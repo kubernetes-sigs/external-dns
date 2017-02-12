@@ -29,6 +29,6 @@ This is a new Kubernetes Incubator project and will incorporate features from th
 
 ## Getting involved!
 
-Want to contribute to kops? We would love the extra help from the community.
+Want to contribute to External DNS? We would love the extra help from the community.
 
 Reach out to us on [Kubernetes slack](https://github.com/kubernetes/community#slack-chat).
