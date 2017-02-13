@@ -1,0 +1,12 @@
+# See the OWNERS file documentation:
+#  https://github.com/kubernetes/kubernetes/blob/master/docs/devel/owners.md
+
+assignees:
+  - justinsb
+  - hjacobs
+  - raffo
+  - linki
+  - ideahitme
+  - chrislovecnm
+  - kris-nova
+  - iterion
