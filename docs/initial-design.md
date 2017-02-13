@@ -29,11 +29,17 @@ If the external-dns controller is running on the cluster, it could automatically
 3. Create/update/remove records as according to Kubernetes resources state
 4. It should address main requirements and support main features of the projects mentioned above
 
-## Design 
+## Design
 
 ### Extensibility
 
 New cloud providers should be easily pluggable. Initially only AWS/Google platforms are supported. However, in the future we are planning to incorporate CoreDNS and Azure DNS as possible DNS providers
+
+### Configuration
+
+DNS records will be automatically created in multiple situations:
+1. Setting `spec.rules.host` on an ingress object.
+2. Specifying two annotations (`external-dns.kubernetes.io/controller` and `external-dns.kubernetes.io/hostname`) on a `type=LoadBalancer` service object.
 
 ### Annotations
 
