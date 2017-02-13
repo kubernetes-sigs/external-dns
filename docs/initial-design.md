@@ -74,6 +74,10 @@ TODO:*Add complete list here*
 |Default   | Empty(falls back to template based approach) |
 |Example|foo.example.org|
 
+**route53-kubernetes*
+
+It should be safe to run both `route53-kubernetes` and `external-dns` simultaneously. Since `route53-kubernetes` only looks at services with the label `dns=route53` and does not support ingress there should be no collisions between annotations. If users desire to switch to `external-dns` they can run both controllers and migrate services over as they are able.
+
 
 ### Ownership
 
