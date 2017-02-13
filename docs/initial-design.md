@@ -39,13 +39,13 @@ New cloud providers should be easily pluggable. Initially only AWS/Google platfo
 
 DNS records will be automatically created in multiple situations:
 1. Setting `spec.rules.host` on an ingress object.
-2. Specifying two annotations (`external-dns.kubernetes.io/controller` and `external-dns.kubernetes.io/hostname`) on a `type=LoadBalancer` service object.
+2. Adding the annotation `external-dns.kubernetes.io/hostname` on a `type=LoadBalancer` service object.
 
 ### Annotations
 
 TODO:*This should probably be placed in a separate file*.
 
-Record configuration should occur via resource annotations. Supported annotations: 
+Record configuration should occur via resource annotations. Supported annotations:
 
 |   Annotations |   |
 |---|---|
@@ -74,7 +74,7 @@ TODO:*Add complete list here*
 |Default   | Empty(falls back to template based approach) |
 |Example|foo.example.org|
 
-**route53-kubernetes*
+**route53-kubernetes**
 
 It should be safe to run both `route53-kubernetes` and `external-dns` simultaneously. Since `route53-kubernetes` only looks at services with the label `dns=route53` and does not support ingress there should be no collisions between annotations. If users desire to switch to `external-dns` they can run both controllers and migrate services over as they are able.
 
