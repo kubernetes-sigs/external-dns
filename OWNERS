@@ -2,8 +2,11 @@
 #  https://github.com/kubernetes/kubernetes/blob/master/docs/devel/owners.md
 
 assignees:
-  - kris-nova
   - justinsb
-  - ideahitme
   - hjacobs
+  - raffo
   - linki
+  - ideahitme
+  - chrislovecnm
+  - kris-nova
+  - iterion
