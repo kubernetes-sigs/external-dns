@@ -36,7 +36,7 @@ Reach out to us on [Kubernetes slack](https://github.com/kubernetes/community#sl
 ## Kubernetes Incubator
 
 This is a [Kubernetes Incubator project](https://github.com/kubernetes/community/blob/master/incubator.md).
-The project was established 2017-Feb-9 (initial announcement [here]((https://docs.google.com/document/d/1ML_q3OppUtQKXan6Q42xIq2jelSoIivuXI8zExbc6ec/edit#heading=h.1pgkuagjhm4p)). 
+The project was established 2017-Feb-9 (initial announcement [here](https://groups.google.com/forum/#!searchin/kubernetes-dev/external$20dns%7Csort:relevance/kubernetes-dev/2wGQUB0fUuE/9OXz01i2BgAJ)). 
 The incubator team for the project is:
 
 Sponsor: sig-network
