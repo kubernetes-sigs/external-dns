@@ -36,11 +36,12 @@ Reach out to us on [Kubernetes slack](https://github.com/kubernetes/community#sl
 ## Kubernetes Incubator
 
 This is a [Kubernetes Incubator project](https://github.com/kubernetes/community/blob/master/incubator.md).
-The project was established 2017-Feb-9 (initial announcement [here](https://groups.google.com/forum/#!searchin/kubernetes-dev/external$20dns%7Csort:relevance/kubernetes-dev/2wGQUB0fUuE/9OXz01i2BgAJ)). 
+The project was established 2017-Feb-9 (initial announcement [here](https://groups.google.com/forum/#!searchin/kubernetes-dev/external$20dns%7Csort:relevance/kubernetes-dev/2wGQUB0fUuE/9OXz01i2BgAJ)).
 The incubator team for the project is:
 
-Sponsor: sig-network
-Champion: Tim Hockin (@thockin)
-SIG: sig-network
+* Sponsor: sig-network
+* Champion: Tim Hockin (@thockin)
+* SIG: sig-network
+
 
 For more information about sig-network such as meeting times and agenda, check out the community site.
