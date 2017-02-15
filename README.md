@@ -32,3 +32,15 @@ This is a new Kubernetes Incubator project and will incorporate features from th
 Want to contribute to External DNS? We would love the extra help from the community.
 
 Reach out to us on [Kubernetes slack](https://github.com/kubernetes/community#slack-chat).
+
+## Kubernetes Incubator
+
+This is a [Kubernetes Incubator project](https://github.com/kubernetes/community/blob/master/incubator.md).
+The project was established 2017-Feb-9 (initial announcement [here]((https://docs.google.com/document/d/1ML_q3OppUtQKXan6Q42xIq2jelSoIivuXI8zExbc6ec/edit#heading=h.1pgkuagjhm4p)). 
+The incubator team for the project is:
+
+Sponsor: sig-network
+Champion: Tim Hockin (@thockin)
+SIG: sig-network
+
+For more information about sig-network such as meeting times and agenda, check out the community site.
