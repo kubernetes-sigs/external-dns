@@ -1,10 +1,11 @@
 ## Development specifications
 
+Proposal regarding the project structure and related tools
+
 ### Vendoring tool 
 
 - glide 
-- govendor 
-
+- alternatives: govendor, godep
 
 ### Project structure
 
@@ -12,6 +13,7 @@
 ./main.go
 ./controller.go - main controlling loop
 ./plan/
+    record.go - dns provider neutral struct for records
     plan.go - implements the logic for managing records
 ./kubernetes/
     manager.go - provides watching capabilities + clientset
@@ -29,13 +31,13 @@
 
 #### Logging 
   - logrus
-  - uber-go/zap
-  - glog
+  - alternatives: uber-go/zap, glog
 
 #### Build
   - Makefile
-  - Bazel
+  - alternatives: bazel.io 
 
 ### CI/CD
 
-- Travis CI
+ - Travis CI - https://github.com/kubernetes-incubator/external-dns/issues/9
+
