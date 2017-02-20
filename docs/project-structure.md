@@ -29,10 +29,12 @@ external-dns --outside-cluster --dnsprovider=aws --source=ingress --source=servi
     aws.go
     google.go
     fake.go 
+    dnsprovider.go - interface
 ./source/ - list of sources
     fake.go
     ingress.go
     services.go
+    source.go - interface
 ```
 
 ### Dependencies 
@@ -53,4 +55,4 @@ external-dns --outside-cluster --dnsprovider=aws --source=ingress --source=servi
 
  - spf13/pflag
  - alternatives - kingpin, jessevdk/go-flags
- Depends whether what kind of cmd line requirements we have
+ Depends what kind of cmd line requirements we have
