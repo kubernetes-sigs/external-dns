@@ -2,6 +2,12 @@
 
 Proposal regarding the project structure and related tools
 
+### How to run
+
+```
+external-dns --outside-cluster --dnsprovider=aws --source=ingress --source=service
+```
+
 ### Vendoring tool 
 
 - glide 
@@ -11,6 +17,7 @@ Proposal regarding the project structure and related tools
 
 ```
 ./main.go
+./config.go - store configurations, flag parsing
 ./controller - main controlling loop
     controller.go 
 ./plan/
@@ -42,3 +49,8 @@ Proposal regarding the project structure and related tools
 
  - Travis CI - https://github.com/kubernetes-incubator/external-dns/issues/9
 
+### Flags
+
+ - spf13/pflag
+ - alternatives - kingpin, jessevdk/go-flags
+ Depends whether what kind of cmd line requirements we have
