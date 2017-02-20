@@ -4,7 +4,7 @@
 
 - glide 
 - govendor 
-- 
+
 
 ### Project structure
 
@@ -12,17 +12,17 @@
 ./main.go
 ./controller.go - main controlling loop
 ./plan/
-  plan.go - implements the logic for managing records
+    plan.go - implements the logic for managing records
 ./kubernetes/
-  manager.go - provides watching capabilities + clientset
-./cloudprovider/ - cloud providers
-  aws.go
-  google.go
-  fake.go 
+    manager.go - provides watching capabilities + clientset
+./dnsprovider/ - dns providers
+    aws.go
+    google.go
+    fake.go 
 ./sources - list of sources
-  fake.go
-  ingress.go
-  services.go
+    fake.go
+    ingress.go
+    services.go
 ```
 
 ### Dependencies 
