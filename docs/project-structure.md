@@ -11,7 +11,8 @@ Proposal regarding the project structure and related tools
 
 ```
 ./main.go
-./controller.go - main controlling loop
+./controller - main controlling loop
+    controller.go 
 ./plan/
     record.go - dns provider neutral struct for records
     plan.go - implements the logic for managing records
@@ -21,7 +22,7 @@ Proposal regarding the project structure and related tools
     aws.go
     google.go
     fake.go 
-./sources - list of sources
+./source/ - list of sources
     fake.go
     ingress.go
     services.go
