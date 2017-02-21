@@ -48,7 +48,7 @@ external-dns --in-cluster=false --dnsprovider=aws --source=ingress --source=serv
  - spf13/pflag - **to be used**
  - alternatives - kingpin, jessevdk/go-flags
 
- #### clientset
+#### Clients
  - k8s.io/client-go
  - aws-sdk-go
  - google.golang.org/api/dns/v1
