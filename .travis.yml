@@ -12,6 +12,11 @@ go:
 
 before_install:
 - go get github.com/mattn/goveralls
+- go get -u github.com/alecthomas/gometalinter
+
+install:
+- gometalinter --install
 
 script:
+- hack/verify-all.sh -v
 - goveralls -service=travis-ci
