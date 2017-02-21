@@ -5,23 +5,18 @@ Proposal regarding the project structure and related tools
 ### How to run
 
 ```
-external-dns --outside-cluster --dnsprovider=aws --source=ingress --source=service
+external-dns --in-cluster=false --dnsprovider=aws --source=ingress --source=service
 ```
-
-### Vendoring tool 
-
-- glide 
-- alternatives: govendor, godep
 
 ### Project structure
 
 ```
 ./main.go
-./config.go - store configurations, flag parsing
+./config - store configurations, flag parsing
+    config.go 
 ./controller - main controlling loop
     controller.go 
 ./plan/
-    record.go - dns provider neutral struct for records
     plan.go - implements the logic for managing records
 ./kubernetes/
     manager.go - provides watching capabilities + clientset
@@ -33,26 +28,37 @@ external-dns --outside-cluster --dnsprovider=aws --source=ingress --source=servi
 ./source/ - list of sources
     fake.go
     ingress.go
-    services.go
+    service.go
     source.go - interface
 ```
+
+### Vendoring tool 
+
+- glide - **to be used**
+- alternatives: govendor, godep
 
 ### Dependencies 
 
 #### Logging 
-  - logrus
+  - logrus - **to be used**
   - alternatives: uber-go/zap, glog
 
-#### Build
-  - Makefile
+#### Flags
+
+ - spf13/pflag - **to be used**
+ - alternatives - kingpin, jessevdk/go-flags
+
+ #### clientset
+ - k8s.io/client-go
+ - aws-sdk-go
+ - google.golang.org/api/dns/v1
+
+### Build
+  - Makefile - **to be used**
   - alternatives: bazel.io 
 
 ### CI/CD
 
  - Travis CI - https://github.com/kubernetes-incubator/external-dns/issues/9
 
-### Flags
 
- - spf13/pflag
- - alternatives - kingpin, jessevdk/go-flags
- Depends what kind of cmd line requirements we have
