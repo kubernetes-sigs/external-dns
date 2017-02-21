@@ -33,7 +33,7 @@ func (cfg *config) parseFlags() {
 }
 
 // ValidateFlags custom validation for flags aside from pflag provided
-func (cfg *config) validateFlags() error {
+func (cfg *config) validate() error {
 	if cfg.logFormat != "text" && cfg.logFormat != "json" {
 		return fmt.Errorf("unsupported log format: %s", cfg.logFormat)
 	}

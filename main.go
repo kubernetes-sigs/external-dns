@@ -16,8 +16,8 @@ import (
 func main() {
 	cfg := newConfig()
 	cfg.parseFlags()
-	if err := cfg.validateFlags(); err != nil {
-		log.Errorf("flag validation failed: %v", err)
+	if err := cfg.validate(); err != nil {
+		log.Errorf("config validation failed: %v", err)
 	}
 
 	if cfg.logFormat == "json" {
