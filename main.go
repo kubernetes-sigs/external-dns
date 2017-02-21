@@ -10,26 +10,27 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
+	"github.com/kubernetes-incubator/external-dns/config"
 	"github.com/kubernetes-incubator/external-dns/controller"
 )
 
 func main() {
-	cfg := newConfig()
-	cfg.parseFlags()
-	if err := cfg.validate(); err != nil {
+	cfg := config.NewConfig()
+	cfg.ParseFlags()
+	if err := cfg.Validate(); err != nil {
 		log.Errorf("config validation failed: %v", err)
 	}
 
-	if cfg.logFormat == "json" {
+	if cfg.LogFormat == "json" {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
-	if cfg.debug {
+	if cfg.Debug {
 		log.SetLevel(log.DebugLevel)
 	}
 
 	stopChan := make(chan struct{}, 1)
 
-	go registerHandlers(cfg.healthPort)
+	go registerHandlers(cfg.HealthPort)
 	go handleSigterm(stopChan)
 
 	controller.Run(stopChan)
