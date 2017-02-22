@@ -23,5 +23,6 @@ install:
 - gometalinter --install
 
 script:
-- hack/verify-all.sh -v
+- repo-infra/verify/verify-boilerplate.sh
+- repo-infra/verify/verify-go-src.sh
 - goveralls -service=travis-ci
