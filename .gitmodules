@@ -1,0 +1,3 @@
+[submodule "repo-infra"]
+	path = repo-infra
+	url = git@github.com:ideahitme/repo-infra.git
