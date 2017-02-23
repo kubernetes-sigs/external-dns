@@ -15,10 +15,13 @@ type Plan struct {
 	Current []DNSRecord
 	// List of desired records
 	Desired []DNSRecord
+	// List of changes necessary to move towards desired state
+	// Populated after calling Calculate()
+	Changes Changes
+}
 
-	// The following lists hold actions to take in orer to move current state to
-	// desired state.
-
+// Changes holds lists of actions to be executed by dns providers
+type Changes struct {
 	// Records that need to be created
 	Create []DNSRecord
 	// Records that need to be updated (current data)
@@ -29,9 +32,10 @@ type Plan struct {
 	Delete []DNSRecord
 }
 
-// Calculate computes the actions needed to move current state to desired state.
+// Calculate computes the actions needed to move current state towards desired
+// state. It returns a copy of Plan with the changes populated.
 func (p *Plan) Calculate() *Plan {
-	plan := &Plan{}
+	changes := Changes{}
 
 	// Ensure all desired records exist. For each desired record make sure it's
 	// either created or updated.
@@ -41,14 +45,14 @@ func (p *Plan) Calculate() *Plan {
 
 		// If there's no current record create desired record.
 		if !exists {
-			plan.Create = append(plan.Create, desired)
+			changes.Create = append(changes.Create, desired)
 			continue
 		}
 
 		// If there already is a record update it if it changed.
 		if desired.Target != current.Target {
-			plan.UpdateOld = append(plan.UpdateOld, current)
-			plan.UpdateNew = append(plan.UpdateNew, desired)
+			changes.UpdateOld = append(changes.UpdateOld, current)
+			changes.UpdateNew = append(changes.UpdateNew, desired)
 		}
 	}
 
@@ -56,8 +60,14 @@ func (p *Plan) Calculate() *Plan {
 	// be found in the list of desired records is removed.
 	for _, current := range p.Current {
 		if _, exists := recordExists(current, p.Desired); !exists {
-			plan.Delete = append(plan.Delete, current)
+			changes.Delete = append(changes.Delete, current)
 		}
+	}
+
+	plan := &Plan{
+		Current: p.Current,
+		Desired: p.Desired,
+		Changes: changes,
 	}
 
 	return plan
