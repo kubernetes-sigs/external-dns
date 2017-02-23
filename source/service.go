@@ -19,7 +19,7 @@ const (
 // ServiceSource is an implementation of Source for Kubernetes service objects.
 // It will find all services that are under our jurisdiction, i.e. annotated
 // desired hostname and matching or no controller annotation. For each of the
-//  matches services' external entrypoints it will return a corresponding
+// matched services' external entrypoints it will return a corresponding
 // Endpoint object.
 type ServiceSource struct {
 	Client kubernetes.Interface
