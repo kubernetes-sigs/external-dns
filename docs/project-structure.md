@@ -34,19 +34,15 @@ external-dns --in-cluster=false --dnsprovider=aws --source=ingress --source=serv
 
 ### Vendoring tool 
 
-- glide - **to be used**
-- alternatives: govendor, godep
+- glide - widely used in kubernetes projects for vendoring
 
 ### Dependencies 
 
 #### Logging 
-  - logrus - **to be used**
-  - alternatives: uber-go/zap, glog
+  - logrus - simple logging library with supported formatter and log levels 
 
 #### Flags
-
- - spf13/pflag - **to be used**
- - alternatives - kingpin, jessevdk/go-flags
+ - spf13/pflag - simple flag library which should suit our needs. We are unlikely to have subcommands and binary will be invoked in a manner to similar shown above
 
 #### Clients
  - k8s.io/client-go
@@ -54,8 +50,7 @@ external-dns --in-cluster=false --dnsprovider=aws --source=ingress --source=serv
  - google.golang.org/api/dns/v1
 
 ### Build
-  - Makefile - **to be used**
-  - alternatives: bazel.io 
+  - Makefile - build should be relatively simple process and Makefile should suit our needs
 
 ### CI/CD
 
