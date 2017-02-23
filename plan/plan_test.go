@@ -11,11 +11,11 @@ func TestCalculate(t *testing.T) {
 	// empty list of records
 	empty := []DNSRecord{}
 	// a simple entry
-	fooV1 := []DNSRecord{{DNSName: "foo", Target: "v1"}}
+	fooV1 := []DNSRecord{{Name: "foo", Target: "v1"}}
 	// the same entry but with different target
-	fooV2 := []DNSRecord{{DNSName: "foo", Target: "v2"}}
+	fooV2 := []DNSRecord{{Name: "foo", Target: "v2"}}
 	// another simple entry
-	bar := []DNSRecord{{DNSName: "bar", Target: "v1"}}
+	bar := []DNSRecord{{Name: "bar", Target: "v1"}}
 
 	for _, tc := range []struct {
 		current, desired, create, updateOld, updateNew, delete []DNSRecord
@@ -52,10 +52,10 @@ func TestCalculate(t *testing.T) {
 
 // BenchmarkCalculate benchmarks the Calculate method.
 func BenchmarkCalculate(b *testing.B) {
-	foo := DNSRecord{DNSName: "foo", Target: "v1"}
-	barV1 := DNSRecord{DNSName: "bar", Target: "v1"}
-	barV2 := DNSRecord{DNSName: "bar", Target: "v2"}
-	baz := DNSRecord{DNSName: "baz", Target: "v1"}
+	foo := DNSRecord{Name: "foo", Target: "v1"}
+	barV1 := DNSRecord{Name: "bar", Target: "v1"}
+	barV2 := DNSRecord{Name: "bar", Target: "v2"}
+	baz := DNSRecord{Name: "baz", Target: "v1"}
 
 	plan := &Plan{
 		Current: []DNSRecord{foo, barV1},
@@ -69,10 +69,10 @@ func BenchmarkCalculate(b *testing.B) {
 
 // ExamplePlan shows how plan can be used.
 func ExamplePlan() {
-	foo := DNSRecord{DNSName: "foo.example.com", Target: "1.2.3.4"}
-	barV1 := DNSRecord{DNSName: "bar.example.com", Target: "8.8.8.8"}
-	barV2 := DNSRecord{DNSName: "bar.example.com", Target: "8.8.4.4"}
-	baz := DNSRecord{DNSName: "baz.example.com", Target: "6.6.6.6"}
+	foo := DNSRecord{Name: "foo.example.com", Target: "1.2.3.4"}
+	barV1 := DNSRecord{Name: "bar.example.com", Target: "8.8.8.8"}
+	barV2 := DNSRecord{Name: "bar.example.com", Target: "8.8.4.4"}
+	baz := DNSRecord{Name: "baz.example.com", Target: "6.6.6.6"}
 
 	// Plan where
 	// * foo should be deleted

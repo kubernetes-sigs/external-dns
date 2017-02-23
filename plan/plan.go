@@ -3,7 +3,7 @@ package plan
 // DNSRecord holds information about a DNS record.
 type DNSRecord struct {
 	// The hostname of the DNS record
-	DNSName string
+	Name string
 	// The target the DNS record points to
 	Target string
 }
@@ -76,7 +76,7 @@ func (p *Plan) Calculate() *Plan {
 // recordExists checks whether a record can be found in a list of records.
 func recordExists(needle DNSRecord, haystack []DNSRecord) (DNSRecord, bool) {
 	for _, record := range haystack {
-		if record.DNSName == needle.DNSName {
+		if record.Name == needle.Name {
 			return record, true
 		}
 	}
