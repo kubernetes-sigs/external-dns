@@ -43,10 +43,10 @@ func TestCalculate(t *testing.T) {
 		plan = plan.Calculate()
 
 		// validate actions
-		validateEntries(t, plan.Create, tc.create)
-		validateEntries(t, plan.UpdateOld, tc.updateOld)
-		validateEntries(t, plan.UpdateNew, tc.updateNew)
-		validateEntries(t, plan.Delete, tc.delete)
+		validateEntries(t, plan.Changes.Create, tc.create)
+		validateEntries(t, plan.Changes.UpdateOld, tc.updateOld)
+		validateEntries(t, plan.Changes.UpdateNew, tc.updateNew)
+		validateEntries(t, plan.Changes.Delete, tc.delete)
 	}
 }
 
@@ -87,10 +87,10 @@ func ExamplePlan() {
 	plan = plan.Calculate()
 
 	// print actions
-	fmt.Println("Create:", plan.Create)
-	fmt.Println("UpdateOld:", plan.UpdateOld)
-	fmt.Println("UpdateNew:", plan.UpdateNew)
-	fmt.Println("Delete:", plan.Delete)
+	fmt.Println("Create:", plan.Changes.Create)
+	fmt.Println("UpdateOld:", plan.Changes.UpdateOld)
+	fmt.Println("UpdateNew:", plan.Changes.UpdateNew)
+	fmt.Println("Delete:", plan.Changes.Delete)
 	// Output:
 	// Create: [{baz.example.com 6.6.6.6}]
 	// UpdateOld: [{bar.example.com 8.8.8.8}]
