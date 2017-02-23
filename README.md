@@ -8,6 +8,14 @@ This is a new Kubernetes Incubator project and will incorporate features from th
 * [Mate](https://github.com/zalando-incubator/mate)
 * [wearemolecule/route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 
+## Current Status
+
+The project just started and isn't in a usable state as of now. The current roadmap looks like the following.
+
+* Create an MVP that allows managing DNS names for Service resources via Google CloudDNS with the official annotation set.
+* Add support for Ingress and Node resources as well as AWS Route53.
+* Add support for the annotation semantics of the three parent projects so that `external-dns` becomes a drop-in replacement for them.
+* Switch from regular sync-only to watch and other advanced topics.
 
 ## Features
 
