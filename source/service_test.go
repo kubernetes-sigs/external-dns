@@ -12,22 +12,23 @@ import (
 // TestEndpoints tests that various services generate the correct endpoints.
 func TestEndpoints(t *testing.T) {
 	for _, tc := range []struct {
+		msg         string
 		namespace   string
 		name        string
 		annotations map[string]string
 		lbs         []string
 		expected    []endpoint.Endpoint
 	}{
-		// Completely opted-out: no endpoints returned.
 		{
+			"no annotated services return no endpoints",
 			"testing",
 			"foo",
 			map[string]string{},
 			[]string{"1.2.3.4"},
 			[]endpoint.Endpoint{},
 		},
-		// Opt-in by setting desired hostname.
 		{
+			"annotated services return an endpoint",
 			"testing",
 			"foo",
 			map[string]string{
@@ -38,8 +39,8 @@ func TestEndpoints(t *testing.T) {
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 			},
 		},
-		// Opt-in by setting desired hostname and this controller.
 		{
+			"our controller type is dns-controller",
 			"testing",
 			"foo",
 			map[string]string{
@@ -51,8 +52,8 @@ func TestEndpoints(t *testing.T) {
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 			},
 		},
-		// Opt-out by setting a different controller.
 		{
+			"different controller types are ignored",
 			"testing",
 			"foo",
 			map[string]string{
@@ -62,8 +63,8 @@ func TestEndpoints(t *testing.T) {
 			[]string{"1.2.3.4"},
 			[]endpoint.Endpoint{},
 		},
-		// Make sure services are found in all namespaces.
 		{
+			"services are found in all namespaces",
 			"other-testing",
 			"foo",
 			map[string]string{
@@ -74,8 +75,8 @@ func TestEndpoints(t *testing.T) {
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 			},
 		},
-		// No external entrypoints lead to no endpoints.
 		{
+			"no external entrypoints return no endpoints",
 			"testing",
 			"foo",
 			map[string]string{
@@ -84,8 +85,8 @@ func TestEndpoints(t *testing.T) {
 			[]string{},
 			[]endpoint.Endpoint{},
 		},
-		// Multiple external entrypoints lead to multiple endpoints.
 		{
+			"multiple external entrypoints return multiple endpoints",
 			"testing",
 			"foo",
 			map[string]string{
@@ -98,45 +99,47 @@ func TestEndpoints(t *testing.T) {
 			},
 		},
 	} {
-		// Create a Kubernetes testing client
-		kubernetes := fake.NewSimpleClientset()
+		t.Run(tc.msg, func(t *testing.T) {
+			// Create a Kubernetes testing client
+			kubernetes := fake.NewSimpleClientset()
 
-		// Create a service to test against
-		ingresses := []v1.LoadBalancerIngress{}
-		for _, lb := range tc.lbs {
-			ingresses = append(ingresses, v1.LoadBalancerIngress{IP: lb})
-		}
+			// Create a service to test against
+			ingresses := []v1.LoadBalancerIngress{}
+			for _, lb := range tc.lbs {
+				ingresses = append(ingresses, v1.LoadBalancerIngress{IP: lb})
+			}
 
-		service := &v1.Service{
-			ObjectMeta: v1.ObjectMeta{
-				Namespace:   tc.namespace,
-				Name:        tc.name,
-				Annotations: tc.annotations,
-			},
-			Status: v1.ServiceStatus{
-				LoadBalancer: v1.LoadBalancerStatus{
-					Ingress: ingresses,
+			service := &v1.Service{
+				ObjectMeta: v1.ObjectMeta{
+					Namespace:   tc.namespace,
+					Name:        tc.name,
+					Annotations: tc.annotations,
 				},
-			},
-		}
+				Status: v1.ServiceStatus{
+					LoadBalancer: v1.LoadBalancerStatus{
+						Ingress: ingresses,
+					},
+				},
+			}
 
-		_, err := kubernetes.Core().Services(service.Namespace).Create(service)
-		if err != nil {
-			t.Fatal(err)
-		}
+			_, err := kubernetes.Core().Services(service.Namespace).Create(service)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		// Create our object under test and get the endpoints.
-		client := &ServiceSource{
-			Client: kubernetes,
-		}
+			// Create our object under test and get the endpoints.
+			client := &ServiceSource{
+				Client: kubernetes,
+			}
 
-		endpoints, err := client.Endpoints()
-		if err != nil {
-			t.Fatal(err)
-		}
+			endpoints, err := client.Endpoints()
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		// Validate returned endpoints against desired endpoints.
-		validateEndpoints(t, endpoints, tc.expected)
+			// Validate returned endpoints against desired endpoints.
+			validateEndpoints(t, endpoints, tc.expected)
+		})
 	}
 }
 
