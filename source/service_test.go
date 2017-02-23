@@ -12,7 +12,7 @@ import (
 // TestEndpoints tests that various services generate the correct endpoints.
 func TestEndpoints(t *testing.T) {
 	for _, tc := range []struct {
-		msg         string
+		title       string
 		namespace   string
 		name        string
 		annotations map[string]string
@@ -99,7 +99,7 @@ func TestEndpoints(t *testing.T) {
 			},
 		},
 	} {
-		t.Run(tc.msg, func(t *testing.T) {
+		t.Run(tc.title, func(t *testing.T) {
 			// Create a Kubernetes testing client
 			kubernetes := fake.NewSimpleClientset()
 
