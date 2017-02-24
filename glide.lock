@@ -1,8 +1,8 @@
-hash: 2d0b9c6adc8e028b9913bb045aadbb3ee97b93050149d388248b53134d452456
-updated: 2017-02-24T15:53:30.477575611+01:00
+hash: ae563d061a64f428ef4396c7a7aef7d51f2bd7cb173848458d4523613971c5c3
+updated: 2017-02-24T17:06:08.321934873+01:00
 imports:
-- name: github.com/ideahitme/repo-infra
-  version: 24624885890083f57f289c3875fdf9a27ddf532b
+- name: github.com/kubernetes/repo-infra
+  version: 4667983ff6a1c7dff07191106392ad4bcad60c29
 - name: github.com/Sirupsen/logrus
   version: c078b1e43f58d563c74cebe63c85789e76ddb627
 - name: github.com/spf13/pflag

@@ -18,6 +18,6 @@ install:
 - gometalinter --install
 
 script:
-- vendor/github.com/ideahitme/repo-infra/verify/verify-boilerplate.sh --rootdir=$(pwd)
-- vendor/github.com/ideahitme/repo-infra/verify/verify-go-src.sh -v --rootdir $(pwd)
+- vendor/github.com/kubernetes/repo-infra/verify/verify-boilerplate.sh --rootdir=$(pwd)
+- vendor/github.com/kubernetes/repo-infra/verify/verify-go-src.sh -v --rootdir $(pwd)
 - goveralls -service=travis-ci
