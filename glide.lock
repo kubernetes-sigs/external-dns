@@ -1,5 +1,5 @@
-hash: 12c49cf861ac3e6c060424c76f0d538f403ae557ce7d1981dca031952feeb330
-updated: 2017-02-24T17:31:39.758887713+01:00
+hash: cd5722a38a9bbd39e1cfd0d3fcdc8c942cedc6d33b65fe189134b75dfac1f4c2
+updated: 2017-02-24T17:59:53.280586006+01:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -118,6 +118,13 @@ imports:
   - unicode/bidi
   - unicode/norm
   - width
+- name: google.golang.org/api
+  version: 64485db7e8c8be51e572801d06cdbcfadd3546c1
+  subpackages:
+  - dns/v1
+  - gensupport
+  - googleapi
+  - googleapi/internal/uritemplates
 - name: google.golang.org/appengine
   version: 4f7eeb5305a4ba1966344836ba4af9996b7b4e05
   subpackages:

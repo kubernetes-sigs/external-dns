@@ -4,6 +4,9 @@ import:
   version: ~0.11.2
 - package: github.com/spf13/pflag
 - package: github.com/kubernetes/repo-infra
+- package: google.golang.org/api
+  subpackages:
+  - dns/v1
 - package: k8s.io/client-go
   version: ~2.0.0
   subpackages:
