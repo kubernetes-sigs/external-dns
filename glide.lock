@@ -1,6 +1,8 @@
-hash: b29eaebb76b914b0175c8d19399427ffc185de84f7ac6b7bce7805eacd8fb417
-updated: 2017-02-24T14:53:51.812049074+01:00
+hash: 2d0b9c6adc8e028b9913bb045aadbb3ee97b93050149d388248b53134d452456
+updated: 2017-02-24T15:53:30.477575611+01:00
 imports:
+- name: github.com/ideahitme/repo-infra
+  version: 24624885890083f57f289c3875fdf9a27ddf532b
 - name: github.com/Sirupsen/logrus
   version: c078b1e43f58d563c74cebe63c85789e76ddb627
 - name: github.com/spf13/pflag
