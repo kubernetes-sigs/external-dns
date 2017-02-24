@@ -1,5 +1,5 @@
-hash: ae563d061a64f428ef4396c7a7aef7d51f2bd7cb173848458d4523613971c5c3
-updated: 2017-02-24T17:06:08.321934873+01:00
+hash: 371cfa24005b1d0305b432b7630e3d6f505a34bd919fc5c0d5f46870cd18cf3a
+updated: 2017-02-24T17:55:47.849524745+01:00
 imports:
 - name: github.com/kubernetes/repo-infra
   version: 4667983ff6a1c7dff07191106392ad4bcad60c29
@@ -7,8 +7,20 @@ imports:
   version: c078b1e43f58d563c74cebe63c85789e76ddb627
 - name: github.com/spf13/pflag
   version: 5ccb023bc27df288a957c5e994cd44fd19619465
+- name: golang.org/x/net
+  version: e90d6d0afc4c315a0d87a568ae68577cc15149a0
+  subpackages:
+  - context
+  - context/ctxhttp
 - name: golang.org/x/sys
   version: 8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9
   subpackages:
   - unix
+- name: google.golang.org/api
+  version: 64485db7e8c8be51e572801d06cdbcfadd3546c1
+  subpackages:
+  - dns/v1
+  - gensupport
+  - googleapi
+  - googleapi/internal/uritemplates
 testImports: []
