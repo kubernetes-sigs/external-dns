@@ -12,6 +12,12 @@ go:
 
 before_install:
 - go get github.com/mattn/goveralls
+- go get -u github.com/alecthomas/gometalinter
+
+install:
+- gometalinter --install
 
 script:
+- repo-infra/verify/verify-boilerplate.sh
+- repo-infra/verify/verify-go-src.sh -v
 - goveralls -service=travis-ci
