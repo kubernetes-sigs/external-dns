@@ -3,9 +3,6 @@ dist: trusty
 os:
 - linux
 
-git:
-  submodules: false
-
 language: go
 
 go:
@@ -16,13 +13,11 @@ go:
 before_install:
 - go get github.com/mattn/goveralls
 - go get -u github.com/alecthomas/gometalinter
-- sed -i 's/git@github.com:/git:\/\/github.com\//' .gitmodules
-- git submodule update --init --recursive
 
 install:
 - gometalinter --install
 
 script:
 - repo-infra/verify/verify-boilerplate.sh
-- repo-infra/verify/verify-go-src.sh
+- repo-infra/verify/verify-go-src.sh -v
 - goveralls -service=travis-ci
