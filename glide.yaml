@@ -1,0 +1,7 @@
+package: github.com/kubernetes-incubator/external-dns
+import:
+- package: github.com/Sirupsen/logrus
+  version: ~0.11.2
+- package: github.com/spf13/pflag
+- package: github.com/ideahitme/repo-infra
+  version: 24624885890083f57f289c3875fdf9a27ddf532b
