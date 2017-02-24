@@ -17,6 +17,8 @@ The project just started and isn't in a usable state as of now. The current road
 * Add support for the annotation semantics of the three parent projects so that `external-dns` becomes a drop-in replacement for them.
 * Switch from regular sync-only to watch and other advanced topics.
 
+Please have a look at [the milestones](https://github.com/kubernetes-incubator/external-dns/milestones) to find corresponding issues.
+
 ## Features
 
 * External DNS should be able to create/update/delete records on Cloud Provider DNS server
