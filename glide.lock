@@ -1,0 +1,12 @@
+hash: b29eaebb76b914b0175c8d19399427ffc185de84f7ac6b7bce7805eacd8fb417
+updated: 2017-02-24T14:53:51.812049074+01:00
+imports:
+- name: github.com/Sirupsen/logrus
+  version: c078b1e43f58d563c74cebe63c85789e76ddb627
+- name: github.com/spf13/pflag
+  version: 5ccb023bc27df288a957c5e994cd44fd19619465
+- name: golang.org/x/sys
+  version: 8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9
+  subpackages:
+  - unix
+testImports: []
