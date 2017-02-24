@@ -1,0 +1,14 @@
+hash: 2d0b9c6adc8e028b9913bb045aadbb3ee97b93050149d388248b53134d452456
+updated: 2017-02-24T15:53:30.477575611+01:00
+imports:
+- name: github.com/ideahitme/repo-infra
+  version: 24624885890083f57f289c3875fdf9a27ddf532b
+- name: github.com/Sirupsen/logrus
+  version: c078b1e43f58d563c74cebe63c85789e76ddb627
+- name: github.com/spf13/pflag
+  version: 5ccb023bc27df288a957c5e994cd44fd19619465
+- name: golang.org/x/sys
+  version: 8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9
+  subpackages:
+  - unix
+testImports: []
