@@ -16,6 +16,7 @@ limitations under the License.
 
 package endpoint
 
+// Endpoint is a high-level way of a connection between a service and an IP
 type Endpoint struct {
 	DNSName string
 	Target  string
