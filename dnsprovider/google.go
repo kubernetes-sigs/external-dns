@@ -157,6 +157,32 @@ func (p *GoogleProvider) DeleteRecord(zone string, record plan.DNSRecord) error 
 	return nil
 }
 
+// ApplyChanges applies a given set of changes in a given zone.
+func (p *GoogleProvider) ApplyChanges(zone string, changes *plan.Changes) error {
+	for _, record := range changes.Create {
+		err := p.CreateRecord(zone, record)
+		if err != nil {
+			return err
+		}
+	}
+
+	for i := range changes.UpdateNew {
+		err := p.UpdateRecord(zone, changes.UpdateNew[i], changes.UpdateOld[i])
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, record := range changes.Delete {
+		err := p.DeleteRecord(zone, record)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // isNotFound returns true if a given error is due to a resource not being found.
 func isNotFound(err error) bool {
 	return strings.Contains(err.Error(), "notFound")
