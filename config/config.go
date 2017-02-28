@@ -21,6 +21,8 @@ import (
 	"os"
 
 	"github.com/spf13/pflag"
+
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 var (
@@ -29,6 +31,8 @@ var (
 
 // Config is a project-wide configuration
 type Config struct {
+	InCluster  bool
+	KubeConfig string
 	HealthPort string
 	Debug      bool
 	LogFormat  string
@@ -42,6 +46,8 @@ func NewConfig() *Config {
 // ParseFlags adds and parses flags from command line
 func (cfg *Config) ParseFlags() {
 	flags := pflag.NewFlagSet("", pflag.ExitOnError)
+	flags.BoolVar(&cfg.InCluster, "in-cluster", false, "whether to use in-cluster config")
+	flags.StringVar(&cfg.KubeConfig, "kubeconfig", clientcmd.RecommendedHomeFile, "path to a local kubeconfig file")
 	flags.StringVar(&cfg.HealthPort, "health-port", defaultHealthPort, "health port to listen on")
 	flags.StringVar(&cfg.LogFormat, "log-format", "text", "log format output. options: [\"text\", \"json\"]")
 	flags.BoolVar(&cfg.Debug, "debug", false, "debug mode")

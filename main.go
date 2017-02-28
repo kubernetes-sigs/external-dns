@@ -59,7 +59,7 @@ func main() {
 	go registerHandlers(cfg.HealthPort)
 	go handleSigterm(stopChan)
 
-	client, err := newClient()
+	client, err := newClient(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -115,21 +115,19 @@ func handleSigterm(stopChan chan struct{}) {
 	close(stopChan)
 }
 
-func newClient() (*kubernetes.Clientset, error) {
+func newClient(cfg *config.Config) (*kubernetes.Clientset, error) {
 	var (
 		config *rest.Config
 		err    error
 	)
 
-	kubeconfig := clientcmd.RecommendedHomeFile
-
-	// if inCluster {
-	// config, err = rest.InClusterConfig()
-	// log.Debug("Using in-cluster config.")
-	// } else {
-	config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
-	log.Debugf("Using current context from kubeconfig at %s.", kubeconfig)
-	// }
+	if cfg.InCluster {
+		config, err = rest.InClusterConfig()
+		log.Debug("Using in-cluster config.")
+	} else {
+		config, err = clientcmd.BuildConfigFromFlags("", cfg.KubeConfig)
+		log.Debugf("Using current context from kubeconfig at %s.", cfg.KubeConfig)
+	}
 	if err != nil {
 		return nil, err
 	}
