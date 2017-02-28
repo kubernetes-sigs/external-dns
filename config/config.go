@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -31,11 +32,13 @@ var (
 
 // Config is a project-wide configuration
 type Config struct {
-	InCluster  bool
-	KubeConfig string
-	HealthPort string
-	Debug      bool
-	LogFormat  string
+	InCluster     bool
+	KubeConfig    string
+	GoogleProject string
+	GoogleZone    string
+	HealthPort    string
+	Debug         bool
+	LogFormat     string
 }
 
 // NewConfig returns new Configuration object
@@ -48,6 +51,8 @@ func (cfg *Config) ParseFlags() {
 	flags := pflag.NewFlagSet("", pflag.ExitOnError)
 	flags.BoolVar(&cfg.InCluster, "in-cluster", false, "whether to use in-cluster config")
 	flags.StringVar(&cfg.KubeConfig, "kubeconfig", clientcmd.RecommendedHomeFile, "path to a local kubeconfig file")
+	flags.StringVar(&cfg.GoogleProject, "google-project", "", "gcloud project to target")
+	flags.StringVar(&cfg.GoogleZone, "google-zone", "", "gcloud dns hosted zone to target")
 	flags.StringVar(&cfg.HealthPort, "health-port", defaultHealthPort, "health port to listen on")
 	flags.StringVar(&cfg.LogFormat, "log-format", "text", "log format output. options: [\"text\", \"json\"]")
 	flags.BoolVar(&cfg.Debug, "debug", false, "debug mode")
@@ -58,6 +63,9 @@ func (cfg *Config) ParseFlags() {
 func (cfg *Config) Validate() error {
 	if cfg.LogFormat != "text" && cfg.LogFormat != "json" {
 		return fmt.Errorf("unsupported log format: %s", cfg.LogFormat)
+	}
+	if cfg.GoogleProject == "" || cfg.GoogleZone == "" {
+		return errors.New("google project or zone missing")
 	}
 	return nil
 }

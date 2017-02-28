@@ -44,7 +44,7 @@ func main() {
 	cfg := config.NewConfig()
 	cfg.ParseFlags()
 	if err := cfg.Validate(); err != nil {
-		log.Errorf("config validation failed: %v", err)
+		log.Fatalf("config validation failed: %v", err)
 	}
 
 	if cfg.LogFormat == "json" {
@@ -79,7 +79,7 @@ func main() {
 	}
 
 	dnsProvider := &dnsprovider.GoogleProvider{
-		Project: "zalando-teapot",
+		Project: cfg.GoogleProject,
 		DryRun:  true,
 		ResourceRecordSetsClient: dnsClient.ResourceRecordSets,
 		ManagedZonesClient:       dnsClient.ManagedZones,
@@ -87,8 +87,7 @@ func main() {
 	}
 
 	ctrl := controller.Controller{
-		Zone: "external-dns-integration-test-gcp-zalan-do",
-
+		Zone:        cfg.GoogleZone,
 		Source:      source,
 		DNSProvider: dnsProvider,
 	}
