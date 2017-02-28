@@ -21,6 +21,7 @@ import (
 
 	"google.golang.org/api/dns/v1"
 
+	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
@@ -75,21 +76,34 @@ func (p *GoogleProvider) DeleteZone(name string) error {
 }
 
 // Records returns the list of records in a given hosted zone.
-func (p *GoogleProvider) Records(zone string) ([]*dns.ResourceRecordSet, error) {
+func (p *GoogleProvider) Records(zone string) ([]endpoint.Endpoint, error) {
 	records, err := p.ResourceRecordSetsClient.List(p.Project, zone).Do()
 	if err != nil {
 		return nil, err
 	}
 
-	return records.Rrsets, nil
+	endpoints := []endpoint.Endpoint{}
+
+	for _, r := range records.Rrsets {
+		for _, rr := range r.Rrdatas {
+			endpoint := endpoint.Endpoint{
+				DNSName: r.Name,
+				Target:  rr,
+			}
+
+			endpoints = append(endpoints, endpoint)
+		}
+	}
+
+	return endpoints, nil
 }
 
 // CreateRecord creates a given DNS record in the given hosted zone.
-func (p *GoogleProvider) CreateRecord(zone string, record plan.DNSRecord) error {
+func (p *GoogleProvider) CreateRecord(zone string, record endpoint.Endpoint) error {
 	change := &dns.Change{
 		Additions: []*dns.ResourceRecordSet{
 			{
-				Name:    record.Name,
+				Name:    record.DNSName,
 				Rrdatas: []string{record.Target},
 				Ttl:     300,
 				Type:    "A",
@@ -106,11 +120,11 @@ func (p *GoogleProvider) CreateRecord(zone string, record plan.DNSRecord) error 
 }
 
 // UpdateRecord updates a given old record to a new record in a given hosted zone.
-func (p *GoogleProvider) UpdateRecord(zone string, newRecord, oldRecord plan.DNSRecord) error {
+func (p *GoogleProvider) UpdateRecord(zone string, newRecord, oldRecord endpoint.Endpoint) error {
 	change := &dns.Change{
 		Deletions: []*dns.ResourceRecordSet{
 			{
-				Name:    oldRecord.Name,
+				Name:    oldRecord.DNSName,
 				Rrdatas: []string{oldRecord.Target},
 				Ttl:     300,
 				Type:    "A",
@@ -118,7 +132,7 @@ func (p *GoogleProvider) UpdateRecord(zone string, newRecord, oldRecord plan.DNS
 		},
 		Additions: []*dns.ResourceRecordSet{
 			{
-				Name:    newRecord.Name,
+				Name:    newRecord.DNSName,
 				Rrdatas: []string{newRecord.Target},
 				Ttl:     300,
 				Type:    "A",
@@ -135,11 +149,11 @@ func (p *GoogleProvider) UpdateRecord(zone string, newRecord, oldRecord plan.DNS
 }
 
 // DeleteRecord deletes a given DNS record in a given zone.
-func (p *GoogleProvider) DeleteRecord(zone string, record plan.DNSRecord) error {
+func (p *GoogleProvider) DeleteRecord(zone string, record endpoint.Endpoint) error {
 	change := &dns.Change{
 		Deletions: []*dns.ResourceRecordSet{
 			{
-				Name:    record.Name,
+				Name:    record.DNSName,
 				Rrdatas: []string{record.Target},
 				Ttl:     300,
 				Type:    "A",

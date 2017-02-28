@@ -14,12 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package endpoint
+package source
 
-// Endpoint is a high-level way of a connection between a service and an IP
-type Endpoint struct {
-	// The hostname of the DNS record
-	DNSName string
-	// The target the DNS record points to
-	Target string
+import (
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+)
+
+// Source defines the interface Endpoint sources should implement.
+type Source interface {
+	Endpoints() ([]endpoint.Endpoint, error)
 }

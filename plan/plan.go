@@ -16,21 +16,17 @@ limitations under the License.
 
 package plan
 
-// DNSRecord holds information about a DNS record.
-type DNSRecord struct {
-	// The hostname of the DNS record
-	Name string
-	// The target the DNS record points to
-	Target string
-}
+import (
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+)
 
 // Plan can convert a list of desired and current records to a series of create,
 // update and delete actions.
 type Plan struct {
 	// List of current records
-	Current []DNSRecord
+	Current []endpoint.Endpoint
 	// List of desired records
-	Desired []DNSRecord
+	Desired []endpoint.Endpoint
 	// List of changes necessary to move towards desired state
 	// Populated after calling Calculate()
 	Changes Changes
@@ -39,13 +35,13 @@ type Plan struct {
 // Changes holds lists of actions to be executed by dns providers
 type Changes struct {
 	// Records that need to be created
-	Create []DNSRecord
+	Create []endpoint.Endpoint
 	// Records that need to be updated (current data)
-	UpdateOld []DNSRecord
+	UpdateOld []endpoint.Endpoint
 	// Records that need to be updated (desired data)
-	UpdateNew []DNSRecord
+	UpdateNew []endpoint.Endpoint
 	// Records that need to be deleted
-	Delete []DNSRecord
+	Delete []endpoint.Endpoint
 }
 
 // Calculate computes the actions needed to move current state towards desired
@@ -90,12 +86,12 @@ func (p *Plan) Calculate() *Plan {
 }
 
 // recordExists checks whether a record can be found in a list of records.
-func recordExists(needle DNSRecord, haystack []DNSRecord) (DNSRecord, bool) {
+func recordExists(needle endpoint.Endpoint, haystack []endpoint.Endpoint) (endpoint.Endpoint, bool) {
 	for _, record := range haystack {
-		if record.Name == needle.Name {
+		if record.DNSName == needle.DNSName {
 			return record, true
 		}
 	}
 
-	return DNSRecord{}, false
+	return endpoint.Endpoint{}, false
 }

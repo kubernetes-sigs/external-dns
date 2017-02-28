@@ -14,12 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package endpoint
+package dnsprovider
 
-// Endpoint is a high-level way of a connection between a service and an IP
-type Endpoint struct {
-	// The hostname of the DNS record
-	DNSName string
-	// The target the DNS record points to
-	Target string
+import (
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/plan"
+)
+
+// DNSProvider defines the interface DNS providers should implement.
+type DNSProvider interface {
+	Records(zone string) ([]endpoint.Endpoint, error)
+	ApplyChanges(zone string, changes *plan.Changes) error
 }

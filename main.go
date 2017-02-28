@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -26,8 +27,17 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/dns/v1"
+
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+
 	"github.com/kubernetes-incubator/external-dns/config"
 	"github.com/kubernetes-incubator/external-dns/controller"
+	"github.com/kubernetes-incubator/external-dns/dnsprovider"
+	"github.com/kubernetes-incubator/external-dns/source"
 )
 
 func main() {
@@ -49,7 +59,40 @@ func main() {
 	go registerHandlers(cfg.HealthPort)
 	go handleSigterm(stopChan)
 
-	controller.Run(stopChan)
+	client, err := newClient()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	source := &source.ServiceSource{
+		Client: client,
+	}
+
+	gcloud, err := google.DefaultClient(context.TODO(), dns.NdevClouddnsReadwriteScope)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dnsClient, err := dns.New(gcloud)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dnsProvider := &dnsprovider.GoogleProvider{
+		Project:                  "zalando-teapot",
+		ResourceRecordSetsClient: dnsClient.ResourceRecordSets,
+		ManagedZonesClient:       dnsClient.ManagedZones,
+		ChangesClient:            dnsClient.Changes,
+	}
+
+	ctrl := controller.Controller{
+		Zone: "external-dns-integration-test.gcp.zalan.do",
+
+		Source:      source,
+		DNSProvider: dnsProvider,
+	}
+
+	ctrl.Run(stopChan)
 	for {
 		log.Infoln("pod waiting to be deleted")
 		time.Sleep(time.Second * 30)
@@ -70,4 +113,32 @@ func handleSigterm(stopChan chan struct{}) {
 	<-signals
 	log.Infoln("received SIGTERM. Terminating...")
 	close(stopChan)
+}
+
+func newClient() (*kubernetes.Clientset, error) {
+	var (
+		config *rest.Config
+		err    error
+	)
+
+	kubeconfig := clientcmd.RecommendedHomeFile
+
+	// if inCluster {
+	// config, err = rest.InClusterConfig()
+	// log.Debug("Using in-cluster config.")
+	// } else {
+	config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+	log.Debugf("Using current context from kubeconfig at %s.", kubeconfig)
+	// }
+	if err != nil {
+		return nil, err
+	}
+	log.Infof("Targeting cluster at %s", config.Host)
+
+	client, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }

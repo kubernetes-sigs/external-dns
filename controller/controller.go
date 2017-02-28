@@ -17,15 +17,64 @@ limitations under the License.
 package controller
 
 import (
+	"time"
+
 	log "github.com/Sirupsen/logrus"
+	"github.com/kubernetes-incubator/external-dns/dnsprovider"
+	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/kubernetes-incubator/external-dns/source"
 )
 
-// Controller main controlling object
+// Controller is responsible for orchestrating the different components.
+// It works in the following way:
+// * Ask the DNS provider for current list of endpoints.
+// * Ask the Source for the desired list of endpoints.
+// * Take both lists and calculate a Plan to move current towards desired state.
+// * Tell the DNS provider to apply the changes calucated by the Plan.
 type Controller struct {
+	Zone string
+
+	Source      source.Source
+	DNSProvider dnsprovider.DNSProvider
 }
 
-// Run runs the main controller loop
-func Run(stopChan <-chan struct{}) {
-	<-stopChan
-	log.Infoln("terminating main controller loop")
+// RunOnce runs a single iteration of a reconciliation loop.
+func (c *Controller) RunOnce() error {
+	records, err := c.DNSProvider.Records(c.Zone)
+	if err != nil {
+		return err
+	}
+
+	endpoints, err := c.Source.Endpoints()
+	if err != nil {
+		return err
+	}
+
+	plan := &plan.Plan{
+		Current: records,
+		Desired: endpoints,
+	}
+
+	plan = plan.Calculate()
+
+	err = c.DNSProvider.ApplyChanges(c.Zone, &plan.Changes)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Run runs RunOnce in a loop with a delay until stopChan receives a value.
+func (c *Controller) Run(stopChan <-chan struct{}) {
+	select {
+	case <-time.After(time.Minute):
+		err := c.RunOnce()
+		if err != nil {
+			log.Fatal(err)
+		}
+	case <-stopChan:
+		log.Infoln("terminating main controller loop")
+		break
+	}
 }
