@@ -1,4 +1,4 @@
-# Copyright YEAR The Kubernetes Authors.
+# Copyright 2017 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 .PHONY: cover cover-html
 
 cover:
+	go get github.com/wadey/gocovmerge
 	$(eval PKGS := $(shell go list ./... | grep -v /vendor/))
 	$(eval PKGS_DELIM := $(shell echo $(PKGS) | sed -e 's/ /,/g'))
 	go list -f '{{if or (len .TestGoFiles) (len .XTestGoFiles)}}go test -test.v -test.timeout=120s -covermode=count -coverprofile={{.Name}}_{{len .Imports}}_{{len .Deps}}.coverprofile -coverpkg $(PKGS_DELIM) {{.ImportPath}}{{end}}' $(PKGS) | xargs -0 sh -c 
@@ -23,4 +24,3 @@ cover:
 
 cover-html: cover
 	go tool cover -html cover.out
-	
