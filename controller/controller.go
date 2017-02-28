@@ -20,6 +20,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+
 	"github.com/kubernetes-incubator/external-dns/dnsprovider"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/source"
@@ -67,14 +68,17 @@ func (c *Controller) RunOnce() error {
 
 // Run runs RunOnce in a loop with a delay until stopChan receives a value.
 func (c *Controller) Run(stopChan <-chan struct{}) {
-	select {
-	case <-time.After(time.Minute):
+	for {
 		err := c.RunOnce()
 		if err != nil {
 			log.Fatal(err)
 		}
-	case <-stopChan:
-		log.Infoln("terminating main controller loop")
-		break
+
+		select {
+		case <-time.After(time.Minute):
+		case <-stopChan:
+			log.Infoln("terminating main controller loop")
+			return
+		}
 	}
 }
