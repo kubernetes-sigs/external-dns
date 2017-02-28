@@ -87,7 +87,7 @@ func main() {
 	}
 
 	ctrl := controller.Controller{
-		Zone: "external-dns-integration-test.gcp.zalan.do",
+		Zone: "external-dns-integration-test-gcp-zalan-do",
 
 		Source:      source,
 		DNSProvider: dnsProvider,
