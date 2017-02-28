@@ -89,6 +89,10 @@ func (p *GoogleProvider) Records(zone string) ([]endpoint.Endpoint, error) {
 	endpoints := []endpoint.Endpoint{}
 
 	for _, r := range records.Rrsets {
+		if r.Type != "A" {
+			continue
+		}
+
 		for _, rr := range r.Rrdatas {
 			endpoint := endpoint.Endpoint{
 				DNSName: r.Name,
