@@ -50,6 +50,9 @@ func main() {
 	if cfg.LogFormat == "json" {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
+	if cfg.DryRun {
+		log.Info("Running in dry-run mode. No changes to DNS records will be made.")
+	}
 	if cfg.Debug {
 		log.SetLevel(log.DebugLevel)
 	}
@@ -80,7 +83,7 @@ func main() {
 
 	dnsProvider := &dnsprovider.GoogleProvider{
 		Project: cfg.GoogleProject,
-		DryRun:  true,
+		DryRun:  cfg.DryRun,
 		ResourceRecordSetsClient: dnsClient.ResourceRecordSets,
 		ManagedZonesClient:       dnsClient.ManagedZones,
 		ChangesClient:            dnsClient.Changes,

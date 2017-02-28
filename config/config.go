@@ -37,6 +37,7 @@ type Config struct {
 	GoogleProject string
 	GoogleZone    string
 	HealthPort    string
+	DryRun        bool
 	Debug         bool
 	LogFormat     string
 }
@@ -55,6 +56,7 @@ func (cfg *Config) ParseFlags() {
 	flags.StringVar(&cfg.GoogleZone, "google-zone", "", "gcloud dns hosted zone to target")
 	flags.StringVar(&cfg.HealthPort, "health-port", defaultHealthPort, "health port to listen on")
 	flags.StringVar(&cfg.LogFormat, "log-format", "text", "log format output. options: [\"text\", \"json\"]")
+	flags.BoolVar(&cfg.DryRun, "dry-run", true, "dry-run mode")
 	flags.BoolVar(&cfg.Debug, "debug", false, "debug mode")
 	flags.Parse(os.Args)
 }
