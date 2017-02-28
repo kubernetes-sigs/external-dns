@@ -79,7 +79,8 @@ func main() {
 	}
 
 	dnsProvider := &dnsprovider.GoogleProvider{
-		Project:                  "zalando-teapot",
+		Project: "zalando-teapot",
+		DryRun:  true,
 		ResourceRecordSetsClient: dnsClient.ResourceRecordSets,
 		ManagedZonesClient:       dnsClient.ManagedZones,
 		ChangesClient:            dnsClient.Changes,
