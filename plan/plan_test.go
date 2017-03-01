@@ -19,22 +19,24 @@ package plan
 import (
 	"fmt"
 	"testing"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
 // TestCalculate tests that a plan can calculate actions to move a list of
 // current records to a list of desired records.
 func TestCalculate(t *testing.T) {
 	// empty list of records
-	empty := []DNSRecord{}
+	empty := []endpoint.Endpoint{}
 	// a simple entry
-	fooV1 := []DNSRecord{{Name: "foo", Target: "v1"}}
+	fooV1 := []endpoint.Endpoint{{DNSName: "foo", Target: "v1"}}
 	// the same entry but with different target
-	fooV2 := []DNSRecord{{Name: "foo", Target: "v2"}}
+	fooV2 := []endpoint.Endpoint{{DNSName: "foo", Target: "v2"}}
 	// another simple entry
-	bar := []DNSRecord{{Name: "bar", Target: "v1"}}
+	bar := []endpoint.Endpoint{{DNSName: "bar", Target: "v1"}}
 
 	for _, tc := range []struct {
-		current, desired, create, updateOld, updateNew, delete []DNSRecord
+		current, desired, create, updateOld, updateNew, delete []endpoint.Endpoint
 	}{
 		// Nothing exists and nothing desired doesn't change anything.
 		{empty, empty, empty, empty, empty, empty},
@@ -68,14 +70,14 @@ func TestCalculate(t *testing.T) {
 
 // BenchmarkCalculate benchmarks the Calculate method.
 func BenchmarkCalculate(b *testing.B) {
-	foo := DNSRecord{Name: "foo", Target: "v1"}
-	barV1 := DNSRecord{Name: "bar", Target: "v1"}
-	barV2 := DNSRecord{Name: "bar", Target: "v2"}
-	baz := DNSRecord{Name: "baz", Target: "v1"}
+	foo := endpoint.Endpoint{DNSName: "foo", Target: "v1"}
+	barV1 := endpoint.Endpoint{DNSName: "bar", Target: "v1"}
+	barV2 := endpoint.Endpoint{DNSName: "bar", Target: "v2"}
+	baz := endpoint.Endpoint{DNSName: "baz", Target: "v1"}
 
 	plan := &Plan{
-		Current: []DNSRecord{foo, barV1},
-		Desired: []DNSRecord{barV2, baz},
+		Current: []endpoint.Endpoint{foo, barV1},
+		Desired: []endpoint.Endpoint{barV2, baz},
 	}
 
 	for i := 0; i < b.N; i++ {
@@ -85,18 +87,18 @@ func BenchmarkCalculate(b *testing.B) {
 
 // ExamplePlan shows how plan can be used.
 func ExamplePlan() {
-	foo := DNSRecord{Name: "foo.example.com", Target: "1.2.3.4"}
-	barV1 := DNSRecord{Name: "bar.example.com", Target: "8.8.8.8"}
-	barV2 := DNSRecord{Name: "bar.example.com", Target: "8.8.4.4"}
-	baz := DNSRecord{Name: "baz.example.com", Target: "6.6.6.6"}
+	foo := endpoint.Endpoint{DNSName: "foo.example.com", Target: "1.2.3.4"}
+	barV1 := endpoint.Endpoint{DNSName: "bar.example.com", Target: "8.8.8.8"}
+	barV2 := endpoint.Endpoint{DNSName: "bar.example.com", Target: "8.8.4.4"}
+	baz := endpoint.Endpoint{DNSName: "baz.example.com", Target: "6.6.6.6"}
 
 	// Plan where
 	// * foo should be deleted
 	// * bar should be updated from v1 to v2
 	// * baz should be created
 	plan := &Plan{
-		Current: []DNSRecord{foo, barV1},
-		Desired: []DNSRecord{barV2, baz},
+		Current: []endpoint.Endpoint{foo, barV1},
+		Desired: []endpoint.Endpoint{barV2, baz},
 	}
 
 	// calculate actions
@@ -115,7 +117,7 @@ func ExamplePlan() {
 }
 
 // validateEntries validates that the list of entries matches expected.
-func validateEntries(t *testing.T, entries, expected []DNSRecord) {
+func validateEntries(t *testing.T, entries, expected []endpoint.Endpoint) {
 	if len(entries) != len(expected) {
 		t.Fatalf("expected %q to match %q", entries, expected)
 	}

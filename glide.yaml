@@ -4,6 +4,9 @@ import:
   version: ~0.11.2
 - package: github.com/spf13/pflag
 - package: github.com/kubernetes/repo-infra
+- package: golang.org/x/oauth2
+  subpackages:
+  - google
 - package: google.golang.org/api
   subpackages:
   - dns/v1
@@ -12,3 +15,5 @@ import:
   subpackages:
   - kubernetes
   - pkg/api/v1
+  - rest
+  - tools/clientcmd

@@ -17,24 +17,55 @@ limitations under the License.
 package validation
 
 import (
-	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
 	"testing"
+
+	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
 )
 
 func TestValidateFlags(t *testing.T) {
-	cfg := externaldns.NewConfig()
+	cfg := newValidConfig(t)
 	cfg.LogFormat = "test"
 	if err := ValidateConfig(cfg); err == nil {
 		t.Errorf("unsupported log format should fail: %s", cfg.LogFormat)
 	}
+
+	cfg = newValidConfig(t)
 	cfg.LogFormat = ""
 	if err := ValidateConfig(cfg); err == nil {
 		t.Errorf("unsupported log format should fail: %s", cfg.LogFormat)
 	}
+
 	for _, format := range []string{"text", "json"} {
+		cfg = newValidConfig(t)
 		cfg.LogFormat = format
 		if err := ValidateConfig(cfg); err != nil {
 			t.Errorf("supported log format: %s should not fail", format)
 		}
 	}
+
+	cfg = newValidConfig(t)
+	cfg.GoogleProject = ""
+	if err := ValidateConfig(cfg); err == nil {
+		t.Error("missing google project should fail")
+	}
+
+	cfg = newValidConfig(t)
+	cfg.GoogleZone = ""
+	if err := ValidateConfig(cfg); err == nil {
+		t.Error("missing google zone should fail")
+	}
+}
+
+func newValidConfig(t *testing.T) *externaldns.Config {
+	cfg := externaldns.NewConfig()
+
+	cfg.LogFormat = "json"
+	cfg.GoogleProject = "test-project"
+	cfg.GoogleZone = "test-zone"
+
+	if err := ValidateConfig(cfg); err != nil {
+		t.Fatalf("newValidConfig should return valid config")
+	}
+
+	return cfg
 }

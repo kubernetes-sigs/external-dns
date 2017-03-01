@@ -19,8 +19,11 @@ package dnsprovider
 import (
 	"strings"
 
+	log "github.com/Sirupsen/logrus"
+
 	"google.golang.org/api/dns/v1"
 
+	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
@@ -28,6 +31,8 @@ import (
 type GoogleProvider struct {
 	// The Google project to work in
 	Project string
+	// Enabled dry-run will print any modifying actions rather than execute them.
+	DryRun bool
 	// A client for managing resource record sets
 	ResourceRecordSetsClient *dns.ResourceRecordSetsService
 	// A client for managing hosted zones
@@ -75,26 +80,48 @@ func (p *GoogleProvider) DeleteZone(name string) error {
 }
 
 // Records returns the list of records in a given hosted zone.
-func (p *GoogleProvider) Records(zone string) ([]*dns.ResourceRecordSet, error) {
+func (p *GoogleProvider) Records(zone string) ([]endpoint.Endpoint, error) {
 	records, err := p.ResourceRecordSetsClient.List(p.Project, zone).Do()
 	if err != nil {
 		return nil, err
 	}
 
-	return records.Rrsets, nil
+	endpoints := []endpoint.Endpoint{}
+
+	for _, r := range records.Rrsets {
+		if r.Type != "A" {
+			continue
+		}
+
+		for _, rr := range r.Rrdatas {
+			endpoint := endpoint.Endpoint{
+				DNSName: r.Name,
+				Target:  rr,
+			}
+
+			endpoints = append(endpoints, endpoint)
+		}
+	}
+
+	return endpoints, nil
 }
 
 // CreateRecord creates a given DNS record in the given hosted zone.
-func (p *GoogleProvider) CreateRecord(zone string, record plan.DNSRecord) error {
+func (p *GoogleProvider) CreateRecord(zone string, record endpoint.Endpoint) error {
+	createRecord := &dns.ResourceRecordSet{
+		Name:    record.DNSName,
+		Rrdatas: []string{record.Target},
+		Ttl:     300,
+		Type:    "A",
+	}
+
 	change := &dns.Change{
-		Additions: []*dns.ResourceRecordSet{
-			{
-				Name:    record.Name,
-				Rrdatas: []string{record.Target},
-				Ttl:     300,
-				Type:    "A",
-			},
-		},
+		Additions: []*dns.ResourceRecordSet{createRecord},
+	}
+
+	if p.DryRun {
+		log.Infof("Creating record: %#v", createRecord)
+		return nil
 	}
 
 	_, err := p.ChangesClient.Create(p.Project, zone, change).Do()
@@ -106,24 +133,29 @@ func (p *GoogleProvider) CreateRecord(zone string, record plan.DNSRecord) error 
 }
 
 // UpdateRecord updates a given old record to a new record in a given hosted zone.
-func (p *GoogleProvider) UpdateRecord(zone string, newRecord, oldRecord plan.DNSRecord) error {
+func (p *GoogleProvider) UpdateRecord(zone string, newRecord, oldRecord endpoint.Endpoint) error {
+	deleteRecord := &dns.ResourceRecordSet{
+		Name:    oldRecord.DNSName,
+		Rrdatas: []string{oldRecord.Target},
+		Ttl:     300,
+		Type:    "A",
+	}
+
+	createRecord := &dns.ResourceRecordSet{
+		Name:    newRecord.DNSName,
+		Rrdatas: []string{newRecord.Target},
+		Ttl:     300,
+		Type:    "A",
+	}
+
 	change := &dns.Change{
-		Deletions: []*dns.ResourceRecordSet{
-			{
-				Name:    oldRecord.Name,
-				Rrdatas: []string{oldRecord.Target},
-				Ttl:     300,
-				Type:    "A",
-			},
-		},
-		Additions: []*dns.ResourceRecordSet{
-			{
-				Name:    newRecord.Name,
-				Rrdatas: []string{newRecord.Target},
-				Ttl:     300,
-				Type:    "A",
-			},
-		},
+		Deletions: []*dns.ResourceRecordSet{deleteRecord},
+		Additions: []*dns.ResourceRecordSet{createRecord},
+	}
+
+	if p.DryRun {
+		log.Infof("Update record: %#v %#v", deleteRecord, createRecord)
+		return nil
 	}
 
 	_, err := p.ChangesClient.Create(p.Project, zone, change).Do()
@@ -135,21 +167,52 @@ func (p *GoogleProvider) UpdateRecord(zone string, newRecord, oldRecord plan.DNS
 }
 
 // DeleteRecord deletes a given DNS record in a given zone.
-func (p *GoogleProvider) DeleteRecord(zone string, record plan.DNSRecord) error {
+func (p *GoogleProvider) DeleteRecord(zone string, record endpoint.Endpoint) error {
+	deleteRecord := &dns.ResourceRecordSet{
+		Name:    record.DNSName,
+		Rrdatas: []string{record.Target},
+		Ttl:     300,
+		Type:    "A",
+	}
+
 	change := &dns.Change{
-		Deletions: []*dns.ResourceRecordSet{
-			{
-				Name:    record.Name,
-				Rrdatas: []string{record.Target},
-				Ttl:     300,
-				Type:    "A",
-			},
-		},
+		Deletions: []*dns.ResourceRecordSet{deleteRecord},
+	}
+
+	if p.DryRun {
+		log.Infof("Delete record: %#v %#v", deleteRecord)
+		return nil
 	}
 
 	_, err := p.ChangesClient.Create(p.Project, zone, change).Do()
 	if err != nil {
 		if !isNotFound(err) {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// ApplyChanges applies a given set of changes in a given zone.
+func (p *GoogleProvider) ApplyChanges(zone string, changes *plan.Changes) error {
+	for _, record := range changes.Create {
+		err := p.CreateRecord(zone, record)
+		if err != nil {
+			return err
+		}
+	}
+
+	for i := range changes.UpdateNew {
+		err := p.UpdateRecord(zone, changes.UpdateNew[i], changes.UpdateOld[i])
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, record := range changes.Delete {
+		err := p.DeleteRecord(zone, record)
+		if err != nil {
 			return err
 		}
 	}
