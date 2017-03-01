@@ -37,3 +37,6 @@ Session.vim
 cscope.*
 
 /bazel-*
+
+# coverage output
+cover.out
