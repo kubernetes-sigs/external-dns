@@ -17,6 +17,7 @@ limitations under the License.
 package source
 
 import (
+	"net"
 	"testing"
 
 	"k8s.io/client-go/kubernetes/fake"
@@ -53,6 +54,18 @@ func TestEndpoints(t *testing.T) {
 			[]string{"1.2.3.4"},
 			[]endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+			},
+		},
+		{
+			"annotated services return an endpoint",
+			"testing",
+			"foo",
+			map[string]string{
+				"external-dns.kubernetes.io/hostname": "foo.example.org",
+			},
+			[]string{"lb.example.com"},
+			[]endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "lb.example.com"},
 			},
 		},
 		{
@@ -122,7 +135,11 @@ func TestEndpoints(t *testing.T) {
 			// Create a service to test against
 			ingresses := []v1.LoadBalancerIngress{}
 			for _, lb := range tc.lbs {
-				ingresses = append(ingresses, v1.LoadBalancerIngress{IP: lb})
+				if net.ParseIP(lb) != nil {
+					ingresses = append(ingresses, v1.LoadBalancerIngress{IP: lb})
+				} else {
+					ingresses = append(ingresses, v1.LoadBalancerIngress{Hostname: lb})
+				}
 			}
 
 			service := &v1.Service{
