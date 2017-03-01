@@ -34,17 +34,18 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/kubernetes-incubator/external-dns/config"
 	"github.com/kubernetes-incubator/external-dns/controller"
 	"github.com/kubernetes-incubator/external-dns/dnsprovider"
+	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
+	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns/validation"
 	"github.com/kubernetes-incubator/external-dns/source"
 )
 
 func main() {
-	cfg := config.NewConfig()
+	cfg := externaldns.NewConfig()
 	cfg.ParseFlags()
-	if err := cfg.Validate(); err != nil {
-		log.Fatalf("config validation failed: %v", err)
+	if err := validation.ValidateConfig(cfg); err != nil {
+		log.Errorf("config validation failed: %v", err)
 	}
 
 	if cfg.LogFormat == "json" {
@@ -118,7 +119,7 @@ func handleSigterm(stopChan chan struct{}) {
 	close(stopChan)
 }
 
-func newClient(cfg *config.Config) (*kubernetes.Clientset, error) {
+func newClient(cfg *externaldns.Config) (*kubernetes.Clientset, error) {
 	var (
 		config *rest.Config
 		err    error

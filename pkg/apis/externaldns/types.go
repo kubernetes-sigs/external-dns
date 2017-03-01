@@ -14,11 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package externaldns
 
 import (
-	"errors"
-	"fmt"
 	"os"
 
 	"github.com/spf13/pflag"
@@ -42,7 +40,7 @@ type Config struct {
 	LogFormat     string
 }
 
-// NewConfig returns new Configuration object
+// NewConfig returns new Config object
 func NewConfig() *Config {
 	return &Config{}
 }
@@ -59,15 +57,4 @@ func (cfg *Config) ParseFlags() {
 	flags.BoolVar(&cfg.DryRun, "dry-run", true, "dry-run mode")
 	flags.BoolVar(&cfg.Debug, "debug", false, "debug mode")
 	flags.Parse(os.Args)
-}
-
-// Validate custom validation for flags aside from flag library provided
-func (cfg *Config) Validate() error {
-	if cfg.LogFormat != "text" && cfg.LogFormat != "json" {
-		return fmt.Errorf("unsupported log format: %s", cfg.LogFormat)
-	}
-	if cfg.GoogleProject == "" || cfg.GoogleZone == "" {
-		return errors.New("google project or zone missing")
-	}
-	return nil
 }
