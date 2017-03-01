@@ -28,9 +28,14 @@ var (
 
 // Config is a project-wide configuration
 type Config struct {
-	HealthPort string
-	Debug      bool
-	LogFormat  string
+	InCluster     bool
+	KubeConfig    string
+	GoogleProject string
+	GoogleZone    string
+	HealthPort    string
+	DryRun        bool
+	Debug         bool
+	LogFormat     string
 }
 
 // NewConfig returns new Config object
@@ -41,8 +46,13 @@ func NewConfig() *Config {
 // ParseFlags adds and parses flags from command line
 func (cfg *Config) ParseFlags() {
 	flags := pflag.NewFlagSet("", pflag.ExitOnError)
+	flags.BoolVar(&cfg.InCluster, "in-cluster", false, "whether to use in-cluster config")
+	flags.StringVar(&cfg.KubeConfig, "kubeconfig", "", "path to a local kubeconfig file")
+	flags.StringVar(&cfg.GoogleProject, "google-project", "", "gcloud project to target")
+	flags.StringVar(&cfg.GoogleZone, "google-zone", "", "gcloud dns hosted zone to target")
 	flags.StringVar(&cfg.HealthPort, "health-port", defaultHealthPort, "health port to listen on")
 	flags.StringVar(&cfg.LogFormat, "log-format", "text", "log format output. options: [\"text\", \"json\"]")
+	flags.BoolVar(&cfg.DryRun, "dry-run", true, "dry-run mode")
 	flags.BoolVar(&cfg.Debug, "debug", false, "debug mode")
 	flags.Parse(os.Args)
 }

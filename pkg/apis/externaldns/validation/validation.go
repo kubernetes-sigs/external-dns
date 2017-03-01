@@ -17,7 +17,9 @@ limitations under the License.
 package validation
 
 import (
+	"errors"
 	"fmt"
+
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
 )
 
@@ -27,5 +29,9 @@ func ValidateConfig(cfg *externaldns.Config) error {
 	if cfg.LogFormat != "text" && cfg.LogFormat != "json" {
 		return fmt.Errorf("unsupported log format: %s", cfg.LogFormat)
 	}
+	if cfg.GoogleProject == "" || cfg.GoogleZone == "" {
+		return errors.New("google project or zone missing")
+	}
+
 	return nil
 }

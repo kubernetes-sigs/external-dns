@@ -18,6 +18,8 @@ package endpoint
 
 // Endpoint is a high-level way of a connection between a service and an IP
 type Endpoint struct {
+	// The hostname of the DNS record
 	DNSName string
-	Target  string
+	// The target the DNS record points to
+	Target string
 }

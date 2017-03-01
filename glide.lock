@@ -1,5 +1,5 @@
-hash: cd5722a38a9bbd39e1cfd0d3fcdc8c942cedc6d33b65fe189134b75dfac1f4c2
-updated: 2017-02-24T17:59:53.280586006+01:00
+hash: ab629131300d541eec768469491aa5194939640f664feb9d14ce11678b23c138
+updated: 2017-02-28T22:25:07.275158056+01:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -59,6 +59,10 @@ imports:
   - proto
 - name: github.com/google/gofuzz
   version: bbcb9da2d746f8bdbd6a936686a0a6067ada0ec5
+- name: github.com/howeyc/gopass
+  version: 3ca23474a7c7203e0a0a070fd33508f6efdb9b3d
+- name: github.com/imdario/mergo
+  version: 6633656539c1639d9d78127b7d47c622b5d7b6dc
 - name: github.com/jonboulle/clockwork
   version: 72f9bd7c4e0c2a40055ab3d0f09654f730cce982
 - name: github.com/juju/ratelimit
@@ -85,6 +89,10 @@ imports:
   version: f1f1a805ed361a0e078bb537e4ea78cd37dcf065
   subpackages:
   - codec
+- name: golang.org/x/crypto
+  version: 1f22c0103821b9390939b6776727195525381532
+  subpackages:
+  - ssh/terminal
 - name: golang.org/x/net
   version: e90d6d0afc4c315a0d87a568ae68577cc15149a0
   subpackages:
@@ -238,6 +246,7 @@ imports:
   - pkg/util/errors
   - pkg/util/flowcontrol
   - pkg/util/framer
+  - pkg/util/homedir
   - pkg/util/integer
   - pkg/util/intstr
   - pkg/util/json
@@ -261,7 +270,11 @@ imports:
   - plugin/pkg/client/auth/oidc
   - rest
   - testing
+  - tools/auth
+  - tools/clientcmd
   - tools/clientcmd/api
+  - tools/clientcmd/api/latest
+  - tools/clientcmd/api/v1
   - tools/metrics
   - transport
 testImports: []
