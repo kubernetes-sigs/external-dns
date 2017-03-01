@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# cover-html creates coverage report for whole project excluding vendor and opens result in the default browser
 .PHONY: cover cover-html
 
 cover:
@@ -24,3 +25,13 @@ cover:
 
 cover-html: cover
 	go tool cover -html cover.out
+
+
+# The verify target runs tasks similar to the CI tasks, but without code coverage
+.PHONY: verify
+
+verify:
+	vendor/github.com/kubernetes/repo-infra/verify/verify-boilerplate.sh --rootdir=${CURDIR}
+	vendor/github.com/kubernetes/repo-infra/verify/verify-go-src.sh -v --rootdir ${CURDIR}
+	go test github.com/kubernetes-incubator/external-dns/pkg/...
+
