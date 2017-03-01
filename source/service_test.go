@@ -45,7 +45,7 @@ func TestEndpoints(t *testing.T) {
 			[]endpoint.Endpoint{},
 		},
 		{
-			"annotated services return an endpoint",
+			"annotated services return an endpoint with target IP",
 			"testing",
 			"foo",
 			map[string]string{
@@ -57,7 +57,7 @@ func TestEndpoints(t *testing.T) {
 			},
 		},
 		{
-			"annotated services return an endpoint",
+			"annotated services return an endpoint with target hostname",
 			"testing",
 			"foo",
 			map[string]string{
@@ -155,7 +155,7 @@ func TestEndpoints(t *testing.T) {
 				},
 			}
 
-			_, err := kubernetes.Core().Services(service.Namespace).Create(service)
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -197,7 +197,7 @@ func BenchmarkEndpoints(b *testing.B) {
 		},
 	}
 
-	_, err := kubernetes.Core().Services(service.Namespace).Create(service)
+	_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
 	if err != nil {
 		b.Fatal(err)
 	}
