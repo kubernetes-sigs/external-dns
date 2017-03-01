@@ -31,7 +31,6 @@ import (
 	"google.golang.org/api/dns/v1"
 
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/kubernetes-incubator/external-dns/controller"
@@ -120,21 +119,15 @@ func handleSigterm(stopChan chan struct{}) {
 }
 
 func newClient(cfg *externaldns.Config) (*kubernetes.Clientset, error) {
-	var (
-		config *rest.Config
-		err    error
-	)
-
-	if cfg.InCluster {
-		config, err = rest.InClusterConfig()
-		log.Debug("Using in-cluster config.")
-	} else {
-		config, err = clientcmd.BuildConfigFromFlags("", cfg.KubeConfig)
-		log.Debugf("Using current context from kubeconfig at %s.", cfg.KubeConfig)
+	if !cfg.InCluster && cfg.KubeConfig == "" {
+		cfg.KubeConfig = clientcmd.RecommendedHomeFile
 	}
+
+	config, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfig)
 	if err != nil {
 		return nil, err
 	}
+
 	log.Infof("Targeting cluster at %s", config.Host)
 
 	client, err := kubernetes.NewForConfig(config)

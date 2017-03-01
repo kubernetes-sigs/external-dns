@@ -20,8 +20,6 @@ import (
 	"os"
 
 	"github.com/spf13/pflag"
-
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 var (
@@ -49,7 +47,7 @@ func NewConfig() *Config {
 func (cfg *Config) ParseFlags() {
 	flags := pflag.NewFlagSet("", pflag.ExitOnError)
 	flags.BoolVar(&cfg.InCluster, "in-cluster", false, "whether to use in-cluster config")
-	flags.StringVar(&cfg.KubeConfig, "kubeconfig", clientcmd.RecommendedHomeFile, "path to a local kubeconfig file")
+	flags.StringVar(&cfg.KubeConfig, "kubeconfig", "", "path to a local kubeconfig file")
 	flags.StringVar(&cfg.GoogleProject, "google-project", "", "gcloud project to target")
 	flags.StringVar(&cfg.GoogleZone, "google-zone", "", "gcloud dns hosted zone to target")
 	flags.StringVar(&cfg.HealthPort, "health-port", defaultHealthPort, "health port to listen on")
