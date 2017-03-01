@@ -16,5 +16,4 @@
 verify:
 	vendor/github.com/kubernetes/repo-infra/verify/verify-boilerplate.sh --rootdir=${CURDIR}
 	vendor/github.com/kubernetes/repo-infra/verify/verify-go-src.sh -v --rootdir ${CURDIR}
-	go test github.com/kubernetes-incubator/external-dns/pkg/...
-
+	go test -v $(shell go list ./... | grep -v /vendor/)
