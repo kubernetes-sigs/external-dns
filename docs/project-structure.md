@@ -12,8 +12,6 @@ external-dns --in-cluster=false --dnsprovider=aws --source=ingress --source=serv
 
 ```
 ./main.go
-./config - store configurations, flag parsing
-    config.go 
 ./controller - main controlling loop
     controller.go 
 ./plan/
@@ -25,6 +23,8 @@ external-dns --in-cluster=false --dnsprovider=aws --source=ingress --source=serv
     google.go
     fake.go 
     dnsprovider.go - interface
+./pkg/apis/externaldns - types that we will want to be subject to apimachinery (e.g. configuration)
+./pkg/apis/externaldns/validation - validation for our types
 ./source/ - list of sources
     fake.go
     ingress.go

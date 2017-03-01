@@ -26,14 +26,15 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
-	"github.com/kubernetes-incubator/external-dns/config"
 	"github.com/kubernetes-incubator/external-dns/controller"
+	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
+	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns/validation"
 )
 
 func main() {
-	cfg := config.NewConfig()
+	cfg := externaldns.NewConfig()
 	cfg.ParseFlags()
-	if err := cfg.Validate(); err != nil {
+	if err := validation.ValidateConfig(cfg); err != nil {
 		log.Errorf("config validation failed: %v", err)
 	}
 
