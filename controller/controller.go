@@ -58,12 +58,7 @@ func (c *Controller) RunOnce() error {
 
 	plan = plan.Calculate()
 
-	err = c.DNSProvider.ApplyChanges(c.Zone, &plan.Changes)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return c.DNSProvider.ApplyChanges(c.Zone, &plan.Changes)
 }
 
 // Run runs RunOnce in a loop with a delay until stopChan receives a value.
