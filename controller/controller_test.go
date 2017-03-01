@@ -20,60 +20,141 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/kubernetes-incubator/external-dns/dnsprovider"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/kubernetes-incubator/external-dns/source"
 )
 
 // mockSource returns mock endpoints.
-type mockSource struct{}
+type mockSource struct {
+	RecordsStore []endpoint.Endpoint
+}
 
-// Endpoints returns a single desired test endpoint
+// Endpoints returns the desired mock endpoints.
 func (s *mockSource) Endpoints() ([]endpoint.Endpoint, error) {
-	endpoints := []endpoint.Endpoint{
-		{
-			DNSName: "test-record",
-			Target:  "1.2.3.4",
-		},
+	return s.RecordsStore, nil
+}
+
+// newMockSource creates a new mockSource returning the given endpoints.
+func newMockSource(endpoints []endpoint.Endpoint) source.Source {
+	source := &mockSource{
+		RecordsStore: endpoints,
 	}
 
-	return endpoints, nil
+	return source
 }
 
-// mockDNSProvider returns no current endpoints and validates that the applied
-// list of endpoints is correct.
-type mockDNSProvider struct{}
+// mockDNSProvider returns mock endpoints and validates changes.
+type mockDNSProvider struct {
+	RecordsStore  []endpoint.Endpoint
+	ExpectZone    string
+	ExpectChanges *plan.Changes
+}
 
-// Records returns an empty list of current endpoints.
+// Records returns the desired mock endpoints.
 func (p *mockDNSProvider) Records(zone string) ([]endpoint.Endpoint, error) {
-	return []endpoint.Endpoint{}, nil
+	return p.RecordsStore, nil
 }
 
-// ApplyChanges validates that the passed in changes satisfy a specifc assumtion.
+// ApplyChanges validates that the passed in changes satisfy the assumtions.
 func (p *mockDNSProvider) ApplyChanges(zone string, changes *plan.Changes) error {
-	if zone != "test-zone" {
+	if zone != p.ExpectZone {
 		return errors.New("zone is incorrect")
 	}
 
-	if len(changes.Create) != 1 {
+	if len(changes.Create) != len(p.ExpectChanges.Create) {
 		return errors.New("number of created records is wrong")
 	}
 
-	create := changes.Create[0]
+	for i := range changes.Create {
+		if changes.Create[i].DNSName != p.ExpectChanges.Create[i].DNSName || changes.Create[i].Target != p.ExpectChanges.Create[i].Target {
+			return errors.New("created record is wrong")
+		}
+	}
 
-	if create.DNSName != "test-record" || create.Target != "1.2.3.4" {
-		return errors.New("created record is wrong")
+	for i := range changes.UpdateNew {
+		if changes.UpdateNew[i].DNSName != p.ExpectChanges.UpdateNew[i].DNSName || changes.UpdateNew[i].Target != p.ExpectChanges.UpdateNew[i].Target {
+			return errors.New("delete record is wrong")
+		}
+	}
+
+	for i := range changes.UpdateOld {
+		if changes.UpdateOld[i].DNSName != p.ExpectChanges.UpdateOld[i].DNSName || changes.UpdateOld[i].Target != p.ExpectChanges.UpdateOld[i].Target {
+			return errors.New("delete record is wrong")
+		}
+	}
+
+	for i := range changes.Delete {
+		if changes.Delete[i].DNSName != p.ExpectChanges.Delete[i].DNSName || changes.Delete[i].Target != p.ExpectChanges.Delete[i].Target {
+			return errors.New("delete record is wrong")
+		}
 	}
 
 	return nil
 }
 
+// newMockDNSProvider creates a new mockDNSProvider returning the given endpoints and validating the desired changes.
+func newMockDNSProvider(endpoints []endpoint.Endpoint, zone string, changes *plan.Changes) dnsprovider.DNSProvider {
+	dnsProvider := &mockDNSProvider{
+		RecordsStore:  endpoints,
+		ExpectZone:    zone,
+		ExpectChanges: changes,
+	}
+
+	return dnsProvider
+}
+
 // TestRunOnce tests that RunOnce correctly orchestrates the different components.
 func TestRunOnce(t *testing.T) {
-	ctrl := &Controller{
-		Zone: "test-zone",
+	// Fake some desired endpoints coming from our source.
+	source := newMockSource(
+		[]endpoint.Endpoint{
+			{
+				DNSName: "create-record",
+				Target:  "1.2.3.4",
+			},
+			{
+				DNSName: "update-record",
+				Target:  "8.8.4.4",
+			},
+		},
+	)
 
-		Source:      &mockSource{},
-		DNSProvider: &mockDNSProvider{},
+	// Fake some existing records in our DNS provider and validate some desired changes.
+	provider := newMockDNSProvider(
+		[]endpoint.Endpoint{
+			{
+				DNSName: "update-record",
+				Target:  "8.8.8.8",
+			},
+			{
+				DNSName: "delete-record",
+				Target:  "4.3.2.1",
+			},
+		},
+		"test-zone",
+		&plan.Changes{
+			Create: []endpoint.Endpoint{
+				{DNSName: "create-record", Target: "1.2.3.4"},
+			},
+			UpdateNew: []endpoint.Endpoint{
+				{DNSName: "update-record", Target: "8.8.4.4"},
+			},
+			UpdateOld: []endpoint.Endpoint{
+				{DNSName: "update-record", Target: "8.8.8.8"},
+			},
+			Delete: []endpoint.Endpoint{
+				{DNSName: "delete-record", Target: "4.3.2.1"},
+			},
+		},
+	)
+
+	// Run our controller once to trigger the validation.
+	ctrl := &Controller{
+		Zone:        "test-zone",
+		Source:      source,
+		DNSProvider: provider,
 	}
 
 	err := ctrl.RunOnce()
