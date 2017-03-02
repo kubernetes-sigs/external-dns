@@ -16,26 +16,139 @@ limitations under the License.
 
 package externaldns
 
-import "testing"
+import (
+	"fmt"
+	"reflect"
+	"testing"
+)
 
 func TestParseFlags(t *testing.T) {
-	// extra := "one-extra-argument"
-	// args := []string{
-	// 	"-bool",
-	// 	"-bool2=true",
-	// 	"--int", "22",
-	// 	"--int64", "0x23",
-	// 	"-uint", "24",
-	// 	"--uint64", "25",
-	// 	"-string", "hello",
-	// 	"-float64", "2718e28",
-	// 	"-duration", "2m",
-	// 	extra,
-	// }
+	for _, ti := range []struct {
+		title       string
+		args        []arg
+		expectError bool
+		expected    *Config
+	}{
+		{
+			title: "set in-cluster true",
+			args: []arg{
+				arg{
+					flag: "--in-cluster",
+					val:  "",
+				},
+			},
+			expected: &Config{
+				InCluster:     true,
+				KubeConfig:    "",
+				GoogleProject: "",
+				GoogleZone:    "",
+				HealthPort:    defaultHealthPort,
+				DryRun:        true,
+				Debug:         false,
+				LogFormat:     defaultLogFormat,
+			},
+		},
+		{
+			title: "all default",
+			args:  []arg{},
+			expected: &Config{
+				InCluster:     false,
+				KubeConfig:    "",
+				GoogleProject: "",
+				GoogleZone:    "",
+				HealthPort:    defaultHealthPort,
+				DryRun:        true,
+				Debug:         false,
+				LogFormat:     defaultLogFormat,
+			},
+		},
+		{
+			title: "set string var",
+			args: []arg{
+				arg{
+					flag: "--kubeconfig",
+					val:  "myhome",
+				},
+			},
+			expected: &Config{
+				InCluster:     false,
+				KubeConfig:    "myhome",
+				GoogleProject: "",
+				GoogleZone:    "",
+				HealthPort:    defaultHealthPort,
+				DryRun:        true,
+				Debug:         false,
+				LogFormat:     defaultLogFormat,
+			},
+		},
+		{
+			title: "unexpected flag",
+			args: []arg{
+				arg{
+					flag: "--random",
+					val:  "myhome",
+				},
+			},
+			expectError: true,
+		},
+		{
+			title: "override default",
+			args: []arg{
+				arg{
+					flag: "--log-format",
+					val:  "json",
+				},
+			},
+			expected: &Config{
+				InCluster:     false,
+				KubeConfig:    "myhome",
+				GoogleProject: "",
+				GoogleZone:    "",
+				HealthPort:    defaultHealthPort,
+				DryRun:        true,
+				Debug:         false,
+				LogFormat:     "json",
+			},
+		},
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			cfg := NewConfig()
+			spaceArgs := []string{"external-dns"}
+			for _, arg := range ti.args {
+				spaceArgs = append(spaceArgs, arg.Slice()...)
+			}
+			err := cfg.ParseFlags(spaceArgs)
+			if !ti.expectError && err != nil {
+				t.Errorf("unexpected parse flags fail for args %#v, error: %v", ti.args, err)
+			}
+			if ti.expectError && err == nil {
+				t.Errorf("parse flags should fail for args %#v", ti.args)
+			}
+			if !ti.expectError {
+				validateConfig(t, cfg, ti.expected)
+			}
+		})
+	}
+}
+
+// helper functions
+
+func validateConfig(t *testing.T, got, expected *Config) {
+	fmt.Println(*got, *expected)
+	if !reflect.DeepEqual(got, expected) {
+		t.Errorf("Config is wrong")
+	}
 }
 
 type arg struct {
-	raw string
-	key string
-	val string
+	flag string
+	val  string
+}
+
+func (a *arg) Slice() []string {
+	return []string{a.flag, a.val}
+}
+
+func (a *arg) String() string {
+	return fmt.Sprintf("%s=%s", a.flag, a.val)
 }
