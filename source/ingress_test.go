@@ -157,6 +157,33 @@ func testIngressEndpoints(t *testing.T) {
 				},
 			},
 		},
+		{
+			title: "two simple ingresses on different namespaces",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: "testing1",
+					dnsnames:  []string{"example.org"},
+					ips:       []string{"8.8.8.8"},
+				},
+				{
+					name:      "fake2",
+					namespace: "testing2",
+					dnsnames:  []string{"new.org"},
+					hostnames: []string{"lb.com"},
+				},
+			},
+			expected: []endpoint.Endpoint{
+				{
+					DNSName: "example.org",
+					Target:  "8.8.8.8",
+				},
+				{
+					DNSName: "new.org",
+					Target:  "lb.com",
+				},
+			},
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			ingresses := make([]*v1beta1.Ingress, 0)
