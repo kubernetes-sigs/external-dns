@@ -24,15 +24,25 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/route53"
-	"github.com/aws/aws-sdk-go/service/route53/route53iface"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
+// Route53API is the subset of the AWS Route53 API that we actually use.  Add methods as required. Signatures must match exactly.
+// mostly taken from: https://github.com/kubernetes/kubernetes/blob/853167624edb6bc0cfdcdfb88e746e178f5db36c/federation/pkg/dnsprovider/providers/aws/route53/stubs/route53api.go
+type Route53API interface {
+	ListResourceRecordSetsPages(input *route53.ListResourceRecordSetsInput, fn func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool)) error
+	ChangeResourceRecordSets(*route53.ChangeResourceRecordSetsInput) (*route53.ChangeResourceRecordSetsOutput, error)
+	ListHostedZonesPages(input *route53.ListHostedZonesInput, fn func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool)) error
+	ListHostedZonesByName(input *route53.ListHostedZonesByNameInput) (*route53.ListHostedZonesByNameOutput, error)
+	CreateHostedZone(*route53.CreateHostedZoneInput) (*route53.CreateHostedZoneOutput, error)
+	DeleteHostedZone(*route53.DeleteHostedZoneInput) (*route53.DeleteHostedZoneOutput, error)
+}
+
 // AWSProvider is an implementation of DNSProvider for AWS Route53.
 type AWSProvider struct {
-	Client route53iface.Route53API
+	Client Route53API
 	DryRun bool
 }
 
@@ -40,13 +50,17 @@ type AWSProvider struct {
 func (p *AWSProvider) Zones() ([]string, error) {
 	zones := []string{}
 
-	resp, err := p.Client.ListHostedZones(&route53.ListHostedZonesInput{})
-	if err != nil {
-		return zones, err
+	f := func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool) {
+		for _, zone := range resp.HostedZones {
+			zones = append(zones, *zone.Name)
+		}
+
+		return true
 	}
 
-	for _, zone := range resp.HostedZones {
-		zones = append(zones, *zone.Name)
+	err := p.Client.ListHostedZonesPages(&route53.ListHostedZonesInput{}, f)
+	if err != nil {
+		return zones, err
 	}
 
 	return zones, nil
@@ -110,26 +124,30 @@ func (p *AWSProvider) Records(zone string) ([]endpoint.Endpoint, error) {
 		HostedZoneId: hostedZone.Id,
 	}
 
-	resp, err := p.Client.ListResourceRecordSets(params)
-	if err != nil {
-		return nil, err
-	}
-
 	endpoints := []endpoint.Endpoint{}
 
-	for _, r := range resp.ResourceRecordSets {
-		if *r.Type != "A" {
-			continue
-		}
-
-		for _, rr := range r.ResourceRecords {
-			endpoint := endpoint.Endpoint{
-				DNSName: *r.Name,
-				Target:  *rr.Value,
+	f := func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool) {
+		for _, r := range resp.ResourceRecordSets {
+			if *r.Type != route53.RRTypeA {
+				continue
 			}
 
-			endpoints = append(endpoints, endpoint)
+			for _, rr := range r.ResourceRecords {
+				endpoint := endpoint.Endpoint{
+					DNSName: *r.Name,
+					Target:  *rr.Value,
+				}
+
+				endpoints = append(endpoints, endpoint)
+			}
 		}
+
+		return true
+	}
+
+	err = p.Client.ListResourceRecordSetsPages(params, f)
+	if err != nil {
+		return nil, err
 	}
 
 	return endpoints, nil
