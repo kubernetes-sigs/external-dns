@@ -42,7 +42,6 @@ import (
 
 func main() {
 	cfg := externaldns.NewConfig()
-
 	if err := cfg.ParseFlags(os.Args); err != nil {
 		log.Fatalf("flag parsing error: %v", err)
 	}
