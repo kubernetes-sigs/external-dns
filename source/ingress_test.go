@@ -18,6 +18,15 @@ package source
 
 import "testing"
 
-func TestEndpoints(t *testing.T) {
+func TestIngress(t *testing.T) {
+	t.Run("endpointsFromIngress", testEndpointsFromIngress)
+	t.Run("Endpoints", testIngressEndpoints)
+}
+
+func testEndpointsFromIngress(t *testing.T) {
+
+}
+
+func testIngressEndpoints(t *testing.T) {
 
 }
