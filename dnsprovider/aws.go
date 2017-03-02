@@ -30,6 +30,7 @@ import (
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
+// AWSProvider is an implementation of DNSProvider for AWS Route53.
 type AWSProvider struct {
 	Client route53iface.Route53API
 	DryRun bool
