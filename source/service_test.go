@@ -26,8 +26,12 @@ import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
-// TestEndpoints tests that various services generate the correct endpoints.
-func TestEndpoints(t *testing.T) {
+func TestService(t *testing.T) {
+	t.Run("Endpoints", testServiceEndpoints)
+}
+
+// testServiceEndpoints tests that various services generate the correct endpoints.
+func testServiceEndpoints(t *testing.T) {
 	for _, tc := range []struct {
 		title       string
 		namespace   string
@@ -176,7 +180,7 @@ func TestEndpoints(t *testing.T) {
 	}
 }
 
-func BenchmarkEndpoints(b *testing.B) {
+func BenchmarkServiceEndpoints(b *testing.B) {
 	kubernetes := fake.NewSimpleClientset()
 
 	service := &v1.Service{
@@ -211,27 +215,5 @@ func BenchmarkEndpoints(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-	}
-}
-
-// test helper functions
-
-func validateEndpoints(t *testing.T, endpoints, expected []endpoint.Endpoint) {
-	if len(endpoints) != len(expected) {
-		t.Fatalf("expected %d endpoints, got %d", len(expected), len(endpoints))
-	}
-
-	for i := range endpoints {
-		validateEndpoint(t, endpoints[i], expected[i])
-	}
-}
-
-func validateEndpoint(t *testing.T, endpoint, expected endpoint.Endpoint) {
-	if endpoint.DNSName != expected.DNSName {
-		t.Errorf("expected %s, got %s", expected.DNSName, endpoint.DNSName)
-	}
-
-	if endpoint.Target != expected.Target {
-		t.Errorf("expected %s, got %s", expected.Target, endpoint.Target)
 	}
 }
