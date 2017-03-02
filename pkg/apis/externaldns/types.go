@@ -16,11 +16,7 @@ limitations under the License.
 
 package externaldns
 
-import (
-	"os"
-
-	"github.com/spf13/pflag"
-)
+import "github.com/spf13/pflag"
 
 var (
 	defaultHealthPort = "9090"
@@ -44,8 +40,8 @@ func NewConfig() *Config {
 }
 
 // ParseFlags adds and parses flags from command line
-func (cfg *Config) ParseFlags() {
-	flags := pflag.NewFlagSet("", pflag.ExitOnError)
+func (cfg *Config) ParseFlags(args []string) error {
+	flags := pflag.NewFlagSet("", pflag.ContinueOnError)
 	flags.BoolVar(&cfg.InCluster, "in-cluster", false, "whether to use in-cluster config")
 	flags.StringVar(&cfg.KubeConfig, "kubeconfig", "", "path to a local kubeconfig file")
 	flags.StringVar(&cfg.GoogleProject, "google-project", "", "gcloud project to target")
@@ -54,5 +50,5 @@ func (cfg *Config) ParseFlags() {
 	flags.StringVar(&cfg.LogFormat, "log-format", "text", "log format output. options: [\"text\", \"json\"]")
 	flags.BoolVar(&cfg.DryRun, "dry-run", true, "dry-run mode")
 	flags.BoolVar(&cfg.Debug, "debug", false, "debug mode")
-	flags.Parse(os.Args)
+	return flags.Parse(args)
 }

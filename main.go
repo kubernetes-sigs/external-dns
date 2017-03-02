@@ -42,7 +42,10 @@ import (
 
 func main() {
 	cfg := externaldns.NewConfig()
-	cfg.ParseFlags()
+
+	if err := cfg.ParseFlags(os.Args); err != nil {
+		log.Fatalf("flag parsing error: %v", err)
+	}
 	if err := validation.ValidateConfig(cfg); err != nil {
 		log.Errorf("config validation failed: %v", err)
 	}
@@ -51,7 +54,7 @@ func main() {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
 	if cfg.DryRun {
-		log.Info("Running in dry-run mode. No changes to DNS records will be made.")
+		log.Info("running in dry-run mode. No changes to DNS records will be made.")
 	}
 	if cfg.Debug {
 		log.SetLevel(log.DebugLevel)
@@ -128,7 +131,7 @@ func newClient(cfg *externaldns.Config) (*kubernetes.Clientset, error) {
 		return nil, err
 	}
 
-	log.Infof("Targeting cluster at %s", config.Host)
+	log.Infof("targeting cluster at %s", config.Host)
 
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
