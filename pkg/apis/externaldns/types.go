@@ -16,7 +16,11 @@ limitations under the License.
 
 package externaldns
 
-import "github.com/spf13/pflag"
+import (
+	"fmt"
+
+	"github.com/spf13/pflag"
+)
 
 var (
 	defaultHealthPort = "9090"
@@ -41,6 +45,7 @@ func NewConfig() *Config {
 
 // ParseFlags adds and parses flags from command line
 func (cfg *Config) ParseFlags(args []string) error {
+	fmt.Println(args)
 	flags := pflag.NewFlagSet("", pflag.ContinueOnError)
 	flags.BoolVar(&cfg.InCluster, "in-cluster", false, "whether to use in-cluster config")
 	flags.StringVar(&cfg.KubeConfig, "kubeconfig", "", "path to a local kubeconfig file")
