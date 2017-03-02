@@ -43,7 +43,7 @@ func testEndpointsFromIngress(t *testing.T) {
 				hostnames: []string{"lb.com"},
 			},
 			expected: []endpoint.Endpoint{
-				endpoint.Endpoint{
+				{
 					DNSName: "foo.bar",
 					Target:  "lb.com",
 				},
@@ -56,7 +56,7 @@ func testEndpointsFromIngress(t *testing.T) {
 				ips:      []string{"8.8.8.8"},
 			},
 			expected: []endpoint.Endpoint{
-				endpoint.Endpoint{
+				{
 					DNSName: "foo.bar",
 					Target:  "8.8.8.8",
 				},
@@ -70,19 +70,19 @@ func testEndpointsFromIngress(t *testing.T) {
 				hostnames: []string{"elb.com", "alb.com"},
 			},
 			expected: []endpoint.Endpoint{
-				endpoint.Endpoint{
+				{
 					DNSName: "foo.bar",
 					Target:  "8.8.8.8",
 				},
-				endpoint.Endpoint{
+				{
 					DNSName: "foo.bar",
 					Target:  "127.0.0.1",
 				},
-				endpoint.Endpoint{
+				{
 					DNSName: "foo.bar",
 					Target:  "elb.com",
 				},
-				endpoint.Endpoint{
+				{
 					DNSName: "foo.bar",
 					Target:  "alb.com",
 				},
@@ -133,13 +133,13 @@ func testIngressEndpoints(t *testing.T) {
 		{
 			title: "two simple ingresses",
 			ingressItems: []fakeIngress{
-				fakeIngress{
+				{
 					name:      "fake1",
 					namespace: namespace,
 					dnsnames:  []string{"example.org"},
 					ips:       []string{"8.8.8.8"},
 				},
-				fakeIngress{
+				{
 					name:      "fake2",
 					namespace: namespace,
 					dnsnames:  []string{"new.org"},
@@ -147,11 +147,11 @@ func testIngressEndpoints(t *testing.T) {
 				},
 			},
 			expected: []endpoint.Endpoint{
-				endpoint.Endpoint{
+				{
 					DNSName: "example.org",
 					Target:  "8.8.8.8",
 				},
-				endpoint.Endpoint{
+				{
 					DNSName: "new.org",
 					Target:  "lb.com",
 				},
