@@ -134,7 +134,6 @@ func TestParseFlags(t *testing.T) {
 // helper functions
 
 func validateConfig(t *testing.T, got, expected *Config) {
-	fmt.Println(*got, *expected)
 	if !reflect.DeepEqual(got, expected) {
 		t.Errorf("Config is wrong")
 	}
