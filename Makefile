@@ -28,9 +28,12 @@ cover-html: cover
 
 
 # The verify target runs tasks similar to the CI tasks, but without code coverage
-.PHONY: verify
+.PHONY: verify test
 
-verify:
+test:
+	go test -v $(shell go list ./... | grep -v /vendor/)
+
+verify: test
 	vendor/github.com/kubernetes/repo-infra/verify/verify-boilerplate.sh --rootdir=${CURDIR}
 	vendor/github.com/kubernetes/repo-infra/verify/verify-go-src.sh -v --rootdir ${CURDIR}
-	go test -v $(shell go list ./... | grep -v /vendor/)
+	
