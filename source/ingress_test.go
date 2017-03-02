@@ -15,3 +15,9 @@ limitations under the License.
 */
 
 package source
+
+import "testing"
+
+func TestEndpoints(t *testing.T) {
+
+}

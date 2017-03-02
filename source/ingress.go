@@ -15,3 +15,61 @@ limitations under the License.
 */
 
 package source
+
+import (
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+)
+
+// IngressSource is an implementation of Ingress for Kubernetes ingress objects.
+// Ingress implementation will use the spec.rules.host value for the hostname
+// Ingress annotations are ignored
+type IngressSource struct {
+	Client kubernetes.Interface
+}
+
+// Endpoints returns endpoint objects for each service that should be processed.
+func (sc *IngressSource) Endpoints() ([]endpoint.Endpoint, error) {
+	ingresses, err := sc.Client.Extensions().Ingresses(v1.NamespaceAll).List(v1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	endpoints := []endpoint.Endpoint{}
+
+	for _, ing := range ingresses.Items {
+		ingEndpoints := endpointsFromIngress(&ing)
+		endpoints = append(endpoints, ingEndpoints...)
+	}
+
+	return endpoints, nil
+}
+
+// endpointsFromIngress extracts the endpoints from a service object
+func endpointsFromIngress(ing *v1beta1.Ingress) []endpoint.Endpoint {
+	var endpoints []endpoint.Endpoint
+
+	for _, rule := range ing.Spec.Rules {
+		if rule.Host == "" {
+			continue
+		}
+		for _, lb := range ing.Status.LoadBalancer.Ingress {
+			endpoint := endpoint.Endpoint{
+				DNSName: rule.Host,
+			}
+			if lb.IP != "" {
+				endpoint.Target = lb.IP
+				endpoints = append(endpoints, endpoint)
+			}
+			if lb.Hostname != "" {
+				endpoint.Target = lb.Hostname
+				endpoints = append(endpoints, endpoint)
+			}
+		}
+	}
+
+	return endpoints
+}
