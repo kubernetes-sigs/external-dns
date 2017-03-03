@@ -17,7 +17,6 @@ limitations under the License.
 package externaldns
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -25,18 +24,13 @@ import (
 func TestParseFlags(t *testing.T) {
 	for _, ti := range []struct {
 		title       string
-		args        []arg
+		args        [][]string
 		expectError bool
 		expected    *Config
 	}{
 		{
 			title: "set in-cluster true",
-			args: []arg{
-				arg{
-					flag: "--in-cluster",
-					val:  "",
-				},
-			},
+			args:  [][]string{{"--in-cluster", ""}},
 			expected: &Config{
 				InCluster:     true,
 				KubeConfig:    "",
@@ -50,7 +44,7 @@ func TestParseFlags(t *testing.T) {
 		},
 		{
 			title: "all default",
-			args:  []arg{},
+			args:  [][]string{},
 			expected: &Config{
 				InCluster:     false,
 				KubeConfig:    "",
@@ -64,12 +58,7 @@ func TestParseFlags(t *testing.T) {
 		},
 		{
 			title: "set string var",
-			args: []arg{
-				arg{
-					flag: "--kubeconfig",
-					val:  "myhome",
-				},
-			},
+			args:  [][]string{{"--kubeconfig", "myhome"}},
 			expected: &Config{
 				InCluster:     false,
 				KubeConfig:    "myhome",
@@ -82,26 +71,16 @@ func TestParseFlags(t *testing.T) {
 			},
 		},
 		{
-			title: "unexpected flag",
-			args: []arg{
-				arg{
-					flag: "--random",
-					val:  "myhome",
-				},
-			},
+			title:       "unexpected flag",
+			args:        [][]string{{"--random", "myhome"}},
 			expectError: true,
 		},
 		{
 			title: "override default",
-			args: []arg{
-				arg{
-					flag: "--log-format",
-					val:  "json",
-				},
-			},
+			args:  [][]string{{"--log-format", "json"}},
 			expected: &Config{
 				InCluster:     false,
-				KubeConfig:    "myhome",
+				KubeConfig:    "",
 				GoogleProject: "",
 				GoogleZone:    "",
 				HealthPort:    defaultHealthPort,
@@ -115,7 +94,7 @@ func TestParseFlags(t *testing.T) {
 			cfg := NewConfig()
 			spaceArgs := []string{"external-dns"}
 			for _, arg := range ti.args {
-				spaceArgs = append(spaceArgs, arg.Slice()...)
+				spaceArgs = append(spaceArgs, arg...)
 			}
 			err := cfg.ParseFlags(spaceArgs)
 			if !ti.expectError && err != nil {
@@ -137,17 +116,4 @@ func validateConfig(t *testing.T, got, expected *Config) {
 	if !reflect.DeepEqual(got, expected) {
 		t.Errorf("Config is wrong")
 	}
-}
-
-type arg struct {
-	flag string
-	val  string
-}
-
-func (a *arg) Slice() []string {
-	return []string{a.flag, a.val}
-}
-
-func (a *arg) String() string {
-	return fmt.Sprintf("%s=%s", a.flag, a.val)
 }
