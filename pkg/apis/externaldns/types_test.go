@@ -89,6 +89,32 @@ func TestParseFlags(t *testing.T) {
 				LogFormat:     "json",
 			},
 		},
+		{
+			title: "set everything",
+			args: [][]string{{"--in-cluster",
+				"--log-format", "yaml",
+				"--kubeconfig", "/some/path",
+				"--google-project", "project",
+				"--google-zone", "zone",
+				"--health-port", "1234",
+				"--dry-run", "true",
+				"--debug"}},
+			expected: &Config{
+				InCluster:     true,
+				KubeConfig:    "/some/path",
+				GoogleProject: "project",
+				GoogleZone:    "zone",
+				HealthPort:    "1234",
+				DryRun:        true,
+				Debug:         true,
+				LogFormat:     "yaml",
+			},
+		},
+		{
+			title:       "--help trigger error",
+			args:        [][]string{{"--help"}},
+			expectError: true,
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			cfg := NewConfig()
