@@ -1,5 +1,5 @@
-hash: 6edb937665d85d2cd7d53d68b033291622414d67782f6e13638f574761c58561
-updated: 2017-03-02T14:34:46.377506862+01:00
+hash: df53656c5b944ac606104fd4339ec0f31cb098426ab0b94b06eff1843fa93461
+updated: 2017-03-06T15:22:13.908484696+01:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -14,16 +14,9 @@ imports:
   - aws/awsutil
   - aws/client
   - aws/client/metadata
-  - aws/corehandlers
   - aws/credentials
-  - aws/credentials/ec2rolecreds
-  - aws/credentials/endpointcreds
-  - aws/credentials/stscreds
-  - aws/defaults
-  - aws/ec2metadata
   - aws/endpoints
   - aws/request
-  - aws/session
   - aws/signer/v4
   - private/protocol
   - private/protocol/query
@@ -33,8 +26,6 @@ imports:
   - private/protocol/xml/xmlutil
   - private/waiter
   - service/route53
-  - service/route53/route53iface
-  - service/sts
 - name: github.com/blang/semver
   version: 31b736133b98f26d5e078ec9eb591666edfd091f
 - name: github.com/coreos/go-oidc
