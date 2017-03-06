@@ -38,12 +38,13 @@ const (
 // matched services' external entrypoints it will return a corresponding
 // Endpoint object.
 type ServiceSource struct {
-	Client kubernetes.Interface
+	Client    kubernetes.Interface
+	Namespace string
 }
 
 // Endpoints returns endpoint objects for each service that should be processed.
 func (sc *ServiceSource) Endpoints() ([]endpoint.Endpoint, error) {
-	services, err := sc.Client.CoreV1().Services(v1.NamespaceAll).List(v1.ListOptions{})
+	services, err := sc.Client.CoreV1().Services(sc.Namespace).List(v1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

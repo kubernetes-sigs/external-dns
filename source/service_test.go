@@ -33,15 +33,17 @@ func TestService(t *testing.T) {
 // testServiceEndpoints tests that various services generate the correct endpoints.
 func testServiceEndpoints(t *testing.T) {
 	for _, tc := range []struct {
-		title       string
-		namespace   string
-		name        string
-		annotations map[string]string
-		lbs         []string
-		expected    []endpoint.Endpoint
+		title           string
+		targetNamespace string
+		svcNamespace    string
+		svcName         string
+		annotations     map[string]string
+		lbs             []string
+		expected        []endpoint.Endpoint
 	}{
 		{
 			"no annotated services return no endpoints",
+			"",
 			"testing",
 			"foo",
 			map[string]string{},
@@ -50,6 +52,7 @@ func testServiceEndpoints(t *testing.T) {
 		},
 		{
 			"annotated services return an endpoint with target IP",
+			"",
 			"testing",
 			"foo",
 			map[string]string{
@@ -62,6 +65,7 @@ func testServiceEndpoints(t *testing.T) {
 		},
 		{
 			"annotated services return an endpoint with target hostname",
+			"",
 			"testing",
 			"foo",
 			map[string]string{
@@ -74,6 +78,7 @@ func testServiceEndpoints(t *testing.T) {
 		},
 		{
 			"our controller type is dns-controller",
+			"",
 			"testing",
 			"foo",
 			map[string]string{
@@ -87,6 +92,7 @@ func testServiceEndpoints(t *testing.T) {
 		},
 		{
 			"different controller types are ignored",
+			"",
 			"testing",
 			"foo",
 			map[string]string{
@@ -97,7 +103,32 @@ func testServiceEndpoints(t *testing.T) {
 			[]endpoint.Endpoint{},
 		},
 		{
+			"services are found in target namespace",
+			"testing",
+			"testing",
+			"foo",
+			map[string]string{
+				"external-dns.kubernetes.io/hostname": "foo.example.org",
+			},
+			[]string{"1.2.3.4"},
+			[]endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+			},
+		},
+		{
+			"services that are not in target namespace are ignored",
+			"testing",
+			"other-testing",
+			"foo",
+			map[string]string{
+				"external-dns.kubernetes.io/hostname": "foo.example.org",
+			},
+			[]string{"1.2.3.4"},
+			[]endpoint.Endpoint{},
+		},
+		{
 			"services are found in all namespaces",
+			"",
 			"other-testing",
 			"foo",
 			map[string]string{
@@ -110,6 +141,7 @@ func testServiceEndpoints(t *testing.T) {
 		},
 		{
 			"no external entrypoints return no endpoints",
+			"",
 			"testing",
 			"foo",
 			map[string]string{
@@ -120,6 +152,7 @@ func testServiceEndpoints(t *testing.T) {
 		},
 		{
 			"multiple external entrypoints return multiple endpoints",
+			"",
 			"testing",
 			"foo",
 			map[string]string{
@@ -148,8 +181,8 @@ func testServiceEndpoints(t *testing.T) {
 
 			service := &v1.Service{
 				ObjectMeta: v1.ObjectMeta{
-					Namespace:   tc.namespace,
-					Name:        tc.name,
+					Namespace:   tc.svcNamespace,
+					Name:        tc.svcName,
 					Annotations: tc.annotations,
 				},
 				Status: v1.ServiceStatus{
@@ -166,7 +199,8 @@ func testServiceEndpoints(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client := &ServiceSource{
-				Client: kubernetes,
+				Client:    kubernetes,
+				Namespace: tc.targetNamespace,
 			}
 
 			endpoints, err := client.Endpoints()
