@@ -15,15 +15,3 @@ limitations under the License.
 */
 
 package storage
-
-import (
-	"testing"
-)
-
-func TestConfigMap(t *testing.T) {
-	t.Run("", testConfigMapWaitForSync)
-}
-
-func testConfigMapWaitForSync(t *testing.T) {
-
-}
