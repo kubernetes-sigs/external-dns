@@ -146,7 +146,7 @@ func (p *AWSProvider) CreateRecords(zone string, records []endpoint.Endpoint) er
 
 	for _, record := range records {
 		change := &route53.Change{
-			Action: aws.String(route53.ChangeActionUpsert),
+			Action: aws.String(route53.ChangeActionCreate),
 			ResourceRecordSet: &route53.ResourceRecordSet{
 				Name: aws.String(record.DNSName),
 				ResourceRecords: []*route53.ResourceRecord{
