@@ -97,6 +97,13 @@ func main() {
 		DNSProvider: dnsProvider,
 	}
 
+	// immediately send stop signal when --once is set
+	if cfg.Once {
+		go func() {
+			stopChan <- struct{}{}
+		}()
+	}
+
 	ctrl.Run(stopChan)
 	for {
 		log.Infoln("pod waiting to be deleted")
