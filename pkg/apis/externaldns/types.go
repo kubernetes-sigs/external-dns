@@ -16,7 +16,11 @@ limitations under the License.
 
 package externaldns
 
-import "github.com/spf13/pflag"
+import (
+	"github.com/spf13/pflag"
+
+	"k8s.io/client-go/pkg/api/v1"
+)
 
 var (
 	defaultHealthPort = "9090"
@@ -46,7 +50,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	flags := pflag.NewFlagSet("", pflag.ContinueOnError)
 	flags.BoolVar(&cfg.InCluster, "in-cluster", false, "whether to use in-cluster config")
 	flags.StringVar(&cfg.KubeConfig, "kubeconfig", "", "path to a local kubeconfig file")
-	flags.StringVar(&cfg.Namespace, "namespace", "", "the namespace to look for endpoints")
+	flags.StringVar(&cfg.Namespace, "namespace", v1.NamespaceAll, "the namespace to look for endpoints; all namespaces by default")
 	flags.StringVar(&cfg.GoogleProject, "google-project", "", "gcloud project to target")
 	flags.StringVar(&cfg.GoogleZone, "google-zone", "", "gcloud dns hosted zone to target")
 	flags.StringVar(&cfg.HealthPort, "health-port", defaultHealthPort, "health port to listen on")
