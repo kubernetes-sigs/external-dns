@@ -67,6 +67,11 @@ func (r *Route53APIStub) ListResourceRecordSetsPages(input *route53.ListResource
 }
 
 func (r *Route53APIStub) ChangeResourceRecordSets(input *route53.ChangeResourceRecordSetsInput) (*route53.ChangeResourceRecordSetsOutput, error) {
+	_, ok := r.zones[*input.HostedZoneId]
+	if !ok {
+		return nil, fmt.Errorf("Hosted zone doesn't exist: %s", *input.HostedZoneId)
+	}
+
 	output := &route53.ChangeResourceRecordSetsOutput{}
 	recordSets, ok := r.recordSets[*input.HostedZoneId]
 	if !ok {
