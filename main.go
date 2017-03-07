@@ -98,6 +98,15 @@ func main() {
 		DNSProvider: dnsProvider,
 	}
 
+	if cfg.Once {
+		err := ctrl.RunOnce()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		os.Exit(0)
+	}
+
 	ctrl.Run(stopChan)
 	for {
 		log.Infoln("pod waiting to be deleted")
