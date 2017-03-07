@@ -163,21 +163,7 @@ func (p *AWSProvider) CreateRecords(zone string, records []endpoint.Endpoint) er
 	changes := []*route53.Change{}
 
 	for _, record := range records {
-		change := &route53.Change{
-			Action: aws.String(route53.ChangeActionCreate),
-			ResourceRecordSet: &route53.ResourceRecordSet{
-				Name: aws.String(record.DNSName),
-				ResourceRecords: []*route53.ResourceRecord{
-					{
-						Value: aws.String(record.Target),
-					},
-				},
-				TTL:  aws.Int64(300),
-				Type: aws.String(route53.RRTypeA),
-			},
-		}
-
-		changes = append(changes, change)
+		changes = append(changes, newChange(route53.ChangeActionCreate, record))
 	}
 
 	params := &route53.ChangeResourceRecordSetsInput{
@@ -210,21 +196,7 @@ func (p *AWSProvider) UpdateRecords(zone string, newRecords, _ []endpoint.Endpoi
 	changes := []*route53.Change{}
 
 	for _, record := range newRecords {
-		change := &route53.Change{
-			Action: aws.String(route53.ChangeActionUpsert),
-			ResourceRecordSet: &route53.ResourceRecordSet{
-				Name: aws.String(record.DNSName),
-				ResourceRecords: []*route53.ResourceRecord{
-					{
-						Value: aws.String(record.Target),
-					},
-				},
-				TTL:  aws.Int64(300),
-				Type: aws.String(route53.RRTypeA),
-			},
-		}
-
-		changes = append(changes, change)
+		changes = append(changes, newChange(route53.ChangeActionUpsert, record))
 	}
 
 	params := &route53.ChangeResourceRecordSetsInput{
@@ -257,21 +229,7 @@ func (p *AWSProvider) DeleteRecords(zone string, records []endpoint.Endpoint) er
 	changes := []*route53.Change{}
 
 	for _, record := range records {
-		change := &route53.Change{
-			Action: aws.String(route53.ChangeActionDelete),
-			ResourceRecordSet: &route53.ResourceRecordSet{
-				Name: aws.String(record.DNSName),
-				ResourceRecords: []*route53.ResourceRecord{
-					{
-						Value: aws.String(record.Target),
-					},
-				},
-				TTL:  aws.Int64(300),
-				Type: aws.String(route53.RRTypeA),
-			},
-		}
-
-		changes = append(changes, change)
+		changes = append(changes, newChange(route53.ChangeActionDelete, record))
 	}
 
 	params := &route53.ChangeResourceRecordSetsInput{
@@ -312,4 +270,25 @@ func (p *AWSProvider) ApplyChanges(zone string, changes *plan.Changes) error {
 	}
 
 	return nil
+}
+
+// newChange returns a Change of the given record by the given action, e.g.
+// action=ChangeActionCreate returns a change for creation of the record and
+// action=ChangeActionDelete returns a change for deletion of the record.
+func newChange(action string, record endpoint.Endpoint) *route53.Change {
+	change := &route53.Change{
+		Action: aws.String(action),
+		ResourceRecordSet: &route53.ResourceRecordSet{
+			Name: aws.String(record.DNSName),
+			ResourceRecords: []*route53.ResourceRecord{
+				{
+					Value: aws.String(record.Target),
+				},
+			},
+			TTL:  aws.Int64(300),
+			Type: aws.String(route53.RRTypeA),
+		},
+	}
+
+	return change
 }
