@@ -59,16 +59,17 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []endpoint.Endpoint {
 			continue
 		}
 		for _, lb := range ing.Status.LoadBalancer.Ingress {
-			endpoint := endpoint.Endpoint{
-				DNSName: rule.Host,
-			}
 			if lb.IP != "" {
-				endpoint.Target = lb.IP
-				endpoints = append(endpoints, endpoint)
+				endpoints = append(endpoints, endpoint.Endpoint{
+					DNSName: rule.Host,
+					Target:  lb.IP,
+				})
 			}
 			if lb.Hostname != "" {
-				endpoint.Target = lb.Hostname
-				endpoints = append(endpoints, endpoint)
+				endpoints = append(endpoints, endpoint.Endpoint{
+					DNSName: rule.Host,
+					Target:  lb.Hostname,
+				})
 			}
 		}
 	}

@@ -80,18 +80,16 @@ func endpointsFromService(svc *v1.Service) []endpoint.Endpoint {
 	// Create a corresponding endpoint for each configured external entrypoint.
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
-			endpoint := endpoint.Endpoint{
+			endpoints = append(endpoints, endpoint.Endpoint{
 				DNSName: hostname,
 				Target:  lb.IP,
-			}
-			endpoints = append(endpoints, endpoint)
+			})
 		}
 		if lb.Hostname != "" {
-			endpoint := endpoint.Endpoint{
+			endpoints = append(endpoints, endpoint.Endpoint{
 				DNSName: hostname,
 				Target:  lb.Hostname,
-			}
-			endpoints = append(endpoints, endpoint)
+			})
 		}
 	}
 
