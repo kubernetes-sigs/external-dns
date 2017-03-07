@@ -133,12 +133,10 @@ func (p *AWSProvider) Records(zone string) ([]endpoint.Endpoint, error) {
 			}
 
 			for _, rr := range r.ResourceRecords {
-				endpoint := endpoint.Endpoint{
+				endpoints = append(endpoints, endpoint.Endpoint{
 					DNSName: aws.StringValue(r.Name),
 					Target:  aws.StringValue(rr.Value),
-				}
-
-				endpoints = append(endpoints, endpoint)
+				})
 			}
 		}
 
