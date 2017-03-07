@@ -38,15 +38,15 @@ var (
 
 type zone map[string][]*InMemoryRecord
 
-// InMemory - dns provider only used for testing purposes
+// InMemoryProvider - dns provider only used for testing purposes
 // initialized as dns provider with no records
-type InMemory struct {
+type InMemoryProvider struct {
 	zones map[string]zone
 }
 
-// NewInMemory returns InMemory DNS provider interface
-func NewInMemory() *InMemory {
-	return &InMemory{
+// NewInMemoryProvider returns InMemoryProvider DNS provider interface implementation
+func NewInMemoryProvider() *InMemoryProvider {
+	return &InMemoryProvider{
 		zones: map[string]zone{},
 	}
 }
@@ -62,7 +62,7 @@ type InMemoryRecord struct {
 }
 
 // Records returns the list of endpoints
-func (im *InMemory) Records(zone string) ([]endpoint.Endpoint, error) {
+func (im *InMemoryProvider) Records(zone string) ([]endpoint.Endpoint, error) {
 	if _, exists := im.zones[zone]; !exists {
 		return nil, ErrZoneNotFound
 	}
@@ -74,7 +74,7 @@ func (im *InMemory) Records(zone string) ([]endpoint.Endpoint, error) {
 // create record - record should not exist
 // update/delete record - record should exist
 // create/update/delete lists should not have overlapping records
-func (im *InMemory) ApplyChanges(zone string, changes *plan.Changes) error {
+func (im *InMemoryProvider) ApplyChanges(zone string, changes *plan.Changes) error {
 	if err := im.validateChangeBatch(zone, changes); err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (im *InMemory) ApplyChanges(zone string, changes *plan.Changes) error {
 }
 
 // validateChangeBatch validates that the changes passed to InMemory DNS provider is valid
-func (im *InMemory) validateChangeBatch(zone string, changes *plan.Changes) error {
+func (im *InMemoryProvider) validateChangeBatch(zone string, changes *plan.Changes) error {
 	existing := im.zones[zone]
 	mesh := map[string]bool{}
 	for _, newEndpoint := range changes.Create {
@@ -135,7 +135,7 @@ func (im *InMemory) validateChangeBatch(zone string, changes *plan.Changes) erro
 	return nil
 }
 
-func (im *InMemory) findByType(recordType string, records []*InMemoryRecord) *InMemoryRecord {
+func (im *InMemoryProvider) findByType(recordType string, records []*InMemoryRecord) *InMemoryRecord {
 	for _, record := range records {
 		if record.Type == recordType {
 			return record
@@ -144,7 +144,7 @@ func (im *InMemory) findByType(recordType string, records []*InMemoryRecord) *In
 	return nil
 }
 
-func (im *InMemory) endpoints(zone string) []endpoint.Endpoint {
+func (im *InMemoryProvider) endpoints(zone string) []endpoint.Endpoint {
 	endpoints := make([]endpoint.Endpoint, 0)
 	if zoneRecords, exists := im.zones[zone]; exists {
 		for _, recordsPerName := range zoneRecords {
