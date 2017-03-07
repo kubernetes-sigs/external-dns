@@ -70,7 +70,8 @@ func main() {
 	}
 
 	source := &source.ServiceSource{
-		Client: client,
+		Client:    client,
+		Namespace: cfg.Namespace,
 	}
 
 	gcloud, err := google.DefaultClient(context.TODO(), dns.NdevClouddnsReadwriteScope)
