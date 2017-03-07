@@ -124,6 +124,10 @@ func (p *GoogleProvider) CreateRecords(zone string, records []endpoint.Endpoint)
 		return nil
 	}
 
+	if len(change.Additions) == 0 {
+		return nil
+	}
+
 	_, err := p.ChangesClient.Create(p.Project, zone, change).Do()
 	if err != nil {
 		return err
@@ -162,6 +166,10 @@ func (p *GoogleProvider) UpdateRecords(zone string, newRecords, oldRecords []end
 		return nil
 	}
 
+	if len(change.Additions) == 0 && len(change.Deletions) == 0 {
+		return nil
+	}
+
 	_, err := p.ChangesClient.Create(p.Project, zone, change).Do()
 	if err != nil {
 		return err
@@ -187,6 +195,10 @@ func (p *GoogleProvider) DeleteRecords(zone string, records []endpoint.Endpoint)
 
 	if p.DryRun {
 		log.Infof("Deleting records: %#v", change.Deletions)
+		return nil
+	}
+
+	if len(change.Deletions) == 0 {
 		return nil
 	}
 
