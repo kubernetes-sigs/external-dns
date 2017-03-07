@@ -97,11 +97,13 @@ func main() {
 		DNSProvider: dnsProvider,
 	}
 
-	// immediately send stop signal when --once is set
 	if cfg.Once {
-		go func() {
-			stopChan <- struct{}{}
-		}()
+		err := ctrl.RunOnce()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		os.Exit(0)
 	}
 
 	ctrl.Run(stopChan)
