@@ -154,135 +154,83 @@ func (p *AWSProvider) Records(zone string) ([]endpoint.Endpoint, error) {
 }
 
 // CreateRecords creates a given set of DNS records in the given hosted zone.
-func (p *AWSProvider) CreateRecords(zone string, records []endpoint.Endpoint) error {
-	hostedZone, err := p.Zone(zone)
-	if err != nil {
-		return err
-	}
-
-	changes := []*route53.Change{}
-
-	for _, record := range records {
-		changes = append(changes, newChange(route53.ChangeActionCreate, record))
-	}
-
-	params := &route53.ChangeResourceRecordSetsInput{
-		HostedZoneId: hostedZone.Id,
-		ChangeBatch: &route53.ChangeBatch{
-			Changes: changes,
-		},
-	}
-
-	if p.DryRun {
-		log.Infof("Creating records: %#v", params.ChangeBatch.Changes)
-		return nil
-	}
-
-	_, err = p.Client.ChangeResourceRecordSets(params)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (p *AWSProvider) CreateRecords(zone string, endpoints []endpoint.Endpoint) error {
+	return p.submitChanges(zone, newChanges(route53.ChangeActionCreate, endpoints))
 }
 
 // UpdateRecords updates a given set of old records to a new set of records in a given hosted zone.
-func (p *AWSProvider) UpdateRecords(zone string, newRecords, _ []endpoint.Endpoint) error {
-	hostedZone, err := p.Zone(zone)
-	if err != nil {
-		return err
-	}
-
-	changes := []*route53.Change{}
-
-	for _, record := range newRecords {
-		changes = append(changes, newChange(route53.ChangeActionUpsert, record))
-	}
-
-	params := &route53.ChangeResourceRecordSetsInput{
-		HostedZoneId: hostedZone.Id,
-		ChangeBatch: &route53.ChangeBatch{
-			Changes: changes,
-		},
-	}
-
-	if p.DryRun {
-		log.Infof("Updating records: %#v", params.ChangeBatch.Changes)
-		return nil
-	}
-
-	_, err = p.Client.ChangeResourceRecordSets(params)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (p *AWSProvider) UpdateRecords(zone string, endpoints, _ []endpoint.Endpoint) error {
+	return p.submitChanges(zone, newChanges(route53.ChangeActionUpsert, endpoints))
 }
 
 // DeleteRecords deletes a given set of DNS records in a given zone.
-func (p *AWSProvider) DeleteRecords(zone string, records []endpoint.Endpoint) error {
-	hostedZone, err := p.Zone(zone)
-	if err != nil {
-		return err
-	}
-
-	changes := []*route53.Change{}
-
-	for _, record := range records {
-		changes = append(changes, newChange(route53.ChangeActionDelete, record))
-	}
-
-	params := &route53.ChangeResourceRecordSetsInput{
-		HostedZoneId: hostedZone.Id,
-		ChangeBatch: &route53.ChangeBatch{
-			Changes: changes,
-		},
-	}
-
-	if p.DryRun {
-		log.Infof("Deleting records: %#v", params.ChangeBatch.Changes)
-		return nil
-	}
-
-	_, err = p.Client.ChangeResourceRecordSets(params)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (p *AWSProvider) DeleteRecords(zone string, endpoints []endpoint.Endpoint) error {
+	return p.submitChanges(zone, newChanges(route53.ChangeActionDelete, endpoints))
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *AWSProvider) ApplyChanges(zone string, changes *plan.Changes) error {
-	err := p.CreateRecords(zone, changes.Create)
+	combinedChanges := make([]*route53.Change, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
+
+	combinedChanges = append(combinedChanges, newChanges(route53.ChangeActionCreate, changes.Create)...)
+	combinedChanges = append(combinedChanges, newChanges(route53.ChangeActionUpsert, changes.UpdateNew)...)
+	combinedChanges = append(combinedChanges, newChanges(route53.ChangeActionDelete, changes.Delete)...)
+
+	return p.submitChanges(zone, combinedChanges)
+}
+
+// submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
+func (p *AWSProvider) submitChanges(zone string, changes []*route53.Change) error {
+	hostedZone, err := p.Zone(zone)
 	if err != nil {
 		return err
 	}
 
-	err = p.UpdateRecords(zone, changes.UpdateNew, changes.UpdateOld)
-	if err != nil {
-		return err
+	if p.DryRun {
+		for _, change := range changes {
+			log.Infof("Changing records: %s %s", aws.StringValue(change.Action), change.String())
+		}
+
+		return nil
 	}
 
-	err = p.DeleteRecords(zone, changes.Delete)
+	params := &route53.ChangeResourceRecordSetsInput{
+		HostedZoneId: hostedZone.Id,
+		ChangeBatch: &route53.ChangeBatch{
+			Changes: changes,
+		},
+	}
+
+	_, err = p.Client.ChangeResourceRecordSets(params)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// newChanges returns a collection of Changes based on the given records and action.
+func newChanges(action string, endpoints []endpoint.Endpoint) []*route53.Change {
+	changes := make([]*route53.Change, 0, len(endpoints))
+
+	for _, endpoint := range endpoints {
+		changes = append(changes, newChange(action, endpoint))
+	}
+
+	return changes
 }
 
 // newChange returns a Change of the given record by the given action, e.g.
 // action=ChangeActionCreate returns a change for creation of the record and
 // action=ChangeActionDelete returns a change for deletion of the record.
-func newChange(action string, record endpoint.Endpoint) *route53.Change {
+func newChange(action string, endpoint endpoint.Endpoint) *route53.Change {
 	change := &route53.Change{
 		Action: aws.String(action),
 		ResourceRecordSet: &route53.ResourceRecordSet{
-			Name: aws.String(record.DNSName),
+			Name: aws.String(endpoint.DNSName),
 			ResourceRecords: []*route53.ResourceRecord{
 				{
-					Value: aws.String(record.Target),
+					Value: aws.String(endpoint.Target),
 				},
 			},
 			TTL:  aws.Int64(300),
