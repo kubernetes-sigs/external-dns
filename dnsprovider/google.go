@@ -104,21 +104,23 @@ func (p *GoogleProvider) Records(zone string) ([]endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
-// CreateRecord creates a given DNS record in the given hosted zone.
-func (p *GoogleProvider) CreateRecord(zone string, record endpoint.Endpoint) error {
-	createRecord := &dns.ResourceRecordSet{
-		Name:    record.DNSName,
-		Rrdatas: []string{record.Target},
-		Ttl:     300,
-		Type:    "A",
+// CreateRecords creates a given set of DNS records in the given hosted zone.
+func (p *GoogleProvider) CreateRecords(zone string, records []endpoint.Endpoint) error {
+	change := &dns.Change{
+		Additions: []*dns.ResourceRecordSet{},
 	}
 
-	change := &dns.Change{
-		Additions: []*dns.ResourceRecordSet{createRecord},
+	for _, record := range records {
+		change.Additions = append(change.Additions, &dns.ResourceRecordSet{
+			Name:    record.DNSName,
+			Rrdatas: []string{record.Target},
+			Ttl:     300,
+			Type:    "A",
+		})
 	}
 
 	if p.DryRun {
-		log.Infof("Creating record: %#v", createRecord)
+		log.Infof("Creating records: %#v", change.Additions)
 		return nil
 	}
 
@@ -130,29 +132,33 @@ func (p *GoogleProvider) CreateRecord(zone string, record endpoint.Endpoint) err
 	return nil
 }
 
-// UpdateRecord updates a given old record to a new record in a given hosted zone.
-func (p *GoogleProvider) UpdateRecord(zone string, newRecord, oldRecord endpoint.Endpoint) error {
-	deleteRecord := &dns.ResourceRecordSet{
-		Name:    oldRecord.DNSName,
-		Rrdatas: []string{oldRecord.Target},
-		Ttl:     300,
-		Type:    "A",
-	}
-
-	createRecord := &dns.ResourceRecordSet{
-		Name:    newRecord.DNSName,
-		Rrdatas: []string{newRecord.Target},
-		Ttl:     300,
-		Type:    "A",
-	}
-
+// UpdateRecords updates a given set of old records to a new set of records in a given hosted zone.
+func (p *GoogleProvider) UpdateRecords(zone string, newRecords, oldRecords []endpoint.Endpoint) error {
 	change := &dns.Change{
-		Deletions: []*dns.ResourceRecordSet{deleteRecord},
-		Additions: []*dns.ResourceRecordSet{createRecord},
+		Deletions: []*dns.ResourceRecordSet{},
+		Additions: []*dns.ResourceRecordSet{},
+	}
+
+	for _, record := range oldRecords {
+		change.Deletions = append(change.Deletions, &dns.ResourceRecordSet{
+			Name:    record.DNSName,
+			Rrdatas: []string{record.Target},
+			Ttl:     300,
+			Type:    "A",
+		})
+	}
+
+	for _, record := range newRecords {
+		change.Additions = append(change.Additions, &dns.ResourceRecordSet{
+			Name:    record.DNSName,
+			Rrdatas: []string{record.Target},
+			Ttl:     300,
+			Type:    "A",
+		})
 	}
 
 	if p.DryRun {
-		log.Infof("Update record: %#v %#v", deleteRecord, createRecord)
+		log.Infof("Updating records: %#v %#v", change.Deletions, change.Additions)
 		return nil
 	}
 
@@ -164,21 +170,23 @@ func (p *GoogleProvider) UpdateRecord(zone string, newRecord, oldRecord endpoint
 	return nil
 }
 
-// DeleteRecord deletes a given DNS record in a given zone.
-func (p *GoogleProvider) DeleteRecord(zone string, record endpoint.Endpoint) error {
-	deleteRecord := &dns.ResourceRecordSet{
-		Name:    record.DNSName,
-		Rrdatas: []string{record.Target},
-		Ttl:     300,
-		Type:    "A",
+// DeleteRecords deletes a given set of DNS records in a given zone.
+func (p *GoogleProvider) DeleteRecords(zone string, records []endpoint.Endpoint) error {
+	change := &dns.Change{
+		Deletions: []*dns.ResourceRecordSet{},
 	}
 
-	change := &dns.Change{
-		Deletions: []*dns.ResourceRecordSet{deleteRecord},
+	for _, record := range records {
+		change.Deletions = append(change.Deletions, &dns.ResourceRecordSet{
+			Name:    record.DNSName,
+			Rrdatas: []string{record.Target},
+			Ttl:     300,
+			Type:    "A",
+		})
 	}
 
 	if p.DryRun {
-		log.Infof("Delete record: %#v %#v", deleteRecord)
+		log.Infof("Deleting records: %#v", change.Deletions)
 		return nil
 	}
 
@@ -194,25 +202,19 @@ func (p *GoogleProvider) DeleteRecord(zone string, record endpoint.Endpoint) err
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *GoogleProvider) ApplyChanges(zone string, changes *plan.Changes) error {
-	for _, record := range changes.Create {
-		err := p.CreateRecord(zone, record)
-		if err != nil {
-			return err
-		}
+	err := p.CreateRecords(zone, changes.Create)
+	if err != nil {
+		return err
 	}
 
-	for i := range changes.UpdateNew {
-		err := p.UpdateRecord(zone, changes.UpdateNew[i], changes.UpdateOld[i])
-		if err != nil {
-			return err
-		}
+	err = p.UpdateRecords(zone, changes.UpdateNew, changes.UpdateOld)
+	if err != nil {
+		return err
 	}
 
-	for _, record := range changes.Delete {
-		err := p.DeleteRecord(zone, record)
-		if err != nil {
-			return err
-		}
+	err = p.DeleteRecords(zone, changes.Delete)
+	if err != nil {
+		return err
 	}
 
 	return nil
