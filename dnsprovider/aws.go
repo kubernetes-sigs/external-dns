@@ -52,7 +52,7 @@ func (p *AWSProvider) Zones() ([]string, error) {
 
 	f := func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool) {
 		for _, zone := range resp.HostedZones {
-			zones = append(zones, *zone.Name)
+			zones = append(zones, aws.StringValue(zone.Name))
 		}
 
 		return true
@@ -128,14 +128,14 @@ func (p *AWSProvider) Records(zone string) ([]endpoint.Endpoint, error) {
 
 	f := func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool) {
 		for _, r := range resp.ResourceRecordSets {
-			if *r.Type != route53.RRTypeA {
+			if aws.StringValue(r.Type) != route53.RRTypeA {
 				continue
 			}
 
 			for _, rr := range r.ResourceRecords {
 				endpoint := endpoint.Endpoint{
-					DNSName: *r.Name,
-					Target:  *rr.Value,
+					DNSName: aws.StringValue(r.Name),
+					Target:  aws.StringValue(rr.Value),
 				}
 
 				endpoints = append(endpoints, endpoint)

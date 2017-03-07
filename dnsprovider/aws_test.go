@@ -52,10 +52,10 @@ func (r *Route53APIStub) ListResourceRecordSetsPages(input *route53.ListResource
 	output := route53.ListResourceRecordSetsOutput{} // TODO: Support optional input args.
 	if len(r.recordSets) <= 0 {
 		output.ResourceRecordSets = []*route53.ResourceRecordSet{}
-	} else if _, ok := r.recordSets[*input.HostedZoneId]; !ok {
+	} else if _, ok := r.recordSets[aws.StringValue(input.HostedZoneId)]; !ok {
 		output.ResourceRecordSets = []*route53.ResourceRecordSet{}
 	} else {
-		for _, rrsets := range r.recordSets[*input.HostedZoneId] {
+		for _, rrsets := range r.recordSets[aws.StringValue(input.HostedZoneId)] {
 			for _, rrset := range rrsets {
 				output.ResourceRecordSets = append(output.ResourceRecordSets, rrset)
 			}
@@ -67,20 +67,20 @@ func (r *Route53APIStub) ListResourceRecordSetsPages(input *route53.ListResource
 }
 
 func (r *Route53APIStub) ChangeResourceRecordSets(input *route53.ChangeResourceRecordSetsInput) (*route53.ChangeResourceRecordSetsOutput, error) {
-	_, ok := r.zones[*input.HostedZoneId]
+	_, ok := r.zones[aws.StringValue(input.HostedZoneId)]
 	if !ok {
-		return nil, fmt.Errorf("Hosted zone doesn't exist: %s", *input.HostedZoneId)
+		return nil, fmt.Errorf("Hosted zone doesn't exist: %s", aws.StringValue(input.HostedZoneId))
 	}
 
 	output := &route53.ChangeResourceRecordSetsOutput{}
-	recordSets, ok := r.recordSets[*input.HostedZoneId]
+	recordSets, ok := r.recordSets[aws.StringValue(input.HostedZoneId)]
 	if !ok {
 		recordSets = make(map[string][]*route53.ResourceRecordSet)
 	}
 
 	for _, change := range input.ChangeBatch.Changes {
-		key := *change.ResourceRecordSet.Name + "::" + *change.ResourceRecordSet.Type
-		switch *change.Action {
+		key := aws.StringValue(change.ResourceRecordSet.Name) + "::" + aws.StringValue(change.ResourceRecordSet.Type)
+		switch aws.StringValue(change.Action) {
 		case route53.ChangeActionCreate:
 			if _, found := recordSets[key]; found {
 				return nil, fmt.Errorf("Attempt to create duplicate rrset %s", key) // TODO: Return AWS errors with codes etc
@@ -95,7 +95,7 @@ func (r *Route53APIStub) ChangeResourceRecordSets(input *route53.ChangeResourceR
 			recordSets[key] = []*route53.ResourceRecordSet{change.ResourceRecordSet}
 		}
 	}
-	r.recordSets[*input.HostedZoneId] = recordSets
+	r.recordSets[aws.StringValue(input.HostedZoneId)] = recordSets
 	return output, nil // TODO: We should ideally return status etc, but we don't' use that yet.
 }
 
@@ -112,7 +112,7 @@ func (r *Route53APIStub) ListHostedZonesPages(input *route53.ListHostedZonesInpu
 func (r *Route53APIStub) ListHostedZonesByName(input *route53.ListHostedZonesByNameInput) (*route53.ListHostedZonesByNameOutput, error) {
 	output := &route53.ListHostedZonesByNameOutput{}
 	for _, zone := range r.zones {
-		if strings.Contains(*input.DNSName, *zone.Name) {
+		if strings.Contains(*input.DNSName, aws.StringValue(zone.Name)) {
 			output.HostedZones = append(output.HostedZones, zone)
 		}
 	}
@@ -133,13 +133,13 @@ func (r *Route53APIStub) CreateHostedZone(input *route53.CreateHostedZoneInput) 
 }
 
 func (r *Route53APIStub) DeleteHostedZone(input *route53.DeleteHostedZoneInput) (*route53.DeleteHostedZoneOutput, error) {
-	if _, ok := r.zones[*input.Id]; !ok {
-		return nil, fmt.Errorf("Error deleting hosted DNS zone: %s does not exist", *input.Id)
+	if _, ok := r.zones[aws.StringValue(input.Id)]; !ok {
+		return nil, fmt.Errorf("Error deleting hosted DNS zone: %s does not exist", aws.StringValue(input.Id))
 	}
-	if len(r.recordSets[*input.Id]) > 0 {
-		return nil, fmt.Errorf("Error deleting hosted DNS zone: %s has resource records", *input.Id)
+	if len(r.recordSets[aws.StringValue(input.Id)]) > 0 {
+		return nil, fmt.Errorf("Error deleting hosted DNS zone: %s has resource records", aws.StringValue(input.Id))
 	}
-	delete(r.zones, *input.Id)
+	delete(r.zones, aws.StringValue(input.Id))
 	return &route53.DeleteHostedZoneOutput{}, nil
 }
 
@@ -180,12 +180,12 @@ func TestAWSZone(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if *zone.Id != *hostedZone.Id {
-		t.Errorf("expected %s, got %s", *hostedZone.Id, *zone.Id)
+	if aws.StringValue(zone.Id) != aws.StringValue(hostedZone.Id) {
+		t.Errorf("expected %s, got %s", aws.StringValue(hostedZone.Id), aws.StringValue(zone.Id))
 	}
 
-	if *zone.Name != "list-ext-dns-test.teapot.zalan.do." {
-		t.Errorf("expected %s, got %s", "list-ext-dns-test.teapot.zalan.do.", *zone.Name)
+	if aws.StringValue(zone.Name) != "list-ext-dns-test.teapot.zalan.do." {
+		t.Errorf("expected %s, got %s", "list-ext-dns-test.teapot.zalan.do.", aws.StringValue(zone.Name))
 	}
 }
 
@@ -223,7 +223,7 @@ func TestAWSDeleteZone(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = provider.DeleteZone(*zone.Id)
+	err = provider.DeleteZone(aws.StringValue(zone.Id))
 	if err != nil {
 		t.Fatal(err)
 	}
