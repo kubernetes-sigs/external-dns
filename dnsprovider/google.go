@@ -94,12 +94,10 @@ func (p *GoogleProvider) Records(zone string) ([]endpoint.Endpoint, error) {
 		}
 
 		for _, rr := range r.Rrdatas {
-			endpoint := endpoint.Endpoint{
+			endpoints = append(endpoints, endpoint.Endpoint{
 				DNSName: r.Name,
 				Target:  rr,
-			}
-
-			endpoints = append(endpoints, endpoint)
+			})
 		}
 	}
 
