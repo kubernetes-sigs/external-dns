@@ -768,7 +768,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 					},
 				},
 				Delete: []endpoint.Endpoint{
-					endpoint.Endpoint{
+					{
 						DNSName: "example.org",
 						Target:  "8.8.8.8",
 					},
