@@ -25,9 +25,9 @@ import (
 
 const (
 	// The annotation used for figuring out which controller is responsible
-	controllerAnnotationKey = "external-dns.kubernetes.io/controller"
+	controllerAnnotationKey = "external-dns.alpha.kubernetes.io/controller"
 	// The annotation used for defining the desired hostname
-	hostnameAnnotationKey = "external-dns.kubernetes.io/hostname"
+	hostnameAnnotationKey = "external-dns.alpha.kubernetes.io/hostname"
 	// The value of the controller annotation so that we feel resposible
 	controllerAnnotationValue = "dns-controller"
 )
@@ -38,12 +38,13 @@ const (
 // matched services' external entrypoints it will return a corresponding
 // Endpoint object.
 type ServiceSource struct {
-	Client kubernetes.Interface
+	Client    kubernetes.Interface
+	Namespace string
 }
 
 // Endpoints returns endpoint objects for each service that should be processed.
 func (sc *ServiceSource) Endpoints() ([]endpoint.Endpoint, error) {
-	services, err := sc.Client.CoreV1().Services(v1.NamespaceAll).List(v1.ListOptions{})
+	services, err := sc.Client.CoreV1().Services(sc.Namespace).List(v1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -79,18 +80,16 @@ func endpointsFromService(svc *v1.Service) []endpoint.Endpoint {
 	// Create a corresponding endpoint for each configured external entrypoint.
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
-			endpoint := endpoint.Endpoint{
+			endpoints = append(endpoints, endpoint.Endpoint{
 				DNSName: hostname,
 				Target:  lb.IP,
-			}
-			endpoints = append(endpoints, endpoint)
+			})
 		}
 		if lb.Hostname != "" {
-			endpoint := endpoint.Endpoint{
+			endpoints = append(endpoints, endpoint.Endpoint{
 				DNSName: hostname,
 				Target:  lb.Hostname,
-			}
-			endpoints = append(endpoints, endpoint)
+			})
 		}
 	}
 

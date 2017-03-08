@@ -28,13 +28,14 @@ import (
 // Ingress implementation will use the spec.rules.host value for the hostname
 // Ingress annotations are ignored
 type IngressSource struct {
-	Client kubernetes.Interface
+	Client    kubernetes.Interface
+	Namespace string
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all ingress resources on all namespaces
 func (sc *IngressSource) Endpoints() ([]endpoint.Endpoint, error) {
-	ingresses, err := sc.Client.Extensions().Ingresses(v1.NamespaceAll).List(v1.ListOptions{})
+	ingresses, err := sc.Client.Extensions().Ingresses(sc.Namespace).List(v1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -58,16 +59,17 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []endpoint.Endpoint {
 			continue
 		}
 		for _, lb := range ing.Status.LoadBalancer.Ingress {
-			endpoint := endpoint.Endpoint{
-				DNSName: rule.Host,
-			}
 			if lb.IP != "" {
-				endpoint.Target = lb.IP
-				endpoints = append(endpoints, endpoint)
+				endpoints = append(endpoints, endpoint.Endpoint{
+					DNSName: rule.Host,
+					Target:  lb.IP,
+				})
 			}
 			if lb.Hostname != "" {
-				endpoint.Target = lb.Hostname
-				endpoints = append(endpoints, endpoint)
+				endpoints = append(endpoints, endpoint.Endpoint{
+					DNSName: rule.Host,
+					Target:  lb.Hostname,
+				})
 			}
 		}
 	}

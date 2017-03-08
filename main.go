@@ -42,7 +42,9 @@ import (
 
 func main() {
 	cfg := externaldns.NewConfig()
-	cfg.ParseFlags()
+	if err := cfg.ParseFlags(os.Args); err != nil {
+		log.Fatalf("flag parsing error: %v", err)
+	}
 	if err := validation.ValidateConfig(cfg); err != nil {
 		log.Errorf("config validation failed: %v", err)
 	}
@@ -51,7 +53,7 @@ func main() {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
 	if cfg.DryRun {
-		log.Info("Running in dry-run mode. No changes to DNS records will be made.")
+		log.Info("running in dry-run mode. No changes to DNS records will be made.")
 	}
 	if cfg.Debug {
 		log.SetLevel(log.DebugLevel)
@@ -68,7 +70,8 @@ func main() {
 	}
 
 	source := &source.ServiceSource{
-		Client: client,
+		Client:    client,
+		Namespace: cfg.Namespace,
 	}
 
 	gcloud, err := google.DefaultClient(context.TODO(), dns.NdevClouddnsReadwriteScope)
@@ -93,6 +96,15 @@ func main() {
 		Zone:        cfg.GoogleZone,
 		Source:      source,
 		DNSProvider: dnsProvider,
+	}
+
+	if cfg.Once {
+		err := ctrl.RunOnce()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		os.Exit(0)
 	}
 
 	ctrl.Run(stopChan)
@@ -128,7 +140,7 @@ func newClient(cfg *externaldns.Config) (*kubernetes.Clientset, error) {
 		return nil, err
 	}
 
-	log.Infof("Targeting cluster at %s", config.Host)
+	log.Infof("targeting cluster at %s", config.Host)
 
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {

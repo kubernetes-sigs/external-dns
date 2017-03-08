@@ -123,15 +123,18 @@ func testEndpointsFromIngress(t *testing.T) {
 func testIngressEndpoints(t *testing.T) {
 	namespace := "testing"
 	for _, ti := range []struct {
-		title        string
-		ingressItems []fakeIngress
-		expected     []endpoint.Endpoint
+		title           string
+		targetNamespace string
+		ingressItems    []fakeIngress
+		expected        []endpoint.Endpoint
 	}{
 		{
-			title: "no ingress",
+			title:           "no ingress",
+			targetNamespace: "",
 		},
 		{
-			title: "two simple ingresses",
+			title:           "two simple ingresses",
+			targetNamespace: "",
 			ingressItems: []fakeIngress{
 				{
 					name:      "fake1",
@@ -158,7 +161,8 @@ func testIngressEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title: "two simple ingresses on different namespaces",
+			title:           "two simple ingresses on different namespaces",
+			targetNamespace: "",
 			ingressItems: []fakeIngress{
 				{
 					name:      "fake1",
@@ -184,6 +188,30 @@ func testIngressEndpoints(t *testing.T) {
 				},
 			},
 		},
+		{
+			title:           "two simple ingresses on different namespaces with target namespace",
+			targetNamespace: "testing1",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: "testing1",
+					dnsnames:  []string{"example.org"},
+					ips:       []string{"8.8.8.8"},
+				},
+				{
+					name:      "fake2",
+					namespace: "testing2",
+					dnsnames:  []string{"new.org"},
+					hostnames: []string{"lb.com"},
+				},
+			},
+			expected: []endpoint.Endpoint{
+				{
+					DNSName: "example.org",
+					Target:  "8.8.8.8",
+				},
+			},
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			ingresses := make([]*v1beta1.Ingress, 0)
@@ -193,7 +221,8 @@ func testIngressEndpoints(t *testing.T) {
 
 			fakeClient := fake.NewSimpleClientset()
 			ingressSource := &IngressSource{
-				Client: fakeClient,
+				Client:    fakeClient,
+				Namespace: ti.targetNamespace,
 			}
 			for _, ingress := range ingresses {
 				_, err := fakeClient.Extensions().Ingresses(ingress.Namespace).Create(ingress)
