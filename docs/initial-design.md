@@ -39,7 +39,7 @@ New cloud providers should be easily pluggable. Initially only AWS/Google platfo
 
 DNS records will be automatically created in multiple situations:
 1. Setting `spec.rules.host` on an ingress object.
-2. Adding the annotation `external-dns.kubernetes.io/hostname` on a `type=LoadBalancer` service object.
+2. Adding the annotation `external-dns.alpha.kubernetes.io/hostname` on a `type=LoadBalancer` service object.
 
 ### Annotations
 
@@ -49,13 +49,13 @@ Record configuration should occur via resource annotations. Supported annotation
 
 |   Annotations |   |
 |---|---|
-|Tag   |external-dns.kubernetes.io/controller   |
+|Tag   |external-dns.alpha.kubernetes.io/controller   |
 |Description   |  Tells a DNS controller to process this service. This is useful when running different DNS controllers at the same time (or different versions of the same controller). The v1 implementation of dns-controller would look for service annotations `dns-controller` and `dns-controller/v1` but not for `mate/v1` or `dns-controller/v2` |
 |Default   | dns-controller  |
 |Example|dns-controller/v1|
 |Required| false |
 |---|---|
-|Tag   |external-dns.kubernetes.io/hostname   |
+|Tag   |external-dns.alpha.kubernetes.io/hostname   |
 |Description   |  Fully qualified name of the desired record |
 |Default| none |
 |Example|foo.example.org|
