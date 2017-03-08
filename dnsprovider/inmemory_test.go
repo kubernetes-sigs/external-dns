@@ -56,7 +56,7 @@ func testInMemoryFindByType(t *testing.T) {
 			title:    "one record, empty type",
 			findType: "",
 			records: []*InMemoryRecord{
-				&InMemoryRecord{
+				{
 					Type: "A",
 				},
 			},
@@ -67,7 +67,7 @@ func testInMemoryFindByType(t *testing.T) {
 			title:    "one record, wrong type",
 			findType: "CNAME",
 			records: []*InMemoryRecord{
-				&InMemoryRecord{
+				{
 					Type: "A",
 				},
 			},
@@ -78,7 +78,7 @@ func testInMemoryFindByType(t *testing.T) {
 			title:    "one record, right type",
 			findType: "A",
 			records: []*InMemoryRecord{
-				&InMemoryRecord{
+				{
 					Type: "A",
 				},
 			},
@@ -90,10 +90,10 @@ func testInMemoryFindByType(t *testing.T) {
 			title:    "multiple records, right type",
 			findType: "A",
 			records: []*InMemoryRecord{
-				&InMemoryRecord{
+				{
 					Type: "A",
 				},
-				&InMemoryRecord{
+				{
 					Type: "TXT",
 				},
 			},
@@ -141,20 +141,20 @@ func testInMemoryEndpoints(t *testing.T) {
 			title: "records, no zone",
 			zone:  "",
 			init: map[string]zone{
-				"org": zone{
+				"org": {
 					"example.org": []*InMemoryRecord{
-						&InMemoryRecord{},
+						{},
 					},
 					"foo.org": []*InMemoryRecord{
-						&InMemoryRecord{},
+						{},
 					},
 				},
-				"com": zone{
+				"com": {
 					"example.com": []*InMemoryRecord{
-						&InMemoryRecord{},
+						{},
 					},
 					"foo.com": []*InMemoryRecord{
-						&InMemoryRecord{},
+						{},
 					},
 				},
 			},
@@ -164,20 +164,20 @@ func testInMemoryEndpoints(t *testing.T) {
 			title: "records, zone with no records",
 			zone:  "",
 			init: map[string]zone{
-				"org": zone{
+				"org": {
 					"example.org": []*InMemoryRecord{
-						&InMemoryRecord{},
+						{},
 					},
 					"foo.org": []*InMemoryRecord{
-						&InMemoryRecord{},
+						{},
 					},
 				},
-				"com": zone{
+				"com": {
 					"example.com": []*InMemoryRecord{
-						&InMemoryRecord{},
+						{},
 					},
 					"foo.com": []*InMemoryRecord{
-						&InMemoryRecord{},
+						{},
 					},
 				},
 			},
@@ -187,16 +187,16 @@ func testInMemoryEndpoints(t *testing.T) {
 			title: "records, zone with records",
 			zone:  "org",
 			init: map[string]zone{
-				"org": zone{
+				"org": {
 					"example.org": []*InMemoryRecord{
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "example.org",
 								Target:  "8.8.8.8",
 							},
 							Type: defaultType,
 						},
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "example.org",
 							},
@@ -204,7 +204,7 @@ func testInMemoryEndpoints(t *testing.T) {
 						},
 					},
 					"foo.org": []*InMemoryRecord{
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "foo.org",
 								Target:  "4.4.4.4",
@@ -213,9 +213,9 @@ func testInMemoryEndpoints(t *testing.T) {
 						},
 					},
 				},
-				"com": zone{
+				"com": {
 					"example.com": []*InMemoryRecord{
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "example.com",
 								Target:  "4.4.4.4",
@@ -226,14 +226,14 @@ func testInMemoryEndpoints(t *testing.T) {
 				},
 			},
 			expected: []endpoint.Endpoint{
-				endpoint.Endpoint{
+				{
 					DNSName: "example.org",
 					Target:  "8.8.8.8",
 				},
-				endpoint.Endpoint{
+				{
 					DNSName: "example.org",
 				},
-				endpoint.Endpoint{
+				{
 					DNSName: "foo.org",
 					Target:  "4.4.4.4",
 				},
@@ -266,8 +266,8 @@ func testInMemoryRecords(t *testing.T) {
 			title: "records, wrong zone",
 			zone:  "net",
 			init: map[string]zone{
-				"org": zone{},
-				"com": zone{},
+				"org": {},
+				"com": {},
 			},
 			expectError: true,
 		},
@@ -275,16 +275,16 @@ func testInMemoryRecords(t *testing.T) {
 			title: "records, zone with records",
 			zone:  "org",
 			init: map[string]zone{
-				"org": zone{
+				"org": {
 					"example.org": []*InMemoryRecord{
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "example.org",
 								Target:  "8.8.8.8",
 							},
 							Type: defaultType,
 						},
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "example.org",
 							},
@@ -292,7 +292,7 @@ func testInMemoryRecords(t *testing.T) {
 						},
 					},
 					"foo.org": []*InMemoryRecord{
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "foo.org",
 								Target:  "4.4.4.4",
@@ -301,9 +301,9 @@ func testInMemoryRecords(t *testing.T) {
 						},
 					},
 				},
-				"com": zone{
+				"com": {
 					"example.com": []*InMemoryRecord{
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "example.com",
 								Target:  "4.4.4.4",
@@ -337,16 +337,16 @@ func testInMemoryRecords(t *testing.T) {
 
 func testInMemoryValidateChangeBatch(t *testing.T) {
 	init := map[string]zone{
-		"org": zone{
+		"org": {
 			"example.org": []*InMemoryRecord{
-				&InMemoryRecord{
+				{
 					Endpoint: endpoint.Endpoint{
 						DNSName: "example.org",
 						Target:  "8.8.8.8",
 					},
 					Type: defaultType,
 				},
-				&InMemoryRecord{
+				{
 					Endpoint: endpoint.Endpoint{
 						DNSName: "example.org",
 					},
@@ -354,7 +354,7 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 				},
 			},
 			"foo.org": []*InMemoryRecord{
-				&InMemoryRecord{
+				{
 					Endpoint: endpoint.Endpoint{
 						DNSName: "foo.org",
 						Target:  "4.4.4.4",
@@ -363,7 +363,7 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 				},
 			},
 			"foo.bar.org": []*InMemoryRecord{
-				&InMemoryRecord{
+				{
 					Endpoint: endpoint.Endpoint{
 						DNSName: "foo.bar.org",
 						Target:  "5.5.5.5",
@@ -372,9 +372,9 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 				},
 			},
 		},
-		"com": zone{
+		"com": {
 			"example.com": []*InMemoryRecord{
-				&InMemoryRecord{
+				{
 					Endpoint: endpoint.Endpoint{
 						DNSName: "example.com",
 						Target:  "4.4.4.4",
@@ -438,7 +438,7 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 			init:        init,
 			changes: &plan.Changes{
 				Create: []endpoint.Endpoint{
-					endpoint.Endpoint{
+					{
 						DNSName: "example.org",
 						Target:  "8.8.8.8",
 					},
@@ -456,13 +456,13 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 			init:        init,
 			changes: &plan.Changes{
 				Create: []endpoint.Endpoint{
-					endpoint.Endpoint{
+					{
 						DNSName: "foo.org",
 						Target:  "4.4.4.4",
 					},
 				},
 				UpdateNew: []endpoint.Endpoint{
-					endpoint.Endpoint{
+					{
 						DNSName: "foo.org",
 						Target:  "4.4.4.4",
 					},
@@ -479,13 +479,13 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 			init:        init,
 			changes: &plan.Changes{
 				Create: []endpoint.Endpoint{
-					endpoint.Endpoint{
+					{
 						DNSName: "foo.org",
 						Target:  "4.4.4.4",
 					},
 				},
 				UpdateNew: []endpoint.Endpoint{
-					endpoint.Endpoint{
+					{
 						DNSName: "foo.org",
 						Target:  "4.4.4.4",
 					},
@@ -502,11 +502,11 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 			init:        init,
 			changes: &plan.Changes{
 				Create: []endpoint.Endpoint{
-					endpoint.Endpoint{
+					{
 						DNSName: "foo.org",
 						Target:  "4.4.4.4",
 					},
-					endpoint.Endpoint{
+					{
 						DNSName: "foo.org",
 						Target:  "4.4.4.4",
 					},
@@ -525,14 +525,14 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 			changes: &plan.Changes{
 				Create: []endpoint.Endpoint{},
 				UpdateNew: []endpoint.Endpoint{
-					endpoint.Endpoint{
+					{
 						DNSName: "example.org",
 						Target:  "8.8.8.8",
 					},
 				},
 				UpdateOld: []endpoint.Endpoint{},
 				Delete: []endpoint.Endpoint{
-					endpoint.Endpoint{
+					{
 						DNSName: "example.org",
 						Target:  "8.8.8.8",
 					},
@@ -550,7 +550,7 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 				UpdateNew: []endpoint.Endpoint{},
 				UpdateOld: []endpoint.Endpoint{},
 				Delete: []endpoint.Endpoint{
-					endpoint.Endpoint{
+					{
 						DNSName: "foo.bar.org",
 						Target:  "5.5.5.5",
 					},
@@ -564,19 +564,19 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 			init:        init,
 			changes: &plan.Changes{
 				Create: []endpoint.Endpoint{
-					endpoint.Endpoint{
+					{
 						DNSName: "foo.bar.new.org",
 						Target:  "4.8.8.9",
 					},
 				},
 				UpdateNew: []endpoint.Endpoint{
-					endpoint.Endpoint{
+					{
 						DNSName: "foo.bar.org",
 						Target:  "4.8.8.4",
 					},
 				},
 				UpdateOld: []endpoint.Endpoint{
-					endpoint.Endpoint{
+					{
 						DNSName: "foo.bar.org",
 						Target:  "5.5.5.5",
 					},
@@ -616,14 +616,14 @@ func testInMemoryApplyChanges(t *testing.T) {
 			changes: &plan.Changes{
 				Create: []endpoint.Endpoint{},
 				UpdateNew: []endpoint.Endpoint{
-					endpoint.Endpoint{
+					{
 						DNSName: "example.org",
 						Target:  "8.8.8.8",
 					},
 				},
 				UpdateOld: []endpoint.Endpoint{},
 				Delete: []endpoint.Endpoint{
-					endpoint.Endpoint{
+					{
 						DNSName: "example.org",
 						Target:  "8.8.8.8",
 					},
@@ -639,23 +639,23 @@ func testInMemoryApplyChanges(t *testing.T) {
 				UpdateNew: []endpoint.Endpoint{},
 				UpdateOld: []endpoint.Endpoint{},
 				Delete: []endpoint.Endpoint{
-					endpoint.Endpoint{
+					{
 						DNSName: "foo.bar.org",
 						Target:  "5.5.5.5",
 					},
 				},
 			},
 			expectedZonesState: map[string]zone{
-				"org": zone{
+				"org": {
 					"example.org": []*InMemoryRecord{
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "example.org",
 								Target:  "8.8.8.8",
 							},
 							Type: defaultType,
 						},
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "example.org",
 							},
@@ -663,7 +663,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 						},
 					},
 					"foo.org": []*InMemoryRecord{
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "foo.org",
 								Target:  "4.4.4.4",
@@ -673,9 +673,9 @@ func testInMemoryApplyChanges(t *testing.T) {
 					},
 					"foo.bar.org": []*InMemoryRecord{},
 				},
-				"com": zone{
+				"com": {
 					"example.com": []*InMemoryRecord{
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "example.com",
 								Target:  "4.4.4.4",
@@ -692,19 +692,19 @@ func testInMemoryApplyChanges(t *testing.T) {
 			zone:        "org",
 			changes: &plan.Changes{
 				Create: []endpoint.Endpoint{
-					endpoint.Endpoint{
+					{
 						DNSName: "foo.bar.new.org",
 						Target:  "4.8.8.9",
 					},
 				},
 				UpdateNew: []endpoint.Endpoint{
-					endpoint.Endpoint{
+					{
 						DNSName: "foo.bar.org",
 						Target:  "4.8.8.4",
 					},
 				},
 				UpdateOld: []endpoint.Endpoint{
-					endpoint.Endpoint{
+					{
 						DNSName: "foo.bar.org",
 						Target:  "5.5.5.5",
 					},
@@ -712,16 +712,16 @@ func testInMemoryApplyChanges(t *testing.T) {
 				Delete: []endpoint.Endpoint{},
 			},
 			expectedZonesState: map[string]zone{
-				"org": zone{
+				"org": {
 					"example.org": []*InMemoryRecord{
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "example.org",
 								Target:  "8.8.8.8",
 							},
 							Type: defaultType,
 						},
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "example.org",
 							},
@@ -729,7 +729,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 						},
 					},
 					"foo.org": []*InMemoryRecord{
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "foo.org",
 								Target:  "4.4.4.4",
@@ -738,7 +738,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 						},
 					},
 					"foo.bar.org": []*InMemoryRecord{
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "foo.bar.org",
 								Target:  "4.8.8.4",
@@ -747,7 +747,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 						},
 					},
 					"foo.bar.new.org": []*InMemoryRecord{
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "foo.bar.new.org",
 								Target:  "4.8.8.9",
@@ -756,9 +756,9 @@ func testInMemoryApplyChanges(t *testing.T) {
 						},
 					},
 				},
-				"com": zone{
+				"com": {
 					"example.com": []*InMemoryRecord{
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "example.com",
 								Target:  "4.4.4.4",
@@ -772,16 +772,16 @@ func testInMemoryApplyChanges(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			init := map[string]zone{
-				"org": zone{
+				"org": {
 					"example.org": []*InMemoryRecord{
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "example.org",
 								Target:  "8.8.8.8",
 							},
 							Type: defaultType,
 						},
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "example.org",
 							},
@@ -789,7 +789,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 						},
 					},
 					"foo.org": []*InMemoryRecord{
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "foo.org",
 								Target:  "4.4.4.4",
@@ -798,7 +798,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 						},
 					},
 					"foo.bar.org": []*InMemoryRecord{
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "foo.bar.org",
 								Target:  "5.5.5.5",
@@ -807,9 +807,9 @@ func testInMemoryApplyChanges(t *testing.T) {
 						},
 					},
 				},
-				"com": zone{
+				"com": {
 					"example.com": []*InMemoryRecord{
-						&InMemoryRecord{
+						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "example.com",
 								Target:  "4.4.4.4",
