@@ -56,7 +56,7 @@ func testServiceEndpoints(t *testing.T) {
 			"testing",
 			"foo",
 			map[string]string{
-				"external-dns.kubernetes.io/hostname": "foo.example.org",
+				hostnameAnnotationKey: "foo.example.org",
 			},
 			[]string{"1.2.3.4"},
 			[]endpoint.Endpoint{
@@ -69,7 +69,7 @@ func testServiceEndpoints(t *testing.T) {
 			"testing",
 			"foo",
 			map[string]string{
-				"external-dns.kubernetes.io/hostname": "foo.example.org",
+				hostnameAnnotationKey: "foo.example.org",
 			},
 			[]string{"lb.example.com"},
 			[]endpoint.Endpoint{
@@ -82,8 +82,8 @@ func testServiceEndpoints(t *testing.T) {
 			"testing",
 			"foo",
 			map[string]string{
-				"external-dns.kubernetes.io/controller": "dns-controller",
-				"external-dns.kubernetes.io/hostname":   "foo.example.org",
+				controllerAnnotationKey: controllerAnnotationValue,
+				hostnameAnnotationKey:   "foo.example.org",
 			},
 			[]string{"1.2.3.4"},
 			[]endpoint.Endpoint{
@@ -96,8 +96,8 @@ func testServiceEndpoints(t *testing.T) {
 			"testing",
 			"foo",
 			map[string]string{
-				"external-dns.kubernetes.io/controller": "some-other-tool",
-				"external-dns.kubernetes.io/hostname":   "foo.example.org",
+				controllerAnnotationKey: "some-other-tool",
+				hostnameAnnotationKey:   "foo.example.org",
 			},
 			[]string{"1.2.3.4"},
 			[]endpoint.Endpoint{},
@@ -108,7 +108,7 @@ func testServiceEndpoints(t *testing.T) {
 			"testing",
 			"foo",
 			map[string]string{
-				"external-dns.kubernetes.io/hostname": "foo.example.org",
+				hostnameAnnotationKey: "foo.example.org",
 			},
 			[]string{"1.2.3.4"},
 			[]endpoint.Endpoint{
@@ -121,7 +121,7 @@ func testServiceEndpoints(t *testing.T) {
 			"other-testing",
 			"foo",
 			map[string]string{
-				"external-dns.kubernetes.io/hostname": "foo.example.org",
+				hostnameAnnotationKey: "foo.example.org",
 			},
 			[]string{"1.2.3.4"},
 			[]endpoint.Endpoint{},
@@ -132,7 +132,7 @@ func testServiceEndpoints(t *testing.T) {
 			"other-testing",
 			"foo",
 			map[string]string{
-				"external-dns.kubernetes.io/hostname": "foo.example.org",
+				hostnameAnnotationKey: "foo.example.org",
 			},
 			[]string{"1.2.3.4"},
 			[]endpoint.Endpoint{
@@ -145,7 +145,7 @@ func testServiceEndpoints(t *testing.T) {
 			"testing",
 			"foo",
 			map[string]string{
-				"external-dns.kubernetes.io/hostname": "foo.example.org",
+				hostnameAnnotationKey: "foo.example.org",
 			},
 			[]string{},
 			[]endpoint.Endpoint{},
@@ -156,7 +156,7 @@ func testServiceEndpoints(t *testing.T) {
 			"testing",
 			"foo",
 			map[string]string{
-				"external-dns.kubernetes.io/hostname": "foo.example.org",
+				hostnameAnnotationKey: "foo.example.org",
 			},
 			[]string{"1.2.3.4", "8.8.8.8"},
 			[]endpoint.Endpoint{
@@ -222,7 +222,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 			Namespace: "testing",
 			Name:      "foo",
 			Annotations: map[string]string{
-				"external-dns.kubernetes.io/hostname": "foo.example.org",
+				hostnameAnnotationKey: "foo.example.org",
 			},
 		},
 		Status: v1.ServiceStatus{
