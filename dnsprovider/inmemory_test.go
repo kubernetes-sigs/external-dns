@@ -496,7 +496,7 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 			errorType: ErrRecordNotFound,
 		},
 		{
-			title:       "zones, update, right zone, invalid batch - duplicated",
+			title:       "zones, update, right zone, invalid batch - duplicated create",
 			expectError: true,
 			zone:        "org",
 			init:        init,
@@ -518,7 +518,7 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 			errorType: ErrInvalidBatchRequest,
 		},
 		{
-			title:       "zones, update, right zone, invalid batch - duplicated",
+			title:       "zones, update, right zone, invalid batch - duplicated update/delete",
 			expectError: true,
 			zone:        "org",
 			init:        init,
@@ -539,6 +539,64 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 				},
 			},
 			errorType: ErrInvalidBatchRequest,
+		},
+		{
+			title:       "zones, update, right zone, invalid batch - duplicated update",
+			expectError: true,
+			zone:        "org",
+			init:        init,
+			changes: &plan.Changes{
+				Create: []endpoint.Endpoint{},
+				UpdateNew: []endpoint.Endpoint{
+					{
+						DNSName: "example.org",
+						Target:  "8.8.8.8",
+					},
+					{
+						DNSName: "example.org",
+						Target:  "8.8.8.8",
+					},
+				},
+				UpdateOld: []endpoint.Endpoint{},
+				Delete:    []endpoint.Endpoint{},
+			},
+			errorType: ErrInvalidBatchRequest,
+		},
+		{
+			title:       "zones, update, right zone, invalid batch - wrong update old",
+			expectError: true,
+			zone:        "org",
+			init:        init,
+			changes: &plan.Changes{
+				Create:    []endpoint.Endpoint{},
+				UpdateNew: []endpoint.Endpoint{},
+				UpdateOld: []endpoint.Endpoint{
+					{
+						DNSName: "new.org",
+						Target:  "8.8.8.8",
+					},
+				},
+				Delete: []endpoint.Endpoint{},
+			},
+			errorType: ErrRecordNotFound,
+		},
+		{
+			title:       "zones, update, right zone, invalid batch - wrong delete",
+			expectError: true,
+			zone:        "org",
+			init:        init,
+			changes: &plan.Changes{
+				Create:    []endpoint.Endpoint{},
+				UpdateNew: []endpoint.Endpoint{},
+				UpdateOld: []endpoint.Endpoint{},
+				Delete: []endpoint.Endpoint{
+					{
+						DNSName: "new.org",
+						Target:  "8.8.8.8",
+					},
+				},
+			},
+			errorType: ErrRecordNotFound,
 		},
 		{
 			title:       "zones, update, right zone, valid batch - delete",
@@ -687,7 +745,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 			},
 		},
 		{
-			title:       "zones, update, right zone, valid batch - update and create",
+			title:       "zones, update, right zone, valid batch - update, create, delete",
 			expectError: false,
 			zone:        "org",
 			changes: &plan.Changes{
@@ -709,18 +767,16 @@ func testInMemoryApplyChanges(t *testing.T) {
 						Target:  "5.5.5.5",
 					},
 				},
-				Delete: []endpoint.Endpoint{},
+				Delete: []endpoint.Endpoint{
+					endpoint.Endpoint{
+						DNSName: "example.org",
+						Target:  "8.8.8.8",
+					},
+				},
 			},
 			expectedZonesState: map[string]zone{
 				"org": {
 					"example.org": []*InMemoryRecord{
-						{
-							Endpoint: endpoint.Endpoint{
-								DNSName: "example.org",
-								Target:  "8.8.8.8",
-							},
-							Type: defaultType,
-						},
 						{
 							Endpoint: endpoint.Endpoint{
 								DNSName: "example.org",
