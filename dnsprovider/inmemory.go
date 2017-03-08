@@ -103,7 +103,10 @@ func (im *InMemoryProvider) ApplyChanges(zone string, changes *plan.Changes) err
 
 // validateChangeBatch validates that the changes passed to InMemory DNS provider is valid
 func (im *InMemoryProvider) validateChangeBatch(zone string, changes *plan.Changes) error {
-	existing := im.zones[zone]
+	existing, ok := im.zones[zone]
+	if !ok {
+		return ErrZoneNotFound
+	}
 	mesh := map[string]bool{}
 	for _, newEndpoint := range changes.Create {
 		if im.findByType(defaultType, existing[newEndpoint.DNSName]) != nil {
@@ -123,8 +126,13 @@ func (im *InMemoryProvider) validateChangeBatch(zone string, changes *plan.Chang
 		}
 		mesh[updateEndpoint.DNSName] = true
 	}
+	for _, updateOldEndpoint := range changes.UpdateOld {
+		if rec := im.findByType(defaultType, existing[updateOldEndpoint.DNSName]); rec == nil || rec.Target != updateOldEndpoint.Target {
+			return ErrRecordNotFound
+		}
+	}
 	for _, deleteEndpoint := range changes.Delete {
-		if im.findByType(defaultType, existing[deleteEndpoint.DNSName]) == nil {
+		if rec := im.findByType(defaultType, existing[deleteEndpoint.DNSName]); rec == nil || rec.Target != deleteEndpoint.Target {
 			return ErrRecordNotFound
 		}
 		if _, exists := mesh[deleteEndpoint.DNSName]; exists {
