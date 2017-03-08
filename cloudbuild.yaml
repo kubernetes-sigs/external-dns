@@ -1,0 +1,16 @@
+steps:
+- name: gcr.io/cloud-builders/go
+  args:
+  - build
+  - -o=build/linux-amd64/external-dns
+  - .
+  env:
+  - PROJECT_ROOT=github.com/kubernetes-incubator/external-dns
+- name: gcr.io/cloud-builders/docker
+  args:
+  - build
+  - --tag=gcr.io/$PROJECT_ID/external-dns
+  - .
+
+images:
+- gcr.io/$PROJECT_ID/external-dns
