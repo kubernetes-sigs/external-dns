@@ -70,7 +70,8 @@ func main() {
 	}
 
 	source := &source.ServiceSource{
-		Client: client,
+		Client:    client,
+		Namespace: cfg.Namespace,
 	}
 
 	gcloud, err := google.DefaultClient(context.TODO(), dns.NdevClouddnsReadwriteScope)
@@ -95,6 +96,15 @@ func main() {
 		Zone:        cfg.GoogleZone,
 		Source:      source,
 		DNSProvider: dnsProvider,
+	}
+
+	if cfg.Once {
+		err := ctrl.RunOnce()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		os.Exit(0)
 	}
 
 	ctrl.Run(stopChan)

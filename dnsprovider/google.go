@@ -94,12 +94,10 @@ func (p *GoogleProvider) Records(zone string) ([]endpoint.Endpoint, error) {
 		}
 
 		for _, rr := range r.Rrdatas {
-			endpoint := endpoint.Endpoint{
+			endpoints = append(endpoints, endpoint.Endpoint{
 				DNSName: r.Name,
 				Target:  rr,
-			}
-
-			endpoints = append(endpoints, endpoint)
+			})
 		}
 	}
 
@@ -123,6 +121,10 @@ func (p *GoogleProvider) CreateRecords(zone string, records []endpoint.Endpoint)
 
 	if p.DryRun {
 		log.Infof("Creating records: %#v", change.Additions)
+		return nil
+	}
+
+	if len(change.Additions) == 0 {
 		return nil
 	}
 
@@ -164,6 +166,10 @@ func (p *GoogleProvider) UpdateRecords(zone string, newRecords, oldRecords []end
 		return nil
 	}
 
+	if len(change.Additions) == 0 && len(change.Deletions) == 0 {
+		return nil
+	}
+
 	_, err := p.ChangesClient.Create(p.Project, zone, change).Do()
 	if err != nil {
 		return err
@@ -189,6 +195,10 @@ func (p *GoogleProvider) DeleteRecords(zone string, records []endpoint.Endpoint)
 
 	if p.DryRun {
 		log.Infof("Deleting records: %#v", change.Deletions)
+		return nil
+	}
+
+	if len(change.Deletions) == 0 {
 		return nil
 	}
 
