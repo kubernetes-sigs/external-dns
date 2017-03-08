@@ -25,9 +25,9 @@ import (
 
 const (
 	// The annotation used for figuring out which controller is responsible
-	controllerAnnotationKey = "external-dns.kubernetes.io/controller"
+	controllerAnnotationKey = "external-dns.alpha.kubernetes.io/controller"
 	// The annotation used for defining the desired hostname
-	hostnameAnnotationKey = "external-dns.kubernetes.io/hostname"
+	hostnameAnnotationKey = "external-dns.alpha.kubernetes.io/hostname"
 	// The value of the controller annotation so that we feel resposible
 	controllerAnnotationValue = "dns-controller"
 )
