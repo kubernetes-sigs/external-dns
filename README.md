@@ -70,7 +70,7 @@ Annotate the service with your desired external DNS name (change `example.org` t
 $ kubectl annotate service nginx "external-dns.alpha.kubernetes.io/hostname=nginx.example.org."
 ```
 
-Run a single sync loop of `external-dns`. In a real setup this would run constantly in your cluster (change the Google project and zone identifier to the one you have).
+Run a single sync loop of `external-dns`. In a real setup this would run constantly in your cluster. Change the Google project and zone identifier to an **unused** and **empty** hosted zone in Google. `external-dns` keeps the entire zone in sync with the desired records, which means that it will remove any records it doesn't know about. However, this will change in the future so that it tolerates and doesn't mess with existing records.
 
 ```console
 $ build/external-dns --google-project example-project --google-zone example-org --once --dry-run=false
