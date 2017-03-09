@@ -84,6 +84,7 @@ ConfigMap will be periodically resynced with the dns provider by fetching the dn
 1. ConfigMap might be out of sync with dns provider state
 2. LifeTime is obviously limited to the cluster lifetime
 3. Not supported in older kubernetes clusters
+4. Bloated ConfigMap - cannot be paginated and will grow very big on DNS provider with thousands of records
 
 
 ## Component integration
