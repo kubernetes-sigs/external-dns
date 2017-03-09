@@ -45,9 +45,7 @@ type GoogleProvider struct {
 // Zones returns the list of hosted zones.
 func (p *GoogleProvider) Zones() (zones []*dns.ManagedZone, _ error) {
 	f := func(resp *dns.ManagedZonesListResponse) error {
-		for _, zone := range resp.ManagedZones {
-			zones = append(zones, zone)
-		}
+		zones = append(zones, resp.ManagedZones...)
 
 		return nil
 	}
@@ -187,10 +185,10 @@ func (p *GoogleProvider) submitChange(zone string, change *dns.Change) error {
 
 // newRecords returns a collection of RecordSets based on the given endpoints.
 func newRecords(endpoints []endpoint.Endpoint) []*dns.ResourceRecordSet {
-	records := make([]*dns.ResourceRecordSet, 0, len(endpoints))
+	records := make([]*dns.ResourceRecordSet, len(endpoints))
 
-	for _, endpoint := range endpoints {
-		records = append(records, newRecord(endpoint))
+	for i, endpoint := range endpoints {
+		records[i] = newRecord(endpoint)
 	}
 
 	return records
