@@ -27,7 +27,7 @@ The following presents two ways to implement the storage, and we are planning to
 
 This implementation idea is borrowed from [Mate](https://github.com/zalando-incubator/mate/)
 
-Each record created by external-dns is accompanied by the TXT record, which internally stores the external-dns identifier. For example, if external dns with `storage-id="external-dns-1"` record to be created with dns name `foo.zone.org`, external-dns will create a TXT record with the same dns name `foo.zone.org` and injected value of `"external-dns-1"`. The transfer of ownership can be done by modifying value in the TXT record.  If no TXT record exists for the record, then external-dns will simply ignore it. 
+Each record created by external-dns is accompanied by the TXT record, which internally stores the external-dns identifier. For example, if external dns with `storage-id="external-dns-1"` record to be created with dns name `foo.zone.org`, external-dns will create a TXT record with the same dns name `foo.zone.org` and injected value of `"external-dns-1"`. The transfer of ownership can be done by modifying the value of the TXT record.  If no TXT record exists for the record or the value does not match its own `storage-id`, then external-dns will simply ignore it. 
 
 
 #### Goods
@@ -76,7 +76,7 @@ ConfigMap will be periodically resynced with the dns provider by fetching the dn
 
 #### Goods
 1. Not difficult to implement and easy to do the ownership transfer
-2. ConfigMap is a first class citized in kubernetes world
+2. ConfigMap is a first class citizen in kubernetes world
 3. Does not create dependency/restriction on DNS provider
 4. Cannot be easily messed with by other parties
 
@@ -100,9 +100,9 @@ A single loop iteration of external-dns operation:
 2. Get storage `Records()` 
 3. Pass `Records` (including ownership information) and list of endpoints to `Plan` to do the calculation
 4. Make a call to DNS provider with `Plan` provided change list
-5. If call succeeded pass the change list pass to storage `Assign()` to mark the records that are created 
+5. If call succeeded pass the change list to storage `Assign()` to mark the records that are created 
 
-Storage gets updated all the time via `Poll`.  
+Storage gets updated all the time via `Poll`. `Plan` does not call DNS provider directly. Good value of the `Poll` is to have simple rate limiting mechanism on DNS provider.  
 
 #### Notes:
 
@@ -117,7 +117,7 @@ Basic implementation of the storage interface:
 
 1. Storage has the dnsprovider object to retrieve the list of records, but it never makes the call to modify the records (think layer to help out with endpoint filtering)
 2. Record() - returns whatever is stored in the storage
-3. Assign(endpoints) - called when the records are registered with dns provider - hence storage need to mark its ownership. Therefore DNSProvider serves as a safe-guard from race conditions
+3. Assign(endpoints) - called when the records are registered with dns provider - hence storage need to mark its ownership. **Therefore DNSProvider serves as a safe-guard from race conditions**
 4. WaitForSync() - called in the beginning to populate the storage, in case of configmap would be the configmap creation and fetching the dns provider records
 5. Poll() - resync loop to stay-up-to-date with dns provider state
 
