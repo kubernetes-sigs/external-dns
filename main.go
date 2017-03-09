@@ -40,11 +40,20 @@ import (
 	"github.com/kubernetes-incubator/external-dns/source"
 )
 
+var (
+	version = "unknown"
+)
+
 func main() {
 	cfg := externaldns.NewConfig()
 	if err := cfg.ParseFlags(os.Args); err != nil {
 		log.Fatalf("flag parsing error: %v", err)
 	}
+	if cfg.Version {
+		fmt.Println(version)
+		os.Exit(0)
+	}
+
 	if err := validation.ValidateConfig(cfg); err != nil {
 		log.Errorf("config validation failed: %v", err)
 	}
