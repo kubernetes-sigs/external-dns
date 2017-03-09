@@ -1,4 +1,3 @@
-//drop and recreate the cache
 /*
 Copyright 2017 The Kubernetes Authors.
 
