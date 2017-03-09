@@ -45,8 +45,8 @@ type GoogleProvider struct {
 // Zones returns the list of hosted zones.
 func (p *GoogleProvider) Zones() (zones []*dns.ManagedZone, _ error) {
 	f := func(resp *dns.ManagedZonesListResponse) error {
+		// each page is processed sequentially, no need for a mutex here.
 		zones = append(zones, resp.ManagedZones...)
-
 		return nil
 	}
 
@@ -95,6 +95,7 @@ func (p *GoogleProvider) Records(zone string) (endpoints []endpoint.Endpoint, _ 
 			}
 
 			for _, rr := range r.Rrdatas {
+				// each page is processed sequentially, no need for a mutex here.
 				endpoints = append(endpoints, endpoint.Endpoint{
 					DNSName: r.Name,
 					Target:  rr,
