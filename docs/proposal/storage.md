@@ -1,12 +1,16 @@
 # Storage
 
+Initial discussion - https://github.com/kubernetes-incubator/external-dns/issues/44
+
 ## Purpose
 
-Provides a persistent storage with additional information to track the records created by the external-dns. Initial discussion - https://github.com/kubernetes-incubator/external-dns/issues/44
+One should not be afraid to use external-dns, because it can delete or overwrite the records preexisting in the DNS provider. 
 
 **Why we need it?**
 
 DNS provider (AWS Route53, Google DNS, etc.) stores dns records which are created via various means. Integration of External-DNS should be safe and should not delete or overwrite the records which it is not responsible for. Moreover, it should certainly be possible for multiple kubernetes clusters to share the same hosted zone within the dns provider, additionally multiple external-dns instances inside the same cluster should be able to co-exist without messing with the same set of records. 
+
+Storage provides a persistent storage with information to track the records created by the external-dns.
 
 This proposal introduces multiple possible implementation with the details depending on the setup. 
 
