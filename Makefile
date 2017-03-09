@@ -40,19 +40,21 @@ verify: test
 # The build targets allow to build the binary and docker image
 .PHONY: build build.docker
 
-PROJECT   ?= zalando-docker
-BINARY    ?= external-dns
-SOURCES    = $(shell find . -name '*.go')
-IMAGE     ?= gcr.io/$(PROJECT)/$(BINARY)
-VERSION   ?= $(shell git describe --tags --always --dirty)
+PROJECT       ?= zalando-docker
+BINARY        ?= external-dns
+SOURCES        = $(shell find . -name '*.go')
+IMAGE         ?= gcr.io/$(PROJECT)/$(BINARY)
+VERSION       ?= $(shell git describe --tags --always --dirty)
+BUILD_FLAGS   ?= -v
+LDFLAGS       ?= -X main.version=$(VERSION) -w -s
 
 build: build/$(BINARY)
 
 build/$(BINARY): $(SOURCES)
-	CGO_ENABLED=0 go build -o build/$(BINARY) .
+	CGO_ENABLED=0 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
 
 build.docker: build/linux-amd64/$(BINARY)
 	docker build --rm --tag "$(IMAGE):$(VERSION)" .
 
 build/linux-amd64/$(BINARY): $(SOURCES)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o build/linux-amd64/$(BINARY) .
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o build/linux-amd64/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .

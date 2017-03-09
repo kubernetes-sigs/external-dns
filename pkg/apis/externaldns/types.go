@@ -39,6 +39,7 @@ type Config struct {
 	DryRun        bool
 	Debug         bool
 	LogFormat     string
+	Version       bool
 }
 
 // NewConfig returns new Config object
@@ -59,5 +60,6 @@ func (cfg *Config) ParseFlags(args []string) error {
 	flags.BoolVar(&cfg.Once, "once", false, "run once and exit")
 	flags.BoolVar(&cfg.DryRun, "dry-run", true, "dry-run mode")
 	flags.BoolVar(&cfg.Debug, "debug", false, "debug mode")
+	flags.BoolVar(&cfg.Version, "version", false, "display the version")
 	return flags.Parse(args)
 }
