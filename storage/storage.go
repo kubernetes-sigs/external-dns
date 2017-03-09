@@ -16,26 +16,44 @@ limitations under the License.
 
 package storage
 
-import (
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-)
+import "github.com/kubernetes-incubator/external-dns/endpoint"
 
 // Storage is an interface which should enable external-dns track its state
 // Record() returns ALL records registered with DNS provider (TODO: consider returning only specific hosted zone)
-// each entry has a field `Owner` which is equal to the identifier passed to the external-dns
-// Update([]*Entry) updates the information in the storage by replacing all data by whatever is passed to Update method
-// WaitForSync waits until the cache is populated with data, this is required for ConfigMap implementation
-// in cases of storage implementation directly fetching freshest data from DnsProvider this interface should just return nil
+// each entry has a field `Owner` which is equal to the identifier passed to the external-dns which created the record
+// OwnRecords() returns list of records which are owned by current external-dns instance
+// Assign([]*endpoint.Endpoint) assigns the owner to the provided list of endpoints and updates the storage
+// WaitForSync() waits until the cache is populated with data, this should be called once to make sure that the storage is usable
+// Poll(stopChan <- chan struct{]}) periodically resyncs and updates the cache from dnsprovider
 type Storage interface {
-	Records() []*Entry
-	Update([]*Entry) error
+	Records() []*SharedEndpoint
+	OwnRecords() []endpoint.Endpoint
+	Assign([]endpoint.Endpoint) error
+	Poll(stopChan <-chan struct{})
 	WaitForSync() error
 }
 
-// Entry is a unit of data stored in the storage it should provide information such as
+// SharedEndpoint is a unit of data stored in the storage it should provide information such as
 // 1. Owner - which external-dns instance is managing the records
 // 2. DNSName and Target inherited from endpoint.Endpoint struct
-type Entry struct {
+type SharedEndpoint struct {
 	Owner string //refers to the Owner ID
 	endpoint.Endpoint
+}
+
+// updatedCache storage agnostic functionality to merge the existing cache records - including owner information
+// with the freshest dnsprovider registered records
+// make sure to include lock/unlock wrapper for the function call
+func updatedCache(records []endpoint.Endpoint, cacheRecords []*SharedEndpoint) []*SharedEndpoint {
+	newCache := make([]*SharedEndpoint, len(records))
+	for i, record := range records {
+		newCache[i] = &SharedEndpoint{Endpoint: record}
+		for _, cache := range cacheRecords {
+			if cache.DNSName == record.DNSName {
+				newCache[i].Owner = cache.Owner
+				break
+			}
+		}
+	}
+	return newCache
 }
