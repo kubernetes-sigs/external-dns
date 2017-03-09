@@ -86,37 +86,39 @@ ConfigMap will be periodically resynced with the dns provider by fetching the dn
 3. Not supported in older kubernetes clusters
 
 
+## Component integration
+
+Components: 
+* Source - all endpoints ( collection of ingress, service[type=LoadBalancer] etc.)
+* [Plan](https://github.com/kubernetes-incubator/external-dns/issues/13) - object responsible for the create of change lists in external-dns 
+* DNSProvider - interface to access the DNS provider API 
+
+A single loop iteration of external-dns operation: 
+
+1. Get all endpoints ( collection ingress, service[type=LoadBalancer] etc.) into collection of `endpoints` 
+2. Get storage `Records()` 
+3. Pass `Records` (including ownership information) and list of endpoints to `Plan` to do the calculation
+4. Make a call to DNS provider with `Plan` provided change list
+5. If call succeeded pass the change list pass to storage `Assign()` to mark the records that are created 
+
+Storage gets updated all the time via `Poll`.  
+
+#### Notes:
+
+1. DNS Provider should use batch operations
+2. DNS Provider should be called with CREATE operation (not UPSERT!) when the record does not yet exist! 
+3. Storage does not need to be in complete sync with DNS provider due to #2. Hence resolving the potential caveats of ConfigMap implementation 
+
+
 ## Implementation
 
-Basic implementation of the storage interface:
+Basic implementation of the storage interface: 
 
-Code:
-```
-// SharedEndpoint is a unit of data stored in the storage it should provide information such as
-// 1. Owner - which external-dns instance is managing the records
-// 2. DNSName and Target inherited from endpoint.Endpoint struct
-
-type SharedEndpoint struct {
-	Owner string //refers to the Owner ID
-	endpoint.Endpoint
-}
-
-// Storage is an interface which should enable external-dns track its state
-// Record() returns ALL records registered with DNS provider
-// each entry has a field `Owner` which is equal to the identifier passed to the external-dns which created the record
-// Assign([]*endpoint.Endpoint) assigns the owner to the provided list of endpoints and updates the storage
-// called after the records are already created in the dns provider
-// WaitForSync() waits until the cache is populated with data, this shuld be called once to make sure that the storage is usable
-// Poll(stopChan <- chan struct{]}) periodically resyncs and updates the cache from dnsprovider
-
-type Storage interface {
-	Records() []*SharedEndpoint
-	Assign([]endpoint.Endpoint) error
-	Poll(stopChan <-chan struct{})
-	WaitForSync() error
-}
-
-```
+1. Storage has the dnsprovider object to retrieve the list of records, but it never makes the call to modify the records (think layer to help out with endpoint filtering)
+2. Record() - returns whatever is stored in the storage
+3. Assign(endpoints) - called when the records are registered with dns provider - hence storage need to mark its ownership. Therefore DNSProvider serves as a safe-guard from race conditions
+4. WaitForSync() - called in the beginning to populate the storage, in case of configmap would be the configmap creation and fetching the dns provider records
+5. Poll() - resync loop to stay-up-to-date with dns provider state
 
 
 ### Example:
@@ -162,25 +164,3 @@ func (im *InMemoryStorage) refreshCache() error {
 	return nil
 }
 ```
-
-
-## Component integration
-
-Components: 
-* Source - all endpoints ( collection of ingress, service[type=LoadBalancer] etc.)
-* [Plan](https://github.com/kubernetes-incubator/external-dns/issues/13) - object responsible for the create of change lists in external-dns 
-* DNSProvider - interface to access the DNS provider API 
-
-A single loop of external-dns operation: 
-
-1. Get all endpoints ( collection ingress, service[type=LoadBalancer] etc.) into collection of `endpoints` 
-2. Get storage `Records()` 
-3. Pass storage information and list of endpoints to `Plan` to do the calculation
-4. Make a call to DNS provider with `Plan` provided change list
-5. If call succeeded pass the change list pass to storage `Assign()` to mark the records that are created 
-
-#### Notes:
-
-1. DNS Provider should use batch operations
-2. DNS Provider should be called with CREATE operation (not UPSERT!) when the record does not yet exist! 
-3. Storage does not need to be in complete sync with DNS provider due to #2. Hence resolving the potential caveats of ConfigMap implementation 
