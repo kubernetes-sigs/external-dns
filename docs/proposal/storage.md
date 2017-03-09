@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Provides a persistent storage with additional information to track the records created by the external-dns. 
+Provides a persistent storage with additional information to track the records created by the external-dns. Initial discussion - https://github.com/kubernetes-incubator/external-dns/issues/44
 
 **Why we need it?**
 
@@ -164,3 +164,5 @@ func (im *InMemoryStorage) refreshCache() error {
 	return nil
 }
 ```
+
+Initial PR: https://github.com/kubernetes-incubator/external-dns/pull/57
