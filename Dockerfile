@@ -14,6 +14,8 @@
 
 FROM alpine:3.5
 
+RUN apk --update --no-cache add ca-certificates
+
 COPY build/linux-amd64/external-dns /external-dns
 
 ENTRYPOINT ["/external-dns"]
