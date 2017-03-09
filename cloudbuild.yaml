@@ -10,7 +10,9 @@ steps:
   args:
   - build
   - --tag=gcr.io/$PROJECT_ID/external-dns
+  - --tag=gcr.io/$PROJECT_ID/external-dns:$REVISION_ID
   - .
 
 images:
 - gcr.io/$PROJECT_ID/external-dns
+- gcr.io/$PROJECT_ID/external-dns:$REVISION_ID
