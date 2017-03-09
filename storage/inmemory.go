@@ -22,9 +22,9 @@ import (
 
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/kubernetes-incubator/external-dns/dnsprovider"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/prometheus/common/log"
 )
 
 var (
