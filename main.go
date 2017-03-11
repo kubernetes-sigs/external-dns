@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -26,9 +25,6 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-
-	"golang.org/x/oauth2/google"
-	"google.golang.org/api/dns/v1"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -83,22 +79,9 @@ func main() {
 		Namespace: cfg.Namespace,
 	}
 
-	gcloud, err := google.DefaultClient(context.TODO(), dns.NdevClouddnsReadwriteScope)
+	dnsProvider, err := dnsprovider.NewGoogleProvider(cfg.GoogleProject, cfg.DryRun)
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	dnsClient, err := dns.New(gcloud)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	dnsProvider := &dnsprovider.GoogleProvider{
-		Project: cfg.GoogleProject,
-		DryRun:  cfg.DryRun,
-		ResourceRecordSetsClient: dnsClient.ResourceRecordSets,
-		ManagedZonesClient:       dnsClient.ManagedZones,
-		ChangesClient:            dnsClient.Changes,
 	}
 
 	ctrl := controller.Controller{
