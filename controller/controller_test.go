@@ -26,25 +26,6 @@ import (
 	"github.com/kubernetes-incubator/external-dns/source"
 )
 
-// mockSource returns mock endpoints.
-type mockSource struct {
-	RecordsStore []endpoint.Endpoint
-}
-
-// Endpoints returns the desired mock endpoints.
-func (s *mockSource) Endpoints() ([]endpoint.Endpoint, error) {
-	return s.RecordsStore, nil
-}
-
-// newMockSource creates a new mockSource returning the given endpoints.
-func newMockSource(endpoints []endpoint.Endpoint) source.Source {
-	source := &mockSource{
-		RecordsStore: endpoints,
-	}
-
-	return source
-}
-
 // mockDNSProvider returns mock endpoints and validates changes.
 type mockDNSProvider struct {
 	RecordsStore  []endpoint.Endpoint
@@ -108,7 +89,7 @@ func newMockDNSProvider(endpoints []endpoint.Endpoint, zone string, changes *pla
 // TestRunOnce tests that RunOnce correctly orchestrates the different components.
 func TestRunOnce(t *testing.T) {
 	// Fake some desired endpoints coming from our source.
-	source := newMockSource(
+	source := source.NewMockSource(
 		[]endpoint.Endpoint{
 			{
 				DNSName: "create-record",
