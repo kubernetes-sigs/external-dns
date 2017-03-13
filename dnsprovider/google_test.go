@@ -17,9 +17,10 @@ limitations under the License.
 package dnsprovider
 
 import (
-	"context"
 	"fmt"
 	"testing"
+
+	"golang.org/x/net/context"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
