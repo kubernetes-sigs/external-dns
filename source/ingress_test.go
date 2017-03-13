@@ -25,6 +25,9 @@ import (
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
+// Validates that IngressSource is a Source
+var _ Source = &IngressSource{}
+
 func TestIngress(t *testing.T) {
 	t.Run("endpointsFromIngress", testEndpointsFromIngress)
 	t.Run("Endpoints", testIngressEndpoints)
