@@ -18,16 +18,16 @@ package source
 
 import "github.com/kubernetes-incubator/external-dns/endpoint"
 
-// MultiSource is a Source that merges the endpoints of its nested Sources.
-type MultiSource struct {
-	Sources []Source
+// multiSource is a Source that merges the endpoints of its nested Sources.
+type multiSource struct {
+	children []Source
 }
 
 // Endpoints collects endpoints of all nested Sources and returns them in a single slice.
-func (ms *MultiSource) Endpoints() ([]endpoint.Endpoint, error) {
+func (ms *multiSource) Endpoints() ([]endpoint.Endpoint, error) {
 	result := []endpoint.Endpoint{}
 
-	for _, s := range ms.Sources {
+	for _, s := range ms.children {
 		endpoints, err := s.Endpoints()
 		if err != nil {
 			return nil, err
@@ -39,7 +39,7 @@ func (ms *MultiSource) Endpoints() ([]endpoint.Endpoint, error) {
 	return result, nil
 }
 
-// NewMultiSource creates a new MultiSource.
-func NewMultiSource(sources ...Source) Source {
-	return &MultiSource{Sources: sources}
+// NewMultiSource creates a new multiSource.
+func NewMultiSource(children ...Source) Source {
+	return &multiSource{children: children}
 }

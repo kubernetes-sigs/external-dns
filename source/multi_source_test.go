@@ -22,8 +22,8 @@ import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
-// Validates that MultiSource is a Source
-var _ Source = &MultiSource{}
+// Validates that multiSource is a Source
+var _ Source = &multiSource{}
 
 func TestMultiSource(t *testing.T) {
 	t.Run("Endpoints", testMultiSourceEndpoints)
