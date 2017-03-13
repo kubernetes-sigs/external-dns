@@ -24,18 +24,23 @@ import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
-// IngressSource is an implementation of Source for Kubernetes ingress objects.
+// ingressSource is an implementation of Source for Kubernetes ingress objects.
 // Ingress implementation will use the spec.rules.host value for the hostname
 // Ingress annotations are ignored
-type IngressSource struct {
-	Client    kubernetes.Interface
-	Namespace string
+type ingressSource struct {
+	client    kubernetes.Interface
+	namespace string
+}
+
+// NewIngressSource creates a new ingressSource with the given client and namespace scope.
+func NewIngressSource(client kubernetes.Interface, namespace string) Source {
+	return &ingressSource{client: client, namespace: namespace}
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all ingress resources on all namespaces
-func (sc *IngressSource) Endpoints() ([]endpoint.Endpoint, error) {
-	ingresses, err := sc.Client.Extensions().Ingresses(sc.Namespace).List(v1.ListOptions{})
+func (sc *ingressSource) Endpoints() ([]endpoint.Endpoint, error) {
+	ingresses, err := sc.client.Extensions().Ingresses(sc.namespace).List(v1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

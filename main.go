@@ -37,7 +37,6 @@ import (
 	"github.com/kubernetes-incubator/external-dns/dnsprovider"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns/validation"
-	"github.com/kubernetes-incubator/external-dns/source"
 )
 
 var (
@@ -78,10 +77,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	source := &source.ServiceSource{
-		Client:    client,
-		Namespace: cfg.Namespace,
-	}
+	source := NewServiceSource(client, cfg.Namespace)
 
 	gcloud, err := google.DefaultClient(context.TODO(), dns.NdevClouddnsReadwriteScope)
 	if err != nil {

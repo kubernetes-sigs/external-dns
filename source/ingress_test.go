@@ -220,10 +220,7 @@ func testIngressEndpoints(t *testing.T) {
 			}
 
 			fakeClient := fake.NewSimpleClientset()
-			ingressSource := &IngressSource{
-				Client:    fakeClient,
-				Namespace: ti.targetNamespace,
-			}
+			ingressSource := NewIngressSource(fakeClient, ti.targetNamespace)
 			for _, ingress := range ingresses {
 				_, err := fakeClient.Extensions().Ingresses(ingress.Namespace).Create(ingress)
 				if err != nil {
