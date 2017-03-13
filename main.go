@@ -74,10 +74,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	source := &source.ServiceSource{
-		Client:    client,
-		Namespace: cfg.Namespace,
-	}
+	source := source.NewServiceSource(client, cfg.Namespace)
 
 	dnsProvider, err := dnsprovider.NewGoogleProvider(cfg.GoogleProject, cfg.DryRun)
 	if err != nil {
