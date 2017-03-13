@@ -32,19 +32,24 @@ const (
 	controllerAnnotationValue = "dns-controller"
 )
 
-// ServiceSource is an implementation of Source for Kubernetes service objects.
+// serviceSource is an implementation of Source for Kubernetes service objects.
 // It will find all services that are under our jurisdiction, i.e. annotated
 // desired hostname and matching or no controller annotation. For each of the
 // matched services' external entrypoints it will return a corresponding
 // Endpoint object.
-type ServiceSource struct {
-	Client    kubernetes.Interface
-	Namespace string
+type serviceSource struct {
+	client    kubernetes.Interface
+	namespace string
+}
+
+// NewServiceSource creates a new serviceSource with the given client and namespace scope.
+func NewServiceSource(client kubernetes.Interface, namespace string) Source {
+	return &serviceSource{client: client, namespace: namespace}
 }
 
 // Endpoints returns endpoint objects for each service that should be processed.
-func (sc *ServiceSource) Endpoints() ([]endpoint.Endpoint, error) {
-	services, err := sc.Client.CoreV1().Services(sc.Namespace).List(v1.ListOptions{})
+func (sc *serviceSource) Endpoints() ([]endpoint.Endpoint, error) {
+	services, err := sc.client.CoreV1().Services(sc.namespace).List(v1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
