@@ -33,6 +33,7 @@ import (
 	"github.com/kubernetes-incubator/external-dns/dnsprovider"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns/validation"
+	"github.com/kubernetes-incubator/external-dns/source"
 )
 
 var (
@@ -73,7 +74,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	source := NewServiceSource(client, cfg.Namespace)
+	source := source.NewServiceSource(client, cfg.Namespace)
 
 	dnsProvider, err := dnsprovider.NewGoogleProvider(cfg.GoogleProject, cfg.DryRun)
 	if err != nil {
