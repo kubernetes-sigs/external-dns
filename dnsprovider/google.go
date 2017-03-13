@@ -17,12 +17,13 @@ limitations under the License.
 package dnsprovider
 
 import (
-	"context"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
 
+	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
+
 	"google.golang.org/api/dns/v1"
 	googleapi "google.golang.org/api/googleapi"
 
@@ -65,35 +66,35 @@ type changesServiceInterface interface {
 }
 
 type resourceRecordSetsService struct {
-	*dns.ResourceRecordSetsService
+	service *dns.ResourceRecordSetsService
 }
 
 func (r resourceRecordSetsService) List(project string, managedZone string) resourceRecordSetsListCallInterface {
-	return r.List(project, managedZone)
+	return r.service.List(project, managedZone)
 }
 
 type managedZonesService struct {
-	*dns.ManagedZonesService
+	service *dns.ManagedZonesService
 }
 
 func (m managedZonesService) Create(project string, managedzone *dns.ManagedZone) managedZonesCreateCallInterface {
-	return m.Create(project, managedzone)
+	return m.service.Create(project, managedzone)
 }
 
 func (m managedZonesService) Delete(project string, managedZone string) managedZonesDeleteCallInterface {
-	return m.Delete(project, managedZone)
+	return m.service.Delete(project, managedZone)
 }
 
 func (m managedZonesService) List(project string) managedZonesListCallInterface {
-	return m.List(project)
+	return m.service.List(project)
 }
 
 type changesService struct {
-	*dns.ChangesService
+	service *dns.ChangesService
 }
 
 func (c changesService) Create(project string, managedZone string, change *dns.Change) changesCreateCallInterface {
-	return c.Create(project, managedZone, change)
+	return c.service.Create(project, managedZone, change)
 }
 
 // googleProvider is an implementation of DNSProvider for Google CloudDNS.
