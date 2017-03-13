@@ -26,8 +26,8 @@ import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
-// Validates that ServiceSource is a Source
-var _ Source = &ServiceSource{}
+// Validates that serviceSource is a Source
+var _ Source = &serviceSource{}
 
 func TestService(t *testing.T) {
 	t.Run("Endpoints", testServiceEndpoints)
