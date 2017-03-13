@@ -1,0 +1,83 @@
+/*
+Copyright 2017 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package source
+
+import (
+	"testing"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+)
+
+// Validates that multiSource is a Source
+var _ Source = &multiSource{}
+
+func TestMultiSource(t *testing.T) {
+	t.Run("Endpoints", testMultiSourceEndpoints)
+}
+
+// testMultiSourceEndpoints tests merged endpoints from children are returned.
+func testMultiSourceEndpoints(t *testing.T) {
+	foo := endpoint.Endpoint{DNSName: "foo", Target: "8.8.8.8"}
+	bar := endpoint.Endpoint{DNSName: "bar", Target: "8.8.4.4"}
+
+	for _, tc := range []struct {
+		title           string
+		nestedEndpoints [][]endpoint.Endpoint
+		expected        []endpoint.Endpoint
+	}{
+		{
+			"no child sources return no endpoints",
+			nil,
+			[]endpoint.Endpoint{},
+		},
+		{
+			"single empty child source returns no endpoints",
+			[][]endpoint.Endpoint{{}},
+			[]endpoint.Endpoint{},
+		},
+		{
+			"single non-empty child source returns child's endpoints",
+			[][]endpoint.Endpoint{{foo}},
+			[]endpoint.Endpoint{foo},
+		},
+		{
+			"multiple non-empty child sources returns merged children's endpoints",
+			[][]endpoint.Endpoint{{foo}, {bar}},
+			[]endpoint.Endpoint{foo, bar},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			// Prepare the nested mock sources
+			sources := make([]Source, 0, len(tc.nestedEndpoints))
+
+			for _, endpoints := range tc.nestedEndpoints {
+				sources = append(sources, NewMockSource(endpoints))
+			}
+
+			// Create our object under test and get the endpoints.
+			source := NewMultiSource(sources...)
+
+			endpoints, err := source.Endpoints()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Validate returned endpoints against desired endpoints.
+			validateEndpoints(t, endpoints, tc.expected)
+		})
+	}
+}
