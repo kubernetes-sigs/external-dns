@@ -22,8 +22,8 @@ import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
-// Validates that MockSource is a Source
-var _ Source = &MockSource{}
+// Validates that mockSource is a Source
+var _ Source = &mockSource{}
 
 func TestMockSource(t *testing.T) {
 	t.Run("Endpoints", testMockSourceEndpoints)

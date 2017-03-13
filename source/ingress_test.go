@@ -25,6 +25,9 @@ import (
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
+// Validates that ingressSource is a Source
+var _ Source = &ingressSource{}
+
 func TestIngress(t *testing.T) {
 	t.Run("endpointsFromIngress", testEndpointsFromIngress)
 	t.Run("Endpoints", testIngressEndpoints)
@@ -220,10 +223,7 @@ func testIngressEndpoints(t *testing.T) {
 			}
 
 			fakeClient := fake.NewSimpleClientset()
-			ingressSource := &IngressSource{
-				Client:    fakeClient,
-				Namespace: ti.targetNamespace,
-			}
+			ingressSource := NewIngressSource(fakeClient, ti.targetNamespace)
 			for _, ingress := range ingresses {
 				_, err := fakeClient.Extensions().Ingresses(ingress.Namespace).Create(ingress)
 				if err != nil {
