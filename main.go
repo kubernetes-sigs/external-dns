@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -26,9 +25,6 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-
-	"golang.org/x/oauth2/google"
-	"google.golang.org/api/dns/v1"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -40,11 +36,20 @@ import (
 	"github.com/kubernetes-incubator/external-dns/source"
 )
 
+var (
+	version = "unknown"
+)
+
 func main() {
 	cfg := externaldns.NewConfig()
 	if err := cfg.ParseFlags(os.Args); err != nil {
 		log.Fatalf("flag parsing error: %v", err)
 	}
+	if cfg.Version {
+		fmt.Println(version)
+		os.Exit(0)
+	}
+
 	if err := validation.ValidateConfig(cfg); err != nil {
 		log.Errorf("config validation failed: %v", err)
 	}
@@ -69,32 +74,19 @@ func main() {
 		log.Fatal(err)
 	}
 
-	source := &source.ServiceSource{
-		Client:    client,
-		Namespace: cfg.Namespace,
-	}
+	source.Register("service", source.NewServiceSource(client, cfg.Namespace))
+	source.Register("ingress", source.NewIngressSource(client, cfg.Namespace))
 
-	gcloud, err := google.DefaultClient(context.TODO(), dns.NdevClouddnsReadwriteScope)
+	sources := source.NewMultiSource(source.LookupMultiple(cfg.Sources...)...)
+
+	dnsProvider, err := dnsprovider.NewGoogleProvider(cfg.GoogleProject, cfg.DryRun)
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	dnsClient, err := dns.New(gcloud)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	dnsProvider := &dnsprovider.GoogleProvider{
-		Project: cfg.GoogleProject,
-		DryRun:  cfg.DryRun,
-		ResourceRecordSetsClient: dnsClient.ResourceRecordSets,
-		ManagedZonesClient:       dnsClient.ManagedZones,
-		ChangesClient:            dnsClient.Changes,
 	}
 
 	ctrl := controller.Controller{
 		Zone:        cfg.GoogleZone,
-		Source:      source,
+		Source:      sources,
 		DNSProvider: dnsProvider,
 	}
 

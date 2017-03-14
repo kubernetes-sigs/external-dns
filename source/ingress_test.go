@@ -25,6 +25,9 @@ import (
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
+// Validates that ingressSource is a Source
+var _ Source = &ingressSource{}
+
 func TestIngress(t *testing.T) {
 	t.Run("endpointsFromIngress", testEndpointsFromIngress)
 	t.Run("Endpoints", testIngressEndpoints)
@@ -44,7 +47,7 @@ func testEndpointsFromIngress(t *testing.T) {
 			},
 			expected: []endpoint.Endpoint{
 				{
-					DNSName: "foo.bar",
+					DNSName: "foo.bar.",
 					Target:  "lb.com",
 				},
 			},
@@ -57,7 +60,7 @@ func testEndpointsFromIngress(t *testing.T) {
 			},
 			expected: []endpoint.Endpoint{
 				{
-					DNSName: "foo.bar",
+					DNSName: "foo.bar.",
 					Target:  "8.8.8.8",
 				},
 			},
@@ -71,19 +74,19 @@ func testEndpointsFromIngress(t *testing.T) {
 			},
 			expected: []endpoint.Endpoint{
 				{
-					DNSName: "foo.bar",
+					DNSName: "foo.bar.",
 					Target:  "8.8.8.8",
 				},
 				{
-					DNSName: "foo.bar",
+					DNSName: "foo.bar.",
 					Target:  "127.0.0.1",
 				},
 				{
-					DNSName: "foo.bar",
+					DNSName: "foo.bar.",
 					Target:  "elb.com",
 				},
 				{
-					DNSName: "foo.bar",
+					DNSName: "foo.bar.",
 					Target:  "alb.com",
 				},
 			},
@@ -151,11 +154,11 @@ func testIngressEndpoints(t *testing.T) {
 			},
 			expected: []endpoint.Endpoint{
 				{
-					DNSName: "example.org",
+					DNSName: "example.org.",
 					Target:  "8.8.8.8",
 				},
 				{
-					DNSName: "new.org",
+					DNSName: "new.org.",
 					Target:  "lb.com",
 				},
 			},
@@ -179,11 +182,11 @@ func testIngressEndpoints(t *testing.T) {
 			},
 			expected: []endpoint.Endpoint{
 				{
-					DNSName: "example.org",
+					DNSName: "example.org.",
 					Target:  "8.8.8.8",
 				},
 				{
-					DNSName: "new.org",
+					DNSName: "new.org.",
 					Target:  "lb.com",
 				},
 			},
@@ -207,7 +210,7 @@ func testIngressEndpoints(t *testing.T) {
 			},
 			expected: []endpoint.Endpoint{
 				{
-					DNSName: "example.org",
+					DNSName: "example.org.",
 					Target:  "8.8.8.8",
 				},
 			},
@@ -220,10 +223,7 @@ func testIngressEndpoints(t *testing.T) {
 			}
 
 			fakeClient := fake.NewSimpleClientset()
-			ingressSource := &IngressSource{
-				Client:    fakeClient,
-				Namespace: ti.targetNamespace,
-			}
+			ingressSource := NewIngressSource(fakeClient, ti.targetNamespace)
 			for _, ingress := range ingresses {
 				_, err := fakeClient.Extensions().Ingresses(ingress.Namespace).Create(ingress)
 				if err != nil {

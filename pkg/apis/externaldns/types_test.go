@@ -40,6 +40,7 @@ func TestParseFlags(t *testing.T) {
 				DryRun:        true,
 				Debug:         false,
 				LogFormat:     defaultLogFormat,
+				Version:       false,
 			},
 		},
 		{
@@ -54,6 +55,7 @@ func TestParseFlags(t *testing.T) {
 				DryRun:        true,
 				Debug:         false,
 				LogFormat:     defaultLogFormat,
+				Version:       false,
 			},
 		},
 		{
@@ -68,6 +70,7 @@ func TestParseFlags(t *testing.T) {
 				DryRun:        true,
 				Debug:         false,
 				LogFormat:     defaultLogFormat,
+				Version:       false,
 			},
 		},
 		{
@@ -87,6 +90,7 @@ func TestParseFlags(t *testing.T) {
 				DryRun:        true,
 				Debug:         false,
 				LogFormat:     "json",
+				Version:       false,
 			},
 		},
 		{
@@ -98,7 +102,8 @@ func TestParseFlags(t *testing.T) {
 				"--google-zone", "zone",
 				"--health-port", "1234",
 				"--dry-run", "true",
-				"--debug"}},
+				"--debug",
+				"--version"}},
 			expected: &Config{
 				InCluster:     true,
 				KubeConfig:    "/some/path",
@@ -108,6 +113,7 @@ func TestParseFlags(t *testing.T) {
 				DryRun:        true,
 				Debug:         true,
 				LogFormat:     "yaml",
+				Version:       true,
 			},
 		},
 		{
