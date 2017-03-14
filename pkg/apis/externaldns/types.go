@@ -32,6 +32,7 @@ type Config struct {
 	InCluster     bool
 	KubeConfig    string
 	Namespace     string
+	Sources       []string
 	GoogleProject string
 	GoogleZone    string
 	HealthPort    string
@@ -53,6 +54,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	flags.BoolVar(&cfg.InCluster, "in-cluster", false, "whether to use in-cluster config")
 	flags.StringVar(&cfg.KubeConfig, "kubeconfig", "", "path to a local kubeconfig file")
 	flags.StringVar(&cfg.Namespace, "namespace", v1.NamespaceAll, "the namespace to look for endpoints; all namespaces by default")
+	flags.StringArrayVar(&cfg.Sources, "source", nil, "the sources to gather endpoints from")
 	flags.StringVar(&cfg.GoogleProject, "google-project", "", "gcloud project to target")
 	flags.StringVar(&cfg.GoogleZone, "google-zone", "", "gcloud dns hosted zone to target")
 	flags.StringVar(&cfg.HealthPort, "health-port", defaultHealthPort, "health port to listen on")
