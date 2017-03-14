@@ -32,9 +32,10 @@ type Config struct {
 	InCluster     bool
 	KubeConfig    string
 	Namespace     string
+	Zone          string
 	Sources       []string
+	DNSProvider   string
 	GoogleProject string
-	GoogleZone    string
 	HealthPort    string
 	Once          bool
 	DryRun        bool
@@ -54,9 +55,10 @@ func (cfg *Config) ParseFlags(args []string) error {
 	flags.BoolVar(&cfg.InCluster, "in-cluster", false, "whether to use in-cluster config")
 	flags.StringVar(&cfg.KubeConfig, "kubeconfig", "", "path to a local kubeconfig file")
 	flags.StringVar(&cfg.Namespace, "namespace", v1.NamespaceAll, "the namespace to look for endpoints; all namespaces by default")
+	flags.StringVar(&cfg.Zone, "zone", "", "the ID of the hosted zone to target")
 	flags.StringArrayVar(&cfg.Sources, "source", nil, "the sources to gather endpoints from")
+	flags.StringVar(&cfg.DNSProvider, "dns-provider", "", "the DNS provider to materialize the records in")
 	flags.StringVar(&cfg.GoogleProject, "google-project", "", "gcloud project to target")
-	flags.StringVar(&cfg.GoogleZone, "google-zone", "", "gcloud dns hosted zone to target")
 	flags.StringVar(&cfg.HealthPort, "health-port", defaultHealthPort, "health port to listen on")
 	flags.StringVar(&cfg.LogFormat, "log-format", defaultLogFormat, "log format output. options: [\"text\", \"json\"]")
 	flags.BoolVar(&cfg.Once, "once", false, "run once and exit")
