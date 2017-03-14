@@ -28,6 +28,7 @@ func TestInMemoryProvider(t *testing.T) {
 	t.Run("validateChangeBatch", testInMemoryValidateChangeBatch)
 	t.Run("ApplyChanges", testInMemoryApplyChanges)
 	t.Run("NewInMemoryProvider", testNewInMemoryProvider)
+	t.Run("CreateZone", testInMemoryCreateZone)
 }
 
 func testInMemoryFindByType(t *testing.T) {
@@ -930,4 +931,14 @@ func sameEndpoints(a, b []endpoint.Endpoint) bool {
 		}
 	}
 	return true
+}
+
+func testInMemoryCreateZone(t *testing.T) {
+	im := NewInMemoryProvider()
+	if err := im.CreateZone("zone"); err != nil {
+		t.Error(err)
+	}
+	if err := im.CreateZone("zone"); err != ErrZoneAlreadyExists {
+		t.Errorf("should fail with zone already exists")
+	}
 }
