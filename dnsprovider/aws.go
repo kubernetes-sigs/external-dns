@@ -23,6 +23,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -44,6 +45,26 @@ type Route53API interface {
 type AWSProvider struct {
 	Client Route53API
 	DryRun bool
+}
+
+// NewAWSProvider initializes a new AWS Route53 based DNSProvider.
+func NewAWSProvider(dryRun bool) (DNSProvider, error) {
+	config := aws.NewConfig()
+
+	session, err := session.NewSessionWithOptions(session.Options{
+		Config:            *config,
+		SharedConfigState: session.SharedConfigEnable,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	provider := &AWSProvider{
+		Client: route53.New(session),
+		DryRun: dryRun,
+	}
+
+	return provider, nil
 }
 
 // Zones returns the list of hosted zones.
