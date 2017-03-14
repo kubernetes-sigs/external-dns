@@ -51,7 +51,7 @@ func main() {
 	}
 
 	if err := validation.ValidateConfig(cfg); err != nil {
-		log.Errorf("config validation failed: %v", err)
+		log.Fatalf("config validation failed: %v", err)
 	}
 
 	if cfg.LogFormat == "json" {
@@ -79,15 +79,23 @@ func main() {
 
 	sources := source.NewMultiSource(source.LookupMultiple(cfg.Sources...)...)
 
-	dnsProvider, err := dnsprovider.NewGoogleProvider(cfg.GoogleProject, cfg.DryRun)
+	googleProvider, err := dnsprovider.NewGoogleProvider(cfg.GoogleProject, cfg.DryRun)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	awsProvider, err := dnsprovider.NewAWSProvider(cfg.DryRun)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dnsprovider.Register("google", googleProvider)
+	dnsprovider.Register("aws", awsProvider)
+
 	ctrl := controller.Controller{
-		Zone:        cfg.GoogleZone,
+		Zone:        cfg.Zone,
 		Source:      sources,
-		DNSProvider: dnsProvider,
+		DNSProvider: dnsprovider.Lookup(cfg.DNSProvider),
 	}
 
 	if cfg.Once {

@@ -29,8 +29,14 @@ func ValidateConfig(cfg *externaldns.Config) error {
 	if cfg.LogFormat != "text" && cfg.LogFormat != "json" {
 		return fmt.Errorf("unsupported log format: %s", cfg.LogFormat)
 	}
-	if cfg.GoogleProject == "" || cfg.GoogleZone == "" {
-		return errors.New("google project or zone missing")
+	if cfg.Zone == "" {
+		return errors.New("hosted zone is missing")
+	}
+	if len(cfg.Sources) == 0 {
+		return errors.New("no sources specified")
+	}
+	if cfg.DNSProvider == "" {
+		return errors.New("no provider specified")
 	}
 
 	return nil
