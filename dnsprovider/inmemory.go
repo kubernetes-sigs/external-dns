@@ -26,6 +26,8 @@ import (
 var (
 	defaultType = "A"
 
+	// ErrZoneAlreadyExists error returned when zone cannot be created when it already exists
+	ErrZoneAlreadyExists = errors.New("specified zone already exists")
 	// ErrZoneNotFound error returned when specified zone does not exists
 	ErrZoneNotFound = errors.New("specified zone not found")
 	// ErrRecordAlreadyExists when create request is sent but record already exists
@@ -59,6 +61,15 @@ type InMemoryRecord struct {
 	Type    string
 	Payload string
 	endpoint.Endpoint
+}
+
+// CreateZone adds new zone if not present
+func (im *InMemoryProvider) CreateZone(newZone string) error {
+	if _, exist := im.zones[newZone]; exist {
+		return ErrZoneAlreadyExists
+	}
+	im.zones[newZone] = zone{}
+	return nil
 }
 
 // Records returns the list of endpoints
