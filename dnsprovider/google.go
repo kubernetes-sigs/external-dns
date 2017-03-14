@@ -113,23 +113,29 @@ type googleProvider struct {
 
 // NewGoogleProvider initializes a new Google CloudDNS based DNSProvider.
 func NewGoogleProvider(project string, dryRun bool) (DNSProvider, error) {
+	return &googleProvider{
+		project: project,
+		dryRun:  dryRun,
+	}, nil
+}
+
+// Initialize sets up the Google API client.
+func (p *googleProvider) Initialize() error {
 	gcloud, err := google.DefaultClient(context.TODO(), dns.NdevClouddnsReadwriteScope)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	dnsClient, err := dns.New(gcloud)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &googleProvider{
-		project: project,
-		dryRun:  dryRun,
-		resourceRecordSetsClient: resourceRecordSetsService{dnsClient.ResourceRecordSets},
-		managedZonesClient:       managedZonesService{dnsClient.ManagedZones},
-		changesClient:            changesService{dnsClient.Changes},
-	}, nil
+	p.resourceRecordSetsClient = resourceRecordSetsService{dnsClient.ResourceRecordSets}
+	p.managedZonesClient = managedZonesService{dnsClient.ManagedZones}
+	p.changesClient = changesService{dnsClient.Changes}
+
+	return nil
 }
 
 // Zones returns the list of hosted zones.

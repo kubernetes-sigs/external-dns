@@ -92,10 +92,17 @@ func main() {
 	dnsprovider.Register("google", googleProvider)
 	dnsprovider.Register("aws", awsProvider)
 
+	provider := dnsprovider.Lookup(cfg.DNSProvider)
+	if provider == nil {
+		log.Fatalf("unknown dns provider: %s", cfg.DNSProvider)
+	}
+
+	provider.Initialize()
+
 	ctrl := controller.Controller{
 		Zone:        cfg.Zone,
 		Source:      sources,
-		DNSProvider: dnsprovider.Lookup(cfg.DNSProvider),
+		DNSProvider: provider,
 	}
 
 	if cfg.Once {
