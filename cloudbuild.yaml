@@ -3,9 +3,6 @@ steps:
   args:
   - build
   - -o=build/linux-amd64/external-dns
-  - -v
-  - -ldflags
-  - -X main.version=$REVISION_ID -w -s
   - .
   env:
   - PROJECT_ROOT=github.com/kubernetes-incubator/external-dns
@@ -13,9 +10,7 @@ steps:
   args:
   - build
   - --tag=gcr.io/$PROJECT_ID/external-dns
-  - --tag=gcr.io/$PROJECT_ID/external-dns:$REVISION_ID
   - .
 
 images:
 - gcr.io/$PROJECT_ID/external-dns
-- gcr.io/$PROJECT_ID/external-dns:$REVISION_ID
