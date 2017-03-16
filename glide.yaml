@@ -1,26 +1,31 @@
 package: github.com/kubernetes-incubator/external-dns
 import:
 - package: github.com/Sirupsen/logrus
-  version: ~0.11.2
+  version: ~0.11.5
 - package: github.com/aws/aws-sdk-go
-  version: ~1.7.3
+  version: ~1.7.9
   subpackages:
   - aws
+  - aws/session
   - service/route53
 - package: github.com/google/uuid
   version: ~0.2.0
 - package: github.com/spf13/pflag
 - package: github.com/kubernetes/repo-infra
+- package: golang.org/x/net
+  subpackages:
+  - context
 - package: golang.org/x/oauth2
   subpackages:
   - google
 - package: google.golang.org/api
   subpackages:
   - dns/v1
+  - googleapi
 - package: k8s.io/client-go
   version: ~2.0.0
   subpackages:
   - kubernetes
   - pkg/api/v1
-  - rest
+  - pkg/apis/extensions/v1beta1
   - tools/clientcmd

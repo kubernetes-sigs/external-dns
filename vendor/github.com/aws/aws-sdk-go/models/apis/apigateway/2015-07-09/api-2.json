@@ -1873,19 +1873,14 @@
     },
     "CreateDomainNameRequest":{
       "type":"structure",
-      "required":[
-        "domainName",
-        "certificateName",
-        "certificateBody",
-        "certificatePrivateKey",
-        "certificateChain"
-      ],
+      "required":["domainName"],
       "members":{
         "domainName":{"shape":"String"},
         "certificateName":{"shape":"String"},
         "certificateBody":{"shape":"String"},
         "certificatePrivateKey":{"shape":"String"},
-        "certificateChain":{"shape":"String"}
+        "certificateChain":{"shape":"String"},
+        "certificateArn":{"shape":"String"}
       }
     },
     "CreateModelRequest":{
@@ -2426,6 +2421,7 @@
       "members":{
         "domainName":{"shape":"String"},
         "certificateName":{"shape":"String"},
+        "certificateArn":{"shape":"String"},
         "certificateUploadDate":{"shape":"Timestamp"},
         "distributionDomainName":{"shape":"String"}
       }
