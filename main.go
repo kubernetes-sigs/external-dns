@@ -25,6 +25,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -66,6 +67,7 @@ func main() {
 
 	stopChan := make(chan struct{}, 1)
 
+	go serveMetrics(cfg.MetricsPort)
 	go registerHandlers(cfg.HealthPort)
 	go handleSigterm(stopChan)
 
@@ -149,4 +151,9 @@ func newClient(cfg *externaldns.Config) (*kubernetes.Clientset, error) {
 	}
 
 	return client, nil
+}
+
+func serveMetrics(port string) {
+	http.Handle("/metrics", promhttp.Handler())
+	log.Fatal(http.ListenAndServe(port, nil))
 }
