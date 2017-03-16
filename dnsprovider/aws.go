@@ -48,8 +48,8 @@ type AWSProvider struct {
 }
 
 // NewAWSProvider initializes a new AWS Route53 based DNSProvider.
-func NewAWSProvider(dryRun bool) (DNSProvider, error) {
-	return &AWSProvider{DryRun: dryRun}, nil
+func NewAWSProvider(dryRun bool) DNSProvider {
+	return &AWSProvider{DryRun: dryRun}
 }
 
 // Initialize sets up the AWS API client.

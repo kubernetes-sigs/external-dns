@@ -112,11 +112,8 @@ type googleProvider struct {
 }
 
 // NewGoogleProvider initializes a new Google CloudDNS based DNSProvider.
-func NewGoogleProvider(project string, dryRun bool) (DNSProvider, error) {
-	return &googleProvider{
-		project: project,
-		dryRun:  dryRun,
-	}, nil
+func NewGoogleProvider(project string, dryRun bool) DNSProvider {
+	return &googleProvider{project: project, dryRun: dryRun}
 }
 
 // Initialize sets up the Google API client.

@@ -79,18 +79,8 @@ func main() {
 
 	sources := source.NewMultiSource(source.LookupMultiple(cfg.Sources...)...)
 
-	googleProvider, err := dnsprovider.NewGoogleProvider(cfg.GoogleProject, cfg.DryRun)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	awsProvider, err := dnsprovider.NewAWSProvider(cfg.DryRun)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	dnsprovider.Register("google", googleProvider)
-	dnsprovider.Register("aws", awsProvider)
+	dnsprovider.Register("google", dnsprovider.NewGoogleProvider(cfg.GoogleProject, cfg.DryRun))
+	dnsprovider.Register("aws", dnsprovider.NewAWSProvider(cfg.DryRun))
 
 	provider := dnsprovider.Lookup(cfg.DNSProvider)
 	if provider == nil {
