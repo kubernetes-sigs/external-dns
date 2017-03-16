@@ -42,56 +42,11 @@ Please have a look at [the milestones](https://github.com/kubernetes-incubator/e
 
 ## Example
 
-The following gives a rough view of a barely working `external-dns`. There are a couple of requirements to make the following work for you.
-* Have a local Go 1.7+ development environment.
-* Have access to a Google project with the DNS API enabled.
-* Have access to a Kubernetes cluster that supports exposing Services, e.g. GKE.
-* Have a properly setup, **unused** and **empty** hosted zone in Google.
+The [tutorials](docs/tutorials/gke.md) section contains a detailed example of how to setup `external-dns` on Google Container Engine.
 
-Build the binary.
+## Building
 
-```console
-$ mkdir -p $GOPATH/src/github.com/kubernetes-incubator/external-dns
-$ cd $GOPATH/src/github.com/kubernetes-incubator/external-dns
-$ git clone https://github.com/kubernetes-incubator/external-dns.git .
-$ go build -o build/external-dns .
-```
-
-Run an application and expose it via a Kubernetes Service.
-
-```console
-$ kubectl run nginx --image=nginx --replicas=1 --port=80
-$ kubectl expose deployment nginx --port=80 --target-port=80 --type=LoadBalancer
-```
-
-Annotate the service with your desired external DNS name (change `example.org` to your domain).
-
-```console
-$ kubectl annotate service nginx "external-dns.alpha.kubernetes.io/hostname=nginx.example.org."
-```
-
-Run a single sync loop of `external-dns`. In a real setup this would run constantly in your cluster. Change the Google project and zone identifier to an **unused** and **empty** hosted zone in Google. `external-dns` keeps the entire zone in sync with the desired records, which means that it will remove any records it doesn't know about. However, this will change in the future so that it tolerates and doesn't mess with existing records.
-
-```console
-$ build/external-dns --google-project example-project --google-zone example-org --once --dry-run=false
-```
-
-Check your cloud provider and see that the DNS record was created with the value of your load balancer IP.
-Give DNS some time to propagate, then check that it resolves to your service IP.
-
-```console
-$ dig +short nginx.example.org.
-1.2.3.4
-```
-
-Remove the annotation, delete or re-create the service, run `external-dns` again and watch it synchronize the DNS record accordingly.
-
-When you're done testing remove the DNS record from the hosted zone via the UI and delete the example deployment.
-
-```console
-$ kubectl delete service nginx
-$ kubectl delete deployment nginx
-```
+You need a working Go 1.7+ development environment. Then run `make build` to build `external-dns` for your platform. The binary will land at `build/external-dns`.
 
 ## Getting involved!
 
