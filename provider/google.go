@@ -65,6 +65,7 @@ type resourceRecordSetsService struct {
 }
 
 func (r resourceRecordSetsService) List(project string, managedZone string) resourceRecordSetsListCallInterface {
+	trackAPICall()
 	return r.service.List(project, managedZone)
 }
 
@@ -73,10 +74,12 @@ type managedZonesService struct {
 }
 
 func (m managedZonesService) Create(project string, managedzone *dns.ManagedZone) managedZonesCreateCallInterface {
+	trackAPICall()
 	return m.service.Create(project, managedzone)
 }
 
 func (m managedZonesService) List(project string) managedZonesListCallInterface {
+	trackAPICall()
 	return m.service.List(project)
 }
 
@@ -85,6 +88,7 @@ type changesService struct {
 }
 
 func (c changesService) Create(project string, managedZone string, change *dns.Change) changesCreateCallInterface {
+	trackAPICall()
 	return c.service.Create(project, managedZone, change)
 }
 
@@ -259,6 +263,8 @@ func (p *googleProvider) submitChange(change *dns.Change) error {
 		}
 	}
 
+	trackAPICall()
+
 	return nil
 }
 
@@ -337,4 +343,8 @@ func newRecord(endpoint *endpoint.Endpoint) *dns.ResourceRecordSet {
 		Ttl:     300,
 		Type:    suitableType(endpoint),
 	}
+}
+
+func trackAPICall() {
+	metrics.APICallsTotal.WithLabelValues("google").Inc()
 }

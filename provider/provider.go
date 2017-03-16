@@ -20,6 +20,8 @@ import (
 	"net"
 	"strings"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
@@ -28,6 +30,23 @@ import (
 type Provider interface {
 	Records(zone string) ([]*endpoint.Endpoint, error)
 	ApplyChanges(zone string, changes *plan.Changes) error
+}
+
+var metrics = struct {
+	APICallsTotal *prometheus.CounterVec
+}{
+	APICallsTotal: prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "external_dns",
+			Name:      "api_calls_total",
+			Help:      "Total number of API calls to DNS providers",
+		},
+		[]string{"dns_provider"},
+	),
+}
+
+func init() {
+	prometheus.MustRegister(metrics.APICallsTotal)
 }
 
 // suitableType returns the DNS resource record type suitable for the target.
