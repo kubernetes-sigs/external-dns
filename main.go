@@ -79,23 +79,23 @@ func main() {
 
 	sources := source.NewMultiSource(source.LookupMultiple(cfg.Sources...)...)
 
-	googleProvider, err := dnsprovider.NewGoogleProvider(cfg.GoogleProject, cfg.DryRun)
+	var provider dnsprovider.DNSProvider
+	switch cfg.DNSProvider {
+	case "google":
+		provider, err = dnsprovider.NewGoogleProvider(cfg.GoogleProject, cfg.DryRun)
+	case "aws":
+		provider, err = dnsprovider.NewAWSProvider(cfg.DryRun)
+	default:
+		log.Fatalf("unknown dns provider: %s", cfg.DNSProvider)
+	}
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	awsProvider, err := dnsprovider.NewAWSProvider(cfg.DryRun)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	dnsprovider.Register("google", googleProvider)
-	dnsprovider.Register("aws", awsProvider)
 
 	ctrl := controller.Controller{
 		Zone:        cfg.Zone,
 		Source:      sources,
-		DNSProvider: dnsprovider.Lookup(cfg.DNSProvider),
+		DNSProvider: provider,
 	}
 
 	if cfg.Once {

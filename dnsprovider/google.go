@@ -123,13 +123,15 @@ func NewGoogleProvider(project string, dryRun bool) (DNSProvider, error) {
 		return nil, err
 	}
 
-	return &googleProvider{
+	provider := &googleProvider{
 		project: project,
 		dryRun:  dryRun,
 		resourceRecordSetsClient: resourceRecordSetsService{dnsClient.ResourceRecordSets},
 		managedZonesClient:       managedZonesService{dnsClient.ManagedZones},
 		changesClient:            changesService{dnsClient.Changes},
-	}, nil
+	}
+
+	return provider, nil
 }
 
 // Zones returns the list of hosted zones.
