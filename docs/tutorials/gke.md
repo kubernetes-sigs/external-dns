@@ -39,6 +39,15 @@ external-dns-test.gcp.zalan.do.  NS    21600  ns-cloud-e1.googledomains.com.,ns-
 
 In this case it's `ns-cloud-{e1-e4}.googledomains.com.` but your's could slightly differ, e.g. `{a1-a4}`, `{b1-b4}` etc.
 
+Tell the parent zone where to find the DNS records for this zone by adding the corresponding NS records there. Assuming the parent zone is "gcp-zalan-do" and the domain is "gcp.zalan.do" and that it's also hosted at Google we would do the following.
+
+```console
+$ gcloud dns record-sets transaction start --zone "gcp-zalan-do"
+$ gcloud dns record-sets transaction add ns-cloud-e{1..4}.googledomains.com. \
+    --name "external-dns-test.gcp.zalan.do." --ttl 300 --type NS --zone "gcp-zalan-do"
+$ gcloud dns record-sets transaction execute --zone "gcp-zalan-do"
+```
+
 Connect your `kubectl` client to the cluster you just created.
 
 ```console
@@ -127,7 +136,7 @@ $ dig +short @ns-cloud-e1.googledomains.com. nginx.external-dns-test.gcp.zalan.d
 104.155.60.49
 ```
 
-If you hooked up your DNS zone with it's parent zone correctly you can use `curl` to access your site.
+Given you hooked up your DNS zone with its parent zone you can use `curl` to access your site.
 
 ```console
 $ curl nginx.external-dns-test.gcp.zalan.do
@@ -178,7 +187,7 @@ dig +short @ns-cloud-e1.googledomains.com. via-ingress.external-dns-test.gcp.zal
 130.211.46.224
 ```
 
-If you've setup your zone correctly, try with `curl` as well.
+Try with `curl` as well.
 
 ```console
 $ curl via-ingress.external-dns-test.gcp.zalan.do
@@ -208,4 +217,13 @@ Give `external-dns` some time to clean up the DNS records for you. Then delete t
 ```console
 $ gcloud dns managed-zones delete "external-dns-test-gcp-zalan-do"
 $ gcloud container clusters delete "external-dns"
+```
+
+Also delete the NS records for your removed zone from the parent zone.
+
+```console
+$ gcloud dns record-sets transaction start --zone "gcp-zalan-do"
+$ gcloud dns record-sets transaction remove ns-cloud-e{1..4}.googledomains.com. \
+    --name "external-dns-test.gcp.zalan.do." --ttl 300 --type NS --zone "gcp-zalan-do"
+$ gcloud dns record-sets transaction execute --zone "gcp-zalan-do"
 ```
