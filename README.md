@@ -54,6 +54,7 @@ Build the binary.
 $ mkdir -p $GOPATH/src/github.com/kubernetes-incubator/external-dns
 $ cd $GOPATH/src/github.com/kubernetes-incubator/external-dns
 $ git clone https://github.com/kubernetes-incubator/external-dns.git .
+$ glide install --strip-vendor
 $ go build -o build/external-dns .
 ```
 
