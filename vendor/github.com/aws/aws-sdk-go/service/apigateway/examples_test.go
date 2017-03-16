@@ -194,11 +194,12 @@ func ExampleAPIGateway_CreateDomainName() {
 	svc := apigateway.New(sess)
 
 	params := &apigateway.CreateDomainNameInput{
-		CertificateBody:       aws.String("String"), // Required
-		CertificateChain:      aws.String("String"), // Required
-		CertificateName:       aws.String("String"), // Required
-		CertificatePrivateKey: aws.String("String"), // Required
 		DomainName:            aws.String("String"), // Required
+		CertificateArn:        aws.String("String"),
+		CertificateBody:       aws.String("String"),
+		CertificateChain:      aws.String("String"),
+		CertificateName:       aws.String("String"),
+		CertificatePrivateKey: aws.String("String"),
 	}
 	resp, err := svc.CreateDomainName(params)
 

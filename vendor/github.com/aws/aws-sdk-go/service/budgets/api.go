@@ -231,6 +231,10 @@ func (c *Budgets) CreateSubscriberRequest(input *CreateSubscriberInput) (req *re
 //   The exception is thrown when customer tries to create a record (e.g. budget)
 //   that already exists.
 //
+//   * ErrCodeNotFoundException "NotFoundException"
+//   This exception is thrown if a requested entity is not found. E.g., if a budget
+//   id doesn't exist for an account ID.
+//
 func (c *Budgets) CreateSubscriber(input *CreateSubscriberInput) (*CreateSubscriberOutput, error) {
 	req, out := c.CreateSubscriberRequest(input)
 	err := req.Send()

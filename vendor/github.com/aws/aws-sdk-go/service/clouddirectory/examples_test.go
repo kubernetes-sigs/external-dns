@@ -1073,6 +1073,32 @@ func ExampleCloudDirectory_ListObjectChildren() {
 	fmt.Println(resp)
 }
 
+func ExampleCloudDirectory_ListObjectParentPaths() {
+	sess := session.Must(session.NewSession())
+
+	svc := clouddirectory.New(sess)
+
+	params := &clouddirectory.ListObjectParentPathsInput{
+		DirectoryArn: aws.String("Arn"), // Required
+		ObjectReference: &clouddirectory.ObjectReference{ // Required
+			Selector: aws.String("SelectorObjectReference"),
+		},
+		MaxResults: aws.Int64(1),
+		NextToken:  aws.String("NextToken"),
+	}
+	resp, err := svc.ListObjectParentPaths(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
 func ExampleCloudDirectory_ListObjectParents() {
 	sess := session.Must(session.NewSession())
 

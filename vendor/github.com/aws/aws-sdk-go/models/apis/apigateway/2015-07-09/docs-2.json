@@ -439,7 +439,7 @@
     "DocumentationPartType": {
       "base": null,
       "refs": {
-        "DocumentationPartLocation$type": "<p>The type of API entity to which the documentation content applies. It is a valid and required field for API entity types of <code>API</code>, <code>AUTHORIZER</code>, <code>MODEL</code>, <code>RESOURCE</code>, <code>METHOD</code>, <code>PATH_PARAMETER</code>, <code>QUERY_PARAMETER</code>, <code>REQUEST_HEADER</code>, <code>REQUEST_BODY</code>, <code>RESPONSE</code>, <code>RESPONSE_HEADER</code>, and <code>RESPONSE_BODY</code>. Content inheritance does not apply to any entity of the <code>API</code>, <code>AUTHROZER</code>, <code>MODEL</code>, or <code>RESOURCE</code> type.</p>",
+        "DocumentationPartLocation$type": "<p>The type of API entity to which the documentation content applies. It is a valid and required field for API entity types of <code>API</code>, <code>AUTHORIZER</code>, <code>MODEL</code>, <code>RESOURCE</code>, <code>METHOD</code>, <code>PATH_PARAMETER</code>, <code>QUERY_PARAMETER</code>, <code>REQUEST_HEADER</code>, <code>REQUEST_BODY</code>, <code>RESPONSE</code>, <code>RESPONSE_HEADER</code>, and <code>RESPONSE_BODY</code>. Content inheritance does not apply to any entity of the <code>API</code>, <code>AUTHROZER</code>, <code>METHOD</code>, <code>MODEL</code>, <code>REQUEST_BODY</code>, or <code>RESOURCE</code> type.</p>",
         "GetDocumentationPartsRequest$type": "<p>The type of API entities of the to-be-retrieved documentation parts. </p>"
       }
     },
@@ -1286,11 +1286,12 @@
         "CreateDocumentationVersionRequest$documentationVersion": "<p>[Required] The version identifier of the new snapshot.</p>",
         "CreateDocumentationVersionRequest$stageName": "<p>The stage name to be associated with the new documentation snapshot.</p>",
         "CreateDocumentationVersionRequest$description": "<p>A description about the new documentation snapshot.</p>",
-        "CreateDomainNameRequest$domainName": "<p>The name of the <a>DomainName</a> resource.</p>",
-        "CreateDomainNameRequest$certificateName": "<p>The name of the certificate.</p>",
-        "CreateDomainNameRequest$certificateBody": "<p>The body of the server certificate provided by your certificate authority.</p>",
-        "CreateDomainNameRequest$certificatePrivateKey": "<p>Your certificate's private key.</p>",
-        "CreateDomainNameRequest$certificateChain": "<p>The intermediate certificates and optionally the root certificate, one after the other without any blank lines. If you include the root certificate, your certificate chain must start with intermediate certificates and end with the root certificate. Use the intermediate certificates that were provided by your certificate authority. Do not include any intermediaries that are not in the chain of trust path.</p>",
+        "CreateDomainNameRequest$domainName": "<p>(Required) The name of the <a>DomainName</a> resource.</p>",
+        "CreateDomainNameRequest$certificateName": "<p>The user-friendly name of the certificate.</p>",
+        "CreateDomainNameRequest$certificateBody": "<p>[Deprecated] The body of the server certificate provided by your certificate authority.</p>",
+        "CreateDomainNameRequest$certificatePrivateKey": "<p>[Deprecated] Your certificate's private key.</p>",
+        "CreateDomainNameRequest$certificateChain": "<p>[Deprecated] The intermediate certificates and optionally the root certificate, one after the other without any blank lines. If you include the root certificate, your certificate chain must start with intermediate certificates and end with the root certificate. Use the intermediate certificates that were provided by your certificate authority. Do not include any intermediaries that are not in the chain of trust path.</p>",
+        "CreateDomainNameRequest$certificateArn": "<p>The reference to an AWS-managed certificate. AWS Certificate Manager is the only supported source.</p>",
         "CreateModelRequest$restApiId": "<p>The <a>RestApi</a> identifier under which the <a>Model</a> will be created.</p>",
         "CreateModelRequest$name": "<p>The name of the model.</p>",
         "CreateModelRequest$description": "<p>The description of the model.</p>",
@@ -1362,6 +1363,7 @@
         "DocumentationVersions$position": null,
         "DomainName$domainName": "<p>The name of the <a>DomainName</a> resource.</p>",
         "DomainName$certificateName": "<p>The name of the certificate.</p>",
+        "DomainName$certificateArn": "<p>The reference to an AWS-managed certificate. AWS Certificate Manager is the only supported source.</p>",
         "DomainName$distributionDomainName": "<p>The domain name of the Amazon CloudFront distribution. For more information, see the <a href=\"http://aws.amazon.com/documentation/cloudfront/\" target=\"_blank\">Amazon CloudFront documentation</a>.</p>",
         "DomainNames$position": null,
         "ExportResponse$contentType": "<p>The content-type header value in the HTTP response. This will correspond to a valid 'accept' type in the request.</p>",
@@ -1647,16 +1649,16 @@
     "Timestamp": {
       "base": null,
       "refs": {
-        "ApiKey$createdDate": "<p>The date when the API Key was created, in <a href=\"http://www.iso.org/iso/home/standards/iso8601.htm\" target=\"_blank\">ISO 8601 format</a>.</p>",
-        "ApiKey$lastUpdatedDate": "<p>When the API Key was last updated, in ISO 8601 format.</p>",
-        "ClientCertificate$createdDate": "<p>The date when the client certificate was created, in <a href=\"http://www.iso.org/iso/home/standards/iso8601.htm\" target=\"_blank\">ISO 8601 format</a>.</p>",
-        "ClientCertificate$expirationDate": "<p>The date when the client certificate will expire, in <a href=\"http://www.iso.org/iso/home/standards/iso8601.htm\" target=\"_blank\">ISO 8601 format</a>.</p>",
+        "ApiKey$createdDate": "<p>The timestamp when the API Key was created.</p>",
+        "ApiKey$lastUpdatedDate": "<p>The timestamp when the API Key was last updated.</p>",
+        "ClientCertificate$createdDate": "<p>The timestamp when the client certificate was created.</p>",
+        "ClientCertificate$expirationDate": "<p>The timestamp when the client certificate will expire.</p>",
         "Deployment$createdDate": "<p>The date and time that the deployment resource was created.</p>",
         "DocumentationVersion$createdDate": "<p>The date when the API documentation snapshot is created.</p>",
-        "DomainName$certificateUploadDate": "<p>The date when the certificate was uploaded, in <a href=\"http://www.iso.org/iso/home/standards/iso8601.htm\" target=\"_blank\">ISO 8601 format</a>.</p>",
-        "RestApi$createdDate": "<p>The date when the API was created, in <a href=\"http://www.iso.org/iso/home/standards/iso8601.htm\" target=\"_blank\">ISO 8601 format</a>.</p>",
-        "Stage$createdDate": "<p>The date and time that the stage was created, in <a href=\"http://www.iso.org/iso/home/standards/iso8601.htm\" target=\"_blank\">ISO 8601 format</a>.</p>",
-        "Stage$lastUpdatedDate": "<p>The date and time that information about the stage was last updated, in <a href=\"http://www.iso.org/iso/home/standards/iso8601.htm\" target=\"_blank\">ISO 8601 format</a>.</p>"
+        "DomainName$certificateUploadDate": "<p>The timestamp when the certificate was uploaded.</p>",
+        "RestApi$createdDate": "<p>The timestamp when the API was created.</p>",
+        "Stage$createdDate": "<p>The timestamp when the stage was created.</p>",
+        "Stage$lastUpdatedDate": "<p>The timestamp when the stage last updated.</p>"
       }
     },
     "TooManyRequestsException": {
