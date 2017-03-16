@@ -31,19 +31,19 @@ func initInMemoryDNSProvider() (*dnsprovider.InMemoryProvider, string) {
 	registry.CreateZone(zone)
 	registry.ApplyChanges(zone, &plan.Changes{
 		Create: []endpoint.Endpoint{
-			endpoint.Endpoint{
+			{
 				DNSName: "foo.org",
 				Target:  "foo-lb.org",
 			},
-			endpoint.Endpoint{
+			{
 				DNSName: "bar.org",
 				Target:  "bar-lb.org",
 			},
-			endpoint.Endpoint{
+			{
 				DNSName: "baz.org",
 				Target:  "baz-lb.org",
 			},
-			endpoint.Endpoint{
+			{
 				DNSName: "qux.org",
 				Target:  "qux-lb.org",
 			},
@@ -69,34 +69,34 @@ func TestUpdatedCache(t *testing.T) {
 			title:   "no records, should produce empty cache",
 			records: []endpoint.Endpoint{},
 			cacheRecords: []*SharedEndpoint{
-				&SharedEndpoint{},
+				{},
 			},
 			expected: []*SharedEndpoint{},
 		},
 		{
 			title: "new records, empty cache",
 			records: []endpoint.Endpoint{
-				endpoint.Endpoint{
+				{
 					DNSName: "foo.org",
 					Target:  "elb.com",
 				},
-				endpoint.Endpoint{
+				{
 					DNSName: "bar.org",
 					Target:  "alb.com",
 				},
 			},
 			cacheRecords: []*SharedEndpoint{
-				&SharedEndpoint{},
+				{},
 			},
 			expected: []*SharedEndpoint{
-				&SharedEndpoint{
+				{
 					Owner: "",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "foo.org",
 						Target:  "elb.com",
 					},
 				},
-				&SharedEndpoint{
+				{
 					Owner: "",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "bar.org",
@@ -108,28 +108,28 @@ func TestUpdatedCache(t *testing.T) {
 		{
 			title: "new records, non-empty cache",
 			records: []endpoint.Endpoint{
-				endpoint.Endpoint{
+				{
 					DNSName: "foo.org",
 					Target:  "elb.com",
 				},
-				endpoint.Endpoint{
+				{
 					DNSName: "bar.org",
 					Target:  "alb.com",
 				},
-				endpoint.Endpoint{
+				{
 					DNSName: "owned.org",
 					Target:  "8.8.8.8",
 				},
 			},
 			cacheRecords: []*SharedEndpoint{
-				&SharedEndpoint{
+				{
 					Owner: "me",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "owned.org",
 						Target:  "8.8.8.8",
 					},
 				},
-				&SharedEndpoint{
+				{
 					Owner: "me",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "to-be-deleted.org",
@@ -138,21 +138,21 @@ func TestUpdatedCache(t *testing.T) {
 				},
 			},
 			expected: []*SharedEndpoint{
-				&SharedEndpoint{
+				{
 					Owner: "",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "foo.org",
 						Target:  "elb.com",
 					},
 				},
-				&SharedEndpoint{
+				{
 					Owner: "",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "bar.org",
 						Target:  "alb.com",
 					},
 				},
-				&SharedEndpoint{
+				{
 					Owner: "me",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "owned.org",
