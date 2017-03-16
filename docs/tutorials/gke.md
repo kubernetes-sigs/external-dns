@@ -48,6 +48,8 @@ $ gcloud dns record-sets transaction add ns-cloud-e{1..4}.googledomains.com. \
 $ gcloud dns record-sets transaction execute --zone "gcp-zalan-do"
 ```
 
+If you decide not to create a new zone but reuse an existing one, make sure it's currently **unused** and **empty**. This version of `external-dns` will remove all records it doesn't recognize from the zone.
+
 Connect your `kubectl` client to the cluster you just created.
 
 ```console
@@ -81,6 +83,8 @@ spec:
         - --google-project=zalando-external-dns-test
         - --dry-run=false
 ```
+
+Use `dry-run=true` if you want to be extra careful on the first run. Note, that you will not see any records created when you are running in dry-run mode. You can, however, inspect the logs and watch what would have been done.
 
 Create the following sample application to test that `external-dns` works.
 
