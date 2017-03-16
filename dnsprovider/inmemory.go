@@ -53,11 +53,6 @@ func NewInMemoryProvider() *InMemoryProvider {
 	}
 }
 
-// Initialize is a no-op for the InMemoryProvider.
-func (im *InMemoryProvider) Initialize() error {
-	return nil
-}
-
 // InMemoryRecord - record stored in memory
 // has additional fields:
 // Type - type of string (TODO: Type should probably be part of endpoint struct)

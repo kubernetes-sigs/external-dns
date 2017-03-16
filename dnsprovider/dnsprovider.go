@@ -23,7 +23,6 @@ import (
 
 // DNSProvider defines the interface DNS providers should implement.
 type DNSProvider interface {
-	Initialize() error
 	Records(zone string) ([]endpoint.Endpoint, error)
 	ApplyChanges(zone string, changes *plan.Changes) error
 }

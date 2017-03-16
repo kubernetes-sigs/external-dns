@@ -48,12 +48,7 @@ type AWSProvider struct {
 }
 
 // NewAWSProvider initializes a new AWS Route53 based DNSProvider.
-func NewAWSProvider(dryRun bool) DNSProvider {
-	return &AWSProvider{DryRun: dryRun}
-}
-
-// Initialize sets up the AWS API client.
-func (p *AWSProvider) Initialize() error {
+func NewAWSProvider(dryRun bool) (DNSProvider, error) {
 	config := aws.NewConfig()
 
 	session, err := session.NewSessionWithOptions(session.Options{
@@ -61,12 +56,15 @@ func (p *AWSProvider) Initialize() error {
 		SharedConfigState: session.SharedConfigEnable,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	p.Client = route53.New(session)
+	provider := &AWSProvider{
+		Client: route53.New(session),
+		DryRun: dryRun,
+	}
 
-	return nil
+	return provider, nil
 }
 
 // Zones returns the list of hosted zones.

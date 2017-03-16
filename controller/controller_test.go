@@ -33,11 +33,6 @@ type mockDNSProvider struct {
 	ExpectChanges *plan.Changes
 }
 
-// Initialize is a no-op for the mockDNSProvider.
-func (p *mockDNSProvider) Initialize() error {
-	return nil
-}
-
 // Records returns the desired mock endpoints.
 func (p *mockDNSProvider) Records(zone string) ([]endpoint.Endpoint, error) {
 	return p.RecordsStore, nil
