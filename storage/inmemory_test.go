@@ -20,10 +20,142 @@ import (
 	"testing"
 
 	"github.com/kubernetes-incubator/external-dns/dnsprovider"
+	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
 func TestInMemory(t *testing.T) {
+	t.Run("TestRefreshCache", testInMemoryRefreshCache)
+	t.Run("TestOwnRecords", testInMemoryOwnRecords)
+	t.Run("TestRecords", testInMemoryRecords)
 	t.Run("TestNewInMemoryStorage", testNewInMemoryStorage)
+}
+
+func testInMemoryRefreshCache(t *testing.T) {
+
+}
+
+func testInMemoryOwnRecords(t *testing.T) {
+	for _, ti := range []struct {
+		title    string
+		owner    string
+		cache    map[string]*SharedEndpoint
+		expected []endpoint.Endpoint
+	}{
+		{
+			title:    "empty cache",
+			owner:    "me",
+			cache:    map[string]*SharedEndpoint{},
+			expected: []endpoint.Endpoint{},
+		},
+		{
+			title: "non-empty cache, empty result",
+			owner: "me",
+			cache: map[string]*SharedEndpoint{
+				"bar.org": &SharedEndpoint{
+					Owner: "you",
+					Endpoint: endpoint.Endpoint{
+						DNSName: "bar.org",
+						Target:  "elb.com",
+					},
+				},
+			},
+			expected: []endpoint.Endpoint{},
+		},
+		{
+			title: "non-empty cache, filter owned records",
+			owner: "me",
+			cache: map[string]*SharedEndpoint{
+				"foo.org": &SharedEndpoint{
+					Owner: "me",
+					Endpoint: endpoint.Endpoint{
+						DNSName: "foo.org",
+						Target:  "elb.com",
+					},
+				},
+				"bar.org": &SharedEndpoint{
+					Owner: "you",
+					Endpoint: endpoint.Endpoint{
+						DNSName: "bar.org",
+						Target:  "elb.com",
+					},
+				},
+			},
+			expected: []endpoint.Endpoint{
+				endpoint.Endpoint{
+					DNSName: "foo.org",
+					Target:  "elb.com",
+				},
+			},
+		},
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			im := &InMemoryStorage{
+				cache: ti.cache,
+				owner: ti.owner,
+			}
+			if !sameEndpoints(im.OwnRecords(), ti.expected) {
+				t.Errorf("unexpected result")
+			}
+		})
+	}
+}
+
+func testInMemoryRecords(t *testing.T) {
+	for _, ti := range []struct {
+		title    string
+		cache    map[string]*SharedEndpoint
+		expected []*SharedEndpoint
+	}{
+		{
+			title:    "empty cache",
+			cache:    map[string]*SharedEndpoint{},
+			expected: []*SharedEndpoint{},
+		},
+		{
+			title: "non-empty cache",
+			cache: map[string]*SharedEndpoint{
+				"foo.org": &SharedEndpoint{
+					Owner: "instance-id",
+					Endpoint: endpoint.Endpoint{
+						DNSName: "foo.org",
+						Target:  "elb.com",
+					},
+				},
+				"bar.org": &SharedEndpoint{
+					Owner: "another-id",
+					Endpoint: endpoint.Endpoint{
+						DNSName: "bar.org",
+						Target:  "elb.com",
+					},
+				},
+			},
+			expected: []*SharedEndpoint{
+				&SharedEndpoint{
+					Owner: "instance-id",
+					Endpoint: endpoint.Endpoint{
+						DNSName: "foo.org",
+						Target:  "elb.com",
+					},
+				},
+				&SharedEndpoint{
+					Owner: "another-id",
+					Endpoint: endpoint.Endpoint{
+						DNSName: "bar.org",
+						Target:  "elb.com",
+					},
+				},
+			},
+		},
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			im := &InMemoryStorage{
+				cache: ti.cache,
+			}
+			if !sameSharedEndpoints(im.Records(), ti.expected) {
+				t.Errorf("unexpected result")
+			}
+		})
+	}
 }
 
 func testNewInMemoryStorage(t *testing.T) {

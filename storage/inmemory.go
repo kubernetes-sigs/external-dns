@@ -58,7 +58,9 @@ func NewInMemoryStorage(registry dnsprovider.DNSProvider, owner, zone string) (*
 
 // Records returns the current records from the in-memory storage
 func (im *InMemoryStorage) Records() []*SharedEndpoint {
-	records := make([]*SharedEndpoint, len(im.cache))
+	im.Lock()
+	defer im.Unlock()
+	records := make([]*SharedEndpoint, 0, len(im.cache))
 	for _, record := range im.cache {
 		records = append(records, record)
 	}

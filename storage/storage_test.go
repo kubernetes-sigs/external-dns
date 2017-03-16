@@ -199,3 +199,32 @@ func sameSharedEndpoints(a, b []*SharedEndpoint) bool {
 	}
 	return true
 }
+
+func sameEndpoints(a, b []endpoint.Endpoint) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for _, recordA := range a {
+		found := false
+		for _, recordB := range b {
+			if recordA.DNSName == recordB.DNSName && recordA.Target == recordB.Target {
+				found = true
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	for _, recordB := range b {
+		found := false
+		for _, recordA := range a {
+			if recordB.DNSName == recordA.DNSName && recordB.Target == recordA.Target {
+				found = true
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
