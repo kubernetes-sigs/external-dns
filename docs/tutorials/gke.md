@@ -79,7 +79,7 @@ spec:
         - --zone=external-dns-test-gcp-zalan-do
         - --source=service
         - --source=ingress
-        - --dns-provider=google
+        - --provider=google
         - --google-project=zalando-external-dns-test
         - --dry-run=false
 ```

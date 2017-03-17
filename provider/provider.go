@@ -14,15 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package dnsprovider
+package provider
 
 import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
-// DNSProvider defines the interface DNS providers should implement.
-type DNSProvider interface {
+// Provider defines the interface DNS providers should implement.
+type Provider interface {
 	Records(zone string) ([]endpoint.Endpoint, error)
 	ApplyChanges(zone string, changes *plan.Changes) error
 }

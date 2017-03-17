@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package dnsprovider
+package provider
 
 import (
 	"fmt"
@@ -41,14 +41,14 @@ type Route53API interface {
 	DeleteHostedZone(*route53.DeleteHostedZoneInput) (*route53.DeleteHostedZoneOutput, error)
 }
 
-// AWSProvider is an implementation of DNSProvider for AWS Route53.
+// AWSProvider is an implementation of Provider for AWS Route53.
 type AWSProvider struct {
 	Client Route53API
 	DryRun bool
 }
 
-// NewAWSProvider initializes a new AWS Route53 based DNSProvider.
-func NewAWSProvider(dryRun bool) (DNSProvider, error) {
+// NewAWSProvider initializes a new AWS Route53 based Provider.
+func NewAWSProvider(dryRun bool) (Provider, error) {
 	config := aws.NewConfig()
 
 	session, err := session.NewSessionWithOptions(session.Options{
