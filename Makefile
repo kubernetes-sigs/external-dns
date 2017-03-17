@@ -19,7 +19,7 @@ cover:
 	go get github.com/wadey/gocovmerge
 	$(eval PKGS := $(shell go list ./... | grep -v /vendor/))
 	$(eval PKGS_DELIM := $(shell echo $(PKGS) | sed -e 's/ /,/g'))
-	go list -f '{{if or (len .TestGoFiles) (len .XTestGoFiles)}}go test -test.v -test.timeout=120s -covermode=count -coverprofile={{.Name}}_{{len .Imports}}_{{len .Deps}}.coverprofile -coverpkg $(PKGS_DELIM) {{.ImportPath}}{{end}}' $(PKGS) | xargs -0 sh -c 
+	go list -f '{{if or (len .TestGoFiles) (len .XTestGoFiles)}}go test -test.v -test.timeout=120s -covermode=count -coverprofile={{.Name}}_{{len .Imports}}_{{len .Deps}}.coverprofile -coverpkg $(PKGS_DELIM) {{.ImportPath}}{{end}}' $(PKGS) | xargs -0 sh -c
 	gocovmerge `ls *.coverprofile` > cover.out
 	rm *.coverprofile
 
@@ -40,10 +40,9 @@ verify: test
 # The build targets allow to build the binary and docker image
 .PHONY: build build.docker
 
-PROJECT       ?= zalando-docker
 BINARY        ?= external-dns
 SOURCES        = $(shell find . -name '*.go')
-IMAGE         ?= gcr.io/$(PROJECT)/$(BINARY)
+IMAGE         ?= registry.opensource.zalan.do/teapot/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty)
 BUILD_FLAGS   ?= -v
 LDFLAGS       ?= -X main.version=$(VERSION) -w -s
@@ -52,6 +51,9 @@ build: build/$(BINARY)
 
 build/$(BINARY): $(SOURCES)
 	CGO_ENABLED=0 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
+
+build.push: build.docker
+	docker push "$(IMAGE):$(VERSION)"
 
 build.docker: build/linux-amd64/$(BINARY)
 	docker build --rm --tag "$(IMAGE):$(VERSION)" .
