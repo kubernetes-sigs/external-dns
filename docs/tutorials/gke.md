@@ -73,7 +73,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: gcr.io/zalando-docker/external-dns:476c3efddff941ac1b168895c2ba1d5693adc8cc
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.1.0-beta.0
         args:
         - --in-cluster
         - --zone=external-dns-test-gcp-zalan-do
