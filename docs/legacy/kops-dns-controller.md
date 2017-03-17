@@ -56,7 +56,7 @@ The DNS record mappings try to "do the right thing", but what this means is diff
 We consult the `Status.LoadBalancer.Ingress` records on the ingress.  For each one, we create a record.
 If the record is an IP address, we add an A record.  If the record is a hostname (AWS ELB), we use a CNAME.
 
-We would like to use an ALIAS, but we have not yet done this because of limitations of the dnsprovider.
+We would like to use an ALIAS, but we have not yet done this because of limitations of the DNS provider.
 
 ### Pods
 

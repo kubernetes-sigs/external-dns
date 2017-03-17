@@ -22,7 +22,7 @@ external-dns --in-cluster=false --dnsprovider=aws --source=ingress --source=serv
     aws.go
     google.go
     fake.go 
-    dnsprovider.go - interface
+    provider.go - interface
 ./pkg/apis/externaldns - types that we will want to be subject to apimachinery (e.g. configuration)
 ./pkg/apis/externaldns/validation - validation for our types
 ./source/ - list of sources
