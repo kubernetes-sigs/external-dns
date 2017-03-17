@@ -21,8 +21,8 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
-	"github.com/kubernetes-incubator/external-dns/dnsprovider"
 	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/kubernetes-incubator/external-dns/provider"
 	"github.com/kubernetes-incubator/external-dns/source"
 )
 
@@ -35,13 +35,13 @@ import (
 type Controller struct {
 	Zone string
 
-	Source      source.Source
-	DNSProvider dnsprovider.DNSProvider
+	Source   source.Source
+	Provider provider.Provider
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
 func (c *Controller) RunOnce() error {
-	records, err := c.DNSProvider.Records(c.Zone)
+	records, err := c.Provider.Records(c.Zone)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func (c *Controller) RunOnce() error {
 
 	plan = plan.Calculate()
 
-	return c.DNSProvider.ApplyChanges(c.Zone, &plan.Changes)
+	return c.Provider.ApplyChanges(c.Zone, &plan.Changes)
 }
 
 // Run runs RunOnce in a loop with a delay until stopChan receives a value.

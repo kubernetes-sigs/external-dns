@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package dnsprovider
+package provider
 
 import (
 	"strings"
@@ -97,7 +97,7 @@ func (c changesService) Create(project string, managedZone string, change *dns.C
 	return c.service.Create(project, managedZone, change)
 }
 
-// googleProvider is an implementation of DNSProvider for Google CloudDNS.
+// googleProvider is an implementation of Provider for Google CloudDNS.
 type googleProvider struct {
 	// The Google project to work in
 	project string
@@ -111,8 +111,8 @@ type googleProvider struct {
 	changesClient changesServiceInterface
 }
 
-// NewGoogleProvider initializes a new Google CloudDNS based DNSProvider.
-func NewGoogleProvider(project string, dryRun bool) (DNSProvider, error) {
+// NewGoogleProvider initializes a new Google CloudDNS based Provider.
+func NewGoogleProvider(project string, dryRun bool) (Provider, error) {
 	gcloud, err := google.DefaultClient(context.TODO(), dns.NdevClouddnsReadwriteScope)
 	if err != nil {
 		return nil, err

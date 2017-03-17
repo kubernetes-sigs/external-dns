@@ -56,7 +56,7 @@ func TestValidateFlags(t *testing.T) {
 	}
 
 	cfg = newValidConfig(t)
-	cfg.DNSProvider = ""
+	cfg.Provider = ""
 	if err := ValidateConfig(cfg); err == nil {
 		t.Error("missing provider should fail")
 	}
@@ -68,7 +68,7 @@ func newValidConfig(t *testing.T) *externaldns.Config {
 	cfg.LogFormat = "json"
 	cfg.Zone = "test-zone"
 	cfg.Sources = []string{"test-source"}
-	cfg.DNSProvider = "test-provider"
+	cfg.Provider = "test-provider"
 
 	if err := ValidateConfig(cfg); err != nil {
 		t.Fatalf("newValidConfig should return valid config")

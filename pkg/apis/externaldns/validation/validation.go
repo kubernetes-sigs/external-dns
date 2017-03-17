@@ -35,7 +35,7 @@ func ValidateConfig(cfg *externaldns.Config) error {
 	if len(cfg.Sources) == 0 {
 		return errors.New("no sources specified")
 	}
-	if cfg.DNSProvider == "" {
+	if cfg.Provider == "" {
 		return errors.New("no provider specified")
 	}
 
