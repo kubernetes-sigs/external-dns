@@ -23,15 +23,6 @@ import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
-const (
-	// The annotation used for figuring out which controller is responsible
-	controllerAnnotationKey = "external-dns.alpha.kubernetes.io/controller"
-	// The annotation used for defining the desired hostname
-	hostnameAnnotationKey = "external-dns.alpha.kubernetes.io/hostname"
-	// The value of the controller annotation so that we feel resposible
-	controllerAnnotationValue = "dns-controller"
-)
-
 // serviceSource is an implementation of Source for Kubernetes service objects.
 // It will find all services that are under our jurisdiction, i.e. annotated
 // desired hostname and matching or no controller annotation. For each of the

@@ -215,6 +215,43 @@ func testIngressEndpoints(t *testing.T) {
 				},
 			},
 		},
+		{
+			title:           "our controller type is dns-controller",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						controllerAnnotationKey: controllerAnnotationValue,
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected: []endpoint.Endpoint{
+				{
+					DNSName: "example.org.",
+					Target:  "8.8.8.8",
+				},
+			},
+		},
+		{
+			title:           "different controller types are ignored",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						controllerAnnotationKey: "some-other-tool",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected: []endpoint.Endpoint{},
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			ingresses := make([]*v1beta1.Ingress, 0)
@@ -243,18 +280,20 @@ func testIngressEndpoints(t *testing.T) {
 
 // ingress specific helper functions
 type fakeIngress struct {
-	dnsnames  []string
-	ips       []string
-	hostnames []string
-	namespace string
-	name      string
+	dnsnames    []string
+	ips         []string
+	hostnames   []string
+	namespace   string
+	name        string
+	annotations map[string]string
 }
 
 func (ing fakeIngress) Ingress() *v1beta1.Ingress {
 	ingress := &v1beta1.Ingress{
 		ObjectMeta: v1.ObjectMeta{
-			Namespace: ing.namespace,
-			Name:      ing.name,
+			Namespace:   ing.namespace,
+			Name:        ing.name,
+			Annotations: ing.annotations,
 		},
 		Spec: v1beta1.IngressSpec{
 			Rules: []v1beta1.IngressRule{},
