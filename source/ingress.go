@@ -61,6 +61,12 @@ func (sc *ingressSource) Endpoints() ([]endpoint.Endpoint, error) {
 func endpointsFromIngress(ing *v1beta1.Ingress) []endpoint.Endpoint {
 	var endpoints []endpoint.Endpoint
 
+	// Check controller annotation to see if we are responsible.
+	controller, exists := ing.Annotations[controllerAnnotationKey]
+	if exists && controller != controllerAnnotationValue {
+		return endpoints
+	}
+
 	for _, rule := range ing.Spec.Rules {
 		if rule.Host == "" {
 			continue
