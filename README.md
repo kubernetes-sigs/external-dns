@@ -58,7 +58,7 @@ $ external-dns --zone example-org --google-project example-project --dry-run=fal
 Check that ExternalDNS created the desired DNS record for your service and that it points to its load balancer's IP. Then try to resolve it.
 
 ```console
-$ digshort nginx.example.org.
+$ dig +short nginx.example.org.
 104.155.60.49
 ```
 
