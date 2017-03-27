@@ -28,8 +28,8 @@ However, EnternalDNS can solve that for you as well.
 
 There will be support for Google CloudDNS and AWS Route53 with ALIAS records. There's a desire to support CoreDNS as well as Azure DNS. We're open to review and add other providers if the community believes them valuable.
 
-Initial support for Google CloudDNS is targeted for the `v0.1` release. You can already test it using version `v0.1.0-beta.0`.
-Initial support for AWS Route53 is targeted for the `v0.2` release. However, you can already test it with CNAME instead of ALIAS using version `v0.1.0-beta.0`.
+Initial support for Google CloudDNS is targeted for the `v0.1` release. You can already test it with version `v0.1.0-beta.1` onwards.
+Initial support for AWS Route53 is targeted for the `v0.2` release. However, you can already test it with CNAME instead of ALIAS using version `v0.1.0`.
 There are no plans regarding other providers at the moment.
 
 ### What Kubernetes objects are supported?

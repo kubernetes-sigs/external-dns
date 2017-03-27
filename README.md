@@ -1,6 +1,7 @@
 # External DNS
 [![Build Status](https://travis-ci.org/kubernetes-incubator/external-dns.svg?branch=master)](https://travis-ci.org/kubernetes-incubator/external-dns)
 [![Coverage Status](https://coveralls.io/repos/github/kubernetes-incubator/external-dns/badge.svg?branch=master)](https://coveralls.io/github/kubernetes-incubator/external-dns?branch=master)
+[![GitHub release](https://img.shields.io/github/release/kubernetes-incubator/external-dns.svg)](https://github.com/kubernetes-incubator/external-dns/releases)
 
 ExternalDNS synchronizes exposed Services and Ingresses with cloud DNS providers.
 
@@ -12,7 +13,7 @@ In a broader sense, it allows you to control DNS records dynamically via Kuberne
 
 # Quickstart
 
-ExternalDNS' current release is `v0.1.0-beta.0` which allows to keep a managed zone in Google's [CloudDNS](https://cloud.google.com/dns/docs/) service synchronized with Services of `type=LoadBalancer` in your cluster.
+ExternalDNS' current release is `v0.1` which allows to keep a managed zone in Google's [CloudDNS](https://cloud.google.com/dns/docs/) service synchronized with Services of `type=LoadBalancer` in your cluster.
 
 In this release ExternalDNS is limited to a single managed zone and takes full ownership of it. That means if you have any existing records in that zone they will be removed. We encourage you to try out ExternalDNS in its own zone first to see if that model works for you. However, ExternalDNS, by default, runs in dryRun mode and won't make any changes to your infrastructure. So, as long as you don't change that flag, you're safe.
 
