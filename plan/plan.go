@@ -27,6 +27,8 @@ type Plan struct {
 	Current []*endpoint.Endpoint
 	// List of desired records
 	Desired []*endpoint.Endpoint
+	// Policy under which the desired changes are calculated
+	Policy Policy
 	// List of changes necessary to move towards desired state
 	// Populated after calling Calculate()
 	Changes Changes
@@ -45,7 +47,8 @@ type Changes struct {
 }
 
 // Calculate computes the actions needed to move current state towards desired
-// state. It returns a copy of Plan with the changes populated.
+// state. It then passes those changes to the current policy for further
+// processing. It returns a copy of Plan with the changes populated.
 func (p *Plan) Calculate() *Plan {
 	changes := Changes{}
 
@@ -75,6 +78,9 @@ func (p *Plan) Calculate() *Plan {
 			changes.Delete = append(changes.Delete, current)
 		}
 	}
+
+	// Apply policy to list of changes.
+	changes = *p.Policy.Apply(&changes)
 
 	plan := &Plan{
 		Current: p.Current,

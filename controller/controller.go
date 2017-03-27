@@ -37,6 +37,8 @@ type Controller struct {
 
 	Source   source.Source
 	Provider provider.Provider
+	// The policy that defines which changes to DNS records are allowed
+	Policy plan.Policy
 	// The interval between individual synchronizations
 	Interval time.Duration
 }
@@ -54,6 +56,7 @@ func (c *Controller) RunOnce() error {
 	}
 
 	plan := &plan.Plan{
+		Policy:  c.Policy,
 		Current: records,
 		Desired: endpoints,
 	}

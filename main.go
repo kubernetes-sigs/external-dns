@@ -32,6 +32,7 @@ import (
 	"github.com/kubernetes-incubator/external-dns/controller"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns/validation"
+	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
 	"github.com/kubernetes-incubator/external-dns/source"
 )
@@ -92,10 +93,16 @@ func main() {
 		log.Fatal(err)
 	}
 
+	policy, exists := plan.Policies[cfg.Policy]
+	if !exists {
+		log.Fatalf("unknown policy: %s", cfg.Policy)
+	}
+
 	ctrl := controller.Controller{
 		Zone:     cfg.Zone,
 		Source:   sources,
 		Provider: p,
+		Policy:   policy,
 		Interval: cfg.Interval,
 	}
 

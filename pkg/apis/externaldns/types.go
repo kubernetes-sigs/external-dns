@@ -38,6 +38,7 @@ type Config struct {
 	Sources       []string
 	Provider      string
 	GoogleProject string
+	Policy        string
 	HealthPort    string
 	Interval      time.Duration
 	Once          bool
@@ -62,6 +63,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	flags.StringArrayVar(&cfg.Sources, "source", nil, "the sources to gather endpoints from")
 	flags.StringVar(&cfg.Provider, "provider", "", "the DNS provider to materialize the records in")
 	flags.StringVar(&cfg.GoogleProject, "google-project", "", "gcloud project to target")
+	flags.StringVar(&cfg.Policy, "policy", "sync", "the policy to use. options: [\"sync\", \"upsert-only\"]")
 	flags.StringVar(&cfg.HealthPort, "health-port", defaultHealthPort, "health port to listen on")
 	flags.StringVar(&cfg.LogFormat, "log-format", defaultLogFormat, "log format output. options: [\"text\", \"json\"]")
 	flags.DurationVar(&cfg.Interval, "interval", time.Minute, "interval between synchronizations")
