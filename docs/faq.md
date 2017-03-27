@@ -67,7 +67,7 @@ However, this is a delicate topic and hasn't found its way into ExternalDNS, yet
 
 ### Does anyone use ExternalDNS in production?
 
-No, but ExternalDNS is heavily influenced by Zalando's [ Mate](https://github.com/zalando-incubator/mate) which is used in production on AWS. If you want to adopt this approach and need a solution now then try Mate. Otherwise we encourage you to stick with ExternalDNS and help us make it work for you.
+No, but ExternalDNS is heavily influenced by Zalando's [Mate](https://github.com/zalando-incubator/mate) which is used in production on AWS. If you want to adopt this approach and need a solution now then try Mate. Otherwise we encourage you to stick with ExternalDNS and help us make it work for you.
 
 ### How can we start using ExternalDNS?
 
