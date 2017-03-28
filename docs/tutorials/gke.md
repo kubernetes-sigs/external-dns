@@ -1,4 +1,4 @@
-# Setting up external-dns on Google Container Engine
+# Setting up ExternalDNS on Google Container Engine
 
 This tutorial describes how to setup `external-dns` for usage within a GKE cluster.
 

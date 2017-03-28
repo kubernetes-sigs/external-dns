@@ -1,3 +1,5 @@
+# Frequently asked questions
+
 ### When is this useful to me?
 
 You probably have created many Deployments in the past. Often you would expose your Deployment to the Internet by creating a Service with a type of LoadBalancer. Depending on your environment this usually assigns a random publicly available endpoint to your service at which you can access it from anywhere in the world. On Google Container Engine this is a public IP address.
