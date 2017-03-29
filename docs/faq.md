@@ -73,6 +73,6 @@ No, but ExternalDNS is heavily influenced by Zalando's [Mate](https://github.com
 
 ### How can we start using ExternalDNS?
 
-ExternalDNS is in an early state and not recommended for production use, yet. However, you can start trying it out on a non-production GKE cluster following [the GKE tutorial](docs/tutorials/gke.md).
+ExternalDNS is in an early state and not recommended for production use, yet. However, you can start trying it out on a non-production GKE cluster following [the GKE tutorial](tutorials/gke.md).
 
 Cluster's on AWS that want to make use of Route53 work very similar but a tutorial is still on our TODO list.
