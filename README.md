@@ -45,7 +45,7 @@ $ kubectl annotate service nginx "external-dns.alpha.kubernetes.io/hostname=ngin
 Run a single sync loop of ExternalDNS locally. Make sure to change the Google project to one you control and the zone identifier to an **unused** and **empty** hosted zone in that project's Google CloudDNS.
 
 ```console
-$ external-dns --zone example-org --google-project example-project --once
+$ external-dns --zone example-org --google-project example-project --source service --once
 ```
 
 This should output the DNS records it's going to modify to match the managed zone with the DNS records you desire.
@@ -53,7 +53,7 @@ This should output the DNS records it's going to modify to match the managed zon
 Once you're satisfied with the result you can run ExternalDNS like you would run it in your cluster: as a control loop and not in dryRun mode.
 
 ```console
-$ external-dns --zone example-org --google-project example-project --dry-run=false
+$ external-dns --zone example-org --google-project example-project --source service --dry-run=false
 ```
 
 Check that ExternalDNS created the desired DNS record for your service and that it points to its load balancer's IP. Then try to resolve it.
