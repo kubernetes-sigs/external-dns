@@ -21,37 +21,138 @@ import (
 
 	"github.com/kubernetes-incubator/external-dns/dnsprovider"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/internal/testutils"
+	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
 func TestInMemory(t *testing.T) {
+	t.Run("TestWaitForSync", testInMemoryWaitForSync)
 	t.Run("TestRefreshCache", testInMemoryRefreshCache)
 	t.Run("TestOwnRecords", testInMemoryOwnRecords)
 	t.Run("TestRecords", testInMemoryRecords)
 	t.Run("TestNewInMemoryStorage", testNewInMemoryStorage)
 }
 
-func testInMemoryRefreshCache(t *testing.T) {
+func testInMemoryWaitForSync(t *testing.T) {
 
+}
+
+func testInMemoryRefreshCache(t *testing.T) {
+	registry := dnsprovider.NewInMemoryProvider()
+	zone := "org"
+	owner := "me"
+	im, _ := NewInMemoryStorage(registry, owner, zone)
+	err := im.refreshCache()
+	if err == nil {
+		t.Errorf("should fail, because zone does not exist")
+	}
+
+	registry.CreateZone(zone)
+	im.refreshCache()
+	if len(im.cache) != 0 {
+		t.Errorf("cache should be empty!")
+	}
+
+	registry.ApplyChanges(zone, &plan.Changes{
+		Create: []endpoint.Endpoint{
+			{
+				DNSName: "foo.org",
+				Target:  "foo-lb.org",
+			},
+			{
+				DNSName: "bar.org",
+				Target:  "bar-lb.org",
+			},
+			{
+				DNSName: "baz.org",
+				Target:  "baz-lb.org",
+			},
+			{
+				DNSName: "qux.org",
+				Target:  "qux-lb.org",
+			},
+		},
+	})
+
+	expectedCache := []*endpoint.SharedEndpoint{
+		&endpoint.SharedEndpoint{
+			Endpoint: endpoint.Endpoint{
+				DNSName: "foo.org",
+				Target:  "foo-lb.org",
+			},
+			Owner: "",
+		},
+		&endpoint.SharedEndpoint{
+			Endpoint: endpoint.Endpoint{
+				DNSName: "bar.org",
+				Target:  "bar-lb.org",
+			},
+			Owner: "",
+		},
+		&endpoint.SharedEndpoint{
+			Endpoint: endpoint.Endpoint{
+				DNSName: "baz.org",
+				Target:  "baz-lb.org",
+			},
+			Owner: "",
+		},
+		&endpoint.SharedEndpoint{
+			Endpoint: endpoint.Endpoint{
+				DNSName: "qux.org",
+				Target:  "qux-lb.org",
+			},
+			Owner: "",
+		},
+	}
+
+	im.refreshCache()
+
+	flatCache := []*endpoint.SharedEndpoint{}
+	for _, record := range im.cache {
+		flatCache = append(flatCache, record)
+	}
+
+	if !testutils.SameSharedEndpoints(expectedCache, flatCache) {
+		t.Errorf("cache is incorrectly populated")
+	}
+
+	im.Assign([]endpoint.Endpoint{
+		{
+			DNSName: "foo.org",
+			Target:  "foo-lb.org",
+		},
+	})
+	im.refreshCache()
+	expectedCache[0].Owner = "me"
+	flatCache = []*endpoint.SharedEndpoint{}
+
+	for _, record := range im.cache {
+		flatCache = append(flatCache, record)
+	}
+
+	if !testutils.SameSharedEndpoints(expectedCache, flatCache) {
+		t.Errorf("cache is incorrectly populated")
+	}
 }
 
 func testInMemoryOwnRecords(t *testing.T) {
 	for _, ti := range []struct {
 		title    string
 		owner    string
-		cache    map[string]*SharedEndpoint
+		cache    map[string]*endpoint.SharedEndpoint
 		expected []endpoint.Endpoint
 	}{
 		{
 			title:    "empty cache",
 			owner:    "me",
-			cache:    map[string]*SharedEndpoint{},
+			cache:    map[string]*endpoint.SharedEndpoint{},
 			expected: []endpoint.Endpoint{},
 		},
 		{
 			title: "non-empty cache, empty result",
 			owner: "me",
-			cache: map[string]*SharedEndpoint{
-				"bar.org": &SharedEndpoint{
+			cache: map[string]*endpoint.SharedEndpoint{
+				"bar.org": &endpoint.SharedEndpoint{
 					Owner: "you",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "bar.org",
@@ -64,15 +165,15 @@ func testInMemoryOwnRecords(t *testing.T) {
 		{
 			title: "non-empty cache, filter owned records",
 			owner: "me",
-			cache: map[string]*SharedEndpoint{
-				"foo.org": &SharedEndpoint{
+			cache: map[string]*endpoint.SharedEndpoint{
+				"foo.org": &endpoint.SharedEndpoint{
 					Owner: "me",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "foo.org",
 						Target:  "elb.com",
 					},
 				},
-				"bar.org": &SharedEndpoint{
+				"bar.org": &endpoint.SharedEndpoint{
 					Owner: "you",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "bar.org",
@@ -93,7 +194,7 @@ func testInMemoryOwnRecords(t *testing.T) {
 				cache: ti.cache,
 				owner: ti.owner,
 			}
-			if !sameEndpoints(im.OwnRecords(), ti.expected) {
+			if !testutils.SameEndpoints(im.OwnRecords(), ti.expected) {
 				t.Errorf("unexpected result")
 			}
 		})
@@ -103,25 +204,25 @@ func testInMemoryOwnRecords(t *testing.T) {
 func testInMemoryRecords(t *testing.T) {
 	for _, ti := range []struct {
 		title    string
-		cache    map[string]*SharedEndpoint
-		expected []*SharedEndpoint
+		cache    map[string]*endpoint.SharedEndpoint
+		expected []*endpoint.SharedEndpoint
 	}{
 		{
 			title:    "empty cache",
-			cache:    map[string]*SharedEndpoint{},
-			expected: []*SharedEndpoint{},
+			cache:    map[string]*endpoint.SharedEndpoint{},
+			expected: []*endpoint.SharedEndpoint{},
 		},
 		{
 			title: "non-empty cache",
-			cache: map[string]*SharedEndpoint{
-				"foo.org": &SharedEndpoint{
+			cache: map[string]*endpoint.SharedEndpoint{
+				"foo.org": &endpoint.SharedEndpoint{
 					Owner: "instance-id",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "foo.org",
 						Target:  "elb.com",
 					},
 				},
-				"bar.org": &SharedEndpoint{
+				"bar.org": &endpoint.SharedEndpoint{
 					Owner: "another-id",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "bar.org",
@@ -129,15 +230,15 @@ func testInMemoryRecords(t *testing.T) {
 					},
 				},
 			},
-			expected: []*SharedEndpoint{
-				&SharedEndpoint{
+			expected: []*endpoint.SharedEndpoint{
+				&endpoint.SharedEndpoint{
 					Owner: "instance-id",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "foo.org",
 						Target:  "elb.com",
 					},
 				},
-				&SharedEndpoint{
+				&endpoint.SharedEndpoint{
 					Owner: "another-id",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "bar.org",
@@ -151,7 +252,7 @@ func testInMemoryRecords(t *testing.T) {
 			im := &InMemoryStorage{
 				cache: ti.cache,
 			}
-			if !sameSharedEndpoints(im.Records(), ti.expected) {
+			if !testutils.SameSharedEndpoints(im.Records(), ti.expected) {
 				t.Errorf("unexpected result")
 			}
 		})

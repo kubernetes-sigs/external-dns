@@ -39,7 +39,7 @@ type InMemoryStorage struct {
 	registry dnsprovider.DNSProvider
 	zone     string
 	owner    string //refers to the owner id of the current instance
-	cache    map[string]*SharedEndpoint
+	cache    map[string]*endpoint.SharedEndpoint
 	sync.Mutex
 }
 
@@ -52,15 +52,15 @@ func NewInMemoryStorage(registry dnsprovider.DNSProvider, owner, zone string) (*
 		registry: registry,
 		zone:     zone,
 		owner:    owner,
-		cache:    map[string]*SharedEndpoint{},
+		cache:    map[string]*endpoint.SharedEndpoint{},
 	}, nil
 }
 
 // Records returns the current records from the in-memory storage
-func (im *InMemoryStorage) Records() []*SharedEndpoint {
+func (im *InMemoryStorage) Records() []*endpoint.SharedEndpoint {
 	im.Lock()
 	defer im.Unlock()
-	records := make([]*SharedEndpoint, 0, len(im.cache))
+	records := make([]*endpoint.SharedEndpoint, 0, len(im.cache))
 	for _, record := range im.cache {
 		records = append(records, record)
 	}
@@ -111,14 +111,14 @@ func (im *InMemoryStorage) refreshCache() error {
 		return err
 	}
 
-	curRecords := make([]*SharedEndpoint, len(im.cache))
+	curRecords := make([]*endpoint.SharedEndpoint, 0, len(im.cache))
 	for _, record := range im.cache {
 		curRecords = append(curRecords, record)
 	}
 
 	newCache := updatedCache(records, curRecords)
 
-	im.cache = map[string]*SharedEndpoint{} //drop the current cache
+	im.cache = map[string]*endpoint.SharedEndpoint{} //drop the current cache
 	for _, newCacheRecord := range newCache {
 		im.cache[newCacheRecord.DNSName] = newCacheRecord
 	}

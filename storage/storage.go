@@ -26,28 +26,20 @@ import "github.com/kubernetes-incubator/external-dns/endpoint"
 // WaitForSync() waits until the cache is populated with data, this should be called once to make sure that the storage is usable
 // Poll(stopChan <- chan struct{]}) periodically resyncs and updates the cache from dnsprovider
 type Storage interface {
-	Records() []*SharedEndpoint
+	Records() []*endpoint.SharedEndpoint
 	OwnRecords() []endpoint.Endpoint
 	Assign([]endpoint.Endpoint) error
 	Poll(stopChan <-chan struct{})
 	WaitForSync() error
 }
 
-// SharedEndpoint is a unit of data stored in the storage it should provide information such as
-// 1. Owner - which external-dns instance is managing the records
-// 2. DNSName and Target inherited from endpoint.Endpoint struct
-type SharedEndpoint struct {
-	Owner string //refers to the Owner ID
-	endpoint.Endpoint
-}
-
 // updatedCache storage agnostic functionality to merge the existing cache records - including owner information
 // with the freshest dnsprovider registered records
 // make sure to include lock/unlock wrapper for the function call
-func updatedCache(records []endpoint.Endpoint, cacheRecords []*SharedEndpoint) []*SharedEndpoint {
-	newCache := make([]*SharedEndpoint, len(records))
+func updatedCache(records []endpoint.Endpoint, cacheRecords []*endpoint.SharedEndpoint) []*endpoint.SharedEndpoint {
+	newCache := make([]*endpoint.SharedEndpoint, len(records))
 	for i, record := range records {
-		newCache[i] = &SharedEndpoint{Endpoint: record}
+		newCache[i] = &endpoint.SharedEndpoint{Endpoint: record}
 		for _, cache := range cacheRecords {
 			if cache.DNSName == record.DNSName {
 				newCache[i].Owner = cache.Owner

@@ -21,6 +21,7 @@ import (
 
 	"github.com/kubernetes-incubator/external-dns/dnsprovider"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
@@ -56,22 +57,22 @@ func TestUpdatedCache(t *testing.T) {
 	for _, ti := range []struct {
 		title        string
 		records      []endpoint.Endpoint
-		cacheRecords []*SharedEndpoint
-		expected     []*SharedEndpoint
+		cacheRecords []*endpoint.SharedEndpoint
+		expected     []*endpoint.SharedEndpoint
 	}{
 		{
 			title:        "all empty",
 			records:      []endpoint.Endpoint{},
-			cacheRecords: []*SharedEndpoint{},
-			expected:     []*SharedEndpoint{},
+			cacheRecords: []*endpoint.SharedEndpoint{},
+			expected:     []*endpoint.SharedEndpoint{},
 		},
 		{
 			title:   "no records, should produce empty cache",
 			records: []endpoint.Endpoint{},
-			cacheRecords: []*SharedEndpoint{
+			cacheRecords: []*endpoint.SharedEndpoint{
 				{},
 			},
-			expected: []*SharedEndpoint{},
+			expected: []*endpoint.SharedEndpoint{},
 		},
 		{
 			title: "new records, empty cache",
@@ -85,10 +86,10 @@ func TestUpdatedCache(t *testing.T) {
 					Target:  "alb.com",
 				},
 			},
-			cacheRecords: []*SharedEndpoint{
+			cacheRecords: []*endpoint.SharedEndpoint{
 				{},
 			},
-			expected: []*SharedEndpoint{
+			expected: []*endpoint.SharedEndpoint{
 				{
 					Owner: "",
 					Endpoint: endpoint.Endpoint{
@@ -121,7 +122,7 @@ func TestUpdatedCache(t *testing.T) {
 					Target:  "8.8.8.8",
 				},
 			},
-			cacheRecords: []*SharedEndpoint{
+			cacheRecords: []*endpoint.SharedEndpoint{
 				{
 					Owner: "me",
 					Endpoint: endpoint.Endpoint{
@@ -137,7 +138,7 @@ func TestUpdatedCache(t *testing.T) {
 					},
 				},
 			},
-			expected: []*SharedEndpoint{
+			expected: []*endpoint.SharedEndpoint{
 				{
 					Owner: "",
 					Endpoint: endpoint.Endpoint{
@@ -163,68 +164,9 @@ func TestUpdatedCache(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			if !sameSharedEndpoints(updatedCache(ti.records, ti.cacheRecords), ti.expected) {
+			if !testutils.SameSharedEndpoints(updatedCache(ti.records, ti.cacheRecords), ti.expected) {
 				t.Errorf("incorrect result produced by updatedCache")
 			}
 		})
 	}
-}
-
-//helper functions
-func sameSharedEndpoints(a, b []*SharedEndpoint) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for _, recordA := range a {
-		found := false
-		for _, recordB := range b {
-			if recordA.DNSName == recordB.DNSName && recordA.Target == recordB.Target && recordA.Owner == recordB.Owner {
-				found = true
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-	for _, recordB := range b {
-		found := false
-		for _, recordA := range a {
-			if recordB.DNSName == recordA.DNSName && recordB.Target == recordA.Target && recordA.Owner == recordB.Owner {
-				found = true
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-	return true
-}
-
-func sameEndpoints(a, b []endpoint.Endpoint) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for _, recordA := range a {
-		found := false
-		for _, recordB := range b {
-			if recordA.DNSName == recordB.DNSName && recordA.Target == recordB.Target {
-				found = true
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-	for _, recordB := range b {
-		found := false
-		for _, recordA := range a {
-			if recordB.DNSName == recordA.DNSName && recordB.Target == recordA.Target {
-				found = true
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-	return true
 }

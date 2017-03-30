@@ -23,3 +23,11 @@ type Endpoint struct {
 	// The target the DNS record points to
 	Target string
 }
+
+// SharedEndpoint is a unit of data stored in the storage it should provide information such as
+// 1. Owner - which external-dns instance is managing the records
+// 2. DNSName and Target inherited from endpoint.Endpoint struct
+type SharedEndpoint struct {
+	Owner string //refers to the Owner ID
+	Endpoint
+}

@@ -16,10 +16,14 @@ limitations under the License.
 
 package dnsprovider
 
-import "testing"
-import "reflect"
-import "github.com/kubernetes-incubator/external-dns/endpoint"
-import "github.com/kubernetes-incubator/external-dns/plan"
+import (
+	"reflect"
+	"testing"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/internal/testutils"
+	"github.com/kubernetes-incubator/external-dns/plan"
+)
 
 func TestInMemoryProvider(t *testing.T) {
 	t.Run("Records", testInMemoryRecords)
@@ -243,7 +247,7 @@ func testInMemoryEndpoints(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			im := &InMemoryProvider{ti.init}
-			if !sameEndpoints(im.endpoints(ti.zone), ti.expected) {
+			if !testutils.SameEndpoints(im.endpoints(ti.zone), ti.expected) {
 				t.Errorf("endpoints returned wrong set")
 			}
 		})
@@ -329,7 +333,7 @@ func testInMemoryRecords(t *testing.T) {
 			if !ti.expectError && err != nil {
 				t.Errorf("unexpected error")
 			}
-			if !ti.expectError && !sameEndpoints(im.endpoints(ti.zone), records) {
+			if !ti.expectError && !testutils.SameEndpoints(im.endpoints(ti.zone), records) {
 				t.Errorf("endpoints returned wrong set")
 			}
 		})
@@ -900,37 +904,6 @@ func testNewInMemoryProvider(t *testing.T) {
 	if cfg.zones == nil {
 		t.Error("nil map")
 	}
-}
-
-// helper functions
-
-func sameEndpoints(a, b []endpoint.Endpoint) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for _, recordA := range a {
-		found := false
-		for _, recordB := range b {
-			if recordA.DNSName == recordB.DNSName && recordA.Target == recordB.Target {
-				found = true
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-	for _, recordB := range b {
-		found := false
-		for _, recordA := range a {
-			if recordB.DNSName == recordA.DNSName && recordB.Target == recordA.Target {
-				found = true
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-	return true
 }
 
 func testInMemoryCreateZone(t *testing.T) {
