@@ -61,7 +61,7 @@ Once you're satisfied with the result, you can run ExternalDNS like you would ru
 $ external-dns --zone example-org --provider google --google-project example-project --source service --dry-run=false
 ```
 
-Check that ExternalDNS has created the desired DNS record for your service and that it points to its load balancer's IP. Then try to resolve it:
+Check that ExternalDNS has created the desired DNS record for your Service and that it points to its load balancer's IP. Then try to resolve it:
 
 ```console
 $ dig +short nginx.example.org.
