@@ -50,14 +50,15 @@ func TestPoll(t *testing.T) {
 		numErr--
 	}
 
-	defer func() {
+	checkFunc := func() {
 		if count != 0 {
-			t.Errorf("Poll SyncFunc was not called %d times", 3)
+			t.Fatalf("Poll SyncFunc was not called %d times", 3)
 		}
 		if numErr != 0 {
-			t.Errorf("Error callback was not triggered")
+			t.Fatalf("Error callback was not triggered")
 		}
-	}()
+	}
+	time.AfterFunc(time.Second*time.Duration(count+1), checkFunc)
 
 	Poll(syncMock, onSyncError, stopChan)
 	// <-stopChan

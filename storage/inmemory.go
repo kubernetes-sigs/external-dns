@@ -19,7 +19,6 @@ package storage
 import (
 	"errors"
 	"sync"
-
 	"time"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
