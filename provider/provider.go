@@ -14,25 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package dnsprovider
+package provider
 
-var store = map[string]DNSProvider{}
+import (
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/plan"
+)
 
-// Register registers a DNSProvider under a given name.
-func Register(name string, provider DNSProvider) {
-	store[name] = provider
-}
-
-// Lookup returns a DNSProvider by the given name.
-func Lookup(name string) DNSProvider {
-	return store[name]
-}
-
-// LookupMultiple returns multiple DNSProviders given multiple names.
-func LookupMultiple(names ...string) (providers []DNSProvider) {
-	for _, name := range names {
-		providers = append(providers, Lookup(name))
-	}
-
-	return providers
+// Provider defines the interface DNS providers should implement.
+type Provider interface {
+	Records(zone string) ([]endpoint.Endpoint, error)
+	ApplyChanges(zone string, changes *plan.Changes) error
 }

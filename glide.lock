@@ -1,5 +1,5 @@
-hash: df53656c5b944ac606104fd4339ec0f31cb098426ab0b94b06eff1843fa93461
-updated: 2017-03-06T15:22:13.908484696+01:00
+hash: c5d933d436758fd43e3fe483b29b596cfe578ce148ca79dce1ea8106e3759f35
+updated: 2017-03-16T15:46:09.965215982+01:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -7,16 +7,23 @@ imports:
   - compute/metadata
   - internal
 - name: github.com/aws/aws-sdk-go
-  version: 6669bce73b4e3bc922ff5ea3a3983ede26e02b39
+  version: 695fe24acaf9afe80b0ce261d4637f42ba0b4c7d
   subpackages:
   - aws
   - aws/awserr
   - aws/awsutil
   - aws/client
   - aws/client/metadata
+  - aws/corehandlers
   - aws/credentials
+  - aws/credentials/ec2rolecreds
+  - aws/credentials/endpointcreds
+  - aws/credentials/stscreds
+  - aws/defaults
+  - aws/ec2metadata
   - aws/endpoints
   - aws/request
+  - aws/session
   - aws/signer/v4
   - private/protocol
   - private/protocol/query
@@ -26,6 +33,7 @@ imports:
   - private/protocol/xml/xmlutil
   - private/waiter
   - service/route53
+  - service/sts
 - name: github.com/blang/semver
   version: 31b736133b98f26d5e078ec9eb591666edfd091f
 - name: github.com/coreos/go-oidc
@@ -108,7 +116,7 @@ imports:
 - name: github.com/PuerkitoBio/urlesc
   version: 5bd2802263f21d8788851d5305584c82a5c75d7e
 - name: github.com/Sirupsen/logrus
-  version: 0208149b40d863d2c1a2f8fe5753096a9cf2cc8b
+  version: ba1b36c82c5e05c4f912a88eab0dcd91a171688f
 - name: github.com/spf13/pflag
   version: 5ccb023bc27df288a957c5e994cd44fd19619465
 - name: github.com/ugorji/go

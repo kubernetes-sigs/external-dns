@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package dnsprovider
+package provider
 
 import (
 	"strings"
@@ -97,7 +97,7 @@ func (c changesService) Create(project string, managedZone string, change *dns.C
 	return c.service.Create(project, managedZone, change)
 }
 
-// googleProvider is an implementation of DNSProvider for Google CloudDNS.
+// googleProvider is an implementation of Provider for Google CloudDNS.
 type googleProvider struct {
 	// The Google project to work in
 	project string
@@ -111,8 +111,8 @@ type googleProvider struct {
 	changesClient changesServiceInterface
 }
 
-// NewGoogleProvider initializes a new Google CloudDNS based DNSProvider.
-func NewGoogleProvider(project string, dryRun bool) (DNSProvider, error) {
+// NewGoogleProvider initializes a new Google CloudDNS based Provider.
+func NewGoogleProvider(project string, dryRun bool) (Provider, error) {
 	gcloud, err := google.DefaultClient(context.TODO(), dns.NdevClouddnsReadwriteScope)
 	if err != nil {
 		return nil, err
@@ -123,13 +123,15 @@ func NewGoogleProvider(project string, dryRun bool) (DNSProvider, error) {
 		return nil, err
 	}
 
-	return &googleProvider{
+	provider := &googleProvider{
 		project: project,
 		dryRun:  dryRun,
 		resourceRecordSetsClient: resourceRecordSetsService{dnsClient.ResourceRecordSets},
 		managedZonesClient:       managedZonesService{dnsClient.ManagedZones},
 		changesClient:            changesService{dnsClient.Changes},
-	}, nil
+	}
+
+	return provider, nil
 }
 
 // Zones returns the list of hosted zones.
@@ -249,12 +251,11 @@ func (p *googleProvider) ApplyChanges(zone string, changes *plan.Changes) error 
 // submitChange takes a zone and a Change and sends it to Google.
 func (p *googleProvider) submitChange(zone string, change *dns.Change) error {
 	if p.dryRun {
-		for _, add := range change.Additions {
-			log.Infof("Add records: %s %s %s", add.Name, add.Type, add.Rrdatas)
-		}
-
 		for _, del := range change.Deletions {
 			log.Infof("Del records: %s %s %s", del.Name, del.Type, del.Rrdatas)
+		}
+		for _, add := range change.Additions {
+			log.Infof("Add records: %s %s %s", add.Name, add.Type, add.Rrdatas)
 		}
 
 		return nil

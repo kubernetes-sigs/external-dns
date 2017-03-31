@@ -213,6 +213,12 @@ type CloudDirectoryAPI interface {
 
 	ListObjectChildrenPages(*clouddirectory.ListObjectChildrenInput, func(*clouddirectory.ListObjectChildrenOutput, bool) bool) error
 
+	ListObjectParentPathsRequest(*clouddirectory.ListObjectParentPathsInput) (*request.Request, *clouddirectory.ListObjectParentPathsOutput)
+
+	ListObjectParentPaths(*clouddirectory.ListObjectParentPathsInput) (*clouddirectory.ListObjectParentPathsOutput, error)
+
+	ListObjectParentPathsPages(*clouddirectory.ListObjectParentPathsInput, func(*clouddirectory.ListObjectParentPathsOutput, bool) bool) error
+
 	ListObjectParentsRequest(*clouddirectory.ListObjectParentsInput) (*request.Request, *clouddirectory.ListObjectParentsOutput)
 
 	ListObjectParents(*clouddirectory.ListObjectParentsInput) (*clouddirectory.ListObjectParentsOutput, error)

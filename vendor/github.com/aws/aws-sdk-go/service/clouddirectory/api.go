@@ -1324,6 +1324,14 @@ func (c *CloudDirectory) DeleteDirectoryRequest(input *DeleteDirectoryInput) (re
 //   A directory that has been deleted has been attempted to be accessed. Note:
 //   The requested resource will eventually cease to exist.
 //
+//   * ErrCodeRetryableConflictException "RetryableConflictException"
+//   Occurs when a conflict with a previous successful write is detected. For
+//   example, if a write operation occurs on an object and then an attempt is
+//   made to read the object using “SERIALIZABLE” consistency, this exception
+//   may result. This generally occurs when the previous write did not have time
+//   to propagate to the host serving the current request. A retry (with appropriate
+//   backoff logic) is the recommended response to this exception.
+//
 // Please also see https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DeleteDirectory
 func (c *CloudDirectory) DeleteDirectory(input *DeleteDirectoryInput) (*DeleteDirectoryOutput, error) {
 	req, out := c.DeleteDirectoryRequest(input)
@@ -2006,6 +2014,14 @@ func (c *CloudDirectory) DisableDirectoryRequest(input *DisableDirectoryInput) (
 //   * ErrCodeAccessDeniedException "AccessDeniedException"
 //   Access denied. Check your permissions.
 //
+//   * ErrCodeRetryableConflictException "RetryableConflictException"
+//   Occurs when a conflict with a previous successful write is detected. For
+//   example, if a write operation occurs on an object and then an attempt is
+//   made to read the object using “SERIALIZABLE” consistency, this exception
+//   may result. This generally occurs when the previous write did not have time
+//   to propagate to the host serving the current request. A retry (with appropriate
+//   backoff logic) is the recommended response to this exception.
+//
 // Please also see https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DisableDirectory
 func (c *CloudDirectory) DisableDirectory(input *DisableDirectoryInput) (*DisableDirectoryOutput, error) {
 	req, out := c.DisableDirectoryRequest(input)
@@ -2091,6 +2107,14 @@ func (c *CloudDirectory) EnableDirectoryRequest(input *EnableDirectoryInput) (re
 //
 //   * ErrCodeAccessDeniedException "AccessDeniedException"
 //   Access denied. Check your permissions.
+//
+//   * ErrCodeRetryableConflictException "RetryableConflictException"
+//   Occurs when a conflict with a previous successful write is detected. For
+//   example, if a write operation occurs on an object and then an attempt is
+//   made to read the object using “SERIALIZABLE” consistency, this exception
+//   may result. This generally occurs when the previous write did not have time
+//   to propagate to the host serving the current request. A retry (with appropriate
+//   backoff logic) is the recommended response to this exception.
 //
 // Please also see https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/EnableDirectory
 func (c *CloudDirectory) EnableDirectory(input *EnableDirectoryInput) (*EnableDirectoryOutput, error) {
@@ -3629,6 +3653,144 @@ func (c *CloudDirectory) ListObjectChildrenPages(input *ListObjectChildrenInput,
 	})
 }
 
+const opListObjectParentPaths = "ListObjectParentPaths"
+
+// ListObjectParentPathsRequest generates a "aws/request.Request" representing the
+// client's request for the ListObjectParentPaths operation. The "output" return
+// value can be used to capture response data after the request's "Send" method
+// is called.
+//
+// See ListObjectParentPaths for usage and error information.
+//
+// Creating a request object using this method should be used when you want to inject
+// custom logic into the request's lifecycle using a custom handler, or if you want to
+// access properties on the request object before or after sending the request. If
+// you just want the service response, call the ListObjectParentPaths method directly
+// instead.
+//
+// Note: You must call the "Send" method on the returned request object in order
+// to execute the request.
+//
+//    // Example sending a request using the ListObjectParentPathsRequest method.
+//    req, resp := client.ListObjectParentPathsRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListObjectParentPaths
+func (c *CloudDirectory) ListObjectParentPathsRequest(input *ListObjectParentPathsInput) (req *request.Request, output *ListObjectParentPathsOutput) {
+	op := &request.Operation{
+		Name:       opListObjectParentPaths,
+		HTTPMethod: "POST",
+		HTTPPath:   "/amazonclouddirectory/2017-01-11/object/parentpaths",
+		Paginator: &request.Paginator{
+			InputTokens:     []string{"NextToken"},
+			OutputTokens:    []string{"NextToken"},
+			LimitToken:      "MaxResults",
+			TruncationToken: "",
+		},
+	}
+
+	if input == nil {
+		input = &ListObjectParentPathsInput{}
+	}
+
+	output = &ListObjectParentPathsOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// ListObjectParentPaths API operation for Amazon CloudDirectory.
+//
+// Retrieves all available parent paths for any object type such as node, leaf
+// node, policy node, and index node objects. For more information about objects,
+// see Directory Structure (http://docs.aws.amazon.com/directoryservice/latest/admin-guide/cd_key_concepts.html#dirstructure).
+//
+// Use this API to evaluate all parents for an object. The call returns all
+// objects from the root of the directory up to the requested object. The API
+// returns the number of paths based on user-defined MaxResults, in case there
+// are multiple paths to the parent. The order of the paths and nodes returned
+// is consistent among multiple API calls unless the objects are deleted or
+// moved. Paths not leading to directory root are ignored from the target object.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for Amazon CloudDirectory's
+// API operation ListObjectParentPaths for usage and error information.
+//
+// Returned Error Codes:
+//   * ErrCodeInternalServiceException "InternalServiceException"
+//   Indicates a problem that must be resolved by Amazon Web Services. This might
+//   be a transient error in which case you can retry your request until it succeeds.
+//   Otherwise, go to the AWS Service Health Dashboard (http://status.aws.amazon.com/)
+//   site to see if there are any operational issues with the service.
+//
+//   * ErrCodeInvalidArnException "InvalidArnException"
+//   Indicates that the provided ARN value is not valid.
+//
+//   * ErrCodeRetryableConflictException "RetryableConflictException"
+//   Occurs when a conflict with a previous successful write is detected. For
+//   example, if a write operation occurs on an object and then an attempt is
+//   made to read the object using “SERIALIZABLE” consistency, this exception
+//   may result. This generally occurs when the previous write did not have time
+//   to propagate to the host serving the current request. A retry (with appropriate
+//   backoff logic) is the recommended response to this exception.
+//
+//   * ErrCodeValidationException "ValidationException"
+//   Indicates your request is malformed in some manner. See the exception message.
+//
+//   * ErrCodeLimitExceededException "LimitExceededException"
+//   Indicates limits are exceeded. See Limits (http://docs.aws.amazon.com/directoryservice/latest/admin-guide/limits.html)
+//   for more information.
+//
+//   * ErrCodeAccessDeniedException "AccessDeniedException"
+//   Access denied. Check your permissions.
+//
+//   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
+//   An operation can only operate on a directory that is not enabled.
+//
+//   * ErrCodeInvalidNextTokenException "InvalidNextTokenException"
+//   Indicates that the NextToken value is not valid.
+//
+//   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
+//   The specified resource could not be found.
+//
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListObjectParentPaths
+func (c *CloudDirectory) ListObjectParentPaths(input *ListObjectParentPathsInput) (*ListObjectParentPathsOutput, error) {
+	req, out := c.ListObjectParentPathsRequest(input)
+	err := req.Send()
+	return out, err
+}
+
+// ListObjectParentPathsPages iterates over the pages of a ListObjectParentPaths operation,
+// calling the "fn" function with the response data for each page. To stop
+// iterating, return false from the fn function.
+//
+// See ListObjectParentPaths method for more information on how to use this operation.
+//
+// Note: This operation can generate multiple requests to a service.
+//
+//    // Example iterating over at most 3 pages of a ListObjectParentPaths operation.
+//    pageNum := 0
+//    err := client.ListObjectParentPathsPages(params,
+//        func(page *ListObjectParentPathsOutput, lastPage bool) bool {
+//            pageNum++
+//            fmt.Println(page)
+//            return pageNum <= 3
+//        })
+//
+func (c *CloudDirectory) ListObjectParentPathsPages(input *ListObjectParentPathsInput, fn func(p *ListObjectParentPathsOutput, lastPage bool) (shouldContinue bool)) error {
+	page, _ := c.ListObjectParentPathsRequest(input)
+	page.Handlers.Build.PushBack(request.MakeAddToUserAgentFreeFormHandler("Paginator"))
+	return page.EachPage(func(p interface{}, lastPage bool) bool {
+		return fn(p.(*ListObjectParentPathsOutput), lastPage)
+	})
+}
+
 const opListObjectParents = "ListObjectParents"
 
 // ListObjectParentsRequest generates a "aws/request.Request" representing the
@@ -4338,8 +4500,8 @@ func (c *CloudDirectory) LookupPolicyRequest(input *LookupPolicyInput) (req *req
 // Lists all policies from the root of the Directory to the object specified.
 // If there are no policies present, an empty list is returned. If policies
 // are present, and if some objects don't have the policies attached, it returns
-// the objectIdentifier for such objects. If policies are present, it returns
-// objectIdentifier, policyId, and policyType. Paths that don't lead to the
+// the ObjectIdentifier for such objects. If policies are present, it returns
+// ObjectIdentifier, policyId, and policyType. Paths that don't lead to the
 // root from the target object are ignored.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -6305,9 +6467,9 @@ type BatchListObjectAttributes struct {
 
 	// Maximum number of items to be retrieved in a single call. This is an approximate
 	// number.
-	MaxResults *int64 `type:"integer"`
+	MaxResults *int64 `min:"1" type:"integer"`
 
-	// Token used for pagination.
+	// The pagination token.
 	NextToken *string `type:"string"`
 
 	// Reference of the object whose attributes need to be listed.
@@ -6329,6 +6491,9 @@ func (s BatchListObjectAttributes) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *BatchListObjectAttributes) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "BatchListObjectAttributes"}
+	if s.MaxResults != nil && *s.MaxResults < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("MaxResults", 1))
+	}
 	if s.ObjectReference == nil {
 		invalidParams.Add(request.NewErrParamRequired("ObjectReference"))
 	}
@@ -6366,7 +6531,7 @@ type BatchListObjectAttributesResponse struct {
 	// value is the value.
 	Attributes []*AttributeKeyAndValue `type:"list"`
 
-	// Token used for pagination.
+	// The pagination token.
 	NextToken *string `type:"string"`
 }
 
@@ -6399,9 +6564,9 @@ type BatchListObjectChildren struct {
 
 	// Maximum number of items to be retrieved in a single call. This is an approximate
 	// number.
-	MaxResults *int64 `type:"integer"`
+	MaxResults *int64 `min:"1" type:"integer"`
 
-	// Token used for pagination.
+	// The pagination token.
 	NextToken *string `type:"string"`
 
 	// Reference of the object for which child objects are being listed.
@@ -6423,6 +6588,9 @@ func (s BatchListObjectChildren) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *BatchListObjectChildren) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "BatchListObjectChildren"}
+	if s.MaxResults != nil && *s.MaxResults < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("MaxResults", 1))
+	}
 	if s.ObjectReference == nil {
 		invalidParams.Add(request.NewErrParamRequired("ObjectReference"))
 	}
@@ -6460,7 +6628,7 @@ type BatchListObjectChildrenResponse struct {
 	// as the value.
 	Children map[string]*string `type:"map"`
 
-	// Token used for pagination.
+	// The pagination token.
 	NextToken *string `type:"string"`
 }
 
@@ -9116,7 +9284,7 @@ type ListAppliedSchemaArnsInput struct {
 	DirectoryArn *string `type:"string" required:"true"`
 
 	// The maximum number of results to retrieve.
-	MaxResults *int64 `type:"integer"`
+	MaxResults *int64 `min:"1" type:"integer"`
 
 	// The pagination token.
 	NextToken *string `type:"string"`
@@ -9137,6 +9305,9 @@ func (s *ListAppliedSchemaArnsInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "ListAppliedSchemaArnsInput"}
 	if s.DirectoryArn == nil {
 		invalidParams.Add(request.NewErrParamRequired("DirectoryArn"))
+	}
+	if s.MaxResults != nil && *s.MaxResults < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("MaxResults", 1))
 	}
 
 	if invalidParams.Len() > 0 {
@@ -9209,7 +9380,7 @@ type ListAttachedIndicesInput struct {
 	DirectoryArn *string `location:"header" locationName:"x-amz-data-partition" type:"string" required:"true"`
 
 	// The maximum number of results to retrieve.
-	MaxResults *int64 `type:"integer"`
+	MaxResults *int64 `min:"1" type:"integer"`
 
 	// The pagination token.
 	NextToken *string `type:"string"`
@@ -9235,6 +9406,9 @@ func (s *ListAttachedIndicesInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "ListAttachedIndicesInput"}
 	if s.DirectoryArn == nil {
 		invalidParams.Add(request.NewErrParamRequired("DirectoryArn"))
+	}
+	if s.MaxResults != nil && *s.MaxResults < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("MaxResults", 1))
 	}
 	if s.TargetReference == nil {
 		invalidParams.Add(request.NewErrParamRequired("TargetReference"))
@@ -9314,7 +9488,7 @@ type ListDevelopmentSchemaArnsInput struct {
 	_ struct{} `type:"structure"`
 
 	// The maximum number of results to retrieve.
-	MaxResults *int64 `type:"integer"`
+	MaxResults *int64 `min:"1" type:"integer"`
 
 	// The pagination token.
 	NextToken *string `type:"string"`
@@ -9328,6 +9502,19 @@ func (s ListDevelopmentSchemaArnsInput) String() string {
 // GoString returns the string representation
 func (s ListDevelopmentSchemaArnsInput) GoString() string {
 	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *ListDevelopmentSchemaArnsInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "ListDevelopmentSchemaArnsInput"}
+	if s.MaxResults != nil && *s.MaxResults < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("MaxResults", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
 // SetMaxResults sets the MaxResults field's value.
@@ -9380,7 +9567,7 @@ type ListDirectoriesInput struct {
 	_ struct{} `type:"structure"`
 
 	// The maximum number of results to retrieve.
-	MaxResults *int64 `type:"integer"`
+	MaxResults *int64 `min:"1" type:"integer"`
 
 	// The pagination token.
 	NextToken *string `type:"string"`
@@ -9398,6 +9585,19 @@ func (s ListDirectoriesInput) String() string {
 // GoString returns the string representation
 func (s ListDirectoriesInput) GoString() string {
 	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *ListDirectoriesInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "ListDirectoriesInput"}
+	if s.MaxResults != nil && *s.MaxResults < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("MaxResults", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
 // SetMaxResults sets the MaxResults field's value.
@@ -9458,7 +9658,7 @@ type ListFacetAttributesInput struct {
 	_ struct{} `type:"structure"`
 
 	// The maximum number of results to retrieve.
-	MaxResults *int64 `type:"integer"`
+	MaxResults *int64 `min:"1" type:"integer"`
 
 	// The name of the facet whose attributes will be retrieved.
 	//
@@ -9487,6 +9687,9 @@ func (s ListFacetAttributesInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *ListFacetAttributesInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "ListFacetAttributesInput"}
+	if s.MaxResults != nil && *s.MaxResults < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("MaxResults", 1))
+	}
 	if s.Name == nil {
 		invalidParams.Add(request.NewErrParamRequired("Name"))
 	}
@@ -9565,7 +9768,7 @@ type ListFacetNamesInput struct {
 	_ struct{} `type:"structure"`
 
 	// The maximum number of results to retrieve
-	MaxResults *int64 `type:"integer"`
+	MaxResults *int64 `min:"1" type:"integer"`
 
 	// The pagination token.
 	NextToken *string `type:"string"`
@@ -9589,6 +9792,9 @@ func (s ListFacetNamesInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *ListFacetNamesInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "ListFacetNamesInput"}
+	if s.MaxResults != nil && *s.MaxResults < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("MaxResults", 1))
+	}
 	if s.SchemaArn == nil {
 		invalidParams.Add(request.NewErrParamRequired("SchemaArn"))
 	}
@@ -9668,7 +9874,7 @@ type ListIndexInput struct {
 	IndexReference *ObjectReference `type:"structure" required:"true"`
 
 	// The maximum number of results to retrieve from the index.
-	MaxResults *int64 `type:"integer"`
+	MaxResults *int64 `min:"1" type:"integer"`
 
 	// The pagination token.
 	NextToken *string `type:"string"`
@@ -9695,6 +9901,9 @@ func (s *ListIndexInput) Validate() error {
 	}
 	if s.IndexReference == nil {
 		invalidParams.Add(request.NewErrParamRequired("IndexReference"))
+	}
+	if s.MaxResults != nil && *s.MaxResults < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("MaxResults", 1))
 	}
 	if s.RangesOnIndexedValues != nil {
 		for i, v := range s.RangesOnIndexedValues {
@@ -9798,9 +10007,9 @@ type ListObjectAttributesInput struct {
 
 	// Maximum number of items to be retrieved in a single call. This is an approximate
 	// number.
-	MaxResults *int64 `type:"integer"`
+	MaxResults *int64 `min:"1" type:"integer"`
 
-	// Token used for pagination.
+	// The pagination token.
 	NextToken *string `type:"string"`
 
 	// Reference that identifies the object whose attributes will be listed.
@@ -9824,6 +10033,9 @@ func (s *ListObjectAttributesInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "ListObjectAttributesInput"}
 	if s.DirectoryArn == nil {
 		invalidParams.Add(request.NewErrParamRequired("DirectoryArn"))
+	}
+	if s.MaxResults != nil && *s.MaxResults < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("MaxResults", 1))
 	}
 	if s.ObjectReference == nil {
 		invalidParams.Add(request.NewErrParamRequired("ObjectReference"))
@@ -9873,7 +10085,7 @@ type ListObjectAttributesOutput struct {
 	// value is the value.
 	Attributes []*AttributeKeyAndValue `type:"list"`
 
-	// Token used for pagination.
+	// The pagination token.
 	NextToken *string `type:"string"`
 }
 
@@ -9915,9 +10127,9 @@ type ListObjectChildrenInput struct {
 
 	// Maximum number of items to be retrieved in a single call. This is an approximate
 	// number.
-	MaxResults *int64 `type:"integer"`
+	MaxResults *int64 `min:"1" type:"integer"`
 
-	// Token used for pagination.
+	// The pagination token.
 	NextToken *string `type:"string"`
 
 	// Reference that identifies the object for which child objects are being listed.
@@ -9941,6 +10153,9 @@ func (s *ListObjectChildrenInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "ListObjectChildrenInput"}
 	if s.DirectoryArn == nil {
 		invalidParams.Add(request.NewErrParamRequired("DirectoryArn"))
+	}
+	if s.MaxResults != nil && *s.MaxResults < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("MaxResults", 1))
 	}
 	if s.ObjectReference == nil {
 		invalidParams.Add(request.NewErrParamRequired("ObjectReference"))
@@ -9990,7 +10205,7 @@ type ListObjectChildrenOutput struct {
 	// as the value.
 	Children map[string]*string `type:"map"`
 
-	// Token used for pagination.
+	// The pagination token.
 	NextToken *string `type:"string"`
 }
 
@@ -10016,6 +10231,114 @@ func (s *ListObjectChildrenOutput) SetNextToken(v string) *ListObjectChildrenOut
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListObjectParentPathsRequest
+type ListObjectParentPathsInput struct {
+	_ struct{} `type:"structure"`
+
+	// The ARN of the directory to which the parent path applies.
+	//
+	// DirectoryArn is a required field
+	DirectoryArn *string `location:"header" locationName:"x-amz-data-partition" type:"string" required:"true"`
+
+	// Maximum number of items to be retrieved in a single call. This is an approximate
+	// number.
+	MaxResults *int64 `min:"1" type:"integer"`
+
+	// The pagination token.
+	NextToken *string `type:"string"`
+
+	// Reference that identifies the object whose parent paths are listed.
+	//
+	// ObjectReference is a required field
+	ObjectReference *ObjectReference `type:"structure" required:"true"`
+}
+
+// String returns the string representation
+func (s ListObjectParentPathsInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListObjectParentPathsInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *ListObjectParentPathsInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "ListObjectParentPathsInput"}
+	if s.DirectoryArn == nil {
+		invalidParams.Add(request.NewErrParamRequired("DirectoryArn"))
+	}
+	if s.MaxResults != nil && *s.MaxResults < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("MaxResults", 1))
+	}
+	if s.ObjectReference == nil {
+		invalidParams.Add(request.NewErrParamRequired("ObjectReference"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetDirectoryArn sets the DirectoryArn field's value.
+func (s *ListObjectParentPathsInput) SetDirectoryArn(v string) *ListObjectParentPathsInput {
+	s.DirectoryArn = &v
+	return s
+}
+
+// SetMaxResults sets the MaxResults field's value.
+func (s *ListObjectParentPathsInput) SetMaxResults(v int64) *ListObjectParentPathsInput {
+	s.MaxResults = &v
+	return s
+}
+
+// SetNextToken sets the NextToken field's value.
+func (s *ListObjectParentPathsInput) SetNextToken(v string) *ListObjectParentPathsInput {
+	s.NextToken = &v
+	return s
+}
+
+// SetObjectReference sets the ObjectReference field's value.
+func (s *ListObjectParentPathsInput) SetObjectReference(v *ObjectReference) *ListObjectParentPathsInput {
+	s.ObjectReference = v
+	return s
+}
+
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListObjectParentPathsResponse
+type ListObjectParentPathsOutput struct {
+	_ struct{} `type:"structure"`
+
+	// The pagination token.
+	NextToken *string `type:"string"`
+
+	// Returns the path to the ObjectIdentifiers associated with the directory.
+	PathToObjectIdentifiersList []*PathToObjectIdentifiers `type:"list"`
+}
+
+// String returns the string representation
+func (s ListObjectParentPathsOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListObjectParentPathsOutput) GoString() string {
+	return s.String()
+}
+
+// SetNextToken sets the NextToken field's value.
+func (s *ListObjectParentPathsOutput) SetNextToken(v string) *ListObjectParentPathsOutput {
+	s.NextToken = &v
+	return s
+}
+
+// SetPathToObjectIdentifiersList sets the PathToObjectIdentifiersList field's value.
+func (s *ListObjectParentPathsOutput) SetPathToObjectIdentifiersList(v []*PathToObjectIdentifiers) *ListObjectParentPathsOutput {
+	s.PathToObjectIdentifiersList = v
+	return s
+}
+
 // Please also see https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListObjectParentsRequest
 type ListObjectParentsInput struct {
 	_ struct{} `type:"structure"`
@@ -10032,9 +10355,9 @@ type ListObjectParentsInput struct {
 
 	// Maximum number of items to be retrieved in a single call. This is an approximate
 	// number.
-	MaxResults *int64 `type:"integer"`
+	MaxResults *int64 `min:"1" type:"integer"`
 
-	// Token used for pagination.
+	// The pagination token.
 	NextToken *string `type:"string"`
 
 	// Reference that identifies the object for which parent objects are being listed.
@@ -10058,6 +10381,9 @@ func (s *ListObjectParentsInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "ListObjectParentsInput"}
 	if s.DirectoryArn == nil {
 		invalidParams.Add(request.NewErrParamRequired("DirectoryArn"))
+	}
+	if s.MaxResults != nil && *s.MaxResults < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("MaxResults", 1))
 	}
 	if s.ObjectReference == nil {
 		invalidParams.Add(request.NewErrParamRequired("ObjectReference"))
@@ -10103,7 +10429,7 @@ func (s *ListObjectParentsInput) SetObjectReference(v *ObjectReference) *ListObj
 type ListObjectParentsOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Token used for pagination.
+	// The pagination token.
 	NextToken *string `type:"string"`
 
 	// Parent structure, which is a map with key as the ObjectIdentifier and LinkName
@@ -10149,9 +10475,9 @@ type ListObjectPoliciesInput struct {
 
 	// Maximum number of items to be retrieved in a single call. This is an approximate
 	// number.
-	MaxResults *int64 `type:"integer"`
+	MaxResults *int64 `min:"1" type:"integer"`
 
-	// Token used for pagination.
+	// The pagination token.
 	NextToken *string `type:"string"`
 
 	// Reference that identifies the object for which policies will be listed.
@@ -10175,6 +10501,9 @@ func (s *ListObjectPoliciesInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "ListObjectPoliciesInput"}
 	if s.DirectoryArn == nil {
 		invalidParams.Add(request.NewErrParamRequired("DirectoryArn"))
+	}
+	if s.MaxResults != nil && *s.MaxResults < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("MaxResults", 1))
 	}
 	if s.ObjectReference == nil {
 		invalidParams.Add(request.NewErrParamRequired("ObjectReference"))
@@ -10223,7 +10552,7 @@ type ListObjectPoliciesOutput struct {
 	// List of policy ObjectIdentifiers, that are attached to the object.
 	AttachedPolicyIds []*string `type:"list"`
 
-	// Token used for pagination.
+	// The pagination token.
 	NextToken *string `type:"string"`
 }
 
@@ -10265,9 +10594,9 @@ type ListPolicyAttachmentsInput struct {
 
 	// Maximum number of items to be retrieved in a single call. This is an approximate
 	// number.
-	MaxResults *int64 `type:"integer"`
+	MaxResults *int64 `min:"1" type:"integer"`
 
-	// Token used for pagination.
+	// The pagination token.
 	NextToken *string `type:"string"`
 
 	// Reference that identifies the policy object.
@@ -10291,6 +10620,9 @@ func (s *ListPolicyAttachmentsInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "ListPolicyAttachmentsInput"}
 	if s.DirectoryArn == nil {
 		invalidParams.Add(request.NewErrParamRequired("DirectoryArn"))
+	}
+	if s.MaxResults != nil && *s.MaxResults < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("MaxResults", 1))
 	}
 	if s.PolicyReference == nil {
 		invalidParams.Add(request.NewErrParamRequired("PolicyReference"))
@@ -10336,7 +10668,7 @@ func (s *ListPolicyAttachmentsInput) SetPolicyReference(v *ObjectReference) *Lis
 type ListPolicyAttachmentsOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Token used for pagination.
+	// The pagination token.
 	NextToken *string `type:"string"`
 
 	// List of ObjectIdentifiers to which the policy is attached.
@@ -10370,7 +10702,7 @@ type ListPublishedSchemaArnsInput struct {
 	_ struct{} `type:"structure"`
 
 	// The maximum number of results to retrieve.
-	MaxResults *int64 `type:"integer"`
+	MaxResults *int64 `min:"1" type:"integer"`
 
 	// The pagination token.
 	NextToken *string `type:"string"`
@@ -10384,6 +10716,19 @@ func (s ListPublishedSchemaArnsInput) String() string {
 // GoString returns the string representation
 func (s ListPublishedSchemaArnsInput) GoString() string {
 	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *ListPublishedSchemaArnsInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "ListPublishedSchemaArnsInput"}
+	if s.MaxResults != nil && *s.MaxResults < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("MaxResults", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
 // SetMaxResults sets the MaxResults field's value.
@@ -10439,8 +10784,8 @@ type ListTagsForResourceInput struct {
 	// single page. This is for future use and is not supported currently.
 	MaxResults *int64 `min:"50" type:"integer"`
 
-	// Next token used for pagination. This is for future use. Currently pagination
-	// is not supported for tagging.
+	// The pagination token. This is for future use. Currently pagination is not
+	// supported for tagging.
 	NextToken *string `type:"string"`
 
 	// ARN of the resource. Tagging is only supported for directories.
@@ -10538,7 +10883,7 @@ type LookupPolicyInput struct {
 
 	// Maximum number of items to be retrieved in a single call. This is an approximate
 	// number.
-	MaxResults *int64 `type:"integer"`
+	MaxResults *int64 `min:"1" type:"integer"`
 
 	// The token to request the next page of results.
 	NextToken *string `type:"string"`
@@ -10564,6 +10909,9 @@ func (s *LookupPolicyInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "LookupPolicyInput"}
 	if s.DirectoryArn == nil {
 		invalidParams.Add(request.NewErrParamRequired("DirectoryArn"))
+	}
+	if s.MaxResults != nil && *s.MaxResults < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("MaxResults", 1))
 	}
 	if s.ObjectReference == nil {
 		invalidParams.Add(request.NewErrParamRequired("ObjectReference"))
@@ -10603,7 +10951,7 @@ func (s *LookupPolicyInput) SetObjectReference(v *ObjectReference) *LookupPolicy
 type LookupPolicyOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Token used for pagination.
+	// The pagination token.
 	NextToken *string `type:"string"`
 
 	// Provides list of path to policies. Policies contain PolicyId, ObjectIdentifier,
@@ -10799,6 +11147,41 @@ func (s ObjectReference) GoString() string {
 // SetSelector sets the Selector field's value.
 func (s *ObjectReference) SetSelector(v string) *ObjectReference {
 	s.Selector = &v
+	return s
+}
+
+// Returns the path to the ObjectIdentifiers associated with the directory.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/PathToObjectIdentifiers
+type PathToObjectIdentifiers struct {
+	_ struct{} `type:"structure"`
+
+	// Lists ObjectIdentifiers starting from directory root to the object in the
+	// request.
+	ObjectIdentifiers []*string `type:"list"`
+
+	// The path used to identify the object starting from directory root.
+	Path *string `type:"string"`
+}
+
+// String returns the string representation
+func (s PathToObjectIdentifiers) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PathToObjectIdentifiers) GoString() string {
+	return s.String()
+}
+
+// SetObjectIdentifiers sets the ObjectIdentifiers field's value.
+func (s *PathToObjectIdentifiers) SetObjectIdentifiers(v []*string) *PathToObjectIdentifiers {
+	s.ObjectIdentifiers = v
+	return s
+}
+
+// SetPath sets the Path field's value.
+func (s *PathToObjectIdentifiers) SetPath(v string) *PathToObjectIdentifiers {
+	s.Path = &v
 	return s
 }
 

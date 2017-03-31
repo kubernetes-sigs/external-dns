@@ -283,7 +283,8 @@
         {"shape":"ValidationException"},
         {"shape":"LimitExceededException"},
         {"shape":"AccessDeniedException"},
-        {"shape":"DirectoryDeletedException"}
+        {"shape":"DirectoryDeletedException"},
+        {"shape":"RetryableConflictException"}
       ]
     },
     "DeleteFacet":{
@@ -427,7 +428,8 @@
         {"shape":"InternalServiceException"},
         {"shape":"ValidationException"},
         {"shape":"LimitExceededException"},
-        {"shape":"AccessDeniedException"}
+        {"shape":"AccessDeniedException"},
+        {"shape":"RetryableConflictException"}
       ]
     },
     "EnableDirectory":{
@@ -445,7 +447,8 @@
         {"shape":"InternalServiceException"},
         {"shape":"ValidationException"},
         {"shape":"LimitExceededException"},
-        {"shape":"AccessDeniedException"}
+        {"shape":"AccessDeniedException"},
+        {"shape":"RetryableConflictException"}
       ]
     },
     "GetDirectory":{
@@ -710,6 +713,27 @@
         {"shape":"ResourceNotFoundException"},
         {"shape":"InvalidNextTokenException"},
         {"shape":"NotNodeException"}
+      ]
+    },
+    "ListObjectParentPaths":{
+      "name":"ListObjectParentPaths",
+      "http":{
+        "method":"POST",
+        "requestUri":"/amazonclouddirectory/2017-01-11/object/parentpaths",
+        "responseCode":200
+      },
+      "input":{"shape":"ListObjectParentPathsRequest"},
+      "output":{"shape":"ListObjectParentPathsResponse"},
+      "errors":[
+        {"shape":"InternalServiceException"},
+        {"shape":"InvalidArnException"},
+        {"shape":"RetryableConflictException"},
+        {"shape":"ValidationException"},
+        {"shape":"LimitExceededException"},
+        {"shape":"AccessDeniedException"},
+        {"shape":"DirectoryNotEnabledException"},
+        {"shape":"InvalidNextTokenException"},
+        {"shape":"ResourceNotFoundException"}
       ]
     },
     "ListObjectParents":{
@@ -2357,6 +2381,30 @@
         "NextToken":{"shape":"NextToken"}
       }
     },
+    "ListObjectParentPathsRequest":{
+      "type":"structure",
+      "required":[
+        "DirectoryArn",
+        "ObjectReference"
+      ],
+      "members":{
+        "DirectoryArn":{
+          "shape":"Arn",
+          "location":"header",
+          "locationName":"x-amz-data-partition"
+        },
+        "ObjectReference":{"shape":"ObjectReference"},
+        "NextToken":{"shape":"NextToken"},
+        "MaxResults":{"shape":"NumberResults"}
+      }
+    },
+    "ListObjectParentPathsResponse":{
+      "type":"structure",
+      "members":{
+        "PathToObjectIdentifiersList":{"shape":"PathToObjectIdentifiersList"},
+        "NextToken":{"shape":"NextToken"}
+      }
+    },
     "ListObjectParentsRequest":{
       "type":"structure",
       "required":[
@@ -2526,7 +2574,7 @@
     "NumberAttributeValue":{"type":"string"},
     "NumberResults":{
       "type":"integer",
-      "min":0
+      "min":1
     },
     "ObjectAlreadyDetachedException":{
       "type":"structure",
@@ -2599,6 +2647,17 @@
       ]
     },
     "PathString":{"type":"string"},
+    "PathToObjectIdentifiers":{
+      "type":"structure",
+      "members":{
+        "Path":{"shape":"PathString"},
+        "ObjectIdentifiers":{"shape":"ObjectIdentifierList"}
+      }
+    },
+    "PathToObjectIdentifiersList":{
+      "type":"list",
+      "member":{"shape":"PathToObjectIdentifiers"}
+    },
     "PolicyAttachment":{
       "type":"structure",
       "members":{
@@ -2785,7 +2844,7 @@
     "SchemaJsonDocument":{"type":"string"},
     "SchemaName":{
       "type":"string",
-      "max":50,
+      "max":32,
       "min":1,
       "pattern":"^[a-zA-Z0-9._-]*$"
     },

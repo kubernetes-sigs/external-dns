@@ -30,9 +30,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/kubernetes-incubator/external-dns/controller"
-	"github.com/kubernetes-incubator/external-dns/dnsprovider"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns/validation"
+	"github.com/kubernetes-incubator/external-dns/provider"
 	"github.com/kubernetes-incubator/external-dns/source"
 )
 
@@ -79,23 +79,23 @@ func main() {
 
 	sources := source.NewMultiSource(source.LookupMultiple(cfg.Sources...)...)
 
-	googleProvider, err := dnsprovider.NewGoogleProvider(cfg.GoogleProject, cfg.DryRun)
+	var p provider.Provider
+	switch cfg.Provider {
+	case "google":
+		p, err = provider.NewGoogleProvider(cfg.GoogleProject, cfg.DryRun)
+	case "aws":
+		p, err = provider.NewAWSProvider(cfg.DryRun)
+	default:
+		log.Fatalf("unknown dns provider: %s", cfg.Provider)
+	}
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	awsProvider, err := dnsprovider.NewAWSProvider(cfg.DryRun)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	dnsprovider.Register("google", googleProvider)
-	dnsprovider.Register("aws", awsProvider)
 
 	ctrl := controller.Controller{
-		Zone:        cfg.Zone,
-		Source:      sources,
-		DNSProvider: dnsprovider.Lookup(cfg.DNSProvider),
+		Zone:     cfg.Zone,
+		Source:   sources,
+		Provider: p,
 	}
 
 	if cfg.Once {

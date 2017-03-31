@@ -63,6 +63,10 @@ type DeviceFarmAPI interface {
 
 	CreateDevicePool(*devicefarm.CreateDevicePoolInput) (*devicefarm.CreateDevicePoolOutput, error)
 
+	CreateNetworkProfileRequest(*devicefarm.CreateNetworkProfileInput) (*request.Request, *devicefarm.CreateNetworkProfileOutput)
+
+	CreateNetworkProfile(*devicefarm.CreateNetworkProfileInput) (*devicefarm.CreateNetworkProfileOutput, error)
+
 	CreateProjectRequest(*devicefarm.CreateProjectInput) (*request.Request, *devicefarm.CreateProjectOutput)
 
 	CreateProject(*devicefarm.CreateProjectInput) (*devicefarm.CreateProjectOutput, error)
@@ -78,6 +82,10 @@ type DeviceFarmAPI interface {
 	DeleteDevicePoolRequest(*devicefarm.DeleteDevicePoolInput) (*request.Request, *devicefarm.DeleteDevicePoolOutput)
 
 	DeleteDevicePool(*devicefarm.DeleteDevicePoolInput) (*devicefarm.DeleteDevicePoolOutput, error)
+
+	DeleteNetworkProfileRequest(*devicefarm.DeleteNetworkProfileInput) (*request.Request, *devicefarm.DeleteNetworkProfileOutput)
+
+	DeleteNetworkProfile(*devicefarm.DeleteNetworkProfileInput) (*devicefarm.DeleteNetworkProfileOutput, error)
 
 	DeleteProjectRequest(*devicefarm.DeleteProjectInput) (*request.Request, *devicefarm.DeleteProjectOutput)
 
@@ -114,6 +122,10 @@ type DeviceFarmAPI interface {
 	GetJobRequest(*devicefarm.GetJobInput) (*request.Request, *devicefarm.GetJobOutput)
 
 	GetJob(*devicefarm.GetJobInput) (*devicefarm.GetJobOutput, error)
+
+	GetNetworkProfileRequest(*devicefarm.GetNetworkProfileInput) (*request.Request, *devicefarm.GetNetworkProfileOutput)
+
+	GetNetworkProfile(*devicefarm.GetNetworkProfileInput) (*devicefarm.GetNetworkProfileOutput, error)
 
 	GetOfferingStatusRequest(*devicefarm.GetOfferingStatusInput) (*request.Request, *devicefarm.GetOfferingStatusOutput)
 
@@ -172,6 +184,10 @@ type DeviceFarmAPI interface {
 	ListJobs(*devicefarm.ListJobsInput) (*devicefarm.ListJobsOutput, error)
 
 	ListJobsPages(*devicefarm.ListJobsInput, func(*devicefarm.ListJobsOutput, bool) bool) error
+
+	ListNetworkProfilesRequest(*devicefarm.ListNetworkProfilesInput) (*request.Request, *devicefarm.ListNetworkProfilesOutput)
+
+	ListNetworkProfiles(*devicefarm.ListNetworkProfilesInput) (*devicefarm.ListNetworkProfilesOutput, error)
 
 	ListOfferingTransactionsRequest(*devicefarm.ListOfferingTransactionsInput) (*request.Request, *devicefarm.ListOfferingTransactionsOutput)
 
@@ -254,6 +270,10 @@ type DeviceFarmAPI interface {
 	UpdateDevicePoolRequest(*devicefarm.UpdateDevicePoolInput) (*request.Request, *devicefarm.UpdateDevicePoolOutput)
 
 	UpdateDevicePool(*devicefarm.UpdateDevicePoolInput) (*devicefarm.UpdateDevicePoolOutput, error)
+
+	UpdateNetworkProfileRequest(*devicefarm.UpdateNetworkProfileInput) (*request.Request, *devicefarm.UpdateNetworkProfileOutput)
+
+	UpdateNetworkProfile(*devicefarm.UpdateNetworkProfileInput) (*devicefarm.UpdateNetworkProfileOutput, error)
 
 	UpdateProjectRequest(*devicefarm.UpdateProjectInput) (*request.Request, *devicefarm.UpdateProjectOutput)
 
