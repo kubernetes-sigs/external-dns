@@ -20,11 +20,11 @@ ExternalDNS' current release is `v0.1`. This version allows you to keep a manage
 In this release, ExternalDNS is limited to—and takes full ownership of—a single managed zone. In other words, if you have any existing records in that zone, they will be removed. We encourage you to try out ExternalDNS in its own zone first to see if that model works for you. However, ExternalDNS runs in dryRun mode by default, and won't make any changes to your infrastructure. So as long as you don't change that flag, you're safe.
 
 ### Technical Requirements
-Make sure you meet the following prerequisites:
-* You have a local Go 1.7+ development environment.
-* You have access to a Google project with the DNS API enabled.
-* You have access to a Kubernetes cluster that supports exposing Services, e.g. GKE.
-* You have a properly setup, **unused** and **empty** hosted zone in Google CloudDNS.
+Make sure you have the following prerequisites:
+* A local Go 1.7+ development environment.
+* Access to a Google project with the DNS API enabled.
+* Access to a Kubernetes cluster that supports exposing Services, e.g. GKE.
+* A properly set up, **unused**, and **empty** hosted zone in Google CloudDNS.
 
 ### Setup Steps
 
@@ -53,15 +53,15 @@ Locally run a single sync loop of ExternalDNS. Make sure to change the Google pr
 $ external-dns --zone example-org --provider google --google-project example-project --source service --once
 ```
 
-This should output the DNS records it's going to modify to match the managed zone with the DNS records you desire.
+This should output the DNS records it will modify to match the managed zone with the DNS records you desire.
 
-Once you're satisfied with the result you can run ExternalDNS like you would run it in your cluster: as a control loop and not in dryRun mode.
+Once you're satisfied with the result, you can run ExternalDNS like you would run it in your cluster: as a control loop, and not in dryRun mode:
 
 ```console
 $ external-dns --zone example-org --provider google --google-project example-project --source service --dry-run=false
 ```
 
-Check that ExternalDNS created the desired DNS record for your service and that it points to its load balancer's IP. Then try to resolve it.
+Check that ExternalDNS has created the desired DNS record for your service and that it points to its load balancer's IP. Then try to resolve it:
 
 ```console
 $ dig +short nginx.example.org.
@@ -74,13 +74,13 @@ Now you can experiment and watch how ExternalDNS makes sure that your DNS record
 * Add another Service to create more DNS records.
 * Remove Services to clean up your managed zone.
 
-The [tutorials](docs/tutorials) section contains examples including Ingress resources and show how to setup ExternalDNS in different environments, such as other cloud providers and alternative ingress controllers.
+The [tutorials](docs/tutorials) section contains examples, including Ingress resources, and shows you how to set up ExternalDNS in different environments such as other cloud providers and alternative ingress controllers.
 
 # Roadmap
 
-ExternalDNS was built with extensibility in mind. Adding and experimenting with new DNS providers and sources of desired DNS records should be as easy as possible. In addition, it should also be possible to modify how ExternalDNS behaves, e.g. whether it should add but must never delete records.
+ExternalDNS was built with extensibility in mind. Adding and experimenting with new DNS providers and sources of desired DNS records should be as easy as possible. It should also be possible to modify how ExternalDNS behaves—e.g. whether it should add records but never delete them.
 
-Furthermore, we're working on an ownership system that allows ExternalDNS to keep track of the records it created and will allow it to never modify records it doesn't have control over.
+We're working on an ownership system that allows ExternalDNS to keep track of records it creates and/or never modify records over which it lacks control.
 
 Here's a rough outline on what is to come:
 
@@ -91,12 +91,12 @@ Here's a rough outline on what is to come:
 
 ### v0.2
 
-* Support for AWS Route53
+* Support for AWS Route 53
 * Support for Kubernetes Ingresses
 
 ### v0.3
 
-* Support for AWS Route53 via ALIAS
+* Support for AWS Route 53 via ALIAS
 * Support for multiple zones
 * Ownership System
 
@@ -119,13 +119,13 @@ Have a look at [the milestones](https://github.com/kubernetes-incubator/external
 
 # Contributing
 
-We encourage you to get involved with ExternalDNS, as users as well as contributors. Read the [contributing guidelines](CONTRIBUTING.md) and have a look at [the contributing docs](docs/contributing/getting-started.md) to learn about building the project, the project structure and the purpose of each package.
+We encourage you to get involved with ExternalDNS, as users as well as contributors. Read the [contributing guidelines](CONTRIBUTING.md) and have a look at [the contributing docs](docs/contributing/getting-started.md) to learn about building the project, the project structure, and the purpose of each package.
 
 Feel free to reach out to us on the [Kubernetes slack](http://slack.k8s.io) in the #sig-network channel.
 
 # Heritage
 
-ExternalDNS is an effort to unify the following similar projects in order to bring the Kubernetes community an easy and predictable way of managing DNS records across cloud providers based on their Kubernetes resources.
+ExternalDNS is an effort to unify the following similar projects in order to bring the Kubernetes community an easy and predictable way of managing DNS records across cloud providers based on their Kubernetes resources:
 
 * Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller)
 * Zalando's [Mate](https://github.com/zalando-incubator/mate)
@@ -141,4 +141,4 @@ The incubator team for the project is:
 * Champion: Tim Hockin (@thockin)
 * SIG: sig-network
 
-For more information about sig-network such as meeting times and agenda, check out the [community site](https://github.com/kubernetes/community/tree/master/sig-network).
+For more information about sig-network, such as meeting times and agenda, check out the [community site](https://github.com/kubernetes/community/tree/master/sig-network).
