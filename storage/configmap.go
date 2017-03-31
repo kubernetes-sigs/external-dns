@@ -17,7 +17,7 @@ limitations under the License.
 package storage
 
 import (
-	"github.com/kubernetes-incubator/external-dns/dnsprovider"
+	"github.com/kubernetes-incubator/external-dns/provider"
 )
 
 /**
@@ -31,5 +31,5 @@ ConfigMap - implements storage interface via Kubernetes ConfigMap resource
 
 // ConfigMap implementation of storage via Kubernetes ConfigMap resource
 type ConfigMap struct {
-	DNSProvider dnsprovider.DNSProvider
+	DNSProvider provider.DNSProvider
 }

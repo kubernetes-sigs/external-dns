@@ -72,28 +72,28 @@ func testInMemoryAssign(t *testing.T) {
 			title: "non-empty cache, empty assign",
 			owner: "me",
 			cache: map[string]*endpoint.SharedEndpoint{
-				"foo.org": &endpoint.SharedEndpoint{
+				"foo.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "foo.org",
 						Target:  "foo-lb.org",
 					},
 					Owner: "",
 				},
-				"bar.org": &endpoint.SharedEndpoint{
+				"bar.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "bar.org",
 						Target:  "bar-lb.org",
 					},
 					Owner: "",
 				},
-				"baz.org": &endpoint.SharedEndpoint{
+				"baz.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "baz.org",
 						Target:  "baz-lb.org",
 					},
 					Owner: "",
 				},
-				"qux.org": &endpoint.SharedEndpoint{
+				"qux.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "qux.org",
 						Target:  "qux-lb.org",
@@ -102,28 +102,28 @@ func testInMemoryAssign(t *testing.T) {
 				},
 			},
 			expectedCache: map[string]*endpoint.SharedEndpoint{
-				"foo.org": &endpoint.SharedEndpoint{
+				"foo.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "foo.org",
 						Target:  "foo-lb.org",
 					},
 					Owner: "",
 				},
-				"bar.org": &endpoint.SharedEndpoint{
+				"bar.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "bar.org",
 						Target:  "bar-lb.org",
 					},
 					Owner: "",
 				},
-				"baz.org": &endpoint.SharedEndpoint{
+				"baz.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "baz.org",
 						Target:  "baz-lb.org",
 					},
 					Owner: "",
 				},
-				"qux.org": &endpoint.SharedEndpoint{
+				"qux.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "qux.org",
 						Target:  "qux-lb.org",
@@ -138,28 +138,28 @@ func testInMemoryAssign(t *testing.T) {
 			title: "non-empty cache, with new assign",
 			owner: "me",
 			cache: map[string]*endpoint.SharedEndpoint{
-				"foo.org": &endpoint.SharedEndpoint{
+				"foo.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "foo.org",
 						Target:  "foo-lb.org",
 					},
 					Owner: "",
 				},
-				"bar.org": &endpoint.SharedEndpoint{
+				"bar.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "bar.org",
 						Target:  "bar-lb.org",
 					},
 					Owner: "",
 				},
-				"baz.org": &endpoint.SharedEndpoint{
+				"baz.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "baz.org",
 						Target:  "baz-lb.org",
 					},
 					Owner: "",
 				},
-				"qux.org": &endpoint.SharedEndpoint{
+				"qux.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "qux.org",
 						Target:  "qux-lb.org",
@@ -168,42 +168,42 @@ func testInMemoryAssign(t *testing.T) {
 				},
 			},
 			expectedCache: map[string]*endpoint.SharedEndpoint{
-				"foo.org": &endpoint.SharedEndpoint{
+				"foo.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "foo.org",
 						Target:  "foo-lb.org",
 					},
 					Owner: "",
 				},
-				"bar.org": &endpoint.SharedEndpoint{
+				"bar.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "bar.org",
 						Target:  "bar-lb.org",
 					},
 					Owner: "",
 				},
-				"baz.org": &endpoint.SharedEndpoint{
+				"baz.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "baz.org",
 						Target:  "baz-lb.org",
 					},
 					Owner: "",
 				},
-				"qux.org": &endpoint.SharedEndpoint{
+				"qux.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "qux.org",
 						Target:  "qux-lb.org",
 					},
 					Owner: "",
 				},
-				"new.org": &endpoint.SharedEndpoint{
+				"new.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "new.org",
 						Target:  "new-lb.org",
 					},
 					Owner: "me",
 				},
-				"another-new.org": &endpoint.SharedEndpoint{
+				"another-new.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "another-new.org",
 						Target:  "another-new-lb.org",
@@ -212,11 +212,11 @@ func testInMemoryAssign(t *testing.T) {
 				},
 			},
 			assign: []endpoint.Endpoint{
-				endpoint.Endpoint{
+				{
 					DNSName: "new.org",
 					Target:  "new-lb.org",
 				},
-				endpoint.Endpoint{
+				{
 					DNSName: "another-new.org",
 					Target:  "another-new-lb.org",
 				},
@@ -227,28 +227,28 @@ func testInMemoryAssign(t *testing.T) {
 			title: "non-empty cache, with old and new assign",
 			owner: "me",
 			cache: map[string]*endpoint.SharedEndpoint{
-				"foo.org": &endpoint.SharedEndpoint{
+				"foo.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "foo.org",
 						Target:  "foo-lb.org",
 					},
 					Owner: "another",
 				},
-				"bar.org": &endpoint.SharedEndpoint{
+				"bar.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "bar.org",
 						Target:  "bar-lb.org",
 					},
 					Owner: "",
 				},
-				"baz.org": &endpoint.SharedEndpoint{
+				"baz.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "baz.org",
 						Target:  "baz-lb.org",
 					},
 					Owner: "",
 				},
-				"qux.org": &endpoint.SharedEndpoint{
+				"qux.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "qux.org",
 						Target:  "qux-lb.org",
@@ -257,35 +257,35 @@ func testInMemoryAssign(t *testing.T) {
 				},
 			},
 			expectedCache: map[string]*endpoint.SharedEndpoint{
-				"foo.org": &endpoint.SharedEndpoint{
+				"foo.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "foo.org",
 						Target:  "foo-lb.org",
 					},
 					Owner: "me",
 				},
-				"bar.org": &endpoint.SharedEndpoint{
+				"bar.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "bar.org",
 						Target:  "bar-lb.org",
 					},
 					Owner: "",
 				},
-				"baz.org": &endpoint.SharedEndpoint{
+				"baz.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "baz.org",
 						Target:  "baz-lb.org",
 					},
 					Owner: "",
 				},
-				"qux.org": &endpoint.SharedEndpoint{
+				"qux.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "qux.org",
 						Target:  "qux-lb.org",
 					},
 					Owner: "",
 				},
-				"new.org": &endpoint.SharedEndpoint{
+				"new.org": {
 					Endpoint: endpoint.Endpoint{
 						DNSName: "new.org",
 						Target:  "new-lb.org",
@@ -294,11 +294,11 @@ func testInMemoryAssign(t *testing.T) {
 				},
 			},
 			assign: []endpoint.Endpoint{
-				endpoint.Endpoint{
+				{
 					DNSName: "new.org",
 					Target:  "new-lb.org",
 				},
-				endpoint.Endpoint{
+				{
 					DNSName: "foo.org",
 					Target:  "foo-lb.org",
 				},
@@ -371,28 +371,28 @@ func testInMemoryWaitForSync(t *testing.T) {
 	})
 
 	expectedCache := []*endpoint.SharedEndpoint{
-		&endpoint.SharedEndpoint{
+		{
 			Endpoint: endpoint.Endpoint{
 				DNSName: "foo.org",
 				Target:  "foo-lb.org",
 			},
 			Owner: "",
 		},
-		&endpoint.SharedEndpoint{
+		{
 			Endpoint: endpoint.Endpoint{
 				DNSName: "bar.org",
 				Target:  "bar-lb.org",
 			},
 			Owner: "",
 		},
-		&endpoint.SharedEndpoint{
+		{
 			Endpoint: endpoint.Endpoint{
 				DNSName: "baz.org",
 				Target:  "baz-lb.org",
 			},
 			Owner: "",
 		},
-		&endpoint.SharedEndpoint{
+		{
 			Endpoint: endpoint.Endpoint{
 				DNSName: "qux.org",
 				Target:  "qux-lb.org",
@@ -448,7 +448,7 @@ func testInMemoryOwnRecords(t *testing.T) {
 			title: "non-empty cache, empty result",
 			owner: "me",
 			cache: map[string]*endpoint.SharedEndpoint{
-				"bar.org": &endpoint.SharedEndpoint{
+				"bar.org": {
 					Owner: "you",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "bar.org",
@@ -462,14 +462,14 @@ func testInMemoryOwnRecords(t *testing.T) {
 			title: "non-empty cache, filter owned records",
 			owner: "me",
 			cache: map[string]*endpoint.SharedEndpoint{
-				"foo.org": &endpoint.SharedEndpoint{
+				"foo.org": {
 					Owner: "me",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "foo.org",
 						Target:  "elb.com",
 					},
 				},
-				"bar.org": &endpoint.SharedEndpoint{
+				"bar.org": {
 					Owner: "you",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "bar.org",
@@ -478,7 +478,7 @@ func testInMemoryOwnRecords(t *testing.T) {
 				},
 			},
 			expected: []endpoint.Endpoint{
-				endpoint.Endpoint{
+				{
 					DNSName: "foo.org",
 					Target:  "elb.com",
 				},
@@ -511,14 +511,14 @@ func testInMemoryRecords(t *testing.T) {
 		{
 			title: "non-empty cache",
 			cache: map[string]*endpoint.SharedEndpoint{
-				"foo.org": &endpoint.SharedEndpoint{
+				"foo.org": {
 					Owner: "instance-id",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "foo.org",
 						Target:  "elb.com",
 					},
 				},
-				"bar.org": &endpoint.SharedEndpoint{
+				"bar.org": {
 					Owner: "another-id",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "bar.org",
@@ -527,14 +527,14 @@ func testInMemoryRecords(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.SharedEndpoint{
-				&endpoint.SharedEndpoint{
+				{
 					Owner: "instance-id",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "foo.org",
 						Target:  "elb.com",
 					},
 				},
-				&endpoint.SharedEndpoint{
+				{
 					Owner: "another-id",
 					Endpoint: endpoint.Endpoint{
 						DNSName: "bar.org",

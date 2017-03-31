@@ -19,8 +19,8 @@ package storage
 import (
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/prometheus/common/log"
 )
 
 // Storage is an interface which should enable external-dns track its state

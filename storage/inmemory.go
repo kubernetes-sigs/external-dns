@@ -22,7 +22,6 @@ import (
 
 	"time"
 
-	"github.com/kubernetes-incubator/external-dns/dnsprovider"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
