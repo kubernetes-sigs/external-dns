@@ -31,5 +31,5 @@ ConfigMap - implements storage interface via Kubernetes ConfigMap resource
 
 // ConfigMap implementation of storage via Kubernetes ConfigMap resource
 type ConfigMap struct {
-	DNSProvider provider.DNSProvider
+	DNSProvider provider.Provider
 }

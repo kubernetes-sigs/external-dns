@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/provider"
 )
 
 var (
@@ -34,7 +35,7 @@ var (
 // 2. To be used for testing purposes
 // 3. State is not shared across different instances of external-dns
 type InMemoryStorage struct {
-	registry dnsprovider.DNSProvider
+	registry provider.Provider
 	zone     string
 	owner    string //refers to the owner id of the current instance
 	cache    map[string]*endpoint.SharedEndpoint
@@ -44,7 +45,7 @@ type InMemoryStorage struct {
 var _ Storage = &InMemoryStorage{}
 
 // NewInMemoryStorage returns new InMemoryStorage object
-func NewInMemoryStorage(registry dnsprovider.DNSProvider, owner, zone string) (*InMemoryStorage, error) {
+func NewInMemoryStorage(registry provider.Provider, owner, zone string) (*InMemoryStorage, error) {
 	if owner == "" || zone == "" {
 		return nil, errors.New("owner and zone should not be empty strings")
 	}

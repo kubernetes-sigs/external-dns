@@ -19,10 +19,10 @@ package storage
 import (
 	"testing"
 
-	"github.com/kubernetes-incubator/external-dns/dnsprovider"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/kubernetes-incubator/external-dns/provider"
 )
 
 func TestInMemory(t *testing.T) {
@@ -307,7 +307,7 @@ func testInMemoryAssign(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			registry := dnsprovider.NewInMemoryProvider()
+			registry := provider.NewInMemoryProvider()
 			zone := "org"
 			owner := "me"
 			im, _ := NewInMemoryStorage(registry, owner, zone)
@@ -334,7 +334,7 @@ func testInMemoryAssign(t *testing.T) {
 }
 
 func testInMemoryWaitForSync(t *testing.T) {
-	registry := dnsprovider.NewInMemoryProvider()
+	registry := provider.NewInMemoryProvider()
 	zone := "org"
 	owner := "me"
 	im, _ := NewInMemoryStorage(registry, owner, zone)
@@ -557,7 +557,7 @@ func testInMemoryRecords(t *testing.T) {
 
 func testNewInMemoryStorage(t *testing.T) {
 	var owner, zone string
-	var provider dnsprovider.InMemoryProvider
+	var provider provider.InMemoryProvider
 	if _, err := NewInMemoryStorage(&provider, owner, zone); err == nil {
 		t.Errorf("should fail when owner/zone is empty")
 	}
@@ -580,7 +580,7 @@ func testNewInMemoryStorage(t *testing.T) {
 	if storage.zone != zone || storage.owner != owner || storage.cache == nil {
 		t.Errorf("incorrectly initialized in memory storage provider")
 	}
-	if _, ok := storage.registry.(*dnsprovider.InMemoryProvider); !ok {
+	if _, ok := storage.registry.(*provider.InMemoryProvider); !ok {
 		t.Errorf("incorrect dns provider is used for registry")
 	}
 }
