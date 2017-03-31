@@ -557,28 +557,28 @@ func testInMemoryRecords(t *testing.T) {
 
 func testNewInMemoryStorage(t *testing.T) {
 	var owner, zone string
-	var provider provider.InMemoryProvider
-	if _, err := NewInMemoryStorage(&provider, owner, zone); err == nil {
+	var dnsProvider provider.InMemoryProvider
+	if _, err := NewInMemoryStorage(&dnsProvider, owner, zone); err == nil {
 		t.Errorf("should fail when owner/zone is empty")
 	}
 	owner = "test-1"
 	zone = ""
-	if _, err := NewInMemoryStorage(&provider, owner, zone); err == nil {
+	if _, err := NewInMemoryStorage(&dnsProvider, owner, zone); err == nil {
 		t.Errorf("should fail when owner/zone is empty")
 	}
 	owner = ""
 	zone = "zone-1"
-	if _, err := NewInMemoryStorage(&provider, owner, zone); err == nil {
+	if _, err := NewInMemoryStorage(&dnsProvider, owner, zone); err == nil {
 		t.Errorf("should fail when owner/zone is empty")
 	}
 	owner = "test-1"
 	zone = "zone-1"
-	storage, err := NewInMemoryStorage(&provider, owner, zone)
+	storage, err := NewInMemoryStorage(&dnsProvider, owner, zone)
 	if err != nil {
 		t.Error(err)
 	}
 	if storage.zone != zone || storage.owner != owner || storage.cache == nil {
-		t.Errorf("incorrectly initialized in memory storage provider")
+		t.Errorf("incorrectly initialized in memory storage dnsProvider")
 	}
 	if _, ok := storage.registry.(*provider.InMemoryProvider); !ok {
 		t.Errorf("incorrect dns provider is used for registry")
