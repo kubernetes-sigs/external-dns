@@ -3,48 +3,51 @@
 [![Coverage Status](https://coveralls.io/repos/github/kubernetes-incubator/external-dns/badge.svg?branch=master)](https://coveralls.io/github/kubernetes-incubator/external-dns?branch=master)
 [![GitHub release](https://img.shields.io/github/release/kubernetes-incubator/external-dns.svg)](https://github.com/kubernetes-incubator/external-dns/releases)
 
-ExternalDNS synchronizes exposed Services and Ingresses with cloud DNS providers.
+ExternalDNS synchronizes exposed services and Kubernetes ingresses with cloud DNS providers.
 
-# Motivation
+## Motivation
 
-Inspired by Kubernetes' cluster-internal [DNS server](https://github.com/kubernetes/dns) ExternalDNS intends to make Kubernetes resources discoverable via public DNS servers. Similarly to KubeDNS it retrieves a list of resources from the Kubernetes API, such as Services and Ingresses, to determine a desired list of DNS records. However, unlike KubeDNS it's not a DNS server itself but merely configures other DNS providers accordingly, e.g. AWS Route53 or Google CloudDNS.
+Inspired by [Kubernetes DNS](https://github.com/kubernetes/dns), Kubernetes' cluster-internal DNS server, ExternalDNS makes Kubernetes resources discoverable via public DNS servers. Like KubeDNS, it retrieves a list of resources (Services, Ingresses, etc.) from the [Kubernetes API](https://kubernetes.io/docs/api/) to determine a desired list of DNS records. **Unlike** KubeDNS, however, it's not a DNS server itself, but merely configures other DNS providers accordingly—e.g. [AWS Route 53](https://aws.amazon.com/route53/) or [Google Cloud DNS](https://cloud.google.com/dns/docs/).
 
-In a broader sense, it allows you to control DNS records dynamically via Kubernetes resources in a DNS provider agnostic way.
+In a broader sense, ExternalDNS allows you to control DNS records dynamically via Kubernetes resources in a DNS provider-agnostic way.
 
 The [FAQ](docs/faq.md) contains additional information and addresses several questions about key concepts of ExternalDNS.
 
-# Getting started
+## Getting started
 
-ExternalDNS' current release is `v0.1` which allows to keep a managed zone in Google's [CloudDNS](https://cloud.google.com/dns/docs/) service synchronized with Services of `type=LoadBalancer` in your cluster.
+ExternalDNS' current release is `v0.1`. This version allows you to keep a managed zone in Google's [CloudDNS](https://cloud.google.com/dns/docs/) service synchronized with Services of `type=LoadBalancer` in your cluster.
 
-In this release ExternalDNS is limited to a single managed zone and takes full ownership of it. That means if you have any existing records in that zone they will be removed. We encourage you to try out ExternalDNS in its own zone first to see if that model works for you. However, ExternalDNS, by default, runs in dryRun mode and won't make any changes to your infrastructure. So, as long as you don't change that flag, you're safe.
+In this release, ExternalDNS is limited to—and takes full ownership of—a single managed zone. In other words, if you have any existing records in that zone, they will be removed. We encourage you to try out ExternalDNS in its own zone first to see if that model works for you. However, ExternalDNS runs in dryRun mode by default, and won't make any changes to your infrastructure. So as long as you don't change that flag, you're safe.
 
+### Technical Requirements
 Make sure you meet the following prerequisites:
 * You have a local Go 1.7+ development environment.
 * You have access to a Google project with the DNS API enabled.
 * You have access to a Kubernetes cluster that supports exposing Services, e.g. GKE.
 * You have a properly setup, **unused** and **empty** hosted zone in Google CloudDNS.
 
-First, get ExternalDNS.
+### Setup Steps
+
+First, get ExternalDNS:
 
 ```console
 $ go get -u github.com/kubernetes-incubator/external-dns
 ```
 
-Run an application and expose it via a Kubernetes Service.
+Next, run an application and expose it via a Kubernetes Service:
 
 ```console
 $ kubectl run nginx --image=nginx --replicas=1 --port=80
 $ kubectl expose deployment nginx --port=80 --target-port=80 --type=LoadBalancer
 ```
 
-Annotate the Service with your desired external DNS name. Make sure to change `example.org` to your domain and that it includes the trailing dot.
+Annotate the Service with your desired external DNS name. Make sure to change `example.org` to your domain (and that it includes the trailing dot):
 
 ```console
 $ kubectl annotate service nginx "external-dns.alpha.kubernetes.io/hostname=nginx.example.org."
 ```
 
-Run a single sync loop of ExternalDNS locally. Make sure to change the Google project to one you control and the zone identifier to an **unused** and **empty** hosted zone in that project's Google CloudDNS.
+Locally run a single sync loop of ExternalDNS. Make sure to change the Google project to one you control, and the zone identifier to an **unused** and **empty** hosted zone in that project's Google CloudDNS:
 
 ```console
 $ external-dns --zone example-org --provider google --google-project example-project --source service --once
