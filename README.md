@@ -11,6 +11,8 @@ Inspired by Kubernetes' cluster-internal [DNS server](https://github.com/kuberne
 
 In a broader sense, it allows you to control DNS records dynamically via Kubernetes resources in a DNS provider agnostic way.
 
+The [FAQ](docs/faq.md) contains additional information and addresses several questions about key concepts of ExternalDNS.
+
 # Getting started
 
 ExternalDNS' current release is `v0.1` which allows to keep a managed zone in Google's [CloudDNS](https://cloud.google.com/dns/docs/) service synchronized with Services of `type=LoadBalancer` in your cluster.
@@ -101,10 +103,6 @@ Here's a rough outline on what is to come:
 * Ability to replace Zalando's [Mate](https://github.com/zalando-incubator/mate)
 * Ability to replace Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 
-The [FAQ](docs/faq.md) contains additional information and addresses several questions about key concepts of ExternalDNS.
-
-Also have a look at [the milestones](https://github.com/kubernetes-incubator/external-dns/milestones) to get an idea of where we currently stand.
-
 ### Yet to be defined
 
 * Support for CoreDNS and Azure DNS
@@ -113,6 +111,8 @@ Also have a look at [the milestones](https://github.com/kubernetes-incubator/ext
 * Support for Services with `type=NodePort`
 * Support for TPRs
 * Support for more advanced DNS record configurations
+
+Have a look at [the milestones](https://github.com/kubernetes-incubator/external-dns/milestones) to get an idea of where we currently stand.
 
 # Contributing
 
