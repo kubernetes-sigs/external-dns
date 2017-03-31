@@ -117,13 +117,13 @@ Here's a rough outline on what is to come:
 
 Have a look at [the milestones](https://github.com/kubernetes-incubator/external-dns/milestones) to get an idea of where we currently stand.
 
-# Contributing
+## Contributing
 
 We encourage you to get involved with ExternalDNS, as users as well as contributors. Read the [contributing guidelines](CONTRIBUTING.md) and have a look at [the contributing docs](docs/contributing/getting-started.md) to learn about building the project, the project structure, and the purpose of each package.
 
 Feel free to reach out to us on the [Kubernetes slack](http://slack.k8s.io) in the #sig-network channel.
 
-# Heritage
+## Heritage
 
 ExternalDNS is an effort to unify the following similar projects in order to bring the Kubernetes community an easy and predictable way of managing DNS records across cloud providers based on their Kubernetes resources:
 
@@ -142,3 +142,7 @@ The incubator team for the project is:
 * SIG: sig-network
 
 For more information about sig-network, such as meeting times and agenda, check out the [community site](https://github.com/kubernetes/community/tree/master/sig-network).
+
+### Code of conduct
+
+Participation in the Kubernetes community is governed by the [Kubernetes Code of Conduct](code-of-conduct.md).
