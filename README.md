@@ -3,7 +3,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/kubernetes-incubator/external-dns/badge.svg?branch=master)](https://coveralls.io/github/kubernetes-incubator/external-dns?branch=master)
 [![GitHub release](https://img.shields.io/github/release/kubernetes-incubator/external-dns.svg)](https://github.com/kubernetes-incubator/external-dns/releases)
 
-ExternalDNS synchronizes exposed services and Kubernetes ingresses with cloud DNS providers.
+ExternalDNS synchronizes exposed Services and Kubernetes Ingresses with cloud DNS providers.
 
 ## What It Does
 
