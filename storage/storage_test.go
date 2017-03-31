@@ -18,39 +18,49 @@ package storage
 
 import (
 	"testing"
+	"time"
 
-	"github.com/kubernetes-incubator/external-dns/dnsprovider"
+	"fmt"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
-	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
-// initInMemoryDNSProvider initialize the state for in memory dns dnsprovider
-func initInMemoryDNSProvider() (*dnsprovider.InMemoryProvider, string) {
-	zone := "org"
-	registry := dnsprovider.NewInMemoryProvider()
-	registry.CreateZone(zone)
-	registry.ApplyChanges(zone, &plan.Changes{
-		Create: []endpoint.Endpoint{
-			{
-				DNSName: "foo.org",
-				Target:  "foo-lb.org",
-			},
-			{
-				DNSName: "bar.org",
-				Target:  "bar-lb.org",
-			},
-			{
-				DNSName: "baz.org",
-				Target:  "baz-lb.org",
-			},
-			{
-				DNSName: "qux.org",
-				Target:  "qux-lb.org",
-			},
-		},
-	})
-	return registry, zone
+func TestPoll(t *testing.T) {
+	oldResyncPeriod := resyncPeriod
+	stopChan := make(chan struct{}, 1)
+	count := 3
+	numErr := 1
+	resyncPeriod = 1 * time.Second
+	defer func() {
+		resyncPeriod = oldResyncPeriod
+	}()
+
+	syncMock := func() error {
+		count--
+		if count == 2 {
+			return fmt.Errorf("error: dummy")
+		}
+		if count == 0 {
+			stopChan <- struct{}{}
+		}
+		return nil
+	}
+	onSyncError := func(err error) {
+		numErr--
+	}
+
+	defer func() {
+		if count != 0 {
+			t.Errorf("Poll SyncFunc was not called %d times", 3)
+		}
+		if numErr != 0 {
+			t.Errorf("Error callback was not triggered")
+		}
+	}()
+
+	Poll(syncMock, onSyncError, stopChan)
+	// <-stopChan
 }
 
 func TestUpdatedCache(t *testing.T) {

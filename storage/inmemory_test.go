@@ -26,29 +26,325 @@ import (
 )
 
 func TestInMemory(t *testing.T) {
+	t.Run("TestAssign", testInMemoryAssign)
 	t.Run("TestWaitForSync", testInMemoryWaitForSync)
-	t.Run("TestRefreshCache", testInMemoryRefreshCache)
 	t.Run("TestOwnRecords", testInMemoryOwnRecords)
 	t.Run("TestRecords", testInMemoryRecords)
 	t.Run("TestNewInMemoryStorage", testNewInMemoryStorage)
 }
 
-func testInMemoryWaitForSync(t *testing.T) {
-
+func testInMemoryAssign(t *testing.T) {
+	initRegistry := []endpoint.Endpoint{
+		{
+			DNSName: "foo.org",
+			Target:  "foo-lb.org",
+		},
+		{
+			DNSName: "bar.org",
+			Target:  "bar-lb.org",
+		},
+		{
+			DNSName: "baz.org",
+			Target:  "baz-lb.org",
+		},
+		{
+			DNSName: "qux.org",
+			Target:  "qux-lb.org",
+		},
+	}
+	for _, ti := range []struct {
+		title         string
+		owner         string
+		cache         map[string]*endpoint.SharedEndpoint
+		assign        []endpoint.Endpoint
+		initRegistry  []endpoint.Endpoint
+		expectedCache map[string]*endpoint.SharedEndpoint
+	}{
+		{
+			title:         "empty cache, empty assign",
+			owner:         "me",
+			cache:         map[string]*endpoint.SharedEndpoint{},
+			expectedCache: map[string]*endpoint.SharedEndpoint{},
+			assign:        []endpoint.Endpoint{},
+			initRegistry:  initRegistry,
+		},
+		{
+			title: "non-empty cache, empty assign",
+			owner: "me",
+			cache: map[string]*endpoint.SharedEndpoint{
+				"foo.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "foo.org",
+						Target:  "foo-lb.org",
+					},
+					Owner: "",
+				},
+				"bar.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "bar.org",
+						Target:  "bar-lb.org",
+					},
+					Owner: "",
+				},
+				"baz.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "baz.org",
+						Target:  "baz-lb.org",
+					},
+					Owner: "",
+				},
+				"qux.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "qux.org",
+						Target:  "qux-lb.org",
+					},
+					Owner: "",
+				},
+			},
+			expectedCache: map[string]*endpoint.SharedEndpoint{
+				"foo.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "foo.org",
+						Target:  "foo-lb.org",
+					},
+					Owner: "",
+				},
+				"bar.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "bar.org",
+						Target:  "bar-lb.org",
+					},
+					Owner: "",
+				},
+				"baz.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "baz.org",
+						Target:  "baz-lb.org",
+					},
+					Owner: "",
+				},
+				"qux.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "qux.org",
+						Target:  "qux-lb.org",
+					},
+					Owner: "",
+				},
+			},
+			assign:       []endpoint.Endpoint{},
+			initRegistry: initRegistry,
+		},
+		{
+			title: "non-empty cache, with new assign",
+			owner: "me",
+			cache: map[string]*endpoint.SharedEndpoint{
+				"foo.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "foo.org",
+						Target:  "foo-lb.org",
+					},
+					Owner: "",
+				},
+				"bar.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "bar.org",
+						Target:  "bar-lb.org",
+					},
+					Owner: "",
+				},
+				"baz.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "baz.org",
+						Target:  "baz-lb.org",
+					},
+					Owner: "",
+				},
+				"qux.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "qux.org",
+						Target:  "qux-lb.org",
+					},
+					Owner: "",
+				},
+			},
+			expectedCache: map[string]*endpoint.SharedEndpoint{
+				"foo.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "foo.org",
+						Target:  "foo-lb.org",
+					},
+					Owner: "",
+				},
+				"bar.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "bar.org",
+						Target:  "bar-lb.org",
+					},
+					Owner: "",
+				},
+				"baz.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "baz.org",
+						Target:  "baz-lb.org",
+					},
+					Owner: "",
+				},
+				"qux.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "qux.org",
+						Target:  "qux-lb.org",
+					},
+					Owner: "",
+				},
+				"new.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "new.org",
+						Target:  "new-lb.org",
+					},
+					Owner: "me",
+				},
+				"another-new.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "another-new.org",
+						Target:  "another-new-lb.org",
+					},
+					Owner: "me",
+				},
+			},
+			assign: []endpoint.Endpoint{
+				endpoint.Endpoint{
+					DNSName: "new.org",
+					Target:  "new-lb.org",
+				},
+				endpoint.Endpoint{
+					DNSName: "another-new.org",
+					Target:  "another-new-lb.org",
+				},
+			},
+			initRegistry: initRegistry,
+		},
+		{
+			title: "non-empty cache, with old and new assign",
+			owner: "me",
+			cache: map[string]*endpoint.SharedEndpoint{
+				"foo.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "foo.org",
+						Target:  "foo-lb.org",
+					},
+					Owner: "another",
+				},
+				"bar.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "bar.org",
+						Target:  "bar-lb.org",
+					},
+					Owner: "",
+				},
+				"baz.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "baz.org",
+						Target:  "baz-lb.org",
+					},
+					Owner: "",
+				},
+				"qux.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "qux.org",
+						Target:  "qux-lb.org",
+					},
+					Owner: "",
+				},
+			},
+			expectedCache: map[string]*endpoint.SharedEndpoint{
+				"foo.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "foo.org",
+						Target:  "foo-lb.org",
+					},
+					Owner: "me",
+				},
+				"bar.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "bar.org",
+						Target:  "bar-lb.org",
+					},
+					Owner: "",
+				},
+				"baz.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "baz.org",
+						Target:  "baz-lb.org",
+					},
+					Owner: "",
+				},
+				"qux.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "qux.org",
+						Target:  "qux-lb.org",
+					},
+					Owner: "",
+				},
+				"new.org": &endpoint.SharedEndpoint{
+					Endpoint: endpoint.Endpoint{
+						DNSName: "new.org",
+						Target:  "new-lb.org",
+					},
+					Owner: "me",
+				},
+			},
+			assign: []endpoint.Endpoint{
+				endpoint.Endpoint{
+					DNSName: "new.org",
+					Target:  "new-lb.org",
+				},
+				endpoint.Endpoint{
+					DNSName: "foo.org",
+					Target:  "foo-lb.org",
+				},
+			},
+			initRegistry: initRegistry,
+		},
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			registry := dnsprovider.NewInMemoryProvider()
+			zone := "org"
+			owner := "me"
+			im, _ := NewInMemoryStorage(registry, owner, zone)
+			im.cache = ti.cache
+			registry.CreateZone(zone)
+			registry.ApplyChanges(zone, &plan.Changes{
+				Create: ti.initRegistry,
+			})
+			err := im.Assign(ti.assign)
+			if err != nil {
+				t.Error(err)
+			}
+			if len(im.cache) != len(ti.expectedCache) {
+				t.Error("provided expected cache does not match the cache")
+				return
+			}
+			for dns := range im.cache {
+				if !testutils.SameSharedEndpoint(*im.cache[dns], *ti.expectedCache[dns]) {
+					t.Error("provided expected cache does not match the cache")
+				}
+			}
+		})
+	}
 }
 
-func testInMemoryRefreshCache(t *testing.T) {
+func testInMemoryWaitForSync(t *testing.T) {
 	registry := dnsprovider.NewInMemoryProvider()
 	zone := "org"
 	owner := "me"
 	im, _ := NewInMemoryStorage(registry, owner, zone)
-	err := im.refreshCache()
+	err := im.WaitForSync()
 	if err == nil {
 		t.Errorf("should fail, because zone does not exist")
 	}
 
 	registry.CreateZone(zone)
-	im.refreshCache()
+	im.WaitForSync()
 	if len(im.cache) != 0 {
 		t.Errorf("cache should be empty!")
 	}
@@ -105,7 +401,7 @@ func testInMemoryRefreshCache(t *testing.T) {
 		},
 	}
 
-	im.refreshCache()
+	im.WaitForSync()
 
 	flatCache := []*endpoint.SharedEndpoint{}
 	for _, record := range im.cache {
@@ -122,7 +418,7 @@ func testInMemoryRefreshCache(t *testing.T) {
 			Target:  "foo-lb.org",
 		},
 	})
-	im.refreshCache()
+	im.WaitForSync()
 	expectedCache[0].Owner = "me"
 	flatCache = []*endpoint.SharedEndpoint{}
 

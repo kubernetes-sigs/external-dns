@@ -16,7 +16,12 @@ limitations under the License.
 
 package storage
 
-import "github.com/kubernetes-incubator/external-dns/endpoint"
+import (
+	"time"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/prometheus/common/log"
+)
 
 // Storage is an interface which should enable external-dns track its state
 // Record() returns ALL records registered with DNS provider (TODO: consider returning only specific hosted zone)
@@ -29,7 +34,6 @@ type Storage interface {
 	Records() []*endpoint.SharedEndpoint
 	OwnRecords() []endpoint.Endpoint
 	Assign([]endpoint.Endpoint) error
-	Poll(stopChan <-chan struct{})
 	WaitForSync() error
 }
 
@@ -48,4 +52,25 @@ func updatedCache(records []endpoint.Endpoint, cacheRecords []*endpoint.SharedEn
 		}
 	}
 	return newCache
+}
+
+// Poll periodically resyncs with the registry to update the cache
+// syncFunc - is the callback func to be called to query registry for the data
+// onSyncError - is the callback func to be called if syncFunc failed
+// and update the cache
+// Example of usage:
+// storage.Poll(inMemoryStorage.WaitForSync, stopChan)
+func Poll(syncFunc func() error, onSyncError func(error), stopChan <-chan struct{}) {
+	for {
+		select {
+		case <-time.After(resyncPeriod):
+			err := syncFunc()
+			if err != nil {
+				onSyncError(err)
+			}
+		case <-stopChan:
+			log.Infoln("terminating storage polling")
+			return
+		}
+	}
 }

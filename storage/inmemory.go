@@ -22,13 +22,12 @@ import (
 
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/kubernetes-incubator/external-dns/dnsprovider"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
 var (
-	resyncPeriod = 30 * time.Second
+	resyncPeriod = 1 * time.Minute
 )
 
 // InMemoryStorage implements storage interface - simple in-memory storage
@@ -42,6 +41,8 @@ type InMemoryStorage struct {
 	cache    map[string]*endpoint.SharedEndpoint
 	sync.Mutex
 }
+
+var _ Storage = &InMemoryStorage{}
 
 // NewInMemoryStorage returns new InMemoryStorage object
 func NewInMemoryStorage(registry dnsprovider.DNSProvider, owner, zone string) (*InMemoryStorage, error) {
@@ -80,14 +81,16 @@ func (im *InMemoryStorage) OwnRecords() []endpoint.Endpoint {
 
 // Assign updates the cache after successful registry update call
 func (im *InMemoryStorage) Assign(records []endpoint.Endpoint) error {
-	im.refreshCache() //with new rebuild cache records should already exists in the cache
-
 	im.Lock()
 	defer im.Unlock()
 	for _, record := range records {
 		if _, exist := im.cache[record.DNSName]; !exist {
-			log.Errorf("record could not be assigned, record was not found in cache")
-			continue
+			im.cache[record.DNSName] = &endpoint.SharedEndpoint{
+				Endpoint: endpoint.Endpoint{
+					DNSName: record.DNSName,
+					Target:  record.Target,
+				},
+			}
 		}
 		im.cache[record.DNSName].Owner = im.owner
 	}
@@ -97,12 +100,6 @@ func (im *InMemoryStorage) Assign(records []endpoint.Endpoint) error {
 
 // WaitForSync fetches the data from dns provider to build ownership information
 func (im *InMemoryStorage) WaitForSync() error {
-	//drop and recreate the cache
-	im.refreshCache()
-	return nil
-}
-
-func (im *InMemoryStorage) refreshCache() error {
 	im.Lock()
 	defer im.Unlock()
 
@@ -124,20 +121,4 @@ func (im *InMemoryStorage) refreshCache() error {
 	}
 
 	return nil
-}
-
-// Poll periodically resyncs with the registry to update the cache
-func (im *InMemoryStorage) Poll(stopChan <-chan struct{}) {
-	for {
-		select {
-		case <-time.After(resyncPeriod):
-			err := im.refreshCache()
-			if err != nil {
-				log.Errorf("failed to refresh cache: %v", err)
-			}
-		case <-stopChan:
-			log.Infoln("terminating storage polling")
-			return
-		}
-	}
 }
