@@ -2,7 +2,7 @@
 
 ### When would ExternalDNS become useful to me?
 
-You've probably created many deployments. Typically, you expose your deployment to the Internet by creating a service with a type of load balancer. Depending on your environment, this usually assigns a random publicly available endpoint to your service that you can access from anywhere in the world. On Google Container Engine, this is a public IP address:
+You've probably created many deployments. Typically, you expose your deployment to the Internet by creating a Service with `type=LoadBalancer`. Depending on your environment, this usually assigns a random publicly available endpoint to your service that you can access from anywhere in the world. On Google Container Engine, this is a public IP address:
 
 ```console
 $ kubectl get svc
@@ -22,7 +22,7 @@ NAME         HOSTS                                      ADDRESS         PORTS   
 entrypoint   frontend.example.org,backend.example.org   35.186.250.78   80        1m
 ```
 
-But there's nothing that actually makes clients resolve those hostnames with the Ingress' IP address. Again, you normally have to register each entry with your DNS provider. Only if you're lucky can you use a wildcard, like in the example above.
+But there's nothing that actually makes clients resolve those hostnames to the Ingress' IP address. Again, you normally have to register each entry with your DNS provider. Only if you're lucky can you use a wildcard, like in the example above.
 
 EnternalDNS can solve this for you as well.
 
@@ -30,13 +30,13 @@ EnternalDNS can solve this for you as well.
 
 So far, Google CloudDNS and AWS Route 53 with ALIAS records. There's interest in supporting CoreDNS and Azure DNS. We're open to discussing/adding other providers if the community believes it would be valuable.
 
-Initial support for Google CloudDNS is available in the `v0.1` release. Initial support for AWS Route 53 is targeted for the `v0.2` release. However, you can already test it with CNAME instead of ALIAS, using version `v0.1.0`.
+Initial support for Google CloudDNS is available in the `v0.1` release. Initial support for AWS Route 53 is targeted for the `v0.2` (CNAME based) and `v0.3` (ALIAS based) releases. However, you can already test AWS Route 53 with CNAME, using version `v0.1.1` and onwards.
 
 There are no plans regarding other providers at the moment.
 
 ### Which Kubernetes objects are supported?
 
-Services exposed via type LoadBalancer and for the hostnames defined in Ingress objects. It also seems useful to expose Services with type NodePort to point to your cluster's nodes directly, but there's no commitment to doing this yet.
+Services exposed via `type=LoadBalancer` and for the hostnames defined in Ingress objects. It also seems useful to expose Services with `type=NodePort` to point to your cluster's nodes directly, but there's no commitment to doing this yet.
 
 ### Which Service and Ingress controllers are supported?
 

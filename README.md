@@ -20,6 +20,7 @@ ExternalDNS' current release is `v0.1`. This version allows you to keep a manage
 In this release, ExternalDNS is limited to—and takes full ownership of—a single managed zone. In other words, if you have any existing records in that zone, they will be removed. We encourage you to try out ExternalDNS in its own zone first to see if that model works for you. However, ExternalDNS runs in dryRun mode by default, and won't make any changes to your infrastructure. So as long as you don't change that flag, you're safe.
 
 ### Technical Requirements
+
 Make sure you have the following prerequisites:
 * A local Go 1.7+ development environment.
 * Access to a Google project with the DNS API enabled.
@@ -80,7 +81,7 @@ The [tutorials](docs/tutorials) section contains examples, including Ingress res
 
 ExternalDNS was built with extensibility in mind. Adding and experimenting with new DNS providers and sources of desired DNS records should be as easy as possible. It should also be possible to modify how ExternalDNS behaves—e.g. whether it should add records but never delete them.
 
-We're working on an ownership system that allows ExternalDNS to keep track of records it creates and/or never modify records over which it lacks control.
+We're working on an ownership system that allows ExternalDNS to never modify records over which it lacks control.
 
 Here's a rough outline on what is to come:
 
