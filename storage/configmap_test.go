@@ -14,20 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package endpoint
+package storage
 
-// Endpoint is a high-level way of a connection between a service and an IP
-type Endpoint struct {
-	// The hostname of the DNS record
-	DNSName string
-	// The target the DNS record points to
-	Target string
+import (
+	"testing"
+)
+
+func TestConfigMap(t *testing.T) {
+	t.Run("", testConfigMapWaitForSync)
 }
 
-// SharedEndpoint is a unit of data stored in the storage it should provide information such as
-// 1. Owner - which external-dns instance is managing the records
-// 2. DNSName and Target inherited from endpoint.Endpoint struct
-type SharedEndpoint struct {
-	Owner string //refers to the Owner ID
-	Endpoint
+func testConfigMapWaitForSync(t *testing.T) {
+
 }
