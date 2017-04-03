@@ -72,6 +72,10 @@ func (r *Route53APIStub) ChangeResourceRecordSets(input *route53.ChangeResourceR
 		return nil, fmt.Errorf("Hosted zone doesn't exist: %s", aws.StringValue(input.HostedZoneId))
 	}
 
+	if len(input.ChangeBatch.Changes) == 0 {
+		return nil, fmt.Errorf("ChangeBatch doesn't contain any changes")
+	}
+
 	output := &route53.ChangeResourceRecordSetsOutput{}
 	recordSets, ok := r.recordSets[aws.StringValue(input.HostedZoneId)]
 	if !ok {
@@ -480,6 +484,20 @@ func TestAWSApply(t *testing.T) {
 
 	if found {
 		t.Fatal("delete-test.ext-dns-test.teapot.zalan.do. should be gone")
+	}
+}
+
+func TestAWSApplyNoChanges(t *testing.T) {
+	provider := newAWSProvider(t, false)
+
+	_, err := provider.CreateZone("ext-dns-test.teapot.zalan.do.")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = provider.ApplyChanges("ext-dns-test.teapot.zalan.do.", &plan.Changes{})
+	if err != nil {
+		t.Error(err)
 	}
 }
 

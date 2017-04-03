@@ -200,6 +200,11 @@ func (p *AWSProvider) ApplyChanges(zone string, changes *plan.Changes) error {
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
 func (p *AWSProvider) submitChanges(zone string, changes []*route53.Change) error {
+	// return early if there is nothing to change
+	if len(changes) == 0 {
+		return nil
+	}
+
 	hostedZone, err := p.Zone(zone)
 	if err != nil {
 		return err
