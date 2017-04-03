@@ -16,10 +16,32 @@ limitations under the License.
 
 package endpoint
 
+const (
+	ownerKey = "owner"
+)
+
 // Endpoint is a high-level way of a connection between a service and an IP
 type Endpoint struct {
 	// The hostname of the DNS record
 	DNSName string
 	// The target the DNS record points to
 	Target string
+	// Labels stores labels defined for the Endpoint
+	Labels map[string]string
+}
+
+// Owner returns the owner for the endpoint - required for the ownership implementation
+func (e *Endpoint) Owner() string {
+	if e.Labels != nil {
+		return e.Labels[ownerKey]
+	}
+	return ""
+}
+
+// SetOwner sets the owner for the endpoint
+func (e *Endpoint) SetOwner(owner string) {
+	if e.Labels == nil {
+		e.Labels = map[string]string{}
+	}
+	e.Labels[ownerKey] = owner
 }
