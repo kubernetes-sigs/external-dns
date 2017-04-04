@@ -15,38 +15,3 @@ limitations under the License.
 */
 
 package endpoint
-
-import (
-	"testing"
-)
-
-func TestOwner(t *testing.T) {
-	e := &Endpoint{}
-	if e.Owner() != "" {
-		t.Errorf("Owner should be empty if Labels not initialized")
-	}
-	e.Labels = map[string]string{}
-	e.Labels[ownerKey] = ""
-	if e.Owner() != "" {
-		t.Errorf("Owner should be empty for records without owners")
-	}
-	e.Labels[ownerKey] = "owner"
-	if e.Owner() != "owner" {
-		t.Errorf("Incorrect owner is returned")
-	}
-}
-
-func TestSetOwner(t *testing.T) {
-	e := &Endpoint{}
-	e.SetOwner("")
-	if e.Labels == nil {
-		t.Fatalf("Labels map should be initialized")
-	}
-	if e.Labels[ownerKey] != "" {
-		t.Errorf("Owner set incorrectly")
-	}
-	e.SetOwner("owner")
-	if e.Labels[ownerKey] != "owner" {
-		t.Errorf("Owner set incorrectly")
-	}
-}
