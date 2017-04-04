@@ -252,7 +252,7 @@ func TestAWSRecords(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	records := []endpoint.Endpoint{{DNSName: "list-test.list-ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
+	records := []*endpoint.Endpoint{{DNSName: "list-test.list-ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
 
 	err = provider.CreateRecords("list-ext-dns-test.teapot.zalan.do.", records)
 	if err != nil {
@@ -291,7 +291,7 @@ func TestAWSCreateRecords(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	records := []endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
+	records := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", records)
 	if err != nil {
@@ -326,14 +326,14 @@ func TestAWSUpdateRecords(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	oldRecords := []endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
+	oldRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", oldRecords)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	newRecords := []endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "1.2.3.4"}}
+	newRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "1.2.3.4"}}
 
 	err = provider.UpdateRecords("ext-dns-test.teapot.zalan.do.", newRecords, oldRecords)
 	if err != nil {
@@ -368,7 +368,7 @@ func TestAWSDeleteRecords(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	records := []endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do.", Target: "20.153.88.175"}}
+	records := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do.", Target: "20.153.88.175"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", records)
 	if err != nil {
@@ -406,22 +406,22 @@ func TestAWSApply(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	updateRecords := []endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
+	updateRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", updateRecords)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	deleteRecords := []endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do.", Target: "20.153.88.175"}}
+	deleteRecords := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do.", Target: "20.153.88.175"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", deleteRecords)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	createRecords := []endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
-	updateNewRecords := []endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "1.2.3.4"}}
+	createRecords := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
+	updateNewRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "1.2.3.4"}}
 
 	changes := &plan.Changes{
 		Create:    createRecords,
@@ -511,7 +511,7 @@ func TestAWSCreateRecordDryRun(t *testing.T) {
 
 	provider.DryRun = true
 
-	records := []endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
+	records := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", records)
 	if err != nil {
@@ -546,7 +546,7 @@ func TestAWSUpdateRecordDryRun(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	oldRecords := []endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
+	oldRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", oldRecords)
 	if err != nil {
@@ -555,7 +555,7 @@ func TestAWSUpdateRecordDryRun(t *testing.T) {
 
 	provider.DryRun = true
 
-	newRecords := []endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "1.2.3.4"}}
+	newRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "1.2.3.4"}}
 
 	err = provider.UpdateRecords("ext-dns-test.teapot.zalan.do.", newRecords, oldRecords)
 	if err != nil {
@@ -590,7 +590,7 @@ func TestAWSDeleteRecordDryRun(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	records := []endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do.", Target: "20.153.88.175"}}
+	records := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do.", Target: "20.153.88.175"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", records)
 	if err != nil {
@@ -630,14 +630,14 @@ func TestAWSApplyDryRun(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	updateRecords := []endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
+	updateRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", updateRecords)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	deleteRecords := []endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do.", Target: "20.153.88.175"}}
+	deleteRecords := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do.", Target: "20.153.88.175"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", deleteRecords)
 	if err != nil {
@@ -646,8 +646,8 @@ func TestAWSApplyDryRun(t *testing.T) {
 
 	provider.DryRun = true
 
-	createRecords := []endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
-	updateNewRecords := []endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "1.2.3.4"}}
+	createRecords := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
+	updateNewRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "1.2.3.4"}}
 
 	changes := &plan.Changes{
 		Create:    createRecords,

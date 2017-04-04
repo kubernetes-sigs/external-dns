@@ -247,7 +247,7 @@ func TestGoogleCreateRecords(t *testing.T) {
 		changesClient: &mockChangesClient{},
 	}
 
-	endpoints := []endpoint.Endpoint{
+	endpoints := []*endpoint.Endpoint{
 		{
 			DNSName: "dns-name",
 			Target:  "target",
@@ -273,14 +273,14 @@ func TestGoogleUpdateRecords(t *testing.T) {
 		changesClient: &mockChangesClient{},
 	}
 
-	records := []endpoint.Endpoint{
+	records := []*endpoint.Endpoint{
 		{
 			DNSName: "dns-name",
 			Target:  "target",
 		},
 	}
 
-	oldRecords := []endpoint.Endpoint{
+	oldRecords := []*endpoint.Endpoint{
 		{
 			DNSName: "dns-name",
 			Target:  "target",
@@ -311,7 +311,7 @@ func TestGoogleDeleteRecords(t *testing.T) {
 		changesClient: &mockChangesClient{},
 	}
 
-	endpoints := []endpoint.Endpoint{
+	endpoints := []*endpoint.Endpoint{
 		{
 			DNSName: "dns-name",
 			Target:  "target",

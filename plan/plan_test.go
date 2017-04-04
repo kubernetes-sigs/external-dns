@@ -27,16 +27,16 @@ import (
 // current records to a list of desired records.
 func TestCalculate(t *testing.T) {
 	// empty list of records
-	empty := []endpoint.Endpoint{}
+	empty := []*endpoint.Endpoint{}
 	// a simple entry
-	fooV1 := []endpoint.Endpoint{{DNSName: "foo", Target: "v1"}}
+	fooV1 := []*endpoint.Endpoint{{DNSName: "foo", Target: "v1"}}
 	// the same entry but with different target
-	fooV2 := []endpoint.Endpoint{{DNSName: "foo", Target: "v2"}}
+	fooV2 := []*endpoint.Endpoint{{DNSName: "foo", Target: "v2"}}
 	// another simple entry
-	bar := []endpoint.Endpoint{{DNSName: "bar", Target: "v1"}}
+	bar := []*endpoint.Endpoint{{DNSName: "bar", Target: "v1"}}
 
 	for _, tc := range []struct {
-		current, desired, create, updateOld, updateNew, delete []endpoint.Endpoint
+		current, desired, create, updateOld, updateNew, delete []*endpoint.Endpoint
 	}{
 		// Nothing exists and nothing desired doesn't change anything.
 		{empty, empty, empty, empty, empty, empty},
@@ -70,14 +70,14 @@ func TestCalculate(t *testing.T) {
 
 // BenchmarkCalculate benchmarks the Calculate method.
 func BenchmarkCalculate(b *testing.B) {
-	foo := endpoint.Endpoint{DNSName: "foo", Target: "v1"}
-	barV1 := endpoint.Endpoint{DNSName: "bar", Target: "v1"}
-	barV2 := endpoint.Endpoint{DNSName: "bar", Target: "v2"}
-	baz := endpoint.Endpoint{DNSName: "baz", Target: "v1"}
+	foo := endpoint.NewEndpoint("foo", "v1")
+	barV1 := endpoint.NewEndpoint("bar", "v1")
+	barV2 := endpoint.NewEndpoint("bar", "v2")
+	baz := endpoint.NewEndpoint("baz", "v1")
 
 	plan := &Plan{
-		Current: []endpoint.Endpoint{foo, barV1},
-		Desired: []endpoint.Endpoint{barV2, baz},
+		Current: []*endpoint.Endpoint{foo, barV1},
+		Desired: []*endpoint.Endpoint{barV2, baz},
 	}
 
 	for i := 0; i < b.N; i++ {
@@ -87,37 +87,53 @@ func BenchmarkCalculate(b *testing.B) {
 
 // ExamplePlan shows how plan can be used.
 func ExamplePlan() {
-	foo := endpoint.Endpoint{DNSName: "foo.example.com", Target: "1.2.3.4"}
-	barV1 := endpoint.Endpoint{DNSName: "bar.example.com", Target: "8.8.8.8"}
-	barV2 := endpoint.Endpoint{DNSName: "bar.example.com", Target: "8.8.4.4"}
-	baz := endpoint.Endpoint{DNSName: "baz.example.com", Target: "6.6.6.6"}
+	foo := endpoint.NewEndpoint("foo.example.com", "1.2.3.4")
+	barV1 := endpoint.NewEndpoint("bar.example.com", "8.8.8.8")
+	barV2 := endpoint.NewEndpoint("bar.example.com", "8.8.4.4")
+	baz := endpoint.NewEndpoint("baz.example.com", "6.6.6.6")
 
 	// Plan where
 	// * foo should be deleted
 	// * bar should be updated from v1 to v2
 	// * baz should be created
 	plan := &Plan{
-		Current: []endpoint.Endpoint{foo, barV1},
-		Desired: []endpoint.Endpoint{barV2, baz},
+		Current: []*endpoint.Endpoint{foo, barV1},
+		Desired: []*endpoint.Endpoint{barV2, baz},
 	}
 
 	// calculate actions
 	plan = plan.Calculate()
 
 	// print actions
-	fmt.Println("Create:", plan.Changes.Create)
-	fmt.Println("UpdateOld:", plan.Changes.UpdateOld)
-	fmt.Println("UpdateNew:", plan.Changes.UpdateNew)
-	fmt.Println("Delete:", plan.Changes.Delete)
+	fmt.Println("Create:")
+	for _, ep := range plan.Changes.Create {
+		fmt.Println(ep)
+	}
+	fmt.Println("UpdateOld:")
+	for _, ep := range plan.Changes.UpdateOld {
+		fmt.Println(ep)
+	}
+	fmt.Println("UpdateNew:")
+	for _, ep := range plan.Changes.UpdateNew {
+		fmt.Println(ep)
+	}
+	fmt.Println("Delete:")
+	for _, ep := range plan.Changes.Delete {
+		fmt.Println(ep)
+	}
 	// Output:
-	// Create: [{baz.example.com 6.6.6.6}]
-	// UpdateOld: [{bar.example.com 8.8.8.8}]
-	// UpdateNew: [{bar.example.com 8.8.4.4}]
-	// Delete: [{foo.example.com 1.2.3.4}]
+	// Create:
+	// &{baz.example.com 6.6.6.6}
+	// UpdateOld:
+	// &{bar.example.com 8.8.8.8}
+	// UpdateNew:
+	// &{bar.example.com 8.8.4.4}
+	// Delete:
+	// &{foo.example.com 1.2.3.4}
 }
 
 // validateEntries validates that the list of entries matches expected.
-func validateEntries(t *testing.T, entries, expected []endpoint.Endpoint) {
+func validateEntries(t *testing.T, entries, expected []*endpoint.Endpoint) {
 	if len(entries) != len(expected) {
 		t.Fatalf("expected %q to match %q", entries, expected)
 	}

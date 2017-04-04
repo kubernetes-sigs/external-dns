@@ -41,13 +41,13 @@ func NewIngressSource(client kubernetes.Interface, namespace string) Source {
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all ingress resources on all namespaces
-func (sc *ingressSource) Endpoints() ([]endpoint.Endpoint, error) {
+func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	ingresses, err := sc.client.Extensions().Ingresses(sc.namespace).List(v1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	endpoints := []endpoint.Endpoint{}
+	endpoints := []*endpoint.Endpoint{}
 
 	for _, ing := range ingresses.Items {
 		ingEndpoints := endpointsFromIngress(&ing)
@@ -58,8 +58,8 @@ func (sc *ingressSource) Endpoints() ([]endpoint.Endpoint, error) {
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object
-func endpointsFromIngress(ing *v1beta1.Ingress) []endpoint.Endpoint {
-	var endpoints []endpoint.Endpoint
+func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
+	var endpoints []*endpoint.Endpoint
 
 	// Check controller annotation to see if we are responsible.
 	controller, exists := ing.Annotations[controllerAnnotationKey]
@@ -73,16 +73,10 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []endpoint.Endpoint {
 		}
 		for _, lb := range ing.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
-				endpoints = append(endpoints, endpoint.Endpoint{
-					DNSName: sanitizeHostname(rule.Host),
-					Target:  lb.IP,
-				})
+				endpoints = append(endpoints, endpoint.NewEndpoint(sanitizeHostname(rule.Host), lb.IP))
 			}
 			if lb.Hostname != "" {
-				endpoints = append(endpoints, endpoint.Endpoint{
-					DNSName: sanitizeHostname(rule.Host),
-					Target:  lb.Hostname,
-				})
+				endpoints = append(endpoints, endpoint.NewEndpoint(sanitizeHostname(rule.Host), lb.Hostname))
 			}
 		}
 	}
