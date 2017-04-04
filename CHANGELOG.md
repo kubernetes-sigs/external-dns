@@ -1,6 +1,7 @@
 Features:
 
   - Support creation of CNAME records when endpoint target is a hostname.
+  - Allow omitting the trailing dot in Service annotations.
 
 Bug fixes:
 
