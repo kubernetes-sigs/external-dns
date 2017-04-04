@@ -93,5 +93,5 @@ func recordExists(needle *endpoint.Endpoint, haystack []*endpoint.Endpoint) (*en
 		}
 	}
 
-	return endpoint.NewEndpoint("", ""), false
+	return nil, false
 }
