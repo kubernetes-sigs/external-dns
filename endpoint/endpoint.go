@@ -36,5 +36,6 @@ func NewEndpoint(dnsName, target string) *Endpoint {
 	return &Endpoint{
 		DNSName: dnsName,
 		Target:  target,
+		Labels:  map[string]string{},
 	}
 }
