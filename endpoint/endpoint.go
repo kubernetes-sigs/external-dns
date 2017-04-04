@@ -23,3 +23,11 @@ type Endpoint struct {
 	// The target the DNS record points to
 	Target string
 }
+
+// NewEndpoint initialization method to be used to create an endpoint
+func NewEndpoint(dnsName, target string) *Endpoint {
+	return &Endpoint{
+		DNSName: dnsName,
+		Target:  target,
+	}
+}

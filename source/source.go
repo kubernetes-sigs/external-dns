@@ -31,5 +31,5 @@ const (
 
 // Source defines the interface Endpoint sources should implement.
 type Source interface {
-	Endpoints() ([]endpoint.Endpoint, error)
+	Endpoints() ([]*endpoint.Endpoint, error)
 }

@@ -60,7 +60,7 @@ func NewInMemoryProvider() *InMemoryProvider {
 type InMemoryRecord struct {
 	Type    string
 	Payload string
-	endpoint.Endpoint
+	*endpoint.Endpoint
 }
 
 // CreateZone adds new zone if not present
@@ -73,7 +73,7 @@ func (im *InMemoryProvider) CreateZone(newZone string) error {
 }
 
 // Records returns the list of endpoints
-func (im *InMemoryProvider) Records(zone string) ([]endpoint.Endpoint, error) {
+func (im *InMemoryProvider) Records(zone string) ([]*endpoint.Endpoint, error) {
 	if _, exists := im.zones[zone]; !exists {
 		return nil, ErrZoneNotFound
 	}
@@ -163,8 +163,8 @@ func (im *InMemoryProvider) findByType(recordType string, records []*InMemoryRec
 	return nil
 }
 
-func (im *InMemoryProvider) endpoints(zone string) []endpoint.Endpoint {
-	endpoints := make([]endpoint.Endpoint, 0)
+func (im *InMemoryProvider) endpoints(zone string) []*endpoint.Endpoint {
+	endpoints := make([]*endpoint.Endpoint, 0)
 	if zoneRecords, exists := im.zones[zone]; exists {
 		for _, recordsPerName := range zoneRecords {
 			for _, record := range recordsPerName {

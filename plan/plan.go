@@ -24,9 +24,9 @@ import (
 // update and delete actions.
 type Plan struct {
 	// List of current records
-	Current []endpoint.Endpoint
+	Current []*endpoint.Endpoint
 	// List of desired records
-	Desired []endpoint.Endpoint
+	Desired []*endpoint.Endpoint
 	// List of changes necessary to move towards desired state
 	// Populated after calling Calculate()
 	Changes Changes
@@ -35,13 +35,13 @@ type Plan struct {
 // Changes holds lists of actions to be executed by dns providers
 type Changes struct {
 	// Records that need to be created
-	Create []endpoint.Endpoint
+	Create []*endpoint.Endpoint
 	// Records that need to be updated (current data)
-	UpdateOld []endpoint.Endpoint
+	UpdateOld []*endpoint.Endpoint
 	// Records that need to be updated (desired data)
-	UpdateNew []endpoint.Endpoint
+	UpdateNew []*endpoint.Endpoint
 	// Records that need to be deleted
-	Delete []endpoint.Endpoint
+	Delete []*endpoint.Endpoint
 }
 
 // Calculate computes the actions needed to move current state towards desired
@@ -86,12 +86,12 @@ func (p *Plan) Calculate() *Plan {
 }
 
 // recordExists checks whether a record can be found in a list of records.
-func recordExists(needle endpoint.Endpoint, haystack []endpoint.Endpoint) (endpoint.Endpoint, bool) {
+func recordExists(needle *endpoint.Endpoint, haystack []*endpoint.Endpoint) (*endpoint.Endpoint, bool) {
 	for _, record := range haystack {
 		if record.DNSName == needle.DNSName {
 			return record, true
 		}
 	}
 
-	return endpoint.Endpoint{}, false
+	return endpoint.NewEndpoint("", ""), false
 }
