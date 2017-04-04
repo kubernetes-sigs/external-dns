@@ -96,6 +96,7 @@ func main() {
 		Zone:     cfg.Zone,
 		Source:   sources,
 		Provider: p,
+		Interval: cfg.Interval,
 	}
 
 	if cfg.Once {

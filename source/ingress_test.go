@@ -37,7 +37,7 @@ func testEndpointsFromIngress(t *testing.T) {
 	for _, ti := range []struct {
 		title    string
 		ingress  fakeIngress
-		expected []endpoint.Endpoint
+		expected []*endpoint.Endpoint
 	}{
 		{
 			title: "one rule.host one lb.hostname",
@@ -45,7 +45,7 @@ func testEndpointsFromIngress(t *testing.T) {
 				dnsnames:  []string{"foo.bar"}, // Kubernetes requires removal of trailing dot
 				hostnames: []string{"lb.com"},  // Kubernetes omits the trailing dot
 			},
-			expected: []endpoint.Endpoint{
+			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "foo.bar.",
 					Target:  "lb.com.",
@@ -58,7 +58,7 @@ func testEndpointsFromIngress(t *testing.T) {
 				dnsnames: []string{"foo.bar"},
 				ips:      []string{"8.8.8.8"},
 			},
-			expected: []endpoint.Endpoint{
+			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "foo.bar.",
 					Target:  "8.8.8.8",
@@ -72,7 +72,7 @@ func testEndpointsFromIngress(t *testing.T) {
 				ips:       []string{"8.8.8.8", "127.0.0.1"},
 				hostnames: []string{"elb.com", "alb.com"},
 			},
-			expected: []endpoint.Endpoint{
+			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "foo.bar.",
 					Target:  "8.8.8.8",
@@ -97,7 +97,7 @@ func testEndpointsFromIngress(t *testing.T) {
 				ips:       []string{"8.8.8.8", "127.0.0.1"},
 				hostnames: []string{"elb.com", "alb.com"},
 			},
-			expected: []endpoint.Endpoint{},
+			expected: []*endpoint.Endpoint{},
 		},
 		{
 			title: "one empty rule.host",
@@ -106,14 +106,14 @@ func testEndpointsFromIngress(t *testing.T) {
 				ips:       []string{"8.8.8.8", "127.0.0.1"},
 				hostnames: []string{"elb.com", "alb.com"},
 			},
-			expected: []endpoint.Endpoint{},
+			expected: []*endpoint.Endpoint{},
 		},
 		{
 			title: "no targets",
 			ingress: fakeIngress{
 				dnsnames: []string{""},
 			},
-			expected: []endpoint.Endpoint{},
+			expected: []*endpoint.Endpoint{},
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
@@ -129,7 +129,7 @@ func testIngressEndpoints(t *testing.T) {
 		title           string
 		targetNamespace string
 		ingressItems    []fakeIngress
-		expected        []endpoint.Endpoint
+		expected        []*endpoint.Endpoint
 	}{
 		{
 			title:           "no ingress",
@@ -152,7 +152,7 @@ func testIngressEndpoints(t *testing.T) {
 					hostnames: []string{"lb.com"},
 				},
 			},
-			expected: []endpoint.Endpoint{
+			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "example.org.",
 					Target:  "8.8.8.8",
@@ -180,7 +180,7 @@ func testIngressEndpoints(t *testing.T) {
 					hostnames: []string{"lb.com"},
 				},
 			},
-			expected: []endpoint.Endpoint{
+			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "example.org.",
 					Target:  "8.8.8.8",
@@ -208,7 +208,7 @@ func testIngressEndpoints(t *testing.T) {
 					hostnames: []string{"lb.com"},
 				},
 			},
-			expected: []endpoint.Endpoint{
+			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "example.org.",
 					Target:  "8.8.8.8",
@@ -229,7 +229,7 @@ func testIngressEndpoints(t *testing.T) {
 					ips:      []string{"8.8.8.8"},
 				},
 			},
-			expected: []endpoint.Endpoint{
+			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "example.org.",
 					Target:  "8.8.8.8",
@@ -250,7 +250,7 @@ func testIngressEndpoints(t *testing.T) {
 					ips:      []string{"8.8.8.8"},
 				},
 			},
-			expected: []endpoint.Endpoint{},
+			expected: []*endpoint.Endpoint{},
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {

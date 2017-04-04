@@ -20,15 +20,15 @@ import "github.com/kubernetes-incubator/external-dns/endpoint"
 
 // mockSource returns mock endpoints.
 type mockSource struct {
-	store []endpoint.Endpoint
+	store []*endpoint.Endpoint
 }
 
 // NewMockSource creates a new mockSource returning the given endpoints.
-func NewMockSource(endpoints []endpoint.Endpoint) Source {
+func NewMockSource(endpoints []*endpoint.Endpoint) Source {
 	return &mockSource{store: endpoints}
 }
 
 // Endpoints returns the desired mock endpoints.
-func (s *mockSource) Endpoints() ([]endpoint.Endpoint, error) {
+func (s *mockSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return s.store, nil
 }

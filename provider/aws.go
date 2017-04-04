@@ -135,7 +135,7 @@ func (p *AWSProvider) DeleteZone(name string) error {
 }
 
 // Records returns the list of records in a given hosted zone.
-func (p *AWSProvider) Records(zone string) ([]endpoint.Endpoint, error) {
+func (p *AWSProvider) Records(zone string) ([]*endpoint.Endpoint, error) {
 	hostedZone, err := p.Zone(zone)
 	if err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ func (p *AWSProvider) Records(zone string) ([]endpoint.Endpoint, error) {
 		HostedZoneId: hostedZone.Id,
 	}
 
-	endpoints := []endpoint.Endpoint{}
+	endpoints := []*endpoint.Endpoint{}
 
 	f := func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool) {
 		for _, r := range resp.ResourceRecordSets {
@@ -157,10 +157,7 @@ func (p *AWSProvider) Records(zone string) ([]endpoint.Endpoint, error) {
 			}
 
 			for _, rr := range r.ResourceRecords {
-				endpoints = append(endpoints, endpoint.Endpoint{
-					DNSName: aws.StringValue(r.Name),
-					Target:  aws.StringValue(rr.Value),
-				})
+				endpoints = append(endpoints, endpoint.NewEndpoint(aws.StringValue(r.Name), aws.StringValue(rr.Value)))
 			}
 		}
 
@@ -176,17 +173,17 @@ func (p *AWSProvider) Records(zone string) ([]endpoint.Endpoint, error) {
 }
 
 // CreateRecords creates a given set of DNS records in the given hosted zone.
-func (p *AWSProvider) CreateRecords(zone string, endpoints []endpoint.Endpoint) error {
+func (p *AWSProvider) CreateRecords(zone string, endpoints []*endpoint.Endpoint) error {
 	return p.submitChanges(zone, newChanges(route53.ChangeActionCreate, endpoints))
 }
 
 // UpdateRecords updates a given set of old records to a new set of records in a given hosted zone.
-func (p *AWSProvider) UpdateRecords(zone string, endpoints, _ []endpoint.Endpoint) error {
+func (p *AWSProvider) UpdateRecords(zone string, endpoints, _ []*endpoint.Endpoint) error {
 	return p.submitChanges(zone, newChanges(route53.ChangeActionUpsert, endpoints))
 }
 
 // DeleteRecords deletes a given set of DNS records in a given zone.
-func (p *AWSProvider) DeleteRecords(zone string, endpoints []endpoint.Endpoint) error {
+func (p *AWSProvider) DeleteRecords(zone string, endpoints []*endpoint.Endpoint) error {
 	return p.submitChanges(zone, newChanges(route53.ChangeActionDelete, endpoints))
 }
 
@@ -237,7 +234,7 @@ func (p *AWSProvider) submitChanges(zone string, changes []*route53.Change) erro
 }
 
 // newChanges returns a collection of Changes based on the given records and action.
-func newChanges(action string, endpoints []endpoint.Endpoint) []*route53.Change {
+func newChanges(action string, endpoints []*endpoint.Endpoint) []*route53.Change {
 	changes := make([]*route53.Change, 0, len(endpoints))
 
 	for _, endpoint := range endpoints {
@@ -250,7 +247,7 @@ func newChanges(action string, endpoints []endpoint.Endpoint) []*route53.Change 
 // newChange returns a Change of the given record by the given action, e.g.
 // action=ChangeActionCreate returns a change for creation of the record and
 // action=ChangeActionDelete returns a change for deletion of the record.
-func newChange(action string, endpoint endpoint.Endpoint) *route53.Change {
+func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 	change := &route53.Change{
 		Action: aws.String(action),
 		ResourceRecordSet: &route53.ResourceRecordSet{

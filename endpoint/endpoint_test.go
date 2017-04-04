@@ -16,18 +16,11 @@ limitations under the License.
 
 package endpoint
 
-// Endpoint is a high-level way of a connection between a service and an IP
-type Endpoint struct {
-	// The hostname of the DNS record
-	DNSName string
-	// The target the DNS record points to
-	Target string
-}
+import "testing"
 
-// NewEndpoint initialization method to be used to create an endpoint
-func NewEndpoint(dnsName, target string) *Endpoint {
-	return &Endpoint{
-		DNSName: dnsName,
-		Target:  target,
+func TestNewEndpoint(t *testing.T) {
+	e := NewEndpoint("example.org", "1.2.3.4")
+	if e.DNSName != "example.org" || e.Target != "1.2.3.4" {
+		t.Error("endpoint is not initialized correctly")
 	}
 }

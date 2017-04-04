@@ -33,7 +33,7 @@ const (
 
 // Source defines the interface Endpoint sources should implement.
 type Source interface {
-	Endpoints() ([]endpoint.Endpoint, error)
+	Endpoints() ([]*endpoint.Endpoint, error)
 }
 
 // sanitizeHostname appends a trailing dot to a hostname if it's missing.

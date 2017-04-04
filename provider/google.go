@@ -179,7 +179,7 @@ func (p *googleProvider) DeleteZone(name string) error {
 }
 
 // Records returns the list of A records in a given hosted zone.
-func (p *googleProvider) Records(zone string) (endpoints []endpoint.Endpoint, _ error) {
+func (p *googleProvider) Records(zone string) (endpoints []*endpoint.Endpoint, _ error) {
 	f := func(resp *dns.ResourceRecordSetsListResponse) error {
 		for _, r := range resp.Rrsets {
 			switch r.Type {
@@ -191,10 +191,7 @@ func (p *googleProvider) Records(zone string) (endpoints []endpoint.Endpoint, _ 
 
 			for _, rr := range r.Rrdatas {
 				// each page is processed sequentially, no need for a mutex here.
-				endpoints = append(endpoints, endpoint.Endpoint{
-					DNSName: r.Name,
-					Target:  rr,
-				})
+				endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, rr))
 			}
 		}
 
@@ -210,7 +207,7 @@ func (p *googleProvider) Records(zone string) (endpoints []endpoint.Endpoint, _ 
 }
 
 // CreateRecords creates a given set of DNS records in the given hosted zone.
-func (p *googleProvider) CreateRecords(zone string, endpoints []endpoint.Endpoint) error {
+func (p *googleProvider) CreateRecords(zone string, endpoints []*endpoint.Endpoint) error {
 	change := &dns.Change{}
 
 	change.Additions = append(change.Additions, newRecords(endpoints)...)
@@ -219,7 +216,7 @@ func (p *googleProvider) CreateRecords(zone string, endpoints []endpoint.Endpoin
 }
 
 // UpdateRecords updates a given set of old records to a new set of records in a given hosted zone.
-func (p *googleProvider) UpdateRecords(zone string, records, oldRecords []endpoint.Endpoint) error {
+func (p *googleProvider) UpdateRecords(zone string, records, oldRecords []*endpoint.Endpoint) error {
 	change := &dns.Change{}
 
 	change.Additions = append(change.Additions, newRecords(records)...)
@@ -229,7 +226,7 @@ func (p *googleProvider) UpdateRecords(zone string, records, oldRecords []endpoi
 }
 
 // DeleteRecords deletes a given set of DNS records in a given zone.
-func (p *googleProvider) DeleteRecords(zone string, endpoints []endpoint.Endpoint) error {
+func (p *googleProvider) DeleteRecords(zone string, endpoints []*endpoint.Endpoint) error {
 	change := &dns.Change{}
 
 	change.Deletions = append(change.Deletions, newRecords(endpoints)...)
@@ -279,7 +276,7 @@ func (p *googleProvider) submitChange(zone string, change *dns.Change) error {
 }
 
 // newRecords returns a collection of RecordSets based on the given endpoints.
-func newRecords(endpoints []endpoint.Endpoint) []*dns.ResourceRecordSet {
+func newRecords(endpoints []*endpoint.Endpoint) []*dns.ResourceRecordSet {
 	records := make([]*dns.ResourceRecordSet, len(endpoints))
 
 	for i, endpoint := range endpoints {
@@ -290,7 +287,7 @@ func newRecords(endpoints []endpoint.Endpoint) []*dns.ResourceRecordSet {
 }
 
 // newRecord returns a RecordSet based on the given endpoint.
-func newRecord(endpoint endpoint.Endpoint) *dns.ResourceRecordSet {
+func newRecord(endpoint *endpoint.Endpoint) *dns.ResourceRecordSet {
 	return &dns.ResourceRecordSet{
 		Name:    endpoint.DNSName,
 		Rrdatas: []string{endpoint.Target},

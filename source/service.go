@@ -39,13 +39,13 @@ func NewServiceSource(client kubernetes.Interface, namespace string) Source {
 }
 
 // Endpoints returns endpoint objects for each service that should be processed.
-func (sc *serviceSource) Endpoints() ([]endpoint.Endpoint, error) {
+func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	services, err := sc.client.CoreV1().Services(sc.namespace).List(v1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	endpoints := []endpoint.Endpoint{}
+	endpoints := []*endpoint.Endpoint{}
 
 	for _, svc := range services.Items {
 		svcEndpoints := endpointsFromService(&svc)
@@ -58,8 +58,8 @@ func (sc *serviceSource) Endpoints() ([]endpoint.Endpoint, error) {
 }
 
 // endpointsFromService extracts the endpoints from a service object
-func endpointsFromService(svc *v1.Service) []endpoint.Endpoint {
-	var endpoints []endpoint.Endpoint
+func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
+	var endpoints []*endpoint.Endpoint
 
 	// Check controller annotation to see if we are responsible.
 	controller, exists := svc.Annotations[controllerAnnotationKey]
@@ -76,16 +76,10 @@ func endpointsFromService(svc *v1.Service) []endpoint.Endpoint {
 	// Create a corresponding endpoint for each configured external entrypoint.
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
-			endpoints = append(endpoints, endpoint.Endpoint{
-				DNSName: sanitizeHostname(hostname),
-				Target:  lb.IP,
-			})
+			endpoints = append(endpoints, endpoint.NewEndpoint(sanitizeHostname(hostname), lb.IP))
 		}
 		if lb.Hostname != "" {
-			endpoints = append(endpoints, endpoint.Endpoint{
-				DNSName: sanitizeHostname(hostname),
-				Target:  sanitizeHostname(lb.Hostname),
-			})
+			endpoints = append(endpoints, endpoint.NewEndpoint(sanitizeHostname(hostname), sanitizeHostname(lb.Hostname)))
 		}
 	}
 

@@ -42,7 +42,7 @@ func testServiceEndpoints(t *testing.T) {
 		svcName         string
 		annotations     map[string]string
 		lbs             []string
-		expected        []endpoint.Endpoint
+		expected        []*endpoint.Endpoint
 	}{
 		{
 			"no annotated services return no endpoints",
@@ -51,7 +51,7 @@ func testServiceEndpoints(t *testing.T) {
 			"foo",
 			map[string]string{},
 			[]string{"1.2.3.4"},
-			[]endpoint.Endpoint{},
+			[]*endpoint.Endpoint{},
 		},
 		{
 			"annotated services return an endpoint with target IP",
@@ -62,7 +62,7 @@ func testServiceEndpoints(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org.",
 			},
 			[]string{"1.2.3.4"},
-			[]endpoint.Endpoint{
+			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org.", Target: "1.2.3.4"},
 			},
 		},
@@ -75,7 +75,7 @@ func testServiceEndpoints(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org.",
 			},
 			[]string{"lb.example.com"}, // Kubernetes omits the trailing dot
-			[]endpoint.Endpoint{
+			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org.", Target: "lb.example.com."},
 			},
 		},
@@ -88,7 +88,7 @@ func testServiceEndpoints(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org", // Trailing dot is omitted
 			},
 			[]string{"1.2.3.4", "lb.example.com"}, // Kubernetes omits the trailing dot
-			[]endpoint.Endpoint{
+			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org.", Target: "1.2.3.4"},
 				{DNSName: "foo.example.org.", Target: "lb.example.com."},
 			},
@@ -103,7 +103,7 @@ func testServiceEndpoints(t *testing.T) {
 				hostnameAnnotationKey:   "foo.example.org.",
 			},
 			[]string{"1.2.3.4"},
-			[]endpoint.Endpoint{
+			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org.", Target: "1.2.3.4"},
 			},
 		},
@@ -117,7 +117,7 @@ func testServiceEndpoints(t *testing.T) {
 				hostnameAnnotationKey:   "foo.example.org.",
 			},
 			[]string{"1.2.3.4"},
-			[]endpoint.Endpoint{},
+			[]*endpoint.Endpoint{},
 		},
 		{
 			"services are found in target namespace",
@@ -128,7 +128,7 @@ func testServiceEndpoints(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org.",
 			},
 			[]string{"1.2.3.4"},
-			[]endpoint.Endpoint{
+			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org.", Target: "1.2.3.4"},
 			},
 		},
@@ -141,7 +141,7 @@ func testServiceEndpoints(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org.",
 			},
 			[]string{"1.2.3.4"},
-			[]endpoint.Endpoint{},
+			[]*endpoint.Endpoint{},
 		},
 		{
 			"services are found in all namespaces",
@@ -152,7 +152,7 @@ func testServiceEndpoints(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org.",
 			},
 			[]string{"1.2.3.4"},
-			[]endpoint.Endpoint{
+			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org.", Target: "1.2.3.4"},
 			},
 		},
@@ -165,7 +165,7 @@ func testServiceEndpoints(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org.",
 			},
 			[]string{},
-			[]endpoint.Endpoint{},
+			[]*endpoint.Endpoint{},
 		},
 		{
 			"multiple external entrypoints return multiple endpoints",
@@ -176,7 +176,7 @@ func testServiceEndpoints(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org.",
 			},
 			[]string{"1.2.3.4", "8.8.8.8"},
-			[]endpoint.Endpoint{
+			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org.", Target: "1.2.3.4"},
 				{DNSName: "foo.example.org.", Target: "8.8.8.8"},
 			},
