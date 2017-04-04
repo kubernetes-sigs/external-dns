@@ -324,7 +324,8 @@ func testInMemoryRecords(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			im := &InMemoryProvider{zones: ti.init}
+			im := NewInMemoryProvider()
+			im.zones = ti.init
 			records, err := im.Records(ti.zone)
 			if ti.expectError && records != nil {
 				t.Errorf("wrong zone should not return records")
@@ -882,9 +883,9 @@ func testInMemoryApplyChanges(t *testing.T) {
 					},
 				},
 			}
-			im := &InMemoryProvider{
-				zones: init,
-			}
+			im := NewInMemoryProvider()
+			im.zones = init
+
 			err := im.ApplyChanges(ti.zone, ti.changes)
 			if ti.expectError && err == nil {
 				t.Errorf("should return an error")
