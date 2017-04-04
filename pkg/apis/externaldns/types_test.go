@@ -19,6 +19,7 @@ package externaldns
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestParseFlags(t *testing.T) {
@@ -40,6 +41,8 @@ func TestParseFlags(t *testing.T) {
 				Provider:      "",
 				GoogleProject: "",
 				HealthPort:    defaultHealthPort,
+				Interval:      time.Minute,
+				Once:          false,
 				DryRun:        true,
 				Debug:         false,
 				LogFormat:     defaultLogFormat,
@@ -58,6 +61,8 @@ func TestParseFlags(t *testing.T) {
 				Provider:      "",
 				GoogleProject: "",
 				HealthPort:    defaultHealthPort,
+				Interval:      time.Minute,
+				Once:          false,
 				DryRun:        true,
 				Debug:         false,
 				LogFormat:     defaultLogFormat,
@@ -76,6 +81,8 @@ func TestParseFlags(t *testing.T) {
 				Provider:      "",
 				GoogleProject: "",
 				HealthPort:    defaultHealthPort,
+				Interval:      time.Minute,
+				Once:          false,
 				DryRun:        true,
 				Debug:         false,
 				LogFormat:     defaultLogFormat,
@@ -99,6 +106,8 @@ func TestParseFlags(t *testing.T) {
 				Provider:      "",
 				GoogleProject: "",
 				HealthPort:    defaultHealthPort,
+				Interval:      time.Minute,
+				Once:          false,
 				DryRun:        true,
 				Debug:         false,
 				LogFormat:     "json",
@@ -116,7 +125,9 @@ func TestParseFlags(t *testing.T) {
 				"--provider", "provider",
 				"--google-project", "project",
 				"--health-port", "1234",
-				"--dry-run", "true",
+				"--interval", "10m",
+				"--once",
+				"--dry-run=false",
 				"--debug",
 				"--version"}},
 			expected: &Config{
@@ -128,7 +139,9 @@ func TestParseFlags(t *testing.T) {
 				Provider:      "provider",
 				GoogleProject: "project",
 				HealthPort:    "1234",
-				DryRun:        true,
+				Interval:      10 * time.Minute,
+				Once:          true,
+				DryRun:        false,
 				Debug:         true,
 				LogFormat:     "yaml",
 				Version:       true,
