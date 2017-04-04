@@ -26,6 +26,6 @@ import (
 // each entry includes owner information
 // ApplyChanges(zone string, changes *plan.Changes) propagates the changes to the DNS Provider API
 type Registry interface {
-	Records() []*endpoint.Endpoint
+	Records() ([]*endpoint.Endpoint, error)
 	ApplyChanges(zone string, changes *plan.Changes) error
 }
