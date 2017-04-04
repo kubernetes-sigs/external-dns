@@ -367,6 +367,20 @@ func TestAWSUpdateRecords(t *testing.T) {
 	if !found {
 		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should point to 1.2.3.4")
 	}
+
+	found = false
+
+	for _, r := range records {
+		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do." {
+			if r.Target == "8.8.8.8" {
+				found = true
+			}
+		}
+	}
+
+	if found {
+		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should point to 1.2.3.4")
+	}
 }
 
 func TestAWSDeleteRecords(t *testing.T) {
@@ -481,6 +495,20 @@ func TestAWSApply(t *testing.T) {
 		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should point to 1.2.3.4")
 	}
 
+	found = false
+
+	for _, r := range records {
+		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do." {
+			if r.Target == "8.8.8.8" {
+				found = true
+			}
+		}
+	}
+
+	if found {
+		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should point to 1.2.3.4")
+	}
+
 	// delete validation
 
 	found = false
@@ -588,6 +616,20 @@ func TestAWSUpdateRecordDryRun(t *testing.T) {
 
 	if found {
 		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should not point to 1.2.3.4")
+	}
+
+	found = false
+
+	for _, r := range records {
+		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do." {
+			if r.Target == "8.8.8.8" {
+				found = true
+			}
+		}
+	}
+
+	if !found {
+		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should point to 8.8.8.8")
 	}
 }
 
@@ -707,6 +749,20 @@ func TestAWSApplyDryRun(t *testing.T) {
 		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should not point to 1.2.3.4")
 	}
 
+	found = false
+
+	for _, r := range records {
+		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do." {
+			if r.Target == "8.8.8.8" {
+				found = true
+			}
+		}
+	}
+
+	if !found {
+		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should point to 8.8.8.8")
+	}
+
 	// delete validation
 
 	found = false
@@ -795,6 +851,20 @@ func TestAWSUpdateRecordsCNAME(t *testing.T) {
 	}
 
 	if !found {
+		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should point to bar.elb.amazonaws.com")
+	}
+
+	found = false
+
+	for _, r := range records {
+		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do." {
+			if r.Target == "foo.elb.amazonaws.com" {
+				found = true
+			}
+		}
+	}
+
+	if found {
 		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should point to bar.elb.amazonaws.com")
 	}
 }
@@ -908,6 +978,20 @@ func TestAWSApplyCNAME(t *testing.T) {
 	}
 
 	if !found {
+		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should point to bar.elb.amazonaws.com")
+	}
+
+	found = false
+
+	for _, r := range records {
+		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do." {
+			if r.Target == "foo.elb.amazonaws.com" {
+				found = true
+			}
+		}
+	}
+
+	if found {
 		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should point to bar.elb.amazonaws.com")
 	}
 
