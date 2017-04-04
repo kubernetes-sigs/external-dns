@@ -18,23 +18,19 @@ package registry
 
 import (
 	"errors"
-	"time"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
 )
 
-var (
-	resyncPeriod = 1 * time.Minute
-)
-
 // InMemoryRegistry implements storage interface - in-memory registry
 // 1. Stores all information in memory -> non-persistent
 // 2. To be used for testing purposes
 // 3. State is not shared across different instances of external-dns
+// 4. Can only use InMemory DNS provider
 type InMemoryRegistry struct {
-	provider provider.Provider
+	provider *provider.InMemoryProvider
 	zone     string
 	ownerID  string //refers to the owner id of the current instance
 }
@@ -42,12 +38,12 @@ type InMemoryRegistry struct {
 var _ Registry = &InMemoryRegistry{}
 
 // NewInMemoryRegistry returns new InMemoryStorage object
-func NewInMemoryRegistry(dnsProvider provider.Provider, ownerID, zone string) (*InMemoryRegistry, error) {
+func NewInMemoryRegistry(ownerID, zone string) (*InMemoryRegistry, error) {
 	if ownerID == "" || zone == "" {
 		return nil, errors.New("owner or zone is not provided")
 	}
 	return &InMemoryRegistry{
-		provider: dnsProvider,
+		provider: provider.NewInMemoryProvider(),
 		zone:     zone,
 		ownerID:  ownerID,
 	}, nil
@@ -65,6 +61,7 @@ func (im *InMemoryRegistry) Records() ([]*endpoint.Endpoint, error) {
 	return nil, nil
 }
 
+// ApplyChanges updates in memory dns provider including ownership information
 func (im *InMemoryRegistry) ApplyChanges(zone string, changes *plan.Changes) error {
 	return nil
 }
