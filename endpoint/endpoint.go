@@ -17,7 +17,7 @@ limitations under the License.
 package endpoint
 
 const (
-	// OwnerLabelKey is the name of the label that defines the owner of an Endpoint.//
+	// OwnerLabelKey is the name of the label that defines the owner of an Endpoint.
 	OwnerLabelKey = "owner"
 )
 
