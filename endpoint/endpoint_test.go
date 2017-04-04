@@ -23,4 +23,7 @@ func TestNewEndpoint(t *testing.T) {
 	if e.DNSName != "example.org" || e.Target != "1.2.3.4" {
 		t.Error("endpoint is not initialized correctly")
 	}
+	if e.Labels == nil {
+		t.Error("Labels is not initialized")
+	}
 }
