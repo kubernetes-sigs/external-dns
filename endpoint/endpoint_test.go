@@ -15,3 +15,15 @@ limitations under the License.
 */
 
 package endpoint
+
+import "testing"
+
+func TestNewEndpoint(t *testing.T) {
+	e := NewEndpoint("example.org", "1.2.3.4")
+	if e.DNSName != "example.org" || e.Target != "1.2.3.4" {
+		t.Error("endpoint is not initialized correctly")
+	}
+	if e.Labels == nil {
+		t.Error("Labels is not initialized")
+	}
+}

@@ -30,3 +30,11 @@ type Endpoint struct {
 	// Labels stores labels defined for the Endpoint
 	Labels map[string]string
 }
+
+// NewEndpoint initialization method to be used to create an endpoint
+func NewEndpoint(dnsName, target string) *Endpoint {
+	return &Endpoint{
+		DNSName: dnsName,
+		Target:  target,
+	}
+}

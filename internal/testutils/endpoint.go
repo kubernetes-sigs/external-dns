@@ -25,7 +25,7 @@ import (
 // SameEndpoint returns true if two endpoint are same
 // considers example.org. and example.org DNSName/Target as different endpoints
 // TODO:might need reconsideration regarding trailing dot
-func SameEndpoint(a, b endpoint.Endpoint) bool {
+func SameEndpoint(a, b *endpoint.Endpoint) bool {
 	return a.DNSName == b.DNSName && a.Target == b.Target
 }
 
@@ -34,7 +34,7 @@ func SameEndpoint(a, b endpoint.Endpoint) bool {
 // [x,x,z] == [x,z,x]
 // [x,y,y] != [x,x,y]
 // [x,x,x] != [x,x,z]
-func SameEndpoints(a, b []endpoint.Endpoint) bool {
+func SameEndpoints(a, b []*endpoint.Endpoint) bool {
 	if len(a) != len(b) {
 		return false
 	}
