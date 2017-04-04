@@ -16,12 +16,19 @@ limitations under the License.
 
 package endpoint
 
+const (
+	// OwnerLabelKey is the name of the label that defines the owner of an Endpoint.
+	OwnerLabelKey = "owner"
+)
+
 // Endpoint is a high-level way of a connection between a service and an IP
 type Endpoint struct {
 	// The hostname of the DNS record
 	DNSName string
 	// The target the DNS record points to
 	Target string
+	// Labels stores labels defined for the Endpoint
+	Labels map[string]string
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
@@ -29,5 +36,6 @@ func NewEndpoint(dnsName, target string) *Endpoint {
 	return &Endpoint{
 		DNSName: dnsName,
 		Target:  target,
+		Labels:  map[string]string{},
 	}
 }
