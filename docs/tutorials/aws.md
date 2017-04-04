@@ -28,6 +28,8 @@ ns-62.awsdns-07.com.
 
 In this case it's the ones shown above but your's will differ.
 
+If you decide not to create a new zone but reuse an existing one, make sure it's currently **unused** and **empty**. This version of ExternalDNS will remove all records it doesn't recognize from the zone.
+
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
 Then apply the following manifest file to deploy ExternalDNS.
 
