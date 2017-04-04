@@ -59,11 +59,11 @@ func testServiceEndpoints(t *testing.T) {
 			"testing",
 			"foo",
 			map[string]string{
-				hostnameAnnotationKey: "foo.example.org",
+				hostnameAnnotationKey: "foo.example.org.",
 			},
 			[]string{"1.2.3.4"},
 			[]endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org.", Target: "1.2.3.4"},
 			},
 		},
 		{
@@ -72,11 +72,25 @@ func testServiceEndpoints(t *testing.T) {
 			"testing",
 			"foo",
 			map[string]string{
-				hostnameAnnotationKey: "foo.example.org",
+				hostnameAnnotationKey: "foo.example.org.",
 			},
-			[]string{"lb.example.com"},
+			[]string{"lb.example.com"}, // Kubernetes omits the trailing dot
 			[]endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "lb.example.com"},
+				{DNSName: "foo.example.org.", Target: "lb.example.com."},
+			},
+		},
+		{
+			"annotated services can omit trailing dot",
+			"",
+			"testing",
+			"foo",
+			map[string]string{
+				hostnameAnnotationKey: "foo.example.org", // Trailing dot is omitted
+			},
+			[]string{"1.2.3.4", "lb.example.com"}, // Kubernetes omits the trailing dot
+			[]endpoint.Endpoint{
+				{DNSName: "foo.example.org.", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org.", Target: "lb.example.com."},
 			},
 		},
 		{
@@ -86,11 +100,11 @@ func testServiceEndpoints(t *testing.T) {
 			"foo",
 			map[string]string{
 				controllerAnnotationKey: controllerAnnotationValue,
-				hostnameAnnotationKey:   "foo.example.org",
+				hostnameAnnotationKey:   "foo.example.org.",
 			},
 			[]string{"1.2.3.4"},
 			[]endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org.", Target: "1.2.3.4"},
 			},
 		},
 		{
@@ -100,7 +114,7 @@ func testServiceEndpoints(t *testing.T) {
 			"foo",
 			map[string]string{
 				controllerAnnotationKey: "some-other-tool",
-				hostnameAnnotationKey:   "foo.example.org",
+				hostnameAnnotationKey:   "foo.example.org.",
 			},
 			[]string{"1.2.3.4"},
 			[]endpoint.Endpoint{},
@@ -111,11 +125,11 @@ func testServiceEndpoints(t *testing.T) {
 			"testing",
 			"foo",
 			map[string]string{
-				hostnameAnnotationKey: "foo.example.org",
+				hostnameAnnotationKey: "foo.example.org.",
 			},
 			[]string{"1.2.3.4"},
 			[]endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org.", Target: "1.2.3.4"},
 			},
 		},
 		{
@@ -124,7 +138,7 @@ func testServiceEndpoints(t *testing.T) {
 			"other-testing",
 			"foo",
 			map[string]string{
-				hostnameAnnotationKey: "foo.example.org",
+				hostnameAnnotationKey: "foo.example.org.",
 			},
 			[]string{"1.2.3.4"},
 			[]endpoint.Endpoint{},
@@ -135,11 +149,11 @@ func testServiceEndpoints(t *testing.T) {
 			"other-testing",
 			"foo",
 			map[string]string{
-				hostnameAnnotationKey: "foo.example.org",
+				hostnameAnnotationKey: "foo.example.org.",
 			},
 			[]string{"1.2.3.4"},
 			[]endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org.", Target: "1.2.3.4"},
 			},
 		},
 		{
@@ -148,7 +162,7 @@ func testServiceEndpoints(t *testing.T) {
 			"testing",
 			"foo",
 			map[string]string{
-				hostnameAnnotationKey: "foo.example.org",
+				hostnameAnnotationKey: "foo.example.org.",
 			},
 			[]string{},
 			[]endpoint.Endpoint{},
@@ -159,12 +173,12 @@ func testServiceEndpoints(t *testing.T) {
 			"testing",
 			"foo",
 			map[string]string{
-				hostnameAnnotationKey: "foo.example.org",
+				hostnameAnnotationKey: "foo.example.org.",
 			},
 			[]string{"1.2.3.4", "8.8.8.8"},
 			[]endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
-				{DNSName: "foo.example.org", Target: "8.8.8.8"},
+				{DNSName: "foo.example.org.", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org.", Target: "8.8.8.8"},
 			},
 		},
 	} {
@@ -222,7 +236,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 			Namespace: "testing",
 			Name:      "foo",
 			Annotations: map[string]string{
-				hostnameAnnotationKey: "foo.example.org",
+				hostnameAnnotationKey: "foo.example.org.",
 			},
 		},
 		Status: v1.ServiceStatus{

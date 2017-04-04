@@ -42,7 +42,7 @@ $ kubectl run nginx --image=nginx --replicas=1 --port=80
 $ kubectl expose deployment nginx --port=80 --target-port=80 --type=LoadBalancer
 ```
 
-Annotate the Service with your desired external DNS name. Make sure to change `example.org` to your domain (and that it includes the trailing dot):
+Annotate the Service with your desired external DNS name. Make sure to change `example.org` to your domain.
 
 ```console
 $ kubectl annotate service nginx "external-dns.alpha.kubernetes.io/hostname=nginx.example.org."

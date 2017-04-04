@@ -17,8 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"strings"
-
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
@@ -81,16 +79,11 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []endpoint.Endpoint {
 			if lb.Hostname != "" {
 				endpoints = append(endpoints, endpoint.Endpoint{
 					DNSName: sanitizeHostname(rule.Host),
-					Target:  lb.Hostname,
+					Target:  sanitizeHostname(lb.Hostname),
 				})
 			}
 		}
 	}
 
 	return endpoints
-}
-
-// sanitizeHostname appends a trailing dot to a hostname if it's missing.
-func sanitizeHostname(hostname string) string {
-	return strings.Trim(hostname, ".") + "."
 }

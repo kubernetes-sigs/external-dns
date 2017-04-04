@@ -77,14 +77,14 @@ func endpointsFromService(svc *v1.Service) []endpoint.Endpoint {
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
 			endpoints = append(endpoints, endpoint.Endpoint{
-				DNSName: hostname,
+				DNSName: sanitizeHostname(hostname),
 				Target:  lb.IP,
 			})
 		}
 		if lb.Hostname != "" {
 			endpoints = append(endpoints, endpoint.Endpoint{
-				DNSName: hostname,
-				Target:  lb.Hostname,
+				DNSName: sanitizeHostname(hostname),
+				Target:  sanitizeHostname(lb.Hostname),
 			})
 		}
 	}
