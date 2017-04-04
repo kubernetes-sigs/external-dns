@@ -248,7 +248,7 @@ func testInMemoryEndpoints(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			im := &InMemoryProvider{ti.init}
+			im := &InMemoryProvider{zones: ti.init}
 			if !testutils.SameEndpoints(im.endpoints(ti.zone), ti.expected) {
 				t.Errorf("endpoints returned wrong set")
 			}
@@ -324,7 +324,7 @@ func testInMemoryRecords(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			im := &InMemoryProvider{ti.init}
+			im := &InMemoryProvider{zones: ti.init}
 			records, err := im.Records(ti.zone)
 			if ti.expectError && records != nil {
 				t.Errorf("wrong zone should not return records")
