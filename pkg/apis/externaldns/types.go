@@ -17,6 +17,8 @@ limitations under the License.
 package externaldns
 
 import (
+	"time"
+
 	"github.com/spf13/pflag"
 
 	"k8s.io/client-go/pkg/api/v1"
@@ -37,6 +39,7 @@ type Config struct {
 	Provider      string
 	GoogleProject string
 	HealthPort    string
+	Interval      time.Duration
 	Once          bool
 	DryRun        bool
 	Debug         bool
@@ -61,6 +64,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	flags.StringVar(&cfg.GoogleProject, "google-project", "", "gcloud project to target")
 	flags.StringVar(&cfg.HealthPort, "health-port", defaultHealthPort, "health port to listen on")
 	flags.StringVar(&cfg.LogFormat, "log-format", defaultLogFormat, "log format output. options: [\"text\", \"json\"]")
+	flags.DurationVar(&cfg.Interval, "interval", time.Minute, "interval between synchronizations")
 	flags.BoolVar(&cfg.Once, "once", false, "run once and exit")
 	flags.BoolVar(&cfg.DryRun, "dry-run", true, "dry-run mode")
 	flags.BoolVar(&cfg.Debug, "debug", false, "debug mode")
