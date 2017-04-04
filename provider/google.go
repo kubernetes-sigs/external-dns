@@ -182,7 +182,10 @@ func (p *googleProvider) DeleteZone(name string) error {
 func (p *googleProvider) Records(zone string) (endpoints []endpoint.Endpoint, _ error) {
 	f := func(resp *dns.ResourceRecordSetsListResponse) error {
 		for _, r := range resp.Rrsets {
-			if r.Type != "A" {
+			switch r.Type {
+			case "A", "CNAME":
+				break
+			default:
 				continue
 			}
 
@@ -292,7 +295,7 @@ func newRecord(endpoint endpoint.Endpoint) *dns.ResourceRecordSet {
 		Name:    endpoint.DNSName,
 		Rrdatas: []string{endpoint.Target},
 		Ttl:     300,
-		Type:    "A",
+		Type:    suitableType(endpoint.Target),
 	}
 }
 

@@ -18,7 +18,6 @@ package provider
 
 import (
 	"fmt"
-	"net"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/google/uuid"
@@ -267,14 +266,4 @@ func newChange(action string, endpoint endpoint.Endpoint) *route53.Change {
 	}
 
 	return change
-}
-
-// suitableType returns the DNS resource record type suitable for the target.
-// In this case type A for IPs and type CNAME for everything else.
-func suitableType(target string) string {
-	if net.ParseIP(target) == nil {
-		return route53.RRTypeCname
-	}
-
-	return route53.RRTypeA
 }

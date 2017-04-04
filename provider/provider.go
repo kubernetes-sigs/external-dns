@@ -17,6 +17,8 @@ limitations under the License.
 package provider
 
 import (
+	"net"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
@@ -25,4 +27,14 @@ import (
 type Provider interface {
 	Records(zone string) ([]endpoint.Endpoint, error)
 	ApplyChanges(zone string, changes *plan.Changes) error
+}
+
+// suitableType returns the DNS resource record type suitable for the target.
+// In this case type A for IPs and type CNAME for everything else.
+func suitableType(target string) string {
+	if net.ParseIP(target) == nil {
+		return "CNAME"
+	}
+
+	return "A"
 }

@@ -34,11 +34,16 @@ var (
 	expectedRecordSets = []*dns.ResourceRecordSet{
 		{
 			Type:    "A",
-			Name:    "expected",
-			Rrdatas: []string{"target"},
+			Name:    "expected-1",
+			Rrdatas: []string{"8.8.8.8"},
 		},
 		{
 			Type:    "CNAME",
+			Name:    "expected-2",
+			Rrdatas: []string{"target.com"},
+		},
+		{
+			Type:    "NS",
 			Name:    "unexpected",
 			Rrdatas: []string{"target"},
 		},
