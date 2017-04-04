@@ -37,6 +37,8 @@ type Controller struct {
 
 	Source   source.Source
 	Provider provider.Provider
+	// The interval between individual synchronizations
+	Interval time.Duration
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -70,7 +72,7 @@ func (c *Controller) Run(stopChan <-chan struct{}) {
 		}
 
 		select {
-		case <-time.After(time.Minute):
+		case <-time.After(c.Interval):
 		case <-stopChan:
 			log.Infoln("terminating main controller loop")
 			return
