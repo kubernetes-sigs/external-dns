@@ -35,24 +35,16 @@ func TestNoopRegistry(t *testing.T) {
 
 func testNoopInit(t *testing.T) {
 	p := provider.NewInMemoryProvider()
-	_, err := NewNoopRegistry(p, "", "")
+	_, err := NewNoopRegistry(p, "")
 	if err == nil {
-		t.Error("should return error if owner id or zone is empty")
-	}
-	_, err = NewNoopRegistry(p, "owner", "")
-	if err == nil {
-		t.Error("should return error if owner id or zone is empty")
-	}
-	_, err = NewNoopRegistry(p, "", "zone")
-	if err == nil {
-		t.Error("should return error if owner id or zone is empty")
+		t.Error("should return error if owner id  is empty")
 	}
 
-	r, err := NewNoopRegistry(p, "owner", "zone")
+	r, err := NewNoopRegistry(p, "owner")
 	if err != nil {
 		t.Error(err)
 	}
-	if r.ownerID != "owner" || r.zone != "zone" || r.provider == nil {
+	if r.ownerID != "owner" || r.provider == nil {
 		t.Error("noop registry incorrectly initialized")
 	}
 }
@@ -70,14 +62,14 @@ func testNoopRecords(t *testing.T) {
 		Create: providerRecords,
 	})
 
-	r, err := NewNoopRegistry(p, "owner", "wrong-zone")
-	_, err = r.Records()
+	r, err := NewNoopRegistry(p, "owner")
+	_, err = r.Records("wrong-zone")
 	if err == nil {
 		t.Error("Should fail for wrong zone: wrong-zone")
 	}
 
-	r, err = NewNoopRegistry(p, "owner", "zone")
-	eps, err := r.Records()
+	r, err = NewNoopRegistry(p, "owner")
+	eps, err := r.Records("zone")
 	if !testutils.SameEndpoints(eps, providerRecords) {
 		t.Error("incorrect result is returned")
 	}
@@ -109,14 +101,14 @@ func testNoopApplyChanges(t *testing.T) {
 	})
 
 	// wrong zone
-	r, _ := NewNoopRegistry(p, "owner", "wrong-zone")
+	r, _ := NewNoopRegistry(p, "owner")
 	err := r.ApplyChanges("wrong-zone", &plan.Changes{})
 	if err != provider.ErrZoneNotFound {
 		t.Error("should return zone not found for apply changes on wrong zone")
 	}
 
 	// wrong changes
-	r, _ = NewNoopRegistry(p, "owner", "wrong-zone")
+	r, _ = NewNoopRegistry(p, "owner")
 	err = r.ApplyChanges("zone", &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{

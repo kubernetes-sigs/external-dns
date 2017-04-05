@@ -27,20 +27,18 @@ import (
 // NoopRegistry implements storage interface without ownership directly propagating changes to dns provider
 type NoopRegistry struct {
 	provider provider.Provider
-	zone     string
 	ownerID  string //refers to the owner id of the current instance
 }
 
 var _ Registry = &NoopRegistry{}
 
 // NewNoopRegistry returns new InMemoryStorage object
-func NewNoopRegistry(provider provider.Provider, ownerID, zone string) (*NoopRegistry, error) {
-	if ownerID == "" || zone == "" {
-		return nil, errors.New("owner or zone is not provided")
+func NewNoopRegistry(provider provider.Provider, ownerID string) (*NoopRegistry, error) {
+	if ownerID == "" {
+		return nil, errors.New("owner is not provided")
 	}
 	return &NoopRegistry{
 		provider: provider,
-		zone:     zone,
 		ownerID:  ownerID,
 	}, nil
 }
@@ -48,8 +46,8 @@ func NewNoopRegistry(provider provider.Provider, ownerID, zone string) (*NoopReg
 //TODO(ideahitme): Do the conversion endpoint <-> DNSRecord
 
 // Records returns the current records from the in-memory storage
-func (im *NoopRegistry) Records() ([]*endpoint.Endpoint, error) {
-	eps, err := im.provider.Records(im.zone)
+func (im *NoopRegistry) Records(zone string) ([]*endpoint.Endpoint, error) {
+	eps, err := im.provider.Records(zone)
 	if err != nil {
 		return nil, err
 	}
