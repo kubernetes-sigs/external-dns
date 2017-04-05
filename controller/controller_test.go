@@ -23,6 +23,7 @@ import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
+	"github.com/kubernetes-incubator/external-dns/registry"
 	"github.com/kubernetes-incubator/external-dns/source"
 )
 
@@ -131,11 +132,13 @@ func TestRunOnce(t *testing.T) {
 		},
 	)
 
+	r, _ := registry.NewNoopRegistry(provider, "owner")
+
 	// Run our controller once to trigger the validation.
 	ctrl := &Controller{
 		Zone:     "test-zone",
 		Source:   source,
-		Provider: provider,
+		Registry: r,
 	}
 
 	err := ctrl.RunOnce()

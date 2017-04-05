@@ -33,6 +33,7 @@ import (
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns/validation"
 	"github.com/kubernetes-incubator/external-dns/provider"
+	"github.com/kubernetes-incubator/external-dns/registry"
 	"github.com/kubernetes-incubator/external-dns/source"
 )
 
@@ -88,6 +89,12 @@ func main() {
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r, err := registry.NewNoopRegistry(p, "owner")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -95,7 +102,7 @@ func main() {
 	ctrl := controller.Controller{
 		Zone:     cfg.Zone,
 		Source:   sources,
-		Provider: p,
+		Registry: r,
 		Interval: cfg.Interval,
 	}
 
