@@ -24,44 +24,39 @@ import (
 	"github.com/kubernetes-incubator/external-dns/provider"
 )
 
-// InMemoryRegistry implements storage interface - in-memory registry
-// 1. Stores all information in memory -> non-persistent
-// 2. To be used for testing purposes
-// 3. State is not shared across different instances of external-dns
-// 4. Can only use InMemory DNS provider
-type InMemoryRegistry struct {
-	provider *provider.InMemoryProvider
+// NoopRegistry implements storage interface without ownership directly propagating changes to dns provider
+type NoopRegistry struct {
+	provider provider.Provider
 	zone     string
 	ownerID  string //refers to the owner id of the current instance
 }
 
-var _ Registry = &InMemoryRegistry{}
+var _ Registry = &NoopRegistry{}
 
-// NewInMemoryRegistry returns new InMemoryStorage object
-func NewInMemoryRegistry(ownerID, zone string) (*InMemoryRegistry, error) {
+// NewNoopRegistry returns new InMemoryStorage object
+func NewNoopRegistry(provider provider.Provider, ownerID, zone string) (*NoopRegistry, error) {
 	if ownerID == "" || zone == "" {
 		return nil, errors.New("owner or zone is not provided")
 	}
-	return &InMemoryRegistry{
-		provider: provider.NewInMemoryProvider(),
+	return &NoopRegistry{
+		provider: provider,
 		zone:     zone,
 		ownerID:  ownerID,
 	}, nil
 }
 
+//TODO(ideahitme): Do the conversion endpoint <-> DNSRecord
+
 // Records returns the current records from the in-memory storage
-func (im *InMemoryRegistry) Records() ([]*endpoint.Endpoint, error) {
-	_, err := im.provider.Records(im.zone)
+func (im *NoopRegistry) Records() ([]*endpoint.Endpoint, error) {
+	eps, err := im.provider.Records(im.zone)
 	if err != nil {
 		return nil, err
 	}
-	// for _, ep := range endpoints {
-	//do the conversion
-	// }
-	return nil, nil
+	return eps, err
 }
 
 // ApplyChanges updates in memory dns provider including ownership information
-func (im *InMemoryRegistry) ApplyChanges(zone string, changes *plan.Changes) error {
-	return nil
+func (im *NoopRegistry) ApplyChanges(zone string, changes *plan.Changes) error {
+	return im.provider.ApplyChanges(zone, changes)
 }
