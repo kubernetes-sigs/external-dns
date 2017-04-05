@@ -30,8 +30,6 @@ type NoopRegistry struct {
 	ownerID  string //refers to the owner id of the current instance
 }
 
-var _ Registry = &NoopRegistry{}
-
 // NewNoopRegistry returns new InMemoryStorage object
 func NewNoopRegistry(provider provider.Provider, ownerID string) (*NoopRegistry, error) {
 	if ownerID == "" {
