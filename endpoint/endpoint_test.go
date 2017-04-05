@@ -14,15 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package provider
+package endpoint
 
-import (
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
-)
+import "testing"
 
-// Provider defines the interface DNS providers should implement.
-type Provider interface {
-	Records(zone string) ([]*endpoint.Endpoint, error)
-	ApplyChanges(zone string, changes *plan.Changes) error
+func TestNewEndpoint(t *testing.T) {
+	e := NewEndpoint("example.org", "1.2.3.4")
+	if e.DNSName != "example.org" || e.Target != "1.2.3.4" {
+		t.Error("endpoint is not initialized correctly")
+	}
+	if e.Labels == nil {
+		t.Error("Labels is not initialized")
+	}
 }

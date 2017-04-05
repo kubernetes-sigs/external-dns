@@ -33,15 +33,15 @@ func TestMockSource(t *testing.T) {
 func testMockSourceEndpoints(t *testing.T) {
 	for _, tc := range []struct {
 		title            string
-		givenAndExpected []endpoint.Endpoint
+		givenAndExpected []*endpoint.Endpoint
 	}{
 		{
 			"no endpoints given return no endpoints",
-			[]endpoint.Endpoint{},
+			[]*endpoint.Endpoint{},
 		},
 		{
 			"single endpoint given returns single endpoint",
-			[]endpoint.Endpoint{
+			[]*endpoint.Endpoint{
 				{DNSName: "foo", Target: "8.8.8.8"},
 			},
 		},

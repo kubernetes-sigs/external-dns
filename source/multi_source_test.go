@@ -31,33 +31,33 @@ func TestMultiSource(t *testing.T) {
 
 // testMultiSourceEndpoints tests merged endpoints from children are returned.
 func testMultiSourceEndpoints(t *testing.T) {
-	foo := endpoint.Endpoint{DNSName: "foo", Target: "8.8.8.8"}
-	bar := endpoint.Endpoint{DNSName: "bar", Target: "8.8.4.4"}
+	foo := &endpoint.Endpoint{DNSName: "foo", Target: "8.8.8.8"}
+	bar := &endpoint.Endpoint{DNSName: "bar", Target: "8.8.4.4"}
 
 	for _, tc := range []struct {
 		title           string
-		nestedEndpoints [][]endpoint.Endpoint
-		expected        []endpoint.Endpoint
+		nestedEndpoints [][]*endpoint.Endpoint
+		expected        []*endpoint.Endpoint
 	}{
 		{
 			"no child sources return no endpoints",
 			nil,
-			[]endpoint.Endpoint{},
+			[]*endpoint.Endpoint{},
 		},
 		{
 			"single empty child source returns no endpoints",
-			[][]endpoint.Endpoint{{}},
-			[]endpoint.Endpoint{},
+			[][]*endpoint.Endpoint{{}},
+			[]*endpoint.Endpoint{},
 		},
 		{
 			"single non-empty child source returns child's endpoints",
-			[][]endpoint.Endpoint{{foo}},
-			[]endpoint.Endpoint{foo},
+			[][]*endpoint.Endpoint{{foo}},
+			[]*endpoint.Endpoint{foo},
 		},
 		{
 			"multiple non-empty child sources returns merged children's endpoints",
-			[][]endpoint.Endpoint{{foo}, {bar}},
-			[]endpoint.Endpoint{foo, bar},
+			[][]*endpoint.Endpoint{{foo}, {bar}},
+			[]*endpoint.Endpoint{foo, bar},
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {

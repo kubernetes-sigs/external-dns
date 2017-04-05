@@ -43,13 +43,17 @@ type zone map[string][]*InMemoryRecord
 // InMemoryProvider - dns provider only used for testing purposes
 // initialized as dns provider with no records
 type InMemoryProvider struct {
-	zones map[string]zone
+	zones          map[string]zone
+	OnApplyChanges func()
+	OnRecords      func()
 }
 
 // NewInMemoryProvider returns InMemoryProvider DNS provider interface implementation
 func NewInMemoryProvider() *InMemoryProvider {
 	return &InMemoryProvider{
-		zones: map[string]zone{},
+		zones:          map[string]zone{},
+		OnApplyChanges: func() {},
+		OnRecords:      func() {},
 	}
 }
 
@@ -60,7 +64,7 @@ func NewInMemoryProvider() *InMemoryProvider {
 type InMemoryRecord struct {
 	Type    string
 	Payload string
-	endpoint.Endpoint
+	*endpoint.Endpoint
 }
 
 // CreateZone adds new zone if not present
@@ -73,7 +77,9 @@ func (im *InMemoryProvider) CreateZone(newZone string) error {
 }
 
 // Records returns the list of endpoints
-func (im *InMemoryProvider) Records(zone string) ([]endpoint.Endpoint, error) {
+func (im *InMemoryProvider) Records(zone string) ([]*endpoint.Endpoint, error) {
+	defer im.OnRecords()
+
 	if _, exists := im.zones[zone]; !exists {
 		return nil, ErrZoneNotFound
 	}
@@ -86,6 +92,8 @@ func (im *InMemoryProvider) Records(zone string) ([]endpoint.Endpoint, error) {
 // update/delete record - record should exist
 // create/update/delete lists should not have overlapping records
 func (im *InMemoryProvider) ApplyChanges(zone string, changes *plan.Changes) error {
+	defer im.OnApplyChanges()
+
 	if err := im.validateChangeBatch(zone, changes); err != nil {
 		return err
 	}
@@ -163,8 +171,8 @@ func (im *InMemoryProvider) findByType(recordType string, records []*InMemoryRec
 	return nil
 }
 
-func (im *InMemoryProvider) endpoints(zone string) []endpoint.Endpoint {
-	endpoints := make([]endpoint.Endpoint, 0)
+func (im *InMemoryProvider) endpoints(zone string) []*endpoint.Endpoint {
+	endpoints := make([]*endpoint.Endpoint, 0)
 	if zoneRecords, exists := im.zones[zone]; exists {
 		for _, recordsPerName := range zoneRecords {
 			for _, record := range recordsPerName {

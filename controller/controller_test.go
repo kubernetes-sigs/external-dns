@@ -28,13 +28,13 @@ import (
 
 // mockProvider returns mock endpoints and validates changes.
 type mockProvider struct {
-	RecordsStore  []endpoint.Endpoint
+	RecordsStore  []*endpoint.Endpoint
 	ExpectZone    string
 	ExpectChanges *plan.Changes
 }
 
 // Records returns the desired mock endpoints.
-func (p *mockProvider) Records(zone string) ([]endpoint.Endpoint, error) {
+func (p *mockProvider) Records(zone string) ([]*endpoint.Endpoint, error) {
 	return p.RecordsStore, nil
 }
 
@@ -76,7 +76,7 @@ func (p *mockProvider) ApplyChanges(zone string, changes *plan.Changes) error {
 }
 
 // newMockProvider creates a new mockProvider returning the given endpoints and validating the desired changes.
-func newMockProvider(endpoints []endpoint.Endpoint, zone string, changes *plan.Changes) provider.Provider {
+func newMockProvider(endpoints []*endpoint.Endpoint, zone string, changes *plan.Changes) provider.Provider {
 	dnsProvider := &mockProvider{
 		RecordsStore:  endpoints,
 		ExpectZone:    zone,
@@ -90,7 +90,7 @@ func newMockProvider(endpoints []endpoint.Endpoint, zone string, changes *plan.C
 func TestRunOnce(t *testing.T) {
 	// Fake some desired endpoints coming from our source.
 	source := source.NewMockSource(
-		[]endpoint.Endpoint{
+		[]*endpoint.Endpoint{
 			{
 				DNSName: "create-record",
 				Target:  "1.2.3.4",
@@ -104,7 +104,7 @@ func TestRunOnce(t *testing.T) {
 
 	// Fake some existing records in our DNS provider and validate some desired changes.
 	provider := newMockProvider(
-		[]endpoint.Endpoint{
+		[]*endpoint.Endpoint{
 			{
 				DNSName: "update-record",
 				Target:  "8.8.8.8",
@@ -116,16 +116,16 @@ func TestRunOnce(t *testing.T) {
 		},
 		"test-zone",
 		&plan.Changes{
-			Create: []endpoint.Endpoint{
+			Create: []*endpoint.Endpoint{
 				{DNSName: "create-record", Target: "1.2.3.4"},
 			},
-			UpdateNew: []endpoint.Endpoint{
+			UpdateNew: []*endpoint.Endpoint{
 				{DNSName: "update-record", Target: "8.8.4.4"},
 			},
-			UpdateOld: []endpoint.Endpoint{
+			UpdateOld: []*endpoint.Endpoint{
 				{DNSName: "update-record", Target: "8.8.8.8"},
 			},
-			Delete: []endpoint.Endpoint{
+			Delete: []*endpoint.Endpoint{
 				{DNSName: "delete-record", Target: "4.3.2.1"},
 			},
 		},
