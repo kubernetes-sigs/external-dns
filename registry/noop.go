@@ -17,8 +17,6 @@ limitations under the License.
 package registry
 
 import (
-	"errors"
-
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
@@ -27,21 +25,14 @@ import (
 // NoopRegistry implements storage interface without ownership directly propagating changes to dns provider
 type NoopRegistry struct {
 	provider provider.Provider
-	ownerID  string //refers to the owner id of the current instance
 }
 
-// NewNoopRegistry returns new InMemoryStorage object
-func NewNoopRegistry(provider provider.Provider, ownerID string) (*NoopRegistry, error) {
-	if ownerID == "" {
-		return nil, errors.New("owner is not provided")
-	}
+// NewNoopRegistry returns new NoopRegistry object
+func NewNoopRegistry(provider provider.Provider) (*NoopRegistry, error) {
 	return &NoopRegistry{
 		provider: provider,
-		ownerID:  ownerID,
 	}, nil
 }
-
-//TODO(ideahitme): Do the conversion endpoint <-> DNSRecord
 
 // Records returns the current records from the in-memory storage
 func (im *NoopRegistry) Records(zone string) ([]*endpoint.Endpoint, error) {

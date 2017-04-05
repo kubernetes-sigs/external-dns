@@ -132,7 +132,7 @@ func TestRunOnce(t *testing.T) {
 		},
 	)
 
-	r, _ := registry.NewNoopRegistry(provider, "owner")
+	r, _ := registry.NewNoopRegistry(provider)
 
 	// Run our controller once to trigger the validation.
 	ctrl := &Controller{

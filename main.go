@@ -94,7 +94,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	r, err := registry.NewNoopRegistry(p, "owner")
+	r, err := registry.NewNoopRegistry(p)
 	if err != nil {
 		log.Fatal(err)
 	}
