@@ -18,6 +18,7 @@ package testutils
 
 import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
 /** test utility functions for endpoints verifications */
@@ -68,4 +69,10 @@ func SameEndpoints(a, b []*endpoint.Endpoint) bool {
 	}
 
 	return true
+}
+
+// SamePlanChanges verifies that two set of changes are the same
+func SamePlanChanges(a, b *plan.Changes) bool {
+	return SameEndpoints(a.Create, b.Create) && SameEndpoints(a.Delete, b.Delete) &&
+		SameEndpoints(a.UpdateOld, b.UpdateOld) && SameEndpoints(a.UpdateNew, b.UpdateNew)
 }
