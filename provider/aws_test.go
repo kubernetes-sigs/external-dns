@@ -786,7 +786,7 @@ func TestAWSCreateRecordsCNAME(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	records := []endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do.", Target: "foo.elb.amazonaws.com"}}
+	records := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do.", Target: "foo.elb.amazonaws.com"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", records)
 	if err != nil {
@@ -821,14 +821,14 @@ func TestAWSUpdateRecordsCNAME(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	oldRecords := []endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "foo.elb.amazonaws.com"}}
+	oldRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "foo.elb.amazonaws.com"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", oldRecords)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	newRecords := []endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "bar.elb.amazonaws.com"}}
+	newRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "bar.elb.amazonaws.com"}}
 
 	err = provider.UpdateRecords("ext-dns-test.teapot.zalan.do.", newRecords, oldRecords)
 	if err != nil {
@@ -877,7 +877,7 @@ func TestAWSDeleteRecordsCNAME(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	records := []endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do.", Target: "baz.elb.amazonaws.com"}}
+	records := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do.", Target: "baz.elb.amazonaws.com"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", records)
 	if err != nil {
@@ -915,22 +915,22 @@ func TestAWSApplyCNAME(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	updateRecords := []endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "foo.elb.amazonaws.com"}}
+	updateRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "foo.elb.amazonaws.com"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", updateRecords)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	deleteRecords := []endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do.", Target: "baz.elb.amazonaws.com"}}
+	deleteRecords := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do.", Target: "baz.elb.amazonaws.com"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", deleteRecords)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	createRecords := []endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do.", Target: "foo.elb.amazonaws.com"}}
-	updateNewRecords := []endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "bar.elb.amazonaws.com"}}
+	createRecords := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do.", Target: "foo.elb.amazonaws.com"}}
+	updateNewRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "bar.elb.amazonaws.com"}}
 
 	changes := &plan.Changes{
 		Create:    createRecords,
