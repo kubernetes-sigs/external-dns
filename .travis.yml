@@ -20,4 +20,4 @@ install:
 script:
 - vendor/github.com/kubernetes/repo-infra/verify/verify-boilerplate.sh --rootdir=$(pwd)
 - vendor/github.com/kubernetes/repo-infra/verify/verify-go-src.sh -v --rootdir $(pwd)
-- goveralls -service=travis-ci
+- travis_wait 20 goveralls -service=travis-ci
