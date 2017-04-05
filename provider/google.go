@@ -182,6 +182,8 @@ func (p *googleProvider) DeleteZone(name string) error {
 func (p *googleProvider) Records(zone string) (endpoints []*endpoint.Endpoint, _ error) {
 	f := func(resp *dns.ResourceRecordSetsListResponse) error {
 		for _, r := range resp.Rrsets {
+			// TODO(linki, ownership): Remove once ownership system is in place.
+			// See: https://github.com/kubernetes-incubator/external-dns/pull/122/files/74e2c3d3e237411e619aefc5aab694742001cdec#r109863370
 			switch r.Type {
 			case "A", "CNAME":
 				break
