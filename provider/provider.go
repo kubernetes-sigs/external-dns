@@ -17,6 +17,8 @@ limitations under the License.
 package provider
 
 import (
+	"net"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
@@ -27,20 +29,12 @@ type Provider interface {
 	ApplyChanges(zone string, changes *plan.Changes) error
 }
 
-// DNSRecord is dns provider agnostic concept
-type DNSRecord struct {
-	DNSName    string
-	Target     string
-	RecordType string
-	Value      string
-}
-
-// NewDNSRecord creates new dns record
-func NewDNSRecord(dnsName, target, recordType, value string) *DNSRecord {
-	return &DNSRecord{
-		DNSName:    dnsName,
-		Target:     target,
-		RecordType: recordType,
-		Value:      value,
+// suitableType returns the DNS resource record type suitable for the target.
+// In this case type A for IPs and type CNAME for everything else.
+func suitableType(target string) string {
+	if net.ParseIP(target) == nil {
+		return "CNAME"
 	}
+
+	return "A"
 }

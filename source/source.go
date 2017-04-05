@@ -17,6 +17,8 @@ limitations under the License.
 package source
 
 import (
+	"strings"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
@@ -32,4 +34,9 @@ const (
 // Source defines the interface Endpoint sources should implement.
 type Source interface {
 	Endpoints() ([]*endpoint.Endpoint, error)
+}
+
+// sanitizeHostname appends a trailing dot to a hostname if it's missing.
+func sanitizeHostname(hostname string) string {
+	return strings.Trim(hostname, ".") + "."
 }

@@ -42,13 +42,13 @@ func testEndpointsFromIngress(t *testing.T) {
 		{
 			title: "one rule.host one lb.hostname",
 			ingress: fakeIngress{
-				dnsnames:  []string{"foo.bar"},
-				hostnames: []string{"lb.com"},
+				dnsnames:  []string{"foo.bar"}, // Kubernetes requires removal of trailing dot
+				hostnames: []string{"lb.com"},  // Kubernetes omits the trailing dot
 			},
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "foo.bar.",
-					Target:  "lb.com",
+					Target:  "lb.com.",
 				},
 			},
 		},
@@ -83,11 +83,11 @@ func testEndpointsFromIngress(t *testing.T) {
 				},
 				{
 					DNSName: "foo.bar.",
-					Target:  "elb.com",
+					Target:  "elb.com.",
 				},
 				{
 					DNSName: "foo.bar.",
-					Target:  "alb.com",
+					Target:  "alb.com.",
 				},
 			},
 		},
@@ -159,7 +159,7 @@ func testIngressEndpoints(t *testing.T) {
 				},
 				{
 					DNSName: "new.org.",
-					Target:  "lb.com",
+					Target:  "lb.com.",
 				},
 			},
 		},
@@ -187,7 +187,7 @@ func testIngressEndpoints(t *testing.T) {
 				},
 				{
 					DNSName: "new.org.",
-					Target:  "lb.com",
+					Target:  "lb.com.",
 				},
 			},
 		},
