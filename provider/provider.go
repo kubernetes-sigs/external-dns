@@ -26,3 +26,21 @@ type Provider interface {
 	Records(zone string) ([]*endpoint.Endpoint, error)
 	ApplyChanges(zone string, changes *plan.Changes) error
 }
+
+// DNSRecord is dns provider agnostic concept
+type DNSRecord struct {
+	DNSName    string
+	Target     string
+	RecordType string
+	Value      string
+}
+
+// NewDNSRecord creates new dns record
+func NewDNSRecord(dnsName, target, recordType, value string) *DNSRecord {
+	return &DNSRecord{
+		DNSName:    dnsName,
+		Target:     target,
+		RecordType: recordType,
+		Value:      value,
+	}
+}
