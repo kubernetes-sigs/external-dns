@@ -149,7 +149,12 @@ func (p *AWSProvider) Records(zone string) ([]*endpoint.Endpoint, error) {
 
 	f := func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool) {
 		for _, r := range resp.ResourceRecordSets {
-			if aws.StringValue(r.Type) != route53.RRTypeA {
+			// TODO(linki, ownership): Remove once ownership system is in place.
+			// See: https://github.com/kubernetes-incubator/external-dns/pull/122/files/74e2c3d3e237411e619aefc5aab694742001cdec#r109863370
+			switch aws.StringValue(r.Type) {
+			case route53.RRTypeA, route53.RRTypeCname:
+				break
+			default:
 				continue
 			}
 
@@ -255,7 +260,7 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 				},
 			},
 			TTL:  aws.Int64(300),
-			Type: aws.String(route53.RRTypeA),
+			Type: aws.String(suitableType(endpoint.Target)),
 		},
 	}
 
