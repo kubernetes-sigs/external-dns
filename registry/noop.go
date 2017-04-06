@@ -22,7 +22,7 @@ import (
 	"github.com/kubernetes-incubator/external-dns/provider"
 )
 
-// NoopRegistry implements storage interface without ownership directly propagating changes to dns provider
+// NoopRegistry implements registry interface without ownership directly propagating changes to dns provider
 type NoopRegistry struct {
 	provider provider.Provider
 }
@@ -34,12 +34,12 @@ func NewNoopRegistry(provider provider.Provider) (*NoopRegistry, error) {
 	}, nil
 }
 
-// Records returns the current records from the in-memory storage
+// Records returns the current records from the dns provider
 func (im *NoopRegistry) Records(zone string) ([]*endpoint.Endpoint, error) {
 	return im.provider.Records(zone)
 }
 
-// ApplyChanges updates in memory dns provider including ownership information
+// ApplyChanges propagates changes to the dns provider
 func (im *NoopRegistry) ApplyChanges(zone string, changes *plan.Changes) error {
 	return im.provider.ApplyChanges(zone, changes)
 }

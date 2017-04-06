@@ -37,7 +37,7 @@ func testNoopInit(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	r, err := NewNoopRegistry(p)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	if r.provider != p {
 		t.Error("noop registry incorrectly initialized")
@@ -57,14 +57,17 @@ func testNoopRecords(t *testing.T) {
 		Create: providerRecords,
 	})
 
-	r, err := NewNoopRegistry(p)
-	_, err = r.Records("wrong-zone")
+	r, _ := NewNoopRegistry(p)
+	_, err := r.Records("wrong-zone")
 	if err == nil {
 		t.Error("Should fail for wrong zone: wrong-zone")
 	}
 
-	r, err = NewNoopRegistry(p)
+	r, _ = NewNoopRegistry(p)
 	eps, err := r.Records("zone")
+	if err != nil {
+		t.Error(err)
+	}
 	if !testutils.SameEndpoints(eps, providerRecords) {
 		t.Error("incorrect result is returned")
 	}
@@ -76,17 +79,17 @@ func testNoopApplyChanges(t *testing.T) {
 	p.CreateZone("zone")
 	providerRecords := []*endpoint.Endpoint{
 		{
-			DNSName: "example.org",
+			DNSName: "example.org.",
 			Target:  "example-lb.com",
 		},
 	}
 	expectedUpdate := []*endpoint.Endpoint{
 		{
-			DNSName: "example.org",
+			DNSName: "example.org.",
 			Target:  "new-example-lb.com",
 		},
 		{
-			DNSName: "new-record.org",
+			DNSName: "new-record.org.",
 			Target:  "new-lb.org",
 		},
 	}
@@ -107,7 +110,7 @@ func testNoopApplyChanges(t *testing.T) {
 	err = r.ApplyChanges("zone", &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{
-				DNSName: "example.org",
+				DNSName: "example.org.",
 				Target:  "lb.com",
 			},
 		},
@@ -120,19 +123,19 @@ func testNoopApplyChanges(t *testing.T) {
 	err = r.ApplyChanges("zone", &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{
-				DNSName: "new-record.org",
+				DNSName: "new-record.org.",
 				Target:  "new-lb.org",
 			},
 		},
 		UpdateNew: []*endpoint.Endpoint{
 			{
-				DNSName: "example.org",
+				DNSName: "example.org.",
 				Target:  "new-example-lb.com",
 			},
 		},
 		UpdateOld: []*endpoint.Endpoint{
 			{
-				DNSName: "example.org",
+				DNSName: "example.org.",
 				Target:  "example-lb.com",
 			},
 		},
