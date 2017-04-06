@@ -16,9 +16,7 @@ limitations under the License.
 
 package testutils
 
-import (
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-)
+import "github.com/kubernetes-incubator/external-dns/endpoint"
 
 /** test utility functions for endpoints verifications */
 
@@ -68,4 +66,10 @@ func SameEndpoints(a, b []*endpoint.Endpoint) bool {
 	}
 
 	return true
+}
+
+// SamePlanChanges verifies that two set of changes are the same
+func SamePlanChanges(a, b map[string][]*endpoint.Endpoint) bool {
+	return SameEndpoints(a["Create"], b["Create"]) && SameEndpoints(a["Delete"], b["Delete"]) &&
+		SameEndpoints(a["UpdateOld"], b["UpdateOld"]) && SameEndpoints(a["UpdateNew"], b["UpdateNew"])
 }
