@@ -31,7 +31,8 @@ import (
 )
 
 const (
-	testZone = "/hostedzone/ext-dns-test.teapot.zalan.do."
+	// ID of the hosted zone where the tests are running.
+	testZone = "ext-dns-test.teapot.zalan.do."
 )
 
 // Compile time check for interface conformance
@@ -483,6 +484,30 @@ func TestAWSApplyChangesCNAME(t *testing.T) {
 	validateEndpoints(t, records, []*endpoint.Endpoint{
 		{DNSName: "create-test.ext-dns-test.teapot.zalan.do.", Target: "foo.elb.amazonaws.com"},
 		{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "baz.elb.amazonaws.com"},
+	})
+}
+
+func TestAWSSanitizeZone(t *testing.T) {
+	provider := newAWSProvider(t, false, []*endpoint.Endpoint{
+		{DNSName: "list-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"},
+	})
+
+	records, err := provider.Records(testZone)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	validateEndpoints(t, records, []*endpoint.Endpoint{
+		{DNSName: "list-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"},
+	})
+
+	records, err = provider.Records("/hostedzone/" + testZone)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	validateEndpoints(t, records, []*endpoint.Endpoint{
+		{DNSName: "list-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"},
 	})
 }
 

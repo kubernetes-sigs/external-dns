@@ -17,6 +17,8 @@ limitations under the License.
 package provider
 
 import (
+	"strings"
+
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -25,6 +27,10 @@ import (
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
+)
+
+const (
+	hostedZonePrefix = "/hostedzone/"
 )
 
 // Route53API is the subset of the AWS Route53 API that we actually use.  Add methods as required. Signatures must match exactly.
@@ -85,7 +91,7 @@ func (p *AWSProvider) Records(zone string) ([]*endpoint.Endpoint, error) {
 	}
 
 	params := &route53.ListResourceRecordSetsInput{
-		HostedZoneId: aws.String(zone),
+		HostedZoneId: aws.String(expandedHostedZoneID(zone)),
 	}
 
 	if err := p.Client.ListResourceRecordSetsPages(params, f); err != nil {
@@ -137,7 +143,7 @@ func (p *AWSProvider) submitChanges(zone string, changes []*route53.Change) erro
 	}
 
 	params := &route53.ChangeResourceRecordSetsInput{
-		HostedZoneId: aws.String(zone),
+		HostedZoneId: aws.String(expandedHostedZoneID(zone)),
 		ChangeBatch: &route53.ChangeBatch{
 			Changes: changes,
 		},
@@ -180,4 +186,8 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 	}
 
 	return change
+}
+
+func expandedHostedZoneID(zone string) string {
+	return hostedZonePrefix + strings.TrimPrefix(zone, hostedZonePrefix)
 }
