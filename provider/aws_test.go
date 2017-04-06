@@ -183,12 +183,12 @@ func TestAWSZones(t *testing.T) {
 func TestAWSZone(t *testing.T) {
 	provider := newAWSProvider(t, false)
 
-	hostedZone, err := provider.CreateZone("list-ext-dns-test.teapot.zalan.do.")
+	hostedZone, err := provider.CreateZone("list-ext-dns-test.teapot.zalan.do")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	zone, err := provider.Zone("list-ext-dns-test.teapot.zalan.do.")
+	zone, err := provider.Zone("list-ext-dns-test.teapot.zalan.do")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,8 +197,8 @@ func TestAWSZone(t *testing.T) {
 		t.Errorf("expected %s, got %s", aws.StringValue(hostedZone.Id), aws.StringValue(zone.Id))
 	}
 
-	if aws.StringValue(zone.Name) != "list-ext-dns-test.teapot.zalan.do." {
-		t.Errorf("expected %s, got %s", "list-ext-dns-test.teapot.zalan.do.", aws.StringValue(zone.Name))
+	if aws.StringValue(zone.Name) != "list-ext-dns-test.teapot.zalan.do" {
+		t.Errorf("expected %s, got %s", "list-ext-dns-test.teapot.zalan.do", aws.StringValue(zone.Name))
 	}
 }
 
@@ -224,14 +224,14 @@ func TestAWSCreateZone(t *testing.T) {
 	}
 
 	if !found {
-		t.Fatal("ext-dns-test.teapot.zalan.do. should be there")
+		t.Fatal("ext-dns-test.teapot.zalan.do should be there")
 	}
 }
 
 func TestAWSDeleteZone(t *testing.T) {
 	provider := newAWSProvider(t, false)
 
-	zone, err := provider.CreateZone("ext-dns-test-2.teapot.zalan.do.")
+	zone, err := provider.CreateZone("ext-dns-test-2.teapot.zalan.do")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -247,8 +247,8 @@ func TestAWSDeleteZone(t *testing.T) {
 	}
 
 	for _, z := range zones {
-		if z == "ext-dns-test-2.teapot.zalan.do." {
-			t.Fatal("ext-dns-test-2.teapot.zalan.do.")
+		if z == "ext-dns-test-2.teapot.zalan.do" {
+			t.Fatal("ext-dns-test-2.teapot.zalan.do")
 		}
 	}
 }
@@ -256,19 +256,19 @@ func TestAWSDeleteZone(t *testing.T) {
 func TestAWSRecords(t *testing.T) {
 	provider := newAWSProvider(t, false)
 
-	_, err := provider.CreateZone("list-ext-dns-test.teapot.zalan.do.")
+	_, err := provider.CreateZone("list-ext-dns-test.teapot.zalan.do")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	records := []*endpoint.Endpoint{{DNSName: "list-test.list-ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
+	records := []*endpoint.Endpoint{{DNSName: "list-test.list-ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"}}
 
-	err = provider.CreateRecords("list-ext-dns-test.teapot.zalan.do.", records)
+	err = provider.CreateRecords("list-ext-dns-test.teapot.zalan.do", records)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	records, err = provider.Records("list-ext-dns-test.teapot.zalan.do.")
+	records, err = provider.Records("list-ext-dns-test.teapot.zalan.do")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -280,7 +280,7 @@ func TestAWSRecords(t *testing.T) {
 	found := false
 
 	for _, r := range records {
-		if r.DNSName == "list-test.list-ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "list-test.list-ext-dns-test.teapot.zalan.do" {
 			if r.Target == "8.8.8.8" {
 				found = true
 			}
@@ -288,7 +288,7 @@ func TestAWSRecords(t *testing.T) {
 	}
 
 	if !found {
-		t.Fatal("list-test.list-ext-dns-test.teapot.zalan.do. should be there")
+		t.Fatal("list-test.list-ext-dns-test.teapot.zalan.do should be there")
 	}
 }
 
@@ -300,7 +300,7 @@ func TestAWSCreateRecords(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	records := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
+	records := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", records)
 	if err != nil {
@@ -315,7 +315,7 @@ func TestAWSCreateRecords(t *testing.T) {
 	found := false
 
 	for _, r := range records {
-		if r.DNSName == "create-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "create-test.ext-dns-test.teapot.zalan.do" {
 			if r.Target == "8.8.8.8" {
 				found = true
 			}
@@ -323,7 +323,7 @@ func TestAWSCreateRecords(t *testing.T) {
 	}
 
 	if !found {
-		t.Fatal("create-test.ext-dns-test.teapot.zalan.do. should be there")
+		t.Fatal("create-test.ext-dns-test.teapot.zalan.do should be there")
 	}
 }
 
@@ -335,14 +335,14 @@ func TestAWSUpdateRecords(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	oldRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
+	oldRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", oldRecords)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	newRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "1.2.3.4"}}
+	newRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "1.2.3.4"}}
 
 	err = provider.UpdateRecords("ext-dns-test.teapot.zalan.do.", newRecords, oldRecords)
 	if err != nil {
@@ -357,7 +357,7 @@ func TestAWSUpdateRecords(t *testing.T) {
 	found := false
 
 	for _, r := range records {
-		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do" {
 			if r.Target == "1.2.3.4" {
 				found = true
 			}
@@ -365,13 +365,13 @@ func TestAWSUpdateRecords(t *testing.T) {
 	}
 
 	if !found {
-		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should point to 1.2.3.4")
+		t.Fatal("update-test.ext-dns-test.teapot.zalan.do should point to 1.2.3.4")
 	}
 
 	found = false
 
 	for _, r := range records {
-		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do" {
 			if r.Target == "8.8.8.8" {
 				found = true
 			}
@@ -379,7 +379,7 @@ func TestAWSUpdateRecords(t *testing.T) {
 	}
 
 	if found {
-		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should point to 1.2.3.4")
+		t.Fatal("update-test.ext-dns-test.teapot.zalan.do should point to 1.2.3.4")
 	}
 }
 
@@ -391,7 +391,7 @@ func TestAWSDeleteRecords(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	records := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do.", Target: "20.153.88.175"}}
+	records := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do", Target: "20.153.88.175"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", records)
 	if err != nil {
@@ -411,13 +411,13 @@ func TestAWSDeleteRecords(t *testing.T) {
 	found := false
 
 	for _, r := range records {
-		if r.DNSName == "delete-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "delete-test.ext-dns-test.teapot.zalan.do" {
 			found = true
 		}
 	}
 
 	if found {
-		t.Fatal("delete-test.ext-dns-test.teapot.zalan.do. should be gone")
+		t.Fatal("delete-test.ext-dns-test.teapot.zalan.do should be gone")
 	}
 }
 
@@ -429,22 +429,22 @@ func TestAWSApply(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	updateRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
+	updateRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", updateRecords)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	deleteRecords := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do.", Target: "20.153.88.175"}}
+	deleteRecords := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do", Target: "20.153.88.175"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", deleteRecords)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	createRecords := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
-	updateNewRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "1.2.3.4"}}
+	createRecords := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"}}
+	updateNewRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "1.2.3.4"}}
 
 	changes := &plan.Changes{
 		Create:    createRecords,
@@ -468,7 +468,7 @@ func TestAWSApply(t *testing.T) {
 	found := false
 
 	for _, r := range records {
-		if r.DNSName == "create-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "create-test.ext-dns-test.teapot.zalan.do" {
 			if r.Target == "8.8.8.8" {
 				found = true
 			}
@@ -476,7 +476,7 @@ func TestAWSApply(t *testing.T) {
 	}
 
 	if !found {
-		t.Fatal("create-test.ext-dns-test.teapot.zalan.do. should be there")
+		t.Fatal("create-test.ext-dns-test.teapot.zalan.do should be there")
 	}
 
 	// update validation
@@ -484,7 +484,7 @@ func TestAWSApply(t *testing.T) {
 	found = false
 
 	for _, r := range records {
-		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do" {
 			if r.Target == "1.2.3.4" {
 				found = true
 			}
@@ -492,13 +492,13 @@ func TestAWSApply(t *testing.T) {
 	}
 
 	if !found {
-		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should point to 1.2.3.4")
+		t.Fatal("update-test.ext-dns-test.teapot.zalan.do should point to 1.2.3.4")
 	}
 
 	found = false
 
 	for _, r := range records {
-		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do" {
 			if r.Target == "8.8.8.8" {
 				found = true
 			}
@@ -506,7 +506,7 @@ func TestAWSApply(t *testing.T) {
 	}
 
 	if found {
-		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should point to 1.2.3.4")
+		t.Fatal("update-test.ext-dns-test.teapot.zalan.do should point to 1.2.3.4")
 	}
 
 	// delete validation
@@ -514,13 +514,13 @@ func TestAWSApply(t *testing.T) {
 	found = false
 
 	for _, r := range records {
-		if r.DNSName == "delete-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "delete-test.ext-dns-test.teapot.zalan.do" {
 			found = true
 		}
 	}
 
 	if found {
-		t.Fatal("delete-test.ext-dns-test.teapot.zalan.do. should be gone")
+		t.Fatal("delete-test.ext-dns-test.teapot.zalan.do should be gone")
 	}
 }
 
@@ -548,7 +548,7 @@ func TestAWSCreateRecordDryRun(t *testing.T) {
 
 	provider.DryRun = true
 
-	records := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
+	records := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", records)
 	if err != nil {
@@ -563,7 +563,7 @@ func TestAWSCreateRecordDryRun(t *testing.T) {
 	found := false
 
 	for _, r := range records {
-		if r.DNSName == "create-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "create-test.ext-dns-test.teapot.zalan.do" {
 			if r.Target == "8.8.8.8" {
 				found = true
 			}
@@ -571,7 +571,7 @@ func TestAWSCreateRecordDryRun(t *testing.T) {
 	}
 
 	if found {
-		t.Fatal("create-test.ext-dns-test.teapot.zalan.do. should not be there")
+		t.Fatal("create-test.ext-dns-test.teapot.zalan.do should not be there")
 	}
 }
 
@@ -583,7 +583,7 @@ func TestAWSUpdateRecordDryRun(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	oldRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
+	oldRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", oldRecords)
 	if err != nil {
@@ -592,7 +592,7 @@ func TestAWSUpdateRecordDryRun(t *testing.T) {
 
 	provider.DryRun = true
 
-	newRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "1.2.3.4"}}
+	newRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "1.2.3.4"}}
 
 	err = provider.UpdateRecords("ext-dns-test.teapot.zalan.do.", newRecords, oldRecords)
 	if err != nil {
@@ -607,7 +607,7 @@ func TestAWSUpdateRecordDryRun(t *testing.T) {
 	found := false
 
 	for _, r := range records {
-		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do" {
 			if r.Target == "1.2.3.4" {
 				found = true
 			}
@@ -615,13 +615,13 @@ func TestAWSUpdateRecordDryRun(t *testing.T) {
 	}
 
 	if found {
-		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should not point to 1.2.3.4")
+		t.Fatal("update-test.ext-dns-test.teapot.zalan.do should not point to 1.2.3.4")
 	}
 
 	found = false
 
 	for _, r := range records {
-		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do" {
 			if r.Target == "8.8.8.8" {
 				found = true
 			}
@@ -629,7 +629,7 @@ func TestAWSUpdateRecordDryRun(t *testing.T) {
 	}
 
 	if !found {
-		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should point to 8.8.8.8")
+		t.Fatal("update-test.ext-dns-test.teapot.zalan.do should point to 8.8.8.8")
 	}
 }
 
@@ -641,7 +641,7 @@ func TestAWSDeleteRecordDryRun(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	records := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do.", Target: "20.153.88.175"}}
+	records := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do", Target: "20.153.88.175"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", records)
 	if err != nil {
@@ -663,13 +663,13 @@ func TestAWSDeleteRecordDryRun(t *testing.T) {
 	found := false
 
 	for _, r := range records {
-		if r.DNSName == "delete-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "delete-test.ext-dns-test.teapot.zalan.do" {
 			found = true
 		}
 	}
 
 	if !found {
-		t.Fatal("delete-test.ext-dns-test.teapot.zalan.do. should not be gone")
+		t.Fatal("delete-test.ext-dns-test.teapot.zalan.do should not be gone")
 	}
 }
 
@@ -681,14 +681,14 @@ func TestAWSApplyDryRun(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	updateRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
+	updateRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", updateRecords)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	deleteRecords := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do.", Target: "20.153.88.175"}}
+	deleteRecords := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do", Target: "20.153.88.175"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", deleteRecords)
 	if err != nil {
@@ -697,8 +697,8 @@ func TestAWSApplyDryRun(t *testing.T) {
 
 	provider.DryRun = true
 
-	createRecords := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do.", Target: "8.8.8.8"}}
-	updateNewRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "1.2.3.4"}}
+	createRecords := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"}}
+	updateNewRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "1.2.3.4"}}
 
 	changes := &plan.Changes{
 		Create:    createRecords,
@@ -722,7 +722,7 @@ func TestAWSApplyDryRun(t *testing.T) {
 	found := false
 
 	for _, r := range records {
-		if r.DNSName == "create-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "create-test.ext-dns-test.teapot.zalan.do" {
 			if r.Target == "8.8.8.8" {
 				found = true
 			}
@@ -730,7 +730,7 @@ func TestAWSApplyDryRun(t *testing.T) {
 	}
 
 	if found {
-		t.Fatal("create-test.ext-dns-test.teapot.zalan.do. should not be there")
+		t.Fatal("create-test.ext-dns-test.teapot.zalan.do should not be there")
 	}
 
 	// update validation
@@ -738,7 +738,7 @@ func TestAWSApplyDryRun(t *testing.T) {
 	found = false
 
 	for _, r := range records {
-		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do" {
 			if r.Target == "1.2.3.4" {
 				found = true
 			}
@@ -746,13 +746,13 @@ func TestAWSApplyDryRun(t *testing.T) {
 	}
 
 	if found {
-		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should not point to 1.2.3.4")
+		t.Fatal("update-test.ext-dns-test.teapot.zalan.do should not point to 1.2.3.4")
 	}
 
 	found = false
 
 	for _, r := range records {
-		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do" {
 			if r.Target == "8.8.8.8" {
 				found = true
 			}
@@ -760,7 +760,7 @@ func TestAWSApplyDryRun(t *testing.T) {
 	}
 
 	if !found {
-		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should point to 8.8.8.8")
+		t.Fatal("update-test.ext-dns-test.teapot.zalan.do should point to 8.8.8.8")
 	}
 
 	// delete validation
@@ -768,13 +768,13 @@ func TestAWSApplyDryRun(t *testing.T) {
 	found = false
 
 	for _, r := range records {
-		if r.DNSName == "delete-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "delete-test.ext-dns-test.teapot.zalan.do" {
 			found = true
 		}
 	}
 
 	if !found {
-		t.Fatal("delete-test.ext-dns-test.teapot.zalan.do. should not be gone")
+		t.Fatal("delete-test.ext-dns-test.teapot.zalan.do should not be gone")
 	}
 }
 
@@ -786,7 +786,7 @@ func TestAWSCreateRecordsCNAME(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	records := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do.", Target: "foo.elb.amazonaws.com"}}
+	records := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do", Target: "foo.elb.amazonaws.com"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", records)
 	if err != nil {
@@ -801,7 +801,7 @@ func TestAWSCreateRecordsCNAME(t *testing.T) {
 	found := false
 
 	for _, r := range records {
-		if r.DNSName == "create-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "create-test.ext-dns-test.teapot.zalan.do" {
 			if r.Target == "foo.elb.amazonaws.com" {
 				found = true
 			}
@@ -809,7 +809,7 @@ func TestAWSCreateRecordsCNAME(t *testing.T) {
 	}
 
 	if !found {
-		t.Fatal("create-test.ext-dns-test.teapot.zalan.do. should be there")
+		t.Fatal("create-test.ext-dns-test.teapot.zalan.do should be there")
 	}
 }
 
@@ -821,14 +821,14 @@ func TestAWSUpdateRecordsCNAME(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	oldRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "foo.elb.amazonaws.com"}}
+	oldRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "foo.elb.amazonaws.com"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", oldRecords)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	newRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "bar.elb.amazonaws.com"}}
+	newRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "bar.elb.amazonaws.com"}}
 
 	err = provider.UpdateRecords("ext-dns-test.teapot.zalan.do.", newRecords, oldRecords)
 	if err != nil {
@@ -843,7 +843,7 @@ func TestAWSUpdateRecordsCNAME(t *testing.T) {
 	found := false
 
 	for _, r := range records {
-		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do" {
 			if r.Target == "bar.elb.amazonaws.com" {
 				found = true
 			}
@@ -851,13 +851,13 @@ func TestAWSUpdateRecordsCNAME(t *testing.T) {
 	}
 
 	if !found {
-		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should point to bar.elb.amazonaws.com")
+		t.Fatal("update-test.ext-dns-test.teapot.zalan.do should point to bar.elb.amazonaws.com")
 	}
 
 	found = false
 
 	for _, r := range records {
-		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do" {
 			if r.Target == "foo.elb.amazonaws.com" {
 				found = true
 			}
@@ -865,7 +865,7 @@ func TestAWSUpdateRecordsCNAME(t *testing.T) {
 	}
 
 	if found {
-		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should point to bar.elb.amazonaws.com")
+		t.Fatal("update-test.ext-dns-test.teapot.zalan.do should point to bar.elb.amazonaws.com")
 	}
 }
 
@@ -877,7 +877,7 @@ func TestAWSDeleteRecordsCNAME(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	records := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do.", Target: "baz.elb.amazonaws.com"}}
+	records := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do", Target: "baz.elb.amazonaws.com"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", records)
 	if err != nil {
@@ -897,13 +897,13 @@ func TestAWSDeleteRecordsCNAME(t *testing.T) {
 	found := false
 
 	for _, r := range records {
-		if r.DNSName == "delete-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "delete-test.ext-dns-test.teapot.zalan.do" {
 			found = true
 		}
 	}
 
 	if found {
-		t.Fatal("delete-test.ext-dns-test.teapot.zalan.do. should be gone")
+		t.Fatal("delete-test.ext-dns-test.teapot.zalan.do should be gone")
 	}
 }
 
@@ -915,22 +915,22 @@ func TestAWSApplyCNAME(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	updateRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "foo.elb.amazonaws.com"}}
+	updateRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "foo.elb.amazonaws.com"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", updateRecords)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	deleteRecords := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do.", Target: "baz.elb.amazonaws.com"}}
+	deleteRecords := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.teapot.zalan.do", Target: "baz.elb.amazonaws.com"}}
 
 	err = provider.CreateRecords("ext-dns-test.teapot.zalan.do.", deleteRecords)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	createRecords := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do.", Target: "foo.elb.amazonaws.com"}}
-	updateNewRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do.", Target: "bar.elb.amazonaws.com"}}
+	createRecords := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.teapot.zalan.do", Target: "foo.elb.amazonaws.com"}}
+	updateNewRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "bar.elb.amazonaws.com"}}
 
 	changes := &plan.Changes{
 		Create:    createRecords,
@@ -954,7 +954,7 @@ func TestAWSApplyCNAME(t *testing.T) {
 	found := false
 
 	for _, r := range records {
-		if r.DNSName == "create-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "create-test.ext-dns-test.teapot.zalan.do" {
 			if r.Target == "foo.elb.amazonaws.com" {
 				found = true
 			}
@@ -962,7 +962,7 @@ func TestAWSApplyCNAME(t *testing.T) {
 	}
 
 	if !found {
-		t.Fatal("create-test.ext-dns-test.teapot.zalan.do. should be there")
+		t.Fatal("create-test.ext-dns-test.teapot.zalan.do should be there")
 	}
 
 	// update validation
@@ -970,7 +970,7 @@ func TestAWSApplyCNAME(t *testing.T) {
 	found = false
 
 	for _, r := range records {
-		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do" {
 			if r.Target == "bar.elb.amazonaws.com" {
 				found = true
 			}
@@ -978,13 +978,13 @@ func TestAWSApplyCNAME(t *testing.T) {
 	}
 
 	if !found {
-		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should point to bar.elb.amazonaws.com")
+		t.Fatal("update-test.ext-dns-test.teapot.zalan.do should point to bar.elb.amazonaws.com")
 	}
 
 	found = false
 
 	for _, r := range records {
-		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "update-test.ext-dns-test.teapot.zalan.do" {
 			if r.Target == "foo.elb.amazonaws.com" {
 				found = true
 			}
@@ -992,7 +992,7 @@ func TestAWSApplyCNAME(t *testing.T) {
 	}
 
 	if found {
-		t.Fatal("update-test.ext-dns-test.teapot.zalan.do. should point to bar.elb.amazonaws.com")
+		t.Fatal("update-test.ext-dns-test.teapot.zalan.do should point to bar.elb.amazonaws.com")
 	}
 
 	// delete validation
@@ -1000,13 +1000,13 @@ func TestAWSApplyCNAME(t *testing.T) {
 	found = false
 
 	for _, r := range records {
-		if r.DNSName == "delete-test.ext-dns-test.teapot.zalan.do." {
+		if r.DNSName == "delete-test.ext-dns-test.teapot.zalan.do" {
 			found = true
 		}
 	}
 
 	if found {
-		t.Fatal("delete-test.ext-dns-test.teapot.zalan.do. should be gone")
+		t.Fatal("delete-test.ext-dns-test.teapot.zalan.do should be gone")
 	}
 }
 
