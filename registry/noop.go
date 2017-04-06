@@ -36,11 +36,7 @@ func NewNoopRegistry(provider provider.Provider) (*NoopRegistry, error) {
 
 // Records returns the current records from the in-memory storage
 func (im *NoopRegistry) Records(zone string) ([]*endpoint.Endpoint, error) {
-	eps, err := im.provider.Records(zone)
-	if err != nil {
-		return nil, err
-	}
-	return eps, err
+	return im.provider.Records(zone)
 }
 
 // ApplyChanges updates in memory dns provider including ownership information

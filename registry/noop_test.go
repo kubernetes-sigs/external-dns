@@ -39,7 +39,7 @@ func testNoopInit(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if r.provider == nil {
+	if r.provider != p {
 		t.Error("noop registry incorrectly initialized")
 	}
 }
