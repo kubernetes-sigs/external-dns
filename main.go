@@ -89,7 +89,6 @@ func main() {
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
-
 	if err != nil {
 		log.Fatal(err)
 	}
