@@ -63,7 +63,7 @@ func testServiceEndpoints(t *testing.T) {
 			},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org.", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 			},
 		},
 		{
@@ -76,7 +76,7 @@ func testServiceEndpoints(t *testing.T) {
 			},
 			[]string{"lb.example.com"}, // Kubernetes omits the trailing dot
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org.", Target: "lb.example.com."},
+				{DNSName: "foo.example.org", Target: "lb.example.com"},
 			},
 		},
 		{
@@ -89,8 +89,8 @@ func testServiceEndpoints(t *testing.T) {
 			},
 			[]string{"1.2.3.4", "lb.example.com"}, // Kubernetes omits the trailing dot
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org.", Target: "1.2.3.4"},
-				{DNSName: "foo.example.org.", Target: "lb.example.com."},
+				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Target: "lb.example.com"},
 			},
 		},
 		{
@@ -104,7 +104,7 @@ func testServiceEndpoints(t *testing.T) {
 			},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org.", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 			},
 		},
 		{
@@ -129,7 +129,7 @@ func testServiceEndpoints(t *testing.T) {
 			},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org.", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 			},
 		},
 		{
@@ -153,7 +153,7 @@ func testServiceEndpoints(t *testing.T) {
 			},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org.", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 			},
 		},
 		{
@@ -177,8 +177,8 @@ func testServiceEndpoints(t *testing.T) {
 			},
 			[]string{"1.2.3.4", "8.8.8.8"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org.", Target: "1.2.3.4"},
-				{DNSName: "foo.example.org.", Target: "8.8.8.8"},
+				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Target: "8.8.8.8"},
 			},
 		},
 	} {
