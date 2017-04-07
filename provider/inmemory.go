@@ -44,7 +44,7 @@ type zone map[string][]*InMemoryRecord
 // initialized as dns provider with no records
 type InMemoryProvider struct {
 	zones          map[string]zone
-	OnApplyChanges func()
+	OnApplyChanges func(changes *plan.Changes)
 	OnRecords      func()
 }
 
@@ -52,7 +52,7 @@ type InMemoryProvider struct {
 func NewInMemoryProvider() *InMemoryProvider {
 	return &InMemoryProvider{
 		zones:          map[string]zone{},
-		OnApplyChanges: func() {},
+		OnApplyChanges: func(changes *plan.Changes) {},
 		OnRecords:      func() {},
 	}
 }
@@ -92,7 +92,7 @@ func (im *InMemoryProvider) Records(zone string) ([]*endpoint.Endpoint, error) {
 // update/delete record - record should exist
 // create/update/delete lists should not have overlapping records
 func (im *InMemoryProvider) ApplyChanges(zone string, changes *plan.Changes) error {
-	defer im.OnApplyChanges()
+	defer im.OnApplyChanges(changes)
 
 	if err := im.validateChangeBatch(zone, changes); err != nil {
 		return err
