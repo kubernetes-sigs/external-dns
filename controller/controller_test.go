@@ -136,6 +136,7 @@ func TestRunOnce(t *testing.T) {
 		Zone:     "test-zone",
 		Source:   source,
 		Provider: provider,
+		Policy:   &plan.SyncPolicy{},
 	}
 
 	err := ctrl.RunOnce()
