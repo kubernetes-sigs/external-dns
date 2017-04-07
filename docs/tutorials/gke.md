@@ -73,7 +73,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.1.0
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.2.0
         args:
         - --in-cluster
         - --zone=external-dns-test-gcp-zalan-do
