@@ -130,13 +130,13 @@ func ExamplePlan() {
 	}
 	// Output:
 	// Create:
-	// &{baz.example.com 6.6.6.6 map[]}
+	// &{baz.example.com 6.6.6.6 map[] }
 	// UpdateOld:
-	// &{bar.example.com 8.8.8.8 map[]}
+	// &{bar.example.com 8.8.8.8 map[] }
 	// UpdateNew:
-	// &{bar.example.com 8.8.4.4 map[]}
+	// &{bar.example.com 8.8.4.4 map[] }
 	// Delete:
-	// &{foo.example.com 1.2.3.4 map[]}
+	// &{foo.example.com 1.2.3.4 map[] }
 }
 
 // validateEntries validates that the list of entries matches expected.
