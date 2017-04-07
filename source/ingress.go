@@ -127,7 +127,7 @@ func getEndpointsFromTargetAnnotation(ing *v1beta1.Ingress, hostname string) []*
 		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
 		for _, targetHostname := range targetsList {
 			targetHostname = strings.TrimSuffix(targetHostname, ".")
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, targetHostname, suitableType(targetHostname), ttl))
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, []string{targetHostname}, suitableType(targetHostname), ttl))
 		}
 	}
 	return endpoints
@@ -156,10 +156,10 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 	}
 	for _, lb := range ing.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.IP, endpoint.RecordTypeA, ttl))
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, []string{lb.IP}, endpoint.RecordTypeA, ttl))
 		}
 		if lb.Hostname != "" {
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.Hostname, endpoint.RecordTypeCNAME, ttl))
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, []string{lb.Hostname}, endpoint.RecordTypeCNAME, ttl))
 		}
 	}
 
@@ -220,10 +220,10 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 
 		for _, lb := range ing.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rule.Host, lb.IP, endpoint.RecordTypeA, ttl))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rule.Host, []string{lb.IP}, endpoint.RecordTypeA, ttl))
 			}
 			if lb.Hostname != "" {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rule.Host, lb.Hostname, endpoint.RecordTypeCNAME, ttl))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rule.Host, []string{lb.Hostname}, endpoint.RecordTypeCNAME, ttl))
 			}
 		}
 	}

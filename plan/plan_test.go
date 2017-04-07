@@ -22,6 +22,8 @@ import (
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // TestCalculate tests that a plan can calculate actions to move a list of
@@ -30,31 +32,31 @@ func TestCalculate(t *testing.T) {
 	// empty list of records
 	empty := []*endpoint.Endpoint{}
 	// a simple entry
-	fooV1 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", endpoint.RecordTypeCNAME)}
+	fooV1 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", []string{"v1", "vv1"}, endpoint.RecordTypeCNAME)}
 	// the same entry but with different target
-	fooV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", endpoint.RecordTypeCNAME)}
+	fooV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", []string{"v2", "vv2"}, endpoint.RecordTypeCNAME)}
 	// another simple entry
-	bar := []*endpoint.Endpoint{endpoint.NewEndpoint("bar", "v1", endpoint.RecordTypeCNAME)}
+	bar := []*endpoint.Endpoint{endpoint.NewEndpoint("bar", []string{"v1", "vv1"}, endpoint.RecordTypeCNAME)}
 
 	// test case with labels
-	noLabels := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", endpoint.RecordTypeCNAME)}
-	labeledV2 := []*endpoint.Endpoint{newEndpointWithOwner("foo", "v2", "123")}
-	labeledV1 := []*endpoint.Endpoint{newEndpointWithOwner("foo", "v1", "123")}
+	noLabels := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", []string{"v2", "vv2"}, endpoint.RecordTypeCNAME)}
+	labeledV2 := []*endpoint.Endpoint{newEndpointWithOwner("foo", []string{"v2", "vv2"}, "123")}
+	labeledV1 := []*endpoint.Endpoint{newEndpointWithOwner("foo", []string{"v1", "vv1"}, "123")}
 
 	// test case with type inheritance
-	noType := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", "")}
-	typedV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", endpoint.RecordTypeA)}
-	typedV1 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", endpoint.RecordTypeA)}
+	noType := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", []string{"v2", "vv2"}, "")}
+	typedV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", []string{"v2", "vv2"}, endpoint.RecordTypeA)}
+	typedV1 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", []string{"v1", "vv1"}, endpoint.RecordTypeA)}
 
 	// test case with TTL
 	ttl := endpoint.TTL(300)
 	ttl2 := endpoint.TTL(50)
-	ttlV1 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v1", endpoint.RecordTypeCNAME, ttl)}
-	ttlV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", endpoint.RecordTypeCNAME)}
-	ttlV3 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v1", endpoint.RecordTypeCNAME, ttl)}
-	ttlV4 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v1", endpoint.RecordTypeCNAME, ttl2)}
-	ttlV5 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", endpoint.RecordTypeCNAME)}
-	ttlV6 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v2", endpoint.RecordTypeCNAME, ttl)}
+	ttlV1 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", []string{"v1", "vv1"}, endpoint.RecordTypeCNAME, ttl)}
+	ttlV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", []string{"v1", "vv1"}, endpoint.RecordTypeCNAME)}
+	ttlV3 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", []string{"v1", "vv1"}, endpoint.RecordTypeCNAME, ttl)}
+	ttlV4 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", []string{"v1", "vv1"}, endpoint.RecordTypeCNAME, ttl2)}
+	ttlV5 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", []string{"v2", "vv2"}, endpoint.RecordTypeCNAME)}
+	ttlV6 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", []string{"v2", "vv2"}, endpoint.RecordTypeCNAME, ttl)}
 
 	for _, tc := range []struct {
 		policies                             []Policy
@@ -107,10 +109,10 @@ func TestCalculate(t *testing.T) {
 
 // BenchmarkCalculate benchmarks the Calculate method.
 func BenchmarkCalculate(b *testing.B) {
-	foo := endpoint.NewEndpoint("foo", "v1", "")
-	barV1 := endpoint.NewEndpoint("bar", "v1", "")
-	barV2 := endpoint.NewEndpoint("bar", "v2", "")
-	baz := endpoint.NewEndpoint("baz", "v1", "")
+	foo := endpoint.NewEndpoint("foo", []string{"v1", "vv1"}, "")
+	barV1 := endpoint.NewEndpoint("bar", []string{"v1", "vv1"}, "")
+	barV2 := endpoint.NewEndpoint("bar", []string{"v2", "vv2"}, "")
+	baz := endpoint.NewEndpoint("baz", []string{"v1", "vv1"}, "")
 
 	plan := &Plan{
 		Current: []*endpoint.Endpoint{foo, barV1},
@@ -124,10 +126,10 @@ func BenchmarkCalculate(b *testing.B) {
 
 // ExamplePlan shows how plan can be used.
 func ExamplePlan() {
-	foo := endpoint.NewEndpoint("foo.example.com", "1.2.3.4", "")
-	barV1 := endpoint.NewEndpoint("bar.example.com", "8.8.8.8", "")
-	barV2 := endpoint.NewEndpoint("bar.example.com", "8.8.4.4", "")
-	baz := endpoint.NewEndpoint("baz.example.com", "6.6.6.6", "")
+	foo := endpoint.NewEndpoint("foo.example.com", []string{"1.2.3.4", "4.3.2.1"}, "")
+	barV1 := endpoint.NewEndpoint("bar.example.com", []string{"8.8.8.8", "7.7.7.7"}, "")
+	barV2 := endpoint.NewEndpoint("bar.example.com", []string{"8.8.4.4", "7.7.3.3"}, "")
+	baz := endpoint.NewEndpoint("baz.example.com", []string{"6.6.6.6", "5.5.5.5"}, "")
 
 	// Plan where
 	// * foo should be deleted
@@ -182,8 +184,52 @@ func validateEntries(t *testing.T, entries, expected []*endpoint.Endpoint) {
 	}
 }
 
-func newEndpointWithOwner(dnsName, target, ownerID string) *endpoint.Endpoint {
-	e := endpoint.NewEndpoint(dnsName, target, endpoint.RecordTypeCNAME)
+func newEndpointWithOwner(dnsName string, targets []string, ownerID string) *endpoint.Endpoint {
+	e := endpoint.NewEndpoint(dnsName, targets, endpoint.RecordTypeCNAME)
 	e.Labels[endpoint.OwnerLabelKey] = ownerID
 	return e
+}
+
+func TestSameTargets(t *testing.T) {
+	// an empty list of endpoints
+	empty := []string{}
+	// a list containing a single target
+	single := []string{"8.8.8.8"}
+	// a list containing another single target
+	singleV2 := []string{"1.2.3.4"}
+	// a list containing a multiple targets
+	multiple := []string{"8.8.4.4", "8.8.8.8"}
+	// a list containing a multiple targets in reverse order
+	multipleReverse := []string{"8.8.8.8", "8.8.4.4"}
+	// a list containing another multiple targets
+	multipleV2 := []string{"8.8.4.4", "1.2.3.4"}
+
+	for _, tc := range []struct {
+		targets    []string
+		candidates []string
+		same       bool
+		difference TargetDifference
+	}{
+		// Two empty lists are equal
+		{empty, empty, true, TargetDifference{}},
+		// Two single-target lists are equal
+		{single, single, true, TargetDifference{}},
+		// Two multiple-target lists are equal
+		{multiple, multiple, true, TargetDifference{}},
+		// Two multiple-target lists are equal
+		{multiple, multipleReverse, true, TargetDifference{}},
+		// An empty list differs from a single-target list
+		{empty, single, false, TargetDifference{Add: []string{"8.8.8.8"}}},
+		// Two single-item list with different items are different
+		{single, singleV2, false, TargetDifference{Add: []string{"1.2.3.4"}, Delete: []string{"8.8.8.8"}}},
+		// Two multiple-item lists with different items are different
+		{multiple, multipleV2, false, TargetDifference{Add: []string{"1.2.3.4"}, Delete: []string{"8.8.8.8"}}},
+		// Two list always differ if their number of elements differ
+		{single, multiple, false, TargetDifference{Add: []string{"8.8.4.4"}}},
+		// The order of comparison shouldn't lead to a panic
+		{multiple, single, false, TargetDifference{Delete: []string{"8.8.4.4"}}},
+	} {
+		assert.Equal(t, tc.same, SameTargets(tc.targets, tc.candidates))
+		assert.Equal(t, tc.difference, CalculateTargetDifference(tc.targets, tc.candidates))
+	}
 }

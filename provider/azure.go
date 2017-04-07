@@ -151,12 +151,12 @@ func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				log.Errorf("Failed to extract target for '%s' with type '%s'.", name, recordType)
 				return true
 			}
-			ep := endpoint.NewEndpoint(name, target, recordType)
+			ep := endpoint.NewEndpoint(name, []string{target}, recordType)
 			log.Debugf(
 				"Found %s record for '%s' with target '%s'.",
 				ep.RecordType,
 				ep.DNSName,
-				ep.Target,
+				ep.Targets[0],
 			)
 			endpoints = append(endpoints, ep)
 			return true
@@ -306,7 +306,7 @@ func (p *AzureProvider) updateRecords(updated azureChangeMap) {
 					"Would update %s record named '%s' to '%s' for Azure DNS zone '%s'.",
 					endpoint.RecordType,
 					name,
-					endpoint.Target,
+					endpoint.Targets[0],
 					zone,
 				)
 				continue
@@ -316,7 +316,7 @@ func (p *AzureProvider) updateRecords(updated azureChangeMap) {
 				"Updating %s record named '%s' to '%s' for Azure DNS zone '%s'.",
 				endpoint.RecordType,
 				name,
-				endpoint.Target,
+				endpoint.Targets[0],
 				zone,
 			)
 
@@ -337,7 +337,7 @@ func (p *AzureProvider) updateRecords(updated azureChangeMap) {
 					"Failed to update %s record named '%s' to '%s' for DNS zone '%s': %v",
 					endpoint.RecordType,
 					name,
-					endpoint.Target,
+					endpoint.Targets[0],
 					zone,
 					err,
 				)
@@ -367,7 +367,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 				TTL: to.Int64Ptr(azureRecordTTL),
 				ARecords: &[]dns.ARecord{
 					{
-						Ipv4Address: to.StringPtr(endpoint.Target),
+						Ipv4Address: to.StringPtr(endpoint.Targets[0]),
 					},
 				},
 			},
@@ -377,7 +377,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 			RecordSetProperties: &dns.RecordSetProperties{
 				TTL: to.Int64Ptr(azureRecordTTL),
 				CnameRecord: &dns.CnameRecord{
-					Cname: to.StringPtr(endpoint.Target),
+					Cname: to.StringPtr(endpoint.Targets[0]),
 				},
 			},
 		}, nil
@@ -388,7 +388,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 				TxtRecords: &[]dns.TxtRecord{
 					{
 						Value: &[]string{
-							endpoint.Target,
+							endpoint.Targets[0],
 						},
 					},
 				},

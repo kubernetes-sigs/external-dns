@@ -165,11 +165,15 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 			}
 
 			for _, rr := range r.ResourceRecords {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(rr.Value), aws.StringValue(r.Type), ttl))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), []string{aws.StringValue(rr.Value)}, aws.StringValue(r.Type), ttl))
 			}
 
+			// should rather be if alias else
+			// TODO
+			// endpoints = append(endpoints, endpoint.NewEndpoint(aws.StringValue(r.Name), records, aws.StringValue(r.Type)))
+
 			if r.AliasTarget != nil {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.AliasTarget.DNSName), endpoint.RecordTypeCNAME, ttl))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), []string{aws.StringValue(r.AliasTarget.DNSName)}, endpoint.RecordTypeCNAME, ttl))
 			}
 		}
 
@@ -365,8 +369,8 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 	if isAWSLoadBalancer(endpoint) {
 		change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
 		change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
-			DNSName:              aws.String(endpoint.Target),
-			HostedZoneId:         aws.String(canonicalHostedZone(endpoint.Target)),
+			DNSName:              aws.String(endpoint.Targets[0]),
+			HostedZoneId:         aws.String(canonicalHostedZone(endpoint.Targets[0])),
 			EvaluateTargetHealth: aws.Bool(evaluateTargetHealth),
 		}
 	} else {
@@ -378,7 +382,7 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 		}
 		change.ResourceRecordSet.ResourceRecords = []*route53.ResourceRecord{
 			{
-				Value: aws.String(endpoint.Target),
+				Value: aws.String(endpoint.Targets[0]),
 			},
 		}
 	}
@@ -388,8 +392,13 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 
 // isAWSLoadBalancer determines if a given hostname belongs to an AWS load balancer.
 func isAWSLoadBalancer(ep *endpoint.Endpoint) bool {
+	// TODO: test me
+	if len(ep.Targets) == 0 {
+		return false
+	}
+
 	if ep.RecordType == endpoint.RecordTypeCNAME {
-		return canonicalHostedZone(ep.Target) != ""
+		return canonicalHostedZone(ep.Targets[0]) != ""
 	}
 
 	return false

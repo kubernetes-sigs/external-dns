@@ -17,8 +17,11 @@ limitations under the License.
 package plan
 
 import (
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"sort"
+
 	log "github.com/sirupsen/logrus"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
 // Plan can convert a list of desired and current records to a series of create,
@@ -65,7 +68,7 @@ func (p *Plan) Calculate() *Plan {
 			continue
 		}
 
-		targetChanged := targetChanged(desired, current)
+		targetChanged := !SameTargets(current.Targets, desired.Targets)
 		shouldUpdateTTL := shouldUpdateTTL(desired, current)
 
 		if !targetChanged && !shouldUpdateTTL {
@@ -109,10 +112,6 @@ func (p *Plan) Calculate() *Plan {
 	return plan
 }
 
-func targetChanged(desired, current *endpoint.Endpoint) bool {
-	return desired.Target != current.Target
-}
-
 func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 	if !desired.RecordTTL.IsConfigured() {
 		return false
@@ -129,4 +128,54 @@ func recordExists(needle *endpoint.Endpoint, haystack []*endpoint.Endpoint) (*en
 	}
 
 	return nil, false
+}
+
+func SameTargets(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	sort.Strings(a)
+	sort.Strings(b)
+
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+type TargetDifference struct {
+	Add    []string
+	Delete []string
+}
+
+func CalculateTargetDifference(current, desired []string) TargetDifference {
+	diff := TargetDifference{}
+
+	for _, d := range desired {
+		if !targetExists(d, current) {
+			diff.Add = append(diff.Add, d)
+		}
+	}
+
+	for _, c := range current {
+		if !targetExists(c, desired) {
+			diff.Delete = append(diff.Delete, c)
+		}
+	}
+
+	return diff
+}
+
+func targetExists(needle string, haystack []string) bool {
+	for _, t := range haystack {
+		if t == needle {
+			return true
+		}
+	}
+
+	return false
 }

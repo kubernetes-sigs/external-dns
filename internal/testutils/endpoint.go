@@ -16,36 +16,51 @@ limitations under the License.
 
 package testutils
 
-import "github.com/kubernetes-incubator/external-dns/endpoint"
-import "sort"
+import (
+	"sort"
 
-/** test utility functions for endpoints verifications */
-
-type byAllFields []*endpoint.Endpoint
-
-func (b byAllFields) Len() int      { return len(b) }
-func (b byAllFields) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
-func (b byAllFields) Less(i, j int) bool {
-	if b[i].DNSName < b[j].DNSName {
-		return true
-	}
-	if b[i].DNSName == b[j].DNSName {
-		if b[i].Target < b[j].Target {
-			return true
-		}
-		if b[i].Target == b[j].Target {
-			return b[i].RecordType <= b[j].RecordType
-		}
-		return false
-	}
-	return false
-}
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+)
 
 // SameEndpoint returns true if two endpoints are same
 // considers example.org. and example.org DNSName/Target as different endpoints
 func SameEndpoint(a, b *endpoint.Endpoint) bool {
-	return a.DNSName == b.DNSName && a.Target == b.Target && a.RecordType == b.RecordType &&
-		a.Labels[endpoint.OwnerLabelKey] == b.Labels[endpoint.OwnerLabelKey] && a.RecordTTL == b.RecordTTL
+	if a.DNSName != b.DNSName {
+		return false
+	}
+
+	if a.RecordType != b.RecordType {
+		return false
+	}
+
+	if a.RecordTTL != b.RecordTTL {
+		return false
+	}
+
+	if len(a.Targets) != len(b.Targets) {
+		return false
+	}
+
+	sort.Strings(a.Targets)
+	sort.Strings(b.Targets)
+
+	for i := range a.Targets {
+		if a.Targets[i] != b.Targets[i] {
+			return false
+		}
+	}
+
+	if len(a.Labels) != len(b.Labels) {
+		return false
+	}
+
+	for k := range a.Labels {
+		if a.Labels[k] != b.Labels[k] {
+			return false
+		}
+	}
+
+	return true
 }
 
 // SameEndpoints compares two slices of endpoints regardless of order
@@ -58,16 +73,15 @@ func SameEndpoints(a, b []*endpoint.Endpoint) bool {
 		return false
 	}
 
-	sa := a[:]
-	sb := b[:]
-	sort.Sort(byAllFields(sa))
-	sort.Sort(byAllFields(sb))
+	sort.Slice(a, func(i, j int) bool { return a[i].String() < a[j].String() })
+	sort.Slice(b, func(i, j int) bool { return b[i].String() < b[j].String() })
 
-	for i := range sa {
-		if !SameEndpoint(sa[i], sb[i]) {
+	for i := range a {
+		if !SameEndpoint(a[i], b[i]) {
 			return false
 		}
 	}
+
 	return true
 }
 

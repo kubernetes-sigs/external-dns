@@ -105,7 +105,7 @@ func (p *DigitalOceanProvider) Records() ([]*endpoint.Endpoint, error) {
 
 		for _, r := range records {
 			if supportedRecordType(r.Type) {
-				endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Data, r.Type))
+				endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, []string{r.Data}, r.Type))
 			}
 		}
 	}
@@ -253,12 +253,17 @@ func newDigitalOceanChanges(action string, endpoints []*endpoint.Endpoint) []*Di
 }
 
 func newDigitalOceanChange(action string, endpoint *endpoint.Endpoint) *DigitalOceanChange {
+	// TODO: test
+	if len(endpoint.Targets) == 0 {
+		return &DigitalOceanChange{}
+	}
+
 	change := &DigitalOceanChange{
 		Action: action,
 		ResourceRecordSet: godo.DomainRecord{
 			Name: endpoint.DNSName,
 			Type: endpoint.RecordType,
-			Data: endpoint.Target,
+			Data: endpoint.Targets[0],
 		},
 	}
 	return change

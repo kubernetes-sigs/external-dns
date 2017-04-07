@@ -137,7 +137,7 @@ func (sc *serviceSource) extractHeadlessEndpoint(svc *v1.Service, hostname strin
 		log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, v.Status.HostIP)
 		// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
 		if v.Status.Phase == v1.PodRunning {
-			endpoints = append(endpoints, endpoint.NewEndpoint(headlessDomain, v.Status.HostIP, endpoint.RecordTypeA))
+			endpoints = append(endpoints, endpoint.NewEndpoint(headlessDomain, []string{v.Status.HostIP}, endpoint.RecordTypeA))
 		} else {
 			log.Debugf("Pod %s is not in running phase", v.Spec.Hostname)
 		}
@@ -239,7 +239,7 @@ func extractServiceIps(svc *v1.Service, hostname string) []*endpoint.Endpoint {
 		return []*endpoint.Endpoint{}
 	}
 
-	return []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(hostname, svc.Spec.ClusterIP, endpoint.RecordTypeA, ttl)}
+	return []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(hostname, []string{svc.Spec.ClusterIP}, endpoint.RecordTypeA, ttl)}
 }
 
 func extractLoadBalancerEndpoints(svc *v1.Service, hostname string) []*endpoint.Endpoint {
@@ -250,15 +250,19 @@ func extractLoadBalancerEndpoints(svc *v1.Service, hostname string) []*endpoint.
 		log.Warn(err)
 	}
 	// Create a corresponding endpoint for each configured external entrypoint.
+	// lbs := []string{}
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
 			//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.IP, endpoint.RecordTypeA, ttl))
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, []string{lb.IP}, endpoint.RecordTypeA, ttl))
 		}
 		if lb.Hostname != "" {
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.Hostname, endpoint.RecordTypeCNAME, ttl))
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, []string{lb.Hostname}, endpoint.RecordTypeCNAME, ttl))
 		}
 	}
+
+	//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
+	// endpoints = []*endpoint.Endpoint{endpoint.NewEndpoint(hostname, lbs, "")}
 
 	return endpoints
 }
