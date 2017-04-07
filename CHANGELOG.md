@@ -1,3 +1,5 @@
+## v0.2.0 - 2017-04-07
+
 Features:
 
   - Support creation of CNAME records when endpoint target is a hostname.
