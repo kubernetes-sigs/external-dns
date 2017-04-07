@@ -68,7 +68,6 @@ func main() {
 	stopChan := make(chan struct{}, 1)
 
 	go serveMetrics(cfg.MetricsPort)
-	go registerHandlers(cfg.HealthPort)
 	go handleSigterm(stopChan)
 
 	client, err := newClient(cfg)
@@ -117,14 +116,6 @@ func main() {
 	}
 }
 
-func registerHandlers(port string) {
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
-	})
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
-}
-
 func handleSigterm(stopChan chan struct{}) {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGTERM)
@@ -154,6 +145,12 @@ func newClient(cfg *externaldns.Config) (*kubernetes.Clientset, error) {
 }
 
 func serveMetrics(port string) {
+	http.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
+
 	http.Handle("/metrics", promhttp.Handler())
+
 	log.Fatal(http.ListenAndServe(port, nil))
 }
