@@ -144,7 +144,7 @@ func newClient(cfg *externaldns.Config) (*kubernetes.Clientset, error) {
 	return client, nil
 }
 
-func serveMetrics(port string) {
+func serveMetrics(address string) {
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
@@ -152,5 +152,5 @@ func serveMetrics(port string) {
 
 	http.Handle("/metrics", promhttp.Handler())
 
-	log.Fatal(http.ListenAndServe(port, nil))
+	log.Fatal(http.ListenAndServe(address, nil))
 }
