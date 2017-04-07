@@ -30,7 +30,7 @@ EnternalDNS can solve this for you as well.
 
 So far, Google CloudDNS and AWS Route 53 with ALIAS records. There's interest in supporting CoreDNS and Azure DNS. We're open to discussing/adding other providers if the community believes it would be valuable.
 
-Initial support for Google CloudDNS is available in the `v0.1` release. Initial support for AWS Route 53 is targeted for the `v0.2` (CNAME based) and `v0.3` (ALIAS based) releases. However, you can already test AWS Route 53 with CNAME, using version `v0.1.1` and onwards.
+Initial support for Google CloudDNS is available since the `v0.1` release. Initial support for AWS Route 53 is available in the `v0.2` release (CNAME based) and ALIAS is targeted for the `v0.3` release.
 
 There are no plans regarding other providers at the moment.
 
