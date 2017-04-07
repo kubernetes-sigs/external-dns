@@ -22,7 +22,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/kubernetes-incubator/external-dns/plan"
-	"github.com/kubernetes-incubator/external-dns/provider"
+	"github.com/kubernetes-incubator/external-dns/registry"
 	"github.com/kubernetes-incubator/external-dns/source"
 )
 
@@ -36,14 +36,14 @@ type Controller struct {
 	Zone string
 
 	Source   source.Source
-	Provider provider.Provider
+	Registry registry.Registry
 	// The interval between individual synchronizations
 	Interval time.Duration
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
 func (c *Controller) RunOnce() error {
-	records, err := c.Provider.Records(c.Zone)
+	records, err := c.Registry.Records(c.Zone)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (c *Controller) RunOnce() error {
 
 	plan = plan.Calculate()
 
-	return c.Provider.ApplyChanges(c.Zone, &plan.Changes)
+	return c.Registry.ApplyChanges(c.Zone, &plan.Changes)
 }
 
 // Run runs RunOnce in a loop with a delay until stopChan receives a value.

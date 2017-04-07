@@ -34,6 +34,7 @@ import (
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns/validation"
 	"github.com/kubernetes-incubator/external-dns/provider"
+	"github.com/kubernetes-incubator/external-dns/registry"
 	"github.com/kubernetes-incubator/external-dns/source"
 )
 
@@ -93,10 +94,15 @@ func main() {
 		log.Fatal(err)
 	}
 
+	r, err := registry.NewNoopRegistry(p)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	ctrl := controller.Controller{
 		Zone:     cfg.Zone,
 		Source:   sources,
-		Provider: p,
+		Registry: r,
 		Interval: cfg.Interval,
 	}
 
