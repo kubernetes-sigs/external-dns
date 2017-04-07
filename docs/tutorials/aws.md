@@ -51,7 +51,7 @@ spec:
         image: registry.opensource.zalan.do/teapot/external-dns:v0.2.0-beta.0
         args:
         - --in-cluster
-        - --zone=external-dns-test.teapot.zalan.do.
+        - --zone=Z16P7IEWFWZ4RB
         - --source=service
         - --provider=aws
         - --dry-run=false
