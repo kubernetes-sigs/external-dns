@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.2.0-beta.0
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.2.0-beta.1
         args:
         - --in-cluster
         - --zone=Z16P7IEWFWZ4RB
