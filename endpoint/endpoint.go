@@ -16,6 +16,10 @@ limitations under the License.
 
 package endpoint
 
+import (
+	"strings"
+)
+
 const (
 	// OwnerLabelKey is the name of the label that defines the owner of an Endpoint.
 	OwnerLabelKey = "owner"
@@ -34,8 +38,8 @@ type Endpoint struct {
 // NewEndpoint initialization method to be used to create an endpoint
 func NewEndpoint(dnsName, target string) *Endpoint {
 	return &Endpoint{
-		DNSName: dnsName,
-		Target:  target,
+		DNSName: strings.TrimSuffix(dnsName, "."),
+		Target:  strings.TrimSuffix(target, "."),
 		Labels:  map[string]string{},
 	}
 }
