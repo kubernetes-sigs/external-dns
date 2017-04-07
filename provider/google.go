@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"net"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
@@ -103,6 +104,8 @@ type googleProvider struct {
 	project string
 	// Enabled dry-run will print any modifying actions rather than execute them.
 	dryRun bool
+	// TODO
+	zoneFilter string
 	// A client for managing resource record sets
 	resourceRecordSetsClient resourceRecordSetsClientInterface
 	// A client for managing hosted zones
@@ -138,7 +141,11 @@ func NewGoogleProvider(project string, dryRun bool) (Provider, error) {
 func (p *googleProvider) Zones() (zones []*dns.ManagedZone, _ error) {
 	f := func(resp *dns.ManagedZonesListResponse) error {
 		// each page is processed sequentially, no need for a mutex here.
-		zones = append(zones, resp.ManagedZones...)
+		for _, zone := range resp.ManagedZones {
+			if strings.HasSuffix(zone.DnsName, p.zoneFilter) {
+				zones = append(zones, zone)
+			}
+		}
 		return nil
 	}
 
@@ -148,34 +155,6 @@ func (p *googleProvider) Zones() (zones []*dns.ManagedZone, _ error) {
 	}
 
 	return zones, nil
-}
-
-// CreateZone creates a hosted zone given a name.
-func (p *googleProvider) CreateZone(name, domain string) error {
-	zone := &dns.ManagedZone{
-		Name:        name,
-		DnsName:     domain,
-		Description: "Automatically managed zone by kubernetes.io/external-dns",
-	}
-
-	_, err := p.managedZonesClient.Create(p.project, zone).Do()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// DeleteZone deletes a hosted zone given a name.
-func (p *googleProvider) DeleteZone(name string) error {
-	err := p.managedZonesClient.Delete(p.project, name).Do()
-	if err != nil {
-		if !isNotFound(err) {
-			return err
-		}
-	}
-
-	return nil
 }
 
 // Records returns the list of A records in a given hosted zone.
@@ -291,11 +270,19 @@ func newRecords(endpoints []*endpoint.Endpoint) []*dns.ResourceRecordSet {
 // newRecord returns a RecordSet based on the given endpoint.
 func newRecord(endpoint *endpoint.Endpoint) *dns.ResourceRecordSet {
 	return &dns.ResourceRecordSet{
-		Name:    endpoint.DNSName,
-		Rrdatas: []string{endpoint.Target},
+		Name:    ensureTrailingDot(endpoint.DNSName),
+		Rrdatas: []string{ensureTrailingDot(endpoint.Target)},
 		Ttl:     300,
 		Type:    suitableType(endpoint.Target),
 	}
+}
+
+func ensureTrailingDot(target string) string {
+	if net.ParseIP(target) != nil {
+		return target
+	}
+
+	return strings.TrimSuffix(target, ".") + "."
 }
 
 // isNotFound returns true if a given error is due to a resource not being found.
