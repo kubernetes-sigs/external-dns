@@ -25,26 +25,26 @@ import (
 )
 
 var (
-	defaultMetricsPort = ":7979"
-	defaultLogFormat   = "text"
+	defaultMetricsAddress = ":7979"
+	defaultLogFormat      = "text"
 )
 
 // Config is a project-wide configuration
 type Config struct {
-	InCluster     bool
-	KubeConfig    string
-	Namespace     string
-	Zone          string
-	Sources       []string
-	Provider      string
-	GoogleProject string
-	MetricsPort   string
-	Interval      time.Duration
-	Once          bool
-	DryRun        bool
-	Debug         bool
-	LogFormat     string
-	Version       bool
+	InCluster      bool
+	KubeConfig     string
+	Namespace      string
+	Zone           string
+	Sources        []string
+	Provider       string
+	GoogleProject  string
+	MetricsAddress string
+	Interval       time.Duration
+	Once           bool
+	DryRun         bool
+	Debug          bool
+	LogFormat      string
+	Version        bool
 }
 
 // NewConfig returns new Config object
@@ -62,7 +62,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	flags.StringArrayVar(&cfg.Sources, "source", nil, "the sources to gather endpoints from")
 	flags.StringVar(&cfg.Provider, "provider", "", "the DNS provider to materialize the records in")
 	flags.StringVar(&cfg.GoogleProject, "google-project", "", "gcloud project to target")
-	flags.StringVar(&cfg.MetricsPort, "metrics-port", defaultMetricsPort, "endpoint on which to expose metrics")
+	flags.StringVar(&cfg.MetricsAddress, "metrics-address", defaultMetricsAddress, "address to expose metrics on")
 	flags.StringVar(&cfg.LogFormat, "log-format", defaultLogFormat, "log format output. options: [\"text\", \"json\"]")
 	flags.DurationVar(&cfg.Interval, "interval", time.Minute, "interval between synchronizations")
 	flags.BoolVar(&cfg.Once, "once", false, "run once and exit")

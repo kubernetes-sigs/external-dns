@@ -67,7 +67,7 @@ func main() {
 
 	stopChan := make(chan struct{}, 1)
 
-	go serveMetrics(cfg.MetricsPort)
+	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(stopChan)
 
 	client, err := newClient(cfg)
