@@ -2,6 +2,7 @@ Features:
 
   - Support creation of CNAME records when endpoint target is a hostname.
   - Allow omitting the trailing dot in Service annotations.
+  - Expose basic Go metrics via Prometheus.
 
 Documentation:
 
