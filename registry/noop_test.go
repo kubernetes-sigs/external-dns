@@ -79,17 +79,17 @@ func testNoopApplyChanges(t *testing.T) {
 	p.CreateZone("zone")
 	providerRecords := []*endpoint.Endpoint{
 		{
-			DNSName: "example.org.",
-			Target:  "example-lb.com",
+			DNSName: "example.org",
+			Target:  "8.8.8.8",
 		},
 	}
 	expectedUpdate := []*endpoint.Endpoint{
 		{
-			DNSName: "example.org.",
+			DNSName: "example.org",
 			Target:  "new-example-lb.com",
 		},
 		{
-			DNSName: "new-record.org.",
+			DNSName: "new-record.org",
 			Target:  "new-lb.org",
 		},
 	}
@@ -110,7 +110,7 @@ func testNoopApplyChanges(t *testing.T) {
 	err = r.ApplyChanges("zone", &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{
-				DNSName: "example.org.",
+				DNSName: "example.org",
 				Target:  "lb.com",
 			},
 		},
@@ -123,25 +123,25 @@ func testNoopApplyChanges(t *testing.T) {
 	err = r.ApplyChanges("zone", &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{
-				DNSName: "new-record.org.",
+				DNSName: "new-record.org",
 				Target:  "new-lb.org",
 			},
 		},
 		UpdateNew: []*endpoint.Endpoint{
 			{
-				DNSName: "example.org.",
+				DNSName: "example.org",
 				Target:  "new-example-lb.com",
 			},
 		},
 		UpdateOld: []*endpoint.Endpoint{
 			{
-				DNSName: "example.org.",
-				Target:  "example-lb.com",
+				DNSName: "example.org",
+				Target:  "8.8.8.8",
 			},
 		},
 	})
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	res, _ := p.Records("zone")
 	if !testutils.SameEndpoints(res, expectedUpdate) {
