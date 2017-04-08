@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	defaultType = "A"
+	defaultType = ""
 
 	// ErrZoneAlreadyExists error returned when zone cannot be created when it already exists
 	ErrZoneAlreadyExists = errors.New("specified zone already exists")
@@ -35,7 +35,7 @@ var (
 	// ErrRecordNotFound when update/delete request is sent but record not found
 	ErrRecordNotFound = errors.New("record not found")
 	// ErrInvalidBatchRequest when record is repeated in create/update/delete
-	ErrInvalidBatchRequest = errors.New("record should only be specified in one list")
+	ErrInvalidBatchRequest = errors.New("invalid batch request")
 )
 
 type zone map[string][]*InMemoryRecord
@@ -100,18 +100,18 @@ func (im *InMemoryProvider) ApplyChanges(zone string, changes *plan.Changes) err
 
 	for _, newEndpoint := range changes.Create {
 		im.zones[zone][newEndpoint.DNSName] = append(im.zones[zone][newEndpoint.DNSName], &InMemoryRecord{
-			Type:     defaultType,
+			Type:     newEndpoint.RecordType,
 			Endpoint: newEndpoint,
 		})
 	}
 	for _, updateEndpoint := range changes.UpdateNew {
-		recordToUpdate := im.findByType(defaultType, im.zones[zone][updateEndpoint.DNSName])
+		recordToUpdate := im.findByType(updateEndpoint.RecordType, im.zones[zone][updateEndpoint.DNSName])
 		recordToUpdate.Target = updateEndpoint.Target
 	}
 	for _, deleteEndpoint := range changes.Delete {
 		newRecordSet := make([]*InMemoryRecord, 0)
 		for _, record := range im.zones[zone][deleteEndpoint.DNSName] {
-			if record.Type != defaultType {
+			if record.Type != deleteEndpoint.RecordType {
 				newRecordSet = append(newRecordSet, record)
 			}
 		}
@@ -126,38 +126,50 @@ func (im *InMemoryProvider) validateChangeBatch(zone string, changes *plan.Chang
 	if !ok {
 		return ErrZoneNotFound
 	}
-	mesh := map[string]bool{}
+	mesh := map[string]map[string]bool{}
 	for _, newEndpoint := range changes.Create {
-		if im.findByType(defaultType, existing[newEndpoint.DNSName]) != nil {
+		if im.findByType(newEndpoint.RecordType, existing[newEndpoint.DNSName]) != nil {
 			return ErrRecordAlreadyExists
 		}
 		if _, exists := mesh[newEndpoint.DNSName]; exists {
-			return ErrInvalidBatchRequest
+			if mesh[newEndpoint.DNSName][newEndpoint.RecordType] {
+				return ErrInvalidBatchRequest
+			}
+			mesh[newEndpoint.DNSName][newEndpoint.RecordType] = true
+			continue
 		}
-		mesh[newEndpoint.DNSName] = true
+		mesh[newEndpoint.DNSName] = map[string]bool{newEndpoint.RecordType: true}
 	}
 	for _, updateEndpoint := range changes.UpdateNew {
-		if im.findByType(defaultType, existing[updateEndpoint.DNSName]) == nil {
+		if im.findByType(updateEndpoint.RecordType, existing[updateEndpoint.DNSName]) == nil {
 			return ErrRecordNotFound
 		}
 		if _, exists := mesh[updateEndpoint.DNSName]; exists {
-			return ErrInvalidBatchRequest
+			if mesh[updateEndpoint.DNSName][updateEndpoint.RecordType] {
+				return ErrInvalidBatchRequest
+			}
+			mesh[updateEndpoint.DNSName][updateEndpoint.RecordType] = true
+			continue
 		}
-		mesh[updateEndpoint.DNSName] = true
+		mesh[updateEndpoint.DNSName] = map[string]bool{updateEndpoint.RecordType: true}
 	}
 	for _, updateOldEndpoint := range changes.UpdateOld {
-		if rec := im.findByType(defaultType, existing[updateOldEndpoint.DNSName]); rec == nil || rec.Target != updateOldEndpoint.Target {
+		if rec := im.findByType(updateOldEndpoint.RecordType, existing[updateOldEndpoint.DNSName]); rec == nil || rec.Target != updateOldEndpoint.Target {
 			return ErrRecordNotFound
 		}
 	}
 	for _, deleteEndpoint := range changes.Delete {
-		if rec := im.findByType(defaultType, existing[deleteEndpoint.DNSName]); rec == nil || rec.Target != deleteEndpoint.Target {
+		if rec := im.findByType(deleteEndpoint.RecordType, existing[deleteEndpoint.DNSName]); rec == nil || rec.Target != deleteEndpoint.Target {
 			return ErrRecordNotFound
 		}
 		if _, exists := mesh[deleteEndpoint.DNSName]; exists {
-			return ErrInvalidBatchRequest
+			if mesh[deleteEndpoint.DNSName][deleteEndpoint.RecordType] {
+				return ErrInvalidBatchRequest
+			}
+			mesh[deleteEndpoint.DNSName][deleteEndpoint.RecordType] = true
+			continue
 		}
-		mesh[deleteEndpoint.DNSName] = true
+		mesh[deleteEndpoint.DNSName] = map[string]bool{deleteEndpoint.RecordType: true}
 	}
 	return nil
 }
