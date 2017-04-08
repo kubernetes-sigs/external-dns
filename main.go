@@ -108,6 +108,8 @@ func main() {
 		p, err = provider.NewGoogleProvider(cfg.GoogleProject, cfg.DryRun)
 	case "aws":
 		p, err = provider.NewAWSProvider(cfg.Domain, cfg.DryRun)
+	case "digital-ocean":
+		p, err = provider.NewDigitalOceanProvider(cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
