@@ -46,6 +46,9 @@ type Config struct {
 	Debug          bool
 	LogFormat      string
 	Version        bool
+	Registry       string
+	RecordOwnerID  string
+	TXTPrefix      string
 }
 
 // NewConfig returns new Config object
@@ -71,5 +74,9 @@ func (cfg *Config) ParseFlags(args []string) error {
 	flags.BoolVar(&cfg.DryRun, "dry-run", true, "dry-run mode")
 	flags.BoolVar(&cfg.Debug, "debug", false, "debug mode")
 	flags.BoolVar(&cfg.Version, "version", false, "display the version")
+	flags.StringVar(&cfg.Registry, "registry", "noop", "type of registry for ownership")
+	flags.StringVar(&cfg.RecordOwnerID, "record-owner-id", "", "id of the current external dns for labeling owned records")
+	flags.StringVar(&cfg.TXTPrefix, "txt-prefix", "", `prefix of the associated TXT records DNS name; if --txt-prefix=abc,
+		 corresponding txt record for CNAME [example.org] will have DNSName [abc.example.org]. Required for CNAME support`)
 	return flags.Parse(args)
 }

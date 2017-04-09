@@ -48,6 +48,9 @@ func TestParseFlags(t *testing.T) {
 				Debug:          false,
 				LogFormat:      defaultLogFormat,
 				Version:        false,
+				Registry:       "noop",
+				RecordOwnerID:  "",
+				TXTPrefix:      "",
 			},
 		},
 		{
@@ -69,6 +72,9 @@ func TestParseFlags(t *testing.T) {
 				Debug:          false,
 				LogFormat:      defaultLogFormat,
 				Version:        false,
+				Registry:       "noop",
+				RecordOwnerID:  "",
+				TXTPrefix:      "",
 			},
 		},
 		{
@@ -90,6 +96,9 @@ func TestParseFlags(t *testing.T) {
 				Debug:          false,
 				LogFormat:      defaultLogFormat,
 				Version:        false,
+				Registry:       "noop",
+				RecordOwnerID:  "",
+				TXTPrefix:      "",
 			},
 		},
 		{
@@ -116,6 +125,9 @@ func TestParseFlags(t *testing.T) {
 				Debug:          false,
 				LogFormat:      "json",
 				Version:        false,
+				Registry:       "noop",
+				RecordOwnerID:  "",
+				TXTPrefix:      "",
 			},
 		},
 		{
@@ -134,6 +146,9 @@ func TestParseFlags(t *testing.T) {
 				"--once",
 				"--dry-run=false",
 				"--debug",
+				"--registry=txt",
+				"--record-owner-id=owner-1",
+				"--txt-prefix=associated-txt-record",
 				"--version"}},
 			expected: &Config{
 				InCluster:      true,
@@ -151,6 +166,9 @@ func TestParseFlags(t *testing.T) {
 				Debug:          true,
 				LogFormat:      "yaml",
 				Version:        true,
+				Registry:       "txt",
+				RecordOwnerID:  "owner-1",
+				TXTPrefix:      "associated-txt-record",
 			},
 		},
 		{
