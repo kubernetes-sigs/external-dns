@@ -30,7 +30,8 @@ const (
 
 func TestTXTRegistry(t *testing.T) {
 	t.Run("TestNewTXTRegistry", testTXTRegistryNew)
-	t.Run("TestTXTRegistryRecords", testTXTRegistryRecords)
+	t.Run("TestRecords", testTXTRegistryRecords)
+	t.Run("TestApplyChanges", testTXTRegistryApplyChanges)
 }
 
 func testTXTRegistryNew(t *testing.T) {
@@ -216,6 +217,160 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 
 	if !testutils.SameEndpoints(records, expectedRecords) {
 		t.Error("incorrect result returned from txt registry")
+	}
+}
+
+func testTXTRegistryApplyChanges(t *testing.T) {
+	t.Run("With Prefix", testTXTRegistryApplyChangesWithPrefix)
+	t.Run("No prefix", testTXTRegistryApplyChangesNoPrefix)
+}
+
+func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
+	p := provider.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	p.ApplyChanges(testZone, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithType("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME"),
+			newEndpointWithType("bar.test-zone.example.org", "my-domain.com", "CNAME"),
+			newEndpointWithType("txt.bar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+			newEndpointWithType("txt.bar.test-zone.example.org", "baz.test-zone.example.org", "ALIAS"),
+			newEndpointWithType("qux.test-zone.example.org", "random", "TXT"),
+			newEndpointWithType("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS"),
+			newEndpointWithType("txt.tar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+			newEndpointWithType("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS"),
+			newEndpointWithType("txt.foobar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+		},
+	})
+	r, _ := NewTXTRegistry(p, "txt", "owner")
+
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com"),
+		},
+		Delete: []*endpoint.Endpoint{
+			newEndpointWithType("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS"),
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			newEndpointWithType("tar.test-zone.example.org", "new-tar.loadbalancer.com", "ALIAS"),
+		},
+		UpdateOld: []*endpoint.Endpoint{
+			newEndpointWithType("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS"),
+		},
+	}
+	expected := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithType("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", ""),
+			newEndpointWithType("txt.new-record-1.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+		},
+		Delete: []*endpoint.Endpoint{
+			newEndpointWithType("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS"),
+			newEndpointWithType("txt.foobar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			newEndpointWithType("tar.test-zone.example.org", "new-tar.loadbalancer.com", "ALIAS"),
+		},
+		UpdateOld: []*endpoint.Endpoint{
+			newEndpointWithType("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS"),
+		},
+	}
+	p.OnApplyChanges = func(got *plan.Changes) {
+		mExpected := map[string][]*endpoint.Endpoint{
+			"Create":    expected.Create,
+			"UpdateNew": expected.UpdateNew,
+			"UpdateOld": expected.UpdateOld,
+			"Delete":    expected.Delete,
+		}
+		mGot := map[string][]*endpoint.Endpoint{
+			"Create":    got.Create,
+			"UpdateNew": got.UpdateNew,
+			"UpdateOld": got.UpdateOld,
+			"Delete":    got.Delete,
+		}
+		if !testutils.SamePlanChanges(mGot, mExpected) {
+			t.Error("incorrect plan changes are passed to provider")
+		}
+	}
+	err := r.ApplyChanges(testZone, changes)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	changes = &plan.Changes{}
+	p.OnApplyChanges = func(c *plan.Changes) {}
+	err = r.ApplyChanges("new-zone", changes)
+	if err == nil {
+		t.Error("expected error")
+	}
+}
+
+func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
+	p := provider.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	p.ApplyChanges(testZone, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithType("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME"),
+			newEndpointWithType("bar.test-zone.example.org", "my-domain.com", "CNAME"),
+			newEndpointWithType("txt.bar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+			newEndpointWithType("txt.bar.test-zone.example.org", "baz.test-zone.example.org", "ALIAS"),
+			newEndpointWithType("qux.test-zone.example.org", "random", "TXT"),
+			newEndpointWithType("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS"),
+			newEndpointWithType("txt.tar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+			newEndpointWithType("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS"),
+			newEndpointWithType("foobar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+		},
+	})
+	r, _ := NewTXTRegistry(p, "", "owner")
+
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com"),
+		},
+		Delete: []*endpoint.Endpoint{
+			newEndpointWithType("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS"),
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			newEndpointWithType("tar.test-zone.example.org", "new-tar.loadbalancer.com", "ALIAS"),
+		},
+		UpdateOld: []*endpoint.Endpoint{
+			newEndpointWithType("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS"),
+		},
+	}
+	expected := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithType("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", ""),
+			newEndpointWithType("new-record-1.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+		},
+		Delete: []*endpoint.Endpoint{
+			newEndpointWithType("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS"),
+			newEndpointWithType("foobar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			newEndpointWithType("tar.test-zone.example.org", "new-tar.loadbalancer.com", "ALIAS"),
+		},
+		UpdateOld: []*endpoint.Endpoint{
+			newEndpointWithType("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS"),
+		},
+	}
+	p.OnApplyChanges = func(got *plan.Changes) {
+		mExpected := map[string][]*endpoint.Endpoint{
+			"Create":    expected.Create,
+			"UpdateNew": expected.UpdateNew,
+			"UpdateOld": expected.UpdateOld,
+			"Delete":    expected.Delete,
+		}
+		mGot := map[string][]*endpoint.Endpoint{
+			"Create":    got.Create,
+			"UpdateNew": got.UpdateNew,
+			"UpdateOld": got.UpdateOld,
+			"Delete":    got.Delete,
+		}
+		if !testutils.SamePlanChanges(mGot, mExpected) {
+			t.Error("incorrect plan changes are passed to provider")
+		}
+	}
+	err := r.ApplyChanges(testZone, changes)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
