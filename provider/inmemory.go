@@ -24,8 +24,6 @@ import (
 )
 
 var (
-	defaultType = ""
-
 	// ErrZoneAlreadyExists error returned when zone cannot be created when it already exists
 	ErrZoneAlreadyExists = errors.New("specified zone already exists")
 	// ErrZoneNotFound error returned when specified zone does not exists

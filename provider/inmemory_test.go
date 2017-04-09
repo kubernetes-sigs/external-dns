@@ -25,7 +25,10 @@ import (
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
-var _ Provider = &InMemoryProvider{}
+var (
+	defaultType          = ""
+	_           Provider = &InMemoryProvider{}
+)
 
 func TestInMemoryProvider(t *testing.T) {
 	t.Run("Records", testInMemoryRecords)
