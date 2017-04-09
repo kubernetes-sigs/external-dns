@@ -67,7 +67,7 @@ func testTXTRegistryNew(t *testing.T) {
 
 func testTXTRegistryRecords(t *testing.T) {
 	t.Run("With prefix", testTXTRegistryRecordsPrefixed)
-	t.Run("No prefix", testTXTRegistryRecordsNoop)
+	t.Run("No prefix", testTXTRegistryRecordsNoPrefix)
 }
 
 func testTXTRegistryRecordsPrefixed(t *testing.T) {
@@ -144,14 +144,78 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	}
 }
 
-func testTXTRegistryRecordsNoop(t *testing.T) {
+func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 	p := provider.NewInMemoryProvider()
-	r, err := NewTXTRegistry(p, "", "owner")
-	if err != nil {
-		t.Fatal(err)
+	p.CreateZone(testZone)
+	p.ApplyChanges(testZone, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithType("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME"),
+			newEndpointWithType("bar.test-zone.example.org", "my-domain.com", "CNAME"),
+			newEndpointWithType("txt.bar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+			newEndpointWithType("txt.bar.test-zone.example.org", "baz.test-zone.example.org", "ALIAS"),
+			newEndpointWithType("qux.test-zone.example.org", "random", "TXT"),
+			newEndpointWithType("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS"),
+			newEndpointWithType("txt.tar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner-2", "TXT"),
+			newEndpointWithType("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS"),
+			newEndpointWithType("foobar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+		},
+	})
+	expectedRecords := []*endpoint.Endpoint{
+		{
+			DNSName:    "foo.test-zone.example.org",
+			Target:     "foo.loadbalancer.com",
+			RecordType: "CNAME",
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "",
+			},
+		},
+		{
+			DNSName:    "bar.test-zone.example.org",
+			Target:     "my-domain.com",
+			RecordType: "CNAME",
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "",
+			},
+		},
+		{
+			DNSName:    "txt.bar.test-zone.example.org",
+			Target:     "baz.test-zone.example.org",
+			RecordType: "ALIAS",
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
+		{
+			DNSName:    "qux.test-zone.example.org",
+			Target:     "random",
+			RecordType: "TXT",
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "",
+			},
+		},
+		{
+			DNSName:    "tar.test-zone.example.org",
+			Target:     "tar.loadbalancer.com",
+			RecordType: "ALIAS",
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "",
+			},
+		},
+		{
+			DNSName:    "foobar.test-zone.example.org",
+			Target:     "foobar.loadbalancer.com",
+			RecordType: "ALIAS",
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
 	}
-	if _, ok := r.mapper.(*noopNameMapper); !ok {
-		t.Error("Incorrect type of prefix name mapper")
+
+	r, _ := NewTXTRegistry(p, "", "owner")
+	records, _ := r.Records(testZone)
+
+	if !testutils.SameEndpoints(records, expectedRecords) {
+		t.Error("incorrect result returned from txt registry")
 	}
 }
 
