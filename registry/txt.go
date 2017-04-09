@@ -78,6 +78,12 @@ func (im *TXTRegistry) Records(zone string) ([]*endpoint.Endpoint, error) {
 			continue
 		}
 		ownerID := im.extractOwnerID(record.Target)
+		if ownerID == "" {
+			//case when value of txt record cannot be identified
+			//record will not be removed as it will have empty owner
+			endpoints = append(endpoints, record)
+			continue
+		}
 		endpointDNSName := im.mapper.toEndpointName(record.DNSName)
 		ownerMap[endpointDNSName] = ownerID
 	}
@@ -127,16 +133,19 @@ type prefixNameMapper struct {
 var _ nameMapper = &prefixNameMapper{}
 
 func newPrefixNameMapper(prefix string) *prefixNameMapper {
-	prefix = strings.Trim(prefix, ".")
+	prefix = strings.TrimSuffix(prefix, ".") + "."
 	return &prefixNameMapper{prefix: prefix}
 }
 
 func (pr *prefixNameMapper) toEndpointName(txtDNSName string) string {
-	return strings.TrimPrefix(txtDNSName, pr.prefix+".")
+	if strings.HasPrefix(txtDNSName, pr.prefix) {
+		return strings.TrimPrefix(txtDNSName, pr.prefix)
+	}
+	return ""
 }
 
 func (pr *prefixNameMapper) toTXTName(endpointDNSName string) string {
-	return fmt.Sprintf("%s.%s", pr.prefix, endpointDNSName)
+	return pr.prefix + endpointDNSName
 }
 
 type noopNameMapper struct {

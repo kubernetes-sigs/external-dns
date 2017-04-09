@@ -18,6 +18,7 @@ package registry
 
 import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
 	"testing"
@@ -57,6 +58,11 @@ func testTXTRegistryNew(t *testing.T) {
 	if _, ok := r.mapper.(*noopNameMapper); !ok {
 		t.Error("Incorrect type of prefix name mapper")
 	}
+
+	rs, err := r.Records("random-zone")
+	if err == nil || rs != nil {
+		t.Error("incorrect zone should trigger error")
+	}
 }
 
 func testTXTRegistryRecords(t *testing.T) {
@@ -65,8 +71,77 @@ func testTXTRegistryRecords(t *testing.T) {
 }
 
 func testTXTRegistryRecordsPrefixed(t *testing.T) {
-	r, _ := NewTXTRegistry(getInitializedProvider(), "txt", "owner")
-	r.Records(testZone)
+	p := provider.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	p.ApplyChanges(testZone, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithType("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME"),
+			newEndpointWithType("bar.test-zone.example.org", "my-domain.com", "CNAME"),
+			newEndpointWithType("txt.bar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+			newEndpointWithType("txt.bar.test-zone.example.org", "baz.test-zone.example.org", "ALIAS"),
+			newEndpointWithType("qux.test-zone.example.org", "random", "TXT"),
+			newEndpointWithType("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS"),
+			newEndpointWithType("txt.tar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner-2", "TXT"),
+			newEndpointWithType("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS"),
+			newEndpointWithType("foobar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+		},
+	})
+	expectedRecords := []*endpoint.Endpoint{
+		{
+			DNSName:    "foo.test-zone.example.org",
+			Target:     "foo.loadbalancer.com",
+			RecordType: "CNAME",
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "",
+			},
+		},
+		{
+			DNSName:    "bar.test-zone.example.org",
+			Target:     "my-domain.com",
+			RecordType: "CNAME",
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
+		{
+			DNSName:    "txt.bar.test-zone.example.org",
+			Target:     "baz.test-zone.example.org",
+			RecordType: "ALIAS",
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "",
+			},
+		},
+		{
+			DNSName:    "qux.test-zone.example.org",
+			Target:     "random",
+			RecordType: "TXT",
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "",
+			},
+		},
+		{
+			DNSName:    "tar.test-zone.example.org",
+			Target:     "tar.loadbalancer.com",
+			RecordType: "ALIAS",
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner-2",
+			},
+		},
+		{
+			DNSName:    "foobar.test-zone.example.org",
+			Target:     "foobar.loadbalancer.com",
+			RecordType: "ALIAS",
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "",
+			},
+		},
+	}
+
+	r, _ := NewTXTRegistry(p, "txt", "owner")
+	records, _ := r.Records(testZone)
+	if !testutils.SameEndpoints(records, expectedRecords) {
+		t.Error("incorrect result returned from txt registry")
+	}
 }
 
 func testTXTRegistryRecordsNoop(t *testing.T) {
@@ -90,18 +165,4 @@ func newEndpointWithType(dnsName, target, recordType string) *endpoint.Endpoint 
 	e := endpoint.NewEndpoint(dnsName, target)
 	e.RecordType = recordType
 	return e
-}
-
-func getInitializedProvider() provider.Provider {
-	p := provider.NewInMemoryProvider()
-	p.CreateZone(testZone)
-	p.ApplyChanges(testZone, &plan.Changes{
-		Create: []*endpoint.Endpoint{
-			newEndpointWithType("", "", ""),
-			newEndpointWithType("", "", ""),
-			newEndpointWithType("", "", ""),
-			newEndpointWithType("", "", ""),
-		},
-	})
-	return p
 }
