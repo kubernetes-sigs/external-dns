@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/gBf-L8hU2vSAjlFpvr_ZRh1Vf_I\"",
+ "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/XJ8vjwOJUtuz-unNR2L_5stMJIc\"",
  "discoveryVersion": "v1",
  "id": "adexchangebuyer:v1.4",
  "name": "adexchangebuyer",
  "canonicalName": "Ad Exchange Buyer",
  "version": "v1.4",
- "revision": "20170118",
+ "revision": "20170215",
  "title": "Ad Exchange Buyer API",
  "description": "Accesses your bidding-account information, submits creatives for validation, finds available direct deals, and retrieves performance reports.",
  "ownerDomain": "google.com",
@@ -396,7 +396,7 @@
     },
     "advertiserName": {
      "type": "string",
-     "description": "The name of the company being advertised in the creative.",
+     "description": "The name of the company being advertised in the creative. The value provided must exist in the advertisers.txt file.",
      "annotations": {
       "required": [
        "adexchangebuyer.creatives.insert"
@@ -415,7 +415,7 @@
     },
     "attribute": {
      "type": "array",
-     "description": "All attributes for the ads that may be shown from this snippet.",
+     "description": "List of buyer selectable attributes for the ads that may be shown from this snippet. Each attribute is represented by an integer as defined in  buyer-declarable-creative-attributes.txt.",
      "items": {
       "type": "integer",
       "format": "int32"
@@ -529,7 +529,7 @@
          },
          "filteringStatus": {
           "type": "integer",
-          "description": "The filtering status code. Please refer to the creative-status-codes.txt file for different statuses.",
+          "description": "The filtering status code as defined in  creative-status-codes.txt.",
           "format": "int32"
          }
         }
@@ -676,7 +676,7 @@
     },
     "productCategories": {
      "type": "array",
-     "description": "Detected product categories, if any. Read-only. This field should not be set in requests.",
+     "description": "Detected product categories, if any. Each category is represented by an integer as defined in  ad-product-categories.txt. Read-only. This field should not be set in requests.",
      "items": {
       "type": "integer",
       "format": "int32"
@@ -684,7 +684,7 @@
     },
     "restrictedCategories": {
      "type": "array",
-     "description": "All restricted categories for the ads that may be shown from this snippet.",
+     "description": "All restricted categories for the ads that may be shown from this snippet. Each category is represented by an integer as defined in the  ad-restricted-categories.txt.",
      "items": {
       "type": "integer",
       "format": "int32"
@@ -692,7 +692,7 @@
     },
     "sensitiveCategories": {
      "type": "array",
-     "description": "Detected sensitive categories, if any. Read-only. This field should not be set in requests.",
+     "description": "Detected sensitive categories, if any. Each category is represented by an integer as defined in  ad-sensitive-categories.txt. Read-only. This field should not be set in requests.",
      "items": {
       "type": "integer",
       "format": "int32"
@@ -723,7 +723,7 @@
           },
           "geoCriteriaId": {
            "type": "array",
-           "description": "Only set when contextType=LOCATION. Represents the geo criterias this restriction applies to.",
+           "description": "Only set when contextType=LOCATION. Represents the geo criterias this restriction applies to. Impressions are considered to match a context if either the user location or publisher location matches a given geoCriteriaId.",
            "items": {
             "type": "integer",
             "format": "int32"
@@ -768,7 +768,7 @@
     },
     "vendorType": {
      "type": "array",
-     "description": "All vendor types for the ads that may be shown from this snippet.",
+     "description": "List of vendor types for the ads that may be shown from this snippet. Each vendor type is represented by an integer as defined in vendors.txt.",
      "items": {
       "type": "integer",
       "format": "int32"
@@ -857,6 +857,10 @@
    "id": "DealServingMetadata",
    "type": "object",
    "properties": {
+    "alcoholAdsAllowed": {
+     "type": "boolean",
+     "description": "True if alcohol ads are allowed for this deal (read-only). This field is only populated when querying for finalized orders using the method GetFinalizedOrderDeals"
+    },
     "dealPauseStatus": {
      "$ref": "DealServingMetadataDealPauseStatus",
      "description": "Tracks which parties (if any) have paused a deal. (readonly, except via PauseResumeOrderDeals action)"

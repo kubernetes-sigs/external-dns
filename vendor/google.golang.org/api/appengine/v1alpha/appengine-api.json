@@ -1,0 +1,584 @@
+{
+ "kind": "discovery#restDescription",
+ "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/1MBWTgxRZMDpMvtX9XjtAWiAbHU\"",
+ "discoveryVersion": "v1",
+ "id": "appengine:v1alpha",
+ "name": "appengine",
+ "version": "v1alpha",
+ "revision": "20170324",
+ "title": "Google App Engine Admin API",
+ "description": "Provisions and manages App Engine applications.",
+ "ownerDomain": "google.com",
+ "ownerName": "Google",
+ "icons": {
+  "x16": "http://www.google.com/images/icons/product/search-16.gif",
+  "x32": "http://www.google.com/images/icons/product/search-32.gif"
+ },
+ "documentationLink": "https://cloud.google.com/appengine/docs/admin-api/",
+ "protocol": "rest",
+ "baseUrl": "https://appengine.googleapis.com/",
+ "basePath": "",
+ "rootUrl": "https://appengine.googleapis.com/",
+ "servicePath": "",
+ "batchPath": "batch",
+ "parameters": {
+  "access_token": {
+   "type": "string",
+   "description": "OAuth access token.",
+   "location": "query"
+  },
+  "alt": {
+   "type": "string",
+   "description": "Data format for response.",
+   "default": "json",
+   "enumDescriptions": [
+    "Responses with Content-Type of application/json",
+    "Media download with context-dependent Content-Type",
+    "Responses with Content-Type of application/x-protobuf"
+   ],
+   "location": "query"
+  },
+  "bearer_token": {
+   "type": "string",
+   "description": "OAuth bearer token.",
+   "location": "query"
+  },
+  "callback": {
+   "type": "string",
+   "description": "JSONP",
+   "location": "query"
+  },
+  "fields": {
+   "type": "string",
+   "description": "Selector specifying which fields to include in a partial response.",
+   "location": "query"
+  },
+  "key": {
+   "type": "string",
+   "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+   "location": "query"
+  },
+  "oauth_token": {
+   "type": "string",
+   "description": "OAuth 2.0 token for the current user.",
+   "location": "query"
+  },
+  "pp": {
+   "type": "boolean",
+   "description": "Pretty-print response.",
+   "default": "true",
+   "location": "query"
+  },
+  "prettyPrint": {
+   "type": "boolean",
+   "description": "Returns response with indentations and line breaks.",
+   "default": "true",
+   "location": "query"
+  },
+  "quotaUser": {
+   "type": "string",
+   "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
+   "location": "query"
+  },
+  "upload_protocol": {
+   "type": "string",
+   "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+   "location": "query"
+  },
+  "uploadType": {
+   "type": "string",
+   "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
+   "location": "query"
+  },
+  "$.xgafv": {
+   "type": "string",
+   "description": "V1 error format.",
+   "enumDescriptions": [
+    "v1 error format",
+    "v2 error format"
+   ],
+   "location": "query"
+  }
+ },
+ "auth": {
+  "oauth2": {
+   "scopes": {
+    "https://www.googleapis.com/auth/appengine.admin": {
+     "description": "View and manage your applications deployed on Google App Engine"
+    },
+    "https://www.googleapis.com/auth/cloud-platform": {
+     "description": "View and manage your data across Google Cloud Platform services"
+    },
+    "https://www.googleapis.com/auth/cloud-platform.read-only": {
+     "description": "View your data across Google Cloud Platform services"
+    }
+   }
+  }
+ },
+ "schemas": {
+  "ListOperationsResponse": {
+   "id": "ListOperationsResponse",
+   "type": "object",
+   "description": "The response message for Operations.ListOperations.",
+   "properties": {
+    "operations": {
+     "type": "array",
+     "description": "A list of operations that matches the specified filter in the request.",
+     "items": {
+      "$ref": "Operation"
+     }
+    },
+    "nextPageToken": {
+     "type": "string",
+     "description": "The standard List next-page token."
+    }
+   }
+  },
+  "Operation": {
+   "id": "Operation",
+   "type": "object",
+   "description": "This resource represents a long-running operation that is the result of a network API call.",
+   "properties": {
+    "name": {
+     "type": "string",
+     "description": "The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the name should have the format of operations/some/unique/name."
+    },
+    "metadata": {
+     "type": "object",
+     "description": "Service-specific metadata associated with the operation. It typically contains progress information and common metadata such as create time. Some services might not provide such metadata. Any method that returns a long-running operation should document the metadata type, if any.",
+     "additionalProperties": {
+      "type": "any",
+      "description": "Properties of the object. Contains field @type with type URL."
+     }
+    },
+    "done": {
+     "type": "boolean",
+     "description": "If the value is false, it means the operation is still in progress. If true, the operation is completed, and either error or response is available."
+    },
+    "error": {
+     "$ref": "Status",
+     "description": "The error result of the operation in case of failure or cancellation."
+    },
+    "response": {
+     "type": "object",
+     "description": "The normal response of the operation in case of success. If the original method returns no data on success, such as Delete, the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type XxxResponse, where Xxx is the original method name. For example, if the original method name is TakeSnapshot(), the inferred response type is TakeSnapshotResponse.",
+     "additionalProperties": {
+      "type": "any",
+      "description": "Properties of the object. Contains field @type with type URL."
+     }
+    }
+   }
+  },
+  "Status": {
+   "id": "Status",
+   "type": "object",
+   "description": "The Status type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by gRPC (https://github.com/grpc). The error model is designed to be: Simple to use and understand for most users Flexible enough to meet unexpected needsOverviewThe Status message contains three pieces of data: error code, error message, and error details. The error code should be an enum value of google.rpc.Code, but it may accept additional error codes if needed. The error message should be a developer-facing English message that helps developers understand and resolve the error. If a localized user-facing error message is needed, put the localized message in the error details or localize it in the client. The optional error details may contain arbitrary information about the error. There is a predefined set of error detail types in the package google.rpc which can be used for common error conditions.Language mappingThe Status message is the logical representation of the error model, but it is not necessarily the actual wire format. When the Status message is exposed in different client libraries and different wire protocols, it can be mapped differently. For example, it will likely be mapped to some exceptions in Java, but more likely mapped to some error codes in C.Other usesThe error model and the Status message can be used in a variety of environments, either with or without APIs, to provide a consistent developer experience across different environments.Example uses of this error model include: Partial errors. If a service needs to return partial errors to the client, it may embed the Status in the normal response to indicate the partial errors. Workflow errors. A typical workflow has multiple steps. Each step may have a Status message for error reporting purpose. Batch operations. If a client uses batch request and batch response, the Status message should be used directly inside batch response, one for each error sub-response. Asynchronous operations. If an API call embeds asynchronous operation results in its response, the status of those operations should be represented directly using the Status message. Logging. If some API errors are stored in logs, the message Status could be used directly after any stripping needed for security/privacy reasons.",
+   "properties": {
+    "code": {
+     "type": "integer",
+     "description": "The status code, which should be an enum value of google.rpc.Code.",
+     "format": "int32"
+    },
+    "message": {
+     "type": "string",
+     "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client."
+    },
+    "details": {
+     "type": "array",
+     "description": "A list of messages that carry the error details. There will be a common set of message types for APIs to use.",
+     "items": {
+      "type": "object",
+      "additionalProperties": {
+       "type": "any",
+       "description": "Properties of the object. Contains field @type with type URL."
+      }
+     }
+    }
+   }
+  },
+  "ListLocationsResponse": {
+   "id": "ListLocationsResponse",
+   "type": "object",
+   "description": "The response message for Locations.ListLocations.",
+   "properties": {
+    "locations": {
+     "type": "array",
+     "description": "A list of locations that matches the specified filter in the request.",
+     "items": {
+      "$ref": "Location"
+     }
+    },
+    "nextPageToken": {
+     "type": "string",
+     "description": "The standard List next-page token."
+    }
+   }
+  },
+  "Location": {
+   "id": "Location",
+   "type": "object",
+   "description": "A resource that represents Google Cloud Platform location.",
+   "properties": {
+    "name": {
+     "type": "string",
+     "description": "Resource name for the location, which may vary between implementations. For example: \"projects/example-project/locations/us-east1\""
+    },
+    "locationId": {
+     "type": "string",
+     "description": "The canonical id for this location. For example: \"us-east1\"."
+    },
+    "labels": {
+     "type": "object",
+     "description": "Cross-service attributes for the location. For example {\"cloud.googleapis.com/region\": \"us-east1\"}",
+     "additionalProperties": {
+      "type": "string"
+     }
+    },
+    "metadata": {
+     "type": "object",
+     "description": "Service-specific metadata. For example the available capacity at the given location.",
+     "additionalProperties": {
+      "type": "any",
+      "description": "Properties of the object. Contains field @type with type URL."
+     }
+    }
+   }
+  },
+  "OperationMetadataExperimental": {
+   "id": "OperationMetadataExperimental",
+   "type": "object",
+   "description": "Metadata for the given google.longrunning.Operation.",
+   "properties": {
+    "method": {
+     "type": "string",
+     "description": "API method that initiated this operation. Example: google.appengine.experimental.CustomDomains.CreateCustomDomain.@OutputOnly"
+    },
+    "insertTime": {
+     "type": "string",
+     "description": "Time that this operation was created.@OutputOnly"
+    },
+    "endTime": {
+     "type": "string",
+     "description": "Time that this operation completed.@OutputOnly"
+    },
+    "user": {
+     "type": "string",
+     "description": "User who requested this operation.@OutputOnly"
+    },
+    "target": {
+     "type": "string",
+     "description": "Name of the resource that this operation is acting on. Example: apps/myapp/customDomains/example.com.@OutputOnly"
+    }
+   }
+  },
+  "OperationMetadata": {
+   "id": "OperationMetadata",
+   "type": "object",
+   "description": "Metadata for the given google.longrunning.Operation.",
+   "properties": {
+    "operationType": {
+     "type": "string",
+     "description": "Type of this operation. Deprecated, use method field instead. Example: \"create_version\".@OutputOnly"
+    },
+    "insertTime": {
+     "type": "string",
+     "description": "Timestamp that this operation was created.@OutputOnly"
+    },
+    "endTime": {
+     "type": "string",
+     "description": "Timestamp that this operation completed.@OutputOnly"
+    },
+    "user": {
+     "type": "string",
+     "description": "User who requested this operation.@OutputOnly"
+    },
+    "target": {
+     "type": "string",
+     "description": "Name of the resource that this operation is acting on. Example: apps/myapp/modules/default.@OutputOnly"
+    },
+    "method": {
+     "type": "string",
+     "description": "API method that initiated this operation. Example: google.appengine.v1beta4.Version.CreateVersion.@OutputOnly"
+    }
+   }
+  },
+  "OperationMetadataV1Beta5": {
+   "id": "OperationMetadataV1Beta5",
+   "type": "object",
+   "description": "Metadata for the given google.longrunning.Operation.",
+   "properties": {
+    "method": {
+     "type": "string",
+     "description": "API method name that initiated this operation. Example: google.appengine.v1beta5.Version.CreateVersion.@OutputOnly"
+    },
+    "insertTime": {
+     "type": "string",
+     "description": "Timestamp that this operation was created.@OutputOnly"
+    },
+    "endTime": {
+     "type": "string",
+     "description": "Timestamp that this operation completed.@OutputOnly"
+    },
+    "user": {
+     "type": "string",
+     "description": "User who requested this operation.@OutputOnly"
+    },
+    "target": {
+     "type": "string",
+     "description": "Name of the resource that this operation is acting on. Example: apps/myapp/services/default.@OutputOnly"
+    }
+   }
+  },
+  "OperationMetadataV1Beta": {
+   "id": "OperationMetadataV1Beta",
+   "type": "object",
+   "description": "Metadata for the given google.longrunning.Operation.",
+   "properties": {
+    "method": {
+     "type": "string",
+     "description": "API method that initiated this operation. Example: google.appengine.v1beta.Versions.CreateVersion.@OutputOnly"
+    },
+    "insertTime": {
+     "type": "string",
+     "description": "Time that this operation was created.@OutputOnly"
+    },
+    "endTime": {
+     "type": "string",
+     "description": "Time that this operation completed.@OutputOnly"
+    },
+    "user": {
+     "type": "string",
+     "description": "User who requested this operation.@OutputOnly"
+    },
+    "target": {
+     "type": "string",
+     "description": "Name of the resource that this operation is acting on. Example: apps/myapp/services/default.@OutputOnly"
+    },
+    "ephemeralMessage": {
+     "type": "string",
+     "description": "Ephemeral message that may change every time the operation is polled. @OutputOnly"
+    },
+    "warning": {
+     "type": "array",
+     "description": "Durable messages that persist on every operation poll. @OutputOnly",
+     "items": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  "OperationMetadataV1": {
+   "id": "OperationMetadataV1",
+   "type": "object",
+   "description": "Metadata for the given google.longrunning.Operation.",
+   "properties": {
+    "method": {
+     "type": "string",
+     "description": "API method that initiated this operation. Example: google.appengine.v1.Versions.CreateVersion.@OutputOnly"
+    },
+    "insertTime": {
+     "type": "string",
+     "description": "Time that this operation was created.@OutputOnly"
+    },
+    "endTime": {
+     "type": "string",
+     "description": "Time that this operation completed.@OutputOnly"
+    },
+    "user": {
+     "type": "string",
+     "description": "User who requested this operation.@OutputOnly"
+    },
+    "target": {
+     "type": "string",
+     "description": "Name of the resource that this operation is acting on. Example: apps/myapp/services/default.@OutputOnly"
+    },
+    "ephemeralMessage": {
+     "type": "string",
+     "description": "Ephemeral message that may change every time the operation is polled. @OutputOnly"
+    },
+    "warning": {
+     "type": "array",
+     "description": "Durable messages that persist on every operation poll. @OutputOnly",
+     "items": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  "LocationMetadata": {
+   "id": "LocationMetadata",
+   "type": "object",
+   "description": "Metadata for the given google.cloud.location.Location.",
+   "properties": {
+    "standardEnvironmentAvailable": {
+     "type": "boolean",
+     "description": "App Engine Standard Environment is available in the given location.@OutputOnly"
+    },
+    "flexibleEnvironmentAvailable": {
+     "type": "boolean",
+     "description": "App Engine Flexible Environment is available in the given location.@OutputOnly"
+    }
+   }
+  }
+ },
+ "resources": {
+  "apps": {
+   "resources": {
+    "operations": {
+     "methods": {
+      "list": {
+       "id": "appengine.apps.operations.list",
+       "path": "v1alpha/apps/{appsId}/operations",
+       "httpMethod": "GET",
+       "description": "Lists operations that match the specified filter in the request. If the server doesn't support this method, it returns UNIMPLEMENTED.NOTE: the name binding below allows API services to override the binding to use different resource name schemes, such as users/*/operations.",
+       "parameters": {
+        "appsId": {
+         "type": "string",
+         "description": "Part of `name`. The name of the operation collection.",
+         "required": true,
+         "location": "path"
+        },
+        "filter": {
+         "type": "string",
+         "description": "The standard list filter.",
+         "location": "query"
+        },
+        "pageSize": {
+         "type": "integer",
+         "description": "The standard list page size.",
+         "format": "int32",
+         "location": "query"
+        },
+        "pageToken": {
+         "type": "string",
+         "description": "The standard list page token.",
+         "location": "query"
+        }
+       },
+       "parameterOrder": [
+        "appsId"
+       ],
+       "response": {
+        "$ref": "ListOperationsResponse"
+       },
+       "scopes": [
+        "https://www.googleapis.com/auth/appengine.admin",
+        "https://www.googleapis.com/auth/cloud-platform",
+        "https://www.googleapis.com/auth/cloud-platform.read-only"
+       ]
+      },
+      "get": {
+       "id": "appengine.apps.operations.get",
+       "path": "v1alpha/apps/{appsId}/operations/{operationsId}",
+       "httpMethod": "GET",
+       "description": "Gets the latest state of a long-running operation. Clients can use this method to poll the operation result at intervals as recommended by the API service.",
+       "parameters": {
+        "appsId": {
+         "type": "string",
+         "description": "Part of `name`. The name of the operation resource.",
+         "required": true,
+         "location": "path"
+        },
+        "operationsId": {
+         "type": "string",
+         "description": "Part of `name`. See documentation of `appsId`.",
+         "required": true,
+         "location": "path"
+        }
+       },
+       "parameterOrder": [
+        "appsId",
+        "operationsId"
+       ],
+       "response": {
+        "$ref": "Operation"
+       },
+       "scopes": [
+        "https://www.googleapis.com/auth/appengine.admin",
+        "https://www.googleapis.com/auth/cloud-platform",
+        "https://www.googleapis.com/auth/cloud-platform.read-only"
+       ]
+      }
+     }
+    },
+    "locations": {
+     "methods": {
+      "list": {
+       "id": "appengine.apps.locations.list",
+       "path": "v1alpha/apps/{appsId}/locations",
+       "httpMethod": "GET",
+       "description": "Lists information about the supported locations for this service.",
+       "parameters": {
+        "appsId": {
+         "type": "string",
+         "description": "Part of `name`. The resource that owns the locations collection, if applicable.",
+         "required": true,
+         "location": "path"
+        },
+        "filter": {
+         "type": "string",
+         "description": "The standard list filter.",
+         "location": "query"
+        },
+        "pageSize": {
+         "type": "integer",
+         "description": "The standard list page size.",
+         "format": "int32",
+         "location": "query"
+        },
+        "pageToken": {
+         "type": "string",
+         "description": "The standard list page token.",
+         "location": "query"
+        }
+       },
+       "parameterOrder": [
+        "appsId"
+       ],
+       "response": {
+        "$ref": "ListLocationsResponse"
+       },
+       "scopes": [
+        "https://www.googleapis.com/auth/appengine.admin",
+        "https://www.googleapis.com/auth/cloud-platform",
+        "https://www.googleapis.com/auth/cloud-platform.read-only"
+       ]
+      },
+      "get": {
+       "id": "appengine.apps.locations.get",
+       "path": "v1alpha/apps/{appsId}/locations/{locationsId}",
+       "httpMethod": "GET",
+       "description": "Get information about a location.",
+       "parameters": {
+        "appsId": {
+         "type": "string",
+         "description": "Part of `name`. Resource name for the location.",
+         "required": true,
+         "location": "path"
+        },
+        "locationsId": {
+         "type": "string",
+         "description": "Part of `name`. See documentation of `appsId`.",
+         "required": true,
+         "location": "path"
+        }
+       },
+       "parameterOrder": [
+        "appsId",
+        "locationsId"
+       ],
+       "response": {
+        "$ref": "Location"
+       },
+       "scopes": [
+        "https://www.googleapis.com/auth/appengine.admin",
+        "https://www.googleapis.com/auth/cloud-platform",
+        "https://www.googleapis.com/auth/cloud-platform.read-only"
+       ]
+      }
+     }
+    }
+   }
+  }
+ }
+}

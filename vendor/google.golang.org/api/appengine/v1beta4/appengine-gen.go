@@ -67,10 +67,9 @@ func New(client *http.Client) (*APIService, error) {
 }
 
 type APIService struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Apps *AppsService
 }
@@ -80,10 +79,6 @@ func (s *APIService) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *APIService) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewAppsService(s *APIService) *AppsService {
@@ -277,6 +272,8 @@ type Application struct {
 	// are order-dependent.@OutputOnly
 	DispatchRules []*UrlDispatchRule `json:"dispatchRules,omitempty"`
 
+	Iap *IdentityAwareProxy `json:"iap,omitempty"`
+
 	// Id: Identifier of the Application resource. This identifier is
 	// equivalent to the project ID of the Google Cloud Platform project
 	// where you want to deploy your application. Example: myapp.
@@ -430,12 +427,14 @@ func (s *BasicScaling) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// ContainerInfo: Docker image that is used to start a VM container for
-// the version you deploy.
+// ContainerInfo: Docker image that is used to create a container and
+// start a VM instance for the version that you deploy. Only applicable
+// for instances running in the App Engine flexible environment.
 type ContainerInfo struct {
-	// Image: URI to the hosted container image in a Docker repository. The
-	// URI must be fully qualified and include a tag or digest. Examples:
-	// "gcr.io/my-project/image:tag" or "gcr.io/my-project/image@digest"
+	// Image: URI to the hosted container image in Google Container
+	// Registry. The URI must be fully qualified and include a tag or
+	// digest. Examples: "gcr.io/my-project/image:tag" or
+	// "gcr.io/my-project/image@digest"
 	Image string `json:"image,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Image") to
@@ -547,8 +546,9 @@ func (s *DebugInstanceRequest) MarshalJSON() ([]byte, error) {
 // Deployment: Code and application artifacts used to deploy a version
 // to App Engine.
 type Deployment struct {
-	// Container: A Docker image that App Engine uses the run the version.
-	// Only applicable for instances in App Engine flexible environment.
+	// Container: The Docker image for the container that runs the version.
+	// Only applicable for instances running in the App Engine flexible
+	// environment.
 	Container *ContainerInfo `json:"container,omitempty"`
 
 	// Files: Manifest of the files stored in Google Cloud Storage that are
@@ -758,6 +758,48 @@ func (s *HealthCheck) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// IdentityAwareProxy: Identity-Aware Proxy
+type IdentityAwareProxy struct {
+	// Enabled: Whether the serving infrastructure will authenticate and
+	// authorize all incoming requests.If true, the oauth2_client_id and
+	// oauth2_client_secret fields must be non-empty.
+	Enabled bool `json:"enabled,omitempty"`
+
+	// Oauth2ClientId: OAuth2 client ID to use for the authentication flow.
+	Oauth2ClientId string `json:"oauth2ClientId,omitempty"`
+
+	// Oauth2ClientSecret: For security reasons, this value cannot be
+	// retrieved via the API. Instead, the SHA-256 hash of the value is
+	// returned in the oauth2_client_secret_sha256 field.@InputOnly
+	Oauth2ClientSecret string `json:"oauth2ClientSecret,omitempty"`
+
+	// Oauth2ClientSecretSha256: Hex-encoded SHA-256 hash of the client
+	// secret.@OutputOnly
+	Oauth2ClientSecretSha256 string `json:"oauth2ClientSecretSha256,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Enabled") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Enabled") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *IdentityAwareProxy) MarshalJSON() ([]byte, error) {
+	type noMethod IdentityAwareProxy
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // Instance: An Instance resource is the computing unit that App Engine
 // uses to automatically scale an application.
 type Instance struct {
@@ -940,7 +982,7 @@ func (s *ListInstancesResponse) MarshalJSON() ([]byte, error) {
 }
 
 // ListLocationsResponse: The response message for
-// LocationService.ListLocations.
+// Locations.ListLocations.
 type ListLocationsResponse struct {
 	// Locations: A list of locations that matches the specified filter in
 	// the request.
@@ -1524,6 +1566,57 @@ type OperationMetadataV1 struct {
 
 func (s *OperationMetadataV1) MarshalJSON() ([]byte, error) {
 	type noMethod OperationMetadataV1
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// OperationMetadataV1Beta: Metadata for the given
+// google.longrunning.Operation.
+type OperationMetadataV1Beta struct {
+	// EndTime: Time that this operation completed.@OutputOnly
+	EndTime string `json:"endTime,omitempty"`
+
+	// EphemeralMessage: Ephemeral message that may change every time the
+	// operation is polled. @OutputOnly
+	EphemeralMessage string `json:"ephemeralMessage,omitempty"`
+
+	// InsertTime: Time that this operation was created.@OutputOnly
+	InsertTime string `json:"insertTime,omitempty"`
+
+	// Method: API method that initiated this operation. Example:
+	// google.appengine.v1beta.Versions.CreateVersion.@OutputOnly
+	Method string `json:"method,omitempty"`
+
+	// Target: Name of the resource that this operation is acting on.
+	// Example: apps/myapp/services/default.@OutputOnly
+	Target string `json:"target,omitempty"`
+
+	// User: User who requested this operation.@OutputOnly
+	User string `json:"user,omitempty"`
+
+	// Warning: Durable messages that persist on every operation poll.
+	// @OutputOnly
+	Warning []string `json:"warning,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "EndTime") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "EndTime") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *OperationMetadataV1Beta) MarshalJSON() ([]byte, error) {
+	type noMethod OperationMetadataV1Beta
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -2325,11 +2418,12 @@ type AppsCreateCall struct {
 }
 
 // Create: Creates an App Engine application for a Google Cloud Platform
-// project. This requires a project that excludes an App Engine
-// application. For details about creating a project without an
-// application, see the Google Cloud Resource Manager create project
-// topic
-// (https://cloud.google.com/resource-manager/docs/creating-project).
+// project. Required fields: id - The ID of the target Cloud Platform
+// project. location - The region
+// (https://cloud.google.com/appengine/docs/locations) where you want
+// the App Engine application located.For more information about App
+// Engine applications, see Managing Projects, Applications, and Billing
+// (https://cloud.google.com/appengine/docs/python/console/).
 func (r *AppsService) Create(application *Application) *AppsCreateCall {
 	c := &AppsCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.application = application
@@ -2367,7 +2461,6 @@ func (c *AppsCreateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.application)
 	if err != nil {
@@ -2420,7 +2513,7 @@ func (c *AppsCreateCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
 	}
 	return ret, nil
 	// {
-	//   "description": "Creates an App Engine application for a Google Cloud Platform project. This requires a project that excludes an App Engine application. For details about creating a project without an application, see the Google Cloud Resource Manager create project topic (https://cloud.google.com/resource-manager/docs/creating-project).",
+	//   "description": "Creates an App Engine application for a Google Cloud Platform project. Required fields: id - The ID of the target Cloud Platform project. location - The region (https://cloud.google.com/appengine/docs/locations) where you want the App Engine application located.For more information about App Engine applications, see Managing Projects, Applications, and Billing (https://cloud.google.com/appengine/docs/python/console/).",
 	//   "httpMethod": "POST",
 	//   "id": "appengine.apps.create",
 	//   "path": "v1beta4/apps",
@@ -2508,7 +2601,6 @@ func (c *AppsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2654,7 +2746,6 @@ func (c *AppsPatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.application)
 	if err != nil {
@@ -2804,7 +2895,6 @@ func (c *AppsLocationsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2974,7 +3064,6 @@ func (c *AppsLocationsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3142,7 +3231,6 @@ func (c *AppsModulesDeleteCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "v1beta4/apps/{appsId}/modules/{modulesId}")
@@ -3287,7 +3375,6 @@ func (c *AppsModulesGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3449,7 +3536,6 @@ func (c *AppsModulesListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3591,9 +3677,9 @@ func (c *AppsModulesPatchCall) Mask(mask string) *AppsModulesPatchCall {
 }
 
 // MigrateTraffic sets the optional parameter "migrateTraffic": Set to
-// true to gradually shift traffic from one version to another single
-// version. By default, traffic is shifted immediately. For gradual
-// traffic migration, the target version must be located within
+// true to gradually shift traffic to one or more versions that you
+// specify. By default, traffic is shifted immediately. For gradual
+// traffic migration, the target versions must be located within
 // instances that are configured for both warmup requests
 // (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1be
 // ta4/apps.modules.versions#inboundservicetype) and automatic scaling
@@ -3642,7 +3728,6 @@ func (c *AppsModulesPatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.module)
 	if err != nil {
@@ -3719,7 +3804,7 @@ func (c *AppsModulesPatchCall) Do(opts ...googleapi.CallOption) (*Operation, err
 	//       "type": "string"
 	//     },
 	//     "migrateTraffic": {
-	//       "description": "Set to true to gradually shift traffic from one version to another single version. By default, traffic is shifted immediately. For gradual traffic migration, the target version must be located within instances that are configured for both warmup requests (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1beta4/apps.modules.versions#inboundservicetype) and automatic scaling (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1beta4/apps.modules.versions#automaticscaling). You must specify the shardBy (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1beta4/apps.modules#shardby) field in the Module resource. Gradual traffic migration is not supported in the App Engine flexible environment. For examples, see Migrating and Splitting Traffic (https://cloud.google.com/appengine/docs/admin-api/migrating-splitting-traffic).",
+	//       "description": "Set to true to gradually shift traffic to one or more versions that you specify. By default, traffic is shifted immediately. For gradual traffic migration, the target versions must be located within instances that are configured for both warmup requests (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1beta4/apps.modules.versions#inboundservicetype) and automatic scaling (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1beta4/apps.modules.versions#automaticscaling). You must specify the shardBy (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1beta4/apps.modules#shardby) field in the Module resource. Gradual traffic migration is not supported in the App Engine flexible environment. For examples, see Migrating and Splitting Traffic (https://cloud.google.com/appengine/docs/admin-api/migrating-splitting-traffic).",
 	//       "location": "query",
 	//       "type": "boolean"
 	//     },
@@ -3796,7 +3881,6 @@ func (c *AppsModulesVersionsCreateCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.version)
 	if err != nil {
@@ -3940,7 +4024,6 @@ func (c *AppsModulesVersionsDeleteCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "v1beta4/apps/{appsId}/modules/{modulesId}/versions/{versionsId}")
@@ -4108,7 +4191,6 @@ func (c *AppsModulesVersionsGetCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4300,7 +4382,6 @@ func (c *AppsModulesVersionsListCall) doRequest(alt string) (*http.Response, err
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4509,7 +4590,6 @@ func (c *AppsModulesVersionsPatchCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.version)
 	if err != nil {
@@ -4676,7 +4756,6 @@ func (c *AppsModulesVersionsInstancesDebugCall) doRequest(alt string) (*http.Res
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.debuginstancerequest)
 	if err != nil {
@@ -4838,7 +4917,6 @@ func (c *AppsModulesVersionsInstancesDeleteCall) doRequest(alt string) (*http.Re
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "v1beta4/apps/{appsId}/modules/{modulesId}/versions/{versionsId}/instances/{instancesId}")
@@ -5003,7 +5081,6 @@ func (c *AppsModulesVersionsInstancesGetCall) doRequest(alt string) (*http.Respo
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -5121,7 +5198,10 @@ type AppsModulesVersionsInstancesListCall struct {
 	header_      http.Header
 }
 
-// List: Lists the instances of a version.
+// List: Lists the instances of a version.Tip: To aggregate details
+// about instances over time, see the Stackdriver Monitoring API
+// (https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.timeS
+// eries/list).
 func (r *AppsModulesVersionsInstancesService) List(appsId string, modulesId string, versionsId string) *AppsModulesVersionsInstancesListCall {
 	c := &AppsModulesVersionsInstancesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.appsId = appsId
@@ -5185,7 +5265,6 @@ func (c *AppsModulesVersionsInstancesListCall) doRequest(alt string) (*http.Resp
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -5241,7 +5320,7 @@ func (c *AppsModulesVersionsInstancesListCall) Do(opts ...googleapi.CallOption) 
 	}
 	return ret, nil
 	// {
-	//   "description": "Lists the instances of a version.",
+	//   "description": "Lists the instances of a version.Tip: To aggregate details about instances over time, see the Stackdriver Monitoring API (https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.timeSeries/list).",
 	//   "httpMethod": "GET",
 	//   "id": "appengine.apps.modules.versions.instances.list",
 	//   "parameterOrder": [
@@ -5377,7 +5456,6 @@ func (c *AppsOperationsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -5550,7 +5628,6 @@ func (c *AppsOperationsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}

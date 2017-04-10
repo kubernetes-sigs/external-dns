@@ -61,10 +61,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Projects *ProjectsService
 }
@@ -74,10 +73,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewProjectsService(s *Service) *ProjectsService {
@@ -634,6 +629,9 @@ type ServiceContext struct {
 	// provided,
 	// which could represent a version label or a Git SHA-1 hash, for
 	// example.
+	// For App Engine standard environment, the version is set to the
+	// version of
+	// the app.
 	Version string `json:"version,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "ResourceType") to
@@ -660,13 +658,12 @@ func (s *ServiceContext) MarshalJSON() ([]byte, error) {
 }
 
 // SourceLocation: Indicates a location in the source code of the
-// service for which
-// errors are reported.
-// This data should be provided by the application when reporting an
-// error,
-// unless the error report has been generated automatically from Google
-// App
-// Engine logs. All fields are optional.
+// service for which errors are
+// reported. `functionName` must be provided by the application when
+// reporting
+// an error, unless the error report contains a `message` with a
+// supported
+// exception stack trace. All fields are optional for the later case.
 type SourceLocation struct {
 	// FilePath: The source code filename, which can include a truncated
 	// relative
@@ -821,7 +818,6 @@ func (c *ProjectsDeleteEventsCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "v1beta1/{+projectName}/events")
@@ -1024,7 +1020,6 @@ func (c *ProjectsEventsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -1231,7 +1226,6 @@ func (c *ProjectsEventsReportCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.reportederrorevent)
 	if err != nil {
@@ -1491,7 +1485,6 @@ func (c *ProjectsGroupStatsListCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -1731,7 +1724,6 @@ func (c *ProjectsGroupsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -1863,7 +1855,6 @@ func (c *ProjectsGroupsUpdateCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.errorgroup)
 	if err != nil {

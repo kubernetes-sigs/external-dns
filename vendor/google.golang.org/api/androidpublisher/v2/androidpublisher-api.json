@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/wBOBQg7Gs1S9CwApK0nCAqVzk_Y\"",
+ "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/z8hLagElncDGGS_B7W6I6uNUHDs\"",
  "discoveryVersion": "v1",
  "id": "androidpublisher:v2",
  "name": "androidpublisher",
  "canonicalName": "Android Publisher",
  "version": "v2",
- "revision": "20170105",
+ "revision": "20170222",
  "title": "Google Play Developer API",
  "description": "Lets Android application developers access their Google Play accounts.",
  "ownerDomain": "google.com",
@@ -1015,6 +1015,11 @@
     "startTimeMillis": {
      "type": "string",
      "description": "Time at which the subscription was granted, in milliseconds since the Epoch.",
+     "format": "int64"
+    },
+    "userCancellationTimeMillis": {
+     "type": "string",
+     "description": "The time at which the subscription was canceled by the user, in milliseconds since the epoch. Only present if cancelReason is 0.",
      "format": "int64"
     }
    }
@@ -3570,7 +3575,7 @@
      "id": "androidpublisher.reviews.list",
      "path": "{packageName}/reviews",
      "httpMethod": "GET",
-     "description": "Returns a list of reviews.",
+     "description": "Returns a list of reviews. Only reviews from last week will be returned.",
      "parameters": {
       "maxResults": {
        "type": "integer",

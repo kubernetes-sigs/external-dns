@@ -1,4 +1,4 @@
-// Package ml provides access to the Google Cloud Machine Learning.
+// Package ml provides access to the Google Cloud Machine Learning Engine.
 //
 // See https://cloud.google.com/ml/
 //
@@ -61,10 +61,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Projects *ProjectsService
 }
@@ -74,10 +73,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewProjectsService(s *Service) *ProjectsService {
@@ -218,6 +213,40 @@ func (s *GoogleApi__HttpBody) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// GoogleCloudMlV1__ManualScaling: Options for manually scaling a model.
+type GoogleCloudMlV1__ManualScaling struct {
+	// Nodes: The number of nodes to allocate for this model. These nodes
+	// are always up,
+	// starting from the time the model is deployed, so the cost of
+	// operating
+	// this model will be proportional to nodes * number of hours
+	// since
+	// deployment.
+	Nodes int64 `json:"nodes,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Nodes") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Nodes") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GoogleCloudMlV1__ManualScaling) MarshalJSON() ([]byte, error) {
+	type noMethod GoogleCloudMlV1__ManualScaling
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // GoogleCloudMlV1__OperationMetadata: Represents the metadata of the
 // long-running operation.
 type GoogleCloudMlV1__OperationMetadata struct {
@@ -281,8 +310,8 @@ func (s *GoogleCloudMlV1__OperationMetadata) MarshalJSON() ([]byte, error) {
 // get
 // information about all of the versions of a given model by
 // calling
-// [projects.models.versions.list](/ml/reference/rest/v1/projects
-// .models.versions/list).
+// [projects.models.versions.list](/ml-engine/reference/rest/v1/p
+// rojects.models.versions/list).
 type GoogleCloudMlV1__Version struct {
 	// CreateTime: Output only. The time the version was created.
 	CreateTime string `json:"createTime,omitempty"`
@@ -290,14 +319,14 @@ type GoogleCloudMlV1__Version struct {
 	// DeploymentUri: Required. The Google Cloud Storage location of the
 	// trained model used to
 	// create the version. See the
-	// [overview of model deployment](/ml/docs/concepts/deployment-overview)
-	// for
+	// [overview of model
+	// deployment](/ml-engine/docs/concepts/deployment-overview) for
 	// more informaiton.
 	//
 	// When passing Version
 	// to
-	// [projects.models.versions.create](/ml/reference/rest/v1/projects.mo
-	// dels.versions/create)
+	// [projects.models.versions.create](/ml-engine/reference/rest/v1/proj
+	// ects.models.versions/create)
 	// the model service uses the specified location as the source of the
 	// model.
 	// Once deployed, the model version is hosted by the prediction service,
@@ -315,13 +344,26 @@ type GoogleCloudMlV1__Version struct {
 	//
 	// You can change the default version by
 	// calling
-	// [projects.methods.versions.setDefault](/ml/reference/rest/v1/p
-	// rojects.models.versions/setDefault).
+	// [projects.methods.versions.setDefault](/ml-engine/reference/re
+	// st/v1/projects.models.versions/setDefault).
 	IsDefault bool `json:"isDefault,omitempty"`
 
 	// LastUseTime: Output only. The time the version was last used for
 	// prediction.
 	LastUseTime string `json:"lastUseTime,omitempty"`
+
+	// ManualScaling: Optional. Manually select the number of nodes to use
+	// for serving the
+	// model. If unset (i.e., by default), the number of nodes used to
+	// serve
+	// the model automatically scales with traffic. However, care should
+	// be
+	// taken to ramp up traffic according to the model's ability to scale.
+	// If
+	// your model needs to handle bursts of traffic beyond it's ability
+	// to
+	// scale, it is recommended you set this field appropriately.
+	ManualScaling *GoogleCloudMlV1__ManualScaling `json:"manualScaling,omitempty"`
 
 	// Name: Required.The name specified for the version when it was
 	// created.
@@ -753,6 +795,41 @@ func (s *GoogleCloudMlV1beta1__ListVersionsResponse) MarshalJSON() ([]byte, erro
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// GoogleCloudMlV1beta1__ManualScaling: Options for manually scaling a
+// model.
+type GoogleCloudMlV1beta1__ManualScaling struct {
+	// Nodes: The number of nodes to allocate for this model. These nodes
+	// are always up,
+	// starting from the time the model is deployed, so the cost of
+	// operating
+	// this model will be proportional to nodes * number of hours
+	// since
+	// deployment.
+	Nodes int64 `json:"nodes,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Nodes") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Nodes") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GoogleCloudMlV1beta1__ManualScaling) MarshalJSON() ([]byte, error) {
+	type noMethod GoogleCloudMlV1beta1__ManualScaling
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // GoogleCloudMlV1beta1__Model: Represents a machine learning
 // solution.
 //
@@ -768,8 +845,8 @@ type GoogleCloudMlV1beta1__Model struct {
 	//
 	// You can change the default version by
 	// calling
-	// [projects.methods.versions.setDefault](/ml/reference/rest/v1be
-	// ta1/projects.models.versions/setDefault).
+	// [projects.methods.versions.setDefault](/ml-engine/reference/re
+	// st/v1beta1/projects.models.versions/setDefault).
 	DefaultVersion *GoogleCloudMlV1beta1__Version `json:"defaultVersion,omitempty"`
 
 	// Description: Optional. The description specified for the model when
@@ -791,6 +868,15 @@ type GoogleCloudMlV1beta1__Model struct {
 	// deployed.
 	// Currently only one region per model is supported.
 	// Defaults to 'us-central1' if nothing is set.
+	// Note:
+	// *   No matter where a model is deployed, it can always be accessed
+	// by
+	//     users from anywhere, both for online and batch prediction.
+	// *   The region for a batch prediction job is set by the region field
+	// when
+	//     submitting the batch prediction job and does not take its value
+	// from
+	//     this field.
 	Regions []string `json:"regions,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -1281,8 +1367,9 @@ type GoogleCloudMlV1beta1__PredictionInput struct {
 	// such as when the model is specified by uri.
 	RuntimeVersion string `json:"runtimeVersion,omitempty"`
 
-	// Uri: Use this field if you want to specify a GCS path to the model to
-	// use.
+	// Uri: Use this field if you want to specify a Google Cloud Storage
+	// path for
+	// the model to use.
 	Uri string `json:"uri,omitempty"`
 
 	// VersionName: Use this field if you want to specify a version of the
@@ -1386,13 +1473,13 @@ type GoogleCloudMlV1beta1__TrainingInput struct {
 	// Hyperparameters: Optional. The set of Hyperparameters to tune.
 	Hyperparameters *GoogleCloudMlV1beta1__HyperparameterSpec `json:"hyperparameters,omitempty"`
 
-	// JobDir: Optional. A GCS path in which to store training outputs and
-	// other data
-	// needed for training. This path will be passed to your TensorFlow
-	// program as
-	// the 'job_dir' command-line arg. The benefit of specifying this field
-	// is that
-	// Cloud ML will validate the path for use in training.
+	// JobDir: Optional. A Google Cloud Storage path in which to store
+	// training outputs
+	// and other data needed for training. This path is passed to your
+	// TensorFlow
+	// program as the 'job_dir' command-line argument. The benefit of
+	// specifying
+	// this field is that Cloud ML validates the path for use in training.
 	JobDir string `json:"jobDir,omitempty"`
 
 	// MasterType: Optional. Specifies the type of virtual machine to use
@@ -1435,6 +1522,21 @@ type GoogleCloudMlV1beta1__TrainingInput struct {
 	//   A machine with roughly twice the number of cores and roughly double
 	// the
 	//   memory of <code suppresswarning="true">complex_model_m</code>.
+	//   </dd>
+	//   <dt>standard_gpu</dt>
+	//   <dd>
+	//   A machine equivalent to <code
+	// suppresswarning="true">standard</code> that
+	//   also includes a
+	//   <a href="/ml-engine/docs/how-tos/using-gpus">
+	//   GPU that you can use in your trainer</a>.
+	//   </dd>
+	//   <dt>complex_model_m_gpu</dt>
+	//   <dd>
+	//   A machine equivalent to
+	//   <code suppresswarning="true">coplex_model_m</code> that also
+	// includes
+	//   four GPUs.
 	//   </dd>
 	// </dl>
 	//
@@ -1494,7 +1596,8 @@ type GoogleCloudMlV1beta1__TrainingInput struct {
 	//   "STANDARD_1" - Many workers and a few parameter servers.
 	//   "PREMIUM_1" - A large number of workers with many parameter
 	// servers.
-	//   "BASIC_GPU" - A single worker instance with a GPU.
+	//   "BASIC_GPU" - A single worker instance [with a
+	// GPU](/ml-engine/docs/how-tos/using-gpus).
 	//   "CUSTOM" - The CUSTOM tier is not a set tier, but rather enables
 	// you to use your
 	// own cluster specification. When you use this tier, set values
@@ -1643,8 +1746,8 @@ func (s *GoogleCloudMlV1beta1__TrainingOutput) UnmarshalJSON(data []byte) error 
 // get
 // information about all of the versions of a given model by
 // calling
-// [projects.models.versions.list](/ml/reference/rest/v1beta1/pro
-// jects.models.versions/list).
+// [projects.models.versions.list](/ml-engine/reference/rest/v1be
+// ta1/projects.models.versions/list).
 type GoogleCloudMlV1beta1__Version struct {
 	// CreateTime: Output only. The time the version was created.
 	CreateTime string `json:"createTime,omitempty"`
@@ -1652,14 +1755,14 @@ type GoogleCloudMlV1beta1__Version struct {
 	// DeploymentUri: Required. The Google Cloud Storage location of the
 	// trained model used to
 	// create the version. See the
-	// [overview of model deployment](/ml/docs/concepts/deployment-overview)
-	// for
+	// [overview of model
+	// deployment](/ml-engine/docs/concepts/deployment-overview) for
 	// more informaiton.
 	//
 	// When passing Version
 	// to
-	// [projects.models.versions.create](/ml/reference/rest/v1beta1/projec
-	// ts.models.versions/create)
+	// [projects.models.versions.create](/ml-engine/reference/rest/v1beta1
+	// /projects.models.versions/create)
 	// the model service uses the specified location as the source of the
 	// model.
 	// Once deployed, the model version is hosted by the prediction service,
@@ -1677,13 +1780,26 @@ type GoogleCloudMlV1beta1__Version struct {
 	//
 	// You can change the default version by
 	// calling
-	// [projects.methods.versions.setDefault](/ml/reference/rest/v1be
-	// ta1/projects.models.versions/setDefault).
+	// [projects.methods.versions.setDefault](/ml-engine/reference/re
+	// st/v1beta1/projects.models.versions/setDefault).
 	IsDefault bool `json:"isDefault,omitempty"`
 
 	// LastUseTime: Output only. The time the version was last used for
 	// prediction.
 	LastUseTime string `json:"lastUseTime,omitempty"`
+
+	// ManualScaling: Optional. Manually select the number of nodes to use
+	// for serving the
+	// model. If unset (i.e., by default), the number of nodes used to
+	// serve
+	// the model automatically scales with traffic. However, care should
+	// be
+	// taken to ramp up traffic according to the model's ability to scale.
+	// If
+	// your model needs to handle bursts of traffic beyond it's ability
+	// to
+	// scale, it is recommended you set this field appropriately.
+	ManualScaling *GoogleCloudMlV1beta1__ManualScaling `json:"manualScaling,omitempty"`
 
 	// Name: Required.The name specified for the version when it was
 	// created.
@@ -2037,7 +2153,6 @@ func (c *ProjectsGetConfigCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2171,7 +2286,6 @@ func (c *ProjectsPredictCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.googlecloudmlv1beta1__predictrequest)
 	if err != nil {
@@ -2307,7 +2421,6 @@ func (c *ProjectsJobsCancelCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.googlecloudmlv1beta1__canceljobrequest)
 	if err != nil {
@@ -2443,7 +2556,6 @@ func (c *ProjectsJobsCreateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.googlecloudmlv1beta1__job)
 	if err != nil {
@@ -2588,7 +2700,6 @@ func (c *ProjectsJobsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2758,7 +2869,6 @@ func (c *ProjectsJobsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2895,8 +3005,8 @@ type ProjectsModelsCreateCall struct {
 // from
 // the model. Add versions by
 // calling
-// [projects.models.versions.create](/ml/reference/rest/v1beta1/p
-// rojects.models.versions/create).
+// [projects.models.versions.create](/ml-engine/reference/rest/v1
+// beta1/projects.models.versions/create).
 func (r *ProjectsModelsService) Create(parent string, googlecloudmlv1beta1__model *GoogleCloudMlV1beta1__Model) *ProjectsModelsCreateCall {
 	c := &ProjectsModelsCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.parent = parent
@@ -2935,7 +3045,6 @@ func (c *ProjectsModelsCreateCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.googlecloudmlv1beta1__model)
 	if err != nil {
@@ -2991,7 +3100,7 @@ func (c *ProjectsModelsCreateCall) Do(opts ...googleapi.CallOption) (*GoogleClou
 	}
 	return ret, nil
 	// {
-	//   "description": "Creates a model which will later contain one or more versions.\n\nYou must add at least one version before you can request predictions from\nthe model. Add versions by calling\n[projects.models.versions.create](/ml/reference/rest/v1beta1/projects.models.versions/create).",
+	//   "description": "Creates a model which will later contain one or more versions.\n\nYou must add at least one version before you can request predictions from\nthe model. Add versions by calling\n[projects.models.versions.create](/ml-engine/reference/rest/v1beta1/projects.models.versions/create).",
 	//   "flatPath": "v1beta1/projects/{projectsId}/models",
 	//   "httpMethod": "POST",
 	//   "id": "ml.projects.models.create",
@@ -3037,8 +3146,8 @@ type ProjectsModelsDeleteCall struct {
 // delete
 // versions by
 // calling
-// [projects.models.versions.delete](/ml/reference/rest/v1beta1/p
-// rojects.models.versions/delete).
+// [projects.models.versions.delete](/ml-engine/reference/rest/v1
+// beta1/projects.models.versions/delete).
 func (r *ProjectsModelsService) Delete(name string) *ProjectsModelsDeleteCall {
 	c := &ProjectsModelsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -3076,7 +3185,6 @@ func (c *ProjectsModelsDeleteCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "v1beta1/{+name}")
@@ -3127,7 +3235,7 @@ func (c *ProjectsModelsDeleteCall) Do(opts ...googleapi.CallOption) (*GoogleLong
 	}
 	return ret, nil
 	// {
-	//   "description": "Deletes a model.\n\nYou can only delete a model if there are no versions in it. You can delete\nversions by calling\n[projects.models.versions.delete](/ml/reference/rest/v1beta1/projects.models.versions/delete).",
+	//   "description": "Deletes a model.\n\nYou can only delete a model if there are no versions in it. You can delete\nversions by calling\n[projects.models.versions.delete](/ml-engine/reference/rest/v1beta1/projects.models.versions/delete).",
 	//   "flatPath": "v1beta1/projects/{projectsId}/models/{modelsId}",
 	//   "httpMethod": "DELETE",
 	//   "id": "ml.projects.models.delete",
@@ -3217,7 +3325,6 @@ func (c *ProjectsModelsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3384,7 +3491,6 @@ func (c *ProjectsModelsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3523,8 +3629,8 @@ type ProjectsModelsVersionsCreateCall struct {
 // want a
 // new version to be the default, you must
 // call
-// [projects.models.versions.setDefault](/ml/reference/rest/v1beta1/
-// projects.models.versions/setDefault).
+// [projects.models.versions.setDefault](/ml-engine/reference/rest/v
+// 1beta1/projects.models.versions/setDefault).
 func (r *ProjectsModelsVersionsService) Create(parent string, googlecloudmlv1beta1__version *GoogleCloudMlV1beta1__Version) *ProjectsModelsVersionsCreateCall {
 	c := &ProjectsModelsVersionsCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.parent = parent
@@ -3563,7 +3669,6 @@ func (c *ProjectsModelsVersionsCreateCall) doRequest(alt string) (*http.Response
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.googlecloudmlv1beta1__version)
 	if err != nil {
@@ -3619,7 +3724,7 @@ func (c *ProjectsModelsVersionsCreateCall) Do(opts ...googleapi.CallOption) (*Go
 	}
 	return ret, nil
 	// {
-	//   "description": "Creates a new version of a model from a trained TensorFlow model.\n\nIf the version created in the cloud by this call is the first deployed\nversion of the specified model, it will be made the default version of the\nmodel. When you add a version to a model that already has one or more\nversions, the default version does not automatically change. If you want a\nnew version to be the default, you must call\n[projects.models.versions.setDefault](/ml/reference/rest/v1beta1/projects.models.versions/setDefault).",
+	//   "description": "Creates a new version of a model from a trained TensorFlow model.\n\nIf the version created in the cloud by this call is the first deployed\nversion of the specified model, it will be made the default version of the\nmodel. When you add a version to a model that already has one or more\nversions, the default version does not automatically change. If you want a\nnew version to be the default, you must call\n[projects.models.versions.setDefault](/ml-engine/reference/rest/v1beta1/projects.models.versions/setDefault).",
 	//   "flatPath": "v1beta1/projects/{projectsId}/models/{modelsId}/versions",
 	//   "httpMethod": "POST",
 	//   "id": "ml.projects.models.versions.create",
@@ -3705,7 +3810,6 @@ func (c *ProjectsModelsVersionsDeleteCall) doRequest(alt string) (*http.Response
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "v1beta1/{+name}")
@@ -3765,7 +3869,7 @@ func (c *ProjectsModelsVersionsDeleteCall) Do(opts ...googleapi.CallOption) (*Go
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "Required. The name of the version. You can get the names of all the\nversions of a model by calling\n[projects.models.versions.list](/ml/reference/rest/v1beta1/projects.models.versions/list).\n\nAuthorization: requires `Editor` role on the parent project.",
+	//       "description": "Required. The name of the version. You can get the names of all the\nversions of a model by calling\n[projects.models.versions.list](/ml-engine/reference/rest/v1beta1/projects.models.versions/list).\n\nAuthorization: requires `Editor` role on the parent project.",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/models/[^/]+/versions/[^/]+$",
 	//       "required": true,
@@ -3798,8 +3902,8 @@ type ProjectsModelsVersionsGetCall struct {
 //
 // Models can have multiple versions. You can
 // call
-// [projects.models.versions.list](/ml/reference/rest/v1beta1/projec
-// ts.models.versions/list)
+// [projects.models.versions.list](/ml-engine/reference/rest/v1beta1
+// /projects.models.versions/list)
 // to get the same information that this method returns for all of
 // the
 // versions of a model.
@@ -3850,7 +3954,6 @@ func (c *ProjectsModelsVersionsGetCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3904,7 +4007,7 @@ func (c *ProjectsModelsVersionsGetCall) Do(opts ...googleapi.CallOption) (*Googl
 	}
 	return ret, nil
 	// {
-	//   "description": "Gets information about a model version.\n\nModels can have multiple versions. You can call\n[projects.models.versions.list](/ml/reference/rest/v1beta1/projects.models.versions/list)\nto get the same information that this method returns for all of the\nversions of a model.",
+	//   "description": "Gets information about a model version.\n\nModels can have multiple versions. You can call\n[projects.models.versions.list](/ml-engine/reference/rest/v1beta1/projects.models.versions/list)\nto get the same information that this method returns for all of the\nversions of a model.",
 	//   "flatPath": "v1beta1/projects/{projectsId}/models/{modelsId}/versions/{versionsId}",
 	//   "httpMethod": "GET",
 	//   "id": "ml.projects.models.versions.get",
@@ -4019,7 +4122,6 @@ func (c *ProjectsModelsVersionsListCall) doRequest(alt string) (*http.Response, 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4195,7 +4297,6 @@ func (c *ProjectsModelsVersionsSetDefaultCall) doRequest(alt string) (*http.Resp
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.googlecloudmlv1beta1__setdefaultversionrequest)
 	if err != nil {
@@ -4260,7 +4361,7 @@ func (c *ProjectsModelsVersionsSetDefaultCall) Do(opts ...googleapi.CallOption) 
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "Required. The name of the version to make the default for the model. You\ncan get the names of all the versions of a model by calling\n[projects.models.versions.list](/ml/reference/rest/v1beta1/projects.models.versions/list).\n\nAuthorization: requires `Editor` role on the parent project.",
+	//       "description": "Required. The name of the version to make the default for the model. You\ncan get the names of all the versions of a model by calling\n[projects.models.versions.list](/ml-engine/reference/rest/v1beta1/projects.models.versions/list).\n\nAuthorization: requires `Editor` role on the parent project.",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/models/[^/]+/versions/[^/]+$",
 	//       "required": true,
@@ -4346,7 +4447,6 @@ func (c *ProjectsOperationsCancelCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "v1beta1/{+name}:cancel")
@@ -4478,7 +4578,6 @@ func (c *ProjectsOperationsDeleteCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "v1beta1/{+name}")
@@ -4619,7 +4718,6 @@ func (c *ProjectsOperationsGetCall) doRequest(alt string) (*http.Response, error
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4787,7 +4885,6 @@ func (c *ProjectsOperationsListCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}

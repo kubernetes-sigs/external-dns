@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/Eza5dkILxsH0BZXGL1UuGyoKbqY\"",
+ "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/e7L4gGXJzl8PkSEyyAcfyGJlqQA\"",
  "discoveryVersion": "v1",
  "id": "identitytoolkit:v3",
  "name": "identitytoolkit",
  "canonicalName": "Identity Toolkit",
  "version": "v3",
- "revision": "20170203",
+ "revision": "20170308",
  "title": "Google Identity Toolkit API",
  "description": "Help the third party sites to implement federated login.",
  "ownerDomain": "google.com",
@@ -791,6 +791,10 @@
    "type": "object",
    "description": "Request to verify the IDP assertion.",
    "properties": {
+    "autoCreate": {
+     "type": "boolean",
+     "description": "When it's true, automatically creates a new account if the user doesn't exist. When it's false, allows existing user to sign in normally and throws exception if the user doesn't exist."
+    },
     "delegatedProjectNumber": {
      "type": "string",
      "description": "GCP project number of the requesting delegated app. Currently only intended for Firebase V1 migration.",
@@ -942,6 +946,22 @@
    "type": "object",
    "description": "Request of getting a code for user confirmation (reset password, change email etc.)",
    "properties": {
+    "androidInstallApp": {
+     "type": "boolean",
+     "description": "whether or not to install the android app on the device where the link is opened"
+    },
+    "androidMinimumVersion": {
+     "type": "string",
+     "description": "minimum version of the app. if the version on the device is lower than this version then the user is taken to the play store to upgrade the app"
+    },
+    "androidPackageName": {
+     "type": "string",
+     "description": "android package name of the android app to handle the action code"
+    },
+    "canHandleCodeInApp": {
+     "type": "boolean",
+     "description": "whether or not the app can handle the oob code without first going to web"
+    },
     "captchaResp": {
      "type": "string",
      "description": "The recaptcha response from the user."
@@ -950,9 +970,21 @@
      "type": "string",
      "description": "The recaptcha challenge presented to the user."
     },
+    "continueUrl": {
+     "type": "string",
+     "description": "The url to continue to the Gitkit app"
+    },
     "email": {
      "type": "string",
      "description": "The email of the user."
+    },
+    "iOSAppStoreId": {
+     "type": "string",
+     "description": "iOS app store id to download the app if it's not already installed"
+    },
+    "iOSBundleId": {
+     "type": "string",
+     "description": "the iOS bundle id of iOS app to handle the action code"
     },
     "idToken": {
      "type": "string",

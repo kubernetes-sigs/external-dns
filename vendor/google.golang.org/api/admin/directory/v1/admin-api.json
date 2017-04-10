@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/5JjoP3Vg5udAY4zd2Hcsn9dKASM\"",
+ "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/Kf10_CyV-UXMG4pe1PBWM5iJx_0\"",
  "discoveryVersion": "v1",
  "id": "admin:directory_v1",
  "name": "admin",
  "canonicalName": "directory",
  "version": "directory_v1",
- "revision": "20161214",
+ "revision": "20170216",
  "title": "Admin Directory API",
  "description": "The Admin SDK Directory API lets you view and manage enterprise resources such as users and groups, administrative notifications, security features, and more.",
  "ownerDomain": "google.com",
@@ -1919,6 +1919,9 @@
     "phones": {
      "type": "any"
     },
+    "posixAccounts": {
+     "type": "any"
+    },
     "primaryEmail": {
      "type": "string",
      "description": "username of User",
@@ -1929,6 +1932,9 @@
      }
     },
     "relations": {
+     "type": "any"
+    },
+    "sshPublicKeys": {
      "type": "any"
     },
     "suspended": {
@@ -2277,6 +2283,47 @@
     }
    }
   },
+  "UserPosixAccount": {
+   "id": "UserPosixAccount",
+   "type": "object",
+   "description": "JSON template for a POSIX account entry. Description of the field family: go/fbs-posix.",
+   "properties": {
+    "gecos": {
+     "type": "string",
+     "description": "The GECOS (user information) entry for this account."
+    },
+    "gid": {
+     "type": "integer",
+     "description": "The default group ID.",
+     "format": "int32"
+    },
+    "homeDirectory": {
+     "type": "string",
+     "description": "The path to the home directory for this account."
+    },
+    "primary": {
+     "type": "boolean",
+     "description": "If this is user's primary account within the SystemId."
+    },
+    "shell": {
+     "type": "string",
+     "description": "The path to the login shell for this account."
+    },
+    "systemId": {
+     "type": "string",
+     "description": "System identifier for which account Username or Uid apply to."
+    },
+    "uid": {
+     "type": "integer",
+     "description": "The user ID.",
+     "format": "int32"
+    },
+    "username": {
+     "type": "string",
+     "description": "The username of the account."
+    }
+   }
+  },
   "UserRelation": {
    "id": "UserRelation",
    "type": "object",
@@ -2293,6 +2340,27 @@
     "value": {
      "type": "string",
      "description": "The name of the relation."
+    }
+   }
+  },
+  "UserSshPublicKey": {
+   "id": "UserSshPublicKey",
+   "type": "object",
+   "description": "JSON template for a POSIX account entry.",
+   "properties": {
+    "expirationTimeUsec": {
+     "type": "string",
+     "description": "An expiration time in microseconds since epoch.",
+     "format": "int64"
+    },
+    "fingerprint": {
+     "type": "string",
+     "description": "A SHA-256 fingerprint of the SSH public key. (Read-only)",
+     "readOnly": true
+    },
+    "key": {
+     "type": "string",
+     "description": "An SSH public key."
     }
    }
   },

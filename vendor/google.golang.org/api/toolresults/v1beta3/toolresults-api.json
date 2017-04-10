@@ -1,21 +1,21 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/NLNRi_fS4FqWh_1V7egeBkDSD6g\"",
+ "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/fe58Z_wMQi0Hq_VNeSHkv3uJtPg\"",
  "discoveryVersion": "v1",
  "id": "toolresults:v1beta3",
  "name": "toolresults",
  "canonicalName": "Tool Results",
  "version": "v1beta3",
- "revision": "20170124",
+ "revision": "20170324",
  "title": "Cloud Tool Results API",
- "description": "Reads and publishes results from Cloud Test Lab.",
+ "description": "Reads and publishes results from Firebase Test Lab.",
  "ownerDomain": "google.com",
  "ownerName": "Google",
  "icons": {
   "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
   "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
  },
- "documentationLink": "https://developers.google.com/cloud-test-lab/",
+ "documentationLink": "https://firebase.google.com/docs/test-lab/",
  "protocol": "rest",
  "baseUrl": "https://www.googleapis.com/toolresults/v1beta3/projects/",
  "basePath": "/toolresults/v1beta3/projects/",
@@ -116,11 +116,13 @@
     "perfUnit": {
      "type": "string",
      "enum": [
+      "bytesPerSecond",
       "kibibyte",
       "percent",
       "perfUnitUnspecified"
      ],
      "enumDescriptions": [
+      "",
       "",
       "",
       ""
@@ -135,11 +137,17 @@
       "memoryRssPrivate",
       "memoryRssShared",
       "memoryRssTotal",
+      "memoryTotal",
+      "networkReceived",
+      "networkSent",
       "ntBytesReceived",
       "ntBytesTransferred",
       "sampleSeriesTypeUnspecified"
      ],
      "enumDescriptions": [
+      "",
+      "",
+      "",
       "",
       "",
       "",
@@ -211,7 +219,7 @@
     },
     "seconds": {
      "type": "string",
-     "description": "Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive.",
+     "description": "Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years",
      "format": "int64"
     }
    }
@@ -1490,7 +1498,10 @@
            ],
            "response": {
             "$ref": "PerfMetricsSummary"
-           }
+           },
+           "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform"
+           ]
           },
           "list": {
            "id": "toolresults.projects.histories.executions.steps.list",

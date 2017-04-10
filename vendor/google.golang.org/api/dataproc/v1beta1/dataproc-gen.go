@@ -62,10 +62,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Operations *OperationsService
 
@@ -77,10 +76,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewOperationsService(s *Service) *OperationsService {
@@ -123,6 +118,43 @@ func NewProjectsJobsService(s *Service) *ProjectsJobsService {
 
 type ProjectsJobsService struct {
 	s *Service
+}
+
+// AcceleratorConfiguration: Specifies the type and number of
+// accelerator cards attached to the instances of an instance group (see
+// GPUs on Compute Engine).
+type AcceleratorConfiguration struct {
+	// AcceleratorCount: The number of the accelerator cards of this type
+	// exposed to this instance.
+	AcceleratorCount int64 `json:"acceleratorCount,omitempty"`
+
+	// AcceleratorTypeUri: Full or partial URI of the accelerator type
+	// resource to expose to this instance. See Google Compute Engine
+	// AcceleratorTypes( /compute/docs/reference/beta/acceleratorTypes)
+	AcceleratorTypeUri string `json:"acceleratorTypeUri,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AcceleratorCount") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "AcceleratorCount") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *AcceleratorConfiguration) MarshalJSON() ([]byte, error) {
+	type noMethod AcceleratorConfiguration
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 // CancelJobRequest: A request to cancel a job.
@@ -417,6 +449,19 @@ type ClusterStatus struct {
 	// StateStartTime: Time when this state was entered.
 	StateStartTime string `json:"stateStartTime,omitempty"`
 
+	// Substate: Output-only Additional state information that includes
+	// status reported by the agent.
+	//
+	// Possible values:
+	//   "UNSPECIFIED"
+	//   "UNHEALTHY" - The cluster is known to be in an unhealthy state (for
+	// example, critical daemons are not running or HDFS capacity is
+	// exhausted).Applies to RUNNING state.
+	//   "STALE_STATUS" - The agent-reported status is out of date (may
+	// occur if Cloud Dataproc loses communication with Agent).Applies to
+	// RUNNING state.
+	Substate string `json:"substate,omitempty"`
+
 	// ForceSendFields is a list of field names (e.g. "Detail") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
@@ -440,11 +485,10 @@ func (s *ClusterStatus) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// DiagnoseClusterOutputLocation: The location where output from
-// diagnostic command can be found.
+// DiagnoseClusterOutputLocation: The location of diagnostic output.
 type DiagnoseClusterOutputLocation struct {
 	// OutputUri: Output-only The Google Cloud Storage URI of the diagnostic
-	// output. This will be a plain text file with summary of collected
+	// output. This is a plain text file with a summary of collected
 	// diagnostics.
 	OutputUri string `json:"outputUri,omitempty"`
 
@@ -770,6 +814,10 @@ func (s *HiveJob) MarshalJSON() ([]byte, error) {
 // Compute Engine resources in an instance group, such as a master or
 // worker group.
 type InstanceGroupConfiguration struct {
+	// Accelerators: Optional The Google Compute Engine accelerator
+	// configuration for these instances.
+	Accelerators []*AcceleratorConfiguration `json:"accelerators,omitempty"`
+
 	// DiskConfiguration: Disk option configuration settings.
 	DiskConfiguration *DiskConfiguration `json:"diskConfiguration,omitempty"`
 
@@ -801,21 +849,20 @@ type InstanceGroupConfiguration struct {
 	// master instance groups, must be set to 1.
 	NumInstances int64 `json:"numInstances,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "DiskConfiguration")
-	// to unconditionally include in API requests. By default, fields with
+	// ForceSendFields is a list of field names (e.g. "Accelerators") to
+	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
 	// server regardless of whether the field is empty or not. This may be
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "DiskConfiguration") to
-	// include in API requests with the JSON null value. By default, fields
-	// with empty values are omitted from API requests. However, any field
-	// with an empty value appearing in NullFields will be sent to the
-	// server as null. It is an error if a field in this list has a
-	// non-empty value. This may be used to include null fields in Patch
-	// requests.
+	// NullFields is a list of field names (e.g. "Accelerators") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
 	NullFields []string `json:"-"`
 }
 
@@ -971,7 +1018,7 @@ type JobReference struct {
 	// The job ID is generated by the server upon job submission or provided
 	// by the user as a means to perform retries without creating duplicate
 	// jobs. The ID must contain only letters (a-z, A-Z), numbers (0-9),
-	// underscores (_), or hyphens (-). The maximum length is 512
+	// underscores (_), or hyphens (-). The maximum length is 100
 	// characters.
 	JobId string `json:"jobId,omitempty"`
 
@@ -1067,6 +1114,22 @@ type JobStatus struct {
 
 	// StateStartTime: Output-only The time when this state was entered.
 	StateStartTime string `json:"stateStartTime,omitempty"`
+
+	// Substate: Output-only Additional state information, which includes
+	// status reported by the agent.
+	//
+	// Possible values:
+	//   "UNSPECIFIED"
+	//   "SUBMITTED" - The Job is submitted to the agent.Applies to RUNNING
+	// state.
+	//   "QUEUED" - The Job has been received and is awaiting execution (it
+	// may be waiting for a condition to be met). See the "details" field
+	// for the reason for the delay.Applies to RUNNING state.
+	//   "STALE_STATUS" - The agent-reported status is out of date, which
+	// may be caused by a loss of communication between the agent and Cloud
+	// Dataproc. If the agent does not send a timely update, the job will
+	// fail.Applies to RUNNING state.
+	Substate string `json:"substate,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Details") to
 	// unconditionally include in API requests. By default, fields with
@@ -1377,32 +1440,8 @@ type OperationMetadata struct {
 	// Description: Output-only Short description of operation.
 	Description string `json:"description,omitempty"`
 
-	// Details: A message containing any operation metadata details.
-	Details string `json:"details,omitempty"`
-
-	// EndTime: The time that the operation completed.
-	EndTime string `json:"endTime,omitempty"`
-
-	// InnerState: A message containing the detailed operation state.
-	InnerState string `json:"innerState,omitempty"`
-
-	// InsertTime: The time that the operation was requested.
-	InsertTime string `json:"insertTime,omitempty"`
-
 	// OperationType: Output-only The operation type.
 	OperationType string `json:"operationType,omitempty"`
-
-	// StartTime: The time that the operation was started by the server.
-	StartTime string `json:"startTime,omitempty"`
-
-	// State: A message containing the operation state.
-	//
-	// Possible values:
-	//   "UNKNOWN" - Unused.
-	//   "PENDING" - The operation has been created.
-	//   "RUNNING" - The operation is currently running.
-	//   "DONE" - The operation is done, either cancelled or completed.
-	State string `json:"state,omitempty"`
 
 	// Status: Output-only Current operation status.
 	Status *OperationStatus `json:"status,omitempty"`
@@ -2020,7 +2059,6 @@ func (c *OperationsCancelCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.canceloperationrequest)
 	if err != nil {
@@ -2157,7 +2195,6 @@ func (c *OperationsDeleteCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "v1beta1/{+name}")
@@ -2296,7 +2333,6 @@ func (c *OperationsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2461,7 +2497,6 @@ func (c *OperationsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2629,7 +2664,6 @@ func (c *ProjectsClustersCreateCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.cluster)
 	if err != nil {
@@ -2764,7 +2798,6 @@ func (c *ProjectsClustersDeleteCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "v1beta1/projects/{projectId}/clusters/{clusterName}")
@@ -2903,7 +2936,6 @@ func (c *ProjectsClustersDiagnoseCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.diagnoseclusterrequest)
 	if err != nil {
@@ -3057,7 +3089,6 @@ func (c *ProjectsClustersGetCall) doRequest(alt string) (*http.Response, error) 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3227,7 +3258,6 @@ func (c *ProjectsClustersListCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3429,7 +3459,6 @@ func (c *ProjectsClustersPatchCall) doRequest(alt string) (*http.Response, error
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.cluster)
 	if err != nil {
@@ -3581,7 +3610,6 @@ func (c *ProjectsJobsCancelCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.canceljobrequest)
 	if err != nil {
@@ -3725,7 +3753,6 @@ func (c *ProjectsJobsDeleteCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "v1beta1/projects/{projectId}/jobs/{jobId}")
@@ -3871,7 +3898,6 @@ func (c *ProjectsJobsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4062,7 +4088,6 @@ func (c *ProjectsJobsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4258,7 +4283,6 @@ func (c *ProjectsJobsPatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.job)
 	if err != nil {
@@ -4407,7 +4431,6 @@ func (c *ProjectsJobsSubmitCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.submitjobrequest)
 	if err != nil {

@@ -58,10 +58,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Lineitems *LineitemsService
 
@@ -77,10 +76,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewLineitemsService(s *Service) *LineitemsService {
@@ -220,7 +215,7 @@ type DownloadRequest struct {
 	// FilterIds: The IDs of the specified filter type. This is used to
 	// filter entities to fetch. At least one ID must be specified. Only one
 	// ID is allowed for the ADVERTISER_ID filter type. For
-	// INSERTION_ORDER_ID or LINE_ITEM_ID filter types all IDs must be from
+	// INSERTION_ORDER_ID or LINE_ITEM_ID filter types, all IDs must be from
 	// the same Advertiser.
 	FilterIds googleapi.Int64s `json:"filterIds,omitempty"`
 
@@ -318,6 +313,7 @@ type FilterPair struct {
 	//   "FILTER_CARRIER"
 	//   "FILTER_CHANNEL_ID"
 	//   "FILTER_CITY"
+	//   "FILTER_COMPANION_CREATIVE_ID"
 	//   "FILTER_CONVERSION_DELAY"
 	//   "FILTER_COUNTRY"
 	//   "FILTER_CREATIVE_HEIGHT"
@@ -366,6 +362,7 @@ type FilterPair struct {
 	//   "FILTER_REGULAR_CHANNEL_ID"
 	//   "FILTER_SITE_ID"
 	//   "FILTER_SITE_LANGUAGE"
+	//   "FILTER_SKIPPABLE_SUPPORT"
 	//   "FILTER_TARGETED_USER_LIST"
 	//   "FILTER_TIME_OF_DAY"
 	//   "FILTER_TRUEVIEW_AD_GROUP_AD_ID"
@@ -541,6 +538,7 @@ type Parameters struct {
 	//   "FILTER_CARRIER"
 	//   "FILTER_CHANNEL_ID"
 	//   "FILTER_CITY"
+	//   "FILTER_COMPANION_CREATIVE_ID"
 	//   "FILTER_CONVERSION_DELAY"
 	//   "FILTER_COUNTRY"
 	//   "FILTER_CREATIVE_HEIGHT"
@@ -589,6 +587,7 @@ type Parameters struct {
 	//   "FILTER_REGULAR_CHANNEL_ID"
 	//   "FILTER_SITE_ID"
 	//   "FILTER_SITE_LANGUAGE"
+	//   "FILTER_SKIPPABLE_SUPPORT"
 	//   "FILTER_TARGETED_USER_LIST"
 	//   "FILTER_TIME_OF_DAY"
 	//   "FILTER_TRUEVIEW_AD_GROUP_AD_ID"
@@ -651,6 +650,7 @@ type Parameters struct {
 	// Metrics: Metrics to include as columns in your report.
 	//
 	// Possible values:
+	//   "METRIC_ACTIVE_VIEW_AUDIBLE_VISIBLE_ON_COMPLETE_IMPRESSIONS"
 	//   "METRIC_ACTIVE_VIEW_AVERAGE_VIEWABLE_TIME"
 	//   "METRIC_ACTIVE_VIEW_DISTRIBUTION_UNMEASURABLE"
 	//   "METRIC_ACTIVE_VIEW_DISTRIBUTION_UNVIEWABLE"
@@ -659,8 +659,20 @@ type Parameters struct {
 	//   "METRIC_ACTIVE_VIEW_MEASURABLE_IMPRESSIONS"
 	//   "METRIC_ACTIVE_VIEW_PCT_MEASURABLE_IMPRESSIONS"
 	//   "METRIC_ACTIVE_VIEW_PCT_VIEWABLE_IMPRESSIONS"
+	//   "METRIC_ACTIVE_VIEW_PERCENT_AUDIBLE_VISIBLE_AT_START"
+	//   "METRIC_ACTIVE_VIEW_PERCENT_AUDIBLE_VISIBLE_FIRST_QUAR"
+	//   "METRIC_ACTIVE_VIEW_PERCENT_AUDIBLE_VISIBLE_ON_COMPLETE"
+	//   "METRIC_ACTIVE_VIEW_PERCENT_AUDIBLE_VISIBLE_SECOND_QUAR"
+	//   "METRIC_ACTIVE_VIEW_PERCENT_AUDIBLE_VISIBLE_THIRD_QUAR"
+	//   "METRIC_ACTIVE_VIEW_PERCENT_VIEWABLE_FOR_TIME_THRESHOLD"
+	//   "METRIC_ACTIVE_VIEW_PERCENT_VISIBLE_AT_START"
+	//   "METRIC_ACTIVE_VIEW_PERCENT_VISIBLE_FIRST_QUAR"
+	//   "METRIC_ACTIVE_VIEW_PERCENT_VISIBLE_ON_COMPLETE"
+	//   "METRIC_ACTIVE_VIEW_PERCENT_VISIBLE_SECOND_QUAR"
+	//   "METRIC_ACTIVE_VIEW_PERCENT_VISIBLE_THIRD_QUAR"
 	//   "METRIC_ACTIVE_VIEW_UNMEASURABLE_IMPRESSIONS"
 	//   "METRIC_ACTIVE_VIEW_UNVIEWABLE_IMPRESSIONS"
+	//   "METRIC_ACTIVE_VIEW_VIEWABLE_FOR_TIME_THRESHOLD"
 	//   "METRIC_ACTIVE_VIEW_VIEWABLE_IMPRESSIONS"
 	//   "METRIC_BID_REQUESTS"
 	//   "METRIC_BILLABLE_COST_ADVERTISER"
@@ -847,6 +859,7 @@ type Parameters struct {
 	//   "METRIC_REVENUE_ECPC_ADVERTISER"
 	//   "METRIC_REVENUE_ECPC_PARTNER"
 	//   "METRIC_REVENUE_ECPC_USD"
+	//   "METRIC_REVENUE_ECPIAVC_ADVERTISER"
 	//   "METRIC_REVENUE_ECPM_ADVERTISER"
 	//   "METRIC_REVENUE_ECPM_PARTNER"
 	//   "METRIC_REVENUE_ECPM_USD"
@@ -970,6 +983,7 @@ type Parameters struct {
 	//   "TYPE_PETRA_NIELSEN_ONLINE_GLOBAL_MARKET"
 	//   "TYPE_PIXEL_LOAD"
 	//   "TYPE_REACH_AND_FREQUENCY"
+	//   "TYPE_REACH_AUDIENCE"
 	//   "TYPE_THIRD_PARTY_DATA_PROVIDER"
 	//   "TYPE_TRUEVIEW"
 	//   "TYPE_TRUEVIEW_IAR"
@@ -1664,7 +1678,6 @@ func (c *LineitemsDownloadlineitemsCall) doRequest(alt string) (*http.Response, 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.downloadlineitemsrequest)
 	if err != nil {
@@ -1779,7 +1792,6 @@ func (c *LineitemsUploadlineitemsCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.uploadlineitemsrequest)
 	if err != nil {
@@ -1894,7 +1906,6 @@ func (c *QueriesCreatequeryCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.query)
 	if err != nil {
@@ -2010,7 +2021,6 @@ func (c *QueriesDeletequeryCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "query/{queryId}")
@@ -2115,7 +2125,6 @@ func (c *QueriesGetqueryCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2249,7 +2258,6 @@ func (c *QueriesListqueriesCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2361,7 +2369,6 @@ func (c *QueriesRunqueryCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.runqueryrequest)
 	if err != nil {
@@ -2474,7 +2481,6 @@ func (c *ReportsListreportsCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2599,7 +2605,6 @@ func (c *SdfDownloadCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.downloadrequest)
 	if err != nil {
