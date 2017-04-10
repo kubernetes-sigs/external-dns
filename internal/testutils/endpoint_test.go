@@ -18,8 +18,9 @@ package testutils
 
 import (
 	"fmt"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"sort"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
 func ExampleSameEndpoints() {
@@ -43,6 +44,11 @@ func ExampleSameEndpoints() {
 			Target:     "1.2.3.4",
 			RecordType: "CNAME",
 		},
+		{
+			DNSName:    "bbc.com",
+			Target:     "1.2.3.4",
+			RecordType: "CNAME",
+		},
 	}
 	sort.Sort(byAllFields(eps))
 	for _, ep := range eps {
@@ -51,6 +57,7 @@ func ExampleSameEndpoints() {
 	// Output:
 	// &{abc.com 1.2.3.4 map[] CNAME}
 	// &{abc.com something map[] TXT}
+	// &{bbc.com 1.2.3.4 map[] CNAME}
 	// &{example.org load-balancer.org map[] }
 	// &{example.org load-balancer.org map[] TXT}
 }
