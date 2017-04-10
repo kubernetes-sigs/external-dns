@@ -29,3 +29,14 @@ type Registry interface {
 	Records(zone string) ([]*endpoint.Endpoint, error)
 	ApplyChanges(zone string, changes *plan.Changes) error
 }
+
+//TODO(ideahitme): considering moving this to Plan
+func filterOwnedRecords(ownerID string, eps []*endpoint.Endpoint) []*endpoint.Endpoint {
+	filtered := []*endpoint.Endpoint{}
+	for _, ep := range eps {
+		if ep.Labels[endpoint.OwnerLabelKey] == ownerID {
+			filtered = append(filtered, ep)
+		}
+	}
+	return filtered
+}

@@ -17,11 +17,12 @@ limitations under the License.
 package registry
 
 import (
+	"testing"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
-	"testing"
 )
 
 const (
@@ -76,15 +77,15 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	p.CreateZone(testZone)
 	p.ApplyChanges(testZone, &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			newEndpointWithType("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME"),
-			newEndpointWithType("bar.test-zone.example.org", "my-domain.com", "CNAME"),
-			newEndpointWithType("txt.bar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
-			newEndpointWithType("txt.bar.test-zone.example.org", "baz.test-zone.example.org", "ALIAS"),
-			newEndpointWithType("qux.test-zone.example.org", "random", "TXT"),
-			newEndpointWithType("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS"),
-			newEndpointWithType("txt.tar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner-2", "TXT"),
-			newEndpointWithType("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS"),
-			newEndpointWithType("foobar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME", ""),
+			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", "CNAME", ""),
+			newEndpointWithOwner("txt.bar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT", ""),
+			newEndpointWithOwner("txt.bar.test-zone.example.org", "baz.test-zone.example.org", "ALIAS", ""),
+			newEndpointWithOwner("qux.test-zone.example.org", "random", "TXT", ""),
+			newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS", ""),
+			newEndpointWithOwner("txt.tar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner-2", "TXT", ""),
+			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS", ""),
+			newEndpointWithOwner("foobar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT", ""),
 		},
 	})
 	expectedRecords := []*endpoint.Endpoint{
@@ -150,15 +151,15 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 	p.CreateZone(testZone)
 	p.ApplyChanges(testZone, &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			newEndpointWithType("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME"),
-			newEndpointWithType("bar.test-zone.example.org", "my-domain.com", "CNAME"),
-			newEndpointWithType("txt.bar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
-			newEndpointWithType("txt.bar.test-zone.example.org", "baz.test-zone.example.org", "ALIAS"),
-			newEndpointWithType("qux.test-zone.example.org", "random", "TXT"),
-			newEndpointWithType("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS"),
-			newEndpointWithType("txt.tar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner-2", "TXT"),
-			newEndpointWithType("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS"),
-			newEndpointWithType("foobar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME", ""),
+			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", "CNAME", ""),
+			newEndpointWithOwner("txt.bar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT", ""),
+			newEndpointWithOwner("txt.bar.test-zone.example.org", "baz.test-zone.example.org", "ALIAS", ""),
+			newEndpointWithOwner("qux.test-zone.example.org", "random", "TXT", ""),
+			newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS", ""),
+			newEndpointWithOwner("txt.tar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner-2", "TXT", ""),
+			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS", ""),
+			newEndpointWithOwner("foobar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT", ""),
 		},
 	})
 	expectedRecords := []*endpoint.Endpoint{
@@ -230,47 +231,47 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 	p.CreateZone(testZone)
 	p.ApplyChanges(testZone, &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			newEndpointWithType("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME"),
-			newEndpointWithType("bar.test-zone.example.org", "my-domain.com", "CNAME"),
-			newEndpointWithType("txt.bar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
-			newEndpointWithType("txt.bar.test-zone.example.org", "baz.test-zone.example.org", "ALIAS"),
-			newEndpointWithType("qux.test-zone.example.org", "random", "TXT"),
-			newEndpointWithType("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS"),
-			newEndpointWithType("txt.tar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
-			newEndpointWithType("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS"),
-			newEndpointWithType("txt.foobar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME", ""),
+			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", "CNAME", ""),
+			newEndpointWithOwner("txt.bar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT", ""),
+			newEndpointWithOwner("txt.bar.test-zone.example.org", "baz.test-zone.example.org", "ALIAS", ""),
+			newEndpointWithOwner("qux.test-zone.example.org", "random", "TXT", ""),
+			newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS", ""),
+			newEndpointWithOwner("txt.tar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT", ""),
+			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS", ""),
+			newEndpointWithOwner("txt.foobar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT", ""),
 		},
 	})
 	r, _ := NewTXTRegistry(p, "txt", "owner")
 
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com"),
+			newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", "", ""),
 		},
 		Delete: []*endpoint.Endpoint{
-			newEndpointWithType("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS"),
+			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS", "owner"),
 		},
 		UpdateNew: []*endpoint.Endpoint{
-			newEndpointWithType("tar.test-zone.example.org", "new-tar.loadbalancer.com", "ALIAS"),
+			newEndpointWithOwner("tar.test-zone.example.org", "new-tar.loadbalancer.com", "ALIAS", "owner"),
 		},
 		UpdateOld: []*endpoint.Endpoint{
-			newEndpointWithType("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS"),
+			newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS", "owner"),
 		},
 	}
 	expected := &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			newEndpointWithType("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", ""),
-			newEndpointWithType("txt.new-record-1.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+			newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", "", ""),
+			newEndpointWithOwner("txt.new-record-1.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT", ""),
 		},
 		Delete: []*endpoint.Endpoint{
-			newEndpointWithType("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS"),
-			newEndpointWithType("txt.foobar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS", "owner"),
+			newEndpointWithOwner("txt.foobar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT", ""),
 		},
 		UpdateNew: []*endpoint.Endpoint{
-			newEndpointWithType("tar.test-zone.example.org", "new-tar.loadbalancer.com", "ALIAS"),
+			newEndpointWithOwner("tar.test-zone.example.org", "new-tar.loadbalancer.com", "ALIAS", "owner"),
 		},
 		UpdateOld: []*endpoint.Endpoint{
-			newEndpointWithType("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS"),
+			newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS", "owner"),
 		},
 	}
 	p.OnApplyChanges = func(got *plan.Changes) {
@@ -308,48 +309,44 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 	p.CreateZone(testZone)
 	p.ApplyChanges(testZone, &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			newEndpointWithType("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME"),
-			newEndpointWithType("bar.test-zone.example.org", "my-domain.com", "CNAME"),
-			newEndpointWithType("txt.bar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
-			newEndpointWithType("txt.bar.test-zone.example.org", "baz.test-zone.example.org", "ALIAS"),
-			newEndpointWithType("qux.test-zone.example.org", "random", "TXT"),
-			newEndpointWithType("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS"),
-			newEndpointWithType("txt.tar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
-			newEndpointWithType("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS"),
-			newEndpointWithType("foobar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME", ""),
+			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", "CNAME", ""),
+			newEndpointWithOwner("txt.bar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT", ""),
+			newEndpointWithOwner("txt.bar.test-zone.example.org", "baz.test-zone.example.org", "ALIAS", ""),
+			newEndpointWithOwner("qux.test-zone.example.org", "random", "TXT", ""),
+			newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS", ""),
+			newEndpointWithOwner("txt.tar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT", ""),
+			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS", ""),
+			newEndpointWithOwner("foobar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT", ""),
 		},
 	})
 	r, _ := NewTXTRegistry(p, "", "owner")
 
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com"),
+			newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", "", ""),
 		},
 		Delete: []*endpoint.Endpoint{
-			newEndpointWithType("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS"),
+			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS", "owner"),
 		},
 		UpdateNew: []*endpoint.Endpoint{
-			newEndpointWithType("tar.test-zone.example.org", "new-tar.loadbalancer.com", "ALIAS"),
+			newEndpointWithOwner("tar.test-zone.example.org", "new-tar.loadbalancer.com", "ALIAS", "owner-2"),
 		},
 		UpdateOld: []*endpoint.Endpoint{
-			newEndpointWithType("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS"),
+			newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS", "owner-2"),
 		},
 	}
 	expected := &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			newEndpointWithType("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", ""),
-			newEndpointWithType("new-record-1.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+			newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", "", ""),
+			newEndpointWithOwner("new-record-1.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT", ""),
 		},
 		Delete: []*endpoint.Endpoint{
-			newEndpointWithType("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS"),
-			newEndpointWithType("foobar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT"),
+			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS", "owner"),
+			newEndpointWithOwner("foobar.test-zone.example.org", "heritage=external-dns;record-owner-id=owner", "TXT", ""),
 		},
-		UpdateNew: []*endpoint.Endpoint{
-			newEndpointWithType("tar.test-zone.example.org", "new-tar.loadbalancer.com", "ALIAS"),
-		},
-		UpdateOld: []*endpoint.Endpoint{
-			newEndpointWithType("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS"),
-		},
+		UpdateNew: []*endpoint.Endpoint{},
+		UpdateOld: []*endpoint.Endpoint{},
 	}
 	p.OnApplyChanges = func(got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
@@ -380,8 +377,9 @@ helper methods
 
 */
 
-func newEndpointWithType(dnsName, target, recordType string) *endpoint.Endpoint {
+func newEndpointWithOwner(dnsName, target, recordType, ownerID string) *endpoint.Endpoint {
 	e := endpoint.NewEndpoint(dnsName, target)
 	e.RecordType = recordType
+	e.Labels[endpoint.OwnerLabelKey] = ownerID
 	return e
 }

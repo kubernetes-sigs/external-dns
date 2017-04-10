@@ -20,11 +20,12 @@ import (
 	"errors"
 
 	"fmt"
+	"regexp"
+	"strings"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
-	"regexp"
-	"strings"
 )
 
 var (
@@ -98,18 +99,25 @@ func (im *TXTRegistry) Records(zone string) ([]*endpoint.Endpoint, error) {
 // ApplyChanges updates dns provider with the changes
 // for each created/deleted record it will also take into account TXT records for creation/deletion
 func (im *TXTRegistry) ApplyChanges(zone string, changes *plan.Changes) error {
-	for _, r := range changes.Create {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel())
-		txt.RecordType = "TXT"
-		changes.Create = append(changes.Create, txt)
-	}
-	for _, r := range changes.Delete {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel())
-		txt.RecordType = "TXT"
-		changes.Delete = append(changes.Delete, txt)
+	filteredChanges := &plan.Changes{
+		Create:    changes.Create,
+		UpdateNew: filterOwnedRecords(im.ownerID, changes.UpdateNew),
+		UpdateOld: filterOwnedRecords(im.ownerID, changes.UpdateOld),
+		Delete:    filterOwnedRecords(im.ownerID, changes.Delete),
 	}
 
-	return im.provider.ApplyChanges(zone, changes)
+	for _, r := range filteredChanges.Create {
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel())
+		txt.RecordType = "TXT"
+		filteredChanges.Create = append(filteredChanges.Create, txt)
+	}
+	for _, r := range filteredChanges.Delete {
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel())
+		txt.RecordType = "TXT"
+		filteredChanges.Delete = append(filteredChanges.Delete, txt)
+	}
+
+	return im.provider.ApplyChanges(zone, filteredChanges)
 }
 
 /**
