@@ -40,6 +40,7 @@ func testServiceEndpoints(t *testing.T) {
 		targetNamespace string
 		svcNamespace    string
 		svcName         string
+		compatibility   bool
 		annotations     map[string]string
 		lbs             []string
 		expected        []*endpoint.Endpoint
@@ -49,6 +50,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			false,
 			map[string]string{},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{},
@@ -58,6 +60,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			false,
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
@@ -71,6 +74,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			false,
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
@@ -84,6 +88,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			false,
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org", // Trailing dot is omitted
 			},
@@ -98,6 +103,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			false,
 			map[string]string{
 				controllerAnnotationKey: controllerAnnotationValue,
 				hostnameAnnotationKey:   "foo.example.org.",
@@ -112,6 +118,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			false,
 			map[string]string{
 				controllerAnnotationKey: "some-other-tool",
 				hostnameAnnotationKey:   "foo.example.org.",
@@ -124,6 +131,7 @@ func testServiceEndpoints(t *testing.T) {
 			"testing",
 			"testing",
 			"foo",
+			false,
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
@@ -137,6 +145,7 @@ func testServiceEndpoints(t *testing.T) {
 			"testing",
 			"other-testing",
 			"foo",
+			false,
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
@@ -148,6 +157,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"other-testing",
 			"foo",
+			false,
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
@@ -161,6 +171,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			false,
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
@@ -172,6 +183,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			false,
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
@@ -179,6 +191,32 @@ func testServiceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 				{DNSName: "foo.example.org", Target: "8.8.8.8"},
+			},
+		},
+		{
+			"services annotated with legacy mate annotations are ignored in default mode",
+			"",
+			"testing",
+			"foo",
+			false,
+			map[string]string{
+				"zalando.org/dnsname": "foo.example.org.",
+			},
+			[]string{"1.2.3.4"},
+			[]*endpoint.Endpoint{},
+		},
+		{
+			"services annotated with legacy mate annotations return an endpoint in compatibility mode",
+			"",
+			"testing",
+			"foo",
+			true,
+			map[string]string{
+				"zalando.org/dnsname": "foo.example.org.",
+			},
+			[]string{"1.2.3.4"},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 			},
 		},
 	} {
@@ -215,7 +253,7 @@ func testServiceEndpoints(t *testing.T) {
 			}
 
 			// Create our object under test and get the endpoints.
-			client := NewServiceSource(kubernetes, tc.targetNamespace)
+			client := NewServiceSource(kubernetes, tc.targetNamespace, tc.compatibility)
 
 			endpoints, err := client.Endpoints()
 			if err != nil {
@@ -254,7 +292,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	client := NewServiceSource(kubernetes, v1.NamespaceAll)
+	client := NewServiceSource(kubernetes, v1.NamespaceAll, false)
 
 	for i := 0; i < b.N; i++ {
 		_, err := client.Endpoints()

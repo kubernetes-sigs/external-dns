@@ -76,7 +76,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	source.Register("service", source.NewServiceSource(client, cfg.Namespace))
+	source.Register("service", source.NewServiceSource(client, cfg.Namespace, cfg.Compatibility))
 	source.Register("ingress", source.NewIngressSource(client, cfg.Namespace))
 
 	sources := source.NewMultiSource(source.LookupMultiple(cfg.Sources...)...)
