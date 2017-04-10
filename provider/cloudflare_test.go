@@ -21,25 +21,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/cloudflare/cloudflare-go"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
-
-	"github.com/cloudflare/cloudflare-go"
 )
-
-//type mockManagedZonesClient struct{}
-//
-//func (m *mockManagedZonesClient) Create(project string, managedzone *dns.ManagedZone) managedZonesCreateCallInterface {
-//	return &mockManagedZonesCreateCall{}
-//}
-//
-//func (m *mockManagedZonesClient) Delete(project string, managedZone string) managedZonesDeleteCallInterface {
-//	return &mockManagedZonesDeleteCall{}
-//}
-//
-//func (m *mockManagedZonesClient) List(project string) managedZonesListCallInterface {
-//	return &mockManagedZonesListCall{}
-//}
 
 type mockCloudFlareClient struct{}
 
@@ -48,7 +33,7 @@ func (m *mockCloudFlareClient) CreateDNSRecord(zoneID string, rr cloudflare.DNSR
 }
 
 func (m *mockCloudFlareClient) DNSRecords(zoneID string, rr cloudflare.DNSRecord) ([]cloudflare.DNSRecord, error) {
-	return []cloudflare.DNSRecord{cloudflare.DNSRecord{ID: "1234567890", Name: "foobar.ext-dns-test.zalando.to."}}, nil
+	return []cloudflare.DNSRecord{{ID: "1234567890", Name: "foobar.ext-dns-test.zalando.to."}}, nil
 }
 
 func (m *mockCloudFlareClient) UpdateDNSRecord(zoneID, recordID string, rr cloudflare.DNSRecord) error {
@@ -472,7 +457,7 @@ func TestCreateRecords(t *testing.T) {
 	}
 	zone := "ext-dns-test.zalando.to"
 	endpoints := []*endpoint.Endpoint{
-		&endpoint.Endpoint{DNSName: "new", Target: "target"},
+		{DNSName: "new", Target: "target"},
 	}
 	err := provider.CreateRecords(zone, endpoints)
 	if err != nil {
