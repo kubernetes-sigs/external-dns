@@ -30,7 +30,30 @@ import (
 )
 
 const (
-	hostedZonePrefix = "/hostedzone/"
+	hostedZonePrefix     = "/hostedzone/"
+	elbHostnameSuffix    = ".elb.amazonaws.com"
+	evaluateTargetHealth = true
+	recordTTL            = 300
+)
+
+var (
+	// see: https://docs.aws.amazon.com/general/latest/gr/rande.html
+	canonicalHostedZones = map[string]string{
+		"us-east-1" + elbHostnameSuffix:      "Z35SXDOTRQ7X7K",
+		"us-east-2" + elbHostnameSuffix:      "Z3AADJGX6KTTL2",
+		"us-west-1" + elbHostnameSuffix:      "Z368ELLRRE2KJ0",
+		"us-west-2" + elbHostnameSuffix:      "Z1H1FL5HABSF5",
+		"ca-central-1" + elbHostnameSuffix:   "ZQSVJUPU6J1EY",
+		"ap-south-1" + elbHostnameSuffix:     "ZP97RAFLXTNZK",
+		"ap-northeast-2" + elbHostnameSuffix: "ZWKZPGTI48KDX",
+		"ap-southeast-1" + elbHostnameSuffix: "Z1LMS91P8CMLE5",
+		"ap-southeast-2" + elbHostnameSuffix: "Z1GM3OXH4ZPM65",
+		"ap-northeast-1" + elbHostnameSuffix: "Z14GRHDCWA56QT",
+		"eu-central-1" + elbHostnameSuffix:   "Z215JYRZR1TBD5",
+		"eu-west-1" + elbHostnameSuffix:      "Z32O12XQLNTSW2",
+		"eu-west-2" + elbHostnameSuffix:      "ZHURV8PSTC4K8",
+		"sa-east-1" + elbHostnameSuffix:      "Z2P70J7HTTTPLU",
+	}
 )
 
 // Route53API is the subset of the AWS Route53 API that we actually use.  Add methods as required. Signatures must match exactly.
@@ -84,6 +107,10 @@ func (p *AWSProvider) Records(zone string) ([]*endpoint.Endpoint, error) {
 
 			for _, rr := range r.ResourceRecords {
 				endpoints = append(endpoints, endpoint.NewEndpoint(aws.StringValue(r.Name), aws.StringValue(rr.Value)))
+			}
+
+			if r.AliasTarget != nil {
+				endpoints = append(endpoints, endpoint.NewEndpoint(aws.StringValue(r.Name), aws.StringValue(r.AliasTarget.DNSName)))
 			}
 		}
 
@@ -175,17 +202,41 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 		Action: aws.String(action),
 		ResourceRecordSet: &route53.ResourceRecordSet{
 			Name: aws.String(endpoint.DNSName),
-			ResourceRecords: []*route53.ResourceRecord{
-				{
-					Value: aws.String(endpoint.Target),
-				},
-			},
-			TTL:  aws.Int64(300),
-			Type: aws.String(suitableType(endpoint.Target)),
 		},
 	}
 
+	if isELBHostname(endpoint.Target) {
+		change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
+		change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
+			DNSName:              aws.String(endpoint.Target),
+			HostedZoneId:         aws.String(canonicalHostedZone(endpoint.Target)),
+			EvaluateTargetHealth: aws.Bool(evaluateTargetHealth),
+		}
+	} else {
+		change.ResourceRecordSet.Type = aws.String(suitableType(endpoint.Target))
+		change.ResourceRecordSet.TTL = aws.Int64(recordTTL)
+		change.ResourceRecordSet.ResourceRecords = []*route53.ResourceRecord{
+			{
+				Value: aws.String(endpoint.Target),
+			},
+		}
+	}
+
 	return change
+}
+
+func isELBHostname(hostname string) bool {
+	return canonicalHostedZone(hostname) != ""
+}
+
+func canonicalHostedZone(hostname string) string {
+	for suffix, zone := range canonicalHostedZones {
+		if strings.HasSuffix(hostname, suffix) {
+			return zone
+		}
+	}
+
+	return ""
 }
 
 func expandedHostedZoneID(zone string) string {
