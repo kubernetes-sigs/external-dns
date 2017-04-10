@@ -55,9 +55,9 @@ func ExampleSameEndpoints() {
 		fmt.Println(ep)
 	}
 	// Output:
-	// &{abc.com 1.2.3.4 map[] CNAME}
-	// &{abc.com something map[] TXT}
-	// &{bbc.com 1.2.3.4 map[] CNAME}
-	// &{example.org load-balancer.org map[] }
-	// &{example.org load-balancer.org map[] TXT}
+	// &{abc.com 1.2.3.4 CNAME map[]}
+	// &{abc.com something TXT map[]}
+	// &{bbc.com 1.2.3.4 CNAME map[]}
+	// &{example.org load-balancer.org  map[]}
+	// &{example.org load-balancer.org TXT map[]}
 }

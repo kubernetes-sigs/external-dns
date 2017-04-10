@@ -24,6 +24,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/davecgh/go-spew/spew"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
@@ -133,16 +134,15 @@ func (r *Route53APIStub) CreateHostedZone(input *route53.CreateHostedZoneInput) 
 
 func TestAWSRecords(t *testing.T) {
 	provider := newAWSProvider(t, false, []*endpoint.Endpoint{
-		{DNSName: "list-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("list-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
 	})
 
 	records, err := provider.Records(testZone)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		{DNSName: "list-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("list-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
 	})
 }
 
@@ -150,7 +150,7 @@ func TestAWSCreateRecords(t *testing.T) {
 	provider := newAWSProvider(t, false, []*endpoint.Endpoint{})
 
 	records := []*endpoint.Endpoint{
-		{DNSName: "create-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("create-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", ""),
 	}
 
 	if err := provider.CreateRecords(testZone, records); err != nil {
@@ -163,20 +163,20 @@ func TestAWSCreateRecords(t *testing.T) {
 	}
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		{DNSName: "create-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("create-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
 	})
 }
 
 func TestAWSUpdateRecords(t *testing.T) {
 	provider := newAWSProvider(t, false, []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
 	})
 
 	currentRecords := []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
 	}
 	updatedRecords := []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "1.2.3.4"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "1.2.3.4", "A"),
 	}
 
 	if err := provider.UpdateRecords(testZone, updatedRecords, currentRecords); err != nil {
@@ -189,17 +189,17 @@ func TestAWSUpdateRecords(t *testing.T) {
 	}
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "1.2.3.4"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "1.2.3.4", "A"),
 	})
 }
 
 func TestAWSDeleteRecords(t *testing.T) {
 	provider := newAWSProvider(t, false, []*endpoint.Endpoint{
-		{DNSName: "delete-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("delete-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
 	})
 
 	currentRecords := []*endpoint.Endpoint{
-		{DNSName: "delete-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("delete-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", ""),
 	}
 
 	if err := provider.DeleteRecords(testZone, currentRecords); err != nil {
@@ -216,23 +216,23 @@ func TestAWSDeleteRecords(t *testing.T) {
 
 func TestAWSApplyChanges(t *testing.T) {
 	provider := newAWSProvider(t, false, []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
-		{DNSName: "delete-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
+		endpoint.NewEndpoint("delete-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
 	})
 
 	createRecords := []*endpoint.Endpoint{
-		{DNSName: "create-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("create-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", ""),
 	}
 
 	currentRecords := []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", ""),
 	}
 	updatedRecords := []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "1.2.3.4"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "1.2.3.4", ""),
 	}
 
 	deleteRecords := []*endpoint.Endpoint{
-		{DNSName: "delete-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("delete-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", ""),
 	}
 
 	changes := &plan.Changes{
@@ -252,8 +252,8 @@ func TestAWSApplyChanges(t *testing.T) {
 	}
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		{DNSName: "create-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "1.2.3.4"},
+		endpoint.NewEndpoint("create-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "1.2.3.4", "A"),
 	})
 }
 
@@ -269,7 +269,7 @@ func TestAWSCreateRecordsDryRun(t *testing.T) {
 	provider := newAWSProvider(t, true, []*endpoint.Endpoint{})
 
 	records := []*endpoint.Endpoint{
-		{DNSName: "create-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("create-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", ""),
 	}
 
 	if err := provider.CreateRecords(testZone, records); err != nil {
@@ -286,14 +286,14 @@ func TestAWSCreateRecordsDryRun(t *testing.T) {
 
 func TestAWSUpdateRecordsDryRun(t *testing.T) {
 	provider := newAWSProvider(t, true, []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
 	})
 
 	currentRecords := []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", ""),
 	}
 	updatedRecords := []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "1.2.3.4"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "1.2.3.4", ""),
 	}
 
 	if err := provider.UpdateRecords(testZone, updatedRecords, currentRecords); err != nil {
@@ -306,17 +306,17 @@ func TestAWSUpdateRecordsDryRun(t *testing.T) {
 	}
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
 	})
 }
 
 func TestAWSDeleteRecordsDryRun(t *testing.T) {
 	provider := newAWSProvider(t, true, []*endpoint.Endpoint{
-		{DNSName: "delete-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("delete-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
 	})
 
 	currentRecords := []*endpoint.Endpoint{
-		{DNSName: "delete-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("delete-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", ""),
 	}
 
 	if err := provider.DeleteRecords(testZone, currentRecords); err != nil {
@@ -329,29 +329,29 @@ func TestAWSDeleteRecordsDryRun(t *testing.T) {
 	}
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		{DNSName: "delete-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("delete-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
 	})
 }
 
 func TestAWSApplyChangesDryRun(t *testing.T) {
 	provider := newAWSProvider(t, true, []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
-		{DNSName: "delete-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
+		endpoint.NewEndpoint("delete-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
 	})
 
 	createRecords := []*endpoint.Endpoint{
-		{DNSName: "create-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("create-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", ""),
 	}
 
 	currentRecords := []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", ""),
 	}
 	updatedRecords := []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "1.2.3.4"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "1.2.3.4", ""),
 	}
 
 	deleteRecords := []*endpoint.Endpoint{
-		{DNSName: "delete-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("delete-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", ""),
 	}
 
 	changes := &plan.Changes{
@@ -371,8 +371,8 @@ func TestAWSApplyChangesDryRun(t *testing.T) {
 	}
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
-		{DNSName: "delete-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
+		endpoint.NewEndpoint("delete-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
 	})
 }
 
@@ -380,7 +380,7 @@ func TestAWSCreateRecordsCNAME(t *testing.T) {
 	provider := newAWSProvider(t, false, []*endpoint.Endpoint{})
 
 	records := []*endpoint.Endpoint{
-		{DNSName: "create-test.ext-dns-test.teapot.zalan.do", Target: "foo.elb.amazonaws.com"},
+		endpoint.NewEndpoint("create-test.ext-dns-test.teapot.zalan.do", "foo.elb.amazonaws.com", ""),
 	}
 
 	if err := provider.CreateRecords(testZone, records); err != nil {
@@ -393,20 +393,20 @@ func TestAWSCreateRecordsCNAME(t *testing.T) {
 	}
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		{DNSName: "create-test.ext-dns-test.teapot.zalan.do", Target: "foo.elb.amazonaws.com"},
+		endpoint.NewEndpoint("create-test.ext-dns-test.teapot.zalan.do", "foo.elb.amazonaws.com", "CNAME"),
 	})
 }
 
 func TestAWSUpdateRecordsCNAME(t *testing.T) {
 	provider := newAWSProvider(t, false, []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "foo.elb.amazonaws.com"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "foo.elb.amazonaws.com", "CNAME"),
 	})
 
 	currentRecords := []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "foo.elb.amazonaws.com"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "foo.elb.amazonaws.com", ""),
 	}
 	updatedRecords := []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "bar.elb.amazonaws.com"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "bar.elb.amazonaws.com", ""),
 	}
 
 	if err := provider.UpdateRecords(testZone, updatedRecords, currentRecords); err != nil {
@@ -419,17 +419,17 @@ func TestAWSUpdateRecordsCNAME(t *testing.T) {
 	}
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "bar.elb.amazonaws.com"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "bar.elb.amazonaws.com", "CNAME"),
 	})
 }
 
 func TestAWSDeleteRecordsCNAME(t *testing.T) {
 	provider := newAWSProvider(t, false, []*endpoint.Endpoint{
-		{DNSName: "delete-test.ext-dns-test.teapot.zalan.do", Target: "baz.elb.amazonaws.com"},
+		endpoint.NewEndpoint("delete-test.ext-dns-test.teapot.zalan.do", "baz.elb.amazonaws.com", "CNAME"),
 	})
 
 	currentRecords := []*endpoint.Endpoint{
-		{DNSName: "delete-test.ext-dns-test.teapot.zalan.do", Target: "baz.elb.amazonaws.com"},
+		endpoint.NewEndpoint("delete-test.ext-dns-test.teapot.zalan.do", "baz.elb.amazonaws.com", ""),
 	}
 
 	if err := provider.DeleteRecords(testZone, currentRecords); err != nil {
@@ -446,23 +446,23 @@ func TestAWSDeleteRecordsCNAME(t *testing.T) {
 
 func TestAWSApplyChangesCNAME(t *testing.T) {
 	provider := newAWSProvider(t, false, []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "foo.elb.amazonaws.com"},
-		{DNSName: "delete-test.ext-dns-test.teapot.zalan.do", Target: "qux.elb.amazonaws.com"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "foo.elb.amazonaws.com", "CNAME"),
+		endpoint.NewEndpoint("delete-test.ext-dns-test.teapot.zalan.do", "qux.elb.amazonaws.com", "CNAME"),
 	})
 
 	createRecords := []*endpoint.Endpoint{
-		{DNSName: "create-test.ext-dns-test.teapot.zalan.do", Target: "foo.elb.amazonaws.com"},
+		endpoint.NewEndpoint("create-test.ext-dns-test.teapot.zalan.do", "foo.elb.amazonaws.com", ""),
 	}
 
 	currentRecords := []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "bar.elb.amazonaws.com"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "bar.elb.amazonaws.com", ""),
 	}
 	updatedRecords := []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "baz.elb.amazonaws.com"},
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "baz.elb.amazonaws.com", ""),
 	}
 
 	deleteRecords := []*endpoint.Endpoint{
-		{DNSName: "delete-test.ext-dns-test.teapot.zalan.do", Target: "qux.elb.amazonaws.com"},
+		endpoint.NewEndpoint("delete-test.ext-dns-test.teapot.zalan.do", "qux.elb.amazonaws.com", ""),
 	}
 
 	changes := &plan.Changes{
@@ -482,14 +482,14 @@ func TestAWSApplyChangesCNAME(t *testing.T) {
 	}
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		{DNSName: "create-test.ext-dns-test.teapot.zalan.do", Target: "foo.elb.amazonaws.com"},
-		{DNSName: "update-test.ext-dns-test.teapot.zalan.do", Target: "baz.elb.amazonaws.com"},
+		endpoint.NewEndpoint("create-test.ext-dns-test.teapot.zalan.do", "foo.elb.amazonaws.com", "CNAME"),
+		endpoint.NewEndpoint("update-test.ext-dns-test.teapot.zalan.do", "baz.elb.amazonaws.com", "CNAME"),
 	})
 }
 
 func TestAWSSanitizeZone(t *testing.T) {
 	provider := newAWSProvider(t, false, []*endpoint.Endpoint{
-		{DNSName: "list-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("list-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
 	})
 
 	records, err := provider.Records(testZone)
@@ -498,7 +498,7 @@ func TestAWSSanitizeZone(t *testing.T) {
 	}
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		{DNSName: "list-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("list-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
 	})
 
 	records, err = provider.Records("/hostedzone/" + testZone)
@@ -507,13 +507,14 @@ func TestAWSSanitizeZone(t *testing.T) {
 	}
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		{DNSName: "list-test.ext-dns-test.teapot.zalan.do", Target: "8.8.8.8"},
+		endpoint.NewEndpoint("list-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
 	})
 }
 
 func validateEndpoints(t *testing.T, endpoints []*endpoint.Endpoint, expected []*endpoint.Endpoint) {
 	if !testutils.SameEndpoints(endpoints, expected) {
-		t.Errorf("expected %v, got %v", expected, endpoints)
+		spew.Dump(endpoints, expected)
+		t.Fatalf("expected %v, got %v", expected, endpoints)
 	}
 }
 
@@ -552,7 +553,6 @@ func setupRecords(t *testing.T, provider *AWSProvider, endpoints []*endpoint.End
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	validateEndpoints(t, records, endpoints)
 }
 

@@ -378,8 +378,7 @@ helper methods
 */
 
 func newEndpointWithOwner(dnsName, target, recordType, ownerID string) *endpoint.Endpoint {
-	e := endpoint.NewEndpoint(dnsName, target)
-	e.RecordType = recordType
+	e := endpoint.NewEndpoint(dnsName, target, recordType)
 	e.Labels[endpoint.OwnerLabelKey] = ownerID
 	return e
 }

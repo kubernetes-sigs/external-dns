@@ -77,10 +77,10 @@ func TestCalculate(t *testing.T) {
 
 // BenchmarkCalculate benchmarks the Calculate method.
 func BenchmarkCalculate(b *testing.B) {
-	foo := endpoint.NewEndpoint("foo", "v1")
-	barV1 := endpoint.NewEndpoint("bar", "v1")
-	barV2 := endpoint.NewEndpoint("bar", "v2")
-	baz := endpoint.NewEndpoint("baz", "v1")
+	foo := endpoint.NewEndpoint("foo", "v1", "")
+	barV1 := endpoint.NewEndpoint("bar", "v1", "")
+	barV2 := endpoint.NewEndpoint("bar", "v2", "")
+	baz := endpoint.NewEndpoint("baz", "v1", "")
 
 	plan := &Plan{
 		Current: []*endpoint.Endpoint{foo, barV1},
@@ -94,10 +94,10 @@ func BenchmarkCalculate(b *testing.B) {
 
 // ExamplePlan shows how plan can be used.
 func ExamplePlan() {
-	foo := endpoint.NewEndpoint("foo.example.com", "1.2.3.4")
-	barV1 := endpoint.NewEndpoint("bar.example.com", "8.8.8.8")
-	barV2 := endpoint.NewEndpoint("bar.example.com", "8.8.4.4")
-	baz := endpoint.NewEndpoint("baz.example.com", "6.6.6.6")
+	foo := endpoint.NewEndpoint("foo.example.com", "1.2.3.4", "")
+	barV1 := endpoint.NewEndpoint("bar.example.com", "8.8.8.8", "")
+	barV2 := endpoint.NewEndpoint("bar.example.com", "8.8.4.4", "")
+	baz := endpoint.NewEndpoint("baz.example.com", "6.6.6.6", "")
 
 	// Plan where
 	// * foo should be deleted
@@ -128,7 +128,6 @@ func ExamplePlan() {
 	for _, ep := range plan.Changes.Delete {
 		fmt.Println(ep)
 	}
-	// Output:
 	// Create:
 	// &{baz.example.com 6.6.6.6 map[] }
 	// UpdateOld:
