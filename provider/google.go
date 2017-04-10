@@ -193,7 +193,7 @@ func (p *googleProvider) Records(zone string) (endpoints []*endpoint.Endpoint, _
 
 			for _, rr := range r.Rrdatas {
 				// each page is processed sequentially, no need for a mutex here.
-				endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, rr))
+				endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, rr, r.Type))
 			}
 		}
 

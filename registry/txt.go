@@ -107,13 +107,11 @@ func (im *TXTRegistry) ApplyChanges(zone string, changes *plan.Changes) error {
 	}
 
 	for _, r := range filteredChanges.Create {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel())
-		txt.RecordType = "TXT"
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), "TXT")
 		filteredChanges.Create = append(filteredChanges.Create, txt)
 	}
 	for _, r := range filteredChanges.Delete {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel())
-		txt.RecordType = "TXT"
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), "TXT")
 		filteredChanges.Delete = append(filteredChanges.Delete, txt)
 	}
 
