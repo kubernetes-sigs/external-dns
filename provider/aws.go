@@ -181,7 +181,7 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 				},
 			},
 			TTL:  aws.Int64(300),
-			Type: aws.String(suitableType(endpoint.Target)),
+			Type: aws.String(suitableType(endpoint)),
 		},
 	}
 

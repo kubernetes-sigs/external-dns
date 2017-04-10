@@ -31,10 +31,12 @@ type Provider interface {
 
 // suitableType returns the DNS resource record type suitable for the target.
 // In this case type A for IPs and type CNAME for everything else.
-func suitableType(target string) string {
-	if net.ParseIP(target) == nil {
+func suitableType(ep *endpoint.Endpoint) string {
+	if ep.RecordType != "" {
+		return ep.RecordType
+	}
+	if net.ParseIP(ep.Target) == nil {
 		return "CNAME"
 	}
-
 	return "A"
 }

@@ -294,7 +294,7 @@ func newRecord(endpoint *endpoint.Endpoint) *dns.ResourceRecordSet {
 		Name:    endpoint.DNSName,
 		Rrdatas: []string{endpoint.Target},
 		Ttl:     300,
-		Type:    suitableType(endpoint.Target),
+		Type:    suitableType(endpoint),
 	}
 }
 
