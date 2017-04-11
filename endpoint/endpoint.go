@@ -44,6 +44,7 @@ func NewEndpoint(dnsName, target string) *Endpoint {
 	}
 }
 
+// MergeLabels adds keys to labels if not defined for the endpoint
 func (e *Endpoint) MergeLabels(labels map[string]string) {
 	for k, v := range labels {
 		if e.Labels[k] == "" {
