@@ -282,9 +282,7 @@ func separateChange(zones map[string]*dns.ManagedZone, change *dns.Change) map[s
 			Additions: []*dns.ResourceRecordSet{},
 			Deletions: []*dns.ResourceRecordSet{},
 		}
-	}
 
-	for _, z := range zones {
 		for _, a := range change.Additions {
 			if strings.HasSuffix(ensureTrailingDot(a.Name), z.DnsName) {
 				changes[z.Name].Additions = append(changes[z.Name].Additions, a)
