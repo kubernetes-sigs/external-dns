@@ -29,8 +29,8 @@ import (
 )
 
 var (
-	txtLabelRegex  = regexp.MustCompile("^heritage=external-dns;record-owner-id=(.+)")
-	txtLabelFormat = "heritage=external-dns;record-owner-id=%s"
+	txtLabelRegex  = regexp.MustCompile("^heritage=external-dns;external-dns/record-owner-id=(.+)")
+	txtLabelFormat = "heritage=external-dns;external-dns/record-owner-id=%s"
 )
 
 // TXTRegistry implements registry interface with ownership implemented via associated TXT records
@@ -46,12 +46,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, ownerID string) (*TXT
 		return nil, errors.New("owner id cannot be empty")
 	}
 
-	var mapper nameMapper
-	if txtPrefix == "" {
-		mapper = newNoopNameMapper()
-	} else {
-		mapper = newPrefixNameMapper(txtPrefix)
-	}
+	mapper := newPrefixNameMapper(txtPrefix)
 
 	return &TXTRegistry{
 		provider: provider,
@@ -150,7 +145,6 @@ type prefixNameMapper struct {
 var _ nameMapper = prefixNameMapper{}
 
 func newPrefixNameMapper(prefix string) prefixNameMapper {
-	prefix = strings.TrimSuffix(prefix, ".") + "."
 	return prefixNameMapper{prefix: prefix}
 }
 
@@ -163,21 +157,4 @@ func (pr prefixNameMapper) toEndpointName(txtDNSName string) string {
 
 func (pr prefixNameMapper) toTXTName(endpointDNSName string) string {
 	return pr.prefix + endpointDNSName
-}
-
-type noopNameMapper struct {
-}
-
-var _ nameMapper = noopNameMapper{}
-
-func newNoopNameMapper() *noopNameMapper {
-	return &noopNameMapper{}
-}
-
-func (pr noopNameMapper) toEndpointName(txtDNSName string) string {
-	return txtDNSName
-}
-
-func (pr noopNameMapper) toTXTName(endpointDNSName string) string {
-	return endpointDNSName
 }

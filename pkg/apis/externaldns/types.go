@@ -76,7 +76,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	flags.BoolVar(&cfg.Version, "version", false, "display the version")
 	flags.StringVar(&cfg.Registry, "registry", "noop", "type of registry for ownership: <noop|txt>")
 	flags.StringVar(&cfg.RecordOwnerID, "record-owner-id", "", "id of the current external dns for labeling owned records")
-	flags.StringVar(&cfg.TXTPrefix, "txt-prefix", "", `prefix of the associated TXT records DNS name; if --txt-prefix=abc,
-		 corresponding txt record for CNAME [example.org] will have DNSName [abc.example.org]. Required for CNAME support`)
+	flags.StringVar(&cfg.TXTPrefix, "txt-prefix", "", `prefix of the associated TXT records DNS name; if --txt-prefix="abc-",
+		 corresponding txt record for CNAME [example.org] will have DNSName [abc-example.org]. Required for CNAME ownership support`)
 	return flags.Parse(args)
 }

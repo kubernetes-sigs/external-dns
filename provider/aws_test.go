@@ -24,7 +24,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/route53"
-	"github.com/davecgh/go-spew/spew"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
@@ -513,7 +512,6 @@ func TestAWSSanitizeZone(t *testing.T) {
 
 func validateEndpoints(t *testing.T, endpoints []*endpoint.Endpoint, expected []*endpoint.Endpoint) {
 	if !testutils.SameEndpoints(endpoints, expected) {
-		spew.Dump(endpoints, expected)
 		t.Fatalf("expected %v, got %v", expected, endpoints)
 	}
 }
