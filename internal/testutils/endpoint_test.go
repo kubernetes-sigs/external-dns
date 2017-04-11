@@ -42,11 +42,11 @@ func ExampleSameEndpoints() {
 		{
 			DNSName:    "abc.com",
 			Target:     "1.2.3.4",
-			RecordType: "CNAME",
+			RecordType: "A",
 		},
 		{
 			DNSName:    "bbc.com",
-			Target:     "1.2.3.4",
+			Target:     "foo.com",
 			RecordType: "CNAME",
 		},
 	}
@@ -55,9 +55,9 @@ func ExampleSameEndpoints() {
 		fmt.Println(ep)
 	}
 	// Output:
-	// &{abc.com 1.2.3.4 CNAME map[]}
+	// &{abc.com 1.2.3.4 A map[]}
 	// &{abc.com something TXT map[]}
-	// &{bbc.com 1.2.3.4 CNAME map[]}
+	// &{bbc.com foo.com CNAME map[]}
 	// &{example.org load-balancer.org  map[]}
 	// &{example.org load-balancer.org TXT map[]}
 }

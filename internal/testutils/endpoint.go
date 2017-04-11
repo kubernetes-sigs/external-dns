@@ -34,19 +34,15 @@ func (b byAllFields) Less(i, j int) bool {
 			return true
 		}
 		if b[i].Target == b[j].Target {
-			if b[i].RecordType <= b[j].RecordType {
-				return true
-			}
-			return false
+			return b[i].RecordType <= b[j].RecordType
 		}
 		return false
 	}
 	return false
 }
 
-// SameEndpoint returns true if two endpoint are same
+// SameEndpoint returns true if two endpoints are same
 // considers example.org. and example.org DNSName/Target as different endpoints
-// TODO:might need reconsideration regarding trailing dot
 func SameEndpoint(a, b *endpoint.Endpoint) bool {
 	return a.DNSName == b.DNSName && a.Target == b.Target && a.RecordType == b.RecordType &&
 		a.Labels[endpoint.OwnerLabelKey] == b.Labels[endpoint.OwnerLabelKey]

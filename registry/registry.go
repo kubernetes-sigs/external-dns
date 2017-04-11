@@ -30,7 +30,7 @@ type Registry interface {
 	ApplyChanges(zone string, changes *plan.Changes) error
 }
 
-//TODO(ideahitme): considering moving this to Plan
+//TODO(ideahitme): consider moving this to Plan
 func filterOwnedRecords(ownerID string, eps []*endpoint.Endpoint) []*endpoint.Endpoint {
 	filtered := []*endpoint.Endpoint{}
 	for _, ep := range eps {
