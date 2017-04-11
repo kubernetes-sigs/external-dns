@@ -16,7 +16,10 @@ limitations under the License.
 
 package endpoint
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestNewEndpoint(t *testing.T) {
 	e := NewEndpoint("example.org", "1.2.3.4")
@@ -30,5 +33,17 @@ func TestNewEndpoint(t *testing.T) {
 	w := NewEndpoint("example.org.", "load-balancer.com.")
 	if w.DNSName != "example.org" || w.Target != "load-balancer.com" {
 		t.Error("endpoint is not initialized correctly")
+	}
+}
+
+func TestMergeLabels(t *testing.T) {
+	e := NewEndpoint("abc.com", "1.2.3.4")
+	e.Labels = map[string]string{
+		"foo": "bar",
+		"baz": "qux",
+	}
+	e.MergeLabels(map[string]string{"baz": "baz", "new": "fox"})
+	if !reflect.DeepEqual(e.Labels, map[string]string{"foo": "bar", "baz": "qux", "new": "fox"}) {
+		t.Error("invalid merge result")
 	}
 }
