@@ -185,7 +185,7 @@ func (p *googleProvider) Records(zone string) (endpoints []*endpoint.Endpoint, _
 			// TODO(linki, ownership): Remove once ownership system is in place.
 			// See: https://github.com/kubernetes-incubator/external-dns/pull/122/files/74e2c3d3e237411e619aefc5aab694742001cdec#r109863370
 			switch r.Type {
-			case "A", "CNAME":
+			case "A", "CNAME", "TXT":
 				break
 			default:
 				continue

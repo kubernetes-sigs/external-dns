@@ -76,7 +76,7 @@ func (p *AWSProvider) Records(zone string) ([]*endpoint.Endpoint, error) {
 			// TODO(linki, ownership): Remove once ownership system is in place.
 			// See: https://github.com/kubernetes-incubator/external-dns/pull/122/files/74e2c3d3e237411e619aefc5aab694742001cdec#r109863370
 			switch aws.StringValue(r.Type) {
-			case route53.RRTypeA, route53.RRTypeCname:
+			case route53.RRTypeA, route53.RRTypeCname, route53.RRTypeTxt:
 				break
 			default:
 				continue
