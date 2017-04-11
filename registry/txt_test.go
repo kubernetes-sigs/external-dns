@@ -46,7 +46,7 @@ func testTXTRegistryNew(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := r.mapper.(*prefixNameMapper); !ok {
+	if _, ok := r.mapper.(prefixNameMapper); !ok {
 		t.Error("incorrectly initialized txt registry instance")
 	}
 	if r.ownerID != "owner" || r.provider != p {

@@ -147,37 +147,37 @@ type prefixNameMapper struct {
 	prefix string
 }
 
-var _ nameMapper = &prefixNameMapper{}
+var _ nameMapper = prefixNameMapper{}
 
-func newPrefixNameMapper(prefix string) *prefixNameMapper {
+func newPrefixNameMapper(prefix string) prefixNameMapper {
 	prefix = strings.TrimSuffix(prefix, ".") + "."
-	return &prefixNameMapper{prefix: prefix}
+	return prefixNameMapper{prefix: prefix}
 }
 
-func (pr *prefixNameMapper) toEndpointName(txtDNSName string) string {
+func (pr prefixNameMapper) toEndpointName(txtDNSName string) string {
 	if strings.HasPrefix(txtDNSName, pr.prefix) {
 		return strings.TrimPrefix(txtDNSName, pr.prefix)
 	}
 	return ""
 }
 
-func (pr *prefixNameMapper) toTXTName(endpointDNSName string) string {
+func (pr prefixNameMapper) toTXTName(endpointDNSName string) string {
 	return pr.prefix + endpointDNSName
 }
 
 type noopNameMapper struct {
 }
 
-var _ nameMapper = &noopNameMapper{}
+var _ nameMapper = noopNameMapper{}
 
 func newNoopNameMapper() *noopNameMapper {
 	return &noopNameMapper{}
 }
 
-func (pr *noopNameMapper) toEndpointName(txtDNSName string) string {
+func (pr noopNameMapper) toEndpointName(txtDNSName string) string {
 	return txtDNSName
 }
 
-func (pr *noopNameMapper) toTXTName(endpointDNSName string) string {
+func (pr noopNameMapper) toTXTName(endpointDNSName string) string {
 	return endpointDNSName
 }
