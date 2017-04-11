@@ -37,7 +37,7 @@ func TestNewEndpoint(t *testing.T) {
 }
 
 func TestMergeLabels(t *testing.T) {
-	e := NewEndpoint("abc.com", "1.2.3.4")
+	e := NewEndpoint("abc.com", "1.2.3.4", "A")
 	e.Labels = map[string]string{
 		"foo": "bar",
 		"baz": "qux",

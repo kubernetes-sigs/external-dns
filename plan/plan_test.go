@@ -30,14 +30,14 @@ func TestCalculate(t *testing.T) {
 	// empty list of records
 	empty := []*endpoint.Endpoint{}
 	// a simple entry
-	fooV1 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1")}
+	fooV1 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", "CNAME")}
 	// the same entry but with different target
-	fooV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2")}
+	fooV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", "CNAME")}
 	// another simple entry
-	bar := []*endpoint.Endpoint{endpoint.NewEndpoint("bar", "v1")}
+	bar := []*endpoint.Endpoint{endpoint.NewEndpoint("bar", "v1", "CNAME")}
 
 	// test case with labels
-	noLabels := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2")}
+	noLabels := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", "CNAME")}
 	labeledV2 := []*endpoint.Endpoint{newEndpointWithOwner("foo", "v2", "123")}
 	labeledV1 := []*endpoint.Endpoint{newEndpointWithOwner("foo", "v1", "123")}
 
@@ -152,7 +152,7 @@ func validateEntries(t *testing.T, entries, expected []*endpoint.Endpoint) {
 }
 
 func newEndpointWithOwner(dnsName, target, ownerID string) *endpoint.Endpoint {
-	e := endpoint.NewEndpoint(dnsName, target)
+	e := endpoint.NewEndpoint(dnsName, target, "CNAME")
 	e.Labels[endpoint.OwnerLabelKey] = ownerID
 	return e
 }
