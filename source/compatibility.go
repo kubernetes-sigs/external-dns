@@ -46,10 +46,10 @@ func legacyEndpointsFromMateService(svc *v1.Service) []*endpoint.Endpoint {
 	// Create a corresponding endpoint for each configured external entrypoint.
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP))
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
 		}
 		if lb.Hostname != "" {
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname))
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
 		}
 	}
 

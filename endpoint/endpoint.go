@@ -31,15 +31,27 @@ type Endpoint struct {
 	DNSName string
 	// The target the DNS record points to
 	Target string
+	// RecordType type of record, e.g. CNAME, A, TXT etc
+	RecordType string
 	// Labels stores labels defined for the Endpoint
 	Labels map[string]string
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
-func NewEndpoint(dnsName, target string) *Endpoint {
+func NewEndpoint(dnsName, target, recordType string) *Endpoint {
 	return &Endpoint{
-		DNSName: strings.TrimSuffix(dnsName, "."),
-		Target:  strings.TrimSuffix(target, "."),
-		Labels:  map[string]string{},
+		DNSName:    strings.TrimSuffix(dnsName, "."),
+		Target:     strings.TrimSuffix(target, "."),
+		RecordType: recordType,
+		Labels:     map[string]string{},
+	}
+}
+
+// MergeLabels adds keys to labels if not defined for the endpoint
+func (e *Endpoint) MergeLabels(labels map[string]string) {
+	for k, v := range labels {
+		if e.Labels[k] == "" {
+			e.Labels[k] = v
+		}
 	}
 }
