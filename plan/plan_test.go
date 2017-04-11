@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 )
 
 // TestCalculate tests that a plan can calculate actions to move a list of
@@ -129,13 +130,13 @@ func ExamplePlan() {
 	}
 	// Output:
 	// Create:
-	// &{baz.example.com 6.6.6.6}
+	// &{baz.example.com 6.6.6.6 map[]}
 	// UpdateOld:
-	// &{bar.example.com 8.8.8.8}
+	// &{bar.example.com 8.8.8.8 map[]}
 	// UpdateNew:
-	// &{bar.example.com 8.8.4.4}
+	// &{bar.example.com 8.8.4.4 map[]}
 	// Delete:
-	// &{foo.example.com 1.2.3.4}
+	// &{foo.example.com 1.2.3.4 map[]}
 }
 
 // validateEntries validates that the list of entries matches expected.
@@ -145,7 +146,7 @@ func validateEntries(t *testing.T, entries, expected []*endpoint.Endpoint) {
 	}
 
 	for i := range entries {
-		if entries[i] != expected[i] {
+		if !testutils.SameEndpoint(entries[i], expected[i]) {
 			t.Fatalf("expected %q to match %q", entries, expected)
 		}
 	}

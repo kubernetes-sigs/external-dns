@@ -10,6 +10,11 @@ import:
   - service/route53
 - package: github.com/google/uuid
   version: ~0.2.0
+- package: github.com/prometheus/client_golang
+  version: ~0.8.0
+  subpackages:
+  - prometheus
+  - prometheus/promhttp
 - package: github.com/spf13/pflag
 - package: github.com/kubernetes/repo-infra
 - package: golang.org/x/net

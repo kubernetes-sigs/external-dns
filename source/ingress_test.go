@@ -42,12 +42,12 @@ func testEndpointsFromIngress(t *testing.T) {
 		{
 			title: "one rule.host one lb.hostname",
 			ingress: fakeIngress{
-				dnsnames:  []string{"foo.bar"},
-				hostnames: []string{"lb.com"},
+				dnsnames:  []string{"foo.bar"}, // Kubernetes requires removal of trailing dot
+				hostnames: []string{"lb.com"},  // Kubernetes omits the trailing dot
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "foo.bar.",
+					DNSName: "foo.bar",
 					Target:  "lb.com",
 				},
 			},
@@ -60,7 +60,7 @@ func testEndpointsFromIngress(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "foo.bar.",
+					DNSName: "foo.bar",
 					Target:  "8.8.8.8",
 				},
 			},
@@ -74,19 +74,19 @@ func testEndpointsFromIngress(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "foo.bar.",
+					DNSName: "foo.bar",
 					Target:  "8.8.8.8",
 				},
 				{
-					DNSName: "foo.bar.",
+					DNSName: "foo.bar",
 					Target:  "127.0.0.1",
 				},
 				{
-					DNSName: "foo.bar.",
+					DNSName: "foo.bar",
 					Target:  "elb.com",
 				},
 				{
-					DNSName: "foo.bar.",
+					DNSName: "foo.bar",
 					Target:  "alb.com",
 				},
 			},
@@ -154,11 +154,11 @@ func testIngressEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "example.org.",
+					DNSName: "example.org",
 					Target:  "8.8.8.8",
 				},
 				{
-					DNSName: "new.org.",
+					DNSName: "new.org",
 					Target:  "lb.com",
 				},
 			},
@@ -182,11 +182,11 @@ func testIngressEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "example.org.",
+					DNSName: "example.org",
 					Target:  "8.8.8.8",
 				},
 				{
-					DNSName: "new.org.",
+					DNSName: "new.org",
 					Target:  "lb.com",
 				},
 			},
@@ -210,7 +210,7 @@ func testIngressEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "example.org.",
+					DNSName: "example.org",
 					Target:  "8.8.8.8",
 				},
 			},
@@ -231,7 +231,7 @@ func testIngressEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "example.org.",
+					DNSName: "example.org",
 					Target:  "8.8.8.8",
 				},
 			},

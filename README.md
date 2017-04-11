@@ -7,7 +7,7 @@ ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS prov
 
 ## What It Does
 
-Inspired by [Kubernetes DNS](https://github.com/kubernetes/dns), Kubernetes' cluster-internal DNS server, ExternalDNS makes Kubernetes resources discoverable via public DNS servers. Like KubeDNS, it retrieves a list of resources (Services, Ingresses, etc.) from the [Kubernetes API](https://kubernetes.io/docs/api/) to determine a desired list of DNS records. *Unlike* KubeDNS, however, it's not a DNS server itself, but merely configures other DNS providers accordingly—e.g. [AWS Route 53](https://aws.amazon.com/route53/) or [Google Cloud DNS](https://cloud.google.com/dns/docs/).
+Inspired by [Kubernetes DNS](https://github.com/kubernetes/dns), Kubernetes' cluster-internal DNS server, ExternalDNS makes Kubernetes resources discoverable via public DNS servers. Like KubeDNS, it retrieves a list of resources (Services, Ingresses, etc.) from the [Kubernetes API](https://kubernetes.io/docs/api/) to determine a desired list of DNS records. *Unlike* KubeDNS, however, it's not a DNS server itself, but merely configures other DNS providers accordingly—e.g. [AWS Route 53](https://aws.amazon.com/route53/) or [Google CloudDNS](https://cloud.google.com/dns/docs/).
 
 In a broader sense, ExternalDNS allows you to control DNS records dynamically via Kubernetes resources in a DNS provider-agnostic way.
 
@@ -15,7 +15,7 @@ The [FAQ](docs/faq.md) contains additional information and addresses several que
 
 ## Getting started
 
-ExternalDNS' current release is `v0.1`. This version allows you to keep a managed zone in Google's [CloudDNS](https://cloud.google.com/dns/docs/) service synchronized with Services of `type=LoadBalancer` in your cluster.
+ExternalDNS' current release is `v0.2`. This version allows you to keep a managed zone in Google's [CloudDNS](https://cloud.google.com/dns/docs/) or [AWS' Route 53](https://aws.amazon.com/route53/) synchronized with Ingresses and Services of `type=LoadBalancer` in your cluster.
 
 In this release, ExternalDNS is limited to—and takes full ownership of—a single managed zone. In other words, if you have any existing records in that zone, they will be removed. We encourage you to try out ExternalDNS in its own zone first to see if that model works for you. However, ExternalDNS runs in dryRun mode by default, and won't make any changes to your infrastructure. So as long as you don't change that flag, you're safe.
 
@@ -42,7 +42,7 @@ $ kubectl run nginx --image=nginx --replicas=1 --port=80
 $ kubectl expose deployment nginx --port=80 --target-port=80 --type=LoadBalancer
 ```
 
-Annotate the Service with your desired external DNS name. Make sure to change `example.org` to your domain (and that it includes the trailing dot):
+Annotate the Service with your desired external DNS name. Make sure to change `example.org` to your domain.
 
 ```console
 $ kubectl annotate service nginx "external-dns.alpha.kubernetes.io/hostname=nginx.example.org."

@@ -25,6 +25,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -34,6 +35,7 @@ import (
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns/validation"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
+	"github.com/kubernetes-incubator/external-dns/registry"
 	"github.com/kubernetes-incubator/external-dns/source"
 )
 
@@ -67,7 +69,7 @@ func main() {
 
 	stopChan := make(chan struct{}, 1)
 
-	go registerHandlers(cfg.HealthPort)
+	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(stopChan)
 
 	client, err := newClient(cfg)
@@ -75,7 +77,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	source.Register("service", source.NewServiceSource(client, cfg.Namespace))
+	source.Register("service", source.NewServiceSource(client, cfg.Namespace, cfg.Compatibility))
 	source.Register("ingress", source.NewIngressSource(client, cfg.Namespace))
 
 	sources := source.NewMultiSource(source.LookupMultiple(cfg.Sources...)...)
@@ -93,6 +95,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	r, err := registry.NewNoopRegistry(p)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	policy, exists := plan.Policies[cfg.Policy]
 	if !exists {
 		log.Fatalf("unknown policy: %s", cfg.Policy)
@@ -101,7 +108,7 @@ func main() {
 	ctrl := controller.Controller{
 		Zone:     cfg.Zone,
 		Source:   sources,
-		Provider: p,
+		Registry: r,
 		Policy:   policy,
 		Interval: cfg.Interval,
 	}
@@ -120,14 +127,6 @@ func main() {
 		log.Infoln("pod waiting to be deleted")
 		time.Sleep(time.Second * 30)
 	}
-}
-
-func registerHandlers(port string) {
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
-	})
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
 }
 
 func handleSigterm(stopChan chan struct{}) {
@@ -156,4 +155,15 @@ func newClient(cfg *externaldns.Config) (*kubernetes.Clientset, error) {
 	}
 
 	return client, nil
+}
+
+func serveMetrics(address string) {
+	http.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
+
+	http.Handle("/metrics", promhttp.Handler())
+
+	log.Fatal(http.ListenAndServe(address, nil))
 }

@@ -1,6 +1,6 @@
 # Setting up ExternalDNS on Google Container Engine
 
-This tutorial describes how to setup `external-dns` for usage within a GKE cluster.
+This tutorial describes how to setup ExternalDNS for usage within a GKE cluster.
 
 Setup your environment to work with Google Cloud Platform. Fill in your values as needed, e.g. target project.
 
@@ -48,7 +48,7 @@ $ gcloud dns record-sets transaction add ns-cloud-e{1..4}.googledomains.com. \
 $ gcloud dns record-sets transaction execute --zone "gcp-zalan-do"
 ```
 
-If you decide not to create a new zone but reuse an existing one, make sure it's currently **unused** and **empty**. This version of `external-dns` will remove all records it doesn't recognize from the zone.
+If you decide not to create a new zone but reuse an existing one, make sure it's currently **unused** and **empty**. This version of ExternalDNS will remove all records it doesn't recognize from the zone.
 
 Connect your `kubectl` client to the cluster you just created.
 
@@ -56,7 +56,7 @@ Connect your `kubectl` client to the cluster you just created.
 gcloud container clusters get-credentials "external-dns"
 ```
 
-Apply the following manifest file to deploy `external-dns`.
+Apply the following manifest file to deploy ExternalDNS.
 
 ```yaml
 apiVersion: extensions/v1beta1
@@ -73,7 +73,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.1.0
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.2.0
         args:
         - --in-cluster
         - --zone=external-dns-test-gcp-zalan-do
@@ -86,7 +86,7 @@ spec:
 
 Use `dry-run=true` if you want to be extra careful on the first run. Note, that you will not see any records created when you are running in dry-run mode. You can, however, inspect the logs and watch what would have been done.
 
-Create the following sample application to test that `external-dns` works.
+Create the following sample application to test that ExternalDNS works.
 
 ```yaml
 apiVersion: v1
@@ -216,7 +216,7 @@ $ kubectl delete service nginx
 $ kubectl delete ingress nginx
 ```
 
-Give `external-dns` some time to clean up the DNS records for you. Then delete the managed zone and cluster.
+Give ExternalDNS some time to clean up the DNS records for you. Then delete the managed zone and cluster.
 
 ```console
 $ gcloud dns managed-zones delete "external-dns-test-gcp-zalan-do"
