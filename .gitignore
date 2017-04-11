@@ -20,6 +20,7 @@
 /output*/
 /_output*/
 /_output
+/build
 
 # Emacs save files
 *~
@@ -40,3 +41,4 @@ cscope.*
 
 # coverage output
 cover.out
+*.coverprofile

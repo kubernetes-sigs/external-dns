@@ -30,11 +30,16 @@ func TestCalculate(t *testing.T) {
 	// empty list of records
 	empty := []*endpoint.Endpoint{}
 	// a simple entry
-	fooV1 := []*endpoint.Endpoint{{DNSName: "foo", Target: "v1"}}
+	fooV1 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", "CNAME")}
 	// the same entry but with different target
-	fooV2 := []*endpoint.Endpoint{{DNSName: "foo", Target: "v2"}}
+	fooV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", "CNAME")}
 	// another simple entry
-	bar := []*endpoint.Endpoint{{DNSName: "bar", Target: "v1"}}
+	bar := []*endpoint.Endpoint{endpoint.NewEndpoint("bar", "v1", "CNAME")}
+
+	// test case with labels
+	noLabels := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", "CNAME")}
+	labeledV2 := []*endpoint.Endpoint{newEndpointWithOwner("foo", "v2", "123")}
+	labeledV1 := []*endpoint.Endpoint{newEndpointWithOwner("foo", "v1", "123")}
 
 	for _, tc := range []struct {
 		current, desired, create, updateOld, updateNew, delete []*endpoint.Endpoint
@@ -51,13 +56,14 @@ func TestCalculate(t *testing.T) {
 		{fooV1, fooV2, empty, fooV1, fooV2, empty},
 		// Both exist but are different creates desired and deletes current.
 		{fooV1, bar, bar, empty, empty, fooV1},
+		// Labels should be inherited
+		{labeledV1, noLabels, empty, labeledV1, labeledV2, empty},
 	} {
 		// setup plan
 		plan := &Plan{
 			Current: tc.current,
 			Desired: tc.desired,
 		}
-
 		// calculate actions
 		plan = plan.Calculate()
 
@@ -71,10 +77,10 @@ func TestCalculate(t *testing.T) {
 
 // BenchmarkCalculate benchmarks the Calculate method.
 func BenchmarkCalculate(b *testing.B) {
-	foo := endpoint.NewEndpoint("foo", "v1")
-	barV1 := endpoint.NewEndpoint("bar", "v1")
-	barV2 := endpoint.NewEndpoint("bar", "v2")
-	baz := endpoint.NewEndpoint("baz", "v1")
+	foo := endpoint.NewEndpoint("foo", "v1", "")
+	barV1 := endpoint.NewEndpoint("bar", "v1", "")
+	barV2 := endpoint.NewEndpoint("bar", "v2", "")
+	baz := endpoint.NewEndpoint("baz", "v1", "")
 
 	plan := &Plan{
 		Current: []*endpoint.Endpoint{foo, barV1},
@@ -88,10 +94,10 @@ func BenchmarkCalculate(b *testing.B) {
 
 // ExamplePlan shows how plan can be used.
 func ExamplePlan() {
-	foo := endpoint.NewEndpoint("foo.example.com", "1.2.3.4")
-	barV1 := endpoint.NewEndpoint("bar.example.com", "8.8.8.8")
-	barV2 := endpoint.NewEndpoint("bar.example.com", "8.8.4.4")
-	baz := endpoint.NewEndpoint("baz.example.com", "6.6.6.6")
+	foo := endpoint.NewEndpoint("foo.example.com", "1.2.3.4", "")
+	barV1 := endpoint.NewEndpoint("bar.example.com", "8.8.8.8", "")
+	barV2 := endpoint.NewEndpoint("bar.example.com", "8.8.4.4", "")
+	baz := endpoint.NewEndpoint("baz.example.com", "6.6.6.6", "")
 
 	// Plan where
 	// * foo should be deleted
@@ -122,15 +128,14 @@ func ExamplePlan() {
 	for _, ep := range plan.Changes.Delete {
 		fmt.Println(ep)
 	}
-	// Output:
 	// Create:
-	// &{baz.example.com 6.6.6.6 map[]}
+	// &{baz.example.com 6.6.6.6 map[] }
 	// UpdateOld:
-	// &{bar.example.com 8.8.8.8 map[]}
+	// &{bar.example.com 8.8.8.8 map[] }
 	// UpdateNew:
-	// &{bar.example.com 8.8.4.4 map[]}
+	// &{bar.example.com 8.8.4.4 map[] }
 	// Delete:
-	// &{foo.example.com 1.2.3.4 map[]}
+	// &{foo.example.com 1.2.3.4 map[] }
 }
 
 // validateEntries validates that the list of entries matches expected.
@@ -144,4 +149,10 @@ func validateEntries(t *testing.T, entries, expected []*endpoint.Endpoint) {
 			t.Fatalf("expected %q to match %q", entries, expected)
 		}
 	}
+}
+
+func newEndpointWithOwner(dnsName, target, ownerID string) *endpoint.Endpoint {
+	e := endpoint.NewEndpoint(dnsName, target, "CNAME")
+	e.Labels[endpoint.OwnerLabelKey] = ownerID
+	return e
 }

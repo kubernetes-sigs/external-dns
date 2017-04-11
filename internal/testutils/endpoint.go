@@ -17,14 +17,35 @@ limitations under the License.
 package testutils
 
 import "github.com/kubernetes-incubator/external-dns/endpoint"
+import "sort"
 
 /** test utility functions for endpoints verifications */
 
-// SameEndpoint returns true if two endpoint are same
+type byAllFields []*endpoint.Endpoint
+
+func (b byAllFields) Len() int      { return len(b) }
+func (b byAllFields) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
+func (b byAllFields) Less(i, j int) bool {
+	if b[i].DNSName < b[j].DNSName {
+		return true
+	}
+	if b[i].DNSName == b[j].DNSName {
+		if b[i].Target < b[j].Target {
+			return true
+		}
+		if b[i].Target == b[j].Target {
+			return b[i].RecordType <= b[j].RecordType
+		}
+		return false
+	}
+	return false
+}
+
+// SameEndpoint returns true if two endpoints are same
 // considers example.org. and example.org DNSName/Target as different endpoints
-// TODO:might need reconsideration regarding trailing dot
 func SameEndpoint(a, b *endpoint.Endpoint) bool {
-	return a.DNSName == b.DNSName && a.Target == b.Target
+	return a.DNSName == b.DNSName && a.Target == b.Target && a.RecordType == b.RecordType &&
+		a.Labels[endpoint.OwnerLabelKey] == b.Labels[endpoint.OwnerLabelKey]
 }
 
 // SameEndpoints compares two slices of endpoints regardless of order
@@ -37,34 +58,16 @@ func SameEndpoints(a, b []*endpoint.Endpoint) bool {
 		return false
 	}
 
-	calculator := map[string]map[string]uint8{} //testutils is not meant for large data sets
-	for _, recordA := range a {
-		if _, exists := calculator[recordA.DNSName]; !exists {
-			calculator[recordA.DNSName] = map[string]uint8{}
-		}
-		if _, exists := calculator[recordA.DNSName][recordA.Target]; !exists {
-			calculator[recordA.DNSName][recordA.Target] = 0
-		}
-		calculator[recordA.DNSName][recordA.Target]++
-	}
-	for _, recordB := range b {
-		if _, exists := calculator[recordB.DNSName]; !exists {
+	sa := a[:]
+	sb := b[:]
+	sort.Sort(byAllFields(sa))
+	sort.Sort(byAllFields(sb))
+
+	for i := range sa {
+		if !SameEndpoint(sa[i], sb[i]) {
 			return false
 		}
-		if _, exists := calculator[recordB.DNSName][recordB.Target]; !exists {
-			return false
-		}
-		calculator[recordB.DNSName][recordB.Target]--
 	}
-
-	for _, byDNSName := range calculator {
-		for _, byCounter := range byDNSName {
-			if byCounter != 0 {
-				return false
-			}
-		}
-	}
-
 	return true
 }
 
