@@ -239,19 +239,28 @@ func (p *CloudFlareProvider) submitChanges(zone string, changes []*CloudFlareCha
 	for _, change := range changes {
 		switch {
 		case change.Action == CloudFlareCreate:
-			p.Client.CreateDNSRecord(zoneID, change.ResourceRecordSet)
+			_, err := p.Client.CreateDNSRecord(zoneID, change.ResourceRecordSet)
+			if err != nil {
+				return err
+			}
 		case change.Action == CloudFlareDelete:
 			recordID, err := p.getRecordID(zoneID, change.ResourceRecordSet)
 			if err != nil {
 				return err
 			}
-			p.Client.DeleteDNSRecord(zoneID, recordID)
+			err = p.Client.DeleteDNSRecord(zoneID, recordID)
+			if err != nil {
+				return err
+			}
 		case change.Action == CloudFlareUpdate:
 			recordID, err := p.getRecordID(zoneID, change.ResourceRecordSet)
 			if err != nil {
 				return err
 			}
-			p.Client.UpdateDNSRecord(zoneID, recordID, change.ResourceRecordSet)
+			err = p.Client.UpdateDNSRecord(zoneID, recordID, change.ResourceRecordSet)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
