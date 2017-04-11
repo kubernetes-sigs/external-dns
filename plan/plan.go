@@ -63,6 +63,7 @@ func (p *Plan) Calculate() *Plan {
 
 		// If there already is a record update it if it changed.
 		if desired.Target != current.Target {
+			desired.MergeLabels(current.Labels) //inherit the labels from the dns provider, including Owner ID
 			changes.UpdateOld = append(changes.UpdateOld, current)
 			changes.UpdateNew = append(changes.UpdateNew, desired)
 		}

@@ -24,7 +24,7 @@ import "github.com/kubernetes-incubator/external-dns/endpoint"
 // considers example.org. and example.org DNSName/Target as different endpoints
 // TODO:might need reconsideration regarding trailing dot
 func SameEndpoint(a, b *endpoint.Endpoint) bool {
-	return a.DNSName == b.DNSName && a.Target == b.Target
+	return a.DNSName == b.DNSName && a.Target == b.Target && a.Labels[endpoint.OwnerLabelKey] == b.Labels[endpoint.OwnerLabelKey]
 }
 
 // SameEndpoints compares two slices of endpoints regardless of order
