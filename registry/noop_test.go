@@ -80,17 +80,19 @@ func testNoopApplyChanges(t *testing.T) {
 	providerRecords := []*endpoint.Endpoint{
 		{
 			DNSName: "example.org",
-			Target:  "8.8.8.8",
+			Target:  "old-lb.com",
 		},
 	}
 	expectedUpdate := []*endpoint.Endpoint{
 		{
-			DNSName: "example.org",
-			Target:  "new-example-lb.com",
+			DNSName:    "example.org",
+			Target:     "new-example-lb.com",
+			RecordType: "CNAME",
 		},
 		{
-			DNSName: "new-record.org",
-			Target:  "new-lb.org",
+			DNSName:    "new-record.org",
+			Target:     "new-lb.org",
+			RecordType: "CNAME",
 		},
 	}
 
@@ -136,7 +138,7 @@ func testNoopApplyChanges(t *testing.T) {
 		UpdateOld: []*endpoint.Endpoint{
 			{
 				DNSName: "example.org",
-				Target:  "8.8.8.8",
+				Target:  "old-lb.com",
 			},
 		},
 	})
