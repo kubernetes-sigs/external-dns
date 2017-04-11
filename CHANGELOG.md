@@ -1,3 +1,5 @@
+- Add support for altering the DNS record modification behavior via policies.
+
 ## v0.2.0 - 2017-04-07
 
 Features:
