@@ -40,3 +40,4 @@ cscope.*
 
 # coverage output
 cover.out
+*.coverprofile
