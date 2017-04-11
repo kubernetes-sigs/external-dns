@@ -566,6 +566,12 @@ func TestNewCloudFlareProvider(t *testing.T) {
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
+	_ = os.Unsetenv("CF_API_KEY")
+	_ = os.Unsetenv("CF_API_EMAIL")
+	_, err = NewCloudFlareProvider(true)
+	if err == nil {
+		t.Errorf("expected to fail")
+	}
 }
 
 func TestApplyChanges(t *testing.T) {
