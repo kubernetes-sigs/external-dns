@@ -20,7 +20,6 @@ import (
 	"context"
 	"net/http"
 	"testing"
-	"time"
 
 	"golang.org/x/oauth2/google"
 
@@ -31,108 +30,115 @@ import (
 	"google.golang.org/api/googleapi"
 )
 
-const (
-	// ID of the hosted zone where the tests are running.
-	googleTestZone = "ext-dns-test-gcp-zalan-do"
-)
-
 func TestGoogleZones(t *testing.T) {
-	provider := newGoogleProvider(t, "ext-dns-test.gcp.zalan.do.", false, []*endpoint.Endpoint{})
+	provider := newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do.", false, []*endpoint.Endpoint{})
 
 	zones, err := provider.Zones()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	validateZones(t, zones, []map[string]string{
-		{"name": "ext-dns-test-gcp-zalan-do", "domain": "ext-dns-test.gcp.zalan.do."},
+	validateZones(t, zones, map[string]*dns.ManagedZone{
+		"zone-1-ext-dns-test-2-gcp-zalan-do": {Name: "zone-1-ext-dns-test-2-gcp-zalan-do", DnsName: "zone-1.ext-dns-test-2.gcp.zalan.do."},
+		"zone-2-ext-dns-test-2-gcp-zalan-do": {Name: "zone-2-ext-dns-test-2-gcp-zalan-do", DnsName: "zone-2.ext-dns-test-2.gcp.zalan.do."},
+		"zone-3-ext-dns-test-2-gcp-zalan-do": {Name: "zone-3-ext-dns-test-2-gcp-zalan-do", DnsName: "zone-3.ext-dns-test-2.gcp.zalan.do."},
 	})
 }
 
 func TestGoogleRecords(t *testing.T) {
-	provider := newGoogleProvider(t, "ext-dns-test.gcp.zalan.do", false, []*endpoint.Endpoint{
-		{DNSName: "create-test.ext-dns-test.gcp.zalan.do", Target: "8.8.8.8"},
+	provider := newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do.", false, []*endpoint.Endpoint{
+		{DNSName: "create-test.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "1.2.3.4"},
+		{DNSName: "create-test.zone-2.ext-dns-test-2.gcp.zalan.do", Target: "8.8.8.8"},
 	})
 
-	records, err := provider.Records("ext-dns-test-gcp-zalan-do")
+	records, err := provider.Records("_")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		{DNSName: "create-test.ext-dns-test.gcp.zalan.do", Target: "8.8.8.8"},
+		{DNSName: "create-test.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "1.2.3.4"},
+		{DNSName: "create-test.zone-2.ext-dns-test-2.gcp.zalan.do", Target: "8.8.8.8"},
 	})
 }
 
 func TestGoogleCreateRecords(t *testing.T) {
-	provider := newGoogleProvider(t, "ext-dns-test.gcp.zalan.do", false, []*endpoint.Endpoint{})
+	provider := newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do.", false, []*endpoint.Endpoint{})
 
 	records := []*endpoint.Endpoint{
-		{DNSName: "create-test.ext-dns-test.gcp.zalan.do", Target: "8.8.8.8"},
-		{DNSName: "create-test-cname.ext-dns-test.gcp.zalan.do", Target: "foo.elb.amazonaws.com"},
+		{DNSName: "create-test.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "1.2.3.4"},
+		{DNSName: "create-test.zone-2.ext-dns-test-2.gcp.zalan.do", Target: "8.8.8.8"},
+		{DNSName: "create-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "foo.elb.amazonaws.com"},
 	}
 
-	if err := provider.CreateRecords(googleTestZone, records); err != nil {
+	if err := provider.CreateRecords(records); err != nil {
 		t.Fatal(err)
 	}
 
-	records, err := provider.Records(googleTestZone)
+	records, err := provider.Records("_")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		{DNSName: "create-test.ext-dns-test.gcp.zalan.do", Target: "8.8.8.8"},
-		{DNSName: "create-test-cname.ext-dns-test.gcp.zalan.do", Target: "foo.elb.amazonaws.com"},
+		{DNSName: "create-test.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "1.2.3.4"},
+		{DNSName: "create-test.zone-2.ext-dns-test-2.gcp.zalan.do", Target: "8.8.8.8"},
+		{DNSName: "create-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "foo.elb.amazonaws.com"},
 	})
 }
 
 func TestGoogleUpdateRecords(t *testing.T) {
-	provider := newGoogleProvider(t, "ext-dns-test.gcp.zalan.do", false, []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.gcp.zalan.do", Target: "8.8.8.8"},
-		{DNSName: "update-test-cname.ext-dns-test.gcp.zalan.do", Target: "foo.elb.amazonaws.com"},
+	provider := newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do.", false, []*endpoint.Endpoint{
+		{DNSName: "update-test.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "8.8.8.8"},
+		{DNSName: "update-test.zone-2.ext-dns-test-2.gcp.zalan.do", Target: "8.8.4.4"},
+		{DNSName: "update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "foo.elb.amazonaws.com"},
 	})
 
 	currentRecords := []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.gcp.zalan.do", Target: "8.8.8.8"},
-		{DNSName: "update-test-cname.ext-dns-test.gcp.zalan.do", Target: "foo.elb.amazonaws.com"},
+		{DNSName: "update-test.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "8.8.8.8"},
+		{DNSName: "update-test.zone-2.ext-dns-test-2.gcp.zalan.do", Target: "8.8.4.4"},
+		{DNSName: "update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "foo.elb.amazonaws.com"},
 	}
 	updatedRecords := []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.gcp.zalan.do", Target: "1.2.3.4"},
-		{DNSName: "update-test-cname.ext-dns-test.gcp.zalan.do", Target: "bar.elb.amazonaws.com"},
+		{DNSName: "update-test.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "1.2.3.4"},
+		{DNSName: "update-test.zone-2.ext-dns-test-2.gcp.zalan.do", Target: "4.3.2.1"},
+		{DNSName: "update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "bar.elb.amazonaws.com"},
 	}
 
-	if err := provider.UpdateRecords(googleTestZone, updatedRecords, currentRecords); err != nil {
+	if err := provider.UpdateRecords(updatedRecords, currentRecords); err != nil {
 		t.Fatal(err)
 	}
 
-	records, err := provider.Records(googleTestZone)
+	records, err := provider.Records("_")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.gcp.zalan.do", Target: "1.2.3.4"},
-		{DNSName: "update-test-cname.ext-dns-test.gcp.zalan.do", Target: "bar.elb.amazonaws.com"},
+		{DNSName: "update-test.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "1.2.3.4"},
+		{DNSName: "update-test.zone-2.ext-dns-test-2.gcp.zalan.do", Target: "4.3.2.1"},
+		{DNSName: "update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "bar.elb.amazonaws.com"},
 	})
 }
 
 func TestGoogleDeleteRecords(t *testing.T) {
-	provider := newGoogleProvider(t, "ext-dns-test.gcp.zalan.do", false, []*endpoint.Endpoint{
-		{DNSName: "delete-test.ext-dns-test.gcp.zalan.do", Target: "8.8.8.8"},
-		{DNSName: "delete-test-cname.ext-dns-test.gcp.zalan.do", Target: "baz.elb.amazonaws.com"},
+	provider := newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do.", false, []*endpoint.Endpoint{
+		{DNSName: "delete-test.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "1.2.3.4"},
+		{DNSName: "delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", Target: "8.8.8.8"},
+		{DNSName: "delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "baz.elb.amazonaws.com"},
 	})
 
 	currentRecords := []*endpoint.Endpoint{
-		{DNSName: "delete-test.ext-dns-test.gcp.zalan.do", Target: "8.8.8.8"},
-		{DNSName: "delete-test-cname.ext-dns-test.gcp.zalan.do", Target: "baz.elb.amazonaws.com"},
+		{DNSName: "delete-test.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "1.2.3.4"},
+		{DNSName: "delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", Target: "8.8.8.8"},
+		{DNSName: "delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "baz.elb.amazonaws.com"},
 	}
 
-	if err := provider.DeleteRecords(googleTestZone, currentRecords); err != nil {
+	if err := provider.DeleteRecords(currentRecords); err != nil {
 		t.Fatal(err)
 	}
 
-	records, err := provider.Records(googleTestZone)
+	records, err := provider.Records("_")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,32 +147,36 @@ func TestGoogleDeleteRecords(t *testing.T) {
 }
 
 func TestGoogleApplyChanges(t *testing.T) {
-	provider := newGoogleProvider(t, "ext-dns-test.gcp.zalan.do", false, []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.gcp.zalan.do", Target: "8.8.8.8"},
-		{DNSName: "delete-test.ext-dns-test.gcp.zalan.do", Target: "8.8.8.8"},
-		{DNSName: "update-test-cname.ext-dns-test.gcp.zalan.do", Target: "bar.elb.amazonaws.com"},
-		{DNSName: "delete-test-cname.ext-dns-test.gcp.zalan.do", Target: "qux.elb.amazonaws.com"},
+	provider := newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do.", false, []*endpoint.Endpoint{
+		{DNSName: "update-test.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "8.8.8.8"},
+		{DNSName: "delete-test.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "8.8.8.8"},
+		{DNSName: "update-test.zone-2.ext-dns-test-2.gcp.zalan.do", Target: "8.8.4.4"},
+		{DNSName: "delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", Target: "8.8.4.4"},
+		{DNSName: "update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "bar.elb.amazonaws.com"},
+		{DNSName: "delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "qux.elb.amazonaws.com"},
 	})
 
-	time.Sleep(time.Second)
-
 	createRecords := []*endpoint.Endpoint{
-		{DNSName: "create-test.ext-dns-test.gcp.zalan.do", Target: "8.8.8.8"},
-		{DNSName: "create-test-cname.ext-dns-test.gcp.zalan.do", Target: "foo.elb.amazonaws.com"},
+		{DNSName: "create-test.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "8.8.8.8"},
+		{DNSName: "create-test.zone-2.ext-dns-test-2.gcp.zalan.do", Target: "8.8.4.4"},
+		{DNSName: "create-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "foo.elb.amazonaws.com"},
 	}
 
 	currentRecords := []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.gcp.zalan.do", Target: "8.8.8.8"},
-		{DNSName: "update-test-cname.ext-dns-test.gcp.zalan.do", Target: "bar.elb.amazonaws.com"},
+		{DNSName: "update-test.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "8.8.8.8"},
+		{DNSName: "update-test.zone-2.ext-dns-test-2.gcp.zalan.do", Target: "8.8.4.4"},
+		{DNSName: "update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "bar.elb.amazonaws.com"},
 	}
 	updatedRecords := []*endpoint.Endpoint{
-		{DNSName: "update-test.ext-dns-test.gcp.zalan.do", Target: "1.2.3.4"},
-		{DNSName: "update-test-cname.ext-dns-test.gcp.zalan.do", Target: "baz.elb.amazonaws.com"},
+		{DNSName: "update-test.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "1.2.3.4"},
+		{DNSName: "update-test.zone-2.ext-dns-test-2.gcp.zalan.do", Target: "4.3.2.1"},
+		{DNSName: "update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "baz.elb.amazonaws.com"},
 	}
 
 	deleteRecords := []*endpoint.Endpoint{
-		{DNSName: "delete-test.ext-dns-test.gcp.zalan.do", Target: "8.8.8.8"},
-		{DNSName: "delete-test-cname.ext-dns-test.gcp.zalan.do", Target: "qux.elb.amazonaws.com"},
+		{DNSName: "delete-test.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "8.8.8.8"},
+		{DNSName: "delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", Target: "8.8.4.4"},
+		{DNSName: "delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "qux.elb.amazonaws.com"},
 	}
 
 	changes := &plan.Changes{
@@ -176,20 +186,74 @@ func TestGoogleApplyChanges(t *testing.T) {
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges(googleTestZone, changes); err != nil {
+	if err := provider.ApplyChanges("_", changes); err != nil {
 		t.Fatal(err)
 	}
 
-	records, err := provider.Records(googleTestZone)
+	records, err := provider.Records("_")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		{DNSName: "create-test.ext-dns-test.gcp.zalan.do", Target: "8.8.8.8"},
-		{DNSName: "update-test.ext-dns-test.gcp.zalan.do", Target: "1.2.3.4"},
-		{DNSName: "create-test-cname.ext-dns-test.gcp.zalan.do", Target: "foo.elb.amazonaws.com"},
-		{DNSName: "update-test-cname.ext-dns-test.gcp.zalan.do", Target: "baz.elb.amazonaws.com"},
+		{DNSName: "create-test.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "8.8.8.8"},
+		{DNSName: "update-test.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "1.2.3.4"},
+		{DNSName: "create-test.zone-2.ext-dns-test-2.gcp.zalan.do", Target: "8.8.4.4"},
+		{DNSName: "update-test.zone-2.ext-dns-test-2.gcp.zalan.do", Target: "4.3.2.1"},
+		{DNSName: "create-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "foo.elb.amazonaws.com"},
+		{DNSName: "update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", Target: "baz.elb.amazonaws.com"},
+	})
+}
+
+func TestSeparateChanges(t *testing.T) {
+	change := &dns.Change{
+		Additions: []*dns.ResourceRecordSet{
+			{Name: "qux.foo.example.org", Ttl: 1},
+			{Name: "qux.bar.example.org", Ttl: 2},
+		},
+		Deletions: []*dns.ResourceRecordSet{
+			{Name: "wambo.foo.example.org", Ttl: 10},
+			{Name: "wambo.bar.example.org", Ttl: 20},
+		},
+	}
+
+	zones := map[string]*dns.ManagedZone{
+		"foo-example-org": &dns.ManagedZone{
+			Name:    "foo-example-org",
+			DnsName: "foo.example.org.",
+		},
+		"bar-example-org": &dns.ManagedZone{
+			Name:    "bar-example-org",
+			DnsName: "bar.example.org.",
+		},
+		"baz-example-org": &dns.ManagedZone{
+			Name:    "baz-example-org",
+			DnsName: "baz.example.org.",
+		},
+	}
+
+	changes := separateChange(zones, change)
+
+	if len(changes) != 2 {
+		t.Fatalf("expected %d change(s), got %d", 2, len(changes))
+	}
+
+	validateChange(t, changes["foo-example-org"], &dns.Change{
+		Additions: []*dns.ResourceRecordSet{
+			{Name: "qux.foo.example.org", Ttl: 1},
+		},
+		Deletions: []*dns.ResourceRecordSet{
+			{Name: "wambo.foo.example.org", Ttl: 10},
+		},
+	})
+
+	validateChange(t, changes["bar-example-org"], &dns.Change{
+		Additions: []*dns.ResourceRecordSet{
+			{Name: "qux.bar.example.org", Ttl: 2},
+		},
+		Deletions: []*dns.ResourceRecordSet{
+			{Name: "wambo.bar.example.org", Ttl: 20},
+		},
 	})
 }
 
@@ -197,11 +261,11 @@ func TestGoogleApplyChanges(t *testing.T) {
 
 // Create with dry run
 // func TestGoogleCreateRecordDryRun(t *testing.T) {
-// 	provider := newGoogleProvider(t, "ext-dns-test.gcp.zalan.do", false, []*endpoint.Endpoint{})
+// 	provider := newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do", false, []*endpoint.Endpoint{})
 //
-// 	records := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.gcp.zalan.do", Target: "8.8.8.8"}}
+// 	records := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test-2.gcp.zalan.do", Target: "8.8.8.8"}}
 //
-// 	err := provider.DeleteRecords("ext-dns-test-gcp-zalan-do", records)
+// 	err := provider.DeleteRecords("ext-dns-test-2-gcp-zalan-do", records)
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}
@@ -210,14 +274,14 @@ func TestGoogleApplyChanges(t *testing.T) {
 //
 // 	//
 //
-// 	provider = newGoogleProvider(t, "ext-dns-test.gcp.zalan.do", true, []*endpoint.Endpoint{})
+// 	provider = newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do", true, []*endpoint.Endpoint{})
 //
-// 	err = provider.CreateRecords("ext-dns-test-gcp-zalan-do", records)
+// 	err = provider.CreateRecords("ext-dns-test-2-gcp-zalan-do", records)
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}
 //
-// 	records, err = provider.Records("ext-dns-test-gcp-zalan-do")
+// 	records, err = provider.Records("ext-dns-test-2-gcp-zalan-do")
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}
@@ -225,7 +289,7 @@ func TestGoogleApplyChanges(t *testing.T) {
 // 	found := false
 //
 // 	for _, r := range records {
-// 		if r.DNSName == "create-test.ext-dns-test.gcp.zalan.do" {
+// 		if r.DNSName == "create-test.ext-dns-test-2.gcp.zalan.do" {
 // 			if r.Target == "8.8.8.8" {
 // 				found = true
 // 			}
@@ -233,23 +297,23 @@ func TestGoogleApplyChanges(t *testing.T) {
 // 	}
 //
 // 	if found {
-// 		t.Fatal("create-test.ext-dns-test.gcp.zalan.do should not be there")
+// 		t.Fatal("create-test.ext-dns-test-2.gcp.zalan.do should not be there")
 // 	}
 // }
 //
 // // update with dryRun
 // func TestGoogleUpdateRecordDryRun(t *testing.T) {
-// 	provider := newGoogleProvider(t, "ext-dns-test.gcp.zalan.do", false, []*endpoint.Endpoint{})
+// 	provider := newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do", false, []*endpoint.Endpoint{})
 //
-// 	oldRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.gcp.zalan.do", Target: "8.8.8.8"}}
-// 	newRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.gcp.zalan.do", Target: "1.2.3.4"}}
+// 	oldRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test-2.gcp.zalan.do", Target: "8.8.8.8"}}
+// 	newRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test-2.gcp.zalan.do", Target: "1.2.3.4"}}
 //
-// 	err := provider.DeleteRecords("ext-dns-test-gcp-zalan-do", newRecords)
+// 	err := provider.DeleteRecords("ext-dns-test-2-gcp-zalan-do", newRecords)
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}
 //
-// 	err = provider.CreateRecords("ext-dns-test-gcp-zalan-do", oldRecords)
+// 	err = provider.CreateRecords("ext-dns-test-2-gcp-zalan-do", oldRecords)
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}
@@ -258,14 +322,14 @@ func TestGoogleApplyChanges(t *testing.T) {
 //
 // 	//
 //
-// 	provider = newGoogleProvider(t, "ext-dns-test.gcp.zalan.do", true, []*endpoint.Endpoint{})
+// 	provider = newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do", true, []*endpoint.Endpoint{})
 //
-// 	err = provider.UpdateRecords("ext-dns-test-gcp-zalan-do", newRecords, oldRecords)
+// 	err = provider.UpdateRecords("ext-dns-test-2-gcp-zalan-do", newRecords, oldRecords)
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}
 //
-// 	records, err := provider.Records("ext-dns-test-gcp-zalan-do")
+// 	records, err := provider.Records("ext-dns-test-2-gcp-zalan-do")
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}
@@ -273,7 +337,7 @@ func TestGoogleApplyChanges(t *testing.T) {
 // 	found := false
 //
 // 	for _, r := range records {
-// 		if r.DNSName == "update-test.ext-dns-test.gcp.zalan.do" {
+// 		if r.DNSName == "update-test.ext-dns-test-2.gcp.zalan.do" {
 // 			if r.Target == "1.2.3.4" {
 // 				found = true
 // 			}
@@ -281,17 +345,17 @@ func TestGoogleApplyChanges(t *testing.T) {
 // 	}
 //
 // 	if found {
-// 		t.Fatal("update-test.ext-dns-test.gcp.zalan.do should not point to 1.2.3.4")
+// 		t.Fatal("update-test.ext-dns-test-2.gcp.zalan.do should not point to 1.2.3.4")
 // 	}
 // }
 //
 // // delete with dryRun
 // func TestGoogleDeleteRecordDryRun(t *testing.T) {
-// 	provider := newGoogleProvider(t, "ext-dns-test.gcp.zalan.do", false, []*endpoint.Endpoint{})
+// 	provider := newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do", false, []*endpoint.Endpoint{})
 //
-// 	records := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.gcp.zalan.do", Target: "20.153.88.175"}}
+// 	records := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test-2.gcp.zalan.do", Target: "20.153.88.175"}}
 //
-// 	err := provider.CreateRecords("ext-dns-test-gcp-zalan-do", records)
+// 	err := provider.CreateRecords("ext-dns-test-2-gcp-zalan-do", records)
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}
@@ -300,14 +364,14 @@ func TestGoogleApplyChanges(t *testing.T) {
 //
 // 	//
 //
-// 	provider = newGoogleProvider(t, "ext-dns-test.gcp.zalan.do", true, []*endpoint.Endpoint{})
+// 	provider = newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do", true, []*endpoint.Endpoint{})
 //
-// 	err = provider.DeleteRecords("ext-dns-test-gcp-zalan-do", records)
+// 	err = provider.DeleteRecords("ext-dns-test-2-gcp-zalan-do", records)
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}
 //
-// 	records, err = provider.Records("ext-dns-test-gcp-zalan-do")
+// 	records, err = provider.Records("ext-dns-test-2-gcp-zalan-do")
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}
@@ -315,25 +379,25 @@ func TestGoogleApplyChanges(t *testing.T) {
 // 	found := false
 //
 // 	for _, r := range records {
-// 		if r.DNSName == "delete-test.ext-dns-test.gcp.zalan.do" {
+// 		if r.DNSName == "delete-test.ext-dns-test-2.gcp.zalan.do" {
 // 			found = true
 // 		}
 // 	}
 //
 // 	if !found {
-// 		t.Fatal("delete-test.ext-dns-test.gcp.zalan.do should not be gone")
+// 		t.Fatal("delete-test.ext-dns-test-2.gcp.zalan.do should not be gone")
 // 	}
 // }
 //
 // // Apply With DryRun
 // func TestGoogleApplyDryRun(t *testing.T) {
-// 	provider := newGoogleProvider(t, "ext-dns-test.gcp.zalan.do", false, []*endpoint.Endpoint{})
+// 	provider := newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do", false, []*endpoint.Endpoint{})
 //
 // 	// create setup
 //
-// 	createRecords := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test.gcp.zalan.do", Target: "8.8.8.8"}}
+// 	createRecords := []*endpoint.Endpoint{{DNSName: "create-test.ext-dns-test-2.gcp.zalan.do", Target: "8.8.8.8"}}
 //
-// 	err := provider.DeleteRecords("ext-dns-test-gcp-zalan-do", createRecords)
+// 	err := provider.DeleteRecords("ext-dns-test-2-gcp-zalan-do", createRecords)
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}
@@ -342,15 +406,15 @@ func TestGoogleApplyChanges(t *testing.T) {
 //
 // 	// update setup
 //
-// 	oldRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.gcp.zalan.do", Target: "8.8.8.8"}}
-// 	newRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test.gcp.zalan.do", Target: "1.2.3.4"}}
+// 	oldRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test-2.gcp.zalan.do", Target: "8.8.8.8"}}
+// 	newRecords := []*endpoint.Endpoint{{DNSName: "update-test.ext-dns-test-2.gcp.zalan.do", Target: "1.2.3.4"}}
 //
-// 	err = provider.DeleteRecords("ext-dns-test-gcp-zalan-do", newRecords)
+// 	err = provider.DeleteRecords("ext-dns-test-2-gcp-zalan-do", newRecords)
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}
 //
-// 	err = provider.CreateRecords("ext-dns-test-gcp-zalan-do", oldRecords)
+// 	err = provider.CreateRecords("ext-dns-test-2-gcp-zalan-do", oldRecords)
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}
@@ -359,9 +423,9 @@ func TestGoogleApplyChanges(t *testing.T) {
 //
 // 	// delete setup
 //
-// 	deleteRecords := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test.gcp.zalan.do", Target: "20.153.88.175"}}
+// 	deleteRecords := []*endpoint.Endpoint{{DNSName: "delete-test.ext-dns-test-2.gcp.zalan.do", Target: "20.153.88.175"}}
 //
-// 	err = provider.CreateRecords("ext-dns-test-gcp-zalan-do", deleteRecords)
+// 	err = provider.CreateRecords("ext-dns-test-2-gcp-zalan-do", deleteRecords)
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}
@@ -370,7 +434,7 @@ func TestGoogleApplyChanges(t *testing.T) {
 //
 // 	//
 //
-// 	provider = newGoogleProvider(t, "ext-dns-test.gcp.zalan.do", true, []*endpoint.Endpoint{})
+// 	provider = newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do", true, []*endpoint.Endpoint{})
 //
 // 	changes := &plan.Changes{
 // 		Create:    createRecords,
@@ -379,14 +443,14 @@ func TestGoogleApplyChanges(t *testing.T) {
 // 		Delete:    deleteRecords,
 // 	}
 //
-// 	err = provider.ApplyChanges("ext-dns-test-gcp-zalan-do", changes)
+// 	err = provider.ApplyChanges("ext-dns-test-2-gcp-zalan-do", changes)
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}
 //
 // 	// create validation
 //
-// 	records, err := provider.Records("ext-dns-test-gcp-zalan-do")
+// 	records, err := provider.Records("ext-dns-test-2-gcp-zalan-do")
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}
@@ -394,7 +458,7 @@ func TestGoogleApplyChanges(t *testing.T) {
 // 	found := false
 //
 // 	for _, r := range records {
-// 		if r.DNSName == "create-test.ext-dns-test.gcp.zalan.do" {
+// 		if r.DNSName == "create-test.ext-dns-test-2.gcp.zalan.do" {
 // 			if r.Target == "8.8.8.8" {
 // 				found = true
 // 			}
@@ -402,7 +466,7 @@ func TestGoogleApplyChanges(t *testing.T) {
 // 	}
 //
 // 	if found {
-// 		t.Fatal("create-test.ext-dns-test.gcp.zalan.do should not be there")
+// 		t.Fatal("create-test.ext-dns-test-2.gcp.zalan.do should not be there")
 // 	}
 //
 // 	// update validation
@@ -410,7 +474,7 @@ func TestGoogleApplyChanges(t *testing.T) {
 // 	found = false
 //
 // 	for _, r := range records {
-// 		if r.DNSName == "update-test.ext-dns-test.gcp.zalan.do" {
+// 		if r.DNSName == "update-test.ext-dns-test-2.gcp.zalan.do" {
 // 			if r.Target == "1.2.3.4" {
 // 				found = true
 // 			}
@@ -418,7 +482,7 @@ func TestGoogleApplyChanges(t *testing.T) {
 // 	}
 //
 // 	if found {
-// 		t.Fatal("update-test.ext-dns-test.gcp.zalan.do should not point to 1.2.3.4")
+// 		t.Fatal("update-test.ext-dns-test-2.gcp.zalan.do should not point to 1.2.3.4")
 // 	}
 //
 // 	// delete validation
@@ -426,17 +490,17 @@ func TestGoogleApplyChanges(t *testing.T) {
 // 	found = false
 //
 // 	for _, r := range records {
-// 		if r.DNSName == "delete-test.ext-dns-test.gcp.zalan.do" {
+// 		if r.DNSName == "delete-test.ext-dns-test-2.gcp.zalan.do" {
 // 			found = true
 // 		}
 // 	}
 //
 // 	if !found {
-// 		t.Fatal("delete-test.ext-dns-test.gcp.zalan.do should not be gone")
+// 		t.Fatal("delete-test.ext-dns-test-2.gcp.zalan.do should not be gone")
 // 	}
 // }
 
-func validateZones(t *testing.T, zones []*dns.ManagedZone, expected []map[string]string) {
+func validateZones(t *testing.T, zones map[string]*dns.ManagedZone, expected map[string]*dns.ManagedZone) {
 	if len(zones) != len(expected) {
 		t.Fatalf("expected %d zone(s), got %d", len(expected), len(zones))
 	}
@@ -446,17 +510,42 @@ func validateZones(t *testing.T, zones []*dns.ManagedZone, expected []map[string
 	}
 }
 
-func validateZone(t *testing.T, zone *dns.ManagedZone, expected map[string]string) {
-	if zone.Name != expected["name"] {
-		t.Errorf("expected %s, got %s", expected["name"], zone.Name)
+func validateZone(t *testing.T, zone *dns.ManagedZone, expected *dns.ManagedZone) {
+	if zone.Name != expected.Name {
+		t.Errorf("expected %s, got %s", expected.Name, zone.Name)
 	}
 
-	if zone.DnsName != expected["domain"] {
-		t.Errorf("expected %s, got %s", expected["domain"], zone.DnsName)
+	if zone.DnsName != expected.DnsName {
+		t.Errorf("expected %s, got %s", expected.DnsName, zone.DnsName)
 	}
 }
 
-func newGoogleProvider(t *testing.T, zoneFilter string, dryRun bool, records []*endpoint.Endpoint) *googleProvider {
+func validateChange(t *testing.T, change *dns.Change, expected *dns.Change) {
+	validateChangeRecords(t, change.Additions, expected.Additions)
+	validateChangeRecords(t, change.Deletions, expected.Deletions)
+}
+
+func validateChangeRecords(t *testing.T, records []*dns.ResourceRecordSet, expected []*dns.ResourceRecordSet) {
+	if len(records) != len(expected) {
+		t.Fatalf("expected %d change(s), got %d", len(expected), len(records))
+	}
+
+	for i := range records {
+		validateChangeRecord(t, records[i], expected[i])
+	}
+}
+
+func validateChangeRecord(t *testing.T, record *dns.ResourceRecordSet, expected *dns.ResourceRecordSet) {
+	if record.Name != expected.Name {
+		t.Errorf("expected %s, got %s", expected.Name, record.Name)
+	}
+
+	if record.Ttl != expected.Ttl {
+		t.Errorf("expected %d, got %d", expected.Ttl, record.Ttl)
+	}
+}
+
+func newGoogleProvider(t *testing.T, domain string, dryRun bool, records []*endpoint.Endpoint) *googleProvider {
 	gcloud, err := google.DefaultClient(context.TODO(), dns.NdevClouddnsReadwriteScope)
 	if err != nil {
 		t.Fatal(err)
@@ -467,26 +556,29 @@ func newGoogleProvider(t *testing.T, zoneFilter string, dryRun bool, records []*
 		t.Fatal(err)
 	}
 
-	zone := &dns.ManagedZone{
-		Name:        "ext-dns-test-gcp-zalan-do",
-		DnsName:     "ext-dns-test.gcp.zalan.do.",
-		Description: "Testing zone for kubernetes.io/external-dns",
-	}
-
-	if _, err := dnsClient.ManagedZones.Create("zalando-external-dns-test", zone).Do(); err != nil {
-		if err, ok := err.(*googleapi.Error); !ok || err.Code != http.StatusConflict {
-			t.Fatal(err)
-		}
-	}
-
 	provider := &googleProvider{
-		project:                  "zalando-external-dns-test",
-		dryRun:                   dryRun,
-		zoneFilter:               zoneFilter,
+		project: "zalando-external-dns-test",
+		domain:  domain,
+		dryRun:  dryRun,
 		resourceRecordSetsClient: resourceRecordSetsService{dnsClient.ResourceRecordSets},
 		managedZonesClient:       managedZonesService{dnsClient.ManagedZones},
 		changesClient:            changesService{dnsClient.Changes},
 	}
+
+	createZone(t, provider, &dns.ManagedZone{
+		Name:    "zone-1-ext-dns-test-2-gcp-zalan-do",
+		DnsName: "zone-1.ext-dns-test-2.gcp.zalan.do.",
+	})
+
+	createZone(t, provider, &dns.ManagedZone{
+		Name:    "zone-2-ext-dns-test-2-gcp-zalan-do",
+		DnsName: "zone-2.ext-dns-test-2.gcp.zalan.do.",
+	})
+
+	createZone(t, provider, &dns.ManagedZone{
+		Name:    "zone-3-ext-dns-test-2-gcp-zalan-do",
+		DnsName: "zone-3.ext-dns-test-2.gcp.zalan.do.",
+	})
 
 	setupGoogleRecords(t, provider, records)
 
@@ -495,14 +587,32 @@ func newGoogleProvider(t *testing.T, zoneFilter string, dryRun bool, records []*
 	return provider
 }
 
-func setupGoogleRecords(t *testing.T, provider *googleProvider, endpoints []*endpoint.Endpoint) {
-	clearGoogleRecords(t, provider)
+func createZone(t *testing.T, provider *googleProvider, zone *dns.ManagedZone) {
+	zone.Description = "Testing zone for kubernetes.io/external-dns"
 
-	if err := provider.CreateRecords(googleTestZone, endpoints); err != nil {
+	if _, err := provider.managedZonesClient.Create("zalando-external-dns-test", zone).Do(); err != nil {
+		if err, ok := err.(*googleapi.Error); !ok || err.Code != http.StatusConflict {
+			t.Fatal(err)
+		}
+	}
+}
+
+func setupGoogleRecords(t *testing.T, provider *googleProvider, endpoints []*endpoint.Endpoint) {
+	clearGoogleRecords(t, provider, "zone-1-ext-dns-test-2-gcp-zalan-do")
+	clearGoogleRecords(t, provider, "zone-2-ext-dns-test-2-gcp-zalan-do")
+
+	records, err := provider.Records("_")
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	records, err := provider.Records(googleTestZone)
+	validateEndpoints(t, records, []*endpoint.Endpoint{})
+
+	if err = provider.CreateRecords(endpoints); err != nil {
+		t.Fatal(err)
+	}
+
+	records, err = provider.Records("_")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -510,9 +620,9 @@ func setupGoogleRecords(t *testing.T, provider *googleProvider, endpoints []*end
 	validateEndpoints(t, records, endpoints)
 }
 
-func clearGoogleRecords(t *testing.T, provider *googleProvider) {
+func clearGoogleRecords(t *testing.T, provider *googleProvider, zone string) {
 	recordSets := []*dns.ResourceRecordSet{}
-	if err := provider.resourceRecordSetsClient.List(provider.project, googleTestZone).Pages(context.TODO(), func(resp *dns.ResourceRecordSetsListResponse) error {
+	if err := provider.resourceRecordSetsClient.List(provider.project, zone).Pages(context.TODO(), func(resp *dns.ResourceRecordSetsListResponse) error {
 		for _, r := range resp.Rrsets {
 			switch r.Type {
 			case "A", "CNAME":
@@ -525,17 +635,10 @@ func clearGoogleRecords(t *testing.T, provider *googleProvider) {
 	}
 
 	if len(recordSets) != 0 {
-		if _, err := provider.changesClient.Create(provider.project, googleTestZone, &dns.Change{
+		if _, err := provider.changesClient.Create(provider.project, zone, &dns.Change{
 			Deletions: recordSets,
 		}).Do(); err != nil {
 			t.Fatal(err)
 		}
 	}
-
-	records, err := provider.Records(googleTestZone)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	validateEndpoints(t, records, []*endpoint.Endpoint{})
 }
