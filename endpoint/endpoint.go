@@ -16,9 +16,7 @@ limitations under the License.
 
 package endpoint
 
-import (
-	"strings"
-)
+import "strings"
 
 const (
 	// OwnerLabelKey is the name of the label that defines the owner of an Endpoint.
@@ -41,5 +39,13 @@ func NewEndpoint(dnsName, target string) *Endpoint {
 		DNSName: strings.TrimSuffix(dnsName, "."),
 		Target:  strings.TrimSuffix(target, "."),
 		Labels:  map[string]string{},
+	}
+}
+
+func (e *Endpoint) MergeLabels(labels map[string]string) {
+	for k, v := range labels {
+		if e.Labels[k] == "" {
+			e.Labels[k] = v
+		}
 	}
 }
