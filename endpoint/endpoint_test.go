@@ -16,8 +16,10 @@ limitations under the License.
 
 package endpoint
 
-import "testing"
-import "reflect"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestNewEndpoint(t *testing.T) {
 	e := NewEndpoint("example.org", "1.2.3.4")

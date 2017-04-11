@@ -16,7 +16,9 @@ limitations under the License.
 
 package endpoint
 
-import "strings"
+import (
+	"strings"
+)
 
 const (
 	// OwnerLabelKey is the name of the label that defines the owner of an Endpoint.
