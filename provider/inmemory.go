@@ -24,8 +24,6 @@ import (
 )
 
 var (
-	defaultType = "A"
-
 	// ErrZoneAlreadyExists error returned when zone cannot be created when it already exists
 	ErrZoneAlreadyExists = errors.New("specified zone already exists")
 	// ErrZoneNotFound error returned when specified zone does not exists
@@ -35,7 +33,7 @@ var (
 	// ErrRecordNotFound when update/delete request is sent but record not found
 	ErrRecordNotFound = errors.New("record not found")
 	// ErrInvalidBatchRequest when record is repeated in create/update/delete
-	ErrInvalidBatchRequest = errors.New("record should only be specified in one list")
+	ErrInvalidBatchRequest = errors.New("invalid batch request")
 )
 
 type zone map[string][]*InMemoryRecord
@@ -100,18 +98,25 @@ func (im *InMemoryProvider) ApplyChanges(zone string, changes *plan.Changes) err
 
 	for _, newEndpoint := range changes.Create {
 		im.zones[zone][newEndpoint.DNSName] = append(im.zones[zone][newEndpoint.DNSName], &InMemoryRecord{
-			Type:     defaultType,
+			Type:     suitableType(newEndpoint),
 			Endpoint: newEndpoint,
 		})
 	}
 	for _, updateEndpoint := range changes.UpdateNew {
-		recordToUpdate := im.findByType(defaultType, im.zones[zone][updateEndpoint.DNSName])
-		recordToUpdate.Target = updateEndpoint.Target
+		for _, curEndpoint := range changes.UpdateOld {
+			if curEndpoint.DNSName == updateEndpoint.DNSName && curEndpoint.RecordType == updateEndpoint.RecordType {
+				for _, recordToUpdate := range im.zones[zone][updateEndpoint.DNSName] {
+					if recordToUpdate.Target == curEndpoint.Target {
+						recordToUpdate.Target = updateEndpoint.Target
+					}
+				}
+			}
+		}
 	}
 	for _, deleteEndpoint := range changes.Delete {
 		newRecordSet := make([]*InMemoryRecord, 0)
 		for _, record := range im.zones[zone][deleteEndpoint.DNSName] {
-			if record.Type != defaultType {
+			if record.Type != suitableType(deleteEndpoint) {
 				newRecordSet = append(newRecordSet, record)
 			}
 		}
@@ -126,38 +131,50 @@ func (im *InMemoryProvider) validateChangeBatch(zone string, changes *plan.Chang
 	if !ok {
 		return ErrZoneNotFound
 	}
-	mesh := map[string]bool{}
+	mesh := map[string]map[string]bool{}
 	for _, newEndpoint := range changes.Create {
-		if im.findByType(defaultType, existing[newEndpoint.DNSName]) != nil {
+		if im.findByType(suitableType(newEndpoint), existing[newEndpoint.DNSName]) != nil {
 			return ErrRecordAlreadyExists
 		}
 		if _, exists := mesh[newEndpoint.DNSName]; exists {
-			return ErrInvalidBatchRequest
+			if mesh[newEndpoint.DNSName][suitableType(newEndpoint)] {
+				return ErrInvalidBatchRequest
+			}
+			mesh[newEndpoint.DNSName][suitableType(newEndpoint)] = true
+			continue
 		}
-		mesh[newEndpoint.DNSName] = true
+		mesh[newEndpoint.DNSName] = map[string]bool{suitableType(newEndpoint): true}
 	}
 	for _, updateEndpoint := range changes.UpdateNew {
-		if im.findByType(defaultType, existing[updateEndpoint.DNSName]) == nil {
+		if im.findByType(suitableType(updateEndpoint), existing[updateEndpoint.DNSName]) == nil {
 			return ErrRecordNotFound
 		}
 		if _, exists := mesh[updateEndpoint.DNSName]; exists {
-			return ErrInvalidBatchRequest
+			if mesh[updateEndpoint.DNSName][suitableType(updateEndpoint)] {
+				return ErrInvalidBatchRequest
+			}
+			mesh[updateEndpoint.DNSName][suitableType(updateEndpoint)] = true
+			continue
 		}
-		mesh[updateEndpoint.DNSName] = true
+		mesh[updateEndpoint.DNSName] = map[string]bool{suitableType(updateEndpoint): true}
 	}
 	for _, updateOldEndpoint := range changes.UpdateOld {
-		if rec := im.findByType(defaultType, existing[updateOldEndpoint.DNSName]); rec == nil || rec.Target != updateOldEndpoint.Target {
+		if rec := im.findByType(suitableType(updateOldEndpoint), existing[updateOldEndpoint.DNSName]); rec == nil || rec.Target != updateOldEndpoint.Target {
 			return ErrRecordNotFound
 		}
 	}
 	for _, deleteEndpoint := range changes.Delete {
-		if rec := im.findByType(defaultType, existing[deleteEndpoint.DNSName]); rec == nil || rec.Target != deleteEndpoint.Target {
+		if rec := im.findByType(suitableType(deleteEndpoint), existing[deleteEndpoint.DNSName]); rec == nil || rec.Target != deleteEndpoint.Target {
 			return ErrRecordNotFound
 		}
 		if _, exists := mesh[deleteEndpoint.DNSName]; exists {
-			return ErrInvalidBatchRequest
+			if mesh[deleteEndpoint.DNSName][suitableType(deleteEndpoint)] {
+				return ErrInvalidBatchRequest
+			}
+			mesh[deleteEndpoint.DNSName][suitableType(deleteEndpoint)] = true
+			continue
 		}
-		mesh[deleteEndpoint.DNSName] = true
+		mesh[deleteEndpoint.DNSName] = map[string]bool{suitableType(deleteEndpoint): true}
 	}
 	return nil
 }
@@ -176,6 +193,7 @@ func (im *InMemoryProvider) endpoints(zone string) []*endpoint.Endpoint {
 	if zoneRecords, exists := im.zones[zone]; exists {
 		for _, recordsPerName := range zoneRecords {
 			for _, record := range recordsPerName {
+				record.Endpoint.RecordType = record.Type
 				endpoints = append(endpoints, record.Endpoint)
 			}
 		}

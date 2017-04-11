@@ -94,7 +94,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	r, err := registry.NewNoopRegistry(p)
+	var r registry.Registry
+	switch cfg.Registry {
+	case "noop":
+		r, err = registry.NewNoopRegistry(p)
+	case "txt":
+		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.RecordOwnerID)
+	default:
+		log.Fatalf("unknown registry: %s", cfg.Registry)
+	}
+
 	if err != nil {
 		log.Fatal(err)
 	}
