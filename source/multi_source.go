@@ -40,6 +40,6 @@ func (ms *multiSource) Endpoints() ([]*endpoint.Endpoint, error) {
 }
 
 // NewMultiSource creates a new multiSource.
-func NewMultiSource(children ...Source) Source {
+func NewMultiSource(children []Source) Source {
 	return &multiSource{children: children}
 }
