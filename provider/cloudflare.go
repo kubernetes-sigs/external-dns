@@ -185,7 +185,7 @@ func (p *CloudFlareProvider) Records(zone string) ([]*endpoint.Endpoint, error) 
 
 	endpoints := []*endpoint.Endpoint{}
 	for _, r := range records {
-		endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Content))
+		endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Content, r.Type))
 	}
 
 	return endpoints, nil
@@ -300,7 +300,7 @@ func newCloudFlareChange(action string, endpoint *endpoint.Endpoint) *CloudFlare
 			TTL: 1,
 			//record is receiving the performance and security benefits of Cloudflare
 			Proxied: true,
-			Type:    suitableType(endpoint.Target),
+			Type:    suitableType(endpoint),
 			Content: endpoint.Target,
 		},
 	}
