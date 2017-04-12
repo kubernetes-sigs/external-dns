@@ -37,6 +37,7 @@ import (
 	"github.com/kubernetes-incubator/external-dns/provider"
 	"github.com/kubernetes-incubator/external-dns/registry"
 	"github.com/kubernetes-incubator/external-dns/source"
+	"github.com/spf13/pflag"
 )
 
 var (
@@ -46,6 +47,9 @@ var (
 func main() {
 	cfg := externaldns.NewConfig()
 	if err := cfg.ParseFlags(os.Args); err != nil {
+		if err == pflag.ErrHelp {
+			os.Exit(0)
+		}
 		log.Fatalf("flag parsing error: %v", err)
 	}
 	if cfg.Version {
@@ -80,7 +84,12 @@ func main() {
 	source.Register("service", source.NewServiceSource(client, cfg.Namespace, cfg.Compatibility))
 	source.Register("ingress", source.NewIngressSource(client, cfg.Namespace))
 
-	sources := source.NewMultiSource(source.LookupMultiple(cfg.Sources...)...)
+	sources, err := source.LookupMultiple(cfg.Sources)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	multiSource := source.NewMultiSource(sources)
 
 	var p provider.Provider
 	switch cfg.Provider {
@@ -116,7 +125,7 @@ func main() {
 
 	ctrl := controller.Controller{
 		Zone:     cfg.Zone,
-		Source:   sources,
+		Source:   multiSource,
 		Registry: r,
 		Policy:   policy,
 		Interval: cfg.Interval,

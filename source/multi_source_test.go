@@ -69,7 +69,7 @@ func testMultiSourceEndpoints(t *testing.T) {
 			}
 
 			// Create our object under test and get the endpoints.
-			source := NewMultiSource(sources...)
+			source := NewMultiSource(sources)
 
 			endpoints, err := source.Endpoints()
 			if err != nil {
