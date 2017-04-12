@@ -39,12 +39,15 @@ type Route53API interface {
 	ListResourceRecordSetsPages(input *route53.ListResourceRecordSetsInput, fn func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool)) error
 	ChangeResourceRecordSets(*route53.ChangeResourceRecordSetsInput) (*route53.ChangeResourceRecordSetsOutput, error)
 	CreateHostedZone(*route53.CreateHostedZoneInput) (*route53.CreateHostedZoneOutput, error)
+	ListHostedZonesPages(input *route53.ListHostedZonesInput, fn func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool)) error
 }
 
 // AWSProvider is an implementation of Provider for AWS Route53.
 type AWSProvider struct {
 	Client Route53API
 	DryRun bool
+	// TODO
+	domain string
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
@@ -67,9 +70,34 @@ func NewAWSProvider(dryRun bool) (Provider, error) {
 	return provider, nil
 }
 
+// Zones returns the list of hosted zones.
+func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
+	zones := make(map[string]*route53.HostedZone)
+
+	f := func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool) {
+		for _, zone := range resp.HostedZones {
+			if strings.HasSuffix(aws.StringValue(zone.Name), p.domain) {
+				zones[aws.StringValue(zone.Id)] = zone
+			}
+		}
+
+		return true
+	}
+
+	err := p.Client.ListHostedZonesPages(&route53.ListHostedZonesInput{}, f)
+	if err != nil {
+		return nil, err
+	}
+
+	return zones, nil
+}
+
 // Records returns the list of records in a given hosted zone.
-func (p *AWSProvider) Records(zone string) ([]*endpoint.Endpoint, error) {
-	endpoints := []*endpoint.Endpoint{}
+func (p *AWSProvider) Records(_ string) (endpoints []*endpoint.Endpoint, _ error) {
+	zones, err := p.Zones()
+	if err != nil {
+		return nil, err
+	}
 
 	f := func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool) {
 		for _, r := range resp.ResourceRecordSets {
@@ -90,45 +118,47 @@ func (p *AWSProvider) Records(zone string) ([]*endpoint.Endpoint, error) {
 		return true
 	}
 
-	params := &route53.ListResourceRecordSetsInput{
-		HostedZoneId: aws.String(expandedHostedZoneID(zone)),
-	}
+	for _, z := range zones {
+		params := &route53.ListResourceRecordSetsInput{
+			HostedZoneId: z.Id,
+		}
 
-	if err := p.Client.ListResourceRecordSetsPages(params, f); err != nil {
-		return nil, err
+		if err := p.Client.ListResourceRecordSetsPages(params, f); err != nil {
+			return nil, err
+		}
 	}
 
 	return endpoints, nil
 }
 
 // CreateRecords creates a given set of DNS records in the given hosted zone.
-func (p *AWSProvider) CreateRecords(zone string, endpoints []*endpoint.Endpoint) error {
-	return p.submitChanges(zone, newChanges(route53.ChangeActionCreate, endpoints))
+func (p *AWSProvider) CreateRecords(endpoints []*endpoint.Endpoint) error {
+	return p.submitChanges(newChanges(route53.ChangeActionCreate, endpoints))
 }
 
 // UpdateRecords updates a given set of old records to a new set of records in a given hosted zone.
-func (p *AWSProvider) UpdateRecords(zone string, endpoints, _ []*endpoint.Endpoint) error {
-	return p.submitChanges(zone, newChanges(route53.ChangeActionUpsert, endpoints))
+func (p *AWSProvider) UpdateRecords(endpoints, _ []*endpoint.Endpoint) error {
+	return p.submitChanges(newChanges(route53.ChangeActionUpsert, endpoints))
 }
 
 // DeleteRecords deletes a given set of DNS records in a given zone.
-func (p *AWSProvider) DeleteRecords(zone string, endpoints []*endpoint.Endpoint) error {
-	return p.submitChanges(zone, newChanges(route53.ChangeActionDelete, endpoints))
+func (p *AWSProvider) DeleteRecords(endpoints []*endpoint.Endpoint) error {
+	return p.submitChanges(newChanges(route53.ChangeActionDelete, endpoints))
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *AWSProvider) ApplyChanges(zone string, changes *plan.Changes) error {
+func (p *AWSProvider) ApplyChanges(_ string, changes *plan.Changes) error {
 	combinedChanges := make([]*route53.Change, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 
 	combinedChanges = append(combinedChanges, newChanges(route53.ChangeActionCreate, changes.Create)...)
 	combinedChanges = append(combinedChanges, newChanges(route53.ChangeActionUpsert, changes.UpdateNew)...)
 	combinedChanges = append(combinedChanges, newChanges(route53.ChangeActionDelete, changes.Delete)...)
 
-	return p.submitChanges(zone, combinedChanges)
+	return p.submitChanges(combinedChanges)
 }
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
-func (p *AWSProvider) submitChanges(zone string, changes []*route53.Change) error {
+func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 	// return early if there is nothing to change
 	if len(changes) == 0 {
 		return nil
@@ -142,18 +172,52 @@ func (p *AWSProvider) submitChanges(zone string, changes []*route53.Change) erro
 		return nil
 	}
 
-	params := &route53.ChangeResourceRecordSetsInput{
-		HostedZoneId: aws.String(expandedHostedZoneID(zone)),
-		ChangeBatch: &route53.ChangeBatch{
-			Changes: changes,
-		},
-	}
-
-	if _, err := p.Client.ChangeResourceRecordSets(params); err != nil {
+	zones, err := p.Zones()
+	if err != nil {
 		return err
 	}
 
+	// separate into per-zone change sets to be passed to the API.
+	changeSet := separateAWSChanges(zones, changes)
+
+	for z, cs := range changeSet {
+		params := &route53.ChangeResourceRecordSetsInput{
+			HostedZoneId: aws.String(z),
+			ChangeBatch: &route53.ChangeBatch{
+				Changes: cs,
+			},
+		}
+
+		if _, err := p.Client.ChangeResourceRecordSets(params); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+// separateChange separates a multi-zone change into a single change per zone.
+func separateAWSChanges(zones map[string]*route53.HostedZone, changeSet []*route53.Change) map[string][]*route53.Change {
+	changes := make(map[string][]*route53.Change)
+
+	for _, z := range zones {
+		changes[aws.StringValue(z.Id)] = []*route53.Change{}
+
+		for _, c := range changeSet {
+			if strings.HasSuffix(ensureTrailingDot(aws.StringValue(c.ResourceRecordSet.Name)), aws.StringValue(z.Name)) {
+				changes[aws.StringValue(z.Id)] = append(changes[aws.StringValue(z.Id)], c)
+			}
+		}
+	}
+
+	// separating a change could lead to empty sub changes, remove them here.
+	for zone, change := range changes {
+		if len(change) == 0 {
+			delete(changes, zone)
+		}
+	}
+
+	return changes
 }
 
 // newChanges returns a collection of Changes based on the given records and action.

@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"net"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
@@ -103,6 +104,8 @@ type googleProvider struct {
 	project string
 	// Enabled dry-run will print any modifying actions rather than execute them.
 	dryRun bool
+	// TODO
+	domain string
 	// A client for managing resource record sets
 	resourceRecordSetsClient resourceRecordSetsClientInterface
 	// A client for managing hosted zones
@@ -112,7 +115,7 @@ type googleProvider struct {
 }
 
 // NewGoogleProvider initializes a new Google CloudDNS based Provider.
-func NewGoogleProvider(project string, dryRun bool) (Provider, error) {
+func NewGoogleProvider(project string, domain string, dryRun bool) (Provider, error) {
 	gcloud, err := google.DefaultClient(context.TODO(), dns.NdevClouddnsReadwriteScope)
 	if err != nil {
 		return nil, err
@@ -125,6 +128,7 @@ func NewGoogleProvider(project string, dryRun bool) (Provider, error) {
 
 	provider := &googleProvider{
 		project: project,
+		domain:  domain,
 		dryRun:  dryRun,
 		resourceRecordSetsClient: resourceRecordSetsService{dnsClient.ResourceRecordSets},
 		managedZonesClient:       managedZonesService{dnsClient.ManagedZones},
@@ -135,51 +139,33 @@ func NewGoogleProvider(project string, dryRun bool) (Provider, error) {
 }
 
 // Zones returns the list of hosted zones.
-func (p *googleProvider) Zones() (zones []*dns.ManagedZone, _ error) {
+func (p *googleProvider) Zones() (map[string]*dns.ManagedZone, error) {
+	zones := make(map[string]*dns.ManagedZone)
+
 	f := func(resp *dns.ManagedZonesListResponse) error {
-		// each page is processed sequentially, no need for a mutex here.
-		zones = append(zones, resp.ManagedZones...)
+		for _, zone := range resp.ManagedZones {
+			if strings.HasSuffix(zone.DnsName, p.domain) {
+				zones[zone.Name] = zone
+			}
+		}
+
 		return nil
 	}
 
-	err := p.managedZonesClient.List(p.project).Pages(context.TODO(), f)
-	if err != nil {
+	if err := p.managedZonesClient.List(p.project).Pages(context.TODO(), f); err != nil {
 		return nil, err
 	}
 
 	return zones, nil
 }
 
-// CreateZone creates a hosted zone given a name.
-func (p *googleProvider) CreateZone(name, domain string) error {
-	zone := &dns.ManagedZone{
-		Name:        name,
-		DnsName:     domain,
-		Description: "Automatically managed zone by kubernetes.io/external-dns",
-	}
-
-	_, err := p.managedZonesClient.Create(p.project, zone).Do()
+// Records returns the list of records in all relevant zones.
+func (p *googleProvider) Records(_ string) (endpoints []*endpoint.Endpoint, _ error) {
+	zones, err := p.Zones()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
-}
-
-// DeleteZone deletes a hosted zone given a name.
-func (p *googleProvider) DeleteZone(name string) error {
-	err := p.managedZonesClient.Delete(p.project, name).Do()
-	if err != nil {
-		if !isNotFound(err) {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// Records returns the list of A records in a given hosted zone.
-func (p *googleProvider) Records(zone string) (endpoints []*endpoint.Endpoint, _ error) {
 	f := func(resp *dns.ResourceRecordSetsListResponse) error {
 		for _, r := range resp.Rrsets {
 			// TODO(linki, ownership): Remove once ownership system is in place.
@@ -200,44 +186,45 @@ func (p *googleProvider) Records(zone string) (endpoints []*endpoint.Endpoint, _
 		return nil
 	}
 
-	err := p.resourceRecordSetsClient.List(p.project, zone).Pages(context.TODO(), f)
-	if err != nil {
-		return nil, err
+	for _, z := range zones {
+		if err := p.resourceRecordSetsClient.List(p.project, z.Name).Pages(context.TODO(), f); err != nil {
+			return nil, err
+		}
 	}
 
 	return endpoints, nil
 }
 
 // CreateRecords creates a given set of DNS records in the given hosted zone.
-func (p *googleProvider) CreateRecords(zone string, endpoints []*endpoint.Endpoint) error {
+func (p *googleProvider) CreateRecords(endpoints []*endpoint.Endpoint) error {
 	change := &dns.Change{}
 
 	change.Additions = append(change.Additions, newRecords(endpoints)...)
 
-	return p.submitChange(zone, change)
+	return p.submitChange(change)
 }
 
 // UpdateRecords updates a given set of old records to a new set of records in a given hosted zone.
-func (p *googleProvider) UpdateRecords(zone string, records, oldRecords []*endpoint.Endpoint) error {
+func (p *googleProvider) UpdateRecords(records, oldRecords []*endpoint.Endpoint) error {
 	change := &dns.Change{}
 
 	change.Additions = append(change.Additions, newRecords(records)...)
 	change.Deletions = append(change.Deletions, newRecords(oldRecords)...)
 
-	return p.submitChange(zone, change)
+	return p.submitChange(change)
 }
 
 // DeleteRecords deletes a given set of DNS records in a given zone.
-func (p *googleProvider) DeleteRecords(zone string, endpoints []*endpoint.Endpoint) error {
+func (p *googleProvider) DeleteRecords(endpoints []*endpoint.Endpoint) error {
 	change := &dns.Change{}
 
 	change.Deletions = append(change.Deletions, newRecords(endpoints)...)
 
-	return p.submitChange(zone, change)
+	return p.submitChange(change)
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *googleProvider) ApplyChanges(zone string, changes *plan.Changes) error {
+func (p *googleProvider) ApplyChanges(_ string, changes *plan.Changes) error {
 	change := &dns.Change{}
 
 	change.Additions = append(change.Additions, newRecords(changes.Create)...)
@@ -247,11 +234,11 @@ func (p *googleProvider) ApplyChanges(zone string, changes *plan.Changes) error 
 
 	change.Deletions = append(change.Deletions, newRecords(changes.Delete)...)
 
-	return p.submitChange(zone, change)
+	return p.submitChange(change)
 }
 
 // submitChange takes a zone and a Change and sends it to Google.
-func (p *googleProvider) submitChange(zone string, change *dns.Change) error {
+func (p *googleProvider) submitChange(change *dns.Change) error {
 	if p.dryRun {
 		for _, del := range change.Deletions {
 			log.Infof("Del records: %s %s %s", del.Name, del.Type, del.Rrdatas)
@@ -267,14 +254,56 @@ func (p *googleProvider) submitChange(zone string, change *dns.Change) error {
 		return nil
 	}
 
-	_, err := p.changesClient.Create(p.project, zone, change).Do()
+	zones, err := p.Zones()
 	if err != nil {
-		if !isNotFound(err) {
-			return err
+		return err
+	}
+
+	// separate into per-zone change sets to be passed to the API.
+	changes := separateChange(zones, change)
+
+	for z, c := range changes {
+		if _, err := p.changesClient.Create(p.project, z, c).Do(); err != nil {
+			if !isNotFound(err) {
+				return err
+			}
 		}
 	}
 
 	return nil
+}
+
+// separateChange separates a multi-zone change into a single change per zone.
+func separateChange(zones map[string]*dns.ManagedZone, change *dns.Change) map[string]*dns.Change {
+	changes := make(map[string]*dns.Change)
+
+	for _, z := range zones {
+		changes[z.Name] = &dns.Change{
+			Additions: []*dns.ResourceRecordSet{},
+			Deletions: []*dns.ResourceRecordSet{},
+		}
+
+		for _, a := range change.Additions {
+			if strings.HasSuffix(ensureTrailingDot(a.Name), z.DnsName) {
+				changes[z.Name].Additions = append(changes[z.Name].Additions, a)
+			}
+		}
+
+		for _, d := range change.Deletions {
+			if strings.HasSuffix(ensureTrailingDot(d.Name), z.DnsName) {
+				changes[z.Name].Deletions = append(changes[z.Name].Deletions, d)
+			}
+		}
+	}
+
+	// separating a change could lead to empty sub changes, remove them here.
+	for zone, change := range changes {
+		if len(change.Additions) == 0 && len(change.Deletions) == 0 {
+			delete(changes, zone)
+		}
+	}
+
+	return changes
 }
 
 // newRecords returns a collection of RecordSets based on the given endpoints.
@@ -291,11 +320,20 @@ func newRecords(endpoints []*endpoint.Endpoint) []*dns.ResourceRecordSet {
 // newRecord returns a RecordSet based on the given endpoint.
 func newRecord(endpoint *endpoint.Endpoint) *dns.ResourceRecordSet {
 	return &dns.ResourceRecordSet{
-		Name:    endpoint.DNSName,
-		Rrdatas: []string{endpoint.Target},
+		Name:    ensureTrailingDot(endpoint.DNSName),
+		Rrdatas: []string{ensureTrailingDot(endpoint.Target)},
 		Ttl:     300,
 		Type:    suitableType(endpoint),
 	}
+}
+
+// ensureTrailingDot ensures that the hostname receives a trailing dot if it hasn't already.
+func ensureTrailingDot(hostname string) string {
+	if net.ParseIP(hostname) != nil {
+		return hostname
+	}
+
+	return strings.TrimSuffix(hostname, ".") + "."
 }
 
 // isNotFound returns true if a given error is due to a resource not being found.
