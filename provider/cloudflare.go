@@ -298,7 +298,7 @@ func newCloudFlareChange(action string, endpoint *endpoint.Endpoint) *CloudFlare
 			Name: endpoint.DNSName,
 			//TTL Value of 1 is 'automatic'
 			TTL: 1,
-			//record is receiving the performance and security benefits of Cloudflare
+			//record is receiving the performance and security benefits of CloudFlare
 			Proxied: true,
 			Type:    suitableType(endpoint),
 			Content: endpoint.Target,
