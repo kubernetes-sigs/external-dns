@@ -31,7 +31,6 @@ import (
 )
 
 const (
-	hostedZonePrefix     = "/hostedzone/"
 	elbHostnameSuffix    = ".elb.amazonaws.com"
 	evaluateTargetHealth = true
 	recordTTL            = 300
