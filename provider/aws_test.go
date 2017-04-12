@@ -549,7 +549,7 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 	})
 }
 
-func TestAWSIsELBHostname(t *testing.T) {
+func TestAWSisAWSLoadBalancer(t *testing.T) {
 	for _, tc := range []struct {
 		hostname string
 		expected bool
@@ -557,10 +557,10 @@ func TestAWSIsELBHostname(t *testing.T) {
 		{"bar.eu-central-1.elb.amazonaws.com", true},
 		{"foo.example.org", false},
 	} {
-		isELB := isELBHostname(tc.hostname)
+		isLB := isAWSLoadBalancer(tc.hostname)
 
-		if isELB != tc.expected {
-			t.Errorf("expected %t, got %t", tc.expected, isELB)
+		if isLB != tc.expected {
+			t.Errorf("expected %t, got %t", tc.expected, isLB)
 		}
 	}
 }

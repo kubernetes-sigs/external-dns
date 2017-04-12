@@ -205,7 +205,7 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 		},
 	}
 
-	if isELBHostname(endpoint.Target) {
+	if isAWSLoadBalancer(endpoint.Target) {
 		change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
 		change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
 			DNSName:              aws.String(endpoint.Target),
@@ -225,7 +225,7 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 	return change
 }
 
-func isELBHostname(hostname string) bool {
+func isAWSLoadBalancer(hostname string) bool {
 	return canonicalHostedZone(hostname) != ""
 }
 
