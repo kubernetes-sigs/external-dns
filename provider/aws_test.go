@@ -149,9 +149,9 @@ func TestAWSZones(t *testing.T) {
 	spew.Dump(zones)
 
 	validateAWSZones(t, zones, map[string]*route53.HostedZone{
-		"/hostedzone/Z3P038J76GDZP7": {Id: aws.String("/hostedzone/Z3P038J76GDZP7"), Name: aws.String("zone-1.ext-dns-test-2.teapot.zalan.do.")},
-		"/hostedzone/ZZAB9T75W5CVV":  {Id: aws.String("/hostedzone/ZZAB9T75W5CVV"), Name: aws.String("zone-2.ext-dns-test-2.teapot.zalan.do.")},
-		"/hostedzone/ZA7M8J730O76W":  {Id: aws.String("/hostedzone/ZA7M8J730O76W"), Name: aws.String("zone-3.ext-dns-test-2.teapot.zalan.do.")},
+		"/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.": {Id: aws.String("/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."), Name: aws.String("zone-1.ext-dns-test-2.teapot.zalan.do.")},
+		"/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do.": {Id: aws.String("/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do."), Name: aws.String("zone-2.ext-dns-test-2.teapot.zalan.do.")},
+		"/hostedzone/zone-3.ext-dns-test-2.teapot.zalan.do.": {Id: aws.String("/hostedzone/zone-3.ext-dns-test-2.teapot.zalan.do."), Name: aws.String("zone-3.ext-dns-test-2.teapot.zalan.do.")},
 	})
 }
 
@@ -589,17 +589,17 @@ func newAWSProvider(t *testing.T, domain string, dryRun bool, records []*endpoin
 	}
 
 	createAWSZone(t, provider, &route53.HostedZone{
-		Id:   aws.String("/hostedzone/Z3P038J76GDZP7"),
+		Id:   aws.String("/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."),
 		Name: aws.String("zone-1.ext-dns-test-2.teapot.zalan.do."),
 	})
 
 	createAWSZone(t, provider, &route53.HostedZone{
-		Id:   aws.String("/hostedzone/ZZAB9T75W5CVV"),
+		Id:   aws.String("/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do."),
 		Name: aws.String("zone-2.ext-dns-test-2.teapot.zalan.do."),
 	})
 
 	createAWSZone(t, provider, &route53.HostedZone{
-		Id:   aws.String("/hostedzone/ZA7M8J730O76W"),
+		Id:   aws.String("/hostedzone/zone-3.ext-dns-test-2.teapot.zalan.do."),
 		Name: aws.String("zone-3.ext-dns-test-2.teapot.zalan.do."),
 	})
 
@@ -624,9 +624,9 @@ func createAWSZone(t *testing.T, provider *AWSProvider, zone *route53.HostedZone
 }
 
 func setupRecords(t *testing.T, provider *AWSProvider, endpoints []*endpoint.Endpoint) {
-	clearAWSRecords(t, provider, "/hostedzone/Z3P038J76GDZP7")
-	clearAWSRecords(t, provider, "/hostedzone/ZZAB9T75W5CVV")
-	clearAWSRecords(t, provider, "/hostedzone/ZA7M8J730O76W")
+	clearAWSRecords(t, provider, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.")
+	clearAWSRecords(t, provider, "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do.")
+	clearAWSRecords(t, provider, "/hostedzone/zone-3.ext-dns-test-2.teapot.zalan.do.")
 
 	records, err := provider.Records("_")
 	if err != nil {

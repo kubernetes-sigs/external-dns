@@ -40,25 +40,7 @@ type Route53API interface {
 	ChangeResourceRecordSets(*route53.ChangeResourceRecordSetsInput) (*route53.ChangeResourceRecordSetsOutput, error)
 	CreateHostedZone(*route53.CreateHostedZoneInput) (*route53.CreateHostedZoneOutput, error)
 	ListHostedZonesPages(input *route53.ListHostedZonesInput, fn func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool)) error
-	// |   -   ListHostedZonesByName(input *route53.ListHostedZonesByNameInput) (*route53.ListHostedZonesByNameOutput, error)
-	// |       CreateHostedZone(*route53.CreateHostedZoneInput) (*route53.CreateHostedZoneOutput, error)
-	// |   -   DeleteHostedZone(*route53.DeleteHostedZoneInput) (*route53.DeleteHostedZoneOutput, error)
 }
-
-// |   -// CreateZone creates a hosted zone given a name.
-// |   -func (p *AWSProvider) CreateZone(name string) (*route53.HostedZone, error) {
-// |   -   params := &route53.CreateHostedZoneInput{
-// |   -           CallerReference: aws.String(uuid.New().String()),
-// |   -           Name:            aws.String(name),
-// |   -   }
-// |   -
-// |   -   resp, err := p.Client.CreateHostedZone(params)
-// |   -   if err != nil {
-// |   -           return nil, err
-// |   -   }
-// |   -
-// |   -   return resp.HostedZone, nil
-// |   -}
 
 // AWSProvider is an implementation of Provider for AWS Route53.
 type AWSProvider struct {
