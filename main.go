@@ -33,6 +33,7 @@ import (
 	"github.com/kubernetes-incubator/external-dns/controller"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns/validation"
+	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
 	"github.com/kubernetes-incubator/external-dns/registry"
 	"github.com/kubernetes-incubator/external-dns/source"
@@ -94,15 +95,30 @@ func main() {
 		log.Fatal(err)
 	}
 
-	r, err := registry.NewNoopRegistry(p)
+	var r registry.Registry
+	switch cfg.Registry {
+	case "noop":
+		r, err = registry.NewNoopRegistry(p)
+	case "txt":
+		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.RecordOwnerID)
+	default:
+		log.Fatalf("unknown registry: %s", cfg.Registry)
+	}
+
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	policy, exists := plan.Policies[cfg.Policy]
+	if !exists {
+		log.Fatalf("unknown policy: %s", cfg.Policy)
 	}
 
 	ctrl := controller.Controller{
 		Zone:     cfg.Zone,
 		Source:   sources,
 		Registry: r,
+		Policy:   policy,
 		Interval: cfg.Interval,
 	}
 

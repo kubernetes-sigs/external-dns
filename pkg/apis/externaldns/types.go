@@ -38,6 +38,7 @@ type Config struct {
 	Sources        []string
 	Provider       string
 	GoogleProject  string
+	Policy         string
 	Compatibility  bool
 	MetricsAddress string
 	Interval       time.Duration
@@ -46,6 +47,9 @@ type Config struct {
 	Debug          bool
 	LogFormat      string
 	Version        bool
+	Registry       string
+	RecordOwnerID  string
+	TXTPrefix      string
 }
 
 // NewConfig returns new Config object
@@ -63,13 +67,18 @@ func (cfg *Config) ParseFlags(args []string) error {
 	flags.StringArrayVar(&cfg.Sources, "source", nil, "the sources to gather endpoints from")
 	flags.StringVar(&cfg.Provider, "provider", "", "the DNS provider to materialize the records in")
 	flags.StringVar(&cfg.GoogleProject, "google-project", "", "gcloud project to target")
+	flags.StringVar(&cfg.Policy, "policy", "sync", "the policy to use. options: [\"sync\", \"upsert-only\"]")
 	flags.BoolVar(&cfg.Compatibility, "compatibility", false, "enable to process annotation semantics from legacy implementations")
 	flags.StringVar(&cfg.MetricsAddress, "metrics-address", defaultMetricsAddress, "address to expose metrics on")
-	flags.StringVar(&cfg.LogFormat, "log-format", defaultLogFormat, "log format output. options: [\"text\", \"json\"]")
+	flags.StringVar(&cfg.LogFormat, "log-format", defaultLogFormat, "log format output: <text|json>")
 	flags.DurationVar(&cfg.Interval, "interval", time.Minute, "interval between synchronizations")
 	flags.BoolVar(&cfg.Once, "once", false, "run once and exit")
 	flags.BoolVar(&cfg.DryRun, "dry-run", true, "dry-run mode")
 	flags.BoolVar(&cfg.Debug, "debug", false, "debug mode")
 	flags.BoolVar(&cfg.Version, "version", false, "display the version")
+	flags.StringVar(&cfg.Registry, "registry", "noop", "type of registry for ownership: <noop|txt>")
+	flags.StringVar(&cfg.RecordOwnerID, "record-owner-id", "", "id of the current external dns for labeling owned records")
+	flags.StringVar(&cfg.TXTPrefix, "txt-prefix", "", `prefix of the associated TXT records DNS name; if --txt-prefix="abc-",
+		 corresponding txt record for CNAME [example.org] will have DNSName [abc-example.org]. Required for CNAME ownership support`)
 	return flags.Parse(args)
 }

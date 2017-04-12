@@ -171,7 +171,7 @@ func (p *googleProvider) Records(_ string) (endpoints []*endpoint.Endpoint, _ er
 			// TODO(linki, ownership): Remove once ownership system is in place.
 			// See: https://github.com/kubernetes-incubator/external-dns/pull/122/files/74e2c3d3e237411e619aefc5aab694742001cdec#r109863370
 			switch r.Type {
-			case "A", "CNAME":
+			case "A", "CNAME", "TXT":
 				break
 			default:
 				continue
@@ -179,7 +179,7 @@ func (p *googleProvider) Records(_ string) (endpoints []*endpoint.Endpoint, _ er
 
 			for _, rr := range r.Rrdatas {
 				// each page is processed sequentially, no need for a mutex here.
-				endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, rr))
+				endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, rr, r.Type))
 			}
 		}
 
@@ -323,7 +323,7 @@ func newRecord(endpoint *endpoint.Endpoint) *dns.ResourceRecordSet {
 		Name:    ensureTrailingDot(endpoint.DNSName),
 		Rrdatas: []string{ensureTrailingDot(endpoint.Target)},
 		Ttl:     300,
-		Type:    suitableType(endpoint.Target),
+		Type:    suitableType(endpoint),
 	}
 }
 
