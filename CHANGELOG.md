@@ -5,6 +5,7 @@ Features:
     1. Create TXT records to mark the records managed by External DNS
     2. Supported for AWS Route53 and Google CloudDNS
     3. Configurable TXT record DNS name format
+  - Add support for altering the DNS record modification behavior via policies.
 
 ## v0.2.0 - 2017-04-07
 
