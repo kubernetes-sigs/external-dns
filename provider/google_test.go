@@ -205,6 +205,17 @@ func TestGoogleApplyChanges(t *testing.T) {
 	})
 }
 
+// // todo for Google?
+// func TestAWSApplyNoChanges(t *testing.T) {
+// 	provider := newAWSProvider(t, "ext-dns-test-2.teapot.zalan.do.", false, []*endpoint.Endpoint{})
+//
+// 	if err := provider.ApplyChanges("_", &plan.Changes{}); err != nil {
+// 		t.Error(err)
+// 	}
+// }
+//
+//
+
 func TestSeparateChanges(t *testing.T) {
 	change := &dns.Change{
 		Additions: []*dns.ResourceRecordSet{
@@ -255,6 +266,8 @@ func TestSeparateChanges(t *testing.T) {
 			{Name: "wambo.bar.example.org", Ttl: 20},
 		},
 	})
+
+	// validateChange(t, changes["baz-example-org"], &dns.Change{})
 }
 
 // GOGOGOGOGOG
