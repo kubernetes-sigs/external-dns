@@ -63,7 +63,7 @@ func (c *Controller) RunOnce() error {
 
 	plan = plan.Calculate()
 
-	return c.Registry.ApplyChanges(c.Zone, &plan.Changes)
+	return c.Registry.ApplyChanges(c.Zone, plan.Changes)
 }
 
 // Run runs RunOnce in a loop with a delay until stopChan receives a value.
