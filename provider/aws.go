@@ -110,7 +110,7 @@ func (p *AWSProvider) Records(zone string) ([]*endpoint.Endpoint, error) {
 			}
 
 			if r.AliasTarget != nil {
-				endpoints = append(endpoints, endpoint.NewEndpoint(aws.StringValue(r.Name), aws.StringValue(r.AliasTarget.DNSName), ""))
+				endpoints = append(endpoints, endpoint.NewEndpoint(aws.StringValue(r.Name), aws.StringValue(r.AliasTarget.DNSName), "ALIAS"))
 			}
 		}
 
