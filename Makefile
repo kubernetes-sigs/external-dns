@@ -14,6 +14,7 @@
 
 # cover-html creates coverage report for whole project excluding vendor and opens result in the default browser
 .PHONY: cover cover-html
+.DEFAULT_GOAL := build
 
 cover:
 	go get github.com/wadey/gocovmerge
@@ -60,3 +61,6 @@ build.docker: build/linux-amd64/$(BINARY)
 
 build/linux-amd64/$(BINARY): $(SOURCES)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o build/linux-amd64/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
+
+clean:
+	@rm -rf build

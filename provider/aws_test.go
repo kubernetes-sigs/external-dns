@@ -19,6 +19,7 @@ package provider
 import (
 	"fmt"
 	"net"
+	"reflect"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -93,6 +94,12 @@ func (r *Route53APIStub) ChangeResourceRecordSets(input *route53.ChangeResourceR
 			}
 		}
 
+		change.ResourceRecordSet.Name = aws.String(ensureTrailingDot(aws.StringValue(change.ResourceRecordSet.Name)))
+
+		if change.ResourceRecordSet.AliasTarget != nil {
+			change.ResourceRecordSet.AliasTarget.DNSName = aws.String(ensureTrailingDot(aws.StringValue(change.ResourceRecordSet.AliasTarget.DNSName)))
+		}
+
 		key := aws.StringValue(change.ResourceRecordSet.Name) + "::" + aws.StringValue(change.ResourceRecordSet.Type)
 		switch aws.StringValue(change.Action) {
 		case route53.ChangeActionCreate:
@@ -164,6 +171,7 @@ func TestAWSRecords(t *testing.T) {
 	provider := newAWSProvider(t, "ext-dns-test-2.teapot.zalan.do.", false, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("list-test.zone-1.ext-dns-test-2.teapot.zalan.do", "1.2.3.4", "A"),
 		endpoint.NewEndpoint("list-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
+		endpoint.NewEndpoint("list-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "ALIAS"),
 	})
 
 	records, err := provider.Records("_")
@@ -174,6 +182,7 @@ func TestAWSRecords(t *testing.T) {
 	validateEndpoints(t, records, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("list-test.zone-1.ext-dns-test-2.teapot.zalan.do", "1.2.3.4", "A"),
 		endpoint.NewEndpoint("list-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
+		endpoint.NewEndpoint("list-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "ALIAS"),
 	})
 }
 
@@ -498,9 +507,103 @@ func validateAWSChangeRecord(t *testing.T, record *route53.Change, expected *rou
 	if aws.StringValue(record.ResourceRecordSet.Name) != aws.StringValue(expected.ResourceRecordSet.Name) {
 		t.Errorf("expected %s, got %s", aws.StringValue(expected.ResourceRecordSet.Name), aws.StringValue(record.ResourceRecordSet.Name))
 	}
+}
 
-	if aws.Int64Value(record.ResourceRecordSet.TTL) != aws.Int64Value(expected.ResourceRecordSet.TTL) {
-		t.Errorf("expected %d, got %d", aws.Int64Value(expected.ResourceRecordSet.TTL), aws.Int64Value(record.ResourceRecordSet.TTL))
+func TestAWSCreateRecordsWithCNAME(t *testing.T) {
+	provider := newAWSProvider(t, "ext-dns-test-2.teapot.zalan.do.", false, []*endpoint.Endpoint{})
+
+	records := []*endpoint.Endpoint{
+		{DNSName: "create-test.zone-1.ext-dns-test-2.teapot.zalan.do", Target: "foo.example.org"},
+	}
+
+	if err := provider.CreateRecords(records); err != nil {
+		t.Fatal(err)
+	}
+
+	recordSets := listAWSRecords(t, provider.Client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.")
+
+	validateRecords(t, recordSets, []*route53.ResourceRecordSet{
+		{
+			Name: aws.String("create-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type: aws.String("CNAME"),
+			TTL:  aws.Int64(300),
+			ResourceRecords: []*route53.ResourceRecord{
+				{
+					Value: aws.String("foo.example.org"),
+				},
+			},
+		},
+	})
+}
+
+func TestAWSCreateRecordsWithALIAS(t *testing.T) {
+	provider := newAWSProvider(t, "ext-dns-test-2.teapot.zalan.do.", false, []*endpoint.Endpoint{})
+
+	records := []*endpoint.Endpoint{
+		{DNSName: "create-test.zone-1.ext-dns-test-2.teapot.zalan.do", Target: "foo.eu-central-1.elb.amazonaws.com"},
+	}
+
+	if err := provider.CreateRecords(records); err != nil {
+		t.Fatal(err)
+	}
+
+	recordSets := listAWSRecords(t, provider.Client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.")
+
+	validateRecords(t, recordSets, []*route53.ResourceRecordSet{
+		{
+			AliasTarget: &route53.AliasTarget{
+				DNSName:              aws.String("foo.eu-central-1.elb.amazonaws.com."),
+				EvaluateTargetHealth: aws.Bool(true),
+				HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
+			},
+			Name: aws.String("create-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type: aws.String("A"),
+		},
+	})
+}
+
+func TestAWSisAWSLoadBalancer(t *testing.T) {
+	for _, tc := range []struct {
+		hostname string
+		expected bool
+	}{
+		{"bar.eu-central-1.elb.amazonaws.com", true},
+		{"foo.example.org", false},
+	} {
+		isLB := isAWSLoadBalancer(tc.hostname)
+
+		if isLB != tc.expected {
+			t.Errorf("expected %t, got %t", tc.expected, isLB)
+		}
+	}
+}
+
+func TestAWSCanonicalHostedZone(t *testing.T) {
+	for _, tc := range []struct {
+		hostname string
+		expected string
+	}{
+		{"foo.us-east-1.elb.amazonaws.com", "Z35SXDOTRQ7X7K"},
+		{"foo.us-east-2.elb.amazonaws.com", "Z3AADJGX6KTTL2"},
+		{"foo.us-west-1.elb.amazonaws.com", "Z368ELLRRE2KJ0"},
+		{"foo.us-west-2.elb.amazonaws.com", "Z1H1FL5HABSF5"},
+		{"foo.ca-central-1.elb.amazonaws.com", "ZQSVJUPU6J1EY"},
+		{"foo.ap-south-1.elb.amazonaws.com", "ZP97RAFLXTNZK"},
+		{"foo.ap-northeast-2.elb.amazonaws.com", "ZWKZPGTI48KDX"},
+		{"foo.ap-southeast-1.elb.amazonaws.com", "Z1LMS91P8CMLE5"},
+		{"foo.ap-southeast-2.elb.amazonaws.com", "Z1GM3OXH4ZPM65"},
+		{"foo.ap-northeast-1.elb.amazonaws.com", "Z14GRHDCWA56QT"},
+		{"foo.eu-central-1.elb.amazonaws.com", "Z215JYRZR1TBD5"},
+		{"foo.eu-west-1.elb.amazonaws.com", "Z32O12XQLNTSW2"},
+		{"foo.eu-west-2.elb.amazonaws.com", "ZHURV8PSTC4K8"},
+		{"foo.sa-east-1.elb.amazonaws.com", "Z2P70J7HTTTPLU"},
+		{"foo.example.org", ""},
+	} {
+		zone := canonicalHostedZone(tc.hostname)
+
+		if zone != tc.expected {
+			t.Errorf("expected %v, got %v", tc.expected, zone)
+		}
 	}
 }
 
@@ -541,9 +644,9 @@ func setupAWSRecords(t *testing.T, provider *AWSProvider, endpoints []*endpoint.
 	validateEndpoints(t, records, endpoints)
 }
 
-func clearAWSRecords(t *testing.T, provider *AWSProvider, zone string) {
+func listAWSRecords(t *testing.T, client Route53API, zone string) []*route53.ResourceRecordSet {
 	recordSets := []*route53.ResourceRecordSet{}
-	if err := provider.Client.ListResourceRecordSetsPages(&route53.ListResourceRecordSetsInput{
+	if err := client.ListResourceRecordSetsPages(&route53.ListResourceRecordSetsInput{
 		HostedZoneId: aws.String(zone),
 	}, func(resp *route53.ListResourceRecordSetsOutput, _ bool) bool {
 		for _, recordSet := range resp.ResourceRecordSets {
@@ -556,6 +659,11 @@ func clearAWSRecords(t *testing.T, provider *AWSProvider, zone string) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+	return recordSets
+}
+
+func clearAWSRecords(t *testing.T, provider *AWSProvider, zone string) {
+	recordSets := listAWSRecords(t, provider.Client, zone)
 
 	changes := make([]*route53.Change, 0, len(recordSets))
 	for _, recordSet := range recordSets {
@@ -606,4 +714,16 @@ func newAWSProvider(t *testing.T, domain string, dryRun bool, records []*endpoin
 	provider.DryRun = dryRun
 
 	return provider
+}
+
+func validateRecords(t *testing.T, records []*route53.ResourceRecordSet, expected []*route53.ResourceRecordSet) {
+	if len(records) != len(expected) {
+		t.Errorf("expected %d records, got %d", len(records), len(expected))
+	}
+
+	for i := range records {
+		if !reflect.DeepEqual(records[i], expected[i]) {
+			t.Errorf("record is wrong")
+		}
+	}
 }

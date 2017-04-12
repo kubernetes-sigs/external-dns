@@ -1,5 +1,6 @@
 Features:
 
+  - Route 53: Support creation of ALIAS records when endpoint target is a ELB/ALB.
   - Ownership via TXT records
     1. Create TXT records to mark the records managed by External DNS
     2. Supported for AWS Route53 and Google CloudDNS

@@ -16,6 +16,8 @@ limitations under the License.
 
 package source
 
+import "fmt"
+
 var store = map[string]Source{}
 
 // Register registers a Source under a given name.
@@ -29,10 +31,16 @@ func Lookup(name string) Source {
 }
 
 // LookupMultiple returns multiple Sources given multiple names.
-func LookupMultiple(names ...string) (sources []Source) {
+func LookupMultiple(names []string) ([]Source, error) {
+	sources := []Source{}
+
 	for _, name := range names {
-		sources = append(sources, Lookup(name))
+		source := Lookup(name)
+		if source == nil {
+			return nil, fmt.Errorf("%s source could not be identified", name)
+		}
+		sources = append(sources, source)
 	}
 
-	return sources
+	return sources, nil
 }

@@ -53,8 +53,10 @@ func testRegisterAndLookup(t *testing.T) {
 // testLookupMultiple tests that Sources can be looked up by providing multiple names.
 func testLookupMultiple(t *testing.T) {
 	for _, tc := range []struct {
-		title            string
-		givenAndExpected map[string]Source
+		title       string
+		registered  map[string]Source
+		names       []string
+		expectError bool
 	}{
 		{
 			"multiple registered sources are found by names",
@@ -62,24 +64,39 @@ func testLookupMultiple(t *testing.T) {
 				"foo": NewMockSource(nil),
 				"bar": NewMockSource(nil),
 			},
+			[]string{"foo", "bar"},
+			false,
+		},
+		{
+			"multiple registered sources, one source not registered",
+			map[string]Source{
+				"foo": NewMockSource(nil),
+				"bar": NewMockSource(nil),
+			},
+			[]string{"foo", "baz"},
+			true,
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			for k, v := range tc.givenAndExpected {
+			for k, v := range tc.registered {
 				Register(k, v)
 			}
 
-			names, sources := []string{}, []Source{}
-			for k, v := range tc.givenAndExpected {
-				names = append(names, k)
-				sources = append(sources, v)
+			lookup, err := LookupMultiple(tc.names)
+			if !tc.expectError && err != nil {
+				t.Fatal(err)
 			}
 
-			lookup := LookupMultiple(names...)
+			if tc.expectError {
+				if err == nil {
+					t.Fatal("look up should fail if source not registered")
+				}
+				t.Skip()
+			}
 
-			for i := range names {
-				if lookup[i] != sources[i] {
-					t.Errorf("expected %#v, got %#v", sources[i], lookup[i])
+			for i, name := range tc.names {
+				if lookup[i] != tc.registered[name] {
+					t.Errorf("expected %#v, got %#v", tc.registered[name], lookup[i])
 				}
 			}
 		})
