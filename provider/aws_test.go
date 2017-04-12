@@ -142,6 +142,7 @@ func (r *Route53APIStub) CreateHostedZone(input *route53.CreateHostedZoneInput) 
 func TestAWSRecords(t *testing.T) {
 	provider := newAWSProvider(t, false, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("list-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
+		endpoint.NewEndpoint("list-test-alias.ext-dns-test.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "ALIAS"),
 	})
 
 	records, err := provider.Records(testZone)
@@ -150,6 +151,7 @@ func TestAWSRecords(t *testing.T) {
 	}
 	validateEndpoints(t, records, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("list-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
+		endpoint.NewEndpoint("list-test-alias.ext-dns-test.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "ALIAS"),
 	})
 }
 
