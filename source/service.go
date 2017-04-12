@@ -31,11 +31,17 @@ import (
 type serviceSource struct {
 	client    kubernetes.Interface
 	namespace string
+	// set to true to process Services with legacy annotations
+	compatibility bool
 }
 
 // NewServiceSource creates a new serviceSource with the given client and namespace scope.
-func NewServiceSource(client kubernetes.Interface, namespace string) Source {
-	return &serviceSource{client: client, namespace: namespace}
+func NewServiceSource(client kubernetes.Interface, namespace string, compatibility bool) Source {
+	return &serviceSource{
+		client:        client,
+		namespace:     namespace,
+		compatibility: compatibility,
+	}
 }
 
 // Endpoints returns endpoint objects for each service that should be processed.
@@ -49,6 +55,12 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 	for _, svc := range services.Items {
 		svcEndpoints := endpointsFromService(&svc)
+
+		// process legacy annotations if no endpoints were returned and compatibility mode is enabled.
+		if len(svcEndpoints) == 0 && sc.compatibility {
+			svcEndpoints = legacyEndpointsFromService(&svc)
+		}
+
 		if len(svcEndpoints) != 0 {
 			endpoints = append(endpoints, svcEndpoints...)
 		}
@@ -64,22 +76,23 @@ func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
 	// Check controller annotation to see if we are responsible.
 	controller, exists := svc.Annotations[controllerAnnotationKey]
 	if exists && controller != controllerAnnotationValue {
-		return endpoints
+		return nil
 	}
 
 	// Get the desired hostname of the service from the annotation.
 	hostname, exists := svc.Annotations[hostnameAnnotationKey]
 	if !exists {
-		return endpoints
+		return nil
 	}
 
 	// Create a corresponding endpoint for each configured external entrypoint.
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
-			endpoints = append(endpoints, endpoint.NewEndpoint(sanitizeHostname(hostname), lb.IP))
+			//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
 		}
 		if lb.Hostname != "" {
-			endpoints = append(endpoints, endpoint.NewEndpoint(sanitizeHostname(hostname), sanitizeHostname(lb.Hostname)))
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
 		}
 	}
 
