@@ -205,16 +205,13 @@ func TestGoogleApplyChanges(t *testing.T) {
 	})
 }
 
-// // todo for Google?
-// func TestAWSApplyNoChanges(t *testing.T) {
-// 	provider := newAWSProvider(t, "ext-dns-test-2.teapot.zalan.do.", false, []*endpoint.Endpoint{})
-//
-// 	if err := provider.ApplyChanges("_", &plan.Changes{}); err != nil {
-// 		t.Error(err)
-// 	}
-// }
-//
-//
+func TestGoogleApplyNoChanges(t *testing.T) {
+	provider := newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do.", false, []*endpoint.Endpoint{})
+
+	if err := provider.ApplyChanges("_", &plan.Changes{}); err != nil {
+		t.Error(err)
+	}
+}
 
 func TestSeparateChanges(t *testing.T) {
 	change := &dns.Change{
