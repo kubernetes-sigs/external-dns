@@ -42,25 +42,30 @@ func TestCalculate(t *testing.T) {
 	labeledV1 := []*endpoint.Endpoint{newEndpointWithOwner("foo", "v1", "123")}
 
 	for _, tc := range []struct {
-		current, desired, create, updateOld, updateNew, delete []*endpoint.Endpoint
+		policy                               Policy
+		current, desired                     []*endpoint.Endpoint
+		create, updateOld, updateNew, delete []*endpoint.Endpoint
 	}{
 		// Nothing exists and nothing desired doesn't change anything.
-		{empty, empty, empty, empty, empty, empty},
+		{&SyncPolicy{}, empty, empty, empty, empty, empty, empty},
 		// More desired than current creates the desired.
-		{empty, fooV1, fooV1, empty, empty, empty},
+		{&SyncPolicy{}, empty, fooV1, fooV1, empty, empty, empty},
 		// Desired equals current doesn't change anything.
-		{fooV1, fooV1, empty, empty, empty, empty},
+		{&SyncPolicy{}, fooV1, fooV1, empty, empty, empty, empty},
 		// Nothing is desired deletes the current.
-		{fooV1, empty, empty, empty, empty, fooV1},
+		{&SyncPolicy{}, fooV1, empty, empty, empty, empty, fooV1},
 		// Current and desired match but Target is different triggers an update.
-		{fooV1, fooV2, empty, fooV1, fooV2, empty},
+		{&SyncPolicy{}, fooV1, fooV2, empty, fooV1, fooV2, empty},
 		// Both exist but are different creates desired and deletes current.
-		{fooV1, bar, bar, empty, empty, fooV1},
+		{&SyncPolicy{}, fooV1, bar, bar, empty, empty, fooV1},
+		// Nothing is desired but policy doesn't allow deletions.
+		{&UpsertOnlyPolicy{}, fooV1, empty, empty, empty, empty, empty},
 		// Labels should be inherited
-		{labeledV1, noLabels, empty, labeledV1, labeledV2, empty},
+		{&SyncPolicy{}, labeledV1, noLabels, empty, labeledV1, labeledV2, empty},
 	} {
 		// setup plan
 		plan := &Plan{
+			Policy:  tc.policy,
 			Current: tc.current,
 			Desired: tc.desired,
 		}
@@ -104,6 +109,7 @@ func ExamplePlan() {
 	// * bar should be updated from v1 to v2
 	// * baz should be created
 	plan := &Plan{
+		Policy:  &SyncPolicy{},
 		Current: []*endpoint.Endpoint{foo, barV1},
 		Desired: []*endpoint.Endpoint{barV2, baz},
 	}

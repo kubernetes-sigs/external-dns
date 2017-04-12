@@ -10,6 +10,10 @@ go:
 - 1.8
 - tip
 
+matrix:
+  allow_failures:
+  - go: tip
+
 before_install:
 - go get github.com/mattn/goveralls
 - go get -u github.com/alecthomas/gometalinter

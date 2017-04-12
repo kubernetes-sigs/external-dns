@@ -37,6 +37,8 @@ type Controller struct {
 
 	Source   source.Source
 	Registry registry.Registry
+	// The policy that defines which changes to DNS records are allowed
+	Policy plan.Policy
 	// The interval between individual synchronizations
 	Interval time.Duration
 }
@@ -54,13 +56,14 @@ func (c *Controller) RunOnce() error {
 	}
 
 	plan := &plan.Plan{
+		Policy:  c.Policy,
 		Current: records,
 		Desired: endpoints,
 	}
 
 	plan = plan.Calculate()
 
-	return c.Registry.ApplyChanges(c.Zone, &plan.Changes)
+	return c.Registry.ApplyChanges(c.Zone, plan.Changes)
 }
 
 // Run runs RunOnce in a loop with a delay until stopChan receives a value.
