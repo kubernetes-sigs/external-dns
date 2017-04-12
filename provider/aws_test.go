@@ -403,15 +403,15 @@ func TestAWSChangesByZones(t *testing.T) {
 	}
 
 	zones := map[string]*route53.HostedZone{
-		"foo-example-org": &route53.HostedZone{
+		"foo-example-org": {
 			Id:   aws.String("foo-example-org"),
 			Name: aws.String("foo.example.org."),
 		},
-		"bar-example-org": &route53.HostedZone{
+		"bar-example-org": {
 			Id:   aws.String("bar-example-org"),
 			Name: aws.String("bar.example.org."),
 		},
-		"baz-example-org": &route53.HostedZone{
+		"baz-example-org": {
 			Id:   aws.String("baz-example-org"),
 			Name: aws.String("baz.example.org."),
 		},
