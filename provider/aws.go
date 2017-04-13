@@ -214,7 +214,7 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 			}
 
 			if _, err := p.Client.ChangeResourceRecordSets(params); err != nil {
-				return err
+				log.Error(err)
 			}
 		}
 	}
