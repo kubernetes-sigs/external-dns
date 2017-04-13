@@ -41,5 +41,6 @@ func (im *NoopRegistry) Records(zone string) ([]*endpoint.Endpoint, error) {
 
 // ApplyChanges propagates changes to the dns provider
 func (im *NoopRegistry) ApplyChanges(zone string, changes *plan.Changes) error {
+	logChanges(changes)
 	return im.provider.ApplyChanges(zone, changes)
 }

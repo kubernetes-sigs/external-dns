@@ -109,7 +109,7 @@ func (im *TXTRegistry) ApplyChanges(zone string, changes *plan.Changes) error {
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), "TXT")
 		filteredChanges.Delete = append(filteredChanges.Delete, txt)
 	}
-
+	logChanges(filteredChanges)
 	return im.provider.ApplyChanges(zone, filteredChanges)
 }
 
