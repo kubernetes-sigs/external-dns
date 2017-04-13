@@ -35,10 +35,10 @@ func TestIngress(t *testing.T) {
 
 func testEndpointsFromIngress(t *testing.T) {
 	for _, ti := range []struct {
-		title    string
-		ingress  fakeIngress
+		title        string
+		ingress      fakeIngress
 		fqdntemplate string
-		expected []*endpoint.Endpoint
+		expected     []*endpoint.Endpoint
 	}{
 		{
 			title: "one rule.host one lb.hostname",
@@ -102,9 +102,7 @@ func testEndpointsFromIngress(t *testing.T) {
 				hostnames: []string{"elb.com", "alb.com"},
 			},
 			fqdntemplate: "",
-			expected: []*endpoint.Endpoint{
-
-			},
+			expected:     []*endpoint.Endpoint{},
 		},
 		{
 			title: "one empty rule.host",
@@ -114,7 +112,7 @@ func testEndpointsFromIngress(t *testing.T) {
 				hostnames: []string{"elb.com", "alb.com"},
 			},
 			fqdntemplate: "",
-			expected: []*endpoint.Endpoint{},
+			expected:     []*endpoint.Endpoint{},
 		},
 		{
 			title: "no targets",
@@ -122,13 +120,13 @@ func testEndpointsFromIngress(t *testing.T) {
 				dnsnames: []string{""},
 			},
 			fqdntemplate: "",
-			expected: []*endpoint.Endpoint{},
+			expected:     []*endpoint.Endpoint{},
 		},
 		{
 			title: "no rule.host but fqdntemplate",
 			ingress: fakeIngress{
 				name: "foo",
-				ips:       []string{"8.8.8.8"},
+				ips:  []string{"8.8.8.8"},
 			},
 			fqdntemplate: "{{.Name}}.bar.example.com",
 			expected: []*endpoint.Endpoint{

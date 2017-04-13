@@ -41,7 +41,7 @@ func testServiceEndpoints(t *testing.T) {
 		svcNamespace    string
 		svcName         string
 		compatibility   bool
-		fqdntemplate	string
+		fqdntemplate    string
 		annotations     map[string]string
 		lbs             []string
 		expected        []*endpoint.Endpoint
