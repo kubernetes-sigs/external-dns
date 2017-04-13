@@ -37,6 +37,7 @@ func testEndpointsFromIngress(t *testing.T) {
 	for _, ti := range []struct {
 		title    string
 		ingress  fakeIngress
+		fqdntemplate string
 		expected []*endpoint.Endpoint
 	}{
 		{
@@ -45,6 +46,7 @@ func testEndpointsFromIngress(t *testing.T) {
 				dnsnames:  []string{"foo.bar"}, // Kubernetes requires removal of trailing dot
 				hostnames: []string{"lb.com"},  // Kubernetes omits the trailing dot
 			},
+			fqdntemplate: "",
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "foo.bar",
@@ -58,6 +60,7 @@ func testEndpointsFromIngress(t *testing.T) {
 				dnsnames: []string{"foo.bar"},
 				ips:      []string{"8.8.8.8"},
 			},
+			fqdntemplate: "",
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "foo.bar",
@@ -72,6 +75,7 @@ func testEndpointsFromIngress(t *testing.T) {
 				ips:       []string{"8.8.8.8", "127.0.0.1"},
 				hostnames: []string{"elb.com", "alb.com"},
 			},
+			fqdntemplate: "",
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "foo.bar",
@@ -97,7 +101,10 @@ func testEndpointsFromIngress(t *testing.T) {
 				ips:       []string{"8.8.8.8", "127.0.0.1"},
 				hostnames: []string{"elb.com", "alb.com"},
 			},
-			expected: []*endpoint.Endpoint{},
+			fqdntemplate: "",
+			expected: []*endpoint.Endpoint{
+
+			},
 		},
 		{
 			title: "one empty rule.host",
@@ -106,6 +113,7 @@ func testEndpointsFromIngress(t *testing.T) {
 				ips:       []string{"8.8.8.8", "127.0.0.1"},
 				hostnames: []string{"elb.com", "alb.com"},
 			},
+			fqdntemplate: "",
 			expected: []*endpoint.Endpoint{},
 		},
 		{
@@ -113,12 +121,27 @@ func testEndpointsFromIngress(t *testing.T) {
 			ingress: fakeIngress{
 				dnsnames: []string{""},
 			},
+			fqdntemplate: "",
 			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title: "no rule.host but fqdntemplate",
+			ingress: fakeIngress{
+				name: "foo",
+				ips:       []string{"8.8.8.8"},
+			},
+			fqdntemplate: "{{.Name}}.bar.example.com",
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "foo.bar.example.com",
+					Target:  "8.8.8.8",
+				},
+			},
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, ""), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, ti.fqdntemplate), ti.expected)
 		})
 	}
 }
