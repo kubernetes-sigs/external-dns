@@ -17,13 +17,14 @@ limitations under the License.
 package source
 
 import (
+	"bytes"
+	"strings"
 	"html/template"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 
-	"bytes"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"strings"
 )
 
 // serviceSource is an implementation of Source for Kubernetes service objects.
