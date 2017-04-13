@@ -63,6 +63,16 @@ func (c *Controller) RunOnce() error {
 
 	plan = plan.Calculate()
 
+	for _, change := range plan.Changes.Create {
+		log.Infof("Creating %s %s -> %s ..", change.RecordType, change.DNSName, change.Target)
+	}
+	for _, change := range plan.Changes.UpdateNew {
+		log.Infof("Updating %s %s -> %s ..", change.RecordType, change.DNSName, change.Target)
+	}
+	for _, change := range plan.Changes.Delete {
+		log.Infof("Deleting %s %s -> %s ..", change.RecordType, change.DNSName, change.Target)
+	}
+
 	return c.Registry.ApplyChanges(c.Zone, plan.Changes)
 }
 
