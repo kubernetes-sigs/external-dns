@@ -192,14 +192,6 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 		return nil
 	}
 
-	if p.DryRun {
-		for _, change := range changes {
-			log.Infof("Changing records: %s %s", aws.StringValue(change.Action), change.String())
-		}
-
-		return nil
-	}
-
 	zones, err := p.Zones()
 	if err != nil {
 		return err
@@ -209,6 +201,14 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 	changesByZone := changesByZone(zones, changes)
 
 	for z, cs := range changesByZone {
+		if p.DryRun {
+			for _, c := range cs {
+				log.Infof("Changing records: %s %s", aws.StringValue(c.Action), c.String())
+			}
+
+			continue
+		}
+
 		params := &route53.ChangeResourceRecordSetsInput{
 			HostedZoneId: aws.String(z),
 			ChangeBatch: &route53.ChangeBatch{
