@@ -270,7 +270,7 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 		},
 	}
 
-	if isAWSLoadBalancer(endpoint.Target) {
+	if isAWSLoadBalancer(endpoint) {
 		change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
 		change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
 			DNSName:              aws.String(endpoint.Target),
@@ -306,8 +306,12 @@ func suitableZone(hostname string, zones map[string]*route53.HostedZone) *route5
 }
 
 // isAWSLoadBalancer determines if a given hostname belongs to an AWS load balancer.
-func isAWSLoadBalancer(hostname string) bool {
-	return canonicalHostedZone(hostname) != ""
+func isAWSLoadBalancer(ep *endpoint.Endpoint) bool {
+	if ep.RecordType == "" {
+		return canonicalHostedZone(ep.Target) != ""
+	}
+
+	return ep.RecordType == "ALIAS"
 }
 
 // canonicalHostedZone returns the matching canonical zone for a given hostname.
