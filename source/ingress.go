@@ -73,20 +73,25 @@ func endpointsFromIngress(ing *v1beta1.Ingress, fqdntemplate string) []*endpoint
 		return endpoints
 	}
 
-	tmpl, err := template.New("endpoint").Funcs(template.FuncMap{
-		"trimPrefix": strings.TrimPrefix,
-	}).Parse(fqdntemplate)
-	if err != nil {
-		return nil
-	}
+	if len(ing.Spec.Rules) == 0 && fqdntemplate != "" {
+		tmpl, err := template.New("endpoint").Funcs(template.FuncMap{
+			"trimPrefix": strings.TrimPrefix,
+		}).Parse(fqdntemplate)
+		if err != nil {
+			return nil
+		}
 
-	var buf bytes.Buffer
+		var buf bytes.Buffer
 
-	tmpl.Execute(&buf, ing)
+		tmpl.Execute(&buf, ing)
 
-	if len(ing.Spec.Rules) == 0 {
 		for _, i := range ing.Status.LoadBalancer.Ingress {
-			endpoints = append(endpoints, endpoint.NewEndpoint(buf.String(), i.IP, ""))
+			if i.IP != "" {
+				endpoints = append(endpoints, endpoint.NewEndpoint(buf.String(), i.IP, ""))
+			}
+			if i.Hostname != "" {
+				endpoints = append(endpoints, endpoint.NewEndpoint(buf.String(), i.Hostname, ""))
+			}
 		}
 	}
 

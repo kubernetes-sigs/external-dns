@@ -86,7 +86,7 @@ func endpointsFromService(svc *v1.Service, fqdntemplate string) []*endpoint.Endp
 
 	// Get the desired hostname of the service from the annotation.
 	hostname, exists := svc.Annotations[hostnameAnnotationKey]
-	if !exists {
+	if !exists && fqdntemplate != "" {
 		tmpl, err := template.New("endpoint").Funcs(template.FuncMap{
 			"trimPrefix": strings.TrimPrefix,
 		}).Parse(fqdntemplate)
@@ -98,6 +98,10 @@ func endpointsFromService(svc *v1.Service, fqdntemplate string) []*endpoint.Endp
 
 		tmpl.Execute(&buf, svc)
 		hostname = buf.String()
+	}
+
+	if !exists && fqdntemplate == "" {
+		return nil
 	}
 
 	// Create a corresponding endpoint for each configured external entrypoint.
