@@ -17,6 +17,7 @@ limitations under the License.
 package registry
 
 import (
+	log "github.com/Sirupsen/logrus"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
@@ -39,4 +40,16 @@ func filterOwnedRecords(ownerID string, eps []*endpoint.Endpoint) []*endpoint.En
 		}
 	}
 	return filtered
+}
+
+func logChanges(changes *plan.Changes) {
+	for _, change := range changes.Create {
+		log.Infof("Creating %s %s -> %s ..", change.RecordType, change.DNSName, change.Target)
+	}
+	for _, change := range changes.UpdateNew {
+		log.Infof("Updating %s %s -> %s ..", change.RecordType, change.DNSName, change.Target)
+	}
+	for _, change := range changes.Delete {
+		log.Infof("Deleting %s %s -> %s ..", change.RecordType, change.DNSName, change.Target)
+	}
 }
