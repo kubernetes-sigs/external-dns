@@ -607,6 +607,28 @@ func TestAWSCanonicalHostedZone(t *testing.T) {
 	}
 }
 
+func TestAWSSuitableZone(t *testing.T) {
+	zones := map[string]*route53.HostedZone{
+		"example-org":     {Id: aws.String("example-org"), Name: aws.String("example.org.")},
+		"bar-example-org": {Id: aws.String("bar-example-org"), Name: aws.String("bar.example.org.")},
+	}
+
+	for _, tc := range []struct {
+		hostname string
+		expected *route53.HostedZone
+	}{
+		{"foo.bar.example.org.", zones["bar-example-org"]},
+		{"foo.example.org.", zones["example-org"]},
+		{"foo.kubernetes.io.", nil},
+	} {
+		suitableZone := suitableZone(tc.hostname, zones)
+
+		if suitableZone != tc.expected {
+			t.Errorf("expected %s, got %s", tc.expected, suitableZone)
+		}
+	}
+}
+
 func createAWSZone(t *testing.T, provider *AWSProvider, zone *route53.HostedZone) {
 	params := &route53.CreateHostedZoneInput{
 		CallerReference: aws.String("external-dns.alpha.kubernetes.io/test-zone"),
@@ -718,7 +740,7 @@ func newAWSProvider(t *testing.T, domain string, dryRun bool, records []*endpoin
 
 func validateRecords(t *testing.T, records []*route53.ResourceRecordSet, expected []*route53.ResourceRecordSet) {
 	if len(records) != len(expected) {
-		t.Errorf("expected %d records, got %d", len(records), len(expected))
+		t.Errorf("expected %d records, got %d", len(expected), len(records))
 	}
 
 	for i := range records {

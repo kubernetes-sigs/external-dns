@@ -205,19 +205,17 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 			for _, c := range cs {
 				log.Infof("Changing records: %s %s", aws.StringValue(c.Action), c.String())
 			}
+		} else {
+			params := &route53.ChangeResourceRecordSetsInput{
+				HostedZoneId: aws.String(z),
+				ChangeBatch: &route53.ChangeBatch{
+					Changes: cs,
+				},
+			}
 
-			continue
-		}
-
-		params := &route53.ChangeResourceRecordSetsInput{
-			HostedZoneId: aws.String(z),
-			ChangeBatch: &route53.ChangeBatch{
-				Changes: cs,
-			},
-		}
-
-		if _, err := p.Client.ChangeResourceRecordSets(params); err != nil {
-			return err
+			if _, err := p.Client.ChangeResourceRecordSets(params); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -230,11 +228,13 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Ch
 
 	for _, z := range zones {
 		changes[aws.StringValue(z.Id)] = []*route53.Change{}
+	}
 
-		for _, c := range changeSet {
-			if strings.HasSuffix(ensureTrailingDot(aws.StringValue(c.ResourceRecordSet.Name)), aws.StringValue(z.Name)) {
-				changes[aws.StringValue(z.Id)] = append(changes[aws.StringValue(z.Id)], c)
-			}
+	for _, c := range changeSet {
+		hostname := ensureTrailingDot(aws.StringValue(c.ResourceRecordSet.Name))
+
+		if zone := suitableZone(hostname, zones); zone != nil {
+			changes[aws.StringValue(zone.Id)] = append(changes[aws.StringValue(zone.Id)], c)
 		}
 	}
 
@@ -290,10 +290,27 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 	return change
 }
 
+// suitableZone returns the most suitable zone for a given hostname and a set of zones.
+func suitableZone(hostname string, zones map[string]*route53.HostedZone) *route53.HostedZone {
+	var zone *route53.HostedZone
+
+	for _, z := range zones {
+		if strings.HasSuffix(hostname, aws.StringValue(z.Name)) {
+			if zone == nil || len(aws.StringValue(z.Name)) > len(aws.StringValue(zone.Name)) {
+				zone = z
+			}
+		}
+	}
+
+	return zone
+}
+
+// isAWSLoadBalancer determines if a given hostname belongs to an AWS load balancer.
 func isAWSLoadBalancer(hostname string) bool {
 	return canonicalHostedZone(hostname) != ""
 }
 
+// canonicalHostedZone returns the matching canonical zone for a given hostname.
 func canonicalHostedZone(hostname string) string {
 	for suffix, zone := range canonicalHostedZones {
 		if strings.HasSuffix(hostname, suffix) {
