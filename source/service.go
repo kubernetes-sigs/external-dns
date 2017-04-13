@@ -21,9 +21,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 
+	"bytes"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"strings"
-	"bytes"
 )
 
 // serviceSource is an implementation of Source for Kubernetes service objects.
@@ -36,7 +36,7 @@ type serviceSource struct {
 	namespace string
 	// set to true to process Services with legacy annotations
 	compatibility bool
-	fqdntemplate string
+	fqdntemplate  string
 }
 
 // NewServiceSource creates a new serviceSource with the given client and namespace scope.
@@ -45,7 +45,7 @@ func NewServiceSource(client kubernetes.Interface, namespace string, compatibili
 		client:        client,
 		namespace:     namespace,
 		compatibility: compatibility,
-		fqdntemplate: fqdntemplate,
+		fqdntemplate:  fqdntemplate,
 	}
 }
 

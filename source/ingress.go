@@ -17,30 +17,30 @@ limitations under the License.
 package source
 
 import (
+	"html/template"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-	"html/template"
 
+	"bytes"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"strings"
-	"bytes"
 )
 
 // ingressSource is an implementation of Source for Kubernetes ingress objects.
 // Ingress implementation will use the spec.rules.host value for the hostname
 // Ingress annotations are ignored
 type ingressSource struct {
-	client    kubernetes.Interface
-	namespace string
+	client       kubernetes.Interface
+	namespace    string
 	fqdntemplate string
 }
 
 // NewIngressSource creates a new ingressSource with the given client and namespace scope.
 func NewIngressSource(client kubernetes.Interface, namespace string, fqdntemplate string) Source {
 	return &ingressSource{
-		client: client,
-		namespace: namespace,
+		client:       client,
+		namespace:    namespace,
 		fqdntemplate: fqdntemplate,
 	}
 }
