@@ -52,6 +52,7 @@ func TestParseFlags(t *testing.T) {
 				Registry:       "noop",
 				RecordOwnerID:  "",
 				TXTPrefix:      "",
+				FqdnTemplate:   "",
 			},
 		},
 		{
@@ -77,6 +78,7 @@ func TestParseFlags(t *testing.T) {
 				Registry:       "noop",
 				RecordOwnerID:  "",
 				TXTPrefix:      "",
+				FqdnTemplate:   "",
 			},
 		},
 		{
@@ -102,6 +104,7 @@ func TestParseFlags(t *testing.T) {
 				Registry:       "noop",
 				RecordOwnerID:  "",
 				TXTPrefix:      "",
+				FqdnTemplate:   "",
 			},
 		},
 		{
@@ -132,6 +135,7 @@ func TestParseFlags(t *testing.T) {
 				Registry:       "noop",
 				RecordOwnerID:  "",
 				TXTPrefix:      "",
+				FqdnTemplate:   "",
 			},
 		},
 		{
@@ -154,6 +158,7 @@ func TestParseFlags(t *testing.T) {
 				"--registry=txt",
 				"--record-owner-id=owner-1",
 				"--txt-prefix=associated-txt-record",
+				"--fqdn-template={{.Name}}.service.example.com"
 				"--version"}},
 			expected: &Config{
 				InCluster:      true,
@@ -175,6 +180,7 @@ func TestParseFlags(t *testing.T) {
 				Registry:       "txt",
 				RecordOwnerID:  "owner-1",
 				TXTPrefix:      "associated-txt-record",
+				FqdnTemplate:   "{{.Name}}.service.example.com",
 			},
 		},
 		{

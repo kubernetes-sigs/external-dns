@@ -81,8 +81,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	source.Register("service", source.NewServiceSource(client, cfg.Namespace, cfg.Compatibility))
-	source.Register("ingress", source.NewIngressSource(client, cfg.Namespace))
+	source.Register("service", source.NewServiceSource(client, cfg.Namespace, cfg.Compatibility, cfg.FqdnTemplate))
+	source.Register("ingress", source.NewIngressSource(client, cfg.Namespace, cfg.FqdnTemplate))
 
 	sources, err := source.LookupMultiple(cfg.Sources)
 	if err != nil {

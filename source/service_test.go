@@ -253,7 +253,7 @@ func testServiceEndpoints(t *testing.T) {
 			}
 
 			// Create our object under test and get the endpoints.
-			client := NewServiceSource(kubernetes, tc.targetNamespace, tc.compatibility)
+			client := NewServiceSource(kubernetes, tc.targetNamespace, tc.compatibility, "")
 
 			endpoints, err := client.Endpoints()
 			if err != nil {
@@ -292,7 +292,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	client := NewServiceSource(kubernetes, v1.NamespaceAll, false)
+	client := NewServiceSource(kubernetes, v1.NamespaceAll, false, "")
 
 	for i := 0; i < b.N; i++ {
 		_, err := client.Endpoints()

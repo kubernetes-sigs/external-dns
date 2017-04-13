@@ -118,7 +118,7 @@ func testEndpointsFromIngress(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, ""), ti.expected)
 		})
 	}
 }
@@ -260,7 +260,7 @@ func testIngressEndpoints(t *testing.T) {
 			}
 
 			fakeClient := fake.NewSimpleClientset()
-			ingressSource := NewIngressSource(fakeClient, ti.targetNamespace)
+			ingressSource := NewIngressSource(fakeClient, ti.targetNamespace, "")
 			for _, ingress := range ingresses {
 				_, err := fakeClient.Extensions().Ingresses(ingress.Namespace).Create(ingress)
 				if err != nil {

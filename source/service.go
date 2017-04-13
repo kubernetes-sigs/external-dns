@@ -17,10 +17,13 @@ limitations under the License.
 package source
 
 import (
+	"html/template"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"strings"
+	"bytes"
 )
 
 // serviceSource is an implementation of Source for Kubernetes service objects.
@@ -33,14 +36,16 @@ type serviceSource struct {
 	namespace string
 	// set to true to process Services with legacy annotations
 	compatibility bool
+	fqdntemplate string
 }
 
 // NewServiceSource creates a new serviceSource with the given client and namespace scope.
-func NewServiceSource(client kubernetes.Interface, namespace string, compatibility bool) Source {
+func NewServiceSource(client kubernetes.Interface, namespace string, compatibility bool, fqdntemplate string) Source {
 	return &serviceSource{
 		client:        client,
 		namespace:     namespace,
 		compatibility: compatibility,
+		fqdntemplate: fqdntemplate,
 	}
 }
 
@@ -54,7 +59,7 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, svc := range services.Items {
-		svcEndpoints := endpointsFromService(&svc)
+		svcEndpoints := endpointsFromService(&svc, sc.fqdntemplate)
 
 		// process legacy annotations if no endpoints were returned and compatibility mode is enabled.
 		if len(svcEndpoints) == 0 && sc.compatibility {
@@ -70,7 +75,7 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 }
 
 // endpointsFromService extracts the endpoints from a service object
-func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
+func endpointsFromService(svc *v1.Service, fqdntemplate string) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	// Check controller annotation to see if we are responsible.
@@ -82,7 +87,17 @@ func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
 	// Get the desired hostname of the service from the annotation.
 	hostname, exists := svc.Annotations[hostnameAnnotationKey]
 	if !exists {
-		return nil
+		tmpl, err := template.New("endpoint").Funcs(template.FuncMap{
+			"trimPrefix": strings.TrimPrefix,
+		}).Parse(fqdntemplate)
+		if err != nil {
+			return nil
+		}
+
+		var buf bytes.Buffer
+
+		tmpl.Execute(&buf, svc)
+		hostname = buf.String()
 	}
 
 	// Create a corresponding endpoint for each configured external entrypoint.
