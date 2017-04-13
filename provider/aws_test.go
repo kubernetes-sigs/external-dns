@@ -203,15 +203,16 @@ func TestAWSUpdateRecords(t *testing.T) {
 }
 
 func TestAWSDeleteRecords(t *testing.T) {
-	provider := newAWSProvider(t, false, []*endpoint.Endpoint{
+	originalEndpoints := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("delete-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
-	})
-
-	currentRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("delete-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", ""),
+		endpoint.NewEndpoint("delete-test-cname.ext-dns-test.teapot.zalan.do", "foo.example.org", "CNAME"),
+		endpoint.NewEndpoint("delete-test-cname.ext-dns-test.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "ALIAS"),
+		endpoint.NewEndpoint("delete-test-cname-alias.ext-dns-test.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "CNAME"),
 	}
 
-	if err := provider.DeleteRecords(testZone, currentRecords); err != nil {
+	provider := newAWSProvider(t, false, originalEndpoints)
+
+	if err := provider.DeleteRecords(testZone, originalEndpoints); err != nil {
 		t.Fatal(err)
 	}
 
@@ -320,15 +321,16 @@ func TestAWSUpdateRecordsDryRun(t *testing.T) {
 }
 
 func TestAWSDeleteRecordsDryRun(t *testing.T) {
-	provider := newAWSProvider(t, true, []*endpoint.Endpoint{
+	originalEndpoints := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("delete-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
-	})
-
-	currentRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("delete-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", ""),
+		endpoint.NewEndpoint("delete-test-cname.ext-dns-test.teapot.zalan.do", "foo.example.org", "CNAME"),
+		endpoint.NewEndpoint("delete-test-cname.ext-dns-test.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "ALIAS"),
+		endpoint.NewEndpoint("delete-test-cname-alias.ext-dns-test.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "CNAME"),
 	}
 
-	if err := provider.DeleteRecords(testZone, currentRecords); err != nil {
+	provider := newAWSProvider(t, true, originalEndpoints)
+
+	if err := provider.DeleteRecords(testZone, originalEndpoints); err != nil {
 		t.Fatal(err)
 	}
 
@@ -337,9 +339,7 @@ func TestAWSDeleteRecordsDryRun(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	validateEndpoints(t, records, []*endpoint.Endpoint{
-		endpoint.NewEndpoint("delete-test.ext-dns-test.teapot.zalan.do", "8.8.8.8", "A"),
-	})
+	validateEndpoints(t, records, originalEndpoints)
 }
 
 func TestAWSApplyChangesDryRun(t *testing.T) {
@@ -549,15 +549,25 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 	})
 }
 
-func TestAWSisAWSLoadBalancer(t *testing.T) {
+func TestAWSisLoadBalancer(t *testing.T) {
 	for _, tc := range []struct {
-		hostname string
-		expected bool
+		target     string
+		recordType string
+		expected   bool
 	}{
-		{"bar.eu-central-1.elb.amazonaws.com", true},
-		{"foo.example.org", false},
+		{"bar.eu-central-1.elb.amazonaws.com", "", true},
+		{"bar.eu-central-1.elb.amazonaws.com", "ALIAS", true},
+		{"bar.eu-central-1.elb.amazonaws.com", "CNAME", false},
+		{"foo.example.org", "", false},
+		{"foo.example.org", "ALIAS", true},
+		{"foo.example.org", "CNAME", false},
 	} {
-		isLB := isAWSLoadBalancer(tc.hostname)
+		ep := &endpoint.Endpoint{
+			Target:     tc.target,
+			RecordType: tc.recordType,
+		}
+
+		isLB := isAWSLoadBalancer(ep)
 
 		if isLB != tc.expected {
 			t.Errorf("expected %t, got %t", tc.expected, isLB)
