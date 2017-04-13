@@ -158,7 +158,7 @@ func TestParseFlags(t *testing.T) {
 				"--registry=txt",
 				"--record-owner-id=owner-1",
 				"--txt-prefix=associated-txt-record",
-				"--fqdn-template={{.Name}}.service.example.com"
+				"--fqdn-template={{.Name}}.service.example.com",
 				"--version"}},
 			expected: &Config{
 				InCluster:      true,
