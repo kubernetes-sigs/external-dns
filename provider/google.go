@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"net"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
@@ -291,11 +292,20 @@ func newRecords(endpoints []*endpoint.Endpoint) []*dns.ResourceRecordSet {
 // newRecord returns a RecordSet based on the given endpoint.
 func newRecord(endpoint *endpoint.Endpoint) *dns.ResourceRecordSet {
 	return &dns.ResourceRecordSet{
-		Name:    endpoint.DNSName,
-		Rrdatas: []string{endpoint.Target},
+		Name:    ensureTrailingDot(endpoint.DNSName),
+		Rrdatas: []string{ensureTrailingDot(endpoint.Target)},
 		Ttl:     300,
 		Type:    suitableType(endpoint.Target),
 	}
+}
+
+// ensureTrailingDot ensures that the hostname receives a trailing dot if it hasn't already.
+func ensureTrailingDot(hostname string) string {
+	if net.ParseIP(hostname) != nil {
+		return hostname
+	}
+
+	return strings.TrimSuffix(hostname, ".") + "."
 }
 
 // isNotFound returns true if a given error is due to a resource not being found.
