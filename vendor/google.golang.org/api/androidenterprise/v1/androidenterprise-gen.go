@@ -74,9 +74,10 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client    *http.Client
-	BasePath  string // API endpoint base URL
-	UserAgent string // optional additional User-Agent fragment
+	client                    *http.Client
+	BasePath                  string // API endpoint base URL
+	UserAgent                 string // optional additional User-Agent fragment
+	GoogleClientHeaderElement string // client header fragment, for Google use only
 
 	Devices *DevicesService
 
@@ -112,6 +113,10 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
+}
+
+func (s *Service) clientHeader() string {
+	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewDevicesService(s *Service) *DevicesService {
@@ -665,14 +670,14 @@ func (s *AuthenticationToken) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Device: A Devices resource represents a mobile device managed by the
+// Device: A device resource represents a mobile device managed by the
 // EMM and belonging to a specific enterprise user.
 //
-// This collection cannot be modified via the API. It is automatically
+// This collection cannot be modified via the API; it is automatically
 // populated as devices are set up to be managed.
 type Device struct {
 	// AndroidId: The Google Play Services Android ID for the device encoded
-	// as a lowercase hex string. For example, "123456789abcdef0".
+	// as a lowercase hex string, e.g. "123456789abcdef0".
 	AndroidId string `json:"androidId,omitempty"`
 
 	// Kind: Identifies what kind of resource this is. Value: the fixed
@@ -968,45 +973,50 @@ func (s *EnterprisesSendTestPushNotificationResponse) MarshalJSON() ([]byte, err
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Entitlement: The presence of an Entitlements resource indicates that
-// a user has the right to use a particular app. Entitlements are user
-// specific, not device specific. This allows a user with an entitlement
-// to an app to install the app on all their devices. It's also possible
-// for a user to hold an entitlement to an app without installing the
-// app on any device.
+// Entitlement: The existence of an entitlement resource means that a
+// user has the right to use a particular app on any of their devices.
+// This might be because the app is free or because they have been
+// allocated a license to the app from a group license purchased by the
+// enterprise.
 //
-// The API can be used to create an entitlement. As an option, you can
-// also use the API to trigger the installation of an app on all a
-// user's managed devices at the same time the entitlement is
-// created.
+// It should always be true that a user has an app installed on one of
+// their devices only if they have an entitlement to it. So if an
+// entitlement is deleted, the app will be uninstalled from all devices.
+// Similarly if the user installs an app (and is permitted to do so), or
+// the EMM triggers an install of the app, an entitlement to that app is
+// automatically created. If this is impossible - e.g. the enterprise
+// has not purchased sufficient licenses - then installation
+// fails.
 //
-// If the app is free, creating the entitlement also creates a group
-// license for that app. For paid apps, creating the entitlement
-// consumes one license, and that license remains consumed until the
-// entitlement is removed. If the enterprise hasn't purchased enough
-// licenses, then no entitlement is created and the installation fails.
-// An entitlement is also not created for an app if the app requires
-// permissions that the enterprise hasn't accepted.
+// Note that entitlements are always user specific, not device specific;
+// a user may have an entitlement even though they have not installed
+// the app anywhere. Once they have an entitlement they can install the
+// app on multiple devices.
 //
-// If an entitlement is deleted, the app may be uninstalled from a
-// user's device. As a best practice, uninstall the app by calling
-// Installs.delete() before deleting the entitlement.
+// The API can be used to create an entitlement. If the app is a free
+// app, a group license for that app is created. If it's a paid app,
+// creating the entitlement consumes one license; it remains consumed
+// until the entitlement is removed. Optionally an installation of the
+// app on all the user's managed devices can be triggered at the time
+// the entitlement is created. An entitlement cannot be created for an
+// app if the app requires permissions that the enterprise has not yet
+// accepted.
 //
-// Entitlements for apps that a user pays for on an unmanaged profile
-// have "userPurchase" as the entitlement reason. These entitlements
-// cannot be removed via the API.
+// Entitlements for paid apps that are due to purchases by the user on a
+// non-managed profile will have "userPurchase" as entitlement reason;
+// those entitlements cannot be removed via the API.
 type Entitlement struct {
 	// Kind: Identifies what kind of resource this is. Value: the fixed
 	// string "androidenterprise#entitlement".
 	Kind string `json:"kind,omitempty"`
 
-	// ProductId: The ID of the product that the entitlement is for. For
-	// example, "app:com.google.android.gm".
+	// ProductId: The ID of the product that the entitlement is for, e.g.
+	// "app:com.google.android.gm".
 	ProductId string `json:"productId,omitempty"`
 
-	// Reason: The reason for the entitlement. For example, "free" for free
-	// apps. This property is temporary: it will be replaced by the
-	// acquisition kind field of group licenses.
+	// Reason: The reason for the entitlement, e.g. "free" for free apps.
+	// This is temporary, it will be replaced by the acquisition kind field
+	// of group licenses.
 	Reason string `json:"reason,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -1098,17 +1108,18 @@ func (s *EntitlementsListResponse) MarshalJSON() ([]byte, error) {
 // Play.
 type GroupLicense struct {
 	// AcquisitionKind: How this group license was acquired. "bulkPurchase"
-	// means that this Grouplicenses resource was created because the
-	// enterprise purchased licenses for this product; otherwise, the value
-	// is "free" (for free products).
+	// means that this group license object was created because the
+	// enterprise purchased licenses for this product; this is "free"
+	// otherwise (for free products).
 	AcquisitionKind string `json:"acquisitionKind,omitempty"`
 
 	// Approval: Whether the product to which this group license relates is
-	// currently approved by the enterprise. Products are approved when a
-	// group license is first created, but this approval may be revoked by
-	// an enterprise admin via Google Play. Unapproved products will not be
-	// visible to end users in collections, and new entitlements to them
-	// should not normally be created.
+	// currently approved by the enterprise, as either "approved" or
+	// "unapproved". Products are approved when a group license is first
+	// created, but this approval may be revoked by an enterprise admin via
+	// Google Play. Unapproved products will not be visible to end users in
+	// collections and new entitlements to them should not normally be
+	// created.
 	Approval string `json:"approval,omitempty"`
 
 	// Kind: Identifies what kind of resource this is. Value: the fixed
@@ -1121,13 +1132,13 @@ type GroupLicense struct {
 	NumProvisioned int64 `json:"numProvisioned,omitempty"`
 
 	// NumPurchased: The number of purchased licenses (possibly in multiple
-	// purchases). If this field is omitted, then there is no limit on the
-	// number of licenses that can be provisioned (for example, if the
-	// acquisition kind is "free").
+	// purchases). If this field is omitted then there is no limit on the
+	// number of licenses that can be provisioned (e.g. if the acquisition
+	// kind is "free").
 	NumPurchased int64 `json:"numPurchased,omitempty"`
 
-	// ProductId: The ID of the product that the license is for. For
-	// example, "app:com.google.android.gm".
+	// ProductId: The ID of the product that the license is for, e.g.
+	// "app:com.google.android.gm".
 	ProductId string `json:"productId,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -1233,23 +1244,23 @@ func (s *GroupLicensesListResponse) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Install: The existence of an Installs resource indicates that an app
+// Install: The existence of an install resource indicates that an app
 // is installed on a particular device (or that an install is
 // pending).
 //
 // The API can be used to create an install resource using the update
 // method. This triggers the actual install of the app on the device. If
-// the user does not already have an entitlement for the app, then an
-// attempt is made to create one. If this fails (for example, because
-// the app is not free and there is no available license), then the
-// creation of the install fails.
+// the user does not already have an entitlement for the app then an
+// attempt is made to create one. If this fails (e.g. because the app is
+// not free and there is no available license) then the creation of the
+// install fails.
 //
-// The API can also be used to update an installed app. If
-// the update method is used on an existing install, then the app will
-// be updated to the latest available version.
+// The API can also be used to update an installed app. If the update
+// method is used on an existing install then the app will be updated to
+// the latest available version.
 //
 // Note that it is not possible to force the installation of a specific
-// version of an app: the version code is read-only.
+// version of an app; the version code is read-only.
 //
 // If a user installs an app themselves (as permitted by the
 // enterprise), then again an install resource and possibly an
@@ -1272,8 +1283,8 @@ type Install struct {
 	// string "androidenterprise#install".
 	Kind string `json:"kind,omitempty"`
 
-	// ProductId: The ID of the product that the install is for. For
-	// example, "app:com.google.android.gm".
+	// ProductId: The ID of the product that the install is for, e.g.
+	// "app:com.google.android.gm".
 	ProductId string `json:"productId,omitempty"`
 
 	// VersionCode: The version of the installed product. Guaranteed to be
@@ -1635,12 +1646,15 @@ type NewDeviceEvent struct {
 	DeviceId string `json:"deviceId,omitempty"`
 
 	// ManagementType: Identifies the extent to which the device is
-	// controlled by an Android EMM in various deployment
+	// controlled by an Android for Work EMM in various deployment
 	// configurations.
 	//
 	// Possible values include:
-	// - "managedDevice", a device where the DPC is set as device owner,
-	// - "managedProfile", a device where the DPC is set as profile owner.
+	// - "managedDevice", a device that has the EMM's device policy
+	// controller (DPC) as the device owner,
+	// - "managedProfile", a device that has a work profile managed by the
+	// DPC (DPC is profile owner) in addition to a separate, personal
+	// profile that is unavailable to the DPC,
 	ManagementType string `json:"managementType,omitempty"`
 
 	// UserId: The ID of the user. This field will always be present.
@@ -1844,18 +1858,18 @@ func (s *PageInfo) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Permission: A Permissions resource represents some extra capability,
-// to be granted to an Android app, which requires explicit consent. An
+// Permission: A permission represents some extra capability, to be
+// granted to an Android app, which requires explicit consent. An
 // enterprise admin must consent to these permissions on behalf of their
 // users before an entitlement for the app can be created.
 //
 // The permissions collection is read-only. The information provided for
 // each permission (localized name and description) is intended to be
-// used in the MDM user interface when obtaining consent from the
+// used in the EMM user interface when obtaining consent from the
 // enterprise.
 type Permission struct {
-	// Description: A longer description of the Permissions resource, giving
-	// more details of what it affects.
+	// Description: A longer description of the permissions giving more
+	// details of what it affects.
 	Description string `json:"description,omitempty"`
 
 	// Kind: Identifies what kind of resource this is. Value: the fixed
@@ -1909,8 +1923,8 @@ type Product struct {
 	// are not included.
 	AppVersion []*AppVersion `json:"appVersion,omitempty"`
 
-	// AuthorName: The name of the author of the product (for example, the
-	// app developer).
+	// AuthorName: The name of the author of the product (e.g. the app
+	// developer).
 	AuthorName string `json:"authorName,omitempty"`
 
 	// DetailsUrl: A link to the (consumer) Google Play details page for the
@@ -2529,11 +2543,15 @@ func (s *StoreCluster) MarshalJSON() ([]byte, error) {
 // the store is opened.
 type StoreLayout struct {
 	// HomepageId: The ID of the store page to be used as the homepage. The
-	// homepage is the first page shown in the managed Google Play
-	// Store.
+	// homepage will be used as the first page shown in the managed Google
+	// Play store.
 	//
-	// Not specifying a homepage is equivalent to setting the store layout
-	// type to "basic".
+	// If a homepage has not been set, the Play store shown on devices will
+	// be empty. Not specifying a homepage on a store layout effectively
+	// empties the store.
+	//
+	// If there exists at least one page, this field must be set to the ID
+	// of a valid page.
 	HomepageId string `json:"homepageId,omitempty"`
 
 	// Kind: Identifies what kind of resource this is. Value: the fixed
@@ -2541,9 +2559,13 @@ type StoreLayout struct {
 	Kind string `json:"kind,omitempty"`
 
 	// StoreLayoutType: The store layout type. By default, this value is set
-	// to "basic" if the homepageId field is not set, and to "custom"
-	// otherwise. If set to "basic", the layout will consist of all approved
-	// apps that have been whitelisted for the user.
+	// to "basic". If set to "custom", "homepageId" must be specified. If
+	// set to "basic", the layout will consist of all approved apps
+	// accessible by the user, split in pages of 100 each; in this case,
+	// "homepageId" must not be specified. The "basic" setting takes
+	// precedence over any existing collections setup for this enterprise
+	// (if any). Should the enterprise use collectionViewers for controlling
+	// access rights, these will still be respected.
 	StoreLayoutType string `json:"storeLayoutType,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -2950,6 +2972,7 @@ func (c *DevicesGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3112,6 +3135,7 @@ func (c *DevicesGetStateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3267,6 +3291,7 @@ func (c *DevicesListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3412,6 +3437,7 @@ func (c *DevicesSetStateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.devicestate)
 	if err != nil {
@@ -3567,6 +3593,7 @@ func (c *EnterprisesAcknowledgeNotificationSetCall) doRequest(alt string) (*http
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/acknowledgeNotificationSet")
@@ -3669,6 +3696,7 @@ func (c *EnterprisesCompleteSignupCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/completeSignup")
@@ -3796,6 +3824,7 @@ func (c *EnterprisesCreateWebTokenCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.administratorwebtokenspec)
 	if err != nil {
@@ -3890,9 +3919,9 @@ type EnterprisesDeleteCall struct {
 }
 
 // Delete: Deletes the binding between the EMM and enterprise. This is
-// now deprecated. Use this method only to unenroll customers that were
-// previously enrolled with the insert call, then enroll them again with
-// the enroll call.
+// now deprecated; use this to unenroll customers that were previously
+// enrolled with the 'insert' call, then enroll them again with the
+// 'enroll' call.
 func (r *EnterprisesService) Delete(enterpriseId string) *EnterprisesDeleteCall {
 	c := &EnterprisesDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.enterpriseId = enterpriseId
@@ -3930,6 +3959,7 @@ func (c *EnterprisesDeleteCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/{enterpriseId}")
@@ -3955,7 +3985,7 @@ func (c *EnterprisesDeleteCall) Do(opts ...googleapi.CallOption) error {
 	}
 	return nil
 	// {
-	//   "description": "Deletes the binding between the EMM and enterprise. This is now deprecated. Use this method only to unenroll customers that were previously enrolled with the insert call, then enroll them again with the enroll call.",
+	//   "description": "Deletes the binding between the EMM and enterprise. This is now deprecated; use this to unenroll customers that were previously enrolled with the 'insert' call, then enroll them again with the 'enroll' call.",
 	//   "httpMethod": "DELETE",
 	//   "id": "androidenterprise.enterprises.delete",
 	//   "parameterOrder": [
@@ -4026,6 +4056,7 @@ func (c *EnterprisesEnrollCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.enterprise)
 	if err != nil {
@@ -4167,6 +4198,7 @@ func (c *EnterprisesGenerateSignupUrlCall) doRequest(alt string) (*http.Response
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/signupUrl")
@@ -4294,6 +4326,7 @@ func (c *EnterprisesGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4457,6 +4490,7 @@ func (c *EnterprisesGetServiceAccountCall) doRequest(alt string) (*http.Response
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4560,8 +4594,8 @@ type EnterprisesGetStoreLayoutCall struct {
 }
 
 // GetStoreLayout: Returns the store layout for the enterprise. If the
-// store layout has not been set, returns "basic" as the store layout
-// type and no homepage.
+// store layout has not been set, or if the store layout has no
+// homepageId set, returns a NOT_FOUND error.
 func (r *EnterprisesService) GetStoreLayout(enterpriseId string) *EnterprisesGetStoreLayoutCall {
 	c := &EnterprisesGetStoreLayoutCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.enterpriseId = enterpriseId
@@ -4609,6 +4643,7 @@ func (c *EnterprisesGetStoreLayoutCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4662,7 +4697,7 @@ func (c *EnterprisesGetStoreLayoutCall) Do(opts ...googleapi.CallOption) (*Store
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns the store layout for the enterprise. If the store layout has not been set, returns \"basic\" as the store layout type and no homepage.",
+	//   "description": "Returns the store layout for the enterprise. If the store layout has not been set, or if the store layout has no homepageId set, returns a NOT_FOUND error.",
 	//   "httpMethod": "GET",
 	//   "id": "androidenterprise.enterprises.getStoreLayout",
 	//   "parameterOrder": [
@@ -4737,6 +4772,7 @@ func (c *EnterprisesInsertCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.enterprise)
 	if err != nil {
@@ -4879,6 +4915,7 @@ func (c *EnterprisesListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4968,8 +5005,8 @@ type EnterprisesPullNotificationSetCall struct {
 // request. The notification set may be empty if no notification are
 // pending.
 // A notification set returned needs to be acknowledged within 20
-// seconds by calling Enterprises.AcknowledgeNotificationSet, unless the
-// notification set is empty.
+// seconds by calling Enterprises​.AcknowledgeNotificationSet, unless
+// the notification set is empty.
 // Notifications that are not acknowledged within the 20 seconds will
 // eventually be included again in the response to another
 // PullNotificationSet request, and those that are never acknowledged
@@ -5036,6 +5073,7 @@ func (c *EnterprisesPullNotificationSetCall) doRequest(alt string) (*http.Respon
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/pullNotificationSet")
@@ -5083,7 +5121,7 @@ func (c *EnterprisesPullNotificationSetCall) Do(opts ...googleapi.CallOption) (*
 	}
 	return ret, nil
 	// {
-	//   "description": "Pulls and returns a notification set for the enterprises associated with the service account authenticated for the request. The notification set may be empty if no notification are pending.\nA notification set returned needs to be acknowledged within 20 seconds by calling Enterprises.AcknowledgeNotificationSet, unless the notification set is empty.\nNotifications that are not acknowledged within the 20 seconds will eventually be included again in the response to another PullNotificationSet request, and those that are never acknowledged will ultimately be deleted according to the Google Cloud Platform Pub/Sub system policy.\nMultiple requests might be performed concurrently to retrieve notifications, in which case the pending notifications (if any) will be split among each caller, if any are pending.\nIf no notifications are present, an empty notification list is returned. Subsequent requests may return more notifications once they become available.",
+	//   "description": "Pulls and returns a notification set for the enterprises associated with the service account authenticated for the request. The notification set may be empty if no notification are pending.\nA notification set returned needs to be acknowledged within 20 seconds by calling Enterprises​.AcknowledgeNotificationSet, unless the notification set is empty.\nNotifications that are not acknowledged within the 20 seconds will eventually be included again in the response to another PullNotificationSet request, and those that are never acknowledged will ultimately be deleted according to the Google Cloud Platform Pub/Sub system policy.\nMultiple requests might be performed concurrently to retrieve notifications, in which case the pending notifications (if any) will be split among each caller, if any are pending.\nIf no notifications are present, an empty notification list is returned. Subsequent requests may return more notifications once they become available.",
 	//   "httpMethod": "POST",
 	//   "id": "androidenterprise.enterprises.pullNotificationSet",
 	//   "parameters": {
@@ -5162,6 +5200,7 @@ func (c *EnterprisesSendTestPushNotificationCall) doRequest(alt string) (*http.R
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/{enterpriseId}/sendTestPushNotification")
@@ -5250,7 +5289,7 @@ type EnterprisesSetAccountCall struct {
 	header_           http.Header
 }
 
-// SetAccount: Sets the account that will be used to authenticate to the
+// SetAccount: Set the account that will be used to authenticate to the
 // API as the enterprise.
 func (r *EnterprisesService) SetAccount(enterpriseId string, enterpriseaccount *EnterpriseAccount) *EnterprisesSetAccountCall {
 	c := &EnterprisesSetAccountCall{s: r.s, urlParams_: make(gensupport.URLParams)}
@@ -5290,6 +5329,7 @@ func (c *EnterprisesSetAccountCall) doRequest(alt string) (*http.Response, error
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.enterpriseaccount)
 	if err != nil {
@@ -5345,7 +5385,7 @@ func (c *EnterprisesSetAccountCall) Do(opts ...googleapi.CallOption) (*Enterpris
 	}
 	return ret, nil
 	// {
-	//   "description": "Sets the account that will be used to authenticate to the API as the enterprise.",
+	//   "description": "Set the account that will be used to authenticate to the API as the enterprise.",
 	//   "httpMethod": "PUT",
 	//   "id": "androidenterprise.enterprises.setAccount",
 	//   "parameterOrder": [
@@ -5390,8 +5430,8 @@ type EnterprisesSetStoreLayoutCall struct {
 // and that have been added to the available product set for a user
 // (using the  setAvailableProductSet call). Apps on the page are sorted
 // in order of their product ID value. If you create a custom store
-// layout (by setting storeLayoutType = "custom" and setting a
-// homepage), the basic store layout is disabled.
+// layout (by setting storeLayoutType = "custom"), the basic store
+// layout is disabled.
 func (r *EnterprisesService) SetStoreLayout(enterpriseId string, storelayout *StoreLayout) *EnterprisesSetStoreLayoutCall {
 	c := &EnterprisesSetStoreLayoutCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.enterpriseId = enterpriseId
@@ -5430,6 +5470,7 @@ func (c *EnterprisesSetStoreLayoutCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.storelayout)
 	if err != nil {
@@ -5485,7 +5526,7 @@ func (c *EnterprisesSetStoreLayoutCall) Do(opts ...googleapi.CallOption) (*Store
 	}
 	return ret, nil
 	// {
-	//   "description": "Sets the store layout for the enterprise. By default, storeLayoutType is set to \"basic\" and the basic store layout is enabled. The basic layout only contains apps approved by the admin, and that have been added to the available product set for a user (using the  setAvailableProductSet call). Apps on the page are sorted in order of their product ID value. If you create a custom store layout (by setting storeLayoutType = \"custom\" and setting a homepage), the basic store layout is disabled.",
+	//   "description": "Sets the store layout for the enterprise. By default, storeLayoutType is set to \"basic\" and the basic store layout is enabled. The basic layout only contains apps approved by the admin, and that have been added to the available product set for a user (using the  setAvailableProductSet call). Apps on the page are sorted in order of their product ID value. If you create a custom store layout (by setting storeLayoutType = \"custom\"), the basic store layout is disabled.",
 	//   "httpMethod": "PUT",
 	//   "id": "androidenterprise.enterprises.setStoreLayout",
 	//   "parameterOrder": [
@@ -5561,6 +5602,7 @@ func (c *EnterprisesUnenrollCall) doRequest(alt string) (*http.Response, error) 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/{enterpriseId}/unenroll")
@@ -5620,7 +5662,8 @@ type EntitlementsDeleteCall struct {
 	header_       http.Header
 }
 
-// Delete: Removes an entitlement to an app for a user.
+// Delete: Removes an entitlement to an app for a user and uninstalls
+// it.
 func (r *EntitlementsService) Delete(enterpriseId string, userId string, entitlementId string) *EntitlementsDeleteCall {
 	c := &EntitlementsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.enterpriseId = enterpriseId
@@ -5660,6 +5703,7 @@ func (c *EntitlementsDeleteCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/{enterpriseId}/users/{userId}/entitlements/{entitlementId}")
@@ -5687,7 +5731,7 @@ func (c *EntitlementsDeleteCall) Do(opts ...googleapi.CallOption) error {
 	}
 	return nil
 	// {
-	//   "description": "Removes an entitlement to an app for a user.",
+	//   "description": "Removes an entitlement to an app for a user and uninstalls it.",
 	//   "httpMethod": "DELETE",
 	//   "id": "androidenterprise.entitlements.delete",
 	//   "parameterOrder": [
@@ -5786,6 +5830,7 @@ func (c *EntitlementsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -5892,7 +5937,7 @@ type EntitlementsListCall struct {
 	header_      http.Header
 }
 
-// List: Lists all entitlements for the specified user. Only the ID is
+// List: List of all entitlements for the specified user. Only the ID is
 // set.
 func (r *EntitlementsService) List(enterpriseId string, userId string) *EntitlementsListCall {
 	c := &EntitlementsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
@@ -5942,6 +5987,7 @@ func (c *EntitlementsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -5996,7 +6042,7 @@ func (c *EntitlementsListCall) Do(opts ...googleapi.CallOption) (*EntitlementsLi
 	}
 	return ret, nil
 	// {
-	//   "description": "Lists all entitlements for the specified user. Only the ID is set.",
+	//   "description": "List of all entitlements for the specified user. Only the ID is set.",
 	//   "httpMethod": "GET",
 	//   "id": "androidenterprise.entitlements.list",
 	//   "parameterOrder": [
@@ -6093,6 +6139,7 @@ func (c *EntitlementsPatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.entitlement)
 	if err != nil {
@@ -6261,6 +6308,7 @@ func (c *EntitlementsUpdateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.entitlement)
 	if err != nil {
@@ -6427,6 +6475,7 @@ func (c *GrouplicensesGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -6573,6 +6622,7 @@ func (c *GrouplicensesListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -6713,6 +6763,7 @@ func (c *GrouplicenseusersListCall) doRequest(alt string) (*http.Response, error
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -6855,6 +6906,7 @@ func (c *InstallsDeleteCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/{enterpriseId}/users/{userId}/devices/{deviceId}/installs/{installId}")
@@ -6991,6 +7043,7 @@ func (c *InstallsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -7157,6 +7210,7 @@ func (c *InstallsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -7266,7 +7320,7 @@ type InstallsPatchCall struct {
 }
 
 // Patch: Requests to install the latest version of an app to a device.
-// If the app is already installed, then it is updated to the latest
+// If the app is already installed then it is updated to the latest
 // version if necessary. This method supports patch semantics.
 func (r *InstallsService) Patch(enterpriseId string, userId string, deviceId string, installId string, install *Install) *InstallsPatchCall {
 	c := &InstallsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
@@ -7309,6 +7363,7 @@ func (c *InstallsPatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.install)
 	if err != nil {
@@ -7367,7 +7422,7 @@ func (c *InstallsPatchCall) Do(opts ...googleapi.CallOption) (*Install, error) {
 	}
 	return ret, nil
 	// {
-	//   "description": "Requests to install the latest version of an app to a device. If the app is already installed, then it is updated to the latest version if necessary. This method supports patch semantics.",
+	//   "description": "Requests to install the latest version of an app to a device. If the app is already installed then it is updated to the latest version if necessary. This method supports patch semantics.",
 	//   "httpMethod": "PATCH",
 	//   "id": "androidenterprise.installs.patch",
 	//   "parameterOrder": [
@@ -7431,7 +7486,7 @@ type InstallsUpdateCall struct {
 }
 
 // Update: Requests to install the latest version of an app to a device.
-// If the app is already installed, then it is updated to the latest
+// If the app is already installed then it is updated to the latest
 // version if necessary.
 func (r *InstallsService) Update(enterpriseId string, userId string, deviceId string, installId string, install *Install) *InstallsUpdateCall {
 	c := &InstallsUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
@@ -7474,6 +7529,7 @@ func (c *InstallsUpdateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.install)
 	if err != nil {
@@ -7532,7 +7588,7 @@ func (c *InstallsUpdateCall) Do(opts ...googleapi.CallOption) (*Install, error) 
 	}
 	return ret, nil
 	// {
-	//   "description": "Requests to install the latest version of an app to a device. If the app is already installed, then it is updated to the latest version if necessary.",
+	//   "description": "Requests to install the latest version of an app to a device. If the app is already installed then it is updated to the latest version if necessary.",
 	//   "httpMethod": "PUT",
 	//   "id": "androidenterprise.installs.update",
 	//   "parameterOrder": [
@@ -7636,6 +7692,7 @@ func (c *ManagedconfigurationsfordeviceDeleteCall) doRequest(alt string) (*http.
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/{enterpriseId}/users/{userId}/devices/{deviceId}/managedConfigurationsForDevice/{managedConfigurationForDeviceId}")
@@ -7772,6 +7829,7 @@ func (c *ManagedconfigurationsfordeviceGetCall) doRequest(alt string) (*http.Res
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -7938,6 +7996,7 @@ func (c *ManagedconfigurationsfordeviceListCall) doRequest(alt string) (*http.Re
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -8091,6 +8150,7 @@ func (c *ManagedconfigurationsfordevicePatchCall) doRequest(alt string) (*http.R
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.managedconfiguration)
 	if err != nil {
@@ -8255,6 +8315,7 @@ func (c *ManagedconfigurationsfordeviceUpdateCall) doRequest(alt string) (*http.
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.managedconfiguration)
 	if err != nil {
@@ -8415,6 +8476,7 @@ func (c *ManagedconfigurationsforuserDeleteCall) doRequest(alt string) (*http.Re
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/{enterpriseId}/users/{userId}/managedConfigurationsForUser/{managedConfigurationForUserId}")
@@ -8542,6 +8604,7 @@ func (c *ManagedconfigurationsforuserGetCall) doRequest(alt string) (*http.Respo
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -8698,6 +8761,7 @@ func (c *ManagedconfigurationsforuserListCall) doRequest(alt string) (*http.Resp
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -8841,6 +8905,7 @@ func (c *ManagedconfigurationsforuserPatchCall) doRequest(alt string) (*http.Res
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.managedconfiguration)
 	if err != nil {
@@ -8995,6 +9060,7 @@ func (c *ManagedconfigurationsforuserUpdateCall) doRequest(alt string) (*http.Re
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.managedconfiguration)
 	if err != nil {
@@ -9161,6 +9227,7 @@ func (c *PermissionsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -9302,6 +9369,7 @@ func (c *ProductsApproveCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.productsapproverequest)
 	if err != nil {
@@ -9433,6 +9501,7 @@ func (c *ProductsGenerateApprovalUrlCall) doRequest(alt string) (*http.Response,
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/{enterpriseId}/products/{productId}/generateApprovalUrl")
@@ -9591,6 +9660,7 @@ func (c *ProductsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -9756,6 +9826,7 @@ func (c *ProductsGetAppRestrictionsSchemaCall) doRequest(alt string) (*http.Resp
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -9909,6 +9980,7 @@ func (c *ProductsGetPermissionsCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -10050,7 +10122,7 @@ func (c *ProductsListCall) Query(query string) *ProductsListCall {
 }
 
 // Token sets the optional parameter "token": A pagination token is
-// contained in a request''s response when there are more products. The
+// contained in a requests response when there are more products. The
 // token can be used in a subsequent request to obtain more products,
 // and so forth. This parameter cannot be used in the initial request.
 func (c *ProductsListCall) Token(token string) *ProductsListCall {
@@ -10099,6 +10171,7 @@ func (c *ProductsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -10187,7 +10260,7 @@ func (c *ProductsListCall) Do(opts ...googleapi.CallOption) (*ProductsListRespon
 	//       "type": "string"
 	//     },
 	//     "token": {
-	//       "description": "A pagination token is contained in a request''s response when there are more products. The token can be used in a subsequent request to obtain more products, and so forth. This parameter cannot be used in the initial request.",
+	//       "description": "A pagination token is contained in a requests response when there are more products. The token can be used in a subsequent request to obtain more products, and so forth. This parameter cannot be used in the initial request.",
 	//       "location": "query",
 	//       "type": "string"
 	//     }
@@ -10254,6 +10327,7 @@ func (c *ProductsUnapproveCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/{enterpriseId}/products/{productId}/unapprove")
@@ -10363,6 +10437,7 @@ func (c *ServiceaccountkeysDeleteCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/{enterpriseId}/serviceAccountKeys/{keyId}")
@@ -10475,6 +10550,7 @@ func (c *ServiceaccountkeysInsertCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.serviceaccountkey)
 	if err != nil {
@@ -10621,6 +10697,7 @@ func (c *ServiceaccountkeysListCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -10751,6 +10828,7 @@ func (c *StorelayoutclustersDeleteCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/{enterpriseId}/storeLayout/pages/{pageId}/clusters/{clusterId}")
@@ -10877,6 +10955,7 @@ func (c *StorelayoutclustersGetCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -11023,6 +11102,7 @@ func (c *StorelayoutclustersInsertCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.storecluster)
 	if err != nil {
@@ -11175,6 +11255,7 @@ func (c *StorelayoutclustersListCall) doRequest(alt string) (*http.Response, err
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -11315,6 +11396,7 @@ func (c *StorelayoutclustersPatchCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.storecluster)
 	if err != nil {
@@ -11468,6 +11550,7 @@ func (c *StorelayoutclustersUpdateCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.storecluster)
 	if err != nil {
@@ -11617,6 +11700,7 @@ func (c *StorelayoutpagesDeleteCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/{enterpriseId}/storeLayout/pages/{pageId}")
@@ -11733,6 +11817,7 @@ func (c *StorelayoutpagesGetCall) doRequest(alt string) (*http.Response, error) 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -11869,6 +11954,7 @@ func (c *StorelayoutpagesInsertCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.storepage)
 	if err != nil {
@@ -12011,6 +12097,7 @@ func (c *StorelayoutpagesListCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -12142,6 +12229,7 @@ func (c *StorelayoutpagesPatchCall) doRequest(alt string) (*http.Response, error
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.storepage)
 	if err != nil {
@@ -12285,6 +12373,7 @@ func (c *StorelayoutpagesUpdateCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.storepage)
 	if err != nil {
@@ -12426,6 +12515,7 @@ func (c *UsersDeleteCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/{enterpriseId}/users/{userId}")
@@ -12536,6 +12626,7 @@ func (c *UsersGenerateAuthenticationTokenCall) doRequest(alt string) (*http.Resp
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/{enterpriseId}/users/{userId}/authenticationToken")
@@ -12673,6 +12764,7 @@ func (c *UsersGenerateTokenCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/{enterpriseId}/users/{userId}/token")
@@ -12817,6 +12909,7 @@ func (c *UsersGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -12965,6 +13058,7 @@ func (c *UsersGetAvailableProductSetCall) doRequest(alt string) (*http.Response,
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -13107,6 +13201,7 @@ func (c *UsersInsertCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.user)
 	if err != nil {
@@ -13253,6 +13348,7 @@ func (c *UsersListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -13396,6 +13492,7 @@ func (c *UsersPatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.user)
 	if err != nil {
@@ -13538,6 +13635,7 @@ func (c *UsersRevokeTokenCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/{enterpriseId}/users/{userId}/token")
@@ -13648,6 +13746,7 @@ func (c *UsersSetAvailableProductSetCall) doRequest(alt string) (*http.Response,
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.productset)
 	if err != nil {
@@ -13796,6 +13895,7 @@ func (c *UsersUpdateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.user)
 	if err != nil {

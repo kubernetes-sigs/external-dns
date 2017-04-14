@@ -58,9 +58,6 @@ package unix
 #include <utime.h>
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/hci.h>
-#include <linux/can.h>
-#include <linux/if_alg.h>
-#include <linux/vm_sockets.h>
 
 #ifdef TCSETS2
 // On systems that have "struct termios2" use this as type Termios.
@@ -108,9 +105,6 @@ typedef struct pt_regs PtraceRegs;
 typedef struct user PtraceRegs;
 #elif defined(__s390x__)
 typedef struct _user_regs_struct PtraceRegs;
-#elif defined(__sparc__)
-#include <asm/ptrace.h>
-typedef struct pt_regs PtraceRegs;
 #else
 typedef struct user_regs_struct PtraceRegs;
 #endif
@@ -128,11 +122,11 @@ typedef struct {} ptracePer;
 // The real epoll_event is a union, and godefs doesn't handle it well.
 struct my_epoll_event {
 	uint32_t events;
-#if defined(__ARM_EABI__) || defined(__aarch64__) || (defined(__mips__) && _MIPS_SIM == _ABIO32)
+#if defined(__ARM_EABI__) || defined(__aarch64__)
 	// padding is not specified in linux/eventpoll.h but added to conform to the
 	// alignment requirements of EABI
 	int32_t padFd;
-#elif defined(__powerpc64__) || defined(__s390x__) || defined(__sparc__)
+#elif defined(__powerpc64__) || defined(__s390x__)
 	int32_t _padFd;
 #endif
 	int32_t fd;
@@ -221,12 +215,6 @@ type RawSockaddrNetlink C.struct_sockaddr_nl
 
 type RawSockaddrHCI C.struct_sockaddr_hci
 
-type RawSockaddrCAN C.struct_sockaddr_can
-
-type RawSockaddrALG C.struct_sockaddr_alg
-
-type RawSockaddrVM C.struct_sockaddr_vm
-
 type RawSockaddr C.struct_sockaddr
 
 type RawSockaddrAny C.struct_sockaddr_any
@@ -267,9 +255,6 @@ const (
 	SizeofSockaddrLinklayer = C.sizeof_struct_sockaddr_ll
 	SizeofSockaddrNetlink   = C.sizeof_struct_sockaddr_nl
 	SizeofSockaddrHCI       = C.sizeof_struct_sockaddr_hci
-	SizeofSockaddrCAN       = C.sizeof_struct_sockaddr_can
-	SizeofSockaddrALG       = C.sizeof_struct_sockaddr_alg
-	SizeofSockaddrVM        = C.sizeof_struct_sockaddr_vm
 	SizeofLinger            = C.sizeof_struct_linger
 	SizeofIPMreq            = C.sizeof_struct_ip_mreq
 	SizeofIPMreqn           = C.sizeof_struct_ip_mreqn
@@ -459,10 +444,6 @@ const (
 )
 
 type Sigset_t C.sigset_t
-
-// sysconf information
-
-const _SC_PAGESIZE = C._SC_PAGESIZE
 
 // Terminal handling
 

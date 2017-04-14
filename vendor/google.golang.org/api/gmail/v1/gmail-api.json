@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/nNHa5d4TJZ825afZFgDJZn14WPw\"",
+ "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/bv4LA8S_yqDUVUFrxfui1vcVGzk\"",
  "discoveryVersion": "v1",
  "id": "gmail:v1",
  "name": "gmail",
  "version": "v1",
- "revision": "20170222",
+ "revision": "20170206",
  "title": "Gmail API",
  "description": "Access Gmail mailboxes including sending user email.",
  "ownerDomain": "google.com",
@@ -70,7 +70,7 @@
   "oauth2": {
    "scopes": {
     "https://mail.google.com/": {
-     "description": "Read, send, delete, and manage your email"
+     "description": "View and manage your mail"
     },
     "https://www.googleapis.com/auth/gmail.compose": {
      "description": "Manage drafts and send emails"
@@ -2470,7 +2470,7 @@
        "id": "gmail.users.settings.updateAutoForwarding",
        "path": "{userId}/settings/autoForwarding",
        "httpMethod": "PUT",
-       "description": "Updates the auto-forwarding setting for the specified account. A verified forwarding address must be specified when auto-forwarding is enabled.\n\nThis method is only available to service account clients that have been delegated domain-wide authority.",
+       "description": "Updates the auto-forwarding setting for the specified account. A verified forwarding address must be specified when auto-forwarding is enabled.",
        "parameters": {
         "userId": {
          "type": "string",
@@ -2702,7 +2702,7 @@
          "id": "gmail.users.settings.forwardingAddresses.create",
          "path": "{userId}/settings/forwardingAddresses",
          "httpMethod": "POST",
-         "description": "Creates a forwarding address. If ownership verification is required, a message will be sent to the recipient and the resource's verification status will be set to pending; otherwise, the resource will be created with verification status set to accepted.\n\nThis method is only available to service account clients that have been delegated domain-wide authority.",
+         "description": "Creates a forwarding address. If ownership verification is required, a message will be sent to the recipient and the resource's verification status will be set to pending; otherwise, the resource will be created with verification status set to accepted.",
          "parameters": {
           "userId": {
            "type": "string",
@@ -2729,7 +2729,7 @@
          "id": "gmail.users.settings.forwardingAddresses.delete",
          "path": "{userId}/settings/forwardingAddresses/{forwardingEmail}",
          "httpMethod": "DELETE",
-         "description": "Deletes the specified forwarding address and revokes any verification that may have been required.\n\nThis method is only available to service account clients that have been delegated domain-wide authority.",
+         "description": "Deletes the specified forwarding address and revokes any verification that may have been required.",
          "parameters": {
           "forwardingEmail": {
            "type": "string",
@@ -2822,7 +2822,7 @@
          "id": "gmail.users.settings.sendAs.create",
          "path": "{userId}/settings/sendAs",
          "httpMethod": "POST",
-         "description": "Creates a custom \"from\" send-as alias. If an SMTP MSA is specified, Gmail will attempt to connect to the SMTP service to validate the configuration before creating the alias. If ownership verification is required for the alias, a message will be sent to the email address and the resource's verification status will be set to pending; otherwise, the resource will be created with verification status set to accepted. If a signature is provided, Gmail will sanitize the HTML before saving it with the alias.\n\nThis method is only available to service account clients that have been delegated domain-wide authority.",
+         "description": "Creates a custom \"from\" send-as alias. If an SMTP MSA is specified, Gmail will attempt to connect to the SMTP service to validate the configuration before creating the alias. If ownership verification is required for the alias, a message will be sent to the email address and the resource's verification status will be set to pending; otherwise, the resource will be created with verification status set to accepted. If a signature is provided, Gmail will sanitize the HTML before saving it with the alias.",
          "parameters": {
           "userId": {
            "type": "string",
@@ -2849,7 +2849,7 @@
          "id": "gmail.users.settings.sendAs.delete",
          "path": "{userId}/settings/sendAs/{sendAsEmail}",
          "httpMethod": "DELETE",
-         "description": "Deletes the specified send-as alias. Revokes any verification that may have been required for using it.\n\nThis method is only available to service account clients that have been delegated domain-wide authority.",
+         "description": "Deletes the specified send-as alias. Revokes any verification that may have been required for using it.",
          "parameters": {
           "sendAsEmail": {
            "type": "string",
@@ -2938,7 +2938,7 @@
          "id": "gmail.users.settings.sendAs.patch",
          "path": "{userId}/settings/sendAs/{sendAsEmail}",
          "httpMethod": "PATCH",
-         "description": "Updates a send-as alias. If a signature is provided, Gmail will sanitize the HTML before saving it with the alias.\n\nAddresses other than the primary address for the account can only be updated by service account clients that have been delegated domain-wide authority. This method supports patch semantics.",
+         "description": "Updates a send-as alias. If a signature is provided, Gmail will sanitize the HTML before saving it with the alias. This method supports patch semantics.",
          "parameters": {
           "sendAsEmail": {
            "type": "string",
@@ -2973,7 +2973,7 @@
          "id": "gmail.users.settings.sendAs.update",
          "path": "{userId}/settings/sendAs/{sendAsEmail}",
          "httpMethod": "PUT",
-         "description": "Updates a send-as alias. If a signature is provided, Gmail will sanitize the HTML before saving it with the alias.\n\nAddresses other than the primary address for the account can only be updated by service account clients that have been delegated domain-wide authority.",
+         "description": "Updates a send-as alias. If a signature is provided, Gmail will sanitize the HTML before saving it with the alias.",
          "parameters": {
           "sendAsEmail": {
            "type": "string",
@@ -3008,7 +3008,7 @@
          "id": "gmail.users.settings.sendAs.verify",
          "path": "{userId}/settings/sendAs/{sendAsEmail}/verify",
          "httpMethod": "POST",
-         "description": "Sends a verification email to the specified send-as alias address. The verification status must be pending.\n\nThis method is only available to service account clients that have been delegated domain-wide authority.",
+         "description": "Sends a verification email to the specified send-as alias address. The verification status must be pending.",
          "parameters": {
           "sendAsEmail": {
            "type": "string",

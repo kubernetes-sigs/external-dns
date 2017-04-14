@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/DTW2IzeTh4yhYDOmlZC3JUDYySE\"",
+ "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/x9AVZb0DFub7qYBAESo32Be1F4A\"",
  "discoveryVersion": "v1",
  "id": "compute:alpha",
  "name": "compute",
  "version": "alpha",
- "revision": "20170302",
+ "revision": "20170124",
  "title": "Compute Engine API",
  "description": "Creates and runs virtual machines on Google Cloud Platform.",
  "ownerDomain": "google.com",
@@ -757,7 +757,7 @@
   "AuditConfig": {
    "id": "AuditConfig",
    "type": "object",
-   "description": "Specifies the audit configuration for a service. It consists of which permission types are logged, and what identities, if any, are exempted from logging. An AuditConifg must have one or more AuditLogConfigs.\n\nIf there are AuditConfigs for both `allServices` and a specific service, the union of the two AuditConfigs is used for that service: the log_types specified in each AuditConfig are enabled, and the exempted_members in each AuditConfig are exempted. Example Policy with multiple AuditConfigs: { \"audit_configs\": [ { \"service\": \"allServices\" \"audit_log_configs\": [ { \"log_type\": \"DATA_READ\", \"exempted_members\": [ \"user:foo@gmail.com\" ] }, { \"log_type\": \"DATA_WRITE\", }, { \"log_type\": \"ADMIN_READ\", } ] }, { \"service\": \"fooservice@googleapis.com\" \"audit_log_configs\": [ { \"log_type\": \"DATA_READ\", }, { \"log_type\": \"DATA_WRITE\", \"exempted_members\": [ \"user:bar@gmail.com\" ] } ] } ] } For fooservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ logging. It also exempts foo@gmail.com from DATA_READ logging, and bar@gmail.com from DATA_WRITE logging.",
+   "description": "Specifies the audit configuration for a service. It consists of which permission types are logged, and what identities, if any, are exempted from logging. An AuditConifg must have one or more AuditLogConfigs.",
    "properties": {
     "auditLogConfigs": {
      "type": "array",
@@ -768,7 +768,7 @@
     },
     "exemptedMembers": {
      "type": "array",
-     "description": "",
+     "description": "Specifies the identities that are exempted from \"data access\" audit logging for the `service` specified above. Follows the same format of Binding.members. This field is deprecated in favor of per-permission-type exemptions.",
      "items": {
       "type": "string"
      }
@@ -1278,10 +1278,6 @@
      "type": "string",
      "description": "Cloud Storage bucket name."
     },
-    "cdnPolicy": {
-     "$ref": "BackendBucketCdnPolicy",
-     "description": "Cloud CDN Coniguration for this BackendBucket."
-    },
     "creationTimestamp": {
      "type": "string",
      "description": "[Output Only] Creation timestamp in RFC3339 text format."
@@ -1312,25 +1308,6 @@
     "selfLink": {
      "type": "string",
      "description": "[Output Only] Server-defined URL for the resource."
-    }
-   }
-  },
-  "BackendBucketCdnPolicy": {
-   "id": "BackendBucketCdnPolicy",
-   "type": "object",
-   "description": "Message containing Cloud CDN configuration for a backend bucket.",
-   "properties": {
-    "signedUrlKeyNames": {
-     "type": "array",
-     "description": "[Output Only] Names of the keys currently configured for Cloud CDN Signed URL on this backend bucket.",
-     "items": {
-      "type": "string"
-     }
-    },
-    "signedUrlTtlSec": {
-     "type": "string",
-     "description": "Number of seconds up to which the response to a signed URL request will be cached in the CDN. After this time period, the Signed URL will be revalidated before being served. Defaults to 1hr (3600s). If this field is set, Cloud CDN will internally act as though all responses from this bucket had a ?Cache-Control: public, max-age=[TTL]? header, regardless of any existing Cache-Control header. The actual headers served in responses will not be altered.",
-     "format": "int64"
     }
    }
   },
@@ -1462,7 +1439,7 @@
     },
     "protocol": {
      "type": "string",
-     "description": "The protocol this BackendService uses to communicate with backends.\n\nPossible values are HTTP, HTTPS, TCP, and SSL. The default is HTTP.\n\nFor internal load balancing, the possible values are TCP and UDP, and the default is TCP.",
+     "description": "The protocol this BackendService uses to communicate with backends.\n\nPossible values are HTTP, HTTPS, HTTP2, TCP and SSL. The default is HTTP.\n\nFor internal load balancing, the possible values are TCP and UDP, and the default is TCP.",
      "enum": [
       "HTTP",
       "HTTP2",
@@ -1483,10 +1460,6 @@
     "region": {
      "type": "string",
      "description": "[Output Only] URL of the region where the regional backend service resides. This field is not applicable to global backend services."
-    },
-    "securityPolicy": {
-     "type": "string",
-     "description": "[Output Only] The resource URL for the security policy associated with this backend service."
     },
     "selfLink": {
      "type": "string",
@@ -1557,18 +1530,6 @@
     "cacheKeyPolicy": {
      "$ref": "CacheKeyPolicy",
      "description": "The CacheKeyPolicy for this CdnPolicy."
-    },
-    "signedUrlKeyNames": {
-     "type": "array",
-     "description": "[Output Only] Names of the keys currently configured for Cloud CDN Signed URL on this backend service.",
-     "items": {
-      "type": "string"
-     }
-    },
-    "signedUrlTtlSec": {
-     "type": "string",
-     "description": "Number of seconds up to which the response to a signed URL request will be cached in the CDN. After this time period, the Signed URL will be revalidated before being served. Defaults to 1hr (3600s). If this field is set, Cloud CDN will internally act as though all responses from this backend had a ?Cache-Control: public, max-age=[TTL]? header, regardless of any existing Cache-Control header. The actual headers served in responses will not be altered.",
-     "format": "int64"
     }
    }
   },
@@ -1592,7 +1553,7 @@
   "BackendServiceIAP": {
    "id": "BackendServiceIAP",
    "type": "object",
-   "description": "Identity-Aware Proxy",
+   "description": "Identity-Aware Proxy (Cloud Gatekeeper)",
    "properties": {
     "enabled": {
      "type": "boolean"
@@ -1631,7 +1592,7 @@
     },
     "nextPageToken": {
      "type": "string",
-     "description": "[Output Only] This token allows you to get the next page of results for list requests. If the number of results is larger than maxResults, use the nextPageToken as a value for the query parameter pageToken in the next list request. Subsequent list requests will have their own nextPageToken to continue paging through the results."
+     "description": "[Output Only] A token used to continue a truncated list request."
     },
     "selfLink": {
      "type": "string",
@@ -1836,10 +1797,6 @@
       ""
      ]
     },
-    "region": {
-     "type": "string",
-     "description": "[Output Only] URL of the region where this commitment may be used."
-    },
     "resources": {
      "type": "array",
      "description": "List of commitment amounts for particular resources. Note that VCPU and MEMORY resource commitments must occur together.",
@@ -2034,16 +1991,12 @@
      "type": "string",
      "description": "Trusted attributes supplied by the IAM system.",
      "enum": [
-      "APPROVER",
       "ATTRIBUTION",
       "AUTHORITY",
-      "JUSTIFICATION_TYPE",
       "NO_ATTR",
       "SECURITY_REALM"
      ],
      "enumDescriptions": [
-      "",
-      "",
       "",
       "",
       "",
@@ -2221,7 +2174,7 @@
     },
     "labels": {
      "type": "object",
-     "description": "Labels to apply to this disk. These can be later modified by the setLabels method.",
+     "description": "Labels to apply to this disk. These can be later modified by the setLabels method. Each label key/value pair must comply with RFC1035. Label values may be empty.",
      "additionalProperties": {
       "type": "string"
      }
@@ -2367,7 +2320,7 @@
     },
     "nextPageToken": {
      "type": "string",
-     "description": "[Output Only] This token allows you to get the next page of results for list requests. If the number of results is larger than maxResults, use the nextPageToken as a value for the query parameter pageToken in the next list request. Subsequent list requests will have their own nextPageToken to continue paging through the results. Acceptable values are 0 to 500, inclusive. (Default: 500)"
+     "description": "[Output Only] This token allows you to get the next page of results for list requests. If the number of results is larger than maxResults, use the nextPageToken as a value for the query parameter pageToken in the next list request. Subsequent list requests will have their own nextPageToken to continue paging through the results."
     },
     "selfLink": {
      "type": "string",
@@ -2398,7 +2351,7 @@
     },
     "nextPageToken": {
      "type": "string",
-     "description": "This token allows you to get the next page of results for list requests. If the number of results is larger than maxResults, use the nextPageToken as a value for the query parameter pageToken in the next list request. Subsequent list requests will have their own nextPageToken to continue paging through the results."
+     "description": "[Output Only] A token used to continue a truncated list request."
     },
     "selfLink": {
      "type": "string",
@@ -2705,28 +2658,6 @@
        "description": "[Output Only] A human-readable description of the warning code."
       }
      }
-    }
-   }
-  },
-  "DistributionPolicy": {
-   "id": "DistributionPolicy",
-   "type": "object",
-   "properties": {
-    "zones": {
-     "type": "array",
-     "items": {
-      "$ref": "DistributionPolicyZoneConfiguration"
-     }
-    }
-   }
-  },
-  "DistributionPolicyZoneConfiguration": {
-   "id": "DistributionPolicyZoneConfiguration",
-   "type": "object",
-   "properties": {
-    "zone": {
-     "type": "string",
-     "description": "URL of the zone where managed instance group is spawning instances (for regional resources). Zone has to belong to the region where managed instance group is located."
     }
    }
   },
@@ -3072,7 +3003,7 @@
     },
     "target": {
      "type": "string",
-     "description": "The URL of the target resource to receive the matched traffic. For regional forwarding rules, this target must live in the same region as the forwarding rule. For global forwarding rules, this target must be a global load balancing resource. The forwarded traffic must be of a type appropriate to the target object. For example, TargetHttpProxy requires HTTP traffic, and TargetHttpsProxy requires HTTPS traffic.\n\nThis field is not used for internal load balancing."
+     "description": "The URL of the target resource to receive the matched traffic. For regional forwarding rules, this target must live in the same region as the forwarding rule. For global forwarding rules, this target must be a global TargetHttpProxy or TargetHttpsProxy resource. The forwarded traffic must be of a type appropriate to the target object. For example, TargetHttpProxy requires HTTP traffic, and TargetHttpsProxy requires HTTPS traffic.\n\nThis field is not used for internal load balancing."
     }
    }
   },
@@ -3271,7 +3202,7 @@
     },
     "port": {
      "type": "integer",
-     "description": "The TCP port number for the health check request. The default value is 443. Valid values are 1 through 65535.",
+     "description": "The TCP port number for the health check request. The default value is 443.",
      "format": "int32"
     },
     "portName": {
@@ -3310,7 +3241,7 @@
     },
     "port": {
      "type": "integer",
-     "description": "The TCP port number for the health check request. The default value is 80. Valid values are 1 through 65535.",
+     "description": "The TCP port number for the health check request. The default value is 80.",
      "format": "int32"
     },
     "portName": {
@@ -3349,7 +3280,7 @@
     },
     "port": {
      "type": "integer",
-     "description": "The TCP port number for the health check request. The default value is 443. Valid values are 1 through 65535.",
+     "description": "The TCP port number for the health check request. The default value is 443.",
      "format": "int32"
     },
     "portName": {
@@ -3576,18 +3507,6 @@
      "type": "string",
      "description": "[Output Only] The type of the resource. Always compute#host for host.",
      "default": "compute#host"
-    },
-    "labelFingerprint": {
-     "type": "string",
-     "description": "A fingerprint for this request, which is essentially a hash of the metadata's contents and used for optimistic locking. The fingerprint is initially generated by Compute Engine and changes after every request to modify or update metadata. You must always provide an up-to-date fingerprint hash in order to update or change metadata.\n\nTo see the latest fingerprint, make get() request to the host.",
-     "format": "byte"
-    },
-    "labels": {
-     "type": "object",
-     "description": "Labels to apply to this host.",
-     "additionalProperties": {
-      "type": "string"
-     }
     },
     "name": {
      "type": "string",
@@ -4251,7 +4170,7 @@
     },
     "labels": {
      "type": "object",
-     "description": "Labels to apply to this image. These can be later modified by the setLabels method.",
+     "description": "Labels to apply to this image. These can be later modified by the setLabels method. Each label key/value pair must comply with RFC1035. Label values may be empty.",
      "additionalProperties": {
       "type": "string"
      }
@@ -4318,10 +4237,6 @@
     "sourceDiskId": {
      "type": "string",
      "description": "The ID value of the disk used to create this image. This value may be used to determine whether the image was taken from the current or a previous instance of a given disk name."
-    },
-    "sourceImage": {
-     "type": "string",
-     "description": "URL of the source image used to create this image. This can be a full or valid partial URL. You must provide exactly one of:  \n- this property, or  \n- the rawDisk.source property, or  \n- the sourceDisk property   in order to create an image."
     },
     "sourceType": {
      "type": "string",
@@ -4440,7 +4355,7 @@
     },
     "labels": {
      "type": "object",
-     "description": "Labels to apply to this instance. These can be later modified by the setLabels method.",
+     "description": "Labels to apply to this instance. These can be later modified by the setLabels method. Each label key/value pair must comply with RFC1035. Label values may be empty.",
      "additionalProperties": {
       "type": "string"
      }
@@ -4464,13 +4379,7 @@
     },
     "name": {
      "type": "string",
-     "description": "The name of the resource, provided by the client when initially creating the resource. The resource name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.",
-     "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
-     "annotations": {
-      "required": [
-       "compute.instances.insert"
-      ]
-     }
+     "description": "The name of the resource, provided by the client when initially creating the resource. The resource name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash."
     },
     "networkInterfaces": {
      "type": "array",
@@ -4489,7 +4398,7 @@
     },
     "serviceAccounts": {
      "type": "array",
-     "description": "A list of service accounts, with their specified scopes, authorized for this instance. Only one service account per VM instance is supported.\n\nService accounts generate access tokens that can be accessed through the metadata server and used to authenticate applications on the instance. See Service Accounts for more information.",
+     "description": "A list of service accounts, with their specified scopes, authorized for this instance. Service accounts generate access tokens that can be accessed through the metadata server and used to authenticate applications on the instance. See Service Accounts for more information.",
      "items": {
       "$ref": "ServiceAccount"
      }
@@ -4730,10 +4639,6 @@
      "type": "string",
      "description": "An optional description of this resource. Provide this property when you create the resource."
     },
-    "distributionPolicy": {
-     "$ref": "DistributionPolicy",
-     "description": "Policy valid only for regional managed instance groups."
-    },
     "failoverAction": {
      "type": "string",
      "description": "The action to perform in case of zone failure. Only one value is supported, NO_FAILOVER. The default is NO_FAILOVER.",
@@ -4804,7 +4709,7 @@
     },
     "spreadingPolicy": {
      "$ref": "SpreadingPolicy",
-     "description": "Policy valid only for regional managed instance groups. Deprecated in favor of distribution_policy."
+     "description": "Policy valid only for regional managed instance groups."
     },
     "targetPools": {
      "type": "array",
@@ -5495,7 +5400,7 @@
     },
     "labels": {
      "type": "object",
-     "description": "Labels to apply to instances that are created from this template.",
+     "description": "Labels to apply to instances that are created from this template. Each label key/value pair must comply with RFC1035. Label values may be empty.",
      "additionalProperties": {
       "type": "string"
      }
@@ -5759,6 +5664,7 @@
     },
     "labels": {
      "type": "object",
+     "description": "A list of labels to apply for this instance. Changing instance labels will also change the instance tags.\n\nEach label key & value must comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash. For example, \"webserver-frontend\": \"images\". A label value can also be empty (e.g. \"my-label\": \"\").",
      "additionalProperties": {
       "type": "string"
      }
@@ -5784,16 +5690,6 @@
     "machineType": {
      "type": "string",
      "description": "Full or partial URL of the machine type resource. See Machine Types for a full list of machine types. For example: zones/us-central1-f/machineTypes/n1-standard-1"
-    }
-   }
-  },
-  "InstancesSetMinCpuPlatformRequest": {
-   "id": "InstancesSetMinCpuPlatformRequest",
-   "type": "object",
-   "properties": {
-    "minCpuPlatform": {
-     "type": "string",
-     "description": "Minimum cpu/platform this instance should be started at."
     }
    }
   },
@@ -5840,19 +5736,6 @@
      "type": "boolean",
      "description": "[Output Only] If true, the customer will be charged license fee for running software that contains this license on an instance."
     },
-    "creationTimestamp": {
-     "type": "string",
-     "description": "[Output Only] Creation timestamp in RFC3339 text format."
-    },
-    "description": {
-     "type": "string",
-     "description": "An optional textual description of the resource; provided by the client when the resource is created."
-    },
-    "id": {
-     "type": "string",
-     "description": "[Output Only] The unique identifier for the resource. This identifier is defined by the server.",
-     "format": "uint64"
-    },
     "kind": {
      "type": "string",
      "description": "[Output Only] Type of resource. Always compute#license for licenses.",
@@ -5873,9 +5756,6 @@
       ]
      }
     },
-    "resourceRequirements": {
-     "$ref": "LicenseResourceRequirements"
-    },
     "selfLink": {
      "type": "string",
      "description": "[Output Only] Server-defined URL for the resource."
@@ -5883,22 +5763,6 @@
     "transferable": {
      "type": "boolean",
      "description": "If false, licenses will not be copied from the source resource when creating an image from a disk, disk from snapshot, or snapshot from disk."
-    }
-   }
-  },
-  "LicenseResourceRequirements": {
-   "id": "LicenseResourceRequirements",
-   "type": "object",
-   "properties": {
-    "minGuestCpuCount": {
-     "type": "integer",
-     "description": "Minimum number of guest cpus required to use the Instance. Enforced at Instance creation and Instance start.",
-     "format": "int32"
-    },
-    "minMemoryMb": {
-     "type": "integer",
-     "description": "Minimum memory required to use the Instance. Enforced at Instance creation and Instance start.",
-     "format": "int32"
     }
    }
   },
@@ -6577,7 +6441,7 @@
     },
     "creationTimestamp": {
      "type": "string",
-     "description": "[Deprecated] This field is deprecated."
+     "description": "[Output Only] Creation timestamp in RFC3339 text format."
     },
     "description": {
      "type": "string",
@@ -7156,6 +7020,7 @@
       "DISKS_TOTAL_GB",
       "FIREWALLS",
       "FORWARDING_RULES",
+      "GPUS",
       "HEALTH_CHECKS",
       "IMAGES",
       "INSTANCES",
@@ -7165,7 +7030,6 @@
       "IN_USE_ADDRESSES",
       "LOCAL_SSD_TOTAL_GB",
       "NETWORKS",
-      "NVIDIA_K80_GPUS",
       "PREEMPTIBLE_CPUS",
       "REGIONAL_AUTOSCALERS",
       "REGIONAL_INSTANCE_GROUP_MANAGERS",
@@ -8354,7 +8218,7 @@
    "properties": {
     "port": {
      "type": "integer",
-     "description": "The TCP port number for the health check request. The default value is 443. Valid values are 1 through 65535.",
+     "description": "The TCP port number for the health check request. The default value is 443.",
      "format": "int32"
     },
     "portName": {
@@ -8435,7 +8299,7 @@
     },
     "start": {
      "type": "string",
-     "description": "The starting byte position of the output that was returned. This should match the start parameter sent with the request. If the serial console output exceeds the size of the buffer, older output will be overwritten by newer content and the start values will be mismatched.",
+     "description": "[Output Only] The starting byte position of the output that was returned. This should match the start parameter sent with the request. If the serial console output exceeds the size of the buffer, older output will be overwritten by newer content and the start values will be mismatched.",
      "format": "int64"
     }
    }
@@ -8493,7 +8357,7 @@
     },
     "labels": {
      "type": "object",
-     "description": "Labels to apply to this snapshot. These can be later modified by the setLabels method. Label values may be empty.",
+     "description": "Labels to apply to this snapshot. These can be later modified by the setLabels method. Each label key/value pair must comply with RFC1035. Label values may be empty.",
      "additionalProperties": {
       "type": "string"
      }
@@ -8601,7 +8465,6 @@
   "SpreadingPolicy": {
    "id": "SpreadingPolicy",
    "type": "object",
-   "description": "Deprecated in favor of distribution policy.",
    "properties": {
     "zones": {
      "type": "array",
@@ -8939,7 +8802,7 @@
    "properties": {
     "port": {
      "type": "integer",
-     "description": "The TCP port number for the health check request. The default value is 80. Valid values are 1 through 65535.",
+     "description": "The TCP port number for the health check request. The default value is 80.",
      "format": "int32"
     },
     "portName": {
@@ -9348,7 +9211,7 @@
   "TargetPool": {
    "id": "TargetPool",
    "type": "object",
-   "description": "A TargetPool resource. This resource defines a pool of instances, an associated HttpHealthCheck resource, and the fallback target pool.",
+   "description": "A TargetPool resource. This resource defines a pool of instances, associated HttpHealthCheck resources, and the fallback target pool.",
    "properties": {
     "backupPool": {
      "type": "string",
@@ -9369,7 +9232,7 @@
     },
     "healthChecks": {
      "type": "array",
-     "description": "The URL of the HttpHealthCheck resource. A member instance in this pool is considered healthy if and only if the health checks pass. An empty list means all member instances will be considered healthy at all times. Only HttpHealthChecks are supported. Only one health check may be specified.",
+     "description": "A list of URLs to the HttpHealthCheck resource. A member instance in this pool is considered healthy if and only if all specified health checks pass. An empty list means all member instances will be considered healthy at all times.",
      "items": {
       "type": "string"
      }
@@ -9509,7 +9372,7 @@
    "properties": {
     "healthChecks": {
      "type": "array",
-     "description": "The HttpHealthCheck to add to the target pool.",
+     "description": "A list of HttpHealthCheck resources to add to the target pool.",
      "items": {
       "$ref": "HealthCheckReference"
      }
@@ -10164,7 +10027,7 @@
    "properties": {
     "port": {
      "type": "integer",
-     "description": "The UDP port number for the health check request. Valid values are 1 through 65535.",
+     "description": "The UDP port number for the health check request.",
      "format": "int32"
     },
     "portName": {
@@ -10826,7 +10689,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -10917,7 +10780,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -10978,7 +10841,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -11040,11 +10903,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -11121,11 +10979,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -11156,7 +11009,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -11219,11 +11072,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "resource": {
        "type": "string",
@@ -11311,7 +11159,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -11366,11 +11214,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -11448,11 +11291,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "Name of the zone for this request.",
@@ -11489,7 +11327,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -11541,7 +11379,8 @@
      "parameters": {
       "autoscaler": {
        "type": "string",
-       "description": "Name of the autoscaler to patch.",
+       "description": "Name of the autoscaler to update.",
+       "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "query"
       },
@@ -11551,11 +11390,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -11567,7 +11401,8 @@
      },
      "parameterOrder": [
       "project",
-      "zone"
+      "zone",
+      "autoscaler"
      ],
      "request": {
       "$ref": "Autoscaler"
@@ -11577,8 +11412,7 @@
      },
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/compute.readonly"
+      "https://www.googleapis.com/auth/compute"
      ]
     },
     "testIamPermissions": {
@@ -11645,11 +11479,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "Name of the zone for this request.",
@@ -11696,11 +11525,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -11795,11 +11619,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -11829,7 +11648,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -11873,7 +11692,7 @@
      "parameters": {
       "backendBucket": {
        "type": "string",
-       "description": "Name of the BackendBucket resource to patch.",
+       "description": "Name of the BackendBucket resource to update.",
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
@@ -11884,11 +11703,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -11903,8 +11717,7 @@
      },
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/compute.readonly"
+      "https://www.googleapis.com/auth/compute"
      ]
     },
     "setIamPolicy": {
@@ -11940,7 +11753,8 @@
      },
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute"
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/compute.readonly"
      ]
     },
     "testIamPermissions": {
@@ -11999,11 +11813,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -12038,7 +11847,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -12093,11 +11902,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -12194,11 +11998,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -12228,7 +12027,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -12268,11 +12067,11 @@
      "id": "compute.backendServices.patch",
      "path": "{project}/global/backendServices/{backendService}",
      "httpMethod": "PATCH",
-     "description": "Patches the specified BackendService resource with the data included in the request. There are several restrictions and guidelines to keep in mind when updating a backend service. Read  Restrictions and Guidelines for more information. This method supports patch semantics.",
+     "description": "Updates the specified BackendService resource with the data included in the request. There are several restrictions and guidelines to keep in mind when updating a backend service. Read  Restrictions and Guidelines for more information. This method supports patch semantics.",
      "parameters": {
       "backendService": {
        "type": "string",
-       "description": "Name of the BackendService resource to patch.",
+       "description": "Name of the BackendService resource to update.",
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
@@ -12283,11 +12082,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -12302,8 +12096,7 @@
      },
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/compute.readonly"
+      "https://www.googleapis.com/auth/compute"
      ]
     },
     "testIamPermissions": {
@@ -12362,11 +12155,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -12442,7 +12230,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -12520,6 +12308,48 @@
       "https://www.googleapis.com/auth/compute.readonly"
      ]
     },
+    "getIamPolicy": {
+     "id": "compute.commitments.getIamPolicy",
+     "path": "{project}/zones/{zone}/commitments/{resource}/getIamPolicy",
+     "httpMethod": "GET",
+     "description": "Gets the access control policy for a resource. May be empty if no such policy or resource exists.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "resource": {
+       "type": "string",
+       "description": "Name of the resource for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      },
+      "zone": {
+       "type": "string",
+       "description": "The name of the zone for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "zone",
+      "resource"
+     ],
+     "response": {
+      "$ref": "Policy"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/compute.readonly"
+     ]
+    },
     "insert": {
      "id": "compute.commitments.insert",
      "path": "{project}/zones/{zone}/commitments",
@@ -12532,11 +12362,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -12574,7 +12399,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -12611,6 +12436,51 @@
      ],
      "response": {
       "$ref": "CommitmentList"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/compute.readonly"
+     ]
+    },
+    "setIamPolicy": {
+     "id": "compute.commitments.setIamPolicy",
+     "path": "{project}/zones/{zone}/commitments/{resource}/setIamPolicy",
+     "httpMethod": "POST",
+     "description": "Sets the access control policy on the specified resource. Replaces any existing policy.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "resource": {
+       "type": "string",
+       "description": "Name of the resource for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      },
+      "zone": {
+       "type": "string",
+       "description": "The name of the zone for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "zone",
+      "resource"
+     ],
+     "request": {
+      "$ref": "Policy"
+     },
+     "response": {
+      "$ref": "Policy"
      },
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",
@@ -12680,7 +12550,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -12771,7 +12641,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -12832,7 +12702,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -12892,11 +12762,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone for this request.",
@@ -12939,11 +12804,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -13008,48 +12868,6 @@
       "https://www.googleapis.com/auth/compute.readonly"
      ]
     },
-    "getIamPolicy": {
-     "id": "compute.disks.getIamPolicy",
-     "path": "{project}/zones/{zone}/disks/{resource}/getIamPolicy",
-     "httpMethod": "GET",
-     "description": "Gets the access control policy for a resource. May be empty if no such policy or resource exists.",
-     "parameters": {
-      "project": {
-       "type": "string",
-       "description": "Project ID for this request.",
-       "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
-       "location": "path"
-      },
-      "resource": {
-       "type": "string",
-       "description": "Name of the resource for this request.",
-       "required": true,
-       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
-       "location": "path"
-      },
-      "zone": {
-       "type": "string",
-       "description": "The name of the zone for this request.",
-       "required": true,
-       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
-       "location": "path"
-      }
-     },
-     "parameterOrder": [
-      "project",
-      "zone",
-      "resource"
-     ],
-     "response": {
-      "$ref": "Policy"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/compute.readonly"
-     ]
-    },
     "insert": {
      "id": "compute.disks.insert",
      "path": "{project}/zones/{zone}/disks",
@@ -13062,11 +12880,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "sourceImage": {
        "type": "string",
@@ -13109,7 +12922,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -13173,11 +12986,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone for this request.",
@@ -13202,50 +13010,6 @@
       "https://www.googleapis.com/auth/compute"
      ]
     },
-    "setIamPolicy": {
-     "id": "compute.disks.setIamPolicy",
-     "path": "{project}/zones/{zone}/disks/{resource}/setIamPolicy",
-     "httpMethod": "POST",
-     "description": "Sets the access control policy on the specified resource. Replaces any existing policy.",
-     "parameters": {
-      "project": {
-       "type": "string",
-       "description": "Project ID for this request.",
-       "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
-       "location": "path"
-      },
-      "resource": {
-       "type": "string",
-       "description": "Name of the resource for this request.",
-       "required": true,
-       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
-       "location": "path"
-      },
-      "zone": {
-       "type": "string",
-       "description": "The name of the zone for this request.",
-       "required": true,
-       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
-       "location": "path"
-      }
-     },
-     "parameterOrder": [
-      "project",
-      "zone",
-      "resource"
-     ],
-     "request": {
-      "$ref": "Policy"
-     },
-     "response": {
-      "$ref": "Policy"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute"
-     ]
-    },
     "setLabels": {
      "id": "compute.disks.setLabels",
      "path": "{project}/zones/{zone}/disks/{resource}/setLabels",
@@ -13258,11 +13022,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "resource": {
        "type": "string",
@@ -13363,11 +13122,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -13428,11 +13182,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -13462,7 +13211,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -13506,7 +13255,7 @@
      "parameters": {
       "firewall": {
        "type": "string",
-       "description": "Name of the firewall rule to patch.",
+       "description": "Name of the firewall rule to update.",
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
@@ -13517,11 +13266,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -13536,8 +13280,7 @@
      },
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/compute.readonly"
+      "https://www.googleapis.com/auth/compute"
      ]
     },
     "testIamPermissions": {
@@ -13596,11 +13339,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -13635,7 +13373,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -13697,11 +13435,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -13778,11 +13511,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -13813,7 +13541,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -13877,11 +13605,6 @@
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "resource": {
        "type": "string",
        "description": "Name of the resource for this request.",
@@ -13932,11 +13655,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -14023,11 +13741,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -14088,11 +13801,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -14122,7 +13830,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -14254,11 +13962,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -14319,11 +14022,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -14353,7 +14051,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -14444,11 +14142,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -14520,7 +14213,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -14633,7 +14326,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -14692,11 +14385,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -14757,11 +14445,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -14791,7 +14474,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -14835,7 +14518,7 @@
      "parameters": {
       "healthCheck": {
        "type": "string",
-       "description": "Name of the HealthCheck resource to patch.",
+       "description": "Name of the HealthCheck resource to update.",
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
@@ -14846,11 +14529,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -14865,8 +14543,7 @@
      },
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/compute.readonly"
+      "https://www.googleapis.com/auth/compute"
      ]
     },
     "testIamPermissions": {
@@ -14925,11 +14602,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -14964,7 +14636,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -15055,7 +14727,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -15116,7 +14788,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -15171,11 +14843,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -15295,11 +14962,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone for this request.",
@@ -15336,7 +14998,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -15421,7 +15083,8 @@
      },
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute"
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/compute.readonly"
      ]
     },
     "testIamPermissions": {
@@ -15492,11 +15155,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -15557,11 +15215,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -15591,7 +15244,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -15646,11 +15299,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -15725,11 +15373,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -15770,11 +15413,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -15835,11 +15473,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -15869,7 +15502,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -15913,7 +15546,7 @@
      "parameters": {
       "httpsHealthCheck": {
        "type": "string",
-       "description": "Name of the HttpsHealthCheck resource to patch.",
+       "description": "Name of the HttpsHealthCheck resource to update.",
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
@@ -15924,11 +15557,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -15943,8 +15571,7 @@
      },
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/compute.readonly"
+      "https://www.googleapis.com/auth/compute"
      ]
     },
     "testIamPermissions": {
@@ -16003,11 +15630,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -16048,11 +15670,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -16086,11 +15703,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -16176,40 +15788,6 @@
       "https://www.googleapis.com/auth/compute.readonly"
      ]
     },
-    "getIamPolicy": {
-     "id": "compute.images.getIamPolicy",
-     "path": "{project}/global/images/{resource}/getIamPolicy",
-     "httpMethod": "GET",
-     "description": "Gets the access control policy for a resource. May be empty if no such policy or resource exists.",
-     "parameters": {
-      "project": {
-       "type": "string",
-       "description": "Project ID for this request.",
-       "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
-       "location": "path"
-      },
-      "resource": {
-       "type": "string",
-       "description": "Name of the resource for this request.",
-       "required": true,
-       "pattern": "[a-z](?:[-a-z0-9_]{0,61}[a-z0-9])?",
-       "location": "path"
-      }
-     },
-     "parameterOrder": [
-      "project",
-      "resource"
-     ],
-     "response": {
-      "$ref": "Policy"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/compute.readonly"
-     ]
-    },
     "insert": {
      "id": "compute.images.insert",
      "path": "{project}/global/images",
@@ -16227,11 +15805,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -16264,7 +15837,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -16298,42 +15871,6 @@
       "https://www.googleapis.com/auth/cloud-platform",
       "https://www.googleapis.com/auth/compute",
       "https://www.googleapis.com/auth/compute.readonly"
-     ]
-    },
-    "setIamPolicy": {
-     "id": "compute.images.setIamPolicy",
-     "path": "{project}/global/images/{resource}/setIamPolicy",
-     "httpMethod": "POST",
-     "description": "Sets the access control policy on the specified resource. Replaces any existing policy.",
-     "parameters": {
-      "project": {
-       "type": "string",
-       "description": "Project ID for this request.",
-       "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
-       "location": "path"
-      },
-      "resource": {
-       "type": "string",
-       "description": "Name of the resource for this request.",
-       "required": true,
-       "pattern": "[a-z](?:[-a-z0-9_]{0,61}[a-z0-9])?",
-       "location": "path"
-      }
-     },
-     "parameterOrder": [
-      "project",
-      "resource"
-     ],
-     "request": {
-      "$ref": "Policy"
-     },
-     "response": {
-      "$ref": "Policy"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute"
      ]
     },
     "setLabels": {
@@ -16432,11 +15969,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone where the managed instance group is located.",
@@ -16473,7 +16005,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -16528,11 +16060,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone where the managed instance group is located.",
@@ -16571,11 +16098,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -16653,11 +16175,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone where you want to create the managed instance group.",
@@ -16693,7 +16210,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -16799,7 +16316,7 @@
      "id": "compute.instanceGroupManagers.patch",
      "path": "{project}/zones/{zone}/instanceGroupManagers/{instanceGroupManager}",
      "httpMethod": "PATCH",
-     "description": "Updates a managed instance group using the information that you specify in the request. This operation is marked as DONE when the group is updated even if the instances in the group have not yet been updated. You must separately verify the status of the individual instances with the listmanagedinstances method. This method supports patch semantics.",
+     "description": "Updates a managed instance group using the information that you specify in the request. The field statefulPolicy is updated using PATCH semantics. This operation is marked as DONE when the group is updated even if the instances in the group have not yet been updated. You must separately verify the status of the individual instances with the listmanagedinstances method. This method supports patch semantics.",
      "parameters": {
       "instanceGroupManager": {
        "type": "string",
@@ -16813,11 +16330,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -16861,11 +16373,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone where the managed instance group is located.",
@@ -16907,11 +16414,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "size": {
        "type": "integer",
@@ -16960,11 +16462,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone where the managed instance group is located.",
@@ -17006,11 +16503,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -17054,11 +16546,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone where the managed instance group is located.",
@@ -17100,11 +16587,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -17178,7 +16660,7 @@
      "id": "compute.instanceGroupManagers.update",
      "path": "{project}/zones/{zone}/instanceGroupManagers/{instanceGroupManager}",
      "httpMethod": "PUT",
-     "description": "Updates a managed instance group using the information that you specify in the request. This operation is marked as DONE when the group is updated even if the instances in the group have not yet been updated. You must separately verify the status of the individual instances with the listmanagedinstances method.",
+     "description": "Updates a managed instance group using the information that you specify in the request. The field statefulPolicy is updated using PATCH semantics. This operation is marked as DONE when the group is updated even if the instances in the group have not yet been updated. You must separately verify the status of the individual instances with the listmanagedinstances method.",
      "parameters": {
       "instanceGroupManager": {
        "type": "string",
@@ -17192,11 +16674,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -17244,11 +16721,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone where the instance group is located.",
@@ -17285,7 +16757,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -17339,11 +16811,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -17418,11 +16885,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone where you want to create the instance group.",
@@ -17458,7 +16920,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -17520,7 +16982,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -17586,11 +17048,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone where the instance group is located.",
@@ -17632,11 +17089,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -17729,11 +17181,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -17794,11 +17241,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -17828,7 +17270,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -17931,11 +17373,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone for this request.",
@@ -17974,7 +17411,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -18035,11 +17472,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone for this request.",
@@ -18083,11 +17515,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -18142,11 +17569,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone for this request.",
@@ -18195,11 +17617,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -18338,7 +17755,7 @@
       },
       "start": {
        "type": "string",
-       "description": "Returns output starting from a specific byte position. Use this to page through output when the output is too large to return in a single request. For the initial request, leave this field unspecified. For subsequent calls, this field should be set to the next value returned in the previous call.",
+       "description": "For the initial request, leave this field unspecified. For subsequent calls, this field should be set to the next value that was returned in the previous call.",
        "format": "int64",
        "location": "query"
       },
@@ -18377,11 +17794,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone for this request.",
@@ -18418,7 +17830,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -18482,11 +17894,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone for this request.",
@@ -18540,11 +17947,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -18610,7 +18012,8 @@
      },
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute"
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/compute.readonly"
      ]
     },
     "setLabels": {
@@ -18632,11 +18035,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -18682,11 +18080,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone for this request.",
@@ -18730,11 +18123,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -18780,11 +18168,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone for this request.",
@@ -18800,55 +18183,6 @@
      ],
      "request": {
       "$ref": "Metadata"
-     },
-     "response": {
-      "$ref": "Operation"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute"
-     ]
-    },
-    "setMinCpuPlatform": {
-     "id": "compute.instances.setMinCpuPlatform",
-     "path": "{project}/zones/{zone}/instances/{instance}/setMinCpuPlatform",
-     "httpMethod": "POST",
-     "description": "Changes the minimum cpu/platform that this instance should be started as. This is called on a stopped instance.",
-     "parameters": {
-      "instance": {
-       "type": "string",
-       "description": "Name of the instance scoping this request.",
-       "required": true,
-       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
-       "location": "path"
-      },
-      "project": {
-       "type": "string",
-       "description": "Project ID for this request.",
-       "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
-       "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
-      "zone": {
-       "type": "string",
-       "description": "The name of the zone for this request.",
-       "required": true,
-       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
-       "location": "path"
-      }
-     },
-     "parameterOrder": [
-      "project",
-      "zone",
-      "instance"
-     ],
-     "request": {
-      "$ref": "InstancesSetMinCpuPlatformRequest"
      },
      "response": {
       "$ref": "Operation"
@@ -18878,11 +18212,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone for this request.",
@@ -18911,7 +18240,7 @@
      "id": "compute.instances.setServiceAccount",
      "path": "{project}/zones/{zone}/instances/{instance}/setServiceAccount",
      "httpMethod": "POST",
-     "description": "Sets the service account on the instance. For more information, read Changing the service account and access scopes for an instance.",
+     "description": "Sets the service account on the instance.",
      "parameters": {
       "instance": {
        "type": "string",
@@ -18926,11 +18255,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -18976,11 +18300,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone for this request.",
@@ -18997,47 +18316,6 @@
      "request": {
       "$ref": "Tags"
      },
-     "response": {
-      "$ref": "Operation"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute"
-     ]
-    },
-    "simulateMaintenanceEvent": {
-     "id": "compute.instances.simulateMaintenanceEvent",
-     "path": "{project}/zones/{zone}/instances/{instance}/simulateMaintenanceEvent",
-     "httpMethod": "POST",
-     "description": "Simulates a maintenance event on the instance.",
-     "parameters": {
-      "instance": {
-       "type": "string",
-       "description": "Name of the instance scoping this request.",
-       "required": true,
-       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
-       "location": "path"
-      },
-      "project": {
-       "type": "string",
-       "description": "Project ID for this request.",
-       "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
-       "location": "path"
-      },
-      "zone": {
-       "type": "string",
-       "description": "The name of the zone for this request.",
-       "required": true,
-       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
-       "location": "path"
-      }
-     },
-     "parameterOrder": [
-      "project",
-      "zone",
-      "instance"
-     ],
      "response": {
       "$ref": "Operation"
      },
@@ -19065,11 +18343,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -19111,11 +18384,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -19166,11 +18434,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone for this request.",
@@ -19216,11 +18479,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "zone": {
        "type": "string",
@@ -19314,11 +18572,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "The name of the zone for this request.",
@@ -19381,42 +18634,6 @@
       "https://www.googleapis.com/auth/compute",
       "https://www.googleapis.com/auth/compute.readonly"
      ]
-    },
-    "insert": {
-     "id": "compute.licenses.insert",
-     "path": "{project}/global/licenses",
-     "httpMethod": "POST",
-     "description": "Create a License resource in the specified project.",
-     "parameters": {
-      "project": {
-       "type": "string",
-       "description": "Project ID for this request.",
-       "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
-       "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      }
-     },
-     "parameterOrder": [
-      "project"
-     ],
-     "request": {
-      "$ref": "License"
-     },
-     "response": {
-      "$ref": "Operation"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/devstorage.full_control",
-      "https://www.googleapis.com/auth/devstorage.read_only",
-      "https://www.googleapis.com/auth/devstorage.read_write"
-     ]
     }
    }
   },
@@ -19435,7 +18652,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -19526,7 +18743,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -19593,11 +18810,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -19634,11 +18846,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -19699,11 +18906,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -19733,7 +18935,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -19788,11 +18990,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -19829,11 +19026,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -19901,11 +19093,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -19931,11 +19118,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -19964,11 +19146,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -19994,11 +19171,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -20172,11 +19344,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -20205,11 +19372,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -20238,11 +19400,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -20271,11 +19428,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -20304,11 +19456,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -20358,11 +19505,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -20439,11 +19581,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -20474,7 +19611,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -20526,7 +19663,8 @@
      "parameters": {
       "autoscaler": {
        "type": "string",
-       "description": "Name of the autoscaler to patch.",
+       "description": "Name of the autoscaler to update.",
+       "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "query"
       },
@@ -20543,16 +19681,12 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
       "project",
-      "region"
+      "region",
+      "autoscaler"
      ],
      "request": {
       "$ref": "Autoscaler"
@@ -20562,8 +19696,7 @@
      },
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/compute.readonly"
+      "https://www.googleapis.com/auth/compute"
      ]
     },
     "testIamPermissions": {
@@ -20636,11 +19769,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -20688,11 +19816,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -20813,11 +19936,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -20848,7 +19966,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -20900,7 +20018,7 @@
      "parameters": {
       "backendService": {
        "type": "string",
-       "description": "Name of the BackendService resource to patch.",
+       "description": "Name of the BackendService resource to update.",
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
@@ -20918,11 +20036,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -20938,8 +20051,7 @@
      },
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/compute.readonly"
+      "https://www.googleapis.com/auth/compute"
      ]
     },
     "testIamPermissions": {
@@ -21013,11 +20125,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -21034,195 +20141,6 @@
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",
       "https://www.googleapis.com/auth/compute"
-     ]
-    }
-   }
-  },
-  "regionCommitments": {
-   "methods": {
-    "get": {
-     "id": "compute.regionCommitments.get",
-     "path": "{project}/regions/{region}/commitments/{commitment}",
-     "httpMethod": "GET",
-     "description": "Returns the specified commitment resource. Get a list of available commitments by making a list() request.",
-     "parameters": {
-      "commitment": {
-       "type": "string",
-       "description": "Name of the commitment to return.",
-       "required": true,
-       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
-       "location": "path"
-      },
-      "project": {
-       "type": "string",
-       "description": "Project ID for this request.",
-       "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
-       "location": "path"
-      },
-      "region": {
-       "type": "string",
-       "description": "Name of the region for this request.",
-       "required": true,
-       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
-       "location": "path"
-      }
-     },
-     "parameterOrder": [
-      "project",
-      "region",
-      "commitment"
-     ],
-     "response": {
-      "$ref": "Commitment"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/compute.readonly"
-     ]
-    },
-    "insert": {
-     "id": "compute.regionCommitments.insert",
-     "path": "{project}/regions/{region}/commitments",
-     "httpMethod": "POST",
-     "description": "Creates an commitment in the specified project using the data included in the request.",
-     "parameters": {
-      "project": {
-       "type": "string",
-       "description": "Project ID for this request.",
-       "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
-       "location": "path"
-      },
-      "region": {
-       "type": "string",
-       "description": "Name of the region for this request.",
-       "required": true,
-       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
-       "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      }
-     },
-     "parameterOrder": [
-      "project",
-      "region"
-     ],
-     "request": {
-      "$ref": "Commitment"
-     },
-     "response": {
-      "$ref": "Operation"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute"
-     ]
-    },
-    "list": {
-     "id": "compute.regionCommitments.list",
-     "path": "{project}/regions/{region}/commitments",
-     "httpMethod": "GET",
-     "description": "Retrieves a list of commitments contained within the specified region.",
-     "parameters": {
-      "filter": {
-       "type": "string",
-       "description": "Sets a filter expression for filtering listed resources, in the form filter={expression}. Your {expression} must be in the format: field_name comparison_string literal_string.\n\nThe field_name is the name of the field you want to compare. Only atomic field types are supported (string, number, boolean). The comparison_string must be either eq (equals) or ne (not equals). The literal_string is the string value to filter to. The literal value must be valid for the type of field you are filtering by (string, number, boolean). For string fields, the literal value is interpreted as a regular expression using RE2 syntax. The literal value must match the entire field.\n\nFor example, to filter for instances that do not have a name of example-instance, you would use filter=name ne example-instance.\n\nYou can filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.\n\nTo filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.",
-       "location": "query"
-      },
-      "maxResults": {
-       "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
-       "default": "500",
-       "format": "uint32",
-       "minimum": "0",
-       "location": "query"
-      },
-      "orderBy": {
-       "type": "string",
-       "description": "Sorts list results by a certain order. By default, results are returned in alphanumerical order based on the resource name.\n\nYou can also sort results in descending order based on the creation timestamp using orderBy=\"creationTimestamp desc\". This sorts results based on the creationTimestamp field in reverse chronological order (newest result first). Use this to sort resources like operations so that the newest operation is returned first.\n\nCurrently, only sorting by name or creationTimestamp desc is supported.",
-       "location": "query"
-      },
-      "pageToken": {
-       "type": "string",
-       "description": "Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.",
-       "location": "query"
-      },
-      "project": {
-       "type": "string",
-       "description": "Project ID for this request.",
-       "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
-       "location": "path"
-      },
-      "region": {
-       "type": "string",
-       "description": "Name of the region for this request.",
-       "required": true,
-       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
-       "location": "path"
-      }
-     },
-     "parameterOrder": [
-      "project",
-      "region"
-     ],
-     "response": {
-      "$ref": "CommitmentList"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/compute.readonly"
-     ]
-    },
-    "testIamPermissions": {
-     "id": "compute.regionCommitments.testIamPermissions",
-     "path": "{project}/regions/{region}/commitments/{resource}/testIamPermissions",
-     "httpMethod": "POST",
-     "description": "Returns permissions that a caller has on the specified resource.",
-     "parameters": {
-      "project": {
-       "type": "string",
-       "description": "Project ID for this request.",
-       "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
-       "location": "path"
-      },
-      "region": {
-       "type": "string",
-       "description": "The name of the region for this request.",
-       "required": true,
-       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
-       "location": "path"
-      },
-      "resource": {
-       "type": "string",
-       "description": "Name of the resource for this request.",
-       "required": true,
-       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
-       "location": "path"
-      }
-     },
-     "parameterOrder": [
-      "project",
-      "region",
-      "resource"
-     ],
-     "request": {
-      "$ref": "TestPermissionsRequest"
-     },
-     "response": {
-      "$ref": "TestPermissionsResponse"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/compute.readonly"
      ]
     }
    }
@@ -21284,7 +20202,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -21362,11 +20280,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -21410,11 +20323,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -21492,11 +20400,6 @@
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "sourceImage": {
        "type": "string",
        "description": "Optional. Source image to restore onto a disk.",
@@ -21531,7 +20434,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -21601,11 +20504,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -21643,11 +20541,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "resource": {
        "type": "string",
@@ -21746,11 +20639,6 @@
        "description": "Name of the region scoping this request.",
        "required": true,
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -21793,11 +20681,6 @@
        "description": "Name of the region scoping this request.",
        "required": true,
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -21837,11 +20720,6 @@
        "description": "Name of the region scoping this request.",
        "required": true,
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -21918,11 +20796,6 @@
        "description": "Name of the region scoping this request.",
        "required": true,
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -21953,7 +20826,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -22079,11 +20952,6 @@
        "description": "Name of the region scoping this request.",
        "required": true,
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -22126,11 +20994,6 @@
        "description": "Name of the region scoping this request.",
        "required": true,
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -22173,11 +21036,6 @@
        "description": "Name of the region scoping this request.",
        "required": true,
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "size": {
        "type": "integer",
@@ -22226,11 +21084,6 @@
        "description": "Name of the region scoping this request.",
        "required": true,
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -22273,11 +21126,6 @@
        "description": "Name of the region scoping this request.",
        "required": true,
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -22320,11 +21168,6 @@
        "description": "Name of the region scoping this request.",
        "required": true,
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -22412,11 +21255,6 @@
        "description": "Name of the region scoping this request.",
        "required": true,
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -22492,7 +21330,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -22554,7 +21392,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -22625,11 +21463,6 @@
        "description": "Name of the region scoping this request.",
        "required": true,
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -22790,7 +21623,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -22885,7 +21718,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -22938,7 +21771,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -22993,11 +21826,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "router": {
        "type": "string",
@@ -23123,11 +21951,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -23158,7 +21981,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -23206,7 +22029,7 @@
      "id": "compute.routers.patch",
      "path": "{project}/regions/{region}/routers/{router}",
      "httpMethod": "PATCH",
-     "description": "Patches the specified Router resource with the data included in the request. This method supports patch semantics.",
+     "description": "Updates the specified Router resource with the data included in the request. This method supports patch semantics.",
      "parameters": {
       "project": {
        "type": "string",
@@ -23222,14 +22045,9 @@
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "router": {
        "type": "string",
-       "description": "Name of the Router resource to patch.",
+       "description": "Name of the Router resource to update.",
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
@@ -23248,8 +22066,7 @@
      },
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/compute.readonly"
+      "https://www.googleapis.com/auth/compute"
      ]
     },
     "preview": {
@@ -23362,11 +22179,6 @@
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "router": {
        "type": "string",
        "description": "Name of the Router resource to update.",
@@ -23407,11 +22219,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "route": {
        "type": "string",
@@ -23479,11 +22286,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -23513,7 +22315,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -23603,11 +22405,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "snapshot": {
        "type": "string",
        "description": "Name of the Snapshot resource to delete.",
@@ -23662,40 +22459,6 @@
       "https://www.googleapis.com/auth/compute.readonly"
      ]
     },
-    "getIamPolicy": {
-     "id": "compute.snapshots.getIamPolicy",
-     "path": "{project}/global/snapshots/{resource}/getIamPolicy",
-     "httpMethod": "GET",
-     "description": "Gets the access control policy for a resource. May be empty if no such policy or resource exists.",
-     "parameters": {
-      "project": {
-       "type": "string",
-       "description": "Project ID for this request.",
-       "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
-       "location": "path"
-      },
-      "resource": {
-       "type": "string",
-       "description": "Name of the resource for this request.",
-       "required": true,
-       "pattern": "[a-z](?:[-a-z0-9_]{0,61}[a-z0-9])?",
-       "location": "path"
-      }
-     },
-     "parameterOrder": [
-      "project",
-      "resource"
-     ],
-     "response": {
-      "$ref": "Policy"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/compute.readonly"
-     ]
-    },
     "list": {
      "id": "compute.snapshots.list",
      "path": "{project}/global/snapshots",
@@ -23709,7 +22472,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -23743,42 +22506,6 @@
       "https://www.googleapis.com/auth/cloud-platform",
       "https://www.googleapis.com/auth/compute",
       "https://www.googleapis.com/auth/compute.readonly"
-     ]
-    },
-    "setIamPolicy": {
-     "id": "compute.snapshots.setIamPolicy",
-     "path": "{project}/global/snapshots/{resource}/setIamPolicy",
-     "httpMethod": "POST",
-     "description": "Sets the access control policy on the specified resource. Replaces any existing policy.",
-     "parameters": {
-      "project": {
-       "type": "string",
-       "description": "Project ID for this request.",
-       "required": true,
-       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
-       "location": "path"
-      },
-      "resource": {
-       "type": "string",
-       "description": "Name of the resource for this request.",
-       "required": true,
-       "pattern": "[a-z](?:[-a-z0-9_]{0,61}[a-z0-9])?",
-       "location": "path"
-      }
-     },
-     "parameterOrder": [
-      "project",
-      "resource"
-     ],
-     "request": {
-      "$ref": "Policy"
-     },
-     "response": {
-      "$ref": "Policy"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute"
      ]
     },
     "setLabels": {
@@ -23871,11 +22598,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "sslCertificate": {
        "type": "string",
        "description": "Name of the SslCertificate resource to delete.",
@@ -23942,11 +22664,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -23976,7 +22693,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -24066,7 +22783,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -24122,11 +22839,6 @@
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "subnetwork": {
        "type": "string",
        "description": "Name of the Subnetwork resource to delete.",
@@ -24167,11 +22879,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "subnetwork": {
        "type": "string",
@@ -24300,11 +23007,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -24335,7 +23037,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -24420,7 +23122,8 @@
      },
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute"
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/compute.readonly"
      ]
     },
     "setPrivateIpGoogleAccess": {
@@ -24442,11 +23145,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "subnetwork": {
        "type": "string",
@@ -24534,11 +23232,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "targetHttpProxy": {
        "type": "string",
        "description": "Name of the TargetHttpProxy resource to delete.",
@@ -24605,11 +23298,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -24639,7 +23327,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -24687,11 +23375,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "targetHttpProxy": {
        "type": "string",
@@ -24770,11 +23453,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "targetHttpsProxy": {
        "type": "string",
        "description": "Name of the TargetHttpsProxy resource to delete.",
@@ -24841,11 +23519,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -24875,7 +23548,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -24924,11 +23597,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "targetHttpsProxy": {
        "type": "string",
        "description": "Name of the TargetHttpsProxy resource to set an SslCertificates resource for.",
@@ -24964,11 +23632,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "targetHttpsProxy": {
        "type": "string",
@@ -25047,7 +23710,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -25095,11 +23758,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "targetInstance": {
        "type": "string",
@@ -25184,11 +23842,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "zone": {
        "type": "string",
        "description": "Name of the zone scoping this request.",
@@ -25225,7 +23878,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -25338,11 +23991,6 @@
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "targetPool": {
        "type": "string",
        "description": "Name of the target pool to add a health check to.",
@@ -25387,11 +24035,6 @@
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "targetPool": {
        "type": "string",
        "description": "Name of the TargetPool resource to add instances to.",
@@ -25429,7 +24072,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -25484,11 +24127,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "targetPool": {
        "type": "string",
@@ -25617,11 +24255,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -25652,7 +24285,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -25716,11 +24349,6 @@
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "targetPool": {
        "type": "string",
        "description": "Name of the target pool to remove health checks from.",
@@ -25764,11 +24392,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "targetPool": {
        "type": "string",
@@ -25819,11 +24442,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "targetPool": {
        "type": "string",
@@ -25911,11 +24529,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "targetSslProxy": {
        "type": "string",
        "description": "Name of the TargetSslProxy resource to delete.",
@@ -25982,11 +24595,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -26016,7 +24624,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -26065,11 +24673,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "targetSslProxy": {
        "type": "string",
        "description": "Name of the TargetSslProxy resource whose BackendService resource is to be set.",
@@ -26106,11 +24709,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "targetSslProxy": {
        "type": "string",
        "description": "Name of the TargetSslProxy resource whose ProxyHeader is to be set.",
@@ -26146,11 +24744,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "targetSslProxy": {
        "type": "string",
@@ -26229,11 +24822,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "targetTcpProxy": {
        "type": "string",
        "description": "Name of the TargetTcpProxy resource to delete.",
@@ -26300,11 +24888,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -26334,7 +24917,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -26383,11 +24966,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "targetTcpProxy": {
        "type": "string",
        "description": "Name of the TargetTcpProxy resource whose BackendService resource is to be set.",
@@ -26423,11 +25001,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "targetTcpProxy": {
        "type": "string",
@@ -26506,7 +25079,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -26561,11 +25134,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "targetVpnGateway": {
        "type": "string",
@@ -26649,11 +25217,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -26684,7 +25247,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -26790,11 +25353,6 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "urlMap": {
        "type": "string",
        "description": "Name of the UrlMap resource to delete.",
@@ -26861,11 +25419,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -26894,11 +25447,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "urlMap": {
        "type": "string",
@@ -26936,7 +25484,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -26976,7 +25524,7 @@
      "id": "compute.urlMaps.patch",
      "path": "{project}/global/urlMaps/{urlMap}",
      "httpMethod": "PATCH",
-     "description": "Patches the specified UrlMap resource with the data included in the request. This method supports patch semantics.",
+     "description": "Updates the specified UrlMap resource with the data included in the request. This method supports patch semantics.",
      "parameters": {
       "project": {
        "type": "string",
@@ -26985,14 +25533,9 @@
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
       },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
-      },
       "urlMap": {
        "type": "string",
-       "description": "Name of the UrlMap resource to patch.",
+       "description": "Name of the UrlMap resource to update.",
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
@@ -27010,8 +25553,7 @@
      },
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/compute.readonly"
+      "https://www.googleapis.com/auth/compute"
      ]
     },
     "testIamPermissions": {
@@ -27063,11 +25605,6 @@
        "required": true,
        "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "urlMap": {
        "type": "string",
@@ -27145,7 +25682,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -27200,11 +25737,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "vpnTunnel": {
        "type": "string",
@@ -27288,11 +25820,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       }
      },
      "parameterOrder": [
@@ -27323,7 +25850,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -27386,11 +25913,6 @@
        "required": true,
        "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
        "location": "path"
-      },
-      "requestId": {
-       "type": "string",
-       "description": "begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.",
-       "location": "query"
       },
       "resource": {
        "type": "string",
@@ -27558,7 +26080,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",
@@ -27653,7 +26175,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)",
+       "description": "The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.",
        "default": "500",
        "format": "uint32",
        "minimum": "0",

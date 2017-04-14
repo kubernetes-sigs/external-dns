@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/jvAB1N_FX7xzyPOdjzd58bQdWjQ\"",
+ "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/CydBYfZ8LICDy6eugptbrOxuOz0\"",
  "discoveryVersion": "v1",
  "id": "appengine:v1",
  "name": "appengine",
  "version": "v1",
- "revision": "20170324",
+ "revision": "20161208",
  "title": "Google App Engine Admin API",
  "description": "Provisions and manages App Engine applications.",
  "ownerDomain": "google.com",
@@ -212,7 +212,7 @@
     },
     "dispatchRules": {
      "type": "array",
-     "description": "HTTP path dispatch rules for requests to the application that do not explicitly target a service or version. Rules are order-dependent. Up to 20 dispatch rules can be supported.@OutputOnly",
+     "description": "HTTP path dispatch rules for requests to the application that do not explicitly target a service or version. Rules are order-dependent.@OutputOnly",
      "items": {
       "$ref": "UrlDispatchRule"
      }
@@ -233,16 +233,6 @@
      "type": "string",
      "description": "Cookie expiration policy for this application."
     },
-    "servingStatus": {
-     "type": "string",
-     "description": "Serving status of this application.",
-     "enum": [
-      "UNSPECIFIED",
-      "SERVING",
-      "USER_DISABLED",
-      "SYSTEM_DISABLED"
-     ]
-    },
     "defaultHostname": {
      "type": "string",
      "description": "Hostname used to reach this application, as resolved by App Engine.@OutputOnly"
@@ -250,13 +240,6 @@
     "defaultBucket": {
      "type": "string",
      "description": "Google Cloud Storage bucket that can be used by this application to store content.@OutputOnly"
-    },
-    "iap": {
-     "$ref": "IdentityAwareProxy"
-    },
-    "gcrDomain": {
-     "type": "string",
-     "description": "The Google Container Registry domain used for storing managed build docker images for this application."
     }
    }
   },
@@ -271,34 +254,11 @@
     },
     "path": {
      "type": "string",
-     "description": "Pathname within the host. Must start with a \"/\". A single \"*\" can be included at the end of the path.The sum of the lengths of the domain and path may not exceed 100 characters."
+     "description": "Pathname within the host. Must start with a \"/\". A single \"*\" can be included at the end of the path. The sum of the lengths of the domain and path may not exceed 100 characters."
     },
     "service": {
      "type": "string",
      "description": "Resource ID of a service in this application that should serve the matched request. The service must already exist. Example: default."
-    }
-   }
-  },
-  "IdentityAwareProxy": {
-   "id": "IdentityAwareProxy",
-   "type": "object",
-   "description": "Identity-Aware Proxy",
-   "properties": {
-    "enabled": {
-     "type": "boolean",
-     "description": "Whether the serving infrastructure will authenticate and authorize all incoming requests.If true, the oauth2_client_id and oauth2_client_secret fields must be non-empty."
-    },
-    "oauth2ClientId": {
-     "type": "string",
-     "description": "OAuth2 client ID to use for the authentication flow."
-    },
-    "oauth2ClientSecret": {
-     "type": "string",
-     "description": "OAuth2 client secret to use for the authentication flow.For security reasons, this value cannot be retrieved via the API. Instead, the SHA-256 hash of the value is returned in the oauth2_client_secret_sha256 field.@InputOnly"
-    },
-    "oauth2ClientSecretSha256": {
-     "type": "string",
-     "description": "Hex-encoded SHA-256 hash of the client secret.@OutputOnly"
     }
    }
   },
@@ -355,8 +315,7 @@
      "enum": [
       "UNSPECIFIED",
       "COOKIE",
-      "IP",
-      "RANDOM"
+      "IP"
      ]
     },
     "allocations": {
@@ -537,14 +496,6 @@
     "healthCheck": {
      "$ref": "HealthCheck",
      "description": "Configures health checking for VM instances. Unhealthy instances are stopped and replaced with new instances. Only applicable for VM runtimes.Only returned in GET requests if view=FULL is set."
-    },
-    "readinessCheck": {
-     "$ref": "ReadinessCheck",
-     "description": "Configures readiness health checking for VM instances. Unhealthy instances are not put into the backend traffic rotation.Only returned in GET requests if view=FULL is set."
-    },
-    "livenessCheck": {
-     "$ref": "LivenessCheck",
-     "description": "Configures liveness health checking for VM instances. Unhealthy instances are stopped and replaced with new instancesOnly returned in GET requests if view=FULL is set."
     },
     "nobuildFilesRegex": {
      "type": "string",
@@ -1062,76 +1013,6 @@
     }
    }
   },
-  "ReadinessCheck": {
-   "id": "ReadinessCheck",
-   "type": "object",
-   "description": "Readiness checking configuration for VM instances. Unhealthy instances are removed from traffic rotation.",
-   "properties": {
-    "path": {
-     "type": "string",
-     "description": "The request path."
-    },
-    "host": {
-     "type": "string",
-     "description": "Host header to send when performing a HTTP Readiness check. Example: \"myapp.appspot.com\""
-    },
-    "failureThreshold": {
-     "type": "integer",
-     "description": "Number of consecutive failed checks required before removing traffic.",
-     "format": "uint32"
-    },
-    "successThreshold": {
-     "type": "integer",
-     "description": "Number of consecutive successful checks required before receiving traffic.",
-     "format": "uint32"
-    },
-    "checkInterval": {
-     "type": "string",
-     "description": "Interval between health checks."
-    },
-    "timeout": {
-     "type": "string",
-     "description": "Time before the check is considered failed."
-    }
-   }
-  },
-  "LivenessCheck": {
-   "id": "LivenessCheck",
-   "type": "object",
-   "description": "Health checking configuration for VM instances. Unhealthy instances are killed and replaced with new instances.",
-   "properties": {
-    "path": {
-     "type": "string",
-     "description": "The request path."
-    },
-    "host": {
-     "type": "string",
-     "description": "Host header to send when performing a HTTP Liveness check. Example: \"myapp.appspot.com\""
-    },
-    "failureThreshold": {
-     "type": "integer",
-     "description": "Number of consecutive failed checks required before considering the VM unhealthy.",
-     "format": "uint32"
-    },
-    "successThreshold": {
-     "type": "integer",
-     "description": "Number of consecutive successful checks required before considering the VM healthy.",
-     "format": "uint32"
-    },
-    "checkInterval": {
-     "type": "string",
-     "description": "Interval between health checks."
-    },
-    "timeout": {
-     "type": "string",
-     "description": "Time before the check is considered failed."
-    },
-    "initialDelay": {
-     "type": "string",
-     "description": "The initial delay before starting to execute the checks."
-    }
-   }
-  },
   "Deployment": {
    "id": "Deployment",
    "type": "object",
@@ -1146,7 +1027,7 @@
     },
     "container": {
      "$ref": "ContainerInfo",
-     "description": "The Docker image for the container that runs the version. Only applicable for instances running in the App Engine flexible environment."
+     "description": "A Docker image that App Engine uses to run the version. Only applicable for instances in App Engine flexible environment."
     },
     "zip": {
      "$ref": "ZipInfo",
@@ -1176,11 +1057,11 @@
   "ContainerInfo": {
    "id": "ContainerInfo",
    "type": "object",
-   "description": "Docker image that is used to create a container and start a VM instance for the version that you deploy. Only applicable for instances running in the App Engine flexible environment.",
+   "description": "Docker image that is used to start a VM container for the version you deploy.",
    "properties": {
     "image": {
      "type": "string",
-     "description": "URI to the hosted container image in Google Container Registry. The URI must be fully qualified and include a tag or digest. Examples: \"gcr.io/my-project/image:tag\" or \"gcr.io/my-project/image@digest\""
+     "description": "URI to the hosted container image in a Docker repository. The URI must be fully qualified and include a tag or digest. Examples: \"gcr.io/my-project/image:tag\" or \"gcr.io/my-project/image@digest\""
     }
    }
   },
@@ -1328,7 +1209,7 @@
   "ListLocationsResponse": {
    "id": "ListLocationsResponse",
    "type": "object",
-   "description": "The response message for Locations.ListLocations.",
+   "description": "The response message for LocationService.ListLocations.",
    "properties": {
     "locations": {
      "type": "array",
@@ -1458,44 +1339,6 @@
     }
    }
   },
-  "OperationMetadataV1Beta": {
-   "id": "OperationMetadataV1Beta",
-   "type": "object",
-   "description": "Metadata for the given google.longrunning.Operation.",
-   "properties": {
-    "method": {
-     "type": "string",
-     "description": "API method that initiated this operation. Example: google.appengine.v1beta.Versions.CreateVersion.@OutputOnly"
-    },
-    "insertTime": {
-     "type": "string",
-     "description": "Time that this operation was created.@OutputOnly"
-    },
-    "endTime": {
-     "type": "string",
-     "description": "Time that this operation completed.@OutputOnly"
-    },
-    "user": {
-     "type": "string",
-     "description": "User who requested this operation.@OutputOnly"
-    },
-    "target": {
-     "type": "string",
-     "description": "Name of the resource that this operation is acting on. Example: apps/myapp/services/default.@OutputOnly"
-    },
-    "ephemeralMessage": {
-     "type": "string",
-     "description": "Ephemeral message that may change every time the operation is polled. @OutputOnly"
-    },
-    "warning": {
-     "type": "array",
-     "description": "Durable messages that persist on every operation poll. @OutputOnly",
-     "items": {
-      "type": "string"
-     }
-    }
-   }
-  },
   "OperationMetadataV1": {
    "id": "OperationMetadataV1",
    "type": "object",
@@ -1582,7 +1425,7 @@
      "id": "appengine.apps.create",
      "path": "v1/apps",
      "httpMethod": "POST",
-     "description": "Creates an App Engine application for a Google Cloud Platform project. Required fields: id - The ID of the target Cloud Platform project. location - The region (https://cloud.google.com/appengine/docs/locations) where you want the App Engine application located.For more information about App Engine applications, see Managing Projects, Applications, and Billing (https://cloud.google.com/appengine/docs/python/console/).",
+     "description": "Creates an App Engine application for a Google Cloud Platform project. This requires a project that excludes an App Engine application. For details about creating a project without an application, see the Google Cloud Resource Manager create project topic (https://cloud.google.com/resource-manager/docs/creating-project).",
      "request": {
       "$ref": "Application"
      },
@@ -1597,7 +1440,7 @@
      "id": "appengine.apps.patch",
      "path": "v1/apps/{appsId}",
      "httpMethod": "PATCH",
-     "description": "Updates the specified Application resource. You can update the following fields: auth_domain - Google authentication domain for controlling user access to the application. default_cookie_expiration - Cookie expiration policy for the application.",
+     "description": "Updates the specified Application resource. You can update the following fields: auth_domain (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1/apps#Application.FIELDS.auth_domain) default_cookie_expiration (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1/apps#Application.FIELDS.default_cookie_expiration)",
      "parameters": {
       "appsId": {
        "type": "string",
@@ -1824,7 +1667,7 @@
         },
         "migrateTraffic": {
          "type": "boolean",
-         "description": "Set to true to gradually shift traffic to one or more versions that you specify. By default, traffic is shifted immediately. For gradual traffic migration, the target versions must be located within instances that are configured for both warmup requests (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1/apps.services.versions#inboundservicetype) and automatic scaling (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1/apps.services.versions#automaticscaling). You must specify the shardBy (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1/apps.services#shardby) field in the Service resource. Gradual traffic migration is not supported in the App Engine flexible environment. For examples, see Migrating and Splitting Traffic (https://cloud.google.com/appengine/docs/admin-api/migrating-splitting-traffic).",
+         "description": "Set to true to gradually shift traffic from one version to another single version. By default, traffic is shifted immediately. For gradual traffic migration, the target version must be located within instances that are configured for both warmup requests (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1/apps.services.versions#inboundservicetype) and automatic scaling (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1/apps.services.versions#automaticscaling). You must specify the shardBy (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1/apps.services#shardby) field in the Service resource. Gradual traffic migration is not supported in the App Engine flexible environment. For examples, see Migrating and Splitting Traffic (https://cloud.google.com/appengine/docs/admin-api/migrating-splitting-traffic).",
          "location": "query"
         }
        },
@@ -2099,7 +1942,7 @@
            "id": "appengine.apps.services.versions.instances.list",
            "path": "v1/apps/{appsId}/services/{servicesId}/versions/{versionsId}/instances",
            "httpMethod": "GET",
-           "description": "Lists the instances of a version.Tip: To aggregate details about instances over time, see the Stackdriver Monitoring API (https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.timeSeries/list).",
+           "description": "Lists the instances of a version.",
            "parameters": {
             "appsId": {
              "type": "string",

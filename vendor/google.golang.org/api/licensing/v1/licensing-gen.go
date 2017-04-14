@@ -47,7 +47,7 @@ const basePath = "https://www.googleapis.com/apps/licensing/v1/product/"
 
 // OAuth2 scopes used by this API.
 const (
-	// View and manage G Suite licenses for your domain
+	// View and manage Google Apps licenses for your domain
 	AppsLicensingScope = "https://www.googleapis.com/auth/apps.licensing"
 )
 
@@ -61,9 +61,10 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client    *http.Client
-	BasePath  string // API endpoint base URL
-	UserAgent string // optional additional User-Agent fragment
+	client                    *http.Client
+	BasePath                  string // API endpoint base URL
+	UserAgent                 string // optional additional User-Agent fragment
+	GoogleClientHeaderElement string // client header fragment, for Google use only
 
 	LicenseAssignments *LicenseAssignmentsService
 }
@@ -73,6 +74,10 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
+}
+
+func (s *Service) clientHeader() string {
+	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewLicenseAssignmentsService(s *Service) *LicenseAssignmentsService {
@@ -92,20 +97,14 @@ type LicenseAssignment struct {
 	// Kind: Identifies the resource as a LicenseAssignment.
 	Kind string `json:"kind,omitempty"`
 
-	// ProductId: Id of the product.
+	// ProductId: Name of the product.
 	ProductId string `json:"productId,omitempty"`
-
-	// ProductName: Display Name of the product.
-	ProductName string `json:"productName,omitempty"`
 
 	// SelfLink: Link to this page.
 	SelfLink string `json:"selfLink,omitempty"`
 
-	// SkuId: Id of the sku of the product.
+	// SkuId: Name of the sku of the product.
 	SkuId string `json:"skuId,omitempty"`
-
-	// SkuName: Display Name of the sku of the product.
-	SkuName string `json:"skuName,omitempty"`
 
 	// UserId: Email id of the user.
 	UserId string `json:"userId,omitempty"`
@@ -262,6 +261,7 @@ func (c *LicenseAssignmentsDeleteCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{productId}/sku/{skuId}/user/{userId}")
@@ -389,6 +389,7 @@ func (c *LicenseAssignmentsGetCall) doRequest(alt string) (*http.Response, error
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -535,6 +536,7 @@ func (c *LicenseAssignmentsInsertCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.licenseassignmentinsert)
 	if err != nil {
@@ -702,6 +704,7 @@ func (c *LicenseAssignmentsListForProductCall) doRequest(alt string) (*http.Resp
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -901,6 +904,7 @@ func (c *LicenseAssignmentsListForProductAndSkuCall) doRequest(alt string) (*htt
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -1084,6 +1088,7 @@ func (c *LicenseAssignmentsPatchCall) doRequest(alt string) (*http.Response, err
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.licenseassignment)
 	if err != nil {
@@ -1237,6 +1242,7 @@ func (c *LicenseAssignmentsUpdateCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.licenseassignment)
 	if err != nil {

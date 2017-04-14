@@ -166,7 +166,7 @@
    "name": "admin",
    "version": "reports_v1",
    "title": "Admin Reports API",
-   "description": "Fetches reports for the administrators of G Suite customers about the usage, collaboration, security, and risk for their users.",
+   "description": "Fetches reports for the administrators of Google Apps customers about the usage, collaboration, security, and risk for their users.",
    "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/admin/reports_v1/rest",
    "discoveryLink": "./apis/admin/reports_v1/rest",
    "icons": {
@@ -343,7 +343,7 @@
    "id": "appsactivity:v1",
    "name": "appsactivity",
    "version": "v1",
-   "title": "G Suite Activity API",
+   "title": "Google Apps Activity API",
    "description": "Provides a historical view of activity.",
    "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/appsactivity/v1/rest",
    "discoveryLink": "./apis/appsactivity/v1/rest",
@@ -474,36 +474,6 @@
   },
   {
    "kind": "discovery#directoryItem",
-   "id": "classroom:v1",
-   "name": "classroom",
-   "version": "v1",
-   "title": "Google Classroom API",
-   "description": "Manages classes, rosters, and invitations in Google Classroom.",
-   "discoveryRestUrl": "https://classroom.googleapis.com/$discovery/rest?version=v1",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://developers.google.com/classroom",
-   "preferred": true
-  },
-  {
-   "kind": "discovery#directoryItem",
-   "id": "cloudbilling:v1",
-   "name": "cloudbilling",
-   "version": "v1",
-   "title": "Google Cloud Billing API",
-   "description": "Allows developers to manage billing for their Google Cloud Platform projects programmatically.",
-   "discoveryRestUrl": "https://cloudbilling.googleapis.com/$discovery/rest?version=v1",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://cloud.google.com/billing/",
-   "preferred": true
-  },
-  {
-   "kind": "discovery#directoryItem",
    "id": "cloudbuild:v1",
    "name": "cloudbuild",
    "version": "v1",
@@ -549,42 +519,12 @@
   },
   {
    "kind": "discovery#directoryItem",
-   "id": "cloudfunctions:v1",
-   "name": "cloudfunctions",
-   "version": "v1",
-   "title": "Google Cloud Functions API",
-   "description": "API for managing lightweight user-provided functions executed in response to events.",
-   "discoveryRestUrl": "https://cloudfunctions.googleapis.com/$discovery/rest?version=v1",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://cloud.google.com/functions",
-   "preferred": true
-  },
-  {
-   "kind": "discovery#directoryItem",
-   "id": "cloudfunctions:v1beta2",
-   "name": "cloudfunctions",
-   "version": "v1beta2",
-   "title": "Google Cloud Functions API",
-   "description": "API for managing lightweight user-provided functions executed in response to events.",
-   "discoveryRestUrl": "https://cloudfunctions.googleapis.com/$discovery/rest?version=v1beta2",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://cloud.google.com/functions",
-   "preferred": false
-  },
-  {
-   "kind": "discovery#directoryItem",
-   "id": "cloudkms:v1",
+   "id": "cloudkms:v1beta1",
    "name": "cloudkms",
-   "version": "v1",
+   "version": "v1beta1",
    "title": "Google Cloud Key Management Service (KMS) API",
    "description": "Manages encryption for your cloud services the same way you do on-premise. You can generate, use, rotate, and destroy AES256 encryption keys.",
-   "discoveryRestUrl": "https://cloudkms.googleapis.com/$discovery/rest?version=v1",
+   "discoveryRestUrl": "https://cloudkms.googleapis.com/$discovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
@@ -952,38 +892,6 @@
   },
   {
    "kind": "discovery#directoryItem",
-   "id": "deploymentmanager:alpha",
-   "name": "deploymentmanager",
-   "version": "alpha",
-   "title": "Google Cloud Deployment Manager Alpha API",
-   "description": "The Deployment Manager API allows users to declaratively configure, deploy and run complex solutions on the Google Cloud Platform.",
-   "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/deploymentmanager/alpha/rest",
-   "discoveryLink": "./apis/deploymentmanager/alpha/rest",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://cloud.google.com/deployment-manager/",
-   "preferred": false
-  },
-  {
-   "kind": "discovery#directoryItem",
-   "id": "deploymentmanager:v2beta",
-   "name": "deploymentmanager",
-   "version": "v2beta",
-   "title": "Google Cloud Deployment Manager API V2Beta Methods",
-   "description": "The Deployment Manager API allows users to declaratively configure, deploy and run complex solutions on the Google Cloud Platform.",
-   "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/deploymentmanager/v2beta/rest",
-   "discoveryLink": "./apis/deploymentmanager/v2beta/rest",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://developers.google.com/deployment-manager/",
-   "preferred": false
-  },
-  {
-   "kind": "discovery#directoryItem",
    "id": "deploymentmanager:v2",
    "name": "deploymentmanager",
    "version": "v2",
@@ -997,6 +905,38 @@
    },
    "documentationLink": "https://cloud.google.com/deployment-manager/",
    "preferred": true
+  },
+  {
+   "kind": "discovery#directoryItem",
+   "id": "dfareporting:v2.5",
+   "name": "dfareporting",
+   "version": "v2.5",
+   "title": "DCM/DFA Reporting And Trafficking API",
+   "description": "Manages your DoubleClick Campaign Manager ad campaigns and reports.",
+   "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/dfareporting/v2.5/rest",
+   "discoveryLink": "./apis/dfareporting/v2.5/rest",
+   "icons": {
+    "x16": "https://www.google.com/images/icons/product/doubleclick-16.gif",
+    "x32": "https://www.google.com/images/icons/product/doubleclick-32.gif"
+   },
+   "documentationLink": "https://developers.google.com/doubleclick-advertisers/reporting/",
+   "preferred": false
+  },
+  {
+   "kind": "discovery#directoryItem",
+   "id": "dfareporting:v2.5beta1",
+   "name": "dfareporting",
+   "version": "v2.5beta1",
+   "title": "DCM/DFA Reporting And Trafficking API",
+   "description": "Manages your DoubleClick Campaign Manager ad campaigns and reports.",
+   "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/dfareporting/v2.5beta1/rest",
+   "discoveryLink": "./apis/dfareporting/v2.5beta1/rest",
+   "icons": {
+    "x16": "https://www.google.com/images/icons/product/doubleclick-16.gif",
+    "x32": "https://www.google.com/images/icons/product/doubleclick-32.gif"
+   },
+   "documentationLink": "https://developers.google.com/doubleclick-advertisers/reporting/",
+   "preferred": false
   },
   {
    "kind": "discovery#directoryItem",
@@ -1044,21 +984,6 @@
     "x32": "http://www.google.com/images/icons/feature/filing_cabinet_search-g32.png"
    },
    "documentationLink": "https://developers.google.com/discovery/",
-   "preferred": true
-  },
-  {
-   "kind": "discovery#directoryItem",
-   "id": "dlp:v2beta1",
-   "name": "dlp",
-   "version": "v2beta1",
-   "title": "DLP API",
-   "description": "The Google Data Loss Prevention API provides methods for detection of privacy-sensitive fragments in text, images, and Google Cloud Platform storage repositories.",
-   "discoveryRestUrl": "https://dlp.googleapis.com/$discovery/rest?version=v2beta1",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://cloud.google.com/dlp/docs/",
    "preferred": true
   },
   {
@@ -1366,36 +1291,6 @@
   },
   {
    "kind": "discovery#directoryItem",
-   "id": "appengine:v1alpha",
-   "name": "appengine",
-   "version": "v1alpha",
-   "title": "Google App Engine Admin API",
-   "description": "Provisions and manages App Engine applications.",
-   "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/appengine/v1alpha/rest",
-   "icons": {
-    "x16": "http://www.google.com/images/icons/product/search-16.gif",
-    "x32": "http://www.google.com/images/icons/product/search-32.gif"
-   },
-   "documentationLink": "https://cloud.google.com/appengine/docs/admin-api/",
-   "preferred": false
-  },
-  {
-   "kind": "discovery#directoryItem",
-   "id": "appengine:v1beta",
-   "name": "appengine",
-   "version": "v1beta",
-   "title": "Google App Engine Admin API",
-   "description": "Provisions and manages App Engine applications.",
-   "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/appengine/v1beta/rest",
-   "icons": {
-    "x16": "http://www.google.com/images/icons/product/search-16.gif",
-    "x32": "http://www.google.com/images/icons/product/search-32.gif"
-   },
-   "documentationLink": "https://cloud.google.com/appengine/docs/admin-api/",
-   "preferred": false
-  },
-  {
-   "kind": "discovery#directoryItem",
    "id": "appengine:v1",
    "name": "appengine",
    "version": "v1",
@@ -1441,6 +1336,36 @@
   },
   {
    "kind": "discovery#directoryItem",
+   "id": "classroom:v1",
+   "name": "classroom",
+   "version": "v1",
+   "title": "Google Classroom API",
+   "description": "Manages classes, rosters, and invitations in Google Classroom.",
+   "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/classroom/v1/rest",
+   "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+   },
+   "documentationLink": "https://developers.google.com/classroom/",
+   "preferred": true
+  },
+  {
+   "kind": "discovery#directoryItem",
+   "id": "cloudbilling:v1",
+   "name": "cloudbilling",
+   "version": "v1",
+   "title": "Google Cloud Billing API",
+   "description": "Retrieves Google Developers Console billing accounts and associates them with projects.",
+   "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/cloudbilling/v1/rest",
+   "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+   },
+   "documentationLink": "https://cloud.google.com/billing/",
+   "preferred": true
+  },
+  {
+   "kind": "discovery#directoryItem",
    "id": "container:v1",
    "name": "container",
    "version": "v1",
@@ -1452,6 +1377,66 @@
     "x32": "http://www.google.com/images/icons/product/search-32.gif"
    },
    "documentationLink": "https://cloud.google.com/container-engine/",
+   "preferred": true
+  },
+  {
+   "kind": "discovery#directoryItem",
+   "id": "partners:v2",
+   "name": "partners",
+   "version": "v2",
+   "title": "Google Partners API",
+   "description": "Lets advertisers search certified companies and create contact leads with them, and also audits the usage of clients.",
+   "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/partners/v2/rest",
+   "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+   },
+   "documentationLink": "https://developers.google.com/partners/",
+   "preferred": true
+  },
+  {
+   "kind": "discovery#directoryItem",
+   "id": "playmoviespartner:v1",
+   "name": "playmoviespartner",
+   "version": "v1",
+   "title": "Google Play Movies Partner API",
+   "description": "Gets the delivery status of titles for Google Play Movies Partners.",
+   "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/playmoviespartner/v1/rest",
+   "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+   },
+   "documentationLink": "https://developers.google.com/playmoviespartner/",
+   "preferred": true
+  },
+  {
+   "kind": "discovery#directoryItem",
+   "id": "proximitybeacon:v1beta1",
+   "name": "proximitybeacon",
+   "version": "v1beta1",
+   "title": "Google Proximity Beacon API",
+   "description": "Registers, manages, indexes, and searches beacons.",
+   "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/proximitybeacon/v1beta1/rest",
+   "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+   },
+   "documentationLink": "https://developers.google.com/beacons/proximity/",
+   "preferred": true
+  },
+  {
+   "kind": "discovery#directoryItem",
+   "id": "safebrowsing:v4",
+   "name": "safebrowsing",
+   "version": "v4",
+   "title": "Safe Browsing APIs",
+   "description": "Enables client applications to check web resources (most commonly URLs) against Google-generated lists of unsafe web resources.",
+   "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/safebrowsing/v4/rest",
+   "icons": {
+    "x16": "http://www.google.com/images/icons/product/search-16.gif",
+    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+   },
+   "documentationLink": "https://developers.google.com/safe-browsing/",
    "preferred": true
   },
   {
@@ -1551,7 +1536,7 @@
    "name": "licensing",
    "version": "v1",
    "title": "Enterprise License Manager API",
-   "description": "Views and manages licenses for your domain.",
+   "description": "Licensing API to view and manage license for your domain.",
    "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/licensing/v1/rest",
    "discoveryLink": "./apis/licensing/v1/rest",
    "icons": {
@@ -1627,25 +1612,10 @@
   },
   {
    "kind": "discovery#directoryItem",
-   "id": "ml:v1",
-   "name": "ml",
-   "version": "v1",
-   "title": "Google Cloud Machine Learning Engine",
-   "description": "An API to enable creating and using machine learning models.",
-   "discoveryRestUrl": "https://ml.googleapis.com/$discovery/rest?version=v1",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://cloud.google.com/ml/",
-   "preferred": true
-  },
-  {
-   "kind": "discovery#directoryItem",
    "id": "ml:v1beta1",
    "name": "ml",
    "version": "v1beta1",
-   "title": "Google Cloud Machine Learning Engine",
+   "title": "Google Cloud Machine Learning",
    "description": "An API to enable creating and using machine learning models.",
    "discoveryRestUrl": "https://ml.googleapis.com/$discovery/rest?version=v1beta1",
    "icons": {
@@ -1653,7 +1623,7 @@
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
    },
    "documentationLink": "https://cloud.google.com/ml/",
-   "preferred": false
+   "preferred": true
   },
   {
    "kind": "discovery#directoryItem",
@@ -1736,21 +1706,6 @@
   },
   {
    "kind": "discovery#directoryItem",
-   "id": "partners:v2",
-   "name": "partners",
-   "version": "v2",
-   "title": "Google Partners API",
-   "description": "Searches certified companies and creates contact leads with them, and also audits the usage of clients.",
-   "discoveryRestUrl": "https://partners.googleapis.com/$discovery/rest?version=v2",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://developers.google.com/partners/",
-   "preferred": true
-  },
-  {
-   "kind": "discovery#directoryItem",
    "id": "people:v1",
    "name": "people",
    "version": "v1",
@@ -1762,21 +1717,6 @@
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
    },
    "documentationLink": "https://developers.google.com/people/",
-   "preferred": true
-  },
-  {
-   "kind": "discovery#directoryItem",
-   "id": "playmoviespartner:v1",
-   "name": "playmoviespartner",
-   "version": "v1",
-   "title": "Google Play Movies Partner API",
-   "description": "Gets the delivery status of titles for Google Play Movies Partners.",
-   "discoveryRestUrl": "https://playmoviespartner.googleapis.com/$discovery/rest?version=v1",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://developers.google.com/playmoviespartner/",
    "preferred": true
   },
   {
@@ -1889,21 +1829,6 @@
     "x32": "https://www.google.com/images/icons/feature/predictionapi-32.png"
    },
    "documentationLink": "https://developers.google.com/prediction/docs/developer-guide",
-   "preferred": true
-  },
-  {
-   "kind": "discovery#directoryItem",
-   "id": "proximitybeacon:v1beta1",
-   "name": "proximitybeacon",
-   "version": "v1beta1",
-   "title": "Google Proximity Beacon API",
-   "description": "Registers, manages, indexes, and searches beacons.",
-   "discoveryRestUrl": "https://proximitybeacon.googleapis.com/$discovery/rest?version=v1beta1",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://developers.google.com/beacons/proximity/",
    "preferred": true
   },
   {
@@ -2113,21 +2038,6 @@
   },
   {
    "kind": "discovery#directoryItem",
-   "id": "safebrowsing:v4",
-   "name": "safebrowsing",
-   "version": "v4",
-   "title": "Google Safe Browsing API",
-   "description": "The Safe Browsing API is an experimental API that allows client applications to check URLs against Google's constantly-updated blacklists of suspected phishing and malware pages. Your client application can use the API to download an encrypted table for local, client-side lookups of URLs.",
-   "discoveryRestUrl": "https://safebrowsing.googleapis.com/$discovery/rest?version=v4",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://developers.google.com/safe-browsing/",
-   "preferred": true
-  },
-  {
-   "kind": "discovery#directoryItem",
    "id": "script:v1",
    "name": "script",
    "version": "v1",
@@ -2188,21 +2098,6 @@
   },
   {
    "kind": "discovery#directoryItem",
-   "id": "serviceuser:v1",
-   "name": "serviceuser",
-   "version": "v1",
-   "title": "Google Service User API",
-   "description": "Enables services that service consumers want to use on Google Cloud Platform, lists the available or enabled services, or disables services that service consumers no longer use.",
-   "discoveryRestUrl": "https://serviceuser.googleapis.com/$discovery/rest?version=v1",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://cloud.google.com/service-management/",
-   "preferred": true
-  },
-  {
-   "kind": "discovery#directoryItem",
    "id": "sheets:v4",
    "name": "sheets",
    "version": "v4",
@@ -2245,36 +2140,6 @@
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
    },
    "documentationLink": "https://developers.google.com/slides/",
-   "preferred": true
-  },
-  {
-   "kind": "discovery#directoryItem",
-   "id": "sourcerepo:v1",
-   "name": "sourcerepo",
-   "version": "v1",
-   "title": "Cloud Source Repositories API",
-   "description": "Access source code repositories hosted by Google.",
-   "discoveryRestUrl": "https://sourcerepo.googleapis.com/$discovery/rest?version=v1",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://cloud.google.com/eap/cloud-repositories/cloud-sourcerepo-api",
-   "preferred": true
-  },
-  {
-   "kind": "discovery#directoryItem",
-   "id": "spanner:v1",
-   "name": "spanner",
-   "version": "v1",
-   "title": "Cloud Spanner API",
-   "description": "Cloud Spanner is a managed, mission-critical, globally consistent and scalable relational database service.",
-   "discoveryRestUrl": "https://spanner.googleapis.com/$discovery/rest?version=v1",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://cloud.google.com/spanner/",
    "preferred": true
   },
   {
@@ -2478,49 +2343,18 @@
   },
   {
    "kind": "discovery#directoryItem",
-   "id": "toolresults:v1beta3firstparty",
-   "name": "toolresults",
-   "version": "v1beta3firstparty",
-   "title": "Cloud Tool Results firstparty API",
-   "description": "Reads and publishes results from Firebase Test Lab.",
-   "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/toolresults/v1beta3firstparty/rest",
-   "discoveryLink": "./apis/toolresults/v1beta3firstparty/rest",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://firebase.google.com/docs/test-lab/",
-   "preferred": false
-  },
-  {
-   "kind": "discovery#directoryItem",
    "id": "toolresults:v1beta3",
    "name": "toolresults",
    "version": "v1beta3",
    "title": "Cloud Tool Results API",
-   "description": "Reads and publishes results from Firebase Test Lab.",
+   "description": "Reads and publishes results from Cloud Test Lab.",
    "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/toolresults/v1beta3/rest",
    "discoveryLink": "./apis/toolresults/v1beta3/rest",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
    },
-   "documentationLink": "https://firebase.google.com/docs/test-lab/",
-   "preferred": true
-  },
-  {
-   "kind": "discovery#directoryItem",
-   "id": "tracing:v1",
-   "name": "tracing",
-   "version": "v1",
-   "title": "Google Tracing API",
-   "description": "Send and retrieve trace data from Google Stackdriver Trace.",
-   "discoveryRestUrl": "https://tracing.googleapis.com/$discovery/rest?version=v1",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://cloud.google.com/trace",
+   "documentationLink": "https://developers.google.com/cloud-test-lab/",
    "preferred": true
   },
   {
