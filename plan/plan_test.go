@@ -41,6 +41,11 @@ func TestCalculate(t *testing.T) {
 	labeledV2 := []*endpoint.Endpoint{newEndpointWithOwner("foo", "v2", "123")}
 	labeledV1 := []*endpoint.Endpoint{newEndpointWithOwner("foo", "v1", "123")}
 
+	// test case with type inheritance
+	noType := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", "")}
+	typedV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", "A")}
+	typedV1 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", "A")}
+
 	for _, tc := range []struct {
 		policy                               Policy
 		current, desired                     []*endpoint.Endpoint
@@ -62,6 +67,8 @@ func TestCalculate(t *testing.T) {
 		{&UpsertOnlyPolicy{}, fooV1, empty, empty, empty, empty, empty},
 		// Labels should be inherited
 		{&SyncPolicy{}, labeledV1, noLabels, empty, labeledV1, labeledV2, empty},
+		// RecordType should be inherited
+		{&SyncPolicy{}, typedV1, noType, empty, typedV1, typedV2, empty},
 	} {
 		// setup plan
 		plan := &Plan{

@@ -105,7 +105,7 @@ func main() {
 	case "google":
 		p, err = provider.NewGoogleProvider(cfg.GoogleProject, cfg.DryRun)
 	case "aws":
-		p, err = provider.NewAWSProvider(cfg.DryRun)
+		p, err = provider.NewAWSProvider(cfg.Domain, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}

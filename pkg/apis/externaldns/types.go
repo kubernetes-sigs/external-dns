@@ -35,6 +35,7 @@ type Config struct {
 	KubeConfig     string
 	Namespace      string
 	Zone           string
+	Domain         string
 	Sources        []string
 	Provider       string
 	GoogleProject  string
@@ -65,6 +66,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	flags.StringVar(&cfg.KubeConfig, "kubeconfig", "", "path to a local kubeconfig file")
 	flags.StringVar(&cfg.Namespace, "namespace", v1.NamespaceAll, "the namespace to look for endpoints; all namespaces by default")
 	flags.StringVar(&cfg.Zone, "zone", "", "the ID of the hosted zone to target")
+	flags.StringVar(&cfg.Domain, "domain", "example.org.", "the name of the top-level domain to manage")
 	flags.StringArrayVar(&cfg.Sources, "source", nil, "the sources to gather endpoints: [service, ingress], e.g. --source service --source ingress")
 	flags.StringVar(&cfg.Provider, "provider", "", "the DNS provider to materialize the records in: <aws|google>")
 	flags.StringVar(&cfg.GoogleProject, "google-project", "", "gcloud project to target")
