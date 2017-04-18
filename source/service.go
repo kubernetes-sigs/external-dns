@@ -17,13 +17,12 @@ limitations under the License.
 package source
 
 import (
+	"bytes"
 	"html/template"
 	"strings"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
-
-	"bytes"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )

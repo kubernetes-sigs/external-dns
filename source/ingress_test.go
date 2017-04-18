@@ -19,11 +19,11 @@ package source
 import (
 	"testing"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
 // Validates that ingressSource is a Source
@@ -297,14 +297,19 @@ func testIngressEndpoints(t *testing.T) {
 					annotations: map[string]string{
 						controllerAnnotationKey: controllerAnnotationValue,
 					},
-					dnsnames: []string{},
-					ips:      []string{"8.8.8.8"},
+					dnsnames:  []string{},
+					ips:       []string{"8.8.8.8"},
+					hostnames: []string{"elb.com"},
 				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "fake1.ext-dns.test.com",
 					Target:  "8.8.8.8",
+				},
+				{
+					DNSName: "fake1.ext-dns.test.com",
+					Target:  "elb.com",
 				},
 			},
 			fqdntemplate: "{{.Name}}.ext-dns.test.com",

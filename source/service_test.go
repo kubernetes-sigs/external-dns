@@ -20,10 +20,10 @@ import (
 	"net"
 	"testing"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
 // Validates that serviceSource is a Source
@@ -274,9 +274,10 @@ func testServiceEndpoints(t *testing.T) {
 			false,
 			"{{.Name}}.bar.example.com",
 			map[string]string{},
-			[]string{"1.2.3.4"},
+			[]string{"1.2.3.4", "elb.com"},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.bar.example.com", Target: "1.2.3.4"},
+				{DNSName: "foo.bar.example.com", Target: "elb.com"},
 			},
 		},
 		{
