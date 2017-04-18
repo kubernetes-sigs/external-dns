@@ -153,12 +153,12 @@ func testServiceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			"different controller types are ignored",
+			"different controller types are ignored even (with template specified)",
 			"",
 			"testing",
 			"foo",
 			false,
-			"",
+			"{{.Name}}.ext-dns.test.com",
 			map[string]string{
 				controllerAnnotationKey: "some-other-tool",
 				hostnameAnnotationKey:   "foo.example.org.",

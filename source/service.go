@@ -72,6 +72,12 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, svc := range services.Items {
+		// Check controller annotation to see if we are responsible.
+		controller, exists := svc.Annotations[controllerAnnotationKey]
+		if exists && controller != controllerAnnotationValue { //TODO(ideahitme): log the skip
+			continue
+		}
+
 		svcEndpoints := endpointsFromService(&svc)
 
 		// process legacy annotations if no endpoints were returned and compatibility mode is enabled.
@@ -116,12 +122,6 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) []*endpoint.Endp
 // endpointsFromService extracts the endpoints from a service object
 func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
-
-	// Check controller annotation to see if we are responsible.
-	controller, exists := svc.Annotations[controllerAnnotationKey]
-	if exists && controller != controllerAnnotationValue {
-		return nil
-	}
 
 	// Get the desired hostname of the service from the annotation.
 	hostname, exists := svc.Annotations[hostnameAnnotationKey]

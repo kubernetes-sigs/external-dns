@@ -68,6 +68,12 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, ing := range ingresses.Items {
+		// Check controller annotation to see if we are responsible.
+		controller, exists := ing.Annotations[controllerAnnotationKey]
+		if exists && controller != controllerAnnotationValue { //TODO(ideahitme): log the skip
+			continue
+		}
+
 		ingEndpoints := endpointsFromIngress(&ing)
 
 		// apply template if host is missing on ingress
@@ -85,9 +91,8 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) []*endpoint
 	var endpoints []*endpoint.Endpoint
 
 	var buf bytes.Buffer
-	err := sc.fqdntemplate.Execute(&buf, ing)
 
-	if err != nil { //TODO(ideahitme): if error is present skip or abort ?
+	if sc.fqdntemplate.Execute(&buf, ing) == nil { //TODO(ideahitme): if error is present skip or abort ?
 		hostname := buf.String()
 		for _, lb := range ing.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
@@ -105,12 +110,6 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) []*endpoint
 // endpointsFromIngress extracts the endpoints from ingress object
 func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
-
-	// Check controller annotation to see if we are responsible.
-	controller, exists := ing.Annotations[controllerAnnotationKey]
-	if exists && controller != controllerAnnotationValue {
-		return endpoints
-	}
 
 	for _, rule := range ing.Spec.Rules {
 		if rule.Host == "" {
