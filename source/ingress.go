@@ -34,15 +34,26 @@ import (
 type ingressSource struct {
 	client       kubernetes.Interface
 	namespace    string
-	fqdntemplate string
+	fqdntemplate *template.Template
 }
 
 // NewIngressSource creates a new ingressSource with the given client and namespace scope.
 func NewIngressSource(client kubernetes.Interface, namespace string, fqdntemplate string) Source {
+	var tmpl *template.Template
+	var err error
+	if fqdntemplate != "" {
+		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
+			"trimPrefix": strings.TrimPrefix,
+		}).Parse(fqdntemplate)
+		if err != nil {
+			return nil
+		}
+	}
+
 	return &ingressSource{
 		client:       client,
 		namespace:    namespace,
-		fqdntemplate: fqdntemplate,
+		fqdntemplate: tmpl,
 	}
 }
 
@@ -57,43 +68,48 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, ing := range ingresses.Items {
-		ingEndpoints := endpointsFromIngress(&ing, sc.fqdntemplate)
+		ingEndpoints := endpointsFromIngress(&ing)
+
+		// apply template if host is missing on ingress
+		if len(ingEndpoints) == 0 {
+			ingEndpoints = sc.endpointsFromTemplate(&ing)
+		}
+
 		endpoints = append(endpoints, ingEndpoints...)
 	}
 
 	return endpoints, nil
 }
 
+func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) []*endpoint.Endpoint {
+	var endpoints []*endpoint.Endpoint
+
+	var buf bytes.Buffer
+	err := sc.fqdntemplate.Execute(&buf, ing)
+
+	if err != nil { //TODO(ideahitme): if error is present skip or abort ?
+		hostname := buf.String()
+		for _, lb := range ing.Status.LoadBalancer.Ingress {
+			if lb.IP != "" {
+				endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
+			}
+			if lb.Hostname != "" {
+				endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
+			}
+		}
+	}
+
+	return endpoints
+}
+
 // endpointsFromIngress extracts the endpoints from ingress object
-func endpointsFromIngress(ing *v1beta1.Ingress, fqdntemplate string) []*endpoint.Endpoint {
+func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	// Check controller annotation to see if we are responsible.
 	controller, exists := ing.Annotations[controllerAnnotationKey]
 	if exists && controller != controllerAnnotationValue {
 		return endpoints
-	}
-
-	if len(ing.Spec.Rules) == 0 && fqdntemplate != "" {
-		tmpl, err := template.New("endpoint").Funcs(template.FuncMap{
-			"trimPrefix": strings.TrimPrefix,
-		}).Parse(fqdntemplate)
-		if err != nil {
-			return nil
-		}
-
-		var buf bytes.Buffer
-
-		tmpl.Execute(&buf, ing)
-
-		for _, i := range ing.Status.LoadBalancer.Ingress {
-			if i.IP != "" {
-				endpoints = append(endpoints, endpoint.NewEndpoint(buf.String(), i.IP, ""))
-			}
-			if i.Hostname != "" {
-				endpoints = append(endpoints, endpoint.NewEndpoint(buf.String(), i.Hostname, ""))
-			}
-		}
 	}
 
 	for _, rule := range ing.Spec.Rules {
