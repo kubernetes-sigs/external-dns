@@ -55,7 +55,7 @@ func TestNewServiceSource(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			_, err := NewServiceSource(fake.NewSimpleClientset(), "", false, ti.fqdntemplate)
+			_, err := NewServiceSource(fake.NewSimpleClientset(), "", ti.fqdntemplate, false)
 			if ti.expectError && err == nil {
 				t.Error("invalid template should return err")
 			}
@@ -340,7 +340,7 @@ func testServiceEndpoints(t *testing.T) {
 			}
 
 			// Create our object under test and get the endpoints.
-			client, _ := NewServiceSource(kubernetes, tc.targetNamespace, tc.compatibility, tc.fqdntemplate)
+			client, _ := NewServiceSource(kubernetes, tc.targetNamespace, tc.fqdntemplate, tc.compatibility)
 
 			endpoints, err := client.Endpoints()
 			if err != nil {
@@ -379,7 +379,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	client, _ := NewServiceSource(kubernetes, v1.NamespaceAll, false, "")
+	client, _ := NewServiceSource(kubernetes, v1.NamespaceAll, "", false)
 
 	for i := 0; i < b.N; i++ {
 		_, err := client.Endpoints()

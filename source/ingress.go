@@ -18,9 +18,10 @@ package source
 
 import (
 	"bytes"
-	"html/template"
 	"strings"
+	"text/template"
 
+	log "github.com/Sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
@@ -69,8 +70,8 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 	for _, ing := range ingresses.Items {
 		// Check controller annotation to see if we are responsible.
-		controller, exists := ing.Annotations[controllerAnnotationKey]
-		if exists && controller != controllerAnnotationValue { //TODO(ideahitme): log the skip
+		controller, ok := ing.Annotations[controllerAnnotationKey]
+		if ok && controller != controllerAnnotationValue { //TODO(ideahitme): log the skip
 			continue
 		}
 
@@ -91,16 +92,19 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) []*endpoint
 	var endpoints []*endpoint.Endpoint
 
 	var buf bytes.Buffer
+	err := sc.fqdntemplate.Execute(&buf, ing)
+	if err != nil {
+		log.Errorf("failed to apply template: %v", err)
+		return nil
+	}
 
-	if sc.fqdntemplate.Execute(&buf, ing) == nil { //TODO(ideahitme): if error is present skip or abort ?
-		hostname := buf.String()
-		for _, lb := range ing.Status.LoadBalancer.Ingress {
-			if lb.IP != "" {
-				endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
-			}
-			if lb.Hostname != "" {
-				endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
-			}
+	hostname := buf.String()
+	for _, lb := range ing.Status.LoadBalancer.Ingress {
+		if lb.IP != "" {
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
+		}
+		if lb.Hostname != "" {
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
 		}
 	}
 

@@ -81,7 +81,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	serviceSource, err := source.NewServiceSource(client, cfg.Namespace, cfg.Compatibility, cfg.FqdnTemplate)
+	serviceSource, err := source.NewServiceSource(client, cfg.Namespace, cfg.FqdnTemplate, cfg.Compatibility)
 	if err != nil {
 		log.Fatal(err)
 	}

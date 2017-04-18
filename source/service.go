@@ -18,9 +18,10 @@ package source
 
 import (
 	"bytes"
-	"html/template"
 	"strings"
+	"text/template"
 
+	log "github.com/Sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 
@@ -41,7 +42,7 @@ type serviceSource struct {
 }
 
 // NewServiceSource creates a new serviceSource with the given client and namespace scope.
-func NewServiceSource(client kubernetes.Interface, namespace string, compatibility bool, fqdntemplate string) (Source, error) {
+func NewServiceSource(client kubernetes.Interface, namespace, fqdntemplate string, compatibility bool) (Source, error) {
 	var tmpl *template.Template
 	var err error
 	if fqdntemplate != "" {
@@ -72,8 +73,8 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 	for _, svc := range services.Items {
 		// Check controller annotation to see if we are responsible.
-		controller, exists := svc.Annotations[controllerAnnotationKey]
-		if exists && controller != controllerAnnotationValue { //TODO(ideahitme): log the skip
+		controller, ok := svc.Annotations[controllerAnnotationKey]
+		if ok && controller != controllerAnnotationValue { //TODO(ideahitme): log the skip
 			continue
 		}
 
@@ -102,16 +103,20 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) []*endpoint.Endp
 
 	var buf bytes.Buffer
 
-	if sc.fqdntemplate.Execute(&buf, svc) == nil { //TODO(ideahitme): if error is present skip or abort ?
-		hostname := buf.String()
-		for _, lb := range svc.Status.LoadBalancer.Ingress {
-			if lb.IP != "" {
-				//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
-				endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
-			}
-			if lb.Hostname != "" {
-				endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
-			}
+	err := sc.fqdntemplate.Execute(&buf, svc)
+	if err != nil {
+		log.Errorf("failed to apply template: %v", err)
+		return nil
+	}
+
+	hostname := buf.String()
+	for _, lb := range svc.Status.LoadBalancer.Ingress {
+		if lb.IP != "" {
+			//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
+		}
+		if lb.Hostname != "" {
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
 		}
 	}
 
