@@ -38,7 +38,7 @@ type ingressSource struct {
 }
 
 // NewIngressSource creates a new ingressSource with the given client and namespace scope.
-func NewIngressSource(client kubernetes.Interface, namespace string, fqdntemplate string) Source {
+func NewIngressSource(client kubernetes.Interface, namespace string, fqdntemplate string) (Source, error) {
 	var tmpl *template.Template
 	var err error
 	if fqdntemplate != "" {
@@ -46,7 +46,7 @@ func NewIngressSource(client kubernetes.Interface, namespace string, fqdntemplat
 			"trimPrefix": strings.TrimPrefix,
 		}).Parse(fqdntemplate)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 	}
 
@@ -54,7 +54,7 @@ func NewIngressSource(client kubernetes.Interface, namespace string, fqdntemplat
 		client:       client,
 		namespace:    namespace,
 		fqdntemplate: tmpl,
-	}
+	}, nil
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
@@ -71,7 +71,7 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		ingEndpoints := endpointsFromIngress(&ing)
 
 		// apply template if host is missing on ingress
-		if len(ingEndpoints) == 0 {
+		if len(ingEndpoints) == 0 && sc.fqdntemplate != nil {
 			ingEndpoints = sc.endpointsFromTemplate(&ing)
 		}
 

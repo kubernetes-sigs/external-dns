@@ -42,7 +42,7 @@ type serviceSource struct {
 }
 
 // NewServiceSource creates a new serviceSource with the given client and namespace scope.
-func NewServiceSource(client kubernetes.Interface, namespace string, compatibility bool, fqdntemplate string) Source {
+func NewServiceSource(client kubernetes.Interface, namespace string, compatibility bool, fqdntemplate string) (Source, error) {
 	var tmpl *template.Template
 	var err error
 	if fqdntemplate != "" {
@@ -50,7 +50,7 @@ func NewServiceSource(client kubernetes.Interface, namespace string, compatibili
 			"trimPrefix": strings.TrimPrefix,
 		}).Parse(fqdntemplate)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 	}
 
@@ -59,7 +59,7 @@ func NewServiceSource(client kubernetes.Interface, namespace string, compatibili
 		namespace:     namespace,
 		compatibility: compatibility,
 		fqdntemplate:  tmpl,
-	}
+	}, nil
 }
 
 // Endpoints returns endpoint objects for each service that should be processed.
@@ -126,6 +126,9 @@ func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
 
 	// Get the desired hostname of the service from the annotation.
 	hostname, exists := svc.Annotations[hostnameAnnotationKey]
+	if !exists {
+		return nil
+	}
 
 	// Create a corresponding endpoint for each configured external entrypoint.
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
