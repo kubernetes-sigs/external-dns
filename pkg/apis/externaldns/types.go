@@ -51,6 +51,7 @@ type Config struct {
 	Registry       string
 	RecordOwnerID  string
 	TXTPrefix      string
+	FqdnTemplate   string
 }
 
 // NewConfig returns new Config object
@@ -81,5 +82,6 @@ func (cfg *Config) ParseFlags(args []string) error {
 	flags.StringVar(&cfg.Registry, "registry", "noop", "type of registry for ownership: <noop|txt>")
 	flags.StringVar(&cfg.RecordOwnerID, "record-owner-id", "", "id for keeping track of the managed records")
 	flags.StringVar(&cfg.TXTPrefix, "txt-prefix", "", `prefix assigned to DNS name of the associated TXT record; e.g. for --txt-prefix=abc_ [CNAME example.org] <-> [TXT abc_example.org]`)
+	flags.StringVar(&cfg.FqdnTemplate, "fqdn-template", "", "template to create FQDN")
 	return flags.Parse(args)
 }

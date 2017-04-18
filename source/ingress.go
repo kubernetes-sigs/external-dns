@@ -17,6 +17,10 @@ limitations under the License.
 package source
 
 import (
+	"bytes"
+	"html/template"
+	"strings"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
@@ -28,13 +32,18 @@ import (
 // Ingress implementation will use the spec.rules.host value for the hostname
 // Ingress annotations are ignored
 type ingressSource struct {
-	client    kubernetes.Interface
-	namespace string
+	client       kubernetes.Interface
+	namespace    string
+	fqdntemplate string
 }
 
 // NewIngressSource creates a new ingressSource with the given client and namespace scope.
-func NewIngressSource(client kubernetes.Interface, namespace string) Source {
-	return &ingressSource{client: client, namespace: namespace}
+func NewIngressSource(client kubernetes.Interface, namespace string, fqdntemplate string) Source {
+	return &ingressSource{
+		client:       client,
+		namespace:    namespace,
+		fqdntemplate: fqdntemplate,
+	}
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
@@ -48,7 +57,7 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, ing := range ingresses.Items {
-		ingEndpoints := endpointsFromIngress(&ing)
+		ingEndpoints := endpointsFromIngress(&ing, sc.fqdntemplate)
 		endpoints = append(endpoints, ingEndpoints...)
 	}
 
@@ -56,13 +65,35 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object
-func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
+func endpointsFromIngress(ing *v1beta1.Ingress, fqdntemplate string) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	// Check controller annotation to see if we are responsible.
 	controller, exists := ing.Annotations[controllerAnnotationKey]
 	if exists && controller != controllerAnnotationValue {
 		return endpoints
+	}
+
+	if len(ing.Spec.Rules) == 0 && fqdntemplate != "" {
+		tmpl, err := template.New("endpoint").Funcs(template.FuncMap{
+			"trimPrefix": strings.TrimPrefix,
+		}).Parse(fqdntemplate)
+		if err != nil {
+			return nil
+		}
+
+		var buf bytes.Buffer
+
+		tmpl.Execute(&buf, ing)
+
+		for _, i := range ing.Status.LoadBalancer.Ingress {
+			if i.IP != "" {
+				endpoints = append(endpoints, endpoint.NewEndpoint(buf.String(), i.IP, ""))
+			}
+			if i.Hostname != "" {
+				endpoints = append(endpoints, endpoint.NewEndpoint(buf.String(), i.Hostname, ""))
+			}
+		}
 	}
 
 	for _, rule := range ing.Spec.Rules {

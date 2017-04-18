@@ -35,9 +35,10 @@ func TestIngress(t *testing.T) {
 
 func testEndpointsFromIngress(t *testing.T) {
 	for _, ti := range []struct {
-		title    string
-		ingress  fakeIngress
-		expected []*endpoint.Endpoint
+		title        string
+		ingress      fakeIngress
+		fqdntemplate string
+		expected     []*endpoint.Endpoint
 	}{
 		{
 			title: "one rule.host one lb.hostname",
@@ -45,6 +46,7 @@ func testEndpointsFromIngress(t *testing.T) {
 				dnsnames:  []string{"foo.bar"}, // Kubernetes requires removal of trailing dot
 				hostnames: []string{"lb.com"},  // Kubernetes omits the trailing dot
 			},
+			fqdntemplate: "",
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "foo.bar",
@@ -58,6 +60,7 @@ func testEndpointsFromIngress(t *testing.T) {
 				dnsnames: []string{"foo.bar"},
 				ips:      []string{"8.8.8.8"},
 			},
+			fqdntemplate: "",
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "foo.bar",
@@ -72,6 +75,7 @@ func testEndpointsFromIngress(t *testing.T) {
 				ips:       []string{"8.8.8.8", "127.0.0.1"},
 				hostnames: []string{"elb.com", "alb.com"},
 			},
+			fqdntemplate: "",
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "foo.bar",
@@ -97,7 +101,8 @@ func testEndpointsFromIngress(t *testing.T) {
 				ips:       []string{"8.8.8.8", "127.0.0.1"},
 				hostnames: []string{"elb.com", "alb.com"},
 			},
-			expected: []*endpoint.Endpoint{},
+			fqdntemplate: "",
+			expected:     []*endpoint.Endpoint{},
 		},
 		{
 			title: "one empty rule.host",
@@ -106,19 +111,35 @@ func testEndpointsFromIngress(t *testing.T) {
 				ips:       []string{"8.8.8.8", "127.0.0.1"},
 				hostnames: []string{"elb.com", "alb.com"},
 			},
-			expected: []*endpoint.Endpoint{},
+			fqdntemplate: "",
+			expected:     []*endpoint.Endpoint{},
 		},
 		{
 			title: "no targets",
 			ingress: fakeIngress{
 				dnsnames: []string{""},
 			},
-			expected: []*endpoint.Endpoint{},
+			fqdntemplate: "",
+			expected:     []*endpoint.Endpoint{},
+		},
+		{
+			title: "no rule.host but fqdntemplate",
+			ingress: fakeIngress{
+				name: "foo",
+				ips:  []string{"8.8.8.8"},
+			},
+			fqdntemplate: "{{.Name}}.bar.example.com",
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "foo.bar.example.com",
+					Target:  "8.8.8.8",
+				},
+			},
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, ti.fqdntemplate), ti.expected)
 		})
 	}
 }
@@ -260,7 +281,7 @@ func testIngressEndpoints(t *testing.T) {
 			}
 
 			fakeClient := fake.NewSimpleClientset()
-			ingressSource := NewIngressSource(fakeClient, ti.targetNamespace)
+			ingressSource := NewIngressSource(fakeClient, ti.targetNamespace, "")
 			for _, ingress := range ingresses {
 				_, err := fakeClient.Extensions().Ingresses(ingress.Namespace).Create(ingress)
 				if err != nil {
