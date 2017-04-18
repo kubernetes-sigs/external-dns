@@ -29,9 +29,9 @@ import (
 // Validates that serviceSource is a Source
 var _ Source = &serviceSource{}
 
-// func TestService(t *testing.T) {
-// 	t.Run("Endpoints", testServiceEndpoints)
-// }
+func TestService(t *testing.T) {
+	t.Run("Endpoints", testServiceEndpoints)
+}
 
 func TestNewServiceSource(t *testing.T) {
 	for _, ti := range []struct {
@@ -277,6 +277,32 @@ func testServiceEndpoints(t *testing.T) {
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.bar.example.com", Target: "1.2.3.4"},
+			},
+		},
+		{
+			"not annotated services with unknown tmpl field should not return anything",
+			"",
+			"testing",
+			"foo",
+			false,
+			"{{.Calibre}}.bar.example.com",
+			map[string]string{},
+			[]string{"1.2.3.4"},
+			[]*endpoint.Endpoint{},
+		},
+		{
+			"compatibility annotated services with tmpl. compatibility takes precedence",
+			"",
+			"testing",
+			"foo",
+			true,
+			"{{.Name}}.bar.example.com",
+			map[string]string{
+				"zalando.org/dnsname": "mate.example.org.",
+			},
+			[]string{"1.2.3.4"},
+			[]*endpoint.Endpoint{
+				{DNSName: "mate.example.org", Target: "1.2.3.4"},
 			},
 		},
 	} {

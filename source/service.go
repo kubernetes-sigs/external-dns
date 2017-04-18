@@ -96,9 +96,8 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) []*endpoint.Endp
 	var endpoints []*endpoint.Endpoint
 
 	var buf bytes.Buffer
-	err := sc.fqdntemplate.Execute(&buf, svc)
 
-	if err != nil { //TODO(ideahitme): if error is present skip or abort ?
+	if sc.fqdntemplate.Execute(&buf, svc) == nil { //TODO(ideahitme): if error is present skip or abort ?
 		hostname := buf.String()
 		for _, lb := range svc.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
