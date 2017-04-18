@@ -20,17 +20,50 @@ import (
 	"net"
 	"testing"
 
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
-
-	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
 // Validates that serviceSource is a Source
 var _ Source = &serviceSource{}
 
-func TestService(t *testing.T) {
-	t.Run("Endpoints", testServiceEndpoints)
+// func TestService(t *testing.T) {
+// 	t.Run("Endpoints", testServiceEndpoints)
+// }
+
+func TestNewServiceSource(t *testing.T) {
+	for _, ti := range []struct {
+		title        string
+		fqdntemplate string
+		expectError  bool
+	}{
+		{
+			title:        "invalid template",
+			expectError:  true,
+			fqdntemplate: "{{.Name",
+		},
+		{
+			title:       "valid empty template",
+			expectError: false,
+		},
+		{
+			title:        "valid template",
+			expectError:  false,
+			fqdntemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
+		},
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			_, err := NewServiceSource(fake.NewSimpleClientset(), "", false, ti.fqdntemplate)
+			if ti.expectError && err == nil {
+				t.Error("invalid template should return err")
+			}
+			if !ti.expectError && err != nil {
+				t.Error(err)
+			}
+		})
+	}
 }
 
 // testServiceEndpoints tests that various services generate the correct endpoints.
@@ -280,7 +313,7 @@ func testServiceEndpoints(t *testing.T) {
 			}
 
 			// Create our object under test and get the endpoints.
-			client := NewServiceSource(kubernetes, tc.targetNamespace, tc.compatibility, tc.fqdntemplate)
+			client, _ := NewServiceSource(kubernetes, tc.targetNamespace, tc.compatibility, tc.fqdntemplate)
 
 			endpoints, err := client.Endpoints()
 			if err != nil {
@@ -319,7 +352,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	client := NewServiceSource(kubernetes, v1.NamespaceAll, false, "")
+	client, _ := NewServiceSource(kubernetes, v1.NamespaceAll, false, "")
 
 	for i := 0; i < b.N; i++ {
 		_, err := client.Endpoints()
