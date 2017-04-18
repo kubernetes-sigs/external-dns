@@ -1,5 +1,5 @@
 Features:
-
+  - Generate DNS Name from template for services/ingress if annotation is missing but `--fqdntemplate` is specified
   - Route 53: Support creation of ALIAS records when endpoint target is a ELB/ALB.
   - Ownership via TXT records
     1. Create TXT records to mark the records managed by External DNS
