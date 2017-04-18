@@ -57,6 +57,8 @@ func main() {
 		os.Exit(0)
 	}
 
+	log.Infof("config: %+v", cfg)
+
 	if err := validation.ValidateConfig(cfg); err != nil {
 		log.Fatalf("config validation failed: %v", err)
 	}
