@@ -83,8 +83,17 @@ func main() {
 		log.Fatal(err)
 	}
 
-	source.Register("service", source.NewServiceSource(client, cfg.Namespace, cfg.Compatibility))
-	source.Register("ingress", source.NewIngressSource(client, cfg.Namespace))
+	serviceSource, err := source.NewServiceSource(client, cfg.Namespace, cfg.FqdnTemplate, cfg.Compatibility)
+	if err != nil {
+		log.Fatal(err)
+	}
+	source.Register("service", serviceSource)
+
+	ingressSource, err := source.NewIngressSource(client, cfg.Namespace, cfg.FqdnTemplate)
+	if err != nil {
+		log.Fatal(err)
+	}
+	source.Register("ingress", ingressSource)
 
 	sources, err := source.LookupMultiple(cfg.Sources)
 	if err != nil {
