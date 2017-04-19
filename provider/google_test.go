@@ -395,15 +395,15 @@ func TestSeparateChanges(t *testing.T) {
 	}
 
 	zones := map[string]*dns.ManagedZone{
-		"foo-example-org": &dns.ManagedZone{
+		"foo-example-org": {
 			Name:    "foo-example-org",
 			DnsName: "foo.example.org.",
 		},
-		"bar-example-org": &dns.ManagedZone{
+		"bar-example-org": {
 			Name:    "bar-example-org",
 			DnsName: "bar.example.org.",
 		},
-		"baz-example-org": &dns.ManagedZone{
+		"baz-example-org": {
 			Name:    "baz-example-org",
 			DnsName: "baz.example.org.",
 		},
