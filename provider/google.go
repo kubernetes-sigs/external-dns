@@ -270,17 +270,17 @@ func separateChange(zones map[string]*dns.ManagedZone, change *dns.Change) map[s
 			Additions: []*dns.ResourceRecordSet{},
 			Deletions: []*dns.ResourceRecordSet{},
 		}
+	}
 
-		for _, a := range change.Additions {
-			if strings.HasSuffix(ensureTrailingDot(a.Name), z.DnsName) {
-				changes[z.Name].Additions = append(changes[z.Name].Additions, a)
-			}
+	for _, a := range change.Additions {
+		if zone := suitableManagedZone(ensureTrailingDot(a.Name), zones); zone != nil {
+			changes[zone.Name].Additions = append(changes[zone.Name].Additions, a)
 		}
+	}
 
-		for _, d := range change.Deletions {
-			if strings.HasSuffix(ensureTrailingDot(d.Name), z.DnsName) {
-				changes[z.Name].Deletions = append(changes[z.Name].Deletions, d)
-			}
+	for _, d := range change.Deletions {
+		if zone := suitableManagedZone(ensureTrailingDot(d.Name), zones); zone != nil {
+			changes[zone.Name].Deletions = append(changes[zone.Name].Deletions, d)
 		}
 	}
 
@@ -292,6 +292,21 @@ func separateChange(zones map[string]*dns.ManagedZone, change *dns.Change) map[s
 	}
 
 	return changes
+}
+
+// suitableManagedZone returns the most suitable zone for a given hostname and a set of zones.
+func suitableManagedZone(hostname string, zones map[string]*dns.ManagedZone) *dns.ManagedZone {
+	var zone *dns.ManagedZone
+
+	for _, z := range zones {
+		if strings.HasSuffix(hostname, z.DnsName) {
+			if zone == nil || len(z.DnsName) > len(zone.DnsName) {
+				zone = z
+			}
+		}
+	}
+
+	return zone
 }
 
 // newRecords returns a collection of RecordSets based on the given endpoints.

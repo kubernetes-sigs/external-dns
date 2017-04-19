@@ -434,6 +434,28 @@ func TestSeparateChanges(t *testing.T) {
 	})
 }
 
+func TestGoogleSuitableZone(t *testing.T) {
+	zones := map[string]*dns.ManagedZone{
+		"example-org":     {Name: "example-org", DnsName: "example.org."},
+		"bar-example-org": {Name: "bar-example-org", DnsName: "bar.example.org."},
+	}
+
+	for _, tc := range []struct {
+		hostname string
+		expected *dns.ManagedZone
+	}{
+		{"foo.bar.example.org.", zones["bar-example-org"]},
+		{"foo.example.org.", zones["example-org"]},
+		{"foo.kubernetes.io.", nil},
+	} {
+		suitableZone := suitableManagedZone(tc.hostname, zones)
+
+		if suitableZone != tc.expected {
+			t.Errorf("expected %s, got %v", tc.expected, suitableZone)
+		}
+	}
+}
+
 func validateZones(t *testing.T, zones map[string]*dns.ManagedZone, expected map[string]*dns.ManagedZone) {
 	if len(zones) != len(expected) {
 		t.Fatalf("expected %d zone(s), got %d", len(expected), len(zones))
