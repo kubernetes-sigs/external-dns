@@ -1,5 +1,5 @@
 Features:
-  - Generate DNS Name from template for services/ingress if annotation is missing but `--fqdntemplate` is specified
+  - Generate DNS Name from template for services/ingress if annotation is missing but `--fqdn-template` is specified
   - Route 53: Support creation of records in multiple hosted zones.
   - Route 53: Support creation of ALIAS records when endpoint target is a ELB/ALB.
   - Ownership via TXT records
