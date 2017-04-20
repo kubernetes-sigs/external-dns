@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -122,6 +123,15 @@ func (m *mockChangesCreateCall) Do(opts ...googleapi.CallOption) (*dns.Change, e
 		testRecords[zoneKey] = make(map[string]*dns.ResourceRecordSet)
 	}
 
+	for _, c := range append(m.change.Additions, m.change.Deletions...) {
+		if !isValidRecordSet(c) {
+			return nil, &googleapi.Error{
+				Code:    http.StatusBadRequest,
+				Message: fmt.Sprintf("invalid record: %v", c),
+			}
+		}
+	}
+
 	for _, del := range m.change.Deletions {
 		recordKey := recordKey(del.Type, del.Name)
 		delete(testRecords[zoneKey], recordKey)
@@ -147,6 +157,35 @@ func zoneKey(project, zoneName string) string {
 
 func recordKey(recordType, recordName string) string {
 	return recordType + "/" + recordName
+}
+
+func isValidRecordSet(recordSet *dns.ResourceRecordSet) bool {
+	if !hasTrailingDot(recordSet.Name) {
+		return false
+	}
+
+	switch recordSet.Type {
+	case "CNAME":
+		for _, rrd := range recordSet.Rrdatas {
+			if !hasTrailingDot(rrd) {
+				return false
+			}
+		}
+	case "A", "TXT":
+		for _, rrd := range recordSet.Rrdatas {
+			if hasTrailingDot(rrd) {
+				return false
+			}
+		}
+	default:
+		panic("unhandled record type")
+	}
+
+	return true
+}
+
+func hasTrailingDot(target string) bool {
+	return strings.HasSuffix(target, ".")
 }
 
 func TestGoogleZones(t *testing.T) {
@@ -385,12 +424,12 @@ func TestGoogleApplyChangesEmpty(t *testing.T) {
 func TestSeparateChanges(t *testing.T) {
 	change := &dns.Change{
 		Additions: []*dns.ResourceRecordSet{
-			{Name: "qux.foo.example.org", Ttl: 1},
-			{Name: "qux.bar.example.org", Ttl: 2},
+			{Name: "qux.foo.example.org.", Ttl: 1},
+			{Name: "qux.bar.example.org.", Ttl: 2},
 		},
 		Deletions: []*dns.ResourceRecordSet{
-			{Name: "wambo.foo.example.org", Ttl: 10},
-			{Name: "wambo.bar.example.org", Ttl: 20},
+			{Name: "wambo.foo.example.org.", Ttl: 10},
+			{Name: "wambo.bar.example.org.", Ttl: 20},
 		},
 	}
 
@@ -417,19 +456,19 @@ func TestSeparateChanges(t *testing.T) {
 
 	validateChange(t, changes["foo-example-org"], &dns.Change{
 		Additions: []*dns.ResourceRecordSet{
-			{Name: "qux.foo.example.org", Ttl: 1},
+			{Name: "qux.foo.example.org.", Ttl: 1},
 		},
 		Deletions: []*dns.ResourceRecordSet{
-			{Name: "wambo.foo.example.org", Ttl: 10},
+			{Name: "wambo.foo.example.org.", Ttl: 10},
 		},
 	})
 
 	validateChange(t, changes["bar-example-org"], &dns.Change{
 		Additions: []*dns.ResourceRecordSet{
-			{Name: "qux.bar.example.org", Ttl: 2},
+			{Name: "qux.bar.example.org.", Ttl: 2},
 		},
 		Deletions: []*dns.ResourceRecordSet{
-			{Name: "wambo.bar.example.org", Ttl: 20},
+			{Name: "wambo.bar.example.org.", Ttl: 20},
 		},
 	})
 }
@@ -451,7 +490,7 @@ func TestGoogleSuitableZone(t *testing.T) {
 		suitableZone := suitableManagedZone(tc.hostname, zones)
 
 		if suitableZone != tc.expected {
-			t.Errorf("expected %s, got %v", tc.expected, suitableZone)
+			t.Errorf("expected %v, got %v", tc.expected, suitableZone)
 		}
 	}
 }

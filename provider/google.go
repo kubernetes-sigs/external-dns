@@ -322,9 +322,17 @@ func newRecords(endpoints []*endpoint.Endpoint) []*dns.ResourceRecordSet {
 
 // newRecord returns a RecordSet based on the given endpoint.
 func newRecord(endpoint *endpoint.Endpoint) *dns.ResourceRecordSet {
+	// TODO(linki): works around appending a trailing dot to TXT records. I think
+	// we should go back to storing DNS names with a trailing dot internally. This
+	// way we can use it has is here and trim it off if it exists when necessary.
+	target := endpoint.Target
+	if suitableType(endpoint) == "CNAME" {
+		target = ensureTrailingDot(target)
+	}
+
 	return &dns.ResourceRecordSet{
 		Name:    ensureTrailingDot(endpoint.DNSName),
-		Rrdatas: []string{ensureTrailingDot(endpoint.Target)},
+		Rrdatas: []string{target},
 		Ttl:     300,
 		Type:    suitableType(endpoint),
 	}
