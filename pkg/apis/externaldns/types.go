@@ -40,7 +40,7 @@ type Config struct {
 	Provider       string
 	GoogleProject  string
 	Policy         string
-	Compatibility  bool
+	Compatibility  string
 	MetricsAddress string
 	Interval       time.Duration
 	Once           bool
@@ -71,7 +71,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	flags.StringVar(&cfg.Provider, "provider", "", "the DNS provider to materialize the records in: <aws|google>")
 	flags.StringVar(&cfg.GoogleProject, "google-project", "", "gcloud project to target")
 	flags.StringVar(&cfg.Policy, "policy", "sync", "the policy to use: <sync|upsert-only>")
-	flags.BoolVar(&cfg.Compatibility, "compatibility", false, "enable to process annotation semantics from legacy implementations")
+	flags.StringVar(&cfg.Compatibility, "compatibility", "", "enable to process annotation semantics from legacy implementations: <mate|molecule>")
 	flags.StringVar(&cfg.MetricsAddress, "metrics-address", defaultMetricsAddress, "address to expose metrics on")
 	flags.StringVar(&cfg.LogFormat, "log-format", defaultLogFormat, "log format output: <text|json>")
 	flags.DurationVar(&cfg.Interval, "interval", time.Minute, "interval between synchronizations")

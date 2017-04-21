@@ -55,7 +55,7 @@ func TestNewServiceSource(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			_, err := NewServiceSource(fake.NewSimpleClientset(), "", ti.fqdntemplate, false)
+			_, err := NewServiceSource(fake.NewSimpleClientset(), "", ti.fqdntemplate, "")
 			if ti.expectError && err == nil {
 				t.Error("invalid template should return err")
 			}
@@ -73,8 +73,9 @@ func testServiceEndpoints(t *testing.T) {
 		targetNamespace string
 		svcNamespace    string
 		svcName         string
-		compatibility   bool
+		compatibility   string
 		fqdntemplate    string
+		labels          map[string]string
 		annotations     map[string]string
 		lbs             []string
 		expected        []*endpoint.Endpoint
@@ -84,8 +85,9 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{},
@@ -95,8 +97,9 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
@@ -110,8 +113,9 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
@@ -125,8 +129,9 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org", // Trailing dot is omitted
 			},
@@ -141,8 +146,9 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{
 				controllerAnnotationKey: controllerAnnotationValue,
 				hostnameAnnotationKey:   "foo.example.org.",
@@ -157,8 +163,9 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
-			false,
+			"",
 			"{{.Name}}.ext-dns.test.com",
+			map[string]string{},
 			map[string]string{
 				controllerAnnotationKey: "some-other-tool",
 				hostnameAnnotationKey:   "foo.example.org.",
@@ -171,8 +178,9 @@ func testServiceEndpoints(t *testing.T) {
 			"testing",
 			"testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
@@ -186,8 +194,9 @@ func testServiceEndpoints(t *testing.T) {
 			"testing",
 			"other-testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
@@ -199,8 +208,9 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"other-testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
@@ -214,8 +224,9 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
@@ -227,8 +238,9 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
@@ -243,8 +255,9 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{
 				"zalando.org/dnsname": "foo.example.org.",
 			},
@@ -256,10 +269,29 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
-			true,
+			"mate",
 			"",
+			map[string]string{},
 			map[string]string{
 				"zalando.org/dnsname": "foo.example.org.",
+			},
+			[]string{"1.2.3.4"},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+			},
+		},
+		{
+			"services annotated with legacy molecule annotations return an endpoint in compatibility mode",
+			"",
+			"testing",
+			"foo",
+			"molecule",
+			"",
+			map[string]string{
+				"dns": "route53",
+			},
+			map[string]string{
+				"domainName": "foo.example.org.",
 			},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
@@ -271,8 +303,9 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
-			false,
+			"",
 			"{{.Name}}.bar.example.com",
+			map[string]string{},
 			map[string]string{},
 			[]string{"1.2.3.4", "elb.com"},
 			[]*endpoint.Endpoint{
@@ -285,8 +318,9 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
-			false,
+			"",
 			"{{.Calibre}}.bar.example.com",
+			map[string]string{},
 			map[string]string{},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{},
@@ -296,8 +330,9 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
-			true,
+			"mate",
 			"{{.Name}}.bar.example.com",
+			map[string]string{},
 			map[string]string{
 				"zalando.org/dnsname": "mate.example.org.",
 			},
@@ -325,6 +360,7 @@ func testServiceEndpoints(t *testing.T) {
 				ObjectMeta: v1.ObjectMeta{
 					Namespace:   tc.svcNamespace,
 					Name:        tc.svcName,
+					Labels:      tc.labels,
 					Annotations: tc.annotations,
 				},
 				Status: v1.ServiceStatus{
@@ -379,7 +415,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	client, _ := NewServiceSource(kubernetes, v1.NamespaceAll, "", false)
+	client, _ := NewServiceSource(kubernetes, v1.NamespaceAll, "", "")
 
 	for i := 0; i < b.N; i++ {
 		_, err := client.Endpoints()
