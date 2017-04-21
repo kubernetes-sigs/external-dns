@@ -70,7 +70,7 @@ func legacyEndpointsFromMoleculeService(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	// Check that the Service opted-in to being processed.
-	if label, exists := svc.Labels["dns"]; !exists || label != "route53" {
+	if svc.Labels["dns"] != "route53" {
 		return nil
 	}
 
