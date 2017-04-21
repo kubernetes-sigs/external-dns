@@ -29,8 +29,8 @@ import (
 )
 
 var (
-	txtLabelRegex  = regexp.MustCompile("^\"heritage=external-dns;external-dns/owner=(.+)\"")
-	txtLabelFormat = "\"heritage=external-dns;external-dns/owner=%s\""
+	txtLabelRegex  = regexp.MustCompile("^\"heritage=external-dns,external-dns/owner=(.+)\"")
+	txtLabelFormat = "\"heritage=external-dns,external-dns/owner=%s\""
 )
 
 // TXTRegistry implements registry interface with ownership implemented via associated TXT records
