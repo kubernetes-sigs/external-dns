@@ -36,13 +36,13 @@ import (
 type serviceSource struct {
 	client    kubernetes.Interface
 	namespace string
-	// set to true to process Services with legacy annotations
-	compatibility bool
+	// process Services with legacy annotations
+	compatibility string
 	fqdntemplate  *template.Template
 }
 
 // NewServiceSource creates a new serviceSource with the given client and namespace scope.
-func NewServiceSource(client kubernetes.Interface, namespace, fqdntemplate string, compatibility bool) (Source, error) {
+func NewServiceSource(client kubernetes.Interface, namespace, fqdntemplate string, compatibility string) (Source, error) {
 	var tmpl *template.Template
 	var err error
 	if fqdntemplate != "" {
@@ -81,8 +81,8 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		svcEndpoints := endpointsFromService(&svc)
 
 		// process legacy annotations if no endpoints were returned and compatibility mode is enabled.
-		if len(svcEndpoints) == 0 && sc.compatibility {
-			svcEndpoints = legacyEndpointsFromService(&svc)
+		if len(svcEndpoints) == 0 && sc.compatibility != "" {
+			svcEndpoints = legacyEndpointsFromService(&svc, sc.compatibility)
 		}
 
 		// apply template if none of the above is found
