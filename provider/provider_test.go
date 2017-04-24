@@ -17,26 +17,29 @@ limitations under the License.
 package provider
 
 import (
-	"net"
+	"testing"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
-// Provider defines the interface DNS providers should implement.
-type Provider interface {
-	Records(zone string) ([]*endpoint.Endpoint, error)
-	ApplyChanges(zone string, changes *plan.Changes) error
-}
+func TestSuitableType(t *testing.T) {
+	for _, tc := range []struct {
+		target, recordType, expected string
+	}{
+		{"8.8.8.8", "", "A"},
+		{"foo.example.org", "", "CNAME"},
+		{"foo.example.org", "ALIAS", "ALIAS"},
+		{"bar.eu-central-1.elb.amazonaws.com", "CNAME", "CNAME"},
+	} {
+		ep := &endpoint.Endpoint{
+			Target:     tc.target,
+			RecordType: tc.recordType,
+		}
 
-// suitableType returns the DNS resource record type suitable for the target.
-// In this case type A for IPs and type CNAME for everything else.
-func suitableType(ep *endpoint.Endpoint) string {
-	if ep.RecordType != "" {
-		return ep.RecordType
+		recordType := suitableType(ep)
+
+		if recordType != tc.expected {
+			t.Errorf("expected %s, got %s", tc.expected, recordType)
+		}
 	}
-	if net.ParseIP(ep.Target) != nil {
-		return "A"
-	}
-	return "CNAME"
 }

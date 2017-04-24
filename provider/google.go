@@ -17,8 +17,6 @@ limitations under the License.
 package provider
 
 import (
-	"strings"
-
 	log "github.com/Sirupsen/logrus"
 
 	"golang.org/x/net/context"
@@ -170,9 +168,7 @@ func (p *googleProvider) CreateZone(name, domain string) error {
 func (p *googleProvider) DeleteZone(name string) error {
 	err := p.managedZonesClient.Delete(p.project, name).Do()
 	if err != nil {
-		if !isNotFound(err) {
-			return err
-		}
+		return err
 	}
 
 	return nil
@@ -269,9 +265,7 @@ func (p *googleProvider) submitChange(zone string, change *dns.Change) error {
 
 	_, err := p.changesClient.Create(p.project, zone, change).Do()
 	if err != nil {
-		if !isNotFound(err) {
-			return err
-		}
+		return err
 	}
 
 	return nil
@@ -291,14 +285,9 @@ func newRecords(endpoints []*endpoint.Endpoint) []*dns.ResourceRecordSet {
 // newRecord returns a RecordSet based on the given endpoint.
 func newRecord(endpoint *endpoint.Endpoint) *dns.ResourceRecordSet {
 	return &dns.ResourceRecordSet{
-		Name:    endpoint.DNSName,
-		Rrdatas: []string{endpoint.Target},
+		Name:    ensureTrailingDot(endpoint.DNSName),
+		Rrdatas: []string{ensureTrailingDot(endpoint.Target)},
 		Ttl:     300,
 		Type:    suitableType(endpoint),
 	}
-}
-
-// isNotFound returns true if a given error is due to a resource not being found.
-func isNotFound(err error) bool {
-	return strings.Contains(err.Error(), "notFound")
 }

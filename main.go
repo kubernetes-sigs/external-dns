@@ -37,6 +37,7 @@ import (
 	"github.com/kubernetes-incubator/external-dns/provider"
 	"github.com/kubernetes-incubator/external-dns/registry"
 	"github.com/kubernetes-incubator/external-dns/source"
+	"github.com/spf13/pflag"
 )
 
 var (
@@ -46,12 +47,17 @@ var (
 func main() {
 	cfg := externaldns.NewConfig()
 	if err := cfg.ParseFlags(os.Args); err != nil {
+		if err == pflag.ErrHelp {
+			os.Exit(0)
+		}
 		log.Fatalf("flag parsing error: %v", err)
 	}
 	if cfg.Version {
 		fmt.Println(version)
 		os.Exit(0)
 	}
+
+	log.Infof("config: %+v", cfg)
 
 	if err := validation.ValidateConfig(cfg); err != nil {
 		log.Fatalf("config validation failed: %v", err)
@@ -77,17 +83,31 @@ func main() {
 		log.Fatal(err)
 	}
 
-	source.Register("service", source.NewServiceSource(client, cfg.Namespace, cfg.Compatibility))
-	source.Register("ingress", source.NewIngressSource(client, cfg.Namespace))
+	serviceSource, err := source.NewServiceSource(client, cfg.Namespace, cfg.FqdnTemplate, cfg.Compatibility)
+	if err != nil {
+		log.Fatal(err)
+	}
+	source.Register("service", serviceSource)
 
-	sources := source.NewMultiSource(source.LookupMultiple(cfg.Sources...)...)
+	ingressSource, err := source.NewIngressSource(client, cfg.Namespace, cfg.FqdnTemplate)
+	if err != nil {
+		log.Fatal(err)
+	}
+	source.Register("ingress", ingressSource)
+
+	sources, err := source.LookupMultiple(cfg.Sources)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	multiSource := source.NewMultiSource(sources)
 
 	var p provider.Provider
 	switch cfg.Provider {
 	case "google":
 		p, err = provider.NewGoogleProvider(cfg.GoogleProject, cfg.DryRun)
 	case "aws":
-		p, err = provider.NewAWSProvider(cfg.DryRun)
+		p, err = provider.NewAWSProvider(cfg.Domain, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
@@ -116,7 +136,7 @@ func main() {
 
 	ctrl := controller.Controller{
 		Zone:     cfg.Zone,
-		Source:   sources,
+		Source:   multiSource,
 		Registry: r,
 		Policy:   policy,
 		Interval: cfg.Interval,

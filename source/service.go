@@ -17,6 +17,11 @@ limitations under the License.
 package source
 
 import (
+	"bytes"
+	"strings"
+	"text/template"
+
+	log "github.com/Sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 
@@ -31,17 +36,30 @@ import (
 type serviceSource struct {
 	client    kubernetes.Interface
 	namespace string
-	// set to true to process Services with legacy annotations
-	compatibility bool
+	// process Services with legacy annotations
+	compatibility string
+	fqdntemplate  *template.Template
 }
 
 // NewServiceSource creates a new serviceSource with the given client and namespace scope.
-func NewServiceSource(client kubernetes.Interface, namespace string, compatibility bool) Source {
+func NewServiceSource(client kubernetes.Interface, namespace, fqdntemplate string, compatibility string) (Source, error) {
+	var tmpl *template.Template
+	var err error
+	if fqdntemplate != "" {
+		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
+			"trimPrefix": strings.TrimPrefix,
+		}).Parse(fqdntemplate)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &serviceSource{
 		client:        client,
 		namespace:     namespace,
 		compatibility: compatibility,
-	}
+		fqdntemplate:  tmpl,
+	}, nil
 }
 
 // Endpoints returns endpoint objects for each service that should be processed.
@@ -54,11 +72,22 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, svc := range services.Items {
+		// Check controller annotation to see if we are responsible.
+		controller, ok := svc.Annotations[controllerAnnotationKey]
+		if ok && controller != controllerAnnotationValue { //TODO(ideahitme): log the skip
+			continue
+		}
+
 		svcEndpoints := endpointsFromService(&svc)
 
 		// process legacy annotations if no endpoints were returned and compatibility mode is enabled.
-		if len(svcEndpoints) == 0 && sc.compatibility {
-			svcEndpoints = legacyEndpointsFromService(&svc)
+		if len(svcEndpoints) == 0 && sc.compatibility != "" {
+			svcEndpoints = legacyEndpointsFromService(&svc, sc.compatibility)
+		}
+
+		// apply template if none of the above is found
+		if len(svcEndpoints) == 0 && sc.fqdntemplate != nil {
+			svcEndpoints = sc.endpointsFromTemplate(&svc)
 		}
 
 		if len(svcEndpoints) != 0 {
@@ -69,15 +98,34 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
+func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) []*endpoint.Endpoint {
+	var endpoints []*endpoint.Endpoint
+
+	var buf bytes.Buffer
+
+	err := sc.fqdntemplate.Execute(&buf, svc)
+	if err != nil {
+		log.Errorf("failed to apply template: %v", err)
+		return nil
+	}
+
+	hostname := buf.String()
+	for _, lb := range svc.Status.LoadBalancer.Ingress {
+		if lb.IP != "" {
+			//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
+		}
+		if lb.Hostname != "" {
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
+		}
+	}
+
+	return endpoints
+}
+
 // endpointsFromService extracts the endpoints from a service object
 func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
-
-	// Check controller annotation to see if we are responsible.
-	controller, exists := svc.Annotations[controllerAnnotationKey]
-	if exists && controller != controllerAnnotationValue {
-		return nil
-	}
 
 	// Get the desired hostname of the service from the annotation.
 	hostname, exists := svc.Annotations[hostnameAnnotationKey]
