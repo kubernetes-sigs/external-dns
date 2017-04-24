@@ -44,12 +44,12 @@ func filterOwnedRecords(ownerID string, eps []*endpoint.Endpoint) []*endpoint.En
 
 func logChanges(changes *plan.Changes) {
 	for _, change := range changes.Create {
-		log.Infof("Creating %s %s -> %s", change.RecordType, change.DNSName, change.Target)
+		log.Infof("Creating %v", change)
 	}
 	for _, change := range changes.UpdateNew {
-		log.Infof("Updating %s %s -> %s", change.RecordType, change.DNSName, change.Target)
+		log.Infof("Updating %v", change)
 	}
 	for _, change := range changes.Delete {
-		log.Infof("Deleting %s %s -> %s", change.RecordType, change.DNSName, change.Target)
+		log.Infof("Deleting %v", change)
 	}
 }
