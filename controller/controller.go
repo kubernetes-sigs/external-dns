@@ -71,7 +71,7 @@ func (c *Controller) Run(stopChan <-chan struct{}) {
 	for {
 		err := c.RunOnce()
 		if err != nil {
-			log.Fatal(err)
+			log.Error(err)
 		}
 
 		select {
