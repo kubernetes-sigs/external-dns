@@ -17,7 +17,6 @@ limitations under the License.
 package provider
 
 import (
-	"net"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
@@ -323,13 +322,4 @@ func canonicalHostedZone(hostname string) string {
 	}
 
 	return ""
-}
-
-// ensureTrailingDot ensures that the hostname receives a trailing dot if it hasn't already.
-func ensureTrailingDot(hostname string) string {
-	if net.ParseIP(hostname) != nil {
-		return hostname
-	}
-
-	return strings.TrimSuffix(hostname, ".") + "."
 }
