@@ -71,7 +71,8 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	for _, ing := range ingresses.Items {
 		// Check controller annotation to see if we are responsible.
 		controller, ok := ing.Annotations[controllerAnnotationKey]
-		if ok && controller != controllerAnnotationValue { //TODO(ideahitme): log the skip
+		if ok && controller != controllerAnnotationValue {
+			log.Debugf("skipping ingress %s/%s another controller annotation is found: %s", ing.Namespace, ing.Name, controller)
 			continue
 		}
 
@@ -82,6 +83,12 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			ingEndpoints = sc.endpointsFromTemplate(&ing)
 		}
 
+		if len(ingEndpoints) == 0 {
+			log.Debugf("no endpoints could be generated from ingress %s/%s", ing.Namespace, ing.Name)
+			continue
+		}
+
+		log.Debugf("endpoints generated from ingress: %s/%s: %v", ingEndpoints)
 		endpoints = append(endpoints, ingEndpoints...)
 	}
 
@@ -94,7 +101,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) []*endpoint
 	var buf bytes.Buffer
 	err := sc.fqdntemplate.Execute(&buf, ing)
 	if err != nil {
-		log.Errorf("failed to apply template: %v", err)
+		log.Errorf("failed to apply template on ingress %+v: %v", ing, err)
 		return nil
 	}
 
