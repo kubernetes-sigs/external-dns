@@ -18,7 +18,15 @@ before_install:
 - go get github.com/mattn/goveralls
 - go get -u github.com/alecthomas/gometalinter
 
+addons:
+  apt:
+    sources:
+      - sourceline: 'ppa:masterminds/glide'
+    packages:
+      - glide
+
 install:
+- glide install
 - gometalinter --install
 
 script:
