@@ -64,9 +64,10 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client    *http.Client
-	BasePath  string // API endpoint base URL
-	UserAgent string // optional additional User-Agent fragment
+	client                    *http.Client
+	BasePath                  string // API endpoint base URL
+	UserAgent                 string // optional additional User-Agent fragment
+	GoogleClientHeaderElement string // client header fragment, for Google use only
 
 	Projects *ProjectsService
 }
@@ -76,6 +77,10 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
+}
+
+func (s *Service) clientHeader() string {
+	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewProjectsService(s *Service) *ProjectsService {
@@ -936,8 +941,9 @@ type Variable struct {
 
 	// Text: The string value of the variable. The length of the value must
 	// be less
-	// than 4096 bytes. Empty values are also accepted. For example,
-	// `text: "my text value". The string must be valid UTF-8.
+	// than 4096 bytes. Empty values are also accepted. For
+	// example,
+	// <code>text: "my text value"</code>.
 	Text string `json:"text,omitempty"`
 
 	// UpdateTime: [Output Only] The time of the last variable update.
@@ -1154,17 +1160,19 @@ func (r *ProjectsConfigsService) Create(parent string, runtimeconfig *RuntimeCon
 }
 
 // RequestId sets the optional parameter "requestId": An optional but
-// recommended unique `request_id`. If the server
-// receives two `create()` requests  with the same
-// `request_id`, then the second request will be ignored and the
+// recommended unique <code>request_id</code>. If the server
+// receives two <code>create()</code> requests  with the
+// same
+// <code>request_id</code>, then the second request will be ignored and
+// the
 // first resource created and stored in the backend is returned.
-// Empty `request_id` fields are ignored.
+// Empty <code>request_id</code> fields are ignored.
 //
 // It is responsibility of the client to ensure uniqueness of
 // the
-// `request_id` strings.
+// <code>request_id</code> strings.
 //
-// `request_id` strings are limited to 64 characters.
+// <code>request_id</code> strings are limited to 64 characters.
 func (c *ProjectsConfigsCreateCall) RequestId(requestId string) *ProjectsConfigsCreateCall {
 	c.urlParams_.Set("requestId", requestId)
 	return c
@@ -1201,6 +1209,7 @@ func (c *ProjectsConfigsCreateCall) doRequest(alt string) (*http.Response, error
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.runtimeconfig)
 	if err != nil {
@@ -1272,7 +1281,7 @@ func (c *ProjectsConfigsCreateCall) Do(opts ...googleapi.CallOption) (*RuntimeCo
 	//       "type": "string"
 	//     },
 	//     "requestId": {
-	//       "description": "An optional but recommended unique `request_id`. If the server\nreceives two `create()` requests  with the same\n`request_id`, then the second request will be ignored and the\nfirst resource created and stored in the backend is returned.\nEmpty `request_id` fields are ignored.\n\nIt is responsibility of the client to ensure uniqueness of the\n`request_id` strings.\n\n`request_id` strings are limited to 64 characters.",
+	//       "description": "An optional but recommended unique \u003ccode\u003erequest_id\u003c/code\u003e. If the server\nreceives two \u003ccode\u003ecreate()\u003c/code\u003e requests  with the same\n\u003ccode\u003erequest_id\u003c/code\u003e, then the second request will be ignored and the\nfirst resource created and stored in the backend is returned.\nEmpty \u003ccode\u003erequest_id\u003c/code\u003e fields are ignored.\n\nIt is responsibility of the client to ensure uniqueness of the\n\u003ccode\u003erequest_id\u003c/code\u003e strings.\n\n\u003ccode\u003erequest_id\u003c/code\u003e strings are limited to 64 characters.",
 	//       "location": "query",
 	//       "type": "string"
 	//     }
@@ -1340,6 +1349,7 @@ func (c *ProjectsConfigsDeleteCall) doRequest(alt string) (*http.Response, error
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "v1beta1/{+name}")
@@ -1477,6 +1487,7 @@ func (c *ProjectsConfigsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -1620,6 +1631,7 @@ func (c *ProjectsConfigsGetIamPolicyCall) doRequest(alt string) (*http.Response,
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -1682,7 +1694,7 @@ func (c *ProjectsConfigsGetIamPolicyCall) Do(opts ...googleapi.CallOption) (*Pol
 	//   ],
 	//   "parameters": {
 	//     "resource": {
-	//       "description": "REQUIRED: The resource for which the policy is being requested.\nSee the operation documentation for the appropriate value for this field.",
+	//       "description": "REQUIRED: The resource for which the policy is being requested.\n`resource` is usually specified as a path. For example, a Project\nresource is specified as `projects/{project}`.",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/configs/[^/]+$",
 	//       "required": true,
@@ -1776,6 +1788,7 @@ func (c *ProjectsConfigsListCall) doRequest(alt string) (*http.Response, error) 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -1941,6 +1954,7 @@ func (c *ProjectsConfigsSetIamPolicyCall) doRequest(alt string) (*http.Response,
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.setiampolicyrequest)
 	if err != nil {
@@ -2005,7 +2019,7 @@ func (c *ProjectsConfigsSetIamPolicyCall) Do(opts ...googleapi.CallOption) (*Pol
 	//   ],
 	//   "parameters": {
 	//     "resource": {
-	//       "description": "REQUIRED: The resource for which the policy is being specified.\nSee the operation documentation for the appropriate value for this field.",
+	//       "description": "REQUIRED: The resource for which the policy is being specified.\n`resource` is usually specified as a path. For example, a Project\nresource is specified as `projects/{project}`.",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/configs/[^/]+$",
 	//       "required": true,
@@ -2043,12 +2057,6 @@ type ProjectsConfigsTestIamPermissionsCall struct {
 // If the resource does not exist, this will return an empty set
 // of
 // permissions, not a NOT_FOUND error.
-//
-// Note: This operation is designed to be used for building
-// permission-aware
-// UIs and command-line tools, not for authorization checking. This
-// operation
-// may "fail open" without warning.
 func (r *ProjectsConfigsService) TestIamPermissions(resource string, testiampermissionsrequest *TestIamPermissionsRequest) *ProjectsConfigsTestIamPermissionsCall {
 	c := &ProjectsConfigsTestIamPermissionsCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.resource = resource
@@ -2087,6 +2095,7 @@ func (c *ProjectsConfigsTestIamPermissionsCall) doRequest(alt string) (*http.Res
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testiampermissionsrequest)
 	if err != nil {
@@ -2142,7 +2151,7 @@ func (c *ProjectsConfigsTestIamPermissionsCall) Do(opts ...googleapi.CallOption)
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns permissions that a caller has on the specified resource.\nIf the resource does not exist, this will return an empty set of\npermissions, not a NOT_FOUND error.\n\nNote: This operation is designed to be used for building permission-aware\nUIs and command-line tools, not for authorization checking. This operation\nmay \"fail open\" without warning.",
+	//   "description": "Returns permissions that a caller has on the specified resource.\nIf the resource does not exist, this will return an empty set of\npermissions, not a NOT_FOUND error.",
 	//   "flatPath": "v1beta1/projects/{projectsId}/configs/{configsId}:testIamPermissions",
 	//   "httpMethod": "POST",
 	//   "id": "runtimeconfig.projects.configs.testIamPermissions",
@@ -2151,7 +2160,7 @@ func (c *ProjectsConfigsTestIamPermissionsCall) Do(opts ...googleapi.CallOption)
 	//   ],
 	//   "parameters": {
 	//     "resource": {
-	//       "description": "REQUIRED: The resource for which the policy detail is being requested.\nSee the operation documentation for the appropriate value for this field.",
+	//       "description": "REQUIRED: The resource for which the policy detail is being requested.\n`resource` is usually specified as a path. For example, a Project\nresource is specified as `projects/{project}`.",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/configs/[^/]+$",
 	//       "required": true,
@@ -2224,6 +2233,7 @@ func (c *ProjectsConfigsUpdateCall) doRequest(alt string) (*http.Response, error
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.runtimeconfig)
 	if err != nil {
@@ -2373,6 +2383,7 @@ func (c *ProjectsConfigsOperationsGetCall) doRequest(alt string) (*http.Response
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2470,12 +2481,6 @@ type ProjectsConfigsOperationsTestIamPermissionsCall struct {
 // If the resource does not exist, this will return an empty set
 // of
 // permissions, not a NOT_FOUND error.
-//
-// Note: This operation is designed to be used for building
-// permission-aware
-// UIs and command-line tools, not for authorization checking. This
-// operation
-// may "fail open" without warning.
 func (r *ProjectsConfigsOperationsService) TestIamPermissions(resource string) *ProjectsConfigsOperationsTestIamPermissionsCall {
 	c := &ProjectsConfigsOperationsTestIamPermissionsCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.resource = resource
@@ -2535,6 +2540,7 @@ func (c *ProjectsConfigsOperationsTestIamPermissionsCall) doRequest(alt string) 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2588,7 +2594,7 @@ func (c *ProjectsConfigsOperationsTestIamPermissionsCall) Do(opts ...googleapi.C
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns permissions that a caller has on the specified resource.\nIf the resource does not exist, this will return an empty set of\npermissions, not a NOT_FOUND error.\n\nNote: This operation is designed to be used for building permission-aware\nUIs and command-line tools, not for authorization checking. This operation\nmay \"fail open\" without warning.",
+	//   "description": "Returns permissions that a caller has on the specified resource.\nIf the resource does not exist, this will return an empty set of\npermissions, not a NOT_FOUND error.",
 	//   "flatPath": "v1beta1/projects/{projectsId}/configs/{configsId}/operations/{operationsId}:testIamPermissions",
 	//   "httpMethod": "GET",
 	//   "id": "runtimeconfig.projects.configs.operations.testIamPermissions",
@@ -2603,7 +2609,7 @@ func (c *ProjectsConfigsOperationsTestIamPermissionsCall) Do(opts ...googleapi.C
 	//       "type": "string"
 	//     },
 	//     "resource": {
-	//       "description": "REQUIRED: The resource for which the policy detail is being requested.\nSee the operation documentation for the appropriate value for this field.",
+	//       "description": "REQUIRED: The resource for which the policy detail is being requested.\n`resource` is usually specified as a path. For example, a Project\nresource is specified as `projects/{project}`.",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/configs/[^/]+/operations/.+$",
 	//       "required": true,
@@ -2652,17 +2658,19 @@ func (r *ProjectsConfigsVariablesService) Create(parent string, variable *Variab
 }
 
 // RequestId sets the optional parameter "requestId": An optional but
-// recommended unique `request_id`. If the server
-// receives two `create()` requests  with the same
-// `request_id`, then the second request will be ignored and the
+// recommended unique <code>request_id</code>. If the server
+// receives two <code>create()</code> requests  with the
+// same
+// <code>request_id</code>, then the second request will be ignored and
+// the
 // first resource created and stored in the backend is returned.
-// Empty `request_id` fields are ignored.
+// Empty <code>request_id</code> fields are ignored.
 //
 // It is responsibility of the client to ensure uniqueness of
 // the
-// `request_id` strings.
+// <code>request_id</code> strings.
 //
-// `request_id` strings are limited to 64 characters.
+// <code>request_id</code> strings are limited to 64 characters.
 func (c *ProjectsConfigsVariablesCreateCall) RequestId(requestId string) *ProjectsConfigsVariablesCreateCall {
 	c.urlParams_.Set("requestId", requestId)
 	return c
@@ -2699,6 +2707,7 @@ func (c *ProjectsConfigsVariablesCreateCall) doRequest(alt string) (*http.Respon
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.variable)
 	if err != nil {
@@ -2770,7 +2779,7 @@ func (c *ProjectsConfigsVariablesCreateCall) Do(opts ...googleapi.CallOption) (*
 	//       "type": "string"
 	//     },
 	//     "requestId": {
-	//       "description": "An optional but recommended unique `request_id`. If the server\nreceives two `create()` requests  with the same\n`request_id`, then the second request will be ignored and the\nfirst resource created and stored in the backend is returned.\nEmpty `request_id` fields are ignored.\n\nIt is responsibility of the client to ensure uniqueness of the\n`request_id` strings.\n\n`request_id` strings are limited to 64 characters.",
+	//       "description": "An optional but recommended unique \u003ccode\u003erequest_id\u003c/code\u003e. If the server\nreceives two \u003ccode\u003ecreate()\u003c/code\u003e requests  with the same\n\u003ccode\u003erequest_id\u003c/code\u003e, then the second request will be ignored and the\nfirst resource created and stored in the backend is returned.\nEmpty \u003ccode\u003erequest_id\u003c/code\u003e fields are ignored.\n\nIt is responsibility of the client to ensure uniqueness of the\n\u003ccode\u003erequest_id\u003c/code\u003e strings.\n\n\u003ccode\u003erequest_id\u003c/code\u003e strings are limited to 64 characters.",
 	//       "location": "query",
 	//       "type": "string"
 	//     }
@@ -2854,6 +2863,7 @@ func (c *ProjectsConfigsVariablesDeleteCall) doRequest(alt string) (*http.Respon
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "v1beta1/{+name}")
@@ -2996,6 +3006,7 @@ func (c *ProjectsConfigsVariablesGetCall) doRequest(alt string) (*http.Response,
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3090,11 +3101,7 @@ type ProjectsConfigsVariablesListCall struct {
 
 // List: Lists variables within given a configuration, matching any
 // provided filters.
-// This only lists variable names, not the values, unless
-// `return_values` is
-// true, in which case only variables that user has IAM permission to
-// GetVariable
-// will be returned.
+// This only lists variable names, not the values.
 func (r *ProjectsConfigsVariablesService) List(parent string) *ProjectsConfigsVariablesListCall {
 	c := &ProjectsConfigsVariablesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.parent = parent
@@ -3125,16 +3132,6 @@ func (c *ProjectsConfigsVariablesListCall) PageSize(pageSize int64) *ProjectsCon
 // returned by a previous list request to get the next page of results.
 func (c *ProjectsConfigsVariablesListCall) PageToken(pageToken string) *ProjectsConfigsVariablesListCall {
 	c.urlParams_.Set("pageToken", pageToken)
-	return c
-}
-
-// ReturnValues sets the optional parameter "returnValues": The flag
-// indicates whether the user wants to return values of variables.
-// If true, then only those variables that user has IAM GetVariable
-// permission
-// will be returned along with their values.
-func (c *ProjectsConfigsVariablesListCall) ReturnValues(returnValues bool) *ProjectsConfigsVariablesListCall {
-	c.urlParams_.Set("returnValues", fmt.Sprint(returnValues))
 	return c
 }
 
@@ -3179,6 +3176,7 @@ func (c *ProjectsConfigsVariablesListCall) doRequest(alt string) (*http.Response
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3232,7 +3230,7 @@ func (c *ProjectsConfigsVariablesListCall) Do(opts ...googleapi.CallOption) (*Li
 	}
 	return ret, nil
 	// {
-	//   "description": "Lists variables within given a configuration, matching any provided filters.\nThis only lists variable names, not the values, unless `return_values` is\ntrue, in which case only variables that user has IAM permission to GetVariable\nwill be returned.",
+	//   "description": "Lists variables within given a configuration, matching any provided filters.\nThis only lists variable names, not the values.",
 	//   "flatPath": "v1beta1/projects/{projectsId}/configs/{configsId}/variables",
 	//   "httpMethod": "GET",
 	//   "id": "runtimeconfig.projects.configs.variables.list",
@@ -3262,11 +3260,6 @@ func (c *ProjectsConfigsVariablesListCall) Do(opts ...googleapi.CallOption) (*Li
 	//       "pattern": "^projects/[^/]+/configs/[^/]+$",
 	//       "required": true,
 	//       "type": "string"
-	//     },
-	//     "returnValues": {
-	//       "description": "The flag indicates whether the user wants to return values of variables.\nIf true, then only those variables that user has IAM GetVariable permission\nwill be returned along with their values.",
-	//       "location": "query",
-	//       "type": "boolean"
 	//     }
 	//   },
 	//   "path": "v1beta1/{+parent}/variables",
@@ -3318,12 +3311,6 @@ type ProjectsConfigsVariablesTestIamPermissionsCall struct {
 // If the resource does not exist, this will return an empty set
 // of
 // permissions, not a NOT_FOUND error.
-//
-// Note: This operation is designed to be used for building
-// permission-aware
-// UIs and command-line tools, not for authorization checking. This
-// operation
-// may "fail open" without warning.
 func (r *ProjectsConfigsVariablesService) TestIamPermissions(resource string) *ProjectsConfigsVariablesTestIamPermissionsCall {
 	c := &ProjectsConfigsVariablesTestIamPermissionsCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.resource = resource
@@ -3383,6 +3370,7 @@ func (c *ProjectsConfigsVariablesTestIamPermissionsCall) doRequest(alt string) (
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3436,7 +3424,7 @@ func (c *ProjectsConfigsVariablesTestIamPermissionsCall) Do(opts ...googleapi.Ca
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns permissions that a caller has on the specified resource.\nIf the resource does not exist, this will return an empty set of\npermissions, not a NOT_FOUND error.\n\nNote: This operation is designed to be used for building permission-aware\nUIs and command-line tools, not for authorization checking. This operation\nmay \"fail open\" without warning.",
+	//   "description": "Returns permissions that a caller has on the specified resource.\nIf the resource does not exist, this will return an empty set of\npermissions, not a NOT_FOUND error.",
 	//   "flatPath": "v1beta1/projects/{projectsId}/configs/{configsId}/variables/{variablesId}:testIamPermissions",
 	//   "httpMethod": "GET",
 	//   "id": "runtimeconfig.projects.configs.variables.testIamPermissions",
@@ -3451,7 +3439,7 @@ func (c *ProjectsConfigsVariablesTestIamPermissionsCall) Do(opts ...googleapi.Ca
 	//       "type": "string"
 	//     },
 	//     "resource": {
-	//       "description": "REQUIRED: The resource for which the policy detail is being requested.\nSee the operation documentation for the appropriate value for this field.",
+	//       "description": "REQUIRED: The resource for which the policy detail is being requested.\n`resource` is usually specified as a path. For example, a Project\nresource is specified as `projects/{project}`.",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/configs/[^/]+/variables/.+$",
 	//       "required": true,
@@ -3520,6 +3508,7 @@ func (c *ProjectsConfigsVariablesUpdateCall) doRequest(alt string) (*http.Respon
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.variable)
 	if err != nil {
@@ -3676,6 +3665,7 @@ func (c *ProjectsConfigsVariablesWatchCall) doRequest(alt string) (*http.Respons
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.watchvariablerequest)
 	if err != nil {
@@ -3791,17 +3781,19 @@ func (r *ProjectsConfigsWaitersService) Create(parent string, waiter *Waiter) *P
 }
 
 // RequestId sets the optional parameter "requestId": An optional but
-// recommended unique `request_id`. If the server
-// receives two `create()` requests  with the same
-// `request_id`, then the second request will be ignored and the
+// recommended unique <code>request_id</code>. If the server
+// receives two <code>create()</code> requests  with the
+// same
+// <code>request_id</code>, then the second request will be ignored and
+// the
 // first resource created and stored in the backend is returned.
-// Empty `request_id` fields are ignored.
+// Empty <code>request_id</code> fields are ignored.
 //
 // It is responsibility of the client to ensure uniqueness of
 // the
-// `request_id` strings.
+// <code>request_id</code> strings.
 //
-// `request_id` strings are limited to 64 characters.
+// <code>request_id</code> strings are limited to 64 characters.
 func (c *ProjectsConfigsWaitersCreateCall) RequestId(requestId string) *ProjectsConfigsWaitersCreateCall {
 	c.urlParams_.Set("requestId", requestId)
 	return c
@@ -3838,6 +3830,7 @@ func (c *ProjectsConfigsWaitersCreateCall) doRequest(alt string) (*http.Response
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.waiter)
 	if err != nil {
@@ -3909,7 +3902,7 @@ func (c *ProjectsConfigsWaitersCreateCall) Do(opts ...googleapi.CallOption) (*Op
 	//       "type": "string"
 	//     },
 	//     "requestId": {
-	//       "description": "An optional but recommended unique `request_id`. If the server\nreceives two `create()` requests  with the same\n`request_id`, then the second request will be ignored and the\nfirst resource created and stored in the backend is returned.\nEmpty `request_id` fields are ignored.\n\nIt is responsibility of the client to ensure uniqueness of the\n`request_id` strings.\n\n`request_id` strings are limited to 64 characters.",
+	//       "description": "An optional but recommended unique \u003ccode\u003erequest_id\u003c/code\u003e. If the server\nreceives two \u003ccode\u003ecreate()\u003c/code\u003e requests  with the same\n\u003ccode\u003erequest_id\u003c/code\u003e, then the second request will be ignored and the\nfirst resource created and stored in the backend is returned.\nEmpty \u003ccode\u003erequest_id\u003c/code\u003e fields are ignored.\n\nIt is responsibility of the client to ensure uniqueness of the\n\u003ccode\u003erequest_id\u003c/code\u003e strings.\n\n\u003ccode\u003erequest_id\u003c/code\u003e strings are limited to 64 characters.",
 	//       "location": "query",
 	//       "type": "string"
 	//     }
@@ -3977,6 +3970,7 @@ func (c *ProjectsConfigsWaitersDeleteCall) doRequest(alt string) (*http.Response
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "v1beta1/{+name}")
@@ -4114,6 +4108,7 @@ func (c *ProjectsConfigsWaitersGetCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4270,6 +4265,7 @@ func (c *ProjectsConfigsWaitersListCall) doRequest(alt string) (*http.Response, 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4399,12 +4395,6 @@ type ProjectsConfigsWaitersTestIamPermissionsCall struct {
 // If the resource does not exist, this will return an empty set
 // of
 // permissions, not a NOT_FOUND error.
-//
-// Note: This operation is designed to be used for building
-// permission-aware
-// UIs and command-line tools, not for authorization checking. This
-// operation
-// may "fail open" without warning.
 func (r *ProjectsConfigsWaitersService) TestIamPermissions(resource string) *ProjectsConfigsWaitersTestIamPermissionsCall {
 	c := &ProjectsConfigsWaitersTestIamPermissionsCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.resource = resource
@@ -4464,6 +4454,7 @@ func (c *ProjectsConfigsWaitersTestIamPermissionsCall) doRequest(alt string) (*h
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4517,7 +4508,7 @@ func (c *ProjectsConfigsWaitersTestIamPermissionsCall) Do(opts ...googleapi.Call
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns permissions that a caller has on the specified resource.\nIf the resource does not exist, this will return an empty set of\npermissions, not a NOT_FOUND error.\n\nNote: This operation is designed to be used for building permission-aware\nUIs and command-line tools, not for authorization checking. This operation\nmay \"fail open\" without warning.",
+	//   "description": "Returns permissions that a caller has on the specified resource.\nIf the resource does not exist, this will return an empty set of\npermissions, not a NOT_FOUND error.",
 	//   "flatPath": "v1beta1/projects/{projectsId}/configs/{configsId}/waiters/{waitersId}:testIamPermissions",
 	//   "httpMethod": "GET",
 	//   "id": "runtimeconfig.projects.configs.waiters.testIamPermissions",
@@ -4532,7 +4523,7 @@ func (c *ProjectsConfigsWaitersTestIamPermissionsCall) Do(opts ...googleapi.Call
 	//       "type": "string"
 	//     },
 	//     "resource": {
-	//       "description": "REQUIRED: The resource for which the policy detail is being requested.\nSee the operation documentation for the appropriate value for this field.",
+	//       "description": "REQUIRED: The resource for which the policy detail is being requested.\n`resource` is usually specified as a path. For example, a Project\nresource is specified as `projects/{project}`.",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/configs/[^/]+/waiters/[^/]+$",
 	//       "required": true,

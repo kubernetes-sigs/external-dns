@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/Se7Ars-pJUGCXY_MujlPxE-KCds\"",
+ "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/WPOHGBs1fdHtwU9urrOWmhzm9OM\"",
  "discoveryVersion": "v1",
  "id": "appengine:v1beta4",
  "name": "appengine",
  "version": "v1beta4",
- "revision": "20170324",
+ "revision": "20161208",
  "title": "Google App Engine Admin API",
  "description": "Provisions and manages App Engine applications.",
  "ownerDomain": "google.com",
@@ -239,9 +239,6 @@
     "defaultBucket": {
      "type": "string",
      "description": "Google Cloud Storage bucket that can be used by this application to store content.@OutputOnly"
-    },
-    "iap": {
-     "$ref": "IdentityAwareProxy"
     }
    }
   },
@@ -261,29 +258,6 @@
     "module": {
      "type": "string",
      "description": "Resource ID of a module in this application that should serve the matched request. The module must already exist. Example: default."
-    }
-   }
-  },
-  "IdentityAwareProxy": {
-   "id": "IdentityAwareProxy",
-   "type": "object",
-   "description": "Identity-Aware Proxy",
-   "properties": {
-    "enabled": {
-     "type": "boolean",
-     "description": "Whether the serving infrastructure will authenticate and authorize all incoming requests.If true, the oauth2_client_id and oauth2_client_secret fields must be non-empty."
-    },
-    "oauth2ClientId": {
-     "type": "string",
-     "description": "OAuth2 client ID to use for the authentication flow."
-    },
-    "oauth2ClientSecret": {
-     "type": "string",
-     "description": "For security reasons, this value cannot be retrieved via the API. Instead, the SHA-256 hash of the value is returned in the oauth2_client_secret_sha256 field.@InputOnly"
-    },
-    "oauth2ClientSecretSha256": {
-     "type": "string",
-     "description": "Hex-encoded SHA-256 hash of the client secret.@OutputOnly"
     }
    }
   },
@@ -989,7 +963,7 @@
     },
     "container": {
      "$ref": "ContainerInfo",
-     "description": "The Docker image for the container that runs the version. Only applicable for instances running in the App Engine flexible environment."
+     "description": "A Docker image that App Engine uses the run the version. Only applicable for instances in App Engine flexible environment."
     },
     "sourceReferences": {
      "type": "array",
@@ -1022,11 +996,11 @@
   "ContainerInfo": {
    "id": "ContainerInfo",
    "type": "object",
-   "description": "Docker image that is used to create a container and start a VM instance for the version that you deploy. Only applicable for instances running in the App Engine flexible environment.",
+   "description": "Docker image that is used to start a VM container for the version you deploy.",
    "properties": {
     "image": {
      "type": "string",
-     "description": "URI to the hosted container image in Google Container Registry. The URI must be fully qualified and include a tag or digest. Examples: \"gcr.io/my-project/image:tag\" or \"gcr.io/my-project/image@digest\""
+     "description": "URI to the hosted container image in a Docker repository. The URI must be fully qualified and include a tag or digest. Examples: \"gcr.io/my-project/image:tag\" or \"gcr.io/my-project/image@digest\""
     }
    }
   },
@@ -1237,7 +1211,7 @@
   "ListLocationsResponse": {
    "id": "ListLocationsResponse",
    "type": "object",
-   "description": "The response message for Locations.ListLocations.",
+   "description": "The response message for LocationService.ListLocations.",
    "properties": {
     "locations": {
      "type": "array",
@@ -1367,44 +1341,6 @@
     }
    }
   },
-  "OperationMetadataV1Beta": {
-   "id": "OperationMetadataV1Beta",
-   "type": "object",
-   "description": "Metadata for the given google.longrunning.Operation.",
-   "properties": {
-    "method": {
-     "type": "string",
-     "description": "API method that initiated this operation. Example: google.appengine.v1beta.Versions.CreateVersion.@OutputOnly"
-    },
-    "insertTime": {
-     "type": "string",
-     "description": "Time that this operation was created.@OutputOnly"
-    },
-    "endTime": {
-     "type": "string",
-     "description": "Time that this operation completed.@OutputOnly"
-    },
-    "user": {
-     "type": "string",
-     "description": "User who requested this operation.@OutputOnly"
-    },
-    "target": {
-     "type": "string",
-     "description": "Name of the resource that this operation is acting on. Example: apps/myapp/services/default.@OutputOnly"
-    },
-    "ephemeralMessage": {
-     "type": "string",
-     "description": "Ephemeral message that may change every time the operation is polled. @OutputOnly"
-    },
-    "warning": {
-     "type": "array",
-     "description": "Durable messages that persist on every operation poll. @OutputOnly",
-     "items": {
-      "type": "string"
-     }
-    }
-   }
-  },
   "OperationMetadataV1": {
    "id": "OperationMetadataV1",
    "type": "object",
@@ -1466,7 +1402,7 @@
      "id": "appengine.apps.create",
      "path": "v1beta4/apps",
      "httpMethod": "POST",
-     "description": "Creates an App Engine application for a Google Cloud Platform project. Required fields: id - The ID of the target Cloud Platform project. location - The region (https://cloud.google.com/appengine/docs/locations) where you want the App Engine application located.For more information about App Engine applications, see Managing Projects, Applications, and Billing (https://cloud.google.com/appengine/docs/python/console/).",
+     "description": "Creates an App Engine application for a Google Cloud Platform project. This requires a project that excludes an App Engine application. For details about creating a project without an application, see the Google Cloud Resource Manager create project topic (https://cloud.google.com/resource-manager/docs/creating-project).",
      "request": {
       "$ref": "Application"
      },
@@ -1740,7 +1676,7 @@
         },
         "migrateTraffic": {
          "type": "boolean",
-         "description": "Set to true to gradually shift traffic to one or more versions that you specify. By default, traffic is shifted immediately. For gradual traffic migration, the target versions must be located within instances that are configured for both warmup requests (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1beta4/apps.modules.versions#inboundservicetype) and automatic scaling (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1beta4/apps.modules.versions#automaticscaling). You must specify the shardBy (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1beta4/apps.modules#shardby) field in the Module resource. Gradual traffic migration is not supported in the App Engine flexible environment. For examples, see Migrating and Splitting Traffic (https://cloud.google.com/appengine/docs/admin-api/migrating-splitting-traffic).",
+         "description": "Set to true to gradually shift traffic from one version to another single version. By default, traffic is shifted immediately. For gradual traffic migration, the target version must be located within instances that are configured for both warmup requests (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1beta4/apps.modules.versions#inboundservicetype) and automatic scaling (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1beta4/apps.modules.versions#automaticscaling). You must specify the shardBy (https://cloud.google.com/appengine/docs/admin-api/reference/rest/v1beta4/apps.modules#shardby) field in the Module resource. Gradual traffic migration is not supported in the App Engine flexible environment. For examples, see Migrating and Splitting Traffic (https://cloud.google.com/appengine/docs/admin-api/migrating-splitting-traffic).",
          "location": "query"
         }
        },
@@ -2075,7 +2011,7 @@
            "id": "appengine.apps.modules.versions.instances.list",
            "path": "v1beta4/apps/{appsId}/modules/{modulesId}/versions/{versionsId}/instances",
            "httpMethod": "GET",
-           "description": "Lists the instances of a version.Tip: To aggregate details about instances over time, see the Stackdriver Monitoring API (https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.timeSeries/list).",
+           "description": "Lists the instances of a version.",
            "parameters": {
             "appsId": {
              "type": "string",

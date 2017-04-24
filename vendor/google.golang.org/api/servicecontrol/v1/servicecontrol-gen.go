@@ -64,9 +64,10 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client    *http.Client
-	BasePath  string // API endpoint base URL
-	UserAgent string // optional additional User-Agent fragment
+	client                    *http.Client
+	BasePath                  string // API endpoint base URL
+	UserAgent                 string // optional additional User-Agent fragment
+	GoogleClientHeaderElement string // client header fragment, for Google use only
 
 	Services *ServicesService
 }
@@ -76,6 +77,10 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
+}
+
+func (s *Service) clientHeader() string {
+	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewServicesService(s *Service) *ServicesService {
@@ -177,11 +182,6 @@ type AllocateQuotaResponse struct {
 	// reached
 	// condition will be specified using the following boolean metric:
 	//   "serviceruntime.googleapis.com/quota/exceeded"
-	//
-	// 4. For allocation quota, value for each quota limit associated
-	// with
-	// the metrics will be specified using the following gauge metric:
-	//   "serviceruntime.googleapis.com/quota/limit"
 	QuotaMetrics []*MetricValueSet `json:"quotaMetrics,omitempty"`
 
 	// ServiceConfigId: ID of the actual config used to process the request.
@@ -773,33 +773,6 @@ type EndReconciliationResponse struct {
 
 	// QuotaMetrics: Metric values as tracked by One Platform before the
 	// adjustment was made.
-	// The following metrics will be included:
-	//
-	// 1. Per quota metric total usage will be specified using the following
-	// gauge
-	// metric:
-	//
-	// "serviceruntime.googleapis.com/allocation/consumer/quota_used_count"
-	//
-	//
-	// 2. Value for each quota limit associated with the metrics will be
-	// specified
-	// using the following gauge metric:
-	//   "serviceruntime.googleapis.com/quota/limit"
-	//
-	// 3. Delta value of the usage after the reconciliation for limits
-	// associated
-	// with the metrics will be specified using the following metric:
-	//   "serviceruntime.googleapis.com/allocation/reconciliation_delta"
-	// The delta value is defined as:
-	//   new_usage_from_client - existing_value_in_spanner.
-	// This metric is not defined in serviceruntime.yaml or in Cloud
-	// Monarch.
-	// This metric is meant for callers' use only. Since this metric is
-	// not
-	// defined in the monitoring backend, reporting on this metric will
-	// result in
-	// an error.
 	QuotaMetrics []*MetricValueSet `json:"quotaMetrics,omitempty"`
 
 	// ReconciliationErrors: Indicates the decision of the reconciliation
@@ -1412,7 +1385,7 @@ type QuotaError struct {
 	//   "LOAS_ROLE_INVALID" - The consumer's LOAS role is invalid.
 	//   "NO_LOAS_PROJECT" - The consumer's LOAS role has no associated
 	// project.
-	//   "PROJECT_STATUS_UNAVAILABLE" - The backend server for looking up
+	//   "PROJECT_STATUS_UNVAILABLE" - The backend server for looking up
 	// project id/number is unavailable.
 	//   "SERVICE_STATUS_UNAVAILABLE" - The backend server for checking
 	// service status is unavailable.
@@ -1596,7 +1569,7 @@ type QuotaOperation struct {
 	// amount
 	// specified in the service configuration or specified using the
 	// quota
-	// metrics. If the release can make used quota negative, release
+	// metrics. If the release can make available quota negative, release
 	// error
 	// will be returned and no quota will be released.
 	//   "BEST_EFFORT" - For AllocateQuota request, this mode is supported
@@ -1614,10 +1587,11 @@ type QuotaOperation struct {
 	// releases
 	// quota for the amount specified in the service configuration or
 	// specified
-	// using the quota metrics. If the release can make used quota
-	// negative, request does not fail but only the used quota will
+	// using the quota metrics. If the release can make available
+	// quota
+	// negative, request does not fail but only the available quota will
 	// be
-	// released. After the ReleaseQuota request completes, the used
+	// released. After the ReleaseQuota request completes, the available
 	// quota
 	// will be 0, and never goes to negative.
 	//   "CHECK_ONLY" - For AllocateQuota request, only checks if there is
@@ -1652,6 +1626,14 @@ func (s *QuotaOperation) MarshalJSON() ([]byte, error) {
 
 // QuotaProperties: Represents the properties needed for quota
 // operations.
+//
+// Use the metric_value_sets field in Operation message to provide
+// cost
+// override with metric_name in
+// <service_name>/quota/<quota_group_name>/cost
+// format. Overrides for unmatched quota groups will be ignored.
+// Costs are expected to be >= 0. Cost 0 will cause no quota check,
+// but still traffic restrictions will be enforced.
 type QuotaProperties struct {
 	// LimitByIds: LimitType IDs that should be used for checking quota. Key
 	// in this map
@@ -1777,12 +1759,6 @@ type ReleaseQuotaResponse struct {
 	// using the following gauge metric:
 	//
 	// "serviceruntime.googleapis.com/allocation/consumer/quota_used_count"
-	//
-	//
-	// 3. For allocation quota, value for each quota limit associated
-	// with
-	// the metrics will be specified using the following gauge metric:
-	//   "serviceruntime.googleapis.com/quota/limit"
 	QuotaMetrics []*MetricValueSet `json:"quotaMetrics,omitempty"`
 
 	// ReleaseErrors: Indicates the decision of the release.
@@ -2086,19 +2062,7 @@ type StartReconciliationResponse struct {
 
 	// QuotaMetrics: Metric values as tracked by One Platform before the
 	// start of
-	// reconciliation. The following metrics will be included:
-	//
-	// 1. Per quota metric total usage will be specified using the following
-	// gauge
-	// metric:
-	//
-	// "serviceruntime.googleapis.com/allocation/consumer/quota_used_count"
-	//
-	//
-	// 2. Value for each quota limit associated with the metrics will be
-	// specified
-	// using the following gauge metric:
-	//   "serviceruntime.googleapis.com/quota/limit"
+	// reconciliation.
 	QuotaMetrics []*MetricValueSet `json:"quotaMetrics,omitempty"`
 
 	// ReconciliationErrors: Indicates the decision of the reconciliation
@@ -2274,17 +2238,6 @@ type ServicesAllocateQuotaCall struct {
 // permission on the specified service. For more information,
 // see
 // [Google Cloud IAM](https://cloud.google.com/iam).
-//
-// **NOTE:** the client code **must** fail-open if the server returns
-// one
-// of the following quota errors:
-// -   `PROJECT_STATUS_UNAVAILABLE`
-// -   `SERVICE_STATUS_UNAVAILABLE`
-// -   `BILLING_STATUS_UNAVAILABLE`
-// -   `QUOTA_SYSTEM_UNAVAILABLE`
-//
-// The server may inject above errors to prohibit any hard dependency
-// on the quota system.
 func (r *ServicesService) AllocateQuota(serviceName string, allocatequotarequest *AllocateQuotaRequest) *ServicesAllocateQuotaCall {
 	c := &ServicesAllocateQuotaCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.serviceName = serviceName
@@ -2323,6 +2276,7 @@ func (c *ServicesAllocateQuotaCall) doRequest(alt string) (*http.Response, error
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.allocatequotarequest)
 	if err != nil {
@@ -2378,7 +2332,7 @@ func (c *ServicesAllocateQuotaCall) Do(opts ...googleapi.CallOption) (*AllocateQ
 	}
 	return ret, nil
 	// {
-	//   "description": "Attempts to allocate quota for the specified consumer. It should be called\nbefore the operation is executed.\n\nThis method requires the `servicemanagement.services.quota`\npermission on the specified service. For more information, see\n[Google Cloud IAM](https://cloud.google.com/iam).\n\n**NOTE:** the client code **must** fail-open if the server returns one\nof the following quota errors:\n-   `PROJECT_STATUS_UNAVAILABLE`\n-   `SERVICE_STATUS_UNAVAILABLE`\n-   `BILLING_STATUS_UNAVAILABLE`\n-   `QUOTA_SYSTEM_UNAVAILABLE`\n\nThe server may inject above errors to prohibit any hard dependency\non the quota system.",
+	//   "description": "Attempts to allocate quota for the specified consumer. It should be called\nbefore the operation is executed.\n\nThis method requires the `servicemanagement.services.quota`\npermission on the specified service. For more information, see\n[Google Cloud IAM](https://cloud.google.com/iam).",
 	//   "flatPath": "v1/services/{serviceName}:allocateQuota",
 	//   "httpMethod": "POST",
 	//   "id": "servicecontrol.services.allocateQuota",
@@ -2475,6 +2429,7 @@ func (c *ServicesCheckCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.checkrequest)
 	if err != nil {
@@ -2618,6 +2573,7 @@ func (c *ServicesEndReconciliationCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.endreconciliationrequest)
 	if err != nil {
@@ -2722,17 +2678,6 @@ type ServicesReleaseQuotaCall struct {
 // permission on the specified service. For more information,
 // see
 // [Google Cloud IAM](https://cloud.google.com/iam).
-//
-// **NOTE:** the client code **must** fail-open if the server returns
-// one
-// of the following quota errors:
-// -   `PROJECT_STATUS_UNAVAILABLE`
-// -   `SERVICE_STATUS_UNAVAILABLE`
-// -   `BILLING_STATUS_UNAVAILABLE`
-// -   `QUOTA_SYSTEM_UNAVAILABLE`
-//
-// The server may inject above errors to prohibit any hard dependency
-// on the quota system.
 func (r *ServicesService) ReleaseQuota(serviceName string, releasequotarequest *ReleaseQuotaRequest) *ServicesReleaseQuotaCall {
 	c := &ServicesReleaseQuotaCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.serviceName = serviceName
@@ -2771,6 +2716,7 @@ func (c *ServicesReleaseQuotaCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.releasequotarequest)
 	if err != nil {
@@ -2826,7 +2772,7 @@ func (c *ServicesReleaseQuotaCall) Do(opts ...googleapi.CallOption) (*ReleaseQuo
 	}
 	return ret, nil
 	// {
-	//   "description": "Releases previously allocated quota done through AllocateQuota method.\n\nThis method requires the `servicemanagement.services.quota`\npermission on the specified service. For more information, see\n[Google Cloud IAM](https://cloud.google.com/iam).\n\n**NOTE:** the client code **must** fail-open if the server returns one\nof the following quota errors:\n-   `PROJECT_STATUS_UNAVAILABLE`\n-   `SERVICE_STATUS_UNAVAILABLE`\n-   `BILLING_STATUS_UNAVAILABLE`\n-   `QUOTA_SYSTEM_UNAVAILABLE`\n\nThe server may inject above errors to prohibit any hard dependency\non the quota system.",
+	//   "description": "Releases previously allocated quota done through AllocateQuota method.\n\nThis method requires the `servicemanagement.services.quota`\npermission on the specified service. For more information, see\n[Google Cloud IAM](https://cloud.google.com/iam).",
 	//   "flatPath": "v1/services/{serviceName}:releaseQuota",
 	//   "httpMethod": "POST",
 	//   "id": "servicecontrol.services.releaseQuota",
@@ -2925,6 +2871,7 @@ func (c *ServicesReportCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.reportrequest)
 	if err != nil {
@@ -3101,6 +3048,7 @@ func (c *ServicesStartReconciliationCall) doRequest(alt string) (*http.Response,
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.startreconciliationrequest)
 	if err != nil {

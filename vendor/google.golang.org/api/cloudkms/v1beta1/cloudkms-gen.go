@@ -142,61 +142,17 @@ type ProjectsLocationsKeyRingsCryptoKeysCryptoKeyVersionsService struct {
 // identities, if
 // any, are exempted from logging.
 // An AuditConifg must have one or more AuditLogConfigs.
-//
-// If there are AuditConfigs for both `allServices` and a specific
-// service,
-// the union of the two AuditConfigs is used for that service: the
-// log_types
-// specified in each AuditConfig are enabled, and the exempted_members
-// in each
-// AuditConfig are exempted.
-// Example Policy with multiple AuditConfigs:
-// {
-//   "audit_configs": [
-//     {
-//       "service": "allServices"
-//       "audit_log_configs": [
-//         {
-//           "log_type": "DATA_READ",
-//           "exempted_members": [
-//             "user:foo@gmail.com"
-//           ]
-//         },
-//         {
-//           "log_type": "DATA_WRITE",
-//         },
-//         {
-//           "log_type": "ADMIN_READ",
-//         }
-//       ]
-//     },
-//     {
-//       "service": "fooservice@googleapis.com"
-//       "audit_log_configs": [
-//         {
-//           "log_type": "DATA_READ",
-//         },
-//         {
-//           "log_type": "DATA_WRITE",
-//           "exempted_members": [
-//             "user:bar@gmail.com"
-//           ]
-//         }
-//       ]
-//     }
-//   ]
-// }
-// For fooservice, this policy enables DATA_READ, DATA_WRITE and
-// ADMIN_READ
-// logging. It also exempts foo@gmail.com from DATA_READ logging,
-// and
-// bar@gmail.com from DATA_WRITE logging.
 type AuditConfig struct {
 	// AuditLogConfigs: The configuration for logging of each type of
 	// permission.
 	// Next ID: 4
 	AuditLogConfigs []*AuditLogConfig `json:"auditLogConfigs,omitempty"`
 
+	// ExemptedMembers: Specifies the identities that are exempted from
+	// "data access" audit
+	// logging for the `service` specified above.
+	// Follows the same format of Binding.members.
+	// This field is deprecated in favor of per-permission-type exemptions.
 	ExemptedMembers []string `json:"exemptedMembers,omitempty"`
 
 	// Service: Specifies a service that will be enabled for audit
@@ -369,32 +325,6 @@ type Condition struct {
 	//   "ATTRIBUTION" - The principal (even if an authority selector is
 	// present), which
 	// must only be used for attribution, not authorization.
-	//   "APPROVER" - An approver (distinct from the requester) that has
-	// authorized this
-	// request.
-	// When used with IN, the condition indicates that one of the
-	// approvers
-	// associated with the request matches the specified principal, or is
-	// a
-	// member of the specified group. Approvers can only grant
-	// additional
-	// access, and are thus only used in a strictly positive context
-	// (e.g. ALLOW/IN or DENY/NOT_IN).
-	// See: go/rpc-security-policy-dynamicauth.
-	//   "JUSTIFICATION_TYPE" - What types of justifications have been
-	// supplied with this request.
-	// String values should match enum names from
-	// tech.iam.JustificationType,
-	// e.g. "MANUAL_STRING". It is not permitted to grant access based
-	// on
-	// the *absence* of a justification, so justification conditions can
-	// only
-	// be used in a "positive" context (e.g., ALLOW/IN or
-	// DENY/NOT_IN).
-	//
-	// Multiple justifications, e.g., a Buganizer ID and a
-	// manually-entered
-	// reason, are normal and supported.
 	Iam string `json:"iam,omitempty"`
 
 	// Op: An operator to apply the subject with.
@@ -403,12 +333,8 @@ type Condition struct {
 	//   "NO_OP" - Default no-op.
 	//   "EQUALS" - DEPRECATED. Use IN instead.
 	//   "NOT_EQUALS" - DEPRECATED. Use NOT_IN instead.
-	//   "IN" - The condition is true if the subject (or any element of it
-	// if it is
-	// a set) matches any of the supplied values.
-	//   "NOT_IN" - The condition is true if the subject (or every element
-	// of it if it is
-	// a set) matches none of the supplied values.
+	//   "IN" - Set-inclusion check.
+	//   "NOT_IN" - Set-exclusion check.
 	//   "DISCHARGED" - Subject is discharged
 	Op string `json:"op,omitempty"`
 
@@ -2201,7 +2127,7 @@ func (c *ProjectsLocationsKeyRingsGetIamPolicyCall) Do(opts ...googleapi.CallOpt
 	//   ],
 	//   "parameters": {
 	//     "resource": {
-	//       "description": "REQUIRED: The resource for which the policy is being requested.\nSee the operation documentation for the appropriate value for this field.",
+	//       "description": "REQUIRED: The resource for which the policy is being requested.\n`resource` is usually specified as a path. For example, a Project\nresource is specified as `projects/{project}`.",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/locations/[^/]+/keyRings/[^/]+$",
 	//       "required": true,
@@ -2529,7 +2455,7 @@ func (c *ProjectsLocationsKeyRingsSetIamPolicyCall) Do(opts ...googleapi.CallOpt
 	//   ],
 	//   "parameters": {
 	//     "resource": {
-	//       "description": "REQUIRED: The resource for which the policy is being specified.\nSee the operation documentation for the appropriate value for this field.",
+	//       "description": "REQUIRED: The resource for which the policy is being specified.\n`resource` is usually specified as a path. For example, a Project\nresource is specified as `projects/{project}`.",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/locations/[^/]+/keyRings/[^/]+$",
 	//       "required": true,
@@ -2566,12 +2492,6 @@ type ProjectsLocationsKeyRingsTestIamPermissionsCall struct {
 // If the resource does not exist, this will return an empty set
 // of
 // permissions, not a NOT_FOUND error.
-//
-// Note: This operation is designed to be used for building
-// permission-aware
-// UIs and command-line tools, not for authorization checking. This
-// operation
-// may "fail open" without warning.
 func (r *ProjectsLocationsKeyRingsService) TestIamPermissions(resource string, testiampermissionsrequest *TestIamPermissionsRequest) *ProjectsLocationsKeyRingsTestIamPermissionsCall {
 	c := &ProjectsLocationsKeyRingsTestIamPermissionsCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.resource = resource
@@ -2666,7 +2586,7 @@ func (c *ProjectsLocationsKeyRingsTestIamPermissionsCall) Do(opts ...googleapi.C
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns permissions that a caller has on the specified resource.\nIf the resource does not exist, this will return an empty set of\npermissions, not a NOT_FOUND error.\n\nNote: This operation is designed to be used for building permission-aware\nUIs and command-line tools, not for authorization checking. This operation\nmay \"fail open\" without warning.",
+	//   "description": "Returns permissions that a caller has on the specified resource.\nIf the resource does not exist, this will return an empty set of\npermissions, not a NOT_FOUND error.",
 	//   "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/keyRings/{keyRingsId}:testIamPermissions",
 	//   "httpMethod": "POST",
 	//   "id": "cloudkms.projects.locations.keyRings.testIamPermissions",
@@ -2675,7 +2595,7 @@ func (c *ProjectsLocationsKeyRingsTestIamPermissionsCall) Do(opts ...googleapi.C
 	//   ],
 	//   "parameters": {
 	//     "resource": {
-	//       "description": "REQUIRED: The resource for which the policy detail is being requested.\nSee the operation documentation for the appropriate value for this field.",
+	//       "description": "REQUIRED: The resource for which the policy detail is being requested.\n`resource` is usually specified as a path. For example, a Project\nresource is specified as `projects/{project}`.",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/locations/[^/]+/keyRings/[^/]+$",
 	//       "required": true,
@@ -3386,7 +3306,7 @@ func (c *ProjectsLocationsKeyRingsCryptoKeysGetIamPolicyCall) Do(opts ...googlea
 	//   ],
 	//   "parameters": {
 	//     "resource": {
-	//       "description": "REQUIRED: The resource for which the policy is being requested.\nSee the operation documentation for the appropriate value for this field.",
+	//       "description": "REQUIRED: The resource for which the policy is being requested.\n`resource` is usually specified as a path. For example, a Project\nresource is specified as `projects/{project}`.",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/locations/[^/]+/keyRings/[^/]+/cryptoKeys/[^/]+$",
 	//       "required": true,
@@ -3864,7 +3784,7 @@ func (c *ProjectsLocationsKeyRingsCryptoKeysSetIamPolicyCall) Do(opts ...googlea
 	//   ],
 	//   "parameters": {
 	//     "resource": {
-	//       "description": "REQUIRED: The resource for which the policy is being specified.\nSee the operation documentation for the appropriate value for this field.",
+	//       "description": "REQUIRED: The resource for which the policy is being specified.\n`resource` is usually specified as a path. For example, a Project\nresource is specified as `projects/{project}`.",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/locations/[^/]+/keyRings/[^/]+/cryptoKeys/[^/]+$",
 	//       "required": true,
@@ -3901,12 +3821,6 @@ type ProjectsLocationsKeyRingsCryptoKeysTestIamPermissionsCall struct {
 // If the resource does not exist, this will return an empty set
 // of
 // permissions, not a NOT_FOUND error.
-//
-// Note: This operation is designed to be used for building
-// permission-aware
-// UIs and command-line tools, not for authorization checking. This
-// operation
-// may "fail open" without warning.
 func (r *ProjectsLocationsKeyRingsCryptoKeysService) TestIamPermissions(resource string, testiampermissionsrequest *TestIamPermissionsRequest) *ProjectsLocationsKeyRingsCryptoKeysTestIamPermissionsCall {
 	c := &ProjectsLocationsKeyRingsCryptoKeysTestIamPermissionsCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.resource = resource
@@ -4001,7 +3915,7 @@ func (c *ProjectsLocationsKeyRingsCryptoKeysTestIamPermissionsCall) Do(opts ...g
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns permissions that a caller has on the specified resource.\nIf the resource does not exist, this will return an empty set of\npermissions, not a NOT_FOUND error.\n\nNote: This operation is designed to be used for building permission-aware\nUIs and command-line tools, not for authorization checking. This operation\nmay \"fail open\" without warning.",
+	//   "description": "Returns permissions that a caller has on the specified resource.\nIf the resource does not exist, this will return an empty set of\npermissions, not a NOT_FOUND error.",
 	//   "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/keyRings/{keyRingsId}/cryptoKeys/{cryptoKeysId}:testIamPermissions",
 	//   "httpMethod": "POST",
 	//   "id": "cloudkms.projects.locations.keyRings.cryptoKeys.testIamPermissions",
@@ -4010,7 +3924,7 @@ func (c *ProjectsLocationsKeyRingsCryptoKeysTestIamPermissionsCall) Do(opts ...g
 	//   ],
 	//   "parameters": {
 	//     "resource": {
-	//       "description": "REQUIRED: The resource for which the policy detail is being requested.\nSee the operation documentation for the appropriate value for this field.",
+	//       "description": "REQUIRED: The resource for which the policy detail is being requested.\n`resource` is usually specified as a path. For example, a Project\nresource is specified as `projects/{project}`.",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/locations/[^/]+/keyRings/[^/]+/cryptoKeys/[^/]+$",
 	//       "required": true,
