@@ -29,8 +29,8 @@ import (
 )
 
 var (
-	txtLabelRegex  = regexp.MustCompile("^\"heritage=external-dns;external-dns/record-owner-id=(.+)\"")
-	txtLabelFormat = "\"heritage=external-dns;external-dns/record-owner-id=%s\""
+	txtLabelRegex  = regexp.MustCompile("^\"heritage=external-dns,external-dns/owner=(.+)\"")
+	txtLabelFormat = "\"heritage=external-dns,external-dns/owner=%s\""
 )
 
 // TXTRegistry implements registry interface with ownership implemented via associated TXT records
@@ -109,7 +109,6 @@ func (im *TXTRegistry) ApplyChanges(zone string, changes *plan.Changes) error {
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), "TXT")
 		filteredChanges.Delete = append(filteredChanges.Delete, txt)
 	}
-	logChanges(filteredChanges)
 	return im.provider.ApplyChanges(zone, filteredChanges)
 }
 

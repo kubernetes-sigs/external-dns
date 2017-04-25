@@ -23,13 +23,21 @@ import (
 )
 
 const (
-	mateAnnotationKey = "zalando.org/dnsname"
+	mateAnnotationKey     = "zalando.org/dnsname"
+	moleculeAnnotationKey = "domainName"
 )
 
 // legacyEndpointsFromService tries to retrieve Endpoints from Services
 // annotated with legacy annotations.
-func legacyEndpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
-	return legacyEndpointsFromMateService(svc)
+func legacyEndpointsFromService(svc *v1.Service, compatibility string) []*endpoint.Endpoint {
+	switch compatibility {
+	case "mate":
+		return legacyEndpointsFromMateService(svc)
+	case "molecule":
+		return legacyEndpointsFromMoleculeService(svc)
+	}
+
+	return []*endpoint.Endpoint{}
 }
 
 // legacyEndpointsFromMateService tries to retrieve Endpoints from Services
@@ -39,6 +47,35 @@ func legacyEndpointsFromMateService(svc *v1.Service) []*endpoint.Endpoint {
 
 	// Get the desired hostname of the service from the annotation.
 	hostname, exists := svc.Annotations[mateAnnotationKey]
+	if !exists {
+		return nil
+	}
+
+	// Create a corresponding endpoint for each configured external entrypoint.
+	for _, lb := range svc.Status.LoadBalancer.Ingress {
+		if lb.IP != "" {
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
+		}
+		if lb.Hostname != "" {
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
+		}
+	}
+
+	return endpoints
+}
+
+// legacyEndpointsFromMoleculeService tries to retrieve Endpoints from Services
+// annotated with Molecule Software's annotation semantics.
+func legacyEndpointsFromMoleculeService(svc *v1.Service) []*endpoint.Endpoint {
+	var endpoints []*endpoint.Endpoint
+
+	// Check that the Service opted-in to being processed.
+	if svc.Labels["dns"] != "route53" {
+		return nil
+	}
+
+	// Get the desired hostname of the service from the annotation.
+	hostname, exists := svc.Annotations[moleculeAnnotationKey]
 	if !exists {
 		return nil
 	}

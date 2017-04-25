@@ -229,18 +229,19 @@ func (p *googleProvider) ApplyChanges(_ string, changes *plan.Changes) error {
 
 // submitChange takes a zone and a Change and sends it to Google.
 func (p *googleProvider) submitChange(change *dns.Change) error {
-	if p.dryRun {
-		for _, del := range change.Deletions {
-			log.Infof("Del records: %s %s %s", del.Name, del.Type, del.Rrdatas)
-		}
-		for _, add := range change.Additions {
-			log.Infof("Add records: %s %s %s", add.Name, add.Type, add.Rrdatas)
-		}
-
+	if len(change.Additions) == 0 && len(change.Deletions) == 0 {
+		log.Infoln("Received empty list of records for creation and deletion")
 		return nil
 	}
 
-	if len(change.Additions) == 0 && len(change.Deletions) == 0 {
+	for _, del := range change.Deletions {
+		log.Infof("Del records: %s %s %s", del.Name, del.Type, del.Rrdatas)
+	}
+	for _, add := range change.Additions {
+		log.Infof("Add records: %s %s %s", add.Name, add.Type, add.Rrdatas)
+	}
+
+	if p.dryRun {
 		return nil
 	}
 

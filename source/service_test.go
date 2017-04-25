@@ -55,7 +55,7 @@ func TestNewServiceSource(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			_, err := NewServiceSource(fake.NewSimpleClientset(), "", ti.fqdntemplate, false)
+			_, err := NewServiceSource(fake.NewSimpleClientset(), "", ti.fqdntemplate, "")
 			if ti.expectError && err == nil {
 				t.Error("invalid template should return err")
 			}
@@ -73,30 +73,35 @@ func testServiceEndpoints(t *testing.T) {
 		targetNamespace string
 		svcNamespace    string
 		svcName         string
-		compatibility   bool
+		compatibility   string
 		fqdntemplate    string
+		labels          map[string]string
 		annotations     map[string]string
 		lbs             []string
 		expected        []*endpoint.Endpoint
+		expectError     bool
 	}{
 		{
 			"no annotated services return no endpoints",
 			"",
 			"testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{},
+			false,
 		},
 		{
 			"annotated services return an endpoint with target IP",
 			"",
 			"testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
@@ -104,14 +109,16 @@ func testServiceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 			},
+			false,
 		},
 		{
 			"annotated services return an endpoint with target hostname",
 			"",
 			"testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
@@ -119,14 +126,16 @@ func testServiceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "lb.example.com"},
 			},
+			false,
 		},
 		{
 			"annotated services can omit trailing dot",
 			"",
 			"testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org", // Trailing dot is omitted
 			},
@@ -135,14 +144,16 @@ func testServiceEndpoints(t *testing.T) {
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 				{DNSName: "foo.example.org", Target: "lb.example.com"},
 			},
+			false,
 		},
 		{
 			"our controller type is dns-controller",
 			"",
 			"testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{
 				controllerAnnotationKey: controllerAnnotationValue,
 				hostnameAnnotationKey:   "foo.example.org.",
@@ -151,28 +162,32 @@ func testServiceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 			},
+			false,
 		},
 		{
 			"different controller types are ignored even (with template specified)",
 			"",
 			"testing",
 			"foo",
-			false,
+			"",
 			"{{.Name}}.ext-dns.test.com",
+			map[string]string{},
 			map[string]string{
 				controllerAnnotationKey: "some-other-tool",
 				hostnameAnnotationKey:   "foo.example.org.",
 			},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{},
+			false,
 		},
 		{
 			"services are found in target namespace",
 			"testing",
 			"testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
@@ -180,27 +195,31 @@ func testServiceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 			},
+			false,
 		},
 		{
 			"services that are not in target namespace are ignored",
 			"testing",
 			"other-testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{},
+			false,
 		},
 		{
 			"services are found in all namespaces",
 			"",
 			"other-testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
@@ -208,27 +227,31 @@ func testServiceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 			},
+			false,
 		},
 		{
 			"no external entrypoints return no endpoints",
 			"",
 			"testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
 			[]string{},
 			[]*endpoint.Endpoint{},
+			false,
 		},
 		{
 			"multiple external entrypoints return multiple endpoints",
 			"",
 			"testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
@@ -237,27 +260,31 @@ func testServiceEndpoints(t *testing.T) {
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 				{DNSName: "foo.example.org", Target: "8.8.8.8"},
 			},
+			false,
 		},
 		{
 			"services annotated with legacy mate annotations are ignored in default mode",
 			"",
 			"testing",
 			"foo",
-			false,
 			"",
+			"",
+			map[string]string{},
 			map[string]string{
 				"zalando.org/dnsname": "foo.example.org.",
 			},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{},
+			false,
 		},
 		{
 			"services annotated with legacy mate annotations return an endpoint in compatibility mode",
 			"",
 			"testing",
 			"foo",
-			true,
+			"mate",
 			"",
+			map[string]string{},
 			map[string]string{
 				"zalando.org/dnsname": "foo.example.org.",
 			},
@@ -265,39 +292,64 @@ func testServiceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 			},
+			false,
+		},
+		{
+			"services annotated with legacy molecule annotations return an endpoint in compatibility mode",
+			"",
+			"testing",
+			"foo",
+			"molecule",
+			"",
+			map[string]string{
+				"dns": "route53",
+			},
+			map[string]string{
+				"domainName": "foo.example.org.",
+			},
+			[]string{"1.2.3.4"},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+			},
+			false,
 		},
 		{
 			"not annotated services with set fqdntemplate return an endpoint with target IP",
 			"",
 			"testing",
 			"foo",
-			false,
+			"",
 			"{{.Name}}.bar.example.com",
+			map[string]string{},
 			map[string]string{},
 			[]string{"1.2.3.4", "elb.com"},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.bar.example.com", Target: "1.2.3.4"},
 				{DNSName: "foo.bar.example.com", Target: "elb.com"},
 			},
+			false,
 		},
 		{
 			"not annotated services with unknown tmpl field should not return anything",
 			"",
 			"testing",
 			"foo",
-			false,
+			"",
 			"{{.Calibre}}.bar.example.com",
+			map[string]string{},
 			map[string]string{},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{},
+			true,
 		},
 		{
 			"compatibility annotated services with tmpl. compatibility takes precedence",
 			"",
 			"testing",
 			"foo",
-			true,
+			"mate",
 			"{{.Name}}.bar.example.com",
+			map[string]string{},
 			map[string]string{
 				"zalando.org/dnsname": "mate.example.org.",
 			},
@@ -305,6 +357,7 @@ func testServiceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "mate.example.org", Target: "1.2.3.4"},
 			},
+			false,
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
@@ -325,6 +378,7 @@ func testServiceEndpoints(t *testing.T) {
 				ObjectMeta: v1.ObjectMeta{
 					Namespace:   tc.svcNamespace,
 					Name:        tc.svcName,
+					Labels:      tc.labels,
 					Annotations: tc.annotations,
 				},
 				Status: v1.ServiceStatus{
@@ -343,8 +397,12 @@ func testServiceEndpoints(t *testing.T) {
 			client, _ := NewServiceSource(kubernetes, tc.targetNamespace, tc.fqdntemplate, tc.compatibility)
 
 			endpoints, err := client.Endpoints()
-			if err != nil {
+
+			if !tc.expectError && err != nil {
 				t.Fatal(err)
+			}
+			if tc.expectError && err == nil {
+				t.Fatal("expected error")
 			}
 
 			// Validate returned endpoints against desired endpoints.
@@ -379,7 +437,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	client, _ := NewServiceSource(kubernetes, v1.NamespaceAll, "", false)
+	client, _ := NewServiceSource(kubernetes, v1.NamespaceAll, "", "")
 
 	for i := 0; i < b.N; i++ {
 		_, err := client.Endpoints()
