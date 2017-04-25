@@ -111,7 +111,7 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) []*endpoint.Endp
 
 	err := sc.fqdntemplate.Execute(&buf, svc)
 	if err != nil {
-		log.Errorf("Failed to apply template on service %+v: %v", svc, err)
+		log.Errorf("failed to apply template on service %s: %v", svc.String(), err)
 		return nil
 	}
 

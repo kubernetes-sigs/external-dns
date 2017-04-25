@@ -102,7 +102,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) []*endpoint
 	var buf bytes.Buffer
 	err := sc.fqdntemplate.Execute(&buf, ing)
 	if err != nil {
-		log.Errorf("Failed to apply template on ingress %+v: %v", ing, err)
+		log.Errorf("failed to apply template on ingress %s: %v", ing.String(), err)
 		return nil
 	}
 
