@@ -18,6 +18,7 @@ package source
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"text/template"
 
@@ -89,7 +90,10 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 		// apply template if none of the above is found
 		if len(svcEndpoints) == 0 && sc.fqdntemplate != nil {
-			svcEndpoints = sc.endpointsFromTemplate(&svc)
+			svcEndpoints, err = sc.endpointsFromTemplate(&svc)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		if len(svcEndpoints) == 0 {
@@ -104,15 +108,13 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
-func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) []*endpoint.Endpoint {
+func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	var buf bytes.Buffer
-
 	err := sc.fqdntemplate.Execute(&buf, svc)
 	if err != nil {
-		log.Errorf("failed to apply template on service %s: %v", svc.String(), err)
-		return nil
+		return nil, fmt.Errorf("failed to apply template on service %s: %v", svc.String(), err)
 	}
 
 	hostname := buf.String()
@@ -126,7 +128,7 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) []*endpoint.Endp
 		}
 	}
 
-	return endpoints
+	return endpoints, nil
 }
 
 // endpointsFromService extracts the endpoints from a service object

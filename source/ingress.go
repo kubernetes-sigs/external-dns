@@ -18,6 +18,7 @@ package source
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"text/template"
 
@@ -81,7 +82,10 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 		// apply template if host is missing on ingress
 		if len(ingEndpoints) == 0 && sc.fqdntemplate != nil {
-			ingEndpoints = sc.endpointsFromTemplate(&ing)
+			ingEndpoints, err = sc.endpointsFromTemplate(&ing)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		if len(ingEndpoints) == 0 {
@@ -96,14 +100,13 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
-func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) []*endpoint.Endpoint {
+func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	var buf bytes.Buffer
 	err := sc.fqdntemplate.Execute(&buf, ing)
 	if err != nil {
-		log.Errorf("failed to apply template on ingress %s: %v", ing.String(), err)
-		return nil
+		return nil, fmt.Errorf("failed to apply template on ingress %s: %v", ing.String(), err)
 	}
 
 	hostname := buf.String()
@@ -116,7 +119,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) []*endpoint
 		}
 	}
 
-	return endpoints
+	return endpoints, nil
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object
