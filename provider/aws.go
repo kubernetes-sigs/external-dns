@@ -201,11 +201,10 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 	changesByZone := changesByZone(zones, changes)
 
 	for z, cs := range changesByZone {
-		if p.DryRun {
-			for _, c := range cs {
-				log.Infof("Changing records: %s %s", aws.StringValue(c.Action), c.String())
-			}
-		} else {
+		for _, c := range cs {
+			log.Infof("Changing records: %s %s", aws.StringValue(c.Action), c.String())
+		}
+		if !p.DryRun {
 			params := &route53.ChangeResourceRecordSetsInput{
 				HostedZoneId: aws.String(z),
 				ChangeBatch: &route53.ChangeBatch{
@@ -235,7 +234,9 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Ch
 
 		if zone := suitableZone(hostname, zones); zone != nil {
 			changes[aws.StringValue(zone.Id)] = append(changes[aws.StringValue(zone.Id)], c)
+			continue
 		}
+		log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.String())
 	}
 
 	// separating a change could lead to empty sub changes, remove them here.

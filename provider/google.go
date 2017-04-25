@@ -248,15 +248,12 @@ func (p *googleProvider) ApplyChanges(zone string, changes *plan.Changes) error 
 
 // submitChange takes a zone and a Change and sends it to Google.
 func (p *googleProvider) submitChange(zone string, change *dns.Change) error {
-	if p.dryRun {
-		for _, del := range change.Deletions {
-			log.Infof("Del records: %s %s %s", del.Name, del.Type, del.Rrdatas)
-		}
-		for _, add := range change.Additions {
-			log.Infof("Add records: %s %s %s", add.Name, add.Type, add.Rrdatas)
-		}
 
-		return nil
+	for _, del := range change.Deletions {
+		log.Infof("Del records: %s %s %s", del.Name, del.Type, del.Rrdatas)
+	}
+	for _, add := range change.Additions {
+		log.Infof("Add records: %s %s %s", add.Name, add.Type, add.Rrdatas)
 	}
 
 	if len(change.Additions) == 0 && len(change.Deletions) == 0 {

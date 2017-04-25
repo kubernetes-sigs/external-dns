@@ -75,7 +75,7 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		// Check controller annotation to see if we are responsible.
 		controller, ok := svc.Annotations[controllerAnnotationKey]
 		if ok && controller != controllerAnnotationValue {
-			log.Debugf("skipping service %s/%s because controller value does not match, found: %s, required: %s",
+			log.Debugf("Skipping service %s/%s because controller value does not match, found: %s, required: %s",
 				svc.Namespace, svc.Name, controller, controllerAnnotationValue)
 			continue
 		}
@@ -93,11 +93,11 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		}
 
 		if len(svcEndpoints) == 0 {
-			log.Debugf("no endpoints could be generated from service %s/%s", svc.Namespace, svc.Name)
+			log.Debugf("No endpoints could be generated from service %s/%s", svc.Namespace, svc.Name)
 			continue
 		}
 
-		log.Debugf("endpoints generated from service: %s/%s: %v", svcEndpoints)
+		log.Debugf("Endpoints generated from service: %s/%s: %v", svcEndpoints)
 		endpoints = append(endpoints, svcEndpoints...)
 	}
 
@@ -111,7 +111,7 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) []*endpoint.Endp
 
 	err := sc.fqdntemplate.Execute(&buf, svc)
 	if err != nil {
-		log.Errorf("failed to apply template on service %+v: %v", svc, err)
+		log.Errorf("Failed to apply template on service %+v: %v", svc, err)
 		return nil
 	}
 

@@ -36,22 +36,10 @@ func filterOwnedRecords(ownerID string, eps []*endpoint.Endpoint) []*endpoint.En
 	filtered := []*endpoint.Endpoint{}
 	for _, ep := range eps {
 		if endpointOwner, ok := ep.Labels[endpoint.OwnerLabelKey]; !ok || endpointOwner != ownerID {
-			log.Debugf("skipping %v because owner id does not match, found: %s, required: %s", ep, endpointOwner, ownerID)
+			log.Debugf("Skipping endpoint %v because owner id does not match, found: %s, required: %s", ep, endpointOwner, ownerID)
 			continue
 		}
 		filtered = append(filtered, ep)
 	}
 	return filtered
-}
-
-func logChanges(changes *plan.Changes) {
-	for _, change := range changes.Create {
-		log.Infof("Creating %v ...", change)
-	}
-	for _, change := range changes.UpdateNew {
-		log.Infof("Updating %v ...", change)
-	}
-	for _, change := range changes.Delete {
-		log.Infof("Deleting %v ...", change)
-	}
 }
