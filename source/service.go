@@ -75,7 +75,8 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		// Check controller annotation to see if we are responsible.
 		controller, ok := svc.Annotations[controllerAnnotationKey]
 		if ok && controller != controllerAnnotationValue {
-			log.Debugf("skipping service %s/%s another controller annotation is found: %s", svc.Namespace, svc.Name, controller)
+			log.Debugf("skipping service %s/%s because controller value does not match, found: %s, required: %s",
+				svc.Namespace, svc.Name, controller, controllerAnnotationValue)
 			continue
 		}
 
@@ -97,7 +98,6 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		}
 
 		log.Debugf("endpoints generated from service: %s/%s: %v", svcEndpoints)
-
 		endpoints = append(endpoints, svcEndpoints...)
 	}
 

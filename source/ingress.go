@@ -72,7 +72,8 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		// Check controller annotation to see if we are responsible.
 		controller, ok := ing.Annotations[controllerAnnotationKey]
 		if ok && controller != controllerAnnotationValue {
-			log.Debugf("skipping ingress %s/%s another controller annotation is found: %s", ing.Namespace, ing.Name, controller)
+			log.Debugf("skipping ingress %s/%s because controller value does not match, found: %s, required: %s",
+				ing.Namespace, ing.Name, controller, controllerAnnotationValue)
 			continue
 		}
 

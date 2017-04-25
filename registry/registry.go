@@ -35,21 +35,23 @@ type Registry interface {
 func filterOwnedRecords(ownerID string, eps []*endpoint.Endpoint) []*endpoint.Endpoint {
 	filtered := []*endpoint.Endpoint{}
 	for _, ep := range eps {
-		if ep.Labels[endpoint.OwnerLabelKey] == ownerID {
-			filtered = append(filtered, ep)
+		if endpointOwner, ok := ep.Labels[endpoint.OwnerLabelKey]; !ok || endpointOwner != ownerID {
+			log.Debugf("skipping %v because owner id does not match, found: %s, required: %s", ep, endpointOwner, ownerID)
+			continue
 		}
+		filtered = append(filtered, ep)
 	}
 	return filtered
 }
 
 func logChanges(changes *plan.Changes) {
 	for _, change := range changes.Create {
-		log.Infof("Creating %v", change)
+		log.Infof("Creating %v ...", change)
 	}
 	for _, change := range changes.UpdateNew {
-		log.Infof("Updating %v", change)
+		log.Infof("Updating %v ...", change)
 	}
 	for _, change := range changes.Delete {
-		log.Infof("Deleting %v", change)
+		log.Infof("Deleting %v ...", change)
 	}
 }
