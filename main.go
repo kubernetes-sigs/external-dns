@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -37,26 +36,13 @@ import (
 	"github.com/kubernetes-incubator/external-dns/provider"
 	"github.com/kubernetes-incubator/external-dns/registry"
 	"github.com/kubernetes-incubator/external-dns/source"
-	"github.com/spf13/pflag"
-)
-
-var (
-	version = "unknown"
 )
 
 func main() {
 	cfg := externaldns.NewConfig()
-	if err := cfg.ParseFlags(os.Args); err != nil {
-		if err == pflag.ErrHelp {
-			os.Exit(0)
-		}
+	if err := cfg.ParseFlags(os.Args[1:]); err != nil {
 		log.Fatalf("flag parsing error: %v", err)
 	}
-	if cfg.Version {
-		fmt.Println(version)
-		os.Exit(0)
-	}
-
 	log.Infof("config: %+v", cfg)
 
 	if err := validation.ValidateConfig(cfg); err != nil {
@@ -135,7 +121,6 @@ func main() {
 	}
 
 	ctrl := controller.Controller{
-		Zone:     cfg.Zone,
 		Source:   multiSource,
 		Registry: r,
 		Policy:   policy,

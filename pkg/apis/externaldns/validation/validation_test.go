@@ -44,12 +44,6 @@ func TestValidateFlags(t *testing.T) {
 	}
 
 	cfg = newValidConfig(t)
-	cfg.Zone = ""
-	if err := ValidateConfig(cfg); err == nil {
-		t.Error("missing hosted zone should fail")
-	}
-
-	cfg = newValidConfig(t)
 	cfg.Sources = []string{}
 	if err := ValidateConfig(cfg); err == nil {
 		t.Error("missing at least one source should fail")
@@ -66,7 +60,6 @@ func newValidConfig(t *testing.T) *externaldns.Config {
 	cfg := externaldns.NewConfig()
 
 	cfg.LogFormat = "json"
-	cfg.Zone = "test-zone"
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "test-provider"
 

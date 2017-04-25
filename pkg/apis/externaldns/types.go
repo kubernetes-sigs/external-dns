@@ -19,12 +19,11 @@ package externaldns
 import (
 	"time"
 
-	"github.com/spf13/pflag"
-
-	"k8s.io/client-go/pkg/api/v1"
+	"github.com/alecthomas/kingpin"
 )
 
 var (
+	version               = "unknown"
 	defaultMetricsAddress = ":7979"
 	defaultLogFormat      = "text"
 )
@@ -34,7 +33,6 @@ type Config struct {
 	InCluster      bool
 	KubeConfig     string
 	Namespace      string
-	Zone           string
 	Domain         string
 	Sources        []string
 	Provider       string
@@ -47,7 +45,6 @@ type Config struct {
 	DryRun         bool
 	Debug          bool
 	LogFormat      string
-	Version        bool
 	Registry       string
 	RecordOwnerID  string
 	TXTPrefix      string
@@ -61,28 +58,34 @@ func NewConfig() *Config {
 
 // ParseFlags adds and parses flags from command line
 func (cfg *Config) ParseFlags(args []string) error {
-	flags := pflag.NewFlagSet("external-dns", pflag.ContinueOnError)
-	flags.BoolVar(&cfg.InCluster, "in-cluster", false, "whether to use in-cluster config")
-	flags.StringVar(&cfg.KubeConfig, "kubeconfig", "", "path to a local kubeconfig file")
-	flags.StringVar(&cfg.Namespace, "namespace", v1.NamespaceAll, "the namespace to look for endpoints; all namespaces by default")
-	flags.StringVar(&cfg.Zone, "zone", "", "the ID of the hosted zone to target")
-	flags.StringVar(&cfg.Domain, "domain", "example.org.", "the name of the top-level domain to manage")
-	flags.StringArrayVar(&cfg.Sources, "source", nil, "the sources to gather endpoints: [service, ingress], e.g. --source service --source ingress")
-	flags.StringVar(&cfg.Provider, "provider", "", "the DNS provider to materialize the records in: <aws|google>")
-	flags.StringVar(&cfg.GoogleProject, "google-project", "", "gcloud project to target")
-	flags.StringVar(&cfg.Policy, "policy", "sync", "the policy to use: <sync|upsert-only>")
-	flags.StringVar(&cfg.Compatibility, "compatibility", "", "enable to process annotation semantics from legacy implementations: <mate|molecule>")
-	flags.StringVar(&cfg.MetricsAddress, "metrics-address", defaultMetricsAddress, "address to expose metrics on")
-	flags.StringVar(&cfg.LogFormat, "log-format", defaultLogFormat, "log format output: <text|json>")
-	flags.DurationVar(&cfg.Interval, "interval", time.Minute, "interval between synchronizations")
-	flags.BoolVar(&cfg.Once, "once", false, "run once and exit")
-	flags.BoolVar(&cfg.DryRun, "dry-run", true, "run without updating DNS provider")
-	flags.BoolVar(&cfg.Debug, "debug", false, "debug mode")
-	flags.BoolVar(&cfg.Version, "version", false, "display the version")
-	flags.StringVar(&cfg.Registry, "registry", "noop", "type of registry for ownership: <noop|txt>")
-	flags.StringVar(&cfg.RecordOwnerID, "record-owner-id", "", "id for keeping track of the managed records")
-	flags.StringVar(&cfg.TXTPrefix, "txt-prefix", "", `prefix assigned to DNS name of the associated TXT record; e.g. for --txt-prefix=abc_ [CNAME example.org] <-> [TXT abc_example.org]`)
-	flags.StringVar(&cfg.FqdnTemplate, "fqdn-template", "", `fallback template to generate DNS name if annotation is missing; 
-		e.g. --fqdn-template={{.Name}}-{{.Namespace}}.example.org will use service/ingress name/namespace`)
-	return flags.Parse(args)
+	app := kingpin.New("external-dns", "ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.")
+	app.Version(version)
+	app.DefaultEnvars()
+
+	app.Flag("in-cluster", "Retrieve target cluster configuration from the environment").BoolVar(&cfg.InCluster)
+	app.Flag("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file").StringVar(&cfg.KubeConfig)
+	app.Flag("namespace", "Limit sources of endpoints to a specific namespace; defaults to all").StringVar(&cfg.Namespace)
+	app.Flag("domain", "Limit possible target zones by a domain suffix").StringVar(&cfg.Domain)
+	app.Flag("source", "The resource types that are queried for endpoints").StringsVar(&cfg.Sources)
+	app.Flag("provider", "The DNS provider where the DNS records will be created").StringVar(&cfg.Provider)
+	app.Flag("google-project", "When using the Google provider, specify the Google project").StringVar(&cfg.GoogleProject)
+	app.Flag("policy", "Modify how DNS records are sychronized between sources and providers; possible choices: <sync|upsert-only> default: sync").Default("sync").StringVar(&cfg.Policy)
+	app.Flag("compatibility", "Process annotation semantics from legacy implementations; possible choices: <mate|molecule>, default: none").StringVar(&cfg.Compatibility)
+	app.Flag("metrics-address", "Specify were to serve the metrics and health check endpoint").Default(defaultMetricsAddress).StringVar(&cfg.MetricsAddress)
+	app.Flag("log-format", "The format in which log messages are printed").Default(defaultLogFormat).StringVar(&cfg.LogFormat)
+	app.Flag("interval", "The interval between two consecutive synchronizations in duration format").Default("1m").DurationVar(&cfg.Interval)
+	app.Flag("once", "When enabled, exits the synchronization loop after the first iteration").BoolVar(&cfg.Once)
+	app.Flag("dry-run", "When enabled, prints DNS record changes rather than actually performing them").BoolVar(&cfg.DryRun)
+	app.Flag("debug", "When enabled, increases the logging output for debugging purposes").BoolVar(&cfg.Debug)
+	app.Flag("registry", "The registry implementation to use to keep track of DNS record ownership").Default("txt").StringVar(&cfg.Registry)
+	app.Flag("record-owner-id", "When using the TXT registry, a name that identifies this instance of ExternalDNS").Default("default").StringVar(&cfg.RecordOwnerID)
+	app.Flag("txt-prefix", "When using the TXT registry, a custom string that's prefixed to each ownership DNS record").StringVar(&cfg.TXTPrefix)
+	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves").StringVar(&cfg.FqdnTemplate)
+
+	_, err := app.Parse(args)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
