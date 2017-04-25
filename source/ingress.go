@@ -89,7 +89,7 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 
-		log.Debugf("Endpoints generated from ingress: %s/%s: %v", ingEndpoints)
+		log.Debugf("Endpoints generated from ingress: %s/%s: %v", ing.Namespace, ing.Name, ingEndpoints)
 		endpoints = append(endpoints, ingEndpoints...)
 	}
 

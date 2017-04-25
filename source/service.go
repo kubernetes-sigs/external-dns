@@ -97,7 +97,7 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 
-		log.Debugf("Endpoints generated from service: %s/%s: %v", svcEndpoints)
+		log.Debugf("Endpoints generated from service: %s/%s: %v", svc.Namespace, svc.Name, svcEndpoints)
 		endpoints = append(endpoints, svcEndpoints...)
 	}
 
