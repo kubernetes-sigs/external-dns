@@ -18,6 +18,7 @@ package provider
 
 import (
 	"net"
+	"strings"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
@@ -39,4 +40,13 @@ func suitableType(ep *endpoint.Endpoint) string {
 		return "A"
 	}
 	return "CNAME"
+}
+
+// ensureTrailingDot ensures that the hostname receives a trailing dot if it hasn't already.
+func ensureTrailingDot(hostname string) string {
+	if net.ParseIP(hostname) != nil {
+		return hostname
+	}
+
+	return strings.TrimSuffix(hostname, ".") + "."
 }

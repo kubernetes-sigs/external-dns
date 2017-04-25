@@ -105,7 +105,7 @@ func main() {
 	var p provider.Provider
 	switch cfg.Provider {
 	case "google":
-		p, err = provider.NewGoogleProvider(cfg.GoogleProject, cfg.DryRun)
+		p, err = provider.NewGoogleProvider(cfg.GoogleProject, cfg.Domain, cfg.DryRun)
 	case "aws":
 		p, err = provider.NewAWSProvider(cfg.Domain, cfg.DryRun)
 	default:
