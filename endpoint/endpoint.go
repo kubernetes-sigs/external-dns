@@ -17,6 +17,7 @@ limitations under the License.
 package endpoint
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -54,4 +55,8 @@ func (e *Endpoint) MergeLabels(labels map[string]string) {
 			e.Labels[k] = v
 		}
 	}
+}
+
+func (e *Endpoint) String() string {
+	return fmt.Sprintf("%s: %s -> %s", e.RecordType, e.DNSName, e.Target)
 }

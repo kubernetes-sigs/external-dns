@@ -18,6 +18,7 @@ package source
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"text/template"
 
@@ -74,7 +75,9 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	for _, svc := range services.Items {
 		// Check controller annotation to see if we are responsible.
 		controller, ok := svc.Annotations[controllerAnnotationKey]
-		if ok && controller != controllerAnnotationValue { //TODO(ideahitme): log the skip
+		if ok && controller != controllerAnnotationValue {
+			log.Debugf("Skipping service %s/%s because controller value does not match, found: %s, required: %s",
+				svc.Namespace, svc.Name, controller, controllerAnnotationValue)
 			continue
 		}
 
@@ -87,26 +90,31 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 		// apply template if none of the above is found
 		if len(svcEndpoints) == 0 && sc.fqdntemplate != nil {
-			svcEndpoints = sc.endpointsFromTemplate(&svc)
+			svcEndpoints, err = sc.endpointsFromTemplate(&svc)
+			if err != nil {
+				return nil, err
+			}
 		}
 
-		if len(svcEndpoints) != 0 {
-			endpoints = append(endpoints, svcEndpoints...)
+		if len(svcEndpoints) == 0 {
+			log.Debugf("No endpoints could be generated from service %s/%s", svc.Namespace, svc.Name)
+			continue
 		}
+
+		log.Debugf("Endpoints generated from service: %s/%s: %v", svc.Namespace, svc.Name, svcEndpoints)
+		endpoints = append(endpoints, svcEndpoints...)
 	}
 
 	return endpoints, nil
 }
 
-func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) []*endpoint.Endpoint {
+func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	var buf bytes.Buffer
-
 	err := sc.fqdntemplate.Execute(&buf, svc)
 	if err != nil {
-		log.Errorf("failed to apply template: %v", err)
-		return nil
+		return nil, fmt.Errorf("failed to apply template on service %s: %v", svc.String(), err)
 	}
 
 	hostname := buf.String()
@@ -120,7 +128,7 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) []*endpoint.Endp
 		}
 	}
 
-	return endpoints
+	return endpoints, nil
 }
 
 // endpointsFromService extracts the endpoints from a service object

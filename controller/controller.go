@@ -71,13 +71,13 @@ func (c *Controller) Run(stopChan <-chan struct{}) {
 	for {
 		err := c.RunOnce()
 		if err != nil {
-			log.Fatal(err)
+			log.Error(err)
 		}
 
 		select {
 		case <-time.After(c.Interval):
 		case <-stopChan:
-			log.Infoln("terminating main controller loop")
+			log.Infoln("Terminating main controller loop")
 			return
 		}
 	}
