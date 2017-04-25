@@ -79,6 +79,7 @@ func testServiceEndpoints(t *testing.T) {
 		annotations     map[string]string
 		lbs             []string
 		expected        []*endpoint.Endpoint
+		expectError     bool
 	}{
 		{
 			"no annotated services return no endpoints",
@@ -91,6 +92,7 @@ func testServiceEndpoints(t *testing.T) {
 			map[string]string{},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{},
+			false,
 		},
 		{
 			"annotated services return an endpoint with target IP",
@@ -107,6 +109,7 @@ func testServiceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 			},
+			false,
 		},
 		{
 			"annotated services return an endpoint with target hostname",
@@ -123,6 +126,7 @@ func testServiceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "lb.example.com"},
 			},
+			false,
 		},
 		{
 			"annotated services can omit trailing dot",
@@ -140,6 +144,7 @@ func testServiceEndpoints(t *testing.T) {
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 				{DNSName: "foo.example.org", Target: "lb.example.com"},
 			},
+			false,
 		},
 		{
 			"our controller type is dns-controller",
@@ -157,6 +162,7 @@ func testServiceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 			},
+			false,
 		},
 		{
 			"different controller types are ignored even (with template specified)",
@@ -172,6 +178,7 @@ func testServiceEndpoints(t *testing.T) {
 			},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{},
+			false,
 		},
 		{
 			"services are found in target namespace",
@@ -188,6 +195,7 @@ func testServiceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 			},
+			false,
 		},
 		{
 			"services that are not in target namespace are ignored",
@@ -202,6 +210,7 @@ func testServiceEndpoints(t *testing.T) {
 			},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{},
+			false,
 		},
 		{
 			"services are found in all namespaces",
@@ -218,6 +227,7 @@ func testServiceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 			},
+			false,
 		},
 		{
 			"no external entrypoints return no endpoints",
@@ -232,6 +242,7 @@ func testServiceEndpoints(t *testing.T) {
 			},
 			[]string{},
 			[]*endpoint.Endpoint{},
+			false,
 		},
 		{
 			"multiple external entrypoints return multiple endpoints",
@@ -249,6 +260,7 @@ func testServiceEndpoints(t *testing.T) {
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 				{DNSName: "foo.example.org", Target: "8.8.8.8"},
 			},
+			false,
 		},
 		{
 			"services annotated with legacy mate annotations are ignored in default mode",
@@ -263,6 +275,7 @@ func testServiceEndpoints(t *testing.T) {
 			},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{},
+			false,
 		},
 		{
 			"services annotated with legacy mate annotations return an endpoint in compatibility mode",
@@ -279,6 +292,7 @@ func testServiceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 			},
+			false,
 		},
 		{
 			"services annotated with legacy molecule annotations return an endpoint in compatibility mode",
@@ -297,6 +311,7 @@ func testServiceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
 			},
+			false,
 		},
 		{
 			"not annotated services with set fqdntemplate return an endpoint with target IP",
@@ -312,6 +327,7 @@ func testServiceEndpoints(t *testing.T) {
 				{DNSName: "foo.bar.example.com", Target: "1.2.3.4"},
 				{DNSName: "foo.bar.example.com", Target: "elb.com"},
 			},
+			false,
 		},
 		{
 			"not annotated services with unknown tmpl field should not return anything",
@@ -324,6 +340,7 @@ func testServiceEndpoints(t *testing.T) {
 			map[string]string{},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{},
+			true,
 		},
 		{
 			"compatibility annotated services with tmpl. compatibility takes precedence",
@@ -340,6 +357,7 @@ func testServiceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "mate.example.org", Target: "1.2.3.4"},
 			},
+			false,
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
@@ -379,8 +397,12 @@ func testServiceEndpoints(t *testing.T) {
 			client, _ := NewServiceSource(kubernetes, tc.targetNamespace, tc.fqdntemplate, tc.compatibility)
 
 			endpoints, err := client.Endpoints()
-			if err != nil {
+
+			if !tc.expectError && err != nil {
 				t.Fatal(err)
+			}
+			if tc.expectError && err == nil {
+				t.Fatal("expected error")
 			}
 
 			// Validate returned endpoints against desired endpoints.
