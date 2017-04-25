@@ -232,11 +232,12 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Ch
 	for _, c := range changeSet {
 		hostname := ensureTrailingDot(aws.StringValue(c.ResourceRecordSet.Name))
 
-		if zone := suitableZone(hostname, zones); zone != nil {
-			changes[aws.StringValue(zone.Id)] = append(changes[aws.StringValue(zone.Id)], c)
+		zone := suitableZone(hostname, zones)
+		if zone == nil {
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.String())
 			continue
 		}
-		log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.String())
+		changes[aws.StringValue(zone.Id)] = append(changes[aws.StringValue(zone.Id)], c)
 	}
 
 	// separating a change could lead to empty sub changes, remove them here.
