@@ -260,9 +260,11 @@ func (p *googleProvider) submitChange(zone string, change *dns.Change) error {
 		return nil
 	}
 
-	_, err := p.changesClient.Create(p.project, zone, change).Do()
-	if err != nil {
-		return err
+	if !p.dryRun {
+		_, err := p.changesClient.Create(p.project, zone, change).Do()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
