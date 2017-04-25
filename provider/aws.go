@@ -242,6 +242,7 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Ch
 	// separating a change could lead to empty sub changes, remove them here.
 	for zone, change := range changes {
 		if len(change) == 0 {
+			log.Infof("No records to be changed in zone: %s", aws.StringValue(zones[zone].Name))
 			delete(changes, zone)
 		}
 	}
