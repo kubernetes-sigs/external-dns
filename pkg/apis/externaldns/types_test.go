@@ -25,7 +25,7 @@ import (
 
 var (
 	defaultConfig = &Config{
-		InCluster:      false,
+		Master:         "",
 		KubeConfig:     "",
 		Namespace:      "",
 		Domain:         "",
@@ -46,7 +46,7 @@ var (
 		FqdnTemplate:   "",
 	}
 	overriddenConfig = &Config{
-		InCluster:      true,
+		Master:         "http://127.0.0.1:8080",
 		KubeConfig:     "/some/path",
 		Namespace:      "namespace",
 		Domain:         "example.org.",
@@ -84,7 +84,7 @@ func TestParseFlags(t *testing.T) {
 		{
 			title: "override everything via flags",
 			args: []string{
-				"--in-cluster",
+				"--master=http://127.0.0.1:8080",
 				"--kubeconfig=/some/path",
 				"--namespace=namespace",
 				"--domain=example.org.",
@@ -112,7 +112,7 @@ func TestParseFlags(t *testing.T) {
 			title: "override everything via environment variables",
 			args:  []string{},
 			envVars: map[string]string{
-				"EXTERNAL_DNS_IN_CLUSTER":      "1",
+				"EXTERNAL_DNS_MASTER":          "http://127.0.0.1:8080",
 				"EXTERNAL_DNS_KUBECONFIG":      "/some/path",
 				"EXTERNAL_DNS_NAMESPACE":       "namespace",
 				"EXTERNAL_DNS_DOMAIN":          "example.org.",

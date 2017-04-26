@@ -152,21 +152,23 @@ func handleSigterm(stopChan chan struct{}) {
 }
 
 func newClient(cfg *externaldns.Config) (*kubernetes.Clientset, error) {
-	if !cfg.InCluster && cfg.KubeConfig == "" {
-		cfg.KubeConfig = clientcmd.RecommendedHomeFile
+	if cfg.KubeConfig == "" {
+		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
+			cfg.KubeConfig = clientcmd.RecommendedHomeFile
+		}
 	}
 
-	config, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfig)
+	config, err := clientcmd.BuildConfigFromFlags(cfg.Master, cfg.KubeConfig)
 	if err != nil {
 		return nil, err
 	}
-
-	log.Infof("targeting cluster at %s", config.Host)
 
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
+
+	log.Infof("Connected to cluster at %s", config.Host)
 
 	return client, nil
 }

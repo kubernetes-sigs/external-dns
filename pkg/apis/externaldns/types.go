@@ -30,7 +30,7 @@ var (
 
 // Config is a project-wide configuration
 type Config struct {
-	InCluster      bool
+	Master         string
 	KubeConfig     string
 	Namespace      string
 	Domain         string
@@ -62,8 +62,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Version(version)
 	app.DefaultEnvars()
 
-	app.Flag("in-cluster", "Retrieve target cluster configuration from the environment").BoolVar(&cfg.InCluster)
-	app.Flag("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file").StringVar(&cfg.KubeConfig)
+	app.Flag("master", "The Kubernetes API server to connect to; defaults to auto-detection from the environment").StringVar(&cfg.Master)
+	app.Flag("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file; defaults to auto-detection from the environment").StringVar(&cfg.KubeConfig)
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace; defaults to all").StringVar(&cfg.Namespace)
 	app.Flag("domain", "Limit possible target zones by a domain suffix").StringVar(&cfg.Domain)
 	app.Flag("source", "The resource types that are queried for endpoints").StringsVar(&cfg.Sources)
