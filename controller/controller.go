@@ -77,7 +77,7 @@ func (c *Controller) Run(stopChan <-chan struct{}) {
 		select {
 		case <-time.After(c.Interval):
 		case <-stopChan:
-			log.Infoln("Terminating main controller loop")
+			log.Info("Terminating main controller loop")
 			return
 		}
 	}

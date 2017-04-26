@@ -189,7 +189,7 @@ func (p *AWSProvider) ApplyChanges(_ string, changes *plan.Changes) error {
 func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 	// return early if there is nothing to change
 	if len(changes) == 0 {
-		log.Infoln("All records are already up to date")
+		log.Info("All records are already up to date")
 		return nil
 	}
 
