@@ -55,9 +55,9 @@ func ExampleSameEndpoints() {
 		fmt.Println(ep)
 	}
 	// Output:
-	// A: abc.com -> 1.2.3.4
-	// TXT: abc.com -> something
-	// CNAME: bbc.com -> foo.com
-	// : example.org -> load-balancer.org
-	// TXT: example.org -> load-balancer.org
+	// abc.com -> 1.2.3.4 (type "A")
+	// abc.com -> something (type "TXT")
+	// bbc.com -> foo.com (type "CNAME")
+	// example.org -> load-balancer.org (type "")
+	// example.org -> load-balancer.org (type "TXT")
 }
