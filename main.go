@@ -153,7 +153,7 @@ func main() {
 
 	ctrl.Run(stopChan)
 	for {
-		log.Infoln("pod waiting to be deleted")
+		log.Info("Pod waiting to be deleted")
 		time.Sleep(time.Second * 30)
 	}
 }
@@ -162,7 +162,7 @@ func handleSigterm(stopChan chan struct{}) {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGTERM)
 	<-signals
-	log.Infoln("received SIGTERM. Terminating...")
+	log.Info("Received SIGTERM. Terminating...")
 	close(stopChan)
 }
 

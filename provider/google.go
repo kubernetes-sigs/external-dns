@@ -230,7 +230,7 @@ func (p *googleProvider) ApplyChanges(_ string, changes *plan.Changes) error {
 // submitChange takes a zone and a Change and sends it to Google.
 func (p *googleProvider) submitChange(change *dns.Change) error {
 	if len(change.Additions) == 0 && len(change.Deletions) == 0 {
-		log.Infoln("Received empty list of records for creation and deletion")
+		log.Info("All records are already up to date")
 		return nil
 	}
 
