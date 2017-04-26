@@ -188,6 +188,7 @@ func (p *AWSProvider) ApplyChanges(_ string, changes *plan.Changes) error {
 func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 	// return early if there is nothing to change
 	if len(changes) == 0 {
+		log.Info("All records are already up to date")
 		return nil
 	}
 
@@ -201,7 +202,7 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 
 	for z, cs := range changesByZone {
 		for _, c := range cs {
-			log.Infof("Changing records: %s %s", aws.StringValue(c.Action), c.String())
+			log.Infof("Changing records: %s %s ...", aws.StringValue(c.Action), c.String())
 		}
 		if !p.DryRun {
 			params := &route53.ChangeResourceRecordSetsInput{
@@ -212,8 +213,10 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 			}
 
 			if _, err := p.Client.ChangeResourceRecordSets(params); err != nil {
-				log.Error(err)
+				log.Error(err) //TODO(ideahitme): consider changing the interface in cases when this error might be a concern for other components
+				continue
 			}
+			log.Infof("Record in zone %s were successfully updated", aws.StringValue(zones[z].Name))
 		}
 	}
 
@@ -242,7 +245,6 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Ch
 	// separating a change could lead to empty sub changes, remove them here.
 	for zone, change := range changes {
 		if len(change) == 0 {
-			log.Infof("No records to be changed in zone: %s", aws.StringValue(zones[zone].Name))
 			delete(changes, zone)
 		}
 	}
