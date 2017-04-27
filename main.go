@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -37,26 +36,13 @@ import (
 	"github.com/kubernetes-incubator/external-dns/provider"
 	"github.com/kubernetes-incubator/external-dns/registry"
 	"github.com/kubernetes-incubator/external-dns/source"
-	"github.com/spf13/pflag"
-)
-
-var (
-	version = "unknown"
 )
 
 func main() {
 	cfg := externaldns.NewConfig()
-	if err := cfg.ParseFlags(os.Args); err != nil {
-		if err == pflag.ErrHelp {
-			os.Exit(0)
-		}
+	if err := cfg.ParseFlags(os.Args[1:]); err != nil {
 		log.Fatalf("flag parsing error: %v", err)
 	}
-	if cfg.Version {
-		fmt.Println(version)
-		os.Exit(0)
-	}
-
 	log.Infof("config: %+v", cfg)
 
 	if err := validation.ValidateConfig(cfg); err != nil {
@@ -105,9 +91,9 @@ func main() {
 	var p provider.Provider
 	switch cfg.Provider {
 	case "google":
-		p, err = provider.NewGoogleProvider(cfg.GoogleProject, cfg.Domain, cfg.DryRun)
+		p, err = provider.NewGoogleProvider(cfg.GoogleProject, cfg.DomainFilter, cfg.DryRun)
 	case "aws":
-		p, err = provider.NewAWSProvider(cfg.Domain, cfg.DryRun)
+		p, err = provider.NewAWSProvider(cfg.DomainFilter, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
@@ -120,7 +106,7 @@ func main() {
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":
-		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.RecordOwnerID)
+		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTOwnerID)
 	default:
 		log.Fatalf("unknown registry: %s", cfg.Registry)
 	}
@@ -135,7 +121,6 @@ func main() {
 	}
 
 	ctrl := controller.Controller{
-		Zone:     cfg.Zone,
 		Source:   multiSource,
 		Registry: r,
 		Policy:   policy,
@@ -167,21 +152,23 @@ func handleSigterm(stopChan chan struct{}) {
 }
 
 func newClient(cfg *externaldns.Config) (*kubernetes.Clientset, error) {
-	if !cfg.InCluster && cfg.KubeConfig == "" {
-		cfg.KubeConfig = clientcmd.RecommendedHomeFile
+	if cfg.KubeConfig == "" {
+		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
+			cfg.KubeConfig = clientcmd.RecommendedHomeFile
+		}
 	}
 
-	config, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfig)
+	config, err := clientcmd.BuildConfigFromFlags(cfg.Master, cfg.KubeConfig)
 	if err != nil {
 		return nil, err
 	}
-
-	log.Infof("targeting cluster at %s", config.Host)
 
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
+
+	log.Infof("Connected to cluster at %s", config.Host)
 
 	return client, nil
 }
