@@ -66,14 +66,14 @@ type Route53API interface {
 
 // AWSProvider is an implementation of Provider for AWS Route53.
 type AWSProvider struct {
-	Client Route53API
-	DryRun bool
+	client Route53API
+	dryRun bool
 	// only consider hosted zones managing domains ending in this suffix
-	Domain string
+	domainFilter string
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
-func NewAWSProvider(domain string, dryRun bool) (Provider, error) {
+func NewAWSProvider(domainFilter string, dryRun bool) (Provider, error) {
 	config := aws.NewConfig()
 
 	session, err := session.NewSessionWithOptions(session.Options{
@@ -85,9 +85,9 @@ func NewAWSProvider(domain string, dryRun bool) (Provider, error) {
 	}
 
 	provider := &AWSProvider{
-		Client: route53.New(session),
-		Domain: domain,
-		DryRun: dryRun,
+		client:       route53.New(session),
+		domainFilter: domainFilter,
+		dryRun:       dryRun,
 	}
 
 	return provider, nil
@@ -99,7 +99,7 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 
 	f := func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool) {
 		for _, zone := range resp.HostedZones {
-			if strings.HasSuffix(aws.StringValue(zone.Name), p.Domain) {
+			if strings.HasSuffix(aws.StringValue(zone.Name), p.domainFilter) {
 				zones[aws.StringValue(zone.Id)] = zone
 			}
 		}
@@ -107,7 +107,7 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 		return true
 	}
 
-	err := p.Client.ListHostedZonesPages(&route53.ListHostedZonesInput{}, f)
+	err := p.client.ListHostedZonesPages(&route53.ListHostedZonesInput{}, f)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +150,7 @@ func (p *AWSProvider) Records(_ string) (endpoints []*endpoint.Endpoint, _ error
 			HostedZoneId: z.Id,
 		}
 
-		if err := p.Client.ListResourceRecordSetsPages(params, f); err != nil {
+		if err := p.client.ListResourceRecordSetsPages(params, f); err != nil {
 			return nil, err
 		}
 	}
@@ -204,7 +204,7 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 		for _, c := range cs {
 			log.Infof("Changing records: %s %s ...", aws.StringValue(c.Action), c.String())
 		}
-		if !p.DryRun {
+		if !p.dryRun {
 			params := &route53.ChangeResourceRecordSetsInput{
 				HostedZoneId: aws.String(z),
 				ChangeBatch: &route53.ChangeBatch{
@@ -212,7 +212,7 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 				},
 			}
 
-			if _, err := p.Client.ChangeResourceRecordSets(params); err != nil {
+			if _, err := p.client.ChangeResourceRecordSets(params); err != nil {
 				log.Error(err) //TODO(ideahitme): consider changing the interface in cases when this error might be a concern for other components
 				continue
 			}

@@ -1,5 +1,5 @@
-hash: 364df913010040d3f77d2aea1f9baf036c811f6c19eba7225d952fff003ac3c8
-updated: 2017-03-16T17:04:23.523911071+01:00
+hash: 14f947c6110ead781a61ecc2f0a299cdc730e0968c953226e67dc5695e4f6f20
+updated: 2017-04-26T11:21:36.188940531+02:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -8,6 +8,14 @@ imports:
   subpackages:
   - compute/metadata
   - internal
+- name: github.com/alecthomas/kingpin
+  version: 7f0871f2e17818990e4eed73f9b5c2f429501228
+- name: github.com/alecthomas/template
+  version: a0175ee3bccc567396460bf5acd36800cb10c49c
+  subpackages:
+  - parse
+- name: github.com/alecthomas/units
+  version: 2efee857e7cfd4f3d0138cc3cbb1b4966962b93a
 - name: github.com/aws/aws-sdk-go
   version: 695fe24acaf9afe80b0ce261d4637f42ba0b4c7d
   subpackages:
@@ -37,7 +45,7 @@ imports:
   - service/route53
   - service/sts
 - name: github.com/beorn7/perks
-  version: 3ac7bf7a47d159a033b107610db8a1b6575507a4
+  version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
   subpackages:
   - quantile
 - name: github.com/blang/semver
@@ -127,7 +135,7 @@ imports:
   - prometheus
   - prometheus/promhttp
 - name: github.com/prometheus/client_model
-  version: fa8ad6fec33561be4280a8f0514318c79d7f6cb6
+  version: 6f3806018612930941127f2a7c6c453ba2c527d2
   subpackages:
   - go
 - name: github.com/prometheus/common
