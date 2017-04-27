@@ -335,7 +335,7 @@ func TestAWSApplyChanges(t *testing.T) {
 	})
 }
 
-func TestAWSApplyChangesdryRun(t *testing.T) {
+func TestAWSApplyChangesDryRun(t *testing.T) {
 	originalEndpoints := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
 		endpoint.NewEndpoint("delete-test.zone-1.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
