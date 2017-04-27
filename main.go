@@ -22,7 +22,6 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/linki/instrumented_http"
@@ -141,26 +140,24 @@ func main() {
 		log.Fatalf("unknown policy: %s", cfg.Policy)
 	}
 
-	ctrl := controller.Controller{
+	config := controller.Config{
 		Source:   endpointsSource,
 		Registry: r,
 		Policy:   policy,
+		StopChan: stopChan,
 		Interval: cfg.Interval,
 	}
 
-	if cfg.Once {
-		err := ctrl.RunOnce()
-		if err != nil {
-			log.Fatal(err)
-		}
+	ctrl := controller.NewBaseController(config)
 
-		os.Exit(0)
+	ctrl = controller.NewInstrumentedController(ctrl)
+
+	if !cfg.Once {
+		ctrl = controller.NewLoopedController(ctrl, config)
 	}
 
-	ctrl.Run(stopChan)
-	for {
-		log.Info("Pod waiting to be deleted")
-		time.Sleep(time.Second * 30)
+	if err := ctrl.Run(); err != nil {
+		log.Fatal(err)
 	}
 }
 

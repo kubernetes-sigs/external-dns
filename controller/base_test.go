@@ -27,6 +27,8 @@ import (
 	"github.com/kubernetes-incubator/external-dns/source"
 )
 
+var _ Controller = &BaseController{}
+
 // mockProvider returns mock endpoints and validates changes.
 type mockProvider struct {
 	RecordsStore  []*endpoint.Endpoint
@@ -128,15 +130,13 @@ func TestRunOnce(t *testing.T) {
 	r, _ := registry.NewNoopRegistry(provider)
 
 	// Run our controller once to trigger the validation.
-	ctrl := &Controller{
+	ctrl := NewBaseController(Config{
 		Source:   source,
 		Registry: r,
 		Policy:   &plan.SyncPolicy{},
-	}
+	})
 
-	err := ctrl.RunOnce()
-
-	if err != nil {
+	if err := ctrl.Run(); err != nil {
 		t.Fatal(err)
 	}
 }
