@@ -335,7 +335,7 @@ func TestAWSApplyChanges(t *testing.T) {
 	})
 }
 
-func TestAWSApplyChangesDryRun(t *testing.T) {
+func TestAWSApplyChangesdryRun(t *testing.T) {
 	originalEndpoints := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
 		endpoint.NewEndpoint("delete-test.zone-1.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
@@ -532,7 +532,7 @@ func TestAWSCreateRecordsWithCNAME(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	recordSets := listAWSRecords(t, provider.Client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.")
+	recordSets := listAWSRecords(t, provider.client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.")
 
 	validateRecords(t, recordSets, []*route53.ResourceRecordSet{
 		{
@@ -559,7 +559,7 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	recordSets := listAWSRecords(t, provider.Client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.")
+	recordSets := listAWSRecords(t, provider.client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.")
 
 	validateRecords(t, recordSets, []*route53.ResourceRecordSet{
 		{
@@ -657,7 +657,7 @@ func createAWSZone(t *testing.T, provider *AWSProvider, zone *route53.HostedZone
 		Name:            zone.Name,
 	}
 
-	if _, err := provider.Client.CreateHostedZone(params); err != nil {
+	if _, err := provider.client.CreateHostedZone(params); err != nil {
 		if err, ok := err.(awserr.Error); !ok || err.Code() != route53.ErrCodeHostedZoneAlreadyExists {
 			t.Fatal(err)
 		}
@@ -707,7 +707,7 @@ func listAWSRecords(t *testing.T, client Route53API, zone string) []*route53.Res
 }
 
 func clearAWSRecords(t *testing.T, provider *AWSProvider, zone string) {
-	recordSets := listAWSRecords(t, provider.Client, zone)
+	recordSets := listAWSRecords(t, provider.client, zone)
 
 	changes := make([]*route53.Change, 0, len(recordSets))
 	for _, recordSet := range recordSets {
@@ -718,7 +718,7 @@ func clearAWSRecords(t *testing.T, provider *AWSProvider, zone string) {
 	}
 
 	if len(changes) != 0 {
-		if _, err := provider.Client.ChangeResourceRecordSets(&route53.ChangeResourceRecordSetsInput{
+		if _, err := provider.client.ChangeResourceRecordSets(&route53.ChangeResourceRecordSetsInput{
 			HostedZoneId: aws.String(zone),
 			ChangeBatch: &route53.ChangeBatch{
 				Changes: changes,
@@ -729,13 +729,13 @@ func clearAWSRecords(t *testing.T, provider *AWSProvider, zone string) {
 	}
 }
 
-func newAWSProvider(t *testing.T, domain string, dryRun bool, records []*endpoint.Endpoint) *AWSProvider {
+func newAWSProvider(t *testing.T, domainFilter string, dryRun bool, records []*endpoint.Endpoint) *AWSProvider {
 	client := NewRoute53APIStub()
 
 	provider := &AWSProvider{
-		Client: client,
-		Domain: domain,
-		DryRun: false,
+		client:       client,
+		domainFilter: domainFilter,
+		dryRun:       false,
 	}
 
 	createAWSZone(t, provider, &route53.HostedZone{
@@ -755,7 +755,7 @@ func newAWSProvider(t *testing.T, domain string, dryRun bool, records []*endpoin
 
 	setupAWSRecords(t, provider, records)
 
-	provider.DryRun = dryRun
+	provider.dryRun = dryRun
 
 	return provider
 }

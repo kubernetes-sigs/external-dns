@@ -95,7 +95,7 @@ type googleProvider struct {
 	// Enabled dry-run will print any modifying actions rather than execute them.
 	dryRun bool
 	// only consider hosted zones managing domains ending in this suffix
-	domain string
+	domainFilter string
 	// A client for managing resource record sets
 	resourceRecordSetsClient resourceRecordSetsClientInterface
 	// A client for managing hosted zones
@@ -105,7 +105,7 @@ type googleProvider struct {
 }
 
 // NewGoogleProvider initializes a new Google CloudDNS based Provider.
-func NewGoogleProvider(project string, domain string, dryRun bool) (Provider, error) {
+func NewGoogleProvider(project string, domainFilter string, dryRun bool) (Provider, error) {
 	gcloud, err := google.DefaultClient(context.TODO(), dns.NdevClouddnsReadwriteScope)
 	if err != nil {
 		return nil, err
@@ -117,9 +117,9 @@ func NewGoogleProvider(project string, domain string, dryRun bool) (Provider, er
 	}
 
 	provider := &googleProvider{
-		project: project,
-		domain:  domain,
-		dryRun:  dryRun,
+		project:      project,
+		domainFilter: domainFilter,
+		dryRun:       dryRun,
 		resourceRecordSetsClient: resourceRecordSetsService{dnsClient.ResourceRecordSets},
 		managedZonesClient:       managedZonesService{dnsClient.ManagedZones},
 		changesClient:            changesService{dnsClient.Changes},
@@ -134,7 +134,7 @@ func (p *googleProvider) Zones() (map[string]*dns.ManagedZone, error) {
 
 	f := func(resp *dns.ManagedZonesListResponse) error {
 		for _, zone := range resp.ManagedZones {
-			if strings.HasSuffix(zone.DnsName, p.domain) {
+			if strings.HasSuffix(zone.DnsName, p.domainFilter) {
 				zones[zone.Name] = zone
 			}
 		}

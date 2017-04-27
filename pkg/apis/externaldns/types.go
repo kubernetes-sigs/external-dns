@@ -30,13 +30,13 @@ var (
 type Config struct {
 	Master         string
 	KubeConfig     string
-	Namespace      string
 	Sources        []string
+	Namespace      string
 	FqdnTemplate   string
 	Compatibility  string
 	Provider       string
 	GoogleProject  string
-	Domain         string
+	DomainFilter   string
 	Policy         string
 	Registry       string
 	TXTOwnerID     string
@@ -52,13 +52,13 @@ type Config struct {
 var defaultConfig = &Config{
 	Master:         "",
 	KubeConfig:     "",
-	Namespace:      "",
 	Sources:        nil,
+	Namespace:      "",
 	FqdnTemplate:   "",
 	Compatibility:  "",
 	Provider:       "",
 	GoogleProject:  "",
-	Domain:         "",
+	DomainFilter:   "",
 	Policy:         "sync",
 	Registry:       "txt",
 	TXTOwnerID:     "default",
@@ -83,37 +83,37 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.DefaultEnvars()
 
 	// Flags related to Kubernetes
-	app.Flag("master", "The Kubernetes API server to connect to; defaults to auto-detection from the environment").Default(defaultConfig.Master).StringVar(&cfg.Master)
-	app.Flag("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file; defaults to auto-detection from the environment").Default(defaultConfig.KubeConfig).StringVar(&cfg.KubeConfig)
-	app.Flag("namespace", "Limit sources of endpoints to a specific namespace; defaults to all").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
+	app.Flag("master", "The Kubernetes API server to connect to (default: auto-detect)").Default(defaultConfig.Master).StringVar(&cfg.Master)
+	app.Flag("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)").Default(defaultConfig.KubeConfig).StringVar(&cfg.KubeConfig)
 
 	// Flags related to processing sources
-	app.Flag("source", "The resource types that are queried for endpoints").EnumsVar(&cfg.Sources, "service", "ingress")
-	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves").Default(defaultConfig.FqdnTemplate).StringVar(&cfg.FqdnTemplate)
-	app.Flag("compatibility", "Process annotation semantics from legacy implementations; possible choices: <mate|molecule>; defaults to none").Default(defaultConfig.Compatibility).EnumVar(&cfg.Compatibility, "", "mate", "molecule")
+	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress")
+	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
+	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves (optional)").Default(defaultConfig.FqdnTemplate).StringVar(&cfg.FqdnTemplate)
+	app.Flag("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule)").Default(defaultConfig.Compatibility).EnumVar(&cfg.Compatibility, "", "mate", "molecule")
 
 	// Flags related to providers
-	app.Flag("provider", "The DNS provider where the DNS records will be created").EnumVar(&cfg.Provider, "aws", "google")
-	app.Flag("google-project", "When using the Google provider, specify the Google project").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
-	app.Flag("domain", "Limit possible target zones by a domain suffix").Default(defaultConfig.Domain).StringVar(&cfg.Domain)
+	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, google)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "google")
+	app.Flag("google-project", "When using the Google provider, specify the Google project (required when --provider=google)").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
+	app.Flag("domain-filter", "Limit possible target zones by a domain suffix (optional)").Default(defaultConfig.DomainFilter).StringVar(&cfg.DomainFilter)
 
 	// Flags related to policies
-	app.Flag("policy", "Modify how DNS records are sychronized between sources and providers; possible choices: <sync|upsert-only>; defaults to sync").Default(defaultConfig.Policy).EnumVar(&cfg.Policy, "sync", "upsert-only")
+	app.Flag("policy", "Modify how DNS records are sychronized between sources and providers (default: sync, options: sync, upsert-only)").Default(defaultConfig.Policy).EnumVar(&cfg.Policy, "sync", "upsert-only")
 
 	// Flags related to the registry
-	app.Flag("registry", "The registry implementation to use to keep track of DNS record ownership; possible choices: <txt|noop>; defaults to txt").Default(defaultConfig.Registry).EnumVar(&cfg.Registry, "txt", "noop")
-	app.Flag("txt-owner-id", "When using the TXT registry, a name that identifies this instance of ExternalDNS").Default(defaultConfig.TXTOwnerID).StringVar(&cfg.TXTOwnerID)
-	app.Flag("txt-prefix", "When using the TXT registry, a custom string that's prefixed to each ownership DNS record").Default(defaultConfig.TXTPrefix).StringVar(&cfg.TXTPrefix)
+	app.Flag("registry", "The registry implementation to use to keep track of DNS record ownership (default: txt, options: txt, noop)").Default(defaultConfig.Registry).EnumVar(&cfg.Registry, "txt", "noop")
+	app.Flag("txt-owner-id", "When using the TXT registry, a name that identifies this instance of ExternalDNS (default: default)").Default(defaultConfig.TXTOwnerID).StringVar(&cfg.TXTOwnerID)
+	app.Flag("txt-prefix", "When using the TXT registry, a custom string that's prefixed to each ownership DNS record (optional)").Default(defaultConfig.TXTPrefix).StringVar(&cfg.TXTPrefix)
 
 	// Flags related to the main control loop
-	app.Flag("interval", "The interval between two consecutive synchronizations in duration format").Default(defaultConfig.Interval.String()).DurationVar(&cfg.Interval)
-	app.Flag("once", "When enabled, exits the synchronization loop after the first iteration").BoolVar(&cfg.Once)
-	app.Flag("dry-run", "When enabled, prints DNS record changes rather than actually performing them").BoolVar(&cfg.DryRun)
+	app.Flag("interval", "The interval between two consecutive synchronizations in duration format (default: 1m)").Default(defaultConfig.Interval.String()).DurationVar(&cfg.Interval)
+	app.Flag("once", "When enabled, exits the synchronization loop after the first iteration (default: disabled)").BoolVar(&cfg.Once)
+	app.Flag("dry-run", "When enabled, prints DNS record changes rather than actually performing them (default: disabled)").BoolVar(&cfg.DryRun)
 
 	// Miscellaneous flags
-	app.Flag("log-format", "The format in which log messages are printed; possible choices: <text|json>; defaults to txt").Default(defaultConfig.LogFormat).EnumVar(&cfg.LogFormat, "text", "json")
-	app.Flag("metrics-address", "Specify were to serve the metrics and health check endpoint").Default(defaultConfig.MetricsAddress).StringVar(&cfg.MetricsAddress)
-	app.Flag("debug", "When enabled, increases the logging output for debugging purposes").BoolVar(&cfg.Debug)
+	app.Flag("log-format", "The format in which log messages are printed (default: text, options: text, json)").Default(defaultConfig.LogFormat).EnumVar(&cfg.LogFormat, "text", "json")
+	app.Flag("metrics-address", "Specify were to serve the metrics and health check endpoint (default: :7979)").Default(defaultConfig.MetricsAddress).StringVar(&cfg.MetricsAddress)
+	app.Flag("debug", "When enabled, increases the logging output for debugging purposes (default: disabled)").BoolVar(&cfg.Debug)
 
 	_, err := app.Parse(args)
 	if err != nil {

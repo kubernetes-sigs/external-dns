@@ -24,6 +24,11 @@ import (
 
 func TestValidateFlags(t *testing.T) {
 	cfg := newValidConfig(t)
+	if err := ValidateConfig(cfg); err != nil {
+		t.Errorf("valid config should be valid: %s", err)
+	}
+
+	cfg = newValidConfig(t)
 	cfg.LogFormat = "test"
 	if err := ValidateConfig(cfg); err == nil {
 		t.Errorf("unsupported log format should fail: %s", cfg.LogFormat)

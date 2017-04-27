@@ -91,9 +91,9 @@ func main() {
 	var p provider.Provider
 	switch cfg.Provider {
 	case "google":
-		p, err = provider.NewGoogleProvider(cfg.GoogleProject, cfg.Domain, cfg.DryRun)
+		p, err = provider.NewGoogleProvider(cfg.GoogleProject, cfg.DomainFilter, cfg.DryRun)
 	case "aws":
-		p, err = provider.NewAWSProvider(cfg.Domain, cfg.DryRun)
+		p, err = provider.NewAWSProvider(cfg.DomainFilter, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
