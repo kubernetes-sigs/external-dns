@@ -31,8 +31,9 @@ func TestMultiSource(t *testing.T) {
 
 // testMultiSourceEndpoints tests merged endpoints from children are returned.
 func testMultiSourceEndpoints(t *testing.T) {
-	foo := &endpoint.Endpoint{DNSName: "foo", Target: "8.8.8.8"}
-	bar := &endpoint.Endpoint{DNSName: "bar", Target: "8.8.4.4"}
+	foo := &endpoint.Endpoint{DNSName: "foo", Target: "8.8.8.8", RecordType: "A"}
+	fooTxt := &endpoint.Endpoint{DNSName: "foo", Target: "8.8.8.8", RecordType: "TXT"}
+	bar := &endpoint.Endpoint{DNSName: "bar", Target: "8.8.4.4", RecordType: "A"}
 
 	for _, tc := range []struct {
 		title           string
@@ -58,6 +59,11 @@ func testMultiSourceEndpoints(t *testing.T) {
 			"multiple non-empty child sources returns merged children's endpoints",
 			[][]*endpoint.Endpoint{{foo}, {bar}},
 			[]*endpoint.Endpoint{foo, bar},
+		},
+		{
+			"duplicates are filtered out",
+			[][]*endpoint.Endpoint{{foo}, {foo, fooTxt}},
+			[]*endpoint.Endpoint{foo, fooTxt},
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
