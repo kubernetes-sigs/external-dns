@@ -217,14 +217,16 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.2.1
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.3.0
         args:
         - --in-cluster
-        - --zone=external-dns-test-gcp-zalan-do
         - --source=ingress
         - --provider=google
         - --google-project=zalando-external-dns-test
         - --dry-run=false
+        - --registry=txt
+        - --txt-owner-id=my-identifier
+        - --domain=external-dns-test.gcp.zalan.do. 
 ```
 
 Use `dry-run=true` if you want to be extra careful on the first run. Note, that you will not see any records created when you are running in dry-run mode. You can, however, inspect the logs and watch what would have been done.

@@ -1,34 +1,35 @@
 # Setting up ExternalDNS for Services on AWS
 
-This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster on AWS.
+This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster on AWS. Make sure to use **>=0.3** version of ExternalDNS for this tutorial 
+
+## Set up a hosted zone
+
+*If you prefer to try-out ExternalDNS in one of the existing hosted-zones you can skip this step*
 
 Create a DNS zone which will contain the managed DNS records.
 
 ```console
-$ aws route53 create-hosted-zone --name "external-dns-test.teapot.zalan.do." --caller-reference "external-dns-test-$(date +%s)"
+$ aws route53 create-hosted-zone --name "external-dns-test.my-org.org." --caller-reference "external-dns-test-$(date +%s)"
 ```
+
 
 Make a note of the ID of the hosted zone you just created.
 
 ```console
-$ aws route53 list-hosted-zones-by-name --dns-name "external-dns-test.teapot.zalan.do." | jq -r '.HostedZones[0].Id'
-/hostedzone/Z16P7IEWFWZ4RB
+$ aws route53 list-hosted-zones-by-name --dns-name "external-dns-test.my-org.org." | jq -r '.HostedZones[0].Id'
+/hostedzone/ZEWFWZ4R16P7IB
 ```
 
 Make a note of the nameservers that were assigned to your new zone.
 
 ```console
-$ aws route53 list-resource-record-sets --hosted-zone-id "/hostedzone/Z16P7IEWFWZ4RB" \
+$ aws route53 list-resource-record-sets --hosted-zone-id "/hostedzone/ZEWFWZ4R16P7IB" \
     --query "ResourceRecordSets[?Type == 'NS']" | jq -r '.[0].ResourceRecords[].Value'
-ns-1455.awsdns-53.org.
-ns-1694.awsdns-19.co.uk.
-ns-764.awsdns-31.net.
-ns-62.awsdns-07.com.
+ns-5514.awsdns-53.org.
+...
 ```
 
-In this case it's the ones shown above but your's will differ.
-
-If you decide not to create a new zone but reuse an existing one, make sure it's currently **unused** and **empty**. This version of ExternalDNS will remove all records it doesn't recognize from the zone.
+## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
 Then apply the following manifest file to deploy ExternalDNS.
@@ -48,14 +49,18 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.2.1
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.3.0
         args:
-        - --in-cluster
-        - --zone=Z16P7IEWFWZ4RB
         - --source=service
+        - --source=ingress
         - --provider=aws
-        - --dry-run=false
+        - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+        - --registry=txt
+        - --txt-owner-id=my-identifier
+        - --domain=external-dns-test.my-org.org. # will make ExternalDNS see only the hosted zones matching provided domain
 ```
+
+## Verify ExternalDNS works
 
 Create the following sample application to test that ExternalDNS works.
 
@@ -65,7 +70,7 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.teapot.zalan.do.
+    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.org.
 spec:
   type: LoadBalancer
   ports:
@@ -96,33 +101,44 @@ spec:
 After roughly two minutes check that a corresponding DNS record for your service was created.
 
 ```console
-$ aws route53 list-resource-record-sets --hosted-zone-id "/hostedzone/Z16P7IEWFWZ4RB" \
-    --query "ResourceRecordSets[?Name == 'nginx.external-dns-test.teapot.zalan.do.']|[?Type == 'CNAME']"
+$ aws route53 list-resource-record-sets --hosted-zone-id "/hostedzone/ZEWFWZ4R16P7IB" \
+    --query "ResourceRecordSets[?Name == 'nginx.external-dns-test.my-org.org.']|[?Type == 'A']"
 [
     {
-        "ResourceRecords": [
-            {
-                "Value": "ae11c2360188411e7951602725593fd1-1224345803.eu-central-1.elb.amazonaws.com"
-            }
-        ],
-        "Type": "CNAME",
-        "Name": "nginx.external-dns-test.teapot.zalan.do.",
-        "TTL": 300
+      "AliasTarget": {
+          "HostedZoneId": "ZEWFWZ4R16P7IB",
+          "DNSName": "ae11c2360188411e7951602725593fd1-1224345803.eu-central-1.elb.amazonaws.com.",
+          "EvaluateTargetHealth": true
+      },
+      "Name": "external-dns-test.my-org.org.",
+      "Type": "A"
+    },
+    {
+      "Name": "external-dns-test.my-org.org",
+      "TTL": 300,
+      "ResourceRecords": [
+          {
+              "Value": "\"heritage=external-dns,external-dns/owner=my-identifier\""
+          }
+      ],
+      "Type": "TXT"
     }
 ]
 ```
 
+Note created TXT record alongside ALIAS record. TXT record signifies that the corresponding ALIAS record is managed by ExternalDNS. This makes ExternalDNS safe for running in environments where there are other records managed via other means.
+
 Let's check that we can resolve this DNS name. We'll ask the nameservers assigned to your zone first.
 
 ```console
-$ dig +short @ns-1455.awsdns-53.org. nginx.external-dns-test.teapot.zalan.do.
+$ dig +short @ns-5514.awsdns-53.org. nginx.external-dns-test.my-org.org.
 ae11c2360188411e7951602725593fd1-1224345803.eu-central-1.elb.amazonaws.com.
 ```
 
 If you hooked up your DNS zone with its parent zone correctly you can use `curl` to access your site.
 
 ```console
-$ curl nginx.external-dns-test.teapot.zalan.do.
+$ curl nginx.external-dns-test.my-org.org.
 <!DOCTYPE html>
 <html>
 <head>
@@ -145,8 +161,8 @@ Make sure to delete all Service objects before terminating the cluster so all lo
 $ kubectl delete service nginx
 ```
 
-Give ExternalDNS some time to clean up the DNS records for you. Then delete the hosted zone.
+Give ExternalDNS some time to clean up the DNS records for you. Then delete the hosted zone if you created one for the testing purpose.
 
 ```console
-$ aws route53 delete-hosted-zone --id /hostedzone/Z16P7IEWFWZ4RB
+$ aws route53 delete-hosted-zone --id /hostedzone/ZEWFWZ4R16P7IB
 ```

@@ -12,7 +12,9 @@ For example, the `ServiceSource` returns all Services converted to `Endpoints` w
 
 This list of endpoints is passed to the [Plan](../../plan) which determines the difference between the current DNS records and the desired list of `Endpoints`.
 
-Once the difference has been figured out the list of intended changes is passed to a `Provider` which live in the [provider](../../provider) package. The provider is the adapter to the DNS provider, e.g. Google CloudDNS. It implements two methods: `ApplyChanges` to apply a set of changes and `Records` to retrieve the current list of records from the DNS provider.
+Once the difference has been figured out the list of intended changes is passed to a `Registry` which live in the [registry](../../registry) package. The registry is a wrapper and access point to DNS provider. Registry implements the ownership concept by marking owned records and filtering out records not owned by ExternalDNS before passing them to DNS provider.
+
+The [provider](../../provider) is the adapter to the DNS provider, e.g. Google CloudDNS. It implements two methods: `ApplyChanges` to apply a set of changes filtered by `Registry` and `Records` to retrieve the current list of records from the DNS provider.
 
 The orchestration between the different components is controlled by the [controller](../../controller).
 
