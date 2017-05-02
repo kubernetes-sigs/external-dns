@@ -150,7 +150,7 @@ func (p *googleProvider) Zones() (map[string]*dns.ManagedZone, error) {
 }
 
 // Records returns the list of records in all relevant zones.
-func (p *googleProvider) Records(_ string) (endpoints []*endpoint.Endpoint, _ error) {
+func (p *googleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.Zones()
 	if err != nil {
 		return nil, err
@@ -214,7 +214,7 @@ func (p *googleProvider) DeleteRecords(endpoints []*endpoint.Endpoint) error {
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *googleProvider) ApplyChanges(_ string, changes *plan.Changes) error {
+func (p *googleProvider) ApplyChanges(changes *plan.Changes) error {
 	change := &dns.Change{}
 
 	change.Additions = append(change.Additions, newRecords(changes.Create)...)

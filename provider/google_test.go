@@ -212,7 +212,7 @@ func TestGoogleRecords(t *testing.T) {
 
 	provider := newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do.", false, originalEndpoints)
 
-	records, err := provider.Records("_")
+	records, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -233,7 +233,7 @@ func TestGoogleCreateRecords(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	records, err := provider.Records("_")
+	records, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -267,7 +267,7 @@ func TestGoogleUpdateRecords(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	records, err := provider.Records("_")
+	records, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -292,7 +292,7 @@ func TestGoogleDeleteRecords(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	records, err := provider.Records("_")
+	records, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -340,11 +340,11 @@ func TestGoogleApplyChanges(t *testing.T) {
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges("_", changes); err != nil {
+	if err := provider.ApplyChanges(changes); err != nil {
 		t.Fatal(err)
 	}
 
-	records, err := provider.Records("_")
+	records, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -401,11 +401,11 @@ func TestGoogleApplyChangesDryRun(t *testing.T) {
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges("_", changes); err != nil {
+	if err := provider.ApplyChanges(changes); err != nil {
 		t.Fatal(err)
 	}
 
-	records, err := provider.Records("_")
+	records, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -416,7 +416,7 @@ func TestGoogleApplyChangesDryRun(t *testing.T) {
 func TestGoogleApplyChangesEmpty(t *testing.T) {
 	provider := newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do.", false, []*endpoint.Endpoint{})
 
-	if err := provider.ApplyChanges("_", &plan.Changes{}); err != nil {
+	if err := provider.ApplyChanges(&plan.Changes{}); err != nil {
 		t.Error(err)
 	}
 }
@@ -586,7 +586,7 @@ func setupGoogleRecords(t *testing.T, provider *googleProvider, endpoints []*end
 	clearGoogleRecords(t, provider, "zone-1-ext-dns-test-2-gcp-zalan-do")
 	clearGoogleRecords(t, provider, "zone-2-ext-dns-test-2-gcp-zalan-do")
 
-	records, err := provider.Records("_")
+	records, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -597,7 +597,7 @@ func setupGoogleRecords(t *testing.T, provider *googleProvider, endpoints []*end
 		t.Fatal(err)
 	}
 
-	records, err = provider.Records("_")
+	records, err = provider.Records()
 	if err != nil {
 		t.Fatal(err)
 	}

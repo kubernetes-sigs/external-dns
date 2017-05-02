@@ -70,7 +70,7 @@ func testTXTRegistryRecords(t *testing.T) {
 func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	p.ApplyChanges("_", &plan.Changes{
+	p.ApplyChanges(&plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME", ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", "CNAME", ""),
@@ -135,7 +135,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	}
 
 	r, _ := NewTXTRegistry(p, "txt.", "owner")
-	records, _ := r.Records(testZone)
+	records, _ := r.Records()
 	if !testutils.SameEndpoints(records, expectedRecords) {
 		t.Error("incorrect result returned from txt registry")
 	}
@@ -144,7 +144,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	p.ApplyChanges(testZone, &plan.Changes{
+	p.ApplyChanges(&plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME", ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", "CNAME", ""),
@@ -209,7 +209,7 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 	}
 
 	r, _ := NewTXTRegistry(p, "", "owner")
-	records, _ := r.Records(testZone)
+	records, _ := r.Records()
 
 	if !testutils.SameEndpoints(records, expectedRecords) {
 		t.Error("incorrect result returned from txt registry")
@@ -224,7 +224,7 @@ func testTXTRegistryApplyChanges(t *testing.T) {
 func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	p.ApplyChanges(testZone, &plan.Changes{
+	p.ApplyChanges(&plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME", ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", "CNAME", ""),
@@ -286,7 +286,7 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 			t.Error("incorrect plan changes are passed to provider")
 		}
 	}
-	err := r.ApplyChanges(testZone, changes)
+	err := r.ApplyChanges(changes)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -295,7 +295,7 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	p.ApplyChanges(testZone, &plan.Changes{
+	p.ApplyChanges(&plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME", ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", "CNAME", ""),
@@ -353,7 +353,7 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 			t.Error("incorrect plan changes are passed to provider")
 		}
 	}
-	err := r.ApplyChanges(testZone, changes)
+	err := r.ApplyChanges(changes)
 	if err != nil {
 		t.Fatal(err)
 	}
