@@ -85,7 +85,7 @@ spec:
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
         - --registry=txt
         - --txt-owner-id=my-identifier
-        - --domain=external-dns-test.gcp.zalan.do. # will make ExternalDNS see only the hosted zones matching provided domain
+        - --domain=external-dns-test.gcp.zalan.do. #will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --google-project=zalando-external-dns-test
 ```
 

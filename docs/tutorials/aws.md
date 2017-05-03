@@ -29,6 +29,8 @@ ns-5514.awsdns-53.org.
 ...
 ```
 
+In this case it's the ones shown above but your's will differ.
+
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
@@ -57,7 +59,7 @@ spec:
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
         - --registry=txt
         - --txt-owner-id=my-identifier
-        - --domain=external-dns-test.my-org.com. # will make ExternalDNS see only the hosted zones matching provided domain
+        - --domain=external-dns-test.my-org.com. # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
 ```
 
 ## Verify ExternalDNS works
