@@ -178,7 +178,8 @@
         {"shape":"DeploymentLimitExceededException"},
         {"shape":"InvalidTargetInstancesException"},
         {"shape":"InvalidAutoRollbackConfigException"},
-        {"shape":"InvalidLoadBalancerInfoException"}
+        {"shape":"InvalidLoadBalancerInfoException"},
+        {"shape":"InvalidFileExistsBehaviorException"}
       ]
     },
     "CreateDeploymentConfig":{
@@ -467,7 +468,8 @@
         {"shape":"InvalidNextTokenException"},
         {"shape":"InvalidDeploymentIdException"},
         {"shape":"InvalidInstanceStatusException"},
-        {"shape":"InvalidInstanceTypeException"}
+        {"shape":"InvalidInstanceTypeException"},
+        {"shape":"InvalidDeploymentInstanceTypeException"}
       ]
     },
     "ListDeployments":{
@@ -966,7 +968,8 @@
         "ignoreApplicationStopFailures":{"shape":"Boolean"},
         "targetInstances":{"shape":"TargetInstances"},
         "autoRollbackConfiguration":{"shape":"AutoRollbackConfiguration"},
-        "updateOutdatedInstancesOnly":{"shape":"Boolean"}
+        "updateOutdatedInstancesOnly":{"shape":"Boolean"},
+        "fileExistsBehavior":{"shape":"FileExistsBehavior"}
       }
     },
     "CreateDeploymentOutput":{
@@ -1147,6 +1150,7 @@
         "deploymentGroupName":{"shape":"DeploymentGroupName"},
         "deploymentConfigName":{"shape":"DeploymentConfigName"},
         "deploymentId":{"shape":"DeploymentId"},
+        "previousRevision":{"shape":"RevisionLocation"},
         "revision":{"shape":"RevisionLocation"},
         "status":{"shape":"DeploymentStatus"},
         "errorInformation":{"shape":"ErrorInformation"},
@@ -1165,7 +1169,8 @@
         "instanceTerminationWaitTimeStarted":{"shape":"Boolean"},
         "blueGreenDeploymentConfiguration":{"shape":"BlueGreenDeploymentConfiguration"},
         "loadBalancerInfo":{"shape":"LoadBalancerInfo"},
-        "additionalDeploymentStatusInfo":{"shape":"AdditionalDeploymentStatusInfo"}
+        "additionalDeploymentStatusInfo":{"shape":"AdditionalDeploymentStatusInfo"},
+        "fileExistsBehavior":{"shape":"FileExistsBehavior"}
       }
     },
     "DeploymentIsNotInReadyStateException":{
@@ -1343,6 +1348,14 @@
       }
     },
     "ErrorMessage":{"type":"string"},
+    "FileExistsBehavior":{
+      "type":"string",
+      "enum":[
+        "DISALLOW",
+        "OVERWRITE",
+        "RETAIN"
+      ]
+    },
     "GenericRevisionInfo":{
       "type":"structure",
       "members":{
@@ -1677,6 +1690,12 @@
       },
       "exception":true
     },
+    "InvalidDeploymentInstanceTypeException":{
+      "type":"structure",
+      "members":{
+      },
+      "exception":true
+    },
     "InvalidDeploymentStatusException":{
       "type":"structure",
       "members":{
@@ -1690,6 +1709,12 @@
       "exception":true
     },
     "InvalidEC2TagException":{
+      "type":"structure",
+      "members":{
+      },
+      "exception":true
+    },
+    "InvalidFileExistsBehaviorException":{
       "type":"structure",
       "members":{
       },

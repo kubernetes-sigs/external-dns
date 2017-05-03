@@ -1,5 +1,5 @@
-hash: 9acd732aa42d366638309eb85248ff41cdef27870c09a060502d9fec5ed84e8f
-updated: 2017-05-15T11:29:00.450041553+02:00
+hash: c00aa897138844c5db59c71eabfeb24df7b9632db00ef8f038027d4b022a428b
+updated: 2017-05-23T16:20:11.952490108+02:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -17,7 +17,7 @@ imports:
 - name: github.com/alecthomas/units
   version: 2efee857e7cfd4f3d0138cc3cbb1b4966962b93a
 - name: github.com/aws/aws-sdk-go
-  version: cea091b5b8fe6fcecf0eb6ec8f1a2570ff4ee6a7
+  version: 48385c808742c8f5f3d3a466d172a52b961ecd7c
   subpackages:
   - aws
   - aws/awserr
@@ -97,7 +97,7 @@ imports:
 - name: github.com/kubernetes/repo-infra
   version: 4667983ff6a1c7dff07191106392ad4bcad60c29
 - name: github.com/linki/instrumented_http
-  version: 74fdeadb7e945ec3cc9dcbefed6a6b148ef00d18
+  version: 0a1a371dd29c69916c8a13be23849354332674c7
 - name: github.com/mailru/easyjson
   version: d5b7844b561a7bc640052f1b935f7b800330d7e0
   subpackages:
@@ -108,6 +108,10 @@ imports:
   version: fc2b8d3a73c4867e51861bbdd5ae3c1f0869dd6a
   subpackages:
   - pbutil
+- name: github.com/pmezard/go-difflib
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  subpackages:
+  - difflib
 - name: github.com/prometheus/client_golang
   version: c5b7fccd204277076155f10851dad72b76a49317
   subpackages:
@@ -132,6 +136,14 @@ imports:
   version: ba1b36c82c5e05c4f912a88eab0dcd91a171688f
 - name: github.com/spf13/pflag
   version: 9ff6c6923cfffbcd502984b8e0c80539a94968b7
+- name: github.com/stretchr/objx
+  version: cbeaeb16a013161a98496fad62933b1d21786672
+- name: github.com/stretchr/testify
+  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  subpackages:
+  - assert
+  - mock
+  - require
 - name: github.com/ugorji/go
   version: ded73eae5db7e7a0ef6f55aace87a2873c5d2b74
   subpackages:

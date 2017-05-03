@@ -357,6 +357,29 @@ func ExampleInspector_DescribeRulesPackages() {
 	fmt.Println(resp)
 }
 
+func ExampleInspector_GetAssessmentReport() {
+	sess := session.Must(session.NewSession())
+
+	svc := inspector.New(sess)
+
+	params := &inspector.GetAssessmentReportInput{
+		AssessmentRunArn: aws.String("Arn"),              // Required
+		ReportFileFormat: aws.String("ReportFileFormat"), // Required
+		ReportType:       aws.String("ReportType"),       // Required
+	}
+	resp, err := svc.GetAssessmentReport(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
 func ExampleInspector_GetTelemetryMetadata() {
 	sess := session.Must(session.NewSession())
 

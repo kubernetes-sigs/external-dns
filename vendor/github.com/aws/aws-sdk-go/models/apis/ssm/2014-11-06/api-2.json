@@ -1071,7 +1071,9 @@
         {"shape":"InvalidDocumentVersion"},
         {"shape":"AssociationDoesNotExist"},
         {"shape":"InvalidUpdate"},
-        {"shape":"TooManyUpdates"}
+        {"shape":"TooManyUpdates"},
+        {"shape":"InvalidDocument"},
+        {"shape":"InvalidTarget"}
       ]
     },
     "UpdateAssociationStatus":{
@@ -2742,6 +2744,14 @@
       "member":{
         "shape":"FailedCreateAssociation",
         "locationName":"FailedCreateAssociationEntry"
+      }
+    },
+    "FailureDetails":{
+      "type":"structure",
+      "members":{
+        "FailureStage":{"shape":"String"},
+        "FailureType":{"shape":"String"},
+        "Details":{"shape":"AutomationParameterMap"}
       }
     },
     "Fault":{
@@ -5014,7 +5024,8 @@
         "Inputs":{"shape":"NormalStringMap"},
         "Outputs":{"shape":"AutomationParameterMap"},
         "Response":{"shape":"String"},
-        "FailureMessage":{"shape":"String"}
+        "FailureMessage":{"shape":"String"},
+        "FailureDetails":{"shape":"FailureDetails"}
       }
     },
     "StepExecutionList":{
@@ -5152,7 +5163,9 @@
         "Parameters":{"shape":"Parameters"},
         "DocumentVersion":{"shape":"DocumentVersion"},
         "ScheduleExpression":{"shape":"ScheduleExpression"},
-        "OutputLocation":{"shape":"InstanceAssociationOutputLocation"}
+        "OutputLocation":{"shape":"InstanceAssociationOutputLocation"},
+        "Name":{"shape":"DocumentName"},
+        "Targets":{"shape":"Targets"}
       }
     },
     "UpdateAssociationResult":{
