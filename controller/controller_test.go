@@ -21,10 +21,10 @@ import (
 	"testing"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
 	"github.com/kubernetes-incubator/external-dns/registry"
-	"github.com/kubernetes-incubator/external-dns/source"
 )
 
 // mockProvider returns mock endpoints and validates changes.
@@ -84,7 +84,7 @@ func newMockProvider(endpoints []*endpoint.Endpoint, changes *plan.Changes) prov
 // TestRunOnce tests that RunOnce correctly orchestrates the different components.
 func TestRunOnce(t *testing.T) {
 	// Fake some desired endpoints coming from our source.
-	source := source.NewMockSource(
+	source := testutils.NewMockSource(
 		[]*endpoint.Endpoint{
 			{
 				DNSName: "create-record",

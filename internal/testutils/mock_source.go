@@ -20,11 +20,20 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/source"
 )
 
 // MockSource returns mock endpoints.
 type MockSource struct {
 	mock.Mock
+}
+
+// NewMockSource returns a MockSource that returns the provided endpoints.
+func NewMockSource(endpoints []*endpoint.Endpoint) source.Source {
+	src := new(MockSource)
+	src.On("Endpoints").Return(endpoints, nil)
+
+	return src
 }
 
 // Endpoints returns the desired mock endpoints.
