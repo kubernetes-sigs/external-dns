@@ -16,7 +16,11 @@ limitations under the License.
 
 package source
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/kubernetes-incubator/external-dns/internal/testutils"
+)
 
 func TestStore(t *testing.T) {
 	t.Run("RegisterAndLookup", testRegisterAndLookup)
@@ -32,7 +36,7 @@ func testRegisterAndLookup(t *testing.T) {
 		{
 			"registered source is found by name",
 			map[string]Source{
-				"foo": NewMockSource(nil),
+				"foo": &testutils.MockSource{},
 			},
 		},
 	} {
@@ -61,8 +65,8 @@ func testLookupMultiple(t *testing.T) {
 		{
 			"multiple registered sources are found by names",
 			map[string]Source{
-				"foo": NewMockSource(nil),
-				"bar": NewMockSource(nil),
+				"foo": &testutils.MockSource{},
+				"bar": &testutils.MockSource{},
 			},
 			[]string{"foo", "bar"},
 			false,
@@ -70,8 +74,8 @@ func testLookupMultiple(t *testing.T) {
 		{
 			"multiple registered sources, one source not registered",
 			map[string]Source{
-				"foo": NewMockSource(nil),
-				"bar": NewMockSource(nil),
+				"foo": &testutils.MockSource{},
+				"bar": &testutils.MockSource{},
 			},
 			[]string{"foo", "baz"},
 			true,
