@@ -144,7 +144,6 @@ nginx.external-dns-test.gcp.zalan.do.  TXT   300  "heritage=external-dns,externa
 
 Note created TXT record alongside A record. TXT record signifies that the corresponding A record is managed by ExternalDNS. This makes ExternalDNS safe for running in environments where there are other records managed via other means.
 
-
 Let's check that we can resolve this DNS name. We'll ask the nameservers assigned to your zone first.
 
 ```console
@@ -195,7 +194,6 @@ $ gcloud dns record-sets list \
 NAME                                         TYPE  TTL  DATA
 via-ingress.external-dns-test.gcp.zalan.do.  A     300  130.211.46.224
 via-ingress.external-dns-test.gcp.zalan.do.  TXT   300  "heritage=external-dns,external-dns/owner=my-identifier"
-
 ```
 
 Let's check that we can resolve this DNS name as well.

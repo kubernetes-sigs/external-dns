@@ -84,7 +84,7 @@ It should be safe to run both `route53-kubernetes` and `external-dns` simultaneo
 
 ### Ownership
 
-External DNS should be *responsible* for the created records. Which means that the records should be tagged and only tagged records are viable for future deletion/update. It should not mess with pre-existing records created via other means
+External DNS should be *responsible* for the created records. Which means that the records should be tagged and only tagged records are viable for future deletion/update. It should not mess with pre-existing records created via other means.
 
 #### Ownership via TXT records
 
