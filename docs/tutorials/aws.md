@@ -9,14 +9,14 @@ This tutorial describes how to setup ExternalDNS for usage within a Kubernetes c
 Create a DNS zone which will contain the managed DNS records.
 
 ```console
-$ aws route53 create-hosted-zone --name "external-dns-test.my-org.org." --caller-reference "external-dns-test-$(date +%s)"
+$ aws route53 create-hosted-zone --name "external-dns-test.my-org.com." --caller-reference "external-dns-test-$(date +%s)"
 ```
 
 
 Make a note of the ID of the hosted zone you just created.
 
 ```console
-$ aws route53 list-hosted-zones-by-name --dns-name "external-dns-test.my-org.org." | jq -r '.HostedZones[0].Id'
+$ aws route53 list-hosted-zones-by-name --dns-name "external-dns-test.my-org.com." | jq -r '.HostedZones[0].Id'
 /hostedzone/ZEWFWZ4R16P7IB
 ```
 
@@ -57,7 +57,7 @@ spec:
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
         - --registry=txt
         - --txt-owner-id=my-identifier
-        - --domain=external-dns-test.my-org.org. # will make ExternalDNS see only the hosted zones matching provided domain
+        - --domain=external-dns-test.my-org.com. # will make ExternalDNS see only the hosted zones matching provided domain
 ```
 
 ## Verify ExternalDNS works
@@ -70,7 +70,7 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.org.
+    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com.
 spec:
   type: LoadBalancer
   ports:
@@ -102,7 +102,7 @@ After roughly two minutes check that a corresponding DNS record for your service
 
 ```console
 $ aws route53 list-resource-record-sets --hosted-zone-id "/hostedzone/ZEWFWZ4R16P7IB" \
-    --query "ResourceRecordSets[?Name == 'nginx.external-dns-test.my-org.org.']|[?Type == 'A']"
+    --query "ResourceRecordSets[?Name == 'nginx.external-dns-test.my-org.com.']|[?Type == 'A']"
 [
     {
       "AliasTarget": {
@@ -110,11 +110,11 @@ $ aws route53 list-resource-record-sets --hosted-zone-id "/hostedzone/ZEWFWZ4R16
           "DNSName": "ae11c2360188411e7951602725593fd1-1224345803.eu-central-1.elb.amazonaws.com.",
           "EvaluateTargetHealth": true
       },
-      "Name": "external-dns-test.my-org.org.",
+      "Name": "external-dns-test.my-org.com.",
       "Type": "A"
     },
     {
-      "Name": "external-dns-test.my-org.org",
+      "Name": "external-dns-test.my-org.com",
       "TTL": 300,
       "ResourceRecords": [
           {
@@ -131,14 +131,14 @@ Note created TXT record alongside ALIAS record. TXT record signifies that the co
 Let's check that we can resolve this DNS name. We'll ask the nameservers assigned to your zone first.
 
 ```console
-$ dig +short @ns-5514.awsdns-53.org. nginx.external-dns-test.my-org.org.
+$ dig +short @ns-5514.awsdns-53.org. nginx.external-dns-test.my-org.com.
 ae11c2360188411e7951602725593fd1-1224345803.eu-central-1.elb.amazonaws.com.
 ```
 
 If you hooked up your DNS zone with its parent zone correctly you can use `curl` to access your site.
 
 ```console
-$ curl nginx.external-dns-test.my-org.org.
+$ curl nginx.external-dns-test.my-org.com.
 <!DOCTYPE html>
 <html>
 <head>
