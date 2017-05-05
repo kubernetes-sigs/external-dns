@@ -64,6 +64,44 @@ func TestApply(t *testing.T) {
 	}
 }
 
+func TestApplyOwnershipPolicy(t *testing.T) {
+	// empty list of records
+	empty := []*endpoint.Endpoint{}
+	// a simple entry
+	fooV1 := []*endpoint.Endpoint{{DNSName: "foo", Target: "v1", Labels: map[string]string{"owner": "foo"}}}
+	// the same entry but with different target
+	fooV2 := []*endpoint.Endpoint{{DNSName: "foo", Target: "v2", Labels: map[string]string{"owner": "foo"}}}
+	// another two simple entries
+	bar := []*endpoint.Endpoint{{DNSName: "bar", Target: "v1", Labels: map[string]string{"owner": "foo"}}}
+	baz := []*endpoint.Endpoint{{DNSName: "baz", Target: "v1", Labels: map[string]string{"owner": "foo"}}}
+
+	for _, tc := range []struct {
+		policy   Policy
+		changes  *Changes
+		expected *Changes
+	}{
+		{
+			&OwnershipPolicy{Owner: "foo"},
+			&Changes{Create: baz, UpdateOld: fooV1, UpdateNew: fooV2, Delete: bar},
+			&Changes{Create: baz, UpdateOld: fooV1, UpdateNew: fooV2, Delete: bar},
+		},
+		{
+			&OwnershipPolicy{Owner: "bar"},
+			&Changes{Create: baz, UpdateOld: fooV1, UpdateNew: fooV2, Delete: bar},
+			&Changes{Create: empty, UpdateOld: empty, UpdateNew: empty, Delete: empty},
+		},
+	} {
+		// apply policy
+		changes := tc.policy.Apply(tc.changes)
+
+		// validate changes after applying policy
+		validateEntries(t, changes.Create, tc.expected.Create)
+		validateEntries(t, changes.UpdateOld, tc.expected.UpdateOld)
+		validateEntries(t, changes.UpdateNew, tc.expected.UpdateNew)
+		validateEntries(t, changes.Delete, tc.expected.Delete)
+	}
+}
+
 // TestPolicies tests that policies are correctly registered.
 func TestPolicies(t *testing.T) {
 	validatePolicy(t, Policies["sync"], &SyncPolicy{})

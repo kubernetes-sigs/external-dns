@@ -16,6 +16,10 @@ limitations under the License.
 
 package plan
 
+import (
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+)
+
 // Policy allows to apply different rules to a set of changes.
 type Policy interface {
 	Apply(changes *Changes) *Changes
@@ -25,6 +29,31 @@ type Policy interface {
 var Policies = map[string]Policy{
 	"sync":        &SyncPolicy{},
 	"upsert-only": &UpsertOnlyPolicy{},
+}
+
+type OwnershipPolicy struct {
+	Owner string
+}
+
+func (p *OwnershipPolicy) Apply(changes *Changes) *Changes {
+	changes.Create = filterByOwner(p.Owner, changes.Create)
+	changes.UpdateOld = filterByOwner(p.Owner, changes.UpdateOld)
+	changes.UpdateNew = filterByOwner(p.Owner, changes.UpdateNew)
+	changes.Delete = filterByOwner(p.Owner, changes.Delete)
+
+	return changes
+}
+
+func filterByOwner(owner string, endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	result := []*endpoint.Endpoint{}
+
+	for _, ep := range endpoints {
+		if ep.Labels["owner"] == owner {
+			result = append(result, ep)
+		}
+	}
+
+	return result
 }
 
 // SyncPolicy allows for full synchronization of DNS records.
