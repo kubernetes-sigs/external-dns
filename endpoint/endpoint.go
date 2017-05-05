@@ -58,5 +58,5 @@ func (e *Endpoint) MergeLabels(labels map[string]string) {
 }
 
 func (e *Endpoint) String() string {
-	return fmt.Sprintf(`%s -> %s (type "%s")`, e.DNSName, e.Target, e.RecordType)
+	return fmt.Sprintf("(%s,%s,%s)", e.DNSName, e.Target, e.RecordType)
 }

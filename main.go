@@ -25,6 +25,8 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	kitlog "github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/linki/instrumented_http"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -54,11 +56,18 @@ func main() {
 	if cfg.LogFormat == "json" {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
+
+	logger := kitlog.NewLogfmtLogger(kitlog.NewSyncWriter(os.Stderr))
+	logger = kitlog.With(logger, "time", kitlog.DefaultTimestampUTC, "caller", kitlog.DefaultCaller)
+
 	if cfg.DryRun {
 		log.Info("running in dry-run mode. No changes to DNS records will be made.")
 	}
 	if cfg.Debug {
 		log.SetLevel(log.DebugLevel)
+		logger = level.NewFilter(logger, level.AllowDebug())
+	} else {
+		logger = level.NewFilter(logger, level.AllowInfo())
 	}
 
 	stopChan := make(chan struct{}, 1)
@@ -88,7 +97,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
+	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources), logger)
 
 	var p provider.Provider
 	switch cfg.Provider {

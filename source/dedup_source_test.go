@@ -19,6 +19,8 @@ package source
 import (
 	"testing"
 
+	"github.com/go-kit/kit/log"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
@@ -91,7 +93,7 @@ func testDedupEndpoints(t *testing.T) {
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			// Create our object under test and get the endpoints.
-			source := NewDedupSource(NewMockSource(tc.endpoints))
+			source := NewDedupSource(NewMockSource(tc.endpoints), log.NewNopLogger())
 
 			endpoints, err := source.Endpoints()
 			if err != nil {
