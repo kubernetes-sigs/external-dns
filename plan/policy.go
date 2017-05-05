@@ -16,10 +16,6 @@ limitations under the License.
 
 package plan
 
-import (
-	log "github.com/Sirupsen/logrus"
-)
-
 // Policy allows to apply different rules to a set of changes.
 type Policy interface {
 	Apply(changes *Changes) *Changes
@@ -44,7 +40,6 @@ type UpsertOnlyPolicy struct{}
 
 // Apply applies the upsert-only policy which strips out any deletions.
 func (p *UpsertOnlyPolicy) Apply(changes *Changes) *Changes {
-	log.Debugf("Records to be excluded from the delete list due to upsert-only policy: %v", changes.Delete)
 	return &Changes{
 		Create:    changes.Create,
 		UpdateOld: changes.UpdateOld,
