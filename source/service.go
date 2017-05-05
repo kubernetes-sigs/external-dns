@@ -134,14 +134,33 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 // endpointsFromService extracts the endpoints from a service object
 func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
-
 	// Get the desired hostname of the service from the annotation.
 	hostname, exists := svc.Annotations[hostnameAnnotationKey]
 	if !exists {
 		return nil
 	}
 
-	// Create a corresponding endpoint for each configured external entrypoint.
+	switch svc.Spec.Type {
+	case "LoadBalancer":
+		endpoints = extractLoadBalancerEndpoints(svc, hostname)
+	case "ClusterIP":
+		endpoints = extractServiceIps(svc, hostname)
+	}
+
+	return endpoints
+}
+
+func extractServiceIps(svc *v1.Service, hostname string) []*endpoint.Endpoint {
+	if svc.Spec.ClusterIP == "None" {
+		log.Debugf("Unable to associate %s headless service with a Cluster IP", svc.Name)
+		return []*endpoint.Endpoint{}
+	}
+
+	return []*endpoint.Endpoint{endpoint.NewEndpoint(hostname, svc.Spec.ClusterIP, "")}
+}
+
+func extractLoadBalancerEndpoints(svc *v1.Service, hostname string) []*endpoint.Endpoint {
+	var endpoints []*endpoint.Endpoint
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
 			//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
@@ -151,6 +170,5 @@ func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
 			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
 		}
 	}
-
 	return endpoints
 }
