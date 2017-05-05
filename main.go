@@ -86,7 +86,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	multiSource := source.NewMultiSource(sources)
+	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
 
 	var p provider.Provider
 	switch cfg.Provider {
@@ -121,7 +121,7 @@ func main() {
 	}
 
 	ctrl := controller.Controller{
-		Source:   multiSource,
+		Source:   endpointsSource,
 		Registry: r,
 		Policy:   policy,
 		Interval: cfg.Interval,
