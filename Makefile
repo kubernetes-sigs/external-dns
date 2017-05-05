@@ -32,7 +32,7 @@ cover-html: cover
 .PHONY: verify test
 
 test:
-	go test -v $(shell go list ./... | grep -v /vendor/)
+	go test -v -race $(shell go list ./... | grep -v /vendor/)
 
 verify: test
 	vendor/github.com/kubernetes/repo-infra/verify/verify-boilerplate.sh --rootdir=${CURDIR}
