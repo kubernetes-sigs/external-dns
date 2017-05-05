@@ -117,6 +117,7 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 		return nil, fmt.Errorf("failed to apply template on service %s: %v", svc.String(), err)
 	}
 
+	//TODO(jrnt30) Add in support for template extraction with ClusterIP
 	hostname := buf.String()
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
@@ -134,6 +135,7 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 // endpointsFromService extracts the endpoints from a service object
 func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
+
 	// Get the desired hostname of the service from the annotation.
 	hostname, exists := svc.Annotations[hostnameAnnotationKey]
 	if !exists {
@@ -161,6 +163,7 @@ func extractServiceIps(svc *v1.Service, hostname string) []*endpoint.Endpoint {
 
 func extractLoadBalancerEndpoints(svc *v1.Service, hostname string) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
+
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
 			//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
@@ -170,5 +173,6 @@ func extractLoadBalancerEndpoints(svc *v1.Service, hostname string) []*endpoint.
 			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
 		}
 	}
+
 	return endpoints
 }

@@ -73,6 +73,7 @@ func testServiceEndpoints(t *testing.T) {
 		targetNamespace string
 		svcNamespace    string
 		svcName         string
+		svcType         v1.ServiceType
 		compatibility   string
 		fqdntemplate    string
 		labels          map[string]string
@@ -86,6 +87,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
 			map[string]string{},
@@ -99,6 +101,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
 			map[string]string{},
@@ -116,6 +119,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
 			map[string]string{},
@@ -133,6 +137,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
 			map[string]string{},
@@ -151,6 +156,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
 			map[string]string{},
@@ -169,6 +175,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"",
 			"{{.Name}}.ext-dns.test.com",
 			map[string]string{},
@@ -185,6 +192,7 @@ func testServiceEndpoints(t *testing.T) {
 			"testing",
 			"testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
 			map[string]string{},
@@ -202,6 +210,7 @@ func testServiceEndpoints(t *testing.T) {
 			"testing",
 			"other-testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
 			map[string]string{},
@@ -217,6 +226,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"other-testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
 			map[string]string{},
@@ -234,6 +244,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
 			map[string]string{},
@@ -249,6 +260,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
 			map[string]string{},
@@ -267,6 +279,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
 			map[string]string{},
@@ -282,6 +295,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"mate",
 			"",
 			map[string]string{},
@@ -299,6 +313,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"molecule",
 			"",
 			map[string]string{
@@ -318,6 +333,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"",
 			"{{.Name}}.bar.example.com",
 			map[string]string{},
@@ -334,6 +350,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"",
 			"{{.Calibre}}.bar.example.com",
 			map[string]string{},
@@ -347,6 +364,7 @@ func testServiceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"mate",
 			"{{.Name}}.bar.example.com",
 			map[string]string{},
@@ -375,6 +393,9 @@ func testServiceEndpoints(t *testing.T) {
 			}
 
 			service := &v1.Service{
+				Spec: v1.ServiceSpec{
+					Type: tc.svcType,
+				},
 				ObjectMeta: v1.ObjectMeta{
 					Namespace:   tc.svcNamespace,
 					Name:        tc.svcName,
