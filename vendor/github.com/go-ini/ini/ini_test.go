@@ -207,6 +207,16 @@ key2=c\d\`))
 		So(cfg.Section("").Key("key2").String(), ShouldEqual, `c\d\`)
 	})
 
+	Convey("Load with ignoring inline comments", t, func() {
+		cfg, err := LoadSources(LoadOptions{IgnoreInlineComment: true}, []byte(`key1=value ;comment
+key2=value #comment2`))
+		So(err, ShouldBeNil)
+		So(cfg, ShouldNotBeNil)
+
+		So(cfg.Section("").Key("key1").String(), ShouldEqual, `value ;comment`)
+		So(cfg.Section("").Key("key2").String(), ShouldEqual, `value #comment2`)
+	})
+
 	Convey("Load with boolean type keys", t, func() {
 		cfg, err := LoadSources(LoadOptions{AllowBooleanKeys: true}, []byte(`key1=hello
 key2
@@ -228,6 +238,31 @@ key2
 key4
 key5
 `)
+	})
+}
+
+func Test_File_ChildSections(t *testing.T) {
+	Convey("Find child sections by parent name", t, func() {
+		cfg, err := Load([]byte(`
+[node]
+
+[node.biz1]
+
+[node.biz2]
+
+[node.biz3]
+
+[node.bizN]
+`))
+		So(err, ShouldBeNil)
+		So(cfg, ShouldNotBeNil)
+
+		children := cfg.ChildSections("node")
+		names := make([]string, len(children))
+		for i := range children {
+			names[i] = children[i].name
+		}
+		So(strings.Join(names, ","), ShouldEqual, "node.biz1,node.biz2,node.biz3,node.bizN")
 	})
 }
 
