@@ -15,9 +15,9 @@ The [FAQ](docs/faq.md) contains additional information and addresses several que
 
 ## Getting started
 
-ExternalDNS' current release is `v0.3`. This version allows you to keep selected zones (via `--domain`) in Google's [CloudDNS](https://cloud.google.com/dns/docs/) or [AWS' Route 53](https://aws.amazon.com/route53/) synchronized with Ingresses and Services of `type=LoadBalancer` in your cluster. 
+ExternalDNS' current release is `v0.3`. This version allows you to keep selected zones (via `--domain`) in Google's [CloudDNS](https://cloud.google.com/dns/docs/) or [AWS' Route 53](https://aws.amazon.com/route53/) synchronized with Ingresses and Services of `type=LoadBalancer` in your cluster.
 
-From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.3` with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API. 
+From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.3` with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
 ### Technical Requirements
 
@@ -58,7 +58,7 @@ This should output the DNS records it will modify to match the managed zone with
 Once you're satisfied with the result, you can run ExternalDNS like you would run it in your cluster: as a control loop, and **not in dry-run** mode:
 
 ```console
-$ external-dns --registry txt --txt-owner-id my-cluster-id  --provider google --google-project example-project --source service
+$ external-dns --registry txt --txt-owner-id my-cluster-id --provider google --google-project example-project --source service
 ```
 
 Check that ExternalDNS has created the desired DNS record for your Service and that it points to its load balancer's IP. Then try to resolve it:
@@ -82,7 +82,7 @@ ExternalDNS was built with extensibility in mind. Adding and experimenting with 
 
 Here's a rough outline on what is to come (subject to change):
 
-### v0.1 
+### v0.1
 
 - [x] Support for Google CloudDNS
 - [x] Support for Kubernetes Services
