@@ -83,4 +83,4 @@ Yes — Zalando replaced [Mate](https://github.com/zalando-incubator/mate) with 
 
 ### How can we start using ExternalDNS?
 
-Check out the following decriptive tutorials on how to run ExternalDNS in [GKE](tutorials/gke.md) and [AWS](tutorial/aws.md). 
+Check out the following decriptive tutorials on how to run ExternalDNS in [GKE](tutorials/gke.md) and [AWS](tutorials/aws.md). 
