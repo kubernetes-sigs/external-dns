@@ -15,17 +15,16 @@ The [FAQ](docs/faq.md) contains additional information and addresses several que
 
 ## Getting started
 
-ExternalDNS' current release is `v0.2`. This version allows you to keep a managed zone in Google's [CloudDNS](https://cloud.google.com/dns/docs/) or [AWS' Route 53](https://aws.amazon.com/route53/) synchronized with Ingresses and Services of `type=LoadBalancer` in your cluster.
+ExternalDNS' current release is `v0.3`. This version allows you to keep selected zones (via `--domain`) in Google's [CloudDNS](https://cloud.google.com/dns/docs/) or [AWS' Route 53](https://aws.amazon.com/route53/) synchronized with Ingresses and Services of `type=LoadBalancer` in your cluster.
 
-In this release, ExternalDNS is limited to—and takes full ownership of—a single managed zone. In other words, if you have any existing records in that zone, they will be removed. We encourage you to try out ExternalDNS in its own zone first to see if that model works for you. However, ExternalDNS runs in dryRun mode by default, and won't make any changes to your infrastructure. So as long as you don't change that flag, you're safe.
+From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.3` with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
 ### Technical Requirements
 
 Make sure you have the following prerequisites:
 * A local Go 1.7+ development environment.
-* Access to a Google project with the DNS API enabled.
+* Access to a Google/AWS account with the DNS API enabled.
 * Access to a Kubernetes cluster that supports exposing Services, e.g. GKE.
-* A properly set up, **unused**, and **empty** hosted zone in Google CloudDNS.
 
 ### Setup Steps
 
@@ -48,18 +47,18 @@ Annotate the Service with your desired external DNS name. Make sure to change `e
 $ kubectl annotate service nginx "external-dns.alpha.kubernetes.io/hostname=nginx.example.org."
 ```
 
-Locally run a single sync loop of ExternalDNS. Make sure to change the Google project to one you control, and the zone identifier to an **unused** and **empty** hosted zone in that project's Google CloudDNS:
+Locally run a single sync loop of ExternalDNS.
 
 ```console
-$ external-dns --zone example-org --provider google --google-project example-project --source service --once
+$ external-dns --registry txt --txt-owner-id my-cluster-id --provider google --google-project example-project --source service --once --dry-run
 ```
 
-This should output the DNS records it will modify to match the managed zone with the DNS records you desire.
+This should output the DNS records it will modify to match the managed zone with the DNS records you desire. Note TXT records having `my-cluster-id` value embedded. Those are used to ensure that ExternalDNS is aware of the records it manages.
 
-Once you're satisfied with the result, you can run ExternalDNS like you would run it in your cluster: as a control loop, and not in dryRun mode:
+Once you're satisfied with the result, you can run ExternalDNS like you would run it in your cluster: as a control loop, and **not in dry-run** mode:
 
 ```console
-$ external-dns --zone example-org --provider google --google-project example-project --source service --dry-run=false
+$ external-dns --registry txt --txt-owner-id my-cluster-id --provider google --google-project example-project --source service
 ```
 
 Check that ExternalDNS has created the desired DNS record for your Service and that it points to its load balancer's IP. Then try to resolve it:
@@ -81,31 +80,29 @@ The [tutorials](docs/tutorials) section contains examples, including Ingress res
 
 ExternalDNS was built with extensibility in mind. Adding and experimenting with new DNS providers and sources of desired DNS records should be as easy as possible. It should also be possible to modify how ExternalDNS behaves—e.g. whether it should add records but never delete them.
 
-We're working on an ownership system that allows ExternalDNS to never modify records over which it lacks control.
-
-Here's a rough outline on what is to come:
+Here's a rough outline on what is to come (subject to change):
 
 ### v0.1
 
-* Support for Google CloudDNS
-* Support for Kubernetes Services
+- [x] Support for Google CloudDNS
+- [x] Support for Kubernetes Services
 
 ### v0.2
 
-* Support for AWS Route 53
-* Support for Kubernetes Ingresses
+- [x] Support for AWS Route 53
+- [x] Support for Kubernetes Ingresses
 
-### v0.3
+### v0.3 - _current version_
 
-* Support for AWS Route 53 via ALIAS
-* Support for multiple zones
-* Ownership System
+- [x] Support for AWS Route 53 via ALIAS
+- [x] Support for multiple zones
+- [x] Ownership System
 
 ### v1.0
 
-* Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller)
-* Ability to replace Zalando's [Mate](https://github.com/zalando-incubator/mate)
-* Ability to replace Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
+- [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller)
+- [ ] Ability to replace Zalando's [Mate](https://github.com/zalando-incubator/mate)
+- [ ] Ability to replace Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 
 ### Yet to be defined
 
