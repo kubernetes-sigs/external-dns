@@ -19,6 +19,8 @@ package provider
 import (
 	"errors"
 
+	"strings"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
@@ -36,12 +38,13 @@ var (
 	ErrInvalidBatchRequest = errors.New("invalid batch request")
 )
 
-type zone map[string][]*InMemoryRecord
-
 // InMemoryProvider - dns provider only used for testing purposes
 // initialized as dns provider with no records
 type InMemoryProvider struct {
 	zones          map[string]zone
+	domain         string
+	client         *inMemoryClient
+	filter         *filter
 	OnApplyChanges func(changes *plan.Changes)
 	OnRecords      func()
 }
@@ -50,38 +53,41 @@ type InMemoryProvider struct {
 func NewInMemoryProvider() *InMemoryProvider {
 	return &InMemoryProvider{
 		zones:          map[string]zone{},
+		filter:         &filter{},
 		OnApplyChanges: func(changes *plan.Changes) {},
 		OnRecords:      func() {},
+		domain:         "",
+		client:         newInMemoryClient(),
 	}
-}
-
-// InMemoryRecord - record stored in memory
-// has additional fields:
-// Type - type of string (TODO: Type should probably be part of endpoint struct)
-// Payload - string - additional information stored
-type InMemoryRecord struct {
-	Type    string
-	Payload string
-	*endpoint.Endpoint
 }
 
 // CreateZone adds new zone if not present
 func (im *InMemoryProvider) CreateZone(newZone string) error {
-	if _, exist := im.zones[newZone]; exist {
-		return ErrZoneAlreadyExists
-	}
-	im.zones[newZone] = zone{}
-	return nil
+	return im.client.CreateZone(newZone)
+}
+
+func (im *InMemoryProvider) Zones() map[string]string {
+	return im.filter.Zones(im.client.Zones())
 }
 
 // Records returns the list of endpoints
-func (im *InMemoryProvider) Records(zone string) ([]*endpoint.Endpoint, error) {
+func (im *InMemoryProvider) Records(_ string) ([]*endpoint.Endpoint, error) {
 	defer im.OnRecords()
 
-	if _, exists := im.zones[zone]; !exists {
-		return nil, ErrZoneNotFound
+	endpoints := make([]*endpoint.Endpoint, 0)
+
+	for zoneID := range im.Zones() {
+		records, err := im.client.Records(zoneID)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, record := range records {
+			endpoints = append(endpoints, endpoint.NewEndpoint(record.Name, record.Target, record.Type))
+		}
 	}
-	return im.endpoints(zone), nil
+
+	return endpoints, nil
 }
 
 // ApplyChanges simply modifies records in memory
@@ -89,38 +95,57 @@ func (im *InMemoryProvider) Records(zone string) ([]*endpoint.Endpoint, error) {
 // create record - record should not exist
 // update/delete record - record should exist
 // create/update/delete lists should not have overlapping records
-func (im *InMemoryProvider) ApplyChanges(zone string, changes *plan.Changes) error {
+func (im *InMemoryProvider) ApplyChanges(_ string, changes *plan.Changes) error {
 	defer im.OnApplyChanges(changes)
 
-	if err := im.validateChangeBatch(zone, changes); err != nil {
-		return err
+	perZoneChanges := map[string]*plan.Changes{}
+
+	zones := im.Zones()
+	for zoneID := range zones {
+		perZoneChanges[zoneID] = &plan.Changes{}
 	}
 
-	for _, newEndpoint := range changes.Create {
-		im.zones[zone][newEndpoint.DNSName] = append(im.zones[zone][newEndpoint.DNSName], &InMemoryRecord{
-			Type:     suitableType(newEndpoint),
-			Endpoint: newEndpoint,
+	for _, ep := range changes.Create {
+		zoneID := im.filter.EndpointZoneID(ep, zones)
+		perZoneChanges[zoneID].Create = append(perZoneChanges[zoneID].Create, ep)
+	}
+	for _, ep := range changes.UpdateNew {
+		zoneID := im.filter.EndpointZoneID(ep, zones)
+		perZoneChanges[zoneID].UpdateNew = append(perZoneChanges[zoneID].UpdateNew, ep)
+	}
+	for _, ep := range changes.UpdateOld {
+		zoneID := im.filter.EndpointZoneID(ep, zones)
+		perZoneChanges[zoneID].UpdateOld = append(perZoneChanges[zoneID].UpdateOld, ep)
+	}
+	for _, ep := range changes.Delete {
+		zoneID := im.filter.EndpointZoneID(ep, zones)
+		perZoneChanges[zoneID].Delete = append(perZoneChanges[zoneID].Delete, ep)
+	}
+
+	for zoneID := range perZoneChanges {
+		change := &inMemoryChange{
+			Create:    im.convertToInMemoryRecord(perZoneChanges[zoneID].Create),
+			UpdateNew: im.convertToInMemoryRecord(perZoneChanges[zoneID].UpdateNew),
+			UpdateOld: im.convertToInMemoryRecord(perZoneChanges[zoneID].UpdateOld),
+			Delete:    im.convertToInMemoryRecord(perZoneChanges[zoneID].Delete),
+		}
+		err := im.client.ApplyChanges(zoneID, change)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (im *InMemoryProvider) convertToInMemoryRecord(endpoints []*endpoint.Endpoint) []*inMemoryRecord {
+	records := []*inMemoryRecord{}
+	for _, ep := range endpoints {
+		records = append(records, &inMemoryRecord{
+			Type:   suitableType(ep),
+			Name:   ep.DNSName,
+			Target: ep.Target,
 		})
-	}
-	for _, updateEndpoint := range changes.UpdateNew {
-		for _, curEndpoint := range changes.UpdateOld {
-			if curEndpoint.DNSName == updateEndpoint.DNSName && curEndpoint.RecordType == updateEndpoint.RecordType {
-				for _, recordToUpdate := range im.zones[zone][updateEndpoint.DNSName] {
-					if recordToUpdate.Target == curEndpoint.Target {
-						recordToUpdate.Target = updateEndpoint.Target
-					}
-				}
-			}
-		}
-	}
-	for _, deleteEndpoint := range changes.Delete {
-		newRecordSet := make([]*InMemoryRecord, 0)
-		for _, record := range im.zones[zone][deleteEndpoint.DNSName] {
-			if record.Type != suitableType(deleteEndpoint) {
-				newRecordSet = append(newRecordSet, record)
-			}
-		}
-		im.zones[zone][deleteEndpoint.DNSName] = newRecordSet
 	}
 	return nil
 }
@@ -179,7 +204,7 @@ func (im *InMemoryProvider) validateChangeBatch(zone string, changes *plan.Chang
 	return nil
 }
 
-func (im *InMemoryProvider) findByType(recordType string, records []*InMemoryRecord) *InMemoryRecord {
+func (im *InMemoryProvider) findByType(recordType string, records []*inMemoryRecord) *inMemoryRecord {
 	for _, record := range records {
 		if record.Type == recordType {
 			return record
@@ -188,15 +213,92 @@ func (im *InMemoryProvider) findByType(recordType string, records []*InMemoryRec
 	return nil
 }
 
-func (im *InMemoryProvider) endpoints(zone string) []*endpoint.Endpoint {
-	endpoints := make([]*endpoint.Endpoint, 0)
-	if zoneRecords, exists := im.zones[zone]; exists {
-		for _, recordsPerName := range zoneRecords {
-			for _, record := range recordsPerName {
-				record.Endpoint.RecordType = record.Type
-				endpoints = append(endpoints, record.Endpoint)
-			}
+// inMemoryRecord - record stored in memory
+// Type - type of string (TODO: Type should probably be part of endpoint struct)
+// Name - DNS name assigned to the record
+// Target - target of the record
+// Payload - string - additional information stored
+type inMemoryRecord struct {
+	Type    string
+	Payload string
+	Name    string
+	Target  string
+}
+
+type zone map[string][]*inMemoryRecord
+
+type inMemoryChange struct {
+	Create    []*inMemoryRecord
+	UpdateNew []*inMemoryRecord
+	UpdateOld []*inMemoryRecord
+	Delete    []*inMemoryRecord
+}
+
+type inMemoryClient struct {
+	zones map[string]zone
+}
+
+func newInMemoryClient() *inMemoryClient {
+	return &inMemoryClient{map[string]zone{}}
+}
+
+func (c *inMemoryClient) Records(zone string) ([]*inMemoryRecord, error) {
+	if _, ok := c.zones[zone]; !ok {
+		return nil, ErrZoneNotFound
+	}
+
+	records := []*inMemoryRecord{}
+	for _, rec := range c.zones[zone] {
+		records = append(records, rec...)
+	}
+	return records, nil
+}
+
+func (c *inMemoryClient) Zones() map[string]string {
+	zones := map[string]string{}
+	for zone := range c.zones {
+		zones[zone] = zone
+	}
+	return zones
+}
+
+func (c *inMemoryClient) CreateZone(zone string) error {
+	if _, ok := c.zones[zone]; ok {
+		return ErrZoneAlreadyExists
+	}
+	c.zones[zone] = map[string][]*inMemoryRecord{}
+
+	return nil
+}
+
+func (c *inMemoryClient) ApplyChanges(zoneID string, change *inMemoryChange) error {
+	return nil
+}
+
+type filter struct {
+	domain string
+}
+
+// Zones filters map[zoneID]zoneName for names having f.domain as suffix
+func (f *filter) Zones(zones map[string]string) map[string]string {
+	result := map[string]string{}
+	for zoneID, zoneName := range zones {
+		if strings.HasSuffix(zoneName, f.domain) {
+			result[zoneID] = zoneName
 		}
 	}
-	return endpoints
+	return result
+}
+
+// EndpointZoneID determines zoneID for endpoint from map[zoneID]zoneName by taking longest suffix zoneName match in endpoint DNSName
+// returns empty string if no match found
+func (f *filter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[string]string) (zoneID string) {
+	var matchZoneID, matchZoneName string
+	for zoneID, zoneName := range zones {
+		if strings.HasSuffix(endpoint.DNSName, zoneName) && len(zoneName) > len(matchZoneName) {
+			matchZoneName = zoneName
+			matchZoneID = zoneID
+		}
+	}
+	return matchZoneID
 }
