@@ -740,7 +740,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 			c.zones = init
 			im.client = c
 
-			err := im.ApplyChanges("", ti.changes)
+			err := im.ApplyChanges("_", ti.changes)
 			if ti.expectError && err == nil {
 				t.Errorf("should return an error")
 			}

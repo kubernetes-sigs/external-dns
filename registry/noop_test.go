@@ -54,7 +54,7 @@ func testNoopRecords(t *testing.T) {
 			RecordType: "CNAME",
 		},
 	}
-	p.ApplyChanges("", &plan.Changes{
+	p.ApplyChanges("_", &plan.Changes{
 		Create: providerRecords,
 	})
 
@@ -92,13 +92,13 @@ func testNoopApplyChanges(t *testing.T) {
 		},
 	}
 
-	p.ApplyChanges("", &plan.Changes{
+	p.ApplyChanges("_", &plan.Changes{
 		Create: providerRecords,
 	})
 
 	// wrong changes
 	r, _ := NewNoopRegistry(p)
-	err := r.ApplyChanges("", &plan.Changes{
+	err := r.ApplyChanges("_", &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{
 				DNSName: "example.org",
@@ -111,7 +111,7 @@ func testNoopApplyChanges(t *testing.T) {
 	}
 
 	//correct changes
-	err = r.ApplyChanges("", &plan.Changes{
+	err = r.ApplyChanges("_", &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{
 				DNSName: "new-record.org",

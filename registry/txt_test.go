@@ -70,7 +70,7 @@ func testTXTRegistryRecords(t *testing.T) {
 func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	p.ApplyChanges("", &plan.Changes{
+	p.ApplyChanges("_", &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME", ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", "CNAME", ""),
