@@ -40,7 +40,6 @@ var (
 // InMemoryProvider - dns provider only used for testing purposes
 // initialized as dns provider with no records
 type InMemoryProvider struct {
-	zones          map[string]zone
 	domain         string
 	client         *inMemoryClient
 	filter         *filter
@@ -51,7 +50,6 @@ type InMemoryProvider struct {
 // NewInMemoryProvider returns InMemoryProvider DNS provider interface implementation
 func NewInMemoryProvider() *InMemoryProvider {
 	return &InMemoryProvider{
-		zones:          map[string]zone{},
 		filter:         &filter{},
 		OnApplyChanges: func(changes *plan.Changes) {},
 		OnRecords:      func() {},
@@ -65,6 +63,7 @@ func (im *InMemoryProvider) CreateZone(newZone string) error {
 	return im.client.CreateZone(newZone)
 }
 
+// Zones returns filtered zones as specified by domain
 func (im *InMemoryProvider) Zones() map[string]string {
 	return im.filter.Zones(im.client.Zones())
 }
@@ -123,10 +122,10 @@ func (im *InMemoryProvider) ApplyChanges(_ string, changes *plan.Changes) error 
 
 	for zoneID := range perZoneChanges {
 		change := &inMemoryChange{
-			Create:    im.convertToInMemoryRecord(perZoneChanges[zoneID].Create),
-			UpdateNew: im.convertToInMemoryRecord(perZoneChanges[zoneID].UpdateNew),
-			UpdateOld: im.convertToInMemoryRecord(perZoneChanges[zoneID].UpdateOld),
-			Delete:    im.convertToInMemoryRecord(perZoneChanges[zoneID].Delete),
+			Create:    convertToInMemoryRecord(perZoneChanges[zoneID].Create),
+			UpdateNew: convertToInMemoryRecord(perZoneChanges[zoneID].UpdateNew),
+			UpdateOld: convertToInMemoryRecord(perZoneChanges[zoneID].UpdateOld),
+			Delete:    convertToInMemoryRecord(perZoneChanges[zoneID].Delete),
 		}
 		err := im.client.ApplyChanges(zoneID, change)
 		if err != nil {
@@ -137,7 +136,7 @@ func (im *InMemoryProvider) ApplyChanges(_ string, changes *plan.Changes) error 
 	return nil
 }
 
-func (im *InMemoryProvider) convertToInMemoryRecord(endpoints []*endpoint.Endpoint) []*inMemoryRecord {
+func convertToInMemoryRecord(endpoints []*endpoint.Endpoint) []*inMemoryRecord {
 	records := []*inMemoryRecord{}
 	for _, ep := range endpoints {
 		records = append(records, &inMemoryRecord{
@@ -146,7 +145,7 @@ func (im *InMemoryProvider) convertToInMemoryRecord(endpoints []*endpoint.Endpoi
 			Target: ep.Target,
 		})
 	}
-	return nil
+	return records
 }
 
 type filter struct {
@@ -265,6 +264,18 @@ func (c *inMemoryClient) ApplyChanges(zoneID string, changes *inMemoryChange) er
 	return nil
 }
 
+func (c *inMemoryClient) updateMesh(mesh map[string]map[string]bool, endpoint *inMemoryRecord) error {
+	if _, exists := mesh[endpoint.Name]; exists {
+		if mesh[endpoint.Name][endpoint.Type] {
+			return ErrInvalidBatchRequest
+		}
+		mesh[endpoint.Name][endpoint.Type] = true
+		return nil
+	}
+	mesh[endpoint.Name] = map[string]bool{endpoint.Type: true}
+	return nil
+}
+
 // validateChangeBatch validates that the changes passed to InMemory DNS provider is valid
 func (c *inMemoryClient) validateChangeBatch(zone string, changes *inMemoryChange) error {
 	curZone, ok := c.zones[zone]
@@ -276,27 +287,17 @@ func (c *inMemoryClient) validateChangeBatch(zone string, changes *inMemoryChang
 		if c.findByType(newEndpoint.Type, curZone[newEndpoint.Name]) != nil {
 			return ErrRecordAlreadyExists
 		}
-		if _, exists := mesh[newEndpoint.Name]; exists {
-			if mesh[newEndpoint.Name][newEndpoint.Type] {
-				return ErrInvalidBatchRequest
-			}
-			mesh[newEndpoint.Name][newEndpoint.Type] = true
-			continue
+		if err := c.updateMesh(mesh, newEndpoint); err != nil {
+			return err
 		}
-		mesh[newEndpoint.Name] = map[string]bool{newEndpoint.Type: true}
 	}
 	for _, updateEndpoint := range changes.UpdateNew {
 		if c.findByType(updateEndpoint.Type, curZone[updateEndpoint.Name]) == nil {
 			return ErrRecordNotFound
 		}
-		if _, exists := mesh[updateEndpoint.Name]; exists {
-			if mesh[updateEndpoint.Name][updateEndpoint.Type] {
-				return ErrInvalidBatchRequest
-			}
-			mesh[updateEndpoint.Name][updateEndpoint.Type] = true
-			continue
+		if err := c.updateMesh(mesh, updateEndpoint); err != nil {
+			return err
 		}
-		mesh[updateEndpoint.Name] = map[string]bool{updateEndpoint.Type: true}
 	}
 	for _, updateOldEndpoint := range changes.UpdateOld {
 		if rec := c.findByType(updateOldEndpoint.Type, curZone[updateOldEndpoint.Name]); rec == nil || rec.Target != updateOldEndpoint.Target {
@@ -307,14 +308,9 @@ func (c *inMemoryClient) validateChangeBatch(zone string, changes *inMemoryChang
 		if rec := c.findByType(deleteEndpoint.Type, curZone[deleteEndpoint.Name]); rec == nil || rec.Target != deleteEndpoint.Target {
 			return ErrRecordNotFound
 		}
-		if _, exists := mesh[deleteEndpoint.Name]; exists {
-			if mesh[deleteEndpoint.Name][deleteEndpoint.Type] {
-				return ErrInvalidBatchRequest
-			}
-			mesh[deleteEndpoint.Name][deleteEndpoint.Type] = true
-			continue
+		if err := c.updateMesh(mesh, deleteEndpoint); err != nil {
+			return err
 		}
-		mesh[deleteEndpoint.Name] = map[string]bool{deleteEndpoint.Type: true}
 	}
 	return nil
 }
