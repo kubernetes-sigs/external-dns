@@ -58,16 +58,15 @@ func main() {
 	}
 
 	logger := kitlog.NewLogfmtLogger(kitlog.NewSyncWriter(os.Stderr))
+	if cfg.Debug {
+		log.SetLevel(log.DebugLevel)
+	} else {
+		logger = level.NewFilter(logger, level.AllowInfo())
+	}
 	logger = kitlog.With(logger, "time", kitlog.DefaultTimestampUTC, "caller", kitlog.DefaultCaller)
 
 	if cfg.DryRun {
 		log.Info("running in dry-run mode. No changes to DNS records will be made.")
-	}
-	if cfg.Debug {
-		log.SetLevel(log.DebugLevel)
-		logger = level.NewFilter(logger, level.AllowDebug())
-	} else {
-		logger = level.NewFilter(logger, level.AllowInfo())
 	}
 
 	stopChan := make(chan struct{}, 1)
