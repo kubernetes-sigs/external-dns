@@ -2,8 +2,6 @@
 
 ## Background
 
-**Note: This DOC is WIP**
-
 [Project proposal](https://groups.google.com/forum/#!searchin/kubernetes-dev/external$20dns%7Csort:relevance/kubernetes-dev/2wGQUB0fUuE/9OXz01i2BgAJ)
 
 [Initial discussion](https://docs.google.com/document/d/1ML_q3OppUtQKXan6Q42xIq2jelSoIivuXI8zExbc6ec/edit#heading=h.1pgkuagjhm4p)
@@ -86,5 +84,8 @@ It should be safe to run both `route53-kubernetes` and `external-dns` simultaneo
 
 ### Ownership
 
-External DNS should be *responsible* for the created records. Which means that the records should be tagged (TODO:*describe how this supposed to work?*) and only tagged records are viable for future deletion/update. It should not mess with pre-existing records created via other means
+External DNS should be *responsible* for the created records. Which means that the records should be tagged and only tagged records are viable for future deletion/update. It should not mess with pre-existing records created via other means.
 
+#### Ownership via TXT records
+
+Each record managed by External DNS is accompanied with a TXT record with a specific value to indicate that corresponding DNS record is managed by External DNS and it can be updated/deleted respectively. TXT records are limited to lifetimes of service/ingress objects and are created/deleted once k8s resources are created/deleted. 
