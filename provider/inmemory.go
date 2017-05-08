@@ -235,9 +235,32 @@ func (c *inMemoryClient) CreateZone(zone string) error {
 	return nil
 }
 
-func (c *inMemoryClient) ApplyChanges(zoneID string, change *inMemoryChange) error {
-	if err := c.validateChangeBatch(zoneID, change); err != nil {
+func (c *inMemoryClient) ApplyChanges(zoneID string, changes *inMemoryChange) error {
+	if err := c.validateChangeBatch(zoneID, changes); err != nil {
 		return err
+	}
+	for _, newEndpoint := range changes.Create {
+		if _, ok := c.zones[zoneID][newEndpoint.Name]; !ok {
+			c.zones[zoneID][newEndpoint.Name] = make([]*inMemoryRecord, 0)
+		}
+		c.zones[zoneID][newEndpoint.Name] = append(c.zones[zoneID][newEndpoint.Name], newEndpoint)
+	}
+	for _, updateEndpoint := range changes.UpdateNew {
+		for _, rec := range c.zones[zoneID][updateEndpoint.Name] {
+			if rec.Type == updateEndpoint.Type {
+				rec.Target = updateEndpoint.Target
+				break
+			}
+		}
+	}
+	for _, deleteEndpoint := range changes.Delete {
+		newSet := make([]*inMemoryRecord, 0)
+		for _, rec := range c.zones[zoneID][deleteEndpoint.Name] {
+			if rec.Type != deleteEndpoint.Type {
+				newSet = append(newSet, rec)
+			}
+		}
+		c.zones[zoneID][deleteEndpoint.Name] = newSet
 	}
 	return nil
 }
