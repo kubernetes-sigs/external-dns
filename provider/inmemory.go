@@ -18,7 +18,6 @@ package provider
 
 import (
 	"errors"
-
 	"strings"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -150,71 +149,36 @@ func (im *InMemoryProvider) convertToInMemoryRecord(endpoints []*endpoint.Endpoi
 	return nil
 }
 
-// validateChangeBatch validates that the changes passed to InMemory DNS provider is valid
-func (im *InMemoryProvider) validateChangeBatch(zone string, changes *plan.Changes) error {
-	existing, ok := im.zones[zone]
-	if !ok {
-		return ErrZoneNotFound
-	}
-	mesh := map[string]map[string]bool{}
-	for _, newEndpoint := range changes.Create {
-		if im.findByType(suitableType(newEndpoint), existing[newEndpoint.DNSName]) != nil {
-			return ErrRecordAlreadyExists
-		}
-		if _, exists := mesh[newEndpoint.DNSName]; exists {
-			if mesh[newEndpoint.DNSName][suitableType(newEndpoint)] {
-				return ErrInvalidBatchRequest
-			}
-			mesh[newEndpoint.DNSName][suitableType(newEndpoint)] = true
-			continue
-		}
-		mesh[newEndpoint.DNSName] = map[string]bool{suitableType(newEndpoint): true}
-	}
-	for _, updateEndpoint := range changes.UpdateNew {
-		if im.findByType(suitableType(updateEndpoint), existing[updateEndpoint.DNSName]) == nil {
-			return ErrRecordNotFound
-		}
-		if _, exists := mesh[updateEndpoint.DNSName]; exists {
-			if mesh[updateEndpoint.DNSName][suitableType(updateEndpoint)] {
-				return ErrInvalidBatchRequest
-			}
-			mesh[updateEndpoint.DNSName][suitableType(updateEndpoint)] = true
-			continue
-		}
-		mesh[updateEndpoint.DNSName] = map[string]bool{suitableType(updateEndpoint): true}
-	}
-	for _, updateOldEndpoint := range changes.UpdateOld {
-		if rec := im.findByType(suitableType(updateOldEndpoint), existing[updateOldEndpoint.DNSName]); rec == nil || rec.Target != updateOldEndpoint.Target {
-			return ErrRecordNotFound
-		}
-	}
-	for _, deleteEndpoint := range changes.Delete {
-		if rec := im.findByType(suitableType(deleteEndpoint), existing[deleteEndpoint.DNSName]); rec == nil || rec.Target != deleteEndpoint.Target {
-			return ErrRecordNotFound
-		}
-		if _, exists := mesh[deleteEndpoint.DNSName]; exists {
-			if mesh[deleteEndpoint.DNSName][suitableType(deleteEndpoint)] {
-				return ErrInvalidBatchRequest
-			}
-			mesh[deleteEndpoint.DNSName][suitableType(deleteEndpoint)] = true
-			continue
-		}
-		mesh[deleteEndpoint.DNSName] = map[string]bool{suitableType(deleteEndpoint): true}
-	}
-	return nil
+type filter struct {
+	domain string
 }
 
-func (im *InMemoryProvider) findByType(recordType string, records []*inMemoryRecord) *inMemoryRecord {
-	for _, record := range records {
-		if record.Type == recordType {
-			return record
+// Zones filters map[zoneID]zoneName for names having f.domain as suffix
+func (f *filter) Zones(zones map[string]string) map[string]string {
+	result := map[string]string{}
+	for zoneID, zoneName := range zones {
+		if strings.HasSuffix(zoneName, f.domain) {
+			result[zoneID] = zoneName
 		}
 	}
-	return nil
+	return result
+}
+
+// EndpointZoneID determines zoneID for endpoint from map[zoneID]zoneName by taking longest suffix zoneName match in endpoint DNSName
+// returns empty string if no match found
+func (f *filter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[string]string) (zoneID string) {
+	var matchZoneID, matchZoneName string
+	for zoneID, zoneName := range zones {
+		if strings.HasSuffix(endpoint.DNSName, zoneName) && len(zoneName) > len(matchZoneName) {
+			matchZoneName = zoneName
+			matchZoneID = zoneID
+		}
+	}
+	return matchZoneID
 }
 
 // inMemoryRecord - record stored in memory
-// Type - type of string (TODO: Type should probably be part of endpoint struct)
+// Type - type of string
 // Name - DNS name assigned to the record
 // Target - target of the record
 // Payload - string - additional information stored
@@ -272,33 +236,71 @@ func (c *inMemoryClient) CreateZone(zone string) error {
 }
 
 func (c *inMemoryClient) ApplyChanges(zoneID string, change *inMemoryChange) error {
+	if err := c.validateChangeBatch(zoneID, change); err != nil {
+		return err
+	}
 	return nil
 }
 
-type filter struct {
-	domain string
-}
-
-// Zones filters map[zoneID]zoneName for names having f.domain as suffix
-func (f *filter) Zones(zones map[string]string) map[string]string {
-	result := map[string]string{}
-	for zoneID, zoneName := range zones {
-		if strings.HasSuffix(zoneName, f.domain) {
-			result[zoneID] = zoneName
+// validateChangeBatch validates that the changes passed to InMemory DNS provider is valid
+func (c *inMemoryClient) validateChangeBatch(zone string, changes *inMemoryChange) error {
+	curZone, ok := c.zones[zone]
+	if !ok {
+		return ErrZoneNotFound
+	}
+	mesh := map[string]map[string]bool{}
+	for _, newEndpoint := range changes.Create {
+		if c.findByType(newEndpoint.Type, curZone[newEndpoint.Name]) != nil {
+			return ErrRecordAlreadyExists
+		}
+		if _, exists := mesh[newEndpoint.Name]; exists {
+			if mesh[newEndpoint.Name][newEndpoint.Type] {
+				return ErrInvalidBatchRequest
+			}
+			mesh[newEndpoint.Name][newEndpoint.Type] = true
+			continue
+		}
+		mesh[newEndpoint.Name] = map[string]bool{newEndpoint.Type: true}
+	}
+	for _, updateEndpoint := range changes.UpdateNew {
+		if c.findByType(updateEndpoint.Type, curZone[updateEndpoint.Name]) == nil {
+			return ErrRecordNotFound
+		}
+		if _, exists := mesh[updateEndpoint.Name]; exists {
+			if mesh[updateEndpoint.Name][updateEndpoint.Type] {
+				return ErrInvalidBatchRequest
+			}
+			mesh[updateEndpoint.Name][updateEndpoint.Type] = true
+			continue
+		}
+		mesh[updateEndpoint.Name] = map[string]bool{updateEndpoint.Type: true}
+	}
+	for _, updateOldEndpoint := range changes.UpdateOld {
+		if rec := c.findByType(updateOldEndpoint.Type, curZone[updateOldEndpoint.Name]); rec == nil || rec.Target != updateOldEndpoint.Target {
+			return ErrRecordNotFound
 		}
 	}
-	return result
+	for _, deleteEndpoint := range changes.Delete {
+		if rec := c.findByType(deleteEndpoint.Type, curZone[deleteEndpoint.Name]); rec == nil || rec.Target != deleteEndpoint.Target {
+			return ErrRecordNotFound
+		}
+		if _, exists := mesh[deleteEndpoint.Name]; exists {
+			if mesh[deleteEndpoint.Name][deleteEndpoint.Type] {
+				return ErrInvalidBatchRequest
+			}
+			mesh[deleteEndpoint.Name][deleteEndpoint.Type] = true
+			continue
+		}
+		mesh[deleteEndpoint.Name] = map[string]bool{deleteEndpoint.Type: true}
+	}
+	return nil
 }
 
-// EndpointZoneID determines zoneID for endpoint from map[zoneID]zoneName by taking longest suffix zoneName match in endpoint DNSName
-// returns empty string if no match found
-func (f *filter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[string]string) (zoneID string) {
-	var matchZoneID, matchZoneName string
-	for zoneID, zoneName := range zones {
-		if strings.HasSuffix(endpoint.DNSName, zoneName) && len(zoneName) > len(matchZoneName) {
-			matchZoneName = zoneName
-			matchZoneID = zoneID
+func (c *inMemoryClient) findByType(recordType string, records []*inMemoryRecord) *inMemoryRecord {
+	for _, record := range records {
+		if record.Type == recordType {
+			return record
 		}
 	}
-	return matchZoneID
+	return nil
 }
