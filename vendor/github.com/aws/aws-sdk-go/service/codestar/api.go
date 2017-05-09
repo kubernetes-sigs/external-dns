@@ -154,7 +154,7 @@ func (c *CodeStar) CreateProjectRequest(input *CreateProjectInput) (req *request
 
 // CreateProject API operation for AWS CodeStar.
 //
-// Creates a project in AWS CodeStar with minimal structure and no resources.
+// Reserved for future use. To create a project, use the AWS CodeStar console.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -1477,28 +1477,18 @@ func (s *AssociateTeamMemberOutput) SetClientRequestToken(v string) *AssociateTe
 type CreateProjectInput struct {
 	_ struct{} `type:"structure"`
 
-	// A user- or system-generated token that identifies the entity that requested
-	// project creation. This token can be used to repeat the request. It can also
-	// be used to identify which user or system made the request in DescribeProject
-	// and ListProjects.
+	// Reserved for future use.
 	ClientRequestToken *string `locationName:"clientRequestToken" min:"1" type:"string"`
 
-	// Optional. The description for the project.
+	// Reserved for future use.
 	Description *string `locationName:"description" type:"string"`
 
-	// The ID for the AWS CodeStar project. Project IDs must be unique within an
-	// AWS account. Project IDs cannot exceed 15 characters and cannot contain capital
-	// letters and other restricted symbols. For more information, see Limits (http://docs.aws.amazon.com/codestar/latest/userguide/limits.html)
-	// in the AWS CodeStar User Guide.
+	// Reserved for future use.
 	//
 	// Id is a required field
 	Id *string `locationName:"id" min:"2" type:"string" required:"true"`
 
-	// The friendly name for the project. This friendly name serves as the basis
-	// for the names for resources associated with the project, such as a repository
-	// name in AWS CodeCommit. The name is limited to 100 characters and cannot
-	// contain certain restricted symbols. For more information, see Limits (http://docs.aws.amazon.com/codestar/latest/userguide/limits.html)
-	// in the AWS CodeStar User Guide.
+	// Reserved for future use.
 	//
 	// Name is a required field
 	Name *string `locationName:"name" min:"1" type:"string" required:"true"`
@@ -1567,22 +1557,20 @@ func (s *CreateProjectInput) SetName(v string) *CreateProjectInput {
 type CreateProjectOutput struct {
 	_ struct{} `type:"structure"`
 
-	// The Amazon Resource Name (ARN) for the project.
+	// Reserved for future use.
 	//
 	// Arn is a required field
 	Arn *string `locationName:"arn" type:"string" required:"true"`
 
-	// The user- or system-generated token from the initial request that can be
-	// used to repeat the request. It can also be used to identify which user or
-	// system made the request in DescribeProject and ListProjects.
+	// Reserved for future use.
 	ClientRequestToken *string `locationName:"clientRequestToken" min:"1" type:"string"`
 
-	// The ID for the project.
+	// Reserved for future use.
 	//
 	// Id is a required field
 	Id *string `locationName:"id" min:"2" type:"string" required:"true"`
 
-	// The ID for the AWS CodeStar project template used to create the project.
+	// Reserved for future use.
 	ProjectTemplateId *string `locationName:"projectTemplateId" min:"1" type:"string"`
 }
 
