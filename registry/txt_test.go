@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	testZone = "test-zone.example.com."
+	testZone = "test-zone.example.org"
 )
 
 func TestTXTRegistry(t *testing.T) {
@@ -60,11 +60,6 @@ func testTXTRegistryNew(t *testing.T) {
 	if _, ok := r.mapper.(prefixNameMapper); !ok {
 		t.Error("Incorrect type of prefix name mapper")
 	}
-
-	rs, err := r.Records("random-zone")
-	if err == nil || rs != nil {
-		t.Error("incorrect zone should trigger error")
-	}
 }
 
 func testTXTRegistryRecords(t *testing.T) {
@@ -75,7 +70,7 @@ func testTXTRegistryRecords(t *testing.T) {
 func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	p.ApplyChanges(testZone, &plan.Changes{
+	p.ApplyChanges("_", &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME", ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", "CNAME", ""),
@@ -294,13 +289,6 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 	err := r.ApplyChanges(testZone, changes)
 	if err != nil {
 		t.Fatal(err)
-	}
-
-	changes = &plan.Changes{}
-	p.OnApplyChanges = func(c *plan.Changes) {}
-	err = r.ApplyChanges("new-zone", changes)
-	if err == nil {
-		t.Error("expected error")
 	}
 }
 
