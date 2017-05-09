@@ -34,3 +34,4 @@ import:
   - pkg/api/v1
   - pkg/apis/extensions/v1beta1
   - tools/clientcmd
+- package: github.com/kubernetes/repo-infra
