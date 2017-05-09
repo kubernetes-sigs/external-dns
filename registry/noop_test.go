@@ -60,7 +60,7 @@ func testNoopRecords(t *testing.T) {
 
 	r, _ := NewNoopRegistry(p)
 
-	eps, err := r.Records("")
+	eps, err := r.Records("_")
 	if err != nil {
 		t.Error(err)
 	}
@@ -134,7 +134,7 @@ func testNoopApplyChanges(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, _ := p.Records("")
+	res, _ := p.Records("_")
 	if !testutils.SameEndpoints(res, expectedUpdate) {
 		t.Error("incorrectly updated dns provider")
 	}

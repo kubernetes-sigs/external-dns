@@ -209,7 +209,7 @@ func testInMemoryRecords(t *testing.T) {
 			im.client = c
 			f := filter{domain: ti.zone}
 			im.filter = &f
-			records, err := im.Records("")
+			records, err := im.Records("_")
 			if ti.expectError && records != nil {
 				t.Errorf("wrong zone should not return records")
 			}
