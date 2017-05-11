@@ -462,6 +462,22 @@
         {"shape":"ServiceAccountException"}
       ]
     },
+    "ListOfferingPromotions":{
+      "name":"ListOfferingPromotions",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"ListOfferingPromotionsRequest"},
+      "output":{"shape":"ListOfferingPromotionsResult"},
+      "errors":[
+        {"shape":"ArgumentException"},
+        {"shape":"NotFoundException"},
+        {"shape":"NotEligibleException"},
+        {"shape":"LimitExceededException"},
+        {"shape":"ServiceAccountException"}
+      ]
+    },
     "ListOfferingTransactions":{
       "name":"ListOfferingTransactions",
       "http":{
@@ -751,9 +767,12 @@
         "unmeteredDevices":{"shape":"PurchasedDevicesMap"},
         "unmeteredRemoteAccessDevices":{"shape":"PurchasedDevicesMap"},
         "maxJobTimeoutMinutes":{"shape":"JobTimeoutMinutes"},
+        "trialMinutes":{"shape":"TrialMinutes"},
+        "maxSlots":{"shape":"MaxSlotMap"},
         "defaultJobTimeoutMinutes":{"shape":"JobTimeoutMinutes"}
       }
     },
+    "AccountsCleanup":{"type":"boolean"},
     "AmazonResourceName":{
       "type":"string",
       "min":32
@@ -762,6 +781,7 @@
       "type":"list",
       "member":{"shape":"AmazonResourceName"}
     },
+    "AppPackagesCleanup":{"type":"boolean"},
     "ArgumentException":{
       "type":"structure",
       "members":{
@@ -1066,7 +1086,8 @@
         "PLATFORM",
         "FORM_FACTOR",
         "MANUFACTURER",
-        "REMOTE_ACCESS_ENABLED"
+        "REMOTE_ACCESS_ENABLED",
+        "APPIUM_VERSION"
       ]
     },
     "DeviceFormFactor":{
@@ -1132,7 +1153,9 @@
     "ExecutionConfiguration":{
       "type":"structure",
       "members":{
-        "jobTimeoutMinutes":{"shape":"JobTimeoutMinutes"}
+        "jobTimeoutMinutes":{"shape":"JobTimeoutMinutes"},
+        "accountsCleanup":{"shape":"AccountsCleanup"},
+        "appPackagesCleanup":{"shape":"AppPackagesCleanup"}
       }
     },
     "ExecutionResult":{
@@ -1183,7 +1206,8 @@
       "members":{
         "devicePoolArn":{"shape":"AmazonResourceName"},
         "appArn":{"shape":"AmazonResourceName"},
-        "testType":{"shape":"TestType"}
+        "testType":{"shape":"TestType"},
+        "test":{"shape":"ScheduleRunTest"}
       }
     },
     "GetDevicePoolCompatibilityResult":{
@@ -1482,6 +1506,19 @@
         "nextToken":{"shape":"PaginationToken"}
       }
     },
+    "ListOfferingPromotionsRequest":{
+      "type":"structure",
+      "members":{
+        "nextToken":{"shape":"PaginationToken"}
+      }
+    },
+    "ListOfferingPromotionsResult":{
+      "type":"structure",
+      "members":{
+        "offeringPromotions":{"shape":"OfferingPromotions"},
+        "nextToken":{"shape":"PaginationToken"}
+      }
+    },
     "ListOfferingTransactionsRequest":{
       "type":"structure",
       "members":{
@@ -1639,6 +1676,11 @@
       }
     },
     "Long":{"type":"long"},
+    "MaxSlotMap":{
+      "type":"map",
+      "key":{"shape":"String"},
+      "value":{"shape":"Integer"}
+    },
     "Message":{
       "type":"string",
       "max":16384,
@@ -1717,6 +1759,21 @@
       "type":"string",
       "min":32
     },
+    "OfferingPromotion":{
+      "type":"structure",
+      "members":{
+        "id":{"shape":"OfferingPromotionIdentifier"},
+        "description":{"shape":"Message"}
+      }
+    },
+    "OfferingPromotionIdentifier":{
+      "type":"string",
+      "min":4
+    },
+    "OfferingPromotions":{
+      "type":"list",
+      "member":{"shape":"OfferingPromotion"}
+    },
     "OfferingStatus":{
       "type":"structure",
       "members":{
@@ -1736,6 +1793,7 @@
       "members":{
         "offeringStatus":{"shape":"OfferingStatus"},
         "transactionId":{"shape":"TransactionIdentifier"},
+        "offeringPromotionId":{"shape":"OfferingPromotionIdentifier"},
         "createdOn":{"shape":"DateTime"},
         "cost":{"shape":"MonetaryAmount"}
       }
@@ -1810,7 +1868,8 @@
       "type":"structure",
       "members":{
         "offeringId":{"shape":"OfferingIdentifier"},
-        "quantity":{"shape":"Integer"}
+        "quantity":{"shape":"Integer"},
+        "offeringPromotionId":{"shape":"OfferingPromotionIdentifier"}
       }
     },
     "PurchaseOfferingResult":{
@@ -1904,7 +1963,8 @@
         "LESS_THAN",
         "GREATER_THAN",
         "IN",
-        "NOT_IN"
+        "NOT_IN",
+        "CONTAINS"
       ]
     },
     "Rules":{
@@ -2116,6 +2176,13 @@
     "TransactionIdentifier":{
       "type":"string",
       "min":32
+    },
+    "TrialMinutes":{
+      "type":"structure",
+      "members":{
+        "total":{"shape":"Double"},
+        "remaining":{"shape":"Double"}
+      }
     },
     "URL":{
       "type":"string",

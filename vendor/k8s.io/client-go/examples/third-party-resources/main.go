@@ -14,29 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Note: the example only works with the code within the same release/branch.
 package main
 
 import (
 	"flag"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/errors"
-	"k8s.io/client-go/pkg/api/unversioned"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-	"k8s.io/client-go/pkg/runtime"
-	"k8s.io/client-go/pkg/runtime/serializer"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	// Only required to authenticate against GKE clusters
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-)
-
-var (
-	config *rest.Config
 )
 
 func main() {
@@ -55,11 +52,11 @@ func main() {
 	}
 
 	// initialize third party resource if it does not exist
-	tpr, err := clientset.Extensions().ThirdPartyResources().Get("example.k8s.io")
+	tpr, err := clientset.ExtensionsV1beta1().ThirdPartyResources().Get("example.k8s.io", metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			tpr := &v1beta1.ThirdPartyResource{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "example.k8s.io",
 				},
 				Versions: []v1beta1.APIVersion{
@@ -68,7 +65,7 @@ func main() {
 				Description: "An Example ThirdPartyResource",
 			}
 
-			result, err := clientset.Extensions().ThirdPartyResources().Create(tpr)
+			result, err := clientset.ExtensionsV1beta1().ThirdPartyResources().Create(tpr)
 			if err != nil {
 				panic(err)
 			}
@@ -102,7 +99,7 @@ func main() {
 		if errors.IsNotFound(err) {
 			// Create an instance of our TPR
 			example := &Example{
-				Metadata: api.ObjectMeta{
+				Metadata: metav1.ObjectMeta{
 					Name: "example1",
 				},
 				Spec: ExampleSpec{
@@ -146,7 +143,7 @@ func buildConfig(kubeconfig string) (*rest.Config, error) {
 }
 
 func configureClient(config *rest.Config) {
-	groupversion := unversioned.GroupVersion{
+	groupversion := schema.GroupVersion{
 		Group:   "k8s.io",
 		Version: "v1",
 	}
@@ -162,10 +159,9 @@ func configureClient(config *rest.Config) {
 				groupversion,
 				&Example{},
 				&ExampleList{},
-				&api.ListOptions{},
-				&api.DeleteOptions{},
 			)
 			return nil
 		})
+	metav1.AddToGroupVersion(api.Scheme, groupversion)
 	schemeBuilder.AddToScheme(api.Scheme)
 }

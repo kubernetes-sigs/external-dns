@@ -50,14 +50,15 @@ type MessageDetails struct {
 	// If IsSigned is true and SignedBy is non-zero then the signature will
 	// be verified as UnverifiedBody is read. The signature cannot be
 	// checked until the whole of UnverifiedBody is read so UnverifiedBody
-	// must be consumed until EOF before the data can trusted. Even if a
+	// must be consumed until EOF before the data can be trusted. Even if a
 	// message isn't signed (or the signer is unknown) the data may contain
 	// an authentication code that is only checked once UnverifiedBody has
 	// been consumed. Once EOF has been seen, the following fields are
 	// valid. (An authentication code failure is reported as a
 	// SignatureError error when reading from UnverifiedBody.)
-	SignatureError error             // nil if the signature is good.
-	Signature      *packet.Signature // the signature packet itself.
+	SignatureError error               // nil if the signature is good.
+	Signature      *packet.Signature   // the signature packet itself, if v4 (default)
+	SignatureV3    *packet.SignatureV3 // the signature packet if it is a v2 or v3 signature
 
 	decrypted io.ReadCloser
 }
@@ -334,12 +335,14 @@ func (scr *signatureCheckReader) Read(buf []byte) (n int, err error) {
 		}
 
 		var ok bool
-		if scr.md.Signature, ok = p.(*packet.Signature); !ok {
+		if scr.md.Signature, ok = p.(*packet.Signature); ok {
+			scr.md.SignatureError = scr.md.SignedBy.PublicKey.VerifySignature(scr.h, scr.md.Signature)
+		} else if scr.md.SignatureV3, ok = p.(*packet.SignatureV3); ok {
+			scr.md.SignatureError = scr.md.SignedBy.PublicKey.VerifySignatureV3(scr.h, scr.md.SignatureV3)
+		} else {
 			scr.md.SignatureError = errors.StructuralError("LiteralData not followed by Signature")
 			return
 		}
-
-		scr.md.SignatureError = scr.md.SignedBy.PublicKey.VerifySignature(scr.h, scr.md.Signature)
 
 		// The SymmetricallyEncrypted packet, if any, might have an
 		// unsigned hash of its own. In order to check this we need to

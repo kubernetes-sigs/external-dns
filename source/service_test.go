@@ -20,6 +20,7 @@ import (
 	"net"
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
 
@@ -375,7 +376,7 @@ func testServiceEndpoints(t *testing.T) {
 			}
 
 			service := &v1.Service{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Namespace:   tc.svcNamespace,
 					Name:        tc.svcName,
 					Labels:      tc.labels,
@@ -415,7 +416,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	kubernetes := fake.NewSimpleClientset()
 
 	service := &v1.Service{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "testing",
 			Name:      "foo",
 			Annotations: map[string]string{

@@ -19,6 +19,7 @@ package source
 import (
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
@@ -369,7 +370,7 @@ type fakeIngress struct {
 
 func (ing fakeIngress) Ingress() *v1beta1.Ingress {
 	ingress := &v1beta1.Ingress{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Namespace:   ing.namespace,
 			Name:        ing.name,
 			Annotations: ing.annotations,

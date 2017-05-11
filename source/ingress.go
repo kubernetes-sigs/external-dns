@@ -23,8 +23,9 @@ import (
 	"text/template"
 
 	log "github.com/Sirupsen/logrus"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -62,7 +63,7 @@ func NewIngressSource(client kubernetes.Interface, namespace string, fqdntemplat
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all ingress resources on all namespaces
 func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
-	ingresses, err := sc.client.Extensions().Ingresses(sc.namespace).List(v1.ListOptions{})
+	ingresses, err := sc.client.Extensions().Ingresses(sc.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

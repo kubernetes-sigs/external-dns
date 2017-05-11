@@ -23,6 +23,8 @@ import (
 	"text/template"
 
 	log "github.com/Sirupsen/logrus"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 
@@ -65,7 +67,7 @@ func NewServiceSource(client kubernetes.Interface, namespace, fqdntemplate strin
 
 // Endpoints returns endpoint objects for each service that should be processed.
 func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
-	services, err := sc.client.CoreV1().Services(sc.namespace).List(v1.ListOptions{})
+	services, err := sc.client.CoreV1().Services(sc.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

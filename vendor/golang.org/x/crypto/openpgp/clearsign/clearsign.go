@@ -118,6 +118,10 @@ func Decode(data []byte) (b *Block, rest []byte) {
 		start := rest
 
 		line, rest = getLine(rest)
+		if len(line) == 0 && len(rest) == 0 {
+			// No armored data was found, so this isn't a complete message.
+			return nil, data
+		}
 		if bytes.Equal(line, endText) {
 			// Back up to the start of the line because armor expects to see the
 			// header line.
