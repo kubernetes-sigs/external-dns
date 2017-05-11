@@ -17,12 +17,12 @@ limitations under the License.
 package fake
 
 import (
-	api "k8s.io/client-go/pkg/api"
-	unversioned "k8s.io/client-go/pkg/api/unversioned"
-	v1 "k8s.io/client-go/pkg/api/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
+	types "k8s.io/apimachinery/pkg/types"
+	watch "k8s.io/apimachinery/pkg/watch"
 	v1beta1 "k8s.io/client-go/pkg/apis/apps/v1beta1"
-	labels "k8s.io/client-go/pkg/labels"
-	watch "k8s.io/client-go/pkg/watch"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -32,7 +32,7 @@ type FakeStatefulSets struct {
 	ns   string
 }
 
-var statefulsetsResource = unversioned.GroupVersionResource{Group: "apps", Version: "v1beta1", Resource: "statefulsets"}
+var statefulsetsResource = schema.GroupVersionResource{Group: "apps", Version: "v1beta1", Resource: "statefulsets"}
 
 func (c *FakeStatefulSets) Create(statefulSet *v1beta1.StatefulSet) (result *v1beta1.StatefulSet, err error) {
 	obj, err := c.Fake.
@@ -78,7 +78,7 @@ func (c *FakeStatefulSets) DeleteCollection(options *v1.DeleteOptions, listOptio
 	return err
 }
 
-func (c *FakeStatefulSets) Get(name string) (result *v1beta1.StatefulSet, err error) {
+func (c *FakeStatefulSets) Get(name string, options v1.GetOptions) (result *v1beta1.StatefulSet, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(statefulsetsResource, c.ns, name), &v1beta1.StatefulSet{})
 
@@ -117,7 +117,7 @@ func (c *FakeStatefulSets) Watch(opts v1.ListOptions) (watch.Interface, error) {
 }
 
 // Patch applies the patch and returns the patched statefulSet.
-func (c *FakeStatefulSets) Patch(name string, pt api.PatchType, data []byte, subresources ...string) (result *v1beta1.StatefulSet, err error) {
+func (c *FakeStatefulSets) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.StatefulSet, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(statefulsetsResource, c.ns, name, data, subresources...), &v1beta1.StatefulSet{})
 

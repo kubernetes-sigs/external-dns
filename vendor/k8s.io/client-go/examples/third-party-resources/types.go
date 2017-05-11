@@ -19,9 +19,8 @@ package main
 import (
 	"encoding/json"
 
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/meta"
-	"k8s.io/client-go/pkg/api/unversioned"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type ExampleSpec struct {
@@ -30,36 +29,36 @@ type ExampleSpec struct {
 }
 
 type Example struct {
-	unversioned.TypeMeta `json:",inline"`
-	Metadata             api.ObjectMeta `json:"metadata"`
+	metav1.TypeMeta `json:",inline"`
+	Metadata        metav1.ObjectMeta `json:"metadata"`
 
 	Spec ExampleSpec `json:"spec"`
 }
 
 type ExampleList struct {
-	unversioned.TypeMeta `json:",inline"`
-	Metadata             unversioned.ListMeta `json:"metadata"`
+	metav1.TypeMeta `json:",inline"`
+	Metadata        metav1.ListMeta `json:"metadata"`
 
 	Items []Example `json:"items"`
 }
 
 // Required to satisfy Object interface
-func (e *Example) GetObjectKind() unversioned.ObjectKind {
+func (e *Example) GetObjectKind() schema.ObjectKind {
 	return &e.TypeMeta
 }
 
 // Required to satisfy ObjectMetaAccessor interface
-func (e *Example) GetObjectMeta() meta.Object {
+func (e *Example) GetObjectMeta() metav1.Object {
 	return &e.Metadata
 }
 
 // Required to satisfy Object interface
-func (el *ExampleList) GetObjectKind() unversioned.ObjectKind {
+func (el *ExampleList) GetObjectKind() schema.ObjectKind {
 	return &el.TypeMeta
 }
 
 // Required to satisfy ListMetaAccessor interface
-func (el *ExampleList) GetListMeta() unversioned.List {
+func (el *ExampleList) GetListMeta() metav1.List {
 	return &el.Metadata
 }
 

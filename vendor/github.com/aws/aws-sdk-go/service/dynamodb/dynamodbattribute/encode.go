@@ -159,6 +159,8 @@ func Marshal(in interface{}) (*dynamodb.AttributeValue, error) {
 
 // MarshalMap is an alias for Marshal func which marshals Go value
 // type to a map of AttributeValues.
+//
+// This is useful for DynamoDB APIs such as PutItem.
 func MarshalMap(in interface{}) (map[string]*dynamodb.AttributeValue, error) {
 	av, err := NewEncoder().Encode(in)
 	if err != nil || av == nil || av.M == nil {

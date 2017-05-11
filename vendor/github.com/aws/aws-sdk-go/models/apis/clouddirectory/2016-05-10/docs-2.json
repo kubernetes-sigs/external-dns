@@ -1477,7 +1477,9 @@
       "refs": {
         "AddFacetToObjectRequest$SchemaFacet": "<p>Identifiers for the facet that you are adding to the object.</p>",
         "BatchAddFacetToObject$SchemaFacet": "<p>Represents the facet being added to the object.</p>",
+        "BatchListObjectAttributes$FacetFilter": "<p>Used to filter the list of object attributes associated with a certain facet.</p>",
         "BatchRemoveFacetFromObject$SchemaFacet": "<p>The facet to remove from the object.</p>",
+        "ListObjectAttributesRequest$FacetFilter": "<p>Used to filter the list of object attributes associated with a certain facet.</p>",
         "RemoveFacetFromObjectRequest$SchemaFacet": "<p>The facet to remove.</p>",
         "SchemaFacetList$member": null
       }

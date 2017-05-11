@@ -71,7 +71,8 @@
         {"shape":"ResourceNotFoundException"},
         {"shape":"LinkNameAlreadyInUseException"},
         {"shape":"InvalidAttachmentException"},
-        {"shape":"ValidationException"}
+        {"shape":"ValidationException"},
+        {"shape":"FacetValidationException"}
       ]
     },
     "AttachPolicy":{
@@ -689,7 +690,8 @@
         {"shape":"DirectoryNotEnabledException"},
         {"shape":"InvalidArnException"},
         {"shape":"ResourceNotFoundException"},
-        {"shape":"InvalidNextTokenException"}
+        {"shape":"InvalidNextTokenException"},
+        {"shape":"FacetValidationException"}
       ]
     },
     "ListObjectChildren":{
@@ -1292,7 +1294,8 @@
       "members":{
         "ObjectReference":{"shape":"ObjectReference"},
         "NextToken":{"shape":"NextToken"},
-        "MaxResults":{"shape":"NumberResults"}
+        "MaxResults":{"shape":"NumberResults"},
+        "FacetFilter":{"shape":"SchemaFacet"}
       }
     },
     "BatchListObjectAttributesResponse":{
@@ -2342,7 +2345,8 @@
           "shape":"ConsistencyLevel",
           "location":"header",
           "locationName":"x-amz-consistency-level"
-        }
+        },
+        "FacetFilter":{"shape":"SchemaFacet"}
       }
     },
     "ListObjectAttributesResponse":{
