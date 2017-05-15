@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/linki/instrumented_http"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
@@ -110,6 +111,13 @@ func NewGoogleProvider(project string, domainFilter string, dryRun bool) (Provid
 	if err != nil {
 		return nil, err
 	}
+
+	gcloud = instrumented_http.NewClient(gcloud, &instrumented_http.Callbacks{
+		PathProcessor: func(path string) string {
+			parts := strings.Split(path, "/")
+			return parts[len(parts)-1]
+		},
+	})
 
 	dnsClient, err := dns.New(gcloud)
 	if err != nil {

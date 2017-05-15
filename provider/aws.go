@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/linki/instrumented_http"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -75,6 +76,15 @@ type AWSProvider struct {
 // NewAWSProvider initializes a new AWS Route53 based Provider.
 func NewAWSProvider(domainFilter string, dryRun bool) (Provider, error) {
 	config := aws.NewConfig()
+
+	config = config.WithHTTPClient(
+		instrumented_http.NewClient(config.HTTPClient, &instrumented_http.Callbacks{
+			PathProcessor: func(path string) string {
+				parts := strings.Split(path, "/")
+				return parts[len(parts)-1]
+			},
+		}),
+	)
 
 	session, err := session.NewSessionWithOptions(session.Options{
 		Config:            *config,
