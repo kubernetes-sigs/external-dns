@@ -20,6 +20,8 @@ import (
 	"errors"
 	"strings"
 
+	log "github.com/Sirupsen/logrus"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
@@ -56,6 +58,35 @@ func NewInMemoryProvider() *InMemoryProvider {
 		domain:         "",
 		client:         newInMemoryClient(),
 	}
+}
+
+// NewInMemoryProviderWithDomain returns InMemoryProvider DNS provider interface
+// implementation with a specified domain
+func NewInMemoryProviderWithDomainAndLogging(domain string) *InMemoryProvider {
+	im := &InMemoryProvider{
+		filter: &filter{},
+		OnApplyChanges: func(changes *plan.Changes) {
+			for _, v := range changes.Create {
+				log.Infof("CREATE: %v", v)
+			}
+			for _, v := range changes.UpdateOld {
+				log.Infof("UPDATE (old): %v", v)
+			}
+			for _, v := range changes.UpdateNew {
+				log.Infof("UPDATE (new): %v", v)
+			}
+			for _, v := range changes.Delete {
+				log.Infof("DELETE: %v", v)
+			}
+		},
+		OnRecords: func() {},
+		domain:    domain,
+		client:    newInMemoryClient(),
+	}
+
+	im.CreateZone(domain)
+
+	return im
 }
 
 // CreateZone adds new zone if not present
