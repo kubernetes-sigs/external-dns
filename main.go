@@ -64,22 +64,40 @@ func main() {
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(stopChan)
 
-	client, err := newClient(cfg)
-	if err != nil {
-		log.Fatal(err)
+	var fakeSrcOnly bool = false
+	for _, svc_type := range cfg.Sources {
+		switch svc_type {
+		case "fake":
+			fqdn := cfg.FqdnTemplate
+			fakeSource, err := source.NewFakeSource(fqdn)
+			if err != nil {
+				log.Fatal(err)
+			}
+			source.Register("fake", fakeSource)
+
+			fakeSrcOnly = true
+			log.Warn("Fake source registered; will not register any other sources.")
+		}
 	}
 
-	serviceSource, err := source.NewServiceSource(client, cfg.Namespace, cfg.FqdnTemplate, cfg.Compatibility)
-	if err != nil {
-		log.Fatal(err)
-	}
-	source.Register("service", serviceSource)
+	if !fakeSrcOnly {
+		client, err := newClient(cfg)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	ingressSource, err := source.NewIngressSource(client, cfg.Namespace, cfg.FqdnTemplate)
-	if err != nil {
-		log.Fatal(err)
+		serviceSource, err := source.NewServiceSource(client, cfg.Namespace, cfg.FqdnTemplate, cfg.Compatibility)
+		if err != nil {
+			log.Fatal(err)
+		}
+		source.Register("service", serviceSource)
+
+		ingressSource, err := source.NewIngressSource(client, cfg.Namespace, cfg.FqdnTemplate)
+		if err != nil {
+			log.Fatal(err)
+		}
+		source.Register("ingress", ingressSource)
 	}
-	source.Register("ingress", ingressSource)
 
 	sources, err := source.LookupMultiple(cfg.Sources)
 	if err != nil {
