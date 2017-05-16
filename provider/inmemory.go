@@ -60,7 +60,7 @@ func NewInMemoryProvider() *InMemoryProvider {
 	}
 }
 
-// NewInMemoryProviderWithDomain returns InMemoryProvider DNS provider interface
+// NewInMemoryProviderWithDomainAndLogging returns InMemoryProvider DNS provider interface
 // implementation with a specified domain
 func NewInMemoryProviderWithDomainAndLogging(domain string) *InMemoryProvider {
 	im := &InMemoryProvider{

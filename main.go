@@ -64,9 +64,9 @@ func main() {
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(stopChan)
 
-	var fakeSrcOnly bool = false
-	for _, svc_type := range cfg.Sources {
-		switch svc_type {
+	var fakeSrcOnly = false
+	for _, svcType := range cfg.Sources {
+		switch svcType {
 		case "fake":
 			fqdn := cfg.FqdnTemplate
 			fakeSource, err := source.NewFakeSource(fqdn)
