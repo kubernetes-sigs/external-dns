@@ -64,39 +64,38 @@ func main() {
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(stopChan)
 
-	var fakeSrcOnly = false
-	for _, svcType := range cfg.Sources {
-		switch svcType {
-		case "fake":
-			fqdn := cfg.FqdnTemplate
-			fakeSource, err := source.NewFakeSource(fqdn)
+	var client *kubernetes.Clientset
+
+	// create only those services we explicitly ask for in cfg.Sources
+	for _, sourceType := range cfg.Sources {
+		// we only need a k8s client if we're creating a non-fake source, and
+		// have not already instantiated a k8s client
+		if sourceType != "fake" && client == nil {
+			var err error
+			client, err = newClient(cfg)
 			if err != nil {
 				log.Fatal(err)
 			}
-			source.Register("fake", fakeSource)
-
-			fakeSrcOnly = true
-			log.Warn("Fake source registered; will not register any other sources.")
 		}
-	}
 
-	if !fakeSrcOnly {
-		client, err := newClient(cfg)
+		var src source.Source
+		var err error
+		switch sourceType {
+		case "fake":
+			src, err = source.NewFakeSource(cfg.FqdnTemplate)
+		case "service":
+			src, err = source.NewServiceSource(client, cfg.Namespace, cfg.FqdnTemplate, cfg.Compatibility)
+		case "ingress":
+			src, err = source.NewIngressSource(client, cfg.Namespace, cfg.FqdnTemplate)
+		default:
+			log.Fatalf("Don't know how to handle sourceType '%s'", sourceType)
+		}
+
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		serviceSource, err := source.NewServiceSource(client, cfg.Namespace, cfg.FqdnTemplate, cfg.Compatibility)
-		if err != nil {
-			log.Fatal(err)
-		}
-		source.Register("service", serviceSource)
-
-		ingressSource, err := source.NewIngressSource(client, cfg.Namespace, cfg.FqdnTemplate)
-		if err != nil {
-			log.Fatal(err)
-		}
-		source.Register("ingress", ingressSource)
+		source.Register(sourceType, src)
 	}
 
 	sources, err := source.LookupMultiple(cfg.Sources)
