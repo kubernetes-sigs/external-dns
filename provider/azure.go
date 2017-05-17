@@ -115,8 +115,44 @@ func NewAzureProvider(configFile string, domainFilter string, resourceGroup stri
 // Records gets the current records.
 //
 // Returns the current records or an error if the operation failed.
-func (p *AzureProvider) Records() ([]*endpoint.Endpoint, error) {
-	return nil, fmt.Errorf("not yet implemented")
+func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
+	zones, err := p.zones()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, zone := range zones {
+		err := p.iterateRecords(*zone.Name, func(recordSet dns.RecordSet) bool {
+			if recordSet.Name == nil || recordSet.Type == nil {
+				log.Error("Skipping invalid record set with nil name or type.")
+				return true
+			}
+			recordType := strings.TrimLeft(*recordSet.Type, "Microsoft.Network/dnszones/")
+			switch dns.RecordType(recordType) {
+			case dns.A, dns.CNAME, dns.TXT:
+				name := formatAzureDNSName(*recordSet.Name, *zone.Name)
+				target := extractAzureTarget(&recordSet)
+				if target == "" {
+					log.Errorf("Failed to extract target for '%s' with type '%s'.", name, recordType)
+					return true
+				}
+				endpoint := endpoint.NewEndpoint(name, target, recordType)
+				log.Debugf(
+					"Found %s record for '%s' with target '%s'.",
+					endpoint.RecordType,
+					endpoint.DNSName,
+					endpoint.Target,
+				)
+				endpoints = append(endpoints, endpoint)
+			default:
+			}
+			return true
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+	return endpoints, nil
 }
 
 // ApplyChanges applies the given changes.
@@ -157,6 +193,29 @@ func (p *AzureProvider) zones() ([]dns.Zone, error) {
 	}
 	log.Debugf("Found %d Azure DNS zone(s).", len(zones))
 	return zones, nil
+}
+
+func (p *AzureProvider) iterateRecords(zoneName string, callback func(dns.RecordSet) bool) error {
+	log.Debugf("Retrieving Azure DNS records for zone '%s'.", zoneName)
+
+	list, err := p.recordsClient.ListByDNSZone(p.resourceGroup, zoneName, nil)
+	if err != nil {
+		return err
+	}
+
+	for list.Value != nil && len(*list.Value) > 0 {
+		for _, recordSet := range *list.Value {
+			if !callback(recordSet) {
+				return nil
+			}
+		}
+
+		list, err = p.recordsClient.ListByDNSZoneNextResults(list)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type azureChangeMap map[*dns.Zone][]*endpoint.Endpoint
@@ -335,4 +394,42 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 		}, nil
 	}
 	return dns.RecordSet{}, fmt.Errorf("unsupported record type '%s'", endpoint.RecordType)
+}
+
+// Helper function (shared with test code)
+func formatAzureDNSName(recordName, zoneName string) string {
+	if recordName == "@" {
+		return zoneName
+	}
+	return fmt.Sprintf("%s.%s", recordName, zoneName)
+}
+
+// Helper function (shared with text code)
+func extractAzureTarget(recordSet *dns.RecordSet) string {
+	properties := recordSet.RecordSetProperties
+	if properties == nil {
+		return ""
+	}
+
+	// Check for A records
+	aRecords := properties.ARecords
+	if aRecords != nil && len(*aRecords) > 0 && (*aRecords)[0].Ipv4Address != nil {
+		return *(*aRecords)[0].Ipv4Address
+	}
+
+	// Check for CNAME records
+	cnameRecord := properties.CnameRecord
+	if cnameRecord != nil && cnameRecord.Cname != nil {
+		return *cnameRecord.Cname
+	}
+
+	// Check for TXT records
+	txtRecords := properties.TxtRecords
+	if txtRecords != nil && len(*txtRecords) > 0 && (*txtRecords)[0].Value != nil {
+		values := (*txtRecords)[0].Value
+		if values != nil && len(*values) > 0 {
+			return (*values)[0]
+		}
+	}
+	return ""
 }
