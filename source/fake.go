@@ -29,10 +29,8 @@ import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
-// fakeSource is an implementation of Source for that provides dummy endpoints
-// for testing/dry-running of dns providers without needing an attached
-// kubernetes cluster.
-
+// fakeSource is an implementation of Source that provides dummy endpoints for
+// testing/dry-running of dns providers without needing an attached Kubernetes cluster.
 type fakeSource struct {
 	dnsName string
 }
@@ -45,18 +43,18 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-// NewFakeSource creates a new fakeSource with the given client and namespace scope.
-func NewFakeSource(dnsName string) (Source, error) {
-	if dnsName == "" {
-		dnsName = defaultDNSName
+// NewFakeSource creates a new fakeSource with the given config.
+func NewFakeSource(cfg *Config) (Source, error) {
+	if cfg.FQDNTemplate == "" {
+		cfg.FQDNTemplate = defaultDNSName
 	}
 
 	return &fakeSource{
-		dnsName: dnsName,
+		dnsName: cfg.FQDNTemplate,
 	}, nil
 }
 
-// Endpoints returns endpoint objects
+// Endpoints returns endpoint objects.
 func (sc *fakeSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	endpoints := make([]*endpoint.Endpoint, 10)
 
