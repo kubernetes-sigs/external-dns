@@ -37,13 +37,13 @@ func TestService(t *testing.T) {
 func TestNewServiceSource(t *testing.T) {
 	for _, ti := range []struct {
 		title        string
-		fqdntemplate string
+		fqdnTemplate string
 		expectError  bool
 	}{
 		{
 			title:        "invalid template",
 			expectError:  true,
-			fqdntemplate: "{{.Name",
+			fqdnTemplate: "{{.Name",
 		},
 		{
 			title:       "valid empty template",
@@ -52,11 +52,14 @@ func TestNewServiceSource(t *testing.T) {
 		{
 			title:        "valid template",
 			expectError:  false,
-			fqdntemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
+			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			_, err := NewServiceSource(fake.NewSimpleClientset(), "", ti.fqdntemplate, "")
+			_, err := NewServiceSource(&Config{
+				KubeClient:   fake.NewSimpleClientset(),
+				FQDNTemplate: ti.fqdnTemplate,
+			})
 			if ti.expectError && err == nil {
 				t.Error("invalid template should return err")
 			}
@@ -75,7 +78,7 @@ func testServiceEndpoints(t *testing.T) {
 		svcNamespace    string
 		svcName         string
 		compatibility   string
-		fqdntemplate    string
+		fqdnTemplate    string
 		labels          map[string]string
 		annotations     map[string]string
 		lbs             []string
@@ -315,7 +318,7 @@ func testServiceEndpoints(t *testing.T) {
 			false,
 		},
 		{
-			"not annotated services with set fqdntemplate return an endpoint with target IP",
+			"not annotated services with set fqdnTemplate return an endpoint with target IP",
 			"",
 			"testing",
 			"foo",
@@ -395,7 +398,12 @@ func testServiceEndpoints(t *testing.T) {
 			}
 
 			// Create our object under test and get the endpoints.
-			client, _ := NewServiceSource(kubernetes, tc.targetNamespace, tc.fqdntemplate, tc.compatibility)
+			client, _ := NewServiceSource(&Config{
+				KubeClient:    kubernetes,
+				Namespace:     tc.targetNamespace,
+				FQDNTemplate:  tc.fqdnTemplate,
+				Compatibility: tc.compatibility,
+			})
 
 			endpoints, err := client.Endpoints()
 
@@ -438,7 +446,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	client, _ := NewServiceSource(kubernetes, v1.NamespaceAll, "", "")
+	client, _ := NewServiceSource(&Config{KubeClient: kubernetes})
 
 	for i := 0; i < b.N; i++ {
 		_, err := client.Endpoints()
