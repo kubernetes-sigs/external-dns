@@ -20,6 +20,10 @@ ExternalDNS' current release is `v0.3`. This version allows you to keep selected
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.3` with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
+Note that all flags can be replaced with environment variables; for instance,
+`--dry-run` could be replaced with `EXTERNAL_DNS_DRY_RUN=1`, or
+`--registry txt` could be replaced with `EXTERNAL_DNS_REGISTRY=txt`.
+
 ### Technical Requirements
 
 Make sure you have the following prerequisites:
