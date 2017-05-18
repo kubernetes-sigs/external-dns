@@ -49,13 +49,27 @@ type config struct {
 	ClientSecret   string `json:"aadClientSecret" yaml:"aadClientSecret"`
 }
 
+// ZonesClient is an interface of dns.ZoneClient that can be stubbed for testing.
+type ZonesClient interface {
+	ListByResourceGroup(resourceGroupName string, top *int32) (result dns.ZoneListResult, err error)
+	ListByResourceGroupNextResults(lastResults dns.ZoneListResult) (result dns.ZoneListResult, err error)
+}
+
+// RecordsClient is an interface of dns.RecordClient that can be stubbed for testing.
+type RecordsClient interface {
+	ListByDNSZone(resourceGroupName string, zoneName string, top *int32) (result dns.RecordSetListResult, err error)
+	ListByDNSZoneNextResults(list dns.RecordSetListResult) (result dns.RecordSetListResult, err error)
+	Delete(resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, ifMatch string) (result autorest.Response, err error)
+	CreateOrUpdate(resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, parameters dns.RecordSet, ifMatch string, ifNoneMatch string) (result dns.RecordSet, err error)
+}
+
 // AzureProvider implements the DNS provider for Microsoft's Azure cloud platform.
 type AzureProvider struct {
 	domainFilter  string
 	dryRun        bool
 	resourceGroup string
-	zonesClient   dns.ZonesClient
-	recordsClient dns.RecordSetsClient
+	zonesClient   ZonesClient
+	recordsClient RecordsClient
 }
 
 // NewAzureProvider creates a new Azure provider.
