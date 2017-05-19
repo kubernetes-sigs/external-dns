@@ -1,5 +1,5 @@
-hash: d46cd439386717ec9ea20d75ab7a8c272acbfee511338b56a0797426ec29b4ee
-updated: 2017-05-09T10:53:15.711029881+02:00
+hash: a89d2fcdf53cc6a050053c36b44925752b37f93f6bc72a289f8536b84b32730c
+updated: 2017-05-17T14:10:04.385630307+02:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -17,7 +17,7 @@ imports:
 - name: github.com/alecthomas/units
   version: 2efee857e7cfd4f3d0138cc3cbb1b4966962b93a
 - name: github.com/aws/aws-sdk-go
-  version: fa7f88097f64d1a2bcc65f9b9b547f363082d496
+  version: e766cfe96ef7320817087fa4cd92c09abdb87310
   subpackages:
   - aws
   - aws/awserr
@@ -43,6 +43,18 @@ imports:
   - private/protocol/xml/xmlutil
   - service/route53
   - service/sts
+- name: github.com/Azure/azure-sdk-for-go
+  version: 5841475edc7c8725d79885d635aa8956f97fdf0e
+  subpackages:
+  - arm/dns
+- name: github.com/Azure/go-autorest
+  version: 58f6f26e200fa5dfb40c9cd1c83f3e2c860d779d
+  subpackages:
+  - autorest
+  - autorest/adal
+  - autorest/azure
+  - autorest/date
+  - autorest/to
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
   subpackages:
@@ -51,6 +63,8 @@ imports:
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
   subpackages:
   - spew
+- name: github.com/dgrijalva/jwt-go
+  version: 6c8dedd55f8a2e41f605de6d5d66e51ed1f299fc
 - name: github.com/docker/distribution
   version: cd27f179f2c10c5d300e6d09025b538c475b0d51
   subpackages:
