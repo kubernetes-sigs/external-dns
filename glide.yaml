@@ -35,3 +35,7 @@ import:
   - pkg/apis/extensions/v1beta1
   - tools/clientcmd
 - package: github.com/kubernetes/repo-infra
+- package: github.com/Azure/azure-sdk-for-go
+  version: v10.0.2-beta
+  subpackages:
+  - arm/dns
