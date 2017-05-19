@@ -32,7 +32,7 @@ type Config struct {
 	KubeConfig     string
 	Sources        []string
 	Namespace      string
-	FqdnTemplate   string
+	FQDNTemplate   string
 	Compatibility  string
 	Provider       string
 	GoogleProject  string
@@ -54,7 +54,7 @@ var defaultConfig = &Config{
 	KubeConfig:     "",
 	Sources:        nil,
 	Namespace:      "",
-	FqdnTemplate:   "",
+	FQDNTemplate:   "",
 	Compatibility:  "",
 	Provider:       "",
 	GoogleProject:  "",
@@ -89,7 +89,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	// Flags related to processing sources
 	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, fake)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "fake")
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
-	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional)").Default(defaultConfig.FqdnTemplate).StringVar(&cfg.FqdnTemplate)
+	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional)").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
 	app.Flag("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule)").Default(defaultConfig.Compatibility).EnumVar(&cfg.Compatibility, "", "mate", "molecule")
 
 	// Flags related to providers
