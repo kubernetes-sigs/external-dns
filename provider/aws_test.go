@@ -174,7 +174,7 @@ func TestAWSRecords(t *testing.T) {
 		endpoint.NewEndpoint("list-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "ALIAS"),
 	})
 
-	records, err := provider.Records("_")
+	records, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -199,7 +199,7 @@ func TestAWSCreateRecords(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	records, err := provider.Records("_")
+	records, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -233,7 +233,7 @@ func TestAWSUpdateRecords(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	records, err := provider.Records("_")
+	records, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -260,7 +260,7 @@ func TestAWSDeleteRecords(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	records, err := provider.Records("_")
+	records, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -314,11 +314,11 @@ func TestAWSApplyChanges(t *testing.T) {
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges("_", changes); err != nil {
+	if err := provider.ApplyChanges(changes); err != nil {
 		t.Fatal(err)
 	}
 
-	records, err := provider.Records("_")
+	records, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -383,11 +383,11 @@ func TestAWSApplyChangesDryRun(t *testing.T) {
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges("_", changes); err != nil {
+	if err := provider.ApplyChanges(changes); err != nil {
 		t.Fatal(err)
 	}
 
-	records, err := provider.Records("_")
+	records, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -669,7 +669,7 @@ func setupAWSRecords(t *testing.T, provider *AWSProvider, endpoints []*endpoint.
 	clearAWSRecords(t, provider, "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do.")
 	clearAWSRecords(t, provider, "/hostedzone/zone-3.ext-dns-test-2.teapot.zalan.do.")
 
-	records, err := provider.Records("_")
+	records, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -680,7 +680,7 @@ func setupAWSRecords(t *testing.T, provider *AWSProvider, endpoints []*endpoint.
 		t.Fatal(err)
 	}
 
-	records, err = provider.Records("_")
+	records, err = provider.Records()
 	if err != nil {
 		t.Fatal(err)
 	}

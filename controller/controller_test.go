@@ -30,21 +30,16 @@ import (
 // mockProvider returns mock endpoints and validates changes.
 type mockProvider struct {
 	RecordsStore  []*endpoint.Endpoint
-	ExpectZone    string
 	ExpectChanges *plan.Changes
 }
 
 // Records returns the desired mock endpoints.
-func (p *mockProvider) Records(zone string) ([]*endpoint.Endpoint, error) {
+func (p *mockProvider) Records() ([]*endpoint.Endpoint, error) {
 	return p.RecordsStore, nil
 }
 
 // ApplyChanges validates that the passed in changes satisfy the assumtions.
-func (p *mockProvider) ApplyChanges(zone string, changes *plan.Changes) error {
-	if zone != p.ExpectZone {
-		return errors.New("zone is incorrect")
-	}
-
+func (p *mockProvider) ApplyChanges(changes *plan.Changes) error {
 	if len(changes.Create) != len(p.ExpectChanges.Create) {
 		return errors.New("number of created records is wrong")
 	}
@@ -77,10 +72,9 @@ func (p *mockProvider) ApplyChanges(zone string, changes *plan.Changes) error {
 }
 
 // newMockProvider creates a new mockProvider returning the given endpoints and validating the desired changes.
-func newMockProvider(endpoints []*endpoint.Endpoint, zone string, changes *plan.Changes) provider.Provider {
+func newMockProvider(endpoints []*endpoint.Endpoint, changes *plan.Changes) provider.Provider {
 	dnsProvider := &mockProvider{
 		RecordsStore:  endpoints,
-		ExpectZone:    zone,
 		ExpectChanges: changes,
 	}
 
@@ -115,7 +109,6 @@ func TestRunOnce(t *testing.T) {
 				Target:  "4.3.2.1",
 			},
 		},
-		"test-zone",
 		&plan.Changes{
 			Create: []*endpoint.Endpoint{
 				{DNSName: "create-record", Target: "1.2.3.4"},
@@ -136,7 +129,6 @@ func TestRunOnce(t *testing.T) {
 
 	// Run our controller once to trigger the validation.
 	ctrl := &Controller{
-		Zone:     "test-zone",
 		Source:   source,
 		Registry: r,
 		Policy:   &plan.SyncPolicy{},

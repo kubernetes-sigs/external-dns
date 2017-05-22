@@ -35,11 +35,11 @@ func NewNoopRegistry(provider provider.Provider) (*NoopRegistry, error) {
 }
 
 // Records returns the current records from the dns provider
-func (im *NoopRegistry) Records(zone string) ([]*endpoint.Endpoint, error) {
-	return im.provider.Records(zone)
+func (im *NoopRegistry) Records() ([]*endpoint.Endpoint, error) {
+	return im.provider.Records()
 }
 
 // ApplyChanges propagates changes to the dns provider
-func (im *NoopRegistry) ApplyChanges(zone string, changes *plan.Changes) error {
-	return im.provider.ApplyChanges(zone, changes)
+func (im *NoopRegistry) ApplyChanges(changes *plan.Changes) error {
+	return im.provider.ApplyChanges(changes)
 }

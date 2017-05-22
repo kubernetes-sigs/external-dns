@@ -69,7 +69,7 @@ func (im *InMemoryProvider) Zones() map[string]string {
 }
 
 // Records returns the list of endpoints
-func (im *InMemoryProvider) Records(_ string) ([]*endpoint.Endpoint, error) {
+func (im *InMemoryProvider) Records() ([]*endpoint.Endpoint, error) {
 	defer im.OnRecords()
 
 	endpoints := make([]*endpoint.Endpoint, 0)
@@ -93,7 +93,7 @@ func (im *InMemoryProvider) Records(_ string) ([]*endpoint.Endpoint, error) {
 // create record - record should not exist
 // update/delete record - record should exist
 // create/update/delete lists should not have overlapping records
-func (im *InMemoryProvider) ApplyChanges(_ string, changes *plan.Changes) error {
+func (im *InMemoryProvider) ApplyChanges(changes *plan.Changes) error {
 	defer im.OnApplyChanges(changes)
 
 	perZoneChanges := map[string]*plan.Changes{}
