@@ -116,7 +116,7 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 }
 
 // Records returns the list of records in a given hosted zone.
-func (p *AWSProvider) Records(_ string) (endpoints []*endpoint.Endpoint, _ error) {
+func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.Zones()
 	if err != nil {
 		return nil, err
@@ -174,7 +174,7 @@ func (p *AWSProvider) DeleteRecords(endpoints []*endpoint.Endpoint) error {
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *AWSProvider) ApplyChanges(_ string, changes *plan.Changes) error {
+func (p *AWSProvider) ApplyChanges(changes *plan.Changes) error {
 	combinedChanges := make([]*route53.Change, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 
 	combinedChanges = append(combinedChanges, newChanges(route53.ChangeActionCreate, changes.Create)...)

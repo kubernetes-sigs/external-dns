@@ -54,13 +54,13 @@ func testNoopRecords(t *testing.T) {
 			RecordType: "CNAME",
 		},
 	}
-	p.ApplyChanges("_", &plan.Changes{
+	p.ApplyChanges(&plan.Changes{
 		Create: providerRecords,
 	})
 
 	r, _ := NewNoopRegistry(p)
 
-	eps, err := r.Records("_")
+	eps, err := r.Records()
 	if err != nil {
 		t.Error(err)
 	}
@@ -92,13 +92,13 @@ func testNoopApplyChanges(t *testing.T) {
 		},
 	}
 
-	p.ApplyChanges("_", &plan.Changes{
+	p.ApplyChanges(&plan.Changes{
 		Create: providerRecords,
 	})
 
 	// wrong changes
 	r, _ := NewNoopRegistry(p)
-	err := r.ApplyChanges("_", &plan.Changes{
+	err := r.ApplyChanges(&plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{
 				DNSName: "example.org",
@@ -111,7 +111,7 @@ func testNoopApplyChanges(t *testing.T) {
 	}
 
 	//correct changes
-	err = r.ApplyChanges("_", &plan.Changes{
+	err = r.ApplyChanges(&plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{
 				DNSName: "new-record.org",
@@ -134,7 +134,7 @@ func testNoopApplyChanges(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, _ := p.Records("_")
+	res, _ := p.Records()
 	if !testutils.SameEndpoints(res, expectedUpdate) {
 		t.Error("incorrectly updated dns provider")
 	}
