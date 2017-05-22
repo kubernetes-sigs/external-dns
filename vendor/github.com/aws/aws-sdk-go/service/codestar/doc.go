@@ -11,9 +11,6 @@
 //
 // Projects and their resources, by calling the following:
 //
-//    * CreateProject, which creates an empty project in AWS CodeStar with no
-//    resources.
-//
 //    * DeleteProject, which deletes a project in AWS CodeStar.
 //
 //    * DescribeProject, which lists the attributes of a project.

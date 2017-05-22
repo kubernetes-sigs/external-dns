@@ -35,3 +35,5 @@ import:
   - pkg/apis/extensions/v1beta1
   - tools/clientcmd
 - package: github.com/kubernetes/repo-infra
+- package: github.com/linki/instrumented_http
+  version: ~0.1.0
