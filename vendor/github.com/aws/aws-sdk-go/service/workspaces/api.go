@@ -905,7 +905,7 @@ func (c *WorkSpaces) ModifyWorkspacePropertiesRequest(input *ModifyWorkspaceProp
 
 // ModifyWorkspaceProperties API operation for Amazon WorkSpaces.
 //
-// Modifies the WorkSpace properties, including the RunningMode and AutoStop
+// Modifies the WorkSpace properties, including the running mode and AutoStop
 // time.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -920,20 +920,21 @@ func (c *WorkSpaces) ModifyWorkspacePropertiesRequest(input *ModifyWorkspaceProp
 //   One or more parameter values are not valid.
 //
 //   * ErrCodeInvalidResourceStateException "InvalidResourceStateException"
-//   The specified WorkSpace has an invalid state for this operation.
+//   The state of the WorkSpace is not valid for this operation.
 //
 //   * ErrCodeOperationInProgressException "OperationInProgressException"
 //   The properties of this WorkSpace are currently being modified. Try again
 //   in a moment.
 //
 //   * ErrCodeUnsupportedWorkspaceConfigurationException "UnsupportedWorkspaceConfigurationException"
-//   The WorkSpace does not have the supported configuration for this operation.
-//   For more information, see the Amazon WorkSpaces Administration Guide (http://docs.aws.amazon.com/workspaces/latest/adminguide).
+//   The configuration of this WorkSpace is not supported for this operation.
+//   For more information, see the Amazon WorkSpaces Administration Guide (http://docs.aws.amazon.com/workspaces/latest/adminguide/).
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The resource could not be found.
 //
 //   * ErrCodeAccessDeniedException "AccessDeniedException"
+//   The user is not authorized to access a resource.
 //
 //   * ErrCodeResourceUnavailableException "ResourceUnavailableException"
 //   The specified resource is not available.
@@ -1178,8 +1179,8 @@ func (c *WorkSpaces) StartWorkspacesRequest(input *StartWorkspacesInput) (req *r
 
 // StartWorkspaces API operation for Amazon WorkSpaces.
 //
-// Starts the specified WorkSpaces. The API only works with WorkSpaces that
-// have RunningMode configured as AutoStop and the State set to “STOPPED.”
+// Starts the specified WorkSpaces. The WorkSpaces must have a running mode
+// of AutoStop and a state of STOPPED.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -1254,9 +1255,8 @@ func (c *WorkSpaces) StopWorkspacesRequest(input *StopWorkspacesInput) (req *req
 
 // StopWorkspaces API operation for Amazon WorkSpaces.
 //
-// Stops the specified WorkSpaces. The API only works with WorkSpaces that have
-// RunningMode configured as AutoStop and the State set to AVAILABLE, IMPAIRED,
-// UNHEALTHY, or ERROR.
+// Stops the specified WorkSpaces. The WorkSpaces must have a running mode of
+// AutoStop and a state of AVAILABLE, IMPAIRED, UNHEALTHY, or ERROR.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about

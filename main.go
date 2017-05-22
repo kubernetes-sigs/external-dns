@@ -20,10 +20,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/linki/instrumented_http"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"k8s.io/client-go/kubernetes"
@@ -161,6 +163,15 @@ func newClient(cfg *externaldns.Config) (*kubernetes.Clientset, error) {
 	config, err := clientcmd.BuildConfigFromFlags(cfg.Master, cfg.KubeConfig)
 	if err != nil {
 		return nil, err
+	}
+
+	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
+		return instrumented_http.NewTransport(rt, &instrumented_http.Callbacks{
+			PathProcessor: func(path string) string {
+				parts := strings.Split(path, "/")
+				return parts[len(parts)-1]
+			},
+		})
 	}
 
 	client, err := kubernetes.NewForConfig(config)

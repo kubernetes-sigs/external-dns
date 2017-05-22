@@ -57,10 +57,9 @@ func (e *UnixTime) UnmarshalDynamoDBAttributeValue(av *dynamodb.AttributeValue) 
 //		type ExampleMarshaler struct {
 //			Value int
 //		}
-//		type (m *ExampleMarshaler) 	MarshalDynamoDBAttributeValue(av *dynamodb.AttributeValue) error {
+//		func (m *ExampleMarshaler) 	MarshalDynamoDBAttributeValue(av *dynamodb.AttributeValue) error {
 //			n := fmt.Sprintf("%v", m.Value)
 //			av.N = &n
-//
 //			return nil
 //		}
 //
