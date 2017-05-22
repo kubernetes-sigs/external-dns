@@ -23,6 +23,9 @@ import (
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var _ Registry = &NoopRegistry{}
@@ -36,12 +39,8 @@ func TestNoopRegistry(t *testing.T) {
 func testNoopInit(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	r, err := NewNoopRegistry(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if r.provider != p {
-		t.Error("noop registry incorrectly initialized")
-	}
+	require.NoError(t, err)
+	assert.Equal(t, p, r.provider)
 }
 
 func testNoopRecords(t *testing.T) {
@@ -59,14 +58,9 @@ func testNoopRecords(t *testing.T) {
 	})
 
 	r, _ := NewNoopRegistry(p)
-
 	eps, err := r.Records()
-	if err != nil {
-		t.Error(err)
-	}
-	if !testutils.SameEndpoints(eps, providerRecords) {
-		t.Error("incorrect result is returned")
-	}
+	assert.NoError(t, err)
+	assert.True(t, testutils.SameEndpoints(eps, providerRecords))
 }
 
 func testNoopApplyChanges(t *testing.T) {
@@ -106,9 +100,7 @@ func testNoopApplyChanges(t *testing.T) {
 			},
 		},
 	})
-	if err != provider.ErrRecordAlreadyExists {
-		t.Error("should return record already exists")
-	}
+	assert.EqualError(t, err, provider.ErrRecordAlreadyExists.Error())
 
 	//correct changes
 	err = r.ApplyChanges(&plan.Changes{
@@ -132,10 +124,8 @@ func testNoopApplyChanges(t *testing.T) {
 		},
 	})
 	if err != nil {
-		t.Fatal(err)
+		require.NoError(t, err)
 	}
 	res, _ := p.Records()
-	if !testutils.SameEndpoints(res, expectedUpdate) {
-		t.Error("incorrectly updated dns provider")
-	}
+	assert.True(t, testutils.SameEndpoints(res, expectedUpdate))
 }

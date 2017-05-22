@@ -29,6 +29,9 @@ import (
 
 	"google.golang.org/api/dns/v1"
 	"google.golang.org/api/googleapi"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -192,9 +195,7 @@ func TestGoogleZones(t *testing.T) {
 	provider := newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do.", false, []*endpoint.Endpoint{})
 
 	zones, err := provider.Zones()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	validateZones(t, zones, map[string]*dns.ManagedZone{
 		"zone-1-ext-dns-test-2-gcp-zalan-do": {Name: "zone-1-ext-dns-test-2-gcp-zalan-do", DnsName: "zone-1.ext-dns-test-2.gcp.zalan.do."},
@@ -213,9 +214,7 @@ func TestGoogleRecords(t *testing.T) {
 	provider := newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do.", false, originalEndpoints)
 
 	records, err := provider.Records()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	validateEndpoints(t, records, originalEndpoints)
 }
@@ -229,14 +228,10 @@ func TestGoogleCreateRecords(t *testing.T) {
 		endpoint.NewEndpoint("create-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "foo.elb.amazonaws.com", ""),
 	}
 
-	if err := provider.CreateRecords(records); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, provider.CreateRecords(records))
 
 	records, err := provider.Records()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("create-test.zone-1.ext-dns-test-2.gcp.zalan.do", "1.2.3.4", "A"),
@@ -263,14 +258,10 @@ func TestGoogleUpdateRecords(t *testing.T) {
 		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "bar.elb.amazonaws.com", "CNAME"),
 	}
 
-	if err := provider.UpdateRecords(updatedRecords, currentRecords); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, provider.UpdateRecords(updatedRecords, currentRecords))
 
 	records, err := provider.Records()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", "1.2.3.4", "A"),
@@ -288,14 +279,10 @@ func TestGoogleDeleteRecords(t *testing.T) {
 
 	provider := newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do.", false, originalEndpoints)
 
-	if err := provider.DeleteRecords(originalEndpoints); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, provider.DeleteRecords(originalEndpoints))
 
 	records, err := provider.Records()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{})
 }
@@ -340,14 +327,10 @@ func TestGoogleApplyChanges(t *testing.T) {
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges(changes); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, provider.ApplyChanges(changes))
 
 	records, err := provider.Records()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("create-test.zone-1.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", "A"),
@@ -401,24 +384,17 @@ func TestGoogleApplyChangesDryRun(t *testing.T) {
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges(changes); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, provider.ApplyChanges(changes))
 
 	records, err := provider.Records()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	validateEndpoints(t, records, originalEndpoints)
 }
 
 func TestGoogleApplyChangesEmpty(t *testing.T) {
 	provider := newGoogleProvider(t, "ext-dns-test-2.gcp.zalan.do.", false, []*endpoint.Endpoint{})
-
-	if err := provider.ApplyChanges(&plan.Changes{}); err != nil {
-		t.Error(err)
-	}
+	assert.NoError(t, provider.ApplyChanges(&plan.Changes{}))
 }
 
 func TestSeparateChanges(t *testing.T) {
@@ -449,10 +425,7 @@ func TestSeparateChanges(t *testing.T) {
 	}
 
 	changes := separateChange(zones, change)
-
-	if len(changes) != 2 {
-		t.Fatalf("expected %d change(s), got %d", 2, len(changes))
-	}
+	require.Len(t, changes, 2)
 
 	validateChange(t, changes["foo-example-org"], &dns.Change{
 		Additions: []*dns.ResourceRecordSet{
@@ -488,17 +461,12 @@ func TestGoogleSuitableZone(t *testing.T) {
 		{"foo.kubernetes.io.", nil},
 	} {
 		suitableZone := suitableManagedZone(tc.hostname, zones)
-
-		if suitableZone != tc.expected {
-			t.Errorf("expected %v, got %v", tc.expected, suitableZone)
-		}
+		assert.Equal(t, suitableZone, tc.expected)
 	}
 }
 
 func validateZones(t *testing.T, zones map[string]*dns.ManagedZone, expected map[string]*dns.ManagedZone) {
-	if len(zones) != len(expected) {
-		t.Fatalf("expected %d zone(s), got %d", len(expected), len(zones))
-	}
+	require.Len(t, zones, len(expected))
 
 	for i, zone := range zones {
 		validateZone(t, zone, expected[i])
@@ -506,13 +474,8 @@ func validateZones(t *testing.T, zones map[string]*dns.ManagedZone, expected map
 }
 
 func validateZone(t *testing.T, zone *dns.ManagedZone, expected *dns.ManagedZone) {
-	if zone.Name != expected.Name {
-		t.Errorf("expected %s, got %s", expected.Name, zone.Name)
-	}
-
-	if zone.DnsName != expected.DnsName {
-		t.Errorf("expected %s, got %s", expected.DnsName, zone.DnsName)
-	}
+	assert.Equal(t, zone.Name, expected.Name)
+	assert.Equal(t, zone.DnsName, expected.DnsName)
 }
 
 func validateChange(t *testing.T, change *dns.Change, expected *dns.Change) {
@@ -521,9 +484,7 @@ func validateChange(t *testing.T, change *dns.Change, expected *dns.Change) {
 }
 
 func validateChangeRecords(t *testing.T, records []*dns.ResourceRecordSet, expected []*dns.ResourceRecordSet) {
-	if len(records) != len(expected) {
-		t.Fatalf("expected %d change(s), got %d", len(expected), len(records))
-	}
+	require.Len(t, records, len(expected))
 
 	for i := range records {
 		validateChangeRecord(t, records[i], expected[i])
@@ -531,13 +492,8 @@ func validateChangeRecords(t *testing.T, records []*dns.ResourceRecordSet, expec
 }
 
 func validateChangeRecord(t *testing.T, record *dns.ResourceRecordSet, expected *dns.ResourceRecordSet) {
-	if record.Name != expected.Name {
-		t.Errorf("expected %s, got %s", expected.Name, record.Name)
-	}
-
-	if record.Ttl != expected.Ttl {
-		t.Errorf("expected %d, got %d", expected.Ttl, record.Ttl)
-	}
+	assert.Equal(t, record.Name, expected.Name)
+	assert.Equal(t, record.Ttl, expected.Ttl)
 }
 
 func newGoogleProvider(t *testing.T, domainFilter string, dryRun bool, records []*endpoint.Endpoint) *googleProvider {
@@ -577,7 +533,7 @@ func createZone(t *testing.T, provider *googleProvider, zone *dns.ManagedZone) {
 
 	if _, err := provider.managedZonesClient.Create("zalando-external-dns-test", zone).Do(); err != nil {
 		if err, ok := err.(*googleapi.Error); !ok || err.Code != http.StatusConflict {
-			t.Fatal(err)
+			require.NoError(t, err)
 		}
 	}
 }
@@ -587,27 +543,21 @@ func setupGoogleRecords(t *testing.T, provider *googleProvider, endpoints []*end
 	clearGoogleRecords(t, provider, "zone-2-ext-dns-test-2-gcp-zalan-do")
 
 	records, err := provider.Records()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{})
 
-	if err = provider.CreateRecords(endpoints); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, provider.CreateRecords(endpoints))
 
 	records, err = provider.Records()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	validateEndpoints(t, records, endpoints)
 }
 
 func clearGoogleRecords(t *testing.T, provider *googleProvider, zone string) {
 	recordSets := []*dns.ResourceRecordSet{}
-	if err := provider.resourceRecordSetsClient.List(provider.project, zone).Pages(context.TODO(), func(resp *dns.ResourceRecordSetsListResponse) error {
+	err := provider.resourceRecordSetsClient.List(provider.project, zone).Pages(context.TODO(), func(resp *dns.ResourceRecordSetsListResponse) error {
 		for _, r := range resp.Rrsets {
 			switch r.Type {
 			case "A", "CNAME":
@@ -615,15 +565,13 @@ func clearGoogleRecords(t *testing.T, provider *googleProvider, zone string) {
 			}
 		}
 		return nil
-	}); err != nil {
-		t.Fatal(err)
-	}
+	})
+	require.NoError(t, err)
 
 	if len(recordSets) != 0 {
-		if _, err := provider.changesClient.Create(provider.project, zone, &dns.Change{
+		_, err := provider.changesClient.Create(provider.project, zone, &dns.Change{
 			Deletions: recordSets,
-		}).Do(); err != nil {
-			t.Fatal(err)
-		}
+		}).Do()
+		require.NoError(t, err)
 	}
 }

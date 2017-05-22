@@ -19,16 +19,17 @@ package provider
 import (
 	"fmt"
 	"net"
-	"reflect"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/route53"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Compile time check for interface conformance
@@ -148,7 +149,7 @@ func TestAWSZones(t *testing.T) {
 
 	zones, err := provider.Zones()
 	if err != nil {
-		t.Fatal(err)
+		require.NoError(t, err)
 	}
 
 	validateAWSZones(t, zones, map[string]*route53.HostedZone{
@@ -175,9 +176,7 @@ func TestAWSRecords(t *testing.T) {
 	})
 
 	records, err := provider.Records()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("list-test.zone-1.ext-dns-test-2.teapot.zalan.do", "1.2.3.4", "A"),
@@ -195,14 +194,10 @@ func TestAWSCreateRecords(t *testing.T) {
 		endpoint.NewEndpoint("create-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.elb.amazonaws.com", ""),
 	}
 
-	if err := provider.CreateRecords(records); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, provider.CreateRecords(records))
 
 	records, err := provider.Records()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("create-test.zone-1.ext-dns-test-2.teapot.zalan.do", "1.2.3.4", "A"),
@@ -229,14 +224,10 @@ func TestAWSUpdateRecords(t *testing.T) {
 		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do", "bar.elb.amazonaws.com", "CNAME"),
 	}
 
-	if err := provider.UpdateRecords(updatedRecords, currentRecords); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, provider.UpdateRecords(updatedRecords, currentRecords))
 
 	records, err := provider.Records()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.teapot.zalan.do", "1.2.3.4", "A"),
@@ -256,14 +247,10 @@ func TestAWSDeleteRecords(t *testing.T) {
 
 	provider := newAWSProvider(t, "ext-dns-test-2.teapot.zalan.do.", false, originalEndpoints)
 
-	if err := provider.DeleteRecords(originalEndpoints); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, provider.DeleteRecords(originalEndpoints))
 
 	records, err := provider.Records()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{})
 }
@@ -314,14 +301,10 @@ func TestAWSApplyChanges(t *testing.T) {
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges(changes); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, provider.ApplyChanges(changes))
 
 	records, err := provider.Records()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("create-test.zone-1.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
@@ -383,14 +366,10 @@ func TestAWSApplyChangesDryRun(t *testing.T) {
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges(changes); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, provider.ApplyChanges(changes))
 
 	records, err := provider.Records()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	validateEndpoints(t, records, originalEndpoints)
 }
@@ -439,10 +418,7 @@ func TestAWSChangesByZones(t *testing.T) {
 	}
 
 	changesByZone := changesByZone(zones, changes)
-
-	if len(changesByZone) != 2 {
-		t.Fatalf("expected %d change(s), got %d", 2, len(changesByZone))
-	}
+	require.Len(t, changesByZone, 2)
 
 	validateAWSChangeRecords(t, changesByZone["foo-example-org"], []*route53.Change{
 		{
@@ -476,15 +452,11 @@ func TestAWSChangesByZones(t *testing.T) {
 }
 
 func validateEndpoints(t *testing.T, endpoints []*endpoint.Endpoint, expected []*endpoint.Endpoint) {
-	if !testutils.SameEndpoints(endpoints, expected) {
-		t.Errorf("expected and actual endpoints don't match")
-	}
+	assert.True(t, testutils.SameEndpoints(endpoints, expected), "expected and actual endpoints don't match")
 }
 
 func validateAWSZones(t *testing.T, zones map[string]*route53.HostedZone, expected map[string]*route53.HostedZone) {
-	if len(zones) != len(expected) {
-		t.Fatalf("expected %d zone(s), got %d", len(expected), len(zones))
-	}
+	require.Len(t, zones, len(expected))
 
 	for i, zone := range zones {
 		validateAWSZone(t, zone, expected[i])
@@ -492,19 +464,12 @@ func validateAWSZones(t *testing.T, zones map[string]*route53.HostedZone, expect
 }
 
 func validateAWSZone(t *testing.T, zone *route53.HostedZone, expected *route53.HostedZone) {
-	if aws.StringValue(zone.Id) != aws.StringValue(expected.Id) {
-		t.Errorf("expected %s, got %s", aws.StringValue(expected.Id), aws.StringValue(zone.Id))
-	}
-
-	if aws.StringValue(zone.Name) != aws.StringValue(expected.Name) {
-		t.Errorf("expected %s, got %s", aws.StringValue(expected.Name), aws.StringValue(zone.Name))
-	}
+	assert.Equal(t, aws.StringValue(expected.Id), aws.StringValue(zone.Id))
+	assert.Equal(t, aws.StringValue(expected.Name), aws.StringValue(zone.Name))
 }
 
 func validateAWSChangeRecords(t *testing.T, records []*route53.Change, expected []*route53.Change) {
-	if len(records) != len(expected) {
-		t.Fatalf("expected %d change(s), got %d", len(expected), len(records))
-	}
+	require.Len(t, records, len(expected))
 
 	for i := range records {
 		validateAWSChangeRecord(t, records[i], expected[i])
@@ -512,13 +477,8 @@ func validateAWSChangeRecords(t *testing.T, records []*route53.Change, expected 
 }
 
 func validateAWSChangeRecord(t *testing.T, record *route53.Change, expected *route53.Change) {
-	if aws.StringValue(record.Action) != aws.StringValue(expected.Action) {
-		t.Errorf("expected %s, got %s", aws.StringValue(expected.Action), aws.StringValue(record.Action))
-	}
-
-	if aws.StringValue(record.ResourceRecordSet.Name) != aws.StringValue(expected.ResourceRecordSet.Name) {
-		t.Errorf("expected %s, got %s", aws.StringValue(expected.ResourceRecordSet.Name), aws.StringValue(record.ResourceRecordSet.Name))
-	}
+	assert.Equal(t, aws.StringValue(expected.Action), aws.StringValue(record.Action))
+	assert.Equal(t, aws.StringValue(expected.ResourceRecordSet.Name), aws.StringValue(record.ResourceRecordSet.Name))
 }
 
 func TestAWSCreateRecordsWithCNAME(t *testing.T) {
@@ -528,9 +488,7 @@ func TestAWSCreateRecordsWithCNAME(t *testing.T) {
 		{DNSName: "create-test.zone-1.ext-dns-test-2.teapot.zalan.do", Target: "foo.example.org"},
 	}
 
-	if err := provider.CreateRecords(records); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, provider.CreateRecords(records))
 
 	recordSets := listAWSRecords(t, provider.client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.")
 
@@ -555,9 +513,7 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 		{DNSName: "create-test.zone-1.ext-dns-test-2.teapot.zalan.do", Target: "foo.eu-central-1.elb.amazonaws.com"},
 	}
 
-	if err := provider.CreateRecords(records); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, provider.CreateRecords(records))
 
 	recordSets := listAWSRecords(t, provider.client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.")
 
@@ -591,12 +547,7 @@ func TestAWSisLoadBalancer(t *testing.T) {
 			Target:     tc.target,
 			RecordType: tc.recordType,
 		}
-
-		isLB := isAWSLoadBalancer(ep)
-
-		if isLB != tc.expected {
-			t.Errorf("expected %t, got %t", tc.expected, isLB)
-		}
+		assert.Equal(t, tc.expected, isAWSLoadBalancer(ep))
 	}
 }
 
@@ -622,10 +573,7 @@ func TestAWSCanonicalHostedZone(t *testing.T) {
 		{"foo.example.org", ""},
 	} {
 		zone := canonicalHostedZone(tc.hostname)
-
-		if zone != tc.expected {
-			t.Errorf("expected %v, got %v", tc.expected, zone)
-		}
+		assert.Equal(t, tc.expected, zone)
 	}
 }
 
@@ -644,10 +592,7 @@ func TestAWSSuitableZone(t *testing.T) {
 		{"foo.kubernetes.io.", nil},
 	} {
 		suitableZone := suitableZone(tc.hostname, zones)
-
-		if suitableZone != tc.expected {
-			t.Errorf("expected %s, got %s", tc.expected, suitableZone)
-		}
+		assert.Equal(t, tc.expected, suitableZone)
 	}
 }
 
@@ -658,9 +603,7 @@ func createAWSZone(t *testing.T, provider *AWSProvider, zone *route53.HostedZone
 	}
 
 	if _, err := provider.client.CreateHostedZone(params); err != nil {
-		if err, ok := err.(awserr.Error); !ok || err.Code() != route53.ErrCodeHostedZoneAlreadyExists {
-			t.Fatal(err)
-		}
+		require.EqualError(t, err, route53.ErrCodeHostedZoneAlreadyExists)
 	}
 }
 
@@ -670,27 +613,21 @@ func setupAWSRecords(t *testing.T, provider *AWSProvider, endpoints []*endpoint.
 	clearAWSRecords(t, provider, "/hostedzone/zone-3.ext-dns-test-2.teapot.zalan.do.")
 
 	records, err := provider.Records()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{})
 
-	if err = provider.CreateRecords(endpoints); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, provider.CreateRecords(endpoints))
 
 	records, err = provider.Records()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	validateEndpoints(t, records, endpoints)
 }
 
 func listAWSRecords(t *testing.T, client Route53API, zone string) []*route53.ResourceRecordSet {
 	recordSets := []*route53.ResourceRecordSet{}
-	if err := client.ListResourceRecordSetsPages(&route53.ListResourceRecordSetsInput{
+	err := client.ListResourceRecordSetsPages(&route53.ListResourceRecordSetsInput{
 		HostedZoneId: aws.String(zone),
 	}, func(resp *route53.ListResourceRecordSetsOutput, _ bool) bool {
 		for _, recordSet := range resp.ResourceRecordSets {
@@ -700,9 +637,9 @@ func listAWSRecords(t *testing.T, client Route53API, zone string) []*route53.Res
 			}
 		}
 		return true
-	}); err != nil {
-		t.Fatal(err)
-	}
+	})
+	require.NoError(t, err)
+
 	return recordSets
 }
 
@@ -718,14 +655,13 @@ func clearAWSRecords(t *testing.T, provider *AWSProvider, zone string) {
 	}
 
 	if len(changes) != 0 {
-		if _, err := provider.client.ChangeResourceRecordSets(&route53.ChangeResourceRecordSetsInput{
+		_, err := provider.client.ChangeResourceRecordSets(&route53.ChangeResourceRecordSetsInput{
 			HostedZoneId: aws.String(zone),
 			ChangeBatch: &route53.ChangeBatch{
 				Changes: changes,
 			},
-		}); err != nil {
-			t.Fatal(err)
-		}
+		})
+		require.NoError(t, err)
 	}
 }
 
@@ -761,13 +697,5 @@ func newAWSProvider(t *testing.T, domainFilter string, dryRun bool, records []*e
 }
 
 func validateRecords(t *testing.T, records []*route53.ResourceRecordSet, expected []*route53.ResourceRecordSet) {
-	if len(records) != len(expected) {
-		t.Errorf("expected %d records, got %d", len(expected), len(records))
-	}
-
-	for i := range records {
-		if !reflect.DeepEqual(records[i], expected[i]) {
-			t.Errorf("record is wrong")
-		}
-	}
+	assert.Equal(t, expected, records)
 }

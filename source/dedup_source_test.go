@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 )
 
 // Validates that dedupSource is a Source
@@ -90,8 +91,11 @@ func testDedupEndpoints(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
+			mockSource := new(testutils.MockSource)
+			mockSource.On("Endpoints").Return(tc.endpoints, nil)
+
 			// Create our object under test and get the endpoints.
-			source := NewDedupSource(NewMockSource(tc.endpoints))
+			source := NewDedupSource(mockSource)
 
 			endpoints, err := source.Endpoints()
 			if err != nil {
@@ -100,6 +104,9 @@ func testDedupEndpoints(t *testing.T) {
 
 			// Validate returned endpoints against desired endpoints.
 			validateEndpoints(t, endpoints, tc.expected)
+
+			// Validate that the mock source was called.
+			mockSource.AssertExpectations(t)
 		})
 	}
 }

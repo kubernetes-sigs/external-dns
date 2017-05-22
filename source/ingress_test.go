@@ -17,6 +17,7 @@ limitations under the License.
 package source
 
 import (
+	"fmt"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,6 +26,8 @@ import (
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // Validates that ingressSource is a Source
@@ -58,11 +61,10 @@ func TestNewIngressSource(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			_, err := NewIngressSource(fake.NewSimpleClientset(), "", ti.fqdntemplate)
-			if ti.expectError && err == nil {
-				t.Error("invalid template should return err")
-			}
-			if !ti.expectError && err != nil {
-				t.Error(err)
+			if ti.expectError {
+				assert.Error(t, err, "invalid template should return err")
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -343,17 +345,12 @@ func testIngressEndpoints(t *testing.T) {
 			ingressSource, _ := NewIngressSource(fakeClient, ti.targetNamespace, ti.fqdntemplate)
 			for _, ingress := range ingresses {
 				_, err := fakeClient.Extensions().Ingresses(ingress.Namespace).Create(ingress)
-				if err != nil {
-					t.Errorf("fake kubernetes ingress creation should not fail. Ingress %v. Error: %v", *ingress, err)
-				}
+				assert.NoError(t, err, fmt.Sprintf("fake kubernetes ingress creation should not fail. Ingress %v. Error: %v", *ingress, err))
 			}
 
 			res, err := ingressSource.Endpoints()
-			if err != nil {
-				t.Errorf("ingress endpoints should not fail on valid fake client call")
-			}
+			assert.NoError(t, err, "ingress endpoints should not fail on valid fake client call")
 			validateEndpoints(t, res, ti.expected)
-
 		})
 	}
 }

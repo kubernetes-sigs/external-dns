@@ -25,6 +25,9 @@ import (
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
 	"github.com/kubernetes-incubator/external-dns/registry"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // mockProvider returns mock endpoints and validates changes.
@@ -125,7 +128,8 @@ func TestRunOnce(t *testing.T) {
 		},
 	)
 
-	r, _ := registry.NewNoopRegistry(provider)
+	r, err := registry.NewNoopRegistry(provider)
+	require.NoError(t, err)
 
 	// Run our controller once to trigger the validation.
 	ctrl := &Controller{
@@ -134,9 +138,5 @@ func TestRunOnce(t *testing.T) {
 		Policy:   &plan.SyncPolicy{},
 	}
 
-	err := ctrl.RunOnce()
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, ctrl.RunOnce())
 }

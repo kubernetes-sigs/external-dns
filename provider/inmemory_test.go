@@ -17,12 +17,14 @@ limitations under the License.
 package provider
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -113,14 +115,11 @@ func testInMemoryFindByType(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			c := newInMemoryClient()
 			record := c.findByType(ti.findType, ti.records)
-			if ti.expectedEmpty && record != nil {
-				t.Errorf("should return nil")
-			}
-			if !ti.expectedEmpty && record == nil {
-				t.Errorf("should not return nil")
-			}
-			if !ti.expectedEmpty && record != nil && !reflect.DeepEqual(*record, *ti.expected) {
-				t.Errorf("wrong record found")
+			if ti.expectedEmpty {
+				require.Nil(t, record)
+			} else {
+				require.NotNil(t, record)
+				assert.Equal(t, *ti.expected, *record)
 			}
 		})
 	}
@@ -210,17 +209,12 @@ func testInMemoryRecords(t *testing.T) {
 			f := filter{domain: ti.zone}
 			im.filter = &f
 			records, err := im.Records()
-			if ti.expectError && records != nil {
-				t.Errorf("wrong zone should not return records")
-			}
-			if ti.expectError && err != ErrZoneNotFound {
-				t.Errorf("expected error")
-			}
-			if !ti.expectError && err != nil {
-				t.Errorf("unexpected error")
-			}
-			if !ti.expectError && !testutils.SameEndpoints(ti.expected, records) {
-				t.Errorf("endpoints returned wrong set")
+			if ti.expectError {
+				assert.Nil(t, records)
+				assert.EqualError(t, err, "specified zone not found")
+			} else {
+				require.NoError(t, err)
+				assert.True(t, testutils.SameEndpoints(ti.expected, records))
 			}
 		})
 	}
@@ -533,11 +527,10 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 				Delete:    convertToInMemoryRecord(ti.changes.Delete),
 			}
 			err := c.validateChangeBatch(ti.zone, ichanges)
-			if ti.expectError && err != ti.errorType {
-				t.Errorf("returns wrong type of error: %v, expected: %v", err, ti.errorType)
-			}
-			if !ti.expectError && err != nil {
-				t.Error(err)
+			if ti.expectError {
+				assert.Error(t, err, ti.errorType) // TODO
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -741,16 +734,11 @@ func testInMemoryApplyChanges(t *testing.T) {
 			im.client = c
 
 			err := im.ApplyChanges(ti.changes)
-			if ti.expectError && err == nil {
-				t.Errorf("should return an error")
-			}
-			if !ti.expectError && err != nil {
-				t.Error(err)
-			}
-			if !ti.expectError {
-				if !reflect.DeepEqual(c.zones, ti.expectedZonesState) {
-					t.Errorf("invalid update")
-				}
+			if ti.expectError {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, ti.expectedZonesState, c.zones)
 			}
 		})
 	}
@@ -758,17 +746,14 @@ func testInMemoryApplyChanges(t *testing.T) {
 
 func testNewInMemoryProvider(t *testing.T) {
 	cfg := NewInMemoryProvider()
-	if cfg.client == nil {
-		t.Error("nil map")
-	}
+	assert.NotNil(t, cfg.client, "nil map")
 }
 
 func testInMemoryCreateZone(t *testing.T) {
 	im := NewInMemoryProvider()
 	if err := im.CreateZone("zone"); err != nil {
-		t.Error(err)
+		assert.NoError(t, err)
 	}
-	if err := im.CreateZone("zone"); err != ErrZoneAlreadyExists {
-		t.Errorf("should fail with zone already exists")
-	}
+	err := im.CreateZone("zone")
+	assert.Error(t, err, ErrZoneAlreadyExists)
 }
