@@ -26,6 +26,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+
 	"github.com/kubernetes-incubator/external-dns/controller"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns/validation"
@@ -61,22 +64,45 @@ func main() {
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(stopChan)
 
-	// Create a source.Config from the flags passed by the user.
-	sourceCfg := source.Config{
-		KubeMaster:    cfg.Master,
-		KubeConfig:    cfg.KubeConfig,
-		Namespace:     cfg.Namespace,
-		FQDNTemplate:  cfg.FQDNTemplate,
-		Compatibility: cfg.Compatibility,
+	var client *kubernetes.Clientset
+
+	// create only those services we explicitly ask for in cfg.Sources
+	for _, sourceType := range cfg.Sources {
+		// we only need a k8s client if we're creating a non-fake source, and
+		// have not already instantiated a k8s client
+		if sourceType != "fake" && client == nil {
+			var err error
+			client, err = newClient(cfg)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
+		var src source.Source
+		var err error
+		switch sourceType {
+		case "fake":
+			src, err = source.NewFakeSource(cfg.FqdnTemplate)
+		case "service":
+			src, err = source.NewServiceSource(client, cfg.Namespace, cfg.FqdnTemplate, cfg.Compatibility)
+		case "ingress":
+			src, err = source.NewIngressSource(client, cfg.Namespace, cfg.FqdnTemplate)
+		default:
+			log.Fatalf("Don't know how to handle sourceType '%s'", sourceType)
+		}
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		source.Register(sourceType, src)
 	}
 
-	// Lookup all the selected sources and pass them the desired configuration.
-	sources, err := source.LookupMultiple(cfg.Sources, &sourceCfg)
+	sources, err := source.LookupMultiple(cfg.Sources)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Combine multiple sources into a single, deduplicated source.
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
 
 	var p provider.Provider
@@ -142,6 +168,28 @@ func handleSigterm(stopChan chan struct{}) {
 	<-signals
 	log.Info("Received SIGTERM. Terminating...")
 	close(stopChan)
+}
+
+func newClient(cfg *externaldns.Config) (*kubernetes.Clientset, error) {
+	if cfg.KubeConfig == "" {
+		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
+			cfg.KubeConfig = clientcmd.RecommendedHomeFile
+		}
+	}
+
+	config, err := clientcmd.BuildConfigFromFlags(cfg.Master, cfg.KubeConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Infof("Connected to cluster at %s", config.Host)
+
+	return client, nil
 }
 
 func serveMetrics(address string) {

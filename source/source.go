@@ -17,13 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"os"
-
-	log "github.com/Sirupsen/logrus"
-
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
@@ -39,39 +32,4 @@ const (
 // Source defines the interface Endpoint sources should implement.
 type Source interface {
 	Endpoints() ([]*endpoint.Endpoint, error)
-}
-
-// Config holds shared configuration options for all Sources.
-type Config struct {
-	KubeClient    kubernetes.Interface
-	KubeMaster    string
-	KubeConfig    string
-	Namespace     string
-	FQDNTemplate  string
-	Compatibility string
-}
-
-// newKubeClient returns a new Kubernetes client object. It takes a Config and
-// uses KubeMaster and KubeConfig attributes to connect to the cluster. If
-// KubeConfig isn't provided it defaults to using the recommended default.
-func newKubeClient(cfg *Config) (*kubernetes.Clientset, error) {
-	if cfg.KubeConfig == "" {
-		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
-			cfg.KubeConfig = clientcmd.RecommendedHomeFile
-		}
-	}
-
-	config, err := clientcmd.BuildConfigFromFlags(cfg.KubeMaster, cfg.KubeConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Infof("Connected to cluster at %s", config.Host)
-
-	return client, nil
 }
