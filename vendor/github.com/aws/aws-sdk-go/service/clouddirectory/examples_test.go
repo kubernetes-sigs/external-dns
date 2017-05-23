@@ -164,6 +164,50 @@ func ExampleCloudDirectory_AttachToIndex() {
 	fmt.Println(resp)
 }
 
+func ExampleCloudDirectory_AttachTypedLink() {
+	sess := session.Must(session.NewSession())
+
+	svc := clouddirectory.New(sess)
+
+	params := &clouddirectory.AttachTypedLinkInput{
+		Attributes: []*clouddirectory.AttributeNameAndValue{ // Required
+			{ // Required
+				AttributeName: aws.String("AttributeName"), // Required
+				Value: &clouddirectory.TypedAttributeValue{ // Required
+					BinaryValue:   []byte("PAYLOAD"),
+					BooleanValue:  aws.Bool(true),
+					DatetimeValue: aws.Time(time.Now()),
+					NumberValue:   aws.String("NumberAttributeValue"),
+					StringValue:   aws.String("StringAttributeValue"),
+				},
+			},
+			// More values...
+		},
+		DirectoryArn: aws.String("Arn"), // Required
+		SourceObjectReference: &clouddirectory.ObjectReference{ // Required
+			Selector: aws.String("SelectorObjectReference"),
+		},
+		TargetObjectReference: &clouddirectory.ObjectReference{ // Required
+			Selector: aws.String("SelectorObjectReference"),
+		},
+		TypedLinkFacet: &clouddirectory.TypedLinkSchemaAndFacetName{ // Required
+			SchemaArn:     aws.String("Arn"),           // Required
+			TypedLinkName: aws.String("TypedLinkName"), // Required
+		},
+	}
+	resp, err := svc.AttachTypedLink(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
 func ExampleCloudDirectory_BatchRead() {
 	sess := session.Must(session.NewSession())
 
@@ -528,6 +572,60 @@ func ExampleCloudDirectory_CreateSchema() {
 	fmt.Println(resp)
 }
 
+func ExampleCloudDirectory_CreateTypedLinkFacet() {
+	sess := session.Must(session.NewSession())
+
+	svc := clouddirectory.New(sess)
+
+	params := &clouddirectory.CreateTypedLinkFacetInput{
+		Facet: &clouddirectory.TypedLinkFacet{ // Required
+			Attributes: []*clouddirectory.TypedLinkAttributeDefinition{ // Required
+				{ // Required
+					Name:             aws.String("AttributeName"),             // Required
+					RequiredBehavior: aws.String("RequiredAttributeBehavior"), // Required
+					Type:             aws.String("FacetAttributeType"),        // Required
+					DefaultValue: &clouddirectory.TypedAttributeValue{
+						BinaryValue:   []byte("PAYLOAD"),
+						BooleanValue:  aws.Bool(true),
+						DatetimeValue: aws.Time(time.Now()),
+						NumberValue:   aws.String("NumberAttributeValue"),
+						StringValue:   aws.String("StringAttributeValue"),
+					},
+					IsImmutable: aws.Bool(true),
+					Rules: map[string]*clouddirectory.Rule{
+						"Key": { // Required
+							Parameters: map[string]*string{
+								"Key": aws.String("RuleParameterValue"), // Required
+								// More values...
+							},
+							Type: aws.String("RuleType"),
+						},
+						// More values...
+					},
+				},
+				// More values...
+			},
+			IdentityAttributeOrder: []*string{ // Required
+				aws.String("AttributeName"), // Required
+				// More values...
+			},
+			Name: aws.String("TypedLinkName"), // Required
+		},
+		SchemaArn: aws.String("Arn"), // Required
+	}
+	resp, err := svc.CreateTypedLinkFacet(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
 func ExampleCloudDirectory_DeleteDirectory() {
 	sess := session.Must(session.NewSession())
 
@@ -616,6 +714,28 @@ func ExampleCloudDirectory_DeleteSchema() {
 	fmt.Println(resp)
 }
 
+func ExampleCloudDirectory_DeleteTypedLinkFacet() {
+	sess := session.Must(session.NewSession())
+
+	svc := clouddirectory.New(sess)
+
+	params := &clouddirectory.DeleteTypedLinkFacetInput{
+		Name:      aws.String("TypedLinkName"), // Required
+		SchemaArn: aws.String("Arn"),           // Required
+	}
+	resp, err := svc.DeleteTypedLinkFacet(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
 func ExampleCloudDirectory_DetachFromIndex() {
 	sess := session.Must(session.NewSession())
 
@@ -683,6 +803,52 @@ func ExampleCloudDirectory_DetachPolicy() {
 		},
 	}
 	resp, err := svc.DetachPolicy(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleCloudDirectory_DetachTypedLink() {
+	sess := session.Must(session.NewSession())
+
+	svc := clouddirectory.New(sess)
+
+	params := &clouddirectory.DetachTypedLinkInput{
+		DirectoryArn: aws.String("Arn"), // Required
+		TypedLinkSpecifier: &clouddirectory.TypedLinkSpecifier{ // Required
+			IdentityAttributeValues: []*clouddirectory.AttributeNameAndValue{ // Required
+				{ // Required
+					AttributeName: aws.String("AttributeName"), // Required
+					Value: &clouddirectory.TypedAttributeValue{ // Required
+						BinaryValue:   []byte("PAYLOAD"),
+						BooleanValue:  aws.Bool(true),
+						DatetimeValue: aws.Time(time.Now()),
+						NumberValue:   aws.String("NumberAttributeValue"),
+						StringValue:   aws.String("StringAttributeValue"),
+					},
+				},
+				// More values...
+			},
+			SourceObjectReference: &clouddirectory.ObjectReference{ // Required
+				Selector: aws.String("SelectorObjectReference"),
+			},
+			TargetObjectReference: &clouddirectory.ObjectReference{ // Required
+				Selector: aws.String("SelectorObjectReference"),
+			},
+			TypedLinkFacet: &clouddirectory.TypedLinkSchemaAndFacetName{ // Required
+				SchemaArn:     aws.String("Arn"),           // Required
+				TypedLinkName: aws.String("TypedLinkName"), // Required
+			},
+		},
+	}
+	resp, err := svc.DetachTypedLink(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and
@@ -826,6 +992,28 @@ func ExampleCloudDirectory_GetSchemaAsJson() {
 	fmt.Println(resp)
 }
 
+func ExampleCloudDirectory_GetTypedLinkFacetInformation() {
+	sess := session.Must(session.NewSession())
+
+	svc := clouddirectory.New(sess)
+
+	params := &clouddirectory.GetTypedLinkFacetInformationInput{
+		Name:      aws.String("TypedLinkName"), // Required
+		SchemaArn: aws.String("Arn"),           // Required
+	}
+	resp, err := svc.GetTypedLinkFacetInformation(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
 func ExampleCloudDirectory_ListAppliedSchemaArns() {
 	sess := session.Must(session.NewSession())
 
@@ -956,6 +1144,61 @@ func ExampleCloudDirectory_ListFacetNames() {
 		NextToken:  aws.String("NextToken"),
 	}
 	resp, err := svc.ListFacetNames(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleCloudDirectory_ListIncomingTypedLinks() {
+	sess := session.Must(session.NewSession())
+
+	svc := clouddirectory.New(sess)
+
+	params := &clouddirectory.ListIncomingTypedLinksInput{
+		DirectoryArn: aws.String("Arn"), // Required
+		ObjectReference: &clouddirectory.ObjectReference{ // Required
+			Selector: aws.String("SelectorObjectReference"),
+		},
+		ConsistencyLevel: aws.String("ConsistencyLevel"),
+		FilterAttributeRanges: []*clouddirectory.TypedLinkAttributeRange{
+			{ // Required
+				Range: &clouddirectory.TypedAttributeValueRange{ // Required
+					EndMode:   aws.String("RangeMode"), // Required
+					StartMode: aws.String("RangeMode"), // Required
+					EndValue: &clouddirectory.TypedAttributeValue{
+						BinaryValue:   []byte("PAYLOAD"),
+						BooleanValue:  aws.Bool(true),
+						DatetimeValue: aws.Time(time.Now()),
+						NumberValue:   aws.String("NumberAttributeValue"),
+						StringValue:   aws.String("StringAttributeValue"),
+					},
+					StartValue: &clouddirectory.TypedAttributeValue{
+						BinaryValue:   []byte("PAYLOAD"),
+						BooleanValue:  aws.Bool(true),
+						DatetimeValue: aws.Time(time.Now()),
+						NumberValue:   aws.String("NumberAttributeValue"),
+						StringValue:   aws.String("StringAttributeValue"),
+					},
+				},
+				AttributeName: aws.String("AttributeName"),
+			},
+			// More values...
+		},
+		FilterTypedLink: &clouddirectory.TypedLinkSchemaAndFacetName{
+			SchemaArn:     aws.String("Arn"),           // Required
+			TypedLinkName: aws.String("TypedLinkName"), // Required
+		},
+		MaxResults: aws.Int64(1),
+		NextToken:  aws.String("NextToken"),
+	}
+	resp, err := svc.ListIncomingTypedLinks(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and
@@ -1161,6 +1404,61 @@ func ExampleCloudDirectory_ListObjectPolicies() {
 	fmt.Println(resp)
 }
 
+func ExampleCloudDirectory_ListOutgoingTypedLinks() {
+	sess := session.Must(session.NewSession())
+
+	svc := clouddirectory.New(sess)
+
+	params := &clouddirectory.ListOutgoingTypedLinksInput{
+		DirectoryArn: aws.String("Arn"), // Required
+		ObjectReference: &clouddirectory.ObjectReference{ // Required
+			Selector: aws.String("SelectorObjectReference"),
+		},
+		ConsistencyLevel: aws.String("ConsistencyLevel"),
+		FilterAttributeRanges: []*clouddirectory.TypedLinkAttributeRange{
+			{ // Required
+				Range: &clouddirectory.TypedAttributeValueRange{ // Required
+					EndMode:   aws.String("RangeMode"), // Required
+					StartMode: aws.String("RangeMode"), // Required
+					EndValue: &clouddirectory.TypedAttributeValue{
+						BinaryValue:   []byte("PAYLOAD"),
+						BooleanValue:  aws.Bool(true),
+						DatetimeValue: aws.Time(time.Now()),
+						NumberValue:   aws.String("NumberAttributeValue"),
+						StringValue:   aws.String("StringAttributeValue"),
+					},
+					StartValue: &clouddirectory.TypedAttributeValue{
+						BinaryValue:   []byte("PAYLOAD"),
+						BooleanValue:  aws.Bool(true),
+						DatetimeValue: aws.Time(time.Now()),
+						NumberValue:   aws.String("NumberAttributeValue"),
+						StringValue:   aws.String("StringAttributeValue"),
+					},
+				},
+				AttributeName: aws.String("AttributeName"),
+			},
+			// More values...
+		},
+		FilterTypedLink: &clouddirectory.TypedLinkSchemaAndFacetName{
+			SchemaArn:     aws.String("Arn"),           // Required
+			TypedLinkName: aws.String("TypedLinkName"), // Required
+		},
+		MaxResults: aws.Int64(1),
+		NextToken:  aws.String("NextToken"),
+	}
+	resp, err := svc.ListOutgoingTypedLinks(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
 func ExampleCloudDirectory_ListPolicyAttachments() {
 	sess := session.Must(session.NewSession())
 
@@ -1221,6 +1519,53 @@ func ExampleCloudDirectory_ListTagsForResource() {
 		NextToken:   aws.String("NextToken"),
 	}
 	resp, err := svc.ListTagsForResource(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleCloudDirectory_ListTypedLinkFacetAttributes() {
+	sess := session.Must(session.NewSession())
+
+	svc := clouddirectory.New(sess)
+
+	params := &clouddirectory.ListTypedLinkFacetAttributesInput{
+		Name:       aws.String("TypedLinkName"), // Required
+		SchemaArn:  aws.String("Arn"),           // Required
+		MaxResults: aws.Int64(1),
+		NextToken:  aws.String("NextToken"),
+	}
+	resp, err := svc.ListTypedLinkFacetAttributes(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleCloudDirectory_ListTypedLinkFacetNames() {
+	sess := session.Must(session.NewSession())
+
+	svc := clouddirectory.New(sess)
+
+	params := &clouddirectory.ListTypedLinkFacetNamesInput{
+		SchemaArn:  aws.String("Arn"), // Required
+		MaxResults: aws.Int64(1),
+		NextToken:  aws.String("NextToken"),
+	}
+	resp, err := svc.ListTypedLinkFacetNames(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and
@@ -1497,6 +1842,61 @@ func ExampleCloudDirectory_UpdateSchema() {
 		SchemaArn: aws.String("Arn"),        // Required
 	}
 	resp, err := svc.UpdateSchema(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleCloudDirectory_UpdateTypedLinkFacet() {
+	sess := session.Must(session.NewSession())
+
+	svc := clouddirectory.New(sess)
+
+	params := &clouddirectory.UpdateTypedLinkFacetInput{
+		AttributeUpdates: []*clouddirectory.TypedLinkFacetAttributeUpdate{ // Required
+			{ // Required
+				Action: aws.String("UpdateActionType"), // Required
+				Attribute: &clouddirectory.TypedLinkAttributeDefinition{ // Required
+					Name:             aws.String("AttributeName"),             // Required
+					RequiredBehavior: aws.String("RequiredAttributeBehavior"), // Required
+					Type:             aws.String("FacetAttributeType"),        // Required
+					DefaultValue: &clouddirectory.TypedAttributeValue{
+						BinaryValue:   []byte("PAYLOAD"),
+						BooleanValue:  aws.Bool(true),
+						DatetimeValue: aws.Time(time.Now()),
+						NumberValue:   aws.String("NumberAttributeValue"),
+						StringValue:   aws.String("StringAttributeValue"),
+					},
+					IsImmutable: aws.Bool(true),
+					Rules: map[string]*clouddirectory.Rule{
+						"Key": { // Required
+							Parameters: map[string]*string{
+								"Key": aws.String("RuleParameterValue"), // Required
+								// More values...
+							},
+							Type: aws.String("RuleType"),
+						},
+						// More values...
+					},
+				},
+			},
+			// More values...
+		},
+		IdentityAttributeOrder: []*string{ // Required
+			aws.String("AttributeName"), // Required
+			// More values...
+		},
+		Name:      aws.String("TypedLinkName"), // Required
+		SchemaArn: aws.String("Arn"),           // Required
+	}
+	resp, err := svc.UpdateTypedLinkFacet(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and
