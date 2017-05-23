@@ -37,37 +37,26 @@ import (
 type ingressSource struct {
 	client       kubernetes.Interface
 	namespace    string
-	fqdnTemplate *template.Template
+	fqdntemplate *template.Template
 }
 
-// NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(cfg *Config) (Source, error) {
-	if cfg.KubeClient == nil {
-		client, err := newKubeClient(cfg)
-		if err != nil {
-			return nil, err
-		}
-
-		cfg.KubeClient = client
-	}
-
-	var (
-		tmpl *template.Template
-		err  error
-	)
-	if cfg.FQDNTemplate != "" {
+// NewIngressSource creates a new ingressSource with the given client and namespace scope.
+func NewIngressSource(client kubernetes.Interface, namespace string, fqdntemplate string) (Source, error) {
+	var tmpl *template.Template
+	var err error
+	if fqdntemplate != "" {
 		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
 			"trimPrefix": strings.TrimPrefix,
-		}).Parse(cfg.FQDNTemplate)
+		}).Parse(fqdntemplate)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return &ingressSource{
-		client:       cfg.KubeClient,
-		namespace:    cfg.Namespace,
-		fqdnTemplate: tmpl,
+		client:       client,
+		namespace:    namespace,
+		fqdntemplate: tmpl,
 	}, nil
 }
 
@@ -93,7 +82,7 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		ingEndpoints := endpointsFromIngress(&ing)
 
 		// apply template if host is missing on ingress
-		if len(ingEndpoints) == 0 && sc.fqdnTemplate != nil {
+		if len(ingEndpoints) == 0 && sc.fqdntemplate != nil {
 			ingEndpoints, err = sc.endpointsFromTemplate(&ing)
 			if err != nil {
 				return nil, err
@@ -116,7 +105,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 	var endpoints []*endpoint.Endpoint
 
 	var buf bytes.Buffer
-	err := sc.fqdnTemplate.Execute(&buf, ing)
+	err := sc.fqdntemplate.Execute(&buf, ing)
 	if err != nil {
 		return nil, fmt.Errorf("failed to apply template on ingress %s: %v", ing.String(), err)
 	}

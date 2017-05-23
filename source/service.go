@@ -41,38 +41,27 @@ type serviceSource struct {
 	namespace string
 	// process Services with legacy annotations
 	compatibility string
-	fqdnTemplate  *template.Template
+	fqdntemplate  *template.Template
 }
 
-// NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(cfg *Config) (Source, error) {
-	if cfg.KubeClient == nil {
-		client, err := newKubeClient(cfg)
-		if err != nil {
-			return nil, err
-		}
-
-		cfg.KubeClient = client
-	}
-
-	var (
-		tmpl *template.Template
-		err  error
-	)
-	if cfg.FQDNTemplate != "" {
+// NewServiceSource creates a new serviceSource with the given client and namespace scope.
+func NewServiceSource(client kubernetes.Interface, namespace, fqdntemplate string, compatibility string) (Source, error) {
+	var tmpl *template.Template
+	var err error
+	if fqdntemplate != "" {
 		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
 			"trimPrefix": strings.TrimPrefix,
-		}).Parse(cfg.FQDNTemplate)
+		}).Parse(fqdntemplate)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return &serviceSource{
-		client:        cfg.KubeClient,
-		namespace:     cfg.Namespace,
-		compatibility: cfg.Compatibility,
-		fqdnTemplate:  tmpl,
+		client:        client,
+		namespace:     namespace,
+		compatibility: compatibility,
+		fqdntemplate:  tmpl,
 	}, nil
 }
 
@@ -102,7 +91,7 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		}
 
 		// apply template if none of the above is found
-		if len(svcEndpoints) == 0 && sc.fqdnTemplate != nil {
+		if len(svcEndpoints) == 0 && sc.fqdntemplate != nil {
 			svcEndpoints, err = sc.endpointsFromTemplate(&svc)
 			if err != nil {
 				return nil, err
@@ -125,7 +114,7 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 	var endpoints []*endpoint.Endpoint
 
 	var buf bytes.Buffer
-	err := sc.fqdnTemplate.Execute(&buf, svc)
+	err := sc.fqdntemplate.Execute(&buf, svc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to apply template on service %s: %v", svc.String(), err)
 	}

@@ -16,62 +16,28 @@ limitations under the License.
 
 package source
 
-import "errors"
+import "fmt"
 
-func init() {
-	// Register all selectable sources under an identifier.
-	RegisterFunc("service", NewServiceSource)
-	RegisterFunc("ingress", NewIngressSource)
-	RegisterFunc("fake", NewFakeSource)
-}
-
-// sourceFunc is a constructor function that returns a Source and an error.
-type sourceFunc func(cfg *Config) (Source, error)
-
-// store is a global store for known sources.
-var store = map[string]sourceFunc{}
-
-// ErrSourceNotFound is returned when a requested source doesn't exist.
-var ErrSourceNotFound = errors.New("source not found")
+var store = map[string]Source{}
 
 // Register registers a Source under a given name.
 func Register(name string, source Source) {
-	store[name] = func(_ *Config) (Source, error) { return source, nil }
-}
-
-// RegisterFunc registers a Source under a given name via a constructor function.
-func RegisterFunc(name string, source sourceFunc) {
 	store[name] = source
 }
 
-// Clear de-registers all sources from the global store.
-func Clear() {
-	store = map[string]sourceFunc{}
-}
-
 // Lookup returns a Source by the given name.
-func Lookup(name string, cfg *Config) (Source, error) {
-	sf, ok := store[name]
-	if !ok {
-		return nil, ErrSourceNotFound
-	}
-
-	source, err := sf(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return source, nil
+func Lookup(name string) Source {
+	return store[name]
 }
 
 // LookupMultiple returns multiple Sources given multiple names.
-func LookupMultiple(names []string, cfg *Config) ([]Source, error) {
+func LookupMultiple(names []string) ([]Source, error) {
 	sources := []Source{}
 
 	for _, name := range names {
-		source, err := Lookup(name, cfg)
-		if err != nil {
-			return nil, ErrSourceNotFound
+		source := Lookup(name)
+		if source == nil {
+			return nil, fmt.Errorf("%s source could not be identified", name)
 		}
 		sources = append(sources, source)
 	}

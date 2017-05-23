@@ -20,15 +20,14 @@ import "testing"
 
 func TestStore(t *testing.T) {
 	t.Run("RegisterAndLookup", testRegisterAndLookup)
-	t.Run("RegisterAndLookupFunc", testRegisterAndLookupFunc)
 	t.Run("LookupMultiple", testLookupMultiple)
 }
 
 // testRegisterAndLookup tests that a Source can be registered and looked up by name.
 func testRegisterAndLookup(t *testing.T) {
 	for _, tc := range []struct {
-		title   string
-		sources map[string]Source
+		title            string
+		givenAndExpected map[string]Source
 	}{
 		{
 			"registered source is found by name",
@@ -38,61 +37,13 @@ func testRegisterAndLookup(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			// Clear already registered sources.
-			Clear()
-
-			// Register the source objects under test.
-			for k, v := range tc.sources {
+			for k, v := range tc.givenAndExpected {
 				Register(k, v)
 			}
 
-			// Validate that we can lookup the registered sources by name.
-			for k, v := range tc.sources {
-				src, err := Lookup(k, nil)
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				if src != v {
-					t.Errorf("expected %#v, got %#v", v, src)
-				}
-			}
-		})
-	}
-}
-
-// testRegisterAndLookupFunc tests that a Source can be registered and looked up
-// by name via constructor functions.
-func testRegisterAndLookupFunc(t *testing.T) {
-	for _, tc := range []struct {
-		title   string
-		sources map[string]Source
-	}{
-		{
-			"registered source is found by name via constructor func",
-			map[string]Source{
-				"foo": NewMockSource(nil),
-			},
-		},
-	} {
-		t.Run(tc.title, func(t *testing.T) {
-			// Clear already registered sources.
-			Clear()
-
-			// Register the source objects under test via contructor functions.
-			for k, v := range tc.sources {
-				RegisterFunc(k, func(_ *Config) (Source, error) { return v, nil })
-			}
-
-			// Validate that we can lookup the registered sources by name.
-			for k, v := range tc.sources {
-				src, err := Lookup(k, nil)
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				if src != v {
-					t.Errorf("expected %#v, got %#v", v, src)
+			for k, v := range tc.givenAndExpected {
+				if Lookup(k) != v {
+					t.Errorf("expected %#v, got %#v", v, Lookup(k))
 				}
 			}
 		})
@@ -103,7 +54,7 @@ func testRegisterAndLookupFunc(t *testing.T) {
 func testLookupMultiple(t *testing.T) {
 	for _, tc := range []struct {
 		title       string
-		sources     map[string]Source
+		registered  map[string]Source
 		names       []string
 		expectError bool
 	}{
@@ -120,22 +71,18 @@ func testLookupMultiple(t *testing.T) {
 			"multiple registered sources, one source not registered",
 			map[string]Source{
 				"foo": NewMockSource(nil),
+				"bar": NewMockSource(nil),
 			},
-			[]string{"foo", "bar"},
+			[]string{"foo", "baz"},
 			true,
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			// Clear already registered sources.
-			Clear()
-
-			// Register the source objects under test.
-			for k, v := range tc.sources {
+			for k, v := range tc.registered {
 				Register(k, v)
 			}
 
-			// Lookup multiple sources by names.
-			lookup, err := LookupMultiple(tc.names, nil)
+			lookup, err := LookupMultiple(tc.names)
 			if !tc.expectError && err != nil {
 				t.Fatal(err)
 			}
@@ -147,10 +94,9 @@ func testLookupMultiple(t *testing.T) {
 				t.Skip()
 			}
 
-			// Validate that we can lookup the registered sources by name.
 			for i, name := range tc.names {
-				if lookup[i] != tc.sources[name] {
-					t.Errorf("expected %#v, got %#v", tc.sources[name], lookup[i])
+				if lookup[i] != tc.registered[name] {
+					t.Errorf("expected %#v, got %#v", tc.registered[name], lookup[i])
 				}
 			}
 		})
