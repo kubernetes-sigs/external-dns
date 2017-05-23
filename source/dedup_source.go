@@ -17,7 +17,8 @@ limitations under the License.
 package source
 
 import (
-	log "github.com/Sirupsen/logrus"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
@@ -25,11 +26,15 @@ import (
 // dedupSource is a Source that removes duplicate endpoints from its wrapped source.
 type dedupSource struct {
 	source Source
+	logger log.Logger
 }
 
 // NewDedupSource creates a new dedupSource wrapping the provided Source.
-func NewDedupSource(source Source) Source {
-	return &dedupSource{source: source}
+func NewDedupSource(source Source, logger log.Logger) Source {
+	return &dedupSource{
+		source: source,
+		logger: log.With(logger, "source", "dedup"),
+	}
 }
 
 // Endpoints collects endpoints from its wrapped source and returns them without duplicates.
@@ -46,7 +51,7 @@ func (ms *dedupSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		identifier := ep.DNSName + " / " + ep.Target
 
 		if _, ok := collected[identifier]; ok {
-			log.Debugf("Removing duplicate endpoint %s", ep)
+			level.Debug(ms.logger).Log("msg", "removing duplicate endpoint", "endpoint", ep)
 			continue
 		}
 
