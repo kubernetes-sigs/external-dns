@@ -45,16 +45,17 @@ func testTXTRegistryNew(t *testing.T) {
 
 	r, err := NewTXTRegistry(p, "txt", "owner")
 	require.NoError(t, err)
+
 	_, ok := r.mapper.(prefixNameMapper)
 	require.True(t, ok)
-	require.Equal(t, "owner", r.ownerID)
-	require.Equal(t, p, r.provider)
+	assert.Equal(t, "owner", r.ownerID)
+	assert.Equal(t, p, r.provider)
 
 	r, err = NewTXTRegistry(p, "", "owner")
 	require.NoError(t, err)
 
 	_, ok = r.mapper.(prefixNameMapper)
-	require.True(t, ok)
+	assert.True(t, ok)
 }
 
 func testTXTRegistryRecords(t *testing.T) {

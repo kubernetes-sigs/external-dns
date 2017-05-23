@@ -474,8 +474,8 @@ func validateZones(t *testing.T, zones map[string]*dns.ManagedZone, expected map
 }
 
 func validateZone(t *testing.T, zone *dns.ManagedZone, expected *dns.ManagedZone) {
-	assert.Equal(t, zone.Name, expected.Name)
-	assert.Equal(t, zone.DnsName, expected.DnsName)
+	assert.Equal(t, expected.Name, zone.Name)
+	assert.Equal(t, expected.DnsName, zone.DnsName)
 }
 
 func validateChange(t *testing.T, change *dns.Change, expected *dns.Change) {
@@ -492,8 +492,8 @@ func validateChangeRecords(t *testing.T, records []*dns.ResourceRecordSet, expec
 }
 
 func validateChangeRecord(t *testing.T, record *dns.ResourceRecordSet, expected *dns.ResourceRecordSet) {
-	assert.Equal(t, record.Name, expected.Name)
-	assert.Equal(t, record.Ttl, expected.Ttl)
+	assert.Equal(t, expected.Name, record.Name)
+	assert.Equal(t, expected.Ttl, record.Ttl)
 }
 
 func newGoogleProvider(t *testing.T, domainFilter string, dryRun bool, records []*endpoint.Endpoint) *googleProvider {
@@ -557,7 +557,7 @@ func setupGoogleRecords(t *testing.T, provider *googleProvider, endpoints []*end
 
 func clearGoogleRecords(t *testing.T, provider *googleProvider, zone string) {
 	recordSets := []*dns.ResourceRecordSet{}
-	err := provider.resourceRecordSetsClient.List(provider.project, zone).Pages(context.TODO(), func(resp *dns.ResourceRecordSetsListResponse) error {
+	require.NoError(t, provider.resourceRecordSetsClient.List(provider.project, zone).Pages(context.TODO(), func(resp *dns.ResourceRecordSetsListResponse) error {
 		for _, r := range resp.Rrsets {
 			switch r.Type {
 			case "A", "CNAME":
@@ -565,8 +565,7 @@ func clearGoogleRecords(t *testing.T, provider *googleProvider, zone string) {
 			}
 		}
 		return nil
-	})
-	require.NoError(t, err)
+	}))
 
 	if len(recordSets) != 0 {
 		_, err := provider.changesClient.Create(provider.project, zone, &dns.Change{

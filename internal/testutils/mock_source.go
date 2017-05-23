@@ -27,14 +27,6 @@ type MockSource struct {
 	mock.Mock
 }
 
-// NewMockSource returns a MockSource that returns the provided endpoints.
-func NewMockSource(endpoints []*endpoint.Endpoint) *MockSource {
-	src := new(MockSource)
-	src.On("Endpoints").Return(endpoints, nil)
-
-	return src
-}
-
 // Endpoints returns the desired mock endpoints.
 func (m *MockSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	args := m.Called()

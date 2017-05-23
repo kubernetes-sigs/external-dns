@@ -87,18 +87,17 @@ func newMockProvider(endpoints []*endpoint.Endpoint, changes *plan.Changes) prov
 // TestRunOnce tests that RunOnce correctly orchestrates the different components.
 func TestRunOnce(t *testing.T) {
 	// Fake some desired endpoints coming from our source.
-	source := testutils.NewMockSource(
-		[]*endpoint.Endpoint{
-			{
-				DNSName: "create-record",
-				Target:  "1.2.3.4",
-			},
-			{
-				DNSName: "update-record",
-				Target:  "8.8.4.4",
-			},
+	source := new(testutils.MockSource)
+	source.On("Endpoints").Return([]*endpoint.Endpoint{
+		{
+			DNSName: "create-record",
+			Target:  "1.2.3.4",
 		},
-	)
+		{
+			DNSName: "update-record",
+			Target:  "8.8.4.4",
+		},
+	}, nil)
 
 	// Fake some existing records in our DNS provider and validate some desired changes.
 	provider := newMockProvider(
@@ -139,4 +138,7 @@ func TestRunOnce(t *testing.T) {
 	}
 
 	assert.NoError(t, ctrl.RunOnce())
+
+	// Validate that the mock source was called.
+	source.AssertExpectations(t)
 }

@@ -89,14 +89,13 @@ func testLookupMultiple(t *testing.T) {
 
 			lookup, err := LookupMultiple(tc.names)
 			if tc.expectError {
-				require.Error(t, err, "look up should fail if source not registered")
-				t.SkipNow()
-			}
-			require.NoError(t, err)
-
-			require.Len(t, lookup, len(tc.registered))
-			for _, source := range tc.registered {
-				assert.Contains(t, lookup, source)
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Len(t, lookup, len(tc.registered))
+				for _, source := range tc.registered {
+					assert.Contains(t, lookup, source)
+				}
 			}
 		})
 	}

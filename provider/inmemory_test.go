@@ -116,7 +116,7 @@ func testInMemoryFindByType(t *testing.T) {
 			c := newInMemoryClient()
 			record := c.findByType(ti.findType, ti.records)
 			if ti.expectedEmpty {
-				require.Nil(t, record)
+				assert.Nil(t, record)
 			} else {
 				require.NotNil(t, record)
 				assert.Equal(t, *ti.expected, *record)
@@ -211,7 +211,7 @@ func testInMemoryRecords(t *testing.T) {
 			records, err := im.Records()
 			if ti.expectError {
 				assert.Nil(t, records)
-				assert.EqualError(t, err, "specified zone not found")
+				assert.EqualError(t, err, ErrZoneNotFound.Error())
 			} else {
 				require.NoError(t, err)
 				assert.True(t, testutils.SameEndpoints(ti.expected, records))
@@ -528,7 +528,7 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 			}
 			err := c.validateChangeBatch(ti.zone, ichanges)
 			if ti.expectError {
-				assert.Error(t, err, ti.errorType) // TODO
+				assert.EqualError(t, err, ti.errorType.Error())
 			} else {
 				assert.NoError(t, err)
 			}
@@ -746,14 +746,13 @@ func testInMemoryApplyChanges(t *testing.T) {
 
 func testNewInMemoryProvider(t *testing.T) {
 	cfg := NewInMemoryProvider()
-	assert.NotNil(t, cfg.client, "nil map")
+	assert.NotNil(t, cfg.client)
 }
 
 func testInMemoryCreateZone(t *testing.T) {
 	im := NewInMemoryProvider()
-	if err := im.CreateZone("zone"); err != nil {
-		assert.NoError(t, err)
-	}
 	err := im.CreateZone("zone")
-	assert.Error(t, err, ErrZoneAlreadyExists)
+	assert.NoError(t, err)
+	err = im.CreateZone("zone")
+	assert.EqualError(t, err, ErrZoneAlreadyExists.Error())
 }

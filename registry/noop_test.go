@@ -58,8 +58,9 @@ func testNoopRecords(t *testing.T) {
 	})
 
 	r, _ := NewNoopRegistry(p)
+
 	eps, err := r.Records()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.True(t, testutils.SameEndpoints(eps, providerRecords))
 }
 
@@ -103,7 +104,7 @@ func testNoopApplyChanges(t *testing.T) {
 	assert.EqualError(t, err, provider.ErrRecordAlreadyExists.Error())
 
 	//correct changes
-	err = r.ApplyChanges(&plan.Changes{
+	require.NoError(t, r.ApplyChanges(&plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{
 				DNSName: "new-record.org",
@@ -122,10 +123,7 @@ func testNoopApplyChanges(t *testing.T) {
 				Target:  "old-lb.com",
 			},
 		},
-	})
-	if err != nil {
-		require.NoError(t, err)
-	}
+	}))
 	res, _ := p.Records()
 	assert.True(t, testutils.SameEndpoints(res, expectedUpdate))
 }

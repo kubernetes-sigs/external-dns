@@ -20,11 +20,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMultiSource(t *testing.T) {
@@ -113,7 +113,7 @@ func testMultiSourceEndpointsWithError(t *testing.T) {
 
 	// Get endpoints from our source.
 	_, err := source.Endpoints()
-	assert.Error(t, err, "some error")
+	assert.EqualError(t, err, "some error")
 
 	// Validate that the nested source was called.
 	src.AssertExpectations(t)

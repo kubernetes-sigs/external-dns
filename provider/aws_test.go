@@ -148,9 +148,7 @@ func TestAWSZones(t *testing.T) {
 	provider := newAWSProvider(t, "ext-dns-test-2.teapot.zalan.do.", false, []*endpoint.Endpoint{})
 
 	zones, err := provider.Zones()
-	if err != nil {
-		require.NoError(t, err)
-	}
+	require.NoError(t, err)
 
 	validateAWSZones(t, zones, map[string]*route53.HostedZone{
 		"/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.": {
@@ -627,7 +625,7 @@ func setupAWSRecords(t *testing.T, provider *AWSProvider, endpoints []*endpoint.
 
 func listAWSRecords(t *testing.T, client Route53API, zone string) []*route53.ResourceRecordSet {
 	recordSets := []*route53.ResourceRecordSet{}
-	err := client.ListResourceRecordSetsPages(&route53.ListResourceRecordSetsInput{
+	require.NoError(t, client.ListResourceRecordSetsPages(&route53.ListResourceRecordSetsInput{
 		HostedZoneId: aws.String(zone),
 	}, func(resp *route53.ListResourceRecordSetsOutput, _ bool) bool {
 		for _, recordSet := range resp.ResourceRecordSets {
@@ -637,8 +635,7 @@ func listAWSRecords(t *testing.T, client Route53API, zone string) []*route53.Res
 			}
 		}
 		return true
-	})
-	require.NoError(t, err)
+	}))
 
 	return recordSets
 }
