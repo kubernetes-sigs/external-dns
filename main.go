@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -24,8 +25,7 @@ import (
 	"syscall"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-	kitlog "github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/linki/instrumented_http"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -43,57 +43,62 @@ import (
 )
 
 func main() {
+	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+
 	cfg := externaldns.NewConfig()
 	if err := cfg.ParseFlags(os.Args[1:]); err != nil {
-		log.Fatalf("flag parsing error: %v", err)
+		level.Error(logger).Log("msg", "failed to parse flags", "error", err)
+		os.Exit(1)
 	}
-	log.Infof("config: %+v", cfg)
+	level.Info(logger).Log("msg", "successfully parsed flags", "config", fmt.Sprintf("%+v", cfg))
 
 	if err := validation.ValidateConfig(cfg); err != nil {
-		log.Fatalf("config validation failed: %v", err)
+		level.Error(logger).Log("msg", "failed to validate config", "error", err)
+		os.Exit(1)
 	}
 
-	if cfg.LogFormat == "json" {
-		log.SetFormatter(&log.JSONFormatter{})
-	}
-
-	logger := kitlog.NewLogfmtLogger(kitlog.NewSyncWriter(os.Stderr))
-	if cfg.Debug {
-		log.SetLevel(log.DebugLevel)
-	} else {
+	if !cfg.Debug {
 		logger = level.NewFilter(logger, level.AllowInfo())
 	}
-	logger = kitlog.With(logger, "time", kitlog.DefaultTimestampUTC, "caller", kitlog.DefaultCaller)
+	logger = log.With(logger, "time", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
+
+	// if cfg.LogFormat == "json" {
+	// 	logger.SetFormatter(&logger.JSONFormatter{})
+	// }
 
 	if cfg.DryRun {
-		log.Info("running in dry-run mode. No changes to DNS records will be made.")
+		level.Info(logger).Log("msg", "running in dry-run mode. No changes to DNS records will be made.")
 	}
 
 	stopChan := make(chan struct{}, 1)
 
-	go serveMetrics(cfg.MetricsAddress)
-	go handleSigterm(stopChan)
+	go serveMetrics(cfg.MetricsAddress, logger)
+	go handleSigterm(stopChan, logger)
 
-	client, err := newClient(cfg)
+	client, err := newClient(cfg, logger)
 	if err != nil {
-		log.Fatal(err)
+		level.Error(logger).Log("msg", "failed to initialize Kubernetes client", "error", err)
+		os.Exit(1)
 	}
 
 	serviceSource, err := source.NewServiceSource(client, cfg.Namespace, cfg.FqdnTemplate, cfg.Compatibility)
 	if err != nil {
-		log.Fatal(err)
+		level.Error(logger).Log("msg", "failed to initialize source", "source", "Service", "error", err)
+		os.Exit(1)
 	}
 	source.Register("service", serviceSource)
 
 	ingressSource, err := source.NewIngressSource(client, cfg.Namespace, cfg.FqdnTemplate)
 	if err != nil {
-		log.Fatal(err)
+		level.Error(logger).Log("msg", "failed to initialize source", "source", "Ingress", "error", err)
+		os.Exit(1)
 	}
 	source.Register("ingress", ingressSource)
 
 	sources, err := source.LookupMultiple(cfg.Sources)
 	if err != nil {
-		log.Fatal(err)
+		level.Error(logger).Log("msg", "failed to initialize source", "source", "Multi", "error", err)
+		os.Exit(1)
 	}
 
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources), logger)
@@ -105,10 +110,12 @@ func main() {
 	case "aws":
 		p, err = provider.NewAWSProvider(cfg.DomainFilter, cfg.DryRun)
 	default:
-		log.Fatalf("unknown dns provider: %s", cfg.Provider)
+		level.Error(logger).Log("msg", "unknown provider", "provider", cfg.Provider)
+		os.Exit(1)
 	}
 	if err != nil {
-		log.Fatal(err)
+		level.Error(logger).Log("msg", "failed to initialize provider", "provider", cfg.Provider, "error", err)
+		os.Exit(1)
 	}
 
 	var r registry.Registry
@@ -118,16 +125,18 @@ func main() {
 	case "txt":
 		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTOwnerID)
 	default:
-		log.Fatalf("unknown registry: %s", cfg.Registry)
+		level.Error(logger).Log("msg", "unknown registry", "registry", cfg.Registry)
+		os.Exit(1)
 	}
-
 	if err != nil {
-		log.Fatal(err)
+		level.Error(logger).Log("msg", "failed to initialize registry", "registry", cfg.Registry, "error", err)
+		os.Exit(1)
 	}
 
 	policy, exists := plan.Policies[cfg.Policy]
 	if !exists {
-		log.Fatalf("unknown policy: %s", cfg.Policy)
+		level.Error(logger).Log("msg", "unknown policy", "policy", cfg.Policy)
+		os.Exit(1)
 	}
 
 	ctrl := controller.Controller{
@@ -138,9 +147,9 @@ func main() {
 	}
 
 	if cfg.Once {
-		err := ctrl.RunOnce()
-		if err != nil {
-			log.Fatal(err)
+		if err := ctrl.RunOnce(); err != nil {
+			level.Error(logger).Log("msg", "failed to run control loop", "error", err)
+			os.Exit(1)
 		}
 
 		os.Exit(0)
@@ -148,20 +157,20 @@ func main() {
 
 	ctrl.Run(stopChan)
 	for {
-		log.Info("Pod waiting to be deleted")
+		level.Info(logger).Log("msg", "Pod waiting to be deleted")
 		time.Sleep(time.Second * 30)
 	}
 }
 
-func handleSigterm(stopChan chan struct{}) {
+func handleSigterm(stopChan chan struct{}, logger log.Logger) {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGTERM)
 	<-signals
-	log.Info("Received SIGTERM. Terminating...")
+	level.Info(logger).Log("msg", "Received SIGTERM. Terminating...")
 	close(stopChan)
 }
 
-func newClient(cfg *externaldns.Config) (*kubernetes.Clientset, error) {
+func newClient(cfg *externaldns.Config, logger log.Logger) (*kubernetes.Clientset, error) {
 	if cfg.KubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
 			cfg.KubeConfig = clientcmd.RecommendedHomeFile
@@ -187,12 +196,12 @@ func newClient(cfg *externaldns.Config) (*kubernetes.Clientset, error) {
 		return nil, err
 	}
 
-	log.Infof("Connected to cluster at %s", config.Host)
+	level.Info(logger).Log("msg", "Connected to Kubernetes cluster", "host", config.Host)
 
 	return client, nil
 }
 
-func serveMetrics(address string) {
+func serveMetrics(address string, logger log.Logger) {
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
@@ -200,5 +209,9 @@ func serveMetrics(address string) {
 
 	http.Handle("/metrics", promhttp.Handler())
 
-	log.Fatal(http.ListenAndServe(address, nil))
+	err := http.ListenAndServe(address, nil)
+	if err != nil {
+		level.Error(logger).Log("msg", "failed to serve metrics", "error", err)
+		os.Exit(1)
+	}
 }
