@@ -66,22 +66,39 @@ func main() {
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(stopChan)
 
-	client, err := newClient(cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
+	var client *kubernetes.Clientset
 
-	serviceSource, err := source.NewServiceSource(client, cfg.Namespace, cfg.FqdnTemplate, cfg.Compatibility)
-	if err != nil {
-		log.Fatal(err)
-	}
-	source.Register("service", serviceSource)
+	// create only those services we explicitly ask for in cfg.Sources
+	for _, sourceType := range cfg.Sources {
+		// we only need a k8s client if we're creating a non-fake source, and
+		// have not already instantiated a k8s client
+		if sourceType != "fake" && client == nil {
+			var err error
+			client, err = newClient(cfg)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
 
-	ingressSource, err := source.NewIngressSource(client, cfg.Namespace, cfg.FqdnTemplate)
-	if err != nil {
-		log.Fatal(err)
+		var src source.Source
+		var err error
+		switch sourceType {
+		case "fake":
+			src, err = source.NewFakeSource(cfg.FqdnTemplate)
+		case "service":
+			src, err = source.NewServiceSource(client, cfg.Namespace, cfg.FqdnTemplate, cfg.Compatibility)
+		case "ingress":
+			src, err = source.NewIngressSource(client, cfg.Namespace, cfg.FqdnTemplate)
+		default:
+			log.Fatalf("Don't know how to handle sourceType '%s'", sourceType)
+		}
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		source.Register(sourceType, src)
 	}
-	source.Register("ingress", ingressSource)
 
 	sources, err := source.LookupMultiple(cfg.Sources)
 	if err != nil {
@@ -96,6 +113,8 @@ func main() {
 		p, err = provider.NewGoogleProvider(cfg.GoogleProject, cfg.DomainFilter, cfg.DryRun)
 	case "aws":
 		p, err = provider.NewAWSProvider(cfg.DomainFilter, cfg.DryRun)
+	case "inmemory":
+		p, err = provider.NewInMemoryProviderWithDomainAndLogging("example.com"), nil
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
