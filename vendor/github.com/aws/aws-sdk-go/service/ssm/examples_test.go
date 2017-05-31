@@ -2085,6 +2085,7 @@ func ExampleSSM_UpdateAssociation() {
 	params := &ssm.UpdateAssociationInput{
 		AssociationId:   aws.String("AssociationId"), // Required
 		DocumentVersion: aws.String("DocumentVersion"),
+		Name:            aws.String("DocumentName"),
 		OutputLocation: &ssm.InstanceAssociationOutputLocation{
 			S3Location: &ssm.S3OutputLocation{
 				OutputS3BucketName: aws.String("S3BucketName"),
@@ -2100,6 +2101,16 @@ func ExampleSSM_UpdateAssociation() {
 			// More values...
 		},
 		ScheduleExpression: aws.String("ScheduleExpression"),
+		Targets: []*ssm.Target{
+			{ // Required
+				Key: aws.String("TargetKey"),
+				Values: []*string{
+					aws.String("TargetValue"), // Required
+					// More values...
+				},
+			},
+			// More values...
+		},
 	}
 	resp, err := svc.UpdateAssociation(params)
 

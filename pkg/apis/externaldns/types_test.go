@@ -18,9 +18,11 @@ package externaldns
 
 import (
 	"os"
-	"reflect"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -141,38 +143,23 @@ func TestParseFlags(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			originalEnv := setEnv(t, ti.envVars)
-			defer func() {
-				restoreEnv(t, originalEnv)
-			}()
+			defer func() { restoreEnv(t, originalEnv) }()
 
 			cfg := NewConfig()
-
-			if err := cfg.ParseFlags(ti.args); err != nil {
-				t.Error(err)
-			}
-
-			validateConfig(t, cfg, ti.expected)
+			require.NoError(t, cfg.ParseFlags(ti.args))
+			assert.Equal(t, ti.expected, cfg)
 		})
 	}
 }
 
 // helper functions
 
-func validateConfig(t *testing.T, got, expected *Config) {
-	if !reflect.DeepEqual(got, expected) {
-		t.Errorf("config is wrong")
-	}
-}
-
 func setEnv(t *testing.T, env map[string]string) map[string]string {
 	originalEnv := map[string]string{}
 
 	for k, v := range env {
 		originalEnv[k] = os.Getenv(k)
-
-		if err := os.Setenv(k, v); err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, os.Setenv(k, v))
 	}
 
 	return originalEnv
@@ -180,8 +167,6 @@ func setEnv(t *testing.T, env map[string]string) map[string]string {
 
 func restoreEnv(t *testing.T, originalEnv map[string]string) {
 	for k, v := range originalEnv {
-		if err := os.Setenv(k, v); err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, os.Setenv(k, v))
 	}
 }

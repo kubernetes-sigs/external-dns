@@ -17,8 +17,9 @@ limitations under the License.
 package endpoint
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewEndpoint(t *testing.T) {
@@ -43,7 +44,5 @@ func TestMergeLabels(t *testing.T) {
 		"baz": "qux",
 	}
 	e.MergeLabels(map[string]string{"baz": "baz", "new": "fox"})
-	if !reflect.DeepEqual(e.Labels, map[string]string{"foo": "bar", "baz": "qux", "new": "fox"}) {
-		t.Error("invalid merge result")
-	}
+	assert.Equal(t, map[string]string{"foo": "bar", "baz": "qux", "new": "fox"}, e.Labels)
 }

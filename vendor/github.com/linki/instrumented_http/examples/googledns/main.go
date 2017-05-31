@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/linki/instrumented_http"
@@ -27,10 +26,7 @@ func main() {
 	}
 
 	instrumentedClient := instrumented_http.NewClient(defaultClient, &instrumented_http.Callbacks{
-		PathProcessor: func(path string) string {
-			parts := strings.Split(path, "/")
-			return parts[len(parts)-1]
-		},
+		PathProcessor: instrumented_http.LastPathElementProcessor,
 	})
 
 	dnsClient, err := dns.New(instrumentedClient)

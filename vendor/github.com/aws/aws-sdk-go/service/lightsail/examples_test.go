@@ -933,6 +933,35 @@ func ExampleLightsail_PeerVpc() {
 	fmt.Println(resp)
 }
 
+func ExampleLightsail_PutInstancePublicPorts() {
+	sess := session.Must(session.NewSession())
+
+	svc := lightsail.New(sess)
+
+	params := &lightsail.PutInstancePublicPortsInput{
+		InstanceName: aws.String("ResourceName"), // Required
+		PortInfos: []*lightsail.PortInfo{ // Required
+			{ // Required
+				FromPort: aws.Int64(1),
+				Protocol: aws.String("NetworkProtocol"),
+				ToPort:   aws.Int64(1),
+			},
+			// More values...
+		},
+	}
+	resp, err := svc.PutInstancePublicPorts(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
 func ExampleLightsail_RebootInstance() {
 	sess := session.Must(session.NewSession())
 

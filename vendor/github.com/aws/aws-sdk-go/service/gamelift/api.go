@@ -293,13 +293,17 @@ func (c *GameLift) CreateFleetRequest(input *CreateFleetInput) (req *request.Req
 // A newly created fleet passes through several statuses; once it reaches the
 // ACTIVE status, it can begin hosting game sessions.
 //
-// To create a new fleet, provide a fleet name, an EC2 instance type, and a
-// build ID of the game build to deploy. You can also configure the new fleet
-// with the following settings: (1) a runtime configuration describing what
-// server processes to run on each instance in the fleet (required to create
-// fleet), (2) access permissions for inbound traffic, (3) fleet-wide game session
-// protection, and (4) the location of default log files for Amazon GameLift
-// to upload and store.
+// To create a new fleet, you must specify the following: (1) fleet name, (2)
+// build ID of an uploaded game build, (3) an EC2 instance type, and (4) a runtime
+// configuration that describes which server processes to run on each instance
+// in the fleet. (Although the runtime configuration is not a required parameter,
+// the fleet cannot be successfully created without it.) You can also configure
+// the new fleet with the following settings: fleet description, access permissions
+// for inbound traffic, fleet-wide game session protection, and resource creation
+// limit. If you use Amazon CloudWatch for metrics, you can add the new fleet
+// to a metric group, which allows you to view aggregated metrics for a set
+// of fleets. Once you specify a metric group, the new fleet's metrics are included
+// in the metric group's data.
 //
 // If the CreateFleet call is successful, Amazon GameLift performs the following
 // tasks:
@@ -635,6 +639,10 @@ func (c *GameLift) CreateGameSessionQueueRequest(input *CreateGameSessionQueueIn
 //
 //   * ErrCodeUnauthorizedException "UnauthorizedException"
 //   The client failed authentication. Clients should not retry such requests.
+//
+//   * ErrCodeLimitExceededException "LimitExceededException"
+//   The requested operation would cause the resource to exceed the allowed service
+//   limit. Resolve the issue before retrying.
 //
 // Please also see https://docs.aws.amazon.com/goto/WebAPI/gamelift-2015-10-01/CreateGameSessionQueue
 func (c *GameLift) CreateGameSessionQueue(input *CreateGameSessionQueueInput) (*CreateGameSessionQueueOutput, error) {
@@ -3984,33 +3992,44 @@ func (c *GameLift) StartGameSessionPlacementRequest(input *StartGameSessionPlace
 // Places a request for a new game session in a queue (see CreateGameSessionQueue).
 // When processing a placement request, Amazon GameLift searches for available
 // resources on the queue's destinations, scanning each until it finds resources
-// or the placement request times out. A game session placement request can
-// also request player sessions. When a new game session is successfully created,
-// Amazon GameLift creates a player session for each player included in the
-// request.
+// or the placement request times out.
+//
+// A game session placement request can also request player sessions. When a
+// new game session is successfully created, Amazon GameLift creates a player
+// session for each player included in the request.
 //
 // When placing a game session, by default Amazon GameLift tries each fleet
 // in the order they are listed in the queue configuration. Ideally, a queue's
-// destinations are listed in preference order. Alternatively, when requesting
-// a game session with players, you can also provide latency data for each player
-// in relevant regions. Latency data indicates the performance lag a player
-// experiences when connected to a fleet in the region. Amazon GameLift uses
-// latency data to reorder the list of destinations to place the game session
-// in a region with minimal lag. If latency data is provided for multiple players,
-// Amazon GameLift calculates each region's average lag for all players and
-// reorders to get the best game play across all players.
+// destinations are listed in preference order.
 //
-// To place a new game session request, specify the queue name and a set of
-// game session properties and settings. Also provide a unique ID (such as a
-// UUID) for the placement. You'll use this ID to track the status of the placement
-// request. Optionally, provide a set of IDs and player data for each player
-// you want to join to the new game session. To optimize game play for the players,
-// also provide latency data for all players. If successful, a new game session
-// placement is created. To track the status of a placement request, call DescribeGameSessionPlacement
+// Alternatively, when requesting a game session with players, you can also
+// provide latency data for each player in relevant regions. Latency data indicates
+// the performance lag a player experiences when connected to a fleet in the
+// region. Amazon GameLift uses latency data to reorder the list of destinations
+// to place the game session in a region with minimal lag. If latency data is
+// provided for multiple players, Amazon GameLift calculates each region's average
+// lag for all players and reorders to get the best game play across all players.
+//
+// To place a new game session request, specify the following:
+//
+//    * The queue name and a set of game session properties and settings
+//
+//    * A unique ID (such as a UUID) for the placement. You use this ID to track
+//    the status of the placement request
+//
+//    * (Optional) A set of IDs and player data for each player you want to
+//    join to the new game session
+//
+//    * Latency data for all players (if you want to optimize game play for
+//    the players)
+//
+// If successful, a new game session placement is created.
+//
+// To track the status of a placement request, call DescribeGameSessionPlacement
 // and check the request's status. If the status is Fulfilled, a new game session
 // has been created and a game session ARN and region are referenced. If the
-// placement request times out, you have the option of resubmitting the request
-// or retrying it with a different queue.
+// placement request times out, you can resubmit the request or retry it with
+// a different queue.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -5510,6 +5529,11 @@ type CreateFleetInput struct {
 	// See more information in the Server API Reference (http://docs.aws.amazon.com/gamelift/latest/developerguide/gamelift-sdk-server-api-ref.html#gamelift-sdk-server-api-ref-dataypes-process).
 	LogPaths []*string `type:"list"`
 
+	// Names of metric groups to add this fleet to. Use an existing metric group
+	// name to add this fleet to the group, or use a new name to create a new metric
+	// group. Currently, a fleet can only be included in one metric group at a time.
+	MetricGroups []*string `type:"list"`
+
 	// Descriptive label that is associated with a fleet. Fleet names do not need
 	// to be unique.
 	//
@@ -5642,6 +5666,12 @@ func (s *CreateFleetInput) SetEC2InstanceType(v string) *CreateFleetInput {
 // SetLogPaths sets the LogPaths field's value.
 func (s *CreateFleetInput) SetLogPaths(v []*string) *CreateFleetInput {
 	s.LogPaths = v
+	return s
+}
+
+// SetMetricGroups sets the MetricGroups field's value.
+func (s *CreateFleetInput) SetMetricGroups(v []*string) *CreateFleetInput {
+	s.MetricGroups = v
 	return s
 }
 
@@ -8354,6 +8384,12 @@ type FleetAttributes struct {
 	// stored logs.
 	LogPaths []*string `type:"list"`
 
+	// Names of metric groups that this fleet is included in. In Amazon CloudWatch,
+	// you can view metrics for an individual fleet or aggregated metrics for a
+	// fleets that are in a fleet metric group. Currently, a fleet can be included
+	// in only one metric group at a time.
+	MetricGroups []*string `type:"list"`
+
 	// Descriptive label that is associated with a fleet. Fleet names do not need
 	// to be unique.
 	Name *string `min:"1" type:"string"`
@@ -8456,6 +8492,12 @@ func (s *FleetAttributes) SetFleetId(v string) *FleetAttributes {
 // SetLogPaths sets the LogPaths field's value.
 func (s *FleetAttributes) SetLogPaths(v []*string) *FleetAttributes {
 	s.LogPaths = v
+	return s
+}
+
+// SetMetricGroups sets the MetricGroups field's value.
+func (s *FleetAttributes) SetMetricGroups(v []*string) *FleetAttributes {
+	s.MetricGroups = v
 	return s
 }
 
@@ -9095,7 +9137,7 @@ type GameSessionQueue struct {
 	// ARN. Destinations are listed in default preference order.
 	Destinations []*GameSessionQueueDestination `type:"list"`
 
-	// Amazon Resource Name (ARN (http://docs.aws.amazon.com/docs.aws.amazon.com/AmazonS3/latest/dev/s3-arn-format.html))
+	// Amazon Resource Name (ARN (http://docs.aws.amazon.com/AmazonS3/latest/dev/s3-arn-format.html))
 	// that is assigned to a game session queue and uniquely identifies it. Format
 	// is arn:aws:gamelift:<region>::fleet/fleet-a1234567-b8c9-0d1e-2fa3-b45c6d7e8912.
 	GameSessionQueueArn *string `min:"1" type:"string"`
@@ -10729,8 +10771,18 @@ func (s *RoutingStrategy) SetType(v string) *RoutingStrategy {
 type RuntimeConfiguration struct {
 	_ struct{} `type:"structure"`
 
-	// Collection of server process configurations describing what server processes
-	// to run on each instance in a fleet
+	// Maximum amount of time (in seconds) that a game session can remain in status
+	// ACTIVATING. If the game session is not active before the timeout, activation
+	// is terminated and the game session status is changed to TERMINATED.
+	GameSessionActivationTimeoutSeconds *int64 `min:"1" type:"integer"`
+
+	// Maximum number of game sessions with status ACTIVATING to allow on an instance
+	// simultaneously. This setting limits the amount of instance resources that
+	// can be used for new game activations at any one time.
+	MaxConcurrentGameSessionActivations *int64 `min:"1" type:"integer"`
+
+	// Collection of server process configurations that describe which server processes
+	// to run on each instance in a fleet.
 	ServerProcesses []*ServerProcess `min:"1" type:"list"`
 }
 
@@ -10747,6 +10799,12 @@ func (s RuntimeConfiguration) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *RuntimeConfiguration) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "RuntimeConfiguration"}
+	if s.GameSessionActivationTimeoutSeconds != nil && *s.GameSessionActivationTimeoutSeconds < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("GameSessionActivationTimeoutSeconds", 1))
+	}
+	if s.MaxConcurrentGameSessionActivations != nil && *s.MaxConcurrentGameSessionActivations < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("MaxConcurrentGameSessionActivations", 1))
+	}
 	if s.ServerProcesses != nil && len(s.ServerProcesses) < 1 {
 		invalidParams.Add(request.NewErrParamMinLen("ServerProcesses", 1))
 	}
@@ -10765,6 +10823,18 @@ func (s *RuntimeConfiguration) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetGameSessionActivationTimeoutSeconds sets the GameSessionActivationTimeoutSeconds field's value.
+func (s *RuntimeConfiguration) SetGameSessionActivationTimeoutSeconds(v int64) *RuntimeConfiguration {
+	s.GameSessionActivationTimeoutSeconds = &v
+	return s
+}
+
+// SetMaxConcurrentGameSessionActivations sets the MaxConcurrentGameSessionActivations field's value.
+func (s *RuntimeConfiguration) SetMaxConcurrentGameSessionActivations(v int64) *RuntimeConfiguration {
+	s.MaxConcurrentGameSessionActivations = &v
+	return s
 }
 
 // SetServerProcesses sets the ServerProcesses field's value.
@@ -11703,6 +11773,13 @@ type UpdateFleetAttributesInput struct {
 	// FleetId is a required field
 	FleetId *string `type:"string" required:"true"`
 
+	// Names of metric groups to include this fleet with. A fleet metric group is
+	// used in Amazon CloudWatch to aggregate metrics from multiple fleets. Use
+	// an existing metric group name to add this fleet to the group, or use a new
+	// name to create a new metric group. Currently, a fleet can only be included
+	// in one metric group at a time.
+	MetricGroups []*string `type:"list"`
+
 	// Descriptive label that is associated with a fleet. Fleet names do not need
 	// to be unique.
 	Name *string `min:"1" type:"string"`
@@ -11761,6 +11838,12 @@ func (s *UpdateFleetAttributesInput) SetDescription(v string) *UpdateFleetAttrib
 // SetFleetId sets the FleetId field's value.
 func (s *UpdateFleetAttributesInput) SetFleetId(v string) *UpdateFleetAttributesInput {
 	s.FleetId = &v
+	return s
+}
+
+// SetMetricGroups sets the MetricGroups field's value.
+func (s *UpdateFleetAttributesInput) SetMetricGroups(v []*string) *UpdateFleetAttributesInput {
+	s.MetricGroups = v
 	return s
 }
 
@@ -12608,6 +12691,9 @@ const (
 	// MetricNameActiveInstances is a MetricName enum value
 	MetricNameActiveInstances = "ActiveInstances"
 
+	// MetricNameAvailableGameSessions is a MetricName enum value
+	MetricNameAvailableGameSessions = "AvailableGameSessions"
+
 	// MetricNameAvailablePlayerSessions is a MetricName enum value
 	MetricNameAvailablePlayerSessions = "AvailablePlayerSessions"
 
@@ -12616,6 +12702,12 @@ const (
 
 	// MetricNameIdleInstances is a MetricName enum value
 	MetricNameIdleInstances = "IdleInstances"
+
+	// MetricNamePercentAvailableGameSessions is a MetricName enum value
+	MetricNamePercentAvailableGameSessions = "PercentAvailableGameSessions"
+
+	// MetricNamePercentIdleInstances is a MetricName enum value
+	MetricNamePercentIdleInstances = "PercentIdleInstances"
 
 	// MetricNameQueueDepth is a MetricName enum value
 	MetricNameQueueDepth = "QueueDepth"
