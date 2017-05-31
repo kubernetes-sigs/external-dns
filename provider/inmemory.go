@@ -20,6 +20,8 @@ import (
 	"errors"
 	"strings"
 
+	log "github.com/Sirupsen/logrus"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
@@ -58,6 +60,35 @@ func NewInMemoryProvider() *InMemoryProvider {
 	}
 }
 
+// NewInMemoryProviderWithDomainAndLogging returns InMemoryProvider DNS provider interface
+// implementation with a specified domain
+func NewInMemoryProviderWithDomainAndLogging(domain string) *InMemoryProvider {
+	im := &InMemoryProvider{
+		filter: &filter{},
+		OnApplyChanges: func(changes *plan.Changes) {
+			for _, v := range changes.Create {
+				log.Infof("CREATE: %v", v)
+			}
+			for _, v := range changes.UpdateOld {
+				log.Infof("UPDATE (old): %v", v)
+			}
+			for _, v := range changes.UpdateNew {
+				log.Infof("UPDATE (new): %v", v)
+			}
+			for _, v := range changes.Delete {
+				log.Infof("DELETE: %v", v)
+			}
+		},
+		OnRecords: func() {},
+		domain:    domain,
+		client:    newInMemoryClient(),
+	}
+
+	im.CreateZone(domain)
+
+	return im
+}
+
 // CreateZone adds new zone if not present
 func (im *InMemoryProvider) CreateZone(newZone string) error {
 	return im.client.CreateZone(newZone)
@@ -69,7 +100,7 @@ func (im *InMemoryProvider) Zones() map[string]string {
 }
 
 // Records returns the list of endpoints
-func (im *InMemoryProvider) Records(_ string) ([]*endpoint.Endpoint, error) {
+func (im *InMemoryProvider) Records() ([]*endpoint.Endpoint, error) {
 	defer im.OnRecords()
 
 	endpoints := make([]*endpoint.Endpoint, 0)
@@ -93,7 +124,7 @@ func (im *InMemoryProvider) Records(_ string) ([]*endpoint.Endpoint, error) {
 // create record - record should not exist
 // update/delete record - record should exist
 // create/update/delete lists should not have overlapping records
-func (im *InMemoryProvider) ApplyChanges(_ string, changes *plan.Changes) error {
+func (im *InMemoryProvider) ApplyChanges(changes *plan.Changes) error {
 	defer im.OnApplyChanges(changes)
 
 	perZoneChanges := map[string]*plan.Changes{}

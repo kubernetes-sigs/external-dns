@@ -19,11 +19,15 @@ package source
 import (
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Validates that ingressSource is a Source
@@ -57,11 +61,10 @@ func TestNewIngressSource(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			_, err := NewIngressSource(fake.NewSimpleClientset(), "", ti.fqdntemplate)
-			if ti.expectError && err == nil {
-				t.Error("invalid template should return err")
-			}
-			if !ti.expectError && err != nil {
-				t.Error(err)
+			if ti.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -342,17 +345,13 @@ func testIngressEndpoints(t *testing.T) {
 			ingressSource, _ := NewIngressSource(fakeClient, ti.targetNamespace, ti.fqdntemplate)
 			for _, ingress := range ingresses {
 				_, err := fakeClient.Extensions().Ingresses(ingress.Namespace).Create(ingress)
-				if err != nil {
-					t.Errorf("fake kubernetes ingress creation should not fail. Ingress %v. Error: %v", *ingress, err)
-				}
+				require.NoError(t, err)
 			}
 
 			res, err := ingressSource.Endpoints()
-			if err != nil {
-				t.Errorf("ingress endpoints should not fail on valid fake client call")
-			}
-			validateEndpoints(t, res, ti.expected)
+			require.NoError(t, err)
 
+			validateEndpoints(t, res, ti.expected)
 		})
 	}
 }
@@ -369,7 +368,7 @@ type fakeIngress struct {
 
 func (ing fakeIngress) Ingress() *v1beta1.Ingress {
 	ingress := &v1beta1.Ingress{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Namespace:   ing.namespace,
 			Name:        ing.name,
 			Annotations: ing.annotations,

@@ -23,6 +23,9 @@ import (
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -38,28 +41,21 @@ func TestTXTRegistry(t *testing.T) {
 func testTXTRegistryNew(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	_, err := NewTXTRegistry(p, "txt", "")
-	if err == nil {
-		t.Fatal("owner should be specified")
-	}
+	require.Error(t, err)
 
 	r, err := NewTXTRegistry(p, "txt", "owner")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := r.mapper.(prefixNameMapper); !ok {
-		t.Error("incorrectly initialized txt registry instance")
-	}
-	if r.ownerID != "owner" || r.provider != p {
-		t.Error("incorrectly initialized txt registry instance")
-	}
+	require.NoError(t, err)
+
+	_, ok := r.mapper.(prefixNameMapper)
+	require.True(t, ok)
+	assert.Equal(t, "owner", r.ownerID)
+	assert.Equal(t, p, r.provider)
 
 	r, err = NewTXTRegistry(p, "", "owner")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := r.mapper.(prefixNameMapper); !ok {
-		t.Error("Incorrect type of prefix name mapper")
-	}
+	require.NoError(t, err)
+
+	_, ok = r.mapper.(prefixNameMapper)
+	assert.True(t, ok)
 }
 
 func testTXTRegistryRecords(t *testing.T) {
@@ -70,7 +66,7 @@ func testTXTRegistryRecords(t *testing.T) {
 func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	p.ApplyChanges("_", &plan.Changes{
+	p.ApplyChanges(&plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME", ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", "CNAME", ""),
@@ -135,16 +131,14 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	}
 
 	r, _ := NewTXTRegistry(p, "txt.", "owner")
-	records, _ := r.Records(testZone)
-	if !testutils.SameEndpoints(records, expectedRecords) {
-		t.Error("incorrect result returned from txt registry")
-	}
+	records, _ := r.Records()
+	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 }
 
 func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	p.ApplyChanges(testZone, &plan.Changes{
+	p.ApplyChanges(&plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME", ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", "CNAME", ""),
@@ -209,11 +203,9 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 	}
 
 	r, _ := NewTXTRegistry(p, "", "owner")
-	records, _ := r.Records(testZone)
+	records, _ := r.Records()
 
-	if !testutils.SameEndpoints(records, expectedRecords) {
-		t.Error("incorrect result returned from txt registry")
-	}
+	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 }
 
 func testTXTRegistryApplyChanges(t *testing.T) {
@@ -224,7 +216,7 @@ func testTXTRegistryApplyChanges(t *testing.T) {
 func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	p.ApplyChanges(testZone, &plan.Changes{
+	p.ApplyChanges(&plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME", ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", "CNAME", ""),
@@ -282,20 +274,16 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 			"UpdateOld": got.UpdateOld,
 			"Delete":    got.Delete,
 		}
-		if !testutils.SamePlanChanges(mGot, mExpected) {
-			t.Error("incorrect plan changes are passed to provider")
-		}
+		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
 	}
-	err := r.ApplyChanges(testZone, changes)
-	if err != nil {
-		t.Fatal(err)
-	}
+	err := r.ApplyChanges(changes)
+	require.NoError(t, err)
 }
 
 func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	p.ApplyChanges(testZone, &plan.Changes{
+	p.ApplyChanges(&plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME", ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", "CNAME", ""),
@@ -349,14 +337,10 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 			"UpdateOld": got.UpdateOld,
 			"Delete":    got.Delete,
 		}
-		if !testutils.SamePlanChanges(mGot, mExpected) {
-			t.Error("incorrect plan changes are passed to provider")
-		}
+		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
 	}
-	err := r.ApplyChanges(testZone, changes)
-	if err != nil {
-		t.Fatal(err)
-	}
+	err := r.ApplyChanges(changes)
+	require.NoError(t, err)
 }
 
 /**

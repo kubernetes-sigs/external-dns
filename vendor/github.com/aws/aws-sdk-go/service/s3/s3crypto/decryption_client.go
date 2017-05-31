@@ -3,6 +3,7 @@ package s3crypto
 import (
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/kms"
@@ -116,5 +117,19 @@ func (c *DecryptionClient) GetObjectRequest(input *s3.GetObjectInput) (*request.
 // GetObject is a wrapper for GetObjectRequest
 func (c *DecryptionClient) GetObject(input *s3.GetObjectInput) (*s3.GetObjectOutput, error) {
 	req, out := c.GetObjectRequest(input)
+	return out, req.Send()
+}
+
+// GetObjectWithContext is a wrapper for GetObjectRequest with the additional
+// context, and request options support.
+//
+// GetObjectWithContext is the same as GetObject with the additional support for
+// Context input parameters. The Context must not be nil. A nil Context will
+// cause a panic. Use the Context to add deadlining, timeouts, ect. In the future
+// this may create sub-contexts for individual underlying requests.
+func (c *DecryptionClient) GetObjectWithContext(ctx aws.Context, input *s3.GetObjectInput, opts ...request.Option) (*s3.GetObjectOutput, error) {
+	req, out := c.GetObjectRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
 	return out, req.Send()
 }

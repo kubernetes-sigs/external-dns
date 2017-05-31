@@ -23,6 +23,9 @@ import (
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var _ Registry = &NoopRegistry{}
@@ -36,12 +39,8 @@ func TestNoopRegistry(t *testing.T) {
 func testNoopInit(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	r, err := NewNoopRegistry(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if r.provider != p {
-		t.Error("noop registry incorrectly initialized")
-	}
+	require.NoError(t, err)
+	assert.Equal(t, p, r.provider)
 }
 
 func testNoopRecords(t *testing.T) {
@@ -54,19 +53,15 @@ func testNoopRecords(t *testing.T) {
 			RecordType: "CNAME",
 		},
 	}
-	p.ApplyChanges("_", &plan.Changes{
+	p.ApplyChanges(&plan.Changes{
 		Create: providerRecords,
 	})
 
 	r, _ := NewNoopRegistry(p)
 
-	eps, err := r.Records("_")
-	if err != nil {
-		t.Error(err)
-	}
-	if !testutils.SameEndpoints(eps, providerRecords) {
-		t.Error("incorrect result is returned")
-	}
+	eps, err := r.Records()
+	require.NoError(t, err)
+	assert.True(t, testutils.SameEndpoints(eps, providerRecords))
 }
 
 func testNoopApplyChanges(t *testing.T) {
@@ -92,13 +87,13 @@ func testNoopApplyChanges(t *testing.T) {
 		},
 	}
 
-	p.ApplyChanges("_", &plan.Changes{
+	p.ApplyChanges(&plan.Changes{
 		Create: providerRecords,
 	})
 
 	// wrong changes
 	r, _ := NewNoopRegistry(p)
-	err := r.ApplyChanges("_", &plan.Changes{
+	err := r.ApplyChanges(&plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{
 				DNSName: "example.org",
@@ -106,12 +101,10 @@ func testNoopApplyChanges(t *testing.T) {
 			},
 		},
 	})
-	if err != provider.ErrRecordAlreadyExists {
-		t.Error("should return record already exists")
-	}
+	assert.EqualError(t, err, provider.ErrRecordAlreadyExists.Error())
 
 	//correct changes
-	err = r.ApplyChanges("_", &plan.Changes{
+	require.NoError(t, r.ApplyChanges(&plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{
 				DNSName: "new-record.org",
@@ -130,12 +123,7 @@ func testNoopApplyChanges(t *testing.T) {
 				Target:  "old-lb.com",
 			},
 		},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	res, _ := p.Records("_")
-	if !testutils.SameEndpoints(res, expectedUpdate) {
-		t.Error("incorrectly updated dns provider")
-	}
+	}))
+	res, _ := p.Records()
+	assert.True(t, testutils.SameEndpoints(res, expectedUpdate))
 }

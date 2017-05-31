@@ -25,14 +25,14 @@ import (
 
 	fuzz "github.com/google/gofuzz"
 
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/testapi"
-	"k8s.io/client-go/pkg/api/unversioned"
-	"k8s.io/client-go/pkg/apimachinery/registered"
-	"k8s.io/client-go/pkg/runtime"
-	"k8s.io/client-go/pkg/util/diff"
-	"k8s.io/client-go/pkg/util/flowcontrol"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/client-go/util/flowcontrol"
+
+	_ "k8s.io/client-go/pkg/api/install"
 )
 
 func TestIsConfigTransportTLS(t *testing.T) {
@@ -70,8 +70,10 @@ func TestIsConfigTransportTLS(t *testing.T) {
 		},
 		{
 			Config: &Config{
-				Host:     "1.2.3.4:567",
-				Insecure: true,
+				Host: "1.2.3.4:567",
+				TLSClientConfig: TLSClientConfig{
+					Insecure: true,
+				},
 			},
 			TransportTLS: true,
 		},
@@ -99,13 +101,13 @@ func TestSetKubernetesDefaultsUserAgent(t *testing.T) {
 }
 
 func TestRESTClientRequires(t *testing.T) {
-	if _, err := RESTClientFor(&Config{Host: "127.0.0.1", ContentConfig: ContentConfig{NegotiatedSerializer: testapi.Default.NegotiatedSerializer()}}); err == nil {
+	if _, err := RESTClientFor(&Config{Host: "127.0.0.1", ContentConfig: ContentConfig{NegotiatedSerializer: api.Codecs}}); err == nil {
 		t.Errorf("unexpected non-error")
 	}
-	if _, err := RESTClientFor(&Config{Host: "127.0.0.1", ContentConfig: ContentConfig{GroupVersion: &registered.GroupOrDie(api.GroupName).GroupVersion}}); err == nil {
+	if _, err := RESTClientFor(&Config{Host: "127.0.0.1", ContentConfig: ContentConfig{GroupVersion: &api.Registry.GroupOrDie(api.GroupName).GroupVersion}}); err == nil {
 		t.Errorf("unexpected non-error")
 	}
-	if _, err := RESTClientFor(&Config{Host: "127.0.0.1", ContentConfig: ContentConfig{GroupVersion: &registered.GroupOrDie(api.GroupName).GroupVersion, NegotiatedSerializer: testapi.Default.NegotiatedSerializer()}}); err != nil {
+	if _, err := RESTClientFor(&Config{Host: "127.0.0.1", ContentConfig: ContentConfig{GroupVersion: &api.Registry.GroupOrDie(api.GroupName).GroupVersion, NegotiatedSerializer: api.Codecs}}); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
@@ -133,7 +135,7 @@ func (t *fakeLimiter) Accept() {}
 
 type fakeCodec struct{}
 
-func (c *fakeCodec) Decode([]byte, *unversioned.GroupVersionKind, runtime.Object) (runtime.Object, *unversioned.GroupVersionKind, error) {
+func (c *fakeCodec) Decode([]byte, *schema.GroupVersionKind, runtime.Object) (runtime.Object, *schema.GroupVersionKind, error) {
 	return nil, nil, nil
 }
 
@@ -205,7 +207,7 @@ func TestAnonymousConfig(t *testing.T) {
 
 		// this is the list of known security related fields, add to this list if a new field
 		// is added to Config, update AnonymousClientConfig to preserve the field otherwise.
-		expected.Impersonate = ""
+		expected.Impersonate = ImpersonationConfig{}
 		expected.BearerToken = ""
 		expected.Username = ""
 		expected.Password = ""

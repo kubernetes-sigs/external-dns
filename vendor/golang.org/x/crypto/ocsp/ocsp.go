@@ -30,11 +30,11 @@ var idPKIXOCSPBasic = asn1.ObjectIdentifier([]int{1, 3, 6, 1, 5, 5, 7, 48, 1, 1}
 type ResponseStatus int
 
 const (
-	Success           ResponseStatus = 0
-	Malformed         ResponseStatus = 1
-	InternalError     ResponseStatus = 2
-	TryLater          ResponseStatus = 3
-	// Status code four is ununsed in OCSP. See
+	Success       ResponseStatus = 0
+	Malformed     ResponseStatus = 1
+	InternalError ResponseStatus = 2
+	TryLater      ResponseStatus = 3
+	// Status code four is unused in OCSP. See
 	// https://tools.ietf.org/html/rfc6960#section-4.2.1
 	SignatureRequired ResponseStatus = 5
 	Unauthorized      ResponseStatus = 6
@@ -114,7 +114,7 @@ type basicResponse struct {
 
 type responseData struct {
 	Raw              asn1.RawContent
-	Version          int           `asn1:"optional,default:1,explicit,tag:0"`
+	Version          int           `asn1:"optional,default:0,explicit,tag:0"`
 	RawResponderName asn1.RawValue `asn1:"optional,explicit,tag:1"`
 	KeyHash          []byte        `asn1:"optional,explicit,tag:2"`
 	ProducedAt       time.Time     `asn1:"generalized"`
@@ -144,7 +144,7 @@ var (
 	oidSignatureSHA384WithRSA   = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 1, 12}
 	oidSignatureSHA512WithRSA   = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 1, 13}
 	oidSignatureDSAWithSHA1     = asn1.ObjectIdentifier{1, 2, 840, 10040, 4, 3}
-	oidSignatureDSAWithSHA256   = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 4, 3, 2}
+	oidSignatureDSAWithSHA256   = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 3, 2}
 	oidSignatureECDSAWithSHA1   = asn1.ObjectIdentifier{1, 2, 840, 10045, 4, 1}
 	oidSignatureECDSAWithSHA256 = asn1.ObjectIdentifier{1, 2, 840, 10045, 4, 3, 2}
 	oidSignatureECDSAWithSHA384 = asn1.ObjectIdentifier{1, 2, 840, 10045, 4, 3, 3}
@@ -266,6 +266,15 @@ func getHashAlgorithmFromOID(target asn1.ObjectIdentifier) crypto.Hash {
 	return crypto.Hash(0)
 }
 
+func getOIDFromHashAlgorithm(target crypto.Hash) asn1.ObjectIdentifier {
+	for hash, oid := range hashOIDs {
+		if hash == target {
+			return oid
+		}
+	}
+	return nil
+}
+
 // This is the exposed reflection of the internal OCSP structures.
 
 // The status values that can be expressed in OCSP.  See RFC 6960.
@@ -303,6 +312,32 @@ type Request struct {
 	IssuerNameHash []byte
 	IssuerKeyHash  []byte
 	SerialNumber   *big.Int
+}
+
+// Marshal marshals the OCSP request to ASN.1 DER encoded form.
+func (req *Request) Marshal() ([]byte, error) {
+	hashAlg := getOIDFromHashAlgorithm(req.HashAlgorithm)
+	if hashAlg == nil {
+		return nil, errors.New("Unknown hash algorithm")
+	}
+	return asn1.Marshal(ocspRequest{
+		tbsRequest{
+			Version: 0,
+			RequestList: []request{
+				{
+					Cert: certID{
+						pkix.AlgorithmIdentifier{
+							Algorithm:  hashAlg,
+							Parameters: asn1.RawValue{Tag: 5 /* ASN.1 NULL */},
+						},
+						req.IssuerNameHash,
+						req.IssuerKeyHash,
+						req.SerialNumber,
+					},
+				},
+			},
+		},
+	})
 }
 
 // Response represents an OCSP response containing a single SingleResponse. See
@@ -402,6 +437,18 @@ func ParseRequest(bytes []byte) (*Request, error) {
 // Invalid signatures or parse failures will result in a ParseError. Error
 // responses will result in a ResponseError.
 func ParseResponse(bytes []byte, issuer *x509.Certificate) (*Response, error) {
+	return ParseResponseForCert(bytes, nil, issuer)
+}
+
+// ParseResponseForCert parses an OCSP response in DER form and searches for a
+// Response relating to cert. If such a Response is found and the OCSP response
+// contains a certificate then the signature over the response is checked. If
+// issuer is not nil then it will be used to validate the signature or embedded
+// certificate.
+//
+// Invalid signatures or parse failures will result in a ParseError. Error
+// responses will result in a ResponseError.
+func ParseResponseForCert(bytes []byte, cert, issuer *x509.Certificate) (*Response, error) {
 	var resp responseASN1
 	rest, err := asn1.Unmarshal(bytes, &resp)
 	if err != nil {
@@ -429,7 +476,7 @@ func ParseResponse(bytes []byte, issuer *x509.Certificate) (*Response, error) {
 		return nil, ParseError("OCSP response contains bad number of certificates")
 	}
 
-	if len(basicResp.TBSResponseData.Responses) != 1 {
+	if n := len(basicResp.TBSResponseData.Responses); n == 0 || cert == nil && n > 1 {
 		return nil, ParseError("OCSP response contains bad number of responses")
 	}
 
@@ -460,7 +507,13 @@ func ParseResponse(bytes []byte, issuer *x509.Certificate) (*Response, error) {
 		}
 	}
 
-	r := basicResp.TBSResponseData.Responses[0]
+	var r singleResponse
+	for _, resp := range basicResp.TBSResponseData.Responses {
+		if cert == nil || cert.SerialNumber.Cmp(resp.CertID.SerialNumber) == 0 {
+			r = resp
+			break
+		}
+	}
 
 	for _, ext := range r.SingleExtensions {
 		if ext.Critical {
@@ -512,8 +565,7 @@ func CreateRequest(cert, issuer *x509.Certificate, opts *RequestOptions) ([]byte
 	// OCSP seems to be the only place where these raw hash identifiers are
 	// used. I took the following from
 	// http://msdn.microsoft.com/en-us/library/ff635603.aspx
-	var hashOID asn1.ObjectIdentifier
-	hashOID, ok := hashOIDs[hashFunc]
+	_, ok := hashOIDs[hashFunc]
 	if !ok {
 		return nil, x509.ErrUnsupportedAlgorithm
 	}
@@ -538,24 +590,13 @@ func CreateRequest(cert, issuer *x509.Certificate, opts *RequestOptions) ([]byte
 	h.Write(issuer.RawSubject)
 	issuerNameHash := h.Sum(nil)
 
-	return asn1.Marshal(ocspRequest{
-		tbsRequest{
-			Version: 0,
-			RequestList: []request{
-				{
-					Cert: certID{
-						pkix.AlgorithmIdentifier{
-							Algorithm:  hashOID,
-							Parameters: asn1.RawValue{Tag: 5 /* ASN.1 NULL */},
-						},
-						issuerNameHash,
-						issuerKeyHash,
-						cert.SerialNumber,
-					},
-				},
-			},
-		},
-	})
+	req := &Request{
+		HashAlgorithm:  hashFunc,
+		IssuerNameHash: issuerNameHash,
+		IssuerKeyHash:  issuerKeyHash,
+		SerialNumber:   cert.SerialNumber,
+	}
+	return req.Marshal()
 }
 
 // CreateResponse returns a DER-encoded OCSP response with the specified contents.

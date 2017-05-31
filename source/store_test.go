@@ -16,7 +16,14 @@ limitations under the License.
 
 package source
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/kubernetes-incubator/external-dns/internal/testutils"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
 func TestStore(t *testing.T) {
 	t.Run("RegisterAndLookup", testRegisterAndLookup)
@@ -32,7 +39,7 @@ func testRegisterAndLookup(t *testing.T) {
 		{
 			"registered source is found by name",
 			map[string]Source{
-				"foo": NewMockSource(nil),
+				"foo": &testutils.MockSource{},
 			},
 		},
 	} {
@@ -42,9 +49,7 @@ func testRegisterAndLookup(t *testing.T) {
 			}
 
 			for k, v := range tc.givenAndExpected {
-				if Lookup(k) != v {
-					t.Errorf("expected %#v, got %#v", v, Lookup(k))
-				}
+				assert.Equal(t, v, Lookup(k))
 			}
 		})
 	}
@@ -61,8 +66,8 @@ func testLookupMultiple(t *testing.T) {
 		{
 			"multiple registered sources are found by names",
 			map[string]Source{
-				"foo": NewMockSource(nil),
-				"bar": NewMockSource(nil),
+				"foo": &testutils.MockSource{},
+				"bar": &testutils.MockSource{},
 			},
 			[]string{"foo", "bar"},
 			false,
@@ -70,10 +75,10 @@ func testLookupMultiple(t *testing.T) {
 		{
 			"multiple registered sources, one source not registered",
 			map[string]Source{
-				"foo": NewMockSource(nil),
-				"bar": NewMockSource(nil),
+				"foo": &testutils.MockSource{},
+				"bar": &testutils.MockSource{},
 			},
-			[]string{"foo", "baz"},
+			[]string{"foo", "bar", "baz"},
 			true,
 		},
 	} {
@@ -83,20 +88,13 @@ func testLookupMultiple(t *testing.T) {
 			}
 
 			lookup, err := LookupMultiple(tc.names)
-			if !tc.expectError && err != nil {
-				t.Fatal(err)
-			}
-
 			if tc.expectError {
-				if err == nil {
-					t.Fatal("look up should fail if source not registered")
-				}
-				t.Skip()
-			}
-
-			for i, name := range tc.names {
-				if lookup[i] != tc.registered[name] {
-					t.Errorf("expected %#v, got %#v", tc.registered[name], lookup[i])
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Len(t, lookup, len(tc.registered))
+				for _, source := range tc.registered {
+					assert.Contains(t, lookup, source)
 				}
 			}
 		})

@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/linki/instrumented_http"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -76,6 +77,15 @@ type AWSProvider struct {
 func NewAWSProvider(domainFilter string, dryRun bool) (Provider, error) {
 	config := aws.NewConfig()
 
+	config = config.WithHTTPClient(
+		instrumented_http.NewClient(config.HTTPClient, &instrumented_http.Callbacks{
+			PathProcessor: func(path string) string {
+				parts := strings.Split(path, "/")
+				return parts[len(parts)-1]
+			},
+		}),
+	)
+
 	session, err := session.NewSessionWithOptions(session.Options{
 		Config:            *config,
 		SharedConfigState: session.SharedConfigEnable,
@@ -116,7 +126,7 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 }
 
 // Records returns the list of records in a given hosted zone.
-func (p *AWSProvider) Records(_ string) (endpoints []*endpoint.Endpoint, _ error) {
+func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.Zones()
 	if err != nil {
 		return nil, err
@@ -174,7 +184,7 @@ func (p *AWSProvider) DeleteRecords(endpoints []*endpoint.Endpoint) error {
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *AWSProvider) ApplyChanges(_ string, changes *plan.Changes) error {
+func (p *AWSProvider) ApplyChanges(changes *plan.Changes) error {
 	combinedChanges := make([]*route53.Change, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 
 	combinedChanges = append(combinedChanges, newChanges(route53.ChangeActionCreate, changes.Create)...)

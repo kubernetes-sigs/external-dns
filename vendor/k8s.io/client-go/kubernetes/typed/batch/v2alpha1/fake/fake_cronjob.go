@@ -17,12 +17,12 @@ limitations under the License.
 package fake
 
 import (
-	api "k8s.io/client-go/pkg/api"
-	unversioned "k8s.io/client-go/pkg/api/unversioned"
-	v1 "k8s.io/client-go/pkg/api/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
+	types "k8s.io/apimachinery/pkg/types"
+	watch "k8s.io/apimachinery/pkg/watch"
 	v2alpha1 "k8s.io/client-go/pkg/apis/batch/v2alpha1"
-	labels "k8s.io/client-go/pkg/labels"
-	watch "k8s.io/client-go/pkg/watch"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -32,7 +32,7 @@ type FakeCronJobs struct {
 	ns   string
 }
 
-var cronjobsResource = unversioned.GroupVersionResource{Group: "batch", Version: "v2alpha1", Resource: "cronjobs"}
+var cronjobsResource = schema.GroupVersionResource{Group: "batch", Version: "v2alpha1", Resource: "cronjobs"}
 
 func (c *FakeCronJobs) Create(cronJob *v2alpha1.CronJob) (result *v2alpha1.CronJob, err error) {
 	obj, err := c.Fake.
@@ -78,7 +78,7 @@ func (c *FakeCronJobs) DeleteCollection(options *v1.DeleteOptions, listOptions v
 	return err
 }
 
-func (c *FakeCronJobs) Get(name string) (result *v2alpha1.CronJob, err error) {
+func (c *FakeCronJobs) Get(name string, options v1.GetOptions) (result *v2alpha1.CronJob, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(cronjobsResource, c.ns, name), &v2alpha1.CronJob{})
 
@@ -117,7 +117,7 @@ func (c *FakeCronJobs) Watch(opts v1.ListOptions) (watch.Interface, error) {
 }
 
 // Patch applies the patch and returns the patched cronJob.
-func (c *FakeCronJobs) Patch(name string, pt api.PatchType, data []byte, subresources ...string) (result *v2alpha1.CronJob, err error) {
+func (c *FakeCronJobs) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v2alpha1.CronJob, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(cronjobsResource, c.ns, name, data, subresources...), &v2alpha1.CronJob{})
 
