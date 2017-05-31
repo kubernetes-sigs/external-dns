@@ -47,34 +47,34 @@ func TestCalculate(t *testing.T) {
 	typedV1 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", "A")}
 
 	for _, tc := range []struct {
-		policy                               Policy
+		policies                             []Policy
 		current, desired                     []*endpoint.Endpoint
 		create, updateOld, updateNew, delete []*endpoint.Endpoint
 	}{
 		// Nothing exists and nothing desired doesn't change anything.
-		{&SyncPolicy{}, empty, empty, empty, empty, empty, empty},
+		{[]Policy{&SyncPolicy{}}, empty, empty, empty, empty, empty, empty},
 		// More desired than current creates the desired.
-		{&SyncPolicy{}, empty, fooV1, fooV1, empty, empty, empty},
+		{[]Policy{&SyncPolicy{}}, empty, fooV1, fooV1, empty, empty, empty},
 		// Desired equals current doesn't change anything.
-		{&SyncPolicy{}, fooV1, fooV1, empty, empty, empty, empty},
+		{[]Policy{&SyncPolicy{}}, fooV1, fooV1, empty, empty, empty, empty},
 		// Nothing is desired deletes the current.
-		{&SyncPolicy{}, fooV1, empty, empty, empty, empty, fooV1},
+		{[]Policy{&SyncPolicy{}}, fooV1, empty, empty, empty, empty, fooV1},
 		// Current and desired match but Target is different triggers an update.
-		{&SyncPolicy{}, fooV1, fooV2, empty, fooV1, fooV2, empty},
+		{[]Policy{&SyncPolicy{}}, fooV1, fooV2, empty, fooV1, fooV2, empty},
 		// Both exist but are different creates desired and deletes current.
-		{&SyncPolicy{}, fooV1, bar, bar, empty, empty, fooV1},
+		{[]Policy{&SyncPolicy{}}, fooV1, bar, bar, empty, empty, fooV1},
 		// Nothing is desired but policy doesn't allow deletions.
-		{&UpsertOnlyPolicy{}, fooV1, empty, empty, empty, empty, empty},
+		{[]Policy{&UpsertOnlyPolicy{}}, fooV1, empty, empty, empty, empty, empty},
 		// Labels should be inherited
-		{&SyncPolicy{}, labeledV1, noLabels, empty, labeledV1, labeledV2, empty},
+		{[]Policy{&SyncPolicy{}}, labeledV1, noLabels, empty, labeledV1, labeledV2, empty},
 		// RecordType should be inherited
-		{&SyncPolicy{}, typedV1, noType, empty, typedV1, typedV2, empty},
+		{[]Policy{&SyncPolicy{}}, typedV1, noType, empty, typedV1, typedV2, empty},
 	} {
 		// setup plan
 		plan := &Plan{
-			Policy:  tc.policy,
-			Current: tc.current,
-			Desired: tc.desired,
+			Policies: tc.policies,
+			Current:  tc.current,
+			Desired:  tc.desired,
 		}
 		// calculate actions
 		plan = plan.Calculate()
@@ -116,9 +116,9 @@ func ExamplePlan() {
 	// * bar should be updated from v1 to v2
 	// * baz should be created
 	plan := &Plan{
-		Policy:  &SyncPolicy{},
-		Current: []*endpoint.Endpoint{foo, barV1},
-		Desired: []*endpoint.Endpoint{barV2, baz},
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  []*endpoint.Endpoint{foo, barV1},
+		Desired:  []*endpoint.Endpoint{barV2, baz},
 	}
 
 	// calculate actions
