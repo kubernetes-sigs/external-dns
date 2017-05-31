@@ -17,143 +17,127 @@ limitations under the License.
 package registry
 
 import (
-	"errors"
-
 	"fmt"
-	"regexp"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
 )
 
-var (
-	txtLabelRegex  = regexp.MustCompile("^\"heritage=external-dns,external-dns/owner=(.+)\"")
-	txtLabelFormat = "\"heritage=external-dns,external-dns/owner=%s\""
+const (
+	heritageLabel  = "heritage"
+	heritageValue  = "external-dns"
+	labelKeyPrefix = "external-dns/"
+	txtRecordType  = "TXT"
 )
 
-// TXTRegistry implements registry interface with ownership implemented via associated TXT records
+// TXTRegistry stores labels as DNS TXT records in the wrapped Provider.
 type TXTRegistry struct {
 	provider provider.Provider
-	ownerID  string //refers to the owner id of the current instance
-	mapper   nameMapper
 }
 
-// NewTXTRegistry returns new TXTRegistry object
-func NewTXTRegistry(provider provider.Provider, txtPrefix, ownerID string) (*TXTRegistry, error) {
-	if ownerID == "" {
-		return nil, errors.New("owner id cannot be empty")
-	}
-
-	mapper := newPrefixNameMapper(txtPrefix)
-
-	return &TXTRegistry{
-		provider: provider,
-		ownerID:  ownerID,
-		mapper:   mapper,
-	}, nil
+// NewTXTRegistry returns a new DNS-based registry for the passed in Provider.
+func NewTXTRegistry(prov provider.Provider) *TXTRegistry {
+	return &TXTRegistry{provider: prov}
 }
 
-// Records returns the current records from the registry excluding TXT Records
-// If TXT records was created previously to indicate ownership its corresponding value
-// will be added to the endpoints Labels map
-func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
-	records, err := im.provider.Records()
+// Records reads DNS records from the nested provider and translates any TXT records containing
+// label information into labels on the returned Endpoint objects.
+func (p *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
+	// Read all records from the DNS provider.
+	records, err := p.provider.Records()
 	if err != nil {
 		return nil, err
 	}
 
-	endpoints := make([]*endpoint.Endpoint, 0)
+	// A temporary store that holds all found labels.
+	labels := map[string]map[string]string{}
 
-	ownerMap := map[string]string{}
-
-	for _, record := range records {
-		if record.RecordType != "TXT" {
-			endpoints = append(endpoints, record)
+	// Go through all TXT records and temporary collect and store label information.
+	for _, r := range records {
+		// Only consider records of type TXT.
+		if r.RecordType != txtRecordType {
 			continue
 		}
-		ownerID := im.extractOwnerID(record.Target)
-		if ownerID == "" {
-			//case when value of txt record cannot be identified
-			//record will not be removed as it will have empty owner
-			endpoints = append(endpoints, record)
+
+		// Parse the value of the TXT record into a label set (a key-value map).
+		labelMap := parseLabels(r.Target)
+
+		// If the TXT record indicates a heritage of ExternalDNS, then attach the remaining labels
+		// to the endpoint object. (More specific: store them to be attached in the following section.)
+		// If not, skip this record.
+		if labelMap[heritageLabel] != heritageValue {
 			continue
 		}
-		endpointDNSName := im.mapper.toEndpointName(record.DNSName)
-		ownerMap[endpointDNSName] = ownerID
+
+		// Initialize a temporary label set for the endpoint to be attached later.
+		labels[r.DNSName] = map[string]string{}
+		for key, value := range labelMap {
+			// Any label that is prefixed by ExternalDNS' label prefix is processed. The prefix is
+			// trimmed before attaching it to the endpoint object.
+			//
+			//   e.g.: TXT: "heritage=external-dns,external-dns/foo=bar" => labels["foo"] = "bar"
+			if strings.HasPrefix(key, labelKeyPrefix) {
+				labels[r.DNSName][key[len(labelKeyPrefix):]] = value
+			}
+		}
 	}
 
-	for _, ep := range endpoints {
-		ep.Labels[endpoint.OwnerLabelKey] = ownerMap[ep.DNSName]
+	// Initialize the final list of endpoints to return.
+	result := []*endpoint.Endpoint{}
+
+	// Go through all non-TXT records and attach the previously collected label sets.
+	for _, r := range records {
+		// Skip all TXT records.
+		if r.RecordType == txtRecordType {
+			continue
+		}
+
+		// Attach the label set and add the record to the final list.
+		r.Labels = labels[r.DNSName]
+		result = append(result, r)
 	}
 
-	return endpoints, err
+	// Return the endpoints with their labels attached.
+	return result, nil
 }
 
-// ApplyChanges updates dns provider with the changes
-// for each created/deleted record it will also take into account TXT records for creation/deletion
-func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
-	filteredChanges := &plan.Changes{
-		Create:    changes.Create,
-		UpdateNew: filterOwnedRecords(im.ownerID, changes.UpdateNew),
-		UpdateOld: filterOwnedRecords(im.ownerID, changes.UpdateOld),
-		Delete:    filterOwnedRecords(im.ownerID, changes.Delete),
+// ApplyChanges creates, updates and removes a co-located TXT record for each desired endpoint
+// holding information about its labels.
+func (p *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
+	for _, ep := range changes.Create {
+		// Don't create a TXT record if we don't have any labels to remember.
+		if len(ep.Labels) == 0 {
+			continue
+		}
+
+		// For each desired label, prefix the key with ExternalDNS' namespace.
+		labelMap := map[string]string{}
+		for key, value := range ep.Labels {
+			labelMap[labelKeyPrefix+key] = value
+		}
+
+		// Append the TXT record to the original creation list. We also add a special label called
+		// heritage to indicate that this TXT record belongs to ExternalDNS.
+		changes.Create = append(changes.Create, &endpoint.Endpoint{
+			DNSName:    ep.DNSName,
+			Target:     fmt.Sprintf("%s=%s,%s", heritageLabel, heritageValue, formatLabels(labelMap)),
+			RecordType: txtRecordType,
+		})
 	}
 
-	for _, r := range filteredChanges.Create {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), "TXT")
-		filteredChanges.Create = append(filteredChanges.Create, txt)
-	}
-	for _, r := range filteredChanges.Delete {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), "TXT")
-		filteredChanges.Delete = append(filteredChanges.Delete, txt)
-	}
-	return im.provider.ApplyChanges(filteredChanges)
+	// Forward the modified change set to the underlying provider.
+	return p.provider.ApplyChanges(changes)
 }
 
-/**
-  TXT registry specific private methods
-*/
-
-func (im *TXTRegistry) getTXTLabel() string {
-	return fmt.Sprintf(txtLabelFormat, im.ownerID)
+func parseLabels(labelStr string) map[string]string {
+	labelMap, _ := labels.ConvertSelectorToLabelsMap(labelStr)
+	return labelMap
 }
 
-func (im *TXTRegistry) extractOwnerID(txtLabel string) string {
-	if matches := txtLabelRegex.FindStringSubmatch(txtLabel); len(matches) == 2 {
-		return matches[1]
-	}
-	return ""
-}
-
-/**
-  nameMapper defines interface which maps the dns name defined for the source
-  to the dns name which TXT record will be created with
-*/
-
-type nameMapper interface {
-	toEndpointName(string) string
-	toTXTName(string) string
-}
-
-type prefixNameMapper struct {
-	prefix string
-}
-
-var _ nameMapper = prefixNameMapper{}
-
-func newPrefixNameMapper(prefix string) prefixNameMapper {
-	return prefixNameMapper{prefix: prefix}
-}
-
-func (pr prefixNameMapper) toEndpointName(txtDNSName string) string {
-	if strings.HasPrefix(txtDNSName, pr.prefix) {
-		return strings.TrimPrefix(txtDNSName, pr.prefix)
-	}
-	return ""
-}
-
-func (pr prefixNameMapper) toTXTName(endpointDNSName string) string {
-	return pr.prefix + endpointDNSName
+func formatLabels(labelMap map[string]string) string {
+	return labels.FormatLabels(labelMap)
 }

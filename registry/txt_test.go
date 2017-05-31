@@ -7,16 +7,17 @@ You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
+Unless required by applicable law or agreed to in writcng, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
-limitations under the License.
+limitatcons under the License.
 */
 
 package registry
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -25,332 +26,319 @@ import (
 	"github.com/kubernetes-incubator/external-dns/provider"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-const (
-	testZone = "test-zone.example.org"
-)
-
+// testTXTRegistryImplementsSource tests that serviceSource is a valid Source.
 func TestTXTRegistry(t *testing.T) {
-	t.Run("TestNewTXTRegistry", testTXTRegistryNew)
-	t.Run("TestRecords", testTXTRegistryRecords)
-	t.Run("TestApplyChanges", testTXTRegistryApplyChanges)
+	t.Run("Interface", testTXTRegistryImplementsRegistry)
+	t.Run("Records", testTXTRegistryRecords)
+	t.Run("RecordsError", testTXTRegistryRecordsReturnsErrors)
+	t.Run("ApplyChanges", testTXTRegistryApplyChanges)
+	t.Run("Labels", testTXTRegistryLabels)
 }
 
-func testTXTRegistryNew(t *testing.T) {
-	p := provider.NewInMemoryProvider()
-	_, err := NewTXTRegistry(p, "txt", "")
-	require.Error(t, err)
-
-	r, err := NewTXTRegistry(p, "txt", "owner")
-	require.NoError(t, err)
-
-	_, ok := r.mapper.(prefixNameMapper)
-	require.True(t, ok)
-	assert.Equal(t, "owner", r.ownerID)
-	assert.Equal(t, p, r.provider)
-
-	r, err = NewTXTRegistry(p, "", "owner")
-	require.NoError(t, err)
-
-	_, ok = r.mapper.(prefixNameMapper)
-	assert.True(t, ok)
+func testTXTRegistryImplementsRegistry(t *testing.T) {
+	mockProvider := new(provider.MockProvider)
+	splitter := NewTXTRegistry(mockProvider)
+	assert.Implements(t, (*Registry)(nil), splitter)
 }
 
 func testTXTRegistryRecords(t *testing.T) {
-	t.Run("With prefix", testTXTRegistryRecordsPrefixed)
-	t.Run("No prefix", testTXTRegistryRecordsNoPrefix)
+	for _, tc := range []struct {
+		msg      string
+		records  []*endpoint.Endpoint
+		expected []*endpoint.Endpoint
+	}{
+		{
+			msg: "no owner",
+			records: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{}},
+			},
+		},
+
+		{
+			msg: "with owner",
+			records: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
+				{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/owner=foo", RecordType: "TXT"},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
+			},
+		},
+
+		// // TODO
+		// {
+		// 	msg: "label order doesn't matter",
+		// 	records: []*endpoint.Endpoint{
+		// 		{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
+		// 		{DNSName: "foo.example.org", Target: "external-dns/owner=foo,heritage=external-dns", RecordType: "TXT"},
+		// 	},
+		// 	expected: []*endpoint.Endpoint{
+		// 		{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
+		// 	},
+		// },
+		//
+		// // TODO
+		// {
+		// 	msg: "spaces don't matter",
+		// 	records: []*endpoint.Endpoint{
+		// 		{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
+		// 		{DNSName: "foo.example.org", Target: "heritage=external-dns, external-dns/owner=foo", RecordType: "TXT"},
+		// 	},
+		// 	expected: []*endpoint.Endpoint{
+		// 		{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
+		// 	},
+		// },
+
+		{
+			msg: "require heritage prefix",
+			records: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
+				{DNSName: "foo.example.org", Target: "heritage=external-dns,owner=foo", RecordType: "TXT"},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{}},
+			},
+		},
+
+		{
+			msg: "look for heritage",
+			records: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
+				{DNSName: "foo.example.org", Target: "external-dns/owner=foo", RecordType: "TXT"},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{}},
+			},
+		},
+
+		{
+			msg: "respect heritage of others",
+			records: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
+				{DNSName: "foo.example.org", Target: "heritage=mate,external-dns/owner=foo", RecordType: "TXT"},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{}},
+			},
+		},
+
+		{
+			msg: "support arbitrary labels",
+			records: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
+				{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/my-label=foo", RecordType: "TXT"},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"my-label": "foo"}},
+			},
+		},
+
+		{
+			msg: "support multiple labels",
+			records: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
+				{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/my-label=foo,external-dns/owner=foo", RecordType: "TXT"},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+			},
+		},
+
+		{
+			msg: "order doesn't matter",
+			records: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/owner=foo", RecordType: "TXT"},
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
+			},
+		},
+
+		{
+			msg: "with wrong owner",
+			records: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
+				{DNSName: "bar.example.org", Target: "heritage=external-dns,external-dns/owner=foo", RecordType: "TXT"},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{}},
+			},
+		},
+	} {
+		t.Run(tc.msg, func(t *testing.T) {
+			mockProvider := new(provider.MockProvider)
+			mockProvider.On("Records").Return(tc.records, nil)
+
+			splitter := NewTXTRegistry(mockProvider)
+			records, err := splitter.Records()
+			assert.NoError(t, err)
+
+			assert.True(t, testutils.SameEndpoints(records, tc.expected))
+
+			mockProvider.AssertExpectations(t)
+		})
+	}
 }
 
-func testTXTRegistryRecordsPrefixed(t *testing.T) {
-	p := provider.NewInMemoryProvider()
-	p.CreateZone(testZone)
-	p.ApplyChanges(&plan.Changes{
-		Create: []*endpoint.Endpoint{
-			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME", ""),
-			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", "CNAME", ""),
-			newEndpointWithOwner("txt.bar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "TXT", ""),
-			newEndpointWithOwner("txt.bar.test-zone.example.org", "baz.test-zone.example.org", "ALIAS", ""),
-			newEndpointWithOwner("qux.test-zone.example.org", "random", "TXT", ""),
-			newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS", ""),
-			newEndpointWithOwner("txt.tar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2\"", "TXT", ""),
-			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS", ""),
-			newEndpointWithOwner("foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "TXT", ""),
-		},
-	})
-	expectedRecords := []*endpoint.Endpoint{
-		{
-			DNSName:    "foo.test-zone.example.org",
-			Target:     "foo.loadbalancer.com",
-			RecordType: "CNAME",
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "",
-			},
-		},
-		{
-			DNSName:    "bar.test-zone.example.org",
-			Target:     "my-domain.com",
-			RecordType: "CNAME",
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "owner",
-			},
-		},
-		{
-			DNSName:    "txt.bar.test-zone.example.org",
-			Target:     "baz.test-zone.example.org",
-			RecordType: "ALIAS",
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "",
-			},
-		},
-		{
-			DNSName:    "qux.test-zone.example.org",
-			Target:     "random",
-			RecordType: "TXT",
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "",
-			},
-		},
-		{
-			DNSName:    "tar.test-zone.example.org",
-			Target:     "tar.loadbalancer.com",
-			RecordType: "ALIAS",
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "owner-2",
-			},
-		},
-		{
-			DNSName:    "foobar.test-zone.example.org",
-			Target:     "foobar.loadbalancer.com",
-			RecordType: "ALIAS",
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "",
-			},
-		},
-	}
+func testTXTRegistryRecordsReturnsErrors(t *testing.T) {
+	mockProvider := new(provider.MockProvider)
+	mockProvider.On("Records").Return(nil, errors.New("some error"))
 
-	r, _ := NewTXTRegistry(p, "txt.", "owner")
-	records, _ := r.Records()
-	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
-}
+	splitter := NewTXTRegistry(mockProvider)
+	_, err := splitter.Records()
+	assert.EqualError(t, err, "some error")
 
-func testTXTRegistryRecordsNoPrefix(t *testing.T) {
-	p := provider.NewInMemoryProvider()
-	p.CreateZone(testZone)
-	p.ApplyChanges(&plan.Changes{
-		Create: []*endpoint.Endpoint{
-			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME", ""),
-			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", "CNAME", ""),
-			newEndpointWithOwner("txt.bar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "TXT", ""),
-			newEndpointWithOwner("txt.bar.test-zone.example.org", "baz.test-zone.example.org", "ALIAS", ""),
-			newEndpointWithOwner("qux.test-zone.example.org", "random", "TXT", ""),
-			newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS", ""),
-			newEndpointWithOwner("txt.tar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2\"", "TXT", ""),
-			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS", ""),
-			newEndpointWithOwner("foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "TXT", ""),
-		},
-	})
-	expectedRecords := []*endpoint.Endpoint{
-		{
-			DNSName:    "foo.test-zone.example.org",
-			Target:     "foo.loadbalancer.com",
-			RecordType: "CNAME",
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "",
-			},
-		},
-		{
-			DNSName:    "bar.test-zone.example.org",
-			Target:     "my-domain.com",
-			RecordType: "CNAME",
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "",
-			},
-		},
-		{
-			DNSName:    "txt.bar.test-zone.example.org",
-			Target:     "baz.test-zone.example.org",
-			RecordType: "ALIAS",
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "owner",
-			},
-		},
-		{
-			DNSName:    "qux.test-zone.example.org",
-			Target:     "random",
-			RecordType: "TXT",
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "",
-			},
-		},
-		{
-			DNSName:    "tar.test-zone.example.org",
-			Target:     "tar.loadbalancer.com",
-			RecordType: "ALIAS",
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "",
-			},
-		},
-		{
-			DNSName:    "foobar.test-zone.example.org",
-			Target:     "foobar.loadbalancer.com",
-			RecordType: "ALIAS",
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "owner",
-			},
-		},
-	}
-
-	r, _ := NewTXTRegistry(p, "", "owner")
-	records, _ := r.Records()
-
-	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+	mockProvider.AssertExpectations(t)
 }
 
 func testTXTRegistryApplyChanges(t *testing.T) {
-	t.Run("With Prefix", testTXTRegistryApplyChangesWithPrefix)
-	t.Run("No prefix", testTXTRegistryApplyChangesNoPrefix)
+	for _, tc := range []struct {
+		msg      string
+		records  []*endpoint.Endpoint
+		expected []*endpoint.Endpoint
+	}{
+		{
+			msg: "no owner",
+			records: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{}},
+			},
+		},
+
+		{
+			msg: "with owner",
+			records: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
+				// {DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
+				{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/owner=foo", RecordType: "TXT"},
+			},
+		},
+
+		{
+			msg: "support arbitrary labels",
+			records: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"my-label": "foo"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"my-label": "foo"}},
+				{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/my-label=foo", RecordType: "TXT"},
+			},
+		},
+
+		{
+			msg: "support multiple labels",
+			records: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+				{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/my-label=foo,external-dns/owner=foo", RecordType: "TXT"},
+			},
+		},
+
+		// {
+		// 	msg: "order doesn't matter",
+		// 	records: []*endpoint.Endpoint{
+		// 		{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
+		// 	},
+		// 	expected: []*endpoint.Endpoint{
+		// 		{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/owner=foo", RecordType: "TXT"},
+		// 		{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
+		// 	},
+		// },
+
+		{
+			msg: "multiple labels order shouldn't matter",
+			records: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+				{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/my-label=foo,external-dns/owner=foo", RecordType: "TXT"},
+			},
+		},
+	} {
+		t.Run(tc.msg, func(t *testing.T) {
+			mockProvider := new(provider.MockProvider)
+			mockProvider.On("ApplyChanges", &plan.Changes{Create: tc.expected}).Return(nil)
+
+			splitter := NewTXTRegistry(mockProvider)
+			err := splitter.ApplyChanges(&plan.Changes{Create: tc.records})
+			assert.NoError(t, err)
+
+			mockProvider.AssertExpectations(t)
+		})
+	}
 }
 
-func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
-	p := provider.NewInMemoryProvider()
-	p.CreateZone(testZone)
-	p.ApplyChanges(&plan.Changes{
-		Create: []*endpoint.Endpoint{
-			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME", ""),
-			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", "CNAME", ""),
-			newEndpointWithOwner("txt.bar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "TXT", ""),
-			newEndpointWithOwner("txt.bar.test-zone.example.org", "baz.test-zone.example.org", "ALIAS", ""),
-			newEndpointWithOwner("qux.test-zone.example.org", "random", "TXT", ""),
-			newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS", ""),
-			newEndpointWithOwner("txt.tar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "TXT", ""),
-			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS", ""),
-			newEndpointWithOwner("txt.foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "TXT", ""),
+func testTXTRegistryLabels(t *testing.T) {
+	for _, tc := range []struct {
+		msg      string
+		labelStr string
+		expected map[string]string
+		parsed   string
+	}{
+		{
+			msg:      "",
+			labelStr: "foo=bar,qux=wambo",
+			expected: map[string]string{
+				"foo": "bar",
+				"qux": "wambo",
+			},
+			parsed: "foo=bar,qux=wambo",
 		},
-	})
-	r, _ := NewTXTRegistry(p, "txt.", "owner")
-
-	changes := &plan.Changes{
-		Create: []*endpoint.Endpoint{
-			newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", "", ""),
+		{
+			msg:      "",
+			labelStr: "foo",
+			expected: map[string]string{},
+			parsed:   "<none>",
 		},
-		Delete: []*endpoint.Endpoint{
-			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS", "owner"),
+		{
+			msg:      "",
+			labelStr: "",
+			expected: map[string]string{},
+			parsed:   "<none>",
 		},
-		UpdateNew: []*endpoint.Endpoint{
-			newEndpointWithOwner("tar.test-zone.example.org", "new-tar.loadbalancer.com", "ALIAS", "owner"),
+		{
+			msg:      "",
+			labelStr: "foo=,wambo",
+			expected: map[string]string{
+				"foo": "",
+			},
+			parsed: "foo=",
 		},
-		UpdateOld: []*endpoint.Endpoint{
-			newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS", "owner"),
+		{
+			msg:      "",
+			labelStr: "foo=bar,wambo",
+			expected: map[string]string{
+				"foo": "bar",
+			},
+			parsed: "foo=bar",
 		},
+		{
+			msg:      "",
+			labelStr: "foo=bar,wambo=",
+			expected: map[string]string{
+				"foo":   "bar",
+				"wambo": "",
+			},
+			parsed: "foo=bar,wambo=",
+		},
+	} {
+		t.Run(tc.msg, func(t *testing.T) {
+			assert.Equal(t, tc.expected, parseLabels(tc.labelStr))
+			assert.Equal(t, tc.parsed, formatLabels(tc.expected))
+		})
 	}
-	expected := &plan.Changes{
-		Create: []*endpoint.Endpoint{
-			newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", "", ""),
-			newEndpointWithOwner("txt.new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "TXT", ""),
-		},
-		Delete: []*endpoint.Endpoint{
-			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS", "owner"),
-			newEndpointWithOwner("txt.foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "TXT", ""),
-		},
-		UpdateNew: []*endpoint.Endpoint{
-			newEndpointWithOwner("tar.test-zone.example.org", "new-tar.loadbalancer.com", "ALIAS", "owner"),
-		},
-		UpdateOld: []*endpoint.Endpoint{
-			newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS", "owner"),
-		},
-	}
-	p.OnApplyChanges = func(got *plan.Changes) {
-		mExpected := map[string][]*endpoint.Endpoint{
-			"Create":    expected.Create,
-			"UpdateNew": expected.UpdateNew,
-			"UpdateOld": expected.UpdateOld,
-			"Delete":    expected.Delete,
-		}
-		mGot := map[string][]*endpoint.Endpoint{
-			"Create":    got.Create,
-			"UpdateNew": got.UpdateNew,
-			"UpdateOld": got.UpdateOld,
-			"Delete":    got.Delete,
-		}
-		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-	}
-	err := r.ApplyChanges(changes)
-	require.NoError(t, err)
-}
-
-func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
-	p := provider.NewInMemoryProvider()
-	p.CreateZone(testZone)
-	p.ApplyChanges(&plan.Changes{
-		Create: []*endpoint.Endpoint{
-			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", "CNAME", ""),
-			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", "CNAME", ""),
-			newEndpointWithOwner("txt.bar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "TXT", ""),
-			newEndpointWithOwner("txt.bar.test-zone.example.org", "baz.test-zone.example.org", "ALIAS", ""),
-			newEndpointWithOwner("qux.test-zone.example.org", "random", "TXT", ""),
-			newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS", ""),
-			newEndpointWithOwner("txt.tar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "TXT", ""),
-			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS", ""),
-			newEndpointWithOwner("foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "TXT", ""),
-		},
-	})
-	r, _ := NewTXTRegistry(p, "", "owner")
-
-	changes := &plan.Changes{
-		Create: []*endpoint.Endpoint{
-			newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", "", ""),
-		},
-		Delete: []*endpoint.Endpoint{
-			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS", "owner"),
-		},
-		UpdateNew: []*endpoint.Endpoint{
-			newEndpointWithOwner("tar.test-zone.example.org", "new-tar.loadbalancer.com", "ALIAS", "owner-2"),
-		},
-		UpdateOld: []*endpoint.Endpoint{
-			newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", "ALIAS", "owner-2"),
-		},
-	}
-	expected := &plan.Changes{
-		Create: []*endpoint.Endpoint{
-			newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", "", ""),
-			newEndpointWithOwner("new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "TXT", ""),
-		},
-		Delete: []*endpoint.Endpoint{
-			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", "ALIAS", "owner"),
-			newEndpointWithOwner("foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", "TXT", ""),
-		},
-		UpdateNew: []*endpoint.Endpoint{},
-		UpdateOld: []*endpoint.Endpoint{},
-	}
-	p.OnApplyChanges = func(got *plan.Changes) {
-		mExpected := map[string][]*endpoint.Endpoint{
-			"Create":    expected.Create,
-			"UpdateNew": expected.UpdateNew,
-			"UpdateOld": expected.UpdateOld,
-			"Delete":    expected.Delete,
-		}
-		mGot := map[string][]*endpoint.Endpoint{
-			"Create":    got.Create,
-			"UpdateNew": got.UpdateNew,
-			"UpdateOld": got.UpdateOld,
-			"Delete":    got.Delete,
-		}
-		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
-	}
-	err := r.ApplyChanges(changes)
-	require.NoError(t, err)
-}
-
-/**
-
-helper methods
-
-*/
-
-func newEndpointWithOwner(dnsName, target, recordType, ownerID string) *endpoint.Endpoint {
-	e := endpoint.NewEndpoint(dnsName, target, recordType)
-	e.Labels[endpoint.OwnerLabelKey] = ownerID
-	return e
 }

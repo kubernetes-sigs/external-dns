@@ -22,7 +22,31 @@ import (
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/stretchr/testify/mock"
 )
+
+// MockProvider TODO
+type MockProvider struct {
+	mock.Mock
+}
+
+// ApplyChanges TODO
+func (m *MockProvider) Records() ([]*endpoint.Endpoint, error) {
+	args := m.Called()
+
+	endpoints := args.Get(0)
+	if endpoints == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).([]*endpoint.Endpoint), args.Error(1)
+}
+
+// ApplyChanges TODO
+func (m *MockProvider) ApplyChanges(changes *plan.Changes) error {
+	args := m.Called(changes)
+	return args.Error(0)
+}
 
 // Provider defines the interface DNS providers should implement.
 type Provider interface {
