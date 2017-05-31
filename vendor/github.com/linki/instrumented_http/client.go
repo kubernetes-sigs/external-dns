@@ -5,6 +5,7 @@ package instrumented_http
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -46,6 +47,11 @@ var (
 	EliminatingProcessor = func(_ string) string { return "" }
 	// IdentityProcessor is callback that returns whatever is passed to it.
 	IdentityProcessor = func(input string) string { return input }
+	// LastPathElementProcessor is callback that returns the last element of a URL path.
+	LastPathElementProcessor = func(path string) string {
+		parts := strings.Split(path, "/")
+		return parts[len(parts)-1]
+	}
 )
 
 // init registers the Prometheus metric globally when the package is loaded.

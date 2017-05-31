@@ -1,3 +1,68 @@
+Release v1.8.27 (2017-05-22)
+===
+
+### Service Client Updates
+* `aws/endpoints`: Updated Regions and Endpoints metadata.
+* `service/resourcegroupstaggingapi`: Updates service API, documentation, and paginators
+  * You can now specify the number of resources returned per page in GetResources operation, as an optional parameter, to easily manage the list of resources returned by your queries.
+
+### SDK Bugs
+* `aws/request`: Add support for PUT temporary redirects (307) [#1283](https://github.com/aws/aws-sdk-go/issues/1283)
+  * Adds support for Go 1.8's GetBody function allowing the SDK's http request using PUT and POST methods to be redirected with temporary redirects with 307 status code.
+  * Fixes: [#1267](https://github.com/aws/aws-sdk-go/issues/1267)
+* `aws/request`: Add handling for retrying temporary errors during unmarshal [#1289](https://github.com/aws/aws-sdk-go/issues/1289)
+  * Adds support for retrying temporary errors that occur during unmarshaling of a request's response body.
+  * Fixes: [#1275](https://github.com/aws/aws-sdk-go/issues/1275)
+Release v1.8.26 (2017-05-18)
+===
+
+### Service Client Updates
+* `service/athena`: Adds new service
+  * This release adds support for Amazon Athena. Amazon Athena is an interactive query service that makes it easy to analyze data in Amazon S3 using standard SQL. Athena is serverless, so there is no infrastructure to manage, and you pay only for the queries that you run.
+* `service/lightsail`: Updates service API, documentation, and paginators
+  * This release adds new APIs that make it easier to set network port configurations on Lightsail instances. Developers can now make a single request to both open and close public ports on an instance using the PutInstancePublicPorts operation.
+
+### SDK Bugs
+* `aws/request`: Fix logging from reporting wrong retry request errors #1281
+  * Fixes the SDK's retry request logging to report the the actual error that occurred, not a stubbed Unknown error message.
+  * Fixes the SDK's response logger to not output the response log multiple times per retry.
+Release v1.8.25 (2017-05-17)
+===
+
+### Service Client Updates
+* `service/autoscaling`: Updates service documentation, paginators, and examples
+  * Various Auto Scaling documentation updates
+* `service/cloudwatchevents`: Updates service documentation
+  * Various CloudWatch Events documentation updates.
+* `service/cloudwatchlogs`: Updates service documentation and paginators
+  * Various CloudWatch Logs documentation updates.
+* `service/polly`: Updates service API
+  * Amazon Polly adds new German voice "Vicki"
+
+Release v1.8.24 (2017-05-16)
+===
+
+### Service Client Updates
+* `service/codedeploy`: Updates service API and documentation
+  * This release introduces the previousRevision field in the responses to the GetDeployment and BatchGetDeployments actions. previousRevision provides information about the application revision that was deployed to the deployment group before the most recent successful deployment.  Also, the fileExistsBehavior parameter has been added for CreateDeployment action requests. In the past, if the AWS CodeDeploy agent detected files in a target location that weren't part of the application revision from the most recent successful deployment, it would fail the current deployment by default. This new parameter provides options for how the agent handles these files: fail the deployment, retain the content, or overwrite the content.
+* `service/gamelift`: Updates service API and documentation
+  * Allow developers to specify how metrics are grouped in CloudWatch for their GameLift fleets. Developers can also specify how many concurrent game sessions activate on a per-instance basis.
+* `service/inspector`: Updates service API, documentation, paginators, and examples
+  * Adds ability to produce an assessment report that includes detailed and comprehensive results of a specified assessment run.
+* `service/kms`: Updates service documentation
+  * Update documentation for KMS.
+
+Release v1.8.23 (2017-05-15)
+===
+
+### Service Client Updates
+* `service/ssm`: Updates service API and documentation
+  * UpdateAssociation API now supports updating document name and targets of an association. GetAutomationExecution API can return FailureDetails as an optional field to the StepExecution Object, which contains failure type, failure stage as well as other failure related information for a failed step.
+
+### SDK Enhancements
+* `aws/session`: SDK should be able to load multiple custom shared config files. [#1258](https://github.com/aws/aws-sdk-go/issues/1258)
+  * This change adds a `SharedConfigFiles` field to the `session.Options` type that allows you to specify the files, and their order, the SDK will use for loading shared configuration and credentials from when the `Session` is created. Use the `NewSessionWithOptions` Session constructor to specify these options. You'll also most likely want to enable support for the shared configuration file's additional attributes by setting `session.Option`'s `SharedConfigState` to `session.SharedConfigEnabled`. 
+
 Release v1.8.22 (2017-05-11)
 ===
 

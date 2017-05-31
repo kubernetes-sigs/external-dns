@@ -21,12 +21,12 @@ func ExampleResourceGroupsTaggingAPI_GetResources() {
 	svc := resourcegroupstaggingapi.New(sess)
 
 	params := &resourcegroupstaggingapi.GetResourcesInput{
-		TagsPerPage:     aws.Int64(1), // Required
 		PaginationToken: aws.String("PaginationToken"),
 		ResourceTypeFilters: []*string{
 			aws.String("AmazonResourceType"), // Required
 			// More values...
 		},
+		ResourcesPerPage: aws.Int64(1),
 		TagFilters: []*resourcegroupstaggingapi.TagFilter{
 			{ // Required
 				Key: aws.String("TagKey"),
@@ -37,6 +37,7 @@ func ExampleResourceGroupsTaggingAPI_GetResources() {
 			},
 			// More values...
 		},
+		TagsPerPage: aws.Int64(1),
 	}
 	resp, err := svc.GetResources(params)
 

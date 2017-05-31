@@ -21,10 +21,13 @@ import (
 	"testing"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
 	"github.com/kubernetes-incubator/external-dns/registry"
-	"github.com/kubernetes-incubator/external-dns/source"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // mockProvider returns mock endpoints and validates changes.
@@ -84,18 +87,17 @@ func newMockProvider(endpoints []*endpoint.Endpoint, changes *plan.Changes) prov
 // TestRunOnce tests that RunOnce correctly orchestrates the different components.
 func TestRunOnce(t *testing.T) {
 	// Fake some desired endpoints coming from our source.
-	source := source.NewMockSource(
-		[]*endpoint.Endpoint{
-			{
-				DNSName: "create-record",
-				Target:  "1.2.3.4",
-			},
-			{
-				DNSName: "update-record",
-				Target:  "8.8.4.4",
-			},
+	source := new(testutils.MockSource)
+	source.On("Endpoints").Return([]*endpoint.Endpoint{
+		{
+			DNSName: "create-record",
+			Target:  "1.2.3.4",
 		},
-	)
+		{
+			DNSName: "update-record",
+			Target:  "8.8.4.4",
+		},
+	}, nil)
 
 	// Fake some existing records in our DNS provider and validate some desired changes.
 	provider := newMockProvider(
@@ -125,7 +127,8 @@ func TestRunOnce(t *testing.T) {
 		},
 	)
 
-	r, _ := registry.NewNoopRegistry(provider)
+	r, err := registry.NewNoopRegistry(provider)
+	require.NoError(t, err)
 
 	// Run our controller once to trigger the validation.
 	ctrl := &Controller{
@@ -134,9 +137,8 @@ func TestRunOnce(t *testing.T) {
 		Policy:   &plan.SyncPolicy{},
 	}
 
-	err := ctrl.RunOnce()
+	assert.NoError(t, ctrl.RunOnce())
 
-	if err != nil {
-		t.Fatal(err)
-	}
+	// Validate that the mock source was called.
+	source.AssertExpectations(t)
 }
