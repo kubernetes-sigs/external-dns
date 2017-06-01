@@ -1,5 +1,5 @@
-hash: 364df913010040d3f77d2aea1f9baf036c811f6c19eba7225d952fff003ac3c8
-updated: 2017-03-16T17:04:23.523911071+01:00
+hash: baa06b531a3909632e344c83426d38281ff52e1223717cc78e59d21ffc0762a4
+updated: 2017-06-01T12:16:01.097685182+02:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -37,7 +37,7 @@ imports:
   - service/route53
   - service/sts
 - name: github.com/beorn7/perks
-  version: 3ac7bf7a47d159a033b107610db8a1b6575507a4
+  version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
   subpackages:
   - quantile
 - name: github.com/blang/semver
@@ -60,6 +60,8 @@ imports:
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
   subpackages:
   - spew
+- name: github.com/digitalocean/godo
+  version: 84099941ba2381607e1b05ffd4822781af86675e
 - name: github.com/docker/distribution
   version: cd27f179f2c10c5d300e6d09025b538c475b0d51
   subpackages:
@@ -73,7 +75,7 @@ imports:
 - name: github.com/ghodss/yaml
   version: 73d445a93680fa1a78ae23a5839bad48f32ba1ee
 - name: github.com/go-ini/ini
-  version: c437d20015c2ab6454b7a66a13109ff0fb99e17a
+  version: e7fea39b01aea8d5671f6858f0532f56e8bff3a5
 - name: github.com/go-openapi/jsonpointer
   version: 46af16f9f7b149af66e5d1bd010e3574dc06de98
 - name: github.com/go-openapi/jsonreference
@@ -93,6 +95,10 @@ imports:
   version: 8616e8ee5e20a1704615e6c8d7afcdac06087a67
   subpackages:
   - proto
+- name: github.com/google/go-querystring
+  version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
+  subpackages:
+  - query
 - name: github.com/google/gofuzz
   version: bbcb9da2d746f8bdbd6a936686a0a6067ada0ec5
 - name: github.com/google/uuid
@@ -127,7 +133,7 @@ imports:
   - prometheus
   - prometheus/promhttp
 - name: github.com/prometheus/client_model
-  version: fa8ad6fec33561be4280a8f0514318c79d7f6cb6
+  version: 6f3806018612930941127f2a7c6c453ba2c527d2
   subpackages:
   - go
 - name: github.com/prometheus/common
@@ -144,7 +150,9 @@ imports:
 - name: github.com/Sirupsen/logrus
   version: ba1b36c82c5e05c4f912a88eab0dcd91a171688f
 - name: github.com/spf13/pflag
-  version: 5ccb023bc27df288a957c5e994cd44fd19619465
+  version: 9ff6c6923cfffbcd502984b8e0c80539a94968b7
+- name: github.com/tent/http-link-go
+  version: ac974c61c2f990f4115b119354b5e0b47550e888
 - name: github.com/ugorji/go
   version: f1f1a805ed361a0e078bb537e4ea78cd37dcf065
   subpackages:
@@ -170,7 +178,7 @@ imports:
   - jws
   - jwt
 - name: golang.org/x/sys
-  version: 8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9
+  version: 7de4796419dc3b554e6dab3a119a62469569d299
   subpackages:
   - unix
 - name: golang.org/x/text

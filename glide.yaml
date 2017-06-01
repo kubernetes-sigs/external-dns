@@ -34,3 +34,5 @@ import:
   - pkg/api/v1
   - pkg/apis/extensions/v1beta1
   - tools/clientcmd
+- package: github.com/digitalocean/godo
+  version: ~1.0.0
