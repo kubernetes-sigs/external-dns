@@ -127,7 +127,7 @@ func main() {
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":
-		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTOwnerID)
+		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix)
 	default:
 		log.Fatalf("unknown registry: %s", cfg.Registry)
 	}

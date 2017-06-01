@@ -31,10 +31,12 @@ var Policies = map[string]Policy{
 	"upsert-only": &UpsertOnlyPolicy{},
 }
 
+// OwnershipPolicy disallows modifying endpoints that we don't own.
 type OwnershipPolicy struct {
 	Owner string
 }
 
+// Apply applies the ownership policy which strips out any endpoints that we don't own.
 func (p *OwnershipPolicy) Apply(changes *Changes) *Changes {
 	changes.Create = filterByOwner(p.Owner, changes.Create)
 	changes.UpdateOld = filterByOwner(p.Owner, changes.UpdateOld)

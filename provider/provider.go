@@ -25,12 +25,12 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockProvider TODO
+// MockProvider is a Provider that can be used to define and expect method calls.
 type MockProvider struct {
 	mock.Mock
 }
 
-// ApplyChanges TODO
+// Records tracks this method's invocation and returns fabricated records.
 func (m *MockProvider) Records() ([]*endpoint.Endpoint, error) {
 	args := m.Called()
 
@@ -42,7 +42,7 @@ func (m *MockProvider) Records() ([]*endpoint.Endpoint, error) {
 	return args.Get(0).([]*endpoint.Endpoint), args.Error(1)
 }
 
-// ApplyChanges TODO
+// ApplyChanges tracks this method's invocation and returns a fabricated result.
 func (m *MockProvider) ApplyChanges(changes *plan.Changes) error {
 	args := m.Called(changes)
 	return args.Error(0)

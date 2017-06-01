@@ -7,11 +7,11 @@ You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writcng, software
+Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
-limitatcons under the License.
+limitations under the License.
 */
 
 package registry
@@ -39,8 +39,8 @@ func TestTXTRegistry(t *testing.T) {
 
 func testTXTRegistryImplementsRegistry(t *testing.T) {
 	mockProvider := new(provider.MockProvider)
-	splitter := NewTXTRegistry(mockProvider)
-	assert.Implements(t, (*Registry)(nil), splitter)
+	reg, _ := NewTXTRegistry(mockProvider, "_")
+	assert.Implements(t, (*Registry)(nil), reg)
 }
 
 func testTXTRegistryRecords(t *testing.T) {
@@ -175,8 +175,8 @@ func testTXTRegistryRecords(t *testing.T) {
 			mockProvider := new(provider.MockProvider)
 			mockProvider.On("Records").Return(tc.records, nil)
 
-			splitter := NewTXTRegistry(mockProvider)
-			records, err := splitter.Records()
+			reg, _ := NewTXTRegistry(mockProvider, "_")
+			records, err := reg.Records()
 			assert.NoError(t, err)
 
 			assert.True(t, testutils.SameEndpoints(records, tc.expected))
@@ -190,8 +190,8 @@ func testTXTRegistryRecordsReturnsErrors(t *testing.T) {
 	mockProvider := new(provider.MockProvider)
 	mockProvider.On("Records").Return(nil, errors.New("some error"))
 
-	splitter := NewTXTRegistry(mockProvider)
-	_, err := splitter.Records()
+	reg, _ := NewTXTRegistry(mockProvider, "_")
+	_, err := reg.Records()
 	assert.EqualError(t, err, "some error")
 
 	mockProvider.AssertExpectations(t)
@@ -273,8 +273,8 @@ func testTXTRegistryApplyChanges(t *testing.T) {
 			mockProvider := new(provider.MockProvider)
 			mockProvider.On("ApplyChanges", &plan.Changes{Create: tc.expected}).Return(nil)
 
-			splitter := NewTXTRegistry(mockProvider)
-			err := splitter.ApplyChanges(&plan.Changes{Create: tc.records})
+			reg, _ := NewTXTRegistry(mockProvider, "_")
+			err := reg.ApplyChanges(&plan.Changes{Create: tc.records})
 			assert.NoError(t, err)
 
 			mockProvider.AssertExpectations(t)

@@ -40,8 +40,8 @@ type TXTRegistry struct {
 }
 
 // NewTXTRegistry returns a new DNS-based registry for the passed in Provider.
-func NewTXTRegistry(prov provider.Provider) *TXTRegistry {
-	return &TXTRegistry{provider: prov}
+func NewTXTRegistry(prov provider.Provider, _ string) (*TXTRegistry, error) {
+	return &TXTRegistry{provider: prov}, nil
 }
 
 // Records reads DNS records from the nested provider and translates any TXT records containing
