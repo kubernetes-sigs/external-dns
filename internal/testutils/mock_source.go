@@ -14,21 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package source
+package testutils
 
-import "github.com/kubernetes-incubator/external-dns/endpoint"
+import (
+	"github.com/stretchr/testify/mock"
 
-// mockSource returns mock endpoints.
-type mockSource struct {
-	store []*endpoint.Endpoint
-}
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+)
 
-// NewMockSource creates a new mockSource returning the given endpoints.
-func NewMockSource(endpoints []*endpoint.Endpoint) Source {
-	return &mockSource{store: endpoints}
+// MockSource returns mock endpoints.
+type MockSource struct {
+	mock.Mock
 }
 
 // Endpoints returns the desired mock endpoints.
-func (s *mockSource) Endpoints() ([]*endpoint.Endpoint, error) {
-	return s.store, nil
+func (m *MockSource) Endpoints() ([]*endpoint.Endpoint, error) {
+	args := m.Called()
+
+	endpoints := args.Get(0)
+	if endpoints == nil {
+		return nil, args.Error(1)
+	}
+
+	return endpoints.([]*endpoint.Endpoint), args.Error(1)
 }

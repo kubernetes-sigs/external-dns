@@ -44,9 +44,9 @@ func (c *BaseController) Run() error {
 	}
 
 	plan := &plan.Plan{
-		Policy:  c.config.Policy,
-		Current: records,
-		Desired: endpoints,
+		Policies: []plan.Policy{c.config.Policy},
+		Current:  records,
+		Desired:  endpoints,
 	}
 
 	plan = plan.Calculate()

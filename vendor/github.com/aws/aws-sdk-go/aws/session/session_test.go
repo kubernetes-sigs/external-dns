@@ -178,6 +178,29 @@ func TestNewSessionWithOptions_OverrideSharedConfigDisable(t *testing.T) {
 	assert.Contains(t, creds.ProviderName, "SharedConfigCredentials")
 }
 
+func TestNewSessionWithOptions_OverrideSharedConfigFiles(t *testing.T) {
+	oldEnv := initSessionTestEnv()
+	defer popEnv(oldEnv)
+
+	os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
+	os.Setenv("AWS_SHARED_CREDENTIALS_FILE", testConfigFilename)
+	os.Setenv("AWS_PROFILE", "config_file_load_order")
+
+	s, err := NewSessionWithOptions(Options{
+		SharedConfigFiles: []string{testConfigOtherFilename},
+	})
+	assert.NoError(t, err)
+
+	assert.Equal(t, "shared_config_other_region", *s.Config.Region)
+
+	creds, err := s.Config.Credentials.Get()
+	assert.NoError(t, err)
+	assert.Equal(t, "shared_config_other_akid", creds.AccessKeyID)
+	assert.Equal(t, "shared_config_other_secret", creds.SecretAccessKey)
+	assert.Empty(t, creds.SessionToken)
+	assert.Contains(t, creds.ProviderName, "SharedConfigCredentials")
+}
+
 func TestNewSessionWithOptions_Overrides(t *testing.T) {
 	cases := []struct {
 		InEnvs    map[string]string

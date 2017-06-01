@@ -28,8 +28,8 @@ type Plan struct {
 	Current []*endpoint.Endpoint
 	// List of desired records
 	Desired []*endpoint.Endpoint
-	// Policy under which the desired changes are calculated
-	Policy Policy
+	// Policies under which the desired changes are calculated
+	Policies []Policy
 	// List of changes necessary to move towards desired state
 	// Populated after calling Calculate()
 	Changes *Changes
@@ -86,8 +86,10 @@ func (p *Plan) Calculate() *Plan {
 		}
 	}
 
-	// Apply policy to list of changes.
-	changes = p.Policy.Apply(changes)
+	// Apply policies to list of changes.
+	for _, pol := range p.Policies {
+		changes = pol.Apply(changes)
+	}
 
 	plan := &Plan{
 		Current: p.Current,

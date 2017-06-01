@@ -93,12 +93,18 @@ func ExampleGameLift_CreateFleet() {
 			aws.String("NonZeroAndMaxString"), // Required
 			// More values...
 		},
+		MetricGroups: []*string{
+			aws.String("MetricGroup"), // Required
+			// More values...
+		},
 		NewGameSessionProtectionPolicy: aws.String("ProtectionPolicy"),
 		ResourceCreationLimitPolicy: &gamelift.ResourceCreationLimitPolicy{
 			NewGameSessionsPerCreator: aws.Int64(1),
 			PolicyPeriodInMinutes:     aws.Int64(1),
 		},
 		RuntimeConfiguration: &gamelift.RuntimeConfiguration{
+			GameSessionActivationTimeoutSeconds: aws.Int64(1),
+			MaxConcurrentGameSessionActivations: aws.Int64(1),
 			ServerProcesses: []*gamelift.ServerProcess{
 				{ // Required
 					ConcurrentExecutions: aws.Int64(1),                      // Required
@@ -1067,7 +1073,11 @@ func ExampleGameLift_UpdateFleetAttributes() {
 	params := &gamelift.UpdateFleetAttributesInput{
 		FleetId:     aws.String("FleetId"), // Required
 		Description: aws.String("NonZeroAndMaxString"),
-		Name:        aws.String("NonZeroAndMaxString"),
+		MetricGroups: []*string{
+			aws.String("MetricGroup"), // Required
+			// More values...
+		},
+		Name: aws.String("NonZeroAndMaxString"),
 		NewGameSessionProtectionPolicy: aws.String("ProtectionPolicy"),
 		ResourceCreationLimitPolicy: &gamelift.ResourceCreationLimitPolicy{
 			NewGameSessionsPerCreator: aws.Int64(1),
@@ -1218,6 +1228,8 @@ func ExampleGameLift_UpdateRuntimeConfiguration() {
 	params := &gamelift.UpdateRuntimeConfigurationInput{
 		FleetId: aws.String("FleetId"), // Required
 		RuntimeConfiguration: &gamelift.RuntimeConfiguration{ // Required
+			GameSessionActivationTimeoutSeconds: aws.Int64(1),
+			MaxConcurrentGameSessionActivations: aws.Int64(1),
 			ServerProcesses: []*gamelift.ServerProcess{
 				{ // Required
 					ConcurrentExecutions: aws.Int64(1),                      // Required

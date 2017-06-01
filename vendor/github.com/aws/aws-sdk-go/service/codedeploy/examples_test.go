@@ -265,6 +265,7 @@ func ExampleCodeDeploy_CreateDeployment() {
 		DeploymentConfigName:          aws.String("DeploymentConfigName"),
 		DeploymentGroupName:           aws.String("DeploymentGroupName"),
 		Description:                   aws.String("Description"),
+		FileExistsBehavior:            aws.String("FileExistsBehavior"),
 		IgnoreApplicationStopFailures: aws.Bool(true),
 		Revision: &codedeploy.RevisionLocation{
 			GitHubLocation: &codedeploy.GitHubLocation{
