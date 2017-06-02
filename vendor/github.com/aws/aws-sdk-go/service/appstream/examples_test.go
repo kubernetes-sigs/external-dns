@@ -55,7 +55,7 @@ func ExampleAppStream_CreateFleet() {
 		EnableDefaultInternetAccess: aws.Bool(true),
 		MaxUserDurationInSeconds:    aws.Int64(1),
 		VpcConfig: &appstream.VpcConfig{
-			SubnetIds: []*string{ // Required
+			SubnetIds: []*string{
 				aws.String("String"), // Required
 				// More values...
 			},
@@ -83,6 +83,13 @@ func ExampleAppStream_CreateStack() {
 		Name:        aws.String("String"), // Required
 		Description: aws.String("Description"),
 		DisplayName: aws.String("DisplayName"),
+		StorageConnectors: []*appstream.StorageConnector{
+			{ // Required
+				ConnectorType:      aws.String("StorageConnectorType"), // Required
+				ResourceIdentifier: aws.String("ResourceIdentifier"),
+			},
+			// More values...
+		},
 	}
 	resp, err := svc.CreateStack(params)
 
@@ -413,7 +420,7 @@ func ExampleAppStream_UpdateFleet() {
 		InstanceType:                aws.String("String"),
 		MaxUserDurationInSeconds:    aws.Int64(1),
 		VpcConfig: &appstream.VpcConfig{
-			SubnetIds: []*string{ // Required
+			SubnetIds: []*string{
 				aws.String("String"), // Required
 				// More values...
 			},
@@ -438,9 +445,17 @@ func ExampleAppStream_UpdateStack() {
 	svc := appstream.New(sess)
 
 	params := &appstream.UpdateStackInput{
-		Name:        aws.String("String"), // Required
-		Description: aws.String("Description"),
-		DisplayName: aws.String("DisplayName"),
+		Name: aws.String("String"), // Required
+		DeleteStorageConnectors: aws.Bool(true),
+		Description:             aws.String("Description"),
+		DisplayName:             aws.String("DisplayName"),
+		StorageConnectors: []*appstream.StorageConnector{
+			{ // Required
+				ConnectorType:      aws.String("StorageConnectorType"), // Required
+				ResourceIdentifier: aws.String("ResourceIdentifier"),
+			},
+			// More values...
+		},
 	}
 	resp, err := svc.UpdateStack(params)
 

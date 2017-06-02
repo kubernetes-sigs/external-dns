@@ -55,25 +55,33 @@ func (c *Rekognition) CompareFacesRequest(input *CompareFacesInput) (req *reques
 // target input image.
 //
 // If the source image contains multiple faces, the service detects the largest
-// face and uses it to compare with each face detected in the target image.
+// face and compares it with each face detected in the target image.
 //
 // In response, the operation returns an array of face matches ordered by similarity
-// score with the highest similarity scores first. For each face match, the
-// response provides a bounding box of the face and confidence value (indicating
-// the level of confidence that the bounding box contains a face). The response
-// also provides a similarity score, which indicates how closely the faces match.
+// score in descending order. For each face match, the response provides a bounding
+// box of the face, facial landmarks, pose details (pitch, role, and yaw), quality
+// (brightness and sharpness), and confidence value (indicating the level of
+// confidence that the bounding box contains a face). The response also provides
+// a similarity score, which indicates how closely the faces match.
 //
-// By default, only faces with the similarity score of greater than or equal
-// to 80% are returned in the response. You can change this value.
+// By default, only faces with a similarity score of greater than or equal to
+// 80% are returned in the response. You can change this value by specifying
+// the SimilarityThreshold parameter.
 //
-// In addition to the face matches, the response returns information about the
-// face in the source image, including the bounding box of the face and confidence
+// CompareFaces also returns an array of faces that don't match the source image.
+// For each face, it returns a bounding box, confidence value, landmarks, pose
+// details, and quality. The response also returns information about the face
+// in the source image, including the bounding box of the face and confidence
 // value.
 //
-// This is a stateless API operation. That is, the operation does not persist
-// any data.
+// If the image doesn't contain Exif metadata, CompareFaces returns orientation
+// information for the source and target images. Use these values to display
+// the images with the correct image orientation.
 //
-// For an example, see get-started-exercise-compare-faces
+// This is a stateless API operation. That is, data returned by this operation
+// doesn't persist.
+//
+// For an example, see get-started-exercise-compare-faces.
 //
 // This operation requires permissions to perform the rekognition:CompareFaces
 // action.
@@ -185,6 +193,8 @@ func (c *Rekognition) CreateCollectionRequest(input *CreateCollectionInput) (req
 // users. A user can then index faces using the IndexFaces operation and persist
 // results in a specific collection. Then, a user can search the collection
 // for faces in the user-specific container.
+//
+// Collection names are case-sensitive.
 //
 // For an example, see example1.
 //
@@ -748,7 +758,7 @@ func (c *Rekognition) DetectModerationLabelsRequest(input *DetectModerationLabel
 
 // DetectModerationLabels API operation for Amazon Rekognition.
 //
-// Detects explicit or suggestive adult content in a specified .jpeg or .png
+// Detects explicit or suggestive adult content in a specified JPEG or PNG format
 // image. Use DetectModerationLabels to moderate images depending on your requirements.
 // For example, you might want to filter images that contain nudity, but not
 // images containing suggestive content.
@@ -1651,15 +1661,16 @@ func (s *BoundingBox) SetWidth(v float64) *BoundingBox {
 type CompareFacesInput struct {
 	_ struct{} `type:"structure"`
 
-	// The minimum level of confidence in the match you want included in the result.
+	// The minimum level of confidence in the face matches that a match must meet
+	// to be included in the FaceMatches array.
 	SimilarityThreshold *float64 `type:"float"`
 
-	// Source image either as bytes or an S3 object
+	// The source image, either as bytes or as an S3 object.
 	//
 	// SourceImage is a required field
 	SourceImage *Image `type:"structure" required:"true"`
 
-	// Target image either as bytes or an S3 object
+	// The target image, either as bytes or as an S3 object.
 	//
 	// TargetImage is a required field
 	TargetImage *Image `type:"structure" required:"true"`
@@ -1719,9 +1730,10 @@ func (s *CompareFacesInput) SetTargetImage(v *Image) *CompareFacesInput {
 	return s
 }
 
-// For the provided the bounding box, confidence level that the bounding box
-// actually contains a face, and the similarity between the face in the bounding
-// box and the face in the source image.
+// Provides information about a face in a target image that matches the source
+// image face analysed by CompareFaces. The Face property contains the bounding
+// box of the face in the target image. The Similarity property is the confidence
+// that the source image face matches the face in the bounding box.
 type CompareFacesMatch struct {
 	_ struct{} `type:"structure"`
 
@@ -1758,13 +1770,45 @@ func (s *CompareFacesMatch) SetSimilarity(v float64) *CompareFacesMatch {
 type CompareFacesOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Provides an array of CompareFacesMatch objects. Each object provides the
-	// bounding box, confidence that the bounding box contains a face, and the similarity
-	// between the face in the bounding box and the face in the source image.
+	// An array of faces in the target image that match the source image face. Each
+	// CompareFacesMatch object provides the bounding box, the confidence level
+	// that the bounding box contains a face, and the similarity score for the face
+	// in the bounding box and the face in the source image.
 	FaceMatches []*CompareFacesMatch `type:"list"`
 
-	// The face from the source image that was used for comparison.
+	// The face in the source image that was used for comparison.
 	SourceImageFace *ComparedSourceImageFace `type:"structure"`
+
+	// The orientation of the source image (counterclockwise direction). If your
+	// application displays the source image, you can use this value to correct
+	// image orientation. The bounding box coordinates returned in SourceImageFace
+	// represent the location of the face before the image orientation is corrected.
+	//
+	// If the source image is in .jpeg format, it might contain exchangeable image
+	// (Exif) metadata that includes the image's orientation. If the Exif metadata
+	// for the source image populates the orientation field, the value of OrientationCorrection
+	// is nil and the SourceImageFace bounding box coordinates represent the location
+	// of the face after Exif metadata is used to correct the orientation. Images
+	// in .png format don't contain Exif metadata.
+	SourceImageOrientationCorrection *string `type:"string" enum:"OrientationCorrection"`
+
+	// The orientation of the target image (in counterclockwise direction). If your
+	// application displays the target image, you can use this value to correct
+	// the orientation of the image. The bounding box coordinates returned in FaceMatches
+	// and UnmatchedFaces represent face locations before the image orientation
+	// is corrected.
+	//
+	// If the target image is in .jpg format, it might contain Exif metadata that
+	// includes the orientation of the image. If the Exif metadata for the target
+	// image populates the orientation field, the value of OrientationCorrection
+	// is nil and the bounding box coordinates in FaceMatches and UnmatchedFaces
+	// represent the location of the face after Exif metadata is used to correct
+	// the orientation. Images in .png format don't contain Exif metadata.
+	TargetImageOrientationCorrection *string `type:"string" enum:"OrientationCorrection"`
+
+	// An array of faces in the target image that did not match the source image
+	// face.
+	UnmatchedFaces []*ComparedFace `type:"list"`
 }
 
 // String returns the string representation
@@ -1789,8 +1833,25 @@ func (s *CompareFacesOutput) SetSourceImageFace(v *ComparedSourceImageFace) *Com
 	return s
 }
 
-// Provides face metadata (bounding box and confidence that the bounding box
-// actually contains a face).
+// SetSourceImageOrientationCorrection sets the SourceImageOrientationCorrection field's value.
+func (s *CompareFacesOutput) SetSourceImageOrientationCorrection(v string) *CompareFacesOutput {
+	s.SourceImageOrientationCorrection = &v
+	return s
+}
+
+// SetTargetImageOrientationCorrection sets the TargetImageOrientationCorrection field's value.
+func (s *CompareFacesOutput) SetTargetImageOrientationCorrection(v string) *CompareFacesOutput {
+	s.TargetImageOrientationCorrection = &v
+	return s
+}
+
+// SetUnmatchedFaces sets the UnmatchedFaces field's value.
+func (s *CompareFacesOutput) SetUnmatchedFaces(v []*ComparedFace) *CompareFacesOutput {
+	s.UnmatchedFaces = v
+	return s
+}
+
+// Provides face metadata for target image faces that are analysed by CompareFaces.
 type ComparedFace struct {
 	_ struct{} `type:"structure"`
 
@@ -1818,6 +1879,15 @@ type ComparedFace struct {
 
 	// Level of confidence that what the bounding box contains is a face.
 	Confidence *float64 `type:"float"`
+
+	// An array of facial landmarks.
+	Landmarks []*Landmark `type:"list"`
+
+	// Indicates the pose of the face as determined by its pitch, roll, and yaw.
+	Pose *Pose `type:"structure"`
+
+	// Identifies face image brightness and sharpness.
+	Quality *ImageQuality `type:"structure"`
 }
 
 // String returns the string representation
@@ -1839,6 +1909,24 @@ func (s *ComparedFace) SetBoundingBox(v *BoundingBox) *ComparedFace {
 // SetConfidence sets the Confidence field's value.
 func (s *ComparedFace) SetConfidence(v float64) *ComparedFace {
 	s.Confidence = &v
+	return s
+}
+
+// SetLandmarks sets the Landmarks field's value.
+func (s *ComparedFace) SetLandmarks(v []*Landmark) *ComparedFace {
+	s.Landmarks = v
+	return s
+}
+
+// SetPose sets the Pose field's value.
+func (s *ComparedFace) SetPose(v *Pose) *ComparedFace {
+	s.Pose = v
+	return s
+}
+
+// SetQuality sets the Quality field's value.
+func (s *ComparedFace) SetQuality(v *ImageQuality) *ComparedFace {
+	s.Quality = v
 	return s
 }
 
@@ -2119,7 +2207,7 @@ func (s *DeleteFacesOutput) SetDeletedFaces(v []*string) *DeleteFacesOutput {
 type DetectFacesInput struct {
 	_ struct{} `type:"structure"`
 
-	// A list of facial attributes you want to be returned. This can be the default
+	// An array of facial attributes you want to be returned. This can be the default
 	// list of attributes or all attributes. If you don't specify a value for Attributes
 	// or if you specify ["DEFAULT"], the API returns the following subset of facial
 	// attributes: BoundingBox, Confidence, Pose, Quality and Landmarks. If you
@@ -2183,18 +2271,17 @@ type DetectFacesOutput struct {
 	// Details of each face found in the image.
 	FaceDetails []*FaceDetail `type:"list"`
 
-	// The algorithm detects the image orientation. If it detects that the image
-	// was rotated, it returns the degrees of rotation. If your application is displaying
-	// the image, you can use this value to adjust the orientation.
+	// The orientation of the input image (counter-clockwise direction). If your
+	// application displays the image, you can use this value to correct image orientation.
+	// The bounding box coordinates returned in FaceDetails represent face locations
+	// before the image orientation is corrected.
 	//
-	// For example, if the service detects that the input image was rotated by 90
-	// degrees, it corrects orientation, performs face detection, and then returns
-	// the faces. That is, the bounding box coordinates in the response are based
-	// on the corrected orientation.
-	//
-	// If the source image Exif metadata populates the orientation field, Amazon
-	// Rekognition does not perform orientation correction and the value of OrientationCorrection
-	// will be nil.
+	// If the source image is in .jpeg format, it might contain exchangeable image
+	// (Exif) metadata that includes the image's orientation. If so, and the Exif
+	// metadata for the source image populates the orientation field, the value
+	// of OrientationCorrection is nil and the FaceDetails bounding box coordinates
+	// represent face locations after Exif metadata is used to correct the image
+	// orientation. Images in .png format don't contain Exif metadata.
 	OrientationCorrection *string `type:"string" enum:"OrientationCorrection"`
 }
 
@@ -2292,11 +2379,10 @@ type DetectLabelsOutput struct {
 	// An array of labels for the real-world objects detected.
 	Labels []*Label `type:"list"`
 
-	// Amazon Rekognition returns the orientation of the input image that was detected
-	// (clockwise direction). If your application displays the image, you can use
-	// this value to correct the orientation. If Amazon Rekognition detects that
-	// the input image was rotated (for example, by 90 degrees), it first corrects
-	// the orientation before detecting the labels.
+	// The orientation of the input image (counter-clockwise direction). If your
+	// application displays the image, you can use this value to correct the orientation.
+	// If Amazon Rekognition detects that the input image was rotated (for example,
+	// by 90 degrees), it first corrects the orientation before detecting the labels.
 	//
 	// If the source image Exif metadata populates the orientation field, Amazon
 	// Rekognition does not perform orientation correction and the value of OrientationCorrection
@@ -2331,12 +2417,19 @@ type DetectModerationLabelsInput struct {
 
 	// Provides the source image either as bytes or an S3 object.
 	//
+	// You pass image bytes to a Rekognition API operation by using the Bytes property.
+	// For example, you would use the Bytes property to pass an image loaded from
+	// a local file system. Image bytes passed by using the Bytes property must
+	// be base64-encoded. Your code may not need to encode image bytes if you are
+	// using an AWS SDK to call Rekognition API operations. For more information,
+	// see example4.
+	//
+	// You pass images stored in an S3 bucket to a Rekognition API operation by
+	// using the S3Object property. Images stored in an S3 bucket do not need to
+	// be base64-encoded.
+	//
 	// The region for the S3 bucket containing the S3 object must match the region
 	// you use for Amazon Rekognition operations.
-	//
-	// You may need to Base64-encode the image bytes depending on the language you
-	// are using and whether or not you are using the AWS SDK. For more information,
-	// see example4.
 	//
 	// If you use the Amazon CLI to call Amazon Rekognition operations, passing
 	// image bytes using the Bytes property is not supported. You must first upload
@@ -2401,9 +2494,9 @@ func (s *DetectModerationLabelsInput) SetMinConfidence(v float64) *DetectModerat
 type DetectModerationLabelsOutput struct {
 	_ struct{} `type:"structure"`
 
-	// A list of labels for explicit or suggestive adult content found in the image.
-	// The list includes the top-level label and each child label detected in the
-	// image. This is useful for filtering specific categories of content.
+	// An array of labels for explicit or suggestive adult content found in the
+	// image. The list includes the top-level label and each child label detected
+	// in the image. This is useful for filtering specific categories of content.
 	ModerationLabels []*ModerationLabel `type:"list"`
 }
 
@@ -2640,7 +2733,7 @@ type FaceDetail struct {
 	// Gender of the face and the confidence level in the determination.
 	Gender *Gender `type:"structure"`
 
-	// Indicates the location of the landmark on the face.
+	// Indicates the location of landmarks on the face.
 	Landmarks []*Landmark `type:"list"`
 
 	// Indicates whether or not the mouth on the face is open, and the confidence
@@ -2651,7 +2744,7 @@ type FaceDetail struct {
 	// in the determination.
 	Mustache *Mustache `type:"structure"`
 
-	// Indicates the pose of the face as determined by pitch, roll, and the yaw.
+	// Indicates the pose of the face as determined by its pitch, roll, and yaw.
 	Pose *Pose `type:"structure"`
 
 	// Identifies image brightness and sharpness.
@@ -2871,12 +2964,19 @@ func (s *Gender) SetValue(v string) *Gender {
 
 // Provides the source image either as bytes or an S3 object.
 //
+// You pass image bytes to a Rekognition API operation by using the Bytes property.
+// For example, you would use the Bytes property to pass an image loaded from
+// a local file system. Image bytes passed by using the Bytes property must
+// be base64-encoded. Your code may not need to encode image bytes if you are
+// using an AWS SDK to call Rekognition API operations. For more information,
+// see example4.
+//
+// You pass images stored in an S3 bucket to a Rekognition API operation by
+// using the S3Object property. Images stored in an S3 bucket do not need to
+// be base64-encoded.
+//
 // The region for the S3 bucket containing the S3 object must match the region
 // you use for Amazon Rekognition operations.
-//
-// You may need to Base64-encode the image bytes depending on the language you
-// are using and whether or not you are using the AWS SDK. For more information,
-// see example4.
 //
 // If you use the Amazon CLI to call Amazon Rekognition operations, passing
 // image bytes using the Bytes property is not supported. You must first upload
@@ -2981,7 +3081,7 @@ type IndexFacesInput struct {
 	// CollectionId is a required field
 	CollectionId *string `min:"1" type:"string" required:"true"`
 
-	// A list of facial attributes that you want to be returned. This can be the
+	// An array of facial attributes that you want to be returned. This can be the
 	// default list of attributes or all attributes. If you don't specify a value
 	// for Attributes or if you specify ["DEFAULT"], the API returns the following
 	// subset of facial attributes: BoundingBox, Confidence, Pose, Quality and Landmarks.
@@ -2997,12 +3097,19 @@ type IndexFacesInput struct {
 
 	// Provides the source image either as bytes or an S3 object.
 	//
+	// You pass image bytes to a Rekognition API operation by using the Bytes property.
+	// For example, you would use the Bytes property to pass an image loaded from
+	// a local file system. Image bytes passed by using the Bytes property must
+	// be base64-encoded. Your code may not need to encode image bytes if you are
+	// using an AWS SDK to call Rekognition API operations. For more information,
+	// see example4.
+	//
+	// You pass images stored in an S3 bucket to a Rekognition API operation by
+	// using the S3Object property. Images stored in an S3 bucket do not need to
+	// be base64-encoded.
+	//
 	// The region for the S3 bucket containing the S3 object must match the region
 	// you use for Amazon Rekognition operations.
-	//
-	// You may need to Base64-encode the image bytes depending on the language you
-	// are using and whether or not you are using the AWS SDK. For more information,
-	// see example4.
 	//
 	// If you use the Amazon CLI to call Amazon Rekognition operations, passing
 	// image bytes using the Bytes property is not supported. You must first upload
@@ -3084,14 +3191,16 @@ type IndexFacesOutput struct {
 	// see howitworks-index-faces.
 	FaceRecords []*FaceRecord `type:"list"`
 
-	// The algorithm detects the image orientation. If it detects that the image
-	// was rotated, it returns the degree of rotation. You can use this value to
-	// correct the orientation and also appropriately analyze the bounding box coordinates
-	// that are returned.
+	// The orientation of the input image (counterclockwise direction). If your
+	// application displays the image, you can use this value to correct image orientation.
+	// The bounding box coordinates returned in FaceRecords represent face locations
+	// before the image orientation is corrected.
 	//
-	// If the source image Exif metadata populates the orientation field, Amazon
-	// Rekognition does not perform orientation correction and the value of OrientationCorrection
-	// will be nil.
+	// If the source image is in jpeg format, it might contain exchangeable image
+	// (Exif) metadata. If so, and the Exif metadata populates the orientation field,
+	// the value of OrientationCorrection is nil and the bounding box coordinates
+	// in FaceRecords represent face locations after Exif metadata is used to correct
+	// the image orientation. Images in .png format don't contain Exif metadata.
 	OrientationCorrection *string `type:"string" enum:"OrientationCorrection"`
 }
 
@@ -3474,7 +3583,7 @@ func (s *Mustache) SetValue(v bool) *Mustache {
 	return s
 }
 
-// Indicates the pose of the face as determined by pitch, roll, and the yaw.
+// Indicates the pose of the face as determined by its pitch, roll, and yaw.
 type Pose struct {
 	_ struct{} `type:"structure"`
 
@@ -3598,12 +3707,19 @@ type SearchFacesByImageInput struct {
 
 	// Provides the source image either as bytes or an S3 object.
 	//
+	// You pass image bytes to a Rekognition API operation by using the Bytes property.
+	// For example, you would use the Bytes property to pass an image loaded from
+	// a local file system. Image bytes passed by using the Bytes property must
+	// be base64-encoded. Your code may not need to encode image bytes if you are
+	// using an AWS SDK to call Rekognition API operations. For more information,
+	// see example4.
+	//
+	// You pass images stored in an S3 bucket to a Rekognition API operation by
+	// using the S3Object property. Images stored in an S3 bucket do not need to
+	// be base64-encoded.
+	//
 	// The region for the S3 bucket containing the S3 object must match the region
 	// you use for Amazon Rekognition operations.
-	//
-	// You may need to Base64-encode the image bytes depending on the language you
-	// are using and whether or not you are using the AWS SDK. For more information,
-	// see example4.
 	//
 	// If you use the Amazon CLI to call Amazon Rekognition operations, passing
 	// image bytes using the Bytes property is not supported. You must first upload

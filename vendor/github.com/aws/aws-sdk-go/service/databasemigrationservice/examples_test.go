@@ -49,17 +49,42 @@ func ExampleDatabaseMigrationService_CreateEndpoint() {
 	svc := databasemigrationservice.New(sess)
 
 	params := &databasemigrationservice.CreateEndpointInput{
-		EndpointIdentifier:        aws.String("String"),                       // Required
-		EndpointType:              aws.String("ReplicationEndpointTypeValue"), // Required
-		EngineName:                aws.String("String"),                       // Required
-		CertificateArn:            aws.String("String"),
-		DatabaseName:              aws.String("String"),
+		EndpointIdentifier: aws.String("String"),                       // Required
+		EndpointType:       aws.String("ReplicationEndpointTypeValue"), // Required
+		EngineName:         aws.String("String"),                       // Required
+		CertificateArn:     aws.String("String"),
+		DatabaseName:       aws.String("String"),
+		DynamoDbSettings: &databasemigrationservice.DynamoDbSettings{
+			ServiceAccessRoleArn: aws.String("String"), // Required
+		},
 		ExtraConnectionAttributes: aws.String("String"),
 		KmsKeyId:                  aws.String("String"),
-		Password:                  aws.String("SecretString"),
-		Port:                      aws.Int64(1),
-		ServerName:                aws.String("String"),
-		SslMode:                   aws.String("DmsSslModeValue"),
+		MongoDbSettings: &databasemigrationservice.MongoDbSettings{
+			AuthMechanism:     aws.String("AuthMechanismValue"),
+			AuthSource:        aws.String("String"),
+			AuthType:          aws.String("AuthTypeValue"),
+			DatabaseName:      aws.String("String"),
+			DocsToInvestigate: aws.String("String"),
+			ExtractDocId:      aws.String("String"),
+			NestingLevel:      aws.String("NestingLevelValue"),
+			Password:          aws.String("SecretString"),
+			Port:              aws.Int64(1),
+			ServerName:        aws.String("String"),
+			Username:          aws.String("String"),
+		},
+		Password: aws.String("SecretString"),
+		Port:     aws.Int64(1),
+		S3Settings: &databasemigrationservice.S3Settings{
+			BucketFolder:            aws.String("String"),
+			BucketName:              aws.String("String"),
+			CompressionType:         aws.String("CompressionTypeValue"),
+			CsvDelimiter:            aws.String("String"),
+			CsvRowDelimiter:         aws.String("String"),
+			ExternalTableDefinition: aws.String("String"),
+			ServiceAccessRoleArn:    aws.String("String"),
+		},
+		ServerName: aws.String("String"),
+		SslMode:    aws.String("DmsSslModeValue"),
 		Tags: []*databasemigrationservice.Tag{
 			{ // Required
 				Key:   aws.String("String"),
@@ -70,6 +95,45 @@ func ExampleDatabaseMigrationService_CreateEndpoint() {
 		Username: aws.String("String"),
 	}
 	resp, err := svc.CreateEndpoint(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleDatabaseMigrationService_CreateEventSubscription() {
+	sess := session.Must(session.NewSession())
+
+	svc := databasemigrationservice.New(sess)
+
+	params := &databasemigrationservice.CreateEventSubscriptionInput{
+		SnsTopicArn:      aws.String("String"), // Required
+		SubscriptionName: aws.String("String"), // Required
+		Enabled:          aws.Bool(true),
+		EventCategories: []*string{
+			aws.String("String"), // Required
+			// More values...
+		},
+		SourceIds: []*string{
+			aws.String("String"), // Required
+			// More values...
+		},
+		SourceType: aws.String("String"),
+		Tags: []*databasemigrationservice.Tag{
+			{ // Required
+				Key:   aws.String("String"),
+				Value: aws.String("String"),
+			},
+			// More values...
+		},
+	}
+	resp, err := svc.CreateEventSubscription(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and
@@ -222,6 +286,27 @@ func ExampleDatabaseMigrationService_DeleteEndpoint() {
 		EndpointArn: aws.String("String"), // Required
 	}
 	resp, err := svc.DeleteEndpoint(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleDatabaseMigrationService_DeleteEventSubscription() {
+	sess := session.Must(session.NewSession())
+
+	svc := databasemigrationservice.New(sess)
+
+	params := &databasemigrationservice.DeleteEventSubscriptionInput{
+		SubscriptionName: aws.String("String"), // Required
+	}
+	resp, err := svc.DeleteEventSubscription(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and
@@ -432,6 +517,111 @@ func ExampleDatabaseMigrationService_DescribeEndpoints() {
 		MaxRecords: aws.Int64(1),
 	}
 	resp, err := svc.DescribeEndpoints(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleDatabaseMigrationService_DescribeEventCategories() {
+	sess := session.Must(session.NewSession())
+
+	svc := databasemigrationservice.New(sess)
+
+	params := &databasemigrationservice.DescribeEventCategoriesInput{
+		Filters: []*databasemigrationservice.Filter{
+			{ // Required
+				Name: aws.String("String"), // Required
+				Values: []*string{ // Required
+					aws.String("String"), // Required
+					// More values...
+				},
+			},
+			// More values...
+		},
+		SourceType: aws.String("String"),
+	}
+	resp, err := svc.DescribeEventCategories(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleDatabaseMigrationService_DescribeEventSubscriptions() {
+	sess := session.Must(session.NewSession())
+
+	svc := databasemigrationservice.New(sess)
+
+	params := &databasemigrationservice.DescribeEventSubscriptionsInput{
+		Filters: []*databasemigrationservice.Filter{
+			{ // Required
+				Name: aws.String("String"), // Required
+				Values: []*string{ // Required
+					aws.String("String"), // Required
+					// More values...
+				},
+			},
+			// More values...
+		},
+		Marker:           aws.String("String"),
+		MaxRecords:       aws.Int64(1),
+		SubscriptionName: aws.String("String"),
+	}
+	resp, err := svc.DescribeEventSubscriptions(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleDatabaseMigrationService_DescribeEvents() {
+	sess := session.Must(session.NewSession())
+
+	svc := databasemigrationservice.New(sess)
+
+	params := &databasemigrationservice.DescribeEventsInput{
+		Duration: aws.Int64(1),
+		EndTime:  aws.Time(time.Now()),
+		EventCategories: []*string{
+			aws.String("String"), // Required
+			// More values...
+		},
+		Filters: []*databasemigrationservice.Filter{
+			{ // Required
+				Name: aws.String("String"), // Required
+				Values: []*string{ // Required
+					aws.String("String"), // Required
+					// More values...
+				},
+			},
+			// More values...
+		},
+		Marker:           aws.String("String"),
+		MaxRecords:       aws.Int64(1),
+		SourceIdentifier: aws.String("String"),
+		SourceType:       aws.String("SourceType"),
+		StartTime:        aws.Time(time.Now()),
+	}
+	resp, err := svc.DescribeEvents(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and
@@ -679,20 +869,73 @@ func ExampleDatabaseMigrationService_ModifyEndpoint() {
 	svc := databasemigrationservice.New(sess)
 
 	params := &databasemigrationservice.ModifyEndpointInput{
-		EndpointArn:               aws.String("String"), // Required
-		CertificateArn:            aws.String("String"),
-		DatabaseName:              aws.String("String"),
+		EndpointArn:    aws.String("String"), // Required
+		CertificateArn: aws.String("String"),
+		DatabaseName:   aws.String("String"),
+		DynamoDbSettings: &databasemigrationservice.DynamoDbSettings{
+			ServiceAccessRoleArn: aws.String("String"), // Required
+		},
 		EndpointIdentifier:        aws.String("String"),
 		EndpointType:              aws.String("ReplicationEndpointTypeValue"),
 		EngineName:                aws.String("String"),
 		ExtraConnectionAttributes: aws.String("String"),
-		Password:                  aws.String("SecretString"),
-		Port:                      aws.Int64(1),
-		ServerName:                aws.String("String"),
-		SslMode:                   aws.String("DmsSslModeValue"),
-		Username:                  aws.String("String"),
+		MongoDbSettings: &databasemigrationservice.MongoDbSettings{
+			AuthMechanism:     aws.String("AuthMechanismValue"),
+			AuthSource:        aws.String("String"),
+			AuthType:          aws.String("AuthTypeValue"),
+			DatabaseName:      aws.String("String"),
+			DocsToInvestigate: aws.String("String"),
+			ExtractDocId:      aws.String("String"),
+			NestingLevel:      aws.String("NestingLevelValue"),
+			Password:          aws.String("SecretString"),
+			Port:              aws.Int64(1),
+			ServerName:        aws.String("String"),
+			Username:          aws.String("String"),
+		},
+		Password: aws.String("SecretString"),
+		Port:     aws.Int64(1),
+		S3Settings: &databasemigrationservice.S3Settings{
+			BucketFolder:            aws.String("String"),
+			BucketName:              aws.String("String"),
+			CompressionType:         aws.String("CompressionTypeValue"),
+			CsvDelimiter:            aws.String("String"),
+			CsvRowDelimiter:         aws.String("String"),
+			ExternalTableDefinition: aws.String("String"),
+			ServiceAccessRoleArn:    aws.String("String"),
+		},
+		ServerName: aws.String("String"),
+		SslMode:    aws.String("DmsSslModeValue"),
+		Username:   aws.String("String"),
 	}
 	resp, err := svc.ModifyEndpoint(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleDatabaseMigrationService_ModifyEventSubscription() {
+	sess := session.Must(session.NewSession())
+
+	svc := databasemigrationservice.New(sess)
+
+	params := &databasemigrationservice.ModifyEventSubscriptionInput{
+		SubscriptionName: aws.String("String"), // Required
+		Enabled:          aws.Bool(true),
+		EventCategories: []*string{
+			aws.String("String"), // Required
+			// More values...
+		},
+		SnsTopicArn: aws.String("String"),
+		SourceType:  aws.String("String"),
+	}
+	resp, err := svc.ModifyEventSubscription(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and
@@ -801,6 +1044,34 @@ func ExampleDatabaseMigrationService_RefreshSchemas() {
 		ReplicationInstanceArn: aws.String("String"), // Required
 	}
 	resp, err := svc.RefreshSchemas(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleDatabaseMigrationService_ReloadTables() {
+	sess := session.Must(session.NewSession())
+
+	svc := databasemigrationservice.New(sess)
+
+	params := &databasemigrationservice.ReloadTablesInput{
+		ReplicationTaskArn: aws.String("String"), // Required
+		TablesToReload: []*databasemigrationservice.TableToReload{ // Required
+			{ // Required
+				SchemaName: aws.String("String"),
+				TableName:  aws.String("String"),
+			},
+			// More values...
+		},
+	}
+	resp, err := svc.ReloadTables(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and

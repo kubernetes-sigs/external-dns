@@ -115,6 +115,8 @@ func main() {
 		p, err = provider.NewAWSProvider(cfg.DomainFilter, cfg.DryRun)
 	case "inmemory":
 		p, err = provider.NewInMemoryProviderWithDomainAndLogging("example.com"), nil
+	case "azure":
+		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, cfg.DomainFilter, cfg.AzureResourceGroup, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
