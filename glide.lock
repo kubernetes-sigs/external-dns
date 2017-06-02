@@ -1,5 +1,5 @@
 hash: dec74bc0a736409302c6deda7a3a298bf7e707a1f73089e87aeccc8ea3a4ec18
-updated: 2017-05-31T13:24:49.243620955-07:00
+updated: 2017-06-02T15:54:18.39889293+02:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -17,7 +17,7 @@ imports:
 - name: github.com/alecthomas/units
   version: 2efee857e7cfd4f3d0138cc3cbb1b4966962b93a
 - name: github.com/aws/aws-sdk-go
-  version: d43439f542aac478e400c879d32e567a406d172b
+  version: f9a14dadf426ac17058f5ed3ec9bac9a61b5990b
   subpackages:
   - aws
   - aws/awserr
@@ -35,6 +35,7 @@ imports:
   - aws/request
   - aws/session
   - aws/signer/v4
+  - internal/shareddefaults
   - private/protocol
   - private/protocol/query
   - private/protocol/query/queryutil
@@ -45,8 +46,16 @@ imports:
   - service/sts
 - name: github.com/Azure/azure-sdk-for-go
   version: 2629e2dfcfeab50896230140542c3b9d89b35ae1
+  subpackages:
+  - arm/dns
 - name: github.com/Azure/go-autorest
   version: 58f6f26e200fa5dfb40c9cd1c83f3e2c860d779d
+  subpackages:
+  - autorest
+  - autorest/adal
+  - autorest/azure
+  - autorest/date
+  - autorest/to
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
   subpackages:
@@ -175,7 +184,7 @@ imports:
   - jws
   - jwt
 - name: golang.org/x/sys
-  version: 9ccfe848b9db8435a24c424abbc07a921adf1df5
+  version: 7de4796419dc3b554e6dab3a119a62469569d299
   subpackages:
   - unix
 - name: golang.org/x/text

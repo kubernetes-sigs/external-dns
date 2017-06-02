@@ -413,6 +413,8 @@ func ExampleELBV2_DescribeRules() {
 
 	params := &elbv2.DescribeRulesInput{
 		ListenerArn: aws.String("ListenerArn"),
+		Marker:      aws.String("Marker"),
+		PageSize:    aws.Int64(1),
 		RuleArns: []*string{
 			aws.String("RuleArn"), // Required
 			// More values...

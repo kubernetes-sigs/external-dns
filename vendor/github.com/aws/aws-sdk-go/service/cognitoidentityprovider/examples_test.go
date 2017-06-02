@@ -564,9 +564,9 @@ func ExampleCognitoIdentityProvider_ChangePassword() {
 	svc := cognitoidentityprovider.New(sess)
 
 	params := &cognitoidentityprovider.ChangePasswordInput{
-		PreviousPassword: aws.String("PasswordType"), // Required
-		ProposedPassword: aws.String("PasswordType"), // Required
-		AccessToken:      aws.String("TokenModelType"),
+		AccessToken:      aws.String("TokenModelType"), // Required
+		PreviousPassword: aws.String("PasswordType"),   // Required
+		ProposedPassword: aws.String("PasswordType"),   // Required
 	}
 	resp, err := svc.ChangePassword(params)
 
@@ -671,6 +671,41 @@ func ExampleCognitoIdentityProvider_CreateGroup() {
 		RoleArn:     aws.String("ArnType"),
 	}
 	resp, err := svc.CreateGroup(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleCognitoIdentityProvider_CreateIdentityProvider() {
+	sess := session.Must(session.NewSession())
+
+	svc := cognitoidentityprovider.New(sess)
+
+	params := &cognitoidentityprovider.CreateIdentityProviderInput{
+		ProviderDetails: map[string]*string{ // Required
+			"Key": aws.String("StringType"), // Required
+			// More values...
+		},
+		ProviderName: aws.String("ProviderNameType"),         // Required
+		ProviderType: aws.String("IdentityProviderTypeType"), // Required
+		UserPoolId:   aws.String("UserPoolIdType"),           // Required
+		AttributeMapping: map[string]*string{
+			"Key": aws.String("StringType"), // Required
+			// More values...
+		},
+		IdpIdentifiers: []*string{
+			aws.String("IdpIdentifierType"), // Required
+			// More values...
+		},
+	}
+	resp, err := svc.CreateIdentityProvider(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and
@@ -810,22 +845,66 @@ func ExampleCognitoIdentityProvider_CreateUserPoolClient() {
 	params := &cognitoidentityprovider.CreateUserPoolClientInput{
 		ClientName: aws.String("ClientNameType"), // Required
 		UserPoolId: aws.String("UserPoolIdType"), // Required
+		AllowedOAuthFlows: []*string{
+			aws.String("OAuthFlowType"), // Required
+			// More values...
+		},
+		AllowedOAuthFlowsUserPoolClient: aws.Bool(true),
+		AllowedOAuthScopes: []*string{
+			aws.String("ScopeType"), // Required
+			// More values...
+		},
+		CallbackURLs: []*string{
+			aws.String("RedirectUrlType"), // Required
+			// More values...
+		},
+		DefaultRedirectURI: aws.String("RedirectUrlType"),
 		ExplicitAuthFlows: []*string{
 			aws.String("ExplicitAuthFlowsType"), // Required
 			// More values...
 		},
 		GenerateSecret: aws.Bool(true),
+		LogoutURLs: []*string{
+			aws.String("RedirectUrlType"), // Required
+			// More values...
+		},
 		ReadAttributes: []*string{
 			aws.String("ClientPermissionType"), // Required
 			// More values...
 		},
 		RefreshTokenValidity: aws.Int64(1),
+		SupportedIdentityProviders: []*string{
+			aws.String("ProviderNameType"), // Required
+			// More values...
+		},
 		WriteAttributes: []*string{
 			aws.String("ClientPermissionType"), // Required
 			// More values...
 		},
 	}
 	resp, err := svc.CreateUserPoolClient(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleCognitoIdentityProvider_CreateUserPoolDomain() {
+	sess := session.Must(session.NewSession())
+
+	svc := cognitoidentityprovider.New(sess)
+
+	params := &cognitoidentityprovider.CreateUserPoolDomainInput{
+		Domain:     aws.String("DomainType"),     // Required
+		UserPoolId: aws.String("UserPoolIdType"), // Required
+	}
+	resp, err := svc.CreateUserPoolDomain(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and
@@ -860,13 +939,35 @@ func ExampleCognitoIdentityProvider_DeleteGroup() {
 	fmt.Println(resp)
 }
 
+func ExampleCognitoIdentityProvider_DeleteIdentityProvider() {
+	sess := session.Must(session.NewSession())
+
+	svc := cognitoidentityprovider.New(sess)
+
+	params := &cognitoidentityprovider.DeleteIdentityProviderInput{
+		ProviderName: aws.String("ProviderNameType"), // Required
+		UserPoolId:   aws.String("UserPoolIdType"),   // Required
+	}
+	resp, err := svc.DeleteIdentityProvider(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
 func ExampleCognitoIdentityProvider_DeleteUser() {
 	sess := session.Must(session.NewSession())
 
 	svc := cognitoidentityprovider.New(sess)
 
 	params := &cognitoidentityprovider.DeleteUserInput{
-		AccessToken: aws.String("TokenModelType"),
+		AccessToken: aws.String("TokenModelType"), // Required
 	}
 	resp, err := svc.DeleteUser(params)
 
@@ -887,11 +988,11 @@ func ExampleCognitoIdentityProvider_DeleteUserAttributes() {
 	svc := cognitoidentityprovider.New(sess)
 
 	params := &cognitoidentityprovider.DeleteUserAttributesInput{
+		AccessToken: aws.String("TokenModelType"), // Required
 		UserAttributeNames: []*string{ // Required
 			aws.String("AttributeNameType"), // Required
 			// More values...
 		},
-		AccessToken: aws.String("TokenModelType"),
 	}
 	resp, err := svc.DeleteUserAttributes(params)
 
@@ -937,6 +1038,50 @@ func ExampleCognitoIdentityProvider_DeleteUserPoolClient() {
 		UserPoolId: aws.String("UserPoolIdType"), // Required
 	}
 	resp, err := svc.DeleteUserPoolClient(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleCognitoIdentityProvider_DeleteUserPoolDomain() {
+	sess := session.Must(session.NewSession())
+
+	svc := cognitoidentityprovider.New(sess)
+
+	params := &cognitoidentityprovider.DeleteUserPoolDomainInput{
+		Domain:     aws.String("DomainType"),     // Required
+		UserPoolId: aws.String("UserPoolIdType"), // Required
+	}
+	resp, err := svc.DeleteUserPoolDomain(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleCognitoIdentityProvider_DescribeIdentityProvider() {
+	sess := session.Must(session.NewSession())
+
+	svc := cognitoidentityprovider.New(sess)
+
+	params := &cognitoidentityprovider.DescribeIdentityProviderInput{
+		ProviderName: aws.String("ProviderNameType"), // Required
+		UserPoolId:   aws.String("UserPoolIdType"),   // Required
+	}
+	resp, err := svc.DescribeIdentityProvider(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and
@@ -1002,6 +1147,27 @@ func ExampleCognitoIdentityProvider_DescribeUserPoolClient() {
 		UserPoolId: aws.String("UserPoolIdType"), // Required
 	}
 	resp, err := svc.DescribeUserPoolClient(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleCognitoIdentityProvider_DescribeUserPoolDomain() {
+	sess := session.Must(session.NewSession())
+
+	svc := cognitoidentityprovider.New(sess)
+
+	params := &cognitoidentityprovider.DescribeUserPoolDomainInput{
+		Domain: aws.String("DomainType"), // Required
+	}
+	resp, err := svc.DescribeUserPoolDomain(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and
@@ -1124,13 +1290,35 @@ func ExampleCognitoIdentityProvider_GetGroup() {
 	fmt.Println(resp)
 }
 
+func ExampleCognitoIdentityProvider_GetIdentityProviderByIdentifier() {
+	sess := session.Must(session.NewSession())
+
+	svc := cognitoidentityprovider.New(sess)
+
+	params := &cognitoidentityprovider.GetIdentityProviderByIdentifierInput{
+		IdpIdentifier: aws.String("IdpIdentifierType"), // Required
+		UserPoolId:    aws.String("UserPoolIdType"),    // Required
+	}
+	resp, err := svc.GetIdentityProviderByIdentifier(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
 func ExampleCognitoIdentityProvider_GetUser() {
 	sess := session.Must(session.NewSession())
 
 	svc := cognitoidentityprovider.New(sess)
 
 	params := &cognitoidentityprovider.GetUserInput{
-		AccessToken: aws.String("TokenModelType"),
+		AccessToken: aws.String("TokenModelType"), // Required
 	}
 	resp, err := svc.GetUser(params)
 
@@ -1151,8 +1339,8 @@ func ExampleCognitoIdentityProvider_GetUserAttributeVerificationCode() {
 	svc := cognitoidentityprovider.New(sess)
 
 	params := &cognitoidentityprovider.GetUserAttributeVerificationCodeInput{
+		AccessToken:   aws.String("TokenModelType"),    // Required
 		AttributeName: aws.String("AttributeNameType"), // Required
-		AccessToken:   aws.String("TokenModelType"),
 	}
 	resp, err := svc.GetUserAttributeVerificationCode(params)
 
@@ -1173,7 +1361,7 @@ func ExampleCognitoIdentityProvider_GlobalSignOut() {
 	svc := cognitoidentityprovider.New(sess)
 
 	params := &cognitoidentityprovider.GlobalSignOutInput{
-		AccessToken: aws.String("TokenModelType"),
+		AccessToken: aws.String("TokenModelType"), // Required
 	}
 	resp, err := svc.GlobalSignOut(params)
 
@@ -1252,6 +1440,29 @@ func ExampleCognitoIdentityProvider_ListGroups() {
 		NextToken:  aws.String("PaginationKey"),
 	}
 	resp, err := svc.ListGroups(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleCognitoIdentityProvider_ListIdentityProviders() {
+	sess := session.Must(session.NewSession())
+
+	svc := cognitoidentityprovider.New(sess)
+
+	params := &cognitoidentityprovider.ListIdentityProvidersInput{
+		UserPoolId: aws.String("UserPoolIdType"), // Required
+		MaxResults: aws.Int64(1),
+		NextToken:  aws.String("PaginationKeyType"),
+	}
+	resp, err := svc.ListIdentityProviders(params)
 
 	if err != nil {
 		// Print the error, cast err to awserr.Error to get the Code and
@@ -1592,12 +1803,47 @@ func ExampleCognitoIdentityProvider_UpdateGroup() {
 	fmt.Println(resp)
 }
 
+func ExampleCognitoIdentityProvider_UpdateIdentityProvider() {
+	sess := session.Must(session.NewSession())
+
+	svc := cognitoidentityprovider.New(sess)
+
+	params := &cognitoidentityprovider.UpdateIdentityProviderInput{
+		ProviderName: aws.String("ProviderNameType"), // Required
+		UserPoolId:   aws.String("UserPoolIdType"),   // Required
+		AttributeMapping: map[string]*string{
+			"Key": aws.String("StringType"), // Required
+			// More values...
+		},
+		IdpIdentifiers: []*string{
+			aws.String("IdpIdentifierType"), // Required
+			// More values...
+		},
+		ProviderDetails: map[string]*string{
+			"Key": aws.String("StringType"), // Required
+			// More values...
+		},
+	}
+	resp, err := svc.UpdateIdentityProvider(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
 func ExampleCognitoIdentityProvider_UpdateUserAttributes() {
 	sess := session.Must(session.NewSession())
 
 	svc := cognitoidentityprovider.New(sess)
 
 	params := &cognitoidentityprovider.UpdateUserAttributesInput{
+		AccessToken: aws.String("TokenModelType"), // Required
 		UserAttributes: []*cognitoidentityprovider.AttributeType{ // Required
 			{ // Required
 				Name:  aws.String("AttributeNameType"), // Required
@@ -1605,7 +1851,6 @@ func ExampleCognitoIdentityProvider_UpdateUserAttributes() {
 			},
 			// More values...
 		},
-		AccessToken: aws.String("TokenModelType"),
 	}
 	resp, err := svc.UpdateUserAttributes(params)
 
@@ -1702,9 +1947,27 @@ func ExampleCognitoIdentityProvider_UpdateUserPoolClient() {
 	params := &cognitoidentityprovider.UpdateUserPoolClientInput{
 		ClientId:   aws.String("ClientIdType"),   // Required
 		UserPoolId: aws.String("UserPoolIdType"), // Required
-		ClientName: aws.String("ClientNameType"),
+		AllowedOAuthFlows: []*string{
+			aws.String("OAuthFlowType"), // Required
+			// More values...
+		},
+		AllowedOAuthFlowsUserPoolClient: aws.Bool(true),
+		AllowedOAuthScopes: []*string{
+			aws.String("ScopeType"), // Required
+			// More values...
+		},
+		CallbackURLs: []*string{
+			aws.String("RedirectUrlType"), // Required
+			// More values...
+		},
+		ClientName:         aws.String("ClientNameType"),
+		DefaultRedirectURI: aws.String("RedirectUrlType"),
 		ExplicitAuthFlows: []*string{
 			aws.String("ExplicitAuthFlowsType"), // Required
+			// More values...
+		},
+		LogoutURLs: []*string{
+			aws.String("RedirectUrlType"), // Required
 			// More values...
 		},
 		ReadAttributes: []*string{
@@ -1712,6 +1975,10 @@ func ExampleCognitoIdentityProvider_UpdateUserPoolClient() {
 			// More values...
 		},
 		RefreshTokenValidity: aws.Int64(1),
+		SupportedIdentityProviders: []*string{
+			aws.String("ProviderNameType"), // Required
+			// More values...
+		},
 		WriteAttributes: []*string{
 			aws.String("ClientPermissionType"), // Required
 			// More values...
@@ -1736,9 +2003,9 @@ func ExampleCognitoIdentityProvider_VerifyUserAttribute() {
 	svc := cognitoidentityprovider.New(sess)
 
 	params := &cognitoidentityprovider.VerifyUserAttributeInput{
+		AccessToken:   aws.String("TokenModelType"),       // Required
 		AttributeName: aws.String("AttributeNameType"),    // Required
 		Code:          aws.String("ConfirmationCodeType"), // Required
-		AccessToken:   aws.String("TokenModelType"),
 	}
 	resp, err := svc.VerifyUserAttribute(params)
 
