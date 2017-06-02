@@ -2796,3 +2796,46 @@ func ExampleRDS_RevokeDBSecurityGroupIngress() {
 	// Pretty-print the response data.
 	fmt.Println(resp)
 }
+
+func ExampleRDS_StartDBInstance() {
+	sess := session.Must(session.NewSession())
+
+	svc := rds.New(sess)
+
+	params := &rds.StartDBInstanceInput{
+		DBInstanceIdentifier: aws.String("String"), // Required
+	}
+	resp, err := svc.StartDBInstance(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
+func ExampleRDS_StopDBInstance() {
+	sess := session.Must(session.NewSession())
+
+	svc := rds.New(sess)
+
+	params := &rds.StopDBInstanceInput{
+		DBInstanceIdentifier: aws.String("String"), // Required
+		DBSnapshotIdentifier: aws.String("String"),
+	}
+	resp, err := svc.StopDBInstance(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}

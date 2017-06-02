@@ -28,47 +28,51 @@ var (
 
 // Config is a project-wide configuration
 type Config struct {
-	Master         string
-	KubeConfig     string
-	Sources        []string
-	Namespace      string
-	FqdnTemplate   string
-	Compatibility  string
-	Provider       string
-	GoogleProject  string
-	DomainFilter   string
-	Policy         string
-	Registry       string
-	TXTOwnerID     string
-	TXTPrefix      string
-	Interval       time.Duration
-	Once           bool
-	DryRun         bool
-	LogFormat      string
-	MetricsAddress string
-	Debug          bool
+	Master             string
+	KubeConfig         string
+	Sources            []string
+	Namespace          string
+	FqdnTemplate       string
+	Compatibility      string
+	Provider           string
+	GoogleProject      string
+	DomainFilter       string
+	AzureConfigFile    string
+	AzureResourceGroup string
+	Policy             string
+	Registry           string
+	TXTOwnerID         string
+	TXTPrefix          string
+	Interval           time.Duration
+	Once               bool
+	DryRun             bool
+	LogFormat          string
+	MetricsAddress     string
+	Debug              bool
 }
 
 var defaultConfig = &Config{
-	Master:         "",
-	KubeConfig:     "",
-	Sources:        nil,
-	Namespace:      "",
-	FqdnTemplate:   "",
-	Compatibility:  "",
-	Provider:       "",
-	GoogleProject:  "",
-	DomainFilter:   "",
-	Policy:         "sync",
-	Registry:       "txt",
-	TXTOwnerID:     "default",
-	TXTPrefix:      "",
-	Interval:       time.Minute,
-	Once:           false,
-	DryRun:         false,
-	LogFormat:      "text",
-	MetricsAddress: ":7979",
-	Debug:          false,
+	Master:             "",
+	KubeConfig:         "",
+	Sources:            nil,
+	Namespace:          "",
+	FqdnTemplate:       "",
+	Compatibility:      "",
+	Provider:           "",
+	GoogleProject:      "",
+	DomainFilter:       "",
+	AzureConfigFile:    "/etc/kubernetes/azure.json",
+	AzureResourceGroup: "",
+	Policy:             "sync",
+	Registry:           "txt",
+	TXTOwnerID:         "default",
+	TXTPrefix:          "",
+	Interval:           time.Minute,
+	Once:               false,
+	DryRun:             false,
+	LogFormat:          "text",
+	MetricsAddress:     ":7979",
+	Debug:              false,
 }
 
 // NewConfig returns new Config object
@@ -93,9 +97,11 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule)").Default(defaultConfig.Compatibility).EnumVar(&cfg.Compatibility, "", "mate", "molecule")
 
 	// Flags related to providers
-	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, google, inmemory)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "google", "inmemory")
+	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, google, inmemory, azure)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "google", "inmemory", "azure")
 	app.Flag("google-project", "When using the Google provider, specify the Google project (required when --provider=google)").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix (optional)").Default(defaultConfig.DomainFilter).StringVar(&cfg.DomainFilter)
+	app.Flag("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure").Default(defaultConfig.AzureConfigFile).StringVar(&cfg.AzureConfigFile)
+	app.Flag("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (optional)").Default(defaultConfig.AzureResourceGroup).StringVar(&cfg.AzureResourceGroup)
 
 	// Flags related to policies
 	app.Flag("policy", "Modify how DNS records are sychronized between sources and providers (default: sync, options: sync, upsert-only)").Default(defaultConfig.Policy).EnumVar(&cfg.Policy, "sync", "upsert-only")

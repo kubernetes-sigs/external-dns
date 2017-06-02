@@ -36,5 +36,11 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return errors.New("no provider specified")
 	}
 
+	// Azure provider specific validations
+	if cfg.Provider == "azure" {
+		if cfg.AzureConfigFile == "" {
+			return errors.New("no Azure config file specified")
+		}
+	}
 	return nil
 }

@@ -62,11 +62,16 @@ func init() {
 // RoundTrip implements http.RoundTripper. It forwards the request to the
 // next RoundTripper and measures the time it took in Prometheus summary.
 func (it *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
+	var statusCode int
+
 	// Remember the current time.
 	now := time.Now()
 
 	// Make the request using the next RoundTripper.
 	resp, err := it.next.RoundTrip(req)
+	if resp != nil {
+		statusCode = resp.StatusCode
+	}
 
 	// Observe the time it took to make the request.
 	RequestDurationMicroseconds.WithLabelValues(
@@ -75,7 +80,7 @@ func (it *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		it.cbs.PathProcessor(req.URL.Path),
 		it.cbs.QueryProcessor(req.URL.RawQuery),
 		req.Method,
-		fmt.Sprintf("%d", resp.StatusCode),
+		fmt.Sprintf("%d", statusCode),
 	).Observe(float64(time.Since(now).Nanoseconds() / 1000))
 
 	// return the response and error reported from the next RoundTripper.

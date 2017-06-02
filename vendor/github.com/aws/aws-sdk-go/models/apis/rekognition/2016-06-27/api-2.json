@@ -311,14 +311,24 @@
       "type":"structure",
       "members":{
         "SourceImageFace":{"shape":"ComparedSourceImageFace"},
-        "FaceMatches":{"shape":"CompareFacesMatchList"}
+        "FaceMatches":{"shape":"CompareFacesMatchList"},
+        "UnmatchedFaces":{"shape":"CompareFacesUnmatchList"},
+        "SourceImageOrientationCorrection":{"shape":"OrientationCorrection"},
+        "TargetImageOrientationCorrection":{"shape":"OrientationCorrection"}
       }
+    },
+    "CompareFacesUnmatchList":{
+      "type":"list",
+      "member":{"shape":"ComparedFace"}
     },
     "ComparedFace":{
       "type":"structure",
       "members":{
         "BoundingBox":{"shape":"BoundingBox"},
-        "Confidence":{"shape":"Percent"}
+        "Confidence":{"shape":"Percent"},
+        "Landmarks":{"shape":"Landmarks"},
+        "Pose":{"shape":"Pose"},
+        "Quality":{"shape":"ImageQuality"}
       }
     },
     "ComparedSourceImageFace":{
