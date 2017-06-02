@@ -24,11 +24,13 @@ import (
 
 var _ Controller = &InstrumentedController{}
 
+// InstrumentedController invokes another controller's Run() method and measures the time it took.
 type InstrumentedController struct {
 	ctrl Controller
 }
 
 var (
+	// SynchronizationLatencies is a Prometheus summary metric for the wrapped controller's Run call.
 	SynchronizationLatencies = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
 			Namespace:  "externaldns",
@@ -44,10 +46,14 @@ func init() {
 	prometheus.MustRegister(SynchronizationLatencies)
 }
 
+// NewInstrumentedController returns a new instrumented Controller that wraps the given controller.
 func NewInstrumentedController(ctrl Controller) Controller {
 	return &InstrumentedController{ctrl: ctrl}
 }
 
+// Run invokes the nested controller's Run method and populates a Prometheus summary metric with
+// the amount of time it took to execute. It adds a single label that indicates whether the call
+// was successful or erroneous.
 func (c *InstrumentedController) Run() error {
 	var err error
 

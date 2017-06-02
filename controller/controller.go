@@ -24,10 +24,12 @@ import (
 	"github.com/kubernetes-incubator/external-dns/source"
 )
 
+// Controller implementations must have a single method called Run() returning an Error.
 type Controller interface {
 	Run() error
 }
 
+// Config holds the shared configuration options for all Controller instances.
 type Config struct {
 	// Source defines where endpoints are coming from.
 	Source source.Source

@@ -18,20 +18,21 @@ package controller
 
 import "github.com/kubernetes-incubator/external-dns/plan"
 
-// BaseController is responsible for orchestrating the different components.
-// It works in the following way:
-// * Ask the DNS provider for current list of endpoints.
-// * Ask the Source for the desired list of endpoints.
-// * Take both lists and calculate a Plan to move current towards desired state under a given policy.
-// * Tell the DNS provider to apply the changes calculated by the Plan.
+// BaseController is responsible for basic orchestration of the different components.
 type BaseController struct {
 	config Config
 }
 
+// NewBaseController returns a new basic controller based on the given config.
 func NewBaseController(cfg Config) Controller {
 	return &BaseController{cfg}
 }
 
+// Run runs a single synchronization. It works in the following way:
+// * Ask the DNS provider for current list of endpoints.
+// * Ask the Source for the desired list of endpoints.
+// * Take both lists and calculate a Plan to move current towards desired state under a given policy.
+// * Tell the DNS provider to apply the changes calculated by the Plan.
 func (c *BaseController) Run() error {
 	records, err := c.config.Registry.Records()
 	if err != nil {

@@ -24,15 +24,18 @@ import (
 
 var _ Controller = &LoopedController{}
 
+// LoopedController invokes another controller's Run() method in an endless loop.
 type LoopedController struct {
 	ctrl   Controller
 	config Config
 }
 
+// NewLoopedController returns a new endlessly looping Controller that wraps the given controller.
 func NewLoopedController(ctrl Controller, config Config) Controller {
 	return &LoopedController{ctrl: ctrl, config: config}
 }
 
+// Run runs the wrapped controller's Run in a loop with a delay until stopChan receives a value.
 func (c *LoopedController) Run() error {
 	for {
 		if err := c.ctrl.Run(); err != nil {
