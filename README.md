@@ -124,6 +124,8 @@ Have a look at [the milestones](https://github.com/kubernetes-incubator/external
 
 We encourage you to get involved with ExternalDNS, as users as well as contributors. Read the [contributing guidelines](CONTRIBUTING.md) and have a look at [the contributing docs](docs/contributing/getting-started.md) to learn about building the project, the project structure, and the purpose of each package.
 
+For an overview on how to write new Sources and Providers check out [Sources and Providers](docs/contributing/sources-and-providers.md).
+
 Feel free to reach out to us on the [Kubernetes slack](http://slack.k8s.io) in the #sig-network channel.
 
 ## Heritage
