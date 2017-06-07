@@ -358,86 +358,10 @@ func (m *mockDigitalOceanCreateRecordsFail) Records(ctx context.Context, domain 
 	return []godo.DomainRecord{{ID: 1, Name: "foobar.ext-dns-test.zalando.to."}, {ID: 2}}, nil, nil
 }
 
-func TestDigitalOceanZones(t *testing.T) {
-	provider := &DigitalOceanProvider{
-		Client: &mockDigitalOceanClient{},
-	}
-
-	_, err := provider.Zones()
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-
-	provider.Client = &mockDigitalOceanListFail{}
-	_, err = provider.Zones()
-	if err == nil {
-		t.Errorf("expected to fail, %s", err)
-	}
-}
-
-func TestDigitalOceanZone(t *testing.T) {
-	zoneName := "example.com"
-
-	provider := &DigitalOceanProvider{
-		Client: &mockDigitalOceanClient{},
-	}
-
-	domain, err := provider.Zone(zoneName)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-	if domain.Name != zoneName {
-		t.Errorf("expected %s, got %s", zoneName, domain.Name)
-	}
-
-	provider.Client = &mockDigitalOceanGetFail{}
-	_, err = provider.Zone(zoneName)
-	if err == nil {
-		t.Errorf("expected to fail, %s", err)
-	}
-}
-
-func TestDigitalOceanCreateZone(t *testing.T) {
-	zoneName := "example.com"
-	ip := "1.2.3.4"
-
-	provider := &DigitalOceanProvider{
-		Client: &mockDigitalOceanClient{},
-	}
-
-	domain, err := provider.CreateZone(zoneName, ip)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-	if domain.Name != zoneName {
-		t.Errorf("expected %s, got %s", zoneName, domain.Name)
-	}
-
-	provider.Client = &mockDigitalOceanCreateFail{}
-	_, err = provider.CreateZone(zoneName, ip)
-	if err == nil {
-		t.Errorf("expected to fail, %s", err)
-	}
-}
-
-func TestDigitalOceanDeleteZone(t *testing.T) {
-	zoneName := "example.com"
-
-	provider := &DigitalOceanProvider{
-		Client: &mockDigitalOceanClient{},
-	}
-
-	_, err := provider.DeleteZone(zoneName)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-
-	provider.Client = &mockDigitalOceanDeleteFail{}
-	_, err = provider.DeleteZone(zoneName)
-	if err == nil {
-		t.Errorf("expected to fail, %s", err)
-	}
-
+func TestNewCloudFlareChanges(t *testing.T) {
+	action := DigitalOceanCreate
+	endpoints := []*endpoint.Endpoint{{DNSName: "new", Target: "target"}}
+	_ = newDigitalOceanChanges(action, endpoints)
 }
 
 func TestDigitalOceanRecords(t *testing.T) {
@@ -447,122 +371,14 @@ func TestDigitalOceanRecords(t *testing.T) {
 		Client: &mockDigitalOceanClient{},
 	}
 
-	_, err := provider.Records(zoneName)
+	_, err := provider.Records()
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
 	provider.Client = &mockDigitalOceanRecordsFail{}
-	_, err = provider.Records(zoneName)
+	_, err = provider.Records()
 	if err == nil {
 		t.Errorf("expected to fail, %s", err)
-	}
-}
-
-func TestDigitalOceanUpdateRecords(t *testing.T) {
-	provider := &DigitalOceanProvider{
-		Client: &mockDigitalOceanClient{},
-	}
-	zone := "ext-dns-test.zalando.to"
-	oldCNameEndpoints := []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "old-target"}}
-	newCNameEndpoints := []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "new-target"}}
-
-	oldANameEndpoints := []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "8.8.8.8"}}
-	newANameEndpoints := []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "7.7.7.7"}}
-	err := provider.UpdateRecords(zone, newCNameEndpoints, oldCNameEndpoints)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-	err = provider.UpdateRecords(zone, newANameEndpoints, oldANameEndpoints)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-	provider.Client = &mockDigitalOceanUpdateRecordsFail{}
-	err = provider.UpdateRecords(zone, newCNameEndpoints, oldCNameEndpoints)
-	if err == nil {
-		t.Errorf("expected to fail")
-	}
-	err = provider.UpdateRecords(zone, newANameEndpoints, oldANameEndpoints)
-	if err == nil {
-		t.Errorf("expected to fail")
-	}
-	provider.Client = &mockDigitalOceanRecordsFail{}
-	err = provider.UpdateRecords(zone, newANameEndpoints, oldANameEndpoints)
-	if err == nil {
-		t.Errorf("expected to fail")
-	}
-	provider.Client = &mockDigitalOceanClient{}
-	provider.DryRun = true
-	err = provider.UpdateRecords(zone, newCNameEndpoints, oldCNameEndpoints)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-	err = provider.UpdateRecords(zone, newANameEndpoints, oldANameEndpoints)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-}
-
-func TestDigitalOceanDeleteRecords(t *testing.T) {
-	provider := &DigitalOceanProvider{
-		Client: &mockDigitalOceanClient{},
-	}
-	zone := "ext-dns-test.zalando.to"
-	endpoints := []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "target"}}
-	err := provider.DeleteRecords(zone, endpoints)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-	provider.Client = &mockDigitalOceanDeleteRecordsFail{}
-	err = provider.DeleteRecords(zone, endpoints)
-	if err == nil {
-		t.Errorf("expected to fail")
-	}
-	provider.DryRun = true
-	err = provider.DeleteRecords(zone, endpoints)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-	provider.Client = &mockDigitalOceanDeleteRecordsFail{}
-	provider.DryRun = false
-	err = provider.DeleteRecords(zone, endpoints)
-	if err == nil {
-		t.Errorf("expected to fail")
-	}
-	endpoints = []*endpoint.Endpoint{}
-	err = provider.DeleteRecords(zone, endpoints)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-}
-
-func TestDigitalOceanCreateRecords(t *testing.T) {
-	provider := &DigitalOceanProvider{
-		Client: &mockDigitalOceanClient{},
-	}
-	zone := "ext-dns-test.zalando.to"
-	endpoints := []*endpoint.Endpoint{
-		{DNSName: "new", Target: "target"},
-	}
-	err := provider.CreateRecords(zone, endpoints)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-	provider.DryRun = true
-	err = provider.CreateRecords(zone, endpoints)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-	provider.Client = &mockDigitalOceanCreateRecordsFail{}
-	provider.DryRun = false
-	err = provider.CreateRecords(zone, endpoints)
-	if err == nil {
-		t.Errorf("expected to fail")
-	}
-	provider.Client = &mockDigitalOceanClient{}
-	endpoints = []*endpoint.Endpoint{}
-	err = provider.CreateRecords(zone, endpoints)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
 	}
 }
 
@@ -576,7 +392,7 @@ func TestDigitalOceanApplyChanges(t *testing.T) {
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "target"}}
 	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "target-old"}}
 	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "target-new"}}
-	err := provider.ApplyChanges(zone, changes)
+	err := provider.ApplyChanges(changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}

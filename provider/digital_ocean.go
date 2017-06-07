@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"golang.org/x/oauth2"
@@ -83,138 +84,106 @@ func NewDigitalOceanProvider(dryRun bool) (Provider, error) {
 	return provider, nil
 }
 
-// Zones returns the list of zones.
-func (p *DigitalOceanProvider) Zones() (*[]godo.Domain, error) {
+// Records returns the list of records in a given zone.
+func (p *DigitalOceanProvider) Records() ([]*endpoint.Endpoint, error) {
 	zones, _, err := p.Client.List(context.TODO(), nil)
 	if err != nil {
 		return nil, err
 	}
-	return &zones, nil
-}
-
-// Zone returns a single zone given a DNS name.
-func (p *DigitalOceanProvider) Zone(zoneName string) (*godo.Domain, error) {
-	zone, _, err := p.Client.Get(context.TODO(), zoneName)
-	if err != nil {
-		return nil, err
-	}
-	return zone, nil
-}
-
-// CreateZone creates a hosted zone given a name.
-func (p *DigitalOceanProvider) CreateZone(name, ip string) (*godo.Domain, error) {
-	newDomain := &godo.DomainCreateRequest{
-		Name:      name,
-		IPAddress: ip,
-	}
-	zone, _, err := p.Client.Create(context.TODO(), newDomain)
-	if err != nil {
-		return nil, err
-	}
-	return zone, nil
-}
-
-// DeleteZone deletes a hosted zone given a name.
-func (p *DigitalOceanProvider) DeleteZone(name string) (string, error) {
-	_, err := p.Client.Delete(context.TODO(), name)
-	if err != nil {
-		return name, err
-	}
-	return name, nil
-}
-
-// Records returns the list of records in a given zone.
-func (p *DigitalOceanProvider) Records(zone string) ([]*endpoint.Endpoint, error) {
-	records, _, err := p.Client.Records(context.TODO(), zone, nil)
-	if err != nil {
-		return nil, err
-	}
-
 	endpoints := []*endpoint.Endpoint{}
-	for _, r := range records {
-		endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Data, r.Type))
+	for _, zone := range zones {
+		records, _, err := p.Client.Records(context.TODO(), zone.Name, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		endpoints := []*endpoint.Endpoint{}
+		for _, r := range records {
+			endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Data, r.Type))
+		}
 	}
 
 	return endpoints, nil
 }
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
-func (p *DigitalOceanProvider) submitChanges(zone string, changes []*DigitalOceanChange) error {
+func (p *DigitalOceanProvider) submitChanges(changes []*DigitalOceanChange) error {
 	// return early if there is nothing to change
 	if len(changes) == 0 {
 		return nil
 	}
-	if p.DryRun {
-		for _, change := range changes {
-			log.Infof("Changing records: %s %s", change.Action, change.ResourceRecordSet.String())
-		}
 
-		return nil
+	zones, _, err := p.Client.List(context.TODO(), nil)
+	if err != nil {
+		return err
 	}
-	for _, change := range changes {
-		switch {
-		case change.Action == DigitalOceanCreate:
-			_, _, err := p.Client.CreateRecord(context.TODO(), zone,
-				&godo.DomainRecordEditRequest{
-					Data: change.ResourceRecordSet.Data,
-					Name: change.ResourceRecordSet.Name,
-					Type: change.ResourceRecordSet.Type,
-				})
-			if err != nil {
-				return err
+
+	// separate into per-zone change sets to be passed to the API.
+	changesByZone := digitalOceanChangesByZone(zones, changes)
+
+	for zoneName, changes := range changesByZone {
+		for _, change := range changes {
+			logFields := log.Fields{
+				"record": change.ResourceRecordSet.Name,
+				"type":   change.ResourceRecordSet.Type,
+				"action": change.Action,
+				"zone":   zoneName,
 			}
-		case change.Action == DigitalOceanDelete:
-			recordID, err := p.getRecordID(zone, change.ResourceRecordSet)
-			if err != nil {
-				return err
+
+			log.WithFields(logFields).Info("Changing record.")
+
+			if p.DryRun {
+				continue
 			}
-			_, err = p.Client.DeleteRecord(context.TODO(), zone, recordID)
-			if err != nil {
-				return err
-			}
-		case change.Action == DigitalOceanUpdate:
-			recordID, err := p.getRecordID(zone, change.ResourceRecordSet)
-			if err != nil {
-				return err
-			}
-			_, _, err = p.Client.EditRecord(context.TODO(), zone, recordID,
-				&godo.DomainRecordEditRequest{
-					Data: change.ResourceRecordSet.Data,
-					Name: change.ResourceRecordSet.Name,
-					Type: change.ResourceRecordSet.Type,
-				})
-			if err != nil {
-				return err
+			switch change.Action {
+			case DigitalOceanCreate:
+				_, _, err := p.Client.CreateRecord(context.TODO(), zoneName,
+					&godo.DomainRecordEditRequest{
+						Data: change.ResourceRecordSet.Data,
+						Name: change.ResourceRecordSet.Name,
+						Type: change.ResourceRecordSet.Type,
+					})
+				if err != nil {
+					return err
+				}
+			case DigitalOceanDelete:
+				recordID, err := p.getRecordID(zoneName, change.ResourceRecordSet)
+				if err != nil {
+					return err
+				}
+				_, err = p.Client.DeleteRecord(context.TODO(), zoneName, recordID)
+				if err != nil {
+					return err
+				}
+			case DigitalOceanUpdate:
+				recordID, err := p.getRecordID(zoneName, change.ResourceRecordSet)
+				if err != nil {
+					return err
+				}
+				_, _, err = p.Client.EditRecord(context.TODO(), zoneName, recordID,
+					&godo.DomainRecordEditRequest{
+						Data: change.ResourceRecordSet.Data,
+						Name: change.ResourceRecordSet.Name,
+						Type: change.ResourceRecordSet.Type,
+					})
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
 	return nil
 }
 
-// CreateRecords creates a given set of DNS records in the given hosted zone.
-func (p *DigitalOceanProvider) CreateRecords(zone string, endpoints []*endpoint.Endpoint) error {
-	return p.submitChanges(zone, newDigitalOceanChanges(DigitalOceanCreate, endpoints))
-}
-
-// UpdateRecords updates a given set of old records to a new set of records in a given hosted zone.
-func (p *DigitalOceanProvider) UpdateRecords(zone string, endpoints, _ []*endpoint.Endpoint) error {
-	return p.submitChanges(zone, newDigitalOceanChanges(DigitalOceanUpdate, endpoints))
-}
-
-// DeleteRecords deletes a given set of DNS records in a given zone.
-func (p *DigitalOceanProvider) DeleteRecords(zone string, endpoints []*endpoint.Endpoint) error {
-	return p.submitChanges(zone, newDigitalOceanChanges(DigitalOceanDelete, endpoints))
-}
-
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *DigitalOceanProvider) ApplyChanges(zone string, changes *plan.Changes) error {
+func (p *DigitalOceanProvider) ApplyChanges(changes *plan.Changes) error {
 	combinedChanges := make([]*DigitalOceanChange, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 
 	combinedChanges = append(combinedChanges, newDigitalOceanChanges(DigitalOceanCreate, changes.Create)...)
 	combinedChanges = append(combinedChanges, newDigitalOceanChanges(DigitalOceanUpdate, changes.UpdateNew)...)
 	combinedChanges = append(combinedChanges, newDigitalOceanChanges(DigitalOceanDelete, changes.Delete)...)
 
-	return p.submitChanges(zone, combinedChanges)
+	return p.submitChanges(combinedChanges)
 }
 
 // newDigitalOceanChanges returns a collection of Changes based on the given records and action.
@@ -234,7 +203,7 @@ func newDigitalOceanChange(action string, endpoint *endpoint.Endpoint) *DigitalO
 		ResourceRecordSet: godo.DomainRecord{
 			Name: endpoint.DNSName,
 			Type: suitableType(endpoint),
-			Data: ensureTrailingDot(endpoint.Target),
+			Data: endpoint.Target,
 		},
 	}
 	return change
@@ -253,4 +222,38 @@ func (p *DigitalOceanProvider) getRecordID(zone string, record godo.DomainRecord
 		}
 	}
 	return 0, fmt.Errorf("No record id found")
+}
+
+// digitalOceanchangesByZone separates a multi-zone change into a single change per zone.
+func digitalOceanChangesByZone(zones []godo.Domain, changeSet []*DigitalOceanChange) map[string][]*DigitalOceanChange {
+	changes := make(map[string][]*DigitalOceanChange)
+
+	for _, z := range zones {
+		changes[z.Name] = []*DigitalOceanChange{}
+	}
+
+	for _, c := range changeSet {
+		zone := digitalOceanSuitableZone(c.ResourceRecordSet.Name, zones)
+		if zone == nil {
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.ResourceRecordSet.Name)
+			continue
+		}
+		changes[zone.Name] = append(changes[zone.Name], c)
+	}
+
+	return changes
+}
+
+// digitalOceanSuitableZone returns the most suitable zone for a given hostname
+// and a set of zones.
+func digitalOceanSuitableZone(hostname string, zones []godo.Domain) *godo.Domain {
+	var zone godo.Domain
+	for _, z := range zones {
+		if strings.HasSuffix(hostname, z.Name) {
+			if len(z.Name) > len(zone.Name) {
+				zone = z
+			}
+		}
+	}
+	return &zone
 }
