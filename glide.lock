@@ -1,5 +1,5 @@
-hash: dec74bc0a736409302c6deda7a3a298bf7e707a1f73089e87aeccc8ea3a4ec18
-updated: 2017-06-02T15:54:18.39889293+02:00
+hash: 9e2583021e0048f8330aacd5920a6512c28465d41ac28eac7d99d23793e759a9
+updated: 2017-06-07T13:34:57.227122747+02:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -17,7 +17,7 @@ imports:
 - name: github.com/alecthomas/units
   version: 2efee857e7cfd4f3d0138cc3cbb1b4966962b93a
 - name: github.com/aws/aws-sdk-go
-  version: f9a14dadf426ac17058f5ed3ec9bac9a61b5990b
+  version: 512bdaf8bec30abd545b440447cebb57b53d3af9
   subpackages:
   - aws
   - aws/awserr
@@ -112,7 +112,7 @@ imports:
 - name: github.com/kubernetes/repo-infra
   version: 4667983ff6a1c7dff07191106392ad4bcad60c29
 - name: github.com/linki/instrumented_http
-  version: d46cf68178e39f604b1243cfc3633ce981332575
+  version: 508103cfb3b315fa9752b5bcd4fb2d97bbc26d89
 - name: github.com/mailru/easyjson
   version: d5b7844b561a7bc640052f1b935f7b800330d7e0
   subpackages:

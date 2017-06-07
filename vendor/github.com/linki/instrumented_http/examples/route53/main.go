@@ -56,8 +56,8 @@ func main() {
 //
 // $ curl -Ss 127.0.0.1:9099/metrics | grep http
 //
-// http_request_duration_microseconds{handler="instrumented_http",host="route53.amazonaws.com",method="GET",path="hostedzone",query="",scheme="https",status="200",quantile="0.5"} 463922
-// http_request_duration_microseconds{handler="instrumented_http",host="route53.amazonaws.com",method="GET",path="hostedzone",query="",scheme="https",status="200",quantile="0.9"} 969598
-// http_request_duration_microseconds{handler="instrumented_http",host="route53.amazonaws.com",method="GET",path="hostedzone",query="",scheme="https",status="200",quantile="0.99"} 969598
-// http_request_duration_microseconds_sum{handler="instrumented_http",host="route53.amazonaws.com",method="GET",path="hostedzone",query="",scheme="https",status="200"} 2.363297e+06
-// http_request_duration_microseconds_count{handler="instrumented_http",host="route53.amazonaws.com",method="GET",path="hostedzone",query="",scheme="https",status="200"} 4
+// http_request_duration_seconds{handler="instrumented_http",host="route53.amazonaws.com",method="GET",path="hostedzone",query="",scheme="https",status="200",quantile="0.5"} 0.463922
+// http_request_duration_seconds{handler="instrumented_http",host="route53.amazonaws.com",method="GET",path="hostedzone",query="",scheme="https",status="200",quantile="0.9"} 0.969598
+// http_request_duration_seconds{handler="instrumented_http",host="route53.amazonaws.com",method="GET",path="hostedzone",query="",scheme="https",status="200",quantile="0.99"} 0.969598
+// http_request_duration_seconds_sum{handler="instrumented_http",host="route53.amazonaws.com",method="GET",path="hostedzone",query="",scheme="https",status="200"} 2.363297242
+// http_request_duration_seconds_count{handler="instrumented_http",host="route53.amazonaws.com",method="GET",path="hostedzone",query="",scheme="https",status="200"} 4

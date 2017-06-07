@@ -252,7 +252,6 @@
         {"shape":"ResourceNotFoundException"},
         {"shape":"ResourceInUseException"},
         {"shape":"InvalidRoleException"},
-        {"shape":"ResourceNotFoundException"},
         {"shape":"InvalidParameterCombinationException"},
         {"shape":"LimitExceededException"},
         {"shape":"IncompatibleImageException"}
@@ -300,7 +299,8 @@
       "type":"string",
       "enum":[
         "API",
-        "SAML"
+        "SAML",
+        "USERPOOL"
       ]
     },
     "Boolean":{"type":"boolean"},
@@ -545,6 +545,17 @@
         "EnableDefaultInternetAccess":{"shape":"BooleanObject"}
       }
     },
+    "FleetAttribute":{
+      "type":"string",
+      "enum":[
+        "VPC_CONFIGURATION",
+        "VPC_CONFIGURATION_SECURITY_GROUP_IDS"
+      ]
+    },
+    "FleetAttributes":{
+      "type":"list",
+      "member":{"shape":"FleetAttribute"}
+    },
     "FleetError":{
       "type":"structure",
       "members":{
@@ -743,6 +754,11 @@
       },
       "exception":true
     },
+    "SecurityGroupIdList":{
+      "type":"list",
+      "member":{"shape":"String"},
+      "max":5
+    },
     "Session":{
       "type":"structure",
       "required":[
@@ -872,10 +888,14 @@
         "VpcConfig":{"shape":"VpcConfig"},
         "MaxUserDurationInSeconds":{"shape":"Integer"},
         "DisconnectTimeoutInSeconds":{"shape":"Integer"},
-        "DeleteVpcConfig":{"shape":"Boolean"},
+        "DeleteVpcConfig":{
+          "shape":"Boolean",
+          "deprecated":true
+        },
         "Description":{"shape":"Description"},
         "DisplayName":{"shape":"DisplayName"},
-        "EnableDefaultInternetAccess":{"shape":"BooleanObject"}
+        "EnableDefaultInternetAccess":{"shape":"BooleanObject"},
+        "AttributesToDelete":{"shape":"FleetAttributes"}
       }
     },
     "UpdateFleetResult":{
@@ -916,7 +936,8 @@
     "VpcConfig":{
       "type":"structure",
       "members":{
-        "SubnetIds":{"shape":"SubnetIdList"}
+        "SubnetIds":{"shape":"SubnetIdList"},
+        "SecurityGroupIds":{"shape":"SecurityGroupIdList"}
       }
     }
   }

@@ -52,8 +52,8 @@ func main() {
 //
 // $ curl -Ss 127.0.0.1:9099/metrics | grep http
 //
-// http_request_duration_microseconds{handler="instrumented_http",host="www.googleapis.com",method="GET",path="managedZones",query="",scheme="https",status="200",quantile="0.5"} 642468
-// http_request_duration_microseconds{handler="instrumented_http",host="www.googleapis.com",method="GET",path="managedZones",query="",scheme="https",status="200",quantile="0.9"} 660945
-// http_request_duration_microseconds{handler="instrumented_http",host="www.googleapis.com",method="GET",path="managedZones",query="",scheme="https",status="200",quantile="0.99"} 660945
-// http_request_duration_microseconds_sum{handler="instrumented_http",host="www.googleapis.com",method="GET",path="managedZones",query="",scheme="https",status="200"} 1.303413e+06
-// http_request_duration_microseconds_count{handler="instrumented_http",host="www.googleapis.com",method="GET",path="managedZones",query="",scheme="https",status="200"} 2
+// http_request_duration_seconds{handler="instrumented_http",host="www.googleapis.com",method="GET",path="managedZones",query="",scheme="https",status="200",quantile="0.5"} 0.642468
+// http_request_duration_seconds{handler="instrumented_http",host="www.googleapis.com",method="GET",path="managedZones",query="",scheme="https",status="200",quantile="0.9"} 0.660945
+// http_request_duration_seconds{handler="instrumented_http",host="www.googleapis.com",method="GET",path="managedZones",query="",scheme="https",status="200",quantile="0.99"} 0.660945
+// http_request_duration_seconds_sum{handler="instrumented_http",host="www.googleapis.com",method="GET",path="managedZones",query="",scheme="https",status="200"} 1.303413521
+// http_request_duration_seconds_count{handler="instrumented_http",host="www.googleapis.com",method="GET",path="managedZones",query="",scheme="https",status="200"} 2

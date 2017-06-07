@@ -1,3 +1,33 @@
+Release v1.8.36 (2017-06-06)
+===
+
+### Service Client Updates
+* `service/acm`: Updates service documentation
+  * Documentation update for AWS Certificate Manager.
+* `service/cloudfront`: Updates service documentation
+  * Doc update to fix incorrect prefix in S3OriginConfig
+* `aws/endpoints`: Updated Regions and Endpoints metadata.
+* `service/iot`: Updates service API
+  * Update client side validation for SalesForce action.
+
+Release v1.8.35 (2017-06-05)
+===
+
+### Service Client Updates
+* `service/appstream`: Updates service API and documentation
+  * AppStream 2.0 Custom Security Groups allows you to easily control what network resources your streaming instances and images have access to. You can assign up to 5 security groups per Fleet to control the inbound and outbound network access to your streaming instances to specific IP ranges, network protocols, or ports.
+* `service/iot`: Updates service API, documentation, paginators, and examples
+  * Added Salesforce action to IoT Rules Engine.
+
+Release v1.8.34 (2017-06-02)
+===
+
+### Service Client Updates
+* `service/kinesisanalytics`: Updates service API, documentation, and paginators
+  * Kinesis Analytics publishes error messages CloudWatch logs in case of application misconfigurations
+* `service/workdocs`: Updates service API and documentation
+  * This release includes new APIs to manage tags and custom metadata on resources and also new APIs to add and retrieve comments at the document level.
+
 Release v1.8.33 (2017-06-01)
 ===
 

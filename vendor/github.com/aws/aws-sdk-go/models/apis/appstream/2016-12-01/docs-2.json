@@ -246,6 +246,18 @@
         "UpdateFleetResult$Fleet": "<p>A list of fleet details.</p>"
       }
     },
+    "FleetAttribute": {
+      "base": "<p>Fleet attribute.</p>",
+      "refs": {
+        "FleetAttributes$member": null
+      }
+    },
+    "FleetAttributes": {
+      "base": "<p>A list of fleet attributes.</p>",
+      "refs": {
+        "UpdateFleetRequest$AttributesToDelete": "<p>Fleet attributes to be deleted.</p>"
+      }
+    },
     "FleetError": {
       "base": "<p>The details of the fleet error.</p>",
       "refs": {
@@ -418,6 +430,12 @@
       "refs": {
       }
     },
+    "SecurityGroupIdList": {
+      "base": "<p>A list of security groups.</p>",
+      "refs": {
+        "VpcConfig$SecurityGroupIds": "<p>Security groups associated with the fleet.</p>"
+      }
+    },
     "Session": {
       "base": "<p>Contains the parameters for a streaming session.</p>",
       "refs": {
@@ -557,6 +575,7 @@
         "ListAssociatedStacksResult$NextToken": "<p>The pagination token to use to retrieve the next page of results for this operation. If there are no more pages, this value is null.</p>",
         "Metadata$key": null,
         "Metadata$value": null,
+        "SecurityGroupIdList$member": null,
         "Session$Id": "<p>The unique ID for a streaming session.</p>",
         "Session$StackName": "<p>The name of the stack for which the streaming session was created.</p>",
         "Session$FleetName": "<p>The name of the fleet for which the streaming session was created.</p>",

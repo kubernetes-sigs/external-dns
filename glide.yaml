@@ -42,7 +42,7 @@ import:
   - tools/clientcmd
 - package: github.com/kubernetes/repo-infra
 - package: github.com/linki/instrumented_http
-  version: ~0.1.0
+  version: ~0.2.0
 - package: github.com/Azure/azure-sdk-for-go
   version: ~10.0.4-beta
 - package: github.com/Azure/go-autorest
