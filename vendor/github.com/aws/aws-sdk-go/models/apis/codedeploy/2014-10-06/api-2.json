@@ -492,6 +492,19 @@
         {"shape":"InvalidNextTokenException"}
       ]
     },
+    "ListGitHubAccountTokenNames":{
+      "name":"ListGitHubAccountTokenNames",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"ListGitHubAccountTokenNamesInput"},
+      "output":{"shape":"ListGitHubAccountTokenNamesOutput"},
+      "errors":[
+        {"shape":"InvalidNextTokenException"},
+        {"shape":"ResourceValidationException"}
+      ]
+    },
     "ListOnPremisesInstances":{
       "name":"ListOnPremisesInstances",
       "http":{
@@ -694,7 +707,8 @@
         "applicationId":{"shape":"ApplicationId"},
         "applicationName":{"shape":"ApplicationName"},
         "createTime":{"shape":"Timestamp"},
-        "linkedToGitHub":{"shape":"Boolean"}
+        "linkedToGitHub":{"shape":"Boolean"},
+        "gitHubAccountName":{"shape":"GitHubAccountTokenName"}
       }
     },
     "ApplicationLimitExceededException":{
@@ -1108,7 +1122,9 @@
         "autoRollbackConfiguration":{"shape":"AutoRollbackConfiguration"},
         "deploymentStyle":{"shape":"DeploymentStyle"},
         "blueGreenDeploymentConfiguration":{"shape":"BlueGreenDeploymentConfiguration"},
-        "loadBalancerInfo":{"shape":"LoadBalancerInfo"}
+        "loadBalancerInfo":{"shape":"LoadBalancerInfo"},
+        "lastSuccessfulDeployment":{"shape":"LastDeploymentInfo"},
+        "lastAttemptedDeployment":{"shape":"LastDeploymentInfo"}
       }
     },
     "DeploymentGroupInfoList":{
@@ -1470,6 +1486,17 @@
       "members":{
         "instanceInfo":{"shape":"InstanceInfo"}
       }
+    },
+    "GitHubAccountTokenDoesNotExistException":{
+      "type":"structure",
+      "members":{
+      },
+      "exception":true
+    },
+    "GitHubAccountTokenName":{"type":"string"},
+    "GitHubAccountTokenNameList":{
+      "type":"list",
+      "member":{"shape":"GitHubAccountTokenName"}
     },
     "GitHubLocation":{
       "type":"structure",
@@ -1841,6 +1868,15 @@
       "exception":true
     },
     "Key":{"type":"string"},
+    "LastDeploymentInfo":{
+      "type":"structure",
+      "members":{
+        "deploymentId":{"shape":"DeploymentId"},
+        "status":{"shape":"DeploymentStatus"},
+        "endTime":{"shape":"Timestamp"},
+        "createTime":{"shape":"Timestamp"}
+      }
+    },
     "LifecycleErrorCode":{
       "type":"string",
       "enum":[
@@ -1981,6 +2017,19 @@
         "nextToken":{"shape":"NextToken"}
       }
     },
+    "ListGitHubAccountTokenNamesInput":{
+      "type":"structure",
+      "members":{
+        "nextToken":{"shape":"NextToken"}
+      }
+    },
+    "ListGitHubAccountTokenNamesOutput":{
+      "type":"structure",
+      "members":{
+        "tokenNameList":{"shape":"GitHubAccountTokenNameList"},
+        "nextToken":{"shape":"NextToken"}
+      }
+    },
     "ListOnPremisesInstancesInput":{
       "type":"structure",
       "members":{
@@ -2075,6 +2124,12 @@
       }
     },
     "Repository":{"type":"string"},
+    "ResourceValidationException":{
+      "type":"structure",
+      "members":{
+      },
+      "exception":true
+    },
     "RevisionDoesNotExistException":{
       "type":"structure",
       "members":{

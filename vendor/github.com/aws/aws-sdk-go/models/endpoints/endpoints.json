@@ -127,6 +127,13 @@
           "us-west-2" : { }
         }
       },
+      "athena" : {
+        "endpoints" : {
+          "us-east-1" : { },
+          "us-east-2" : { },
+          "us-west-2" : { }
+        }
+      },
       "autoscaling" : {
         "defaults" : {
           "protocols" : [ "http", "https" ]
@@ -150,7 +157,9 @@
       },
       "batch" : {
         "endpoints" : {
-          "us-east-1" : { }
+          "eu-west-1" : { },
+          "us-east-1" : { },
+          "us-west-2" : { }
         }
       },
       "budgets" : {
@@ -267,6 +276,10 @@
       },
       "codecommit" : {
         "endpoints" : {
+          "ap-northeast-1" : { },
+          "ap-southeast-1" : { },
+          "ap-southeast-2" : { },
+          "eu-central-1" : { },
           "eu-west-1" : { },
           "us-east-1" : { },
           "us-east-2" : { },
@@ -862,6 +875,10 @@
       },
       "lightsail" : {
         "endpoints" : {
+          "ap-northeast-1" : { },
+          "ap-south-1" : { },
+          "ap-southeast-1" : { },
+          "ap-southeast-2" : { },
           "eu-central-1" : { },
           "eu-west-1" : { },
           "eu-west-2" : { },
@@ -1259,10 +1276,13 @@
         "endpoints" : {
           "ap-northeast-1" : { },
           "ap-northeast-2" : { },
+          "ap-south-1" : { },
           "ap-southeast-1" : { },
           "ap-southeast-2" : { },
+          "ca-central-1" : { },
           "eu-central-1" : { },
           "eu-west-1" : { },
+          "eu-west-2" : { },
           "sa-east-1" : { },
           "us-east-1" : { },
           "us-east-2" : { },
@@ -1721,6 +1741,11 @@
         }
       },
       "cloudtrail" : {
+        "endpoints" : {
+          "us-gov-west-1" : { }
+        }
+      },
+      "codedeploy" : {
         "endpoints" : {
           "us-gov-west-1" : { }
         }

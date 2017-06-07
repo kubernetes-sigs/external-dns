@@ -31,6 +31,7 @@
     "ListDeploymentGroups": "<p>Lists the deployment groups for an application registered with the applicable IAM user or AWS account.</p>",
     "ListDeploymentInstances": "<p>Lists the instance for a deployment associated with the applicable IAM user or AWS account.</p>",
     "ListDeployments": "<p>Lists the deployments in a deployment group for an application registered with the applicable IAM user or AWS account.</p>",
+    "ListGitHubAccountTokenNames": "<p>Lists the names of stored connections to GitHub accounts.</p>",
     "ListOnPremisesInstances": "<p>Gets a list of names for one or more on-premises instances.</p> <p>Unless otherwise specified, both registered and deregistered on-premises instance names will be listed. To list only registered or deregistered on-premises instance names, use the registration status parameter.</p>",
     "RegisterApplicationRevision": "<p>Registers with AWS CodeDeploy a revision for the specified application.</p>",
     "RegisterOnPremisesInstance": "<p>Registers an on-premises instance.</p> <note> <p>Only one IAM ARN (an IAM session ARN or IAM user ARN) is supported in the request. You cannot use both.</p> </note>",
@@ -223,62 +224,62 @@
       }
     },
     "BatchGetApplicationRevisionsInput": {
-      "base": "<p>Represents the input of a batch get application revisions operation.</p>",
+      "base": "<p>Represents the input of a BatchGetApplicationRevisions operation.</p>",
       "refs": {
       }
     },
     "BatchGetApplicationRevisionsOutput": {
-      "base": "<p>Represents the output of a batch get application revisions operation.</p>",
+      "base": "<p>Represents the output of a BatchGetApplicationRevisions operation.</p>",
       "refs": {
       }
     },
     "BatchGetApplicationsInput": {
-      "base": "<p>Represents the input of a batch get applications operation.</p>",
+      "base": "<p>Represents the input of a BatchGetApplications operation.</p>",
       "refs": {
       }
     },
     "BatchGetApplicationsOutput": {
-      "base": "<p>Represents the output of a batch get applications operation.</p>",
+      "base": "<p>Represents the output of a BatchGetApplications operation.</p>",
       "refs": {
       }
     },
     "BatchGetDeploymentGroupsInput": {
-      "base": "<p>Represents the input of a batch get deployment groups operation.</p>",
+      "base": "<p>Represents the input of a BatchGetDeploymentGroups operation.</p>",
       "refs": {
       }
     },
     "BatchGetDeploymentGroupsOutput": {
-      "base": "<p>Represents the output of a batch get deployment groups operation.</p>",
+      "base": "<p>Represents the output of a BatchGetDeploymentGroups operation.</p>",
       "refs": {
       }
     },
     "BatchGetDeploymentInstancesInput": {
-      "base": "<p>Represents the input of a batch get deployment instances operation.</p>",
+      "base": "<p>Represents the input of a BatchGetDeploymentInstances operation.</p>",
       "refs": {
       }
     },
     "BatchGetDeploymentInstancesOutput": {
-      "base": "<p>Represents the output of a batch get deployment instance operation.</p>",
+      "base": "<p>Represents the output of a BatchGetDeploymentInstances operation.</p>",
       "refs": {
       }
     },
     "BatchGetDeploymentsInput": {
-      "base": "<p>Represents the input of a batch get deployments operation.</p>",
+      "base": "<p>Represents the input of a BatchGetDeployments operation.</p>",
       "refs": {
       }
     },
     "BatchGetDeploymentsOutput": {
-      "base": "<p>Represents the output of a batch get deployments operation.</p>",
+      "base": "<p>Represents the output of a BatchGetDeployments operation.</p>",
       "refs": {
       }
     },
     "BatchGetOnPremisesInstancesInput": {
-      "base": "<p>Represents the input of a batch get on-premises instances operation.</p>",
+      "base": "<p>Represents the input of a BatchGetOnPremisesInstances operation.</p>",
       "refs": {
       }
     },
     "BatchGetOnPremisesInstancesOutput": {
-      "base": "<p>Represents the output of a batch get on-premises instances operation.</p>",
+      "base": "<p>Represents the output of a BatchGetOnPremisesInstances operation.</p>",
       "refs": {
       }
     },
@@ -339,62 +340,62 @@
       }
     },
     "CreateApplicationInput": {
-      "base": "<p>Represents the input of a create application operation.</p>",
+      "base": "<p>Represents the input of a CreateApplication operation.</p>",
       "refs": {
       }
     },
     "CreateApplicationOutput": {
-      "base": "<p>Represents the output of a create application operation.</p>",
+      "base": "<p>Represents the output of a CreateApplication operation.</p>",
       "refs": {
       }
     },
     "CreateDeploymentConfigInput": {
-      "base": "<p>Represents the input of a create deployment configuration operation.</p>",
+      "base": "<p>Represents the input of a CreateDeploymentConfig operation.</p>",
       "refs": {
       }
     },
     "CreateDeploymentConfigOutput": {
-      "base": "<p>Represents the output of a create deployment configuration operation.</p>",
+      "base": "<p>Represents the output of a CreateDeploymentConfig operation.</p>",
       "refs": {
       }
     },
     "CreateDeploymentGroupInput": {
-      "base": "<p>Represents the input of a create deployment group operation.</p>",
+      "base": "<p>Represents the input of a CreateDeploymentGroup operation.</p>",
       "refs": {
       }
     },
     "CreateDeploymentGroupOutput": {
-      "base": "<p>Represents the output of a create deployment group operation.</p>",
+      "base": "<p>Represents the output of a CreateDeploymentGroup operation.</p>",
       "refs": {
       }
     },
     "CreateDeploymentInput": {
-      "base": "<p>Represents the input of a create deployment operation.</p>",
+      "base": "<p>Represents the input of a CreateDeployment operation.</p>",
       "refs": {
       }
     },
     "CreateDeploymentOutput": {
-      "base": "<p>Represents the output of a create deployment operation.</p>",
+      "base": "<p>Represents the output of a CreateDeployment operation.</p>",
       "refs": {
       }
     },
     "DeleteApplicationInput": {
-      "base": "<p>Represents the input of a delete application operation.</p>",
+      "base": "<p>Represents the input of a DeleteApplication operation.</p>",
       "refs": {
       }
     },
     "DeleteDeploymentConfigInput": {
-      "base": "<p>Represents the input of a delete deployment configuration operation.</p>",
+      "base": "<p>Represents the input of a DeleteDeploymentConfig operation.</p>",
       "refs": {
       }
     },
     "DeleteDeploymentGroupInput": {
-      "base": "<p>Represents the input of a delete deployment group operation.</p>",
+      "base": "<p>Represents the input of a DeleteDeploymentGroup operation.</p>",
       "refs": {
       }
     },
     "DeleteDeploymentGroupOutput": {
-      "base": "<p>Represents the output of a delete deployment group operation.</p>",
+      "base": "<p>Represents the output of a DeleteDeploymentGroup operation.</p>",
       "refs": {
       }
     },
@@ -547,6 +548,7 @@
         "GetDeploymentInput$deploymentId": "<p>A deployment ID associated with the applicable IAM user or AWS account.</p>",
         "GetDeploymentInstanceInput$deploymentId": "<p>The unique ID of a deployment.</p>",
         "InstanceSummary$deploymentId": "<p>The deployment ID.</p>",
+        "LastDeploymentInfo$deploymentId": "<p>The deployment ID.</p>",
         "ListDeploymentInstancesInput$deploymentId": "<p>The unique ID of a deployment.</p>",
         "RollbackInfo$rollbackDeploymentId": "<p>The ID of the deployment rollback.</p>",
         "RollbackInfo$rollbackTriggeringDeploymentId": "<p>The deployment ID of the deployment that was underway and triggered a rollback deployment because it failed or was stopped.</p>",
@@ -609,7 +611,8 @@
       "base": null,
       "refs": {
         "DeploymentInfo$status": "<p>The current state of the deployment as a whole.</p>",
-        "DeploymentStatusList$member": null
+        "DeploymentStatusList$member": null,
+        "LastDeploymentInfo$status": "<p>The status of the most recent deployment.</p>"
       }
     },
     "DeploymentStatusList": {
@@ -647,7 +650,7 @@
       }
     },
     "DeregisterOnPremisesInstanceInput": {
-      "base": "<p>Represents the input of a deregister on-premises instance operation.</p>",
+      "base": "<p>Represents the input of a DeregisterOnPremisesInstance operation.</p>",
       "refs": {
       }
     },
@@ -760,73 +763,91 @@
       }
     },
     "GetApplicationInput": {
-      "base": "<p>Represents the input of a get application operation.</p>",
+      "base": "<p>Represents the input of a GetApplication operation.</p>",
       "refs": {
       }
     },
     "GetApplicationOutput": {
-      "base": "<p>Represents the output of a get application operation.</p>",
+      "base": "<p>Represents the output of a GetApplication operation.</p>",
       "refs": {
       }
     },
     "GetApplicationRevisionInput": {
-      "base": "<p>Represents the input of a get application revision operation.</p>",
+      "base": "<p>Represents the input of a GetApplicationRevision operation.</p>",
       "refs": {
       }
     },
     "GetApplicationRevisionOutput": {
-      "base": "<p>Represents the output of a get application revision operation.</p>",
+      "base": "<p>Represents the output of a GetApplicationRevision operation.</p>",
       "refs": {
       }
     },
     "GetDeploymentConfigInput": {
-      "base": "<p>Represents the input of a get deployment configuration operation.</p>",
+      "base": "<p>Represents the input of a GetDeploymentConfig operation.</p>",
       "refs": {
       }
     },
     "GetDeploymentConfigOutput": {
-      "base": "<p>Represents the output of a get deployment configuration operation.</p>",
+      "base": "<p>Represents the output of a GetDeploymentConfig operation.</p>",
       "refs": {
       }
     },
     "GetDeploymentGroupInput": {
-      "base": "<p>Represents the input of a get deployment group operation.</p>",
+      "base": "<p>Represents the input of a GetDeploymentGroup operation.</p>",
       "refs": {
       }
     },
     "GetDeploymentGroupOutput": {
-      "base": "<p>Represents the output of a get deployment group operation.</p>",
+      "base": "<p>Represents the output of a GetDeploymentGroup operation.</p>",
       "refs": {
       }
     },
     "GetDeploymentInput": {
-      "base": "<p>Represents the input of a get deployment operation.</p>",
+      "base": "<p>Represents the input of a GetDeployment operation.</p>",
       "refs": {
       }
     },
     "GetDeploymentInstanceInput": {
-      "base": "<p>Represents the input of a get deployment instance operation.</p>",
+      "base": "<p>Represents the input of a GetDeploymentInstance operation.</p>",
       "refs": {
       }
     },
     "GetDeploymentInstanceOutput": {
-      "base": "<p>Represents the output of a get deployment instance operation.</p>",
+      "base": "<p>Represents the output of a GetDeploymentInstance operation.</p>",
       "refs": {
       }
     },
     "GetDeploymentOutput": {
-      "base": "<p>Represents the output of a get deployment operation.</p>",
+      "base": "<p>Represents the output of a GetDeployment operation.</p>",
       "refs": {
       }
     },
     "GetOnPremisesInstanceInput": {
-      "base": "<p>Represents the input of a get on-premises instance operation.</p>",
+      "base": "<p>Represents the input of a GetOnPremisesInstance operation.</p>",
       "refs": {
       }
     },
     "GetOnPremisesInstanceOutput": {
-      "base": "<p>Represents the output of a get on-premises instance operation.</p>",
+      "base": "<p>Represents the output of a GetOnPremisesInstance operation.</p>",
       "refs": {
+      }
+    },
+    "GitHubAccountTokenDoesNotExistException": {
+      "base": "<p>No GitHub account connection exists with the named specified in the call.</p>",
+      "refs": {
+      }
+    },
+    "GitHubAccountTokenName": {
+      "base": null,
+      "refs": {
+        "ApplicationInfo$gitHubAccountName": "<p>The name for a connection to a GitHub account.</p>",
+        "GitHubAccountTokenNameList$member": null
+      }
+    },
+    "GitHubAccountTokenNameList": {
+      "base": null,
+      "refs": {
+        "ListGitHubAccountTokenNamesOutput$tokenNameList": "<p>A list of names of connections to GitHub accounts.</p>"
       }
     },
     "GitHubLocation": {
@@ -1203,6 +1224,13 @@
         "TagFilter$Key": "<p>The on-premises instance tag filter key.</p>"
       }
     },
+    "LastDeploymentInfo": {
+      "base": "<p>Information about the most recent attempted or successful deployment to a deployment group.</p>",
+      "refs": {
+        "DeploymentGroupInfo$lastSuccessfulDeployment": "<p>Information about the most recent successful deployment to the deployment group.</p>",
+        "DeploymentGroupInfo$lastAttemptedDeployment": "<p>Information about the most recent attempted deployment to the deployment group.</p>"
+      }
+    },
     "LifecycleErrorCode": {
       "base": null,
       "refs": {
@@ -1245,67 +1273,77 @@
       }
     },
     "ListApplicationRevisionsInput": {
-      "base": "<p>Represents the input of a list application revisions operation.</p>",
+      "base": "<p>Represents the input of a ListApplicationRevisions operation.</p>",
       "refs": {
       }
     },
     "ListApplicationRevisionsOutput": {
-      "base": "<p>Represents the output of a list application revisions operation.</p>",
+      "base": "<p>Represents the output of a ListApplicationRevisions operation.</p>",
       "refs": {
       }
     },
     "ListApplicationsInput": {
-      "base": "<p>Represents the input of a list applications operation.</p>",
+      "base": "<p>Represents the input of a ListApplications operation.</p>",
       "refs": {
       }
     },
     "ListApplicationsOutput": {
-      "base": "<p>Represents the output of a list applications operation.</p>",
+      "base": "<p>Represents the output of a ListApplications operation.</p>",
       "refs": {
       }
     },
     "ListDeploymentConfigsInput": {
-      "base": "<p>Represents the input of a list deployment configurations operation.</p>",
+      "base": "<p>Represents the input of a ListDeploymentConfigs operation.</p>",
       "refs": {
       }
     },
     "ListDeploymentConfigsOutput": {
-      "base": "<p>Represents the output of a list deployment configurations operation.</p>",
+      "base": "<p>Represents the output of a ListDeploymentConfigs operation.</p>",
       "refs": {
       }
     },
     "ListDeploymentGroupsInput": {
-      "base": "<p>Represents the input of a list deployment groups operation.</p>",
+      "base": "<p>Represents the input of a ListDeploymentGroups operation.</p>",
       "refs": {
       }
     },
     "ListDeploymentGroupsOutput": {
-      "base": "<p>Represents the output of a list deployment groups operation.</p>",
+      "base": "<p>Represents the output of a ListDeploymentGroups operation.</p>",
       "refs": {
       }
     },
     "ListDeploymentInstancesInput": {
-      "base": "<p>Represents the input of a list deployment instances operation.</p>",
+      "base": "<p>Represents the input of a ListDeploymentInstances operation.</p>",
       "refs": {
       }
     },
     "ListDeploymentInstancesOutput": {
-      "base": "<p>Represents the output of a list deployment instances operation.</p>",
+      "base": "<p>Represents the output of a ListDeploymentInstances operation.</p>",
       "refs": {
       }
     },
     "ListDeploymentsInput": {
-      "base": "<p>Represents the input of a list deployments operation.</p>",
+      "base": "<p>Represents the input of a ListDeployments operation.</p>",
       "refs": {
       }
     },
     "ListDeploymentsOutput": {
-      "base": "<p>Represents the output of a list deployments operation.</p>",
+      "base": "<p>Represents the output of a ListDeployments operation.</p>",
+      "refs": {
+      }
+    },
+    "ListGitHubAccountTokenNamesInput": {
+      "base": "<p>Represents the input of a ListGitHubAccountTokenNames operation.</p>",
+      "refs": {
+      }
+    },
+    "ListGitHubAccountTokenNamesOutput": {
+      "base": "<p>Represents the output of a ListGitHubAccountTokenNames operation.</p>",
       "refs": {
       }
     },
     "ListOnPremisesInstancesInput": {
-      "base": "<p>Represents the input of a list on-premises instances operation.</p>",
+      "base": "<p>Represents the input of a ListOnPremisesInstances operation.</p>",
       "refs": {
       }
     },
@@ -1380,6 +1418,8 @@
         "ListDeploymentInstancesOutput$nextToken": "<p>If a large amount of information is returned, an identifier is also returned. It can be used in a subsequent list deployment instances call to return the next set of deployment instances in the list.</p>",
         "ListDeploymentsInput$nextToken": "<p>An identifier returned from the previous list deployments call. It can be used to return the next set of deployments in the list.</p>",
         "ListDeploymentsOutput$nextToken": "<p>If a large amount of information is returned, an identifier is also returned. It can be used in a subsequent list deployments call to return the next set of deployments in the list.</p>",
+        "ListGitHubAccountTokenNamesInput$nextToken": "<p>An identifier returned from the previous ListGitHubAccountTokenNames call. It can be used to return the next set of names in the list. </p>",
+        "ListGitHubAccountTokenNamesOutput$nextToken": "<p>If a large amount of information is returned, an identifier is also returned. It can be used in a subsequent ListGitHubAccountTokenNames call to return the next set of names in the list. </p>",
         "ListOnPremisesInstancesInput$nextToken": "<p>An identifier returned from the previous list on-premises instances call. It can be used to return the next set of on-premises instances in the list.</p>",
         "ListOnPremisesInstancesOutput$nextToken": "<p>If a large amount of information is returned, an identifier is also returned. It can be used in a subsequent list on-premises instances call to return the next set of on-premises instances in the list.</p>"
       }
@@ -1391,7 +1431,7 @@
       }
     },
     "RegisterApplicationRevisionInput": {
-      "base": "<p>Represents the input of a register application revision operation.</p>",
+      "base": "<p>Represents the input of a RegisterApplicationRevision operation.</p>",
       "refs": {
       }
     },
@@ -1407,7 +1447,7 @@
       }
     },
     "RemoveTagsFromOnPremisesInstancesInput": {
-      "base": "<p>Represents the input of a remove tags from on-premises instances operation.</p>",
+      "base": "<p>Represents the input of a RemoveTagsFromOnPremisesInstances operation.</p>",
       "refs": {
       }
     },
@@ -1415,6 +1455,11 @@
       "base": null,
       "refs": {
         "GitHubLocation$repository": "<p>The GitHub account and repository pair that stores a reference to the commit that represents the bundled artifacts for the application revision. </p> <p>Specified as account/repository.</p>"
+      }
+    },
+    "ResourceValidationException": {
+      "base": "<p>The specified resource could not be validated.</p>",
+      "refs": {
       }
     },
     "RevisionDoesNotExistException": {
@@ -1523,12 +1568,12 @@
       }
     },
     "StopDeploymentInput": {
-      "base": "<p>Represents the input of a stop deployment operation.</p>",
+      "base": "<p>Represents the input of a StopDeployment operation.</p>",
       "refs": {
       }
     },
     "StopDeploymentOutput": {
-      "base": "<p>Represents the output of a stop deployment operation.</p>",
+      "base": "<p>Represents the output of a StopDeployment operation.</p>",
       "refs": {
       }
     },
@@ -1610,6 +1655,8 @@
         "InstanceInfo$registerTime": "<p>The time at which the on-premises instance was registered.</p>",
         "InstanceInfo$deregisterTime": "<p>If the on-premises instance was deregistered, the time at which the on-premises instance was deregistered.</p>",
         "InstanceSummary$lastUpdatedAt": "<p>A timestamp indicating when the instance information was last updated.</p>",
+        "LastDeploymentInfo$endTime": "<p>A timestamp indicating when the most recent deployment to the deployment group completed.</p>",
+        "LastDeploymentInfo$createTime": "<p>A timestamp indicating when the most recent deployment to the deployment group started.</p>",
         "LifecycleEvent$startTime": "<p>A timestamp indicating when the deployment lifecycle event started.</p>",
         "LifecycleEvent$endTime": "<p>A timestamp indicating when the deployment lifecycle event ended.</p>",
         "TimeRange$start": "<p>The start time of the time range.</p> <note> <p>Specify null to leave the start time open-ended.</p> </note>",
@@ -1665,17 +1712,17 @@
       }
     },
     "UpdateApplicationInput": {
-      "base": "<p>Represents the input of an update application operation.</p>",
+      "base": "<p>Represents the input of an UpdateApplication operation.</p>",
       "refs": {
       }
     },
     "UpdateDeploymentGroupInput": {
-      "base": "<p>Represents the input of an update deployment group operation.</p>",
+      "base": "<p>Represents the input of an UpdateDeploymentGroup operation.</p>",
       "refs": {
       }
     },
     "UpdateDeploymentGroupOutput": {
-      "base": "<p>Represents the output of an update deployment group operation.</p>",
+      "base": "<p>Represents the output of an UpdateDeploymentGroup operation.</p>",
       "refs": {
       }
     },
