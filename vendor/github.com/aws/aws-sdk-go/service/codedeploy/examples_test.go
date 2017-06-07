@@ -832,6 +832,27 @@ func ExampleCodeDeploy_ListDeployments() {
 	fmt.Println(resp)
 }
 
+func ExampleCodeDeploy_ListGitHubAccountTokenNames() {
+	sess := session.Must(session.NewSession())
+
+	svc := codedeploy.New(sess)
+
+	params := &codedeploy.ListGitHubAccountTokenNamesInput{
+		NextToken: aws.String("NextToken"),
+	}
+	resp, err := svc.ListGitHubAccountTokenNames(params)
+
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		fmt.Println(err.Error())
+		return
+	}
+
+	// Pretty-print the response data.
+	fmt.Println(resp)
+}
+
 func ExampleCodeDeploy_ListOnPremisesInstances() {
 	sess := session.Must(session.NewSession())
 

@@ -104,7 +104,7 @@
         "DeleteBotChannelAssociationRequest$name": "<p>The name of the association. The name is case sensitive. </p>",
         "GetBotChannelAssociationRequest$name": "<p>The name of the association between the bot and the channel. The name is case sensitive. </p>",
         "GetBotChannelAssociationResponse$name": "<p>The name of the association between the bot and the channel.</p>",
-        "GetBotChannelAssociationsRequest$nameContains": "<p>Substring to match in channel association names. An association will be returned if any part of its name matches the substring. For example, \"xyz\" matches both \"xyzabc\" and \"abcxyz.\"</p>"
+        "GetBotChannelAssociationsRequest$nameContains": "<p>Substring to match in channel association names. An association will be returned if any part of its name matches the substring. For example, \"xyz\" matches both \"xyzabc\" and \"abcxyz.\" To return all bot channel associations, use a hyphen (\"-\") as the <code>nameContains</code> parameter.</p>"
       }
     },
     "BotMetadata": {
@@ -974,7 +974,7 @@
         "ConflictException$message": null,
         "CreateBotVersionRequest$checksum": "<p>Identifies a specific revision of the <code>$LATEST</code> version of the bot. If you specify a checksum and the <code>$LATEST</code> version of the bot has a different checksum, a <code>PreconditionFailedException</code> exception is returned and Amazon Lex doesn't publish a new version. If you don't specify a checksum, Amazon Lex publishes the <code>$LATEST</code> version.</p>",
         "CreateBotVersionResponse$failureReason": "<p>If <code>status</code> is <code>FAILED</code>, Amazon Lex provides the reason that it failed to build the bot.</p>",
-        "CreateBotVersionResponse$voiceId": "<p>The Amazon Parrot voice ID that Amazon Lex uses for voice interactions with the user.</p>",
+        "CreateBotVersionResponse$voiceId": "<p>The Amazon Polly voice ID that Amazon Lex uses for voice interactions with the user.</p>",
         "CreateBotVersionResponse$checksum": "<p>Checksum identifying the version of the bot that was created.</p>",
         "CreateIntentVersionRequest$checksum": "<p>Checksum of the <code>$LATEST</code> version of the intent that should be used to create the new version. If you specify a checksum and the <code>$LATEST</code> version of the intent has a different checksum, Amazon Lex returns a <code>PreconditionFailedException</code> exception and doesn't publish a new version. If you don't specify a checksum, Amazon Lex publishes the <code>$LATEST</code> version.</p>",
         "CreateIntentVersionResponse$checksum": "<p>Checksum of the intent version created.</p>",
@@ -983,7 +983,7 @@
         "GetBotAliasResponse$checksum": "<p>Checksum of the bot alias.</p>",
         "GetBotRequest$versionOrAlias": "<p>The version or alias of the bot.</p>",
         "GetBotResponse$failureReason": "<p>If <code>status</code> is <code>FAILED</code>, Amazon Lex explains why it failed to build the bot.</p>",
-        "GetBotResponse$voiceId": "<p>The Amazon Parrot voice ID that Amazon Lex uses for voice interaction with the user. For more information, see .</p>",
+        "GetBotResponse$voiceId": "<p>The Amazon Polly voice ID that Amazon Lex uses for voice interaction with the user. For more information, see .</p>",
         "GetBotResponse$checksum": "<p>Checksum of the bot used to identify a specific revision of the bot's <code>$LATEST</code> version.</p>",
         "GetBuiltinIntentsRequest$signatureContains": "<p>Substring to match in built-in intent signatures. An intent will be returned if any part of its signature matches the substring. For example, \"xyz\" matches both \"xyzabc\" and \"abcxyz.\" To find the signature for an intent, see <a href=\"https://developer.amazon.com/public/solutions/alexa/alexa-skills-kit/docs/built-in-intent-ref/standard-intents\">Standard Built-in Intents</a> in the <i>Alexa Skills Kit</i>.</p>",
         "GetBuiltinSlotTypesRequest$signatureContains": "<p>Substring to match in built-in slot type signatures. A slot type will be returned if any part of its signature matches the substring. For example, \"xyz\" matches both \"xyzabc\" and \"abcxyz.\"</p>",
@@ -996,10 +996,10 @@
         "PreconditionFailedException$message": null,
         "PutBotAliasRequest$checksum": "<p>Identifies a specific revision of the <code>$LATEST</code> version.</p> <p>When you create a new bot alias, leave the <code>checksum</code> field blank. If you specify a checksum you get a <code>BadRequestException</code> exception.</p> <p>When you want to update a bot alias, set the <code>checksum</code> field to the checksum of the most recent revision of the <code>$LATEST</code> version. If you don't specify the <code> checksum</code> field, or if the checksum does not match the <code>$LATEST</code> version, you get a <code>PreconditionFailedException</code> exception.</p>",
         "PutBotAliasResponse$checksum": "<p>The checksum for the current version of the alias.</p>",
-        "PutBotRequest$voiceId": "<p>The Amazon Parrot voice ID that you want Amazon Lex to use for voice interactions with the user. The locale configured for the voice must match the locale of the bot. For more information, see <a href=\"http://docs.aws.amazon.com/polly/latest/dg/API_Voice.html\">Voice</a> in the <i>Amazon Polly Developer Guide</i>.</p>",
+        "PutBotRequest$voiceId": "<p>The Amazon Polly voice ID that you want Amazon Lex to use for voice interactions with the user. The locale configured for the voice must match the locale of the bot. For more information, see <a href=\"http://docs.aws.amazon.com/polly/latest/dg/API_Voice.html\">Voice</a> in the <i>Amazon Polly Developer Guide</i>.</p>",
         "PutBotRequest$checksum": "<p>Identifies a specific revision of the <code>$LATEST</code> version.</p> <p>When you create a new bot, leave the <code>checksum</code> field blank. If you specify a checksum you get a <code>BadRequestException</code> exception.</p> <p>When you want to update a bot, set the <code>checksum</code> field to the checksum of the most recent revision of the <code>$LATEST</code> version. If you don't specify the <code> checksum</code> field, or if the checksum does not match the <code>$LATEST</code> version, you get a <code>PreconditionFailedException</code> exception.</p>",
         "PutBotResponse$failureReason": "<p>If <code>status</code> is <code>FAILED</code>, Amazon Lex provides the reason that it failed to build the bot.</p>",
-        "PutBotResponse$voiceId": "<p>The Amazon Parrot voice ID that Amazon Lex uses for voice interaction with the user. For more information, see .</p>",
+        "PutBotResponse$voiceId": "<p>The Amazon Polly voice ID that Amazon Lex uses for voice interaction with the user. For more information, see .</p>",
         "PutBotResponse$checksum": "<p>Checksum of the bot that you created.</p>",
         "PutIntentRequest$checksum": "<p>Identifies a specific revision of the <code>$LATEST</code> version.</p> <p>When you create a new intent, leave the <code>checksum</code> field blank. If you specify a checksum you get a <code>BadRequestException</code> exception.</p> <p>When you want to update a intent, set the <code>checksum</code> field to the checksum of the most recent revision of the <code>$LATEST</code> version. If you don't specify the <code> checksum</code> field, or if the checksum does not match the <code>$LATEST</code> version, you get a <code>PreconditionFailedException</code> exception.</p>",
         "PutIntentResponse$checksum": "<p>Checksum of the <code>$LATEST</code>version of the intent created or updated.</p>",
