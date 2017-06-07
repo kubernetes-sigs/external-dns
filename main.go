@@ -113,6 +113,8 @@ func main() {
 		p, err = provider.NewGoogleProvider(cfg.GoogleProject, cfg.DomainFilter, cfg.DryRun)
 	case "aws":
 		p, err = provider.NewAWSProvider(cfg.DomainFilter, cfg.DryRun)
+	case "dnsimple":
+		p, err = provider.NewDnsimpleProvider(cfg.DomainFilter, cfg.DryRun)
 	case "inmemory":
 		p, err = provider.NewInMemoryProviderWithDomainAndLogging("example.com"), nil
 	case "azure":
