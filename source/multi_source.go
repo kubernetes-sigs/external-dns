@@ -23,9 +23,15 @@ type multiSource struct {
 	children []Source
 }
 
+// struct to allow for quickly creating distinct set of endpoints to return
+type endpointKey struct {
+	DNSName string
+	TxtType bool
+}
+
 // Endpoints collects endpoints of all nested Sources and returns them in a single slice.
 func (ms *multiSource) Endpoints() ([]*endpoint.Endpoint, error) {
-	result := []*endpoint.Endpoint{}
+	uniqueEndpoints := make(map[endpointKey]*endpoint.Endpoint)
 
 	for _, s := range ms.children {
 		endpoints, err := s.Endpoints()
@@ -33,10 +39,24 @@ func (ms *multiSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			return nil, err
 		}
 
-		result = append(result, endpoints...)
+		for _, endpoint := range endpoints {
+			uniqueEndpoints[newEndpointKey(endpoint)] = endpoint
+		}
+	}
+
+	result := []*endpoint.Endpoint{}
+	for _, e := range uniqueEndpoints {
+		result = append(result, e)
 	}
 
 	return result, nil
+}
+
+func newEndpointKey(endpoint *endpoint.Endpoint) endpointKey {
+	return endpointKey{
+		DNSName: endpoint.DNSName,
+		TxtType: endpoint.RecordType == "TXT",
+	}
 }
 
 // NewMultiSource creates a new multiSource.
