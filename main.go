@@ -114,7 +114,7 @@ func main() {
 	case "aws":
 		p, err = provider.NewAWSProvider(cfg.DomainFilter, cfg.DryRun)
 	case "inmemory":
-		p, err = provider.NewInMemoryProviderWithDomainAndLogging("example.com"), nil
+		p, err = provider.NewInMemoryProvider(provider.InMemoryWithDomain(cfg.DomainFilter), provider.InMemoryWithLogging()), nil
 	case "azure":
 		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, cfg.DomainFilter, cfg.AzureResourceGroup, cfg.DryRun)
 	default:
