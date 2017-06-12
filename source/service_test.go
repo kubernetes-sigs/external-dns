@@ -20,20 +20,29 @@ import (
 	"net"
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-// Validates that serviceSource is a Source
-var _ Source = &serviceSource{}
-
-func TestService(t *testing.T) {
-	t.Run("Endpoints", testServiceEndpoints)
+func TestServiceSource(t *testing.T) {
+	t.Run("Interface", testServiceSourceImplementsSource)
+	t.Run("NewServiceSource", testServiceSourceNewServiceSource)
+	t.Run("Endpoints", testServiceSourceEndpoints)
 }
 
-func TestNewServiceSource(t *testing.T) {
+// testServiceSourceImplementsSource tests that serviceSource is a valid Source.
+func testServiceSourceImplementsSource(t *testing.T) {
+	assert.Implements(t, (*Source)(nil), new(serviceSource))
+}
+
+// testServiceSourceNewServiceSource tests that NewServiceSource doesn't return an error.
+func testServiceSourceNewServiceSource(t *testing.T) {
 	for _, ti := range []struct {
 		title        string
 		fqdntemplate string
@@ -56,18 +65,18 @@ func TestNewServiceSource(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			_, err := NewServiceSource(fake.NewSimpleClientset(), "", ti.fqdntemplate, "")
-			if ti.expectError && err == nil {
-				t.Error("invalid template should return err")
-			}
-			if !ti.expectError && err != nil {
-				t.Error(err)
+
+			if ti.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
 }
 
-// testServiceEndpoints tests that various services generate the correct endpoints.
-func testServiceEndpoints(t *testing.T) {
+// testServiceSourceEndpoints tests that various services generate the correct endpoints.
+func testServiceSourceEndpoints(t *testing.T) {
 	for _, tc := range []struct {
 		title           string
 		targetNamespace string
@@ -393,10 +402,10 @@ func testServiceEndpoints(t *testing.T) {
 			}
 
 			service := &v1.Service{
-				Spec: v1.ServiceSpec{
+				Spec: metav1.ServiceSpec{
 					Type: tc.svcType,
 				},
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Namespace:   tc.svcNamespace,
 					Name:        tc.svcName,
 					Labels:      tc.labels,
@@ -410,20 +419,17 @@ func testServiceEndpoints(t *testing.T) {
 			}
 
 			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
-			client, _ := NewServiceSource(kubernetes, tc.targetNamespace, tc.fqdntemplate, tc.compatibility)
+			client, err := NewServiceSource(kubernetes, tc.targetNamespace, tc.fqdntemplate, tc.compatibility)
+			require.NoError(t, err)
 
 			endpoints, err := client.Endpoints()
-
-			if !tc.expectError && err != nil {
-				t.Fatal(err)
-			}
-			if tc.expectError && err == nil {
-				t.Fatal("expected error")
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
 			}
 
 			// Validate returned endpoints against desired endpoints.
@@ -436,7 +442,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	kubernetes := fake.NewSimpleClientset()
 
 	service := &v1.Service{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "testing",
 			Name:      "foo",
 			Annotations: map[string]string{
@@ -454,16 +460,13 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	}
 
 	_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
-	if err != nil {
-		b.Fatal(err)
-	}
+	require.NoError(b, err)
 
-	client, _ := NewServiceSource(kubernetes, v1.NamespaceAll, "", "")
+	client, err := NewServiceSource(kubernetes, v1.NamespaceAll, "", "")
+	require.NoError(b, err)
 
 	for i := 0; i < b.N; i++ {
 		_, err := client.Endpoints()
-		if err != nil {
-			b.Fatal(err)
-		}
+		require.NoError(b, err)
 	}
 }

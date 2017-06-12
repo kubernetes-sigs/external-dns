@@ -1,4 +1,7 @@
+## v0.3.0 - 2017-05-08
+
 Features:
+
   - Changed the flags to the v0.3 semantics, the following has changed:
     1. The TXT registry is used by default and has an owner ID of `default`
     2. `--dry-run` is disabled by default

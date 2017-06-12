@@ -17,12 +17,14 @@ limitations under the License.
 package provider
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -30,9 +32,8 @@ var (
 )
 
 func TestInMemoryProvider(t *testing.T) {
-	t.Run("Records", testInMemoryRecords)
-	t.Run("endpoints", testInMemoryEndpoints)
 	t.Run("findByType", testInMemoryFindByType)
+	t.Run("Records", testInMemoryRecords)
 	t.Run("validateChangeBatch", testInMemoryValidateChangeBatch)
 	t.Run("ApplyChanges", testInMemoryApplyChanges)
 	t.Run("NewInMemoryProvider", testNewInMemoryProvider)
@@ -43,8 +44,8 @@ func testInMemoryFindByType(t *testing.T) {
 	for _, ti := range []struct {
 		title         string
 		findType      string
-		records       []*InMemoryRecord
-		expected      *InMemoryRecord
+		records       []*inMemoryRecord
+		expected      *inMemoryRecord
 		expectedEmpty bool
 	}{
 		{
@@ -64,7 +65,7 @@ func testInMemoryFindByType(t *testing.T) {
 		{
 			title:    "one record, empty type",
 			findType: "",
-			records: []*InMemoryRecord{
+			records: []*inMemoryRecord{
 				{
 					Type: "A",
 				},
@@ -75,7 +76,7 @@ func testInMemoryFindByType(t *testing.T) {
 		{
 			title:    "one record, wrong type",
 			findType: "CNAME",
-			records: []*InMemoryRecord{
+			records: []*inMemoryRecord{
 				{
 					Type: "A",
 				},
@@ -86,19 +87,19 @@ func testInMemoryFindByType(t *testing.T) {
 		{
 			title:    "one record, right type",
 			findType: "A",
-			records: []*InMemoryRecord{
+			records: []*inMemoryRecord{
 				{
 					Type: "A",
 				},
 			},
-			expected: &InMemoryRecord{
+			expected: &inMemoryRecord{
 				Type: "A",
 			},
 		},
 		{
 			title:    "multiple records, right type",
 			findType: "A",
-			records: []*InMemoryRecord{
+			records: []*inMemoryRecord{
 				{
 					Type: "A",
 				},
@@ -106,134 +107,82 @@ func testInMemoryFindByType(t *testing.T) {
 					Type: "TXT",
 				},
 			},
-			expected: &InMemoryRecord{
+			expected: &inMemoryRecord{
 				Type: "A",
 			},
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			im := NewInMemoryProvider()
-			record := im.findByType(ti.findType, ti.records)
-			if ti.expectedEmpty && record != nil {
-				t.Errorf("should return nil")
-			}
-			if !ti.expectedEmpty && record == nil {
-				t.Errorf("should not return nil")
-			}
-			if !ti.expectedEmpty && record != nil && !reflect.DeepEqual(*record, *ti.expected) {
-				t.Errorf("wrong record found")
+			c := newInMemoryClient()
+			record := c.findByType(ti.findType, ti.records)
+			if ti.expectedEmpty {
+				assert.Nil(t, record)
+			} else {
+				require.NotNil(t, record)
+				assert.Equal(t, *ti.expected, *record)
 			}
 		})
 	}
 }
 
-func testInMemoryEndpoints(t *testing.T) {
+func testInMemoryRecords(t *testing.T) {
 	for _, ti := range []struct {
-		title    string
-		zone     string
-		init     map[string]zone
-		expected []*endpoint.Endpoint
+		title       string
+		zone        string
+		expectError bool
+		init        map[string]zone
+		expected    []*endpoint.Endpoint
 	}{
 		{
-			title:    "no records, no zone",
-			zone:     "",
-			init:     map[string]zone{},
-			expected: []*endpoint.Endpoint{},
+			title:       "no records, no zone",
+			zone:        "",
+			init:        map[string]zone{},
+			expectError: false,
 		},
 		{
-			title:    "no records, zone",
-			zone:     "central",
-			init:     map[string]zone{},
-			expected: []*endpoint.Endpoint{},
-		},
-		{
-			title: "records, no zone",
-			zone:  "",
+			title: "records, wrong zone",
+			zone:  "net",
 			init: map[string]zone{
-				"org": {
-					"example.org": []*InMemoryRecord{
-						{},
-					},
-					"foo.org": []*InMemoryRecord{
-						{},
-					},
-				},
-				"com": {
-					"example.com": []*InMemoryRecord{
-						{},
-					},
-					"foo.com": []*InMemoryRecord{
-						{},
-					},
-				},
+				"org": {},
+				"com": {},
 			},
-			expected: []*endpoint.Endpoint{},
-		},
-		{
-			title: "records, zone with no records",
-			zone:  "",
-			init: map[string]zone{
-				"org": {
-					"example.org": []*InMemoryRecord{
-						{},
-					},
-					"foo.org": []*InMemoryRecord{
-						{},
-					},
-				},
-				"com": {
-					"example.com": []*InMemoryRecord{
-						{},
-					},
-					"foo.com": []*InMemoryRecord{
-						{},
-					},
-				},
-			},
-			expected: []*endpoint.Endpoint{},
+			expectError: false,
 		},
 		{
 			title: "records, zone with records",
 			zone:  "org",
 			init: map[string]zone{
 				"org": {
-					"example.org": []*InMemoryRecord{
+					"example.org": []*inMemoryRecord{
 						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "example.org",
-								Target:  "8.8.8.8",
-							},
-							Type: "A",
+							Name:   "example.org",
+							Target: "8.8.8.8",
+							Type:   "A",
 						},
 						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "example.org",
-							},
+							Name: "example.org",
 							Type: "TXT",
 						},
 					},
-					"foo.org": []*InMemoryRecord{
+					"foo.org": []*inMemoryRecord{
 						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "foo.org",
-								Target:  "bar.org",
-							},
-							Type: "CNAME",
+							Name:   "foo.org",
+							Target: "4.4.4.4",
+							Type:   "CNAME",
 						},
 					},
 				},
 				"com": {
-					"example.com": []*InMemoryRecord{
+					"example.com": []*inMemoryRecord{
 						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "example.com",
-								Target:  "4.4.4.4",
-							},
-							Type: "A",
+							Name:   "example.com",
+							Target: "4.4.4.4",
+							Type:   "CNAME",
 						},
 					},
 				},
 			},
+			expectError: false,
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
@@ -246,103 +195,26 @@ func testInMemoryEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "foo.org",
-					Target:     "bar.org",
+					Target:     "4.4.4.4",
 					RecordType: "CNAME",
 				},
 			},
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			im := &InMemoryProvider{zones: ti.init}
-			if !testutils.SameEndpoints(im.endpoints(ti.zone), ti.expected) {
-				t.Errorf("endpoints returned wrong set")
-			}
-		})
-	}
-}
-
-func testInMemoryRecords(t *testing.T) {
-	for _, ti := range []struct {
-		title       string
-		zone        string
-		expectError bool
-		init        map[string]zone
-	}{
-		{
-			title:       "no records, no zone",
-			zone:        "",
-			init:        map[string]zone{},
-			expectError: true,
-		},
-		{
-			title: "records, wrong zone",
-			zone:  "net",
-			init: map[string]zone{
-				"org": {},
-				"com": {},
-			},
-			expectError: true,
-		},
-		{
-			title: "records, zone with records",
-			zone:  "org",
-			init: map[string]zone{
-				"org": {
-					"example.org": []*InMemoryRecord{
-						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "example.org",
-								Target:  "8.8.8.8",
-							},
-							Type: "A",
-						},
-						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "example.org",
-							},
-							Type: "TXT",
-						},
-					},
-					"foo.org": []*InMemoryRecord{
-						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "foo.org",
-								Target:  "4.4.4.4",
-							},
-							Type: "CNAME",
-						},
-					},
-				},
-				"com": {
-					"example.com": []*InMemoryRecord{
-						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "example.com",
-								Target:  "4.4.4.4",
-							},
-							Type: "CNAME",
-						},
-					},
-				},
-			},
-			expectError: false,
-		},
-	} {
-		t.Run(ti.title, func(t *testing.T) {
+			c := newInMemoryClient()
+			c.zones = ti.init
 			im := NewInMemoryProvider()
-			im.zones = ti.init
-			records, err := im.Records(ti.zone)
-			if ti.expectError && records != nil {
-				t.Errorf("wrong zone should not return records")
-			}
-			if ti.expectError && err != ErrZoneNotFound {
-				t.Errorf("expected error")
-			}
-			if !ti.expectError && err != nil {
-				t.Errorf("unexpected error")
-			}
-			if !ti.expectError && !testutils.SameEndpoints(im.endpoints(ti.zone), records) {
-				t.Errorf("endpoints returned wrong set")
+			im.client = c
+			f := filter{domain: ti.zone}
+			im.filter = &f
+			records, err := im.Records()
+			if ti.expectError {
+				assert.Nil(t, records)
+				assert.EqualError(t, err, ErrZoneNotFound.Error())
+			} else {
+				require.NoError(t, err)
+				assert.True(t, testutils.SameEndpoints(ti.expected, records))
 			}
 		})
 	}
@@ -351,48 +223,37 @@ func testInMemoryRecords(t *testing.T) {
 func testInMemoryValidateChangeBatch(t *testing.T) {
 	init := map[string]zone{
 		"org": {
-			"example.org": []*InMemoryRecord{
+			"example.org": []*inMemoryRecord{
 				{
-					Endpoint: &endpoint.Endpoint{
-						DNSName: "example.org",
-						Target:  "8.8.8.8",
-					},
-					Type: "A",
+					Name:   "example.org",
+					Target: "8.8.8.8",
+					Type:   "A",
 				},
 				{
-					Endpoint: &endpoint.Endpoint{
-						DNSName: "example.org",
-					},
-					Type: "TXT",
+					Name: "example.org",
 				},
 			},
-			"foo.org": []*InMemoryRecord{
+			"foo.org": []*inMemoryRecord{
 				{
-					Endpoint: &endpoint.Endpoint{
-						DNSName: "foo.org",
-						Target:  "bar.org",
-					},
-					Type: "CNAME",
+					Name:   "foo.org",
+					Target: "bar.org",
+					Type:   "CNAME",
 				},
 			},
-			"foo.bar.org": []*InMemoryRecord{
+			"foo.bar.org": []*inMemoryRecord{
 				{
-					Endpoint: &endpoint.Endpoint{
-						DNSName: "foo.bar.org",
-						Target:  "5.5.5.5",
-					},
-					Type: "A",
+					Name:   "foo.bar.org",
+					Target: "5.5.5.5",
+					Type:   "A",
 				},
 			},
 		},
 		"com": {
-			"example.com": []*InMemoryRecord{
+			"example.com": []*inMemoryRecord{
 				{
-					Endpoint: &endpoint.Endpoint{
-						DNSName: "example.com",
-						Target:  "another-example.com",
-					},
-					Type: "CNAME",
+					Name:   "example.com",
+					Target: "another-example.com",
+					Type:   "CNAME",
 				},
 			},
 		},
@@ -657,15 +518,19 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			im := &InMemoryProvider{
-				zones: ti.init,
+			c := &inMemoryClient{}
+			c.zones = ti.init
+			ichanges := &inMemoryChange{
+				Create:    convertToInMemoryRecord(ti.changes.Create),
+				UpdateNew: convertToInMemoryRecord(ti.changes.UpdateNew),
+				UpdateOld: convertToInMemoryRecord(ti.changes.UpdateOld),
+				Delete:    convertToInMemoryRecord(ti.changes.Delete),
 			}
-			err := im.validateChangeBatch(ti.zone, ti.changes)
-			if ti.expectError && err != ti.errorType {
-				t.Errorf("returns wrong type of error: %v, expected: %v", err, ti.errorType)
-			}
-			if !ti.expectError && err != nil {
-				t.Error(err)
+			err := c.validateChangeBatch(ti.zone, ichanges)
+			if ti.expectError {
+				assert.EqualError(t, err, ti.errorType.Error())
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
@@ -718,40 +583,35 @@ func testInMemoryApplyChanges(t *testing.T) {
 			},
 			expectedZonesState: map[string]zone{
 				"org": {
-					"example.org": []*InMemoryRecord{
+					"example.org": []*inMemoryRecord{
 						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "example.org",
-								Target:  "8.8.8.8",
-							},
-							Type: "A",
+
+							Name:   "example.org",
+							Target: "8.8.8.8",
+							Type:   "A",
 						},
 						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "example.org",
-							},
+
+							Name: "example.org",
 							Type: "TXT",
 						},
 					},
-					"foo.org": []*InMemoryRecord{
+					"foo.org": []*inMemoryRecord{
 						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "foo.org",
-								Target:  "4.4.4.4",
-							},
-							Type: "CNAME",
+
+							Name:   "foo.org",
+							Target: "4.4.4.4",
+							Type:   "CNAME",
 						},
 					},
-					"foo.bar.org": []*InMemoryRecord{},
+					"foo.bar.org": []*inMemoryRecord{},
 				},
 				"com": {
-					"example.com": []*InMemoryRecord{
+					"example.com": []*inMemoryRecord{
 						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "example.com",
-								Target:  "4.4.4.4",
-							},
-							Type: "CNAME",
+							Name:   "example.com",
+							Target: "4.4.4.4",
+							Type:   "CNAME",
 						},
 					},
 				},
@@ -789,50 +649,40 @@ func testInMemoryApplyChanges(t *testing.T) {
 			},
 			expectedZonesState: map[string]zone{
 				"org": {
-					"example.org": []*InMemoryRecord{
+					"example.org": []*inMemoryRecord{
 						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "example.org",
-							},
+							Name: "example.org",
 							Type: "TXT",
 						},
 					},
-					"foo.org": []*InMemoryRecord{
+					"foo.org": []*inMemoryRecord{
 						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "foo.org",
-								Target:  "4.4.4.4",
-							},
-							Type: "CNAME",
+							Name:   "foo.org",
+							Target: "4.4.4.4",
+							Type:   "CNAME",
 						},
 					},
-					"foo.bar.org": []*InMemoryRecord{
+					"foo.bar.org": []*inMemoryRecord{
 						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "foo.bar.org",
-								Target:  "4.8.8.4",
-							},
-							Type: "A",
+							Name:   "foo.bar.org",
+							Target: "4.8.8.4",
+							Type:   "A",
 						},
 					},
-					"foo.bar.new.org": []*InMemoryRecord{
+					"foo.bar.new.org": []*inMemoryRecord{
 						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "foo.bar.new.org",
-								Target:  "4.8.8.9",
-							},
-							Type: "A",
+							Name:   "foo.bar.new.org",
+							Target: "4.8.8.9",
+							Type:   "A",
 						},
 					},
 				},
 				"com": {
-					"example.com": []*InMemoryRecord{
+					"example.com": []*inMemoryRecord{
 						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "example.com",
-								Target:  "4.4.4.4",
-							},
-							Type: "CNAME",
+							Name:   "example.com",
+							Target: "4.4.4.4",
+							Type:   "CNAME",
 						},
 					},
 				},
@@ -842,66 +692,53 @@ func testInMemoryApplyChanges(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			init := map[string]zone{
 				"org": {
-					"example.org": []*InMemoryRecord{
+					"example.org": []*inMemoryRecord{
 						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "example.org",
-								Target:  "8.8.8.8",
-							},
-							Type: "A",
+							Name:   "example.org",
+							Target: "8.8.8.8",
+							Type:   "A",
 						},
 						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "example.org",
-							},
+							Name: "example.org",
 							Type: "TXT",
 						},
 					},
-					"foo.org": []*InMemoryRecord{
+					"foo.org": []*inMemoryRecord{
 						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "foo.org",
-								Target:  "4.4.4.4",
-							},
-							Type: "CNAME",
+							Name:   "foo.org",
+							Target: "4.4.4.4",
+							Type:   "CNAME",
 						},
 					},
-					"foo.bar.org": []*InMemoryRecord{
+					"foo.bar.org": []*inMemoryRecord{
 						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "foo.bar.org",
-								Target:  "5.5.5.5",
-							},
-							Type: "A",
+							Name:   "foo.bar.org",
+							Target: "5.5.5.5",
+							Type:   "A",
 						},
 					},
 				},
 				"com": {
-					"example.com": []*InMemoryRecord{
+					"example.com": []*inMemoryRecord{
 						{
-							Endpoint: &endpoint.Endpoint{
-								DNSName: "example.com",
-								Target:  "4.4.4.4",
-							},
-							Type: "CNAME",
+							Name:   "example.com",
+							Target: "4.4.4.4",
+							Type:   "CNAME",
 						},
 					},
 				},
 			}
 			im := NewInMemoryProvider()
-			im.zones = init
+			c := &inMemoryClient{}
+			c.zones = init
+			im.client = c
 
-			err := im.ApplyChanges(ti.zone, ti.changes)
-			if ti.expectError && err == nil {
-				t.Errorf("should return an error")
-			}
-			if !ti.expectError && err != nil {
-				t.Error(err)
-			}
-			if !ti.expectError {
-				if !reflect.DeepEqual(im.zones, ti.expectedZonesState) {
-					t.Errorf("invalid update")
-				}
+			err := im.ApplyChanges(ti.changes)
+			if ti.expectError {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, ti.expectedZonesState, c.zones)
 			}
 		})
 	}
@@ -909,17 +746,13 @@ func testInMemoryApplyChanges(t *testing.T) {
 
 func testNewInMemoryProvider(t *testing.T) {
 	cfg := NewInMemoryProvider()
-	if cfg.zones == nil {
-		t.Error("nil map")
-	}
+	assert.NotNil(t, cfg.client)
 }
 
 func testInMemoryCreateZone(t *testing.T) {
 	im := NewInMemoryProvider()
-	if err := im.CreateZone("zone"); err != nil {
-		t.Error(err)
-	}
-	if err := im.CreateZone("zone"); err != ErrZoneAlreadyExists {
-		t.Errorf("should fail with zone already exists")
-	}
+	err := im.CreateZone("zone")
+	assert.NoError(t, err)
+	err = im.CreateZone("zone")
+	assert.EqualError(t, err, ErrZoneAlreadyExists.Error())
 }

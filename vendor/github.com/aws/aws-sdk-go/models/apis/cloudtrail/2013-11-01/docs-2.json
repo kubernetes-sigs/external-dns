@@ -429,9 +429,9 @@
       }
     },
     "ResourceTagList": {
-      "base": "<p>A list of resource tags.</p>",
+      "base": null,
       "refs": {
-        "ListTagsResponse$ResourceTagList": null
+        "ListTagsResponse$ResourceTagList": "<p>A list of resource tags.</p>"
       }
     },
     "ResourceTypeNotSupportedException": {
@@ -567,7 +567,7 @@
       "refs": {
         "AddTagsRequest$TagsList": "<p>Contains a list of CloudTrail tags, up to a limit of 50</p>",
         "RemoveTagsRequest$TagsList": "<p>Specifies a list of tags to be removed.</p>",
-        "ResourceTag$TagsList": null
+        "ResourceTag$TagsList": "<p>A list of tags.</p>"
       }
     },
     "Trail": {

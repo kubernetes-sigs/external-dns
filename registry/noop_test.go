@@ -23,6 +23,9 @@ import (
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var _ Registry = &NoopRegistry{}
@@ -36,47 +39,35 @@ func TestNoopRegistry(t *testing.T) {
 func testNoopInit(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	r, err := NewNoopRegistry(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if r.provider != p {
-		t.Error("noop registry incorrectly initialized")
-	}
+	require.NoError(t, err)
+	assert.Equal(t, p, r.provider)
 }
 
 func testNoopRecords(t *testing.T) {
 	p := provider.NewInMemoryProvider()
-	p.CreateZone("zone")
+	p.CreateZone("org")
 	providerRecords := []*endpoint.Endpoint{
 		{
-			DNSName: "example.org",
-			Target:  "example-lb.com",
+			DNSName:    "example.org",
+			Target:     "example-lb.com",
+			RecordType: "CNAME",
 		},
 	}
-	p.ApplyChanges("zone", &plan.Changes{
+	p.ApplyChanges(&plan.Changes{
 		Create: providerRecords,
 	})
 
 	r, _ := NewNoopRegistry(p)
-	_, err := r.Records("wrong-zone")
-	if err == nil {
-		t.Error("Should fail for wrong zone: wrong-zone")
-	}
 
-	r, _ = NewNoopRegistry(p)
-	eps, err := r.Records("zone")
-	if err != nil {
-		t.Error(err)
-	}
-	if !testutils.SameEndpoints(eps, providerRecords) {
-		t.Error("incorrect result is returned")
-	}
+	eps, err := r.Records()
+	require.NoError(t, err)
+	assert.True(t, testutils.SameEndpoints(eps, providerRecords))
 }
 
 func testNoopApplyChanges(t *testing.T) {
 	// do some prep
 	p := provider.NewInMemoryProvider()
-	p.CreateZone("zone")
+	p.CreateZone("org")
 	providerRecords := []*endpoint.Endpoint{
 		{
 			DNSName: "example.org",
@@ -96,20 +87,13 @@ func testNoopApplyChanges(t *testing.T) {
 		},
 	}
 
-	p.ApplyChanges("zone", &plan.Changes{
+	p.ApplyChanges(&plan.Changes{
 		Create: providerRecords,
 	})
 
-	// wrong zone
-	r, _ := NewNoopRegistry(p)
-	err := r.ApplyChanges("wrong-zone", &plan.Changes{})
-	if err != provider.ErrZoneNotFound {
-		t.Error("should return zone not found for apply changes on wrong zone")
-	}
-
 	// wrong changes
-	r, _ = NewNoopRegistry(p)
-	err = r.ApplyChanges("zone", &plan.Changes{
+	r, _ := NewNoopRegistry(p)
+	err := r.ApplyChanges(&plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{
 				DNSName: "example.org",
@@ -117,12 +101,10 @@ func testNoopApplyChanges(t *testing.T) {
 			},
 		},
 	})
-	if err != provider.ErrRecordAlreadyExists {
-		t.Error("should return record already exists")
-	}
+	assert.EqualError(t, err, provider.ErrRecordAlreadyExists.Error())
 
 	//correct changes
-	err = r.ApplyChanges("zone", &plan.Changes{
+	require.NoError(t, r.ApplyChanges(&plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{
 				DNSName: "new-record.org",
@@ -141,12 +123,7 @@ func testNoopApplyChanges(t *testing.T) {
 				Target:  "old-lb.com",
 			},
 		},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	res, _ := p.Records("zone")
-	if !testutils.SameEndpoints(res, expectedUpdate) {
-		t.Error("incorrectly updated dns provider")
-	}
+	}))
+	res, _ := p.Records()
+	assert.True(t, testutils.SameEndpoints(res, expectedUpdate))
 }
