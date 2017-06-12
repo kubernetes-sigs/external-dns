@@ -611,6 +611,19 @@
         {"shape":"InternalServerError"}
       ]
     },
+    "RefreshCache":{
+      "name":"RefreshCache",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"RefreshCacheInput"},
+      "output":{"shape":"RefreshCacheOutput"},
+      "errors":[
+        {"shape":"InvalidGatewayRequestException"},
+        {"shape":"InternalServerError"}
+      ]
+    },
     "RemoveTagsFromResource":{
       "name":"RemoveTagsFromResource",
       "http":{
@@ -1037,7 +1050,9 @@
         "Role":{"shape":"Role"},
         "LocationARN":{"shape":"LocationARN"},
         "DefaultStorageClass":{"shape":"StorageClass"},
-        "ClientList":{"shape":"FileShareClientList"}
+        "ClientList":{"shape":"FileShareClientList"},
+        "Squash":{"shape":"Squash"},
+        "ReadOnly":{"shape":"Boolean"}
       }
     },
     "CreateNFSFileShareOutput":{
@@ -1956,7 +1971,9 @@
         "Role":{"shape":"Role"},
         "LocationARN":{"shape":"LocationARN"},
         "DefaultStorageClass":{"shape":"StorageClass"},
-        "ClientList":{"shape":"FileShareClientList"}
+        "ClientList":{"shape":"FileShareClientList"},
+        "Squash":{"shape":"Squash"},
+        "ReadOnly":{"shape":"Boolean"}
       }
     },
     "NFSFileShareInfoList":{
@@ -2005,6 +2022,19 @@
       "type":"integer",
       "max":24,
       "min":1
+    },
+    "RefreshCacheInput":{
+      "type":"structure",
+      "required":["FileShareARN"],
+      "members":{
+        "FileShareARN":{"shape":"FileShareARN"}
+      }
+    },
+    "RefreshCacheOutput":{
+      "type":"structure",
+      "members":{
+        "FileShareARN":{"shape":"FileShareARN"}
+      }
     },
     "RegionId":{
       "type":"string",
@@ -2132,6 +2162,11 @@
       "type":"string",
       "pattern":"\\Asnap-([0-9A-Fa-f]{8}|[0-9A-Fa-f]{17})\\z"
     },
+    "Squash":{
+      "type":"string",
+      "max":15,
+      "min":5
+    },
     "StartGatewayInput":{
       "type":"structure",
       "required":["GatewayARN"],
@@ -2215,7 +2250,8 @@
         "TapeSizeInBytes":{"shape":"TapeSize"},
         "TapeStatus":{"shape":"TapeStatus"},
         "VTLDevice":{"shape":"VTLDeviceARN"},
-        "Progress":{"shape":"DoubleObject"}
+        "Progress":{"shape":"DoubleObject"},
+        "TapeUsedInBytes":{"shape":"TapeUsage"}
       }
     },
     "TapeARN":{
@@ -2237,7 +2273,8 @@
         "TapeSizeInBytes":{"shape":"TapeSize"},
         "CompletionTime":{"shape":"Time"},
         "RetrievedTo":{"shape":"GatewayARN"},
-        "TapeStatus":{"shape":"TapeArchiveStatus"}
+        "TapeStatus":{"shape":"TapeArchiveStatus"},
+        "TapeUsedInBytes":{"shape":"TapeUsage"}
       }
     },
     "TapeArchiveStatus":{"type":"string"},
@@ -2292,6 +2329,7 @@
     "TapeRecoveryPointStatus":{"type":"string"},
     "TapeSize":{"type":"long"},
     "TapeStatus":{"type":"string"},
+    "TapeUsage":{"type":"long"},
     "Tapes":{
       "type":"list",
       "member":{"shape":"Tape"}
@@ -2403,7 +2441,9 @@
         "KMSKey":{"shape":"KMSKey"},
         "NFSFileShareDefaults":{"shape":"NFSFileShareDefaults"},
         "DefaultStorageClass":{"shape":"StorageClass"},
-        "ClientList":{"shape":"FileShareClientList"}
+        "ClientList":{"shape":"FileShareClientList"},
+        "Squash":{"shape":"Squash"},
+        "ReadOnly":{"shape":"Boolean"}
       }
     },
     "UpdateNFSFileShareOutput":{

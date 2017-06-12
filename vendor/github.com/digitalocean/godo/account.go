@@ -1,6 +1,6 @@
 package godo
 
-import "context"
+import "github.com/digitalocean/godo/context"
 
 // AccountService is an interface for interfacing with the Account
 // endpoints of the DigitalOcean API
@@ -47,7 +47,7 @@ func (s *AccountServiceOp) Get(ctx context.Context) (*Account, *Response, error)
 	}
 
 	root := new(accountRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}

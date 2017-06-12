@@ -20,59 +20,46 @@ import (
 	"testing"
 
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidateFlags(t *testing.T) {
 	cfg := newValidConfig(t)
+	assert.NoError(t, ValidateConfig(cfg))
+
+	cfg = newValidConfig(t)
 	cfg.LogFormat = "test"
-	if err := ValidateConfig(cfg); err == nil {
-		t.Errorf("unsupported log format should fail: %s", cfg.LogFormat)
-	}
+	assert.Error(t, ValidateConfig(cfg))
 
 	cfg = newValidConfig(t)
 	cfg.LogFormat = ""
-	if err := ValidateConfig(cfg); err == nil {
-		t.Errorf("unsupported log format should fail: %s", cfg.LogFormat)
-	}
+	assert.Error(t, ValidateConfig(cfg))
 
 	for _, format := range []string{"text", "json"} {
 		cfg = newValidConfig(t)
 		cfg.LogFormat = format
-		if err := ValidateConfig(cfg); err != nil {
-			t.Errorf("supported log format: %s should not fail", format)
-		}
-	}
-
-	cfg = newValidConfig(t)
-	cfg.Zone = ""
-	if err := ValidateConfig(cfg); err == nil {
-		t.Error("missing hosted zone should fail")
+		assert.NoError(t, ValidateConfig(cfg))
 	}
 
 	cfg = newValidConfig(t)
 	cfg.Sources = []string{}
-	if err := ValidateConfig(cfg); err == nil {
-		t.Error("missing at least one source should fail")
-	}
+	assert.Error(t, ValidateConfig(cfg))
 
 	cfg = newValidConfig(t)
 	cfg.Provider = ""
-	if err := ValidateConfig(cfg); err == nil {
-		t.Error("missing provider should fail")
-	}
+	assert.Error(t, ValidateConfig(cfg))
 }
 
 func newValidConfig(t *testing.T) *externaldns.Config {
 	cfg := externaldns.NewConfig()
 
 	cfg.LogFormat = "json"
-	cfg.Zone = "test-zone"
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "test-provider"
 
-	if err := ValidateConfig(cfg); err != nil {
-		t.Fatalf("newValidConfig should return valid config")
-	}
+	require.NoError(t, ValidateConfig(cfg))
 
 	return cfg
 }

@@ -1,8 +1,9 @@
 package godo
 
 import (
-	"context"
 	"fmt"
+
+	"github.com/digitalocean/godo/context"
 )
 
 // FloatingIPActionsService is an interface for interfacing with the
@@ -62,7 +63,7 @@ func (s *FloatingIPActionsServiceOp) doAction(ctx context.Context, ip string, re
 	}
 
 	root := new(actionRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -77,7 +78,7 @@ func (s *FloatingIPActionsServiceOp) get(ctx context.Context, path string) (*Act
 	}
 
 	root := new(actionRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -92,7 +93,7 @@ func (s *FloatingIPActionsServiceOp) list(ctx context.Context, path string) ([]A
 	}
 
 	root := new(actionsRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}

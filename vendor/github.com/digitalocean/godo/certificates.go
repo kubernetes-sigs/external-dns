@@ -1,8 +1,9 @@
 package godo
 
 import (
-	"context"
 	"path"
+
+	"github.com/digitalocean/godo/context"
 )
 
 const certificatesBasePath = "/v2/certificates"
@@ -59,7 +60,7 @@ func (c *CertificatesServiceOp) Get(ctx context.Context, cID string) (*Certifica
 	}
 
 	root := new(certificateRoot)
-	resp, err := c.client.Do(req, root)
+	resp, err := c.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -80,7 +81,7 @@ func (c *CertificatesServiceOp) List(ctx context.Context, opt *ListOptions) ([]C
 	}
 
 	root := new(certificatesRoot)
-	resp, err := c.client.Do(req, root)
+	resp, err := c.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -99,7 +100,7 @@ func (c *CertificatesServiceOp) Create(ctx context.Context, cr *CertificateReque
 	}
 
 	root := new(certificateRoot)
-	resp, err := c.client.Do(req, root)
+	resp, err := c.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -116,5 +117,5 @@ func (c *CertificatesServiceOp) Delete(ctx context.Context, cID string) (*Respon
 		return nil, err
 	}
 
-	return c.client.Do(req, nil)
+	return c.client.Do(ctx, req, nil)
 }

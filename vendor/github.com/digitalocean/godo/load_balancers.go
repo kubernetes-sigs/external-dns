@@ -1,8 +1,9 @@
 package godo
 
 import (
-	"context"
 	"fmt"
+
+	"github.com/digitalocean/godo/context"
 )
 
 const loadBalancersBasePath = "/v2/load_balancers"
@@ -148,7 +149,7 @@ func (l *LoadBalancersServiceOp) Get(ctx context.Context, lbID string) (*LoadBal
 	}
 
 	root := new(loadBalancerRoot)
-	resp, err := l.client.Do(req, root)
+	resp, err := l.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -169,7 +170,7 @@ func (l *LoadBalancersServiceOp) List(ctx context.Context, opt *ListOptions) ([]
 	}
 
 	root := new(loadBalancersRoot)
-	resp, err := l.client.Do(req, root)
+	resp, err := l.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -188,7 +189,7 @@ func (l *LoadBalancersServiceOp) Create(ctx context.Context, lbr *LoadBalancerRe
 	}
 
 	root := new(loadBalancerRoot)
-	resp, err := l.client.Do(req, root)
+	resp, err := l.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -206,7 +207,7 @@ func (l *LoadBalancersServiceOp) Update(ctx context.Context, lbID string, lbr *L
 	}
 
 	root := new(loadBalancerRoot)
-	resp, err := l.client.Do(req, root)
+	resp, err := l.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -223,7 +224,7 @@ func (l *LoadBalancersServiceOp) Delete(ctx context.Context, ldID string) (*Resp
 		return nil, err
 	}
 
-	return l.client.Do(req, nil)
+	return l.client.Do(ctx, req, nil)
 }
 
 // AddDroplets adds droplets to a load balancer.
@@ -235,7 +236,7 @@ func (l *LoadBalancersServiceOp) AddDroplets(ctx context.Context, lbID string, d
 		return nil, err
 	}
 
-	return l.client.Do(req, nil)
+	return l.client.Do(ctx, req, nil)
 }
 
 // RemoveDroplets removes droplets from a load balancer.
@@ -247,7 +248,7 @@ func (l *LoadBalancersServiceOp) RemoveDroplets(ctx context.Context, lbID string
 		return nil, err
 	}
 
-	return l.client.Do(req, nil)
+	return l.client.Do(ctx, req, nil)
 }
 
 // AddForwardingRules adds forwarding rules to a load balancer.
@@ -259,7 +260,7 @@ func (l *LoadBalancersServiceOp) AddForwardingRules(ctx context.Context, lbID st
 		return nil, err
 	}
 
-	return l.client.Do(req, nil)
+	return l.client.Do(ctx, req, nil)
 }
 
 // RemoveForwardingRules removes forwarding rules from a load balancer.
@@ -271,5 +272,5 @@ func (l *LoadBalancersServiceOp) RemoveForwardingRules(ctx context.Context, lbID
 		return nil, err
 	}
 
-	return l.client.Do(req, nil)
+	return l.client.Do(ctx, req, nil)
 }

@@ -50,6 +50,20 @@ func TestSignDetachedDSA(t *testing.T) {
 	testDetachedSignature(t, kring, out, signedInput, "check", testKey3KeyId)
 }
 
+func TestSignDetachedP256(t *testing.T) {
+	kring, _ := ReadKeyRing(readerFromHex(p256TestKeyPrivateHex))
+	kring[0].PrivateKey.Decrypt([]byte("passphrase"))
+
+	out := bytes.NewBuffer(nil)
+	message := bytes.NewBufferString(signedInput)
+	err := DetachSign(out, kring[0], message, nil)
+	if err != nil {
+		t.Error(err)
+	}
+
+	testDetachedSignature(t, kring, out, signedInput, "check", testKeyP256KeyId)
+}
+
 func TestNewEntity(t *testing.T) {
 	if testing.Short() {
 		return

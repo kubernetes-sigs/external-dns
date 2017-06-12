@@ -1,6 +1,10 @@
 # Setting up ExternalDNS on Google Container Engine
 
-This tutorial describes how to setup ExternalDNS for usage within a GKE cluster.
+This tutorial describes how to setup ExternalDNS for usage within a GKE cluster. Make sure to use **>=0.3** version of ExternalDNS for this tutorial
+
+## Set up your environment
+
+*If you prefer to try-out ExternalDNS in one of the existing environments you can skip this step*
 
 Setup your environment to work with Google Cloud Platform. Fill in your values as needed, e.g. target project.
 
@@ -48,7 +52,7 @@ $ gcloud dns record-sets transaction add ns-cloud-e{1..4}.googledomains.com. \
 $ gcloud dns record-sets transaction execute --zone "gcp-zalan-do"
 ```
 
-If you decide not to create a new zone but reuse an existing one, make sure it's currently **unused** and **empty**. This version of ExternalDNS will remove all records it doesn't recognize from the zone.
+## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you just created.
 
@@ -73,18 +77,22 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.2.0
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.3.0
         args:
-        - --in-cluster
-        - --zone=external-dns-test-gcp-zalan-do
         - --source=service
         - --source=ingress
+        - --domain-filter=external-dns-test.gcp.zalan.do. #will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=google
         - --google-project=zalando-external-dns-test
-        - --dry-run=false
+        - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+        - --registry=txt
+        - --txt-owner-id=my-identifier
 ```
 
-Use `dry-run=true` if you want to be extra careful on the first run. Note, that you will not see any records created when you are running in dry-run mode. You can, however, inspect the logs and watch what would have been done.
+Use `--dry-run` if you want to be extra careful on the first run. Note, that you will not see any records created when you are running in dry-run mode. You can, however, inspect the logs and watch what would have been done.
+
+
+## Verify ExternalDNS works
 
 Create the following sample application to test that ExternalDNS works.
 
@@ -127,11 +135,14 @@ After roughly two minutes check that a corresponding DNS record for your service
 ```console
 $ gcloud dns record-sets list \
     --zone "external-dns-test-gcp-zalan-do" \
-    --name "nginx.external-dns-test.gcp.zalan.do." \
-    --type A
+    --name "nginx.external-dns-test.gcp.zalan.do."
+
 NAME                                   TYPE  TTL  DATA
 nginx.external-dns-test.gcp.zalan.do.  A     300  104.155.60.49
+nginx.external-dns-test.gcp.zalan.do.  TXT   300  "heritage=external-dns,external-dns/owner=my-identifier"
 ```
+
+Note created TXT record alongside A record. TXT record signifies that the corresponding A record is managed by ExternalDNS. This makes ExternalDNS safe for running in environments where there are other records managed via other means.
 
 Let's check that we can resolve this DNS name. We'll ask the nameservers assigned to your zone first.
 
@@ -179,9 +190,10 @@ Again, after roughly two minutes check that a corresponding DNS record for your 
 $ gcloud dns record-sets list \
     --zone "external-dns-test-gcp-zalan-do" \
     --name "via-ingress.external-dns-test.gcp.zalan.do." \
-    --type A
+
 NAME                                         TYPE  TTL  DATA
 via-ingress.external-dns-test.gcp.zalan.do.  A     300  130.211.46.224
+via-ingress.external-dns-test.gcp.zalan.do.  TXT   300  "heritage=external-dns,external-dns/owner=my-identifier"
 ```
 
 Let's check that we can resolve this DNS name as well.

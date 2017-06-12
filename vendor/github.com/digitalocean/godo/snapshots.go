@@ -1,8 +1,9 @@
 package godo
 
 import (
-	"context"
 	"fmt"
+
+	"github.com/digitalocean/godo/context"
 )
 
 const snapshotBasePath = "v2/snapshots"
@@ -86,7 +87,7 @@ func (s *SnapshotsServiceOp) Delete(ctx context.Context, snapshotID string) (*Re
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
+	resp, err := s.client.Do(ctx, req, nil)
 
 	return resp, err
 }
@@ -101,7 +102,7 @@ func (s *SnapshotsServiceOp) get(ctx context.Context, ID string) (*Snapshot, *Re
 	}
 
 	root := new(snapshotRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -127,7 +128,7 @@ func (s *SnapshotsServiceOp) list(ctx context.Context, opt *ListOptions, listOpt
 	}
 
 	root := new(snapshotsRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}

@@ -239,6 +239,61 @@ func TestStorageVolumes_Create(t *testing.T) {
 	}
 }
 
+func TestStorageVolumes_CreateFromSnapshot(t *testing.T) {
+	setup()
+	defer teardown()
+
+	createRequest := &VolumeCreateRequest{
+		Name:          "my-volume-from-a-snapshot",
+		Description:   "my description",
+		SizeGigaBytes: 100,
+		SnapshotID:    "0d165eff-0b4c-11e7-9093-0242ac110207",
+	}
+
+	want := &Volume{
+		Region:        &Region{Slug: "nyc3"},
+		ID:            "80d414c6-295e-4e3a-ac58-eb9456c1e1d1",
+		Name:          "my-volume-from-a-snapshot",
+		Description:   "my description",
+		SizeGigaBytes: 100,
+		CreatedAt:     time.Date(2002, 10, 02, 15, 00, 00, 50000000, time.UTC),
+	}
+	jBlob := `{
+		"volume":{
+			"region": {"slug":"nyc3"},
+			"id": "80d414c6-295e-4e3a-ac58-eb9456c1e1d1",
+			"name": "my-volume-from-a-snapshot",
+			"description": "my description",
+			"size_gigabytes": 100,
+			"created_at": "2002-10-02T15:00:00.05Z"
+		},
+		"links": {}
+	}`
+
+	mux.HandleFunc("/v2/volumes", func(w http.ResponseWriter, r *http.Request) {
+		v := new(VolumeCreateRequest)
+		err := json.NewDecoder(r.Body).Decode(v)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		testMethod(t, r, "POST")
+		if !reflect.DeepEqual(v, createRequest) {
+			t.Errorf("Request body = %+v, expected %+v", v, createRequest)
+		}
+
+		fmt.Fprint(w, jBlob)
+	})
+
+	got, _, err := client.Storage.CreateVolume(ctx, createRequest)
+	if err != nil {
+		t.Errorf("Storage.CreateVolume returned error: %v", err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Storage.CreateVolume returned %+v, want %+v", got, want)
+	}
+}
+
 func TestStorageVolumes_Destroy(t *testing.T) {
 	setup()
 	defer teardown()

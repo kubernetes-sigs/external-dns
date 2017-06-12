@@ -17,6 +17,7 @@ limitations under the License.
 package plan
 
 import (
+	log "github.com/Sirupsen/logrus"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
@@ -27,8 +28,8 @@ type Plan struct {
 	Current []*endpoint.Endpoint
 	// List of desired records
 	Desired []*endpoint.Endpoint
-	// Policy under which the desired changes are calculated
-	Policy Policy
+	// Policies under which the desired changes are calculated
+	Policies []Policy
 	// List of changes necessary to move towards desired state
 	// Populated after calling Calculate()
 	Changes *Changes
@@ -71,7 +72,10 @@ func (p *Plan) Calculate() *Plan {
 			desired.RecordType = current.RecordType // inherit the type from the dns provider
 			desired.MergeLabels(current.Labels)     // inherit the labels from the dns provider, including Owner ID
 			changes.UpdateNew = append(changes.UpdateNew, desired)
+			continue
 		}
+
+		log.Debugf("Skipping endpoint %v because target has not changed", desired)
 	}
 
 	// Ensure all undesired records are removed. Each current record that cannot
@@ -82,8 +86,10 @@ func (p *Plan) Calculate() *Plan {
 		}
 	}
 
-	// Apply policy to list of changes.
-	changes = p.Policy.Apply(changes)
+	// Apply policies to list of changes.
+	for _, pol := range p.Policies {
+		changes = pol.Apply(changes)
+	}
 
 	plan := &Plan{
 		Current: p.Current,

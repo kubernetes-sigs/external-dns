@@ -1,7 +1,6 @@
 package godo
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -12,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/digitalocean/godo/context"
 )
 
 var (
@@ -224,7 +225,7 @@ func TestDo(t *testing.T) {
 
 	req, _ := client.NewRequest(ctx, "GET", "/", nil)
 	body := new(foo)
-	_, err := client.Do(req, body)
+	_, err := client.Do(context.Background(), req, body)
 	if err != nil {
 		t.Fatalf("Do(): %v", err)
 	}
@@ -244,7 +245,7 @@ func TestDo_httpError(t *testing.T) {
 	})
 
 	req, _ := client.NewRequest(ctx, "GET", "/", nil)
-	_, err := client.Do(req, nil)
+	_, err := client.Do(context.Background(), req, nil)
 
 	if err == nil {
 		t.Error("Expected HTTP 400 error.")
@@ -262,7 +263,7 @@ func TestDo_redirectLoop(t *testing.T) {
 	})
 
 	req, _ := client.NewRequest(ctx, "GET", "/", nil)
-	_, err := client.Do(req, nil)
+	_, err := client.Do(context.Background(), req, nil)
 
 	if err == nil {
 		t.Error("Expected error to be returned.")
@@ -347,7 +348,7 @@ func TestDo_rateLimit(t *testing.T) {
 	}
 
 	req, _ := client.NewRequest(ctx, "GET", "/", nil)
-	_, err := client.Do(req, nil)
+	_, err := client.Do(context.Background(), req, nil)
 	if err != nil {
 		t.Fatalf("Do(): %v", err)
 	}
@@ -378,7 +379,7 @@ func TestDo_rateLimit_errorResponse(t *testing.T) {
 	var expected int
 
 	req, _ := client.NewRequest(ctx, "GET", "/", nil)
-	_, _ = client.Do(req, nil)
+	_, _ = client.Do(context.Background(), req, nil)
 
 	if expected = 60; client.Rate.Limit != expected {
 		t.Errorf("Client rate limit = %v, expected %v", client.Rate.Limit, expected)
@@ -431,7 +432,7 @@ func TestDo_completion_callback(t *testing.T) {
 		}
 		completedResp = string(b)
 	})
-	_, err := client.Do(req, body)
+	_, err := client.Do(context.Background(), req, body)
 	if err != nil {
 		t.Fatalf("Do(): %v", err)
 	}

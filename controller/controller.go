@@ -33,8 +33,6 @@ import (
 // * Take both lists and calculate a Plan to move current towards desired state.
 // * Tell the DNS provider to apply the changes calucated by the Plan.
 type Controller struct {
-	Zone string
-
 	Source   source.Source
 	Registry registry.Registry
 	// The policy that defines which changes to DNS records are allowed
@@ -45,7 +43,7 @@ type Controller struct {
 
 // RunOnce runs a single iteration of a reconciliation loop.
 func (c *Controller) RunOnce() error {
-	records, err := c.Registry.Records(c.Zone)
+	records, err := c.Registry.Records()
 	if err != nil {
 		return err
 	}
@@ -56,14 +54,14 @@ func (c *Controller) RunOnce() error {
 	}
 
 	plan := &plan.Plan{
-		Policy:  c.Policy,
-		Current: records,
-		Desired: endpoints,
+		Policies: []plan.Policy{c.Policy},
+		Current:  records,
+		Desired:  endpoints,
 	}
 
 	plan = plan.Calculate()
 
-	return c.Registry.ApplyChanges(c.Zone, plan.Changes)
+	return c.Registry.ApplyChanges(plan.Changes)
 }
 
 // Run runs RunOnce in a loop with a delay until stopChan receives a value.
@@ -71,13 +69,13 @@ func (c *Controller) Run(stopChan <-chan struct{}) {
 	for {
 		err := c.RunOnce()
 		if err != nil {
-			log.Fatal(err)
+			log.Error(err)
 		}
 
 		select {
 		case <-time.After(c.Interval):
 		case <-stopChan:
-			log.Infoln("terminating main controller loop")
+			log.Info("Terminating main controller loop")
 			return
 		}
 	}

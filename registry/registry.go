@@ -23,33 +23,23 @@ import (
 )
 
 // Registry is an interface which should enables ownership concept in external-dns
-// Record(zone string) returns ALL records registered with DNS provider (TODO: for multi-zone support return all records)
+// Records() returns ALL records registered with DNS provider (TODO: for multi-zone support return all records)
 // each entry includes owner information
-// ApplyChanges(zone string, changes *plan.Changes) propagates the changes to the DNS Provider API and correspondingly updates ownership depending on type of registry being used
+// ApplyChanges(changes *plan.Changes) propagates the changes to the DNS Provider API and correspondingly updates ownership depending on type of registry being used
 type Registry interface {
-	Records(zone string) ([]*endpoint.Endpoint, error)
-	ApplyChanges(zone string, changes *plan.Changes) error
+	Records() ([]*endpoint.Endpoint, error)
+	ApplyChanges(changes *plan.Changes) error
 }
 
 //TODO(ideahitme): consider moving this to Plan
 func filterOwnedRecords(ownerID string, eps []*endpoint.Endpoint) []*endpoint.Endpoint {
 	filtered := []*endpoint.Endpoint{}
 	for _, ep := range eps {
-		if ep.Labels[endpoint.OwnerLabelKey] == ownerID {
-			filtered = append(filtered, ep)
+		if endpointOwner, ok := ep.Labels[endpoint.OwnerLabelKey]; !ok || endpointOwner != ownerID {
+			log.Debugf(`Skipping endpoint %v because owner id does not match, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
+			continue
 		}
+		filtered = append(filtered, ep)
 	}
 	return filtered
-}
-
-func logChanges(changes *plan.Changes) {
-	for _, change := range changes.Create {
-		log.Infof("Creating %s %s -> %s ..", change.RecordType, change.DNSName, change.Target)
-	}
-	for _, change := range changes.UpdateNew {
-		log.Infof("Updating %s %s -> %s ..", change.RecordType, change.DNSName, change.Target)
-	}
-	for _, change := range changes.Delete {
-		log.Infof("Deleting %s %s -> %s ..", change.RecordType, change.DNSName, change.Target)
-	}
 }

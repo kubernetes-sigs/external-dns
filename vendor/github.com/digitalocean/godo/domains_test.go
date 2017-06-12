@@ -234,6 +234,7 @@ func TestDomains_CreateRecordForDomainName(t *testing.T) {
 		Data:     "@",
 		Priority: 10,
 		Port:     10,
+		TTL:      1800,
 		Weight:   10,
 	}
 
@@ -275,6 +276,7 @@ func TestDomains_EditRecordForDomainName(t *testing.T) {
 		Data:     "@",
 		Priority: 10,
 		Port:     10,
+		TTL:      1800,
 		Weight:   10,
 	}
 
@@ -312,11 +314,12 @@ func TestDomainRecord_String(t *testing.T) {
 		Data:     "@",
 		Priority: 10,
 		Port:     10,
+		TTL:      1800,
 		Weight:   10,
 	}
 
 	stringified := record.String()
-	expected := `godo.DomainRecord{ID:1, Type:"CNAME", Name:"example", Data:"@", Priority:10, Port:10, Weight:10}`
+	expected := `godo.DomainRecord{ID:1, Type:"CNAME", Name:"example", Data:"@", Priority:10, Port:10, TTL:1800, Weight:10}`
 	if expected != stringified {
 		t.Errorf("DomainRecord.String returned %+v, expected %+v", stringified, expected)
 	}
@@ -329,11 +332,12 @@ func TestDomainRecordEditRequest_String(t *testing.T) {
 		Data:     "@",
 		Priority: 10,
 		Port:     10,
+		TTL:      1800,
 		Weight:   10,
 	}
 
 	stringified := record.String()
-	expected := `godo.DomainRecordEditRequest{Type:"CNAME", Name:"example", Data:"@", Priority:10, Port:10, Weight:10}`
+	expected := `godo.DomainRecordEditRequest{Type:"CNAME", Name:"example", Data:"@", Priority:10, Port:10, TTL:1800, Weight:10}`
 	if expected != stringified {
 		t.Errorf("DomainRecordEditRequest.String returned %+v, expected %+v", stringified, expected)
 	}

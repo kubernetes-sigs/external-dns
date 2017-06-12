@@ -1,8 +1,9 @@
 package godo
 
 import (
-	"context"
 	"fmt"
+
+	"github.com/digitalocean/godo/context"
 )
 
 const (
@@ -66,7 +67,7 @@ func (s *ActionsServiceOp) List(ctx context.Context, opt *ListOptions) ([]Action
 	}
 
 	root := new(actionsRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -90,7 +91,7 @@ func (s *ActionsServiceOp) Get(ctx context.Context, id int) (*Action, *Response,
 	}
 
 	root := new(actionRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}

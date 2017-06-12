@@ -66,7 +66,7 @@ func TestDropletActions_ShutdownByTag(t *testing.T) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
 		}
 
-		fmt.Fprintf(w, `{"action":{"status":"in-progress"}}`)
+		fmt.Fprint(w, `{"actions": [{"status":"in-progress"},{"status":"in-progress"}]}`)
 	})
 
 	action, _, err := client.DropletActions.ShutdownByTag(ctx, "testing-1")
@@ -74,7 +74,7 @@ func TestDropletActions_ShutdownByTag(t *testing.T) {
 		t.Errorf("DropletActions.ShutdownByTag returned error: %v", err)
 	}
 
-	expected := &Action{Status: "in-progress"}
+	expected := []Action{{Status: "in-progress"}, {Status: "in-progress"}}
 	if !reflect.DeepEqual(action, expected) {
 		t.Errorf("DropletActions.ShutdownByTag returned %+v, expected %+v", action, expected)
 	}
@@ -138,7 +138,7 @@ func TestDropletAction_PowerOffByTag(t *testing.T) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
 		}
 
-		fmt.Fprintf(w, `{"action":{"status":"in-progress"}}`)
+		fmt.Fprint(w, `{"actions": [{"status":"in-progress"},{"status":"in-progress"}]}`)
 	})
 
 	action, _, err := client.DropletActions.PowerOffByTag(ctx, "testing-1")
@@ -146,7 +146,7 @@ func TestDropletAction_PowerOffByTag(t *testing.T) {
 		t.Errorf("DropletActions.PowerOffByTag returned error: %v", err)
 	}
 
-	expected := &Action{Status: "in-progress"}
+	expected := []Action{{Status: "in-progress"}, {Status: "in-progress"}}
 	if !reflect.DeepEqual(action, expected) {
 		t.Errorf("DropletActions.PoweroffByTag returned %+v, expected %+v", action, expected)
 	}
@@ -210,7 +210,7 @@ func TestDropletAction_PowerOnByTag(t *testing.T) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
 		}
 
-		fmt.Fprintf(w, `{"action":{"status":"in-progress"}}`)
+		fmt.Fprint(w, `{"actions": [{"status":"in-progress"},{"status":"in-progress"}]}`)
 	})
 
 	action, _, err := client.DropletActions.PowerOnByTag(ctx, "testing-1")
@@ -218,7 +218,7 @@ func TestDropletAction_PowerOnByTag(t *testing.T) {
 		t.Errorf("DropletActions.PowerOnByTag returned error: %v", err)
 	}
 
-	expected := &Action{Status: "in-progress"}
+	expected := []Action{{Status: "in-progress"}, {Status: "in-progress"}}
 	if !reflect.DeepEqual(action, expected) {
 		t.Errorf("DropletActions.PowerOnByTag returned %+v, expected %+v", action, expected)
 	}
@@ -428,8 +428,7 @@ func TestDropletAction_PowerCycleByTag(t *testing.T) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
 		}
 
-		fmt.Fprintf(w, `{"action":{"status":"in-progress"}}`)
-
+		fmt.Fprint(w, `{"actions": [{"status":"in-progress"},{"status":"in-progress"}]}`)
 	})
 
 	action, _, err := client.DropletActions.PowerCycleByTag(ctx, "testing-1")
@@ -437,7 +436,7 @@ func TestDropletAction_PowerCycleByTag(t *testing.T) {
 		t.Errorf("DropletActions.PowerCycleByTag returned error: %v", err)
 	}
 
-	expected := &Action{Status: "in-progress"}
+	expected := []Action{{Status: "in-progress"}, {Status: "in-progress"}}
 	if !reflect.DeepEqual(action, expected) {
 		t.Errorf("DropletActions.PowerCycleByTag returned %+v, expected %+v", action, expected)
 	}
@@ -505,7 +504,7 @@ func TestDropletAction_SnapshotByTag(t *testing.T) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
 		}
 
-		fmt.Fprintf(w, `{"action":{"status":"in-progress"}}`)
+		fmt.Fprint(w, `{"actions": [{"status":"in-progress"},{"status":"in-progress"}]}`)
 	})
 
 	action, _, err := client.DropletActions.SnapshotByTag(ctx, "testing-1", "Image-Name")
@@ -513,7 +512,7 @@ func TestDropletAction_SnapshotByTag(t *testing.T) {
 		t.Errorf("DropletActions.SnapshotByTag returned error: %v", err)
 	}
 
-	expected := &Action{Status: "in-progress"}
+	expected := []Action{{Status: "in-progress"}, {Status: "in-progress"}}
 	if !reflect.DeepEqual(action, expected) {
 		t.Errorf("DropletActions.SnapshotByTag returned %+v, expected %+v", action, expected)
 	}
@@ -579,7 +578,7 @@ func TestDropletAction_EnableBackupsByTag(t *testing.T) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
 		}
 
-		fmt.Fprintf(w, `{"action":{"status":"in-progress"}}`)
+		fmt.Fprint(w, `{"actions": [{"status":"in-progress"},{"status":"in-progress"}]}`)
 	})
 
 	action, _, err := client.DropletActions.EnableBackupsByTag(ctx, "testing-1")
@@ -587,7 +586,7 @@ func TestDropletAction_EnableBackupsByTag(t *testing.T) {
 		t.Errorf("DropletActions.EnableBackupsByTag returned error: %v", err)
 	}
 
-	expected := &Action{Status: "in-progress"}
+	expected := []Action{{Status: "in-progress"}, {Status: "in-progress"}}
 	if !reflect.DeepEqual(action, expected) {
 		t.Errorf("DropletActions.EnableBackupsByTag returned %+v, expected %+v", action, expected)
 	}
@@ -653,7 +652,7 @@ func TestDropletAction_DisableBackupsByTag(t *testing.T) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
 		}
 
-		fmt.Fprintf(w, `{"action":{"status":"in-progress"}}`)
+		fmt.Fprint(w, `{"actions": [{"status":"in-progress"},{"status":"in-progress"}]}`)
 	})
 
 	action, _, err := client.DropletActions.DisableBackupsByTag(ctx, "testing-1")
@@ -661,7 +660,7 @@ func TestDropletAction_DisableBackupsByTag(t *testing.T) {
 		t.Errorf("DropletActions.DisableBackupsByTag returned error: %v", err)
 	}
 
-	expected := &Action{Status: "in-progress"}
+	expected := []Action{{Status: "in-progress"}, {Status: "in-progress"}}
 	if !reflect.DeepEqual(action, expected) {
 		t.Errorf("DropletActions.DisableBackupsByTag returned %+v, expected %+v", action, expected)
 	}
@@ -870,7 +869,7 @@ func TestDropletAction_EnableIPv6ByTag(t *testing.T) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
 		}
 
-		fmt.Fprintf(w, `{"action":{"status":"in-progress"}}`)
+		fmt.Fprint(w, `{"actions": [{"status":"in-progress"},{"status":"in-progress"}]}`)
 	})
 
 	action, _, err := client.DropletActions.EnableIPv6ByTag(ctx, "testing-1")
@@ -878,7 +877,7 @@ func TestDropletAction_EnableIPv6ByTag(t *testing.T) {
 		t.Errorf("DropletActions.EnableIPv6ByTag returned error: %v", err)
 	}
 
-	expected := &Action{Status: "in-progress"}
+	expected := []Action{{Status: "in-progress"}, {Status: "in-progress"}}
 	if !reflect.DeepEqual(action, expected) {
 		t.Errorf("DropletActions.EnableIPv6byTag returned %+v, expected %+v", action, expected)
 	}
@@ -944,7 +943,7 @@ func TestDropletAction_EnablePrivateNetworkingByTag(t *testing.T) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
 		}
 
-		fmt.Fprintf(w, `{"action":{"status":"in-progress"}}`)
+		fmt.Fprint(w, `{"actions": [{"status":"in-progress"},{"status":"in-progress"}]}`)
 	})
 
 	action, _, err := client.DropletActions.EnablePrivateNetworkingByTag(ctx, "testing-1")
@@ -952,7 +951,7 @@ func TestDropletAction_EnablePrivateNetworkingByTag(t *testing.T) {
 		t.Errorf("DropletActions.EnablePrivateNetworkingByTag returned error: %v", err)
 	}
 
-	expected := &Action{Status: "in-progress"}
+	expected := []Action{{Status: "in-progress"}, {Status: "in-progress"}}
 	if !reflect.DeepEqual(action, expected) {
 		t.Errorf("DropletActions.EnablePrivateNetworkingByTag returned %+v, expected %+v", action, expected)
 	}

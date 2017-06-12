@@ -43,3 +43,19 @@ func TestSuitableType(t *testing.T) {
 		}
 	}
 }
+
+func TestEnsureTrailingDot(t *testing.T) {
+	for _, tc := range []struct {
+		input, expected string
+	}{
+		{"example.org", "example.org."},
+		{"example.org.", "example.org."},
+		{"8.8.8.8", "8.8.8.8"},
+	} {
+		output := ensureTrailingDot(tc.input)
+
+		if output != tc.expected {
+			t.Errorf("expected %s, got %s", tc.expected, output)
+		}
+	}
+}

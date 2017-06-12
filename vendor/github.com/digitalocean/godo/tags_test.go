@@ -42,7 +42,7 @@ var (
 		}
 		],
 		"links": {
- 			"pages":{
+			"pages":{
 				"next":"http://example.com/v2/tags/?page=3",
 				"prev":"http://example.com/v2/tags/?page=1",
 				"last":"http://example.com/v2/tags/?page=3",
@@ -279,35 +279,6 @@ func TestTags_Create(t *testing.T) {
 	expected := &Tag{Name: "testing-1", Resources: &TaggedResources{Droplets: &TaggedDropletsResources{Count: 0, LastTagged: nil}}}
 	if !reflect.DeepEqual(tag, expected) {
 		t.Errorf("Tags.Create returned %+v, expected %+v", tag, expected)
-	}
-}
-
-func TestTags_Update(t *testing.T) {
-	setup()
-	defer teardown()
-
-	updateRequest := &TagUpdateRequest{
-		Name: "testing-1",
-	}
-
-	mux.HandleFunc("/v2/tags/old-testing-1", func(w http.ResponseWriter, r *http.Request) {
-		v := new(TagUpdateRequest)
-
-		err := json.NewDecoder(r.Body).Decode(v)
-		if err != nil {
-			t.Fatalf("decode json: %v", err)
-		}
-
-		testMethod(t, r, "PUT")
-		if !reflect.DeepEqual(v, updateRequest) {
-			t.Errorf("Request body = %+v, expected %+v", v, updateRequest)
-		}
-
-	})
-
-	_, err := client.Tags.Update(ctx, "old-testing-1", updateRequest)
-	if err != nil {
-		t.Errorf("Tags.Update returned error: %v", err)
 	}
 }
 

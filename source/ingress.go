@@ -18,12 +18,14 @@ package source
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"text/template"
 
 	log "github.com/Sirupsen/logrus"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -61,7 +63,7 @@ func NewIngressSource(client kubernetes.Interface, namespace string, fqdntemplat
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all ingress resources on all namespaces
 func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
-	ingresses, err := sc.client.Extensions().Ingresses(sc.namespace).List(v1.ListOptions{})
+	ingresses, err := sc.client.Extensions().Ingresses(sc.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +73,9 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	for _, ing := range ingresses.Items {
 		// Check controller annotation to see if we are responsible.
 		controller, ok := ing.Annotations[controllerAnnotationKey]
-		if ok && controller != controllerAnnotationValue { //TODO(ideahitme): log the skip
+		if ok && controller != controllerAnnotationValue {
+			log.Debugf("Skipping ingress %s/%s because controller value does not match, found: %s, required: %s",
+				ing.Namespace, ing.Name, controller, controllerAnnotationValue)
 			continue
 		}
 
@@ -79,23 +83,31 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 		// apply template if host is missing on ingress
 		if len(ingEndpoints) == 0 && sc.fqdntemplate != nil {
-			ingEndpoints = sc.endpointsFromTemplate(&ing)
+			ingEndpoints, err = sc.endpointsFromTemplate(&ing)
+			if err != nil {
+				return nil, err
+			}
 		}
 
+		if len(ingEndpoints) == 0 {
+			log.Debugf("No endpoints could be generated from ingress %s/%s", ing.Namespace, ing.Name)
+			continue
+		}
+
+		log.Debugf("Endpoints generated from ingress: %s/%s: %v", ing.Namespace, ing.Name, ingEndpoints)
 		endpoints = append(endpoints, ingEndpoints...)
 	}
 
 	return endpoints, nil
 }
 
-func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) []*endpoint.Endpoint {
+func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	var buf bytes.Buffer
 	err := sc.fqdntemplate.Execute(&buf, ing)
 	if err != nil {
-		log.Errorf("failed to apply template: %v", err)
-		return nil
+		return nil, fmt.Errorf("failed to apply template on ingress %s: %v", ing.String(), err)
 	}
 
 	hostname := buf.String()
@@ -108,7 +120,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) []*endpoint
 		}
 	}
 
-	return endpoints
+	return endpoints, nil
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object

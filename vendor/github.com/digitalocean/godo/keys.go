@@ -1,8 +1,9 @@
 package godo
 
 import (
-	"context"
 	"fmt"
+
+	"github.com/digitalocean/godo/context"
 )
 
 const keysBasePath = "v2/account/keys"
@@ -75,7 +76,7 @@ func (s *KeysServiceOp) List(ctx context.Context, opt *ListOptions) ([]Key, *Res
 	}
 
 	root := new(keysRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -94,7 +95,7 @@ func (s *KeysServiceOp) get(ctx context.Context, path string) (*Key, *Response, 
 	}
 
 	root := new(keyRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -134,7 +135,7 @@ func (s *KeysServiceOp) Create(ctx context.Context, createRequest *KeyCreateRequ
 	}
 
 	root := new(keyRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -159,7 +160,7 @@ func (s *KeysServiceOp) UpdateByID(ctx context.Context, keyID int, updateRequest
 	}
 
 	root := new(keyRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -184,7 +185,7 @@ func (s *KeysServiceOp) UpdateByFingerprint(ctx context.Context, fingerprint str
 	}
 
 	root := new(keyRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -199,7 +200,7 @@ func (s *KeysServiceOp) delete(ctx context.Context, path string) (*Response, err
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
+	resp, err := s.client.Do(ctx, req, nil)
 
 	return resp, err
 }

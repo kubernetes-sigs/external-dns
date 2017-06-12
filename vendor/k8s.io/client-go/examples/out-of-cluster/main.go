@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Note: the example only works with the code within the same release/branch.
 package main
 
 import (
@@ -21,16 +22,13 @@ import (
 	"fmt"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-var (
-	kubeconfig = flag.String("kubeconfig", "./config", "absolute path to the kubeconfig file")
-)
-
 func main() {
+	kubeconfig := flag.String("kubeconfig", "./config", "absolute path to the kubeconfig file")
 	flag.Parse()
 	// uses the current context in kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
@@ -43,7 +41,7 @@ func main() {
 		panic(err.Error())
 	}
 	for {
-		pods, err := clientset.Core().Pods("").List(v1.ListOptions{})
+		pods, err := clientset.CoreV1().Pods("").List(metav1.ListOptions{})
 		if err != nil {
 			panic(err.Error())
 		}

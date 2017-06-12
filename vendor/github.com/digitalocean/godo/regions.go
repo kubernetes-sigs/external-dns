@@ -1,6 +1,6 @@
 package godo
 
-import "context"
+import "github.com/digitalocean/godo/context"
 
 // RegionsService is an interface for interfacing with the regions
 // endpoints of the DigitalOcean API
@@ -49,7 +49,7 @@ func (s *RegionsServiceOp) List(ctx context.Context, opt *ListOptions) ([]Region
 	}
 
 	root := new(regionsRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}

@@ -1,11 +1,11 @@
 package util
 
 import (
-	"context"
 	"fmt"
 	"time"
 
 	"github.com/digitalocean/godo"
+	"github.com/digitalocean/godo/context"
 )
 
 const (

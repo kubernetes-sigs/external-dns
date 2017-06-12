@@ -2,7 +2,6 @@ package godo
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,10 +14,12 @@ import (
 
 	"github.com/google/go-querystring/query"
 	headerLink "github.com/tent/http-link-go"
+
+	"github.com/digitalocean/godo/context"
 )
 
 const (
-	libraryVersion = "1.0.0"
+	libraryVersion = "1.1.0"
 	defaultBaseURL = "https://api.digitalocean.com/"
 	userAgent      = "godo/" + libraryVersion
 	mediaType      = "application/json"
@@ -62,6 +63,7 @@ type Client struct {
 	Tags              TagsService
 	LoadBalancers     LoadBalancersService
 	Certificates      CertificatesService
+	Firewalls         FirewallsService
 
 	// Optional function called after every successful request made to the DO APIs
 	onRequestCompleted RequestCompletionCallback
@@ -172,6 +174,7 @@ func NewClient(httpClient *http.Client) *Client {
 	c.Tags = &TagsServiceOp{client: c}
 	c.LoadBalancers = &LoadBalancersServiceOp{client: c}
 	c.Certificates = &CertificatesServiceOp{client: c}
+	c.Firewalls = &FirewallsServiceOp{client: c}
 
 	return c
 }
@@ -236,7 +239,6 @@ func (c *Client) NewRequest(ctx context.Context, method, urlStr string, body int
 		return nil, err
 	}
 
-	req = req.WithContext(ctx)
 	req.Header.Add("Content-Type", mediaType)
 	req.Header.Add("Accept", mediaType)
 	req.Header.Add("User-Agent", c.UserAgent)
@@ -293,8 +295,8 @@ func (r *Response) populateRate() {
 // Do sends an API request and returns the API response. The API response is JSON decoded and stored in the value
 // pointed to by v, or returned as an error if an API error has occurred. If v implements the io.Writer interface,
 // the raw response will be written to v, without attempting to decode it.
-func (c *Client) Do(req *http.Request, v interface{}) (*Response, error) {
-	resp, err := c.client.Do(req)
+func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Response, error) {
+	resp, err := context.DoRequestWithClient(ctx, c.client, req)
 	if err != nil {
 		return nil, err
 	}

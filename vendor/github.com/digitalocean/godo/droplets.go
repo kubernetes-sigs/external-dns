@@ -1,10 +1,11 @@
 package godo
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/digitalocean/godo/context"
 )
 
 const dropletBasePath = "v2/droplets"
@@ -280,7 +281,7 @@ func (s *DropletsServiceOp) list(ctx context.Context, path string) ([]Droplet, *
 	}
 
 	root := new(dropletsRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -327,7 +328,7 @@ func (s *DropletsServiceOp) Get(ctx context.Context, dropletID int) (*Droplet, *
 	}
 
 	root := new(dropletRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -349,7 +350,7 @@ func (s *DropletsServiceOp) Create(ctx context.Context, createRequest *DropletCr
 	}
 
 	root := new(dropletRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -374,7 +375,7 @@ func (s *DropletsServiceOp) CreateMultiple(ctx context.Context, createRequest *D
 	}
 
 	root := new(dropletsRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -392,7 +393,7 @@ func (s *DropletsServiceOp) delete(ctx context.Context, path string) (*Response,
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
+	resp, err := s.client.Do(ctx, req, nil)
 
 	return resp, err
 }
@@ -437,7 +438,7 @@ func (s *DropletsServiceOp) Kernels(ctx context.Context, dropletID int, opt *Lis
 	}
 
 	root := new(kernelsRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if l := root.Links; l != nil {
 		resp.Links = l
 	}
@@ -463,7 +464,7 @@ func (s *DropletsServiceOp) Actions(ctx context.Context, dropletID int, opt *Lis
 	}
 
 	root := new(actionsRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -492,7 +493,7 @@ func (s *DropletsServiceOp) Backups(ctx context.Context, dropletID int, opt *Lis
 	}
 
 	root := new(backupsRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -521,7 +522,7 @@ func (s *DropletsServiceOp) Snapshots(ctx context.Context, dropletID int, opt *L
 	}
 
 	root := new(dropletSnapshotsRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -546,7 +547,7 @@ func (s *DropletsServiceOp) Neighbors(ctx context.Context, dropletID int) ([]Dro
 	}
 
 	root := new(dropletsRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}

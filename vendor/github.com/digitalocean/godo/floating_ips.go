@@ -1,8 +1,9 @@
 package godo
 
 import (
-	"context"
 	"fmt"
+
+	"github.com/digitalocean/godo/context"
 )
 
 const floatingBasePath = "v2/floating_ips"
@@ -68,7 +69,7 @@ func (f *FloatingIPsServiceOp) List(ctx context.Context, opt *ListOptions) ([]Fl
 	}
 
 	root := new(floatingIPsRoot)
-	resp, err := f.client.Do(req, root)
+	resp, err := f.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -89,7 +90,7 @@ func (f *FloatingIPsServiceOp) Get(ctx context.Context, ip string) (*FloatingIP,
 	}
 
 	root := new(floatingIPRoot)
-	resp, err := f.client.Do(req, root)
+	resp, err := f.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -108,7 +109,7 @@ func (f *FloatingIPsServiceOp) Create(ctx context.Context, createRequest *Floati
 	}
 
 	root := new(floatingIPRoot)
-	resp, err := f.client.Do(req, root)
+	resp, err := f.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -128,7 +129,7 @@ func (f *FloatingIPsServiceOp) Delete(ctx context.Context, ip string) (*Response
 		return nil, err
 	}
 
-	resp, err := f.client.Do(req, nil)
+	resp, err := f.client.Do(ctx, req, nil)
 
 	return resp, err
 }

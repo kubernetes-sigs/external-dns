@@ -1,8 +1,9 @@
 package godo
 
 import (
-	"context"
 	"fmt"
+
+	"github.com/digitalocean/godo/context"
 )
 
 const imageBasePath = "v2/images"
@@ -123,7 +124,7 @@ func (s *ImagesServiceOp) Update(ctx context.Context, imageID int, updateRequest
 	}
 
 	root := new(imageRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -144,7 +145,7 @@ func (s *ImagesServiceOp) Delete(ctx context.Context, imageID int) (*Response, e
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
+	resp, err := s.client.Do(ctx, req, nil)
 
 	return resp, err
 }
@@ -159,7 +160,7 @@ func (s *ImagesServiceOp) get(ctx context.Context, ID interface{}) (*Image, *Res
 	}
 
 	root := new(imageRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -185,7 +186,7 @@ func (s *ImagesServiceOp) list(ctx context.Context, opt *ListOptions, listOpt *l
 	}
 
 	root := new(imagesRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}

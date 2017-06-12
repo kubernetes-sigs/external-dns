@@ -1,8 +1,9 @@
 package godo
 
 import (
-	"context"
 	"fmt"
+
+	"github.com/digitalocean/godo/context"
 )
 
 // ImageActionsService is an interface for interfacing with the image actions
@@ -40,7 +41,7 @@ func (i *ImageActionsServiceOp) Transfer(ctx context.Context, imageID int, trans
 	}
 
 	root := new(actionRoot)
-	resp, err := i.client.Do(req, root)
+	resp, err := i.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -66,7 +67,7 @@ func (i *ImageActionsServiceOp) Convert(ctx context.Context, imageID int) (*Acti
 	}
 
 	root := new(actionRoot)
-	resp, err := i.client.Do(req, root)
+	resp, err := i.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -92,7 +93,7 @@ func (i *ImageActionsServiceOp) Get(ctx context.Context, imageID, actionID int) 
 	}
 
 	root := new(actionRoot)
-	resp, err := i.client.Do(req, root)
+	resp, err := i.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}

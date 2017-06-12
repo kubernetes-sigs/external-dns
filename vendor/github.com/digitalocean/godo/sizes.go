@@ -1,6 +1,6 @@
 package godo
 
-import "context"
+import "github.com/digitalocean/godo/context"
 
 // SizesService is an interface for interfacing with the size
 // endpoints of the DigitalOcean API
@@ -53,7 +53,7 @@ func (s *SizesServiceOp) List(ctx context.Context, opt *ListOptions) ([]Size, *R
 	}
 
 	root := new(sizesRoot)
-	resp, err := s.client.Do(req, root)
+	resp, err := s.client.Do(ctx, req, root)
 	if err != nil {
 		return nil, resp, err
 	}

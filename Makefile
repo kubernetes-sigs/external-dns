@@ -32,7 +32,7 @@ cover-html: cover
 .PHONY: verify test
 
 test:
-	go test -v $(shell go list ./... | grep -v /vendor/)
+	go test -v -race $(shell go list ./... | grep -v /vendor/)
 
 verify: test
 	vendor/github.com/kubernetes/repo-infra/verify/verify-boilerplate.sh --rootdir=${CURDIR}
@@ -46,7 +46,7 @@ SOURCES        = $(shell find . -name '*.go')
 IMAGE         ?= registry.opensource.zalan.do/teapot/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty)
 BUILD_FLAGS   ?= -v
-LDFLAGS       ?= -X main.version=$(VERSION) -w -s
+LDFLAGS       ?= -X github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns.version=$(VERSION) -w -s
 
 build: build/$(BINARY)
 

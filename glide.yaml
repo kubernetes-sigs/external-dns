@@ -2,21 +2,24 @@ package: github.com/kubernetes-incubator/external-dns
 import:
 - package: github.com/Sirupsen/logrus
   version: ~0.11.5
+- package: github.com/alecthomas/kingpin
+  version: ~2.2.4
 - package: github.com/aws/aws-sdk-go
-  version: ~1.7.9
+  version: ~1.8.20
   subpackages:
   - aws
   - aws/session
   - service/route53
-- package: github.com/google/uuid
-  version: ~0.2.0
 - package: github.com/prometheus/client_golang
   version: ~0.8.0
   subpackages:
-  - prometheus
   - prometheus/promhttp
-- package: github.com/spf13/pflag
-- package: github.com/kubernetes/repo-infra
+- package: github.com/stretchr/testify
+  version: ~1.1.4
+  subpackages:
+  - assert
+  - mock
+  - require
 - package: golang.org/x/net
   subpackages:
   - context
@@ -27,12 +30,24 @@ import:
   subpackages:
   - dns/v1
   - googleapi
+- package: k8s.io/apimachinery
+  subpackages:
+  - pkg/apis/meta/v1
 - package: k8s.io/client-go
-  version: ~2.0.0
+  version: ~3.0.0-beta.0
   subpackages:
   - kubernetes
   - pkg/api/v1
   - pkg/apis/extensions/v1beta1
   - tools/clientcmd
+- package: github.com/kubernetes/repo-infra
+- package: github.com/linki/instrumented_http
+  version: ~0.1.0
+- package: github.com/Azure/azure-sdk-for-go
+  version: ~10.0.4-beta
+- package: github.com/Azure/go-autorest
+  version: ~8.0.0
+- package: github.com/dgrijalva/jwt-go
+  version: ~3.0.0
 - package: github.com/digitalocean/godo
-  version: ~1.0.0
+  version: ~1.1.0

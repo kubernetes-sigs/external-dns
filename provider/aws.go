@@ -17,10 +17,10 @@ limitations under the License.
 package provider
 
 import (
-	"net"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/linki/instrumented_http"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -67,15 +67,24 @@ type Route53API interface {
 
 // AWSProvider is an implementation of Provider for AWS Route53.
 type AWSProvider struct {
-	Client Route53API
-	DryRun bool
+	client Route53API
+	dryRun bool
 	// only consider hosted zones managing domains ending in this suffix
-	Domain string
+	domainFilter string
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
-func NewAWSProvider(domain string, dryRun bool) (Provider, error) {
+func NewAWSProvider(domainFilter string, dryRun bool) (Provider, error) {
 	config := aws.NewConfig()
+
+	config = config.WithHTTPClient(
+		instrumented_http.NewClient(config.HTTPClient, &instrumented_http.Callbacks{
+			PathProcessor: func(path string) string {
+				parts := strings.Split(path, "/")
+				return parts[len(parts)-1]
+			},
+		}),
+	)
 
 	session, err := session.NewSessionWithOptions(session.Options{
 		Config:            *config,
@@ -86,9 +95,9 @@ func NewAWSProvider(domain string, dryRun bool) (Provider, error) {
 	}
 
 	provider := &AWSProvider{
-		Client: route53.New(session),
-		Domain: domain,
-		DryRun: dryRun,
+		client:       route53.New(session),
+		domainFilter: domainFilter,
+		dryRun:       dryRun,
 	}
 
 	return provider, nil
@@ -100,7 +109,7 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 
 	f := func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool) {
 		for _, zone := range resp.HostedZones {
-			if strings.HasSuffix(aws.StringValue(zone.Name), p.Domain) {
+			if strings.HasSuffix(aws.StringValue(zone.Name), p.domainFilter) {
 				zones[aws.StringValue(zone.Id)] = zone
 			}
 		}
@@ -108,7 +117,7 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 		return true
 	}
 
-	err := p.Client.ListHostedZonesPages(&route53.ListHostedZonesInput{}, f)
+	err := p.client.ListHostedZonesPages(&route53.ListHostedZonesInput{}, f)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +126,7 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 }
 
 // Records returns the list of records in a given hosted zone.
-func (p *AWSProvider) Records(_ string) (endpoints []*endpoint.Endpoint, _ error) {
+func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.Zones()
 	if err != nil {
 		return nil, err
@@ -151,7 +160,7 @@ func (p *AWSProvider) Records(_ string) (endpoints []*endpoint.Endpoint, _ error
 			HostedZoneId: z.Id,
 		}
 
-		if err := p.Client.ListResourceRecordSetsPages(params, f); err != nil {
+		if err := p.client.ListResourceRecordSetsPages(params, f); err != nil {
 			return nil, err
 		}
 	}
@@ -175,7 +184,7 @@ func (p *AWSProvider) DeleteRecords(endpoints []*endpoint.Endpoint) error {
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *AWSProvider) ApplyChanges(_ string, changes *plan.Changes) error {
+func (p *AWSProvider) ApplyChanges(changes *plan.Changes) error {
 	combinedChanges := make([]*route53.Change, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 
 	combinedChanges = append(combinedChanges, newChanges(route53.ChangeActionCreate, changes.Create)...)
@@ -189,6 +198,7 @@ func (p *AWSProvider) ApplyChanges(_ string, changes *plan.Changes) error {
 func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 	// return early if there is nothing to change
 	if len(changes) == 0 {
+		log.Info("All records are already up to date")
 		return nil
 	}
 
@@ -201,11 +211,10 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 	changesByZone := changesByZone(zones, changes)
 
 	for z, cs := range changesByZone {
-		if p.DryRun {
-			for _, c := range cs {
-				log.Infof("Changing records: %s %s", aws.StringValue(c.Action), c.String())
-			}
-		} else {
+		for _, c := range cs {
+			log.Infof("Changing records: %s %s ...", aws.StringValue(c.Action), c.String())
+		}
+		if !p.dryRun {
 			params := &route53.ChangeResourceRecordSetsInput{
 				HostedZoneId: aws.String(z),
 				ChangeBatch: &route53.ChangeBatch{
@@ -213,9 +222,11 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 				},
 			}
 
-			if _, err := p.Client.ChangeResourceRecordSets(params); err != nil {
-				log.Error(err)
+			if _, err := p.client.ChangeResourceRecordSets(params); err != nil {
+				log.Error(err) //TODO(ideahitme): consider changing the interface in cases when this error might be a concern for other components
+				continue
 			}
+			log.Infof("Record in zone %s were successfully updated", aws.StringValue(zones[z].Name))
 		}
 	}
 
@@ -233,9 +244,12 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Ch
 	for _, c := range changeSet {
 		hostname := ensureTrailingDot(aws.StringValue(c.ResourceRecordSet.Name))
 
-		if zone := suitableZone(hostname, zones); zone != nil {
-			changes[aws.StringValue(zone.Id)] = append(changes[aws.StringValue(zone.Id)], c)
+		zone := suitableZone(hostname, zones)
+		if zone == nil {
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.String())
+			continue
 		}
+		changes[aws.StringValue(zone.Id)] = append(changes[aws.StringValue(zone.Id)], c)
 	}
 
 	// separating a change could lead to empty sub changes, remove them here.
@@ -323,13 +337,4 @@ func canonicalHostedZone(hostname string) string {
 	}
 
 	return ""
-}
-
-// ensureTrailingDot ensures that the hostname receives a trailing dot if it hasn't already.
-func ensureTrailingDot(hostname string) string {
-	if net.ParseIP(hostname) != nil {
-		return hostname
-	}
-
-	return strings.TrimSuffix(hostname, ".") + "."
 }
