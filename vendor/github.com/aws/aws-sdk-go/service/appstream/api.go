@@ -1532,9 +1532,6 @@ func (c *AppStream) UpdateStackRequest(input *UpdateStackInput) (req *request.Re
 //   * ErrCodeInvalidRoleException "InvalidRoleException"
 //   The specified role is invalid.
 //
-//   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
-//   The specified resource was not found.
-//
 //   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombinationException"
 //   Indicates an incorrect combination of parameters, or a missing parameter.
 //
@@ -3745,11 +3742,14 @@ func (s *StorageConnector) SetResourceIdentifier(v string) *StorageConnector {
 type UpdateFleetInput struct {
 	_ struct{} `type:"structure"`
 
+	// Fleet attributes to be deleted.
+	AttributesToDelete []*string `type:"list"`
+
 	// The parameters for the capacity allocated to the fleet.
 	ComputeCapacity *ComputeCapacity `type:"structure"`
 
 	// Delete the VPC association for the specified fleet.
-	DeleteVpcConfig *bool `type:"boolean"`
+	DeleteVpcConfig *bool `deprecated:"true" type:"boolean"`
 
 	// The description displayed to end users on the AppStream 2.0 portal.
 	Description *string `type:"string"`
@@ -3821,6 +3821,12 @@ func (s *UpdateFleetInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAttributesToDelete sets the AttributesToDelete field's value.
+func (s *UpdateFleetInput) SetAttributesToDelete(v []*string) *UpdateFleetInput {
+	s.AttributesToDelete = v
+	return s
 }
 
 // SetComputeCapacity sets the ComputeCapacity field's value.
@@ -4030,6 +4036,9 @@ func (s *UpdateStackOutput) SetStack(v *Stack) *UpdateStackOutput {
 type VpcConfig struct {
 	_ struct{} `type:"structure"`
 
+	// Security groups associated with the fleet.
+	SecurityGroupIds []*string `type:"list"`
+
 	// The list of subnets to which a network interface is established from the
 	// fleet instance.
 	SubnetIds []*string `type:"list"`
@@ -4045,6 +4054,12 @@ func (s VpcConfig) GoString() string {
 	return s.String()
 }
 
+// SetSecurityGroupIds sets the SecurityGroupIds field's value.
+func (s *VpcConfig) SetSecurityGroupIds(v []*string) *VpcConfig {
+	s.SecurityGroupIds = v
+	return s
+}
+
 // SetSubnetIds sets the SubnetIds field's value.
 func (s *VpcConfig) SetSubnetIds(v []*string) *VpcConfig {
 	s.SubnetIds = v
@@ -4057,6 +4072,18 @@ const (
 
 	// AuthenticationTypeSaml is a AuthenticationType enum value
 	AuthenticationTypeSaml = "SAML"
+
+	// AuthenticationTypeUserpool is a AuthenticationType enum value
+	AuthenticationTypeUserpool = "USERPOOL"
+)
+
+// Fleet attribute.
+const (
+	// FleetAttributeVpcConfiguration is a FleetAttribute enum value
+	FleetAttributeVpcConfiguration = "VPC_CONFIGURATION"
+
+	// FleetAttributeVpcConfigurationSecurityGroupIds is a FleetAttribute enum value
+	FleetAttributeVpcConfigurationSecurityGroupIds = "VPC_CONFIGURATION_SECURITY_GROUP_IDS"
 )
 
 const (

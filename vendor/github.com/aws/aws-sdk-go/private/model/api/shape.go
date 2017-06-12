@@ -145,6 +145,14 @@ func (s *Shape) GoTypeWithPkgName() string {
 	return goType(s, true)
 }
 
+func (s *Shape) GoTypeWithPkgNameElem() string {
+	t := goType(s, true)
+	if strings.HasPrefix(t, "*") {
+		return t[1:]
+	}
+	return t
+}
+
 // GenAccessors returns if the shape's reference should have setters generated.
 func (s *ShapeRef) UseIndirection() bool {
 	switch s.Shape.Type {
@@ -244,11 +252,11 @@ func goType(s *Shape, withPkgName bool) string {
 		}
 		return "*" + s.ShapeName
 	case "map":
-		return "map[string]" + s.ValueRef.GoType()
+		return "map[string]" + goType(s.ValueRef.Shape, withPkgName)
 	case "jsonvalue":
 		return "aws.JSONValue"
 	case "list":
-		return "[]" + s.MemberRef.GoType()
+		return "[]" + goType(s.MemberRef.Shape, withPkgName)
 	case "boolean":
 		return "*bool"
 	case "string", "character":
