@@ -34,7 +34,9 @@ import (
 // DigitalOceanProvider is an implementation of Provider for Digital Ocean's DNS.
 type DigitalOceanProvider struct {
 	Client godo.DomainsService
-	DryRun bool
+	// only consider hosted zones managing domains ending in this suffix
+	domainFilter string
+	DryRun       bool
 }
 
 // TokenSource inherits AccessToken to initialize a new Digital Ocean client.
@@ -66,7 +68,7 @@ func (t *TokenSource) Token() (*oauth2.Token, error) {
 }
 
 // NewDigitalOceanProvider initializes a new DigitalOcean DNS based Provider.
-func NewDigitalOceanProvider(dryRun bool) (Provider, error) {
+func NewDigitalOceanProvider(domainFilter string, dryRun bool) (Provider, error) {
 	token := os.Getenv("DO_TOKEN")
 	tokenSource := &TokenSource{
 		AccessToken: token,
@@ -78,15 +80,34 @@ func NewDigitalOceanProvider(dryRun bool) (Provider, error) {
 	client := godo.NewClient(oauthClient)
 
 	provider := &DigitalOceanProvider{
-		Client: client.Domains,
-		DryRun: dryRun,
+		Client:       client.Domains,
+		domainFilter: domainFilter,
+		DryRun:       dryRun,
 	}
 	return provider, nil
 }
 
+// Zones returns the list of hosted zones.
+func (p *DigitalOceanProvider) Zones() ([]godo.Domain, error) {
+	result := []godo.Domain{}
+
+	zones, _, err := p.Client.List(context.TODO(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, zone := range zones {
+		if strings.HasSuffix(zone.Name, p.domainFilter) {
+			result = append(result, zone)
+		}
+	}
+
+	return result, nil
+}
+
 // Records returns the list of records in a given zone.
 func (p *DigitalOceanProvider) Records() ([]*endpoint.Endpoint, error) {
-	zones, _, err := p.Client.List(context.TODO(), nil)
+	zones, err := p.Zones()
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +133,7 @@ func (p *DigitalOceanProvider) submitChanges(changes []*DigitalOceanChange) erro
 		return nil
 	}
 
-	zones, _, err := p.Client.List(context.TODO(), nil)
+	zones, err := p.Zones()
 	if err != nil {
 		return err
 	}

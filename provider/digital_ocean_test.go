@@ -26,6 +26,9 @@ import (
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type mockDigitalOceanInterface interface {
@@ -37,7 +40,7 @@ type mockDigitalOceanInterface interface {
 type mockDigitalOceanClient struct{}
 
 func (m *mockDigitalOceanClient) List(context.Context, *godo.ListOptions) ([]godo.Domain, *godo.Response, error) {
-	return []godo.Domain{{Name: "foo.com"}, {Name: "bar.com"}}, nil, nil
+	return []godo.Domain{{Name: "foo.com"}, {Name: "bar.com"}, {Name: "bar.de"}}, nil, nil
 }
 
 func (m *mockDigitalOceanClient) Create(context.Context, *godo.DomainCreateRequest) (*godo.Domain, *godo.Response, error) {
@@ -364,6 +367,22 @@ func TestNewCloudFlareChanges(t *testing.T) {
 	_ = newDigitalOceanChanges(action, endpoints)
 }
 
+func TestDigitalOceanZones(t *testing.T) {
+	provider := &DigitalOceanProvider{
+		Client:       &mockDigitalOceanClient{},
+		domainFilter: "com",
+	}
+
+	zones, err := provider.Zones()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	validateDigitalOceanZones(t, zones, []godo.Domain{
+		{Name: "foo.com"}, {Name: "bar.com"},
+	})
+}
+
 func TestDigitalOceanRecords(t *testing.T) {
 	provider := &DigitalOceanProvider{
 		Client: &mockDigitalOceanClient{},
@@ -397,12 +416,12 @@ func TestDigitalOceanApplyChanges(t *testing.T) {
 
 func TestNewDigitalOceanProvider(t *testing.T) {
 	_ = os.Setenv("DO_TOKEN", "xxxxxxxxxxxxxxxxx")
-	_, err := NewDigitalOceanProvider(true)
+	_, err := NewDigitalOceanProvider("ext-dns-test.zalando.to.", true)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
 	_ = os.Unsetenv("DO_TOKEN")
-	_, err = NewDigitalOceanProvider(true)
+	_, err = NewDigitalOceanProvider("ext-dns-test.zalando.to.", true)
 	fmt.Println(err)
 	if err == nil {
 		t.Errorf("expected to fail")
@@ -419,4 +438,12 @@ func TestToken(t *testing.T) {
 		t.Errorf("Expected %s, got %s", ts.AccessToken, oauthToken.AccessToken)
 	}
 
+}
+
+func validateDigitalOceanZones(t *testing.T, zones []godo.Domain, expected []godo.Domain) {
+	require.Len(t, zones, len(expected))
+
+	for i, zone := range zones {
+		assert.Equal(t, expected[i].Name, zone.Name)
+	}
 }
