@@ -17,12 +17,12 @@ limitations under the License.
 package provider
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"testing"
 
 	"github.com/digitalocean/godo"
+	"github.com/digitalocean/godo/context"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
@@ -365,8 +365,6 @@ func TestNewCloudFlareChanges(t *testing.T) {
 }
 
 func TestDigitalOceanRecords(t *testing.T) {
-	zoneName := "example.com"
-
 	provider := &DigitalOceanProvider{
 		Client: &mockDigitalOceanClient{},
 	}
@@ -387,7 +385,6 @@ func TestDigitalOceanApplyChanges(t *testing.T) {
 	provider := &DigitalOceanProvider{
 		Client: &mockDigitalOceanClient{},
 	}
-	zone := "ext-dns-test.zalando.to"
 	changes.Create = []*endpoint.Endpoint{{DNSName: "new.ext-dns-test.zalando.to.", Target: "target"}}
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "target"}}
 	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "target-old"}}

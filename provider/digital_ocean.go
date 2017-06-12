@@ -17,7 +17,6 @@ limitations under the License.
 package provider
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -26,6 +25,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/digitalocean/godo"
+	"github.com/digitalocean/godo/context"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
@@ -97,7 +97,6 @@ func (p *DigitalOceanProvider) Records() ([]*endpoint.Endpoint, error) {
 			return nil, err
 		}
 
-		endpoints := []*endpoint.Endpoint{}
 		for _, r := range records {
 			endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Data, r.Type))
 		}
