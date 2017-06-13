@@ -496,8 +496,8 @@ func validateChangeRecord(t *testing.T, record *dns.ResourceRecordSet, expected 
 	assert.Equal(t, expected.Ttl, record.Ttl)
 }
 
-func newGoogleProvider(t *testing.T, domainFilter string, dryRun bool, records []*endpoint.Endpoint) *googleProvider {
-	provider := &googleProvider{
+func newGoogleProvider(t *testing.T, domainFilter string, dryRun bool, records []*endpoint.Endpoint) *GoogleProvider {
+	provider := &GoogleProvider{
 		project:      "zalando-external-dns-test",
 		domainFilter: domainFilter,
 		dryRun:       false,
@@ -528,7 +528,7 @@ func newGoogleProvider(t *testing.T, domainFilter string, dryRun bool, records [
 	return provider
 }
 
-func createZone(t *testing.T, provider *googleProvider, zone *dns.ManagedZone) {
+func createZone(t *testing.T, provider *GoogleProvider, zone *dns.ManagedZone) {
 	zone.Description = "Testing zone for kubernetes.io/external-dns"
 
 	if _, err := provider.managedZonesClient.Create("zalando-external-dns-test", zone).Do(); err != nil {
@@ -538,7 +538,7 @@ func createZone(t *testing.T, provider *googleProvider, zone *dns.ManagedZone) {
 	}
 }
 
-func setupGoogleRecords(t *testing.T, provider *googleProvider, endpoints []*endpoint.Endpoint) {
+func setupGoogleRecords(t *testing.T, provider *GoogleProvider, endpoints []*endpoint.Endpoint) {
 	clearGoogleRecords(t, provider, "zone-1-ext-dns-test-2-gcp-zalan-do")
 	clearGoogleRecords(t, provider, "zone-2-ext-dns-test-2-gcp-zalan-do")
 
@@ -555,7 +555,7 @@ func setupGoogleRecords(t *testing.T, provider *googleProvider, endpoints []*end
 	validateEndpoints(t, records, endpoints)
 }
 
-func clearGoogleRecords(t *testing.T, provider *googleProvider, zone string) {
+func clearGoogleRecords(t *testing.T, provider *GoogleProvider, zone string) {
 	recordSets := []*dns.ResourceRecordSet{}
 	require.NoError(t, provider.resourceRecordSetsClient.List(provider.project, zone).Pages(context.TODO(), func(resp *dns.ResourceRecordSetsListResponse) error {
 		for _, r := range resp.Rrsets {
