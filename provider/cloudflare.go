@@ -76,7 +76,6 @@ type cloudFlareProvider struct {
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter string
 	DryRun       bool
-	zoneRecords  map[string][]cloudflare.DNSRecord
 }
 
 // cloudFlareChange differentiates between ChangActions
@@ -143,7 +142,12 @@ func (p *cloudFlareProvider) Records() ([]*endpoint.Endpoint, error) {
 		}
 
 		for _, r := range records {
-			// TODO: limit Types
+			switch r.Type {
+			case "A", "CNAME", "TXT":
+				break
+			default:
+				continue
+			}
 			endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Content, r.Type))
 		}
 	}
@@ -181,7 +185,6 @@ func (p *cloudFlareProvider) submitChanges(changes []*cloudFlareChange) error {
 		if err != nil {
 			return fmt.Errorf("could not fetch records from zone, %v", err)
 		}
-		p.zoneRecords[zoneID] = records
 		for _, change := range changes {
 			logFields := log.Fields{
 				"record": change.ResourceRecordSet.Name,
@@ -195,7 +198,7 @@ func (p *cloudFlareProvider) submitChanges(changes []*cloudFlareChange) error {
 			if p.DryRun {
 				continue
 			}
-			recordID := p.getRecordID(zoneID, change.ResourceRecordSet)
+			recordID := p.getRecordID(records, zoneID, change.ResourceRecordSet)
 			switch change.Action {
 			case cloudFlareCreate:
 				_, err := p.Client.CreateDNSRecord(zoneID, change.ResourceRecordSet)
@@ -252,9 +255,9 @@ func cloudflareSuitableZone(hostname string, zones []cloudflare.Zone) *cloudflar
 	return &zone
 }
 
-func (p *cloudFlareProvider) getRecordID(zoneID string, record cloudflare.DNSRecord) string {
-	for _, zoneRecord := range p.zoneRecords[zoneID] {
-		if zoneRecord.Name == record.Name {
+func (p *cloudFlareProvider) getRecordID(records []cloudflare.DNSRecord, zoneID string, record cloudflare.DNSRecord) string {
+	for _, zoneRecord := range records {
+		if zoneRecord.Name == record.Name && zoneRecord.Type == record.Type {
 			return zoneRecord.ID
 		}
 	}
