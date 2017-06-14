@@ -37,7 +37,13 @@ func (m *mockCloudFlareClient) CreateDNSRecord(zoneID string, rr cloudflare.DNSR
 }
 
 func (m *mockCloudFlareClient) DNSRecords(zoneID string, rr cloudflare.DNSRecord) ([]cloudflare.DNSRecord, error) {
-	return []cloudflare.DNSRecord{{ID: "1234567890", Name: "foobar.ext-dns-test.zalando.to."}}, nil
+	if zoneID == "1234567890" {
+		return []cloudflare.DNSRecord{
+				{ID: "1234567890", Name: "foobar.ext-dns-test.zalando.to.", Type: "A"},
+				{ID: "1231231233", Name: "foo.bar.com"}},
+			nil
+	}
+	return nil, nil
 }
 
 func (m *mockCloudFlareClient) UpdateDNSRecord(zoneID, recordID string, rr cloudflare.DNSRecord) error {
@@ -336,7 +342,7 @@ func TestNewCloudFlareChanges(t *testing.T) {
 }
 
 func TestCloudFlareZones(t *testing.T) {
-	provider := &cloudFlareProvider{
+	provider := &CloudFlareProvider{
 		Client:       &mockCloudFlareClient{},
 		domainFilter: "zalando.to.",
 	}
@@ -352,20 +358,15 @@ func TestCloudFlareZones(t *testing.T) {
 }
 
 func TestRecords(t *testing.T) {
-	provider := &cloudFlareProvider{
+	provider := &CloudFlareProvider{
 		Client: &mockCloudFlareClient{},
-		zoneRecords: map[string][]cloudflare.DNSRecord{
-			"12345656790": []cloudflare.DNSRecord{
-				cloudflare.DNSRecord{
-					Name: "foobar.ext-dns-test.zalando.to",
-				},
-			},
-		},
 	}
-	_, err := provider.Records()
+	records, err := provider.Records()
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
+
+	assert.Equal(t, 1, len(records))
 	provider.Client = &mockCloudFlareDNSRecordsFail{}
 	_, err = provider.Records()
 	if err == nil {
@@ -395,15 +396,8 @@ func TestNewCloudFlareProvider(t *testing.T) {
 
 func TestApplyChanges(t *testing.T) {
 	changes := &plan.Changes{}
-	provider := &cloudFlareProvider{
+	provider := &CloudFlareProvider{
 		Client: &mockCloudFlareClient{},
-		zoneRecords: map[string][]cloudflare.DNSRecord{
-			"1234567890": []cloudflare.DNSRecord{
-				cloudflare.DNSRecord{
-					Name: "foobar.ext-dns-test.zalando.to",
-				},
-			},
-		},
 	}
 	changes.Create = []*endpoint.Endpoint{{DNSName: "new.ext-dns-test.zalando.to.", Target: "target"}}
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "target"}}
@@ -424,6 +418,31 @@ func TestApplyChanges(t *testing.T) {
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
+}
+
+func TestCloudFlareGetRecordID(t *testing.T) {
+	p := &CloudFlareProvider{}
+	records := []cloudflare.DNSRecord{
+		cloudflare.DNSRecord{
+			Name: "foo.com",
+			Type: "CNAME",
+			ID:   "1",
+		},
+		cloudflare.DNSRecord{
+			Name: "bar.de",
+			Type: "A",
+			ID:   "2",
+		},
+	}
+
+	assert.Equal(t, "", p.getRecordID(records, cloudflare.DNSRecord{
+		Name: "foo.com",
+		Type: "A",
+	}))
+	assert.Equal(t, "2", p.getRecordID(records, cloudflare.DNSRecord{
+		Name: "bar.de",
+		Type: "A",
+	}))
 }
 
 func validateCloudFlareZones(t *testing.T, zones []cloudflare.Zone, expected []cloudflare.Zone) {

@@ -29,6 +29,15 @@ import (
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
+const (
+	// cloudFlareCreate is a ChangeAction enum value
+	cloudFlareCreate = "CREATE"
+	// cloudFlareDelete is a ChangeAction enum value
+	cloudFlareDelete = "DELETE"
+	// cloudFlareUpdate is a ChangeAction enum value
+	cloudFlareUpdate = "UPDATE"
+)
+
 // cloudFlareDNS is the subset of the CloudFlare API that we actually use.  Add methods as required. Signatures must match exactly.
 type cloudFlareDNS interface {
 	UserDetails() (cloudflare.User, error)
@@ -70,8 +79,8 @@ func (z zoneService) DeleteDNSRecord(zoneID, recordID string) error {
 	return z.service.DeleteDNSRecord(zoneID, recordID)
 }
 
-// cloudFlareProvider is an implementation of Provider for CloudFlare DNS.
-type cloudFlareProvider struct {
+// CloudFlareProvider is an implementation of Provider for CloudFlare DNS.
+type CloudFlareProvider struct {
 	Client cloudFlareDNS
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter string
@@ -84,23 +93,14 @@ type cloudFlareChange struct {
 	ResourceRecordSet cloudflare.DNSRecord
 }
 
-const (
-	// cloudFlareCreate is a ChangeAction enum value
-	cloudFlareCreate = "CREATE"
-	// cloudFlareDelete is a ChangeAction enum value
-	cloudFlareDelete = "DELETE"
-	// cloudFlareUpdate is a ChangeAction enum value
-	cloudFlareUpdate = "UPDATE"
-)
-
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(domainFilter string, dryRun bool) (Provider, error) {
+func NewCloudFlareProvider(domainFilter string, dryRun bool) (*CloudFlareProvider, error) {
 	// initialize via API email and API key and returns new API object
 	config, err := cloudflare.New(os.Getenv("CF_API_KEY"), os.Getenv("CF_API_EMAIL"))
 	if err != nil {
 		return nil, err
 	}
-	provider := &cloudFlareProvider{
+	provider := &CloudFlareProvider{
 		//Client: config,
 		Client:       zoneService{config},
 		domainFilter: domainFilter,
@@ -110,7 +110,7 @@ func NewCloudFlareProvider(domainFilter string, dryRun bool) (Provider, error) {
 }
 
 // Zones returns the list of hosted zones.
-func (p *cloudFlareProvider) Zones() ([]cloudflare.Zone, error) {
+func (p *CloudFlareProvider) Zones() ([]cloudflare.Zone, error) {
 	result := []cloudflare.Zone{}
 
 	zones, err := p.Client.ListZones()
@@ -128,7 +128,7 @@ func (p *cloudFlareProvider) Zones() ([]cloudflare.Zone, error) {
 }
 
 // Records returns the list of records.
-func (p *cloudFlareProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p *CloudFlareProvider) Records() ([]*endpoint.Endpoint, error) {
 	zones, err := p.Zones()
 	if err != nil {
 		return nil, err
@@ -156,7 +156,7 @@ func (p *cloudFlareProvider) Records() ([]*endpoint.Endpoint, error) {
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *cloudFlareProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *CloudFlareProvider) ApplyChanges(changes *plan.Changes) error {
 	combinedChanges := make([]*cloudFlareChange, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 
 	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareCreate, changes.Create)...)
@@ -167,7 +167,7 @@ func (p *cloudFlareProvider) ApplyChanges(changes *plan.Changes) error {
 }
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
-func (p *cloudFlareProvider) submitChanges(changes []*cloudFlareChange) error {
+func (p *CloudFlareProvider) submitChanges(changes []*cloudFlareChange) error {
 	// return early if there is nothing to change
 	if len(changes) == 0 {
 		return nil
@@ -198,7 +198,7 @@ func (p *cloudFlareProvider) submitChanges(changes []*cloudFlareChange) error {
 			if p.DryRun {
 				continue
 			}
-			recordID := p.getRecordID(records, zoneID, change.ResourceRecordSet)
+			recordID := p.getRecordID(records, change.ResourceRecordSet)
 			switch change.Action {
 			case cloudFlareCreate:
 				_, err := p.Client.CreateDNSRecord(zoneID, change.ResourceRecordSet)
@@ -244,18 +244,18 @@ func cloudflareChangesByZone(zones []cloudflare.Zone, changeSet []*cloudFlareCha
 // cloudflareSuitableZone returns the most suitable zone for a given hostname
 // and a set of zones.
 func cloudflareSuitableZone(hostname string, zones []cloudflare.Zone) *cloudflare.Zone {
-	var zone cloudflare.Zone
+	var zone *cloudflare.Zone
 	for _, z := range zones {
 		if strings.HasSuffix(hostname, z.Name) {
-			if len(z.Name) > len(zone.Name) {
-				zone = z
+			if zone == nil || len(z.Name) > len(zone.Name) {
+				zone = &z
 			}
 		}
 	}
-	return &zone
+	return zone
 }
 
-func (p *cloudFlareProvider) getRecordID(records []cloudflare.DNSRecord, zoneID string, record cloudflare.DNSRecord) string {
+func (p *CloudFlareProvider) getRecordID(records []cloudflare.DNSRecord, record cloudflare.DNSRecord) string {
 	for _, zoneRecord := range records {
 		if zoneRecord.Name == record.Name && zoneRecord.Type == record.Type {
 			return zoneRecord.ID
