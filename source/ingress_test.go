@@ -19,10 +19,15 @@ package source
 import (
 	"testing"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Validates that ingressSource is a Source
@@ -31,6 +36,38 @@ var _ Source = &ingressSource{}
 func TestIngress(t *testing.T) {
 	t.Run("endpointsFromIngress", testEndpointsFromIngress)
 	t.Run("Endpoints", testIngressEndpoints)
+}
+
+func TestNewIngressSource(t *testing.T) {
+	for _, ti := range []struct {
+		title        string
+		fqdntemplate string
+		expectError  bool
+	}{
+		{
+			title:        "invalid template",
+			expectError:  true,
+			fqdntemplate: "{{.Name",
+		},
+		{
+			title:       "valid empty template",
+			expectError: false,
+		},
+		{
+			title:        "valid template",
+			expectError:  false,
+			fqdntemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
+		},
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			_, err := NewIngressSource(fake.NewSimpleClientset(), "", ti.fqdntemplate)
+			if ti.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
 func testEndpointsFromIngress(t *testing.T) {
@@ -130,6 +167,7 @@ func testIngressEndpoints(t *testing.T) {
 		targetNamespace string
 		ingressItems    []fakeIngress
 		expected        []*endpoint.Endpoint
+		fqdntemplate    string
 	}{
 		{
 			title:           "no ingress",
@@ -252,6 +290,50 @@ func testIngressEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{},
 		},
+		{
+			title:           "template for ingress if host is missing",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						controllerAnnotationKey: controllerAnnotationValue,
+					},
+					dnsnames:  []string{},
+					ips:       []string{"8.8.8.8"},
+					hostnames: []string{"elb.com"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "fake1.ext-dns.test.com",
+					Target:  "8.8.8.8",
+				},
+				{
+					DNSName: "fake1.ext-dns.test.com",
+					Target:  "elb.com",
+				},
+			},
+			fqdntemplate: "{{.Name}}.ext-dns.test.com",
+		},
+		{
+			title:           "another controller annotation skipped even with template",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						controllerAnnotationKey: "other-controller",
+					},
+					dnsnames: []string{},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected:     []*endpoint.Endpoint{},
+			fqdntemplate: "{{.Name}}.ext-dns.test.com",
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			ingresses := make([]*v1beta1.Ingress, 0)
@@ -260,20 +342,16 @@ func testIngressEndpoints(t *testing.T) {
 			}
 
 			fakeClient := fake.NewSimpleClientset()
-			ingressSource := NewIngressSource(fakeClient, ti.targetNamespace)
+			ingressSource, _ := NewIngressSource(fakeClient, ti.targetNamespace, ti.fqdntemplate)
 			for _, ingress := range ingresses {
 				_, err := fakeClient.Extensions().Ingresses(ingress.Namespace).Create(ingress)
-				if err != nil {
-					t.Errorf("fake kubernetes ingress creation should not fail. Ingress %v. Error: %v", *ingress, err)
-				}
+				require.NoError(t, err)
 			}
 
 			res, err := ingressSource.Endpoints()
-			if err != nil {
-				t.Errorf("ingress endpoints should not fail on valid fake client call")
-			}
-			validateEndpoints(t, res, ti.expected)
+			require.NoError(t, err)
 
+			validateEndpoints(t, res, ti.expected)
 		})
 	}
 }
@@ -290,7 +368,7 @@ type fakeIngress struct {
 
 func (ing fakeIngress) Ingress() *v1beta1.Ingress {
 	ingress := &v1beta1.Ingress{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Namespace:   ing.namespace,
 			Name:        ing.name,
 			Annotations: ing.annotations,

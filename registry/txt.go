@@ -29,8 +29,8 @@ import (
 )
 
 var (
-	txtLabelRegex  = regexp.MustCompile("^\"heritage=external-dns;external-dns/record-owner-id=(.+)\"")
-	txtLabelFormat = "\"heritage=external-dns;external-dns/record-owner-id=%s\""
+	txtLabelRegex  = regexp.MustCompile("^\"heritage=external-dns,external-dns/owner=(.+)\"")
+	txtLabelFormat = "\"heritage=external-dns,external-dns/owner=%s\""
 )
 
 // TXTRegistry implements registry interface with ownership implemented via associated TXT records
@@ -58,8 +58,8 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, ownerID string) (*TXT
 // Records returns the current records from the registry excluding TXT Records
 // If TXT records was created previously to indicate ownership its corresponding value
 // will be added to the endpoints Labels map
-func (im *TXTRegistry) Records(zone string) ([]*endpoint.Endpoint, error) {
-	records, err := im.provider.Records(zone)
+func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
+	records, err := im.provider.Records()
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (im *TXTRegistry) Records(zone string) ([]*endpoint.Endpoint, error) {
 
 // ApplyChanges updates dns provider with the changes
 // for each created/deleted record it will also take into account TXT records for creation/deletion
-func (im *TXTRegistry) ApplyChanges(zone string, changes *plan.Changes) error {
+func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
 		UpdateNew: filterOwnedRecords(im.ownerID, changes.UpdateNew),
@@ -109,8 +109,7 @@ func (im *TXTRegistry) ApplyChanges(zone string, changes *plan.Changes) error {
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), "TXT")
 		filteredChanges.Delete = append(filteredChanges.Delete, txt)
 	}
-
-	return im.provider.ApplyChanges(zone, filteredChanges)
+	return im.provider.ApplyChanges(filteredChanges)
 }
 
 /**

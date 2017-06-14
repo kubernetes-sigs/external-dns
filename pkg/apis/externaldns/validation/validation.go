@@ -29,9 +29,6 @@ func ValidateConfig(cfg *externaldns.Config) error {
 	if cfg.LogFormat != "text" && cfg.LogFormat != "json" {
 		return fmt.Errorf("unsupported log format: %s", cfg.LogFormat)
 	}
-	if cfg.Zone == "" {
-		return errors.New("hosted zone is missing")
-	}
 	if len(cfg.Sources) == 0 {
 		return errors.New("no sources specified")
 	}
@@ -39,5 +36,11 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return errors.New("no provider specified")
 	}
 
+	// Azure provider specific validations
+	if cfg.Provider == "azure" {
+		if cfg.AzureConfigFile == "" {
+			return errors.New("no Azure config file specified")
+		}
+	}
 	return nil
 }

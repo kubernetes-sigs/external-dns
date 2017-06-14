@@ -17,196 +17,164 @@ limitations under the License.
 package externaldns
 
 import (
-	"reflect"
+	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+var (
+	minimalConfig = &Config{
+		Master:             "",
+		KubeConfig:         "",
+		Sources:            []string{"service"},
+		Namespace:          "",
+		FqdnTemplate:       "",
+		Compatibility:      "",
+		Provider:           "google",
+		GoogleProject:      "",
+		DomainFilter:       "",
+		AzureConfigFile:    "/etc/kubernetes/azure.json",
+		AzureResourceGroup: "",
+		Policy:             "sync",
+		Registry:           "txt",
+		TXTOwnerID:         "default",
+		TXTPrefix:          "",
+		Interval:           time.Minute,
+		Once:               false,
+		DryRun:             false,
+		LogFormat:          "text",
+		MetricsAddress:     ":7979",
+		Debug:              false,
+	}
+
+	overriddenConfig = &Config{
+		Master:             "http://127.0.0.1:8080",
+		KubeConfig:         "/some/path",
+		Sources:            []string{"service", "ingress"},
+		Namespace:          "namespace",
+		FqdnTemplate:       "{{.Name}}.service.example.com",
+		Compatibility:      "mate",
+		Provider:           "google",
+		GoogleProject:      "project",
+		DomainFilter:       "example.org.",
+		AzureConfigFile:    "azure.json",
+		AzureResourceGroup: "arg",
+		Policy:             "upsert-only",
+		Registry:           "noop",
+		TXTOwnerID:         "owner-1",
+		TXTPrefix:          "associated-txt-record",
+		Interval:           10 * time.Minute,
+		Once:               true,
+		DryRun:             true,
+		LogFormat:          "json",
+		MetricsAddress:     "127.0.0.1:9099",
+		Debug:              true,
+	}
 )
 
 func TestParseFlags(t *testing.T) {
 	for _, ti := range []struct {
-		title       string
-		args        [][]string
-		expectError bool
-		expected    *Config
+		title    string
+		args     []string
+		envVars  map[string]string
+		expected *Config
 	}{
 		{
-			title: "set in-cluster true",
-			args:  [][]string{{"--in-cluster", ""}},
-			expected: &Config{
-				InCluster:      true,
-				KubeConfig:     "",
-				Namespace:      "",
-				Zone:           "",
-				Sources:        nil,
-				Provider:       "",
-				GoogleProject:  "",
-				Policy:         "sync",
-				Compatibility:  false,
-				MetricsAddress: defaultMetricsAddress,
-				Interval:       time.Minute,
-				Once:           false,
-				DryRun:         true,
-				Debug:          false,
-				LogFormat:      defaultLogFormat,
-				Version:        false,
-				Registry:       "noop",
-				RecordOwnerID:  "",
-				TXTPrefix:      "",
+			title: "default config with minimal flags defined",
+			args: []string{
+				"--source=service",
+				"--provider=google",
 			},
+			envVars:  map[string]string{},
+			expected: minimalConfig,
 		},
 		{
-			title: "all default",
-			args:  [][]string{},
-			expected: &Config{
-				InCluster:      false,
-				KubeConfig:     "",
-				Namespace:      "",
-				Zone:           "",
-				Sources:        nil,
-				Provider:       "",
-				GoogleProject:  "",
-				Policy:         "sync",
-				Compatibility:  false,
-				MetricsAddress: defaultMetricsAddress,
-				Interval:       time.Minute,
-				Once:           false,
-				DryRun:         true,
-				Debug:          false,
-				LogFormat:      defaultLogFormat,
-				Version:        false,
-				Registry:       "noop",
-				RecordOwnerID:  "",
-				TXTPrefix:      "",
-			},
-		},
-		{
-			title: "set string var",
-			args:  [][]string{{"--kubeconfig", "myhome"}},
-			expected: &Config{
-				InCluster:      false,
-				KubeConfig:     "myhome",
-				Namespace:      "",
-				Zone:           "",
-				Sources:        nil,
-				Provider:       "",
-				GoogleProject:  "",
-				Policy:         "sync",
-				Compatibility:  false,
-				MetricsAddress: defaultMetricsAddress,
-				Interval:       time.Minute,
-				Once:           false,
-				DryRun:         true,
-				Debug:          false,
-				LogFormat:      defaultLogFormat,
-				Version:        false,
-				Registry:       "noop",
-				RecordOwnerID:  "",
-				TXTPrefix:      "",
-			},
-		},
-		{
-			title:       "unexpected flag",
-			args:        [][]string{{"--random", "myhome"}},
-			expectError: true,
-		},
-		{
-			title: "override default",
-			args:  [][]string{{"--log-format", "json"}},
-			expected: &Config{
-				InCluster:      false,
-				KubeConfig:     "",
-				Namespace:      "",
-				Zone:           "",
-				Sources:        nil,
-				Provider:       "",
-				GoogleProject:  "",
-				Policy:         "sync",
-				Compatibility:  false,
-				MetricsAddress: defaultMetricsAddress,
-				Interval:       time.Minute,
-				Once:           false,
-				DryRun:         true,
-				Debug:          false,
-				LogFormat:      "json",
-				Version:        false,
-				Registry:       "noop",
-				RecordOwnerID:  "",
-				TXTPrefix:      "",
-			},
-		},
-		{
-			title: "set everything",
-			args: [][]string{{"--in-cluster",
-				"--log-format", "yaml",
-				"--kubeconfig", "/some/path",
-				"--namespace", "namespace",
-				"--zone", "zone",
-				"--source", "source",
-				"--provider", "provider",
-				"--google-project", "project",
-				"--policy", "upsert-only",
-				"--compatibility",
-				"--metrics-address", "127.0.0.1:9099",
-				"--interval", "10m",
-				"--once",
-				"--dry-run=false",
-				"--debug",
-				"--registry=txt",
-				"--record-owner-id=owner-1",
+			title: "override everything via flags",
+			args: []string{
+				"--master=http://127.0.0.1:8080",
+				"--kubeconfig=/some/path",
+				"--source=service",
+				"--source=ingress",
+				"--namespace=namespace",
+				"--fqdn-template={{.Name}}.service.example.com",
+				"--compatibility=mate",
+				"--provider=google",
+				"--google-project=project",
+				"--azure-config-file=azure.json",
+				"--azure-resource-group=arg",
+				"--domain-filter=example.org.",
+				"--policy=upsert-only",
+				"--registry=noop",
+				"--txt-owner-id=owner-1",
 				"--txt-prefix=associated-txt-record",
-				"--version"}},
-			expected: &Config{
-				InCluster:      true,
-				KubeConfig:     "/some/path",
-				Namespace:      "namespace",
-				Zone:           "zone",
-				Sources:        []string{"source"},
-				Provider:       "provider",
-				GoogleProject:  "project",
-				Policy:         "upsert-only",
-				Compatibility:  true,
-				MetricsAddress: "127.0.0.1:9099",
-				Interval:       10 * time.Minute,
-				Once:           true,
-				DryRun:         false,
-				Debug:          true,
-				LogFormat:      "yaml",
-				Version:        true,
-				Registry:       "txt",
-				RecordOwnerID:  "owner-1",
-				TXTPrefix:      "associated-txt-record",
+				"--interval=10m",
+				"--once",
+				"--dry-run",
+				"--log-format=json",
+				"--metrics-address=127.0.0.1:9099",
+				"--debug",
 			},
+			envVars:  map[string]string{},
+			expected: overriddenConfig,
 		},
 		{
-			title:       "--help trigger error",
-			args:        [][]string{{"--help"}},
-			expectError: true,
+			title: "override everything via environment variables",
+			args:  []string{},
+			envVars: map[string]string{
+				"EXTERNAL_DNS_MASTER":               "http://127.0.0.1:8080",
+				"EXTERNAL_DNS_KUBECONFIG":           "/some/path",
+				"EXTERNAL_DNS_SOURCE":               "service\ningress",
+				"EXTERNAL_DNS_NAMESPACE":            "namespace",
+				"EXTERNAL_DNS_FQDN_TEMPLATE":        "{{.Name}}.service.example.com",
+				"EXTERNAL_DNS_COMPATIBILITY":        "mate",
+				"EXTERNAL_DNS_PROVIDER":             "google",
+				"EXTERNAL_DNS_GOOGLE_PROJECT":       "project",
+				"EXTERNAL_DNS_AZURE_CONFIG_FILE":    "azure.json",
+				"EXTERNAL_DNS_AZURE_RESOURCE_GROUP": "arg",
+				"EXTERNAL_DNS_DOMAIN_FILTER":        "example.org.",
+				"EXTERNAL_DNS_POLICY":               "upsert-only",
+				"EXTERNAL_DNS_REGISTRY":             "noop",
+				"EXTERNAL_DNS_TXT_OWNER_ID":         "owner-1",
+				"EXTERNAL_DNS_TXT_PREFIX":           "associated-txt-record",
+				"EXTERNAL_DNS_INTERVAL":             "10m",
+				"EXTERNAL_DNS_ONCE":                 "1",
+				"EXTERNAL_DNS_DRY_RUN":              "1",
+				"EXTERNAL_DNS_LOG_FORMAT":           "json",
+				"EXTERNAL_DNS_METRICS_ADDRESS":      "127.0.0.1:9099",
+				"EXTERNAL_DNS_DEBUG":                "1",
+			},
+			expected: overriddenConfig,
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
+			originalEnv := setEnv(t, ti.envVars)
+			defer func() { restoreEnv(t, originalEnv) }()
+
 			cfg := NewConfig()
-			spaceArgs := []string{"external-dns"}
-			for _, arg := range ti.args {
-				spaceArgs = append(spaceArgs, arg...)
-			}
-			err := cfg.ParseFlags(spaceArgs)
-			if !ti.expectError && err != nil {
-				t.Errorf("unexpected parse flags fail for args %#v, error: %v", ti.args, err)
-			}
-			if ti.expectError && err == nil {
-				t.Errorf("parse flags should fail for args %#v", ti.args)
-			}
-			if !ti.expectError {
-				validateConfig(t, cfg, ti.expected)
-			}
+			require.NoError(t, cfg.ParseFlags(ti.args))
+			assert.Equal(t, ti.expected, cfg)
 		})
 	}
 }
 
 // helper functions
 
-func validateConfig(t *testing.T, got, expected *Config) {
-	if !reflect.DeepEqual(got, expected) {
-		t.Errorf("config is wrong")
+func setEnv(t *testing.T, env map[string]string) map[string]string {
+	originalEnv := map[string]string{}
+
+	for k, v := range env {
+		originalEnv[k] = os.Getenv(k)
+		require.NoError(t, os.Setenv(k, v))
+	}
+
+	return originalEnv
+}
+
+func restoreEnv(t *testing.T, originalEnv map[string]string) {
+	for k, v := range originalEnv {
+		require.NoError(t, os.Setenv(k, v))
 	}
 }

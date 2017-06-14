@@ -38,6 +38,16 @@ There are no plans regarding other providers at the moment.
 
 Services exposed via `type=LoadBalancer` and for the hostnames defined in Ingress objects. It also seems useful to expose Services with `type=NodePort` to point to your cluster's nodes directly, but there's no commitment to doing this yet.
 
+### How do I specify DNS name for my Kubernetes objects?
+
+There are three sources of information for ExternalDNS to decide on DNS name. ExternalDNS will pick one in order as listed below: 
+
+1. For ingress objects ExternalDNS will create a DNS record based on the host specified for the ingress object. For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the corresponding value. 
+
+2. If compatibility mode is enabled (e.g. `--compatibility={mate,molecule}` flag), External DNS will parse annotations used by Zalando/Mate, wearemolecule/route53-kubernetes. Compatibility mode with Kops DNS Controller is planned to be added in the future.
+
+3. If `--fqdn-template` flag is specified, e.g. `--fqdn-template={{.Name}}.my-org.com`, ExternalDNS will use service/ingress specifications for the provided template to generate DNS name. 
+
 ### Which Service and Ingress controllers are supported?
 
 Regarding Services, we'll support the OSI Layer 4 load balancers that Kubernetes creates on AWS and Google Container Engine, and possibly other clusters running on Google Compute Engine.
@@ -63,16 +73,14 @@ ExternalDNS will allow you to opt into any Services and Ingresses that you want 
 
 ### I'm afraid you will mess up my DNS records!
 
-ExternalDNS will implement the concept of owning DNS records. This means that ExternalDNS will keep track of which records it has control over, and will never modify any records over which it doesn't have control. This is a fundamental requirement to operate ExternalDNS safely when there might be other actors creating DNS records in the same target space.
+ExternalDNS since v0.3 implements the concept of owning DNS records. This means that ExternalDNS will keep track of which records it has control over, and will never modify any records over which it doesn't have control. This is a fundamental requirement to operate ExternalDNS safely when there might be other actors creating DNS records in the same target space.
 
-However, this is a delicate topic and hasn't yet found its way into ExternalDNS.
+For now ExternalDNS uses TXT records to label owned records, and there might be other alternatives coming in the future releases.
 
 ### Does anyone use ExternalDNS in production?
 
-No — but ExternalDNS is heavily influenced by Zalando's [Mate](https://github.com/zalando-incubator/mate), which is used in production on AWS. If you want to adopt this approach and need a solution now, then try Mate. Otherwise, we encourage you to stick with ExternalDNS and help us make it work for you.
+Yes — Zalando replaced [Mate](https://github.com/zalando-incubator/mate) with ExternalDNS since its v0.3 release, which now runs in production-level clusters. We are planning to document a step-by-step tutorial on how the switch from Mate to ExternalDNS has occured.
 
 ### How can we start using ExternalDNS?
 
-ExternalDNS is in an early state and not yet recommended for production use. However, you can start trying it out on a non-production GKE cluster following [the GKE tutorial](tutorials/gke.md).
-
-Clusters on AWS that want to make use of Route 53 work very similar, but a tutorial is still on our TODO list.
+Check out the following decriptive tutorials on how to run ExternalDNS in [GKE](tutorials/gke.md) and [AWS](tutorials/aws.md). 

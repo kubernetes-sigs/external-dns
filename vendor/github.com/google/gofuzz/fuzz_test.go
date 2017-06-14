@@ -220,6 +220,30 @@ func TestFuzz_structslice(t *testing.T) {
 	})
 }
 
+func TestFuzz_structarray(t *testing.T) {
+	obj := &struct {
+		A [3]struct {
+			S string
+		}
+		B [2]int
+	}{}
+
+	tryFuzz(t, New(), obj, func() (int, bool) {
+		for _, v := range obj.A {
+			if v.S == "" {
+				return 1, false
+			}
+		}
+
+		for _, v := range obj.B {
+			if v == 0 {
+				return 2, false
+			}
+		}
+		return 3, true
+	})
+}
+
 func TestFuzz_custom(t *testing.T) {
 	obj := &struct {
 		A string
@@ -381,4 +405,24 @@ func TestFuzz_noCustom(t *testing.T) {
 	if obj4.In.Str != testPhrase {
 		t.Errorf("expected Inner custom function to have been called")
 	}
+}
+
+func TestFuzz_NumElements(t *testing.T) {
+	f := New().NilChance(0).NumElements(0, 1)
+	obj := &struct {
+		A []int
+	}{}
+
+	tryFuzz(t, f, obj, func() (int, bool) {
+		if obj.A == nil {
+			return 1, false
+		}
+		return 2, len(obj.A) == 0
+	})
+	tryFuzz(t, f, obj, func() (int, bool) {
+		if obj.A == nil {
+			return 3, false
+		}
+		return 4, len(obj.A) == 1
+	})
 }

@@ -16,7 +16,14 @@ limitations under the License.
 
 package source
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/kubernetes-incubator/external-dns/internal/testutils"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
 func TestStore(t *testing.T) {
 	t.Run("RegisterAndLookup", testRegisterAndLookup)
@@ -32,7 +39,7 @@ func testRegisterAndLookup(t *testing.T) {
 		{
 			"registered source is found by name",
 			map[string]Source{
-				"foo": NewMockSource(nil),
+				"foo": &testutils.MockSource{},
 			},
 		},
 	} {
@@ -42,9 +49,7 @@ func testRegisterAndLookup(t *testing.T) {
 			}
 
 			for k, v := range tc.givenAndExpected {
-				if Lookup(k) != v {
-					t.Errorf("expected %#v, got %#v", v, Lookup(k))
-				}
+				assert.Equal(t, v, Lookup(k))
 			}
 		})
 	}
@@ -53,33 +58,43 @@ func testRegisterAndLookup(t *testing.T) {
 // testLookupMultiple tests that Sources can be looked up by providing multiple names.
 func testLookupMultiple(t *testing.T) {
 	for _, tc := range []struct {
-		title            string
-		givenAndExpected map[string]Source
+		title       string
+		registered  map[string]Source
+		names       []string
+		expectError bool
 	}{
 		{
 			"multiple registered sources are found by names",
 			map[string]Source{
-				"foo": NewMockSource(nil),
-				"bar": NewMockSource(nil),
+				"foo": &testutils.MockSource{},
+				"bar": &testutils.MockSource{},
 			},
+			[]string{"foo", "bar"},
+			false,
+		},
+		{
+			"multiple registered sources, one source not registered",
+			map[string]Source{
+				"foo": &testutils.MockSource{},
+				"bar": &testutils.MockSource{},
+			},
+			[]string{"foo", "bar", "baz"},
+			true,
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			for k, v := range tc.givenAndExpected {
+			for k, v := range tc.registered {
 				Register(k, v)
 			}
 
-			names, sources := []string{}, []Source{}
-			for k, v := range tc.givenAndExpected {
-				names = append(names, k)
-				sources = append(sources, v)
-			}
-
-			lookup := LookupMultiple(names...)
-
-			for i := range names {
-				if lookup[i] != sources[i] {
-					t.Errorf("expected %#v, got %#v", sources[i], lookup[i])
+			lookup, err := LookupMultiple(tc.names)
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Len(t, lookup, len(tc.registered))
+				for _, source := range tc.registered {
+					assert.Contains(t, lookup, source)
 				}
 			}
 		})

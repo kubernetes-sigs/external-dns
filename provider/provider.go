@@ -18,6 +18,7 @@ package provider
 
 import (
 	"net"
+	"strings"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
@@ -25,8 +26,8 @@ import (
 
 // Provider defines the interface DNS providers should implement.
 type Provider interface {
-	Records(zone string) ([]*endpoint.Endpoint, error)
-	ApplyChanges(zone string, changes *plan.Changes) error
+	Records() ([]*endpoint.Endpoint, error)
+	ApplyChanges(changes *plan.Changes) error
 }
 
 // suitableType returns the DNS resource record type suitable for the target.
@@ -35,8 +36,17 @@ func suitableType(ep *endpoint.Endpoint) string {
 	if ep.RecordType != "" {
 		return ep.RecordType
 	}
-	if net.ParseIP(ep.Target) == nil {
-		return "CNAME"
+	if net.ParseIP(ep.Target) != nil {
+		return "A"
 	}
-	return "A"
+	return "CNAME"
+}
+
+// ensureTrailingDot ensures that the hostname receives a trailing dot if it hasn't already.
+func ensureTrailingDot(hostname string) string {
+	if net.ParseIP(hostname) != nil {
+		return hostname
+	}
+
+	return strings.TrimSuffix(hostname, ".") + "."
 }

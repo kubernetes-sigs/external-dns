@@ -1,5 +1,17 @@
+## v0.3.0 - 2017-05-08
+
 Features:
 
+  - Changed the flags to the v0.3 semantics, the following has changed:
+    1. The TXT registry is used by default and has an owner ID of `default`
+    2. `--dry-run` is disabled by default
+    3. The `--compatibility` flag was added and takes a string instead of a boolean
+    4. The `--in-cluster` flag has been dropped for auto-detection
+    5. The `--zone` specifier has been replaced by a `--domain-filter` that filters domains by suffix
+  - Improved logging output
+  - Generate DNS Name from template for services/ingress if annotation is missing but `--fqdn-template` is specified
+  - Route 53, Google CloudDNS: Support creation of records in multiple hosted zones.
+  - Route 53: Support creation of ALIAS records when endpoint target is a ELB/ALB.
   - Ownership via TXT records
     1. Create TXT records to mark the records managed by External DNS
     2. Supported for AWS Route53 and Google CloudDNS
