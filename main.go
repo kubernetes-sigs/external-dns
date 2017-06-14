@@ -113,7 +113,7 @@ func main() {
 		p, err = provider.NewGoogleProvider(cfg.GoogleProject, cfg.DomainFilter, cfg.DryRun)
 	case "aws":
 		p, err = provider.NewAWSProvider(cfg.DomainFilter, cfg.DryRun)
-	case "digital-ocean":
+	case "digitalocean":
 		p, err = provider.NewDigitalOceanProvider(cfg.DomainFilter, cfg.DryRun)
 	case "inmemory":
 		p, err = provider.NewInMemoryProviderWithDomainAndLogging("example.com"), nil

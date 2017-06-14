@@ -31,25 +31,6 @@ import (
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
-// DigitalOceanProvider is an implementation of Provider for Digital Ocean's DNS.
-type DigitalOceanProvider struct {
-	Client godo.DomainsService
-	// only consider hosted zones managing domains ending in this suffix
-	domainFilter string
-	DryRun       bool
-}
-
-// TokenSource inherits AccessToken to initialize a new Digital Ocean client.
-type TokenSource struct {
-	AccessToken string
-}
-
-// DigitalOceanChange differentiates between ChangActions
-type DigitalOceanChange struct {
-	Action            string
-	ResourceRecordSet godo.DomainRecord
-}
-
 const (
 	// DigitalOceanCreate is a ChangeAction enum value
 	DigitalOceanCreate = "CREATE"
@@ -59,24 +40,29 @@ const (
 	DigitalOceanUpdate = "UPDATE"
 )
 
-// Token returns oauth2 token struct in order to use Digital Ocean's API.
-func (t *TokenSource) Token() (*oauth2.Token, error) {
-	token := &oauth2.Token{
-		AccessToken: t.AccessToken,
-	}
-	return token, nil
+// DigitalOceanProvider is an implementation of Provider for Digital Ocean's DNS.
+type DigitalOceanProvider struct {
+	Client godo.DomainsService
+	// only consider hosted zones managing domains ending in this suffix
+	domainFilter string
+	DryRun       bool
+}
+
+// DigitalOceanChange differentiates between ChangActions
+type DigitalOceanChange struct {
+	Action            string
+	ResourceRecordSet godo.DomainRecord
 }
 
 // NewDigitalOceanProvider initializes a new DigitalOcean DNS based Provider.
-func NewDigitalOceanProvider(domainFilter string, dryRun bool) (Provider, error) {
-	token := os.Getenv("DO_TOKEN")
-	tokenSource := &TokenSource{
-		AccessToken: token,
-	}
-	if len(token) == 0 {
+func NewDigitalOceanProvider(domainFilter string, dryRun bool) (*DigitalOceanProvider, error) {
+	token, ok := os.LookupEnv("DO_TOKEN")
+	if !ok {
 		return nil, fmt.Errorf("No token found")
 	}
-	oauthClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
+	oauthClient := oauth2.NewClient(oauth2.NoContext, oauth2.StaticTokenSource(&oauth2.Token{
+		AccessToken: token,
+	}))
 	client := godo.NewClient(oauthClient)
 
 	provider := &DigitalOceanProvider{
@@ -91,7 +77,7 @@ func NewDigitalOceanProvider(domainFilter string, dryRun bool) (Provider, error)
 func (p *DigitalOceanProvider) Zones() ([]godo.Domain, error) {
 	result := []godo.Domain{}
 
-	zones, _, err := p.Client.List(context.TODO(), nil)
+	zones, err := p.fetchZones()
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +99,7 @@ func (p *DigitalOceanProvider) Records() ([]*endpoint.Endpoint, error) {
 	}
 	endpoints := []*endpoint.Endpoint{}
 	for _, zone := range zones {
-		records, _, err := p.Client.Records(context.TODO(), zone.Name, nil)
+		records, err := p.fetchRecords(zone.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -124,6 +110,56 @@ func (p *DigitalOceanProvider) Records() ([]*endpoint.Endpoint, error) {
 	}
 
 	return endpoints, nil
+}
+
+func (p *DigitalOceanProvider) fetchRecords(zoneName string) ([]godo.DomainRecord, error) {
+	allRecords := []godo.DomainRecord{}
+	listOptions := &godo.ListOptions{}
+	for {
+		records, resp, err := p.Client.Records(context.TODO(), zoneName, listOptions)
+		if err != nil {
+			return nil, err
+		}
+		allRecords = append(allRecords, records...)
+
+		if resp == nil || resp.Links == nil || resp.Links.IsLastPage() {
+			break
+		}
+
+		page, err := resp.Links.CurrentPage()
+		if err != nil {
+			return nil, err
+		}
+
+		listOptions.Page = page + 1
+	}
+
+	return allRecords, nil
+}
+
+func (p *DigitalOceanProvider) fetchZones() ([]godo.Domain, error) {
+	allZones := []godo.Domain{}
+	listOptions := &godo.ListOptions{}
+	for {
+		zones, resp, err := p.Client.List(context.TODO(), listOptions)
+		if err != nil {
+			return nil, err
+		}
+		allZones = append(allZones, zones...)
+
+		if resp == nil || resp.Links == nil || resp.Links.IsLastPage() {
+			break
+		}
+
+		page, err := resp.Links.CurrentPage()
+		if err != nil {
+			return nil, err
+		}
+
+		listOptions.Page = page + 1
+	}
+
+	return allZones, nil
 }
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
@@ -142,6 +178,11 @@ func (p *DigitalOceanProvider) submitChanges(changes []*DigitalOceanChange) erro
 	changesByZone := digitalOceanChangesByZone(zones, changes)
 
 	for zoneName, changes := range changesByZone {
+		records, err := p.fetchRecords(zoneName)
+		if err != nil {
+			log.Errorf("Failed to list records in the zone: %s", zoneName)
+			continue
+		}
 		for _, change := range changes {
 			logFields := log.Fields{
 				"record": change.ResourceRecordSet.Name,
@@ -167,19 +208,13 @@ func (p *DigitalOceanProvider) submitChanges(changes []*DigitalOceanChange) erro
 					return err
 				}
 			case DigitalOceanDelete:
-				recordID, err := p.getRecordID(zoneName, change.ResourceRecordSet)
-				if err != nil {
-					return err
-				}
+				recordID := p.getRecordID(records, zoneName, change.ResourceRecordSet)
 				_, err = p.Client.DeleteRecord(context.TODO(), zoneName, recordID)
 				if err != nil {
 					return err
 				}
 			case DigitalOceanUpdate:
-				recordID, err := p.getRecordID(zoneName, change.ResourceRecordSet)
-				if err != nil {
-					return err
-				}
+				recordID := p.getRecordID(records, zoneName, change.ResourceRecordSet)
 				_, _, err = p.Client.EditRecord(context.TODO(), zoneName, recordID,
 					&godo.DomainRecordEditRequest{
 						Data: change.ResourceRecordSet.Data,
@@ -231,17 +266,13 @@ func newDigitalOceanChange(action string, endpoint *endpoint.Endpoint) *DigitalO
 
 // getRecordID returns the ID from a record.
 // the ID is mandatory to update and delete records
-func (p *DigitalOceanProvider) getRecordID(zone string, record godo.DomainRecord) (int, error) {
-	zoneRecords, _, err := p.Client.Records(context.TODO(), zone, nil)
-	if err != nil {
-		return 0, err
-	}
-	for _, zoneRecord := range zoneRecords {
-		if zoneRecord.Name == record.Name {
-			return zoneRecord.ID, nil
+func (p *DigitalOceanProvider) getRecordID(records []godo.DomainRecord, zone string, record godo.DomainRecord) int {
+	for _, zoneRecord := range records {
+		if zoneRecord.Name == record.Name && zoneRecord.Type == record.Type {
+			return zoneRecord.ID
 		}
 	}
-	return 0, fmt.Errorf("No record id found")
+	return 0
 }
 
 // digitalOceanchangesByZone separates a multi-zone change into a single change per zone.

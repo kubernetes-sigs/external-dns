@@ -428,18 +428,6 @@ func TestNewDigitalOceanProvider(t *testing.T) {
 	}
 }
 
-func TestToken(t *testing.T) {
-	ts := &TokenSource{AccessToken: "xxxxxxxxxxxxxxxxx"}
-	oauthToken, err := ts.Token()
-	if err != nil {
-		t.Errorf("should not fail")
-	}
-	if oauthToken.AccessToken != ts.AccessToken {
-		t.Errorf("Expected %s, got %s", ts.AccessToken, oauthToken.AccessToken)
-	}
-
-}
-
 func validateDigitalOceanZones(t *testing.T, zones []godo.Domain, expected []godo.Domain) {
 	require.Len(t, zones, len(expected))
 
