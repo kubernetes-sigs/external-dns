@@ -176,7 +176,6 @@ func (p *DigitalOceanProvider) submitChanges(changes []*DigitalOceanChange) erro
 
 	// separate into per-zone change sets to be passed to the API.
 	changesByZone := digitalOceanChangesByZone(zones, changes)
-
 	for zoneName, changes := range changesByZone {
 		records, err := p.fetchRecords(zoneName)
 		if err != nil {
@@ -198,7 +197,7 @@ func (p *DigitalOceanProvider) submitChanges(changes []*DigitalOceanChange) erro
 			}
 			switch change.Action {
 			case DigitalOceanCreate:
-				_, _, err := p.Client.CreateRecord(context.TODO(), zoneName,
+				_, _, err = p.Client.CreateRecord(context.TODO(), zoneName,
 					&godo.DomainRecordEditRequest{
 						Data: change.ResourceRecordSet.Data,
 						Name: change.ResourceRecordSet.Name,
@@ -208,13 +207,13 @@ func (p *DigitalOceanProvider) submitChanges(changes []*DigitalOceanChange) erro
 					return err
 				}
 			case DigitalOceanDelete:
-				recordID := p.getRecordID(records, zoneName, change.ResourceRecordSet)
+				recordID := p.getRecordID(records, change.ResourceRecordSet)
 				_, err = p.Client.DeleteRecord(context.TODO(), zoneName, recordID)
 				if err != nil {
 					return err
 				}
 			case DigitalOceanUpdate:
-				recordID := p.getRecordID(records, zoneName, change.ResourceRecordSet)
+				recordID := p.getRecordID(records, change.ResourceRecordSet)
 				_, _, err = p.Client.EditRecord(context.TODO(), zoneName, recordID,
 					&godo.DomainRecordEditRequest{
 						Data: change.ResourceRecordSet.Data,
@@ -266,7 +265,7 @@ func newDigitalOceanChange(action string, endpoint *endpoint.Endpoint) *DigitalO
 
 // getRecordID returns the ID from a record.
 // the ID is mandatory to update and delete records
-func (p *DigitalOceanProvider) getRecordID(records []godo.DomainRecord, zone string, record godo.DomainRecord) int {
+func (p *DigitalOceanProvider) getRecordID(records []godo.DomainRecord, record godo.DomainRecord) int {
 	for _, zoneRecord := range records {
 		if zoneRecord.Name == record.Name && zoneRecord.Type == record.Type {
 			return zoneRecord.ID
@@ -298,13 +297,13 @@ func digitalOceanChangesByZone(zones []godo.Domain, changeSet []*DigitalOceanCha
 // digitalOceanSuitableZone returns the most suitable zone for a given hostname
 // and a set of zones.
 func digitalOceanSuitableZone(hostname string, zones []godo.Domain) *godo.Domain {
-	var zone godo.Domain
+	var zone *godo.Domain
 	for _, z := range zones {
 		if strings.HasSuffix(hostname, z.Name) {
-			if len(z.Name) > len(zone.Name) {
-				zone = z
+			if zone == nil || len(z.Name) > len(zone.Name) {
+				zone = &z
 			}
 		}
 	}
-	return &zone
+	return zone
 }
