@@ -19,23 +19,22 @@ package provider
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
+
 	"github.com/cloudflare/cloudflare-go"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
-// CloudFlareDNSInterface is the subset of the CloudFlare API that we actually use.  Add methods as required. Signatures must match exactly.
-type CloudFlareDNSInterface interface {
+// cloudFlareDNS is the subset of the CloudFlare API that we actually use.  Add methods as required. Signatures must match exactly.
+type cloudFlareDNS interface {
 	UserDetails() (cloudflare.User, error)
 	ZoneIDByName(zoneName string) (string, error)
-	Zones() ([]cloudflare.Zone, error)
-	Zone(zoneID ...string) ([]cloudflare.Zone, error)
 	ListZones(zoneID ...string) ([]cloudflare.Zone, error)
 	DNSRecords(zoneID string, rr cloudflare.DNSRecord) ([]cloudflare.DNSRecord, error)
-	CreateZone(name string, jumpstart bool, org cloudflare.Organization) (cloudflare.Zone, error)
-	DeleteZone(zoneID string) (cloudflare.ZoneID, error)
 	CreateDNSRecord(zoneID string, rr cloudflare.DNSRecord) (*cloudflare.DNSRecordResponse, error)
 	DeleteDNSRecord(zoneID, recordID string) error
 	UpdateDNSRecord(zoneID, recordID string, rr cloudflare.DNSRecord) error
@@ -47,14 +46,6 @@ type zoneService struct {
 
 func (z zoneService) UserDetails() (cloudflare.User, error) {
 	return z.service.UserDetails()
-}
-
-func (z zoneService) Zones() ([]cloudflare.Zone, error) {
-	return z.service.ListZones()
-}
-
-func (z zoneService) Zone(zoneID ...string) ([]cloudflare.Zone, error) {
-	return z.service.ListZones(zoneID...)
 }
 
 func (z zoneService) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
@@ -78,211 +69,201 @@ func (z zoneService) UpdateDNSRecord(zoneID, recordID string, rr cloudflare.DNSR
 func (z zoneService) DeleteDNSRecord(zoneID, recordID string) error {
 	return z.service.DeleteDNSRecord(zoneID, recordID)
 }
-func (z zoneService) CreateZone(name string, jumpstart bool, org cloudflare.Organization) (cloudflare.Zone, error) {
-	return z.service.CreateZone(name, jumpstart, org)
+
+// cloudFlareProvider is an implementation of Provider for CloudFlare DNS.
+type cloudFlareProvider struct {
+	Client cloudFlareDNS
+	// only consider hosted zones managing domains ending in this suffix
+	domainFilter string
+	DryRun       bool
+	zoneRecords  map[string][]cloudflare.DNSRecord
 }
 
-func (z zoneService) DeleteZone(zoneID string) (cloudflare.ZoneID, error) {
-	return z.service.DeleteZone(zoneID)
-}
-
-// CloudFlareProvider is an implementation of Provider for CloudFlare DNS.
-type CloudFlareProvider struct {
-	Client CloudFlareDNSInterface
-	DryRun bool
-}
-
-// CloudFlareChange differentiates between ChangActions
-type CloudFlareChange struct {
+// cloudFlareChange differentiates between ChangActions
+type cloudFlareChange struct {
 	Action            string
 	ResourceRecordSet cloudflare.DNSRecord
 }
 
 const (
-	// CloudFlareCreate is a ChangeAction enum value
-	CloudFlareCreate = "CREATE"
-	// CloudFlareDelete is a ChangeAction enum value
-	CloudFlareDelete = "DELETE"
-	// CloudFlareUpdate is a ChangeAction enum value
-	CloudFlareUpdate = "UPDATE"
+	// cloudFlareCreate is a ChangeAction enum value
+	cloudFlareCreate = "CREATE"
+	// cloudFlareDelete is a ChangeAction enum value
+	cloudFlareDelete = "DELETE"
+	// cloudFlareUpdate is a ChangeAction enum value
+	cloudFlareUpdate = "UPDATE"
 )
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(dryRun bool) (Provider, error) {
+func NewCloudFlareProvider(domainFilter string, dryRun bool) (Provider, error) {
 	// initialize via API email and API key and returns new API object
 	config, err := cloudflare.New(os.Getenv("CF_API_KEY"), os.Getenv("CF_API_EMAIL"))
 	if err != nil {
 		return nil, err
 	}
-	provider := &CloudFlareProvider{
+	provider := &cloudFlareProvider{
 		//Client: config,
-		Client: zoneService{config},
-		DryRun: dryRun,
+		Client:       zoneService{config},
+		domainFilter: domainFilter,
+		DryRun:       dryRun,
 	}
 	return provider, nil
 }
 
-// Zones returns the list of zones.
-func (p *CloudFlareProvider) Zones() ([]cloudflare.Zone, error) {
+// Zones returns the list of hosted zones.
+func (p *cloudFlareProvider) Zones() ([]cloudflare.Zone, error) {
+	result := []cloudflare.Zone{}
+
 	zones, err := p.Client.ListZones()
 	if err != nil {
-		return []cloudflare.Zone{}, nil
-	}
-	return zones, nil
-}
-
-// Zone returns a single zone given a DNS name.
-func (p *CloudFlareProvider) Zone(name string) ([]cloudflare.Zone, error) {
-	zoneID, err := p.Client.ZoneIDByName(name)
-	if err != nil {
-		return []cloudflare.Zone{}, err
-	}
-	zones, err := p.Client.ListZones(zoneID)
-	if err != nil {
-		return []cloudflare.Zone{}, nil
-	}
-	return zones, nil
-}
-
-// CreateZone creates a hosted zone given a name.
-func (p *CloudFlareProvider) CreateZone(name string) (*cloudflare.Zone, error) {
-	user, err := p.Client.UserDetails()
-	if err != nil {
-		return nil, err
-	}
-	zone, err := p.Client.CreateZone(name, true, cloudflare.Organization{ID: user.ID})
-	if err != nil {
 		return nil, err
 	}
 
-	return &zone, nil
+	for _, zone := range zones {
+		if strings.HasSuffix(zone.Name, p.domainFilter) {
+			result = append(result, zone)
+		}
+	}
+
+	return result, nil
 }
 
-// DeleteZone deletes a hosted zone given a name.
-func (p *CloudFlareProvider) DeleteZone(name string) (cloudflare.ZoneID, error) {
-	zoneID, err := p.Client.ZoneIDByName(name)
-	if err != nil {
-		return cloudflare.ZoneID{}, err
-	}
-	zone, err := p.Client.DeleteZone(zoneID)
-	if err != nil {
-		return cloudflare.ZoneID{}, err
-	}
-	return zone, nil
-}
-
-// Records returns the list of records in a given zone.
-func (p *CloudFlareProvider) Records(zone string) ([]*endpoint.Endpoint, error) {
-	var record cloudflare.DNSRecord
-	zoneID, err := p.Client.ZoneIDByName(zone)
-	if err != nil {
-		return nil, err
-	}
-	records, err := p.Client.DNSRecords(zoneID, record)
+// Records returns the list of records.
+func (p *cloudFlareProvider) Records() ([]*endpoint.Endpoint, error) {
+	zones, err := p.Zones()
 	if err != nil {
 		return nil, err
 	}
 
 	endpoints := []*endpoint.Endpoint{}
-	for _, r := range records {
-		endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Content, r.Type))
+	for _, zone := range zones {
+		records, err := p.Client.DNSRecords(zone.ID, cloudflare.DNSRecord{})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, r := range records {
+			// TODO: limit Types
+			endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Content, r.Type))
+		}
 	}
 
 	return endpoints, nil
 }
 
-// CreateRecords creates a given set of DNS records in the given hosted zone.
-func (p *CloudFlareProvider) CreateRecords(zone string, endpoints []*endpoint.Endpoint) error {
-	return p.submitChanges(zone, newCloudFlareChanges(CloudFlareCreate, endpoints))
-}
-
-// UpdateRecords updates a given set of old records to a new set of records in a given hosted zone.
-func (p *CloudFlareProvider) UpdateRecords(zone string, endpoints, _ []*endpoint.Endpoint) error {
-	return p.submitChanges(zone, newCloudFlareChanges(CloudFlareUpdate, endpoints))
-}
-
-// DeleteRecords deletes a given set of DNS records in a given zone.
-func (p *CloudFlareProvider) DeleteRecords(zone string, endpoints []*endpoint.Endpoint) error {
-	return p.submitChanges(zone, newCloudFlareChanges(CloudFlareDelete, endpoints))
-}
-
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *CloudFlareProvider) ApplyChanges(zone string, changes *plan.Changes) error {
-	combinedChanges := make([]*CloudFlareChange, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
+func (p *cloudFlareProvider) ApplyChanges(changes *plan.Changes) error {
+	combinedChanges := make([]*cloudFlareChange, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 
-	combinedChanges = append(combinedChanges, newCloudFlareChanges(CloudFlareCreate, changes.Create)...)
-	combinedChanges = append(combinedChanges, newCloudFlareChanges(CloudFlareUpdate, changes.UpdateNew)...)
-	combinedChanges = append(combinedChanges, newCloudFlareChanges(CloudFlareDelete, changes.Delete)...)
+	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareCreate, changes.Create)...)
+	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareUpdate, changes.UpdateNew)...)
+	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareDelete, changes.Delete)...)
 
-	return p.submitChanges(zone, combinedChanges)
+	return p.submitChanges(combinedChanges)
 }
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
-func (p *CloudFlareProvider) submitChanges(zone string, changes []*CloudFlareChange) error {
+func (p *cloudFlareProvider) submitChanges(changes []*cloudFlareChange) error {
 	// return early if there is nothing to change
 	if len(changes) == 0 {
 		return nil
 	}
 
-	zoneID, err := p.Client.ZoneIDByName(zone)
+	zones, err := p.Zones()
 	if err != nil {
 		return err
 	}
+	// separate into per-zone change sets to be passed to the API.
+	changesByZone := cloudflareChangesByZone(zones, changes)
 
-	if p.DryRun {
-		for _, change := range changes {
-			log.Infof("Changing records: %s %+v", change.Action, change.ResourceRecordSet)
+	for zoneID, changes := range changesByZone {
+		records, err := p.Client.DNSRecords(zoneID, cloudflare.DNSRecord{})
+		if err != nil {
+			return fmt.Errorf("could not fetch records from zone, %v", err)
 		}
+		p.zoneRecords[zoneID] = records
+		for _, change := range changes {
+			logFields := log.Fields{
+				"record": change.ResourceRecordSet.Name,
+				"type":   change.ResourceRecordSet.Type,
+				"action": change.Action,
+				"zone":   zoneID,
+			}
 
-		return nil
-	}
-	for _, change := range changes {
-		switch {
-		case change.Action == CloudFlareCreate:
-			_, err := p.Client.CreateDNSRecord(zoneID, change.ResourceRecordSet)
-			if err != nil {
-				return err
+			log.WithFields(logFields).Info("Changing record.")
+
+			if p.DryRun {
+				continue
 			}
-		case change.Action == CloudFlareDelete:
-			recordID, err := p.getRecordID(zoneID, change.ResourceRecordSet)
-			if err != nil {
-				return err
-			}
-			err = p.Client.DeleteDNSRecord(zoneID, recordID)
-			if err != nil {
-				return err
-			}
-		case change.Action == CloudFlareUpdate:
-			recordID, err := p.getRecordID(zoneID, change.ResourceRecordSet)
-			if err != nil {
-				return err
-			}
-			err = p.Client.UpdateDNSRecord(zoneID, recordID, change.ResourceRecordSet)
-			if err != nil {
-				return err
+			recordID := p.getRecordID(zoneID, change.ResourceRecordSet)
+			switch change.Action {
+			case cloudFlareCreate:
+				_, err := p.Client.CreateDNSRecord(zoneID, change.ResourceRecordSet)
+				if err != nil {
+					log.WithFields(logFields).Errorf("failed to create record: %v", err)
+				}
+			case cloudFlareDelete:
+				err := p.Client.DeleteDNSRecord(zoneID, recordID)
+				if err != nil {
+					log.WithFields(logFields).Errorf("failed to delete record: %v", err)
+				}
+			case cloudFlareUpdate:
+				err := p.Client.UpdateDNSRecord(zoneID, recordID, change.ResourceRecordSet)
+				if err != nil {
+					log.WithFields(logFields).Errorf("failed to update record: %v", err)
+				}
 			}
 		}
 	}
 	return nil
 }
 
-func (p *CloudFlareProvider) getRecordID(zoneID string, record cloudflare.DNSRecord) (string, error) {
-	records := cloudflare.DNSRecord{}
-	zoneRecords, err := p.Client.DNSRecords(zoneID, records)
-	if err != nil {
-		return "", err
+// changesByZone separates a multi-zone change into a single change per zone.
+func cloudflareChangesByZone(zones []cloudflare.Zone, changeSet []*cloudFlareChange) map[string][]*cloudFlareChange {
+	changes := make(map[string][]*cloudFlareChange)
+
+	for _, z := range zones {
+		changes[z.ID] = []*cloudFlareChange{}
 	}
-	for _, zoneRecord := range zoneRecords {
-		if zoneRecord.Name == record.Name {
-			return zoneRecord.ID, nil
+
+	for _, c := range changeSet {
+		zone := cloudflareSuitableZone(c.ResourceRecordSet.Name, zones)
+		if zone == nil {
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.ResourceRecordSet.Name)
+			continue
+		}
+		changes[zone.ID] = append(changes[zone.ID], c)
+	}
+
+	return changes
+}
+
+// cloudflareSuitableZone returns the most suitable zone for a given hostname
+// and a set of zones.
+func cloudflareSuitableZone(hostname string, zones []cloudflare.Zone) *cloudflare.Zone {
+	var zone cloudflare.Zone
+	for _, z := range zones {
+		if strings.HasSuffix(hostname, z.Name) {
+			if len(z.Name) > len(zone.Name) {
+				zone = z
+			}
 		}
 	}
-	return "", fmt.Errorf("No record id found")
+	return &zone
+}
+
+func (p *cloudFlareProvider) getRecordID(zoneID string, record cloudflare.DNSRecord) string {
+	for _, zoneRecord := range p.zoneRecords[zoneID] {
+		if zoneRecord.Name == record.Name {
+			return zoneRecord.ID
+		}
+	}
+	return ""
 }
 
 // newCloudFlareChanges returns a collection of Changes based on the given records and action.
-func newCloudFlareChanges(action string, endpoints []*endpoint.Endpoint) []*CloudFlareChange {
-	changes := make([]*CloudFlareChange, 0, len(endpoints))
+func newCloudFlareChanges(action string, endpoints []*endpoint.Endpoint) []*cloudFlareChange {
+	changes := make([]*cloudFlareChange, 0, len(endpoints))
 
 	for _, endpoint := range endpoints {
 		changes = append(changes, newCloudFlareChange(action, endpoint))
@@ -291,18 +272,18 @@ func newCloudFlareChanges(action string, endpoints []*endpoint.Endpoint) []*Clou
 	return changes
 }
 
-func newCloudFlareChange(action string, endpoint *endpoint.Endpoint) *CloudFlareChange {
-	change := &CloudFlareChange{
+func newCloudFlareChange(action string, endpoint *endpoint.Endpoint) *cloudFlareChange {
+	typ := suitableType(endpoint)
+
+	return &cloudFlareChange{
 		Action: action,
 		ResourceRecordSet: cloudflare.DNSRecord{
 			Name: endpoint.DNSName,
-			//TTL Value of 1 is 'automatic'
-			TTL: 1,
-			//record is receiving the performance and security benefits of CloudFlare
-			Proxied: true,
-			Type:    suitableType(endpoint),
+			// TTL Value of 1 is 'automatic'
+			TTL:     1,
+			Proxied: false,
+			Type:    typ,
 			Content: endpoint.Target,
 		},
 	}
-	return change
 }

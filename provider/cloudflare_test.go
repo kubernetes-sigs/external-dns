@@ -22,8 +22,12 @@ import (
 	"testing"
 
 	"github.com/cloudflare/cloudflare-go"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type mockCloudFlareClient struct{}
@@ -52,24 +56,8 @@ func (m *mockCloudFlareClient) ZoneIDByName(zoneName string) (string, error) {
 	return "1234567890", nil
 }
 
-func (m *mockCloudFlareClient) Zones() ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
-func (m *mockCloudFlareClient) Zone(zoneID ...string) ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
 func (m *mockCloudFlareClient) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
-func (m *mockCloudFlareClient) CreateZone(name string, jumpstart bool, org cloudflare.Organization) (cloudflare.Zone, error) {
-	return cloudflare.Zone{Name: "ext-dns-test.zalando.to."}, nil
-}
-
-func (m *mockCloudFlareClient) DeleteZone(zoneID string) (cloudflare.ZoneID, error) {
-	return cloudflare.ZoneID{ID: "1234567890"}, nil
+	return []cloudflare.Zone{{ID: "1234567890", Name: "ext-dns-test.zalando.to."}, {ID: "1234567891", Name: "foo.com."}}, nil
 }
 
 type mockCloudFlareUserDetailsFail struct{}
@@ -98,24 +86,8 @@ func (m *mockCloudFlareUserDetailsFail) ZoneIDByName(zoneName string) (string, e
 	return "", nil
 }
 
-func (m *mockCloudFlareUserDetailsFail) Zones() ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
-func (m *mockCloudFlareUserDetailsFail) Zone(zoneID ...string) ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
 func (m *mockCloudFlareUserDetailsFail) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
 	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
-func (m *mockCloudFlareUserDetailsFail) CreateZone(name string, jumpstart bool, org cloudflare.Organization) (cloudflare.Zone, error) {
-	return cloudflare.Zone{Name: "ext-dns-test.zalando.to."}, nil
-}
-
-func (m *mockCloudFlareUserDetailsFail) DeleteZone(zoneID string) (cloudflare.ZoneID, error) {
-	return cloudflare.ZoneID{ID: "1234567890"}, nil
 }
 
 type mockCloudFlareCreateZoneFail struct{}
@@ -144,24 +116,8 @@ func (m *mockCloudFlareCreateZoneFail) ZoneIDByName(zoneName string) (string, er
 	return "", nil
 }
 
-func (m *mockCloudFlareCreateZoneFail) Zones() ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
-func (m *mockCloudFlareCreateZoneFail) Zone(zoneID ...string) ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
 func (m *mockCloudFlareCreateZoneFail) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
 	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
-func (m *mockCloudFlareCreateZoneFail) CreateZone(name string, jumpstart bool, org cloudflare.Organization) (cloudflare.Zone, error) {
-	return cloudflare.Zone{}, fmt.Errorf("could not create new zone")
-}
-
-func (m *mockCloudFlareCreateZoneFail) DeleteZone(zoneID string) (cloudflare.ZoneID, error) {
-	return cloudflare.ZoneID{ID: "1234567890"}, nil
 }
 
 type mockCloudFlareDNSRecordsFail struct{}
@@ -189,24 +145,8 @@ func (m *mockCloudFlareDNSRecordsFail) ZoneIDByName(zoneName string) (string, er
 	return "", nil
 }
 
-func (m *mockCloudFlareDNSRecordsFail) Zones() ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
-func (m *mockCloudFlareDNSRecordsFail) Zone(zoneID ...string) ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
 func (m *mockCloudFlareDNSRecordsFail) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
 	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
-func (m *mockCloudFlareDNSRecordsFail) CreateZone(name string, jumpstart bool, org cloudflare.Organization) (cloudflare.Zone, error) {
-	return cloudflare.Zone{}, nil
-}
-
-func (m *mockCloudFlareDNSRecordsFail) DeleteZone(zoneID string) (cloudflare.ZoneID, error) {
-	return cloudflare.ZoneID{ID: "1234567890"}, nil
 }
 
 type mockCloudFlareZoneIDByNameFail struct{}
@@ -235,24 +175,8 @@ func (m *mockCloudFlareZoneIDByNameFail) ZoneIDByName(zoneName string) (string, 
 	return "", fmt.Errorf("no ID for zone found")
 }
 
-func (m *mockCloudFlareZoneIDByNameFail) Zones() ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
-func (m *mockCloudFlareZoneIDByNameFail) Zone(zoneID ...string) ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
 func (m *mockCloudFlareZoneIDByNameFail) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
 	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
-func (m *mockCloudFlareZoneIDByNameFail) CreateZone(name string, jumpstart bool, org cloudflare.Organization) (cloudflare.Zone, error) {
-	return cloudflare.Zone{}, nil
-}
-
-func (m *mockCloudFlareZoneIDByNameFail) DeleteZone(zoneID string) (cloudflare.ZoneID, error) {
-	return cloudflare.ZoneID{ID: "1234567890"}, nil
 }
 
 type mockCloudFlareDeleteZoneFail struct{}
@@ -281,24 +205,8 @@ func (m *mockCloudFlareDeleteZoneFail) ZoneIDByName(zoneName string) (string, er
 	return "1234567890", nil
 }
 
-func (m *mockCloudFlareDeleteZoneFail) Zones() ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
-func (m *mockCloudFlareDeleteZoneFail) Zone(zoneID ...string) ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
 func (m *mockCloudFlareDeleteZoneFail) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
 	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
-func (m *mockCloudFlareDeleteZoneFail) CreateZone(name string, jumpstart bool, org cloudflare.Organization) (cloudflare.Zone, error) {
-	return cloudflare.Zone{}, nil
-}
-
-func (m *mockCloudFlareDeleteZoneFail) DeleteZone(zoneID string) (cloudflare.ZoneID, error) {
-	return cloudflare.ZoneID{}, fmt.Errorf("could not delete zone")
 }
 
 type mockCloudFlareListZonesFail struct{}
@@ -327,24 +235,8 @@ func (m *mockCloudFlareListZonesFail) ZoneIDByName(zoneName string) (string, err
 	return "1234567890", nil
 }
 
-func (m *mockCloudFlareListZonesFail) Zones() ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
-func (m *mockCloudFlareListZonesFail) Zone(zoneID ...string) ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
 func (m *mockCloudFlareListZonesFail) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
 	return []cloudflare.Zone{{}}, fmt.Errorf("no zones available")
-}
-
-func (m *mockCloudFlareListZonesFail) CreateZone(name string, jumpstart bool, org cloudflare.Organization) (cloudflare.Zone, error) {
-	return cloudflare.Zone{}, nil
-}
-
-func (m *mockCloudFlareListZonesFail) DeleteZone(zoneID string) (cloudflare.ZoneID, error) {
-	return cloudflare.ZoneID{}, fmt.Errorf("could not delete zone")
 }
 
 type mockCloudFlareCreateRecordsFail struct{}
@@ -373,24 +265,8 @@ func (m *mockCloudFlareCreateRecordsFail) ZoneIDByName(zoneName string) (string,
 	return "1234567890", nil
 }
 
-func (m *mockCloudFlareCreateRecordsFail) Zones() ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
-func (m *mockCloudFlareCreateRecordsFail) Zone(zoneID ...string) ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
 func (m *mockCloudFlareCreateRecordsFail) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
 	return []cloudflare.Zone{{}}, fmt.Errorf("no zones available")
-}
-
-func (m *mockCloudFlareCreateRecordsFail) CreateZone(name string, jumpstart bool, org cloudflare.Organization) (cloudflare.Zone, error) {
-	return cloudflare.Zone{}, nil
-}
-
-func (m *mockCloudFlareCreateRecordsFail) DeleteZone(zoneID string) (cloudflare.ZoneID, error) {
-	return cloudflare.ZoneID{}, fmt.Errorf("could not delete zone")
 }
 
 type mockCloudFlareDeleteRecordsFail struct{}
@@ -419,24 +295,8 @@ func (m *mockCloudFlareDeleteRecordsFail) ZoneIDByName(zoneName string) (string,
 	return "1234567890", nil
 }
 
-func (m *mockCloudFlareDeleteRecordsFail) Zones() ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
-func (m *mockCloudFlareDeleteRecordsFail) Zone(zoneID ...string) ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
 func (m *mockCloudFlareDeleteRecordsFail) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
 	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
-func (m *mockCloudFlareDeleteRecordsFail) CreateZone(name string, jumpstart bool, org cloudflare.Organization) (cloudflare.Zone, error) {
-	return cloudflare.Zone{Name: "ext-dns-test.zalando.to."}, nil
-}
-
-func (m *mockCloudFlareDeleteRecordsFail) DeleteZone(zoneID string) (cloudflare.ZoneID, error) {
-	return cloudflare.ZoneID{ID: "1234567890"}, nil
 }
 
 type mockCloudFlareUpdateRecordsFail struct{}
@@ -465,265 +325,54 @@ func (m *mockCloudFlareUpdateRecordsFail) ZoneIDByName(zoneName string) (string,
 	return "1234567890", nil
 }
 
-func (m *mockCloudFlareUpdateRecordsFail) Zones() ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
-func (m *mockCloudFlareUpdateRecordsFail) Zone(zoneID ...string) ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
 func (m *mockCloudFlareUpdateRecordsFail) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
 	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
 }
 
-func (m *mockCloudFlareUpdateRecordsFail) CreateZone(name string, jumpstart bool, org cloudflare.Organization) (cloudflare.Zone, error) {
-	return cloudflare.Zone{Name: "ext-dns-test.zalando.to."}, nil
-}
-
-func (m *mockCloudFlareUpdateRecordsFail) DeleteZone(zoneID string) (cloudflare.ZoneID, error) {
-	return cloudflare.ZoneID{ID: "1234567890"}, nil
-}
-
-func TestCloudFlareCreateZone(t *testing.T) {
-	provider := &CloudFlareProvider{
-		Client: &mockCloudFlareClient{},
-	}
-	_, err := provider.CreateZone("ext-dns-test.zalando.to.")
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestCloudFlareDeleteZone(t *testing.T) {
-	provider := &CloudFlareProvider{
-		Client: &mockCloudFlareClient{},
-	}
-	_, err := provider.DeleteZone("ext-dns-test.zalando.to.")
-	if err != nil {
-		t.Fatal(err)
-	}
-	provider.Client = &mockCloudFlareZoneIDByNameFail{}
-	_, err = provider.DeleteZone("ext-dns-test.zalando.to.")
-	if err == nil {
-		t.Errorf("exptected error")
-	}
-	provider.Client = &mockCloudFlareDeleteZoneFail{}
-	_, err = provider.DeleteZone("ext-dns-test.zalando.to.")
-	if err == nil {
-		t.Errorf("exptected error")
-	}
-}
-
-func TestCloudFlareCreateZoneFail(t *testing.T) {
-	provider := &CloudFlareProvider{
-		Client: &mockCloudFlareUserDetailsFail{},
-	}
-	_, err := provider.CreateZone("ext-dns-test.zalando.to.")
-	if err == nil {
-		t.Errorf("exptected error")
-	}
-	provider.Client = &mockCloudFlareCreateZoneFail{}
-	_, err = provider.CreateZone("ext-dns-test.zalando.to.")
-	if err == nil {
-		t.Errorf("exptected error")
-	}
-}
-
-func TestCloudFlareGetRecordID(t *testing.T) {
-	provider := &CloudFlareProvider{
-		Client: &mockCloudFlareDNSRecordsFail{},
-	}
-	zoneID := "12345656790"
-	record := cloudflare.DNSRecord{Name: "foobar.ext-dns-test.zalando.to"}
-	_, err := provider.getRecordID(zoneID, record)
-	if err == nil {
-		t.Errorf("exptected error")
-	}
-	provider.Client = &mockCloudFlareClient{}
-	_, err = provider.getRecordID(zoneID, record)
-	if err == nil {
-		t.Errorf("exptected error")
-	}
-	record = cloudflare.DNSRecord{Name: "foobar.ext-dns-test.zalando.to."}
-	_, err = provider.getRecordID(zoneID, record)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-}
-
-func TestZones(t *testing.T) {
-	provider := &CloudFlareProvider{
-		Client: &mockCloudFlareClient{},
-	}
-	_, err := provider.Zones()
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-	provider.Client = &mockCloudFlareListZonesFail{}
-	_, err = provider.Zones()
-	if err != nil {
-		//https://github.com/cloudflare/cloudflare-go/blob/ea9272e4235ff7a9aa37e2c7c7a8debe22b3d696/zone.go#L270
-		t.Errorf("should not fail, %s", err)
-	}
-
-}
-
-func TestZone(t *testing.T) {
-	provider := &CloudFlareProvider{
-		Client: &mockCloudFlareClient{},
-	}
-	_, err := provider.Zone("ext-dns-test.zalando.to.")
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-	provider.Client = &mockCloudFlareZoneIDByNameFail{}
-	_, err = provider.Zone("ext-dns-test.zalando.to.")
-	if err == nil {
-		t.Errorf("exptected error")
-	}
-	provider.Client = &mockCloudFlareListZonesFail{}
-	_, err = provider.Zone("ext-dns-test.zalando.to.")
-	if err != nil {
-		//https://github.com/cloudflare/cloudflare-go/blob/ea9272e4235ff7a9aa37e2c7c7a8debe22b3d696/zone.go#L270
-		t.Errorf("should not fail, %s", err)
-	}
-}
-
-func TestCreateRecords(t *testing.T) {
-	provider := &CloudFlareProvider{
-		Client: &mockCloudFlareClient{},
-	}
-	zone := "ext-dns-test.zalando.to"
-	endpoints := []*endpoint.Endpoint{
-		{DNSName: "new", Target: "target"},
-	}
-	err := provider.CreateRecords(zone, endpoints)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-	provider.DryRun = true
-	err = provider.CreateRecords(zone, endpoints)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-	provider.Client = &mockCloudFlareCreateRecordsFail{}
-	provider.DryRun = false
-	err = provider.CreateRecords(zone, endpoints)
-	if err == nil {
-		t.Errorf("expected to fail")
-	}
-	provider.Client = &mockCloudFlareZoneIDByNameFail{}
-	err = provider.CreateRecords(zone, endpoints)
-	if err == nil {
-		t.Errorf("expected to fail")
-	}
-	endpoints = []*endpoint.Endpoint{}
-	err = provider.CreateRecords(zone, endpoints)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-}
-
-func TestDeleteRecords(t *testing.T) {
-	provider := &CloudFlareProvider{
-		Client: &mockCloudFlareClient{},
-	}
-	zone := "ext-dns-test.zalando.to"
-	endpoints := []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "target"}}
-	err := provider.DeleteRecords(zone, endpoints)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-	provider.Client = &mockCloudFlareDNSRecordsFail{}
-	err = provider.DeleteRecords(zone, endpoints)
-	if err == nil {
-		t.Errorf("expected to fail")
-	}
-	provider.DryRun = true
-	err = provider.DeleteRecords(zone, endpoints)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-	provider.Client = &mockCloudFlareDeleteRecordsFail{}
-	provider.DryRun = false
-	err = provider.DeleteRecords(zone, endpoints)
-	if err == nil {
-		t.Errorf("expected to fail")
-	}
-	endpoints = []*endpoint.Endpoint{}
-	err = provider.DeleteRecords(zone, endpoints)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-}
-
-func TestUpdateRecords(t *testing.T) {
-	provider := &CloudFlareProvider{
-		Client: &mockCloudFlareClient{},
-	}
-	zone := "ext-dns-test.zalando.to"
-	oldCNameEndpoints := []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "old-target"}}
-	newCNameEndpoints := []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "new-target"}}
-
-	oldANameEndpoints := []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "8.8.8.8"}}
-	newANameEndpoints := []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "7.7.7.7"}}
-	err := provider.UpdateRecords(zone, newCNameEndpoints, oldCNameEndpoints)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-	err = provider.UpdateRecords(zone, newANameEndpoints, oldANameEndpoints)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-	provider.Client = &mockCloudFlareUpdateRecordsFail{}
-	err = provider.UpdateRecords(zone, newCNameEndpoints, oldCNameEndpoints)
-	if err == nil {
-		t.Errorf("expected to fail")
-	}
-	err = provider.UpdateRecords(zone, newANameEndpoints, oldANameEndpoints)
-	if err == nil {
-		t.Errorf("expected to fail")
-	}
-	provider.Client = &mockCloudFlareDNSRecordsFail{}
-	err = provider.UpdateRecords(zone, newANameEndpoints, oldANameEndpoints)
-	if err == nil {
-		t.Errorf("expected to fail")
-	}
-	provider.Client = &mockCloudFlareClient{}
-	provider.DryRun = true
-	err = provider.UpdateRecords(zone, newCNameEndpoints, oldCNameEndpoints)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-	err = provider.UpdateRecords(zone, newANameEndpoints, oldANameEndpoints)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-}
-
 func TestNewCloudFlareChanges(t *testing.T) {
-	action := CloudFlareCreate
+	action := cloudFlareCreate
 	endpoints := []*endpoint.Endpoint{{DNSName: "new", Target: "target"}}
 	_ = newCloudFlareChanges(action, endpoints)
 }
 
-func TestRecords(t *testing.T) {
-	provider := &CloudFlareProvider{
-		Client: &mockCloudFlareClient{},
+func TestCloudFlareZones(t *testing.T) {
+	provider := &cloudFlareProvider{
+		Client:       &mockCloudFlareClient{},
+		domainFilter: "zalando.to.",
 	}
-	zone := "ext-dns-test.zalando.to"
-	_, err := provider.Records(zone)
+
+	zones, err := provider.Zones()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	validateCloudFlareZones(t, zones, []cloudflare.Zone{
+		{Name: "ext-dns-test.zalando.to."},
+	})
+}
+
+func TestRecords(t *testing.T) {
+	provider := &cloudFlareProvider{
+		Client: &mockCloudFlareClient{},
+		zoneRecords: map[string][]cloudflare.DNSRecord{
+			"12345656790": []cloudflare.DNSRecord{
+				cloudflare.DNSRecord{
+					Name: "foobar.ext-dns-test.zalando.to",
+				},
+			},
+		},
+	}
+	_, err := provider.Records()
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
 	provider.Client = &mockCloudFlareDNSRecordsFail{}
-	_, err = provider.Records(zone)
+	_, err = provider.Records()
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
-	provider.Client = &mockCloudFlareZoneIDByNameFail{}
-	_, err = provider.Records(zone)
+	provider.Client = &mockCloudFlareListZonesFail{}
+	_, err = provider.Records()
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
@@ -732,13 +381,13 @@ func TestRecords(t *testing.T) {
 func TestNewCloudFlareProvider(t *testing.T) {
 	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
 	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
-	_, err := NewCloudFlareProvider(true)
+	_, err := NewCloudFlareProvider("ext-dns-test.zalando.to.", true)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
 	_ = os.Unsetenv("CF_API_KEY")
 	_ = os.Unsetenv("CF_API_EMAIL")
-	_, err = NewCloudFlareProvider(true)
+	_, err = NewCloudFlareProvider("ext-dns-test.zalando.to.", true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
@@ -746,16 +395,41 @@ func TestNewCloudFlareProvider(t *testing.T) {
 
 func TestApplyChanges(t *testing.T) {
 	changes := &plan.Changes{}
-	provider := &CloudFlareProvider{
+	provider := &cloudFlareProvider{
 		Client: &mockCloudFlareClient{},
+		zoneRecords: map[string][]cloudflare.DNSRecord{
+			"1234567890": []cloudflare.DNSRecord{
+				cloudflare.DNSRecord{
+					Name: "foobar.ext-dns-test.zalando.to",
+				},
+			},
+		},
 	}
-	zone := "ext-dns-test.zalando.to"
 	changes.Create = []*endpoint.Endpoint{{DNSName: "new.ext-dns-test.zalando.to.", Target: "target"}}
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "target"}}
 	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "target-old"}}
 	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "target-new"}}
-	err := provider.ApplyChanges(zone, changes)
+	err := provider.ApplyChanges(changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
+	}
+
+	// empty changes
+	changes.Create = []*endpoint.Endpoint{}
+	changes.Delete = []*endpoint.Endpoint{}
+	changes.UpdateOld = []*endpoint.Endpoint{}
+	changes.UpdateNew = []*endpoint.Endpoint{}
+
+	err = provider.ApplyChanges(changes)
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
+}
+
+func validateCloudFlareZones(t *testing.T, zones []cloudflare.Zone, expected []cloudflare.Zone) {
+	require.Len(t, zones, len(expected))
+
+	for i, zone := range zones {
+		assert.Equal(t, expected[i].Name, zone.Name)
 	}
 }
