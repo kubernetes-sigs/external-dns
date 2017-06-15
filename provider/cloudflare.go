@@ -98,7 +98,7 @@ func NewCloudFlareProvider(domainFilter string, dryRun bool) (*CloudFlareProvide
 	// initialize via API email and API key and returns new API object
 	config, err := cloudflare.New(os.Getenv("CF_API_KEY"), os.Getenv("CF_API_EMAIL"))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to initialize cloudflare provider: %v", err)
 	}
 	provider := &CloudFlareProvider{
 		//Client: config,

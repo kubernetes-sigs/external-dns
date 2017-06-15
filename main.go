@@ -109,14 +109,16 @@ func main() {
 
 	var p provider.Provider
 	switch cfg.Provider {
-	case "google":
-		p, err = provider.NewGoogleProvider(cfg.GoogleProject, cfg.DomainFilter, cfg.DryRun)
 	case "aws":
 		p, err = provider.NewAWSProvider(cfg.DomainFilter, cfg.DryRun)
-	case "inmemory":
-		p, err = provider.NewInMemoryProvider(provider.InMemoryWithDomain(cfg.DomainFilter), provider.InMemoryWithLogging()), nil
 	case "azure":
 		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, cfg.DomainFilter, cfg.AzureResourceGroup, cfg.DryRun)
+	case "cloudflare":
+		p, err = provider.NewCloudFlareProvider(cfg.DomainFilter, cfg.DryRun)
+	case "google":
+		p, err = provider.NewGoogleProvider(cfg.GoogleProject, cfg.DomainFilter, cfg.DryRun)
+	case "inmemory":
+		p, err = provider.NewInMemoryProvider(provider.InMemoryWithDomain(cfg.DomainFilter), provider.InMemoryWithLogging()), nil
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
