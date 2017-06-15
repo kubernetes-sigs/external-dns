@@ -49,3 +49,4 @@ import:
   version: ~8.0.0
 - package: github.com/dgrijalva/jwt-go
   version: ~3.0.0
+- package: github.com/coreos/go-oidc
