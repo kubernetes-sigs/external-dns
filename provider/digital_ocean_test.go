@@ -430,7 +430,7 @@ func TestDigitalOceanApplyChanges(t *testing.T) {
 	provider := &DigitalOceanProvider{
 		Client: &mockDigitalOceanClient{},
 	}
-	changes.Create = []*endpoint.Endpoint{{DNSName: "new.ext-dns-test.bar.com", Target: "target"}}
+	changes.Create = []*endpoint.Endpoint{{DNSName: "new.ext-dns-test.bar.com", Target: "target"}, {DNSName: "new.ext-dns-test.unexpected.com", Target: "target"}}
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.bar.com", Target: "target"}}
 	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.bar.de", Target: "target-old"}}
 	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.foo.com", Target: "target-new"}}
