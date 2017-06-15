@@ -297,13 +297,14 @@ func digitalOceanChangesByZone(zones []godo.Domain, changeSet []*DigitalOceanCha
 // digitalOceanSuitableZone returns the most suitable zone for a given hostname
 // and a set of zones.
 func digitalOceanSuitableZone(hostname string, zones []godo.Domain) *godo.Domain {
-	var zone *godo.Domain
-	for _, z := range zones {
-		if strings.HasSuffix(hostname, z.Name) {
-			if zone == nil || len(z.Name) > len(zone.Name) {
-				zone = &z
+	var result *godo.Domain
+	for i := range zones {
+		zone := &zones[i]
+		if strings.HasSuffix(hostname, zone.Name) {
+			if result == nil || len(zone.Name) > len(result.Name) {
+				result = zone
 			}
 		}
 	}
-	return zone
+	return result
 }

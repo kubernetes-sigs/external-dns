@@ -486,6 +486,9 @@ func TestDigitalOceanSuitableZone(t *testing.T) {
 		{
 			Name: "bar.foo.com",
 		},
+		{
+			Name: "baz.com",
+		},
 	}
 	assert.Nil(t, digitalOceanSuitableZone("foo.de", domains))
 	assert.Equal(t, "bar.foo.com", digitalOceanSuitableZone("record.bar.foo.com", domains).Name)
