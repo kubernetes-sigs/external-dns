@@ -389,7 +389,7 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 				UpdateOld: []*endpoint.Endpoint{},
 				Delete:    []*endpoint.Endpoint{},
 			},
-			errorType: ErrInvalidBatchRequest,
+			errorType: ErrDuplicateRecordFound,
 		},
 		{
 			title:       "zones, update, right zone, invalid batch - duplicated update/delete",
@@ -412,7 +412,7 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 					},
 				},
 			},
-			errorType: ErrInvalidBatchRequest,
+			errorType: ErrDuplicateRecordFound,
 		},
 		{
 			title:       "zones, update, right zone, invalid batch - duplicated update",
@@ -434,7 +434,7 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 				UpdateOld: []*endpoint.Endpoint{},
 				Delete:    []*endpoint.Endpoint{},
 			},
-			errorType: ErrInvalidBatchRequest,
+			errorType: ErrDuplicateRecordFound,
 		},
 		{
 			title:       "zones, update, right zone, invalid batch - wrong update old",
