@@ -244,15 +244,16 @@ func cloudflareChangesByZone(zones []cloudflare.Zone, changeSet []*cloudFlareCha
 // cloudflareSuitableZone returns the most suitable zone for a given hostname
 // and a set of zones.
 func cloudflareSuitableZone(hostname string, zones []cloudflare.Zone) *cloudflare.Zone {
-	var zone *cloudflare.Zone
-	for _, z := range zones {
-		if strings.HasSuffix(hostname, z.Name) {
-			if zone == nil || len(z.Name) > len(zone.Name) {
-				zone = &z
+	var result *cloudflare.Zone
+	for i := range zones {
+		zone := &zones[i]
+		if strings.HasSuffix(hostname, zone.Name) {
+			if result == nil || len(zone.Name) > len(result.Name) {
+				result = zone
 			}
 		}
 	}
-	return zone
+	return result
 }
 
 func (p *CloudFlareProvider) getRecordID(records []cloudflare.DNSRecord, record cloudflare.DNSRecord) string {
