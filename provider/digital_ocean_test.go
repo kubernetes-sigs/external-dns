@@ -456,12 +456,12 @@ func TestNewDigitalOceanProvider(t *testing.T) {
 func TestDigitalOceanGetRecordID(t *testing.T) {
 	p := &DigitalOceanProvider{}
 	records := []godo.DomainRecord{
-		godo.DomainRecord{
+		{
 			ID:   1,
 			Name: "foo.com",
 			Type: "CNAME",
 		},
-		godo.DomainRecord{
+		{
 			ID:   2,
 			Name: "baz.de",
 			Type: "A",
@@ -480,10 +480,10 @@ func TestDigitalOceanGetRecordID(t *testing.T) {
 
 func TestDigitalOceanSuitableZone(t *testing.T) {
 	domains := []godo.Domain{
-		godo.Domain{
+		{
 			Name: "foo.com",
 		},
-		godo.Domain{
+		{
 			Name: "bar.foo.com",
 		},
 	}
