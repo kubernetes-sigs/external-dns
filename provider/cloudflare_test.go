@@ -423,12 +423,12 @@ func TestApplyChanges(t *testing.T) {
 func TestCloudFlareGetRecordID(t *testing.T) {
 	p := &CloudFlareProvider{}
 	records := []cloudflare.DNSRecord{
-		cloudflare.DNSRecord{
+		{
 			Name: "foo.com",
 			Type: "CNAME",
 			ID:   "1",
 		},
-		cloudflare.DNSRecord{
+		{
 			Name: "bar.de",
 			Type: "A",
 			ID:   "2",
