@@ -717,7 +717,9 @@ func TestEnforceShouldRetryCheck(t *testing.T) {
 	client := &http.Client{Transport: tp}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(5 * time.Millisecond)
+		// This server should wait forever. Requests will timeout and the SDK should
+		// attempt to retry.
+		select {}
 	}))
 
 	retryer := &testRetryer{}

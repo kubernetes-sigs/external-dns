@@ -49,3 +49,5 @@ import:
   version: ~8.0.0
 - package: github.com/dgrijalva/jwt-go
   version: ~3.0.0
+- package: github.com/cloudflare/cloudflare-go
+  version: ~0.7.3
