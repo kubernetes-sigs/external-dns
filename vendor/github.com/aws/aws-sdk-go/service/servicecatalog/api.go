@@ -317,7 +317,7 @@ func (c *ServiceCatalog) CreateConstraintRequest(input *CreateConstraintInput) (
 
 // CreateConstraint API operation for AWS Service Catalog.
 //
-// Creates a new constraint.
+// Creates a new constraint. For more information, see Using Constraints (http://docs.aws.amazon.com/servicecatalog/latest/adminguide/constraints.html).
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -663,7 +663,9 @@ func (c *ServiceCatalog) CreateProvisioningArtifactRequest(input *CreateProvisio
 // CreateProvisioningArtifact API operation for AWS Service Catalog.
 //
 // Create a new provisioning artifact for the specified product. This operation
-// will not work with a product that has been shared with you.
+// does not work with a product that has been shared with you.
+//
+// See the bottom of this topic for an example JSON request.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -833,7 +835,7 @@ func (c *ServiceCatalog) DeletePortfolioRequest(input *DeletePortfolioInput) (re
 
 // DeletePortfolio API operation for AWS Service Catalog.
 //
-// Deletes the specified portfolio. This operation will not work with a portfolio
+// Deletes the specified portfolio. This operation does not work with a portfolio
 // that has been shared with you or if it has products, users, constraints,
 // or shared accounts associated with it.
 //
@@ -1002,7 +1004,7 @@ func (c *ServiceCatalog) DeleteProductRequest(input *DeleteProductInput) (req *r
 
 // DeleteProduct API operation for AWS Service Catalog.
 //
-// Deletes the specified product. This operation will not work with a product
+// Deletes the specified product. This operation does not work with a product
 // that has been shared with you or is associated with a portfolio.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -1090,7 +1092,7 @@ func (c *ServiceCatalog) DeleteProvisioningArtifactRequest(input *DeleteProvisio
 
 // DeleteProvisioningArtifact API operation for AWS Service Catalog.
 //
-// Deletes the specified provisioning artifact. This operation will not work
+// Deletes the specified provisioning artifact. This operation does not work
 // on a provisioning artifact associated with a product that has been shared
 // with you, or on the last provisioning artifact associated with a product
 // (a product must have at least one provisioning artifact).
@@ -1543,6 +1545,86 @@ func (c *ServiceCatalog) DescribeProductView(input *DescribeProductViewInput) (*
 // for more information on using Contexts.
 func (c *ServiceCatalog) DescribeProductViewWithContext(ctx aws.Context, input *DescribeProductViewInput, opts ...request.Option) (*DescribeProductViewOutput, error) {
 	req, out := c.DescribeProductViewRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
+const opDescribeProvisionedProduct = "DescribeProvisionedProduct"
+
+// DescribeProvisionedProductRequest generates a "aws/request.Request" representing the
+// client's request for the DescribeProvisionedProduct operation. The "output" return
+// value can be used to capture response data after the request's "Send" method
+// is called.
+//
+// See DescribeProvisionedProduct for usage and error information.
+//
+// Creating a request object using this method should be used when you want to inject
+// custom logic into the request's lifecycle using a custom handler, or if you want to
+// access properties on the request object before or after sending the request. If
+// you just want the service response, call the DescribeProvisionedProduct method directly
+// instead.
+//
+// Note: You must call the "Send" method on the returned request object in order
+// to execute the request.
+//
+//    // Example sending a request using the DescribeProvisionedProductRequest method.
+//    req, resp := client.DescribeProvisionedProductRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/servicecatalog-2015-12-10/DescribeProvisionedProduct
+func (c *ServiceCatalog) DescribeProvisionedProductRequest(input *DescribeProvisionedProductInput) (req *request.Request, output *DescribeProvisionedProductOutput) {
+	op := &request.Operation{
+		Name:       opDescribeProvisionedProduct,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+	}
+
+	if input == nil {
+		input = &DescribeProvisionedProductInput{}
+	}
+
+	output = &DescribeProvisionedProductOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// DescribeProvisionedProduct API operation for AWS Service Catalog.
+//
+// Retrieve detailed information about the provisioned product.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for AWS Service Catalog's
+// API operation DescribeProvisionedProduct for usage and error information.
+//
+// Returned Error Codes:
+//   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
+//   The specified resource was not found.
+//
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/servicecatalog-2015-12-10/DescribeProvisionedProduct
+func (c *ServiceCatalog) DescribeProvisionedProduct(input *DescribeProvisionedProductInput) (*DescribeProvisionedProductOutput, error) {
+	req, out := c.DescribeProvisionedProductRequest(input)
+	return out, req.Send()
+}
+
+// DescribeProvisionedProductWithContext is the same as DescribeProvisionedProduct with the addition of
+// the ability to pass a context and additional request options.
+//
+// See DescribeProvisionedProduct for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *ServiceCatalog) DescribeProvisionedProductWithContext(ctx aws.Context, input *DescribeProvisionedProductInput, opts ...request.Option) (*DescribeProvisionedProductOutput, error) {
+	req, out := c.DescribeProvisionedProductRequest(input)
 	req.SetContext(ctx)
 	req.ApplyOptions(opts...)
 	return out, req.Send()
@@ -2747,7 +2829,7 @@ func (c *ServiceCatalog) ProvisionProductRequest(input *ProvisionProductInput) (
 
 // ProvisionProduct API operation for AWS Service Catalog.
 //
-// Requests a Provision of a specified product. A ProvisionedProduct is a resourced
+// Requests a provision of a specified product. A provisioned product is a resourced
 // instance for a product. For example, provisioning a CloudFormation-template-backed
 // product results in launching a CloudFormation stack and all the underlying
 // resources that come with it.
@@ -3339,7 +3421,7 @@ func (c *ServiceCatalog) UpdatePortfolioRequest(input *UpdatePortfolioInput) (re
 
 // UpdatePortfolio API operation for AWS Service Catalog.
 //
-// Updates the specified portfolio's details. This operation will not work with
+// Updates the specified portfolio's details. This operation does not work with
 // a product that has been shared with you.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -3599,7 +3681,7 @@ func (c *ServiceCatalog) UpdateProvisioningArtifactRequest(input *UpdateProvisio
 
 // UpdateProvisioningArtifact API operation for AWS Service Catalog.
 //
-// Updates an existing provisioning artifact's information. This operation will
+// Updates an existing provisioning artifact's information. This operation does
 // not work on a provisioning artifact associated with a product that has been
 // shared with you.
 //
@@ -4077,7 +4159,14 @@ type CreateConstraintInput struct {
 	// IdempotencyToken is a required field
 	IdempotencyToken *string `min:"1" type:"string" required:"true" idempotencyToken:"true"`
 
-	// The constraint parameters.
+	// The constraint parameters. Expected values vary depending on which Type is
+	// specified. For examples, see the bottom of this topic.
+	//
+	// For Type LAUNCH, the RoleArn property is required.
+	//
+	// For Type NOTIFICATION, the NotificationArns property is required.
+	//
+	// For Type TEMPLATE, the Rules property is required.
 	//
 	// Parameters is a required field
 	Parameters *string `type:"string" required:"true"`
@@ -4092,7 +4181,8 @@ type CreateConstraintInput struct {
 	// ProductId is a required field
 	ProductId *string `min:"1" type:"string" required:"true"`
 
-	// The type of the constraint.
+	// The type of the constraint. Case-sensitive valid values are: LAUNCH, NOTIFICATION,
+	// or TEMPLATE.
 	//
 	// Type is a required field
 	Type *string `min:"1" type:"string" required:"true"`
@@ -4806,7 +4896,7 @@ func (s *CreateProvisioningArtifactInput) SetProductId(v string) *CreateProvisio
 type CreateProvisioningArtifactOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Additional information about the provisioning artifact create request.
+	// Additional information about the creation request for the provisioning artifact.
 	Info map[string]*string `min:"1" type:"map"`
 
 	// The resulting detailed provisioning artifact information.
@@ -5179,7 +5269,8 @@ type DeleteProvisioningArtifactInput struct {
 	// ProductId is a required field
 	ProductId *string `min:"1" type:"string" required:"true"`
 
-	// The identifier of the provisioning artifact for the delete request.
+	// The identifier of the provisioning artifact for the delete request. This
+	// is sometimes referred to as the product version.
 	//
 	// ProvisioningArtifactId is a required field
 	ProvisioningArtifactId *string `min:"1" type:"string" required:"true"`
@@ -5512,6 +5603,9 @@ type DescribeProductAsAdminOutput struct {
 	// Detailed product view information.
 	ProductViewDetail *ProductViewDetail `type:"structure"`
 
+	// A list of provisioning artifact summaries for the product.
+	ProvisioningArtifactSummaries []*ProvisioningArtifactSummary `type:"list"`
+
 	// Tags associated with the product.
 	Tags []*Tag `type:"list"`
 }
@@ -5529,6 +5623,12 @@ func (s DescribeProductAsAdminOutput) GoString() string {
 // SetProductViewDetail sets the ProductViewDetail field's value.
 func (s *DescribeProductAsAdminOutput) SetProductViewDetail(v *ProductViewDetail) *DescribeProductAsAdminOutput {
 	s.ProductViewDetail = v
+	return s
+}
+
+// SetProvisioningArtifactSummaries sets the ProvisioningArtifactSummaries field's value.
+func (s *DescribeProductAsAdminOutput) SetProvisioningArtifactSummaries(v []*ProvisioningArtifactSummary) *DescribeProductAsAdminOutput {
+	s.ProvisioningArtifactSummaries = v
 	return s
 }
 
@@ -5726,6 +5826,90 @@ func (s *DescribeProductViewOutput) SetProvisioningArtifacts(v []*ProvisioningAr
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/servicecatalog-2015-12-10/DescribeProvisionedProductInput
+type DescribeProvisionedProductInput struct {
+	_ struct{} `type:"structure"`
+
+	// The language code to use for this operation. Supported language codes are
+	// as follows:
+	//
+	// "en" (English)
+	//
+	// "jp" (Japanese)
+	//
+	// "zh" (Chinese)
+	//
+	// If no code is specified, "en" is used as the default.
+	AcceptLanguage *string `type:"string"`
+
+	// The provisioned product identifier.
+	//
+	// Id is a required field
+	Id *string `min:"1" type:"string" required:"true"`
+}
+
+// String returns the string representation
+func (s DescribeProvisionedProductInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DescribeProvisionedProductInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *DescribeProvisionedProductInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "DescribeProvisionedProductInput"}
+	if s.Id == nil {
+		invalidParams.Add(request.NewErrParamRequired("Id"))
+	}
+	if s.Id != nil && len(*s.Id) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("Id", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetAcceptLanguage sets the AcceptLanguage field's value.
+func (s *DescribeProvisionedProductInput) SetAcceptLanguage(v string) *DescribeProvisionedProductInput {
+	s.AcceptLanguage = &v
+	return s
+}
+
+// SetId sets the Id field's value.
+func (s *DescribeProvisionedProductInput) SetId(v string) *DescribeProvisionedProductInput {
+	s.Id = &v
+	return s
+}
+
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/servicecatalog-2015-12-10/DescribeProvisionedProductOutput
+type DescribeProvisionedProductOutput struct {
+	_ struct{} `type:"structure"`
+
+	// Detailed provisioned product information.
+	ProvisionedProductDetail *ProvisionedProductDetail `type:"structure"`
+}
+
+// String returns the string representation
+func (s DescribeProvisionedProductOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DescribeProvisionedProductOutput) GoString() string {
+	return s.String()
+}
+
+// SetProvisionedProductDetail sets the ProvisionedProductDetail field's value.
+func (s *DescribeProvisionedProductOutput) SetProvisionedProductDetail(v *ProvisionedProductDetail) *DescribeProvisionedProductOutput {
+	s.ProvisionedProductDetail = v
+	return s
+}
+
 // Please also see https://docs.aws.amazon.com/goto/WebAPI/servicecatalog-2015-12-10/DescribeProvisioningArtifactInput
 type DescribeProvisioningArtifactInput struct {
 	_ struct{} `type:"structure"`
@@ -5747,10 +5931,14 @@ type DescribeProvisioningArtifactInput struct {
 	// ProductId is a required field
 	ProductId *string `min:"1" type:"string" required:"true"`
 
-	// The identifier of the provisioning artifact.
+	// The identifier of the provisioning artifact. This is sometimes referred to
+	// as the product version.
 	//
 	// ProvisioningArtifactId is a required field
 	ProvisioningArtifactId *string `min:"1" type:"string" required:"true"`
+
+	// Selects verbose results. If set to true, the CloudFormation template is returned.
+	Verbose *bool `type:"boolean"`
 }
 
 // String returns the string representation
@@ -5800,6 +5988,12 @@ func (s *DescribeProvisioningArtifactInput) SetProductId(v string) *DescribeProv
 // SetProvisioningArtifactId sets the ProvisioningArtifactId field's value.
 func (s *DescribeProvisioningArtifactInput) SetProvisioningArtifactId(v string) *DescribeProvisioningArtifactInput {
 	s.ProvisioningArtifactId = &v
+	return s
+}
+
+// SetVerbose sets the Verbose field's value.
+func (s *DescribeProvisioningArtifactInput) SetVerbose(v bool) *DescribeProvisioningArtifactInput {
+	s.Verbose = &v
 	return s
 }
 
@@ -5871,7 +6065,8 @@ type DescribeProvisioningParametersInput struct {
 	// ProductId is a required field
 	ProductId *string `min:"1" type:"string" required:"true"`
 
-	// The provisioning artifact identifier for this product.
+	// The provisioning artifact identifier for this product. This is sometimes
+	// referred to as the product version.
 	//
 	// ProvisioningArtifactId is a required field
 	ProvisioningArtifactId *string `min:"1" type:"string" required:"true"`
@@ -7502,6 +7697,12 @@ type ProductViewDetail struct {
 	ProductViewSummary *ProductViewSummary `type:"structure"`
 
 	// Current status of the product.
+	//
+	// AVAILABLE - Product is available for use.
+	//
+	// CREATING - Creation of product started, not ready for use.
+	//
+	// FAILED - Action on product failed.
 	Status *string `type:"string" enum:"Status"`
 }
 
@@ -7581,7 +7782,8 @@ type ProductViewSummary struct {
 	SupportUrl *string `type:"string"`
 
 	// The product type. Contact the product administrator for the significance
-	// of this value.
+	// of this value. If this value is MARKETPLACE, the product was created by AWS
+	// Marketplace.
 	Type *string `type:"string" enum:"ProductType"`
 }
 
@@ -7701,9 +7903,10 @@ type ProvisionProductInput struct {
 	// is provisioned.
 	//
 	// ProvisionedProductName is a required field
-	ProvisionedProductName *string `type:"string" required:"true"`
+	ProvisionedProductName *string `min:"1" type:"string" required:"true"`
 
-	// The provisioning artifact identifier for this product.
+	// The provisioning artifact identifier for this product. This is sometimes
+	// referred to as the product version.
 	//
 	// ProvisioningArtifactId is a required field
 	ProvisioningArtifactId *string `min:"1" type:"string" required:"true"`
@@ -7746,6 +7949,9 @@ func (s *ProvisionProductInput) Validate() error {
 	}
 	if s.ProvisionedProductName == nil {
 		invalidParams.Add(request.NewErrParamRequired("ProvisionedProductName"))
+	}
+	if s.ProvisionedProductName != nil && len(*s.ProvisionedProductName) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("ProvisionedProductName", 1))
 	}
 	if s.ProvisioningArtifactId == nil {
 		invalidParams.Add(request.NewErrParamRequired("ProvisioningArtifactId"))
@@ -7888,7 +8094,22 @@ type ProvisionedProductDetail struct {
 	Name *string `min:"1" type:"string"`
 
 	// The current status of the ProvisionedProduct.
-	Status *string `type:"string" enum:"RecordStatus"`
+	//
+	// AVAILABLE - Stable state, ready to perform any operation. The most recent
+	// action request succeeded and completed.
+	//
+	// UNDER_CHANGE - Transitive state, operations performed may or may not have
+	// valid results. Wait for an AVAILABLE status before performing operations.
+	//
+	// TAINTED - Stable state, ready to perform any operation. The stack has completed
+	// the requested operation but is not exactly what was requested. For example,
+	// a request to update to a new version failed and the stack rolled back to
+	// the current version.
+	//
+	// ERROR - Something unexpected happened such that the provisioned product exists
+	// but the stack is not running. For example, CloudFormation received an invalid
+	// parameter value and could not launch the stack.
+	Status *string `type:"string" enum:"ProvisionedProductStatus"`
 
 	// The current status message of the ProvisionedProduct.
 	StatusMessage *string `type:"string"`
@@ -7972,7 +8193,8 @@ type ProvisioningArtifact struct {
 	// The text description of the artifact.
 	Description *string `type:"string"`
 
-	// The identifier for the artifact.
+	// The identifier for the artifact. This is sometimes referred to as the product
+	// version.
 	Id *string `min:"1" type:"string"`
 
 	// The name of the artifact.
@@ -8024,13 +8246,19 @@ type ProvisioningArtifactDetail struct {
 	// The text description of the provisioning artifact.
 	Description *string `type:"string"`
 
-	// The identifier of the provisioning artifact.
+	// The identifier of the provisioning artifact. This is sometimes referred to
+	// as the product version.
 	Id *string `min:"1" type:"string"`
 
 	// The name assigned to the provisioning artifact.
 	Name *string `type:"string"`
 
-	// The type of the provisioning artifact.
+	// The type of the provisioning artifact. The following provisioning artifact
+	// types are used by AWS Marketplace products:
+	//
+	// MARKETPLACE_AMI - AMI products.
+	//
+	// MARKETPLACE_CAR - CAR (Cluster and AWS Resources) products.
 	Type *string `type:"string" enum:"ProvisioningArtifactType"`
 }
 
@@ -8147,7 +8375,7 @@ func (s *ProvisioningArtifactParameter) SetParameterType(v string) *Provisioning
 	return s
 }
 
-// Provisioning artifact properties.
+// Provisioning artifact properties. For example request JSON, see CreateProvisioningArtifact.
 // Please also see https://docs.aws.amazon.com/goto/WebAPI/servicecatalog-2015-12-10/ProvisioningArtifactProperties
 type ProvisioningArtifactProperties struct {
 	_ struct{} `type:"structure"`
@@ -8155,7 +8383,9 @@ type ProvisioningArtifactProperties struct {
 	// The text description of the provisioning artifact properties.
 	Description *string `type:"string"`
 
-	// Additional information about the provisioning artifact properties.
+	// Additional information about the provisioning artifact properties. When using
+	// this element in a request, you must specify LoadTemplateFromURL. For more
+	// information, see CreateProvisioningArtifact.
 	//
 	// Info is a required field
 	Info map[string]*string `min:"1" type:"map" required:"true"`
@@ -8163,7 +8393,12 @@ type ProvisioningArtifactProperties struct {
 	// The name assigned to the provisioning artifact properties.
 	Name *string `type:"string"`
 
-	// The type of the provisioning artifact properties.
+	// The type of the provisioning artifact properties. The following provisioning
+	// artifact property types are used by AWS Marketplace products:
+	//
+	// MARKETPLACE_AMI - AMI products.
+	//
+	// MARKETPLACE_CAR - CAR (Cluster and AWS Resources) products.
 	Type *string `type:"string" enum:"ProvisioningArtifactType"`
 }
 
@@ -8217,7 +8452,69 @@ func (s *ProvisioningArtifactProperties) SetType(v string) *ProvisioningArtifact
 	return s
 }
 
-// The arameter key/value pairs used to provision a product.
+// Summary information about a provisioning artifact.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/servicecatalog-2015-12-10/ProvisioningArtifactSummary
+type ProvisioningArtifactSummary struct {
+	_ struct{} `type:"structure"`
+
+	// The UTC timestamp of the creation time.
+	CreatedTime *time.Time `type:"timestamp" timestampFormat:"unix"`
+
+	// The provisioning artifact description.
+	Description *string `type:"string"`
+
+	// The provisioning artifact identifier.
+	Id *string `min:"1" type:"string"`
+
+	// The provisioning artifact name.
+	Name *string `type:"string"`
+
+	// The provisioning artifact metadata. This data is used with products created
+	// by AWS Marketplace.
+	ProvisioningArtifactMetadata map[string]*string `min:"1" type:"map"`
+}
+
+// String returns the string representation
+func (s ProvisioningArtifactSummary) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ProvisioningArtifactSummary) GoString() string {
+	return s.String()
+}
+
+// SetCreatedTime sets the CreatedTime field's value.
+func (s *ProvisioningArtifactSummary) SetCreatedTime(v time.Time) *ProvisioningArtifactSummary {
+	s.CreatedTime = &v
+	return s
+}
+
+// SetDescription sets the Description field's value.
+func (s *ProvisioningArtifactSummary) SetDescription(v string) *ProvisioningArtifactSummary {
+	s.Description = &v
+	return s
+}
+
+// SetId sets the Id field's value.
+func (s *ProvisioningArtifactSummary) SetId(v string) *ProvisioningArtifactSummary {
+	s.Id = &v
+	return s
+}
+
+// SetName sets the Name field's value.
+func (s *ProvisioningArtifactSummary) SetName(v string) *ProvisioningArtifactSummary {
+	s.Name = &v
+	return s
+}
+
+// SetProvisioningArtifactMetadata sets the ProvisioningArtifactMetadata field's value.
+func (s *ProvisioningArtifactSummary) SetProvisioningArtifactMetadata(v map[string]*string) *ProvisioningArtifactSummary {
+	s.ProvisioningArtifactMetadata = v
+	return s
+}
+
+// The parameter key-value pairs used to provision a product.
 // Please also see https://docs.aws.amazon.com/goto/WebAPI/servicecatalog-2015-12-10/ProvisioningParameter
 type ProvisioningParameter struct {
 	_ struct{} `type:"structure"`
@@ -8283,12 +8580,13 @@ type RecordDetail struct {
 	ProvisionedProductId *string `min:"1" type:"string"`
 
 	// The user-friendly name of the ProvisionedProduct object.
-	ProvisionedProductName *string `type:"string"`
+	ProvisionedProductName *string `min:"1" type:"string"`
 
 	// The type of the ProvisionedProduct object.
 	ProvisionedProductType *string `type:"string"`
 
-	// The provisioning artifact identifier for this product.
+	// The provisioning artifact identifier for this product. This is sometimes
+	// referred to as the product version.
 	ProvisioningArtifactId *string `min:"1" type:"string"`
 
 	// A list of errors that occurred while processing the request.
@@ -8304,6 +8602,18 @@ type RecordDetail struct {
 	RecordType *string `type:"string"`
 
 	// The status of the ProvisionedProduct object.
+	//
+	// CREATED - Request created but the operation has not yet started.
+	//
+	// IN_PROGRESS - The requested operation is in-progress.
+	//
+	// IN_PROGRESS_IN_ERROR - The provisioned product is under change but the requested
+	// operation failed and some remediation is occurring. For example, a roll-back.
+	//
+	// SUCCEEDED - The requested operation has successfully completed.
+	//
+	// FAILED - The requested operation has completed but has failed. Investigate
+	// using the error messages returned.
 	Status *string `type:"string" enum:"RecordStatus"`
 
 	// The time when the record for the ProvisionedProduct object was last updated.
@@ -8969,7 +9279,7 @@ type Tag struct {
 	// Key is a required field
 	Key *string `min:"1" type:"string" required:"true"`
 
-	// The esired value for this key.
+	// The desired value for this key.
 	//
 	// Value is a required field
 	Value *string `min:"1" type:"string" required:"true"`
@@ -9039,12 +9349,12 @@ type TerminateProvisionedProductInput struct {
 	// object even if it cannot delete the underlying resources.
 	IgnoreErrors *bool `type:"boolean"`
 
-	// The identifier of the ProvisionedProduct object to terminate. You must specify
-	// either ProvisionedProductName or ProvisionedProductId, but not both.
+	// The identifier of the ProvisionedProduct object to terminate. Specify either
+	// ProvisionedProductName or ProvisionedProductId, but not both.
 	ProvisionedProductId *string `min:"1" type:"string"`
 
-	// The name of the ProvisionedProduct object to terminate. You must specify
-	// either ProvisionedProductName or ProvisionedProductId, but not both.
+	// The name of the ProvisionedProduct object to terminate. Specify either ProvisionedProductName
+	// or ProvisionedProductId, but not both.
 	ProvisionedProductName *string `min:"1" type:"string"`
 
 	// An idempotency token that uniquely identifies the termination request. This
@@ -9618,15 +9928,16 @@ type UpdateProvisionedProductInput struct {
 	// The identifier of the ProvisionedProduct object.
 	ProductId *string `min:"1" type:"string"`
 
-	// The identifier of the ProvisionedProduct object to update. You must specify
-	// either ProvisionedProductName or ProvisionedProductId, but not both.
+	// The identifier of the ProvisionedProduct object to update. Specify either
+	// ProvisionedProductName or ProvisionedProductId, but not both.
 	ProvisionedProductId *string `min:"1" type:"string"`
 
-	// The updated name of the ProvisionedProduct object . You must specify either
-	// ProvisionedProductName or ProvisionedProductId, but not both.
+	// The updated name of the ProvisionedProduct object. Specify either ProvisionedProductName
+	// or ProvisionedProductId, but not both.
 	ProvisionedProductName *string `min:"1" type:"string"`
 
-	// The provisioning artifact identifier for this product.
+	// The provisioning artifact identifier for this product. This is sometimes
+	// referred to as the product version.
 	ProvisioningArtifactId *string `min:"1" type:"string"`
 
 	// A list of ProvisioningParameter objects used to update the ProvisionedProduct
@@ -9792,7 +10103,8 @@ type UpdateProvisioningArtifactInput struct {
 	// ProductId is a required field
 	ProductId *string `min:"1" type:"string" required:"true"`
 
-	// The identifier of the provisioning artifact for the update request.
+	// The identifier of the provisioning artifact for the update request. This
+	// is sometimes referred to as the product version.
 	//
 	// ProvisioningArtifactId is a required field
 	ProvisioningArtifactId *string `min:"1" type:"string" required:"true"`
@@ -9902,7 +10214,7 @@ func (s *UpdateProvisioningArtifactOutput) SetStatus(v string) *UpdateProvisioni
 	return s
 }
 
-// The parameter key/value pair used to update a ProvisionedProduct object.
+// The parameter key-value pair used to update a ProvisionedProduct object.
 // If UsePreviousValue is set to true, Value is ignored and the value for Key
 // is kept as previously set (current value).
 // Please also see https://docs.aws.amazon.com/goto/WebAPI/servicecatalog-2015-12-10/UpdateProvisioningParameter
@@ -10020,6 +10332,9 @@ const (
 const (
 	// ProductTypeCloudFormationTemplate is a ProductType enum value
 	ProductTypeCloudFormationTemplate = "CLOUD_FORMATION_TEMPLATE"
+
+	// ProductTypeMarketplace is a ProductType enum value
+	ProductTypeMarketplace = "MARKETPLACE"
 )
 
 const (
@@ -10031,6 +10346,9 @@ const (
 
 	// ProductViewFilterByProductType is a ProductViewFilterBy enum value
 	ProductViewFilterByProductType = "ProductType"
+
+	// ProductViewFilterBySourceProductId is a ProductViewFilterBy enum value
+	ProductViewFilterBySourceProductId = "SourceProductId"
 )
 
 const (
@@ -10045,19 +10363,45 @@ const (
 )
 
 const (
-	// ProvisioningArtifactTypeCloudFormationTemplate is a ProvisioningArtifactType enum value
-	ProvisioningArtifactTypeCloudFormationTemplate = "CLOUD_FORMATION_TEMPLATE"
+	// ProvisionedProductStatusAvailable is a ProvisionedProductStatus enum value
+	ProvisionedProductStatusAvailable = "AVAILABLE"
+
+	// ProvisionedProductStatusUnderChange is a ProvisionedProductStatus enum value
+	ProvisionedProductStatusUnderChange = "UNDER_CHANGE"
+
+	// ProvisionedProductStatusTainted is a ProvisionedProductStatus enum value
+	ProvisionedProductStatusTainted = "TAINTED"
+
+	// ProvisionedProductStatusError is a ProvisionedProductStatus enum value
+	ProvisionedProductStatusError = "ERROR"
 )
 
 const (
+	// ProvisioningArtifactTypeCloudFormationTemplate is a ProvisioningArtifactType enum value
+	ProvisioningArtifactTypeCloudFormationTemplate = "CLOUD_FORMATION_TEMPLATE"
+
+	// ProvisioningArtifactTypeMarketplaceAmi is a ProvisioningArtifactType enum value
+	ProvisioningArtifactTypeMarketplaceAmi = "MARKETPLACE_AMI"
+
+	// ProvisioningArtifactTypeMarketplaceCar is a ProvisioningArtifactType enum value
+	ProvisioningArtifactTypeMarketplaceCar = "MARKETPLACE_CAR"
+)
+
+const (
+	// RecordStatusCreated is a RecordStatus enum value
+	RecordStatusCreated = "CREATED"
+
 	// RecordStatusInProgress is a RecordStatus enum value
 	RecordStatusInProgress = "IN_PROGRESS"
+
+	// RecordStatusInProgressInError is a RecordStatus enum value
+	RecordStatusInProgressInError = "IN_PROGRESS_IN_ERROR"
 
 	// RecordStatusSucceeded is a RecordStatus enum value
 	RecordStatusSucceeded = "SUCCEEDED"
 
-	// RecordStatusError is a RecordStatus enum value
-	RecordStatusError = "ERROR"
+	// RecordStatusFailed is a RecordStatus enum value
+	RecordStatusFailed = "FAILED"
 )
 
 const (
