@@ -1,25 +1,26 @@
 {
   "version": "2.0",
-  "service": "<fullname>AWS Service Catalog</fullname> <p> <b>Overview</b> </p> <p> <a href=\"https://aws.amazon.com/servicecatalog/\">AWS Service Catalog</a> allows organizations to create and manage catalogs of IT services that are approved for use on AWS. This documentation provides reference material for the AWS Service Catalog end user API. To get the most out of this documentation, you need to be familiar with the terminology discussed in <a href=\"http://docs.aws.amazon.com/servicecatalog/latest/userguide/what-is_concepts.html\">AWS Service Catalog Concepts</a>.</p> <p> <i>Additional Resources</i> </p> <ul> <li> <p> <a href=\"http://docs.aws.amazon.com/servicecatalog/latest/adminguide/introduction.html\">AWS Service Catalog Administrator Guide</a> </p> </li> <li> <p> <a href=\"http://docs.aws.amazon.com/servicecatalog/latest/userguide/introduction.html\">AWS Service Catalog User Guide</a> </p> </li> </ul>",
+  "service": "<fullname>AWS Service Catalog</fullname> <p> <b>Overview</b> </p> <p> <a href=\"https://aws.amazon.com/servicecatalog/\">AWS Service Catalog</a> allows organizations to create and manage catalogs of IT services that are approved for use on AWS. This documentation provides reference material for the AWS Service Catalog end user API. To get the most out of this documentation, be familiar with the terminology discussed in <a href=\"http://docs.aws.amazon.com/servicecatalog/latest/adminguide/what-is_concepts.html\">AWS Service Catalog Concepts</a>.</p> <p> <i>Additional Resources</i> </p> <ul> <li> <p> <a href=\"http://docs.aws.amazon.com/servicecatalog/latest/adminguide/introduction.html\">AWS Service Catalog Administrator Guide</a> </p> </li> <li> <p> <a href=\"http://docs.aws.amazon.com/servicecatalog/latest/userguide/introduction.html\">AWS Service Catalog User Guide</a> </p> </li> </ul>",
   "operations": {
     "AcceptPortfolioShare": "<p>Accepts an offer to share a portfolio.</p>",
     "AssociatePrincipalWithPortfolio": "<p>Associates the specified principal ARN with the specified portfolio.</p>",
     "AssociateProductWithPortfolio": "<p>Associates a product with a portfolio.</p>",
-    "CreateConstraint": "<p>Creates a new constraint.</p>",
+    "CreateConstraint": "<p>Creates a new constraint. For more information, see <a href=\"http://docs.aws.amazon.com/servicecatalog/latest/adminguide/constraints.html\">Using Constraints</a>.</p>",
     "CreatePortfolio": "<p>Creates a new portfolio.</p>",
     "CreatePortfolioShare": "<p>Creates a new portfolio share.</p>",
     "CreateProduct": "<p>Creates a new product.</p>",
-    "CreateProvisioningArtifact": "<p>Create a new provisioning artifact for the specified product. This operation will not work with a product that has been shared with you.</p>",
+    "CreateProvisioningArtifact": "<p>Create a new provisioning artifact for the specified product. This operation does not work with a product that has been shared with you.</p> <p>See the bottom of this topic for an example JSON request.</p>",
     "DeleteConstraint": "<p>Deletes the specified constraint.</p>",
-    "DeletePortfolio": "<p>Deletes the specified portfolio. This operation will not work with a portfolio that has been shared with you or if it has products, users, constraints, or shared accounts associated with it.</p>",
+    "DeletePortfolio": "<p>Deletes the specified portfolio. This operation does not work with a portfolio that has been shared with you or if it has products, users, constraints, or shared accounts associated with it.</p>",
     "DeletePortfolioShare": "<p>Deletes the specified portfolio share.</p>",
-    "DeleteProduct": "<p>Deletes the specified product. This operation will not work with a product that has been shared with you or is associated with a portfolio. </p>",
-    "DeleteProvisioningArtifact": "<p>Deletes the specified provisioning artifact. This operation will not work on a provisioning artifact associated with a product that has been shared with you, or on the last provisioning artifact associated with a product (a product must have at least one provisioning artifact).</p>",
+    "DeleteProduct": "<p>Deletes the specified product. This operation does not work with a product that has been shared with you or is associated with a portfolio. </p>",
+    "DeleteProvisioningArtifact": "<p>Deletes the specified provisioning artifact. This operation does not work on a provisioning artifact associated with a product that has been shared with you, or on the last provisioning artifact associated with a product (a product must have at least one provisioning artifact).</p>",
     "DescribeConstraint": "<p>Retrieves detailed information for a specified constraint.</p>",
     "DescribePortfolio": "<p>Retrieves detailed information and any tags associated with the specified portfolio.</p>",
     "DescribeProduct": "<p>Retrieves information about a specified product.</p> <p>This operation is functionally identical to <a>DescribeProductView</a> except that it takes as input <code>ProductId</code> instead of <code>ProductViewId</code>.</p>",
     "DescribeProductAsAdmin": "<p>Retrieves information about a specified product, run with administrator access.</p>",
     "DescribeProductView": "<p>Retrieves information about a specified product.</p> <p>This operation is functionally identical to <a>DescribeProduct</a> except that it takes as input <code>ProductViewId</code> instead of <code>ProductId</code>.</p>",
+    "DescribeProvisionedProduct": "<p>Retrieve detailed information about the provisioned product.</p>",
     "DescribeProvisioningArtifact": "<p>Retrieves detailed information about the specified provisioning artifact.</p>",
     "DescribeProvisioningParameters": "<p>Provides information about parameters required to provision a specified product in a specified manner. Use this operation to obtain the list of <code>ProvisioningArtifactParameters</code> parameters available to call the <a>ProvisionProduct</a> operation for the specified product.</p>",
     "DescribeRecord": "<p>Retrieves a paginated list of the full details of a specific request. Use this operation after calling a request operation (<a>ProvisionProduct</a>, <a>TerminateProvisionedProduct</a>, or <a>UpdateProvisionedProduct</a>). </p>",
@@ -34,17 +35,17 @@
     "ListPrincipalsForPortfolio": "<p>Lists all principal ARNs associated with the specified portfolio.</p>",
     "ListProvisioningArtifacts": "<p>Lists all provisioning artifacts associated with the specified product.</p>",
     "ListRecordHistory": "<p>Returns a paginated list of all performed requests, in the form of RecordDetails objects that are filtered as specified.</p>",
-    "ProvisionProduct": "<p>Requests a <i>Provision</i> of a specified product. A <i>ProvisionedProduct</i> is a resourced instance for a product. For example, provisioning a CloudFormation-template-backed product results in launching a CloudFormation stack and all the underlying resources that come with it. </p> <p>You can check the status of this request using the <a>DescribeRecord</a> operation.</p>",
+    "ProvisionProduct": "<p>Requests a <i>provision</i> of a specified product. A <i>provisioned product</i> is a resourced instance for a product. For example, provisioning a CloudFormation-template-backed product results in launching a CloudFormation stack and all the underlying resources that come with it. </p> <p>You can check the status of this request using the <a>DescribeRecord</a> operation.</p>",
     "RejectPortfolioShare": "<p>Rejects an offer to share a portfolio.</p>",
     "ScanProvisionedProducts": "<p>Returns a paginated list of all the ProvisionedProduct objects that are currently available (not terminated). </p>",
     "SearchProducts": "<p>Returns a paginated list all of the <code>Products</code> objects to which the caller has access. </p> <p>The output of this operation can be used as input for other operations, such as <a>DescribeProductView</a>.</p>",
     "SearchProductsAsAdmin": "<p>Retrieves summary and status information about all products created within the caller's account. If a portfolio ID is provided, this operation retrieves information for only those products that are associated with the specified portfolio.</p>",
     "TerminateProvisionedProduct": "<p>Requests termination of an existing ProvisionedProduct object. If there are <code>Tags</code> associated with the object, they are terminated when the ProvisionedProduct object is terminated. </p> <p>This operation does not delete any records associated with the ProvisionedProduct object.</p> <p>You can check the status of this request using the <a>DescribeRecord</a> operation.</p>",
     "UpdateConstraint": "<p>Updates an existing constraint.</p>",
-    "UpdatePortfolio": "<p>Updates the specified portfolio's details. This operation will not work with a product that has been shared with you.</p>",
+    "UpdatePortfolio": "<p>Updates the specified portfolio's details. This operation does not work with a product that has been shared with you.</p>",
     "UpdateProduct": "<p>Updates an existing product.</p>",
     "UpdateProvisionedProduct": "<p>Requests updates to the configuration of an existing ProvisionedProduct object. If there are tags associated with the object, they cannot be updated or added with this operation. Depending on the specific updates requested, this operation may update with no interruption, with some interruption, or replace the ProvisionedProduct object entirely. </p> <p>You can check the status of this request using the <a>DescribeRecord</a> operation.</p>",
-    "UpdateProvisioningArtifact": "<p>Updates an existing provisioning artifact's information. This operation will not work on a provisioning artifact associated with a product that has been shared with you.</p>"
+    "UpdateProvisioningArtifact": "<p>Updates an existing provisioning artifact's information. This operation does not work on a provisioning artifact associated with a product that has been shared with you.</p>"
   },
   "shapes": {
     "AcceptLanguage": {
@@ -68,6 +69,7 @@
         "DescribeProductAsAdminInput$AcceptLanguage": "<p>The language code to use for this operation. Supported language codes are as follows:</p> <p>\"en\" (English)</p> <p>\"jp\" (Japanese)</p> <p>\"zh\" (Chinese)</p> <p>If no code is specified, \"en\" is used as the default.</p>",
         "DescribeProductInput$AcceptLanguage": "<p>The language code to use for this operation. Supported language codes are as follows:</p> <p>\"en\" (English)</p> <p>\"jp\" (Japanese)</p> <p>\"zh\" (Chinese)</p> <p>If no code is specified, \"en\" is used as the default.</p>",
         "DescribeProductViewInput$AcceptLanguage": "<p>The language code to use for this operation. Supported language codes are as follows:</p> <p>\"en\" (English)</p> <p>\"jp\" (Japanese)</p> <p>\"zh\" (Chinese)</p> <p>If no code is specified, \"en\" is used as the default.</p>",
+        "DescribeProvisionedProductInput$AcceptLanguage": "<p>The language code to use for this operation. Supported language codes are as follows:</p> <p>\"en\" (English)</p> <p>\"jp\" (Japanese)</p> <p>\"zh\" (Chinese)</p> <p>If no code is specified, \"en\" is used as the default.</p>",
         "DescribeProvisioningArtifactInput$AcceptLanguage": "<p>The language code to use for this operation. Supported language codes are as follows:</p> <p>\"en\" (English)</p> <p>\"jp\" (Japanese)</p> <p>\"zh\" (Chinese)</p> <p>If no code is specified, \"en\" is used as the default.</p>",
         "DescribeProvisioningParametersInput$AcceptLanguage": "<p>The language code to use for this operation. Supported language codes are as follows:</p> <p>\"en\" (English)</p> <p>\"jp\" (Japanese)</p> <p>\"zh\" (Chinese)</p> <p>If no code is specified, \"en\" is used as the default.</p>",
         "DescribeRecordInput$AcceptLanguage": "<p>The language code to use for this operation. Supported language codes are as follows:</p> <p>\"en\" (English)</p> <p>\"jp\" (Japanese)</p> <p>\"zh\" (Chinese)</p> <p>If no code is specified, \"en\" is used as the default.</p>",
@@ -219,7 +221,7 @@
     "ConstraintParameters": {
       "base": null,
       "refs": {
-        "CreateConstraintInput$Parameters": "<p>The constraint parameters.</p>",
+        "CreateConstraintInput$Parameters": "<p>The constraint parameters. Expected values vary depending on which <b>Type</b> is specified. For examples, see the bottom of this topic.</p> <p>For Type <code>LAUNCH</code>, the <code>RoleArn</code> property is required. </p> <p>For Type <code>NOTIFICATION</code>, the <code>NotificationArns</code> property is required.</p> <p>For Type <code>TEMPLATE</code>, the <code>Rules</code> property is required.</p>",
         "CreateConstraintOutput$ConstraintParameters": "<p>The resulting constraint parameters.</p>",
         "DescribeConstraintOutput$ConstraintParameters": "<p>The current parameters associated with the specified constraint.</p>",
         "UpdateConstraintOutput$ConstraintParameters": "<p>The resulting updated constraint parameters.</p>"
@@ -243,7 +245,7 @@
       "refs": {
         "ConstraintDetail$Type": "<p>The type of the constraint.</p>",
         "ConstraintSummary$Type": "<p>The type of the constraint. </p>",
-        "CreateConstraintInput$Type": "<p>The type of the constraint.</p>"
+        "CreateConstraintInput$Type": "<p>The type of the constraint. Case-sensitive valid values are: <code>LAUNCH</code>, <code>NOTIFICATION</code>, or <code>TEMPLATE</code>. </p>"
       }
     },
     "CreateConstraintInput": {
@@ -417,6 +419,16 @@
       "refs": {
       }
     },
+    "DescribeProvisionedProductInput": {
+      "base": null,
+      "refs": {
+      }
+    },
+    "DescribeProvisionedProductOutput": {
+      "base": null,
+      "refs": {
+      }
+    },
     "DescribeProvisioningArtifactInput": {
       "base": null,
       "refs": {
@@ -515,16 +527,17 @@
         "DeletePortfolioShareInput$PortfolioId": "<p>The portfolio identifier.</p>",
         "DeleteProductInput$Id": "<p>The identifier of the product for the delete request.</p>",
         "DeleteProvisioningArtifactInput$ProductId": "<p>The product identifier.</p>",
-        "DeleteProvisioningArtifactInput$ProvisioningArtifactId": "<p>The identifier of the provisioning artifact for the delete request.</p>",
+        "DeleteProvisioningArtifactInput$ProvisioningArtifactId": "<p>The identifier of the provisioning artifact for the delete request. This is sometimes referred to as the product version.</p>",
         "DescribeConstraintInput$Id": "<p>The identifier of the constraint.</p>",
         "DescribePortfolioInput$Id": "<p>The identifier of the portfolio for which to retrieve information.</p>",
         "DescribeProductAsAdminInput$Id": "<p>The identifier of the product for which to retrieve information.</p>",
         "DescribeProductInput$Id": "<p>The <code>ProductId</code> of the product to describe.</p>",
         "DescribeProductViewInput$Id": "<p>The <code>ProductViewId</code> of the product to describe.</p>",
-        "DescribeProvisioningArtifactInput$ProvisioningArtifactId": "<p>The identifier of the provisioning artifact.</p>",
+        "DescribeProvisionedProductInput$Id": "<p>The provisioned product identifier.</p>",
+        "DescribeProvisioningArtifactInput$ProvisioningArtifactId": "<p>The identifier of the provisioning artifact. This is sometimes referred to as the product version.</p>",
         "DescribeProvisioningArtifactInput$ProductId": "<p>The product identifier.</p>",
         "DescribeProvisioningParametersInput$ProductId": "<p>The product identifier.</p>",
-        "DescribeProvisioningParametersInput$ProvisioningArtifactId": "<p>The provisioning artifact identifier for this product.</p>",
+        "DescribeProvisioningParametersInput$ProvisioningArtifactId": "<p>The provisioning artifact identifier for this product. This is sometimes referred to as the product version.</p>",
         "DescribeProvisioningParametersInput$PathId": "<p>The identifier of the path for this product's provisioning. This value is optional if the product has a default path, and is required if there is more than one path for the specified product.</p>",
         "DescribeRecordInput$Id": "<p>The record identifier of the ProvisionedProduct object for which to retrieve output information. This is the <code>RecordDetail.RecordId</code> obtained from the request operation's response.</p>",
         "DisassociatePrincipalFromPortfolioInput$PortfolioId": "<p>The portfolio identifier.</p>",
@@ -542,27 +555,28 @@
         "ProductViewSummary$Id": "<p>The product view identifier.</p>",
         "ProductViewSummary$ProductId": "<p>The product identifier.</p>",
         "ProvisionProductInput$ProductId": "<p>The product identifier.</p>",
-        "ProvisionProductInput$ProvisioningArtifactId": "<p>The provisioning artifact identifier for this product.</p>",
+        "ProvisionProductInput$ProvisioningArtifactId": "<p>The provisioning artifact identifier for this product. This is sometimes referred to as the product version.</p>",
         "ProvisionProductInput$PathId": "<p>The identifier of the path for this product's provisioning. This value is optional if the product has a default path, and is required if there is more than one path for the specified product.</p>",
-        "ProvisioningArtifact$Id": "<p>The identifier for the artifact.</p>",
-        "ProvisioningArtifactDetail$Id": "<p>The identifier of the provisioning artifact.</p>",
+        "ProvisioningArtifact$Id": "<p>The identifier for the artifact. This is sometimes referred to as the product version.</p>",
+        "ProvisioningArtifactDetail$Id": "<p>The identifier of the provisioning artifact. This is sometimes referred to as the product version.</p>",
+        "ProvisioningArtifactSummary$Id": "<p>The provisioning artifact identifier.</p>",
         "RecordDetail$RecordId": "<p>The identifier of the ProvisionedProduct object record.</p>",
         "RecordDetail$ProvisionedProductId": "<p>The identifier of the ProvisionedProduct object.</p>",
         "RecordDetail$ProductId": "<p>The product identifier.</p>",
-        "RecordDetail$ProvisioningArtifactId": "<p>The provisioning artifact identifier for this product.</p>",
+        "RecordDetail$ProvisioningArtifactId": "<p>The provisioning artifact identifier for this product. This is sometimes referred to as the product version.</p>",
         "RecordDetail$PathId": "<p>The identifier of the path for this product's provisioning.</p>",
         "RejectPortfolioShareInput$PortfolioId": "<p>The portfolio identifier.</p>",
         "SearchProductsAsAdminInput$PortfolioId": "<p>The portfolio identifier.</p>",
-        "TerminateProvisionedProductInput$ProvisionedProductId": "<p>The identifier of the ProvisionedProduct object to terminate. You must specify either <code>ProvisionedProductName</code> or <code>ProvisionedProductId</code>, but not both.</p>",
+        "TerminateProvisionedProductInput$ProvisionedProductId": "<p>The identifier of the ProvisionedProduct object to terminate. Specify either <code>ProvisionedProductName</code> or <code>ProvisionedProductId</code>, but not both.</p>",
         "UpdateConstraintInput$Id": "<p>The identifier of the constraint to update.</p>",
         "UpdatePortfolioInput$Id": "<p>The identifier of the portfolio for the update request.</p>",
         "UpdateProductInput$Id": "<p>The identifier of the product for the update request.</p>",
-        "UpdateProvisionedProductInput$ProvisionedProductId": "<p>The identifier of the ProvisionedProduct object to update. You must specify either <code>ProvisionedProductName</code> or <code>ProvisionedProductId</code>, but not both.</p>",
+        "UpdateProvisionedProductInput$ProvisionedProductId": "<p>The identifier of the ProvisionedProduct object to update. Specify either <code>ProvisionedProductName</code> or <code>ProvisionedProductId</code>, but not both.</p>",
         "UpdateProvisionedProductInput$ProductId": "<p>The identifier of the ProvisionedProduct object.</p>",
-        "UpdateProvisionedProductInput$ProvisioningArtifactId": "<p>The provisioning artifact identifier for this product.</p>",
+        "UpdateProvisionedProductInput$ProvisioningArtifactId": "<p>The provisioning artifact identifier for this product. This is sometimes referred to as the product version.</p>",
         "UpdateProvisionedProductInput$PathId": "<p>The identifier of the path to use in the updated ProvisionedProduct object. This value is optional if the product has a default path, and is required if there is more than one path for the specified product.</p>",
         "UpdateProvisioningArtifactInput$ProductId": "<p>The product identifier.</p>",
-        "UpdateProvisioningArtifactInput$ProvisioningArtifactId": "<p>The identifier of the provisioning artifact for the update request.</p>"
+        "UpdateProvisioningArtifactInput$ProvisioningArtifactId": "<p>The identifier of the provisioning artifact for the update request. This is sometimes referred to as the product version.</p>"
       }
     },
     "IdempotencyToken": {
@@ -898,7 +912,7 @@
       "base": null,
       "refs": {
         "CreateProductInput$ProductType": "<p>The type of the product to create.</p>",
-        "ProductViewSummary$Type": "<p>The product type. Contact the product administrator for the significance of this value.</p>"
+        "ProductViewSummary$Type": "<p>The product type. Contact the product administrator for the significance of this value. If this value is <code>MARKETPLACE</code>, the product was created by AWS Marketplace.</p>"
       }
     },
     "ProductViewAggregationType": {
@@ -1040,6 +1054,7 @@
     "ProvisionedProductDetail": {
       "base": "<p>Detailed information about a ProvisionedProduct object.</p>",
       "refs": {
+        "DescribeProvisionedProductOutput$ProvisionedProductDetail": "<p>Detailed provisioned product information.</p>",
         "ProvisionedProductDetails$member": null
       }
     },
@@ -1067,8 +1082,14 @@
       "refs": {
         "ProvisionedProductDetail$Name": "<p>The user-friendly name of the ProvisionedProduct object.</p>",
         "ProvisionedProductDetail$Arn": "<p>The ARN associated with the ProvisionedProduct object.</p>",
-        "TerminateProvisionedProductInput$ProvisionedProductName": "<p>The name of the ProvisionedProduct object to terminate. You must specify either <code>ProvisionedProductName</code> or <code>ProvisionedProductId</code>, but not both.</p>",
-        "UpdateProvisionedProductInput$ProvisionedProductName": "<p>The updated name of the ProvisionedProduct object . You must specify either <code>ProvisionedProductName</code> or <code>ProvisionedProductId</code>, but not both.</p>"
+        "TerminateProvisionedProductInput$ProvisionedProductName": "<p>The name of the ProvisionedProduct object to terminate. Specify either <code>ProvisionedProductName</code> or <code>ProvisionedProductId</code>, but not both.</p>",
+        "UpdateProvisionedProductInput$ProvisionedProductName": "<p>The updated name of the ProvisionedProduct object. Specify either <code>ProvisionedProductName</code> or <code>ProvisionedProductId</code>, but not both.</p>"
+      }
+    },
+    "ProvisionedProductStatus": {
+      "base": null,
+      "refs": {
+        "ProvisionedProductDetail$Status": "<p>The current status of the ProvisionedProduct.</p> <p> <code>AVAILABLE</code> - Stable state, ready to perform any operation. The most recent action request succeeded and completed.</p> <p> <code>UNDER_CHANGE</code> - Transitive state, operations performed may or may not have valid results. Wait for an <code>AVAILABLE</code> status before performing operations.</p> <p> <code>TAINTED</code> - Stable state, ready to perform any operation. The stack has completed the requested operation but is not exactly what was requested. For example, a request to update to a new version failed and the stack rolled back to the current version. </p> <p> <code>ERROR</code> - Something unexpected happened such that the provisioned product exists but the stack is not running. For example, CloudFormation received an invalid parameter value and could not launch the stack.</p>"
       }
     },
     "ProvisionedProductStatusMessage": {
@@ -1093,7 +1114,8 @@
     "ProvisioningArtifactCreatedTime": {
       "base": null,
       "refs": {
-        "ProvisioningArtifact$CreatedTime": "<p>The UTC timestamp of the creation time.</p>"
+        "ProvisioningArtifact$CreatedTime": "<p>The UTC timestamp of the creation time.</p>",
+        "ProvisioningArtifactSummary$CreatedTime": "<p>The UTC timestamp of the creation time.</p>"
       }
     },
     "ProvisioningArtifactDescription": {
@@ -1101,6 +1123,7 @@
       "refs": {
         "ProvisioningArtifact$Description": "<p>The text description of the artifact.</p>",
         "ProvisioningArtifactProperties$Description": "<p>The text description of the provisioning artifact properties.</p>",
+        "ProvisioningArtifactSummary$Description": "<p>The provisioning artifact description.</p>",
         "UpdateProvisioningArtifactInput$Description": "<p>The updated text description of the provisioning artifact.</p>"
       }
     },
@@ -1123,9 +1146,10 @@
     "ProvisioningArtifactInfo": {
       "base": null,
       "refs": {
-        "CreateProvisioningArtifactOutput$Info": "<p>Additional information about the provisioning artifact create request.</p>",
+        "CreateProvisioningArtifactOutput$Info": "<p>Additional information about the creation request for the provisioning artifact.</p>",
         "DescribeProvisioningArtifactOutput$Info": "<p>Additional information about the provisioning artifact.</p>",
-        "ProvisioningArtifactProperties$Info": "<p>Additional information about the provisioning artifact properties.</p>",
+        "ProvisioningArtifactProperties$Info": "<p>Additional information about the provisioning artifact properties. When using this element in a request, you must specify <code>LoadTemplateFromURL</code>. For more information, see <a>CreateProvisioningArtifact</a>.</p>",
+        "ProvisioningArtifactSummary$ProvisioningArtifactMetadata": "<p>The provisioning artifact metadata. This data is used with products created by AWS Marketplace.</p>",
         "UpdateProvisioningArtifactOutput$Info": "<p>Additional information about the provisioning artifact update request.</p>"
       }
     },
@@ -1148,6 +1172,7 @@
         "ProvisioningArtifactDetail$Name": "<p>The name assigned to the provisioning artifact.</p>",
         "ProvisioningArtifactDetail$Description": "<p>The text description of the provisioning artifact.</p>",
         "ProvisioningArtifactProperties$Name": "<p>The name assigned to the provisioning artifact properties.</p>",
+        "ProvisioningArtifactSummary$Name": "<p>The provisioning artifact name.</p>",
         "UpdateProvisioningArtifactInput$Name": "<p>The updated name of the provisioning artifact.</p>"
       }
     },
@@ -1164,17 +1189,29 @@
       }
     },
     "ProvisioningArtifactProperties": {
-      "base": "<p>Provisioning artifact properties.</p>",
+      "base": "<p>Provisioning artifact properties. For example request JSON, see <a>CreateProvisioningArtifact</a>.</p>",
       "refs": {
         "CreateProductInput$ProvisioningArtifactParameters": "<p>Parameters for the provisioning artifact.</p>",
         "CreateProvisioningArtifactInput$Parameters": "<p>The parameters to use when creating the new provisioning artifact.</p>"
       }
     },
+    "ProvisioningArtifactSummaries": {
+      "base": null,
+      "refs": {
+        "DescribeProductAsAdminOutput$ProvisioningArtifactSummaries": "<p>A list of provisioning artifact summaries for the product.</p>"
+      }
+    },
+    "ProvisioningArtifactSummary": {
+      "base": "<p>Summary information about a provisioning artifact.</p>",
+      "refs": {
+        "ProvisioningArtifactSummaries$member": null
+      }
+    },
     "ProvisioningArtifactType": {
       "base": null,
       "refs": {
-        "ProvisioningArtifactDetail$Type": "<p>The type of the provisioning artifact.</p>",
-        "ProvisioningArtifactProperties$Type": "<p>The type of the provisioning artifact properties.</p>"
+        "ProvisioningArtifactDetail$Type": "<p>The type of the provisioning artifact. The following provisioning artifact types are used by AWS Marketplace products:</p> <p> <code>MARKETPLACE_AMI</code> - AMI products.</p> <p> <code>MARKETPLACE_CAR</code> - CAR (Cluster and AWS Resources) products.</p>",
+        "ProvisioningArtifactProperties$Type": "<p>The type of the provisioning artifact properties. The following provisioning artifact property types are used by AWS Marketplace products:</p> <p> <code>MARKETPLACE_AMI</code> - AMI products.</p> <p> <code>MARKETPLACE_CAR</code> - CAR (Cluster and AWS Resources) products.</p>"
       }
     },
     "ProvisioningArtifacts": {
@@ -1185,7 +1222,7 @@
       }
     },
     "ProvisioningParameter": {
-      "base": "<p>The arameter key/value pairs used to provision a product.</p>",
+      "base": "<p>The parameter key-value pairs used to provision a product.</p>",
       "refs": {
         "ProvisioningParameters$member": null
       }
@@ -1239,8 +1276,7 @@
     "RecordStatus": {
       "base": null,
       "refs": {
-        "ProvisionedProductDetail$Status": "<p>The current status of the ProvisionedProduct.</p>",
-        "RecordDetail$Status": "<p>The status of the ProvisionedProduct object.</p>"
+        "RecordDetail$Status": "<p>The status of the ProvisionedProduct object.</p> <p> <code>CREATED</code> - Request created but the operation has not yet started.</p> <p> <code>IN_PROGRESS</code> - The requested operation is in-progress.</p> <p> <code>IN_PROGRESS_IN_ERROR</code> - The provisioned product is under change but the requested operation failed and some remediation is occurring. For example, a roll-back.</p> <p> <code>SUCCEEDED</code> - The requested operation has successfully completed.</p> <p> <code>FAILED</code> - The requested operation has completed but has failed. Investigate using the error messages returned.</p>"
       }
     },
     "RecordTag": {
@@ -1356,7 +1392,7 @@
         "CreateProvisioningArtifactOutput$Status": "<p>The status of the current request.</p>",
         "DescribeConstraintOutput$Status": "<p>The status of the current request.</p>",
         "DescribeProvisioningArtifactOutput$Status": "<p>The status of the current request.</p>",
-        "ProductViewDetail$Status": "<p>Current status of the product.</p>",
+        "ProductViewDetail$Status": "<p>Current status of the product.</p> <p> <code>AVAILABLE</code> - Product is available for use.</p> <p> <code>CREATING</code> - Creation of product started, not ready for use.</p> <p> <code>FAILED</code> - Action on product failed.</p>",
         "UpdateConstraintOutput$Status": "<p>The status of the current request.</p>",
         "UpdateProvisioningArtifactOutput$Status": "<p>The status of the current request.</p>"
       }
@@ -1409,7 +1445,7 @@
     "TagValue": {
       "base": null,
       "refs": {
-        "Tag$Value": "<p>The esired value for this key.</p>"
+        "Tag$Value": "<p>The desired value for this key.</p>"
       }
     },
     "Tags": {
@@ -1486,7 +1522,7 @@
       }
     },
     "UpdateProvisioningParameter": {
-      "base": "<p>The parameter key/value pair used to update a ProvisionedProduct object. If <code>UsePreviousValue</code> is set to true, <code>Value</code> is ignored and the value for <code>Key</code> is kept as previously set (current value).</p>",
+      "base": "<p>The parameter key-value pair used to update a ProvisionedProduct object. If <code>UsePreviousValue</code> is set to true, <code>Value</code> is ignored and the value for <code>Key</code> is kept as previously set (current value).</p>",
       "refs": {
         "UpdateProvisioningParameters$member": null
       }
@@ -1519,6 +1555,12 @@
       "base": null,
       "refs": {
         "UpdateProvisioningParameter$UsePreviousValue": "<p>If true, uses the currently set value for <code>Key</code>, ignoring <code>UpdateProvisioningParameter.Value</code>.</p>"
+      }
+    },
+    "Verbose": {
+      "base": null,
+      "refs": {
+        "DescribeProvisioningArtifactInput$Verbose": "<p>Selects verbose results. If set to true, the CloudFormation template is returned.</p>"
       }
     }
   }

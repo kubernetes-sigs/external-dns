@@ -2123,8 +2123,7 @@ func (c *IoT) DescribeCertificateRequest(input *DescribeCertificateInput) (req *
 
 // DescribeCertificate API operation for AWS IoT.
 //
-// Gets information about the specified certificate. You may specify the certificate
-// using either its ID or PEM.
+// Gets information about the specified certificate.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -7655,9 +7654,6 @@ type DescribeCertificateInput struct {
 	//
 	// CertificateId is a required field
 	CertificateId *string `location:"uri" locationName:"certificateId" min:"64" type:"string" required:"true"`
-
-	// The PEM of the certificate.
-	CertificatePem *string `location:"header" locationName:"x-amzn-iot-certificate-pem" min:"1" type:"string"`
 }
 
 // String returns the string representation
@@ -7679,9 +7675,6 @@ func (s *DescribeCertificateInput) Validate() error {
 	if s.CertificateId != nil && len(*s.CertificateId) < 64 {
 		invalidParams.Add(request.NewErrParamMinLen("CertificateId", 64))
 	}
-	if s.CertificatePem != nil && len(*s.CertificatePem) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("CertificatePem", 1))
-	}
 
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -7692,12 +7685,6 @@ func (s *DescribeCertificateInput) Validate() error {
 // SetCertificateId sets the CertificateId field's value.
 func (s *DescribeCertificateInput) SetCertificateId(v string) *DescribeCertificateInput {
 	s.CertificateId = &v
-	return s
-}
-
-// SetCertificatePem sets the CertificatePem field's value.
-func (s *DescribeCertificateInput) SetCertificatePem(v string) *DescribeCertificateInput {
-	s.CertificatePem = &v
 	return s
 }
 
