@@ -1,5 +1,5 @@
-hash: 5f76106cd21d8fd81f20c985889fb13813427be28c44b9a61ee4cc962d92af17
-updated: 2017-06-16T11:04:45.615380025+02:00
+hash: d1ca92323760e7bdb44d2b80d066dd21bcd49c714faa88372a87a81a9520dffc
+updated: 2017-06-16T11:52:01.08864027+02:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -60,6 +60,8 @@ imports:
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
   subpackages:
   - quantile
+- name: github.com/cloudflare/cloudflare-go
+  version: 9d186a5948cb4bb3d1f3343bc6bcae91e7aa6479
 - name: github.com/coreos/go-oidc
   version: be73733bb8cc830d0205609b95d125215f8e9c70
   subpackages:
@@ -147,6 +149,8 @@ imports:
   version: fc2b8d3a73c4867e51861bbdd5ae3c1f0869dd6a
   subpackages:
   - pbutil
+- name: github.com/pkg/errors
+  version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/pmezard/go-difflib
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
