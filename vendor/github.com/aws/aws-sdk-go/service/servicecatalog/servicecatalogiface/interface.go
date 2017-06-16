@@ -132,6 +132,10 @@ type ServiceCatalogAPI interface {
 	DescribeProductViewWithContext(aws.Context, *servicecatalog.DescribeProductViewInput, ...request.Option) (*servicecatalog.DescribeProductViewOutput, error)
 	DescribeProductViewRequest(*servicecatalog.DescribeProductViewInput) (*request.Request, *servicecatalog.DescribeProductViewOutput)
 
+	DescribeProvisionedProduct(*servicecatalog.DescribeProvisionedProductInput) (*servicecatalog.DescribeProvisionedProductOutput, error)
+	DescribeProvisionedProductWithContext(aws.Context, *servicecatalog.DescribeProvisionedProductInput, ...request.Option) (*servicecatalog.DescribeProvisionedProductOutput, error)
+	DescribeProvisionedProductRequest(*servicecatalog.DescribeProvisionedProductInput) (*request.Request, *servicecatalog.DescribeProvisionedProductOutput)
+
 	DescribeProvisioningArtifact(*servicecatalog.DescribeProvisioningArtifactInput) (*servicecatalog.DescribeProvisioningArtifactOutput, error)
 	DescribeProvisioningArtifactWithContext(aws.Context, *servicecatalog.DescribeProvisioningArtifactInput, ...request.Option) (*servicecatalog.DescribeProvisioningArtifactOutput, error)
 	DescribeProvisioningArtifactRequest(*servicecatalog.DescribeProvisioningArtifactInput) (*request.Request, *servicecatalog.DescribeProvisioningArtifactOutput)

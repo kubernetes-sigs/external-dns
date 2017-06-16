@@ -51,3 +51,6 @@ import:
   version: ~3.0.0
 - package: github.com/cloudflare/cloudflare-go
   version: ~0.7.3
+- package: github.com/digitalocean/godo
+  version: ~1.1.0
+- package: github.com/coreos/go-oidc
