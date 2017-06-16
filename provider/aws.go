@@ -74,7 +74,7 @@ type AWSProvider struct {
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
-func NewAWSProvider(domainFilter string, dryRun bool) (Provider, error) {
+func NewAWSProvider(domainFilter string, dryRun bool) (*AWSProvider, error) {
 	config := aws.NewConfig()
 
 	config = config.WithHTTPClient(

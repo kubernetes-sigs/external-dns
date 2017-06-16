@@ -2,6 +2,35 @@
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster on AWS. Make sure to use **>=0.3** version of ExternalDNS for this tutorial
 
+## IAM Permissions
+
+```json
+{
+ "Version": "2012-10-17",
+ "Statement": [
+   {
+     "Effect": "Allow",
+     "Action": [
+       "route53:ChangeResourceRecordSets"
+     ],
+     "Resource": [
+       "arn:aws:route53:::hostedzone/*"
+     ]
+   },
+   {
+     "Effect": "Allow",
+     "Action": [
+       "route53:ListHostedZones",
+       "route53:ListResourceRecordSets"
+     ],
+     "Resource": [
+       "*"
+     ]
+   }
+ ]
+}
+```
+
 ## Set up a hosted zone
 
 *If you prefer to try-out ExternalDNS in one of the existing hosted-zones you can skip this step*

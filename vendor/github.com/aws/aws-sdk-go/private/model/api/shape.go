@@ -400,16 +400,18 @@ func (ref *ShapeRef) GoTags(toplevel bool, isRequired bool) string {
 		if ref.Shape.Payload != "" {
 			tags = append(tags, ShapeTag{"payload", ref.Shape.Payload})
 		}
-		if ref.XMLNamespace.Prefix != "" {
-			tags = append(tags, ShapeTag{"xmlPrefix", ref.XMLNamespace.Prefix})
-		} else if ref.Shape.XMLNamespace.Prefix != "" {
-			tags = append(tags, ShapeTag{"xmlPrefix", ref.Shape.XMLNamespace.Prefix})
-		}
-		if ref.XMLNamespace.URI != "" {
-			tags = append(tags, ShapeTag{"xmlURI", ref.XMLNamespace.URI})
-		} else if ref.Shape.XMLNamespace.URI != "" {
-			tags = append(tags, ShapeTag{"xmlURI", ref.Shape.XMLNamespace.URI})
-		}
+	}
+
+	if ref.XMLNamespace.Prefix != "" {
+		tags = append(tags, ShapeTag{"xmlPrefix", ref.XMLNamespace.Prefix})
+	} else if ref.Shape.XMLNamespace.Prefix != "" {
+		tags = append(tags, ShapeTag{"xmlPrefix", ref.Shape.XMLNamespace.Prefix})
+	}
+
+	if ref.XMLNamespace.URI != "" {
+		tags = append(tags, ShapeTag{"xmlURI", ref.XMLNamespace.URI})
+	} else if ref.Shape.XMLNamespace.URI != "" {
+		tags = append(tags, ShapeTag{"xmlURI", ref.Shape.XMLNamespace.URI})
 	}
 
 	if ref.IdempotencyToken || ref.Shape.IdempotencyToken {

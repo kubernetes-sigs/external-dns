@@ -758,6 +758,16 @@
           "us-west-2" : { }
         }
       },
+      "greengrass" : {
+        "defaults" : {
+          "protocols" : [ "https" ]
+        },
+        "endpoints" : {
+          "us-east-1" : { },
+          "us-west-2" : { }
+        },
+        "isRegionalized" : true
+      },
       "health" : {
         "endpoints" : {
           "us-east-1" : { }
@@ -1300,6 +1310,7 @@
       "states" : {
         "endpoints" : {
           "ap-northeast-1" : { },
+          "ap-southeast-2" : { },
           "eu-central-1" : { },
           "eu-west-1" : { },
           "us-east-1" : { },

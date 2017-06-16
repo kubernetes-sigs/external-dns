@@ -1,3 +1,73 @@
+Release v1.8.43 (2017-06-15)
+===
+
+### Service Client Updates
+* `service/ec2`: Updates service API and documentation
+  * Adds API to describe Amazon FPGA Images (AFIs) available to customers, which includes public AFIs, private AFIs that you own, and AFIs owned by other AWS accounts for which you have load permissions.
+* `service/ecs`: Updates service API and documentation
+  * Added support for cpu, memory, and memory reservation container overrides on the RunTask and StartTask APIs.
+* `service/iot`: Updates service API and documentation
+  * Revert the last release: remove CertificatePem from DescribeCertificate API.
+* `service/servicecatalog`: Updates service API, documentation, and paginators
+  * Added ProvisioningArtifactSummaries to DescribeProductAsAdmin's output to show the provisioning artifacts belong to the product. Allow filtering by SourceProductId in SearchProductsAsAdmin for AWS Marketplace products. Added a verbose option to DescribeProvisioningArtifact to display the CloudFormation template used to create the provisioning artifact.Added DescribeProvisionedProduct API. Changed the type of ProvisionedProduct's Status to be distinct from Record's Status. New ProvisionedProduct's Status are AVAILABLE, UNDER_CHANGE, TAINTED, ERROR. Changed Record's Status set of values to CREATED, IN_PROGRESS, IN_PROGRESS_IN_ERROR, SUCCEEDED, FAILED.
+
+### SDK Bugs
+* `private/model/api`: Fix RESTXML support for XML Namespace [#1343](https://github.com/aws/aws-sdk-go/pull/1343)
+  * Fixes a bug with the SDK's generation of services using the REST XML protocol not annotating shape references with the XML Namespace attribute.
+  * Fixes [#1334](https://github.com/aws/aws-sdk-go/pull/1334)
+Release v1.8.42 (2017-06-14)
+===
+
+### Service Client Updates
+* `service/applicationautoscaling`: Updates service API and documentation
+* `service/clouddirectory`: Updates service documentation
+  * Documentation update for Cloud Directory
+
+Release v1.8.41 (2017-06-13)
+===
+
+### Service Client Updates
+* `service/configservice`: Updates service API
+
+Release v1.8.40 (2017-06-13)
+===
+
+### Service Client Updates
+* `service/rds`: Updates service API and documentation
+  * API Update for RDS: this update enables copy-on-write, a new Aurora MySQL Compatible Edition feature that allows users to restore their database, and support copy of TDE enabled snapshot cross region.
+
+### SDK Bugs
+* `aws/request`: Fix NewErrParamMinLen to use correct ParamMinLenErrCode [#1336](https://github.com/aws/aws-sdk-go/issues/1336)
+  * Fixes the `NewErrParamMinLen` function returning the wrong error code. `ParamMinLenErrCode` should be returned not `ParamMinValueErrCode`.
+  * Fixes [#1335](https://github.com/aws/aws-sdk-go/issues/1335)
+Release v1.8.39 (2017-06-09)
+===
+
+### Service Client Updates
+* `aws/endpoints`: Updated Regions and Endpoints metadata.
+* `service/opsworks`: Updates service API and documentation
+  * Tagging Support for AWS OpsWorks Stacks
+
+Release v1.8.38 (2017-06-08)
+===
+
+### Service Client Updates
+* `service/iot`: Updates service API and documentation
+  * In addition to using certificate ID, AWS IoT customers can now obtain the description of a certificate with the certificate PEM.
+* `service/pinpoint`: Updates service API and documentation
+  * Starting today Amazon Pinpoint adds SMS Text and Email Messaging support in addition to Mobile Push Notifications, providing developers, product managers and marketers with multi-channel messaging capabilities to drive user engagement in their applications. Pinpoint also enables backend services and applications to message users directly and provides advanced user and app analytics to understand user behavior and messaging performance.
+* `service/rekognition`: Updates service API and documentation
+  * API Update for AmazonRekognition: Adding RecognizeCelebrities API
+
+Release v1.8.37 (2017-06-07)
+===
+
+### Service Client Updates
+* `service/codebuild`: Updates service API and documentation
+  * Add support to APIs for privileged containers. This change would allow performing privileged operations like starting the Docker daemon inside builds possible in custom docker images.
+* `service/greengrass`: Adds new service
+  * AWS Greengrass is software that lets you run local compute, messaging, and device state synchronization for connected devices in a secure way. With AWS Greengrass, connected devices can run AWS Lambda functions, keep device data in sync, and communicate with other devices securely even when not connected to the Internet. Using AWS Lambda, Greengrass ensures your IoT devices can respond quickly to local events, operate with intermittent connections, and minimize the cost of transmitting IoT data to the cloud.
+
 Release v1.8.36 (2017-06-06)
 ===
 

@@ -1832,7 +1832,8 @@
         "KmsKeyId":{"shape":"String"},
         "Tags":{"shape":"TagList"},
         "CopyTags":{"shape":"BooleanOptional"},
-        "PreSignedUrl":{"shape":"String"}
+        "PreSignedUrl":{"shape":"String"},
+        "OptionGroupName":{"shape":"String"}
       }
     },
     "CopyDBSnapshotResult":{
@@ -2180,6 +2181,7 @@
         "DBClusterArn":{"shape":"String"},
         "AssociatedRoles":{"shape":"DBClusterRoles"},
         "IAMDatabaseAuthenticationEnabled":{"shape":"Boolean"},
+        "CloneGroupId":{"shape":"String"},
         "ClusterCreateTime":{"shape":"TStamp"}
       },
       "wrapper":true
@@ -4768,6 +4770,7 @@
       ],
       "members":{
         "DBClusterIdentifier":{"shape":"String"},
+        "RestoreType":{"shape":"String"},
         "SourceDBClusterIdentifier":{"shape":"String"},
         "RestoreToTime":{"shape":"TStamp"},
         "UseLatestRestorableTime":{"shape":"Boolean"},
