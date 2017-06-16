@@ -384,7 +384,7 @@ func (m *mockDigitalOceanCreateRecordsFail) Records(ctx context.Context, domain 
 	return []godo.DomainRecord{{ID: 1, Name: "foobar.ext-dns-test.zalando.to."}, {ID: 2}}, nil, nil
 }
 
-func TestNewCloudFlareChanges(t *testing.T) {
+func TestNewDigitalOceanChanges(t *testing.T) {
 	action := DigitalOceanCreate
 	endpoints := []*endpoint.Endpoint{{DNSName: "new", Target: "target"}}
 	_ = newDigitalOceanChanges(action, endpoints)
