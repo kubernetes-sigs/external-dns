@@ -26,6 +26,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
 	"github.com/kubernetes-incubator/external-dns/controller"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns/validation"
@@ -81,12 +83,18 @@ func main() {
 
 	var p provider.Provider
 	switch cfg.Provider {
-	case "google":
-		p, err = provider.NewGoogleProvider(cfg.GoogleProject, cfg.DomainFilter, cfg.DryRun)
 	case "aws":
 		p, err = provider.NewAWSProvider(cfg.DomainFilter, cfg.DryRun)
+	case "azure":
+		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, cfg.DomainFilter, cfg.AzureResourceGroup, cfg.DryRun)
+	case "cloudflare":
+		p, err = provider.NewCloudFlareProvider(cfg.DomainFilter, cfg.DryRun)
+	case "google":
+		p, err = provider.NewGoogleProvider(cfg.GoogleProject, cfg.DomainFilter, cfg.DryRun)
+	case "digitalocean":
+		p, err = provider.NewDigitalOceanProvider(cfg.DomainFilter, cfg.DryRun)
 	case "inmemory":
-		p, err = provider.NewInMemoryProviderWithDomainAndLogging("example.com"), nil
+		p, err = provider.NewInMemoryProvider(provider.InMemoryWithDomain(cfg.DomainFilter), provider.InMemoryWithLogging()), nil
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}

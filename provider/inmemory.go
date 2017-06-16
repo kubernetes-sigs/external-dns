@@ -35,8 +35,8 @@ var (
 	ErrRecordAlreadyExists = errors.New("record already exists")
 	// ErrRecordNotFound when update/delete request is sent but record not found
 	ErrRecordNotFound = errors.New("record not found")
-	// ErrInvalidBatchRequest when record is repeated in create/update/delete
-	ErrInvalidBatchRequest = errors.New("invalid batch request")
+	// ErrDuplicateRecordFound when record is repeated in create/update/delete
+	ErrDuplicateRecordFound = errors.New("invalid batch request")
 )
 
 // InMemoryProvider - dns provider only used for testing purposes
@@ -49,23 +49,13 @@ type InMemoryProvider struct {
 	OnRecords      func()
 }
 
-// NewInMemoryProvider returns InMemoryProvider DNS provider interface implementation
-func NewInMemoryProvider() *InMemoryProvider {
-	return &InMemoryProvider{
-		filter:         &filter{},
-		OnApplyChanges: func(changes *plan.Changes) {},
-		OnRecords:      func() {},
-		domain:         "",
-		client:         newInMemoryClient(),
-	}
-}
+// InMemoryOption allows to extend in-memory provider
+type InMemoryOption func(*InMemoryProvider)
 
-// NewInMemoryProviderWithDomainAndLogging returns InMemoryProvider DNS provider interface
-// implementation with a specified domain
-func NewInMemoryProviderWithDomainAndLogging(domain string) *InMemoryProvider {
-	im := &InMemoryProvider{
-		filter: &filter{},
-		OnApplyChanges: func(changes *plan.Changes) {
+// InMemoryWithLogging injects logging when ApplyChanges is called
+func InMemoryWithLogging() InMemoryOption {
+	return func(p *InMemoryProvider) {
+		p.OnApplyChanges = func(changes *plan.Changes) {
 			for _, v := range changes.Create {
 				log.Infof("CREATE: %v", v)
 			}
@@ -78,13 +68,30 @@ func NewInMemoryProviderWithDomainAndLogging(domain string) *InMemoryProvider {
 			for _, v := range changes.Delete {
 				log.Infof("DELETE: %v", v)
 			}
-		},
-		OnRecords: func() {},
-		domain:    domain,
-		client:    newInMemoryClient(),
+		}
+	}
+}
+
+// InMemoryWithDomain modifies the domain on which dns zones are filtered
+func InMemoryWithDomain(domain string) InMemoryOption {
+	return func(p *InMemoryProvider) {
+		p.domain = domain
+	}
+}
+
+// NewInMemoryProvider returns InMemoryProvider DNS provider interface implementation
+func NewInMemoryProvider(opts ...InMemoryOption) *InMemoryProvider {
+	im := &InMemoryProvider{
+		filter:         &filter{},
+		OnApplyChanges: func(changes *plan.Changes) {},
+		OnRecords:      func() {},
+		domain:         "",
+		client:         newInMemoryClient(),
 	}
 
-	im.CreateZone(domain)
+	for _, opt := range opts {
+		opt(im)
+	}
 
 	return im
 }
@@ -208,15 +215,13 @@ func (f *filter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[string]st
 }
 
 // inMemoryRecord - record stored in memory
-// Type - type of string
+// Type - type of record
 // Name - DNS name assigned to the record
 // Target - target of the record
-// Payload - string - additional information stored
 type inMemoryRecord struct {
-	Type    string
-	Payload string
-	Name    string
-	Target  string
+	Type   string
+	Name   string
+	Target string
 }
 
 type zone map[string][]*inMemoryRecord
@@ -295,15 +300,15 @@ func (c *inMemoryClient) ApplyChanges(zoneID string, changes *inMemoryChange) er
 	return nil
 }
 
-func (c *inMemoryClient) updateMesh(mesh map[string]map[string]bool, endpoint *inMemoryRecord) error {
-	if _, exists := mesh[endpoint.Name]; exists {
-		if mesh[endpoint.Name][endpoint.Type] {
-			return ErrInvalidBatchRequest
+func (c *inMemoryClient) updateMesh(mesh map[string]map[string]bool, record *inMemoryRecord) error {
+	if _, exists := mesh[record.Name]; exists {
+		if mesh[record.Name][record.Type] {
+			return ErrDuplicateRecordFound
 		}
-		mesh[endpoint.Name][endpoint.Type] = true
+		mesh[record.Name][record.Type] = true
 		return nil
 	}
-	mesh[endpoint.Name] = map[string]bool{endpoint.Type: true}
+	mesh[record.Name] = map[string]bool{record.Type: true}
 	return nil
 }
 

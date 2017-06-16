@@ -4526,7 +4526,7 @@ type CreateBotVersionOutput struct {
 	// The version of the bot.
 	Version *string `locationName:"version" min:"1" type:"string"`
 
-	// The Amazon Parrot voice ID that Amazon Lex uses for voice interactions with
+	// The Amazon Polly voice ID that Amazon Lex uses for voice interactions with
 	// the user.
 	VoiceId *string `locationName:"voiceId" type:"string"`
 }
@@ -6243,7 +6243,8 @@ type GetBotChannelAssociationsInput struct {
 
 	// Substring to match in channel association names. An association will be returned
 	// if any part of its name matches the substring. For example, "xyz" matches
-	// both "xyzabc" and "abcxyz."
+	// both "xyzabc" and "abcxyz." To return all bot channel associations, use a
+	// hyphen ("-") as the nameContains parameter.
 	NameContains *string `location:"querystring" locationName:"nameContains" min:"1" type:"string"`
 
 	// A pagination token for fetching the next page of associations. If the response
@@ -6490,7 +6491,7 @@ type GetBotOutput struct {
 	// The version of the bot. For a new bot, the version is always $LATEST.
 	Version *string `locationName:"version" min:"1" type:"string"`
 
-	// The Amazon Parrot voice ID that Amazon Lex uses for voice interaction with
+	// The Amazon Polly voice ID that Amazon Lex uses for voice interaction with
 	// the user. For more information, see .
 	VoiceId *string `locationName:"voiceId" type:"string"`
 }
@@ -8521,7 +8522,7 @@ type PutBotInput struct {
 	// If you don't specify this value, the default value is Save.
 	ProcessBehavior *string `locationName:"processBehavior" type:"string" enum:"ProcessBehavior"`
 
-	// The Amazon Parrot voice ID that you want Amazon Lex to use for voice interactions
+	// The Amazon Polly voice ID that you want Amazon Lex to use for voice interactions
 	// with the user. The locale configured for the voice must match the locale
 	// of the bot. For more information, see Voice (http://docs.aws.amazon.com/polly/latest/dg/API_Voice.html)
 	// in the Amazon Polly Developer Guide.
@@ -8732,7 +8733,7 @@ type PutBotOutput struct {
 	// The version of the bot. For a new bot, the version is always $LATEST.
 	Version *string `locationName:"version" min:"1" type:"string"`
 
-	// The Amazon Parrot voice ID that Amazon Lex uses for voice interaction with
+	// The Amazon Polly voice ID that Amazon Lex uses for voice interaction with
 	// the user. For more information, see .
 	VoiceId *string `locationName:"voiceId" type:"string"`
 }

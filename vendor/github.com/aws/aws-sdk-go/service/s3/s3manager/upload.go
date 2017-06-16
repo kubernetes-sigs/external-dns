@@ -215,7 +215,7 @@ func WithUploaderRequestOptions(opts ...request.Option) func(*Uploader) {
 type Uploader struct {
 	// The buffer size (in bytes) to use when buffering data into chunks and
 	// sending them as parts to S3. The minimum allowed part size is 5MB, and
-	// if this value is set to zero, the DefaultPartSize value will be used.
+	// if this value is set to zero, the DefaultUploadPartSize value will be used.
 	PartSize int64
 
 	// The number of goroutines to spin up in parallel when sending parts.

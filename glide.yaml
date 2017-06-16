@@ -14,6 +14,12 @@ import:
   version: ~0.8.0
   subpackages:
   - prometheus/promhttp
+- package: github.com/stretchr/testify
+  version: ~1.1.4
+  subpackages:
+  - assert
+  - mock
+  - require
 - package: golang.org/x/net
   subpackages:
   - context
@@ -36,4 +42,15 @@ import:
   - tools/clientcmd
 - package: github.com/kubernetes/repo-infra
 - package: github.com/linki/instrumented_http
-  version: ~0.1.0
+  version: ~0.2.0
+- package: github.com/Azure/azure-sdk-for-go
+  version: ~10.0.4-beta
+- package: github.com/Azure/go-autorest
+  version: ~8.0.0
+- package: github.com/dgrijalva/jwt-go
+  version: ~3.0.0
+- package: github.com/cloudflare/cloudflare-go
+  version: ~0.7.3
+- package: github.com/digitalocean/godo
+  version: ~1.1.0
+- package: github.com/coreos/go-oidc

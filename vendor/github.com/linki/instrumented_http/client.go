@@ -5,6 +5,7 @@ package instrumented_http
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -30,11 +31,11 @@ const (
 )
 
 var (
-	// RequestDurationMicroseconds is a Prometheus summary to collect request times.
-	RequestDurationMicroseconds = prometheus.NewSummaryVec(
+	// RequestDurationSeconds is a Prometheus summary to collect request times.
+	RequestDurationSeconds = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
-			Name:        "request_duration_microseconds",
-			Help:        "The HTTP request latencies in microseconds.",
+			Name:        "request_duration_seconds",
+			Help:        "The HTTP request latencies in seconds.",
 			Subsystem:   "http",
 			ConstLabels: prometheus.Labels{"handler": handlerName},
 			Objectives:  map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
@@ -46,31 +47,41 @@ var (
 	EliminatingProcessor = func(_ string) string { return "" }
 	// IdentityProcessor is callback that returns whatever is passed to it.
 	IdentityProcessor = func(input string) string { return input }
+	// LastPathElementProcessor is callback that returns the last element of a URL path.
+	LastPathElementProcessor = func(path string) string {
+		parts := strings.Split(path, "/")
+		return parts[len(parts)-1]
+	}
 )
 
 // init registers the Prometheus metric globally when the package is loaded.
 func init() {
-	prometheus.MustRegister(RequestDurationMicroseconds)
+	prometheus.MustRegister(RequestDurationSeconds)
 }
 
 // RoundTrip implements http.RoundTripper. It forwards the request to the
 // next RoundTripper and measures the time it took in Prometheus summary.
 func (it *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
+	var statusCode int
+
 	// Remember the current time.
 	now := time.Now()
 
 	// Make the request using the next RoundTripper.
 	resp, err := it.next.RoundTrip(req)
+	if resp != nil {
+		statusCode = resp.StatusCode
+	}
 
 	// Observe the time it took to make the request.
-	RequestDurationMicroseconds.WithLabelValues(
+	RequestDurationSeconds.WithLabelValues(
 		req.URL.Scheme,
 		req.URL.Host,
 		it.cbs.PathProcessor(req.URL.Path),
 		it.cbs.QueryProcessor(req.URL.RawQuery),
 		req.Method,
-		fmt.Sprintf("%d", resp.StatusCode),
-	).Observe(float64(time.Since(now).Nanoseconds() / 1000))
+		fmt.Sprintf("%d", statusCode),
+	).Observe(time.Since(now).Seconds())
 
 	// return the response and error reported from the next RoundTripper.
 	return resp, err

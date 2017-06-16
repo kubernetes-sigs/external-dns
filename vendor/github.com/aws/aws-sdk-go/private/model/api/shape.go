@@ -145,6 +145,14 @@ func (s *Shape) GoTypeWithPkgName() string {
 	return goType(s, true)
 }
 
+func (s *Shape) GoTypeWithPkgNameElem() string {
+	t := goType(s, true)
+	if strings.HasPrefix(t, "*") {
+		return t[1:]
+	}
+	return t
+}
+
 // GenAccessors returns if the shape's reference should have setters generated.
 func (s *ShapeRef) UseIndirection() bool {
 	switch s.Shape.Type {
@@ -244,11 +252,11 @@ func goType(s *Shape, withPkgName bool) string {
 		}
 		return "*" + s.ShapeName
 	case "map":
-		return "map[string]" + s.ValueRef.GoType()
+		return "map[string]" + goType(s.ValueRef.Shape, withPkgName)
 	case "jsonvalue":
 		return "aws.JSONValue"
 	case "list":
-		return "[]" + s.MemberRef.GoType()
+		return "[]" + goType(s.MemberRef.Shape, withPkgName)
 	case "boolean":
 		return "*bool"
 	case "string", "character":
@@ -392,16 +400,18 @@ func (ref *ShapeRef) GoTags(toplevel bool, isRequired bool) string {
 		if ref.Shape.Payload != "" {
 			tags = append(tags, ShapeTag{"payload", ref.Shape.Payload})
 		}
-		if ref.XMLNamespace.Prefix != "" {
-			tags = append(tags, ShapeTag{"xmlPrefix", ref.XMLNamespace.Prefix})
-		} else if ref.Shape.XMLNamespace.Prefix != "" {
-			tags = append(tags, ShapeTag{"xmlPrefix", ref.Shape.XMLNamespace.Prefix})
-		}
-		if ref.XMLNamespace.URI != "" {
-			tags = append(tags, ShapeTag{"xmlURI", ref.XMLNamespace.URI})
-		} else if ref.Shape.XMLNamespace.URI != "" {
-			tags = append(tags, ShapeTag{"xmlURI", ref.Shape.XMLNamespace.URI})
-		}
+	}
+
+	if ref.XMLNamespace.Prefix != "" {
+		tags = append(tags, ShapeTag{"xmlPrefix", ref.XMLNamespace.Prefix})
+	} else if ref.Shape.XMLNamespace.Prefix != "" {
+		tags = append(tags, ShapeTag{"xmlPrefix", ref.Shape.XMLNamespace.Prefix})
+	}
+
+	if ref.XMLNamespace.URI != "" {
+		tags = append(tags, ShapeTag{"xmlURI", ref.XMLNamespace.URI})
+	} else if ref.Shape.XMLNamespace.URI != "" {
+		tags = append(tags, ShapeTag{"xmlURI", ref.Shape.XMLNamespace.URI})
 	}
 
 	if ref.IdempotencyToken || ref.Shape.IdempotencyToken {
