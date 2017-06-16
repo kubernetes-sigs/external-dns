@@ -23,7 +23,7 @@
     "DeleteTopicRule": "<p>Deletes the specified rule.</p>",
     "DeprecateThingType": "<p>Deprecates a thing type. You can not associate new things with deprecated thing type.</p>",
     "DescribeCACertificate": "<p>Describes a registered CA certificate.</p>",
-    "DescribeCertificate": "<p>Gets information about the specified certificate. You may specify the certificate using either its ID or PEM.</p>",
+    "DescribeCertificate": "<p>Gets information about the specified certificate.</p>",
     "DescribeEndpoint": "<p>Returns a unique endpoint specific to the AWS account making the call.</p>",
     "DescribeThing": "<p>Gets information about the specified thing.</p>",
     "DescribeThingType": "<p>Gets information about the specified thing type.</p>",
@@ -299,13 +299,12 @@
       }
     },
     "CertificatePem": {
-      "base": "<p>The PEM of a certificate.</p>",
+      "base": null,
       "refs": {
         "CACertificateDescription$certificatePem": "<p>The CA certificate data, in PEM format.</p>",
         "CertificateDescription$certificatePem": "<p>The certificate data, in PEM format.</p>",
         "CreateCertificateFromCsrResponse$certificatePem": "<p>The certificate data, in PEM format.</p>",
         "CreateKeysAndCertificateResponse$certificatePem": "<p>The certificate data, in PEM format.</p>",
-        "DescribeCertificateRequest$certificatePem": "<p>The PEM of the certificate.</p>",
         "RegisterCACertificateRequest$caCertificate": "<p>The CA certificate.</p>",
         "RegisterCACertificateRequest$verificationCertificate": "<p>The private key verification certificate.</p>",
         "RegisterCertificateRequest$certificatePem": "<p>The certificate data, in PEM format.</p>",

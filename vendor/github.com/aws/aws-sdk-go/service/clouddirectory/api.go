@@ -8339,7 +8339,7 @@ func (s *AttachToIndexOutput) SetAttachedObjectIdentifier(v string) *AttachToInd
 type AttachTypedLinkInput struct {
 	_ struct{} `type:"structure"`
 
-	// An ordered set of attributes that are associated with the typed link.
+	// A set of attributes that are associated with the typed link.
 	//
 	// Attributes is a required field
 	Attributes []*AttributeNameAndValue `type:"list" required:"true"`
@@ -12247,13 +12247,14 @@ func (s *GetTypedLinkFacetInformationInput) SetSchemaArn(v string) *GetTypedLink
 type GetTypedLinkFacetInformationOutput struct {
 	_ struct{} `type:"structure"`
 
-	// A range filter that you provide for multiple attributes. The ability to filter
-	// typed links considers the order that the attributes are defined on the typed
-	// link facet. When providing ranges to typed link selection, any inexact ranges
-	// must be specified at the end. Any attributes that do not have a range specified
-	// are presumed to match the entire range. Filters are interpreted in the order
-	// of the attributes on the typed link facet, not the order in which they are
-	// supplied to any API calls.
+	// The order of identity attributes for the facet, from most significant to
+	// least significant. The ability to filter typed links considers the order
+	// that the attributes are defined on the typed link facet. When providing ranges
+	// to typed link selection, any inexact ranges must be specified at the end.
+	// Any attributes that do not have a range specified are presumed to match the
+	// entire range. Filters are interpreted in the order of the attributes on the
+	// typed link facet, not the order in which they are supplied to any API calls.
+	// For more information about identity attributes, see Typed link (http://docs.aws.amazon.com/directoryservice/latest/admin-guide/objectsandlinks.html#typedlink).
 	IdentityAttributeOrder []*string `type:"list"`
 }
 
@@ -13015,7 +13016,7 @@ func (s *ListIncomingTypedLinksInput) SetObjectReference(v *ObjectReference) *Li
 type ListIncomingTypedLinksOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Returns a typed link specifier as output.
+	// Returns one or more typed link specifiers as output.
 	LinkSpecifiers []*TypedLinkSpecifier `type:"list"`
 
 	// The pagination token.
@@ -15577,21 +15578,18 @@ func (s *TypedLinkAttributeRange) SetRange(v *TypedAttributeValueRange) *TypedLi
 type TypedLinkFacet struct {
 	_ struct{} `type:"structure"`
 
-	// An ordered set of attributes that are associate with the typed link. You
-	// can use typed link attributes when you need to represent the relationship
-	// between two objects or allow for quick filtering of incoming or outgoing
-	// typed links.
+	// A set of key-value pairs associated with the typed link. Typed link attributes
+	// are used when you have data values that are related to the link itself, and
+	// not to one of the two objects being linked. Identity attributes also serve
+	// to distinguish the link from others of the same type between the same objects.
 	//
 	// Attributes is a required field
 	Attributes []*TypedLinkAttributeDefinition `type:"list" required:"true"`
 
-	// A range filter that you provide for multiple attributes. The ability to filter
-	// typed links considers the order that the attributes are defined on the typed
-	// link facet. When providing ranges to typed link selection, any inexact ranges
-	// must be specified at the end. Any attributes that do not have a range specified
-	// are presumed to match the entire range. Filters are interpreted in the order
-	// of the attributes on the typed link facet, not the order in which they are
-	// supplied to any API calls.
+	// The set of attributes that distinguish links made from this facet from each
+	// other, in the order of significance. Listing typed links can filter on the
+	// values of these attributes. See ListOutgoingTypedLinks and ListIncomingTypeLinks
+	// for details.
 	//
 	// IdentityAttributeOrder is a required field
 	IdentityAttributeOrder []*string `type:"list" required:"true"`
@@ -16241,13 +16239,14 @@ type UpdateTypedLinkFacetInput struct {
 	// AttributeUpdates is a required field
 	AttributeUpdates []*TypedLinkFacetAttributeUpdate `type:"list" required:"true"`
 
-	// A range filter that you provide for multiple attributes. The ability to filter
-	// typed links considers the order that the attributes are defined on the typed
-	// link facet. When providing ranges to a typed link selection, any inexact
-	// ranges must be specified at the end. Any attributes that do not have a range
-	// specified are presumed to match the entire range. Filters are interpreted
-	// in the order of the attributes on the typed link facet, not the order in
-	// which they are supplied to any API calls.
+	// The order of identity attributes for the facet, from most significant to
+	// least significant. The ability to filter typed links considers the order
+	// that the attributes are defined on the typed link facet. When providing ranges
+	// to a typed link selection, any inexact ranges must be specified at the end.
+	// Any attributes that do not have a range specified are presumed to match the
+	// entire range. Filters are interpreted in the order of the attributes on the
+	// typed link facet, not the order in which they are supplied to any API calls.
+	// For more information about identity attributes, see Typed link (http://docs.aws.amazon.com/directoryservice/latest/admin-guide/objectsandlinks.html#typedlink).
 	//
 	// IdentityAttributeOrder is a required field
 	IdentityAttributeOrder []*string `type:"list" required:"true"`
