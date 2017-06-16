@@ -1,5 +1,5 @@
-hash: 9b0956761f95e461a9cbf8edfac1537ef55005b27f9be0659582b336a227b1c2
-updated: 2017-06-16T10:50:06.229451646+02:00
+hash: d1ca92323760e7bdb44d2b80d066dd21bcd49c714faa88372a87a81a9520dffc
+updated: 2017-06-16T11:52:01.08864027+02:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -138,7 +138,7 @@ imports:
 - name: github.com/kubernetes/repo-infra
   version: 4667983ff6a1c7dff07191106392ad4bcad60c29
 - name: github.com/linki/instrumented_http
-  version: d46cf68178e39f604b1243cfc3633ce981332575
+  version: 508103cfb3b315fa9752b5bcd4fb2d97bbc26d89
 - name: github.com/mailru/easyjson
   version: d5b7844b561a7bc640052f1b935f7b800330d7e0
   subpackages:
