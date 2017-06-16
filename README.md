@@ -107,7 +107,7 @@ Here's a rough outline on what is to come (subject to change):
 
 - [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller)
 - [ ] Ability to replace Zalando's [Mate](https://github.com/zalando-incubator/mate)
-- [ ] Ability to replace Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
+- [x] Ability to replace Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 
 ### Yet to be defined
 
