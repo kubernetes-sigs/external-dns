@@ -227,7 +227,7 @@ spec:
         - --txt-owner-id=my-identifier
 ```
 
-Use `dry-run=true` if you want to be extra careful on the first run. Note, that you will not see any records created when you are running in dry-run mode. You can, however, inspect the logs and watch what would have been done.
+Use `--dry-run` if you want to be extra careful on the first run. Note, that you will not see any records created when you are running in dry-run mode. You can, however, inspect the logs and watch what would have been done.
 
 ## Deploy a sample application
 
