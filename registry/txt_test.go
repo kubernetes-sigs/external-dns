@@ -70,29 +70,49 @@ func testTXTRegistryRecords(t *testing.T) {
 			},
 		},
 
-		// // TODO
-		// {
-		// 	msg: "label order doesn't matter",
-		// 	records: []*endpoint.Endpoint{
-		// 		{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
-		// 		{DNSName: "foo.example.org", Target: "external-dns/owner=foo,heritage=external-dns", RecordType: "TXT"},
-		// 	},
-		// 	expected: []*endpoint.Endpoint{
-		// 		{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
-		// 	},
-		// },
-		//
-		// // TODO
-		// {
-		// 	msg: "spaces don't matter",
-		// 	records: []*endpoint.Endpoint{
-		// 		{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
-		// 		{DNSName: "foo.example.org", Target: "heritage=external-dns, external-dns/owner=foo", RecordType: "TXT"},
-		// 	},
-		// 	expected: []*endpoint.Endpoint{
-		// 		{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
-		// 	},
-		// },
+		{
+			msg: "with wrong owner",
+			records: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
+				{DNSName: "owner-for-something-else.example.org", Target: "heritage=external-dns,external-dns/owner=foo", RecordType: "TXT"},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{}},
+			},
+		},
+
+		{
+			msg: "spaces don't matter",
+			records: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
+				{DNSName: "foo.example.org", Target: "heritage=external-dns,  external-dns/owner=foo", RecordType: "TXT"},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
+			},
+		},
+
+		{
+			msg: "heritage can be anywhere",
+			records: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
+				{DNSName: "foo.example.org", Target: "external-dns/owner=foo,heritage=external-dns", RecordType: "TXT"},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
+			},
+		},
+
+		{
+			msg: "support arbitrary label name",
+			records: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
+				{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/my-label=foo", RecordType: "TXT"},
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"my-label": "foo"}},
+			},
+		},
 
 		{
 			msg: "require heritage prefix",
@@ -128,17 +148,6 @@ func testTXTRegistryRecords(t *testing.T) {
 		},
 
 		{
-			msg: "support arbitrary labels",
-			records: []*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
-				{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/my-label=foo", RecordType: "TXT"},
-			},
-			expected: []*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"my-label": "foo"}},
-			},
-		},
-
-		{
 			msg: "support multiple labels",
 			records: []*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
@@ -150,24 +159,24 @@ func testTXTRegistryRecords(t *testing.T) {
 		},
 
 		{
-			msg: "order doesn't matter",
+			msg: "label order doesn't matter",
 			records: []*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/owner=foo", RecordType: "TXT"},
 				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
+				{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/owner=foo,external-dns/my-label=foo", RecordType: "TXT"},
 			},
 			expected: []*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
 			},
 		},
 
 		{
-			msg: "with wrong owner",
+			msg: "heritage and label order doesn't matter",
 			records: []*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
-				{DNSName: "bar.example.org", Target: "heritage=external-dns,external-dns/owner=foo", RecordType: "TXT"},
+				{DNSName: "foo.example.org", Target: "external-dns/owner=foo,heritage=external-dns,external-dns/my-label=foo", RecordType: "TXT"},
 			},
 			expected: []*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{}},
+				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
 			},
 		},
 	} {
@@ -342,17 +351,6 @@ func testTXTRegistryApplyChanges(t *testing.T) {
 				},
 			},
 		},
-
-		// {
-		// 	msg: "order doesn't matter",
-		// 	records: []*endpoint.Endpoint{
-		// 		{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
-		// 	},
-		// 	expected: []*endpoint.Endpoint{
-		// 		{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/owner=foo", RecordType: "TXT"},
-		// 		{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
-		// 	},
-		// },
 
 		{
 			msg: "multiple labels order shouldn't matter",
