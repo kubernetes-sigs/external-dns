@@ -200,50 +200,146 @@ func testTXTRegistryRecordsReturnsErrors(t *testing.T) {
 func testTXTRegistryApplyChanges(t *testing.T) {
 	for _, tc := range []struct {
 		msg      string
-		records  []*endpoint.Endpoint
-		expected []*endpoint.Endpoint
+		given    *plan.Changes
+		expected *plan.Changes
 	}{
 		{
 			msg: "no owner",
-			records: []*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{}},
+			given: &plan.Changes{
+				Create: []*endpoint.Endpoint{
+					{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{}},
+				},
+				UpdateOld: []*endpoint.Endpoint{
+					{DNSName: "wambo.example.org", Target: "1.2.3.4", RecordType: "A", Labels: map[string]string{}},
+				},
+				UpdateNew: []*endpoint.Endpoint{
+					{DNSName: "wambo.example.org", Target: "4.3.2.1", RecordType: "A", Labels: map[string]string{}},
+				},
+				Delete: []*endpoint.Endpoint{
+					{DNSName: "bar.example.org", Target: "8.8.4.4", RecordType: "A", Labels: map[string]string{}},
+				},
 			},
-			expected: []*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{}},
+			expected: &plan.Changes{
+				Create: []*endpoint.Endpoint{
+					{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{}},
+				},
+				UpdateOld: []*endpoint.Endpoint{
+					{DNSName: "wambo.example.org", Target: "1.2.3.4", RecordType: "A", Labels: map[string]string{}},
+				},
+				UpdateNew: []*endpoint.Endpoint{
+					{DNSName: "wambo.example.org", Target: "4.3.2.1", RecordType: "A", Labels: map[string]string{}},
+				},
+				Delete: []*endpoint.Endpoint{
+					{DNSName: "bar.example.org", Target: "8.8.4.4", RecordType: "A", Labels: map[string]string{}},
+				},
 			},
 		},
 
 		{
 			msg: "with owner",
-			records: []*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
-				// {DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A"},
+			given: &plan.Changes{
+				Create: []*endpoint.Endpoint{
+					{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
+				},
+				UpdateOld: []*endpoint.Endpoint{
+					{DNSName: "wambo.example.org", Target: "1.2.3.4", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
+				},
+				UpdateNew: []*endpoint.Endpoint{
+					{DNSName: "wambo.example.org", Target: "4.3.2.1", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
+				},
+				Delete: []*endpoint.Endpoint{
+					{DNSName: "bar.example.org", Target: "8.8.4.4", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
+				},
 			},
-			expected: []*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
-				{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/owner=foo", RecordType: "TXT"},
+			expected: &plan.Changes{
+				Create: []*endpoint.Endpoint{
+					{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
+					{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/owner=foo", RecordType: "TXT"},
+				},
+				UpdateOld: []*endpoint.Endpoint{
+					{DNSName: "wambo.example.org", Target: "1.2.3.4", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
+					{DNSName: "wambo.example.org", Target: "heritage=external-dns,external-dns/owner=foo", RecordType: "TXT"},
+				},
+				UpdateNew: []*endpoint.Endpoint{
+					{DNSName: "wambo.example.org", Target: "4.3.2.1", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
+					{DNSName: "wambo.example.org", Target: "heritage=external-dns,external-dns/owner=foo", RecordType: "TXT"},
+				},
+				Delete: []*endpoint.Endpoint{
+					{DNSName: "bar.example.org", Target: "8.8.4.4", RecordType: "A", Labels: map[string]string{"owner": "foo"}},
+					{DNSName: "bar.example.org", Target: "heritage=external-dns,external-dns/owner=foo", RecordType: "TXT"},
+				},
 			},
 		},
 
 		{
 			msg: "support arbitrary labels",
-			records: []*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"my-label": "foo"}},
+			given: &plan.Changes{
+				Create: []*endpoint.Endpoint{
+					{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"my-label": "foo"}},
+				},
+				UpdateOld: []*endpoint.Endpoint{
+					{DNSName: "wambo.example.org", Target: "1.2.3.4", RecordType: "A", Labels: map[string]string{"my-label": "foo"}},
+				},
+				UpdateNew: []*endpoint.Endpoint{
+					{DNSName: "wambo.example.org", Target: "4.3.2.1", RecordType: "A", Labels: map[string]string{"my-label": "foo"}},
+				},
+				Delete: []*endpoint.Endpoint{
+					{DNSName: "bar.example.org", Target: "8.8.4.4", RecordType: "A", Labels: map[string]string{"my-label": "foo"}},
+				},
 			},
-			expected: []*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"my-label": "foo"}},
-				{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/my-label=foo", RecordType: "TXT"},
+			expected: &plan.Changes{
+				Create: []*endpoint.Endpoint{
+					{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"my-label": "foo"}},
+					{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/my-label=foo", RecordType: "TXT"},
+				},
+				UpdateOld: []*endpoint.Endpoint{
+					{DNSName: "wambo.example.org", Target: "1.2.3.4", RecordType: "A", Labels: map[string]string{"my-label": "foo"}},
+					{DNSName: "wambo.example.org", Target: "heritage=external-dns,external-dns/my-label=foo", RecordType: "TXT"},
+				},
+				UpdateNew: []*endpoint.Endpoint{
+					{DNSName: "wambo.example.org", Target: "4.3.2.1", RecordType: "A", Labels: map[string]string{"my-label": "foo"}},
+					{DNSName: "wambo.example.org", Target: "heritage=external-dns,external-dns/my-label=foo", RecordType: "TXT"},
+				},
+				Delete: []*endpoint.Endpoint{
+					{DNSName: "bar.example.org", Target: "8.8.4.4", RecordType: "A", Labels: map[string]string{"my-label": "foo"}},
+					{DNSName: "bar.example.org", Target: "heritage=external-dns,external-dns/my-label=foo", RecordType: "TXT"},
+				},
 			},
 		},
 
 		{
 			msg: "support multiple labels",
-			records: []*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+			given: &plan.Changes{
+				Create: []*endpoint.Endpoint{
+					{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+				},
+				UpdateOld: []*endpoint.Endpoint{
+					{DNSName: "wambo.example.org", Target: "1.2.3.4", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+				},
+				UpdateNew: []*endpoint.Endpoint{
+					{DNSName: "wambo.example.org", Target: "4.3.2.1", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+				},
+				Delete: []*endpoint.Endpoint{
+					{DNSName: "bar.example.org", Target: "8.8.4.4", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+				},
 			},
-			expected: []*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
-				{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/my-label=foo,external-dns/owner=foo", RecordType: "TXT"},
+			expected: &plan.Changes{
+				Create: []*endpoint.Endpoint{
+					{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+					{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/my-label=foo,external-dns/owner=foo", RecordType: "TXT"},
+				},
+				UpdateOld: []*endpoint.Endpoint{
+					{DNSName: "wambo.example.org", Target: "1.2.3.4", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+					{DNSName: "wambo.example.org", Target: "heritage=external-dns,external-dns/my-label=foo,external-dns/owner=foo", RecordType: "TXT"},
+				},
+				UpdateNew: []*endpoint.Endpoint{
+					{DNSName: "wambo.example.org", Target: "4.3.2.1", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+					{DNSName: "wambo.example.org", Target: "heritage=external-dns,external-dns/my-label=foo,external-dns/owner=foo", RecordType: "TXT"},
+				},
+				Delete: []*endpoint.Endpoint{
+					{DNSName: "bar.example.org", Target: "8.8.4.4", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+					{DNSName: "bar.example.org", Target: "heritage=external-dns,external-dns/my-label=foo,external-dns/owner=foo", RecordType: "TXT"},
+				},
 			},
 		},
 
@@ -260,21 +356,46 @@ func testTXTRegistryApplyChanges(t *testing.T) {
 
 		{
 			msg: "multiple labels order shouldn't matter",
-			records: []*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+			given: &plan.Changes{
+				Create: []*endpoint.Endpoint{
+					{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+				},
+				UpdateOld: []*endpoint.Endpoint{
+					{DNSName: "wambo.example.org", Target: "1.2.3.4", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+				},
+				UpdateNew: []*endpoint.Endpoint{
+					{DNSName: "wambo.example.org", Target: "4.3.2.1", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+				},
+				Delete: []*endpoint.Endpoint{
+					{DNSName: "bar.example.org", Target: "8.8.4.4", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+				},
 			},
-			expected: []*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
-				{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/my-label=foo,external-dns/owner=foo", RecordType: "TXT"},
+			expected: &plan.Changes{
+				Create: []*endpoint.Endpoint{
+					{DNSName: "foo.example.org", Target: "8.8.8.8", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+					{DNSName: "foo.example.org", Target: "heritage=external-dns,external-dns/my-label=foo,external-dns/owner=foo", RecordType: "TXT"},
+				},
+				UpdateOld: []*endpoint.Endpoint{
+					{DNSName: "wambo.example.org", Target: "1.2.3.4", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+					{DNSName: "wambo.example.org", Target: "heritage=external-dns,external-dns/my-label=foo,external-dns/owner=foo", RecordType: "TXT"},
+				},
+				UpdateNew: []*endpoint.Endpoint{
+					{DNSName: "wambo.example.org", Target: "4.3.2.1", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+					{DNSName: "wambo.example.org", Target: "heritage=external-dns,external-dns/my-label=foo,external-dns/owner=foo", RecordType: "TXT"},
+				},
+				Delete: []*endpoint.Endpoint{
+					{DNSName: "bar.example.org", Target: "8.8.4.4", RecordType: "A", Labels: map[string]string{"owner": "foo", "my-label": "foo"}},
+					{DNSName: "bar.example.org", Target: "heritage=external-dns,external-dns/my-label=foo,external-dns/owner=foo", RecordType: "TXT"},
+				},
 			},
 		},
 	} {
 		t.Run(tc.msg, func(t *testing.T) {
 			mockProvider := new(provider.MockProvider)
-			mockProvider.On("ApplyChanges", &plan.Changes{Create: tc.expected}).Return(nil)
+			mockProvider.On("ApplyChanges", tc.expected).Return(nil)
 
 			reg, _ := NewTXTRegistry(mockProvider, "_")
-			err := reg.ApplyChanges(&plan.Changes{Create: tc.records})
+			err := reg.ApplyChanges(tc.given)
 			assert.NoError(t, err)
 
 			mockProvider.AssertExpectations(t)

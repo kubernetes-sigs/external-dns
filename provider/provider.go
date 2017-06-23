@@ -22,6 +22,7 @@ import (
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
+
 	"github.com/stretchr/testify/mock"
 )
 

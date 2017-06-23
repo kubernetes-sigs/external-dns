@@ -129,6 +129,69 @@ func (p *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 		})
 	}
 
+	for _, ep := range changes.UpdateOld {
+		// TODO: Don't create a TXT record if we don't have any labels to remember.
+		if len(ep.Labels) == 0 {
+			continue
+		}
+
+		// TODO: For each desired label, prefix the key with ExternalDNS' namespace.
+		labelMap := map[string]string{}
+		for key, value := range ep.Labels {
+			labelMap[labelKeyPrefix+key] = value
+		}
+
+		// TODO: Append the TXT record to the original creation list. We also add a special label called
+		// heritage to indicate that this TXT record belongs to ExternalDNS.
+		changes.UpdateOld = append(changes.UpdateOld, &endpoint.Endpoint{
+			DNSName:    ep.DNSName,
+			Target:     fmt.Sprintf("%s=%s,%s", heritageLabel, heritageValue, formatLabels(labelMap)),
+			RecordType: txtRecordType,
+		})
+	}
+
+	for _, ep := range changes.UpdateNew {
+		// TODO: Don't create a TXT record if we don't have any labels to remember.
+		if len(ep.Labels) == 0 {
+			continue
+		}
+
+		// TODO: For each desired label, prefix the key with ExternalDNS' namespace.
+		labelMap := map[string]string{}
+		for key, value := range ep.Labels {
+			labelMap[labelKeyPrefix+key] = value
+		}
+
+		// TODO: Append the TXT record to the original creation list. We also add a special label called
+		// heritage to indicate that this TXT record belongs to ExternalDNS.
+		changes.UpdateNew = append(changes.UpdateNew, &endpoint.Endpoint{
+			DNSName:    ep.DNSName,
+			Target:     fmt.Sprintf("%s=%s,%s", heritageLabel, heritageValue, formatLabels(labelMap)),
+			RecordType: txtRecordType,
+		})
+	}
+
+	for _, ep := range changes.Delete {
+		// TODO: Don't create a TXT record if we don't have any labels to remember.
+		if len(ep.Labels) == 0 {
+			continue
+		}
+
+		// TODO: For each desired label, prefix the key with ExternalDNS' namespace.
+		labelMap := map[string]string{}
+		for key, value := range ep.Labels {
+			labelMap[labelKeyPrefix+key] = value
+		}
+
+		// TODO: Append the TXT record to the original creation list. We also add a special label called
+		// heritage to indicate that this TXT record belongs to ExternalDNS.
+		changes.Delete = append(changes.Delete, &endpoint.Endpoint{
+			DNSName:    ep.DNSName,
+			Target:     fmt.Sprintf("%s=%s,%s", heritageLabel, heritageValue, formatLabels(labelMap)),
+			RecordType: txtRecordType,
+		})
+	}
+
 	// Forward the modified change set to the underlying provider.
 	return p.provider.ApplyChanges(changes)
 }
