@@ -43,8 +43,9 @@ type DNSListResponse struct {
 }
 
 // CreateDNSRecord creates a DNS record for the zone identifier.
-//
-// API reference: https://api.cloudflare.com/#dns-records-for-a-zone-create-dns-record
+// API reference:
+//   https://api.cloudflare.com/#dns-records-for-a-zone-create-dns-record
+//   POST /zones/:zone_identifier/dns_records
 func (api *API) CreateDNSRecord(zoneID string, rr DNSRecord) (*DNSRecordResponse, error) {
 	uri := "/zones/" + zoneID + "/dns_records"
 	res, err := api.makeRequest("POST", uri, rr)
@@ -62,10 +63,9 @@ func (api *API) CreateDNSRecord(zoneID string, rr DNSRecord) (*DNSRecordResponse
 }
 
 // DNSRecords returns a slice of DNS records for the given zone identifier.
-//
-// This takes a DNSRecord to allow filtering of the results returned.
-//
-// API reference: https://api.cloudflare.com/#dns-records-for-a-zone-list-dns-records
+// API reference:
+//   https://api.cloudflare.com/#dns-records-for-a-zone-list-dns-records
+//   GET /zones/:zone_identifier/dns_records
 func (api *API) DNSRecords(zoneID string, rr DNSRecord) ([]DNSRecord, error) {
 	// Construct a query string
 	v := url.Values{}
@@ -111,8 +111,9 @@ func (api *API) DNSRecords(zoneID string, rr DNSRecord) ([]DNSRecord, error) {
 
 // DNSRecord returns a single DNS record for the given zone & record
 // identifiers.
-//
-// API reference: https://api.cloudflare.com/#dns-records-for-a-zone-dns-record-details
+// API reference:
+//   https://api.cloudflare.com/#dns-records-for-a-zone-dns-record-details
+//   GET /zones/:zone_identifier/dns_records/:identifier
 func (api *API) DNSRecord(zoneID, recordID string) (DNSRecord, error) {
 	uri := "/zones/" + zoneID + "/dns_records/" + recordID
 	res, err := api.makeRequest("GET", uri, nil)
@@ -129,8 +130,9 @@ func (api *API) DNSRecord(zoneID, recordID string) (DNSRecord, error) {
 
 // UpdateDNSRecord updates a single DNS record for the given zone & record
 // identifiers.
-//
-// API reference: https://api.cloudflare.com/#dns-records-for-a-zone-update-dns-record
+// API reference:
+//   https://api.cloudflare.com/#dns-records-for-a-zone-update-dns-record
+//   PUT /zones/:zone_identifier/dns_records/:identifier
 func (api *API) UpdateDNSRecord(zoneID, recordID string, rr DNSRecord) error {
 	rec, err := api.DNSRecord(zoneID, recordID)
 	if err != nil {
@@ -157,8 +159,9 @@ func (api *API) UpdateDNSRecord(zoneID, recordID string, rr DNSRecord) error {
 
 // DeleteDNSRecord deletes a single DNS record for the given zone & record
 // identifiers.
-//
-// API reference: https://api.cloudflare.com/#dns-records-for-a-zone-delete-dns-record
+// API reference:
+//   https://api.cloudflare.com/#dns-records-for-a-zone-delete-dns-record
+//   DELETE /zones/:zone_identifier/dns_records/:identifier
 func (api *API) DeleteDNSRecord(zoneID, recordID string) error {
 	uri := "/zones/" + zoneID + "/dns_records/" + recordID
 	res, err := api.makeRequest("DELETE", uri, nil)

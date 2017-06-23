@@ -18,24 +18,22 @@ type Owner struct {
 
 // Zone describes a Cloudflare zone.
 type Zone struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	// DevMode contains the time in seconds until development expires (if
-	// positive) or since it expired (if negative). It will be 0 if never used.
-	DevMode           int          `json:"development_mode"`
-	OriginalNS        []string     `json:"original_name_servers"`
-	OriginalRegistrar string       `json:"original_registrar"`
-	OriginalDNSHost   string       `json:"original_dnshost"`
-	CreatedOn         time.Time    `json:"created_on"`
-	ModifiedOn        time.Time    `json:"modified_on"`
-	NameServers       []string     `json:"name_servers"`
-	Owner             Owner        `json:"owner"`
-	Permissions       []string     `json:"permissions"`
-	Plan              ZoneRatePlan `json:"plan"`
-	PlanPending       ZoneRatePlan `json:"plan_pending,omitempty"`
-	Status            string       `json:"status"`
-	Paused            bool         `json:"paused"`
-	Type              string       `json:"type"`
+	ID                string    `json:"id"`
+	Name              string    `json:"name"`
+	DevMode           int       `json:"development_mode"`
+	OriginalNS        []string  `json:"original_name_servers"`
+	OriginalRegistrar string    `json:"original_registrar"`
+	OriginalDNSHost   string    `json:"original_dnshost"`
+	CreatedOn         time.Time `json:"created_on"`
+	ModifiedOn        time.Time `json:"modified_on"`
+	NameServers       []string  `json:"name_servers"`
+	Owner             Owner     `json:"owner"`
+	Permissions       []string  `json:"permissions"`
+	Plan              ZonePlan  `json:"plan"`
+	PlanPending       ZonePlan  `json:"plan_pending,omitempty"`
+	Status            string    `json:"status"`
+	Paused            bool      `json:"paused"`
+	Type              string    `json:"type"`
 	Host              struct {
 		Name    string
 		Website string
@@ -46,7 +44,7 @@ type Zone struct {
 	Meta        ZoneMeta `json:"meta"`
 }
 
-// ZoneMeta describes metadata about a zone.
+// ZoneMeta metadata about a zone.
 type ZoneMeta struct {
 	// custom_certificate_quota is broken - sometimes it's a string, sometimes a number!
 	// CustCertQuota     int    `json:"custom_certificate_quota"`
@@ -55,21 +53,16 @@ type ZoneMeta struct {
 	PhishingDetected  bool `json:"phishing_detected"`
 }
 
-// ZoneRatePlan contains the plan information for a zone.
-type ZoneRatePlan struct {
-	ID         string                   `json:"id"`
-	Name       string                   `json:"name,omitempty"`
-	Price      int                      `json:"price,omitempty"`
-	Currency   string                   `json:"currency,omitempty"`
-	Duration   int                      `json:"duration,omitempty"`
-	Frequency  string                   `json:"frequency,omitempty"`
-	Components []zoneRatePlanComponents `json:"components,omitempty"`
-}
-
-type zoneRatePlanComponents struct {
-	Name      string `json:"name"`
-	Default   int    `json:"Default"`
-	UnitPrice int    `json:"unit_price"`
+// ZonePlan contains the plan information for a zone.
+type ZonePlan struct {
+	ID           string `json:"id"`
+	Name         string `json:"name,omitempty"`
+	Price        int    `json:"price,omitempty"`
+	Currency     string `json:"currency,omitempty"`
+	Frequency    string `json:"frequency,omitempty"`
+	LegacyID     string `json:"legacy_id,omitempty"`
+	IsSubscribed bool   `json:"is_subscribed,omitempty"`
+	CanSubscribe bool   `json:"can_subscribe,omitempty"`
 }
 
 // ZoneID contains only the zone ID.
@@ -95,17 +88,17 @@ type ZoneIDResponse struct {
 	Result ZoneID `json:"result"`
 }
 
-// AvailableZoneRatePlansResponse represents the response from the Available Rate Plans endpoint.
-type AvailableZoneRatePlansResponse struct {
+// AvailableZonePlansResponse represents the response from the Available Plans endpoint.
+type AvailableZonePlansResponse struct {
 	Response
-	Result []ZoneRatePlan `json:"result"`
+	Result []ZonePlan `json:"result"`
 	ResultInfo
 }
 
-// ZoneRatePlanResponse represents the response from the Plan Details endpoint.
-type ZoneRatePlanResponse struct {
+// ZonePlanResponse represents the response from the Plan Details endpoint.
+type ZonePlanResponse struct {
 	Response
-	Result ZoneRatePlan `json:"result"`
+	Result ZonePlan `json:"result"`
 }
 
 // ZoneSetting contains settings for a zone.
@@ -121,21 +114,6 @@ type ZoneSetting struct {
 type ZoneSettingResponse struct {
 	Response
 	Result []ZoneSetting `json:"result"`
-}
-
-// ZoneSSLSetting contains ssl setting for a zone.
-type ZoneSSLSetting struct {
-	ID                string `json:"id"`
-	Editable          bool   `json:"editable"`
-	ModifiedOn        string `json:"modified_on"`
-	Value             string `json:"value"`
-	CertificateStatus string `json:"certificate_status"`
-}
-
-// ZoneSettingResponse represents the response from the Zone SSL Setting endpoint.
-type ZoneSSLSettingResponse struct {
-	Response
-	Result ZoneSSLSetting `json:"result"`
 }
 
 // ZoneAnalyticsData contains totals and timeseries analytics data for a zone.
@@ -233,12 +211,6 @@ type newZone struct {
 }
 
 // CreateZone creates a zone on an account.
-//
-// Setting jumpstart to true will attempt to automatically scan for existing
-// DNS records. Setting this to false will create the zone with no DNS records.
-//
-// If Organization is non-empty, it must have at least the ID field populated.
-// This will add the new zone to the specified multi-user organization.
 //
 // API reference: https://api.cloudflare.com/#zone-create-a-zone
 func (api *API) CreateZone(name string, jumpstart bool, org Organization) (Zone, error) {
@@ -343,15 +315,17 @@ func (api *API) ZoneDetails(zoneID string) (Zone, error) {
 
 // ZoneOptions is a subset of Zone, for editable options.
 type ZoneOptions struct {
-	Paused   *bool         `json:"paused,omitempty"`
-	VanityNS []string      `json:"vanity_name_servers,omitempty"`
-	Plan     *ZoneRatePlan `json:"plan,omitempty"`
+	// FIXME(jamesog): Using omitempty here means we can't disable Paused.
+	// Currently unsure how to work around this.
+	Paused   bool      `json:"paused,omitempty"`
+	VanityNS []string  `json:"vanity_name_servers,omitempty"`
+	Plan     *ZonePlan `json:"plan,omitempty"`
 }
 
 // ZoneSetPaused pauses Cloudflare service for the entire zone, sending all
 // traffic direct to the origin.
 func (api *API) ZoneSetPaused(zoneID string, paused bool) (Zone, error) {
-	zoneopts := ZoneOptions{Paused: &paused}
+	zoneopts := ZoneOptions{Paused: paused}
 	zone, err := api.EditZone(zoneID, zoneopts)
 	if err != nil {
 		return Zone{}, err
@@ -372,8 +346,8 @@ func (api *API) ZoneSetVanityNS(zoneID string, ns []string) (Zone, error) {
 	return zone, nil
 }
 
-// ZoneSetRatePlan changes the zone plan.
-func (api *API) ZoneSetRatePlan(zoneID string, plan ZoneRatePlan) (Zone, error) {
+// ZoneSetPlan changes the zone plan.
+func (api *API) ZoneSetPlan(zoneID string, plan ZonePlan) (Zone, error) {
 	zoneopts := ZoneOptions{Plan: &plan}
 	zone, err := api.EditZone(zoneID, zoneopts)
 	if err != nil {
@@ -384,7 +358,6 @@ func (api *API) ZoneSetRatePlan(zoneID string, plan ZoneRatePlan) (Zone, error) 
 }
 
 // EditZone edits the given zone.
-//
 // This is usually called by ZoneSetPaused, ZoneSetVanityNS or ZoneSetPlan.
 //
 // API reference: https://api.cloudflare.com/#zone-edit-zone-properties
@@ -403,7 +376,6 @@ func (api *API) EditZone(zoneID string, zoneOpts ZoneOptions) (Zone, error) {
 }
 
 // PurgeEverything purges the cache for the given zone.
-//
 // Note: this will substantially increase load on the origin server for that
 // zone if there is a high cached vs. uncached request ratio.
 //
@@ -455,19 +427,36 @@ func (api *API) DeleteZone(zoneID string) (ZoneID, error) {
 	return r.Result, nil
 }
 
-// AvailableZoneRatePlans returns information about all plans available to the specified zone.
+// AvailableZonePlans returns information about all plans available to the specified zone.
 //
 // API reference: https://api.cloudflare.com/#zone-plan-available-plans
-func (api *API) AvailableZoneRatePlans(zoneID string) ([]ZoneRatePlan, error) {
-	uri := "/zones/" + zoneID + "/available_rate_plans"
+func (api *API) AvailableZonePlans(zoneID string) ([]ZonePlan, error) {
+	uri := "/zones/" + zoneID + "/available_plans"
 	res, err := api.makeRequest("GET", uri, nil)
 	if err != nil {
-		return []ZoneRatePlan{}, errors.Wrap(err, errMakeRequestError)
+		return []ZonePlan{}, errors.Wrap(err, errMakeRequestError)
 	}
-	var r AvailableZoneRatePlansResponse
+	var r AvailableZonePlansResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return []ZoneRatePlan{}, errors.Wrap(err, errUnmarshalError)
+		return []ZonePlan{}, errors.Wrap(err, errUnmarshalError)
+	}
+	return r.Result, nil
+}
+
+// ZonePlanDetails returns information about a zone plan.
+//
+// API reference: https://api.cloudflare.com/#zone-plan-plan-details
+func (api *API) ZonePlanDetails(zoneID, planID string) (ZonePlan, error) {
+	uri := "/zones/" + zoneID + "/available_plans/" + planID
+	res, err := api.makeRequest("GET", uri, nil)
+	if err != nil {
+		return ZonePlan{}, errors.Wrap(err, errMakeRequestError)
+	}
+	var r ZonePlanResponse
+	err = json.Unmarshal(res, &r)
+	if err != nil {
+		return ZonePlan{}, errors.Wrap(err, errUnmarshalError)
 	}
 	return r.Result, nil
 }
@@ -489,7 +478,9 @@ func (o ZoneAnalyticsOptions) encode() string {
 
 // ZoneAnalyticsDashboard returns zone analytics information.
 //
-// API reference: https://api.cloudflare.com/#zone-analytics-dashboard
+// API reference:
+//  https://api.cloudflare.com/#zone-analytics-dashboard
+//  GET /zones/:zone_identifier/analytics/dashboard
 func (api *API) ZoneAnalyticsDashboard(zoneID string, options ZoneAnalyticsOptions) (ZoneAnalyticsData, error) {
 	uri := "/zones/" + zoneID + "/analytics/dashboard" + "?" + options.encode()
 	res, err := api.makeRequest("GET", uri, nil)
@@ -506,7 +497,9 @@ func (api *API) ZoneAnalyticsDashboard(zoneID string, options ZoneAnalyticsOptio
 
 // ZoneAnalyticsByColocation returns zone analytics information by datacenter.
 //
-// API reference: https://api.cloudflare.com/#zone-analytics-analytics-by-co-locations
+// API reference:
+//  https://api.cloudflare.com/#zone-analytics-analytics-by-co-locations
+//  GET /zones/:zone_identifier/analytics/colos
 func (api *API) ZoneAnalyticsByColocation(zoneID string, options ZoneAnalyticsOptions) ([]ZoneAnalyticsColocation, error) {
 	uri := "/zones/" + zoneID + "/analytics/colos" + "?" + options.encode()
 	res, err := api.makeRequest("GET", uri, nil)
@@ -521,19 +514,8 @@ func (api *API) ZoneAnalyticsByColocation(zoneID string, options ZoneAnalyticsOp
 	return r.Result, nil
 }
 
-// ZoneSSLSetting returns information about ssl setting to the specified zone.
-//
-// API reference: https://api.cloudflare.com/#zone-settings-get-ssl-setting
-func (api *API) ZoneSSLSettings(zoneID string) (ZoneSSLSetting, error) {
-	uri := "/zones/" + zoneID + "/settings/ssl"
-	res, err := api.makeRequest("GET", uri, nil)
-	if err != nil {
-		return ZoneSSLSetting{}, errors.Wrap(err, errMakeRequestError)
-	}
-	var r ZoneSSLSettingResponse
-	err = json.Unmarshal(res, &r)
-	if err != nil {
-		return ZoneSSLSetting{}, errors.Wrap(err, errUnmarshalError)
-	}
-	return r.Result, nil
-}
+// Zone Settings
+// https://api.cloudflare.com/#zone-settings-for-a-zone-get-all-zone-settings
+// e.g.
+// https://api.cloudflare.com/#zone-settings-for-a-zone-get-always-online-setting
+// https://api.cloudflare.com/#zone-settings-for-a-zone-change-always-online-setting

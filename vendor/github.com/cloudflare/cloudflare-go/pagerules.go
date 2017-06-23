@@ -7,10 +7,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-// PageRuleTarget is the target to evaluate on a request.
-//
-// Currently Target must always be "url" and Operator must be "matches". Value
-// is the URL pattern to match against.
+/*
+PageRuleTarget is the target to evaluate on a request.
+
+Currently Target must always be "url" and Operator must be "matches". Value
+is the URL pattern to match against.
+*/
 type PageRuleTarget struct {
 	Target     string `json:"target"`
 	Constraint struct {
@@ -50,7 +52,7 @@ type PageRuleAction struct {
 	Value interface{} `json:"value"`
 }
 
-// PageRuleActions maps API action IDs to human-readable strings.
+// PageRuleActions maps API action IDs to human-readable strings
 var PageRuleActions = map[string]string{
 	"always_online":       "Always Online",            // Value of type string
 	"always_use_https":    "Always Use HTTPS",         // Value of type interface{}
@@ -101,9 +103,13 @@ type PageRulesResponse struct {
 	Result   []PageRule `json:"result"`
 }
 
-// CreatePageRule creates a new Page Rule for a zone.
-//
-// API reference: https://api.cloudflare.com/#page-rules-for-a-zone-create-a-page-rule
+/*
+CreatePageRule creates a new Page Rule for a zone.
+
+API reference:
+  https://api.cloudflare.com/#page-rules-for-a-zone-create-a-page-rule
+  POST /zones/:zone_identifier/pagerules
+*/
 func (api *API) CreatePageRule(zoneID string, rule PageRule) error {
 	uri := "/zones/" + zoneID + "/pagerules"
 	res, err := api.makeRequest("POST", uri, rule)
@@ -118,9 +124,13 @@ func (api *API) CreatePageRule(zoneID string, rule PageRule) error {
 	return nil
 }
 
-// ListPageRules returns all Page Rules for a zone.
-//
-// API reference: https://api.cloudflare.com/#page-rules-for-a-zone-list-page-rules
+/*
+ListPageRules returns all Page Rules for a zone.
+
+API reference:
+  https://api.cloudflare.com/#page-rules-for-a-zone-list-page-rules
+  GET /zones/:zone_identifier/pagerules
+*/
 func (api *API) ListPageRules(zoneID string) ([]PageRule, error) {
 	uri := "/zones/" + zoneID + "/pagerules"
 	res, err := api.makeRequest("GET", uri, nil)
@@ -135,9 +145,13 @@ func (api *API) ListPageRules(zoneID string) ([]PageRule, error) {
 	return r.Result, nil
 }
 
-// PageRule fetches detail about one Page Rule for a zone.
-//
-// API reference: https://api.cloudflare.com/#page-rules-for-a-zone-page-rule-details
+/*
+PageRule fetches detail about one Page Rule for a zone.
+
+API reference:
+  https://api.cloudflare.com/#page-rules-for-a-zone-page-rule-details
+  GET /zones/:zone_identifier/pagerules/:identifier
+*/
 func (api *API) PageRule(zoneID, ruleID string) (PageRule, error) {
 	uri := "/zones/" + zoneID + "/pagerules/" + ruleID
 	res, err := api.makeRequest("GET", uri, nil)
@@ -152,10 +166,14 @@ func (api *API) PageRule(zoneID, ruleID string) (PageRule, error) {
 	return r.Result, nil
 }
 
-// ChangePageRule lets you change individual settings for a Page Rule. This is
-// in contrast to UpdatePageRule which replaces the entire Page Rule.
-//
-// API reference: https://api.cloudflare.com/#page-rules-for-a-zone-change-a-page-rule
+/*
+ChangePageRule lets change individual settings for a Page Rule. This is in
+contrast to UpdatePageRule which replaces the entire Page Rule.
+
+API reference:
+  https://api.cloudflare.com/#page-rules-for-a-zone-change-a-page-rule
+  PATCH /zones/:zone_identifier/pagerules/:identifier
+*/
 func (api *API) ChangePageRule(zoneID, ruleID string, rule PageRule) error {
 	uri := "/zones/" + zoneID + "/pagerules/" + ruleID
 	res, err := api.makeRequest("PATCH", uri, rule)
@@ -170,10 +188,14 @@ func (api *API) ChangePageRule(zoneID, ruleID string, rule PageRule) error {
 	return nil
 }
 
-// UpdatePageRule lets you replace a Page Rule. This is in contrast to
-// ChangePageRule which lets you change individual settings.
-//
-// API reference: https://api.cloudflare.com/#page-rules-for-a-zone-update-a-page-rule
+/*
+UpdatePageRule lets you replace a Page Rule. This is in contrast to
+ChangePageRule which lets you change individual settings.
+
+API reference:
+  https://api.cloudflare.com/#page-rules-for-a-zone-update-a-page-rule
+  PUT /zones/:zone_identifier/pagerules/:identifier
+*/
 func (api *API) UpdatePageRule(zoneID, ruleID string, rule PageRule) error {
 	uri := "/zones/" + zoneID + "/pagerules/" + ruleID
 	res, err := api.makeRequest("PUT", uri, nil)
@@ -188,9 +210,13 @@ func (api *API) UpdatePageRule(zoneID, ruleID string, rule PageRule) error {
 	return nil
 }
 
-// DeletePageRule deletes a Page Rule for a zone.
-//
-// API reference: https://api.cloudflare.com/#page-rules-for-a-zone-delete-a-page-rule
+/*
+DeletePageRule deletes a Page Rule for a zone.
+
+API reference:
+  https://api.cloudflare.com/#page-rules-for-a-zone-delete-a-page-rule
+  DELETE /zones/:zone_identifier/pagerules/:identifier
+*/
 func (api *API) DeletePageRule(zoneID, ruleID string) error {
 	uri := "/zones/" + zoneID + "/pagerules/" + ruleID
 	res, err := api.makeRequest("DELETE", uri, nil)

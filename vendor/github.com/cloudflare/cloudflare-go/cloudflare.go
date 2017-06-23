@@ -12,23 +12,15 @@ import (
 )
 
 const apiURL = "https://api.cloudflare.com/client/v4"
-const (
-	// AuthKeyEmail specifies that we should authenticate with API key and email address
-	AuthKeyEmail = 1 << iota
-	// AuthUserService specifies that we should authenticate with a User-Service key
-	AuthUserService
-)
 
 // API holds the configuration for the current API client. A client should not
 // be modified concurrently.
 type API struct {
-	APIKey            string
-	APIEmail          string
-	APIUserServiceKey string
-	BaseURL           string
-	headers           http.Header
-	httpClient        *http.Client
-	authType          int
+	APIKey     string
+	APIEmail   string
+	BaseURL    string
+	headers    http.Header
+	httpClient *http.Client
 }
 
 // New creates a new Cloudflare v4 API client.
@@ -42,7 +34,6 @@ func New(key, email string, opts ...Option) (*API, error) {
 		APIEmail: email,
 		BaseURL:  apiURL,
 		headers:  make(http.Header),
-		authType: AuthKeyEmail,
 	}
 
 	err := api.parseOptions(opts...)
@@ -57,11 +48,6 @@ func New(key, email string, opts ...Option) (*API, error) {
 	}
 
 	return api, nil
-}
-
-// SetAuthType sets the authentication method (AuthyKeyEmail or AuthUserService).
-func (api *API) SetAuthType(authType int) {
-	api.authType = authType
 }
 
 // ZoneIDByName retrieves a zone's ID from the name.
@@ -81,10 +67,6 @@ func (api *API) ZoneIDByName(zoneName string) (string, error) {
 // makeRequest makes a HTTP request and returns the body as a byte slice,
 // closing it before returnng. params will be serialized to JSON.
 func (api *API) makeRequest(method, uri string, params interface{}) ([]byte, error) {
-	return api.makeRequestWithAuthType(method, uri, params, api.authType)
-}
-
-func (api *API) makeRequestWithAuthType(method, uri string, params interface{}, authType int) ([]byte, error) {
 	// Replace nil with a JSON object if needed
 	var reqBody io.Reader
 	if params != nil {
@@ -97,7 +79,7 @@ func (api *API) makeRequestWithAuthType(method, uri string, params interface{}, 
 		reqBody = nil
 	}
 
-	resp, err := api.request(method, uri, reqBody, authType)
+	resp, err := api.request(method, uri, reqBody)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +114,7 @@ func (api *API) makeRequestWithAuthType(method, uri string, params interface{}, 
 // request makes a HTTP request to the given API endpoint, returning the raw
 // *http.Response, or an error if one occurred. The caller is responsible for
 // closing the response body.
-func (api *API) request(method, uri string, reqBody io.Reader, authType int) (*http.Response, error) {
+func (api *API) request(method, uri string, reqBody io.Reader) (*http.Response, error) {
 	req, err := http.NewRequest(method, api.BaseURL+uri, reqBody)
 	if err != nil {
 		return nil, errors.Wrap(err, "HTTP request creation failed")
@@ -140,17 +122,8 @@ func (api *API) request(method, uri string, reqBody io.Reader, authType int) (*h
 
 	// Apply any user-defined headers first.
 	req.Header = cloneHeader(api.headers)
-	if authType&AuthKeyEmail != 0 {
-		req.Header.Set("X-Auth-Key", api.APIKey)
-		req.Header.Set("X-Auth-Email", api.APIEmail)
-	}
-	if authType&AuthUserService != 0 {
-		req.Header.Set("X-Auth-User-Service-Key", api.APIUserServiceKey)
-	}
-
-	if req.Header.Get("Content-Type") == "" {
-		req.Header.Set("Content-Type", "application/json")
-	}
+	req.Header.Set("X-Auth-Key", api.APIKey)
+	req.Header.Set("X-Auth-Email", api.APIEmail)
 
 	resp, err := api.httpClient.Do(req)
 	if err != nil {

@@ -345,8 +345,7 @@
         "EndTime":{"shape":"Timestamp"},
         "Edges":{"shape":"EdgeList"},
         "SummaryStatistics":{"shape":"ServiceStatistics"},
-        "DurationHistogram":{"shape":"Histogram"},
-        "ResponseTimeHistogram":{"shape":"Histogram"}
+        "DurationHistogram":{"shape":"Histogram"}
       }
     },
     "ServiceId":{

@@ -59,8 +59,9 @@ type UserBillingProfile struct {
 }
 
 // UserDetails provides information about the logged-in user.
-//
-// API reference: https://api.cloudflare.com/#user-user-details
+// API reference:
+// 	https://api.cloudflare.com/#user-user-details
+//	GET /user
 func (api *API) UserDetails() (User, error) {
 	var r UserResponse
 	res, err := api.makeRequest("GET", "/user", nil)
@@ -77,8 +78,9 @@ func (api *API) UserDetails() (User, error) {
 }
 
 // UpdateUser updates the properties of the given user.
-//
-// API reference: https://api.cloudflare.com/#user-update-user
+// API reference:
+// 	https://api.cloudflare.com/#user-update-user
+//	PATCH /user
 func (api *API) UpdateUser(user *User) (User, error) {
 	var r UserResponse
 	res, err := api.makeRequest("PATCH", "/user", user)
@@ -95,8 +97,9 @@ func (api *API) UpdateUser(user *User) (User, error) {
 }
 
 // UserBillingProfile returns the billing profile of the user.
-//
-// API reference: https://api.cloudflare.com/#user-billing-profile
+// API reference:
+// 	https://api.cloudflare.com/#user-billing-profile
+//	GET /user/billing/profile
 func (api *API) UserBillingProfile() (UserBillingProfile, error) {
 	var r userBillingProfileResponse
 	res, err := api.makeRequest("GET", "/user/billing/profile", nil)

@@ -26,4 +26,3 @@ notifications:
     recipients:
       - jamesog@cloudflare.com
       - msilverlock@cloudflare.com
-      - salvatore@cloudflare.com
