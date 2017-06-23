@@ -62,7 +62,7 @@ func (c *WorkDocs) AbortDocumentVersionUploadRequest(input *AbortDocumentVersion
 //
 // Aborts the upload of the specified document version that was previously initiated
 // by InitiateDocumentVersionUpload. The client should make this call only when
-// it no longer intends or fails to upload the document version.
+// it no longer intends to upload the document version, or fails to do so.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -300,6 +300,209 @@ func (c *WorkDocs) AddResourcePermissionsWithContext(ctx aws.Context, input *Add
 	return out, req.Send()
 }
 
+const opCreateComment = "CreateComment"
+
+// CreateCommentRequest generates a "aws/request.Request" representing the
+// client's request for the CreateComment operation. The "output" return
+// value can be used to capture response data after the request's "Send" method
+// is called.
+//
+// See CreateComment for usage and error information.
+//
+// Creating a request object using this method should be used when you want to inject
+// custom logic into the request's lifecycle using a custom handler, or if you want to
+// access properties on the request object before or after sending the request. If
+// you just want the service response, call the CreateComment method directly
+// instead.
+//
+// Note: You must call the "Send" method on the returned request object in order
+// to execute the request.
+//
+//    // Example sending a request using the CreateCommentRequest method.
+//    req, resp := client.CreateCommentRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/CreateComment
+func (c *WorkDocs) CreateCommentRequest(input *CreateCommentInput) (req *request.Request, output *CreateCommentOutput) {
+	op := &request.Operation{
+		Name:       opCreateComment,
+		HTTPMethod: "POST",
+		HTTPPath:   "/api/v1/documents/{DocumentId}/versions/{VersionId}/comment",
+	}
+
+	if input == nil {
+		input = &CreateCommentInput{}
+	}
+
+	output = &CreateCommentOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// CreateComment API operation for Amazon WorkDocs.
+//
+// Adds a new comment to the specified document version.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for Amazon WorkDocs's
+// API operation CreateComment for usage and error information.
+//
+// Returned Error Codes:
+//   * ErrCodeEntityNotExistsException "EntityNotExistsException"
+//   The resource does not exist.
+//
+//   * ErrCodeProhibitedStateException "ProhibitedStateException"
+//   The specified document version is not in the INITIALIZED state.
+//
+//   * ErrCodeUnauthorizedOperationException "UnauthorizedOperationException"
+//   The operation is not permitted.
+//
+//   * ErrCodeUnauthorizedResourceAccessException "UnauthorizedResourceAccessException"
+//   The caller does not have access to perform the action on the resource.
+//
+//   * ErrCodeFailedDependencyException "FailedDependencyException"
+//   The AWS Directory Service cannot reach an on-premises instance. Or a dependency
+//   under the control of the organization is failing, such as a connected active
+//   directory.
+//
+//   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
+//   One or more of the dependencies is unavailable.
+//
+//   * ErrCodeDocumentLockedForCommentsException "DocumentLockedForCommentsException"
+//   This exception is thrown when the document is locked for comments and user
+//   tries to create or delete a comment on that document.
+//
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/CreateComment
+func (c *WorkDocs) CreateComment(input *CreateCommentInput) (*CreateCommentOutput, error) {
+	req, out := c.CreateCommentRequest(input)
+	return out, req.Send()
+}
+
+// CreateCommentWithContext is the same as CreateComment with the addition of
+// the ability to pass a context and additional request options.
+//
+// See CreateComment for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *WorkDocs) CreateCommentWithContext(ctx aws.Context, input *CreateCommentInput, opts ...request.Option) (*CreateCommentOutput, error) {
+	req, out := c.CreateCommentRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
+const opCreateCustomMetadata = "CreateCustomMetadata"
+
+// CreateCustomMetadataRequest generates a "aws/request.Request" representing the
+// client's request for the CreateCustomMetadata operation. The "output" return
+// value can be used to capture response data after the request's "Send" method
+// is called.
+//
+// See CreateCustomMetadata for usage and error information.
+//
+// Creating a request object using this method should be used when you want to inject
+// custom logic into the request's lifecycle using a custom handler, or if you want to
+// access properties on the request object before or after sending the request. If
+// you just want the service response, call the CreateCustomMetadata method directly
+// instead.
+//
+// Note: You must call the "Send" method on the returned request object in order
+// to execute the request.
+//
+//    // Example sending a request using the CreateCustomMetadataRequest method.
+//    req, resp := client.CreateCustomMetadataRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/CreateCustomMetadata
+func (c *WorkDocs) CreateCustomMetadataRequest(input *CreateCustomMetadataInput) (req *request.Request, output *CreateCustomMetadataOutput) {
+	op := &request.Operation{
+		Name:       opCreateCustomMetadata,
+		HTTPMethod: "PUT",
+		HTTPPath:   "/api/v1/resources/{ResourceId}/customMetadata",
+	}
+
+	if input == nil {
+		input = &CreateCustomMetadataInput{}
+	}
+
+	output = &CreateCustomMetadataOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// CreateCustomMetadata API operation for Amazon WorkDocs.
+//
+// Adds one or more custom properties to the specified resource (a folder, document,
+// or version).
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for Amazon WorkDocs's
+// API operation CreateCustomMetadata for usage and error information.
+//
+// Returned Error Codes:
+//   * ErrCodeEntityNotExistsException "EntityNotExistsException"
+//   The resource does not exist.
+//
+//   * ErrCodeUnauthorizedOperationException "UnauthorizedOperationException"
+//   The operation is not permitted.
+//
+//   * ErrCodeUnauthorizedResourceAccessException "UnauthorizedResourceAccessException"
+//   The caller does not have access to perform the action on the resource.
+//
+//   * ErrCodeProhibitedStateException "ProhibitedStateException"
+//   The specified document version is not in the INITIALIZED state.
+//
+//   * ErrCodeCustomMetadataLimitExceededException "CustomMetadataLimitExceededException"
+//   The limit has been reached on the number of custom properties for the specified
+//   resource.
+//
+//   * ErrCodeFailedDependencyException "FailedDependencyException"
+//   The AWS Directory Service cannot reach an on-premises instance. Or a dependency
+//   under the control of the organization is failing, such as a connected active
+//   directory.
+//
+//   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
+//   One or more of the dependencies is unavailable.
+//
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/CreateCustomMetadata
+func (c *WorkDocs) CreateCustomMetadata(input *CreateCustomMetadataInput) (*CreateCustomMetadataOutput, error) {
+	req, out := c.CreateCustomMetadataRequest(input)
+	return out, req.Send()
+}
+
+// CreateCustomMetadataWithContext is the same as CreateCustomMetadata with the addition of
+// the ability to pass a context and additional request options.
+//
+// See CreateCustomMetadata for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *WorkDocs) CreateCustomMetadataWithContext(ctx aws.Context, input *CreateCustomMetadataInput, opts ...request.Option) (*CreateCustomMetadataOutput, error) {
+	req, out := c.CreateCustomMetadataRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
 const opCreateFolder = "CreateFolder"
 
 // CreateFolderRequest generates a "aws/request.Request" representing the
@@ -365,7 +568,7 @@ func (c *WorkDocs) CreateFolderRequest(input *CreateFolderInput) (req *request.R
 //   The specified document version is not in the INITIALIZED state.
 //
 //   * ErrCodeLimitExceededException "LimitExceededException"
-//   You've exceeded the maximum of 100,000 folders under the parent folder.
+//   The maximum of 100,000 folders under the parent folder has been exceeded.
 //
 //   * ErrCodeUnauthorizedOperationException "UnauthorizedOperationException"
 //   The operation is not permitted.
@@ -398,6 +601,103 @@ func (c *WorkDocs) CreateFolder(input *CreateFolderInput) (*CreateFolderOutput, 
 // for more information on using Contexts.
 func (c *WorkDocs) CreateFolderWithContext(ctx aws.Context, input *CreateFolderInput, opts ...request.Option) (*CreateFolderOutput, error) {
 	req, out := c.CreateFolderRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
+const opCreateLabels = "CreateLabels"
+
+// CreateLabelsRequest generates a "aws/request.Request" representing the
+// client's request for the CreateLabels operation. The "output" return
+// value can be used to capture response data after the request's "Send" method
+// is called.
+//
+// See CreateLabels for usage and error information.
+//
+// Creating a request object using this method should be used when you want to inject
+// custom logic into the request's lifecycle using a custom handler, or if you want to
+// access properties on the request object before or after sending the request. If
+// you just want the service response, call the CreateLabels method directly
+// instead.
+//
+// Note: You must call the "Send" method on the returned request object in order
+// to execute the request.
+//
+//    // Example sending a request using the CreateLabelsRequest method.
+//    req, resp := client.CreateLabelsRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/CreateLabels
+func (c *WorkDocs) CreateLabelsRequest(input *CreateLabelsInput) (req *request.Request, output *CreateLabelsOutput) {
+	op := &request.Operation{
+		Name:       opCreateLabels,
+		HTTPMethod: "PUT",
+		HTTPPath:   "/api/v1/resources/{ResourceId}/labels",
+	}
+
+	if input == nil {
+		input = &CreateLabelsInput{}
+	}
+
+	output = &CreateLabelsOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// CreateLabels API operation for Amazon WorkDocs.
+//
+// Adds the specified list of labels to the given resource (a document or folder)
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for Amazon WorkDocs's
+// API operation CreateLabels for usage and error information.
+//
+// Returned Error Codes:
+//   * ErrCodeEntityNotExistsException "EntityNotExistsException"
+//   The resource does not exist.
+//
+//   * ErrCodeUnauthorizedOperationException "UnauthorizedOperationException"
+//   The operation is not permitted.
+//
+//   * ErrCodeUnauthorizedResourceAccessException "UnauthorizedResourceAccessException"
+//   The caller does not have access to perform the action on the resource.
+//
+//   * ErrCodeFailedDependencyException "FailedDependencyException"
+//   The AWS Directory Service cannot reach an on-premises instance. Or a dependency
+//   under the control of the organization is failing, such as a connected active
+//   directory.
+//
+//   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
+//   One or more of the dependencies is unavailable.
+//
+//   * ErrCodeTooManyLabelsException "TooManyLabelsException"
+//   The limit has been reached on the number of labels for the specified resource.
+//
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/CreateLabels
+func (c *WorkDocs) CreateLabels(input *CreateLabelsInput) (*CreateLabelsOutput, error) {
+	req, out := c.CreateLabelsRequest(input)
+	return out, req.Send()
+}
+
+// CreateLabelsWithContext is the same as CreateLabels with the addition of
+// the ability to pass a context and additional request options.
+//
+// See CreateLabels for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *WorkDocs) CreateLabelsWithContext(ctx aws.Context, input *CreateLabelsInput, opts ...request.Option) (*CreateLabelsOutput, error) {
+	req, out := c.CreateLabelsRequest(input)
 	req.SetContext(ctx)
 	req.ApplyOptions(opts...)
 	return out, req.Send()
@@ -681,6 +981,206 @@ func (c *WorkDocs) DeactivateUser(input *DeactivateUserInput) (*DeactivateUserOu
 // for more information on using Contexts.
 func (c *WorkDocs) DeactivateUserWithContext(ctx aws.Context, input *DeactivateUserInput, opts ...request.Option) (*DeactivateUserOutput, error) {
 	req, out := c.DeactivateUserRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
+const opDeleteComment = "DeleteComment"
+
+// DeleteCommentRequest generates a "aws/request.Request" representing the
+// client's request for the DeleteComment operation. The "output" return
+// value can be used to capture response data after the request's "Send" method
+// is called.
+//
+// See DeleteComment for usage and error information.
+//
+// Creating a request object using this method should be used when you want to inject
+// custom logic into the request's lifecycle using a custom handler, or if you want to
+// access properties on the request object before or after sending the request. If
+// you just want the service response, call the DeleteComment method directly
+// instead.
+//
+// Note: You must call the "Send" method on the returned request object in order
+// to execute the request.
+//
+//    // Example sending a request using the DeleteCommentRequest method.
+//    req, resp := client.DeleteCommentRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/DeleteComment
+func (c *WorkDocs) DeleteCommentRequest(input *DeleteCommentInput) (req *request.Request, output *DeleteCommentOutput) {
+	op := &request.Operation{
+		Name:       opDeleteComment,
+		HTTPMethod: "DELETE",
+		HTTPPath:   "/api/v1/documents/{DocumentId}/versions/{VersionId}/comment/{CommentId}",
+	}
+
+	if input == nil {
+		input = &DeleteCommentInput{}
+	}
+
+	output = &DeleteCommentOutput{}
+	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restjson.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
+	return
+}
+
+// DeleteComment API operation for Amazon WorkDocs.
+//
+// Deletes the specified comment from the document version.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for Amazon WorkDocs's
+// API operation DeleteComment for usage and error information.
+//
+// Returned Error Codes:
+//   * ErrCodeEntityNotExistsException "EntityNotExistsException"
+//   The resource does not exist.
+//
+//   * ErrCodeProhibitedStateException "ProhibitedStateException"
+//   The specified document version is not in the INITIALIZED state.
+//
+//   * ErrCodeUnauthorizedOperationException "UnauthorizedOperationException"
+//   The operation is not permitted.
+//
+//   * ErrCodeUnauthorizedResourceAccessException "UnauthorizedResourceAccessException"
+//   The caller does not have access to perform the action on the resource.
+//
+//   * ErrCodeFailedDependencyException "FailedDependencyException"
+//   The AWS Directory Service cannot reach an on-premises instance. Or a dependency
+//   under the control of the organization is failing, such as a connected active
+//   directory.
+//
+//   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
+//   One or more of the dependencies is unavailable.
+//
+//   * ErrCodeDocumentLockedForCommentsException "DocumentLockedForCommentsException"
+//   This exception is thrown when the document is locked for comments and user
+//   tries to create or delete a comment on that document.
+//
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/DeleteComment
+func (c *WorkDocs) DeleteComment(input *DeleteCommentInput) (*DeleteCommentOutput, error) {
+	req, out := c.DeleteCommentRequest(input)
+	return out, req.Send()
+}
+
+// DeleteCommentWithContext is the same as DeleteComment with the addition of
+// the ability to pass a context and additional request options.
+//
+// See DeleteComment for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *WorkDocs) DeleteCommentWithContext(ctx aws.Context, input *DeleteCommentInput, opts ...request.Option) (*DeleteCommentOutput, error) {
+	req, out := c.DeleteCommentRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
+const opDeleteCustomMetadata = "DeleteCustomMetadata"
+
+// DeleteCustomMetadataRequest generates a "aws/request.Request" representing the
+// client's request for the DeleteCustomMetadata operation. The "output" return
+// value can be used to capture response data after the request's "Send" method
+// is called.
+//
+// See DeleteCustomMetadata for usage and error information.
+//
+// Creating a request object using this method should be used when you want to inject
+// custom logic into the request's lifecycle using a custom handler, or if you want to
+// access properties on the request object before or after sending the request. If
+// you just want the service response, call the DeleteCustomMetadata method directly
+// instead.
+//
+// Note: You must call the "Send" method on the returned request object in order
+// to execute the request.
+//
+//    // Example sending a request using the DeleteCustomMetadataRequest method.
+//    req, resp := client.DeleteCustomMetadataRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/DeleteCustomMetadata
+func (c *WorkDocs) DeleteCustomMetadataRequest(input *DeleteCustomMetadataInput) (req *request.Request, output *DeleteCustomMetadataOutput) {
+	op := &request.Operation{
+		Name:       opDeleteCustomMetadata,
+		HTTPMethod: "DELETE",
+		HTTPPath:   "/api/v1/resources/{ResourceId}/customMetadata",
+	}
+
+	if input == nil {
+		input = &DeleteCustomMetadataInput{}
+	}
+
+	output = &DeleteCustomMetadataOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// DeleteCustomMetadata API operation for Amazon WorkDocs.
+//
+// Deletes custom metadata from the specified resource.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for Amazon WorkDocs's
+// API operation DeleteCustomMetadata for usage and error information.
+//
+// Returned Error Codes:
+//   * ErrCodeEntityNotExistsException "EntityNotExistsException"
+//   The resource does not exist.
+//
+//   * ErrCodeUnauthorizedOperationException "UnauthorizedOperationException"
+//   The operation is not permitted.
+//
+//   * ErrCodeUnauthorizedResourceAccessException "UnauthorizedResourceAccessException"
+//   The caller does not have access to perform the action on the resource.
+//
+//   * ErrCodeProhibitedStateException "ProhibitedStateException"
+//   The specified document version is not in the INITIALIZED state.
+//
+//   * ErrCodeFailedDependencyException "FailedDependencyException"
+//   The AWS Directory Service cannot reach an on-premises instance. Or a dependency
+//   under the control of the organization is failing, such as a connected active
+//   directory.
+//
+//   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
+//   One or more of the dependencies is unavailable.
+//
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/DeleteCustomMetadata
+func (c *WorkDocs) DeleteCustomMetadata(input *DeleteCustomMetadataInput) (*DeleteCustomMetadataOutput, error) {
+	req, out := c.DeleteCustomMetadataRequest(input)
+	return out, req.Send()
+}
+
+// DeleteCustomMetadataWithContext is the same as DeleteCustomMetadata with the addition of
+// the ability to pass a context and additional request options.
+//
+// See DeleteCustomMetadata for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *WorkDocs) DeleteCustomMetadataWithContext(ctx aws.Context, input *DeleteCustomMetadataInput, opts ...request.Option) (*DeleteCustomMetadataOutput, error) {
+	req, out := c.DeleteCustomMetadataRequest(input)
 	req.SetContext(ctx)
 	req.ApplyOptions(opts...)
 	return out, req.Send()
@@ -986,6 +1486,100 @@ func (c *WorkDocs) DeleteFolderContentsWithContext(ctx aws.Context, input *Delet
 	return out, req.Send()
 }
 
+const opDeleteLabels = "DeleteLabels"
+
+// DeleteLabelsRequest generates a "aws/request.Request" representing the
+// client's request for the DeleteLabels operation. The "output" return
+// value can be used to capture response data after the request's "Send" method
+// is called.
+//
+// See DeleteLabels for usage and error information.
+//
+// Creating a request object using this method should be used when you want to inject
+// custom logic into the request's lifecycle using a custom handler, or if you want to
+// access properties on the request object before or after sending the request. If
+// you just want the service response, call the DeleteLabels method directly
+// instead.
+//
+// Note: You must call the "Send" method on the returned request object in order
+// to execute the request.
+//
+//    // Example sending a request using the DeleteLabelsRequest method.
+//    req, resp := client.DeleteLabelsRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/DeleteLabels
+func (c *WorkDocs) DeleteLabelsRequest(input *DeleteLabelsInput) (req *request.Request, output *DeleteLabelsOutput) {
+	op := &request.Operation{
+		Name:       opDeleteLabels,
+		HTTPMethod: "DELETE",
+		HTTPPath:   "/api/v1/resources/{ResourceId}/labels",
+	}
+
+	if input == nil {
+		input = &DeleteLabelsInput{}
+	}
+
+	output = &DeleteLabelsOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// DeleteLabels API operation for Amazon WorkDocs.
+//
+// Deletes the specified list of labels from a resource.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for Amazon WorkDocs's
+// API operation DeleteLabels for usage and error information.
+//
+// Returned Error Codes:
+//   * ErrCodeEntityNotExistsException "EntityNotExistsException"
+//   The resource does not exist.
+//
+//   * ErrCodeUnauthorizedOperationException "UnauthorizedOperationException"
+//   The operation is not permitted.
+//
+//   * ErrCodeUnauthorizedResourceAccessException "UnauthorizedResourceAccessException"
+//   The caller does not have access to perform the action on the resource.
+//
+//   * ErrCodeFailedDependencyException "FailedDependencyException"
+//   The AWS Directory Service cannot reach an on-premises instance. Or a dependency
+//   under the control of the organization is failing, such as a connected active
+//   directory.
+//
+//   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
+//   One or more of the dependencies is unavailable.
+//
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/DeleteLabels
+func (c *WorkDocs) DeleteLabels(input *DeleteLabelsInput) (*DeleteLabelsOutput, error) {
+	req, out := c.DeleteLabelsRequest(input)
+	return out, req.Send()
+}
+
+// DeleteLabelsWithContext is the same as DeleteLabels with the addition of
+// the ability to pass a context and additional request options.
+//
+// See DeleteLabels for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *WorkDocs) DeleteLabelsWithContext(ctx aws.Context, input *DeleteLabelsInput, opts ...request.Option) (*DeleteLabelsOutput, error) {
+	req, out := c.DeleteLabelsRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
 const opDeleteNotificationSubscription = "DeleteNotificationSubscription"
 
 // DeleteNotificationSubscriptionRequest generates a "aws/request.Request" representing the
@@ -1168,6 +1762,103 @@ func (c *WorkDocs) DeleteUser(input *DeleteUserInput) (*DeleteUserOutput, error)
 // for more information on using Contexts.
 func (c *WorkDocs) DeleteUserWithContext(ctx aws.Context, input *DeleteUserInput, opts ...request.Option) (*DeleteUserOutput, error) {
 	req, out := c.DeleteUserRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
+const opDescribeComments = "DescribeComments"
+
+// DescribeCommentsRequest generates a "aws/request.Request" representing the
+// client's request for the DescribeComments operation. The "output" return
+// value can be used to capture response data after the request's "Send" method
+// is called.
+//
+// See DescribeComments for usage and error information.
+//
+// Creating a request object using this method should be used when you want to inject
+// custom logic into the request's lifecycle using a custom handler, or if you want to
+// access properties on the request object before or after sending the request. If
+// you just want the service response, call the DescribeComments method directly
+// instead.
+//
+// Note: You must call the "Send" method on the returned request object in order
+// to execute the request.
+//
+//    // Example sending a request using the DescribeCommentsRequest method.
+//    req, resp := client.DescribeCommentsRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/DescribeComments
+func (c *WorkDocs) DescribeCommentsRequest(input *DescribeCommentsInput) (req *request.Request, output *DescribeCommentsOutput) {
+	op := &request.Operation{
+		Name:       opDescribeComments,
+		HTTPMethod: "GET",
+		HTTPPath:   "/api/v1/documents/{DocumentId}/versions/{VersionId}/comments",
+	}
+
+	if input == nil {
+		input = &DescribeCommentsInput{}
+	}
+
+	output = &DescribeCommentsOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// DescribeComments API operation for Amazon WorkDocs.
+//
+// List all the comments for the specified document version.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for Amazon WorkDocs's
+// API operation DescribeComments for usage and error information.
+//
+// Returned Error Codes:
+//   * ErrCodeEntityNotExistsException "EntityNotExistsException"
+//   The resource does not exist.
+//
+//   * ErrCodeProhibitedStateException "ProhibitedStateException"
+//   The specified document version is not in the INITIALIZED state.
+//
+//   * ErrCodeUnauthorizedOperationException "UnauthorizedOperationException"
+//   The operation is not permitted.
+//
+//   * ErrCodeUnauthorizedResourceAccessException "UnauthorizedResourceAccessException"
+//   The caller does not have access to perform the action on the resource.
+//
+//   * ErrCodeFailedDependencyException "FailedDependencyException"
+//   The AWS Directory Service cannot reach an on-premises instance. Or a dependency
+//   under the control of the organization is failing, such as a connected active
+//   directory.
+//
+//   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
+//   One or more of the dependencies is unavailable.
+//
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/DescribeComments
+func (c *WorkDocs) DescribeComments(input *DescribeCommentsInput) (*DescribeCommentsOutput, error) {
+	req, out := c.DescribeCommentsRequest(input)
+	return out, req.Send()
+}
+
+// DescribeCommentsWithContext is the same as DescribeComments with the addition of
+// the ability to pass a context and additional request options.
+//
+// See DescribeComments for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *WorkDocs) DescribeCommentsWithContext(ctx aws.Context, input *DescribeCommentsInput, opts ...request.Option) (*DescribeCommentsOutput, error) {
+	req, out := c.DescribeCommentsRequest(input)
 	req.SetContext(ctx)
 	req.ApplyOptions(opts...)
 	return out, req.Send()
@@ -1383,7 +2074,7 @@ func (c *WorkDocs) DescribeFolderContentsRequest(input *DescribeFolderContentsIn
 // DescribeFolderContents API operation for Amazon WorkDocs.
 //
 // Describes the contents of the specified folder, including its documents and
-// sub-folders.
+// subfolders.
 //
 // By default, Amazon WorkDocs returns the first 100 active document and folder
 // metadata items. If there are more results, the response includes a marker
@@ -1867,7 +2558,7 @@ func (c *WorkDocs) GetDocumentRequest(input *GetDocumentInput) (req *request.Req
 
 // GetDocument API operation for Amazon WorkDocs.
 //
-// Retrieves the specified document object.
+// Retrieves details of a document.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -2407,6 +3098,12 @@ func (c *WorkDocs) InitiateDocumentVersionUploadRequest(input *InitiateDocumentV
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   One or more of the dependencies is unavailable.
 //
+//   * ErrCodeDraftUploadOutOfSyncException "DraftUploadOutOfSyncException"
+//   This exception is thrown when a valid checkout ID is not presented on document
+//   version upload calls for a document that has been checked out from Web client.
+//
+//   * ErrCodeResourceAlreadyCheckedOutException "ResourceAlreadyCheckedOutException"
+//
 // Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/InitiateDocumentVersionUpload
 func (c *WorkDocs) InitiateDocumentVersionUpload(input *InitiateDocumentVersionUploadInput) (*InitiateDocumentVersionUploadOutput, error) {
 	req, out := c.InitiateDocumentVersionUploadRequest(input)
@@ -2662,8 +3359,8 @@ func (c *WorkDocs) UpdateDocumentRequest(input *UpdateDocumentInput) (req *reque
 
 // UpdateDocument API operation for Amazon WorkDocs.
 //
-// Updates the specified attributes of the specified document. The user must
-// have access to both the document and its parent folder, if applicable.
+// Updates the specified attributes of a document. The user must have access
+// to both the document and its parent folder, if applicable.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -2680,7 +3377,7 @@ func (c *WorkDocs) UpdateDocumentRequest(input *UpdateDocumentInput) (req *reque
 //   The resource already exists.
 //
 //   * ErrCodeLimitExceededException "LimitExceededException"
-//   You've exceeded the maximum of 100,000 folders under the parent folder.
+//   The maximum of 100,000 folders under the parent folder has been exceeded.
 //
 //   * ErrCodeProhibitedStateException "ProhibitedStateException"
 //   The specified document version is not in the INITIALIZED state.
@@ -2904,7 +3601,7 @@ func (c *WorkDocs) UpdateFolderRequest(input *UpdateFolderInput) (req *request.R
 //   The resource hierarchy is changing.
 //
 //   * ErrCodeLimitExceededException "LimitExceededException"
-//   You've exceeded the maximum of 100,000 folders under the parent folder.
+//   The maximum of 100,000 folders under the parent folder has been exceeded.
 //
 //   * ErrCodeUnauthorizedOperationException "UnauthorizedOperationException"
 //   The operation is not permitted.
@@ -3047,6 +3744,10 @@ func (c *WorkDocs) UpdateUserWithContext(ctx aws.Context, input *UpdateUserInput
 type AbortDocumentVersionUploadInput struct {
 	_ struct{} `type:"structure"`
 
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
 	// The ID of the document.
 	//
 	// DocumentId is a required field
@@ -3071,6 +3772,9 @@ func (s AbortDocumentVersionUploadInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *AbortDocumentVersionUploadInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "AbortDocumentVersionUploadInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.DocumentId == nil {
 		invalidParams.Add(request.NewErrParamRequired("DocumentId"))
 	}
@@ -3088,6 +3792,12 @@ func (s *AbortDocumentVersionUploadInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *AbortDocumentVersionUploadInput) SetAuthenticationToken(v string) *AbortDocumentVersionUploadInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetDocumentId sets the DocumentId field's value.
@@ -3121,6 +3831,10 @@ func (s AbortDocumentVersionUploadOutput) GoString() string {
 type ActivateUserInput struct {
 	_ struct{} `type:"structure"`
 
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
 	// The ID of the user.
 	//
 	// UserId is a required field
@@ -3140,6 +3854,9 @@ func (s ActivateUserInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *ActivateUserInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "ActivateUserInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.UserId == nil {
 		invalidParams.Add(request.NewErrParamRequired("UserId"))
 	}
@@ -3151,6 +3868,12 @@ func (s *ActivateUserInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *ActivateUserInput) SetAuthenticationToken(v string) *ActivateUserInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetUserId sets the UserId field's value.
@@ -3187,6 +3910,10 @@ func (s *ActivateUserOutput) SetUser(v *User) *ActivateUserOutput {
 type AddResourcePermissionsInput struct {
 	_ struct{} `type:"structure"`
 
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
 	// The users, groups, or organization being granted permission.
 	//
 	// Principals is a required field
@@ -3211,6 +3938,9 @@ func (s AddResourcePermissionsInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *AddResourcePermissionsInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "AddResourcePermissionsInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.Principals == nil {
 		invalidParams.Add(request.NewErrParamRequired("Principals"))
 	}
@@ -3235,6 +3965,12 @@ func (s *AddResourcePermissionsInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *AddResourcePermissionsInput) SetAuthenticationToken(v string) *AddResourcePermissionsInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetPrincipals sets the Principals field's value.
@@ -3273,9 +4009,373 @@ func (s *AddResourcePermissionsOutput) SetShareResults(v []*ShareResult) *AddRes
 	return s
 }
 
+// Describes a comment.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/Comment
+type Comment struct {
+	_ struct{} `type:"structure"`
+
+	// The ID of the comment.
+	//
+	// CommentId is a required field
+	CommentId *string `min:"1" type:"string" required:"true"`
+
+	// The details of the user who made the comment.
+	Contributor *User `type:"structure"`
+
+	// The time that the comment was created.
+	CreatedTimestamp *time.Time `type:"timestamp" timestampFormat:"unix"`
+
+	// The ID of the parent comment.
+	ParentId *string `min:"1" type:"string"`
+
+	// If the comment is a reply to another user's comment, this field contains
+	// the user ID of the user being replied to.
+	RecipientId *string `min:"1" type:"string"`
+
+	// The status of the comment.
+	Status *string `type:"string" enum:"CommentStatusType"`
+
+	// The text of the comment.
+	Text *string `min:"1" type:"string"`
+
+	// The ID of the root comment in the thread.
+	ThreadId *string `min:"1" type:"string"`
+
+	// The visibility of the comment. Options are either PRIVATE, where the comment
+	// is visible only to the comment author and document owner and co-owners, or
+	// PUBLIC, where the comment is visible to document owners, co-owners, and contributors.
+	Visibility *string `type:"string" enum:"CommentVisibilityType"`
+}
+
+// String returns the string representation
+func (s Comment) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s Comment) GoString() string {
+	return s.String()
+}
+
+// SetCommentId sets the CommentId field's value.
+func (s *Comment) SetCommentId(v string) *Comment {
+	s.CommentId = &v
+	return s
+}
+
+// SetContributor sets the Contributor field's value.
+func (s *Comment) SetContributor(v *User) *Comment {
+	s.Contributor = v
+	return s
+}
+
+// SetCreatedTimestamp sets the CreatedTimestamp field's value.
+func (s *Comment) SetCreatedTimestamp(v time.Time) *Comment {
+	s.CreatedTimestamp = &v
+	return s
+}
+
+// SetParentId sets the ParentId field's value.
+func (s *Comment) SetParentId(v string) *Comment {
+	s.ParentId = &v
+	return s
+}
+
+// SetRecipientId sets the RecipientId field's value.
+func (s *Comment) SetRecipientId(v string) *Comment {
+	s.RecipientId = &v
+	return s
+}
+
+// SetStatus sets the Status field's value.
+func (s *Comment) SetStatus(v string) *Comment {
+	s.Status = &v
+	return s
+}
+
+// SetText sets the Text field's value.
+func (s *Comment) SetText(v string) *Comment {
+	s.Text = &v
+	return s
+}
+
+// SetThreadId sets the ThreadId field's value.
+func (s *Comment) SetThreadId(v string) *Comment {
+	s.ThreadId = &v
+	return s
+}
+
+// SetVisibility sets the Visibility field's value.
+func (s *Comment) SetVisibility(v string) *Comment {
+	s.Visibility = &v
+	return s
+}
+
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/CreateCommentRequest
+type CreateCommentInput struct {
+	_ struct{} `type:"structure"`
+
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
+	// The ID of the document.
+	//
+	// DocumentId is a required field
+	DocumentId *string `location:"uri" locationName:"DocumentId" min:"1" type:"string" required:"true"`
+
+	// Set this parameter to TRUE to send an email out to the document collaborators
+	// after the comment is created.
+	NotifyCollaborators *bool `type:"boolean"`
+
+	// The ID of the parent comment.
+	ParentId *string `min:"1" type:"string"`
+
+	// The text of the comment.
+	//
+	// Text is a required field
+	Text *string `min:"1" type:"string" required:"true"`
+
+	// The ID of the root comment in the thread.
+	ThreadId *string `min:"1" type:"string"`
+
+	// The ID of the document version.
+	//
+	// VersionId is a required field
+	VersionId *string `location:"uri" locationName:"VersionId" min:"1" type:"string" required:"true"`
+
+	// The visibility of the comment. Options are either PRIVATE, where the comment
+	// is visible only to the comment author and document owner and co-owners, or
+	// PUBLIC, where the comment is visible to document owners, co-owners, and contributors.
+	Visibility *string `type:"string" enum:"CommentVisibilityType"`
+}
+
+// String returns the string representation
+func (s CreateCommentInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateCommentInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *CreateCommentInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "CreateCommentInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
+	if s.DocumentId == nil {
+		invalidParams.Add(request.NewErrParamRequired("DocumentId"))
+	}
+	if s.DocumentId != nil && len(*s.DocumentId) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("DocumentId", 1))
+	}
+	if s.ParentId != nil && len(*s.ParentId) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("ParentId", 1))
+	}
+	if s.Text == nil {
+		invalidParams.Add(request.NewErrParamRequired("Text"))
+	}
+	if s.Text != nil && len(*s.Text) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("Text", 1))
+	}
+	if s.ThreadId != nil && len(*s.ThreadId) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("ThreadId", 1))
+	}
+	if s.VersionId == nil {
+		invalidParams.Add(request.NewErrParamRequired("VersionId"))
+	}
+	if s.VersionId != nil && len(*s.VersionId) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("VersionId", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *CreateCommentInput) SetAuthenticationToken(v string) *CreateCommentInput {
+	s.AuthenticationToken = &v
+	return s
+}
+
+// SetDocumentId sets the DocumentId field's value.
+func (s *CreateCommentInput) SetDocumentId(v string) *CreateCommentInput {
+	s.DocumentId = &v
+	return s
+}
+
+// SetNotifyCollaborators sets the NotifyCollaborators field's value.
+func (s *CreateCommentInput) SetNotifyCollaborators(v bool) *CreateCommentInput {
+	s.NotifyCollaborators = &v
+	return s
+}
+
+// SetParentId sets the ParentId field's value.
+func (s *CreateCommentInput) SetParentId(v string) *CreateCommentInput {
+	s.ParentId = &v
+	return s
+}
+
+// SetText sets the Text field's value.
+func (s *CreateCommentInput) SetText(v string) *CreateCommentInput {
+	s.Text = &v
+	return s
+}
+
+// SetThreadId sets the ThreadId field's value.
+func (s *CreateCommentInput) SetThreadId(v string) *CreateCommentInput {
+	s.ThreadId = &v
+	return s
+}
+
+// SetVersionId sets the VersionId field's value.
+func (s *CreateCommentInput) SetVersionId(v string) *CreateCommentInput {
+	s.VersionId = &v
+	return s
+}
+
+// SetVisibility sets the Visibility field's value.
+func (s *CreateCommentInput) SetVisibility(v string) *CreateCommentInput {
+	s.Visibility = &v
+	return s
+}
+
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/CreateCommentResponse
+type CreateCommentOutput struct {
+	_ struct{} `type:"structure"`
+
+	// The comment that has been created.
+	Comment *Comment `type:"structure"`
+}
+
+// String returns the string representation
+func (s CreateCommentOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateCommentOutput) GoString() string {
+	return s.String()
+}
+
+// SetComment sets the Comment field's value.
+func (s *CreateCommentOutput) SetComment(v *Comment) *CreateCommentOutput {
+	s.Comment = v
+	return s
+}
+
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/CreateCustomMetadataRequest
+type CreateCustomMetadataInput struct {
+	_ struct{} `type:"structure"`
+
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
+	// Custom metadata in the form of name-value pairs.
+	//
+	// CustomMetadata is a required field
+	CustomMetadata map[string]*string `min:"1" type:"map" required:"true"`
+
+	// The ID of the resource.
+	//
+	// ResourceId is a required field
+	ResourceId *string `location:"uri" locationName:"ResourceId" min:"1" type:"string" required:"true"`
+
+	// The ID of the version, if the custom metadata is being added to a document
+	// version.
+	VersionId *string `location:"querystring" locationName:"versionid" min:"1" type:"string"`
+}
+
+// String returns the string representation
+func (s CreateCustomMetadataInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateCustomMetadataInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *CreateCustomMetadataInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "CreateCustomMetadataInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
+	if s.CustomMetadata == nil {
+		invalidParams.Add(request.NewErrParamRequired("CustomMetadata"))
+	}
+	if s.CustomMetadata != nil && len(s.CustomMetadata) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("CustomMetadata", 1))
+	}
+	if s.ResourceId == nil {
+		invalidParams.Add(request.NewErrParamRequired("ResourceId"))
+	}
+	if s.ResourceId != nil && len(*s.ResourceId) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("ResourceId", 1))
+	}
+	if s.VersionId != nil && len(*s.VersionId) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("VersionId", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *CreateCustomMetadataInput) SetAuthenticationToken(v string) *CreateCustomMetadataInput {
+	s.AuthenticationToken = &v
+	return s
+}
+
+// SetCustomMetadata sets the CustomMetadata field's value.
+func (s *CreateCustomMetadataInput) SetCustomMetadata(v map[string]*string) *CreateCustomMetadataInput {
+	s.CustomMetadata = v
+	return s
+}
+
+// SetResourceId sets the ResourceId field's value.
+func (s *CreateCustomMetadataInput) SetResourceId(v string) *CreateCustomMetadataInput {
+	s.ResourceId = &v
+	return s
+}
+
+// SetVersionId sets the VersionId field's value.
+func (s *CreateCustomMetadataInput) SetVersionId(v string) *CreateCustomMetadataInput {
+	s.VersionId = &v
+	return s
+}
+
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/CreateCustomMetadataResponse
+type CreateCustomMetadataOutput struct {
+	_ struct{} `type:"structure"`
+}
+
+// String returns the string representation
+func (s CreateCustomMetadataOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateCustomMetadataOutput) GoString() string {
+	return s.String()
+}
+
 // Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/CreateFolderRequest
 type CreateFolderInput struct {
 	_ struct{} `type:"structure"`
+
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
 
 	// The name of the new folder.
 	Name *string `min:"1" type:"string"`
@@ -3299,6 +4399,9 @@ func (s CreateFolderInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *CreateFolderInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "CreateFolderInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.Name != nil && len(*s.Name) < 1 {
 		invalidParams.Add(request.NewErrParamMinLen("Name", 1))
 	}
@@ -3313,6 +4416,12 @@ func (s *CreateFolderInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *CreateFolderInput) SetAuthenticationToken(v string) *CreateFolderInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetName sets the Name field's value.
@@ -3349,6 +4458,90 @@ func (s CreateFolderOutput) GoString() string {
 func (s *CreateFolderOutput) SetMetadata(v *FolderMetadata) *CreateFolderOutput {
 	s.Metadata = v
 	return s
+}
+
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/CreateLabelsRequest
+type CreateLabelsInput struct {
+	_ struct{} `type:"structure"`
+
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
+	// List of labels to add to the resource.
+	//
+	// Labels is a required field
+	Labels []*string `type:"list" required:"true"`
+
+	// The ID of the resource.
+	//
+	// ResourceId is a required field
+	ResourceId *string `location:"uri" locationName:"ResourceId" min:"1" type:"string" required:"true"`
+}
+
+// String returns the string representation
+func (s CreateLabelsInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateLabelsInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *CreateLabelsInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "CreateLabelsInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
+	if s.Labels == nil {
+		invalidParams.Add(request.NewErrParamRequired("Labels"))
+	}
+	if s.ResourceId == nil {
+		invalidParams.Add(request.NewErrParamRequired("ResourceId"))
+	}
+	if s.ResourceId != nil && len(*s.ResourceId) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("ResourceId", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *CreateLabelsInput) SetAuthenticationToken(v string) *CreateLabelsInput {
+	s.AuthenticationToken = &v
+	return s
+}
+
+// SetLabels sets the Labels field's value.
+func (s *CreateLabelsInput) SetLabels(v []*string) *CreateLabelsInput {
+	s.Labels = v
+	return s
+}
+
+// SetResourceId sets the ResourceId field's value.
+func (s *CreateLabelsInput) SetResourceId(v string) *CreateLabelsInput {
+	s.ResourceId = &v
+	return s
+}
+
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/CreateLabelsResponse
+type CreateLabelsOutput struct {
+	_ struct{} `type:"structure"`
+}
+
+// String returns the string representation
+func (s CreateLabelsOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s CreateLabelsOutput) GoString() string {
+	return s.String()
 }
 
 // Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/CreateNotificationSubscriptionRequest
@@ -3468,6 +4661,13 @@ func (s *CreateNotificationSubscriptionOutput) SetSubscription(v *Subscription) 
 type CreateUserInput struct {
 	_ struct{} `type:"structure"`
 
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
+	// The email address of the user.
+	EmailAddress *string `min:"1" type:"string"`
+
 	// The given name of the user.
 	//
 	// GivenName is a required field
@@ -3511,6 +4711,12 @@ func (s CreateUserInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *CreateUserInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "CreateUserInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
+	if s.EmailAddress != nil && len(*s.EmailAddress) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("EmailAddress", 1))
+	}
 	if s.GivenName == nil {
 		invalidParams.Add(request.NewErrParamRequired("GivenName"))
 	}
@@ -3546,6 +4752,18 @@ func (s *CreateUserInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *CreateUserInput) SetAuthenticationToken(v string) *CreateUserInput {
+	s.AuthenticationToken = &v
+	return s
+}
+
+// SetEmailAddress sets the EmailAddress field's value.
+func (s *CreateUserInput) SetEmailAddress(v string) *CreateUserInput {
+	s.EmailAddress = &v
+	return s
 }
 
 // SetGivenName sets the GivenName field's value.
@@ -3618,6 +4836,10 @@ func (s *CreateUserOutput) SetUser(v *User) *CreateUserOutput {
 type DeactivateUserInput struct {
 	_ struct{} `type:"structure"`
 
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
 	// The ID of the user.
 	//
 	// UserId is a required field
@@ -3637,6 +4859,9 @@ func (s DeactivateUserInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *DeactivateUserInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "DeactivateUserInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.UserId == nil {
 		invalidParams.Add(request.NewErrParamRequired("UserId"))
 	}
@@ -3648,6 +4873,12 @@ func (s *DeactivateUserInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *DeactivateUserInput) SetAuthenticationToken(v string) *DeactivateUserInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetUserId sets the UserId field's value.
@@ -3671,9 +4902,219 @@ func (s DeactivateUserOutput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/DeleteCommentRequest
+type DeleteCommentInput struct {
+	_ struct{} `type:"structure"`
+
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
+	// The ID of the comment.
+	//
+	// CommentId is a required field
+	CommentId *string `location:"uri" locationName:"CommentId" min:"1" type:"string" required:"true"`
+
+	// The ID of the document.
+	//
+	// DocumentId is a required field
+	DocumentId *string `location:"uri" locationName:"DocumentId" min:"1" type:"string" required:"true"`
+
+	// The ID of the document version.
+	//
+	// VersionId is a required field
+	VersionId *string `location:"uri" locationName:"VersionId" min:"1" type:"string" required:"true"`
+}
+
+// String returns the string representation
+func (s DeleteCommentInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteCommentInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *DeleteCommentInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "DeleteCommentInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
+	if s.CommentId == nil {
+		invalidParams.Add(request.NewErrParamRequired("CommentId"))
+	}
+	if s.CommentId != nil && len(*s.CommentId) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("CommentId", 1))
+	}
+	if s.DocumentId == nil {
+		invalidParams.Add(request.NewErrParamRequired("DocumentId"))
+	}
+	if s.DocumentId != nil && len(*s.DocumentId) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("DocumentId", 1))
+	}
+	if s.VersionId == nil {
+		invalidParams.Add(request.NewErrParamRequired("VersionId"))
+	}
+	if s.VersionId != nil && len(*s.VersionId) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("VersionId", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *DeleteCommentInput) SetAuthenticationToken(v string) *DeleteCommentInput {
+	s.AuthenticationToken = &v
+	return s
+}
+
+// SetCommentId sets the CommentId field's value.
+func (s *DeleteCommentInput) SetCommentId(v string) *DeleteCommentInput {
+	s.CommentId = &v
+	return s
+}
+
+// SetDocumentId sets the DocumentId field's value.
+func (s *DeleteCommentInput) SetDocumentId(v string) *DeleteCommentInput {
+	s.DocumentId = &v
+	return s
+}
+
+// SetVersionId sets the VersionId field's value.
+func (s *DeleteCommentInput) SetVersionId(v string) *DeleteCommentInput {
+	s.VersionId = &v
+	return s
+}
+
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/DeleteCommentOutput
+type DeleteCommentOutput struct {
+	_ struct{} `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteCommentOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteCommentOutput) GoString() string {
+	return s.String()
+}
+
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/DeleteCustomMetadataRequest
+type DeleteCustomMetadataInput struct {
+	_ struct{} `type:"structure"`
+
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
+	// Flag to indicate removal of all custom metadata properties from the specified
+	// resource.
+	DeleteAll *bool `location:"querystring" locationName:"deleteAll" type:"boolean"`
+
+	// List of properties to remove.
+	Keys []*string `location:"querystring" locationName:"keys" type:"list"`
+
+	// The ID of the resource, either a document or folder.
+	//
+	// ResourceId is a required field
+	ResourceId *string `location:"uri" locationName:"ResourceId" min:"1" type:"string" required:"true"`
+
+	// The ID of the version, if the custom metadata is being deleted from a document
+	// version.
+	VersionId *string `location:"querystring" locationName:"versionId" min:"1" type:"string"`
+}
+
+// String returns the string representation
+func (s DeleteCustomMetadataInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteCustomMetadataInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *DeleteCustomMetadataInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "DeleteCustomMetadataInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
+	if s.ResourceId == nil {
+		invalidParams.Add(request.NewErrParamRequired("ResourceId"))
+	}
+	if s.ResourceId != nil && len(*s.ResourceId) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("ResourceId", 1))
+	}
+	if s.VersionId != nil && len(*s.VersionId) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("VersionId", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *DeleteCustomMetadataInput) SetAuthenticationToken(v string) *DeleteCustomMetadataInput {
+	s.AuthenticationToken = &v
+	return s
+}
+
+// SetDeleteAll sets the DeleteAll field's value.
+func (s *DeleteCustomMetadataInput) SetDeleteAll(v bool) *DeleteCustomMetadataInput {
+	s.DeleteAll = &v
+	return s
+}
+
+// SetKeys sets the Keys field's value.
+func (s *DeleteCustomMetadataInput) SetKeys(v []*string) *DeleteCustomMetadataInput {
+	s.Keys = v
+	return s
+}
+
+// SetResourceId sets the ResourceId field's value.
+func (s *DeleteCustomMetadataInput) SetResourceId(v string) *DeleteCustomMetadataInput {
+	s.ResourceId = &v
+	return s
+}
+
+// SetVersionId sets the VersionId field's value.
+func (s *DeleteCustomMetadataInput) SetVersionId(v string) *DeleteCustomMetadataInput {
+	s.VersionId = &v
+	return s
+}
+
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/DeleteCustomMetadataResponse
+type DeleteCustomMetadataOutput struct {
+	_ struct{} `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteCustomMetadataOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteCustomMetadataOutput) GoString() string {
+	return s.String()
+}
+
 // Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/DeleteDocumentRequest
 type DeleteDocumentInput struct {
 	_ struct{} `type:"structure"`
+
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
 
 	// The ID of the document.
 	//
@@ -3694,6 +5135,9 @@ func (s DeleteDocumentInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *DeleteDocumentInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "DeleteDocumentInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.DocumentId == nil {
 		invalidParams.Add(request.NewErrParamRequired("DocumentId"))
 	}
@@ -3705,6 +5149,12 @@ func (s *DeleteDocumentInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *DeleteDocumentInput) SetAuthenticationToken(v string) *DeleteDocumentInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetDocumentId sets the DocumentId field's value.
@@ -3732,6 +5182,10 @@ func (s DeleteDocumentOutput) GoString() string {
 type DeleteFolderContentsInput struct {
 	_ struct{} `type:"structure"`
 
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
 	// The ID of the folder.
 	//
 	// FolderId is a required field
@@ -3751,6 +5205,9 @@ func (s DeleteFolderContentsInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *DeleteFolderContentsInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "DeleteFolderContentsInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.FolderId == nil {
 		invalidParams.Add(request.NewErrParamRequired("FolderId"))
 	}
@@ -3762,6 +5219,12 @@ func (s *DeleteFolderContentsInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *DeleteFolderContentsInput) SetAuthenticationToken(v string) *DeleteFolderContentsInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetFolderId sets the FolderId field's value.
@@ -3789,6 +5252,10 @@ func (s DeleteFolderContentsOutput) GoString() string {
 type DeleteFolderInput struct {
 	_ struct{} `type:"structure"`
 
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
 	// The ID of the folder.
 	//
 	// FolderId is a required field
@@ -3808,6 +5275,9 @@ func (s DeleteFolderInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *DeleteFolderInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "DeleteFolderInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.FolderId == nil {
 		invalidParams.Add(request.NewErrParamRequired("FolderId"))
 	}
@@ -3819,6 +5289,12 @@ func (s *DeleteFolderInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *DeleteFolderInput) SetAuthenticationToken(v string) *DeleteFolderInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetFolderId sets the FolderId field's value.
@@ -3839,6 +5315,94 @@ func (s DeleteFolderOutput) String() string {
 
 // GoString returns the string representation
 func (s DeleteFolderOutput) GoString() string {
+	return s.String()
+}
+
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/DeleteLabelsRequest
+type DeleteLabelsInput struct {
+	_ struct{} `type:"structure"`
+
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
+	// Flag to request removal of all labels from the specified resource.
+	DeleteAll *bool `location:"querystring" locationName:"deleteAll" type:"boolean"`
+
+	// List of labels to delete from the resource.
+	Labels []*string `location:"querystring" locationName:"labels" type:"list"`
+
+	// The ID of the resource.
+	//
+	// ResourceId is a required field
+	ResourceId *string `location:"uri" locationName:"ResourceId" min:"1" type:"string" required:"true"`
+}
+
+// String returns the string representation
+func (s DeleteLabelsInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteLabelsInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *DeleteLabelsInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "DeleteLabelsInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
+	if s.ResourceId == nil {
+		invalidParams.Add(request.NewErrParamRequired("ResourceId"))
+	}
+	if s.ResourceId != nil && len(*s.ResourceId) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("ResourceId", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *DeleteLabelsInput) SetAuthenticationToken(v string) *DeleteLabelsInput {
+	s.AuthenticationToken = &v
+	return s
+}
+
+// SetDeleteAll sets the DeleteAll field's value.
+func (s *DeleteLabelsInput) SetDeleteAll(v bool) *DeleteLabelsInput {
+	s.DeleteAll = &v
+	return s
+}
+
+// SetLabels sets the Labels field's value.
+func (s *DeleteLabelsInput) SetLabels(v []*string) *DeleteLabelsInput {
+	s.Labels = v
+	return s
+}
+
+// SetResourceId sets the ResourceId field's value.
+func (s *DeleteLabelsInput) SetResourceId(v string) *DeleteLabelsInput {
+	s.ResourceId = &v
+	return s
+}
+
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/DeleteLabelsResponse
+type DeleteLabelsOutput struct {
+	_ struct{} `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteLabelsOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteLabelsOutput) GoString() string {
 	return s.String()
 }
 
@@ -3920,6 +5484,10 @@ func (s DeleteNotificationSubscriptionOutput) GoString() string {
 type DeleteUserInput struct {
 	_ struct{} `type:"structure"`
 
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
 	// The ID of the user.
 	//
 	// UserId is a required field
@@ -3939,6 +5507,9 @@ func (s DeleteUserInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *DeleteUserInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "DeleteUserInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.UserId == nil {
 		invalidParams.Add(request.NewErrParamRequired("UserId"))
 	}
@@ -3950,6 +5521,12 @@ func (s *DeleteUserInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *DeleteUserInput) SetAuthenticationToken(v string) *DeleteUserInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetUserId sets the UserId field's value.
@@ -3973,9 +5550,144 @@ func (s DeleteUserOutput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/DescribeCommentsRequest
+type DescribeCommentsInput struct {
+	_ struct{} `type:"structure"`
+
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
+	// The ID of the document.
+	//
+	// DocumentId is a required field
+	DocumentId *string `location:"uri" locationName:"DocumentId" min:"1" type:"string" required:"true"`
+
+	// The maximum number of items to return.
+	Limit *int64 `location:"querystring" locationName:"limit" min:"1" type:"integer"`
+
+	// The marker for the next set of results. This marker was received from a previous
+	// call.
+	Marker *string `location:"querystring" locationName:"marker" min:"1" type:"string"`
+
+	// The ID of the document version.
+	//
+	// VersionId is a required field
+	VersionId *string `location:"uri" locationName:"VersionId" min:"1" type:"string" required:"true"`
+}
+
+// String returns the string representation
+func (s DescribeCommentsInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DescribeCommentsInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *DescribeCommentsInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "DescribeCommentsInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
+	if s.DocumentId == nil {
+		invalidParams.Add(request.NewErrParamRequired("DocumentId"))
+	}
+	if s.DocumentId != nil && len(*s.DocumentId) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("DocumentId", 1))
+	}
+	if s.Limit != nil && *s.Limit < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("Limit", 1))
+	}
+	if s.Marker != nil && len(*s.Marker) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("Marker", 1))
+	}
+	if s.VersionId == nil {
+		invalidParams.Add(request.NewErrParamRequired("VersionId"))
+	}
+	if s.VersionId != nil && len(*s.VersionId) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("VersionId", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *DescribeCommentsInput) SetAuthenticationToken(v string) *DescribeCommentsInput {
+	s.AuthenticationToken = &v
+	return s
+}
+
+// SetDocumentId sets the DocumentId field's value.
+func (s *DescribeCommentsInput) SetDocumentId(v string) *DescribeCommentsInput {
+	s.DocumentId = &v
+	return s
+}
+
+// SetLimit sets the Limit field's value.
+func (s *DescribeCommentsInput) SetLimit(v int64) *DescribeCommentsInput {
+	s.Limit = &v
+	return s
+}
+
+// SetMarker sets the Marker field's value.
+func (s *DescribeCommentsInput) SetMarker(v string) *DescribeCommentsInput {
+	s.Marker = &v
+	return s
+}
+
+// SetVersionId sets the VersionId field's value.
+func (s *DescribeCommentsInput) SetVersionId(v string) *DescribeCommentsInput {
+	s.VersionId = &v
+	return s
+}
+
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/DescribeCommentsResponse
+type DescribeCommentsOutput struct {
+	_ struct{} `type:"structure"`
+
+	// The list of comments for the specified document version.
+	Comments []*Comment `type:"list"`
+
+	// The marker for the next set of results. This marker was received from a previous
+	// call.
+	Marker *string `min:"1" type:"string"`
+}
+
+// String returns the string representation
+func (s DescribeCommentsOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DescribeCommentsOutput) GoString() string {
+	return s.String()
+}
+
+// SetComments sets the Comments field's value.
+func (s *DescribeCommentsOutput) SetComments(v []*Comment) *DescribeCommentsOutput {
+	s.Comments = v
+	return s
+}
+
+// SetMarker sets the Marker field's value.
+func (s *DescribeCommentsOutput) SetMarker(v string) *DescribeCommentsOutput {
+	s.Marker = &v
+	return s
+}
+
 // Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/DescribeDocumentVersionsRequest
 type DescribeDocumentVersionsInput struct {
 	_ struct{} `type:"structure"`
+
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
 
 	// The ID of the document.
 	//
@@ -4011,6 +5723,9 @@ func (s DescribeDocumentVersionsInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *DescribeDocumentVersionsInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "DescribeDocumentVersionsInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.DocumentId == nil {
 		invalidParams.Add(request.NewErrParamRequired("DocumentId"))
 	}
@@ -4034,6 +5749,12 @@ func (s *DescribeDocumentVersionsInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *DescribeDocumentVersionsInput) SetAuthenticationToken(v string) *DescribeDocumentVersionsInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetDocumentId sets the DocumentId field's value.
@@ -4104,6 +5825,10 @@ func (s *DescribeDocumentVersionsOutput) SetMarker(v string) *DescribeDocumentVe
 type DescribeFolderContentsInput struct {
 	_ struct{} `type:"structure"`
 
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
 	// The ID of the folder.
 	//
 	// FolderId is a required field
@@ -4115,8 +5840,8 @@ type DescribeFolderContentsInput struct {
 	// The maximum number of items to return with this call.
 	Limit *int64 `location:"querystring" locationName:"limit" min:"1" type:"integer"`
 
-	// The marker for the next set of results. (You received this marker from a
-	// previous call.)
+	// The marker for the next set of results. This marker was received from a previous
+	// call.
 	Marker *string `location:"querystring" locationName:"marker" min:"1" type:"string"`
 
 	// The order for the contents of the folder.
@@ -4142,6 +5867,9 @@ func (s DescribeFolderContentsInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *DescribeFolderContentsInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "DescribeFolderContentsInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.FolderId == nil {
 		invalidParams.Add(request.NewErrParamRequired("FolderId"))
 	}
@@ -4162,6 +5890,12 @@ func (s *DescribeFolderContentsInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *DescribeFolderContentsInput) SetAuthenticationToken(v string) *DescribeFolderContentsInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetFolderId sets the FolderId field's value.
@@ -4213,7 +5947,7 @@ type DescribeFolderContentsOutput struct {
 	// The documents in the specified folder.
 	Documents []*DocumentMetadata `type:"list"`
 
-	// The sub-folders in the specified folder.
+	// The subfolders in the specified folder.
 	Folders []*FolderMetadata `type:"list"`
 
 	// The marker to use when requesting the next set of results. If there are no
@@ -4354,6 +6088,10 @@ func (s *DescribeNotificationSubscriptionsOutput) SetSubscriptions(v []*Subscrip
 type DescribeResourcePermissionsInput struct {
 	_ struct{} `type:"structure"`
 
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
 	// The maximum number of items to return with this call.
 	Limit *int64 `location:"querystring" locationName:"limit" min:"1" type:"integer"`
 
@@ -4380,6 +6118,9 @@ func (s DescribeResourcePermissionsInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *DescribeResourcePermissionsInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "DescribeResourcePermissionsInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.Limit != nil && *s.Limit < 1 {
 		invalidParams.Add(request.NewErrParamMinValue("Limit", 1))
 	}
@@ -4397,6 +6138,12 @@ func (s *DescribeResourcePermissionsInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *DescribeResourcePermissionsInput) SetAuthenticationToken(v string) *DescribeResourcePermissionsInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetLimit sets the Limit field's value.
@@ -4455,6 +6202,10 @@ func (s *DescribeResourcePermissionsOutput) SetPrincipals(v []*Principal) *Descr
 type DescribeUsersInput struct {
 	_ struct{} `type:"structure"`
 
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
 	// A comma-separated list of values. Specify "STORAGE_METADATA" to include the
 	// user storage quota and utilization information.
 	Fields *string `location:"querystring" locationName:"fields" min:"1" type:"string"`
@@ -4498,6 +6249,9 @@ func (s DescribeUsersInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *DescribeUsersInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "DescribeUsersInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.Fields != nil && len(*s.Fields) < 1 {
 		invalidParams.Add(request.NewErrParamMinLen("Fields", 1))
 	}
@@ -4521,6 +6275,12 @@ func (s *DescribeUsersInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *DescribeUsersInput) SetAuthenticationToken(v string) *DescribeUsersInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetFields sets the Fields field's value.
@@ -4634,6 +6394,9 @@ type DocumentMetadata struct {
 	// The ID of the document.
 	Id *string `min:"1" type:"string"`
 
+	// List of labels on the document.
+	Labels []*string `type:"list"`
+
 	// The latest version of the document.
 	LatestVersionMetadata *DocumentVersionMetadata `type:"structure"`
 
@@ -4672,6 +6435,12 @@ func (s *DocumentMetadata) SetCreatorId(v string) *DocumentMetadata {
 // SetId sets the Id field's value.
 func (s *DocumentMetadata) SetId(v string) *DocumentMetadata {
 	s.Id = &v
+	return s
+}
+
+// SetLabels sets the Labels field's value.
+func (s *DocumentMetadata) SetLabels(v []*string) *DocumentMetadata {
+	s.Labels = v
 	return s
 }
 
@@ -4846,6 +6615,11 @@ type FolderMetadata struct {
 	// The ID of the folder.
 	Id *string `min:"1" type:"string"`
 
+	// List of labels on the folder.
+	Labels []*string `type:"list"`
+
+	LatestVersionSize *int64 `type:"long"`
+
 	// The time when the folder was updated.
 	ModifiedTimestamp *time.Time `type:"timestamp" timestampFormat:"unix"`
 
@@ -4860,6 +6634,8 @@ type FolderMetadata struct {
 
 	// The unique identifier created from the subfolders and documents of the folder.
 	Signature *string `type:"string"`
+
+	Size *int64 `type:"long"`
 }
 
 // String returns the string representation
@@ -4887,6 +6663,18 @@ func (s *FolderMetadata) SetCreatorId(v string) *FolderMetadata {
 // SetId sets the Id field's value.
 func (s *FolderMetadata) SetId(v string) *FolderMetadata {
 	s.Id = &v
+	return s
+}
+
+// SetLabels sets the Labels field's value.
+func (s *FolderMetadata) SetLabels(v []*string) *FolderMetadata {
+	s.Labels = v
+	return s
+}
+
+// SetLatestVersionSize sets the LatestVersionSize field's value.
+func (s *FolderMetadata) SetLatestVersionSize(v int64) *FolderMetadata {
+	s.LatestVersionSize = &v
 	return s
 }
 
@@ -4920,14 +6708,27 @@ func (s *FolderMetadata) SetSignature(v string) *FolderMetadata {
 	return s
 }
 
+// SetSize sets the Size field's value.
+func (s *FolderMetadata) SetSize(v int64) *FolderMetadata {
+	s.Size = &v
+	return s
+}
+
 // Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/GetDocumentRequest
 type GetDocumentInput struct {
 	_ struct{} `type:"structure"`
 
-	// The ID of the document object.
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
+	// The ID of the document.
 	//
 	// DocumentId is a required field
 	DocumentId *string `location:"uri" locationName:"DocumentId" min:"1" type:"string" required:"true"`
+
+	// Set this to TRUE to include custom metadata in the response.
+	IncludeCustomMetadata *bool `location:"querystring" locationName:"includeCustomMetadata" type:"boolean"`
 }
 
 // String returns the string representation
@@ -4943,6 +6744,9 @@ func (s GetDocumentInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *GetDocumentInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "GetDocumentInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.DocumentId == nil {
 		invalidParams.Add(request.NewErrParamRequired("DocumentId"))
 	}
@@ -4956,9 +6760,21 @@ func (s *GetDocumentInput) Validate() error {
 	return nil
 }
 
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *GetDocumentInput) SetAuthenticationToken(v string) *GetDocumentInput {
+	s.AuthenticationToken = &v
+	return s
+}
+
 // SetDocumentId sets the DocumentId field's value.
 func (s *GetDocumentInput) SetDocumentId(v string) *GetDocumentInput {
 	s.DocumentId = &v
+	return s
+}
+
+// SetIncludeCustomMetadata sets the IncludeCustomMetadata field's value.
+func (s *GetDocumentInput) SetIncludeCustomMetadata(v bool) *GetDocumentInput {
+	s.IncludeCustomMetadata = &v
 	return s
 }
 
@@ -4966,7 +6782,10 @@ func (s *GetDocumentInput) SetDocumentId(v string) *GetDocumentInput {
 type GetDocumentOutput struct {
 	_ struct{} `type:"structure"`
 
-	// The document object.
+	// The custom metadata on the document.
+	CustomMetadata map[string]*string `min:"1" type:"map"`
+
+	// The metadata details of the document.
 	Metadata *DocumentMetadata `type:"structure"`
 }
 
@@ -4980,6 +6799,12 @@ func (s GetDocumentOutput) GoString() string {
 	return s.String()
 }
 
+// SetCustomMetadata sets the CustomMetadata field's value.
+func (s *GetDocumentOutput) SetCustomMetadata(v map[string]*string) *GetDocumentOutput {
+	s.CustomMetadata = v
+	return s
+}
+
 // SetMetadata sets the Metadata field's value.
 func (s *GetDocumentOutput) SetMetadata(v *DocumentMetadata) *GetDocumentOutput {
 	s.Metadata = v
@@ -4990,13 +6815,17 @@ func (s *GetDocumentOutput) SetMetadata(v *DocumentMetadata) *GetDocumentOutput 
 type GetDocumentPathInput struct {
 	_ struct{} `type:"structure"`
 
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
 	// The ID of the document.
 	//
 	// DocumentId is a required field
 	DocumentId *string `location:"uri" locationName:"DocumentId" min:"1" type:"string" required:"true"`
 
-	// A comma-separated list of values. Specify "NAME" to include the names of
-	// the parent folders.
+	// A comma-separated list of values. Specify NAME to include the names of the
+	// parent folders.
 	Fields *string `location:"querystring" locationName:"fields" min:"1" type:"string"`
 
 	// The maximum number of levels in the hierarchy to return.
@@ -5019,6 +6848,9 @@ func (s GetDocumentPathInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *GetDocumentPathInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "GetDocumentPathInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.DocumentId == nil {
 		invalidParams.Add(request.NewErrParamRequired("DocumentId"))
 	}
@@ -5039,6 +6871,12 @@ func (s *GetDocumentPathInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *GetDocumentPathInput) SetAuthenticationToken(v string) *GetDocumentPathInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetDocumentId sets the DocumentId field's value.
@@ -5093,6 +6931,10 @@ func (s *GetDocumentPathOutput) SetPath(v *ResourcePath) *GetDocumentPathOutput 
 type GetDocumentVersionInput struct {
 	_ struct{} `type:"structure"`
 
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
 	// The ID of the document.
 	//
 	// DocumentId is a required field
@@ -5101,6 +6943,9 @@ type GetDocumentVersionInput struct {
 	// A comma-separated list of values. Specify "SOURCE" to include a URL for the
 	// source document.
 	Fields *string `location:"querystring" locationName:"fields" min:"1" type:"string"`
+
+	// Set this to TRUE to include custom metadata in the response.
+	IncludeCustomMetadata *bool `location:"querystring" locationName:"includeCustomMetadata" type:"boolean"`
 
 	// The version ID of the document.
 	//
@@ -5121,6 +6966,9 @@ func (s GetDocumentVersionInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *GetDocumentVersionInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "GetDocumentVersionInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.DocumentId == nil {
 		invalidParams.Add(request.NewErrParamRequired("DocumentId"))
 	}
@@ -5143,6 +6991,12 @@ func (s *GetDocumentVersionInput) Validate() error {
 	return nil
 }
 
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *GetDocumentVersionInput) SetAuthenticationToken(v string) *GetDocumentVersionInput {
+	s.AuthenticationToken = &v
+	return s
+}
+
 // SetDocumentId sets the DocumentId field's value.
 func (s *GetDocumentVersionInput) SetDocumentId(v string) *GetDocumentVersionInput {
 	s.DocumentId = &v
@@ -5155,6 +7009,12 @@ func (s *GetDocumentVersionInput) SetFields(v string) *GetDocumentVersionInput {
 	return s
 }
 
+// SetIncludeCustomMetadata sets the IncludeCustomMetadata field's value.
+func (s *GetDocumentVersionInput) SetIncludeCustomMetadata(v bool) *GetDocumentVersionInput {
+	s.IncludeCustomMetadata = &v
+	return s
+}
+
 // SetVersionId sets the VersionId field's value.
 func (s *GetDocumentVersionInput) SetVersionId(v string) *GetDocumentVersionInput {
 	s.VersionId = &v
@@ -5164,6 +7024,9 @@ func (s *GetDocumentVersionInput) SetVersionId(v string) *GetDocumentVersionInpu
 // Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/GetDocumentVersionResponse
 type GetDocumentVersionOutput struct {
 	_ struct{} `type:"structure"`
+
+	// The custom metadata on the document version.
+	CustomMetadata map[string]*string `min:"1" type:"map"`
 
 	// The version metadata.
 	Metadata *DocumentVersionMetadata `type:"structure"`
@@ -5179,6 +7042,12 @@ func (s GetDocumentVersionOutput) GoString() string {
 	return s.String()
 }
 
+// SetCustomMetadata sets the CustomMetadata field's value.
+func (s *GetDocumentVersionOutput) SetCustomMetadata(v map[string]*string) *GetDocumentVersionOutput {
+	s.CustomMetadata = v
+	return s
+}
+
 // SetMetadata sets the Metadata field's value.
 func (s *GetDocumentVersionOutput) SetMetadata(v *DocumentVersionMetadata) *GetDocumentVersionOutput {
 	s.Metadata = v
@@ -5189,10 +7058,17 @@ func (s *GetDocumentVersionOutput) SetMetadata(v *DocumentVersionMetadata) *GetD
 type GetFolderInput struct {
 	_ struct{} `type:"structure"`
 
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
 	// The ID of the folder.
 	//
 	// FolderId is a required field
 	FolderId *string `location:"uri" locationName:"FolderId" min:"1" type:"string" required:"true"`
+
+	// Set to TRUE to include custom metadata in the response.
+	IncludeCustomMetadata *bool `location:"querystring" locationName:"includeCustomMetadata" type:"boolean"`
 }
 
 // String returns the string representation
@@ -5208,6 +7084,9 @@ func (s GetFolderInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *GetFolderInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "GetFolderInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.FolderId == nil {
 		invalidParams.Add(request.NewErrParamRequired("FolderId"))
 	}
@@ -5221,15 +7100,30 @@ func (s *GetFolderInput) Validate() error {
 	return nil
 }
 
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *GetFolderInput) SetAuthenticationToken(v string) *GetFolderInput {
+	s.AuthenticationToken = &v
+	return s
+}
+
 // SetFolderId sets the FolderId field's value.
 func (s *GetFolderInput) SetFolderId(v string) *GetFolderInput {
 	s.FolderId = &v
 	return s
 }
 
+// SetIncludeCustomMetadata sets the IncludeCustomMetadata field's value.
+func (s *GetFolderInput) SetIncludeCustomMetadata(v bool) *GetFolderInput {
+	s.IncludeCustomMetadata = &v
+	return s
+}
+
 // Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/GetFolderResponse
 type GetFolderOutput struct {
 	_ struct{} `type:"structure"`
+
+	// The custom metadata on the folder.
+	CustomMetadata map[string]*string `min:"1" type:"map"`
 
 	// The metadata of the folder.
 	Metadata *FolderMetadata `type:"structure"`
@@ -5245,6 +7139,12 @@ func (s GetFolderOutput) GoString() string {
 	return s.String()
 }
 
+// SetCustomMetadata sets the CustomMetadata field's value.
+func (s *GetFolderOutput) SetCustomMetadata(v map[string]*string) *GetFolderOutput {
+	s.CustomMetadata = v
+	return s
+}
+
 // SetMetadata sets the Metadata field's value.
 func (s *GetFolderOutput) SetMetadata(v *FolderMetadata) *GetFolderOutput {
 	s.Metadata = v
@@ -5254,6 +7154,10 @@ func (s *GetFolderOutput) SetMetadata(v *FolderMetadata) *GetFolderOutput {
 // Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/GetFolderPathRequest
 type GetFolderPathInput struct {
 	_ struct{} `type:"structure"`
+
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
 
 	// A comma-separated list of values. Specify "NAME" to include the names of
 	// the parent folders.
@@ -5284,6 +7188,9 @@ func (s GetFolderPathInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *GetFolderPathInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "GetFolderPathInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.Fields != nil && len(*s.Fields) < 1 {
 		invalidParams.Add(request.NewErrParamMinLen("Fields", 1))
 	}
@@ -5304,6 +7211,12 @@ func (s *GetFolderPathInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *GetFolderPathInput) SetAuthenticationToken(v string) *GetFolderPathInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetFields sets the Fields field's value.
@@ -5358,6 +7271,10 @@ func (s *GetFolderPathOutput) SetPath(v *ResourcePath) *GetFolderPathOutput {
 type InitiateDocumentVersionUploadInput struct {
 	_ struct{} `type:"structure"`
 
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
 	// The time stamp when the content of the document was originally created.
 	ContentCreatedTimestamp *time.Time `type:"timestamp" timestampFormat:"unix"`
 
@@ -5395,6 +7312,9 @@ func (s InitiateDocumentVersionUploadInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *InitiateDocumentVersionUploadInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "InitiateDocumentVersionUploadInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.ContentType != nil && len(*s.ContentType) < 1 {
 		invalidParams.Add(request.NewErrParamMinLen("ContentType", 1))
 	}
@@ -5415,6 +7335,12 @@ func (s *InitiateDocumentVersionUploadInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *InitiateDocumentVersionUploadInput) SetAuthenticationToken(v string) *InitiateDocumentVersionUploadInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetContentCreatedTimestamp sets the ContentCreatedTimestamp field's value.
@@ -5573,6 +7499,10 @@ func (s *Principal) SetType(v string) *Principal {
 type RemoveAllResourcePermissionsInput struct {
 	_ struct{} `type:"structure"`
 
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
 	// The ID of the resource.
 	//
 	// ResourceId is a required field
@@ -5592,6 +7522,9 @@ func (s RemoveAllResourcePermissionsInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *RemoveAllResourcePermissionsInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "RemoveAllResourcePermissionsInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.ResourceId == nil {
 		invalidParams.Add(request.NewErrParamRequired("ResourceId"))
 	}
@@ -5603,6 +7536,12 @@ func (s *RemoveAllResourcePermissionsInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *RemoveAllResourcePermissionsInput) SetAuthenticationToken(v string) *RemoveAllResourcePermissionsInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetResourceId sets the ResourceId field's value.
@@ -5629,6 +7568,10 @@ func (s RemoveAllResourcePermissionsOutput) GoString() string {
 // Please also see https://docs.aws.amazon.com/goto/WebAPI/workdocs-2016-05-01/RemoveResourcePermissionRequest
 type RemoveResourcePermissionInput struct {
 	_ struct{} `type:"structure"`
+
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
 
 	// The principal ID of the resource.
 	//
@@ -5657,6 +7600,9 @@ func (s RemoveResourcePermissionInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *RemoveResourcePermissionInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "RemoveResourcePermissionInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.PrincipalId == nil {
 		invalidParams.Add(request.NewErrParamRequired("PrincipalId"))
 	}
@@ -5674,6 +7620,12 @@ func (s *RemoveResourcePermissionInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *RemoveResourcePermissionInput) SetAuthenticationToken(v string) *RemoveResourcePermissionInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetPrincipalId sets the PrincipalId field's value.
@@ -5981,6 +7933,10 @@ func (s *Subscription) SetSubscriptionId(v string) *Subscription {
 type UpdateDocumentInput struct {
 	_ struct{} `type:"structure"`
 
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
 	// The ID of the document.
 	//
 	// DocumentId is a required field
@@ -6010,6 +7966,9 @@ func (s UpdateDocumentInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *UpdateDocumentInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "UpdateDocumentInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.DocumentId == nil {
 		invalidParams.Add(request.NewErrParamRequired("DocumentId"))
 	}
@@ -6027,6 +7986,12 @@ func (s *UpdateDocumentInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *UpdateDocumentInput) SetAuthenticationToken(v string) *UpdateDocumentInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetDocumentId sets the DocumentId field's value.
@@ -6072,6 +8037,10 @@ func (s UpdateDocumentOutput) GoString() string {
 type UpdateDocumentVersionInput struct {
 	_ struct{} `type:"structure"`
 
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
 	// The ID of the document.
 	//
 	// DocumentId is a required field
@@ -6099,6 +8068,9 @@ func (s UpdateDocumentVersionInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *UpdateDocumentVersionInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "UpdateDocumentVersionInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.DocumentId == nil {
 		invalidParams.Add(request.NewErrParamRequired("DocumentId"))
 	}
@@ -6116,6 +8088,12 @@ func (s *UpdateDocumentVersionInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *UpdateDocumentVersionInput) SetAuthenticationToken(v string) *UpdateDocumentVersionInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetDocumentId sets the DocumentId field's value.
@@ -6155,6 +8133,10 @@ func (s UpdateDocumentVersionOutput) GoString() string {
 type UpdateFolderInput struct {
 	_ struct{} `type:"structure"`
 
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
 	// The ID of the folder.
 	//
 	// FolderId is a required field
@@ -6184,6 +8166,9 @@ func (s UpdateFolderInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *UpdateFolderInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "UpdateFolderInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.FolderId == nil {
 		invalidParams.Add(request.NewErrParamRequired("FolderId"))
 	}
@@ -6201,6 +8186,12 @@ func (s *UpdateFolderInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *UpdateFolderInput) SetAuthenticationToken(v string) *UpdateFolderInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetFolderId sets the FolderId field's value.
@@ -6246,6 +8237,10 @@ func (s UpdateFolderOutput) GoString() string {
 type UpdateUserInput struct {
 	_ struct{} `type:"structure"`
 
+	// Amazon WorkDocs authentication token. This field should not be set when using
+	// administrative API actions, as in accessing the API using AWS credentials.
+	AuthenticationToken *string `location:"header" locationName:"Authentication" min:"1" type:"string"`
+
 	// The given name of the user.
 	GivenName *string `min:"1" type:"string"`
 
@@ -6283,6 +8278,9 @@ func (s UpdateUserInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *UpdateUserInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "UpdateUserInput"}
+	if s.AuthenticationToken != nil && len(*s.AuthenticationToken) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("AuthenticationToken", 1))
+	}
 	if s.GivenName != nil && len(*s.GivenName) < 1 {
 		invalidParams.Add(request.NewErrParamMinLen("GivenName", 1))
 	}
@@ -6303,6 +8301,12 @@ func (s *UpdateUserInput) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetAuthenticationToken sets the AuthenticationToken field's value.
+func (s *UpdateUserInput) SetAuthenticationToken(v string) *UpdateUserInput {
+	s.AuthenticationToken = &v
+	return s
 }
 
 // SetGivenName sets the GivenName field's value.
@@ -6589,6 +8593,25 @@ func (s *UserStorageMetadata) SetStorageUtilizedInBytes(v int64) *UserStorageMet
 	s.StorageUtilizedInBytes = &v
 	return s
 }
+
+const (
+	// CommentStatusTypeDraft is a CommentStatusType enum value
+	CommentStatusTypeDraft = "DRAFT"
+
+	// CommentStatusTypePublished is a CommentStatusType enum value
+	CommentStatusTypePublished = "PUBLISHED"
+
+	// CommentStatusTypeDeleted is a CommentStatusType enum value
+	CommentStatusTypeDeleted = "DELETED"
+)
+
+const (
+	// CommentVisibilityTypePublic is a CommentVisibilityType enum value
+	CommentVisibilityTypePublic = "PUBLIC"
+
+	// CommentVisibilityTypePrivate is a CommentVisibilityType enum value
+	CommentVisibilityTypePrivate = "PRIVATE"
+)
 
 const (
 	// DocumentSourceTypeOriginal is a DocumentSourceType enum value

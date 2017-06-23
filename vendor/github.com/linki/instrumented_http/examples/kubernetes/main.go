@@ -54,8 +54,8 @@ func main() {
 //
 // $ curl -Ss 127.0.0.1:9099/metrics | grep http
 //
-// http_request_duration_microseconds{handler="instrumented_http",host="my-cluster.example.org",method="GET",path="pods",query="",scheme="https",status="200",quantile="0.5"} 83626
-// http_request_duration_microseconds{handler="instrumented_http",host="my-cluster.example.org",method="GET",path="pods",query="",scheme="https",status="200",quantile="0.9"} 736648
-// http_request_duration_microseconds{handler="instrumented_http",host="my-cluster.example.org",method="GET",path="pods",query="",scheme="https",status="200",quantile="0.99"} 736648
-// http_request_duration_microseconds_sum{handler="instrumented_http",host="my-cluster.example.org",method="GET",path="pods",query="",scheme="https",status="200"} 820274
-// http_request_duration_microseconds_count{handler="instrumented_http",host="my-cluster.example.org",method="GET",path="pods",query="",scheme="https",status="200"} 2
+// http_request_duration_seconds{handler="instrumented_http",host="my-cluster.example.org",method="GET",path="pods",query="",scheme="https",status="200",quantile="0.5"} 0.83626
+// http_request_duration_seconds{handler="instrumented_http",host="my-cluster.example.org",method="GET",path="pods",query="",scheme="https",status="200",quantile="0.9"} 0.736648
+// http_request_duration_seconds{handler="instrumented_http",host="my-cluster.example.org",method="GET",path="pods",query="",scheme="https",status="200",quantile="0.99"} 0.736648
+// http_request_duration_seconds_sum{handler="instrumented_http",host="my-cluster.example.org",method="GET",path="pods",query="",scheme="https",status="200"} 0.820274243
+// http_request_duration_seconds_count{handler="instrumented_http",host="my-cluster.example.org",method="GET",path="pods",query="",scheme="https",status="200"} 2

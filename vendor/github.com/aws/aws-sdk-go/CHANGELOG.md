@@ -1,3 +1,131 @@
+Release v1.8.44 (2017-06-16)
+===
+
+### Service Client Updates
+* `service/xray`: Updates service API, documentation, and paginators
+  * Add a response time histogram to the services in response of GetServiceGraph API.
+
+Release v1.8.43 (2017-06-15)
+===
+
+### Service Client Updates
+* `service/ec2`: Updates service API and documentation
+  * Adds API to describe Amazon FPGA Images (AFIs) available to customers, which includes public AFIs, private AFIs that you own, and AFIs owned by other AWS accounts for which you have load permissions.
+* `service/ecs`: Updates service API and documentation
+  * Added support for cpu, memory, and memory reservation container overrides on the RunTask and StartTask APIs.
+* `service/iot`: Updates service API and documentation
+  * Revert the last release: remove CertificatePem from DescribeCertificate API.
+* `service/servicecatalog`: Updates service API, documentation, and paginators
+  * Added ProvisioningArtifactSummaries to DescribeProductAsAdmin's output to show the provisioning artifacts belong to the product. Allow filtering by SourceProductId in SearchProductsAsAdmin for AWS Marketplace products. Added a verbose option to DescribeProvisioningArtifact to display the CloudFormation template used to create the provisioning artifact.Added DescribeProvisionedProduct API. Changed the type of ProvisionedProduct's Status to be distinct from Record's Status. New ProvisionedProduct's Status are AVAILABLE, UNDER_CHANGE, TAINTED, ERROR. Changed Record's Status set of values to CREATED, IN_PROGRESS, IN_PROGRESS_IN_ERROR, SUCCEEDED, FAILED.
+
+### SDK Bugs
+* `private/model/api`: Fix RESTXML support for XML Namespace [#1343](https://github.com/aws/aws-sdk-go/pull/1343)
+  * Fixes a bug with the SDK's generation of services using the REST XML protocol not annotating shape references with the XML Namespace attribute.
+  * Fixes [#1334](https://github.com/aws/aws-sdk-go/pull/1334)
+Release v1.8.42 (2017-06-14)
+===
+
+### Service Client Updates
+* `service/applicationautoscaling`: Updates service API and documentation
+* `service/clouddirectory`: Updates service documentation
+  * Documentation update for Cloud Directory
+
+Release v1.8.41 (2017-06-13)
+===
+
+### Service Client Updates
+* `service/configservice`: Updates service API
+
+Release v1.8.40 (2017-06-13)
+===
+
+### Service Client Updates
+* `service/rds`: Updates service API and documentation
+  * API Update for RDS: this update enables copy-on-write, a new Aurora MySQL Compatible Edition feature that allows users to restore their database, and support copy of TDE enabled snapshot cross region.
+
+### SDK Bugs
+* `aws/request`: Fix NewErrParamMinLen to use correct ParamMinLenErrCode [#1336](https://github.com/aws/aws-sdk-go/issues/1336)
+  * Fixes the `NewErrParamMinLen` function returning the wrong error code. `ParamMinLenErrCode` should be returned not `ParamMinValueErrCode`.
+  * Fixes [#1335](https://github.com/aws/aws-sdk-go/issues/1335)
+Release v1.8.39 (2017-06-09)
+===
+
+### Service Client Updates
+* `aws/endpoints`: Updated Regions and Endpoints metadata.
+* `service/opsworks`: Updates service API and documentation
+  * Tagging Support for AWS OpsWorks Stacks
+
+Release v1.8.38 (2017-06-08)
+===
+
+### Service Client Updates
+* `service/iot`: Updates service API and documentation
+  * In addition to using certificate ID, AWS IoT customers can now obtain the description of a certificate with the certificate PEM.
+* `service/pinpoint`: Updates service API and documentation
+  * Starting today Amazon Pinpoint adds SMS Text and Email Messaging support in addition to Mobile Push Notifications, providing developers, product managers and marketers with multi-channel messaging capabilities to drive user engagement in their applications. Pinpoint also enables backend services and applications to message users directly and provides advanced user and app analytics to understand user behavior and messaging performance.
+* `service/rekognition`: Updates service API and documentation
+  * API Update for AmazonRekognition: Adding RecognizeCelebrities API
+
+Release v1.8.37 (2017-06-07)
+===
+
+### Service Client Updates
+* `service/codebuild`: Updates service API and documentation
+  * Add support to APIs for privileged containers. This change would allow performing privileged operations like starting the Docker daemon inside builds possible in custom docker images.
+* `service/greengrass`: Adds new service
+  * AWS Greengrass is software that lets you run local compute, messaging, and device state synchronization for connected devices in a secure way. With AWS Greengrass, connected devices can run AWS Lambda functions, keep device data in sync, and communicate with other devices securely even when not connected to the Internet. Using AWS Lambda, Greengrass ensures your IoT devices can respond quickly to local events, operate with intermittent connections, and minimize the cost of transmitting IoT data to the cloud.
+
+Release v1.8.36 (2017-06-06)
+===
+
+### Service Client Updates
+* `service/acm`: Updates service documentation
+  * Documentation update for AWS Certificate Manager.
+* `service/cloudfront`: Updates service documentation
+  * Doc update to fix incorrect prefix in S3OriginConfig
+* `aws/endpoints`: Updated Regions and Endpoints metadata.
+* `service/iot`: Updates service API
+  * Update client side validation for SalesForce action.
+
+Release v1.8.35 (2017-06-05)
+===
+
+### Service Client Updates
+* `service/appstream`: Updates service API and documentation
+  * AppStream 2.0 Custom Security Groups allows you to easily control what network resources your streaming instances and images have access to. You can assign up to 5 security groups per Fleet to control the inbound and outbound network access to your streaming instances to specific IP ranges, network protocols, or ports.
+* `service/iot`: Updates service API, documentation, paginators, and examples
+  * Added Salesforce action to IoT Rules Engine.
+
+Release v1.8.34 (2017-06-02)
+===
+
+### Service Client Updates
+* `service/kinesisanalytics`: Updates service API, documentation, and paginators
+  * Kinesis Analytics publishes error messages CloudWatch logs in case of application misconfigurations
+* `service/workdocs`: Updates service API and documentation
+  * This release includes new APIs to manage tags and custom metadata on resources and also new APIs to add and retrieve comments at the document level.
+
+Release v1.8.33 (2017-06-01)
+===
+
+### Service Client Updates
+* `service/codedeploy`: Updates service API and documentation
+  * AWS CodeDeploy has improved how it manages connections to GitHub accounts and repositories. You can now create and store up to 25 connections to GitHub accounts in order to associate AWS CodeDeploy applications with GitHub repositories. Each connection can support multiple repositories. You can create connections to up to 25 different GitHub accounts, or create more than one connection to a single account. The ListGitHubAccountTokenNames command has been introduced to retrieve the names of stored connections to GitHub accounts that you have created. The name of the connection to GitHub used for an AWS CodeDeploy application is also included in the ApplicationInfo structure.  Two new fields, lastAttemptedDeployment and lastSuccessfulDeployment, have been added to DeploymentGroupInfo to improve the handling of deployment group information in the AWS CodeDeploy console. Information about these latest deployments can also be retrieved using the GetDeploymentGroup and BatchGetDeployment group requests. Also includes a region update  (us-gov-west-1).
+* `service/cognitoidentityprovider`: Updates service API, documentation, and paginators
+* `service/elbv2`: Updates service API and documentation
+* `aws/endpoints`: Updated Regions and Endpoints metadata.
+* `service/lexmodelbuildingservice`: Updates service documentation and examples
+
+### SDK Enhancements
+* `aws/defaults`: Exports shared credentials and config default filenames used by the SDK. [#1308](https://github.com/aws/aws-sdk-go/pull/1308)
+  * Adds SharedCredentialsFilename and SharedConfigFilename functions to defaults package.
+
+### SDK Bugs
+* `aws/credentials`: Fixes shared credential provider's default filename on Windows. [#1308](https://github.com/aws/aws-sdk-go/pull/1308)
+  * The shared credentials provider would attempt to use the wrong filename on Windows if the `HOME` environment variable was defined.
+* `service/s3/s3manager`: service/s3/s3manager: Fix Downloader ignoring Range get parameter [#1311](https://github.com/aws/aws-sdk-go/pull/1311)
+  * Fixes the S3 Download Manager ignoring the GetObjectInput's Range parameter. If this parameter is provided it will force the downloader to fallback to a single GetObject request disabling concurrency and automatic part size gets.
+  * Fixes [#1296](https://github.com/aws/aws-sdk-go/issues/1296)
 Release v1.8.32 (2017-05-31)
 ===
 

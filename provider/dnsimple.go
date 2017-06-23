@@ -55,31 +55,31 @@ type dnsimpleZoneServiceInterface interface {
 	UpdateRecord(accountID string, zoneID string, recordID int, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error)
 }
 
-type zoneService struct {
+type dnsimpleZoneService struct {
 	service *dnsimple.ZonesService
 }
 
-func (z zoneService) ListZones(accountID string, options *dnsimple.ZoneListOptions) (*dnsimple.ZonesResponse, error) {
+func (z dnsimpleZoneService) ListZones(accountID string, options *dnsimple.ZoneListOptions) (*dnsimple.ZonesResponse, error) {
 	return z.service.ListZones(accountID, options)
 }
 
-func (z zoneService) ListRecords(accountID string, zoneID string, options *dnsimple.ZoneRecordListOptions) (*dnsimple.ZoneRecordsResponse, error) {
+func (z dnsimpleZoneService) ListRecords(accountID string, zoneID string, options *dnsimple.ZoneRecordListOptions) (*dnsimple.ZoneRecordsResponse, error) {
 	return z.service.ListRecords(accountID, zoneID, options)
 }
 
-func (z zoneService) CreateRecord(accountID string, zoneID string, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error) {
+func (z dnsimpleZoneService) CreateRecord(accountID string, zoneID string, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error) {
 	return z.service.CreateRecord(accountID, zoneID, recordAttributes)
 }
 
-func (z zoneService) DeleteRecord(accountID string, zoneID string, recordID int) (*dnsimple.ZoneRecordResponse, error) {
+func (z dnsimpleZoneService) DeleteRecord(accountID string, zoneID string, recordID int) (*dnsimple.ZoneRecordResponse, error) {
 	return z.service.DeleteRecord(accountID, zoneID, recordID)
 }
 
-func (z zoneService) GetZone(accountID string, zoneName string) (*dnsimple.ZoneResponse, error) {
+func (z dnsimpleZoneService) GetZone(accountID string, zoneName string) (*dnsimple.ZoneResponse, error) {
 	return z.service.GetZone(accountID, zoneName)
 }
 
-func (z zoneService) UpdateRecord(accountID string, zoneID string, recordID int, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error) {
+func (z dnsimpleZoneService) UpdateRecord(accountID string, zoneID string, recordID int, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error) {
 	return z.service.UpdateRecord(accountID, zoneID, recordID, recordAttributes)
 }
 
@@ -110,7 +110,7 @@ func NewDnsimpleProvider(domainFilter string, dryRun bool) (Provider, error) {
 	}
 	client := dnsimple.NewClient(dnsimple.NewOauthTokenCredentials(oauthToken))
 	provider := &dnsimpleProvider{
-		client:       zoneService{service: client.Zones},
+		client:       dnsimpleZoneService{service: client.Zones},
 		identity:     identityService{service: client.Identity},
 		domainFilter: domainFilter,
 		dryRun:       dryRun,

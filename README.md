@@ -107,7 +107,7 @@ Here's a rough outline on what is to come (subject to change):
 
 - [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller)
 - [ ] Ability to replace Zalando's [Mate](https://github.com/zalando-incubator/mate)
-- [ ] Ability to replace Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
+- [x] Ability to replace Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 
 ### Yet to be defined
 
@@ -123,6 +123,8 @@ Have a look at [the milestones](https://github.com/kubernetes-incubator/external
 ## Contributing
 
 We encourage you to get involved with ExternalDNS, as users as well as contributors. Read the [contributing guidelines](CONTRIBUTING.md) and have a look at [the contributing docs](docs/contributing/getting-started.md) to learn about building the project, the project structure, and the purpose of each package.
+
+For an overview on how to write new Sources and Providers check out [Sources and Providers](docs/contributing/sources-and-providers.md).
 
 Feel free to reach out to us on the [Kubernetes slack](http://slack.k8s.io) in the #sig-network channel.
 
