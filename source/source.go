@@ -31,5 +31,3 @@ const (
 type Source interface {
 	Endpoints() ([]*endpoint.Endpoint, error)
 }
-
-// newKubeClient returns a new Kubernetes client object. It takes a Config and

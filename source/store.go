@@ -42,17 +42,17 @@ type Config struct {
 	Compatibility string
 }
 
-type clientProvider struct {
-	kubeConfig string
-	kubeMaster string
+type ClientProvider struct {
+	KubeConfig string
+	KubeMaster string
 	client     kubernetes.Interface
 	sync.Once
 }
 
-func (p *clientProvider) kubeClient() (kubernetes.Interface, error) {
+func (p *ClientProvider) KubeClient() (kubernetes.Interface, error) {
 	var err error
 	p.Once.Do(func() {
-		p.client, err = NewKubeClient(p.kubeConfig, p.kubeMaster)
+		p.client, err = NewKubeClient(p.KubeConfig, p.KubeMaster)
 	})
 	return p.client, err
 }
@@ -60,9 +60,12 @@ func (p *clientProvider) kubeClient() (kubernetes.Interface, error) {
 // ByNames returns multiple Sources given multiple names.
 func ByNames(names []string, cfg *Config) ([]Source, error) {
 	sources := []Source{}
-
+	p := &ClientProvider{
+		KubeConfig: cfg.KubeConfig,
+		KubeMaster: cfg.KubeMaster,
+	}
 	for _, name := range names {
-		source, err := BuildWithConfig(name, cfg)
+		source, err := BuildWithConfig(name, p, cfg)
 		if err != nil {
 			return nil, err
 		}
@@ -72,20 +75,16 @@ func ByNames(names []string, cfg *Config) ([]Source, error) {
 	return sources, nil
 }
 
-func BuildWithConfig(source string, cfg *Config) (Source, error) {
-	p := &clientProvider{
-		kubeConfig: cfg.KubeConfig,
-		kubeMaster: cfg.KubeMaster,
-	}
+func BuildWithConfig(source string, p *ClientProvider, cfg *Config) (Source, error) {
 	switch source {
 	case "service":
-		client, err := p.kubeClient()
+		client, err := p.KubeClient()
 		if err != nil {
 			return nil, err
 		}
 		return NewServiceSource(client, cfg.FQDNTemplate, cfg.Namespace, cfg.Compatibility)
 	case "ingress":
-		client, err := p.kubeClient()
+		client, err := p.KubeClient()
 		if err != nil {
 			return nil, err
 		}
