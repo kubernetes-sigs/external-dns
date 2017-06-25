@@ -44,8 +44,7 @@ func init() {
 }
 
 // NewFakeSource creates a new fakeSource with the given config.
-func NewFakeSource(cfg *Config) (Source, error) {
-	fqdnTemplate := cfg.FQDNTemplate
+func NewFakeSource(fqdnTemplate string) (Source, error) {
 	if fqdnTemplate == "" {
 		fqdnTemplate = defaultDNSName
 	}

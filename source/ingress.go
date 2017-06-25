@@ -41,32 +41,23 @@ type ingressSource struct {
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(cfg *Config) (Source, error) {
-	if cfg.KubeClient == nil {
-		client, err := newKubeClient(cfg)
-		if err != nil {
-			return nil, err
-		}
-
-		cfg.KubeClient = client
-	}
-
+func NewIngressSource(kubeClient kubernetes.Interface, fqdnTemplate, namespace string) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
 	)
-	if cfg.FQDNTemplate != "" {
+	if fqdnTemplate != "" {
 		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
 			"trimPrefix": strings.TrimPrefix,
-		}).Parse(cfg.FQDNTemplate)
+		}).Parse(fqdnTemplate)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return &ingressSource{
-		client:       cfg.KubeClient,
-		namespace:    cfg.Namespace,
+		client:       kubeClient,
+		namespace:    namespace,
 		fqdnTemplate: tmpl,
 	}, nil
 }
