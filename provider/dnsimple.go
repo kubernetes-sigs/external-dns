@@ -165,7 +165,7 @@ func (p *dnsimpleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 			default:
 				continue
 			}
-			endpoints = append(endpoints, endpoint.NewEndpoint(record.Name, record.Content, record.Type))
+			endpoints = append(endpoints, endpoint.NewEndpoint(record.Name+"."+record.ZoneID, record.Content, record.Type))
 		}
 	}
 	return endpoints, nil
@@ -205,7 +205,10 @@ func (p *dnsimpleProvider) submitChanges(changes []*dnsimpleChange) error {
 	}
 	for _, change := range changes {
 		zone := dnsimpleSuitableZone(change.ResourceRecordSet.Name, zones)
-		log.Infof("Changing records: %s %v", change.Action, change.ResourceRecordSet)
+		if zone.ID == 0 {
+			return fmt.Errorf("No suitable zone name found")
+		}
+		log.Infof("Changing records: %s %v in zone: %s", change.Action, change.ResourceRecordSet, zone.Name)
 
 		change.ResourceRecordSet.Name = strings.TrimSuffix(change.ResourceRecordSet.Name, "."+zone.Name)
 		if !p.dryRun {
