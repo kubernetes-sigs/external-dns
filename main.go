@@ -72,8 +72,8 @@ func main() {
 		Compatibility: cfg.Compatibility,
 	}
 
-	// Lookup all the selected sources and pass them the desired configuration.
-	sources, err := source.LookupMultiple(cfg.Sources, sourceCfg)
+	// Lookup all the selected sources by names and pass them the desired configuration.
+	sources, err := source.ByNames(cfg.Sources, sourceCfg)
 	if err != nil {
 		log.Fatal(err)
 	}

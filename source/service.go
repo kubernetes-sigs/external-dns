@@ -45,33 +45,24 @@ type serviceSource struct {
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(cfg *Config) (Source, error) {
-	if cfg.KubeClient == nil {
-		client, err := newKubeClient(cfg)
-		if err != nil {
-			return nil, err
-		}
-
-		cfg.KubeClient = client
-	}
-
+func NewServiceSource(kubeClient kubernetes.Interface, fqdnTemplate, namespace, compatibility string) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
 	)
-	if cfg.FQDNTemplate != "" {
+	if fqdnTemplate != "" {
 		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
 			"trimPrefix": strings.TrimPrefix,
-		}).Parse(cfg.FQDNTemplate)
+		}).Parse(fqdnTemplate)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return &serviceSource{
-		client:        cfg.KubeClient,
-		namespace:     cfg.Namespace,
-		compatibility: cfg.Compatibility,
+		client:        kubeClient,
+		namespace:     namespace,
+		compatibility: compatibility,
 		fqdnTemplate:  tmpl,
 	}, nil
 }

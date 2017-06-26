@@ -16,65 +16,115 @@ limitations under the License.
 
 package source
 
-import "errors"
+import (
+	"errors"
+	"net/http"
+	"os"
+	"strings"
 
-func init() {
-	// Register all selectable sources under an identifier.
-	RegisterFunc("service", NewServiceSource)
-	RegisterFunc("ingress", NewIngressSource)
-	RegisterFunc("fake", NewFakeSource)
-}
+	"sync"
 
-// sourceFunc is a constructor function that returns a Source and an error.
-type sourceFunc func(cfg *Config) (Source, error)
-
-// store is a global store for known sources.
-var store = map[string]sourceFunc{}
+	log "github.com/Sirupsen/logrus"
+	"github.com/linki/instrumented_http"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+)
 
 // ErrSourceNotFound is returned when a requested source doesn't exist.
 var ErrSourceNotFound = errors.New("source not found")
 
-// Register registers a Source under a given name.
-func Register(name string, source Source) {
-	store[name] = func(_ *Config) (Source, error) { return source, nil }
+// Config holds shared configuration options for all Sources.
+type Config struct {
+	KubeMaster    string
+	KubeConfig    string
+	Namespace     string
+	FQDNTemplate  string
+	Compatibility string
 }
 
-// RegisterFunc registers a Source under a given name via a constructor function.
-func RegisterFunc(name string, source sourceFunc) {
-	store[name] = source
+type ClientProvider struct {
+	KubeConfig string
+	KubeMaster string
+	client     kubernetes.Interface
+	sync.Once
 }
 
-// Clear de-registers all sources from the global store.
-func Clear() {
-	store = map[string]sourceFunc{}
+func (p *ClientProvider) KubeClient() (kubernetes.Interface, error) {
+	var err error
+	p.Once.Do(func() {
+		p.client, err = NewKubeClient(p.KubeConfig, p.KubeMaster)
+	})
+	return p.client, err
 }
 
-// Lookup returns a Source by the given name.
-func Lookup(name string, cfg *Config) (Source, error) {
-	sf, ok := store[name]
-	if !ok {
-		return nil, ErrSourceNotFound
-	}
-
-	source, err := sf(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return source, nil
-}
-
-// LookupMultiple returns multiple Sources given multiple names.
-func LookupMultiple(names []string, cfg *Config) ([]Source, error) {
+// ByNames returns multiple Sources given multiple names.
+func ByNames(names []string, cfg *Config) ([]Source, error) {
 	sources := []Source{}
-
+	p := &ClientProvider{
+		KubeConfig: cfg.KubeConfig,
+		KubeMaster: cfg.KubeMaster,
+	}
 	for _, name := range names {
-		source, err := Lookup(name, cfg)
+		source, err := BuildWithConfig(name, p, cfg)
 		if err != nil {
-			return nil, ErrSourceNotFound
+			return nil, err
 		}
 		sources = append(sources, source)
 	}
 
 	return sources, nil
+}
+
+func BuildWithConfig(source string, p *ClientProvider, cfg *Config) (Source, error) {
+	switch source {
+	case "service":
+		client, err := p.KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		return NewServiceSource(client, cfg.FQDNTemplate, cfg.Namespace, cfg.Compatibility)
+	case "ingress":
+		client, err := p.KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		return NewIngressSource(client, cfg.FQDNTemplate, cfg.Namespace)
+	case "fake":
+		return NewFakeSource(cfg.FQDNTemplate)
+	}
+	return nil, ErrSourceNotFound
+}
+
+// NewKubeClient returns a new Kubernetes client object. It takes a Config and
+// uses KubeMaster and KubeConfig attributes to connect to the cluster. If
+// KubeConfig isn't provided it defaults to using the recommended default.
+func NewKubeClient(kubeConfig, kubeMaster string) (*kubernetes.Clientset, error) {
+	if kubeConfig == "" {
+		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
+			kubeConfig = clientcmd.RecommendedHomeFile
+		}
+	}
+
+	config, err := clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
+		return instrumented_http.NewTransport(rt, &instrumented_http.Callbacks{
+			PathProcessor: func(path string) string {
+				parts := strings.Split(path, "/")
+				return parts[len(parts)-1]
+			},
+		})
+	}
+
+	client, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Infof("Connected to cluster at %s", config.Host)
+
+	return client, nil
 }

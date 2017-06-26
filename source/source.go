@@ -16,19 +16,7 @@ limitations under the License.
 
 package source
 
-import (
-	"net/http"
-	"os"
-	"strings"
-
-	log "github.com/Sirupsen/logrus"
-	"github.com/linki/instrumented_http"
-
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-)
+import "github.com/kubernetes-incubator/external-dns/endpoint"
 
 const (
 	// The annotation used for figuring out which controller is responsible
@@ -42,48 +30,4 @@ const (
 // Source defines the interface Endpoint sources should implement.
 type Source interface {
 	Endpoints() ([]*endpoint.Endpoint, error)
-}
-
-// Config holds shared configuration options for all Sources.
-type Config struct {
-	KubeClient    kubernetes.Interface
-	KubeMaster    string
-	KubeConfig    string
-	Namespace     string
-	FQDNTemplate  string
-	Compatibility string
-}
-
-// newKubeClient returns a new Kubernetes client object. It takes a Config and
-// uses KubeMaster and KubeConfig attributes to connect to the cluster. If
-// KubeConfig isn't provided it defaults to using the recommended default.
-func newKubeClient(cfg *Config) (*kubernetes.Clientset, error) {
-	if cfg.KubeConfig == "" {
-		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
-			cfg.KubeConfig = clientcmd.RecommendedHomeFile
-		}
-	}
-
-	config, err := clientcmd.BuildConfigFromFlags(cfg.KubeMaster, cfg.KubeConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
-		return instrumented_http.NewTransport(rt, &instrumented_http.Callbacks{
-			PathProcessor: func(path string) string {
-				parts := strings.Split(path, "/")
-				return parts[len(parts)-1]
-			},
-		})
-	}
-
-	client, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Infof("Connected to cluster at %s", config.Host)
-
-	return client, nil
 }
