@@ -46,9 +46,9 @@ func (p *dnsimpleProvider) GetAccountID(credentials dnsimple.Credentials, client
 	return strconv.Itoa(whoamiResponse.Data.Account.ID), nil
 }
 
-type dnsimpleZoneServiceInterface interface {
+// DnsimpleZoneServiceInterface is an interface that contains all necessary zone services from dnsimple
+type DnsimpleZoneServiceInterface interface {
 	ListZones(accountID string, options *dnsimple.ZoneListOptions) (*dnsimple.ZonesResponse, error)
-	GetZone(accountID string, zoneName string) (*dnsimple.ZoneResponse, error)
 	ListRecords(accountID string, zoneID string, options *dnsimple.ZoneRecordListOptions) (*dnsimple.ZoneRecordsResponse, error)
 	CreateRecord(accountID string, zoneID string, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error)
 	DeleteRecord(accountID string, zoneID string, recordID int) (*dnsimple.ZoneRecordResponse, error)
@@ -75,16 +75,12 @@ func (z dnsimpleZoneService) DeleteRecord(accountID string, zoneID string, recor
 	return z.service.DeleteRecord(accountID, zoneID, recordID)
 }
 
-func (z dnsimpleZoneService) GetZone(accountID string, zoneName string) (*dnsimple.ZoneResponse, error) {
-	return z.service.GetZone(accountID, zoneName)
-}
-
 func (z dnsimpleZoneService) UpdateRecord(accountID string, zoneID string, recordID int, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error) {
 	return z.service.UpdateRecord(accountID, zoneID, recordID, recordAttributes)
 }
 
 type dnsimpleProvider struct {
-	client       dnsimpleZoneServiceInterface
+	client       DnsimpleZoneServiceInterface
 	identity     identityService
 	accountID    string
 	domainFilter string
@@ -136,15 +132,6 @@ func (p *dnsimpleProvider) Zones() (map[string]dnsimple.Zone, error) {
 		}
 	}
 	return zones, nil
-}
-
-// GetZone returns a single zone based on the passed zone name
-func (p *dnsimpleProvider) GetZone(zoneName string) (*dnsimple.Zone, error) {
-	zone, err := p.client.GetZone(p.accountID, zoneName)
-	if err != nil {
-		return nil, err
-	}
-	return zone.Data, nil
 }
 
 // Records retuns a list of endpoints in a given zone
