@@ -65,15 +65,16 @@ func main() {
 
 	// Create a source.Config from the flags passed by the user.
 	sourceCfg := &source.Config{
-		KubeMaster:    cfg.Master,
-		KubeConfig:    cfg.KubeConfig,
 		Namespace:     cfg.Namespace,
 		FQDNTemplate:  cfg.FQDNTemplate,
 		Compatibility: cfg.Compatibility,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
-	sources, err := source.ByNames(cfg.Sources, sourceCfg)
+	sources, err := source.ByNames(&source.ClientProvider{
+		KubeConfig: cfg.KubeConfig,
+		KubeMaster: cfg.Master,
+	}, cfg.Sources, sourceCfg)
 	if err != nil {
 		log.Fatal(err)
 	}

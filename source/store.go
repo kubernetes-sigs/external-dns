@@ -35,13 +35,18 @@ var ErrSourceNotFound = errors.New("source not found")
 
 // Config holds shared configuration options for all Sources.
 type Config struct {
-	KubeMaster    string
-	KubeConfig    string
 	Namespace     string
 	FQDNTemplate  string
 	Compatibility string
 }
 
+// SingletonClientProvider provides singleton clients
+type SingletonClientProvider interface {
+	KubeClient() (kubernetes.Interface, error)
+}
+
+// ClientProvider stores provider clients and guarantees that only one instance of client
+// will be generated
 type ClientProvider struct {
 	KubeConfig string
 	KubeMaster string
@@ -49,6 +54,7 @@ type ClientProvider struct {
 	sync.Once
 }
 
+// KubeClient generates a kube client if it was not created before
 func (p *ClientProvider) KubeClient() (kubernetes.Interface, error) {
 	var err error
 	p.Once.Do(func() {
@@ -58,12 +64,8 @@ func (p *ClientProvider) KubeClient() (kubernetes.Interface, error) {
 }
 
 // ByNames returns multiple Sources given multiple names.
-func ByNames(names []string, cfg *Config) ([]Source, error) {
+func ByNames(p SingletonClientProvider, names []string, cfg *Config) ([]Source, error) {
 	sources := []Source{}
-	p := &ClientProvider{
-		KubeConfig: cfg.KubeConfig,
-		KubeMaster: cfg.KubeMaster,
-	}
 	for _, name := range names {
 		source, err := BuildWithConfig(name, p, cfg)
 		if err != nil {
@@ -75,7 +77,8 @@ func ByNames(names []string, cfg *Config) ([]Source, error) {
 	return sources, nil
 }
 
-func BuildWithConfig(source string, p *ClientProvider, cfg *Config) (Source, error) {
+// BuildWithConfig allows to generate a Source implementation from the shared config
+func BuildWithConfig(source string, p SingletonClientProvider, cfg *Config) (Source, error) {
 	switch source {
 	case "service":
 		client, err := p.KubeClient()
