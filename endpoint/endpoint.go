@@ -24,6 +24,10 @@ import (
 const (
 	// OwnerLabelKey is the name of the label that defines the owner of an Endpoint.
 	OwnerLabelKey = "owner"
+
+	RecordTypeA     = "A"
+	RecordTypeCNAME = "CNAME"
+	RecordTypeTXT   = "TXT"
 )
 
 // Endpoint is a high-level way of a connection between a service and an IP

@@ -69,7 +69,7 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 	ownerMap := map[string]string{}
 
 	for _, record := range records {
-		if record.RecordType != "TXT" {
+		if record.RecordType != endpoint.RecordTypeTXT {
 			endpoints = append(endpoints, record)
 			continue
 		}
@@ -102,13 +102,16 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 	}
 
 	for _, r := range filteredChanges.Create {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), "TXT")
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), endpoint.RecordTypeTXT)
 		filteredChanges.Create = append(filteredChanges.Create, txt)
 	}
+
 	for _, r := range filteredChanges.Delete {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), "TXT")
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), endpoint.RecordTypeTXT)
+
 		filteredChanges.Delete = append(filteredChanges.Delete, txt)
 	}
+
 	return im.provider.ApplyChanges(filteredChanges)
 }
 

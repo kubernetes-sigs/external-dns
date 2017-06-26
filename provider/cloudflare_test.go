@@ -39,7 +39,7 @@ func (m *mockCloudFlareClient) CreateDNSRecord(zoneID string, rr cloudflare.DNSR
 func (m *mockCloudFlareClient) DNSRecords(zoneID string, rr cloudflare.DNSRecord) ([]cloudflare.DNSRecord, error) {
 	if zoneID == "1234567890" {
 		return []cloudflare.DNSRecord{
-				{ID: "1234567890", Name: "foobar.ext-dns-test.zalando.to.", Type: "A"},
+				{ID: "1234567890", Name: "foobar.ext-dns-test.zalando.to.", Type: endpoint.RecordTypeA},
 				{ID: "1231231233", Name: "foo.bar.com"}},
 			nil
 	}
@@ -425,23 +425,23 @@ func TestCloudFlareGetRecordID(t *testing.T) {
 	records := []cloudflare.DNSRecord{
 		{
 			Name: "foo.com",
-			Type: "CNAME",
+			Type: endpoint.RecordTypeCNAME,
 			ID:   "1",
 		},
 		{
 			Name: "bar.de",
-			Type: "A",
+			Type: endpoint.RecordTypeA,
 			ID:   "2",
 		},
 	}
 
 	assert.Equal(t, "", p.getRecordID(records, cloudflare.DNSRecord{
 		Name: "foo.com",
-		Type: "A",
+		Type: endpoint.RecordTypeA,
 	}))
 	assert.Equal(t, "2", p.getRecordID(records, cloudflare.DNSRecord{
 		Name: "bar.de",
-		Type: "A",
+		Type: endpoint.RecordTypeA,
 	}))
 }
 
