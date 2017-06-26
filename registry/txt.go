@@ -108,7 +108,22 @@ func (p *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 // ApplyChanges creates, updates and removes a co-located TXT record for each desired endpoint
 // holding information about its labels.
 func (p *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
-	for _, ep := range changes.Create {
+	// Append ownership records to the given list of changes.
+	changes.Create = append(changes.Create, newOwnershipRecords(changes.Create)...)
+	changes.UpdateOld = append(changes.UpdateOld, newOwnershipRecords(changes.UpdateOld)...)
+	changes.UpdateNew = append(changes.UpdateNew, newOwnershipRecords(changes.UpdateNew)...)
+	changes.Delete = append(changes.Delete, newOwnershipRecords(changes.Delete)...)
+
+	// Forward the modified change set to the underlying provider.
+	return p.provider.ApplyChanges(changes)
+}
+
+// newOwnershipRecords returns a collection of endpoints that store the given endpoints' label
+// information as TXT records.
+func newOwnershipRecords(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	ownershipRecords := []*endpoint.Endpoint{}
+
+	for _, ep := range endpoints {
 		// Don't create a TXT record if we don't have any labels to remember.
 		if len(ep.Labels) == 0 {
 			continue
@@ -122,78 +137,14 @@ func (p *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 
 		// Append the TXT record to the original creation list. We also add a special label called
 		// heritage to indicate that this TXT record belongs to ExternalDNS.
-		changes.Create = append(changes.Create, &endpoint.Endpoint{
+		ownershipRecords = append(ownershipRecords, &endpoint.Endpoint{
 			DNSName:    ep.DNSName,
 			Target:     fmt.Sprintf("%s=%s,%s", heritageLabel, heritageValue, formatLabels(labelMap)),
 			RecordType: txtRecordType,
 		})
 	}
 
-	for _, ep := range changes.UpdateOld {
-		// TODO: Don't create a TXT record if we don't have any labels to remember.
-		if len(ep.Labels) == 0 {
-			continue
-		}
-
-		// TODO: For each desired label, prefix the key with ExternalDNS' namespace.
-		labelMap := map[string]string{}
-		for key, value := range ep.Labels {
-			labelMap[labelKeyPrefix+key] = value
-		}
-
-		// TODO: Append the TXT record to the original creation list. We also add a special label called
-		// heritage to indicate that this TXT record belongs to ExternalDNS.
-		changes.UpdateOld = append(changes.UpdateOld, &endpoint.Endpoint{
-			DNSName:    ep.DNSName,
-			Target:     fmt.Sprintf("%s=%s,%s", heritageLabel, heritageValue, formatLabels(labelMap)),
-			RecordType: txtRecordType,
-		})
-	}
-
-	for _, ep := range changes.UpdateNew {
-		// TODO: Don't create a TXT record if we don't have any labels to remember.
-		if len(ep.Labels) == 0 {
-			continue
-		}
-
-		// TODO: For each desired label, prefix the key with ExternalDNS' namespace.
-		labelMap := map[string]string{}
-		for key, value := range ep.Labels {
-			labelMap[labelKeyPrefix+key] = value
-		}
-
-		// TODO: Append the TXT record to the original creation list. We also add a special label called
-		// heritage to indicate that this TXT record belongs to ExternalDNS.
-		changes.UpdateNew = append(changes.UpdateNew, &endpoint.Endpoint{
-			DNSName:    ep.DNSName,
-			Target:     fmt.Sprintf("%s=%s,%s", heritageLabel, heritageValue, formatLabels(labelMap)),
-			RecordType: txtRecordType,
-		})
-	}
-
-	for _, ep := range changes.Delete {
-		// TODO: Don't create a TXT record if we don't have any labels to remember.
-		if len(ep.Labels) == 0 {
-			continue
-		}
-
-		// TODO: For each desired label, prefix the key with ExternalDNS' namespace.
-		labelMap := map[string]string{}
-		for key, value := range ep.Labels {
-			labelMap[labelKeyPrefix+key] = value
-		}
-
-		// TODO: Append the TXT record to the original creation list. We also add a special label called
-		// heritage to indicate that this TXT record belongs to ExternalDNS.
-		changes.Delete = append(changes.Delete, &endpoint.Endpoint{
-			DNSName:    ep.DNSName,
-			Target:     fmt.Sprintf("%s=%s,%s", heritageLabel, heritageValue, formatLabels(labelMap)),
-			RecordType: txtRecordType,
-		})
-	}
-
-	// Forward the modified change set to the underlying provider.
-	return p.provider.ApplyChanges(changes)
+	return ownershipRecords
 }
 
 func parseLabels(labelStr string) map[string]string {
