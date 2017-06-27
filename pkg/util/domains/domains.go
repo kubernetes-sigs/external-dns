@@ -20,10 +20,12 @@ import (
 	"strings"
 )
 
+// DomainFilter holds a lists of valid domain names
 type DomainFilter struct {
 	filters []string
 }
 
+// NewDomainFilter returns a new DomainFilter given a comma separated list of domains
 func NewDomainFilter(domainFilter string) DomainFilter {
 
 	if strings.TrimSpace(domainFilter) == "" {
@@ -43,6 +45,7 @@ func NewDomainFilter(domainFilter string) DomainFilter {
 	return DomainFilter{filters}
 }
 
+// Match checks whether a domain can be found in the DomainFilter.
 func (df DomainFilter) Match(domain string) bool {
 
 	// return always true, if not filter is specified
