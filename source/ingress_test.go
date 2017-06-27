@@ -62,8 +62,8 @@ func TestNewIngressSource(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			_, err := NewIngressSource(
 				fake.NewSimpleClientset(),
-				ti.fqdnTemplate,
 				"",
+				ti.fqdnTemplate,
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -348,8 +348,8 @@ func testIngressEndpoints(t *testing.T) {
 			fakeClient := fake.NewSimpleClientset()
 			ingressSource, _ := NewIngressSource(
 				fakeClient,
-				ti.fqdnTemplate,
 				ti.targetNamespace,
+				ti.fqdnTemplate,
 			)
 			for _, ingress := range ingresses {
 				_, err := fakeClient.Extensions().Ingresses(ingress.Namespace).Create(ingress)

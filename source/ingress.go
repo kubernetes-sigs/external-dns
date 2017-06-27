@@ -41,7 +41,7 @@ type ingressSource struct {
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(kubeClient kubernetes.Interface, fqdnTemplate, namespace string) (Source, error) {
+func NewIngressSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate string) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error

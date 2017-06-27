@@ -78,10 +78,10 @@ func (suite *ByNamesTestSuite) TestKubeClientFails() {
 	mockClientProvider.On("KubeClient").Return(nil, errors.New("foo"))
 
 	_, err := ByNames(mockClientProvider, []string{"service"}, &Config{})
-	suite.NotNil(err, "should return an error if client cannot be created")
+	suite.Error(err, "should return an error if client cannot be created")
 
 	_, err = ByNames(mockClientProvider, []string{"ingress"}, &Config{})
-	suite.NotNil(err, "should return an error if client cannot be created")
+	suite.Error(err, "should return an error if client cannot be created")
 }
 
 func TestByNames(t *testing.T) {

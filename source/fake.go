@@ -36,7 +36,7 @@ type fakeSource struct {
 }
 
 const (
-	defaultDNSName = "example.com"
+	defaultFQDNTemplate = "example.com"
 )
 
 func init() {
@@ -46,7 +46,7 @@ func init() {
 // NewFakeSource creates a new fakeSource with the given config.
 func NewFakeSource(fqdnTemplate string) (Source, error) {
 	if fqdnTemplate == "" {
-		fqdnTemplate = defaultDNSName
+		fqdnTemplate = defaultFQDNTemplate
 	}
 
 	return &fakeSource{

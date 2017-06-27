@@ -45,7 +45,7 @@ type serviceSource struct {
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, fqdnTemplate, namespace, compatibility string) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate, compatibility string) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
