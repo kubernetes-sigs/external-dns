@@ -25,6 +25,7 @@ import (
 	"github.com/digitalocean/godo/context"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/pkg/util/domains"
 	"github.com/kubernetes-incubator/external-dns/plan"
 
 	"github.com/stretchr/testify/assert"
@@ -393,7 +394,7 @@ func TestNewDigitalOceanChanges(t *testing.T) {
 func TestDigitalOceanZones(t *testing.T) {
 	provider := &DigitalOceanProvider{
 		Client:       &mockDigitalOceanClient{},
-		domainFilter: "com",
+		domainFilter: domains.NewDomainFilter("com"),
 	}
 
 	zones, err := provider.Zones()
@@ -442,12 +443,12 @@ func TestDigitalOceanApplyChanges(t *testing.T) {
 
 func TestNewDigitalOceanProvider(t *testing.T) {
 	_ = os.Setenv("DO_TOKEN", "xxxxxxxxxxxxxxxxx")
-	_, err := NewDigitalOceanProvider("ext-dns-test.zalando.to.", true)
+	_, err := NewDigitalOceanProvider(domains.NewDomainFilter("ext-dns-test.zalando.to."), true)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
 	_ = os.Unsetenv("DO_TOKEN")
-	_, err = NewDigitalOceanProvider("ext-dns-test.zalando.to.", true)
+	_, err = NewDigitalOceanProvider(domains.NewDomainFilter("ext-dns-test.zalando.to."), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}

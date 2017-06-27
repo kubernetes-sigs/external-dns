@@ -29,6 +29,7 @@ import (
 	googleapi "google.golang.org/api/googleapi"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/pkg/util/domains"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
@@ -96,7 +97,7 @@ type GoogleProvider struct {
 	// Enabled dry-run will print any modifying actions rather than execute them.
 	dryRun bool
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter string
+	domainFilter domains.DomainFilter
 	// A client for managing resource record sets
 	resourceRecordSetsClient resourceRecordSetsClientInterface
 	// A client for managing hosted zones
@@ -106,7 +107,7 @@ type GoogleProvider struct {
 }
 
 // NewGoogleProvider initializes a new Google CloudDNS based Provider.
-func NewGoogleProvider(project string, domainFilter string, dryRun bool) (*GoogleProvider, error) {
+func NewGoogleProvider(project string, domainFilter domains.DomainFilter, dryRun bool) (*GoogleProvider, error) {
 	gcloud, err := google.DefaultClient(context.TODO(), dns.NdevClouddnsReadwriteScope)
 	if err != nil {
 		return nil, err
@@ -142,7 +143,7 @@ func (p *GoogleProvider) Zones() (map[string]*dns.ManagedZone, error) {
 
 	f := func(resp *dns.ManagedZonesListResponse) error {
 		for _, zone := range resp.ManagedZones {
-			if strings.HasSuffix(zone.DnsName, p.domainFilter) {
+			if p.domainFilter.Match(zone.DnsName) {
 				zones[zone.Name] = zone
 			}
 		}

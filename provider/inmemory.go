@@ -23,6 +23,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/pkg/util/domains"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
@@ -42,7 +43,7 @@ var (
 // InMemoryProvider - dns provider only used for testing purposes
 // initialized as dns provider with no records
 type InMemoryProvider struct {
-	domain         string
+	domain         domains.DomainFilter
 	client         *inMemoryClient
 	filter         *filter
 	OnApplyChanges func(changes *plan.Changes)
@@ -73,9 +74,9 @@ func InMemoryWithLogging() InMemoryOption {
 }
 
 // InMemoryWithDomain modifies the domain on which dns zones are filtered
-func InMemoryWithDomain(domain string) InMemoryOption {
+func InMemoryWithDomain(domainFilter domains.DomainFilter) InMemoryOption {
 	return func(p *InMemoryProvider) {
-		p.domain = domain
+		p.domain = domainFilter
 	}
 }
 
@@ -85,7 +86,7 @@ func NewInMemoryProvider(opts ...InMemoryOption) *InMemoryProvider {
 		filter:         &filter{},
 		OnApplyChanges: func(changes *plan.Changes) {},
 		OnRecords:      func() {},
-		domain:         "",
+		domain:         domains.NewDomainFilter(""),
 		client:         newInMemoryClient(),
 	}
 

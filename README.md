@@ -18,6 +18,8 @@ The [FAQ](docs/faq.md) contains additional information and addresses several que
 
 ExternalDNS' current release is `v0.3`. This version allows you to keep selected zones (via `--domain-filter`) in Google's [CloudDNS](https://cloud.google.com/dns/docs/) or [AWS' Route 53](https://aws.amazon.com/route53/) synchronized with Ingresses and Services of `type=LoadBalancer` in your cluster.
 
+The flag `--domain-filter` supports a comma separated list of domain suffixes like `--domain-filter="example.com, company.org, staging-company.org"`.
+
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.3` with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
 Note that all flags can be replaced with environment variables; for instance,

@@ -35,6 +35,7 @@ import (
 	"github.com/kubernetes-incubator/external-dns/controller"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns/validation"
+	"github.com/kubernetes-incubator/external-dns/pkg/util/domains"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
 	"github.com/kubernetes-incubator/external-dns/registry"
@@ -108,20 +109,22 @@ func main() {
 
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
 
+	domainFilter := domains.NewDomainFilter(cfg.DomainFilter)
+
 	var p provider.Provider
 	switch cfg.Provider {
 	case "aws":
-		p, err = provider.NewAWSProvider(cfg.DomainFilter, cfg.DryRun)
+		p, err = provider.NewAWSProvider(domainFilter, cfg.DryRun)
 	case "azure":
-		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, cfg.DomainFilter, cfg.AzureResourceGroup, cfg.DryRun)
+		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, cfg.AzureResourceGroup, cfg.DryRun)
 	case "cloudflare":
-		p, err = provider.NewCloudFlareProvider(cfg.DomainFilter, cfg.DryRun)
+		p, err = provider.NewCloudFlareProvider(domainFilter, cfg.DryRun)
 	case "google":
-		p, err = provider.NewGoogleProvider(cfg.GoogleProject, cfg.DomainFilter, cfg.DryRun)
+		p, err = provider.NewGoogleProvider(cfg.GoogleProject, domainFilter, cfg.DryRun)
 	case "digitalocean":
-		p, err = provider.NewDigitalOceanProvider(cfg.DomainFilter, cfg.DryRun)
+		p, err = provider.NewDigitalOceanProvider(domainFilter, cfg.DryRun)
 	case "inmemory":
-		p, err = provider.NewInMemoryProvider(provider.InMemoryWithDomain(cfg.DomainFilter), provider.InMemoryWithLogging()), nil
+		p, err = provider.NewInMemoryProvider(provider.InMemoryWithDomain(domainFilter), provider.InMemoryWithLogging()), nil
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
