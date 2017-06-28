@@ -30,17 +30,17 @@ type domainFilterTest struct {
 
 var domainFilterTests = []domainFilterTest{
 	{
-		[]string{"google.com.","exaring.de","inovex.de"},
+		[]string{"google.com.", "exaring.de", "inovex.de"},
 		[]string{"google.com", "exaring.de", "inovex.de"},
 		true,
 	},
 	{
-		[]string{"google.com.","exaring.de", "inovex.de"},
+		[]string{"google.com.", "exaring.de", "inovex.de"},
 		[]string{"google.com", "exaring.de", "inovex.de"},
 		true,
 	},
 	{
-		[]string{"google.com.","exaring.de.",    "inovex.de"},
+		[]string{"google.com.", "exaring.de.", "inovex.de"},
 		[]string{"google.com", "exaring.de", "inovex.de"},
 		true,
 	},
@@ -70,12 +70,12 @@ var domainFilterTests = []domainFilterTest{
 		false,
 	},
 	{
-		[]string{"","foo.org."},
+		[]string{"", "foo.org."},
 		[]string{"foo.org"},
 		true,
 	},
 	{
-		[]string{"","foo.org."},
+		[]string{"", "foo.org."},
 		[]string{},
 		true,
 	},
@@ -106,7 +106,7 @@ func TestDomainFilter_Match(t *testing.T) {
 		domainFilter := NewDomainFilter(tt.domainFilter)
 		for _, domain := range tt.domains {
 			assert.Equal(t, tt.expected, domainFilter.Match(domain), "should not fail: %v in test-case #%v", domain, i)
-			assert.Equal(t, tt.expected, domainFilter.Match(domain + "."), "should not fail: %v in test-case #%v", domain + ".", i)
+			assert.Equal(t, tt.expected, domainFilter.Match(domain+"."), "should not fail: %v in test-case #%v", domain+".", i)
 		}
 	}
 }
@@ -116,7 +116,7 @@ func TestDomainFilter_Match_default_Filter_always_matches(t *testing.T) {
 		domainFilter := DomainFilter{}
 		for i, domain := range tt.domains {
 			assert.True(t, domainFilter.Match(domain), "should not fail: %v in test-case #%v", domain, i)
-			assert.True(t, domainFilter.Match(domain + "."), "should not fail: %v in test-case #%v", domain + ".", i)
+			assert.True(t, domainFilter.Match(domain+"."), "should not fail: %v in test-case #%v", domain+".", i)
 		}
 	}
 }
