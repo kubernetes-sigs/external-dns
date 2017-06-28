@@ -86,7 +86,7 @@ func NewInMemoryProvider(opts ...InMemoryOption) *InMemoryProvider {
 		filter:         &filter{},
 		OnApplyChanges: func(changes *plan.Changes) {},
 		OnRecords:      func() {},
-		domain:         domains.NewDomainFilter(""),
+		domain:         domains.NewDomainFilter([]string{""}),
 		client:         newInMemoryClient(),
 	}
 

@@ -170,7 +170,7 @@ func TestAzureRecord(t *testing.T) {
 		},
 	}
 
-	provider := newAzureProvider(domains.NewDomainFilter("example.com"), true, "k8s", &zonesClient, &recordsClient)
+	provider := newAzureProvider(domains.NewDomainFilter([]string{"example.com"}), true, "k8s", &zonesClient, &recordsClient)
 	actual, err := provider.Records()
 
 	if err != nil {
@@ -225,7 +225,7 @@ func TestAzureApplyChangesDryRun(t *testing.T) {
 
 func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordsClient) {
 	provider := newAzureProvider(
-		domains.NewDomainFilter(""),
+		domains.NewDomainFilter([]string{""}),
 		dryRun,
 		"group",
 		&mockZonesClient{

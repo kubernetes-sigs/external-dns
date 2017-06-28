@@ -26,20 +26,12 @@ type DomainFilter struct {
 }
 
 // NewDomainFilter returns a new DomainFilter given a comma separated list of domains
-func NewDomainFilter(domainFilter string) DomainFilter {
+func NewDomainFilter(filters []string) DomainFilter {
 
-	if strings.TrimSpace(domainFilter) == "" {
-		return DomainFilter{[]string{""}}
-	}
-
-	filters := strings.Split(domainFilter, ",")
-
+	// user can define filter domains either with trailing dot or without, we remove all trailing periods from
+	// the internal representation
 	for i := 0; i < len(filters); i++ {
-		filters[i] = strings.TrimSuffix(strings.TrimSpace(filters[i]), ".") + "."
-		if filters[i] == "." {
-			filters = append(filters[:i], filters[i+1:]...)
-			i--
-		}
+		filters[i] = strings.TrimSuffix(strings.TrimSpace(filters[i]), ".")
 	}
 
 	return DomainFilter{filters}
@@ -55,8 +47,7 @@ func (df DomainFilter) Match(domain string) bool {
 
 	for _, filter := range df.filters {
 
-		// user can define domains either with trailing dot or without.
-		if strings.HasSuffix(domain, filter) || strings.HasSuffix(domain+".", filter) {
+		if strings.HasSuffix(strings.TrimSuffix(domain, "."), filter) {
 			return true
 		}
 	}
