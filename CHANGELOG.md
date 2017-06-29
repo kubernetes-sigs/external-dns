@@ -1,4 +1,4 @@
-  - The flag `--domain-filter` can repeated multiple times like `--domain-filter=example.com --domain-filter=company.org.`.
+  - The flag `--domain-filter` can be repeated multiple times like `--domain-filter=example.com --domain-filter=company.org.`.
   - A trailing period is not required anymore for `--domain-filter` when AWS (or any other) provider is used.
 
 ## v0.3.0 - 2017-05-08
