@@ -84,7 +84,7 @@ spec:
         args:
         - --source=service
         - --source=ingress
-        - --domain-filter=external-dns-test.my-org.com. # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
+        - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
         - --registry=txt

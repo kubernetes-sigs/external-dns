@@ -70,11 +70,11 @@ type AWSProvider struct {
 	client Route53API
 	dryRun bool
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter string
+	domainFilter DomainFilter
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
-func NewAWSProvider(domainFilter string, dryRun bool) (*AWSProvider, error) {
+func NewAWSProvider(domainFilter DomainFilter, dryRun bool) (*AWSProvider, error) {
 	config := aws.NewConfig()
 
 	config = config.WithHTTPClient(
@@ -109,7 +109,7 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 
 	f := func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool) {
 		for _, zone := range resp.HostedZones {
-			if strings.HasSuffix(aws.StringValue(zone.Name), p.domainFilter) {
+			if p.domainFilter.Match(aws.StringValue(zone.Name)) {
 				zones[aws.StringValue(zone.Id)] = zone
 			}
 		}

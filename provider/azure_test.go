@@ -138,7 +138,7 @@ func (client *mockRecordsClient) CreateOrUpdate(resourceGroupName string, zoneNa
 	return parameters, nil
 }
 
-func newAzureProvider(domainFilter string, dryRun bool, resourceGroup string, zonesClient ZonesClient, recordsClient RecordsClient) *AzureProvider {
+func newAzureProvider(domainFilter DomainFilter, dryRun bool, resourceGroup string, zonesClient ZonesClient, recordsClient RecordsClient) *AzureProvider {
 	return &AzureProvider{
 		domainFilter:  domainFilter,
 		dryRun:        dryRun,
@@ -169,7 +169,7 @@ func TestAzureRecord(t *testing.T) {
 		},
 	}
 
-	provider := newAzureProvider("example.com", true, "k8s", &zonesClient, &recordsClient)
+	provider := newAzureProvider(NewDomainFilter([]string{"example.com"}), true, "k8s", &zonesClient, &recordsClient)
 	actual, err := provider.Records()
 
 	if err != nil {
@@ -224,7 +224,7 @@ func TestAzureApplyChangesDryRun(t *testing.T) {
 
 func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordsClient) {
 	provider := newAzureProvider(
-		"",
+		NewDomainFilter([]string{""}),
 		dryRun,
 		"group",
 		&mockZonesClient{
