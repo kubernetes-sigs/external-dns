@@ -27,12 +27,12 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type MockClientProvider struct {
+type MockClientGenerator struct {
 	mock.Mock
 	client kubernetes.Interface
 }
 
-func (m *MockClientProvider) KubeClient() (kubernetes.Interface, error) {
+func (m *MockClientGenerator) KubeClient() (kubernetes.Interface, error) {
 	args := m.Called()
 	if args.Error(1) == nil {
 		m.client = args.Get(0).(kubernetes.Interface)
@@ -46,41 +46,41 @@ type ByNamesTestSuite struct {
 }
 
 func (suite *ByNamesTestSuite) TestAllInitialized() {
-	mockClientProvider := new(MockClientProvider)
-	mockClientProvider.On("KubeClient").Return(fake.NewSimpleClientset(), nil)
+	mockClientGenerator := new(MockClientGenerator)
+	mockClientGenerator.On("KubeClient").Return(fake.NewSimpleClientset(), nil)
 
-	sources, err := ByNames(mockClientProvider, []string{"service", "ingress", "fake"}, &Config{})
+	sources, err := ByNames(mockClientGenerator, []string{"service", "ingress", "fake"}, &Config{})
 	suite.NoError(err, "should not generate errors")
 	suite.Len(sources, 3, "should generate all three sources")
 }
 
 func (suite *ByNamesTestSuite) TestOnlyFake() {
-	mockClientProvider := new(MockClientProvider)
-	mockClientProvider.On("KubeClient").Return(fake.NewSimpleClientset(), nil)
+	mockClientGenerator := new(MockClientGenerator)
+	mockClientGenerator.On("KubeClient").Return(fake.NewSimpleClientset(), nil)
 
-	sources, err := ByNames(mockClientProvider, []string{"fake"}, &Config{})
+	sources, err := ByNames(mockClientGenerator, []string{"fake"}, &Config{})
 	suite.NoError(err, "should not generate errors")
 	suite.Len(sources, 1, "should generate all three sources")
-	suite.Nil(mockClientProvider.client, "client should not be created")
+	suite.Nil(mockClientGenerator.client, "client should not be created")
 }
 
 func (suite *ByNamesTestSuite) TestSourceNotFound() {
-	mockClientProvider := new(MockClientProvider)
-	mockClientProvider.On("KubeClient").Return(fake.NewSimpleClientset(), nil)
+	mockClientGenerator := new(MockClientGenerator)
+	mockClientGenerator.On("KubeClient").Return(fake.NewSimpleClientset(), nil)
 
-	sources, err := ByNames(mockClientProvider, []string{"foo"}, &Config{})
+	sources, err := ByNames(mockClientGenerator, []string{"foo"}, &Config{})
 	suite.Equal(err, ErrSourceNotFound, "should return sourcen not found")
 	suite.Len(sources, 0, "should not returns any source")
 }
 
 func (suite *ByNamesTestSuite) TestKubeClientFails() {
-	mockClientProvider := new(MockClientProvider)
-	mockClientProvider.On("KubeClient").Return(nil, errors.New("foo"))
+	mockClientGenerator := new(MockClientGenerator)
+	mockClientGenerator.On("KubeClient").Return(nil, errors.New("foo"))
 
-	_, err := ByNames(mockClientProvider, []string{"service"}, &Config{})
+	_, err := ByNames(mockClientGenerator, []string{"service"}, &Config{})
 	suite.Error(err, "should return an error if client cannot be created")
 
-	_, err = ByNames(mockClientProvider, []string{"ingress"}, &Config{})
+	_, err = ByNames(mockClientGenerator, []string{"ingress"}, &Config{})
 	suite.Error(err, "should return an error if client cannot be created")
 }
 

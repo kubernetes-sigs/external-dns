@@ -71,7 +71,7 @@ func main() {
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
-	sources, err := source.ByNames(&source.ClientProvider{
+	sources, err := source.ByNames(&source.SingletonClientGenerator{
 		KubeConfig: cfg.KubeConfig,
 		KubeMaster: cfg.Master,
 	}, cfg.Sources, sourceCfg)

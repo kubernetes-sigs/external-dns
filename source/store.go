@@ -40,14 +40,14 @@ type Config struct {
 	Compatibility string
 }
 
-// SingletonClientProvider provides singleton clients
-type SingletonClientProvider interface {
+// ClientGenerator provides clients
+type ClientGenerator interface {
 	KubeClient() (kubernetes.Interface, error)
 }
 
-// ClientProvider stores provider clients and guarantees that only one instance of client
+// SingletonClientGenerator stores provider clients and guarantees that only one instance of client
 // will be generated
-type ClientProvider struct {
+type SingletonClientGenerator struct {
 	KubeConfig string
 	KubeMaster string
 	client     kubernetes.Interface
@@ -55,7 +55,7 @@ type ClientProvider struct {
 }
 
 // KubeClient generates a kube client if it was not created before
-func (p *ClientProvider) KubeClient() (kubernetes.Interface, error) {
+func (p *SingletonClientGenerator) KubeClient() (kubernetes.Interface, error) {
 	var err error
 	p.Once.Do(func() {
 		p.client, err = NewKubeClient(p.KubeConfig, p.KubeMaster)
@@ -64,7 +64,7 @@ func (p *ClientProvider) KubeClient() (kubernetes.Interface, error) {
 }
 
 // ByNames returns multiple Sources given multiple names.
-func ByNames(p SingletonClientProvider, names []string, cfg *Config) ([]Source, error) {
+func ByNames(p ClientGenerator, names []string, cfg *Config) ([]Source, error) {
 	sources := []Source{}
 	for _, name := range names {
 		source, err := BuildWithConfig(name, p, cfg)
@@ -78,7 +78,7 @@ func ByNames(p SingletonClientProvider, names []string, cfg *Config) ([]Source, 
 }
 
 // BuildWithConfig allows to generate a Source implementation from the shared config
-func BuildWithConfig(source string, p SingletonClientProvider, cfg *Config) (Source, error) {
+func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, error) {
 	switch source {
 	case "service":
 		client, err := p.KubeClient()
