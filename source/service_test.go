@@ -121,6 +121,42 @@ func testServiceSourceEndpoints(t *testing.T) {
 			false,
 		},
 		{
+			"annotated services with multiple hostnames return an endpoint with target IP",
+			"",
+			"testing",
+			"foo",
+			"",
+			"",
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey: "foo.example.org., bar.example.org.",
+			},
+			[]string{"1.2.3.4"},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "bar.example.org", Target: "1.2.3.4"},
+			},
+			false,
+		},
+		{
+			"annotated services with multiple hostnames and without trailing period return an endpoint with target IP",
+			"",
+			"testing",
+			"foo",
+			"",
+			"",
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey: "foo.example.org, bar.example.org",
+			},
+			[]string{"1.2.3.4"},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "bar.example.org", Target: "1.2.3.4"},
+			},
+			false,
+		},
+		{
 			"annotated services return an endpoint with target hostname",
 			"",
 			"testing",

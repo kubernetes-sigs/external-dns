@@ -138,21 +138,37 @@ func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	// Get the desired hostname of the service from the annotation.
-	hostname, exists := svc.Annotations[hostnameAnnotationKey]
+	hostnameAnnotation, exists := svc.Annotations[hostnameAnnotationKey]
 	if !exists {
 		return nil
 	}
 
-	// Create a corresponding endpoint for each configured external entrypoint.
-	for _, lb := range svc.Status.LoadBalancer.Ingress {
-		if lb.IP != "" {
-			//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
-		}
-		if lb.Hostname != "" {
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
+	hostnames := parseHostnameAnnotation(hostnameAnnotation)
+
+	for _, hostname := range hostnames {
+		// Create a corresponding endpoint for each configured external entrypoint.
+		for _, lb := range svc.Status.LoadBalancer.Ingress {
+			if lb.IP != "" {
+				//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
+				endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
+			}
+			if lb.Hostname != "" {
+				endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
+			}
 		}
 	}
 
 	return endpoints
+}
+
+// parseHostnameAnnotation splits the hostname annontation and removes the trailing periods
+func parseHostnameAnnotation(hostnameAnnotation string) (hostnames []string) {
+
+	hostnameList := strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
+
+	for _, hostname := range hostnameList {
+		hostnames = append(hostnames, strings.TrimSuffix(hostname, "."))
+	}
+
+	return
 }
