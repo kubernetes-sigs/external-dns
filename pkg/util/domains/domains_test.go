@@ -101,7 +101,7 @@ var domainFilterTests = []domainFilterTest{
 	},
 }
 
-func TestDomainFilter_Match(t *testing.T) {
+func TestDomainFilterMatch(t *testing.T) {
 	for i, tt := range domainFilterTests {
 		domainFilter := NewDomainFilter(tt.domainFilter)
 		for _, domain := range tt.domains {
@@ -111,7 +111,7 @@ func TestDomainFilter_Match(t *testing.T) {
 	}
 }
 
-func TestDomainFilter_Match_default_Filter_always_matches(t *testing.T) {
+func TestDomainFilterMatchWithEmptyFilter(t *testing.T) {
 	for _, tt := range domainFilterTests {
 		domainFilter := DomainFilter{}
 		for i, domain := range tt.domains {
