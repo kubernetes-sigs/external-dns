@@ -83,7 +83,7 @@ func (z zoneService) DeleteDNSRecord(zoneID, recordID string) error {
 type CloudFlareProvider struct {
 	Client cloudFlareDNS
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter string
+	domainFilter DomainFilter
 	DryRun       bool
 }
 
@@ -94,7 +94,7 @@ type cloudFlareChange struct {
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(domainFilter string, dryRun bool) (*CloudFlareProvider, error) {
+func NewCloudFlareProvider(domainFilter DomainFilter, dryRun bool) (*CloudFlareProvider, error) {
 	// initialize via API email and API key and returns new API object
 	config, err := cloudflare.New(os.Getenv("CF_API_KEY"), os.Getenv("CF_API_EMAIL"))
 	if err != nil {
@@ -119,7 +119,7 @@ func (p *CloudFlareProvider) Zones() ([]cloudflare.Zone, error) {
 	}
 
 	for _, zone := range zones {
-		if strings.HasSuffix(zone.Name, p.domainFilter) {
+		if p.domainFilter.Match(zone.Name) {
 			result = append(result, zone)
 		}
 	}

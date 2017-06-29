@@ -44,7 +44,7 @@ const (
 type DigitalOceanProvider struct {
 	Client godo.DomainsService
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter string
+	domainFilter DomainFilter
 	DryRun       bool
 }
 
@@ -55,7 +55,7 @@ type DigitalOceanChange struct {
 }
 
 // NewDigitalOceanProvider initializes a new DigitalOcean DNS based Provider.
-func NewDigitalOceanProvider(domainFilter string, dryRun bool) (*DigitalOceanProvider, error) {
+func NewDigitalOceanProvider(domainFilter DomainFilter, dryRun bool) (*DigitalOceanProvider, error) {
 	token, ok := os.LookupEnv("DO_TOKEN")
 	if !ok {
 		return nil, fmt.Errorf("No token found")
@@ -83,7 +83,7 @@ func (p *DigitalOceanProvider) Zones() ([]godo.Domain, error) {
 	}
 
 	for _, zone := range zones {
-		if strings.HasSuffix(zone.Name, p.domainFilter) {
+		if p.domainFilter.Match(zone.Name) {
 			result = append(result, zone)
 		}
 	}

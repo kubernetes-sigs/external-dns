@@ -220,7 +220,7 @@ spec:
         image: registry.opensource.zalan.do/teapot/external-dns:v0.3.0
         args:
         - --source=ingress
-        - --domain-filter=external-dns-test.gcp.zalan.do.
+        - --domain-filter=external-dns-test.gcp.zalan.do
         - --provider=google
         - --google-project=zalando-external-dns-test
         - --registry=txt
