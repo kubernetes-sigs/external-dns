@@ -26,12 +26,13 @@ type DomainFilter struct {
 }
 
 // NewDomainFilter returns a new DomainFilter given a comma separated list of domains
-func NewDomainFilter(filters []string) DomainFilter {
+func NewDomainFilter(domainFilters []string) DomainFilter {
+	filters := make([]string, len(domainFilters))
 
 	// user can define filter domains either with trailing dot or without, we remove all trailing periods from
 	// the internal representation
-	for i := 0; i < len(filters); i++ {
-		filters[i] = strings.TrimSuffix(strings.TrimSpace(filters[i]), ".")
+	for i, domain := range domainFilters {
+		filters[i] = strings.TrimSuffix(strings.TrimSpace(domain), ".")
 	}
 
 	return DomainFilter{filters}
@@ -39,7 +40,6 @@ func NewDomainFilter(filters []string) DomainFilter {
 
 // Match checks whether a domain can be found in the DomainFilter.
 func (df DomainFilter) Match(domain string) bool {
-
 	// return always true, if not filter is specified
 	if len(df.filters) == 0 {
 		return true
