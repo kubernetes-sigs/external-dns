@@ -35,7 +35,6 @@ import (
 	"github.com/kubernetes-incubator/external-dns/controller"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns/validation"
-	"github.com/kubernetes-incubator/external-dns/pkg/util/domains"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
 	"github.com/kubernetes-incubator/external-dns/registry"
@@ -109,7 +108,7 @@ func main() {
 
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
 
-	domainFilter := domains.NewDomainFilter(cfg.DomainFilter)
+	domainFilter := provider.NewDomainFilter(cfg.DomainFilter)
 
 	var p provider.Provider
 	switch cfg.Provider {

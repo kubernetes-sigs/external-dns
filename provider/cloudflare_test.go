@@ -24,7 +24,6 @@ import (
 	"github.com/cloudflare/cloudflare-go"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/pkg/util/domains"
 	"github.com/kubernetes-incubator/external-dns/plan"
 
 	"github.com/stretchr/testify/assert"
@@ -345,7 +344,7 @@ func TestNewCloudFlareChanges(t *testing.T) {
 func TestCloudFlareZones(t *testing.T) {
 	provider := &CloudFlareProvider{
 		Client:       &mockCloudFlareClient{},
-		domainFilter: domains.NewDomainFilter([]string{"zalando.to."}),
+		domainFilter: NewDomainFilter([]string{"zalando.to."}),
 	}
 
 	zones, err := provider.Zones()
@@ -383,13 +382,13 @@ func TestRecords(t *testing.T) {
 func TestNewCloudFlareProvider(t *testing.T) {
 	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
 	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
-	_, err := NewCloudFlareProvider(domains.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
+	_, err := NewCloudFlareProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
 	_ = os.Unsetenv("CF_API_KEY")
 	_ = os.Unsetenv("CF_API_EMAIL")
-	_, err = NewCloudFlareProvider(domains.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
+	_, err = NewCloudFlareProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}

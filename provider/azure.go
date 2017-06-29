@@ -32,7 +32,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/pkg/util/domains"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
@@ -66,7 +65,7 @@ type RecordsClient interface {
 
 // AzureProvider implements the DNS provider for Microsoft's Azure cloud platform.
 type AzureProvider struct {
-	domainFilter  domains.DomainFilter
+	domainFilter  DomainFilter
 	dryRun        bool
 	resourceGroup string
 	zonesClient   ZonesClient
@@ -76,7 +75,7 @@ type AzureProvider struct {
 // NewAzureProvider creates a new Azure provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAzureProvider(configFile string, domainFilter domains.DomainFilter, resourceGroup string, dryRun bool) (*AzureProvider, error) {
+func NewAzureProvider(configFile string, domainFilter DomainFilter, resourceGroup string, dryRun bool) (*AzureProvider, error) {
 	contents, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)

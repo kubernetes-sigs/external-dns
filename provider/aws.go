@@ -27,7 +27,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/route53"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/pkg/util/domains"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
@@ -71,11 +70,11 @@ type AWSProvider struct {
 	client Route53API
 	dryRun bool
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter domains.DomainFilter
+	domainFilter DomainFilter
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
-func NewAWSProvider(domainFilter domains.DomainFilter, dryRun bool) (*AWSProvider, error) {
+func NewAWSProvider(domainFilter DomainFilter, dryRun bool) (*AWSProvider, error) {
 	config := aws.NewConfig()
 
 	config = config.WithHTTPClient(
