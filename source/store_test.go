@@ -17,86 +17,73 @@ limitations under the License.
 package source
 
 import (
+	"errors"
 	"testing"
 
-	"github.com/kubernetes-incubator/external-dns/internal/testutils"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestStore(t *testing.T) {
-	t.Run("RegisterAndLookup", testRegisterAndLookup)
-	t.Run("LookupMultiple", testLookupMultiple)
+type MockClientGenerator struct {
+	mock.Mock
+	client kubernetes.Interface
 }
 
-// testRegisterAndLookup tests that a Source can be registered and looked up by name.
-func testRegisterAndLookup(t *testing.T) {
-	for _, tc := range []struct {
-		title            string
-		givenAndExpected map[string]Source
-	}{
-		{
-			"registered source is found by name",
-			map[string]Source{
-				"foo": &testutils.MockSource{},
-			},
-		},
-	} {
-		t.Run(tc.title, func(t *testing.T) {
-			for k, v := range tc.givenAndExpected {
-				Register(k, v)
-			}
-
-			for k, v := range tc.givenAndExpected {
-				assert.Equal(t, v, Lookup(k))
-			}
-		})
+func (m *MockClientGenerator) KubeClient() (kubernetes.Interface, error) {
+	args := m.Called()
+	if args.Error(1) == nil {
+		m.client = args.Get(0).(kubernetes.Interface)
+		return m.client, nil
 	}
+	return nil, args.Error(1)
 }
 
-// testLookupMultiple tests that Sources can be looked up by providing multiple names.
-func testLookupMultiple(t *testing.T) {
-	for _, tc := range []struct {
-		title       string
-		registered  map[string]Source
-		names       []string
-		expectError bool
-	}{
-		{
-			"multiple registered sources are found by names",
-			map[string]Source{
-				"foo": &testutils.MockSource{},
-				"bar": &testutils.MockSource{},
-			},
-			[]string{"foo", "bar"},
-			false,
-		},
-		{
-			"multiple registered sources, one source not registered",
-			map[string]Source{
-				"foo": &testutils.MockSource{},
-				"bar": &testutils.MockSource{},
-			},
-			[]string{"foo", "bar", "baz"},
-			true,
-		},
-	} {
-		t.Run(tc.title, func(t *testing.T) {
-			for k, v := range tc.registered {
-				Register(k, v)
-			}
+type ByNamesTestSuite struct {
+	suite.Suite
+}
 
-			lookup, err := LookupMultiple(tc.names)
-			if tc.expectError {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-				require.Len(t, lookup, len(tc.registered))
-				for _, source := range tc.registered {
-					assert.Contains(t, lookup, source)
-				}
-			}
-		})
-	}
+func (suite *ByNamesTestSuite) TestAllInitialized() {
+	mockClientGenerator := new(MockClientGenerator)
+	mockClientGenerator.On("KubeClient").Return(fake.NewSimpleClientset(), nil)
+
+	sources, err := ByNames(mockClientGenerator, []string{"service", "ingress", "fake"}, &Config{})
+	suite.NoError(err, "should not generate errors")
+	suite.Len(sources, 3, "should generate all three sources")
+}
+
+func (suite *ByNamesTestSuite) TestOnlyFake() {
+	mockClientGenerator := new(MockClientGenerator)
+	mockClientGenerator.On("KubeClient").Return(fake.NewSimpleClientset(), nil)
+
+	sources, err := ByNames(mockClientGenerator, []string{"fake"}, &Config{})
+	suite.NoError(err, "should not generate errors")
+	suite.Len(sources, 1, "should generate all three sources")
+	suite.Nil(mockClientGenerator.client, "client should not be created")
+}
+
+func (suite *ByNamesTestSuite) TestSourceNotFound() {
+	mockClientGenerator := new(MockClientGenerator)
+	mockClientGenerator.On("KubeClient").Return(fake.NewSimpleClientset(), nil)
+
+	sources, err := ByNames(mockClientGenerator, []string{"foo"}, &Config{})
+	suite.Equal(err, ErrSourceNotFound, "should return sourcen not found")
+	suite.Len(sources, 0, "should not returns any source")
+}
+
+func (suite *ByNamesTestSuite) TestKubeClientFails() {
+	mockClientGenerator := new(MockClientGenerator)
+	mockClientGenerator.On("KubeClient").Return(nil, errors.New("foo"))
+
+	_, err := ByNames(mockClientGenerator, []string{"service"}, &Config{})
+	suite.Error(err, "should return an error if client cannot be created")
+
+	_, err = ByNames(mockClientGenerator, []string{"ingress"}, &Config{})
+	suite.Error(err, "should return an error if client cannot be created")
+}
+
+func TestByNames(t *testing.T) {
+	suite.Run(t, new(ByNamesTestSuite))
 }
