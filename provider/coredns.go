@@ -19,8 +19,11 @@ package provider
 import (
 	"container/list"
 	"encoding/json"
+	"fmt"
+	"math/rand"
 	"net"
 	"strings"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	etcd "github.com/coreos/etcd/client"
@@ -29,6 +32,10 @@ import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 // skyDNSClient is an interface to work with SkyDNS service records in etcd
 type skyDNSClient interface {
@@ -163,10 +170,11 @@ func (p coreDNSProvider) Records() ([]*endpoint.Endpoint, error) {
 	for _, service := range services {
 		domains := strings.Split(strings.TrimPrefix(service.Key, "/skydns/"), "/")
 		reverse(domains)
-		dnsName := strings.Join(domains, ".")
+		dnsName := strings.Join(domains[service.TargetStrip:], ".")
 		if !p.domainFilter.Match(dnsName) {
 			continue
 		}
+		prefix := strings.Join(domains[:service.TargetStrip], ".")
 		if service.Host != "" {
 			ep := endpoint.NewEndpoint(
 				dnsName,
@@ -174,6 +182,7 @@ func (p coreDNSProvider) Records() ([]*endpoint.Endpoint, error) {
 				guessRecordType(service.Host),
 			)
 			ep.Labels["originalText"] = service.Text
+			ep.Labels["prefix"] = prefix
 			result = append(result, ep)
 		}
 		if service.Text != "" {
@@ -182,6 +191,7 @@ func (p coreDNSProvider) Records() ([]*endpoint.Endpoint, error) {
 				service.Text,
 				endpoint.RecordTypeTXT,
 			)
+			ep.Labels["prefix"] = prefix
 			result = append(result, ep)
 		}
 	}
@@ -202,27 +212,47 @@ func (p coreDNSProvider) ApplyChanges(changes *plan.Changes) error {
 			log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", dnsName)
 			continue
 		}
-		service := Service{}
+		var services []Service
 		for _, ep := range group {
-			switch ep.RecordType {
-			case endpoint.RecordTypeA:
-				service.Host = ep.Target
-			case endpoint.RecordTypeCNAME:
-				if service.Host == "" {
-					service.Host = ep.Target
-				}
-			case endpoint.RecordTypeTXT:
-				service.Text = ep.Target
-			default:
-				log.Error("Unsupported record type", ep.RecordType)
+			if ep.RecordType == endpoint.RecordTypeTXT {
 				continue
 			}
-			if service.Text == "" {
-				service.Text = ep.Labels["originalText"]
+			prefix := ep.Labels["prefix"]
+			if prefix == "" {
+				prefix = fmt.Sprintf("%08x", rand.Int31())
 			}
+			service := Service{
+				Host:        ep.Target,
+				Text:        ep.Labels["originalText"],
+				Key:         etcdKeyFor(prefix + "." + dnsName),
+				TargetStrip: strings.Count(prefix, ".") + 1,
+			}
+			services = append(services, service)
 		}
-		if service.Host != "" || service.Text != "" {
-			service.Key = etcdKeyFor(dnsName)
+		index := 0
+		for _, ep := range group {
+			if ep.RecordType != "TXT" {
+				continue
+			}
+			if index >= len(services) {
+				prefix := ep.Labels["prefix"]
+				if prefix == "" {
+					prefix = fmt.Sprintf("%08x", rand.Int31())
+				}
+				services = append(services, Service{
+					Key:         etcdKeyFor(prefix + "." + dnsName),
+					TargetStrip: strings.Count(prefix, ".") + 1,
+				})
+			}
+			services[index].Text = ep.Target
+			index++
+		}
+
+		for i := index; index > 0 && i < len(services); i++ {
+			services[i].Text = ""
+		}
+
+		for _, service := range services {
 			log.Infof("Add/set key %s to Host=%s, Text=%s", service.Key, service.Host, service.Text)
 			if !p.dryRun {
 				err := p.client.SaveService(&service)
@@ -234,7 +264,11 @@ func (p coreDNSProvider) ApplyChanges(changes *plan.Changes) error {
 	}
 
 	for _, ep := range changes.Delete {
-		key := etcdKeyFor(ep.DNSName)
+		dnsName := ep.DNSName
+		if ep.Labels["prefix"] != "" {
+			dnsName = ep.Labels["prefix"] + "." + dnsName
+		}
+		key := etcdKeyFor(dnsName)
 		log.Infof("Delete key %s", key)
 		if !p.dryRun {
 			err := p.client.DeleteService(key)

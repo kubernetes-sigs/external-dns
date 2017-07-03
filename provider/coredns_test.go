@@ -241,9 +241,11 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 		Create: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("domain3.local", "7.7.7.7", endpoint.RecordTypeA),
 		},
-		UpdateNew: []*endpoint.Endpoint{updatedEp},
+		UpdateNew: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("domain1.local", "6.6.6.6", "A"),
+		},
 	}
-	coredns.ApplyChanges(changes2)
+	applyServiceChanges(coredns, changes2)
 
 	expectedServices2 := map[string]*Service{
 		"/skydns/local/domain1": {Host: "6.6.6.6", Text: "string1"},
@@ -260,7 +262,7 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 		},
 	}
 
-	coredns.ApplyChanges(changes3)
+	applyServiceChanges(coredns, changes3)
 
 	expectedServices3 := map[string]*Service{
 		"/skydns/local/domain2": {Host: "site.local"},
@@ -268,12 +270,28 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 	validateServices(client.services, expectedServices3, t, 3)
 }
 
+func applyServiceChanges(provider coreDNSProvider, changes *plan.Changes) {
+	records, _ := provider.Records()
+	for _, col := range [][]*endpoint.Endpoint{changes.Create, changes.UpdateNew, changes.Delete} {
+		for _, record := range col {
+			for _, existingRecord := range records {
+				if existingRecord.DNSName == record.DNSName && existingRecord.RecordType == record.RecordType {
+					record.MergeLabels(existingRecord.Labels)
+				}
+			}
+		}
+	}
+	provider.ApplyChanges(changes)
+}
+
 func validateServices(services, expectedServices map[string]*Service, t *testing.T, step int) {
 	if len(services) != len(expectedServices) {
 		t.Errorf("wrong number of records on step %d: %d != %d", step, len(services), len(expectedServices))
 	}
 	for key, value := range services {
-		expectedService := expectedServices[key]
+		keyParts := strings.Split(key, "/")
+		expectedKey := strings.Join(keyParts[:len(keyParts)-value.TargetStrip], "/")
+		expectedService := expectedServices[expectedKey]
 		if expectedService == nil {
 			t.Errorf("unexpected service %s", key)
 			continue
