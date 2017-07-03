@@ -344,17 +344,22 @@ func testServiceSourceEndpoints(t *testing.T) {
 			false,
 		},
 		{
-			"not annotated services with unknown tmpl field should not return anything",
+			"annotated services with set fqdnTemplate annotation takes precedence",
 			"",
 			"testing",
 			"foo",
 			"",
-			"{{.Calibre}}.bar.example.com",
+			"{{.Name}}.bar.example.com",
 			map[string]string{},
-			map[string]string{},
-			[]string{"1.2.3.4"},
-			[]*endpoint.Endpoint{},
-			true,
+			map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+			},
+			[]string{"1.2.3.4", "elb.com"},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Target: "elb.com"},
+			},
+			false,
 		},
 		{
 			"compatibility annotated services with tmpl. compatibility takes precedence",
@@ -372,6 +377,19 @@ func testServiceSourceEndpoints(t *testing.T) {
 				{DNSName: "mate.example.org", Target: "1.2.3.4"},
 			},
 			false,
+		},
+		{
+			"not annotated services with unknown tmpl field should not return anything",
+			"",
+			"testing",
+			"foo",
+			"",
+			"{{.Calibre}}.bar.example.com",
+			map[string]string{},
+			map[string]string{},
+			[]string{"1.2.3.4"},
+			[]*endpoint.Endpoint{},
+			true,
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
