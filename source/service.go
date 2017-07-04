@@ -143,9 +143,11 @@ func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
 		return nil
 	}
 
-	hostnames := parseHostnameAnnotation(hostnameAnnotation)
+	// splits the hostname annotation and removes the trailing periods
+	hostnameList := strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
 
-	for _, hostname := range hostnames {
+	for _, hostname := range hostnameList {
+		hostname = strings.TrimSuffix(hostname, ".")
 		// Create a corresponding endpoint for each configured external entrypoint.
 		for _, lb := range svc.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
@@ -159,16 +161,4 @@ func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
 	}
 
 	return endpoints
-}
-
-// parseHostnameAnnotation splits the hostname annontation and removes the trailing periods
-func parseHostnameAnnotation(hostnameAnnotation string) (hostnames []string) {
-
-	hostnameList := strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
-
-	for _, hostname := range hostnameList {
-		hostnames = append(hostnames, strings.TrimSuffix(hostname, "."))
-	}
-
-	return
 }
