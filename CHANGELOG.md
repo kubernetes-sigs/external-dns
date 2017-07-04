@@ -1,6 +1,7 @@
   - The flag `--domain-filter` can be repeated multiple times like `--domain-filter=example.com --domain-filter=company.org.`.
   - A trailing period is not required anymore for `--domain-filter` when AWS (or any other) provider is used.
-
+  - The `external-dns.alpha.kubernetes.io/hostname` annotation accepts now a comma separated list of hostnames and a trailing period is not required anymore.
+  
 ## v0.3.0 - 2017-05-08
 
 Features:
