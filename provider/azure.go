@@ -65,7 +65,7 @@ type RecordsClient interface {
 
 // AzureProvider implements the DNS provider for Microsoft's Azure cloud platform.
 type AzureProvider struct {
-	domainFilter  string
+	domainFilter  DomainFilter
 	dryRun        bool
 	resourceGroup string
 	zonesClient   ZonesClient
@@ -75,7 +75,7 @@ type AzureProvider struct {
 // NewAzureProvider creates a new Azure provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAzureProvider(configFile string, domainFilter string, resourceGroup string, dryRun bool) (*AzureProvider, error) {
+func NewAzureProvider(configFile string, domainFilter DomainFilter, resourceGroup string, dryRun bool) (*AzureProvider, error) {
 	contents, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
@@ -195,7 +195,7 @@ func (p *AzureProvider) zones() ([]dns.Zone, error) {
 
 	for list.Value != nil && len(*list.Value) > 0 {
 		for _, zone := range *list.Value {
-			if zone.Name != nil && strings.HasSuffix(*zone.Name, p.domainFilter) {
+			if zone.Name != nil && p.domainFilter.Match(*zone.Name) {
 				zones = append(zones, zone)
 			}
 		}

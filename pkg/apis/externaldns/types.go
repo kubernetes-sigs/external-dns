@@ -32,11 +32,11 @@ type Config struct {
 	KubeConfig         string
 	Sources            []string
 	Namespace          string
-	FqdnTemplate       string
+	FQDNTemplate       string
 	Compatibility      string
 	Provider           string
 	GoogleProject      string
-	DomainFilter       string
+	DomainFilter       []string
 	AzureConfigFile    string
 	AzureResourceGroup string
 	Policy             string
@@ -56,11 +56,11 @@ var defaultConfig = &Config{
 	KubeConfig:         "",
 	Sources:            nil,
 	Namespace:          "",
-	FqdnTemplate:       "",
+	FQDNTemplate:       "",
 	Compatibility:      "",
 	Provider:           "",
 	GoogleProject:      "",
-	DomainFilter:       "",
+	DomainFilter:       []string{},
 	AzureConfigFile:    "/etc/kubernetes/azure.json",
 	AzureResourceGroup: "",
 	Policy:             "sync",
@@ -93,13 +93,13 @@ func (cfg *Config) ParseFlags(args []string) error {
 	// Flags related to processing sources
 	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, fake)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "fake")
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
-	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional)").Default(defaultConfig.FqdnTemplate).StringVar(&cfg.FqdnTemplate)
+	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional)").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
 	app.Flag("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule)").Default(defaultConfig.Compatibility).EnumVar(&cfg.Compatibility, "", "mate", "molecule")
 
 	// Flags related to providers
 	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, google, azure, cloudflare, digitalocean, dnsimple, inmemory)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "google", "azure", "cloudflare", "digitalocean", "dnsimple", "inmemory")
 	app.Flag("google-project", "When using the Google provider, specify the Google project (required when --provider=google)").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
-	app.Flag("domain-filter", "Limit possible target zones by a domain suffix (optional)").Default(defaultConfig.DomainFilter).StringVar(&cfg.DomainFilter)
+	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure").Default(defaultConfig.AzureConfigFile).StringVar(&cfg.AzureConfigFile)
 	app.Flag("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (optional)").Default(defaultConfig.AzureResourceGroup).StringVar(&cfg.AzureResourceGroup)
 

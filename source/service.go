@@ -41,27 +41,29 @@ type serviceSource struct {
 	namespace string
 	// process Services with legacy annotations
 	compatibility string
-	fqdntemplate  *template.Template
+	fqdnTemplate  *template.Template
 }
 
-// NewServiceSource creates a new serviceSource with the given client and namespace scope.
-func NewServiceSource(client kubernetes.Interface, namespace, fqdntemplate string, compatibility string) (Source, error) {
-	var tmpl *template.Template
-	var err error
-	if fqdntemplate != "" {
+// NewServiceSource creates a new serviceSource with the given config.
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate, compatibility string) (Source, error) {
+	var (
+		tmpl *template.Template
+		err  error
+	)
+	if fqdnTemplate != "" {
 		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
 			"trimPrefix": strings.TrimPrefix,
-		}).Parse(fqdntemplate)
+		}).Parse(fqdnTemplate)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return &serviceSource{
-		client:        client,
+		client:        kubeClient,
 		namespace:     namespace,
 		compatibility: compatibility,
-		fqdntemplate:  tmpl,
+		fqdnTemplate:  tmpl,
 	}, nil
 }
 
@@ -91,7 +93,7 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		}
 
 		// apply template if none of the above is found
-		if len(svcEndpoints) == 0 && sc.fqdntemplate != nil {
+		if len(svcEndpoints) == 0 && sc.fqdnTemplate != nil {
 			svcEndpoints, err = sc.endpointsFromTemplate(&svc)
 			if err != nil {
 				return nil, err
@@ -114,7 +116,7 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 	var endpoints []*endpoint.Endpoint
 
 	var buf bytes.Buffer
-	err := sc.fqdntemplate.Execute(&buf, svc)
+	err := sc.fqdnTemplate.Execute(&buf, svc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to apply template on service %s: %v", svc.String(), err)
 	}
@@ -138,19 +140,25 @@ func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	// Get the desired hostname of the service from the annotation.
-	hostname, exists := svc.Annotations[hostnameAnnotationKey]
+	hostnameAnnotation, exists := svc.Annotations[hostnameAnnotationKey]
 	if !exists {
 		return nil
 	}
 
-	// Create a corresponding endpoint for each configured external entrypoint.
-	for _, lb := range svc.Status.LoadBalancer.Ingress {
-		if lb.IP != "" {
-			//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
-		}
-		if lb.Hostname != "" {
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
+	// splits the hostname annotation and removes the trailing periods
+	hostnameList := strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
+
+	for _, hostname := range hostnameList {
+		hostname = strings.TrimSuffix(hostname, ".")
+		// Create a corresponding endpoint for each configured external entrypoint.
+		for _, lb := range svc.Status.LoadBalancer.Ingress {
+			if lb.IP != "" {
+				//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
+				endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
+			}
+			if lb.Hostname != "" {
+				endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
+			}
 		}
 	}
 

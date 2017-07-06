@@ -83,7 +83,7 @@ type dnsimpleProvider struct {
 	client       DnsimpleZoneServiceInterface
 	identity     identityService
 	accountID    string
-	domainFilter string
+	domainFilter DomainFilter
 	dryRun       bool
 }
 
@@ -99,7 +99,7 @@ const (
 )
 
 // NewDnsimpleProvider initializes a new Dnsimple based provider
-func NewDnsimpleProvider(domainFilter string, dryRun bool) (Provider, error) {
+func NewDnsimpleProvider(domainFilter DomainFilter, dryRun bool) (Provider, error) {
 	oauthToken := os.Getenv("DNSIMPLE_OAUTH")
 	if len(oauthToken) == 0 {
 		return nil, fmt.Errorf("No dnsimple oauth token provided")
@@ -127,7 +127,7 @@ func (p *dnsimpleProvider) Zones() (map[string]dnsimple.Zone, error) {
 		return nil, err
 	}
 	for _, zone := range zonesResponse.Data {
-		if strings.HasSuffix(zone.Name, p.domainFilter) {
+		if p.domainFilter.Match(zone.Name) {
 			zones[strconv.Itoa(zone.ID)] = zone
 		}
 	}

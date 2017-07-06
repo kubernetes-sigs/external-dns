@@ -45,13 +45,13 @@ func testServiceSourceImplementsSource(t *testing.T) {
 func testServiceSourceNewServiceSource(t *testing.T) {
 	for _, ti := range []struct {
 		title        string
-		fqdntemplate string
+		fqdnTemplate string
 		expectError  bool
 	}{
 		{
 			title:        "invalid template",
 			expectError:  true,
-			fqdntemplate: "{{.Name",
+			fqdnTemplate: "{{.Name",
 		},
 		{
 			title:       "valid empty template",
@@ -60,11 +60,16 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 		{
 			title:        "valid template",
 			expectError:  false,
-			fqdntemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
+			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			_, err := NewServiceSource(fake.NewSimpleClientset(), "", ti.fqdntemplate, "")
+			_, err := NewServiceSource(
+				fake.NewSimpleClientset(),
+				"",
+				ti.fqdnTemplate,
+				"",
+			)
 
 			if ti.expectError {
 				assert.Error(t, err)
@@ -83,7 +88,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 		svcNamespace    string
 		svcName         string
 		compatibility   string
-		fqdntemplate    string
+		fqdnTemplate    string
 		labels          map[string]string
 		annotations     map[string]string
 		lbs             []string
@@ -117,6 +122,42 @@ func testServiceSourceEndpoints(t *testing.T) {
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+			},
+			false,
+		},
+		{
+			"annotated services with multiple hostnames return an endpoint with target IP",
+			"",
+			"testing",
+			"foo",
+			"",
+			"",
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey: "foo.example.org., bar.example.org.",
+			},
+			[]string{"1.2.3.4"},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "bar.example.org", Target: "1.2.3.4"},
+			},
+			false,
+		},
+		{
+			"annotated services with multiple hostnames and without trailing period return an endpoint with target IP",
+			"",
+			"testing",
+			"foo",
+			"",
+			"",
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey: "foo.example.org, bar.example.org",
+			},
+			[]string{"1.2.3.4"},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "bar.example.org", Target: "1.2.3.4"},
 			},
 			false,
 		},
@@ -323,7 +364,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			false,
 		},
 		{
-			"not annotated services with set fqdntemplate return an endpoint with target IP",
+			"not annotated services with set fqdnTemplate return an endpoint with target IP",
 			"",
 			"testing",
 			"foo",
@@ -339,17 +380,22 @@ func testServiceSourceEndpoints(t *testing.T) {
 			false,
 		},
 		{
-			"not annotated services with unknown tmpl field should not return anything",
+			"annotated services with set fqdnTemplate annotation takes precedence",
 			"",
 			"testing",
 			"foo",
 			"",
-			"{{.Calibre}}.bar.example.com",
+			"{{.Name}}.bar.example.com",
 			map[string]string{},
-			map[string]string{},
-			[]string{"1.2.3.4"},
-			[]*endpoint.Endpoint{},
-			true,
+			map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+			},
+			[]string{"1.2.3.4", "elb.com"},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Target: "elb.com"},
+			},
+			false,
 		},
 		{
 			"compatibility annotated services with tmpl. compatibility takes precedence",
@@ -367,6 +413,19 @@ func testServiceSourceEndpoints(t *testing.T) {
 				{DNSName: "mate.example.org", Target: "1.2.3.4"},
 			},
 			false,
+		},
+		{
+			"not annotated services with unknown tmpl field should not return anything",
+			"",
+			"testing",
+			"foo",
+			"",
+			"{{.Calibre}}.bar.example.com",
+			map[string]string{},
+			map[string]string{},
+			[]string{"1.2.3.4"},
+			[]*endpoint.Endpoint{},
+			true,
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
@@ -401,7 +460,12 @@ func testServiceSourceEndpoints(t *testing.T) {
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
-			client, err := NewServiceSource(kubernetes, tc.targetNamespace, tc.fqdntemplate, tc.compatibility)
+			client, _ := NewServiceSource(
+				kubernetes,
+				tc.targetNamespace,
+				tc.fqdnTemplate,
+				tc.compatibility,
+			)
 			require.NoError(t, err)
 
 			endpoints, err := client.Endpoints()

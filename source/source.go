@@ -16,9 +16,7 @@ limitations under the License.
 
 package source
 
-import (
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-)
+import "github.com/kubernetes-incubator/external-dns/endpoint"
 
 const (
 	// The annotation used for figuring out which controller is responsible
