@@ -52,36 +52,47 @@ type Changes struct {
 // processing. It returns a copy of Plan with the changes populated.
 func (p *Plan) Calculate() *Plan {
 	changes := &Changes{}
+	usedDesired := map[int]bool{}
+	usedCurrent := map[int]bool{}
 
-	// Ensure all desired records exist. For each desired record make sure it's
-	// either created or updated.
-	for _, desired := range p.Desired {
-		// Get the matching current record if it exists.
-		current, exists := recordExists(desired, p.Current)
-
-		// If there's no current record create desired record.
-		if !exists {
-			changes.Create = append(changes.Create, desired)
-			continue
+	for c, current := range p.Current {
+		for d, desired := range p.Desired {
+			if current.DNSName == desired.DNSName && current.Target == desired.Target &&
+				current.SuitableType() == desired.SuitableType() {
+				usedDesired[d] = true
+				usedCurrent[c] = true
+				log.Debugf("Skipping endpoint %v because target has not changed", desired)
+			}
 		}
-
-		// If there already is a record update it if it changed.
-		if desired.Target != current.Target {
-			changes.UpdateOld = append(changes.UpdateOld, current)
-
-			desired.RecordType = current.RecordType // inherit the type from the dns provider
-			desired.MergeLabels(current.Labels)     // inherit the labels from the dns provider, including Owner ID
-			changes.UpdateNew = append(changes.UpdateNew, desired)
-			continue
-		}
-
-		log.Debugf("Skipping endpoint %v because target has not changed", desired)
 	}
 
-	// Ensure all undesired records are removed. Each current record that cannot
-	// be found in the list of desired records is removed.
-	for _, current := range p.Current {
-		if _, exists := recordExists(current, p.Desired); !exists {
+	for c, current := range p.Current {
+		if _, found := usedCurrent[c]; found {
+			continue
+		}
+		for d, desired := range p.Desired {
+			if _, found := usedDesired[d]; found {
+				continue
+			}
+			if current.DNSName == desired.DNSName && current.SuitableType() == desired.SuitableType() {
+				changes.UpdateOld = append(changes.UpdateOld, current)
+				changes.UpdateNew = append(changes.UpdateNew, desired)
+				if desired.Labels != nil && desired.Labels[endpoint.OwnerLabelKey] == "" {
+					desired.Labels[endpoint.OwnerLabelKey] = current.Labels[endpoint.OwnerLabelKey]
+				}
+				desired.RecordType = current.RecordType
+				usedDesired[d] = true
+				usedCurrent[c] = true
+			}
+		}
+	}
+	for d, desired := range p.Desired {
+		if _, found := usedDesired[d]; !found {
+			changes.Create = append(changes.Create, desired)
+		}
+	}
+	for c, current := range p.Current {
+		if _, found := usedCurrent[c]; !found {
 			changes.Delete = append(changes.Delete, current)
 		}
 	}
@@ -98,15 +109,4 @@ func (p *Plan) Calculate() *Plan {
 	}
 
 	return plan
-}
-
-// recordExists checks whether a record can be found in a list of records.
-func recordExists(needle *endpoint.Endpoint, haystack []*endpoint.Endpoint) (*endpoint.Endpoint, bool) {
-	for _, record := range haystack {
-		if record.DNSName == needle.DNSName {
-			return record, true
-		}
-	}
-
-	return nil, false
 }
