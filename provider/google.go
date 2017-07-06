@@ -335,7 +335,7 @@ func newRecord(endpoint *endpoint.Endpoint) *dns.ResourceRecordSet {
 	// we should go back to storing DNS names with a trailing dot internally. This
 	// way we can use it has is here and trim it off if it exists when necessary.
 	target := endpoint.Target
-	if suitableType(endpoint) == "CNAME" {
+	if endpoint.SuitableType() == "CNAME" {
 		target = ensureTrailingDot(target)
 	}
 
@@ -343,6 +343,6 @@ func newRecord(endpoint *endpoint.Endpoint) *dns.ResourceRecordSet {
 		Name:    ensureTrailingDot(endpoint.DNSName),
 		Rrdatas: []string{target},
 		Ttl:     300,
-		Type:    suitableType(endpoint),
+		Type:    endpoint.SuitableType(),
 	}
 }

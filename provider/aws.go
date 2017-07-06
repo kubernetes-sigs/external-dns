@@ -292,7 +292,7 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 			EvaluateTargetHealth: aws.Bool(evaluateTargetHealth),
 		}
 	} else {
-		change.ResourceRecordSet.Type = aws.String(suitableType(endpoint))
+		change.ResourceRecordSet.Type = aws.String(endpoint.SuitableType())
 		change.ResourceRecordSet.TTL = aws.Int64(recordTTL)
 		change.ResourceRecordSet.ResourceRecords = []*route53.ResourceRecord{
 			{

@@ -277,7 +277,7 @@ func newCloudFlareChanges(action string, endpoints []*endpoint.Endpoint) []*clou
 }
 
 func newCloudFlareChange(action string, endpoint *endpoint.Endpoint) *cloudFlareChange {
-	typ := suitableType(endpoint)
+	typ := endpoint.SuitableType()
 
 	return &cloudFlareChange{
 		Action: action,

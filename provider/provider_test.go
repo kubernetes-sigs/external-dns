@@ -36,7 +36,7 @@ func TestSuitableType(t *testing.T) {
 			RecordType: tc.recordType,
 		}
 
-		recordType := suitableType(ep)
+		recordType := ep.SuitableType()
 
 		if recordType != tc.expected {
 			t.Errorf("expected %s, got %s", tc.expected, recordType)
