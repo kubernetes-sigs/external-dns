@@ -12,7 +12,7 @@ func TestZoneFinder(t *testing.T) {
 	}{
 		{
 			"foobar.zone.com",
-			map[string]string{"zone.com": "123456"},
+			map[string]string{"zone.com": "1234567"},
 			"zone.com",
 		},
 	}
