@@ -446,25 +446,6 @@ func TestSeparateChanges(t *testing.T) {
 	})
 }
 
-func TestGoogleSuitableZone(t *testing.T) {
-	zones := map[string]*dns.ManagedZone{
-		"example-org":     {Name: "example-org", DnsName: "example.org."},
-		"bar-example-org": {Name: "bar-example-org", DnsName: "bar.example.org."},
-	}
-
-	for _, tc := range []struct {
-		hostname string
-		expected *dns.ManagedZone
-	}{
-		{"foo.bar.example.org.", zones["bar-example-org"]},
-		{"foo.example.org.", zones["example-org"]},
-		{"foo.kubernetes.io.", nil},
-	} {
-		suitableZone := suitableManagedZone(tc.hostname, zones)
-		assert.Equal(t, suitableZone, tc.expected)
-	}
-}
-
 func validateZones(t *testing.T, zones map[string]*dns.ManagedZone, expected map[string]*dns.ManagedZone) {
 	require.Len(t, zones, len(expected))
 

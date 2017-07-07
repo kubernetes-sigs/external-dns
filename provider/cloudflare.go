@@ -19,7 +19,6 @@ package provider
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	log "github.com/Sirupsen/logrus"
 
@@ -142,13 +141,9 @@ func (p *CloudFlareProvider) Records() ([]*endpoint.Endpoint, error) {
 		}
 
 		for _, r := range records {
-			switch r.Type {
-			case "A", "CNAME", "TXT":
-				break
-			default:
-				continue
+			if ok := recordTypeFilter(r.Type); ok != false {
+				endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Content, r.Type))
 			}
-			endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Content, r.Type))
 		}
 	}
 
@@ -178,7 +173,7 @@ func (p *CloudFlareProvider) submitChanges(changes []*cloudFlareChange) error {
 		return err
 	}
 	// separate into per-zone change sets to be passed to the API.
-	changesByZone := cloudflareChangesByZone(zones, changes)
+	changesByZone := p.cloudflareChangesByZone(zones, changes)
 
 	for zoneID, changes := range changesByZone {
 		records, err := p.Client.DNSRecords(zoneID, cloudflare.DNSRecord{})
@@ -222,38 +217,26 @@ func (p *CloudFlareProvider) submitChanges(changes []*cloudFlareChange) error {
 }
 
 // changesByZone separates a multi-zone change into a single change per zone.
-func cloudflareChangesByZone(zones []cloudflare.Zone, changeSet []*cloudFlareChange) map[string][]*cloudFlareChange {
+func (p *CloudFlareProvider) cloudflareChangesByZone(zones []cloudflare.Zone, changeSet []*cloudFlareChange) map[string][]*cloudFlareChange {
 	changes := make(map[string][]*cloudFlareChange)
+	zoneNameIDMapper := map[string]string{}
 
 	for _, z := range zones {
+		zoneNameIDMapper[z.Name] = z.ID
 		changes[z.ID] = []*cloudFlareChange{}
 	}
 
 	for _, c := range changeSet {
-		zone := cloudflareSuitableZone(c.ResourceRecordSet.Name, zones)
-		if zone == nil {
+		zone := zoneFinder(c.ResourceRecordSet.Name, zoneNameIDMapper)
+		if zone == "" {
 			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.ResourceRecordSet.Name)
 			continue
 		}
-		changes[zone.ID] = append(changes[zone.ID], c)
+		zoneID := zoneNameIDMapper[zone]
+		changes[zoneID] = append(changes[zoneID], c)
 	}
 
 	return changes
-}
-
-// cloudflareSuitableZone returns the most suitable zone for a given hostname
-// and a set of zones.
-func cloudflareSuitableZone(hostname string, zones []cloudflare.Zone) *cloudflare.Zone {
-	var result *cloudflare.Zone
-	for i := range zones {
-		zone := &zones[i]
-		if strings.HasSuffix(hostname, zone.Name) {
-			if result == nil || len(zone.Name) > len(result.Name) {
-				result = zone
-			}
-		}
-	}
-	return result
 }
 
 func (p *CloudFlareProvider) getRecordID(records []cloudflare.DNSRecord, record cloudflare.DNSRecord) string {

@@ -445,27 +445,6 @@ func TestCloudFlareGetRecordID(t *testing.T) {
 	}))
 }
 
-func TestCloudflareSuitableZone(t *testing.T) {
-	zones := []cloudflare.Zone{
-		{
-			ID:   "1",
-			Name: "foo.com",
-		},
-		{
-			ID:   "2",
-			Name: "foo.bar.com",
-		},
-		{
-			ID:   "3",
-			Name: "bar.com",
-		},
-	}
-	hostname := "a.foo.bar.com"
-	zone := cloudflareSuitableZone(hostname, zones)
-	assert.NotNil(t, zone)
-	assert.Equal(t, "2", zone.ID)
-}
-
 func validateCloudFlareZones(t *testing.T, zones []cloudflare.Zone, expected []cloudflare.Zone) {
 	require.Len(t, zones, len(expected))
 
