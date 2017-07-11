@@ -26,8 +26,8 @@ import (
 	"github.com/dnsimple/dnsimple-go/dnsimple"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
-	"github.com/kubernetes-incubator/external-dns/provider/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -81,7 +81,7 @@ func TestDnsimpleServices(t *testing.T) {
 	}
 
 	// Setup mock services
-	mockDNS := &mocks.DnsimpleZoneServiceInterface{}
+	mockDNS := &mockDnsimpleZoneServiceInterface{}
 	mockDNS.On("ListZones", "1", &dnsimple.ZoneListOptions{}).Return(&dnsimpleListZonesResponse, nil)
 	mockDNS.On("ListZones", "2", &dnsimple.ZoneListOptions{}).Return(nil, fmt.Errorf("Account ID not found"))
 	mockDNS.On("ListRecords", "1", "example.com", &dnsimple.ZoneRecordListOptions{}).Return(&dnsimpleListRecordsResponse, nil)
@@ -180,4 +180,63 @@ func validateDnsimpleZones(t *testing.T, zones map[string]dnsimple.Zone, expecte
 	for _, e := range expected {
 		assert.Equal(t, zones[strconv.Itoa(e.ID)].Name, e.Name)
 	}
+}
+
+type mockDnsimpleZoneServiceInterface struct {
+	mock.Mock
+}
+
+func (_m *mockDnsimpleZoneServiceInterface) CreateRecord(accountID string, zoneID string, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error) {
+	args := _m.Called(accountID, zoneID, recordAttributes)
+	var r0 *dnsimple.ZoneRecordResponse
+
+	if args.Get(0) != nil {
+		r0 = args.Get(0).(*dnsimple.ZoneRecordResponse)
+	}
+
+	return r0, args.Error(1)
+}
+
+func (_m *mockDnsimpleZoneServiceInterface) DeleteRecord(accountID string, zoneID string, recordID int) (*dnsimple.ZoneRecordResponse, error) {
+	args := _m.Called(accountID, zoneID, recordID)
+	var r0 *dnsimple.ZoneRecordResponse
+
+	if args.Get(0) != nil {
+		r0 = args.Get(0).(*dnsimple.ZoneRecordResponse)
+	}
+
+	return r0, args.Error(1)
+}
+
+func (_m *mockDnsimpleZoneServiceInterface) ListRecords(accountID string, zoneID string, options *dnsimple.ZoneRecordListOptions) (*dnsimple.ZoneRecordsResponse, error) {
+	args := _m.Called(accountID, zoneID, options)
+	var r0 *dnsimple.ZoneRecordsResponse
+
+	if args.Get(0) != nil {
+		r0 = args.Get(0).(*dnsimple.ZoneRecordsResponse)
+	}
+
+	return r0, args.Error(1)
+}
+
+func (_m *mockDnsimpleZoneServiceInterface) ListZones(accountID string, options *dnsimple.ZoneListOptions) (*dnsimple.ZonesResponse, error) {
+	args := _m.Called(accountID, options)
+	var r0 *dnsimple.ZonesResponse
+
+	if args.Get(0) != nil {
+		r0 = args.Get(0).(*dnsimple.ZonesResponse)
+	}
+
+	return r0, args.Error(1)
+}
+
+func (_m *mockDnsimpleZoneServiceInterface) UpdateRecord(accountID string, zoneID string, recordID int, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error) {
+	args := _m.Called(accountID, zoneID, recordID, recordAttributes)
+	var r0 *dnsimple.ZoneRecordResponse
+
+	if args.Get(0) != nil {
+		r0 = args.Get(0).(*dnsimple.ZoneRecordResponse)
+	}
+
+	return r0, args.Error(1)
 }

@@ -46,8 +46,8 @@ func (p *dnsimpleProvider) GetAccountID(credentials dnsimple.Credentials, client
 	return strconv.Itoa(whoamiResponse.Data.Account.ID), nil
 }
 
-// DnsimpleZoneServiceInterface is an interface that contains all necessary zone services from dnsimple
-type DnsimpleZoneServiceInterface interface {
+// dnsimpleZoneServiceInterface is an interface that contains all necessary zone services from dnsimple
+type dnsimpleZoneServiceInterface interface {
 	ListZones(accountID string, options *dnsimple.ZoneListOptions) (*dnsimple.ZonesResponse, error)
 	ListRecords(accountID string, zoneID string, options *dnsimple.ZoneRecordListOptions) (*dnsimple.ZoneRecordsResponse, error)
 	CreateRecord(accountID string, zoneID string, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error)
@@ -80,7 +80,7 @@ func (z dnsimpleZoneService) UpdateRecord(accountID string, zoneID string, recor
 }
 
 type dnsimpleProvider struct {
-	client       DnsimpleZoneServiceInterface
+	client       dnsimpleZoneServiceInterface
 	identity     identityService
 	accountID    string
 	domainFilter DomainFilter
