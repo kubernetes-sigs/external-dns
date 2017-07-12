@@ -1,0 +1,13 @@
+build_steps:
+- desc: Install docker
+  cmd: |
+    curl -fLOsS https://delivery.cloud.zalando.com/utils/ensure-docker && sh ensure-docker && rm ensure-docker
+- desc: Build and push docker image
+  cmd: |
+    image=registry.opensource.zalan.do/teapot/external-dns:$(git describe --always --dirty --tags)
+    docker build --tag $image .
+    IS_PR_BUILD=${CDP_PULL_REQUEST_NUMBER+"true"}
+    if [[ ${CDP_TARGET_BRANCH} == "master" && ${IS_PR_BUILD} != "true" ]]
+    then
+      docker push $image
+    fi
