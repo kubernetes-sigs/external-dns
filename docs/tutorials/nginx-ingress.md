@@ -220,14 +220,14 @@ spec:
         image: registry.opensource.zalan.do/teapot/external-dns:v0.3.0
         args:
         - --source=ingress
-        - --domain-filter=external-dns-test.gcp.zalan.do.
+        - --domain-filter=external-dns-test.gcp.zalan.do
         - --provider=google
         - --google-project=zalando-external-dns-test
         - --registry=txt
         - --txt-owner-id=my-identifier
 ```
 
-Use `dry-run=true` if you want to be extra careful on the first run. Note, that you will not see any records created when you are running in dry-run mode. You can, however, inspect the logs and watch what would have been done.
+Use `--dry-run` if you want to be extra careful on the first run. Note, that you will not see any records created when you are running in dry-run mode. You can, however, inspect the logs and watch what would have been done.
 
 ## Deploy a sample application
 

@@ -41,13 +41,13 @@ func TestIngress(t *testing.T) {
 func TestNewIngressSource(t *testing.T) {
 	for _, ti := range []struct {
 		title        string
-		fqdntemplate string
+		fqdnTemplate string
 		expectError  bool
 	}{
 		{
 			title:        "invalid template",
 			expectError:  true,
-			fqdntemplate: "{{.Name",
+			fqdnTemplate: "{{.Name",
 		},
 		{
 			title:       "valid empty template",
@@ -56,11 +56,15 @@ func TestNewIngressSource(t *testing.T) {
 		{
 			title:        "valid template",
 			expectError:  false,
-			fqdntemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
+			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			_, err := NewIngressSource(fake.NewSimpleClientset(), "", ti.fqdntemplate)
+			_, err := NewIngressSource(
+				fake.NewSimpleClientset(),
+				"",
+				ti.fqdnTemplate,
+			)
 			if ti.expectError {
 				assert.Error(t, err)
 			} else {
@@ -167,7 +171,7 @@ func testIngressEndpoints(t *testing.T) {
 		targetNamespace string
 		ingressItems    []fakeIngress
 		expected        []*endpoint.Endpoint
-		fqdntemplate    string
+		fqdnTemplate    string
 	}{
 		{
 			title:           "no ingress",
@@ -315,7 +319,7 @@ func testIngressEndpoints(t *testing.T) {
 					Target:  "elb.com",
 				},
 			},
-			fqdntemplate: "{{.Name}}.ext-dns.test.com",
+			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
 		},
 		{
 			title:           "another controller annotation skipped even with template",
@@ -332,7 +336,7 @@ func testIngressEndpoints(t *testing.T) {
 				},
 			},
 			expected:     []*endpoint.Endpoint{},
-			fqdntemplate: "{{.Name}}.ext-dns.test.com",
+			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
@@ -342,7 +346,11 @@ func testIngressEndpoints(t *testing.T) {
 			}
 
 			fakeClient := fake.NewSimpleClientset()
-			ingressSource, _ := NewIngressSource(fakeClient, ti.targetNamespace, ti.fqdntemplate)
+			ingressSource, _ := NewIngressSource(
+				fakeClient,
+				ti.targetNamespace,
+				ti.fqdnTemplate,
+			)
 			for _, ingress := range ingresses {
 				_, err := fakeClient.Extensions().Ingresses(ingress.Namespace).Create(ingress)
 				require.NoError(t, err)

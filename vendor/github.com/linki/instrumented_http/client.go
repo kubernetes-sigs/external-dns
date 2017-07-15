@@ -31,11 +31,11 @@ const (
 )
 
 var (
-	// RequestDurationMicroseconds is a Prometheus summary to collect request times.
-	RequestDurationMicroseconds = prometheus.NewSummaryVec(
+	// RequestDurationSeconds is a Prometheus summary to collect request times.
+	RequestDurationSeconds = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
-			Name:        "request_duration_microseconds",
-			Help:        "The HTTP request latencies in microseconds.",
+			Name:        "request_duration_seconds",
+			Help:        "The HTTP request latencies in seconds.",
 			Subsystem:   "http",
 			ConstLabels: prometheus.Labels{"handler": handlerName},
 			Objectives:  map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
@@ -56,7 +56,7 @@ var (
 
 // init registers the Prometheus metric globally when the package is loaded.
 func init() {
-	prometheus.MustRegister(RequestDurationMicroseconds)
+	prometheus.MustRegister(RequestDurationSeconds)
 }
 
 // RoundTrip implements http.RoundTripper. It forwards the request to the
@@ -74,14 +74,14 @@ func (it *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	// Observe the time it took to make the request.
-	RequestDurationMicroseconds.WithLabelValues(
+	RequestDurationSeconds.WithLabelValues(
 		req.URL.Scheme,
 		req.URL.Host,
 		it.cbs.PathProcessor(req.URL.Path),
 		it.cbs.QueryProcessor(req.URL.RawQuery),
 		req.Method,
 		fmt.Sprintf("%d", statusCode),
-	).Observe(float64(time.Since(now).Nanoseconds() / 1000))
+	).Observe(time.Since(now).Seconds())
 
 	// return the response and error reported from the next RoundTripper.
 	return resp, err

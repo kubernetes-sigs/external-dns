@@ -23,7 +23,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/route53"
-
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
@@ -145,7 +144,7 @@ func (r *Route53APIStub) CreateHostedZone(input *route53.CreateHostedZoneInput) 
 }
 
 func TestAWSZones(t *testing.T) {
-	provider := newAWSProvider(t, "ext-dns-test-2.teapot.zalan.do.", false, []*endpoint.Endpoint{})
+	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), false, []*endpoint.Endpoint{})
 
 	zones, err := provider.Zones()
 	require.NoError(t, err)
@@ -167,7 +166,7 @@ func TestAWSZones(t *testing.T) {
 }
 
 func TestAWSRecords(t *testing.T) {
-	provider := newAWSProvider(t, "ext-dns-test-2.teapot.zalan.do.", false, []*endpoint.Endpoint{
+	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), false, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("list-test.zone-1.ext-dns-test-2.teapot.zalan.do", "1.2.3.4", "A"),
 		endpoint.NewEndpoint("list-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
 		endpoint.NewEndpoint("list-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "ALIAS"),
@@ -184,7 +183,7 @@ func TestAWSRecords(t *testing.T) {
 }
 
 func TestAWSCreateRecords(t *testing.T) {
-	provider := newAWSProvider(t, "ext-dns-test-2.teapot.zalan.do.", false, []*endpoint.Endpoint{})
+	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), false, []*endpoint.Endpoint{})
 
 	records := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("create-test.zone-1.ext-dns-test-2.teapot.zalan.do", "1.2.3.4", ""),
@@ -205,7 +204,7 @@ func TestAWSCreateRecords(t *testing.T) {
 }
 
 func TestAWSUpdateRecords(t *testing.T) {
-	provider := newAWSProvider(t, "ext-dns-test-2.teapot.zalan.do.", false, []*endpoint.Endpoint{
+	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), false, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
 		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.4.4", "A"),
 		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.elb.amazonaws.com", "CNAME"),
@@ -243,7 +242,7 @@ func TestAWSDeleteRecords(t *testing.T) {
 		endpoint.NewEndpoint("delete-test-cname-alias.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "CNAME"),
 	}
 
-	provider := newAWSProvider(t, "ext-dns-test-2.teapot.zalan.do.", false, originalEndpoints)
+	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), false, originalEndpoints)
 
 	require.NoError(t, provider.DeleteRecords(originalEndpoints))
 
@@ -254,7 +253,7 @@ func TestAWSDeleteRecords(t *testing.T) {
 }
 
 func TestAWSApplyChanges(t *testing.T) {
-	provider := newAWSProvider(t, "ext-dns-test-2.teapot.zalan.do.", false, []*endpoint.Endpoint{
+	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), false, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
 		endpoint.NewEndpoint("delete-test.zone-1.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
 		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.4.4", "A"),
@@ -328,7 +327,7 @@ func TestAWSApplyChangesDryRun(t *testing.T) {
 		endpoint.NewEndpoint("delete-test-cname-alias.zone-1.ext-dns-test-2.teapot.zalan.do", "qux.elb.amazonaws.com", "ALIAS"),
 	}
 
-	provider := newAWSProvider(t, "ext-dns-test-2.teapot.zalan.do.", true, originalEndpoints)
+	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), true, originalEndpoints)
 
 	createRecords := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("create-test.zone-1.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", ""),
@@ -480,7 +479,7 @@ func validateAWSChangeRecord(t *testing.T, record *route53.Change, expected *rou
 }
 
 func TestAWSCreateRecordsWithCNAME(t *testing.T) {
-	provider := newAWSProvider(t, "ext-dns-test-2.teapot.zalan.do.", false, []*endpoint.Endpoint{})
+	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), false, []*endpoint.Endpoint{})
 
 	records := []*endpoint.Endpoint{
 		{DNSName: "create-test.zone-1.ext-dns-test-2.teapot.zalan.do", Target: "foo.example.org"},
@@ -505,7 +504,7 @@ func TestAWSCreateRecordsWithCNAME(t *testing.T) {
 }
 
 func TestAWSCreateRecordsWithALIAS(t *testing.T) {
-	provider := newAWSProvider(t, "ext-dns-test-2.teapot.zalan.do.", false, []*endpoint.Endpoint{})
+	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), false, []*endpoint.Endpoint{})
 
 	records := []*endpoint.Endpoint{
 		{DNSName: "create-test.zone-1.ext-dns-test-2.teapot.zalan.do", Target: "foo.eu-central-1.elb.amazonaws.com"},
@@ -662,7 +661,7 @@ func clearAWSRecords(t *testing.T, provider *AWSProvider, zone string) {
 	}
 }
 
-func newAWSProvider(t *testing.T, domainFilter string, dryRun bool, records []*endpoint.Endpoint) *AWSProvider {
+func newAWSProvider(t *testing.T, domainFilter DomainFilter, dryRun bool, records []*endpoint.Endpoint) *AWSProvider {
 	client := NewRoute53APIStub()
 
 	provider := &AWSProvider{

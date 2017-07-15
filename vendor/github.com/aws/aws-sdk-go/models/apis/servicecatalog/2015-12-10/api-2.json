@@ -1,14 +1,14 @@
 {
   "version":"2.0",
   "metadata":{
-    "uid":"servicecatalog-2015-12-10",
     "apiVersion":"2015-12-10",
     "endpointPrefix":"servicecatalog",
     "jsonVersion":"1.1",
     "protocol":"json",
     "serviceFullName":"AWS Service Catalog",
     "signatureVersion":"v4",
-    "targetPrefix":"AWS242ServiceCatalogService"
+    "targetPrefix":"AWS242ServiceCatalogService",
+    "uid":"servicecatalog-2015-12-10"
   },
   "operations":{
     "AcceptPortfolioShare":{
@@ -249,6 +249,18 @@
       "errors":[
         {"shape":"ResourceNotFoundException"},
         {"shape":"InvalidParametersException"}
+      ]
+    },
+    "DescribeProvisionedProduct":{
+      "name":"DescribeProvisionedProduct",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"DescribeProvisionedProductInput"},
+      "output":{"shape":"DescribeProvisionedProductOutput"},
+      "errors":[
+        {"shape":"ResourceNotFoundException"}
       ]
     },
     "DescribeProvisioningArtifact":{
@@ -943,6 +955,7 @@
       "type":"structure",
       "members":{
         "ProductViewDetail":{"shape":"ProductViewDetail"},
+        "ProvisioningArtifactSummaries":{"shape":"ProvisioningArtifactSummaries"},
         "Tags":{"shape":"Tags"}
       }
     },
@@ -976,6 +989,20 @@
         "ProvisioningArtifacts":{"shape":"ProvisioningArtifacts"}
       }
     },
+    "DescribeProvisionedProductInput":{
+      "type":"structure",
+      "required":["Id"],
+      "members":{
+        "AcceptLanguage":{"shape":"AcceptLanguage"},
+        "Id":{"shape":"Id"}
+      }
+    },
+    "DescribeProvisionedProductOutput":{
+      "type":"structure",
+      "members":{
+        "ProvisionedProductDetail":{"shape":"ProvisionedProductDetail"}
+      }
+    },
     "DescribeProvisioningArtifactInput":{
       "type":"structure",
       "required":[
@@ -985,7 +1012,8 @@
       "members":{
         "AcceptLanguage":{"shape":"AcceptLanguage"},
         "ProvisioningArtifactId":{"shape":"Id"},
-        "ProductId":{"shape":"Id"}
+        "ProductId":{"shape":"Id"},
+        "Verbose":{"shape":"Verbose"}
       }
     },
     "DescribeProvisioningArtifactOutput":{
@@ -1309,7 +1337,7 @@
     "ParameterType":{"type":"string"},
     "ParameterValue":{
       "type":"string",
-      "max":1000
+      "max":4096
     },
     "PortfolioDescription":{
       "type":"string",
@@ -1362,7 +1390,10 @@
     },
     "ProductType":{
       "type":"string",
-      "enum":["CLOUD_FORMATION_TEMPLATE"]
+      "enum":[
+        "CLOUD_FORMATION_TEMPLATE",
+        "MARKETPLACE"
+      ]
     },
     "ProductViewAggregationType":{"type":"string"},
     "ProductViewAggregationValue":{
@@ -1400,7 +1431,8 @@
       "enum":[
         "FullTextSearch",
         "Owner",
-        "ProductType"
+        "ProductType",
+        "SourceProductId"
       ]
     },
     "ProductViewFilterValue":{"type":"string"},
@@ -1485,7 +1517,7 @@
         "Arn":{"shape":"ProvisionedProductNameOrArn"},
         "Type":{"shape":"ProvisionedProductType"},
         "Id":{"shape":"ProvisionedProductId"},
-        "Status":{"shape":"RecordStatus"},
+        "Status":{"shape":"ProvisionedProductStatus"},
         "StatusMessage":{"shape":"ProvisionedProductStatusMessage"},
         "CreatedTime":{"shape":"CreatedTime"},
         "IdempotencyToken":{"shape":"IdempotencyToken"},
@@ -1497,12 +1529,26 @@
       "member":{"shape":"ProvisionedProductDetail"}
     },
     "ProvisionedProductId":{"type":"string"},
-    "ProvisionedProductName":{"type":"string"},
+    "ProvisionedProductName":{
+      "type":"string",
+      "max":128,
+      "min":1,
+      "pattern":"[a-zA-Z0-9][a-zA-Z0-9._-]*"
+    },
     "ProvisionedProductNameOrArn":{
       "type":"string",
       "max":1224,
       "min":1,
-      "pattern":"[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}|arn:[a-z0-9-\\.]{1,63}:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:[^/].{0,1023}"
+      "pattern":"[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}|arn:[a-z0-9-\\.]{1,63}:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:[a-z0-9-\\.]{0,63}:[^/].{0,1023}"
+    },
+    "ProvisionedProductStatus":{
+      "type":"string",
+      "enum":[
+        "AVAILABLE",
+        "UNDER_CHANGE",
+        "TAINTED",
+        "ERROR"
+      ]
     },
     "ProvisionedProductStatusMessage":{"type":"string"},
     "ProvisionedProductType":{"type":"string"},
@@ -1535,7 +1581,7 @@
       "type":"map",
       "key":{"shape":"ProvisioningArtifactInfoKey"},
       "value":{"shape":"ProvisioningArtifactInfoValue"},
-      "max":1,
+      "max":100,
       "min":1
     },
     "ProvisioningArtifactInfoKey":{"type":"string"},
@@ -1566,9 +1612,27 @@
         "Type":{"shape":"ProvisioningArtifactType"}
       }
     },
+    "ProvisioningArtifactSummaries":{
+      "type":"list",
+      "member":{"shape":"ProvisioningArtifactSummary"}
+    },
+    "ProvisioningArtifactSummary":{
+      "type":"structure",
+      "members":{
+        "Id":{"shape":"Id"},
+        "Name":{"shape":"ProvisioningArtifactName"},
+        "Description":{"shape":"ProvisioningArtifactDescription"},
+        "CreatedTime":{"shape":"ProvisioningArtifactCreatedTime"},
+        "ProvisioningArtifactMetadata":{"shape":"ProvisioningArtifactInfo"}
+      }
+    },
     "ProvisioningArtifactType":{
       "type":"string",
-      "enum":["CLOUD_FORMATION_TEMPLATE"]
+      "enum":[
+        "CLOUD_FORMATION_TEMPLATE",
+        "MARKETPLACE_AMI",
+        "MARKETPLACE_CAR"
+      ]
     },
     "ProvisioningArtifacts":{
       "type":"list",
@@ -1633,9 +1697,11 @@
     "RecordStatus":{
       "type":"string",
       "enum":[
+        "CREATED",
         "IN_PROGRESS",
+        "IN_PROGRESS_IN_ERROR",
         "SUCCEEDED",
-        "ERROR"
+        "FAILED"
       ]
     },
     "RecordTag":{
@@ -1950,6 +2016,7 @@
       "type":"list",
       "member":{"shape":"UsageInstruction"}
     },
-    "UsePreviousValue":{"type":"boolean"}
+    "UsePreviousValue":{"type":"boolean"},
+    "Verbose":{"type":"boolean"}
   }
 }
