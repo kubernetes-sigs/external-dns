@@ -2,7 +2,7 @@
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using Cloudflare DNS.
 
-Make sure to use **>=0.4.0-alpha.0** version of ExternalDNS for this tutorial.
+Make sure to use **>=0.4.0-alpha.2** version of ExternalDNS for this tutorial.
 
 ## Creating a Cloudflare DNS zone
 
@@ -39,7 +39,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.0-alpha.0
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.0-alpha.2
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -117,9 +117,9 @@ Check your [Cloudflare dasbhboard](https://www.cloudflare.com/a/dns/example.com)
 
 Substitute the zone for the one created above if a different domain was used.
 
-This should show the external IP address of the service as the A record for your domain. 
+This should show the external IP address of the service as the A record for your domain.
 
-## Cleanup 
+## Cleanup
 
 Now that we have verified that ExternalDNS will automatically manage Cloudflare DNS records, we can delete the tutorial's example:
 
