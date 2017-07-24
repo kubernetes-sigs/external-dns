@@ -2,7 +2,7 @@
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster on Azure.
 
-Make sure to use **>=0.4.0-alpha.0** version of ExternalDNS for this tutorial.
+Make sure to use **>=0.4.0** version of ExternalDNS for this tutorial.
 
 This tutorial uses [Azure CLI 2.0](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) for all
 Azure commands and assumes that the Kubernetes cluster was created via Azure Container Services and `kubectl` commands
@@ -69,7 +69,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.0-alpha.0
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.0
         args:
         - --source=service
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.

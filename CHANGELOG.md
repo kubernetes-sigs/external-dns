@@ -1,3 +1,5 @@
+## v0.4.0 - 2017-07-21
+
   - ExternalDNS now supports three more DNS providers:
     * [AzureDNS](https://azure.microsoft.com/en-us/services/dns) @peterhuene
     * [CloudFlare](https://www.cloudflare.com/de/dns) @njuettner
