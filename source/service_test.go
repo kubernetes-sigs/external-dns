@@ -92,7 +92,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 		fqdnTemplate    string
 		labels          map[string]string
 		annotations     map[string]string
-		clusterIp       string
+		clusterIP       string
 		lbs             []string
 		expected        []*endpoint.Endpoint
 		expectError     bool
@@ -522,8 +522,8 @@ func testServiceSourceEndpoints(t *testing.T) {
 
 			service := &v1.Service{
 				Spec: v1.ServiceSpec{
-					Type: tc.svcType,
-					ClusterIP: tc.clusterIp,
+					Type:      tc.svcType,
+					ClusterIP: tc.clusterIP,
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace:   tc.svcNamespace,
