@@ -26,6 +26,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
@@ -63,6 +64,7 @@ type Route53API interface {
 	ChangeResourceRecordSets(*route53.ChangeResourceRecordSetsInput) (*route53.ChangeResourceRecordSetsOutput, error)
 	CreateHostedZone(*route53.CreateHostedZoneInput) (*route53.CreateHostedZoneOutput, error)
 	ListHostedZonesPages(input *route53.ListHostedZonesInput, fn func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool)) error
+	GetHostedZone(input *route53.GetHostedZoneInput) (*route53.GetHostedZoneOutput, error)
 }
 
 // AWSProvider is an implementation of Provider for AWS Route53.
@@ -110,7 +112,36 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 	f := func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool) {
 		for _, zone := range resp.HostedZones {
 			if p.domainFilter.Match(aws.StringValue(zone.Name)) {
+
+				hostedZoneOutput, err := p.client.GetHostedZone(&route53.GetHostedZoneInput{
+					Id: zone.Id,
+				})
+
+				if err != nil {
+					if awsErr, ok := err.(awserr.Error); ok {
+
+						if awsErr.Code() == "AccessDenied" {
+							log.WithField("ID", aws.StringValue(zone.Id)).
+								WithField("Name", aws.StringValue(zone.Name)).
+								WithField("Private", aws.BoolValue(zone.Config.PrivateZone)).
+								Debugf("Skipping the Zone, because access is denied.")
+							continue
+						} else {
+							log.WithField("Code", awsErr.Code()).WithField("Message", awsErr.Message()).WithField("Err", awsErr.OrigErr()).Errorf("AWS Route53 API Error")
+							return false
+						}
+					}
+				}
+
+				log.
+					WithField("ID", aws.StringValue(hostedZoneOutput.HostedZone.Id)).
+					WithField("Name", aws.StringValue(hostedZoneOutput.HostedZone.Name)).
+					WithField("ResourceRecordSetCount", aws.Int64Value(hostedZoneOutput.HostedZone.ResourceRecordSetCount)).
+					WithField("Private", aws.BoolValue(hostedZoneOutput.HostedZone.Config.PrivateZone)).
+					Debugf("Zone Info")
+
 				zones[aws.StringValue(zone.Id)] = zone
+
 			}
 		}
 

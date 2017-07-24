@@ -27,6 +27,9 @@ import (
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
 
+	"errors"
+
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -137,10 +140,29 @@ func (r *Route53APIStub) CreateHostedZone(input *route53.CreateHostedZoneInput) 
 		return nil, fmt.Errorf("Error creating hosted DNS zone: %s already exists", id)
 	}
 	r.zones[id] = &route53.HostedZone{
-		Id:   aws.String(id),
-		Name: aws.String(name),
+		Id:     aws.String(id),
+		Name:   aws.String(name),
+		Config: input.HostedZoneConfig,
 	}
 	return &route53.CreateHostedZoneOutput{HostedZone: r.zones[id]}, nil
+}
+
+func (r *Route53APIStub) GetHostedZone(input *route53.GetHostedZoneInput) (*route53.GetHostedZoneOutput, error) {
+
+	if aws.StringValue(input.Id) == "/hostedzone/accessdenied.com." {
+		return nil, awserr.New("AccessDenied", "AccessDenied", errors.New("AccessDenied"))
+
+	}
+	id := "/hostedzone/" + aws.StringValue(input.Id)
+
+	return &route53.GetHostedZoneOutput{HostedZone: &route53.HostedZone{
+		Id:   aws.String(id),
+		Name: aws.String("testing"), // value is not important here
+		Config: &route53.HostedZoneConfig{
+			PrivateZone: aws.Bool(false),
+		},
+		ResourceRecordSetCount: aws.Int64(1),
+	}}, nil
 }
 
 func TestAWSZones(t *testing.T) {
@@ -597,6 +619,9 @@ func createAWSZone(t *testing.T, provider *AWSProvider, zone *route53.HostedZone
 	params := &route53.CreateHostedZoneInput{
 		CallerReference: aws.String("external-dns.alpha.kubernetes.io/test-zone"),
 		Name:            zone.Name,
+		HostedZoneConfig: &route53.HostedZoneConfig{
+			PrivateZone: zone.Config.PrivateZone,
+		},
 	}
 
 	if _, err := provider.client.CreateHostedZone(params); err != nil {
@@ -673,16 +698,33 @@ func newAWSProvider(t *testing.T, domainFilter DomainFilter, dryRun bool, record
 	createAWSZone(t, provider, &route53.HostedZone{
 		Id:   aws.String("/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."),
 		Name: aws.String("zone-1.ext-dns-test-2.teapot.zalan.do."),
+		Config: &route53.HostedZoneConfig{
+			PrivateZone: aws.Bool(false),
+		},
 	})
 
 	createAWSZone(t, provider, &route53.HostedZone{
 		Id:   aws.String("/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do."),
 		Name: aws.String("zone-2.ext-dns-test-2.teapot.zalan.do."),
+		Config: &route53.HostedZoneConfig{
+			PrivateZone: aws.Bool(false),
+		},
 	})
 
 	createAWSZone(t, provider, &route53.HostedZone{
 		Id:   aws.String("/hostedzone/zone-3.ext-dns-test-2.teapot.zalan.do."),
 		Name: aws.String("zone-3.ext-dns-test-2.teapot.zalan.do."),
+		Config: &route53.HostedZoneConfig{
+			PrivateZone: aws.Bool(false),
+		},
+	})
+
+	createAWSZone(t, provider, &route53.HostedZone{
+		Id:   aws.String("/hostedzone/accessdenied.com."),
+		Name: aws.String("accessdenied.com."),
+		Config: &route53.HostedZoneConfig{
+			PrivateZone: aws.Bool(false),
+		},
 	})
 
 	setupAWSRecords(t, provider, records)
