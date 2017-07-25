@@ -92,3 +92,7 @@ TODO (https://github.com/kubernetes-incubator/external-dns/issues/267)
 ### I'm using an ELB with TXT registry but the CNAME record clashes with the TXT record. How to avoid this?
 
 TODO (https://github.com/kubernetes-incubator/external-dns/issues/262)
+
+### Which permissions do I need when running ExternalDNS on a GCE or GKE node.
+
+You need to add either https://www.googleapis.com/auth/ndev.clouddns.readwrite or https://www.googleapis.com/auth/cloud-platform on your instance group's scope.
