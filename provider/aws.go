@@ -137,14 +137,15 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 			// TODO(linki, ownership): Remove once ownership system is in place.
 			// See: https://github.com/kubernetes-incubator/external-dns/pull/122/files/74e2c3d3e237411e619aefc5aab694742001cdec#r109863370
 
-			if ok := recordTypeFilter(aws.StringValue(r.Type)); ok != false {
-				for _, rr := range r.ResourceRecords {
-					endpoints = append(endpoints, endpoint.NewEndpoint(aws.StringValue(r.Name), aws.StringValue(rr.Value), aws.StringValue(r.Type)))
-				}
+			if !supportedRecordType(aws.StringValue(r.Type)) {
+				continue
+			}
+			for _, rr := range r.ResourceRecords {
+				endpoints = append(endpoints, endpoint.NewEndpoint(aws.StringValue(r.Name), aws.StringValue(rr.Value), aws.StringValue(r.Type)))
+			}
 
-				if r.AliasTarget != nil {
-					endpoints = append(endpoints, endpoint.NewEndpoint(aws.StringValue(r.Name), aws.StringValue(r.AliasTarget.DNSName), "ALIAS"))
-				}
+			if r.AliasTarget != nil {
+				endpoints = append(endpoints, endpoint.NewEndpoint(aws.StringValue(r.Name), aws.StringValue(r.AliasTarget.DNSName), "ALIAS"))
 			}
 		}
 

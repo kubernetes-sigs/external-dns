@@ -171,7 +171,7 @@ func (p *GoogleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 
 			for _, rr := range r.Rrdatas {
 				// each page is processed sequentially, no need for a mutex here.
-				if ok := recordTypeFilter(r.Type); ok != false {
+				if supportedRecordType(r.Type) {
 					endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, rr, r.Type))
 				}
 			}

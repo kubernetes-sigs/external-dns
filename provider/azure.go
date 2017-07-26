@@ -142,22 +142,23 @@ func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				return true
 			}
 			recordType := strings.TrimLeft(*recordSet.Type, "Microsoft.Network/dnszones/")
-			if ok := recordTypeFilter(recordType); ok != false {
-				name := formatAzureDNSName(*recordSet.Name, *zone.Name)
-				target := extractAzureTarget(&recordSet)
-				if target == "" {
-					log.Errorf("Failed to extract target for '%s' with type '%s'.", name, recordType)
-					return true
-				}
-				endpoint := endpoint.NewEndpoint(name, target, recordType)
-				log.Debugf(
-					"Found %s record for '%s' with target '%s'.",
-					endpoint.RecordType,
-					endpoint.DNSName,
-					endpoint.Target,
-				)
-				endpoints = append(endpoints, endpoint)
+			if !supportedRecordType(recordType) {
+				return true
 			}
+			name := formatAzureDNSName(*recordSet.Name, *zone.Name)
+			target := extractAzureTarget(&recordSet)
+			if target == "" {
+				log.Errorf("Failed to extract target for '%s' with type '%s'.", name, recordType)
+				return true
+			}
+			endpoint := endpoint.NewEndpoint(name, target, recordType)
+			log.Debugf(
+				"Found %s record for '%s' with target '%s'.",
+				endpoint.RecordType,
+				endpoint.DNSName,
+				endpoint.Target,
+			)
+			endpoints = append(endpoints, endpoint)
 			return true
 		})
 		if err != nil {

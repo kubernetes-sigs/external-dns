@@ -104,7 +104,7 @@ func (p *DigitalOceanProvider) Records() ([]*endpoint.Endpoint, error) {
 		}
 
 		for _, r := range records {
-			if ok := recordTypeFilter(r.Type); ok != false {
+			if supportedRecordType(r.Type) {
 				endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Data, r.Type))
 			}
 		}
