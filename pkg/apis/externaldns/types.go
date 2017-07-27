@@ -34,6 +34,7 @@ type Config struct {
 	Namespace          string
 	FQDNTemplate       string
 	Compatibility      string
+	PublishInternal    bool
 	Provider           string
 	GoogleProject      string
 	DomainFilter       []string
@@ -58,6 +59,7 @@ var defaultConfig = &Config{
 	Namespace:          "",
 	FQDNTemplate:       "",
 	Compatibility:      "",
+	PublishInternal:    false,
 	Provider:           "",
 	GoogleProject:      "",
 	DomainFilter:       []string{},
@@ -95,6 +97,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
 	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional)").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
 	app.Flag("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule)").Default(defaultConfig.Compatibility).EnumVar(&cfg.Compatibility, "", "mate", "molecule")
+	app.Flag("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)").BoolVar(&cfg.PublishInternal)
 
 	// Flags related to providers
 	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, google, azure, cloudflare, digitalocean, inmemory)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "google", "azure", "cloudflare", "digitalocean", "inmemory")

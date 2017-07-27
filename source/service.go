@@ -34,18 +34,19 @@ import (
 // serviceSource is an implementation of Source for Kubernetes service objects.
 // It will find all services that are under our jurisdiction, i.e. annotated
 // desired hostname and matching or no controller annotation. For each of the
-// matched services' external entrypoints it will return a corresponding
+// matched services' entrypoints it will return a corresponding
 // Endpoint object.
 type serviceSource struct {
 	client    kubernetes.Interface
 	namespace string
 	// process Services with legacy annotations
-	compatibility string
-	fqdnTemplate  *template.Template
+	compatibility   string
+	fqdnTemplate    *template.Template
+	publishInternal bool
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate, compatibility string) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate, compatibility string, publishInternal bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -60,10 +61,11 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate, 
 	}
 
 	return &serviceSource{
-		client:        kubeClient,
-		namespace:     namespace,
-		compatibility: compatibility,
-		fqdnTemplate:  tmpl,
+		client:          kubeClient,
+		namespace:       namespace,
+		compatibility:   compatibility,
+		fqdnTemplate:    tmpl,
+		publishInternal: publishInternal,
 	}, nil
 }
 
@@ -85,7 +87,7 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 
-		svcEndpoints := endpointsFromService(&svc)
+		svcEndpoints := sc.endpointsFromService(&svc)
 
 		// process legacy annotations if no endpoints were returned and compatibility mode is enabled.
 		if len(svcEndpoints) == 0 && sc.compatibility != "" {
@@ -122,13 +124,13 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 	}
 
 	hostname := buf.String()
-	endpoints = generateEndpoints(svc, hostname)
+	endpoints = sc.generateEndpoints(svc, hostname)
 
 	return endpoints, nil
 }
 
 // endpointsFromService extracts the endpoints from a service object
-func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
+func (sc *serviceSource) endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	// Get the desired hostname of the service from the annotation.
@@ -139,13 +141,13 @@ func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
 
 	hostnameList := strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
 	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, generateEndpoints(svc, hostname)...)
+		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname)...)
 	}
 
 	return endpoints
 }
 
-func generateEndpoints(svc *v1.Service, hostname string) []*endpoint.Endpoint {
+func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	hostname = strings.TrimSuffix(hostname, ".")
@@ -153,7 +155,9 @@ func generateEndpoints(svc *v1.Service, hostname string) []*endpoint.Endpoint {
 	case "LoadBalancer":
 		endpoints = append(endpoints, extractLoadBalancerEndpoints(svc, hostname)...)
 	case "ClusterIP":
-		endpoints = append(endpoints, extractServiceIps(svc, hostname)...)
+		if sc.publishInternal {
+			endpoints = append(endpoints, extractServiceIps(svc, hostname)...)
+		}
 	}
 
 	return endpoints

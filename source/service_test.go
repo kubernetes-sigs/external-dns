@@ -69,6 +69,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 				"",
 				ti.fqdnTemplate,
 				"",
+				false,
 			)
 
 			if ti.expectError {
@@ -132,7 +133,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			false,
 		},
 		{
-			"annotated ClusterIp services return an endpoint with Cluster IP",
+			"annotated ClusterIp aren't processed without explicit authorization",
 			"",
 			"testing",
 			"foo",
@@ -145,9 +146,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			},
 			"1.2.3.4",
 			[]string{},
-			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
-			},
+			[]*endpoint.Endpoint{},
 			false,
 		},
 		{
@@ -435,23 +434,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			false,
 		},
 		{
-			"not annotated ClusterIp services with set fqdnTemplate return an endpoint with target IP",
-			"",
-			"testing",
-			"foo",
-			v1.ServiceTypeClusterIP,
-			"",
-			"{{.Name}}.bar.example.com",
-			map[string]string{},
-			map[string]string{},
-			"4.5.6.7",
-			[]string{},
-			[]*endpoint.Endpoint{
-				{DNSName: "foo.bar.example.com", Target: "4.5.6.7"},
-			},
-			false,
-		},
-		{
 			"annotated services with set fqdnTemplate annotation takes precedence",
 			"",
 			"testing",
@@ -547,6 +529,119 @@ func testServiceSourceEndpoints(t *testing.T) {
 				tc.targetNamespace,
 				tc.fqdnTemplate,
 				tc.compatibility,
+				false,
+			)
+			require.NoError(t, err)
+
+			endpoints, err := client.Endpoints()
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			// Validate returned endpoints against desired endpoints.
+			validateEndpoints(t, endpoints, tc.expected)
+		})
+	}
+}
+
+// testServiceSourceEndpoints tests that various services generate the correct endpoints.
+func TestClusterIpServices(t *testing.T) {
+	for _, tc := range []struct {
+		title           string
+		targetNamespace string
+		svcNamespace    string
+		svcName         string
+		svcType         v1.ServiceType
+		compatibility   string
+		fqdnTemplate    string
+		labels          map[string]string
+		annotations     map[string]string
+		clusterIP       string
+		lbs             []string
+		expected        []*endpoint.Endpoint
+		expectError     bool
+	}{
+		{
+			"annotated ClusterIp services return an endpoint with Cluster IP",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+			},
+			"1.2.3.4",
+			[]string{},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+			},
+			false,
+		},
+		{
+			"non-annotated ClusterIp services with set fqdnTemplate return an endpoint with target IP",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"{{.Name}}.bar.example.com",
+			map[string]string{},
+			map[string]string{},
+			"4.5.6.7",
+			[]string{},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.bar.example.com", Target: "4.5.6.7"},
+			},
+			false,
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			// Create a Kubernetes testing client
+			kubernetes := fake.NewSimpleClientset()
+
+			// Create a service to test against
+			ingresses := []v1.LoadBalancerIngress{}
+			for _, lb := range tc.lbs {
+				if net.ParseIP(lb) != nil {
+					ingresses = append(ingresses, v1.LoadBalancerIngress{IP: lb})
+				} else {
+					ingresses = append(ingresses, v1.LoadBalancerIngress{Hostname: lb})
+				}
+			}
+
+			service := &v1.Service{
+				Spec: v1.ServiceSpec{
+					Type:      tc.svcType,
+					ClusterIP: tc.clusterIP,
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   tc.svcNamespace,
+					Name:        tc.svcName,
+					Labels:      tc.labels,
+					Annotations: tc.annotations,
+				},
+				Status: v1.ServiceStatus{
+					LoadBalancer: v1.LoadBalancerStatus{
+						Ingress: ingresses,
+					},
+				},
+			}
+
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
+			require.NoError(t, err)
+
+			// Create our object under test and get the endpoints.
+			client, _ := NewServiceSource(
+				kubernetes,
+				tc.targetNamespace,
+				tc.fqdnTemplate,
+				tc.compatibility,
+				true,
 			)
 			require.NoError(t, err)
 
@@ -587,7 +682,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
 	require.NoError(b, err)
 
-	client, err := NewServiceSource(kubernetes, v1.NamespaceAll, "", "")
+	client, err := NewServiceSource(kubernetes, v1.NamespaceAll, "", "", false)
 	require.NoError(b, err)
 
 	for i := 0; i < b.N; i++ {
