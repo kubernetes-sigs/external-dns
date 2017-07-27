@@ -1,6 +1,6 @@
 # Setting up ExternalDNS for Services on AWS
 
-This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster on AWS. Make sure to use **>=0.3** version of ExternalDNS for this tutorial
+This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster on AWS. Make sure to use **>=0.4** version of ExternalDNS for this tutorial
 
 ## IAM Permissions
 
@@ -80,7 +80,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.3.0
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.0
         args:
         - --source=service
         - --source=ingress

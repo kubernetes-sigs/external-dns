@@ -1,6 +1,6 @@
 # Setting up ExternalDNS on Google Container Engine
 
-This tutorial describes how to setup ExternalDNS for usage within a GKE cluster. Make sure to use **>=0.3** version of ExternalDNS for this tutorial
+This tutorial describes how to setup ExternalDNS for usage within a GKE cluster. Make sure to use **>=0.4** version of ExternalDNS for this tutorial
 
 ## Set up your environment
 
@@ -77,7 +77,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.3.0
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.0
         args:
         - --source=service
         - --source=ingress
