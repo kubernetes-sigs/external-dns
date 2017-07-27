@@ -16,9 +16,14 @@ The [FAQ](docs/faq.md) contains additional information and addresses several que
 
 ## Getting started
 
-ExternalDNS' current release is `v0.3`. This version allows you to keep selected zones (via `--domain-filter`) in Google's [CloudDNS](https://cloud.google.com/dns/docs/) or [AWS' Route 53](https://aws.amazon.com/route53/) synchronized with Ingresses and Services of `type=LoadBalancer` in your cluster.
+ExternalDNS' current release is `v0.4`. This version allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
+* [Google CloudDNS](https://cloud.google.com/dns/docs/)
+* [AWS Route 53](https://aws.amazon.com/route53/)
+* [AzureDNS](https://azure.microsoft.com/en-us/services/dns)
+* [CloudFlare](https://www.cloudflare.com/de/dns)
+* [DigitalOcean](https://www.digitalocean.com/products/networking)
 
-From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.3` with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
+From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.4` with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
 Note that all flags can be replaced with environment variables; for instance,
 `--dry-run` could be replaced with `EXTERNAL_DNS_DRY_RUN=1`, or
@@ -97,16 +102,23 @@ Here's a rough outline on what is to come (subject to change):
 - [x] Support for AWS Route 53
 - [x] Support for Kubernetes Ingresses
 
-### v0.3 - _current version_
+### v0.3
 
 - [x] Support for AWS Route 53 via ALIAS
 - [x] Support for multiple zones
 - [x] Ownership System
 
+### v0.4 - _current version_
+
+- [x] Support for AzureDNS
+- [x] Support for CloudFlare
+- [x] Support for DigitalOcean
+- [x] Multiple DNS names per Service
+
 ### v1.0
 
 - [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller)
-- [ ] Ability to replace Zalando's [Mate](https://github.com/zalando-incubator/mate)
+- [x] Ability to replace Zalando's [Mate](https://github.com/linki/mate)
 - [x] Ability to replace Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 
 ### Yet to be defined
@@ -133,7 +145,7 @@ Feel free to reach out to us on the [Kubernetes slack](http://slack.k8s.io) in t
 ExternalDNS is an effort to unify the following similar projects in order to bring the Kubernetes community an easy and predictable way of managing DNS records across cloud providers based on their Kubernetes resources:
 
 * Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller)
-* Zalando's [Mate](https://github.com/zalando-incubator/mate)
+* Zalando's [Mate](https://github.com/linki/mate)
 * Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 
 ## Kubernetes Incubator
