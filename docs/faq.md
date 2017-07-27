@@ -96,3 +96,7 @@ TODO (https://github.com/kubernetes-incubator/external-dns/issues/262)
 ### Which permissions do I need when running ExternalDNS on a GCE or GKE node.
 
 You need to add either https://www.googleapis.com/auth/ndev.clouddns.readwrite or https://www.googleapis.com/auth/cloud-platform on your instance group's scope.
+
+### How can I run ExternalDNS under a specific GCP Service Account, e.g. to access DNS records in other projects?
+
+Have a look at https://github.com/linki/mate/blob/v0.6.2/examples/google/README.md#permissions
