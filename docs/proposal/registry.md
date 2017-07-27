@@ -30,7 +30,7 @@ The following presents two ways to implement the registry, and we are planning t
 
 ### TXT records
 
-This implementation idea is borrowed from [Mate](https://github.com/zalando-incubator/mate/)
+This implementation idea is borrowed from [Mate](https://github.com/linki/mate/)
 
 Each record created by external-dns is accompanied by the TXT record, which internally stores the external-dns identifier. For example, if external dns with `owner-id="external-dns-1"` record to be created with dns name `foo.zone.org`, external-dns will create a TXT record with the same dns name `foo.zone.org` and injected value of `"external-dns-1"`. The transfer of ownership can be done by modifying the value of the TXT record.  If no TXT record exists for the record or the value does not match its own `owner-id`, then external-dns will simply ignore it.
 
