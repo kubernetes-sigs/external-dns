@@ -62,7 +62,7 @@ Regarding Ingress, we'll support:
 ExternalDNS is a joint effort to unify different projects accomplishing the same goals, namely:
 
 * Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller)
-* Zalando's [Mate](https://github.com/zalando-incubator/mate)
+* Zalando's [Mate](https://github.com/linki/mate)
 * Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 
 We strive to make the migration from these implementations a smooth experience. This means that, for some time, we'll support their annotation semantics in ExternalDNS and allow both implementations to run side-by-side. This enables you to migrate incrementally and slowly phase out the other implementation.
@@ -79,7 +79,7 @@ For now ExternalDNS uses TXT records to label owned records, and there might be 
 
 ### Does anyone use ExternalDNS in production?
 
-Yes — Zalando replaced [Mate](https://github.com/zalando-incubator/mate) with ExternalDNS since its v0.3 release, which now runs in production-level clusters. We are planning to document a step-by-step tutorial on how the switch from Mate to ExternalDNS has occured.
+Yes — Zalando replaced [Mate](https://github.com/linki/mate) with ExternalDNS since its v0.3 release, which now runs in production-level clusters. We are planning to document a step-by-step tutorial on how the switch from Mate to ExternalDNS has occured.
 
 ### How can we start using ExternalDNS?
 
@@ -96,3 +96,7 @@ TODO (https://github.com/kubernetes-incubator/external-dns/issues/262)
 ### Which permissions do I need when running ExternalDNS on a GCE or GKE node.
 
 You need to add either https://www.googleapis.com/auth/ndev.clouddns.readwrite or https://www.googleapis.com/auth/cloud-platform on your instance group's scope.
+
+### How can I run ExternalDNS under a specific GCP Service Account, e.g. to access DNS records in other projects?
+
+Have a look at https://github.com/linki/mate/blob/v0.6.2/examples/google/README.md#permissions

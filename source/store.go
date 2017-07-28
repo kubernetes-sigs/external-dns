@@ -86,13 +86,13 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewServiceSource(client, cfg.FQDNTemplate, cfg.Namespace, cfg.Compatibility, cfg.PublishInternal)
+		return NewServiceSource(client, cfg.Namespace, cfg.FQDNTemplate, cfg.Compatibility, cfg.PublishInternal)
 	case "ingress":
 		client, err := p.KubeClient()
 		if err != nil {
 			return nil, err
 		}
-		return NewIngressSource(client, cfg.FQDNTemplate, cfg.Namespace)
+		return NewIngressSource(client, cfg.Namespace, cfg.FQDNTemplate)
 	case "fake":
 		return NewFakeSource(cfg.FQDNTemplate)
 	}
