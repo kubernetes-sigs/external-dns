@@ -101,9 +101,7 @@ For example if your `nginx-ingress-controller` Service's name is `nginx-ingress-
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  labels:
-    app: nginx-ingress
-    name: nginx-ingress-controller
+  name: nginx-ingress-controller
 spec:
   replicas: 1
   template:
