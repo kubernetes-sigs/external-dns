@@ -1,3 +1,7 @@
+## v0.4.1 - 2017-07-28
+
+  - Fix incorrect order of constructor parameters (#298)
+
 ## v0.4.0 - 2017-07-21
 
   - ExternalDNS now supports three more DNS providers:
