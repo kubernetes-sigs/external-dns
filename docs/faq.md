@@ -79,11 +79,47 @@ For now ExternalDNS uses TXT records to label owned records, and there might be 
 
 ### Does anyone use ExternalDNS in production?
 
-Yes — Zalando replaced [Mate](https://github.com/linki/mate) with ExternalDNS since its v0.3 release, which now runs in production-level clusters. We are planning to document a step-by-step tutorial on how the switch from Mate to ExternalDNS has occured.
+Yes — Zalando replaced [Mate](https://github.com/linki/mate) with ExternalDNS since its v0.3 release, which now runs in production-level clusters. We are planning to document a step-by-step tutorial on how the switch from Mate to ExternalDNS has occurred.
 
 ### How can we start using ExternalDNS?
 
-Check out the following decriptive tutorials on how to run ExternalDNS in [GKE](tutorials/gke.md) and [AWS](tutorials/aws.md). 
+Check out the following descriptive tutorials on how to run ExternalDNS in [GKE](tutorials/gke.md) and [AWS](tutorials/aws.md). 
+
+### Why is ExternalDNS only adding a single IP address in Route 53 on AWS when using the `nginx-ingress-controller`? How do I get it to use the FQDN of the ELB assigned to my `nginx-ingress-controller` Service instead?
+
+By default the `nginx-ingress-controller` assigns a single IP address to an Ingress resource when it's created. ExternalDNS uses what's assigned to the Ingress resource, so it too will use this single IP address when adding the record in Route 53.
+
+In most AWS deployments, you'll instead want the Route 53 entry to be the FQDN of the ELB that is assigned to the `nginx-ingress-controller` Service. To accomplish this, when you create the `nginx-ingress-controller` Deployment, you need to provide the `--publish-service` option to the `/nginx-ingress-controller` executable under `args`. Once this is deployed new Ingress resources will get the ELB's FQDN and ExternalDNS will use the same when creating records in Route 53. 
+
+According to the `nginx-ingress-controller` [docs](https://github.com/kubernetes/ingress/tree/master/controllers/nginx) the value you need to provide `--publish-service` is:
+
+> Service fronting the ingress controllers. Takes the form namespace/name. The controller will set the endpoint records on the ingress objects to reflect those on the service.
+
+For example if your `nginx-ingress-controller` Service's name is `nginx-ingress-controller-svc` and it's in the `default` namespace the start of your resource YAML might look like the following. Note the second to last line.
+
+```
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nginx-ingress-controller
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: nginx-ingress
+    spec:
+      hostNetwork: false
+      containers:
+        - name: nginx-ingress-controller
+          image: "gcr.io/google_containers/nginx-ingress-controller:0.9.0-beta.11"
+          imagePullPolicy: "IfNotPresent"
+          args:
+            - /nginx-ingress-controller
+            - --default-backend-service={your-backend-service}
+            - --publish-service=default/nginx-ingress-controller-svc
+            - --configmap={your-configmap}
+```
 
 ### I have a Service/Ingress but it's ignored by ExternalDNS. Why?
 
