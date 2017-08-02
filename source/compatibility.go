@@ -17,6 +17,8 @@ limitations under the License.
 package source
 
 import (
+	"strings"
+
 	"k8s.io/client-go/pkg/api/v1"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -75,18 +77,22 @@ func legacyEndpointsFromMoleculeService(svc *v1.Service) []*endpoint.Endpoint {
 	}
 
 	// Get the desired hostname of the service from the annotation.
-	hostname, exists := svc.Annotations[moleculeAnnotationKey]
+	hostnameAnnotation, exists := svc.Annotations[moleculeAnnotationKey]
 	if !exists {
 		return nil
 	}
 
-	// Create a corresponding endpoint for each configured external entrypoint.
-	for _, lb := range svc.Status.LoadBalancer.Ingress {
-		if lb.IP != "" {
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
-		}
-		if lb.Hostname != "" {
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
+	hostnameList := strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
+
+	for _, hostname := range hostnameList {
+		// Create a corresponding endpoint for each configured external entrypoint.
+		for _, lb := range svc.Status.LoadBalancer.Ingress {
+			if lb.IP != "" {
+				endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
+			}
+			if lb.Hostname != "" {
+				endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
+			}
 		}
 	}
 
