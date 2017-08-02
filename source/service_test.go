@@ -355,11 +355,12 @@ func testServiceSourceEndpoints(t *testing.T) {
 				"dns": "route53",
 			},
 			map[string]string{
-				"domainName": "foo.example.org.",
+				"domainName": "foo.example.org., bar.example.org",
 			},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "bar.example.org", Target: "1.2.3.4"},
 			},
 			false,
 		},
