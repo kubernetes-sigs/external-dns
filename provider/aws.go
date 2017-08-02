@@ -125,6 +125,15 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 	return zones, nil
 }
 
+// wildcardUnescape converts \\052.abc back to *.abc
+// Route53 stores wildcards escaped: http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html?shortFooter=true#domain-name-format-asterisk
+func wildcardUnescape(s string) string {
+	if strings.HasPrefix(s, "\\052") {
+		s = strings.Replace(s, "\\052", "*", 1)
+	}
+	return s
+}
+
 // Records returns the list of records in a given hosted zone.
 func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.Zones()
@@ -144,11 +153,11 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 			}
 
 			for _, rr := range r.ResourceRecords {
-				endpoints = append(endpoints, endpoint.NewEndpoint(aws.StringValue(r.Name), aws.StringValue(rr.Value), aws.StringValue(r.Type)))
+				endpoints = append(endpoints, endpoint.NewEndpoint(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(rr.Value), aws.StringValue(r.Type)))
 			}
 
 			if r.AliasTarget != nil {
-				endpoints = append(endpoints, endpoint.NewEndpoint(aws.StringValue(r.Name), aws.StringValue(r.AliasTarget.DNSName), "ALIAS"))
+				endpoints = append(endpoints, endpoint.NewEndpoint(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.AliasTarget.DNSName), "ALIAS"))
 			}
 		}
 
