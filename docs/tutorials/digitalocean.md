@@ -2,7 +2,7 @@
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using DigitalOcean DNS.
 
-Make sure to use **>=0.4.0** version of ExternalDNS for this tutorial.
+Make sure to use **>=0.4.2** version of ExternalDNS for this tutorial.
 
 ## Creating a DigitalOcean DNS zone
 
@@ -37,7 +37,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.0
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.2
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
