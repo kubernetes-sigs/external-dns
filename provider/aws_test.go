@@ -19,6 +19,7 @@ package provider
 import (
 	"fmt"
 	"net"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -69,6 +70,14 @@ func (r *Route53APIStub) ListResourceRecordSetsPages(input *route53.ListResource
 	return nil
 }
 
+// Route53 stores wildcards escaped: http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html?shortFooter=true#domain-name-format-asterisk
+func wildcardEscape(s string) string {
+	if strings.HasPrefix(s, "*") {
+		s = strings.Replace(s, "*", "\\052", 1)
+	}
+	return s
+}
+
 func (r *Route53APIStub) ChangeResourceRecordSets(input *route53.ChangeResourceRecordSetsInput) (*route53.ChangeResourceRecordSetsOutput, error) {
 	_, ok := r.zones[aws.StringValue(input.HostedZoneId)]
 	if !ok {
@@ -94,10 +103,10 @@ func (r *Route53APIStub) ChangeResourceRecordSets(input *route53.ChangeResourceR
 			}
 		}
 
-		change.ResourceRecordSet.Name = aws.String(ensureTrailingDot(aws.StringValue(change.ResourceRecordSet.Name)))
+		change.ResourceRecordSet.Name = aws.String(wildcardEscape(ensureTrailingDot(aws.StringValue(change.ResourceRecordSet.Name))))
 
 		if change.ResourceRecordSet.AliasTarget != nil {
-			change.ResourceRecordSet.AliasTarget.DNSName = aws.String(ensureTrailingDot(aws.StringValue(change.ResourceRecordSet.AliasTarget.DNSName)))
+			change.ResourceRecordSet.AliasTarget.DNSName = aws.String(wildcardEscape(ensureTrailingDot(aws.StringValue(change.ResourceRecordSet.AliasTarget.DNSName))))
 		}
 
 		key := aws.StringValue(change.ResourceRecordSet.Name) + "::" + aws.StringValue(change.ResourceRecordSet.Type)
@@ -169,7 +178,9 @@ func TestAWSRecords(t *testing.T) {
 	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), false, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("list-test.zone-1.ext-dns-test-2.teapot.zalan.do", "1.2.3.4", "A"),
 		endpoint.NewEndpoint("list-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
+		endpoint.NewEndpoint("*.wildcard-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
 		endpoint.NewEndpoint("list-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "ALIAS"),
+		endpoint.NewEndpoint("*.wildcard-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "ALIAS"),
 	})
 
 	records, err := provider.Records()
@@ -178,7 +189,9 @@ func TestAWSRecords(t *testing.T) {
 	validateEndpoints(t, records, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("list-test.zone-1.ext-dns-test-2.teapot.zalan.do", "1.2.3.4", "A"),
 		endpoint.NewEndpoint("list-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
+		endpoint.NewEndpoint("*.wildcard-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
 		endpoint.NewEndpoint("list-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "ALIAS"),
+		endpoint.NewEndpoint("*.wildcard-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "ALIAS"),
 	})
 }
 
