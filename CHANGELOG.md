@@ -1,3 +1,7 @@
+## v0.4.2 - 2017-08-03
+
+  - Fix to support multiple hostnames for Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes) compatibility (#301)
+
 ## v0.4.1 - 2017-07-28
 
   - Fix incorrect order of constructor parameters (#298)
