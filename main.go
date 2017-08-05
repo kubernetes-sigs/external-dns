@@ -103,6 +103,8 @@ func main() {
 		p, err = provider.NewDigitalOceanProvider(domainFilter, cfg.DryRun)
 	case "inmemory":
 		p, err = provider.NewInMemoryProvider(provider.InMemoryWithDomain(domainFilter), provider.InMemoryWithLogging()), nil
+	case "designate":
+		p, err = provider.NewDesignateProvider(domainFilter, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
