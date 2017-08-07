@@ -370,10 +370,6 @@ func testIngressEndpoints(t *testing.T) {
 					DNSName: "example2.org",
 					Target:  "ingress-target.com",
 				},
-				{
-					DNSName: "example2.org",
-					Target:  "8.8.8.8",
-				},
 			},
 		},
 		{
@@ -408,10 +404,6 @@ func testIngressEndpoints(t *testing.T) {
 				{
 					DNSName: "fake2.ext-dns.test.com",
 					Target:  "ingress-target.com",
-				},
-				{
-					DNSName: "fake2.ext-dns.test.com",
-					Target:  "8.8.8.8",
 				},
 			},
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
