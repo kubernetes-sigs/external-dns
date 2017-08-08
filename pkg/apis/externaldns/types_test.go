@@ -57,8 +57,8 @@ var (
 		DryRun:               false,
 		LogFormat:            "text",
 		MetricsAddress:       ":7979",
+		Debug:                false,
 		LogLevel:             logrus.InfoLevel.String(),
-		ETCD:               "http://localhost:2379",
 	}
 
 	overriddenConfig = &Config{
@@ -92,7 +92,6 @@ var (
 		LogFormat:            "json",
 		MetricsAddress:       "127.0.0.1:9099",
 		LogLevel:             logrus.DebugLevel.String(),
-		ETCD:               "http://host:3378,http://host:3379",
 	}
 )
 
@@ -148,7 +147,6 @@ func TestParseFlags(t *testing.T) {
 				"--log-format=json",
 				"--metrics-address=127.0.0.1:9099",
 				"--log-level=debug",
-				"--etcd=http://host:3378,http://host:3379",
 			},
 			envVars:  map[string]string{},
 			expected: overriddenConfig,
@@ -187,7 +185,6 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_LOG_FORMAT":             "json",
 				"EXTERNAL_DNS_METRICS_ADDRESS":        "127.0.0.1:9099",
 				"EXTERNAL_DNS_LOG_LEVEL":              "debug",
-				"EXTERNAL_DNS_ETCD":                 "http://host:3378,http://host:3379",
 			},
 			expected: overriddenConfig,
 		},

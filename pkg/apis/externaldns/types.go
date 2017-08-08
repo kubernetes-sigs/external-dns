@@ -61,8 +61,7 @@ type Config struct {
 	LogFormat            string
 	MetricsAddress       string
 	LogLevel             string
-	Debug              bool
-	ETCD               string
+	Debug                bool
 }
 
 var defaultConfig = &Config{
@@ -97,7 +96,6 @@ var defaultConfig = &Config{
 	LogFormat:            "text",
 	MetricsAddress:       ":7979",
 	LogLevel:             logrus.InfoLevel.String(),
-	ETCD:               "http://localhost:2379",
 }
 
 // NewConfig returns new Config object
@@ -139,7 +137,6 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure").Default(defaultConfig.AzureConfigFile).StringVar(&cfg.AzureConfigFile)
 	app.Flag("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (optional)").Default(defaultConfig.AzureResourceGroup).StringVar(&cfg.AzureResourceGroup)
 	app.Flag("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.CloudflareProxied)
-	app.Flag("etcd", "ETCD cluster URI(s) for coredns/skydns provider").Default(defaultConfig.ETCD).StringVar(&cfg.ETCD)
 	app.Flag("infoblox-grid-host", "When using the Infoblox provider, specify the Grid Manager host (required when --provider=infoblox)").Default(defaultConfig.InfobloxGridHost).StringVar(&cfg.InfobloxGridHost)
 	app.Flag("infoblox-wapi-port", "When using the Infoblox provider, specify the WAPI port (default: 443)").Default(strconv.Itoa(defaultConfig.InfobloxWapiPort)).IntVar(&cfg.InfobloxWapiPort)
 	app.Flag("infoblox-wapi-username", "When using the Infoblox provider, specify the WAPI username (default: admin)").Default(defaultConfig.InfobloxWapiUsername).StringVar(&cfg.InfobloxWapiUsername)

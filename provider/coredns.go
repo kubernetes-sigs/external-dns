@@ -18,15 +18,21 @@ package provider
 
 import (
 	"container/list"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"net"
+	"net/http"
+	"os"
 	"strings"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	etcd "github.com/coreos/etcd/client"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -136,10 +142,100 @@ func (c etcdClient) DeleteService(key string) error {
 
 }
 
+// loads TLS artifacts and builds tls.Clonfig object
+func newTLSConfig(certPath, keyPath, caPath, serverName string, insecure bool) (*tls.Config, error) {
+	if certPath != "" && keyPath == "" || certPath == "" && keyPath != "" {
+		return nil, errors.New("either both cert and key or none must be provided")
+	}
+	var certificates []tls.Certificate
+	if certPath != "" {
+		cert, err := tls.LoadX509KeyPair(certPath, keyPath)
+		if err != nil {
+			return nil, fmt.Errorf("could not load TLS cert: %s", err)
+		}
+		certificates = append(certificates, cert)
+	}
+	roots, err := loadRoots(caPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tls.Config{
+		Certificates:       certificates,
+		RootCAs:            roots,
+		InsecureSkipVerify: insecure,
+		ServerName:         serverName,
+	}, nil
+}
+
+// loads CA cert
+func loadRoots(caPath string) (*x509.CertPool, error) {
+	if caPath == "" {
+		return nil, nil
+	}
+
+	roots := x509.NewCertPool()
+	pem, err := ioutil.ReadFile(caPath)
+	if err != nil {
+		return nil, fmt.Errorf("error reading %s: %s", caPath, err)
+	}
+	ok := roots.AppendCertsFromPEM(pem)
+	if !ok {
+		return nil, fmt.Errorf("could not read root certs: %s", err)
+	}
+	return roots, nil
+}
+
+// constructs http.Transport object for https protocol
+func newHTTPSTransport(cc *tls.Config) *http.Transport {
+	return &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		Dial: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).Dial,
+		TLSHandshakeTimeout: 10 * time.Second,
+		TLSClientConfig:     cc,
+	}
+}
+
+// builds etcd client config depending on connection scheme and TLS parameters
+func getETCDConfig() (*etcd.Config, error) {
+	etcdURLsStr := os.Getenv("ETCD_URLS")
+	if etcdURLsStr == "" {
+		etcdURLsStr = "http://localhost:2379"
+	}
+	etcdURLs := strings.Split(etcdURLsStr, ",")
+	firstURL := strings.ToLower(etcdURLs[0])
+	if strings.HasPrefix(firstURL, "http://") {
+		return &etcd.Config{Endpoints: etcdURLs}, nil
+	} else if strings.HasPrefix(firstURL, "https://") {
+		caFile := os.Getenv("ETCD_CA_FILE")
+		certFile := os.Getenv("ETCD_CERT_FILE")
+		keyFile := os.Getenv("ETCD_KEY_FILE")
+		serverName := os.Getenv("ETCD_TLS_SERVER_NAME")
+		isInsecureStr := strings.ToLower(os.Getenv("ETCD_TLS_INSECURE"))
+		isInsecure := isInsecureStr == "true" || isInsecureStr == "yes" || isInsecureStr == "1"
+		tlsConfig, err := newTLSConfig(certFile, keyFile, caFile, serverName, isInsecure)
+		if err != nil {
+			return nil, err
+		}
+		return &etcd.Config{
+			Endpoints: etcdURLs,
+			Transport: newHTTPSTransport(tlsConfig),
+		}, nil
+	} else {
+		return nil, errors.New("etcd URLs must start with either http:// or https://")
+	}
+}
+
 //newETCDClient is an etcd client constructor
-func newETCDClient(etcdURIs string) (skyDNSClient, error) {
-	cfg := etcd.Config{Endpoints: strings.Split(etcdURIs, ",")}
-	c, err := etcd.New(cfg)
+func newETCDClient() (skyDNSClient, error) {
+	cfg, err := getETCDConfig()
+	if err != nil {
+		return nil, err
+	}
+	c, err := etcd.New(*cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -147,8 +243,8 @@ func newETCDClient(etcdURIs string) (skyDNSClient, error) {
 }
 
 // NewCoreDNSProvider is a CoreDNS provider constructor
-func NewCoreDNSProvider(domainFilter DomainFilter, etcdURIs string, dryRun bool) (Provider, error) {
-	client, err := newETCDClient(etcdURIs)
+func NewCoreDNSProvider(domainFilter DomainFilter, dryRun bool) (Provider, error) {
+	client, err := newETCDClient()
 	if err != nil {
 		return nil, err
 	}
