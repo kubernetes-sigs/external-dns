@@ -54,3 +54,18 @@ func (df DomainFilter) Match(domain string) bool {
 
 	return false
 }
+
+// ContainsDot checks whether a dot is found in any domain filters
+func (df DomainFilter) ContainsDot() bool {
+	// Return false if no filters
+	if len(df.filters) == 0 {
+		return false
+	}
+
+	for _, filter := range df.filters {
+		if strings.Contains(filter, ".") {
+			return true
+		}
+	}
+	return false
+}
