@@ -1,3 +1,5 @@
+<img src="img/external-dns.png" alt="ExternalDNS" width="24%">
+
 # ExternalDNS
 [![Build Status](https://travis-ci.org/kubernetes-incubator/external-dns.svg?branch=master)](https://travis-ci.org/kubernetes-incubator/external-dns)
 [![Coverage Status](https://coveralls.io/repos/github/kubernetes-incubator/external-dns/badge.svg?branch=master)](https://coveralls.io/github/kubernetes-incubator/external-dns?branch=master)
@@ -5,8 +7,6 @@
 [![go-doc](https://godoc.org/github.com/kubernetes-incubator/external-dns?status.svg)](https://godoc.org/github.com/kubernetes-incubator/external-dns)
 
 ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
-
-<img src="img/external-dns.png" alt="ExternalDNS" width="80%">
 
 ## What It Does
 
