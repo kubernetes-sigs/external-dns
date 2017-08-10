@@ -133,12 +133,22 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 		if rule.Host == "" {
 			continue
 		}
-		for _, lb := range ing.Status.LoadBalancer.Ingress {
-			if lb.IP != "" {
-				endpoints = append(endpoints, endpoint.NewEndpoint(rule.Host, lb.IP, ""))
+		// Check if we want to override IP from ingress
+		externalIP, ok := ing.Annotations[ingressExternalIPKey]
+		if ok {
+			ips := strings.Split(strings.Replace(externalIP, " ", "", -1), ",")
+			for _, ip := range ips {
+				endpoints = append(endpoints, endpoint.NewEndpoint(rule.Host, ip, ""))
 			}
-			if lb.Hostname != "" {
-				endpoints = append(endpoints, endpoint.NewEndpoint(rule.Host, lb.Hostname, ""))
+		} else {
+			for _, lb := range ing.Status.LoadBalancer.Ingress {
+				if lb.IP != "" {
+					endpoints = append(endpoints, endpoint.NewEndpoint(rule.Host, lb.IP, ""))
+
+				}
+				if lb.Hostname != "" {
+					endpoints = append(endpoints, endpoint.NewEndpoint(rule.Host, lb.Hostname, ""))
+				}
 			}
 		}
 	}
