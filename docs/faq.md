@@ -136,3 +136,59 @@ You need to add either https://www.googleapis.com/auth/ndev.clouddns.readwrite o
 ### How can I run ExternalDNS under a specific GCP Service Account, e.g. to access DNS records in other projects?
 
 Have a look at https://github.com/linki/mate/blob/v0.6.2/examples/google/README.md#permissions
+
+### How do I configure multiple Sources via environment variables? (also applies to domain filters)
+
+Separate the individual values via a line break. The equivalent of `--source=service --source=ingress` would be `service\ningress`. However, it can be tricky do define that depending on your environment. The following examples work (zsh):
+
+Via docker:
+
+```console
+$ docker run \
+  -e EXTERNAL_DNS_SOURCE=$'service\ningress' \
+  -e EXTERNAL_DNS_PROVIDER=google \
+  -e EXTERNAL_DNS_DOMAIN_FILTER=$'foo.com\nbar.com' \
+  registry.opensource.zalan.do/teapot/external-dns:v0.4.2
+time="2017-08-08T14:10:26Z" level=info msg="config: &{Master: KubeConfig: Sources:[service ingress] Namespace: ...
+```
+
+Locally:
+
+```console
+$ export EXTERNAL_DNS_SOURCE=$'service\ningress'
+$ external-dns --provider=google
+INFO[0000] config: &{Master: KubeConfig: Sources:[service ingress] Namespace: ...
+```
+
+```
+$ EXTERNAL_DNS_SOURCE=$'service\ningress' external-dns --provider=google
+INFO[0000] config: &{Master: KubeConfig: Sources:[service ingress] Namespace: ...
+```
+
+In a Kubernetes manifest:
+
+```yaml
+spec:
+  containers:
+  - name: external-dns
+    args:
+    - --provider=google
+    env:
+    - name: EXTERNAL_DNS_SOURCE
+      value: "service\ningress"
+```
+
+Or preferably:
+
+```yaml
+spec:
+  containers:
+  - name: external-dns
+    args:
+    - --provider=google
+    env:
+    - name: EXTERNAL_DNS_SOURCE
+      value: |-
+        service
+        ingress
+```
