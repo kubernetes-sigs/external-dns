@@ -338,6 +338,84 @@ func testIngressEndpoints(t *testing.T) {
 			expected:     []*endpoint.Endpoint{},
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
 		},
+		{
+			title:           "ingress rules with annotation",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						targetAnnotationKey: "ingress-target.com",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{},
+				},
+				{
+					name:      "fake2",
+					namespace: namespace,
+					annotations: map[string]string{
+						targetAnnotationKey: "ingress-target.com",
+					},
+					dnsnames: []string{"example2.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "example.org",
+					Target:  "ingress-target.com",
+				},
+				{
+					DNSName: "example2.org",
+					Target:  "ingress-target.com",
+				},
+				{
+					DNSName: "example2.org",
+					Target:  "8.8.8.8",
+				},
+			},
+		},
+		{
+			title:           "template for ingress with annotation",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						targetAnnotationKey: "ingress-target.com",
+					},
+					dnsnames:  []string{},
+					ips:       []string{},
+					hostnames: []string{},
+				},
+				{
+					name:      "fake2",
+					namespace: namespace,
+					annotations: map[string]string{
+						targetAnnotationKey: "ingress-target.com",
+					},
+					dnsnames: []string{},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "fake1.ext-dns.test.com",
+					Target:  "ingress-target.com",
+				},
+				{
+					DNSName: "fake2.ext-dns.test.com",
+					Target:  "ingress-target.com",
+				},
+				{
+					DNSName: "fake2.ext-dns.test.com",
+					Target:  "8.8.8.8",
+				},
+			},
+			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			ingresses := make([]*v1beta1.Ingress, 0)
