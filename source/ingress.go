@@ -33,7 +33,7 @@ import (
 
 // ingressSource is an implementation of Source for Kubernetes ingress objects.
 // Ingress implementation will use the spec.rules.host value for the hostname
-// Ingress annotations are ignored
+// Use targetAnnotationKey to add an additional Endpoint. (useful if the ingress controller does not update)
 type ingressSource struct {
 	client       kubernetes.Interface
 	namespace    string
@@ -113,6 +113,18 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 	}
 
 	hostname := buf.String()
+
+	// Get the desired hostname of the ingress from the annotation.
+	targetAnnotation, exists := ing.Annotations[targetAnnotationKey]
+	if exists {
+		// splits the hostname annotation and removes the trailing periods
+		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
+		for _, targetHostname := range targetsList {
+			targetHostname = strings.TrimSuffix(targetHostname, ".")
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, targetHostname, ""))
+		}
+	}
+
 	for _, lb := range ing.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
 			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
@@ -133,6 +145,18 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 		if rule.Host == "" {
 			continue
 		}
+
+		// Get the desired hostname of the ingress from the annotation.
+		targetAnnotation, exists := ing.Annotations[targetAnnotationKey]
+		if exists {
+			// splits the hostname annotation and removes the trailing periods
+			targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
+			for _, targetHostname := range targetsList {
+				targetHostname = strings.TrimSuffix(targetHostname, ".")
+				endpoints = append(endpoints, endpoint.NewEndpoint(rule.Host, targetHostname, ""))
+			}
+		}
+
 		for _, lb := range ing.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
 				endpoints = append(endpoints, endpoint.NewEndpoint(rule.Host, lb.IP, ""))
