@@ -103,6 +103,21 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
+// append endpoints from optional "target" annotation
+func addEndpointsFromTargetAnnotation(ing *v1beta1.Ingress, hostname string, endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	// Get the desired hostname of the ingress from the annotation.
+	targetAnnotation, exists := ing.Annotations[targetAnnotationKey]
+	if exists {
+		// splits the hostname annotation and removes the trailing periods
+		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
+		for _, targetHostname := range targetsList {
+			targetHostname = strings.TrimSuffix(targetHostname, ".")
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, targetHostname, ""))
+		}
+	}
+	return endpoints
+}
+
 func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
@@ -114,16 +129,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 
 	hostname := buf.String()
 
-	// Get the desired hostname of the ingress from the annotation.
-	targetAnnotation, exists := ing.Annotations[targetAnnotationKey]
-	if exists {
-		// splits the hostname annotation and removes the trailing periods
-		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
-		for _, targetHostname := range targetsList {
-			targetHostname = strings.TrimSuffix(targetHostname, ".")
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, targetHostname, ""))
-		}
-	}
+	endpoints = addEndpointsFromTargetAnnotation(ing, hostname, endpoints)
 
 	for _, lb := range ing.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
@@ -146,16 +152,7 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 			continue
 		}
 
-		// Get the desired hostname of the ingress from the annotation.
-		targetAnnotation, exists := ing.Annotations[targetAnnotationKey]
-		if exists {
-			// splits the hostname annotation and removes the trailing periods
-			targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
-			for _, targetHostname := range targetsList {
-				targetHostname = strings.TrimSuffix(targetHostname, ".")
-				endpoints = append(endpoints, endpoint.NewEndpoint(rule.Host, targetHostname, ""))
-			}
-		}
+		endpoints = addEndpointsFromTargetAnnotation(ing, rule.Host, endpoints)
 
 		for _, lb := range ing.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
