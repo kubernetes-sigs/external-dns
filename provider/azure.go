@@ -103,7 +103,7 @@ func NewAzureProvider(configFile string, domainFilter DomainFilter, resourceGrou
 
 	oauthConfig, err := adal.NewOAuthConfig(environment.ActiveDirectoryEndpoint, cfg.TenantID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retreive OAuth config: %v", err)
+		return nil, fmt.Errorf("failed to retrieve OAuth config: %v", err)
 	}
 
 	token, err := adal.NewServicePrincipalToken(*oauthConfig, cfg.ClientID, cfg.ClientSecret, environment.ResourceManagerEndpoint)
