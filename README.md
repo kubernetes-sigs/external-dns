@@ -3,6 +3,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/kubernetes-incubator/external-dns/badge.svg?branch=master)](https://coveralls.io/github/kubernetes-incubator/external-dns?branch=master)
 [![GitHub release](https://img.shields.io/github/release/kubernetes-incubator/external-dns.svg)](https://github.com/kubernetes-incubator/external-dns/releases)
 [![go-doc](https://godoc.org/github.com/kubernetes-incubator/external-dns?status.svg)](https://godoc.org/github.com/kubernetes-incubator/external-dns)
+[![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes-incubator/external-dns)](https://goreportcard.com/report/github.com/kubernetes-incubator/external-dns)
 
 ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 
