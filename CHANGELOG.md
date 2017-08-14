@@ -1,3 +1,6 @@
+## v0.4.4 - (unreleased)
+  - ExternalDNS now services of type `ClusterIP` with the use of the `--publish-internal-services`.  Enabling this will now create the apprioriate A records for the given service's internal ip.  @jrnt30
+
 ## v0.4.0 - 2017-07-21
 
   - ExternalDNS now supports three more DNS providers:
