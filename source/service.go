@@ -87,7 +87,7 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 
-		svcEndpoints := sc.endpointsFromService(&svc)
+		svcEndpoints := sc.endpoints(&svc)
 
 		// process legacy annotations if no endpoints were returned and compatibility mode is enabled.
 		if len(svcEndpoints) == 0 && sc.compatibility != "" {
@@ -130,7 +130,7 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 }
 
 // endpointsFromService extracts the endpoints from a service object
-func (sc *serviceSource) endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
+func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	// Get the desired hostname of the service from the annotation.
@@ -152,9 +152,9 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*
 
 	hostname = strings.TrimSuffix(hostname, ".")
 	switch svc.Spec.Type {
-	case "LoadBalancer":
+	case v1.ServiceTypeLoadBalancer:
 		endpoints = append(endpoints, extractLoadBalancerEndpoints(svc, hostname)...)
-	case "ClusterIP":
+	case v1.ServiceTypeClusterIP:
 		if sc.publishInternal {
 			endpoints = append(endpoints, extractServiceIps(svc, hostname)...)
 		}
