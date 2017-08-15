@@ -18,8 +18,11 @@ package provider
 
 import (
 	"fmt"
+	"net"
+	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/gophercloud/gophercloud"
@@ -29,6 +32,7 @@ import (
 	"github.com/gophercloud/gophercloud/pagination"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/pkg/tlsutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
@@ -132,6 +136,25 @@ func createDesignateServiceClient() (*gophercloud.ServiceClient, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	tlsConfig, err := tlsutils.CreateTLSConfig("OPENSTACK")
+	if err != nil {
+		return nil, err
+	}
+
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		TLSClientConfig:       tlsConfig,
+	}
+	client.ProviderClient.HTTPClient.Transport = transport
 	log.Infof("Found OpenStack Designate service at %s", client.Endpoint)
 	return client, nil
 }
