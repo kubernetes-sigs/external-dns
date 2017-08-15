@@ -176,9 +176,9 @@ func TestAWSZones(t *testing.T) {
 
 func TestAWSRecords(t *testing.T) {
 	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), false, []*endpoint.Endpoint{
-		endpoint.NewEndpoint("list-test.zone-1.ext-dns-test-2.teapot.zalan.do", "1.2.3.4", "A"),
-		endpoint.NewEndpoint("list-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
-		endpoint.NewEndpoint("*.wildcard-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
+		endpoint.NewEndpointWithTTL("list-test.zone-1.ext-dns-test-2.teapot.zalan.do", "1.2.3.4", "A", aws.Int64(recordTTL)),
+		endpoint.NewEndpointWithTTL("list-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A", aws.Int64(recordTTL)),
+		endpoint.NewEndpointWithTTL("*.wildcard-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A", aws.Int64(recordTTL)),
 		endpoint.NewEndpoint("list-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "ALIAS"),
 		endpoint.NewEndpoint("*.wildcard-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "ALIAS"),
 	})
@@ -187,9 +187,9 @@ func TestAWSRecords(t *testing.T) {
 	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		endpoint.NewEndpoint("list-test.zone-1.ext-dns-test-2.teapot.zalan.do", "1.2.3.4", "A"),
-		endpoint.NewEndpoint("list-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
-		endpoint.NewEndpoint("*.wildcard-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
+		endpoint.NewEndpointWithTTL("list-test.zone-1.ext-dns-test-2.teapot.zalan.do", "1.2.3.4", "A", aws.Int64(recordTTL)),
+		endpoint.NewEndpointWithTTL("list-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A", aws.Int64(recordTTL)),
+		endpoint.NewEndpointWithTTL("*.wildcard-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A", aws.Int64(recordTTL)),
 		endpoint.NewEndpoint("list-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "ALIAS"),
 		endpoint.NewEndpoint("*.wildcard-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "ALIAS"),
 	})
@@ -221,9 +221,9 @@ func TestAWSCreateRecords(t *testing.T) {
 
 func TestAWSUpdateRecords(t *testing.T) {
 	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), false, []*endpoint.Endpoint{
-		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
-		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.4.4", "A"),
-		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.elb.amazonaws.com", "CNAME"),
+		endpoint.NewEndpointWithTTL("update-test.zone-1.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A", aws.Int64(recordTTL)),
+		endpoint.NewEndpointWithTTL("update-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.4.4", "A", aws.Int64(recordTTL)),
+		endpoint.NewEndpointWithTTL("update-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.elb.amazonaws.com", "CNAME", aws.Int64(recordTTL)),
 	})
 
 	currentRecords := []*endpoint.Endpoint{
@@ -243,19 +243,19 @@ func TestAWSUpdateRecords(t *testing.T) {
 	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.teapot.zalan.do", "1.2.3.4", "A"),
-		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.teapot.zalan.do", "4.3.2.1", "A"),
-		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do", "bar.elb.amazonaws.com", "CNAME"),
+		endpoint.NewEndpointWithTTL("update-test.zone-1.ext-dns-test-2.teapot.zalan.do", "1.2.3.4", "A", aws.Int64(recordTTL)),
+		endpoint.NewEndpointWithTTL("update-test.zone-2.ext-dns-test-2.teapot.zalan.do", "4.3.2.1", "A", aws.Int64(recordTTL)),
+		endpoint.NewEndpointWithTTL("update-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do", "bar.elb.amazonaws.com", "CNAME", aws.Int64(recordTTL)),
 	})
 }
 
 func TestAWSDeleteRecords(t *testing.T) {
 	originalEndpoints := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("delete-test.zone-1.ext-dns-test-2.teapot.zalan.do", "1.2.3.4", "A"),
-		endpoint.NewEndpoint("delete-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
-		endpoint.NewEndpoint("delete-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do", "baz.elb.amazonaws.com", "CNAME"),
+		endpoint.NewEndpointWithTTL("delete-test.zone-1.ext-dns-test-2.teapot.zalan.do", "1.2.3.4", "A", aws.Int64(recordTTL)),
+		endpoint.NewEndpointWithTTL("delete-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A", aws.Int64(recordTTL)),
+		endpoint.NewEndpointWithTTL("delete-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do", "baz.elb.amazonaws.com", "CNAME", aws.Int64(recordTTL)),
 		endpoint.NewEndpoint("delete-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "ALIAS"),
-		endpoint.NewEndpoint("delete-test-cname-alias.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "CNAME"),
+		endpoint.NewEndpointWithTTL("delete-test-cname-alias.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", "CNAME", aws.Int64(recordTTL)),
 	}
 
 	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), false, originalEndpoints)
