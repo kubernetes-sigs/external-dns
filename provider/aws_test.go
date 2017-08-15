@@ -196,12 +196,14 @@ func TestAWSRecords(t *testing.T) {
 }
 
 func TestAWSCreateRecords(t *testing.T) {
+	customTTL := aws.Int64(60)
 	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), false, []*endpoint.Endpoint{})
 
 	records := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("create-test.zone-1.ext-dns-test-2.teapot.zalan.do", "1.2.3.4", ""),
 		endpoint.NewEndpoint("create-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", ""),
 		endpoint.NewEndpoint("create-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.elb.amazonaws.com", ""),
+		endpoint.NewEndpointWithTTL("create-test-cname-custom-ttl.zone-1.ext-dns-test-2.teapot.zalan.do", "172.17.0.1", "A", customTTL),
 	}
 
 	require.NoError(t, provider.CreateRecords(records))
@@ -210,9 +212,10 @@ func TestAWSCreateRecords(t *testing.T) {
 	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		endpoint.NewEndpoint("create-test.zone-1.ext-dns-test-2.teapot.zalan.do", "1.2.3.4", "A"),
-		endpoint.NewEndpoint("create-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A"),
-		endpoint.NewEndpoint("create-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.elb.amazonaws.com", "CNAME"),
+		endpoint.NewEndpointWithTTL("create-test.zone-1.ext-dns-test-2.teapot.zalan.do", "1.2.3.4", "A", aws.Int64(recordTTL)),
+		endpoint.NewEndpointWithTTL("create-test.zone-2.ext-dns-test-2.teapot.zalan.do", "8.8.8.8", "A", aws.Int64(recordTTL)),
+		endpoint.NewEndpointWithTTL("create-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.elb.amazonaws.com", "CNAME", aws.Int64(recordTTL)),
+		endpoint.NewEndpointWithTTL("create-test-cname-custom-ttl.zone-1.ext-dns-test-2.teapot.zalan.do", "172.17.0.1", "A", customTTL),
 	})
 }
 
@@ -462,7 +465,7 @@ func TestAWSChangesByZones(t *testing.T) {
 }
 
 func validateEndpoints(t *testing.T, endpoints []*endpoint.Endpoint, expected []*endpoint.Endpoint) {
-	assert.True(t, testutils.SameEndpoints(endpoints, expected), "expected and actual endpoints don't match")
+	assert.True(t, testutils.SameEndpoints(endpoints, expected), "expected and actual endpoints don't match. %s:%s", endpoints, expected)
 }
 
 func validateAWSZones(t *testing.T, zones map[string]*route53.HostedZone, expected map[string]*route53.HostedZone) {

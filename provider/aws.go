@@ -153,11 +153,11 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 			}
 
 			for _, rr := range r.ResourceRecords {
-				endpoints = append(endpoints, endpoint.NewEndpoint(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(rr.Value), aws.StringValue(r.Type)))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(rr.Value), aws.StringValue(r.Type), r.TTL))
 			}
 
 			if r.AliasTarget != nil {
-				endpoints = append(endpoints, endpoint.NewEndpoint(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.AliasTarget.DNSName), "ALIAS"))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.AliasTarget.DNSName), "ALIAS", r.TTL))
 			}
 		}
 
@@ -282,6 +282,16 @@ func newChanges(action string, endpoints []*endpoint.Endpoint) []*route53.Change
 	return changes
 }
 
+func getTTLValue(ep *endpoint.Endpoint) *int64 {
+	var ttl int64
+	if !ep.RecordTTL.IsConfigured {
+		ttl = recordTTL
+	} else {
+		ttl = ep.RecordTTL.Value
+	}
+	return aws.Int64(ttl)
+}
+
 // newChange returns a Change of the given record by the given action, e.g.
 // action=ChangeActionCreate returns a change for creation of the record and
 // action=ChangeActionDelete returns a change for deletion of the record.
@@ -302,7 +312,7 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 		}
 	} else {
 		change.ResourceRecordSet.Type = aws.String(suitableType(endpoint))
-		change.ResourceRecordSet.TTL = aws.Int64(recordTTL)
+		change.ResourceRecordSet.TTL = getTTLValue(endpoint)
 		change.ResourceRecordSet.ResourceRecords = []*route53.ResourceRecord{
 			{
 				Value: aws.String(endpoint.Target),

@@ -49,11 +49,23 @@ type Endpoint struct {
 
 // NewEndpoint initialization method to be used to create an endpoint
 func NewEndpoint(dnsName, target, recordType string) *Endpoint {
+	return NewEndpointWithTTL(dnsName, target, recordType, nil)
+}
+
+// NewEndpoint initialization with
+func NewEndpointWithTTL(dnsName, target, recordType string, ttlValue *int64) *Endpoint {
+	var ttl TTL
+	if ttlValue != nil {
+		ttl = TTL{Value: *ttlValue, IsConfigured: true}
+	} else {
+		ttl = TTL{IsConfigured: false}
+	}
 	return &Endpoint{
 		DNSName:    strings.TrimSuffix(dnsName, "."),
 		Target:     strings.TrimSuffix(target, "."),
 		RecordType: recordType,
 		Labels:     map[string]string{},
+		RecordTTL:  ttl,
 	}
 }
 
@@ -67,5 +79,9 @@ func (e *Endpoint) MergeLabels(labels map[string]string) {
 }
 
 func (e *Endpoint) String() string {
-	return fmt.Sprintf(`%s -> %s (type "%s")`, e.DNSName, e.Target, e.RecordType)
+	var ttl string
+	if e.RecordTTL.IsConfigured {
+		ttl = fmt.Sprintf(" TTL: %v", e.RecordTTL.Value)
+	}
+	return fmt.Sprintf(`%s -> %s (type "%s") %s`, e.DNSName, e.Target, e.RecordType, ttl)
 }
