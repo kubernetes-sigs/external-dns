@@ -29,6 +29,7 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"strconv"
 )
 
 // serviceSource is an implementation of Source for Kubernetes service objects.
@@ -135,6 +136,23 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 	return endpoints, nil
 }
 
+func getTTLFromService(svc *v1.Service) endpoint.TTL {
+	ttlAnnotation, exists := svc.Annotations[ttlAnnotationKey]
+	if !exists {
+		return endpoint.TTL{IsConfigured: false}
+	}
+	ttlValue, err := strconv.ParseInt(ttlAnnotation, 10, 64)
+	if err != nil {
+		log.Warnf("%v is not a valid TTL value", ttlAnnotation)
+		return endpoint.TTL{IsConfigured: false}
+	}
+	if ttlValue < 0 {
+		log.Warnf("TTL must be a non-negative integer", ttlAnnotation)
+		return endpoint.TTL{IsConfigured: false}
+	}
+	return endpoint.TTL{Value: ttlValue, IsConfigured: true}
+}
+
 // endpointsFromService extracts the endpoints from a service object
 func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
@@ -148,17 +166,22 @@ func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
 	// splits the hostname annotation and removes the trailing periods
 	hostnameList := strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
 
+	ttl := getTTLFromService(svc)
+
+	var ep *endpoint.Endpoint
 	for _, hostname := range hostnameList {
 		hostname = strings.TrimSuffix(hostname, ".")
 		// Create a corresponding endpoint for each configured external entrypoint.
 		for _, lb := range svc.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
 				//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
-				endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
+				ep = endpoint.NewEndpoint(hostname, lb.IP, "")
 			}
 			if lb.Hostname != "" {
-				endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
+				ep = endpoint.NewEndpoint(hostname, lb.Hostname, "")
 			}
+			ep.RecordTTL = ttl
+			endpoints = append(endpoints, ep)
 		}
 	}
 

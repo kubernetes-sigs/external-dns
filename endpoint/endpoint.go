@@ -26,6 +26,13 @@ const (
 	OwnerLabelKey = "owner"
 )
 
+type TTL struct {
+	// The value of the TTL
+	Value int64
+	// Whether or not the TTL value is configured
+	IsConfigured bool
+}
+
 // Endpoint is a high-level way of a connection between a service and an IP
 type Endpoint struct {
 	// The hostname of the DNS record
@@ -34,6 +41,8 @@ type Endpoint struct {
 	Target string
 	// RecordType type of record, e.g. CNAME, A, TXT etc
 	RecordType string
+	// TTL for the record
+	RecordTTL TTL
 	// Labels stores labels defined for the Endpoint
 	Labels map[string]string
 }
