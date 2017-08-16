@@ -46,6 +46,16 @@ func TestCalculate(t *testing.T) {
 	typedV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", "A")}
 	typedV1 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", "A")}
 
+	// test case with TTL
+	ttl := int64(300)
+	ttl2 := int64(50)
+	ttlV1 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v1", "CNAME", &ttl)}
+	ttlV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", "CNAME")}
+	ttlV3 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v1", "CNAME", &ttl)}
+	ttlV4 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v1", "CNAME", &ttl2)}
+	ttlV5 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", "CNAME")}
+	ttlV6 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v2", "CNAME", &ttl)}
+
 	for _, tc := range []struct {
 		policies                             []Policy
 		current, desired                     []*endpoint.Endpoint
@@ -69,6 +79,14 @@ func TestCalculate(t *testing.T) {
 		{[]Policy{&SyncPolicy{}}, labeledV1, noLabels, empty, labeledV1, labeledV2, empty},
 		// RecordType should be inherited
 		{[]Policy{&SyncPolicy{}}, typedV1, noType, empty, typedV1, typedV2, empty},
+		// If desired TTL is not configured, do not update
+		{[]Policy{&SyncPolicy{}}, ttlV1, ttlV2, empty, empty, empty, empty},
+		// If desired TTL is configured but is the same as current TTL, do not update
+		{[]Policy{&SyncPolicy{}}, ttlV1, ttlV3, empty, empty, empty, empty},
+		// If desired TTL is configured and is not the same as current TTL, need to update
+		{[]Policy{&SyncPolicy{}}, ttlV1, ttlV4, empty, ttlV1, ttlV4, empty},
+		// If target changed and desired TTL is not configured, do not update TTL
+		{[]Policy{&SyncPolicy{}}, ttlV1, ttlV5, empty, ttlV1, ttlV6, empty},
 	} {
 		// setup plan
 		plan := &Plan{

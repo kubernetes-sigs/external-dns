@@ -65,17 +65,26 @@ func (p *Plan) Calculate() *Plan {
 			continue
 		}
 
-		// If there already is a record update it if it changed.
-		if targetChanged(desired, current) || shouldUpdateTTL(desired, current) {
-			changes.UpdateOld = append(changes.UpdateOld, current)
+		targetChanged := targetChanged(desired, current)
+		shouldUpdateTTL := shouldUpdateTTL(desired, current)
 
-			desired.RecordType = current.RecordType // inherit the type from the dns provider
-			desired.MergeLabels(current.Labels)     // inherit the labels from the dns provider, including Owner ID
-			changes.UpdateNew = append(changes.UpdateNew, desired)
+		if !targetChanged && !shouldUpdateTTL {
+			log.Debugf("Skipping endpoint %v because nothing has changed", desired)
 			continue
 		}
 
-		log.Debugf("Skipping endpoint %v because target has not changed", desired)
+		changes.UpdateOld = append(changes.UpdateOld, current)
+		desired.MergeLabels(current.Labels)     // inherit the labels from the dns provider, including Owner ID
+
+		if targetChanged {
+			desired.RecordType = current.RecordType // inherit the type from the dns provider
+		}
+
+		if !shouldUpdateTTL {
+			desired.RecordTTL = current.RecordTTL
+		}
+
+		changes.UpdateNew = append(changes.UpdateNew, desired)
 	}
 
 	// Ensure all undesired records are removed. Each current record that cannot
