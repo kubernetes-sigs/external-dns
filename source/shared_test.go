@@ -44,6 +44,6 @@ func validateEndpoint(t *testing.T, endpoint, expected *endpoint.Endpoint) {
 	}
 
 	if endpoint.RecordTTL != expected.RecordTTL {
-		t.Errorf("expected %s, got %s", expected.RecordTTL, endpoint.RecordTTL)
+		t.Errorf("expected %v, got %v", expected.RecordTTL, endpoint.RecordTTL)
 	}
 }
