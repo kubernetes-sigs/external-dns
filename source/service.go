@@ -115,6 +115,7 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
+	var ep *endpoint.Endpoint
 
 	var buf bytes.Buffer
 	err := sc.fqdnTemplate.Execute(&buf, svc)
@@ -122,14 +123,19 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 		return nil, fmt.Errorf("failed to apply template on service %s: %v", svc.String(), err)
 	}
 
+	ttl := getTTLFromAnnotations(svc.Annotations)
 	hostname := buf.String()
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
 			//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
+			ep = endpoint.NewEndpoint(hostname, lb.IP, "")
+			ep.RecordTTL = ttl
+			endpoints = append(endpoints, ep)
 		}
 		if lb.Hostname != "" {
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
+			ep = endpoint.NewEndpoint(hostname, lb.Hostname, "")
+			ep.RecordTTL = ttl
+			endpoints = append(endpoints, ep)
 		}
 	}
 
@@ -176,12 +182,14 @@ func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
 			if lb.IP != "" {
 				//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
 				ep = endpoint.NewEndpoint(hostname, lb.IP, "")
+				ep.RecordTTL = ttl
+				endpoints = append(endpoints, ep)
 			}
 			if lb.Hostname != "" {
 				ep = endpoint.NewEndpoint(hostname, lb.Hostname, "")
+				ep.RecordTTL = ttl
+				endpoints = append(endpoints, ep)
 			}
-			ep.RecordTTL = ttl
-			endpoints = append(endpoints, ep)
 		}
 	}
 
