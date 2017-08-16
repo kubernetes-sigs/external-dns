@@ -50,10 +50,10 @@ func ExampleSameEndpoints() {
 			RecordType: "CNAME",
 		},
 		{
-			DNSName: "cbc.com",
-			Target: "foo.com",
+			DNSName:    "cbc.com",
+			Target:     "foo.com",
 			RecordType: "CNAME",
-			RecordTTL: endpoint.TTL{IsConfigured: true, Value: 60},
+			RecordTTL:  endpoint.TTL{IsConfigured: true, Value: 60},
 		},
 	}
 	sort.Sort(byAllFields(eps))
