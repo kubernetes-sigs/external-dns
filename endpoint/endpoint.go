@@ -84,5 +84,5 @@ func (e *Endpoint) String() string {
 	if e.RecordTTL.IsConfigured {
 		ttl = fmt.Sprintf(" TTL: %v", e.RecordTTL.Value)
 	}
-	return fmt.Sprintf(`%s -> %s (type "%s") %s`, e.DNSName, e.Target, e.RecordType, ttl)
+	return fmt.Sprintf(`%s -> %s (type "%s")%s`, e.DNSName, e.Target, e.RecordType, ttl)
 }

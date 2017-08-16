@@ -49,6 +49,12 @@ func ExampleSameEndpoints() {
 			Target:     "foo.com",
 			RecordType: "CNAME",
 		},
+		{
+			DNSName: "cbc.com",
+			Target: "foo.com",
+			RecordType: "CNAME",
+			RecordTTL: endpoint.TTL{IsConfigured: true, Value: 60},
+		},
 	}
 	sort.Sort(byAllFields(eps))
 	for _, ep := range eps {
@@ -58,6 +64,7 @@ func ExampleSameEndpoints() {
 	// abc.com -> 1.2.3.4 (type "A")
 	// abc.com -> something (type "TXT")
 	// bbc.com -> foo.com (type "CNAME")
+	// cbc.com -> foo.com (type "CNAME") TTL: 60
 	// example.org -> load-balancer.org (type "")
 	// example.org -> load-balancer.org (type "TXT")
 }
