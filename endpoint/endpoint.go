@@ -52,7 +52,7 @@ func NewEndpoint(dnsName, target, recordType string) *Endpoint {
 	return NewEndpointWithTTL(dnsName, target, recordType, nil)
 }
 
-// NewEndpoint initialization with
+// NewEndpoint initialization with TTL
 func NewEndpointWithTTL(dnsName, target, recordType string, ttlValue *int64) *Endpoint {
 	var ttl TTL
 	if ttlValue != nil {
