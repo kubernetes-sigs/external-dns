@@ -3,6 +3,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/kubernetes-incubator/external-dns/badge.svg?branch=master)](https://coveralls.io/github/kubernetes-incubator/external-dns?branch=master)
 [![GitHub release](https://img.shields.io/github/release/kubernetes-incubator/external-dns.svg)](https://github.com/kubernetes-incubator/external-dns/releases)
 [![go-doc](https://godoc.org/github.com/kubernetes-incubator/external-dns?status.svg)](https://godoc.org/github.com/kubernetes-incubator/external-dns)
+[![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes-incubator/external-dns)](https://goreportcard.com/report/github.com/kubernetes-incubator/external-dns)
 
 ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 
@@ -14,7 +15,7 @@ In a broader sense, ExternalDNS allows you to control DNS records dynamically vi
 
 The [FAQ](docs/faq.md) contains additional information and addresses several questions about key concepts of ExternalDNS.
 
-## Getting started
+## The Latest Release: v0.4
 
 ExternalDNS' current release is `v0.4`. This version allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
 * [Google CloudDNS](https://cloud.google.com/dns/docs/)
@@ -28,6 +29,20 @@ From this release, ExternalDNS can become aware of the records it is managing (e
 Note that all flags can be replaced with environment variables; for instance,
 `--dry-run` could be replaced with `EXTERNAL_DNS_DRY_RUN=1`, or
 `--registry txt` could be replaced with `EXTERNAL_DNS_REGISTRY=txt`.
+
+## Deploying to a Cluster
+
+The following tutorials are provided:
+
+* [AWS](docs/tutorials/aws.md)
+* [Azure](docs/tutorials/azure.md)
+* [Cloudflare](docs/tutorials/cloudflare.md)
+* [DigitalOcean](docs/tutorials/digitalocean.md)
+* Google Container Engine
+	* [Using Google's Default Ingress Controller](docs/tutorials/gke.md)
+	* [Using the Nginx Ingress Controller](docs/tutorials/nginx-ingress.md)
+
+## Running Locally
 
 ### Technical Requirements
 

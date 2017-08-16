@@ -121,7 +121,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 
 	// Miscellaneous flags
 	app.Flag("log-format", "The format in which log messages are printed (default: text, options: text, json)").Default(defaultConfig.LogFormat).EnumVar(&cfg.LogFormat, "text", "json")
-	app.Flag("metrics-address", "Specify were to serve the metrics and health check endpoint (default: :7979)").Default(defaultConfig.MetricsAddress).StringVar(&cfg.MetricsAddress)
+	app.Flag("metrics-address", "Specify where to serve the metrics and health check endpoint (default: :7979)").Default(defaultConfig.MetricsAddress).StringVar(&cfg.MetricsAddress)
 	app.Flag("debug", "When enabled, increases the logging output for debugging purposes (default: disabled)").BoolVar(&cfg.Debug)
 
 	_, err := app.Parse(args)

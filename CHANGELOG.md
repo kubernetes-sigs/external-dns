@@ -1,5 +1,12 @@
-## v0.4.4 - (unreleased)
   - ExternalDNS now services of type `ClusterIP` with the use of the `--publish-internal-services`.  Enabling this will now create the apprioriate A records for the given service's internal ip.  @jrnt30
+
+## v0.4.2 - 2017-08-03
+
+  - Fix to support multiple hostnames for Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes) compatibility (#301)
+
+## v0.4.1 - 2017-07-28
+
+  - Fix incorrect order of constructor parameters (#298)
 
 ## v0.4.0 - 2017-07-21
 
