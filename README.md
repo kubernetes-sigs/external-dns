@@ -1,4 +1,5 @@
-<div style="background-image:url('img/external-dns.png');height:400px;background-position:center; background-size: auto 110%;background-repeat: no-repeat;">
+<div align="center">
+	<img src="img/external-dns.png" style="max-width:40%;" alt="ExternalDNS">
 </div>
 
 # ExternalDNS
