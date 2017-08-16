@@ -164,7 +164,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*
 }
 
 func extractServiceIps(svc *v1.Service, hostname string) []*endpoint.Endpoint {
-	if svc.Spec.ClusterIP == "None" {
+	if svc.Spec.ClusterIP == v1.ClusterIPNone {
 		log.Debugf("Unable to associate %s headless service with a Cluster IP", svc.Name)
 		return []*endpoint.Endpoint{}
 	}

@@ -600,6 +600,21 @@ func TestClusterIpServices(t *testing.T) {
 			},
 			false,
 		},
+		{
+			"Headless services do not generate endpoints",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			map[string]string{},
+			map[string]string{},
+			v1.ClusterIPNone,
+			[]string{},
+			[]*endpoint.Endpoint{},
+			false,
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			// Create a Kubernetes testing client
