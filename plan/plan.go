@@ -66,7 +66,7 @@ func (p *Plan) Calculate() *Plan {
 		}
 
 		// If there already is a record update it if it changed.
-		if desired.Target != current.Target {
+		if targetChanged(desired, current) || shouldUpdateTTL(desired, current) {
 			changes.UpdateOld = append(changes.UpdateOld, current)
 
 			desired.RecordType = current.RecordType // inherit the type from the dns provider
@@ -98,6 +98,17 @@ func (p *Plan) Calculate() *Plan {
 	}
 
 	return plan
+}
+
+func targetChanged(desired, current *endpoint.Endpoint) bool {
+	return desired.Target != current.Target
+}
+
+func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
+	if !desired.RecordTTL.IsConfigured {
+		return false
+	}
+	return desired.RecordTTL.Value != current.RecordTTL.Value
 }
 
 // recordExists checks whether a record can be found in a list of records.
