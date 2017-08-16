@@ -385,7 +385,7 @@ func testIngressEndpoints(t *testing.T) {
 					namespace: namespace,
 					annotations: map[string]string{
 						targetAnnotationKey: "ingress-target.com",
-						ttlAnnotationKey: "6",
+						ttlAnnotationKey:    "6",
 					},
 					dnsnames: []string{"example.org"},
 					ips:      []string{},
@@ -395,7 +395,7 @@ func testIngressEndpoints(t *testing.T) {
 					namespace: namespace,
 					annotations: map[string]string{
 						targetAnnotationKey: "ingress-target.com",
-						ttlAnnotationKey: "1",
+						ttlAnnotationKey:    "1",
 					},
 					dnsnames: []string{"example2.org"},
 					ips:      []string{"8.8.8.8"},
@@ -407,7 +407,7 @@ func testIngressEndpoints(t *testing.T) {
 					Target:  "ingress-target.com",
 					RecordTTL: endpoint.TTL{
 						IsConfigured: true,
-						Value: 6,
+						Value:        6,
 					},
 				},
 				{
@@ -415,7 +415,7 @@ func testIngressEndpoints(t *testing.T) {
 					Target:  "ingress-target.com",
 					RecordTTL: endpoint.TTL{
 						IsConfigured: true,
-						Value: 1,
+						Value:        1,
 					},
 				},
 				{
@@ -423,7 +423,7 @@ func testIngressEndpoints(t *testing.T) {
 					Target:  "8.8.8.8",
 					RecordTTL: endpoint.TTL{
 						IsConfigured: true,
-						Value: 1,
+						Value:        1,
 					},
 				},
 			},

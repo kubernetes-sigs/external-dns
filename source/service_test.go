@@ -455,7 +455,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
-				ttlAnnotationKey: "foo",
+				ttlAnnotationKey:      "foo",
 			},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
@@ -473,7 +473,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
-				ttlAnnotationKey: "10",
+				ttlAnnotationKey:      "10",
 			},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
@@ -491,7 +491,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
-				ttlAnnotationKey: "-10",
+				ttlAnnotationKey:      "-10",
 			},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
