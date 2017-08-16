@@ -1,4 +1,5 @@
-<img src="img/external-dns.png" alt="ExternalDNS" width="20%">
+<div style="background-image:url('img/external-dns.png');height:400px;background-position:center; background-size: auto 110%;background-repeat: no-repeat;">
+</div>
 
 # ExternalDNS
 [![Build Status](https://travis-ci.org/kubernetes-incubator/external-dns.svg?branch=master)](https://travis-ci.org/kubernetes-incubator/external-dns)
