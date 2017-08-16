@@ -50,11 +50,11 @@ type Endpoint struct {
 
 // NewEndpoint initialization method to be used to create an endpoint
 func NewEndpoint(dnsName, target, recordType string) *Endpoint {
-	return NewEndpointWithTTL(dnsName, target, recordType, nil)
+	return NewEndpointWithTTLValue(dnsName, target, recordType, nil)
 }
 
-// NewEndpointWithTTL initialization method to be used to create an endpoint with TTL
-func NewEndpointWithTTL(dnsName, target, recordType string, ttlValue *int64) *Endpoint {
+// NewEndpointWithTTLValue initialization method to be used to create an endpoint with TTL
+func NewEndpointWithTTLValue(dnsName, target, recordType string, ttlValue *int64) *Endpoint {
 	var ttl TTL
 	if ttlValue != nil {
 		ttl = TTL{Value: *ttlValue, IsConfigured: true}

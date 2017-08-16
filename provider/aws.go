@@ -153,11 +153,11 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 			}
 
 			for _, rr := range r.ResourceRecords {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(rr.Value), aws.StringValue(r.Type), r.TTL))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTLValue(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(rr.Value), aws.StringValue(r.Type), r.TTL))
 			}
 
 			if r.AliasTarget != nil {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.AliasTarget.DNSName), "ALIAS", r.TTL))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTLValue(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.AliasTarget.DNSName), "ALIAS", r.TTL))
 			}
 		}
 
