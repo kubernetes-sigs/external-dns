@@ -139,12 +139,14 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 	for _, lb := range ing.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
 			ep = endpoint.NewEndpoint(hostname, lb.IP, "")
+			ep.RecordTTL = ttl
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
 		}
 		if lb.Hostname != "" {
 			ep = endpoint.NewEndpoint(hostname, lb.Hostname, "")
+			ep.RecordTTL = ttl
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
 		}
-		ep.RecordTTL = ttl
-		endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
 	}
 
 	return endpoints, nil
