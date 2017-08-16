@@ -113,9 +113,7 @@ func addEndpointsFromTargetAnnotation(ing *v1beta1.Ingress, hostname string, end
 		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
 		for _, targetHostname := range targetsList {
 			targetHostname = strings.TrimSuffix(targetHostname, ".")
-			ep := endpoint.NewEndpoint(hostname, targetHostname, "")
-			ep.RecordTTL = ttl
-			endpoints = append(endpoints, ep)
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, targetHostname, "", ttl))
 		}
 	}
 	return endpoints
@@ -123,7 +121,6 @@ func addEndpointsFromTargetAnnotation(ing *v1beta1.Ingress, hostname string, end
 
 func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
-	var ep *endpoint.Endpoint
 
 	var buf bytes.Buffer
 	err := sc.fqdnTemplate.Execute(&buf, ing)
@@ -138,14 +135,10 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 	ttl := getTTLFromAnnotations(ing.Annotations)
 	for _, lb := range ing.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
-			ep = endpoint.NewEndpoint(hostname, lb.IP, "")
-			ep.RecordTTL = ttl
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.IP, "", ttl))
 		}
 		if lb.Hostname != "" {
-			ep = endpoint.NewEndpoint(hostname, lb.Hostname, "")
-			ep.RecordTTL = ttl
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.Hostname, "", ttl))
 		}
 	}
 
@@ -155,7 +148,6 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 // endpointsFromIngress extracts the endpoints from ingress object
 func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
-	var ep *endpoint.Endpoint
 
 	for _, rule := range ing.Spec.Rules {
 		if rule.Host == "" {
@@ -168,13 +160,11 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 
 		for _, lb := range ing.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
-				ep = endpoint.NewEndpoint(rule.Host, lb.IP, "")
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rule.Host, lb.IP, "", ttl))
 			}
 			if lb.Hostname != "" {
-				ep = endpoint.NewEndpoint(rule.Host, lb.Hostname, "")
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rule.Host, lb.Hostname, "", ttl))
 			}
-			ep.RecordTTL = ttl
-			endpoints = append(endpoints, ep)
 		}
 	}
 

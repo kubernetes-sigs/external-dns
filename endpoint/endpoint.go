@@ -53,7 +53,7 @@ func NewEndpoint(dnsName, target, recordType string) *Endpoint {
 	return NewEndpointWithTTLValue(dnsName, target, recordType, nil)
 }
 
-// NewEndpointWithTTLValue initialization method to be used to create an endpoint with TTL
+// NewEndpointWithTTLValue initialization method to be used to create an endpoint with a pointer to the TTL value
 func NewEndpointWithTTLValue(dnsName, target, recordType string, ttlValue *int64) *Endpoint {
 	var ttl TTL
 	if ttlValue != nil {
@@ -61,6 +61,11 @@ func NewEndpointWithTTLValue(dnsName, target, recordType string, ttlValue *int64
 	} else {
 		ttl = TTL{IsConfigured: false}
 	}
+	return NewEndpointWithTTL(dnsName, target, recordType, ttl)
+}
+
+// NewEndpointWithTTL initialization method to be used to create an endpoint with a TTL struct
+func NewEndpointWithTTL(dnsName, target, recordType string, ttl TTL) *Endpoint {
 	return &Endpoint{
 		DNSName:    strings.TrimSuffix(dnsName, "."),
 		Target:     strings.TrimSuffix(target, "."),

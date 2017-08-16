@@ -115,7 +115,6 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
-	var ep *endpoint.Endpoint
 
 	var buf bytes.Buffer
 	err := sc.fqdnTemplate.Execute(&buf, svc)
@@ -128,14 +127,10 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
 			//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
-			ep = endpoint.NewEndpoint(hostname, lb.IP, "")
-			ep.RecordTTL = ttl
-			endpoints = append(endpoints, ep)
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.IP, "", ttl))
 		}
 		if lb.Hostname != "" {
-			ep = endpoint.NewEndpoint(hostname, lb.Hostname, "")
-			ep.RecordTTL = ttl
-			endpoints = append(endpoints, ep)
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.Hostname, "", ttl))
 		}
 	}
 
@@ -174,21 +169,16 @@ func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
 
 	ttl := getTTLFromAnnotations(svc.Annotations)
 
-	var ep *endpoint.Endpoint
 	for _, hostname := range hostnameList {
 		hostname = strings.TrimSuffix(hostname, ".")
 		// Create a corresponding endpoint for each configured external entrypoint.
 		for _, lb := range svc.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
 				//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
-				ep = endpoint.NewEndpoint(hostname, lb.IP, "")
-				ep.RecordTTL = ttl
-				endpoints = append(endpoints, ep)
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.IP, "", ttl))
 			}
 			if lb.Hostname != "" {
-				ep = endpoint.NewEndpoint(hostname, lb.Hostname, "")
-				ep.RecordTTL = ttl
-				endpoints = append(endpoints, ep)
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.Hostname, "", ttl))
 			}
 		}
 	}
