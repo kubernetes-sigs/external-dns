@@ -1,3 +1,7 @@
+<p align="center">
+	<img src="img/external-dns.png" width="40%" align="center" alt="ExternalDNS">
+</p>
+
 # ExternalDNS
 [![Build Status](https://travis-ci.org/kubernetes-incubator/external-dns.svg?branch=master)](https://travis-ci.org/kubernetes-incubator/external-dns)
 [![Coverage Status](https://coveralls.io/repos/github/kubernetes-incubator/external-dns/badge.svg?branch=master)](https://coveralls.io/github/kubernetes-incubator/external-dns?branch=master)
