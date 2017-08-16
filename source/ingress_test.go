@@ -377,6 +377,58 @@ func testIngressEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title:           "ingress rules with annotation and custom TTL",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						targetAnnotationKey: "ingress-target.com",
+						ttlAnnotationKey: "6",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{},
+				},
+				{
+					name:      "fake2",
+					namespace: namespace,
+					annotations: map[string]string{
+						targetAnnotationKey: "ingress-target.com",
+						ttlAnnotationKey: "1",
+					},
+					dnsnames: []string{"example2.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "example.org",
+					Target:  "ingress-target.com",
+					RecordTTL: endpoint.TTL{
+						IsConfigured: true,
+						Value: 6,
+					},
+				},
+				{
+					DNSName: "example2.org",
+					Target:  "ingress-target.com",
+					RecordTTL: endpoint.TTL{
+						IsConfigured: true,
+						Value: 1,
+					},
+				},
+				{
+					DNSName: "example2.org",
+					Target:  "8.8.8.8",
+					RecordTTL: endpoint.TTL{
+						IsConfigured: true,
+						Value: 1,
+					},
+				},
+			},
+		},
+		{
 			title:           "template for ingress with annotation",
 			targetNamespace: "",
 			ingressItems: []fakeIngress{
