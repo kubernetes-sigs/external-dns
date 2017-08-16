@@ -136,8 +136,8 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 	return endpoints, nil
 }
 
-func getTTLFromService(svc *v1.Service) endpoint.TTL {
-	ttlAnnotation, exists := svc.Annotations[ttlAnnotationKey]
+func getTTLFromAnnotations(annotations map[string]string) endpoint.TTL {
+	ttlAnnotation, exists := annotations[ttlAnnotationKey]
 	if !exists {
 		return endpoint.TTL{IsConfigured: false}
 	}
@@ -166,7 +166,7 @@ func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
 	// splits the hostname annotation and removes the trailing periods
 	hostnameList := strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
 
-	ttl := getTTLFromService(svc)
+	ttl := getTTLFromAnnotations(svc.Annotations)
 
 	var ep *endpoint.Endpoint
 	for _, hostname := range hostnameList {
