@@ -26,6 +26,7 @@ const (
 	OwnerLabelKey = "owner"
 )
 
+// TTL is a structure defining the TTL of a DNS record
 type TTL struct {
 	// The value of the TTL
 	Value int64
@@ -52,7 +53,7 @@ func NewEndpoint(dnsName, target, recordType string) *Endpoint {
 	return NewEndpointWithTTL(dnsName, target, recordType, nil)
 }
 
-// NewEndpoint initialization with TTL
+// NewEndpointWithTTL initialization method to be used to create an endpoint with TTL
 func NewEndpointWithTTL(dnsName, target, recordType string, ttlValue *int64) *Endpoint {
 	var ttl TTL
 	if ttlValue != nil {
