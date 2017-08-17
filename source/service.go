@@ -140,18 +140,18 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 func getTTLFromAnnotations(annotations map[string]string) endpoint.TTL {
 	ttlAnnotation, exists := annotations[ttlAnnotationKey]
 	if !exists {
-		return endpoint.TTL{IsConfigured: false}
+		return endpoint.TTL(0)
 	}
 	ttlValue, err := strconv.ParseInt(ttlAnnotation, 10, 64)
 	if err != nil {
 		log.Warnf("%v is not a valid TTL value", ttlAnnotation)
-		return endpoint.TTL{IsConfigured: false}
+		return endpoint.TTL(0)
 	}
 	if ttlValue < 0 {
 		log.Warnf("TTL must be a non-negative integer", ttlAnnotation)
-		return endpoint.TTL{IsConfigured: false}
+		return endpoint.TTL(0)
 	}
-	return endpoint.TTL{Value: ttlValue, IsConfigured: true}
+	return endpoint.TTL(ttlValue)
 }
 
 // endpointsFromService extracts the endpoints from a service object

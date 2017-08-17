@@ -441,7 +441,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4", RecordTTL: endpoint.TTL{IsConfigured: false}},
+				{DNSName: "foo.example.org", Target: "1.2.3.4", RecordTTL: endpoint.TTL(0)},
 			},
 			false,
 		},
@@ -459,7 +459,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4", RecordTTL: endpoint.TTL{IsConfigured: false}},
+				{DNSName: "foo.example.org", Target: "1.2.3.4", RecordTTL: endpoint.TTL(0)},
 			},
 			false,
 		},
@@ -477,7 +477,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4", RecordTTL: endpoint.TTL{IsConfigured: true, Value: 10}},
+				{DNSName: "foo.example.org", Target: "1.2.3.4", RecordTTL: endpoint.TTL(10)},
 			},
 			false,
 		},
@@ -495,7 +495,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			},
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4", RecordTTL: endpoint.TTL{IsConfigured: false}},
+				{DNSName: "foo.example.org", Target: "1.2.3.4", RecordTTL: endpoint.TTL(0)},
 			},
 			false,
 		},

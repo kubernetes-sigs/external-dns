@@ -405,26 +405,17 @@ func testIngressEndpoints(t *testing.T) {
 				{
 					DNSName: "example.org",
 					Target:  "ingress-target.com",
-					RecordTTL: endpoint.TTL{
-						IsConfigured: true,
-						Value:        6,
-					},
+					RecordTTL: endpoint.TTL(6),
 				},
 				{
 					DNSName: "example2.org",
 					Target:  "ingress-target.com",
-					RecordTTL: endpoint.TTL{
-						IsConfigured: true,
-						Value:        1,
-					},
+					RecordTTL: endpoint.TTL(1),
 				},
 				{
 					DNSName: "example2.org",
 					Target:  "8.8.8.8",
-					RecordTTL: endpoint.TTL{
-						IsConfigured: true,
-						Value:        1,
-					},
+					RecordTTL: endpoint.TTL(1),
 				},
 			},
 		},
