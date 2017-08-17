@@ -1,3 +1,13 @@
+## v0.4.4 - 2017-08-17
+
+  - ExternalDNS now services of type `ClusterIP` with the use of the `--publish-internal-services`.  Enabling this will now create the apprioriate A records for the given service's internal ip.  @jrnt30
+  - Fix to have external target annotations on ingress resources replace existing endpoints instead of appending to them (#318)
+
+## v0.4.3 - 2017-08-10
+
+  - Support new `external-dns.alpha.kubernetes.io/target` annotation for Ingress (#312)
+  - Fix for wildcard domains in Route53 (#302)
+
 ## v0.4.2 - 2017-08-03
 
   - Fix to support multiple hostnames for Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes) compatibility (#301)

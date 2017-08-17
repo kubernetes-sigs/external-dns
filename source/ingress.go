@@ -33,7 +33,8 @@ import (
 
 // ingressSource is an implementation of Source for Kubernetes ingress objects.
 // Ingress implementation will use the spec.rules.host value for the hostname
-// Use targetAnnotationKey to add an additional Endpoint. (useful if the ingress controller does not update)
+// Use targetAnnotationKey to explicitly set Endpoint. (useful if the ingress
+// controller does not update, or to override with alternative endpoint)
 type ingressSource struct {
 	client       kubernetes.Interface
 	namespace    string
@@ -103,8 +104,11 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
-// append endpoints from optional "target" annotation
-func addEndpointsFromTargetAnnotation(ing *v1beta1.Ingress, hostname string, endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+// get endpoints from optional "target" annotation
+// Returns empty endpoints array if none are found.
+func getEndpointsFromTargetAnnotation(ing *v1beta1.Ingress, hostname string) []*endpoint.Endpoint {
+	var endpoints []*endpoint.Endpoint
+
 	// Get the desired hostname of the ingress from the annotation.
 	targetAnnotation, exists := ing.Annotations[targetAnnotationKey]
 	if exists {
@@ -130,7 +134,11 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 
 	hostname := buf.String()
 
-	endpoints = addEndpointsFromTargetAnnotation(ing, hostname, endpoints)
+	endpoints = getEndpointsFromTargetAnnotation(ing, hostname)
+
+	if len(endpoints) != 0 {
+		return endpoints, nil
+	}
 
 	ttl := getTTLFromAnnotations(ing.Annotations)
 	for _, lb := range ing.Status.LoadBalancer.Ingress {
@@ -154,7 +162,12 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 			continue
 		}
 
-		endpoints = addEndpointsFromTargetAnnotation(ing, rule.Host, endpoints)
+		annotationEndpoints := getEndpointsFromTargetAnnotation(ing, rule.Host)
+
+		if len(annotationEndpoints) != 0 {
+			endpoints = append(endpoints, annotationEndpoints...)
+			continue
+		}
 
 		ttl := getTTLFromAnnotations(ing.Annotations)
 

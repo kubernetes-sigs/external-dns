@@ -35,18 +35,19 @@ import (
 // serviceSource is an implementation of Source for Kubernetes service objects.
 // It will find all services that are under our jurisdiction, i.e. annotated
 // desired hostname and matching or no controller annotation. For each of the
-// matched services' external entrypoints it will return a corresponding
+// matched services' entrypoints it will return a corresponding
 // Endpoint object.
 type serviceSource struct {
 	client    kubernetes.Interface
 	namespace string
 	// process Services with legacy annotations
-	compatibility string
-	fqdnTemplate  *template.Template
+	compatibility   string
+	fqdnTemplate    *template.Template
+	publishInternal bool
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate, compatibility string) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate, compatibility string, publishInternal bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -61,10 +62,11 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate, 
 	}
 
 	return &serviceSource{
-		client:        kubeClient,
-		namespace:     namespace,
-		compatibility: compatibility,
-		fqdnTemplate:  tmpl,
+		client:          kubeClient,
+		namespace:       namespace,
+		compatibility:   compatibility,
+		fqdnTemplate:    tmpl,
+		publishInternal: publishInternal,
 	}, nil
 }
 
@@ -86,7 +88,7 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 
-		svcEndpoints := endpointsFromService(&svc)
+		svcEndpoints := sc.endpoints(&svc)
 
 		// process legacy annotations if no endpoints were returned and compatibility mode is enabled.
 		if len(svcEndpoints) == 0 && sc.compatibility != "" {
@@ -122,17 +124,8 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 		return nil, fmt.Errorf("failed to apply template on service %s: %v", svc.String(), err)
 	}
 
-	ttl := getTTLFromAnnotations(svc.Annotations)
 	hostname := buf.String()
-	for _, lb := range svc.Status.LoadBalancer.Ingress {
-		if lb.IP != "" {
-			//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.IP, "", ttl))
-		}
-		if lb.Hostname != "" {
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.Hostname, "", ttl))
-		}
-	}
+	endpoints = sc.generateEndpoints(svc, hostname)
 
 	return endpoints, nil
 }
@@ -155,7 +148,7 @@ func getTTLFromAnnotations(annotations map[string]string) endpoint.TTL {
 }
 
 // endpointsFromService extracts the endpoints from a service object
-func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
+func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	// Get the desired hostname of the service from the annotation.
@@ -164,22 +157,51 @@ func endpointsFromService(svc *v1.Service) []*endpoint.Endpoint {
 		return nil
 	}
 
-	// splits the hostname annotation and removes the trailing periods
 	hostnameList := strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
+	for _, hostname := range hostnameList {
+		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname)...)
+	}
+
+	return endpoints
+}
+
+func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*endpoint.Endpoint {
+	var endpoints []*endpoint.Endpoint
+
+	hostname = strings.TrimSuffix(hostname, ".")
+	switch svc.Spec.Type {
+	case v1.ServiceTypeLoadBalancer:
+		endpoints = append(endpoints, extractLoadBalancerEndpoints(svc, hostname)...)
+	case v1.ServiceTypeClusterIP:
+		if sc.publishInternal {
+			endpoints = append(endpoints, extractServiceIps(svc, hostname)...)
+		}
+	}
+	return endpoints
+}
+
+func extractServiceIps(svc *v1.Service, hostname string) []*endpoint.Endpoint {
+	ttl := getTTLFromAnnotations(svc.Annotations)
+	if svc.Spec.ClusterIP == v1.ClusterIPNone {
+		log.Debugf("Unable to associate %s headless service with a Cluster IP", svc.Name)
+		return []*endpoint.Endpoint{}
+	}
+
+	return []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(hostname, svc.Spec.ClusterIP, "", ttl)}
+}
+
+func extractLoadBalancerEndpoints(svc *v1.Service, hostname string) []*endpoint.Endpoint {
+	var endpoints []*endpoint.Endpoint
 
 	ttl := getTTLFromAnnotations(svc.Annotations)
-
-	for _, hostname := range hostnameList {
-		hostname = strings.TrimSuffix(hostname, ".")
-		// Create a corresponding endpoint for each configured external entrypoint.
-		for _, lb := range svc.Status.LoadBalancer.Ingress {
-			if lb.IP != "" {
-				//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.IP, "", ttl))
-			}
-			if lb.Hostname != "" {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.Hostname, "", ttl))
-			}
+	// Create a corresponding endpoint for each configured external entrypoint.
+	for _, lb := range svc.Status.LoadBalancer.Ingress {
+		if lb.IP != "" {
+			//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.IP, "", ttl))
+		}
+		if lb.Hostname != "" {
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.Hostname, "", ttl))
 		}
 	}
 
