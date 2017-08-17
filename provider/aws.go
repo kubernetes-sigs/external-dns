@@ -152,12 +152,18 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				continue
 			}
 
+			var ttl endpoint.TTL
+			if r.TTL == nil {
+				ttl = endpoint.TTL(0)
+			} else {
+				ttl = endpoint.TTL(*r.TTL)
+			}
 			for _, rr := range r.ResourceRecords {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTLValue(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(rr.Value), aws.StringValue(r.Type), r.TTL))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(rr.Value), aws.StringValue(r.Type), ttl))
 			}
 
 			if r.AliasTarget != nil {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTLValue(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.AliasTarget.DNSName), "ALIAS", r.TTL))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.AliasTarget.DNSName), "ALIAS", ttl))
 			}
 		}
 
@@ -284,10 +290,10 @@ func newChanges(action string, endpoints []*endpoint.Endpoint) []*route53.Change
 
 func getTTLValue(ep *endpoint.Endpoint) *int64 {
 	var ttl int64
-	if !ep.RecordTTL.IsConfigured {
+	if !ep.RecordTTL.IsConfigured() {
 		ttl = recordTTL
 	} else {
-		ttl = ep.RecordTTL.Value
+		ttl = int64(ep.RecordTTL)
 	}
 	return aws.Int64(ttl)
 }
