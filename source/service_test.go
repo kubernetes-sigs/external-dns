@@ -493,12 +493,14 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
+			"",
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "1.2.3.4", RecordTTL: endpoint.TTL(0)},
@@ -510,6 +512,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
 			map[string]string{},
@@ -517,6 +520,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org.",
 				ttlAnnotationKey:      "foo",
 			},
+			"",
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "1.2.3.4", RecordTTL: endpoint.TTL(0)},
@@ -528,6 +532,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
 			map[string]string{},
@@ -535,6 +540,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org.",
 				ttlAnnotationKey:      "10",
 			},
+			"",
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "1.2.3.4", RecordTTL: endpoint.TTL(10)},
@@ -546,6 +552,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"testing",
 			"foo",
+			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
 			map[string]string{},
@@ -553,6 +560,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org.",
 				ttlAnnotationKey:      "-10",
 			},
+			"",
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Target: "1.2.3.4", RecordTTL: endpoint.TTL(0)},
