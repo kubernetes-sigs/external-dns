@@ -1,3 +1,6 @@
+## v0.4.3 - 2017-08-17
+
+  - Fix to have external target annotations on ingress resources replace existing endpoints instead of appending to them (#318)
 ## v0.4.2 - 2017-08-03
 
   - Fix to support multiple hostnames for Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes) compatibility (#301)
