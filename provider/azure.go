@@ -249,7 +249,7 @@ func (p *AzureProvider) mapChanges(zones []dns.Zone, changes *plan.Changes) (azu
 			return
 		}
 		// Ensure the record type is suitable
-		change.RecordType = suitableType(change)
+		change.RecordType = change.SuitableType()
 		changeMap[zone] = append(changeMap[zone], change)
 	}
 

@@ -17,12 +17,159 @@ limitations under the License.
 package plan
 
 import (
-	"fmt"
 	"testing"
 
+	"fmt"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
+	"github.com/stretchr/testify/suite"
 )
+
+type PlanTestSuite struct {
+	suite.Suite
+	fooV1Cname *endpoint.Endpoint
+	fooV2Cname *endpoint.Endpoint
+	fooA       *endpoint.Endpoint
+	bar127A    *endpoint.Endpoint
+	bar192A    *endpoint.Endpoint
+}
+
+func (suite *PlanTestSuite) SetupTest() {
+	suite.fooV1Cname = &endpoint.Endpoint{
+		DNSName:    "foo",
+		Target:     "v1",
+		RecordType: "CNAME",
+	}
+	suite.fooV2Cname = &endpoint.Endpoint{
+		DNSName:    "foo",
+		Target:     "v2",
+		RecordType: "CNAME",
+	}
+	suite.bar127A = &endpoint.Endpoint{
+		DNSName:    "bar",
+		Target:     "127.0.0.1",
+		RecordType: "A",
+	}
+	suite.bar192A = &endpoint.Endpoint{
+		DNSName:    "bar",
+		Target:     "192.168.0.1",
+		RecordType: "A",
+	}
+	suite.fooA = &endpoint.Endpoint{
+		DNSName:    "foo",
+		Target:     "5.5.5.5",
+		RecordType: "A",
+	}
+}
+
+func (suite *PlanTestSuite) TestSyncFirstRound() {
+	current := []*endpoint.Endpoint{}
+	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.bar127A}
+	expectedCreate := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.bar127A}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
+func (suite *PlanTestSuite) TestSyncSecondRound() {
+	current := []*endpoint.Endpoint{suite.fooV1Cname}
+	desired := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooV1Cname, suite.bar127A}
+	expectedCreate := []*endpoint.Endpoint{suite.fooV2Cname, suite.bar127A}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
+func (suite *PlanTestSuite) TestIdempotency() {
+	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname}
+	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname}
+	expectedCreate := []*endpoint.Endpoint{}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
+func (suite *PlanTestSuite) TestDifferentTypes() {
+	current := []*endpoint.Endpoint{suite.fooV1Cname}
+	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooA}
+	expectedCreate := []*endpoint.Endpoint{suite.fooA}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
+func (suite *PlanTestSuite) TestRemoveEndpoint() {
+	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname}
+	desired := []*endpoint.Endpoint{suite.fooV1Cname}
+	expectedCreate := []*endpoint.Endpoint{}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{suite.fooV2Cname}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
+func TestPlan(t *testing.T) {
+	suite.Run(t, new(PlanTestSuite))
+}
 
 // TestCalculate tests that a plan can calculate actions to move a list of
 // current records to a list of desired records.
@@ -43,7 +190,6 @@ func TestCalculate(t *testing.T) {
 
 	// test case with type inheritance
 	noType := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", "")}
-	typedV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", "A")}
 	typedV1 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", "A")}
 
 	for _, tc := range []struct {
@@ -68,7 +214,7 @@ func TestCalculate(t *testing.T) {
 		// Labels should be inherited
 		{[]Policy{&SyncPolicy{}}, labeledV1, noLabels, empty, labeledV1, labeledV2, empty},
 		// RecordType should be inherited
-		{[]Policy{&SyncPolicy{}}, typedV1, noType, empty, typedV1, typedV2, empty},
+		{[]Policy{&SyncPolicy{}}, typedV1, noType, noType, empty, empty, typedV1},
 	} {
 		// setup plan
 		plan := &Plan{

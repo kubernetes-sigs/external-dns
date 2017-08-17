@@ -18,6 +18,7 @@ package endpoint
 
 import (
 	"fmt"
+	"net"
 	"strings"
 )
 
@@ -59,4 +60,16 @@ func (e *Endpoint) MergeLabels(labels map[string]string) {
 
 func (e *Endpoint) String() string {
 	return fmt.Sprintf(`%s -> %s (type "%s")`, e.DNSName, e.Target, e.RecordType)
+}
+
+// SuitableType returns the DNS resource record type suitable for the target.
+// In this case type A for IPs and type CNAME for everything else.
+func (e *Endpoint) SuitableType() string {
+	if e.RecordType != "" {
+		return e.RecordType
+	}
+	if net.ParseIP(e.Target) != nil {
+		return "A"
+	}
+	return "CNAME"
 }
