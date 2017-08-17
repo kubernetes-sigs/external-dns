@@ -288,16 +288,6 @@ func newChanges(action string, endpoints []*endpoint.Endpoint) []*route53.Change
 	return changes
 }
 
-func getTTLValue(ep *endpoint.Endpoint) *int64 {
-	var ttl int64
-	if !ep.RecordTTL.IsConfigured() {
-		ttl = recordTTL
-	} else {
-		ttl = int64(ep.RecordTTL)
-	}
-	return aws.Int64(ttl)
-}
-
 // newChange returns a Change of the given record by the given action, e.g.
 // action=ChangeActionCreate returns a change for creation of the record and
 // action=ChangeActionDelete returns a change for deletion of the record.
@@ -318,7 +308,11 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 		}
 	} else {
 		change.ResourceRecordSet.Type = aws.String(suitableType(endpoint))
-		change.ResourceRecordSet.TTL = getTTLValue(endpoint)
+		if !endpoint.RecordTTL.IsConfigured() {
+			change.ResourceRecordSet.TTL = aws.Int64(recordTTL)
+		} else {
+			change.ResourceRecordSet.TTL = aws.Int64(int64(endpoint.RecordTTL))
+		}
 		change.ResourceRecordSet.ResourceRecords = []*route53.ResourceRecord{
 			{
 				Value: aws.String(endpoint.Target),
