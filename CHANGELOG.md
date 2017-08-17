@@ -1,3 +1,6 @@
+## HEAD
+  - Support customization of DNS record TTL through the use of annotation `external-dns.alpha.kubernetes.io/ttl` on services or ingresses (route53)
+
 ## v0.4.4 - 2017-08-17
 
   - ExternalDNS now services of type `ClusterIP` with the use of the `--publish-internal-services`.  Enabling this will now create the apprioriate A records for the given service's internal ip.  @jrnt30
