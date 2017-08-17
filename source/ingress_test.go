@@ -408,11 +408,6 @@ func testIngressEndpoints(t *testing.T) {
 					Target:  "ingress-target.com",
 					RecordTTL: endpoint.TTL(1),
 				},
-				{
-					DNSName: "example2.org",
-					Target:  "8.8.8.8",
-					RecordTTL: endpoint.TTL(1),
-				},
 			},
 		},
 		{
