@@ -111,7 +111,7 @@ func main() {
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":
-		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTOwnerID)
+		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix)
 	default:
 		log.Fatalf("unknown registry: %s", cfg.Registry)
 	}
@@ -120,15 +120,23 @@ func main() {
 		log.Fatal(err)
 	}
 
+	policies := []plan.Policy{}
+
+	// if ownership enabled
+	if cfg.Registry == "txt" {
+		policies = append(policies, &plan.OwnershipPolicy{Owner: cfg.TXTOwnerID})
+	}
+
 	policy, exists := plan.Policies[cfg.Policy]
 	if !exists {
 		log.Fatalf("unknown policy: %s", cfg.Policy)
 	}
+	policies = append(policies, policy)
 
 	ctrl := controller.Controller{
 		Source:   endpointsSource,
 		Registry: r,
-		Policy:   policy,
+		Policies: policies,
 		Interval: cfg.Interval,
 	}
 

@@ -134,7 +134,7 @@ func TestRunOnce(t *testing.T) {
 	ctrl := &Controller{
 		Source:   source,
 		Registry: r,
-		Policy:   &plan.SyncPolicy{},
+		Policies: []plan.Policy{&plan.SyncPolicy{}},
 	}
 
 	assert.NoError(t, ctrl.RunOnce())

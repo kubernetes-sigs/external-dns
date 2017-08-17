@@ -35,8 +35,8 @@ import (
 type Controller struct {
 	Source   source.Source
 	Registry registry.Registry
-	// The policy that defines which changes to DNS records are allowed
-	Policy plan.Policy
+	// The policies that define which changes to DNS records are allowed
+	Policies []plan.Policy
 	// The interval between individual synchronizations
 	Interval time.Duration
 }
@@ -54,7 +54,7 @@ func (c *Controller) RunOnce() error {
 	}
 
 	plan := &plan.Plan{
-		Policies: []plan.Policy{c.Policy},
+		Policies: c.Policies,
 		Current:  records,
 		Desired:  endpoints,
 	}

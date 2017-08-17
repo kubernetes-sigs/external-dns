@@ -22,7 +22,32 @@ import (
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
+
+	"github.com/stretchr/testify/mock"
 )
+
+// MockProvider is a Provider that can be used to define and expect method calls.
+type MockProvider struct {
+	mock.Mock
+}
+
+// Records tracks this method's invocation and returns fabricated records.
+func (m *MockProvider) Records() ([]*endpoint.Endpoint, error) {
+	args := m.Called()
+
+	endpoints := args.Get(0)
+	if endpoints == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).([]*endpoint.Endpoint), args.Error(1)
+}
+
+// ApplyChanges tracks this method's invocation and returns a fabricated result.
+func (m *MockProvider) ApplyChanges(changes *plan.Changes) error {
+	args := m.Called(changes)
+	return args.Error(0)
+}
 
 // Provider defines the interface DNS providers should implement.
 type Provider interface {
