@@ -27,11 +27,11 @@ const (
 )
 
 // TTL is a structure defining the TTL of a DNS record
-type TTL struct {
-	// The value of the TTL
-	Value int64
-	// Whether or not the TTL value is configured
-	IsConfigured bool
+type TTL int64
+
+// IsConfigured returns true if TTL is configured, false otherwise
+func (ttl TTL) IsConfigured() bool {
+	return ttl > 0
 }
 
 // Endpoint is a high-level way of a connection between a service and an IP
@@ -55,12 +55,8 @@ func NewEndpoint(dnsName, target, recordType string) *Endpoint {
 
 // NewEndpointWithTTLValue initialization method to be used to create an endpoint with a pointer to the TTL value
 func NewEndpointWithTTLValue(dnsName, target, recordType string, ttlValue *int64) *Endpoint {
+	// TODO: remove
 	var ttl TTL
-	if ttlValue != nil {
-		ttl = TTL{Value: *ttlValue, IsConfigured: true}
-	} else {
-		ttl = TTL{IsConfigured: false}
-	}
 	return NewEndpointWithTTL(dnsName, target, recordType, ttl)
 }
 
@@ -85,5 +81,5 @@ func (e *Endpoint) MergeLabels(labels map[string]string) {
 }
 
 func (e *Endpoint) String() string {
-	return fmt.Sprintf("%s %d IN %s %s", e.DNSName, e.RecordTTL.Value, e.RecordType, e.Target)
+	return fmt.Sprintf("%s %d IN %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.Target)
 }

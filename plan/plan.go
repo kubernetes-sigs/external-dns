@@ -114,10 +114,10 @@ func targetChanged(desired, current *endpoint.Endpoint) bool {
 }
 
 func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
-	if !desired.RecordTTL.IsConfigured {
+	if !desired.RecordTTL.IsConfigured() {
 		return false
 	}
-	return desired.RecordTTL.Value != current.RecordTTL.Value
+	return desired.RecordTTL != current.RecordTTL
 }
 
 // recordExists checks whether a record can be found in a list of records.
