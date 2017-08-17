@@ -59,9 +59,11 @@ Regarding Ingress, we'll support:
 
 ### Are other Ingress Controllers supported?
 
-For Ingress objects, ExternalDNS will attempt to discover the target hostname of the relevant Ingress Controller automatically. If you are using an Ingress Controller that is not listed above you may have issues with ExternalDNS not discovering Endpoints and consequently not creating any DNS records. As a workaround, it is possible to force create an Endpoint by manually specifying a target host/IP for the records to be created by setting the annotation `external-dns.alpha.kubernetes.io/target` in the Ingress object. 
+For Ingress objects, ExternalDNS will attempt to discover the target hostname of the relevant Ingress Controller automatically. If you are using an Ingress Controller that is not listed above you may have issues with ExternalDNS not discovering Endpoints and consequently not creating any DNS records. As a workaround, it is possible to force create an Endpoint by manually specifying a target host/IP for the records to be created by setting the annotation `external-dns.alpha.kubernetes.io/target` in the Ingress object.
 
-Note that the hostname specified in the Ingress object's annotation must already exist. (i.e.: You have a Service resource for your Ingress Controller with the `external-dns.alpha.kubernetes.io/hostname` annotation set to the same value.)
+Another reason you may want to override the ingress hostname or IP address is if you have an external mechanism for handling failover across ingress endpoints.  Possible scenarios for this would include using [keepalived-vip](https://github.com/kubernetes/contrib/tree/master/keepalived-vip) to manage failover faster than DNS TTLs might expire.
+
+Note that if you set the target to a hostname, then a CNAME record will be created.  In this case, the hostname specified in the Ingress object's annotation must already exist. (i.e.: You have a Service resource for your Ingress Controller with the `external-dns.alpha.kubernetes.io/hostname` annotation set to the same value.)
 
 ### What about those other projects?
 
