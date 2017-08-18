@@ -29,7 +29,6 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"strconv"
 )
 
 // serviceSource is an implementation of Source for Kubernetes service objects.
@@ -128,23 +127,6 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 	endpoints = sc.generateEndpoints(svc, hostname)
 
 	return endpoints, nil
-}
-
-func getTTLFromAnnotations(annotations map[string]string) endpoint.TTL {
-	ttlAnnotation, exists := annotations[ttlAnnotationKey]
-	if !exists {
-		return endpoint.TTL(0)
-	}
-	ttlValue, err := strconv.ParseInt(ttlAnnotation, 10, 64)
-	if err != nil {
-		log.Warnf("%v is not a valid TTL value", ttlAnnotation)
-		return endpoint.TTL(0)
-	}
-	if ttlValue < 0 {
-		log.Warnf("TTL must be a non-negative integer", ttlAnnotation)
-		return endpoint.TTL(0)
-	}
-	return endpoint.TTL(ttlValue)
 }
 
 // endpointsFromService extracts the endpoints from a service object
