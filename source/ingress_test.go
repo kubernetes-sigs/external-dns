@@ -399,13 +399,13 @@ func testIngressEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "example.org",
-					Target:  "ingress-target.com",
+					DNSName:   "example.org",
+					Target:    "ingress-target.com",
 					RecordTTL: endpoint.TTL(6),
 				},
 				{
-					DNSName: "example2.org",
-					Target:  "ingress-target.com",
+					DNSName:   "example2.org",
+					Target:    "ingress-target.com",
 					RecordTTL: endpoint.TTL(1),
 				},
 			},
