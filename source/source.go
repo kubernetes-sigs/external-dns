@@ -17,10 +17,10 @@ limitations under the License.
 package source
 
 import (
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"strconv"
 	"fmt"
+	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"math"
+	"strconv"
 )
 
 const (
@@ -40,6 +40,7 @@ const (
 	ttlMinimum = 1
 	ttlMaximum = math.MaxUint32
 )
+
 // Source defines the interface Endpoint sources should implement.
 type Source interface {
 	Endpoints() ([]*endpoint.Endpoint, error)
