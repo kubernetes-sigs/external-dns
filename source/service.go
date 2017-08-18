@@ -163,7 +163,10 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*
 }
 
 func extractServiceIps(svc *v1.Service, hostname string) []*endpoint.Endpoint {
-	ttl := getTTLFromAnnotations(svc.Annotations)
+	ttl, err := getTTLFromAnnotations(svc.Annotations)
+	if err != nil {
+		log.Warn(err)
+	}
 	if svc.Spec.ClusterIP == v1.ClusterIPNone {
 		log.Debugf("Unable to associate %s headless service with a Cluster IP", svc.Name)
 		return []*endpoint.Endpoint{}
@@ -175,7 +178,10 @@ func extractServiceIps(svc *v1.Service, hostname string) []*endpoint.Endpoint {
 func extractLoadBalancerEndpoints(svc *v1.Service, hostname string) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
-	ttl := getTTLFromAnnotations(svc.Annotations)
+	ttl, err := getTTLFromAnnotations(svc.Annotations)
+	if err != nil {
+		log.Warn(err)
+	}
 	// Create a corresponding endpoint for each configured external entrypoint.
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {

@@ -142,7 +142,6 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 	}
 
 	f := func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool) {
-		var ttl endpoint.TTL
 		for _, r := range resp.ResourceRecordSets {
 			// TODO(linki, ownership): Remove once ownership system is in place.
 			// See: https://github.com/kubernetes-incubator/external-dns/pull/122/files/74e2c3d3e237411e619aefc5aab694742001cdec#r109863370
@@ -153,6 +152,7 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				continue
 			}
 
+			var ttl endpoint.TTL
 			if r.TTL != nil {
 				ttl = endpoint.TTL(*r.TTL)
 			}

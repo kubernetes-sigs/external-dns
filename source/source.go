@@ -19,7 +19,8 @@ package source
 import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"strconv"
-	log "github.com/Sirupsen/logrus"
+	"fmt"
+	"math"
 )
 
 const (
@@ -35,24 +36,27 @@ const (
 	controllerAnnotationValue = "dns-controller"
 )
 
+const (
+	ttlMinimum = 1
+	ttlMaximum = math.MaxUint32
+)
 // Source defines the interface Endpoint sources should implement.
 type Source interface {
 	Endpoints() ([]*endpoint.Endpoint, error)
 }
 
-func getTTLFromAnnotations(annotations map[string]string) endpoint.TTL {
+func getTTLFromAnnotations(annotations map[string]string) (endpoint.TTL, error) {
+	var ttl endpoint.TTL
 	ttlAnnotation, exists := annotations[ttlAnnotationKey]
 	if !exists {
-		return endpoint.TTL(0)
+		return ttl, nil
 	}
 	ttlValue, err := strconv.ParseInt(ttlAnnotation, 10, 64)
 	if err != nil {
-		log.Warnf("%v is not a valid TTL value", ttlAnnotation)
-		return endpoint.TTL(0)
+		return ttl, fmt.Errorf("%v is not a valid TTL value", ttlAnnotation)
 	}
-	if ttlValue < 0 {
-		log.Warnf("TTL must be a non-negative integer", ttlAnnotation)
-		return endpoint.TTL(0)
+	if ttlValue < ttlMinimum || ttlValue > ttlMaximum {
+		return ttl, fmt.Errorf("TTL value must be between [%s, %s]", ttlMinimum, ttlMaximum)
 	}
-	return endpoint.TTL(ttlValue)
+	return endpoint.TTL(ttlValue), nil
 }

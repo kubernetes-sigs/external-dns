@@ -112,7 +112,10 @@ func getEndpointsFromTargetAnnotation(ing *v1beta1.Ingress, hostname string) []*
 	// Get the desired hostname of the ingress from the annotation.
 	targetAnnotation, exists := ing.Annotations[targetAnnotationKey]
 	if exists {
-		ttl := getTTLFromAnnotations(ing.Annotations)
+		ttl, err := getTTLFromAnnotations(ing.Annotations)
+		if err != nil {
+			log.Warn(err)
+		}
 		// splits the hostname annotation and removes the trailing periods
 		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
 		for _, targetHostname := range targetsList {
@@ -140,7 +143,10 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 		return endpoints, nil
 	}
 
-	ttl := getTTLFromAnnotations(ing.Annotations)
+	ttl, err := getTTLFromAnnotations(ing.Annotations)
+	if err != nil {
+		log.Warn(err)
+	}
 	for _, lb := range ing.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
 			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.IP, "", ttl))
@@ -169,7 +175,10 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 			continue
 		}
 
-		ttl := getTTLFromAnnotations(ing.Annotations)
+		ttl, err := getTTLFromAnnotations(ing.Annotations)
+		if err != nil {
+			log.Warn(err)
+		}
 
 		for _, lb := range ing.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
