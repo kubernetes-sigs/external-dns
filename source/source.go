@@ -47,17 +47,17 @@ type Source interface {
 }
 
 func getTTLFromAnnotations(annotations map[string]string) (endpoint.TTL, error) {
-	var ttl endpoint.TTL
+	ttlNotConfigured := endpoint.TTL(0)
 	ttlAnnotation, exists := annotations[ttlAnnotationKey]
 	if !exists {
-		return ttl, nil
+		return ttlNotConfigured, nil
 	}
 	ttlValue, err := strconv.ParseInt(ttlAnnotation, 10, 64)
 	if err != nil {
-		return ttl, fmt.Errorf("%v is not a valid TTL value", ttlAnnotation)
+		return ttlNotConfigured, fmt.Errorf("\"%v\" is not a valid TTL value", ttlAnnotation)
 	}
 	if ttlValue < ttlMinimum || ttlValue > ttlMaximum {
-		return ttl, fmt.Errorf("TTL value must be between [%s, %s]", ttlMinimum, ttlMaximum)
+		return ttlNotConfigured, fmt.Errorf("TTL value must be between [%d, %d]", ttlMinimum, ttlMaximum)
 	}
 	return endpoint.TTL(ttlValue), nil
 }
