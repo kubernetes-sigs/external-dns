@@ -82,6 +82,8 @@ Optionally, you can customize the TTL value of the resulting DNS record by using
 $ kubectl annotate service nginx "external-dns.alpha.kubernetes.io/ttl=10"
 ```
 
+For more details on configuring TTL, see [here](docs/ttl.md).
+
 Locally run a single sync loop of ExternalDNS.
 
 ```console
