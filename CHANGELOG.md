@@ -1,5 +1,4 @@
-## HEAD
-  - Support customization of DNS record TTL through the use of annotation `external-dns.alpha.kubernetes.io/ttl` on services or ingresses (route53)
+  - [AWS Route53 provider] Support customization of DNS record TTL through the use of annotation `external-dns.alpha.kubernetes.io/ttl` on services or ingresses
 
 ## v0.4.4 - 2017-08-17
 
