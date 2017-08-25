@@ -69,7 +69,7 @@ func (sc *fakeSource) generateEndpoint() (*endpoint.Endpoint, error) {
 	endpoint := endpoint.NewEndpoint(
 		generateDNSName(4, sc.dnsName),
 		generateIPAddress(),
-		"A",
+		endpoint.RecordTypeA,
 	)
 
 	return endpoint, nil

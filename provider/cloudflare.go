@@ -21,9 +21,9 @@ import (
 	"os"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
+	cloudflare "github.com/cloudflare/cloudflare-go"
 
-	"github.com/cloudflare/cloudflare-go"
+	log "github.com/Sirupsen/logrus"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
@@ -143,7 +143,7 @@ func (p *CloudFlareProvider) Records() ([]*endpoint.Endpoint, error) {
 
 		for _, r := range records {
 			switch r.Type {
-			case "A", "CNAME", "TXT":
+			case endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeTXT:
 				break
 			default:
 				continue
@@ -277,8 +277,6 @@ func newCloudFlareChanges(action string, endpoints []*endpoint.Endpoint) []*clou
 }
 
 func newCloudFlareChange(action string, endpoint *endpoint.Endpoint) *cloudFlareChange {
-	typ := suitableType(endpoint)
-
 	return &cloudFlareChange{
 		Action: action,
 		ResourceRecordSet: cloudflare.DNSRecord{
@@ -286,7 +284,7 @@ func newCloudFlareChange(action string, endpoint *endpoint.Endpoint) *cloudFlare
 			// TTL Value of 1 is 'automatic'
 			TTL:     1,
 			Proxied: false,
-			Type:    typ,
+			Type:    endpoint.RecordType,
 			Content: endpoint.Target,
 		},
 	}

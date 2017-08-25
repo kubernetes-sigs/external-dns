@@ -141,10 +141,10 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 
 	for _, lb := range ing.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, endpoint.RecordTypeA))
 		}
 		if lb.Hostname != "" {
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, endpoint.RecordTypeCNAME))
 		}
 	}
 
@@ -169,10 +169,10 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 
 		for _, lb := range ing.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
-				endpoints = append(endpoints, endpoint.NewEndpoint(rule.Host, lb.IP, ""))
+				endpoints = append(endpoints, endpoint.NewEndpoint(rule.Host, lb.IP, endpoint.RecordTypeA))
 			}
 			if lb.Hostname != "" {
-				endpoints = append(endpoints, endpoint.NewEndpoint(rule.Host, lb.Hostname, ""))
+				endpoints = append(endpoints, endpoint.NewEndpoint(rule.Host, lb.Hostname, endpoint.RecordTypeCNAME))
 			}
 		}
 	}
