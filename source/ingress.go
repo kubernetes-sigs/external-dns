@@ -116,7 +116,7 @@ func getEndpointsFromTargetAnnotation(ing *v1beta1.Ingress, hostname string) []*
 		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
 		for _, targetHostname := range targetsList {
 			targetHostname = strings.TrimSuffix(targetHostname, ".")
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, targetHostname, ""))
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, targetHostname, suitableType(targetHostname)))
 		}
 	}
 	return endpoints
