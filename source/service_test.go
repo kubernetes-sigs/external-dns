@@ -767,6 +767,7 @@ func TestHeadlessServices(t *testing.T) {
 			}
 			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
 			require.NoError(t, err)
+
 			for i, hostname := range tc.hostnames {
 				pod := &v1.Pod{
 					Spec: v1.PodSpec{
@@ -785,7 +786,7 @@ func TestHeadlessServices(t *testing.T) {
 					},
 				}
 
-				_, err := kubernetes.CoreV1().Pods(tc.svcNamespace).Create(pod)
+				_, err = kubernetes.CoreV1().Pods(tc.svcNamespace).Create(pod)
 				require.NoError(t, err)
 			}
 
