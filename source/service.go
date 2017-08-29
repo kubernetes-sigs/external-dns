@@ -192,14 +192,12 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*
 	var endpoints []*endpoint.Endpoint
 
 	hostname = strings.TrimSuffix(hostname, ".")
-
 	switch svc.Spec.Type {
 	case v1.ServiceTypeLoadBalancer:
 		endpoints = append(endpoints, extractLoadBalancerEndpoints(svc, hostname)...)
 	case v1.ServiceTypeClusterIP:
 		if sc.publishInternal {
 			endpoints = append(endpoints, extractServiceIps(svc, hostname)...)
-
 		}
 	}
 
