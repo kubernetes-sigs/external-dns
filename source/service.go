@@ -25,6 +25,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 
@@ -94,6 +95,14 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			svcEndpoints = legacyEndpointsFromService(&svc, sc.compatibility)
 		}
 
+		// check for headless service
+		if len(svcEndpoints) == 0 {
+			svcEndpoints, err = sc.endpointsFromHeadless(&svc)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		// apply template if none of the above is found
 		if len(svcEndpoints) == 0 && sc.fqdnTemplate != nil {
 			svcEndpoints, err = sc.endpointsFromTemplate(&svc)
@@ -109,6 +118,37 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 		log.Debugf("Endpoints generated from service: %s/%s: %v", svc.Namespace, svc.Name, svcEndpoints)
 		endpoints = append(endpoints, svcEndpoints...)
+	}
+
+	return endpoints, nil
+}
+
+func (sc *serviceSource) endpointsFromHeadless(svc *v1.Service) ([]*endpoint.Endpoint, error) {
+
+	var endpoints []*endpoint.Endpoint
+
+	// Check if a Headless Service definition and we need to generate the hostnames differently
+	headlessDomain, ok := svc.Annotations[headlessDomainAnnotationKey]
+
+	// We require some domain to be set, maybe should also use the fqdn-template?
+	if ok && headlessDomain != "" {
+
+		// Get all the Pods
+		if pods, err := sc.client.CoreV1().Pods(svc.Namespace).List(metav1.ListOptions{LabelSelector: labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String()}); err != nil {
+			log.Errorf("List Pods of service[%s] error:%v", svc.GetName(), err)
+		} else {
+			for _, v := range pods.Items {
+
+				log.Debugf("Generating matching endpoint %s%s with HostIP %s", v.Spec.Hostname+headlessDomain, v.GetName(), v.Status.HostIP)
+				// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
+				if v.Status.Phase == v1.PodRunning {
+					endpoints = append(endpoints, endpoint.NewEndpoint(v.Spec.Hostname+headlessDomain, v.Status.HostIP, endpoint.RecordTypeA))
+				} else {
+					log.Debugf("Pod %s is not in running phase", v.Spec.Hostname)
+				}
+			}
+		}
+
 	}
 
 	return endpoints, nil
@@ -152,12 +192,14 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*
 	var endpoints []*endpoint.Endpoint
 
 	hostname = strings.TrimSuffix(hostname, ".")
+
 	switch svc.Spec.Type {
 	case v1.ServiceTypeLoadBalancer:
 		endpoints = append(endpoints, extractLoadBalancerEndpoints(svc, hostname)...)
 	case v1.ServiceTypeClusterIP:
 		if sc.publishInternal {
 			endpoints = append(endpoints, extractServiceIps(svc, hostname)...)
+
 		}
 	}
 
