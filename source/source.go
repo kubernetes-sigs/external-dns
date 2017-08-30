@@ -16,7 +16,11 @@ limitations under the License.
 
 package source
 
-import "github.com/kubernetes-incubator/external-dns/endpoint"
+import (
+	"net"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+)
 
 const (
 	// The annotation used for figuring out which controller is responsible
@@ -32,4 +36,13 @@ const (
 // Source defines the interface Endpoint sources should implement.
 type Source interface {
 	Endpoints() ([]*endpoint.Endpoint, error)
+}
+
+// suitableType returns the DNS resource record type suitable for the target.
+// In this case type A for IPs and type CNAME for everything else.
+func suitableType(target string) string {
+	if net.ParseIP(target) != nil {
+		return endpoint.RecordTypeA
+	}
+	return endpoint.RecordTypeCNAME
 }
