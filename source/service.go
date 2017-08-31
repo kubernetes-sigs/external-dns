@@ -95,14 +95,6 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			svcEndpoints = legacyEndpointsFromService(&svc, sc.compatibility)
 		}
 
-		// check for headless service
-		if len(svcEndpoints) == 0 {
-			svcEndpoints, err = sc.endpointsFromHeadless(&svc)
-			if err != nil {
-				return nil, err
-			}
-		}
-
 		// apply template if none of the above is found
 		if len(svcEndpoints) == 0 && sc.fqdnTemplate != nil {
 			svcEndpoints, err = sc.endpointsFromTemplate(&svc)
@@ -123,37 +115,28 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
-func (sc *serviceSource) endpointsFromHeadless(svc *v1.Service) ([]*endpoint.Endpoint, error) {
+func (sc *serviceSource) extractHeadlessEndpoint(svc *v1.Service, hostname string) []*endpoint.Endpoint {
 
 	var endpoints []*endpoint.Endpoint
 
-	// Check if a Headless Service definition and we need to generate the hostnames differently
-	headlessDomain, ok := svc.Annotations[headlessDomainAnnotationKey]
-
-	// We require some domain to be set, maybe should also use the fqdn-template?
-	if ok && headlessDomain != "" {
-
-		// Get all the Pods
-		if pods, err := sc.client.CoreV1().Pods(svc.Namespace).List(metav1.ListOptions{LabelSelector: labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String()}); err != nil {
-			log.Errorf("List Pods of service[%s] error:%v", svc.GetName(), err)
-		} else {
-			for _, v := range pods.Items {
-
-				log.Debugf("Generating matching endpoint %s%s with HostIP %s", v.Spec.Hostname+headlessDomain, v.GetName(), v.Status.HostIP)
-				// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
-				if v.Status.Phase == v1.PodRunning {
-					endpoints = append(endpoints, endpoint.NewEndpoint(v.Spec.Hostname+headlessDomain, v.Status.HostIP, endpoint.RecordTypeA))
-				} else {
-					log.Debugf("Pod %s is not in running phase", v.Spec.Hostname)
-				}
+	// Get all the Pods
+	if pods, err := sc.client.CoreV1().Pods(svc.Namespace).List(metav1.ListOptions{LabelSelector: labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String()}); err != nil {
+		log.Errorf("List Pods of service[%s] error:%v", svc.GetName(), err)
+	} else {
+		for _, v := range pods.Items {
+			headlessDomain := v.Spec.Hostname + "." + hostname
+			log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, v.Status.HostIP)
+			// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
+			if v.Status.Phase == v1.PodRunning {
+				endpoints = append(endpoints, endpoint.NewEndpoint(headlessDomain, v.Status.HostIP, endpoint.RecordTypeA))
+			} else {
+				log.Debugf("Pod %s is not in running phase", v.Spec.Hostname)
 			}
 		}
-
 	}
 
-	return endpoints, nil
+	return endpoints
 }
-
 func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
@@ -199,6 +182,10 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*
 		if sc.publishInternal {
 			endpoints = append(endpoints, extractServiceIps(svc, hostname)...)
 		}
+		if svc.Spec.ClusterIP == v1.ClusterIPNone {
+			endpoints = append(endpoints, sc.extractHeadlessEndpoint(svc, hostname)...)
+		}
+
 	}
 
 	return endpoints

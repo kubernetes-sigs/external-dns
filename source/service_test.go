@@ -705,7 +705,7 @@ func TestHeadlessServices(t *testing.T) {
 			"",
 			map[string]string{"component": "foo"},
 			map[string]string{
-				headlessDomainAnnotationKey: ".example.org.",
+				hostnameAnnotationKey: "service.example.org",
 			},
 			v1.ClusterIPNone,
 			"1.1.1.1",
@@ -716,8 +716,8 @@ func TestHeadlessServices(t *testing.T) {
 			[]string{"foo-0", "foo-1"},
 			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo-0.example.org", Target: "1.1.1.1"},
-				{DNSName: "foo-1.example.org", Target: "1.1.1.1"},
+				{DNSName: "foo-0.service.example.org", Target: "1.1.1.1"},
+				{DNSName: "foo-1.service.example.org", Target: "1.1.1.1"},
 			},
 			false,
 		},
@@ -731,7 +731,7 @@ func TestHeadlessServices(t *testing.T) {
 			"",
 			map[string]string{"component": "foo"},
 			map[string]string{
-				headlessDomainAnnotationKey: ".example.org.",
+				hostnameAnnotationKey: "service.example.org",
 			},
 			v1.ClusterIPNone,
 			"1.1.1.1",
@@ -742,7 +742,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]string{"foo-0", "foo-1"},
 			[]v1.PodPhase{v1.PodRunning, v1.PodFailed},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo-0.example.org", Target: "1.1.1.1"},
+				{DNSName: "foo-0.service.example.org", Target: "1.1.1.1"},
 			},
 			false,
 		},

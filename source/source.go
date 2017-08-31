@@ -25,8 +25,6 @@ const (
 	hostnameAnnotationKey = "external-dns.alpha.kubernetes.io/hostname"
 	// The annotation used for defining the desired ingress target
 	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
-	// The annotation used for defining a subdomain the Pods of a headless service are going to be injected into
-	headlessDomainAnnotationKey = "external-dns.alpha.kubernetes.io/headlessDomain"
 	// The value of the controller annotation so that we feel resposible
 	controllerAnnotationValue = "dns-controller"
 )
