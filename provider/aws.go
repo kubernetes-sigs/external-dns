@@ -20,14 +20,12 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/linki/instrumented_http"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
-
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/linki/instrumented_http"
 )
 
 const (
@@ -271,12 +269,39 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Ch
 	return changes
 }
 
-// newChanges returns a collection of Changes based on the given records and action.
-func newChanges(action string, endpoints []*endpoint.Endpoint) []*route53.Change {
-	changes := make([]*route53.Change, 0, len(endpoints))
+func expandAliasTargets(eps []*endpoint.Endpoint) (endpoints, aliasTargets []*endpoint.Endpoint) {
+	for _, ep := range eps {
+		targets := []string{}
+		for _, target := range ep.Targets {
+			if ok := isAWSLoadBalancer(ep.RecordType, target); ok {
+				aliasTargets = append(aliasTargets, endpoint.NewEndpoint(ep.DNSName, target, ep.RecordType))
+			} else {
+				targets = append(targets, target)
+			}
+		}
+		if len(targets) > 0 {
+			endpoints = append(endpoints, &endpoint.Endpoint{
+				DNSName:    ep.DNSName,
+				Targets:    targets,
+				RecordType: ep.RecordType,
+			})
+		}
+	}
+	return
+}
 
-	for _, endpoint := range endpoints {
-		changes = append(changes, newChange(action, endpoint))
+// newChanges returns a collection of Changes based on the given records and action.
+func newChanges(action string, eps []*endpoint.Endpoint) []*route53.Change {
+	changes := []*route53.Change{}
+
+	endpoints, aliasTargets := expandAliasTargets(eps)
+
+	for _, ep := range endpoints {
+		changes = append(changes, newChange(action, ep))
+	}
+
+	for _, ep := range aliasTargets {
+		changes = append(changes, newAliasTargetChange(action, ep))
 	}
 
 	return changes
@@ -285,32 +310,37 @@ func newChanges(action string, endpoints []*endpoint.Endpoint) []*route53.Change
 // newChange returns a Change of the given record by the given action, e.g.
 // action=ChangeActionCreate returns a change for creation of the record and
 // action=ChangeActionDelete returns a change for deletion of the record.
-func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
-	change := &route53.Change{
+func newChange(action string, ep *endpoint.Endpoint) *route53.Change {
+	resourceRecords := []*route53.ResourceRecord{}
+	for _, target := range ep.Targets {
+		resourceRecords = append(resourceRecords, &route53.ResourceRecord{Value: aws.String(target)})
+	}
+	return &route53.Change{
 		Action: aws.String(action),
 		ResourceRecordSet: &route53.ResourceRecordSet{
-			Name: aws.String(endpoint.DNSName),
+			Name:            aws.String(ep.DNSName),
+			Type:            aws.String(ep.RecordType),
+			TTL:             aws.Int64(recordTTL),
+			ResourceRecords: resourceRecords,
 		},
 	}
+}
 
-	if isAWSLoadBalancer(endpoint) {
-		change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
-		change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
-			DNSName:              aws.String(endpoint.Target),
-			HostedZoneId:         aws.String(canonicalHostedZone(endpoint.Target)),
-			EvaluateTargetHealth: aws.Bool(evaluateTargetHealth),
-		}
-	} else {
-		change.ResourceRecordSet.Type = aws.String(endpoint.RecordType)
-		change.ResourceRecordSet.TTL = aws.Int64(recordTTL)
-		change.ResourceRecordSet.ResourceRecords = []*route53.ResourceRecord{
-			{
-				Value: aws.String(endpoint.Target),
+// newAliasTargetChange returns a Change of the given alias target record.
+func newAliasTargetChange(action string, ep *endpoint.Endpoint) *route53.Change {
+	target := ep.Targets[0]
+	return &route53.Change{
+		Action: aws.String(action),
+		ResourceRecordSet: &route53.ResourceRecordSet{
+			Name: aws.String(ep.DNSName),
+			Type: aws.String(ep.RecordType),
+			AliasTarget: &route53.AliasTarget{
+				DNSName:              aws.String(target),
+				HostedZoneId:         aws.String(canonicalHostedZone(target)),
+				EvaluateTargetHealth: aws.Bool(evaluateTargetHealth),
 			},
-		}
+		},
 	}
-
-	return change
 }
 
 // suitableZone returns the most suitable zone for a given hostname and a set of zones.
@@ -329,9 +359,9 @@ func suitableZone(hostname string, zones map[string]*route53.HostedZone) *route5
 }
 
 // isAWSLoadBalancer determines if a given hostname belongs to an AWS load balancer.
-func isAWSLoadBalancer(ep *endpoint.Endpoint) bool {
-	if ep.RecordType == endpoint.RecordTypeCNAME {
-		return canonicalHostedZone(ep.Target) != ""
+func isAWSLoadBalancer(recordType, target string) bool {
+	if recordType == endpoint.RecordTypeCNAME {
+		return canonicalHostedZone(target) != ""
 	}
 
 	return false

@@ -18,6 +18,7 @@ package endpoint
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -37,7 +38,7 @@ type Endpoint struct {
 	// The hostname of the DNS record
 	DNSName string
 	// The target the DNS record points to
-	Target string
+	Targets []string
 	// RecordType type of record, e.g. CNAME, A, TXT etc
 	RecordType string
 	// Labels stores labels defined for the Endpoint
@@ -48,7 +49,7 @@ type Endpoint struct {
 func NewEndpoint(dnsName, target, recordType string) *Endpoint {
 	return &Endpoint{
 		DNSName:    strings.TrimSuffix(dnsName, "."),
-		Target:     strings.TrimSuffix(target, "."),
+		Targets:    []string{strings.TrimSuffix(target, ".")},
 		RecordType: recordType,
 		Labels:     map[string]string{},
 	}
@@ -64,5 +65,22 @@ func (e *Endpoint) MergeLabels(labels map[string]string) {
 }
 
 func (e *Endpoint) String() string {
-	return fmt.Sprintf(`%s -> %s (type "%s")`, e.DNSName, e.Target, e.RecordType)
+	return fmt.Sprintf(`%s -> %v (type "%s")`, e.DNSName, e.Targets, e.RecordType)
+}
+
+// TargetSliceEquals compares two slices of targets
+func TargetSliceEquals(l, r []string) bool {
+	if len(l) != len(r) {
+		return false
+	}
+
+	sort.Strings(l)
+	sort.Strings(r)
+
+	for i := range l {
+		if l[i] != r[i] {
+			return false
+		}
+	}
+	return true
 }

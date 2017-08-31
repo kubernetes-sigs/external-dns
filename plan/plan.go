@@ -21,18 +21,56 @@ import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
+// RecordKey is used to group records
+type RecordKey struct {
+	RecordType string
+	DNSName    string
+}
+
 // Plan can convert a list of desired and current records to a series of create,
 // update and delete actions.
 type Plan struct {
-	// List of current records
-	Current []*endpoint.Endpoint
-	// List of desired records
-	Desired []*endpoint.Endpoint
+	Current map[RecordKey][]string
+
+	Desired map[RecordKey][]string
+
+	Labels map[RecordKey]map[string]string
 	// Policies under which the desired changes are calculated
 	Policies []Policy
 	// List of changes necessary to move towards desired state
 	// Populated after calling Calculate()
 	Changes *Changes
+}
+
+// NewPlan returns a plan with current and desired records grouped by RecordKey
+func NewPlan(current, desired []*endpoint.Endpoint, policies []Policy) *Plan {
+	p := &Plan{
+		Policies: policies,
+		Current:  make(map[RecordKey][]string),
+		Desired:  make(map[RecordKey][]string),
+		Labels:   make(map[RecordKey]map[string]string),
+	}
+
+	// aggregate desired endpoint target values
+	for _, ep := range desired {
+		key := RecordKey{
+			RecordType: ep.RecordType,
+			DNSName:    ep.DNSName,
+		}
+		p.Desired[key] = append(p.Desired[key], ep.Targets...)
+	}
+
+	// aggregate current endpoint target values
+	for _, ep := range current {
+		key := RecordKey{
+			RecordType: ep.RecordType,
+			DNSName:    ep.DNSName,
+		}
+		p.Labels[key] = ep.Labels
+		p.Current[key] = append(p.Current[key], ep.Targets...)
+	}
+
+	return p
 }
 
 // Changes holds lists of actions to be executed by dns providers
@@ -52,61 +90,50 @@ type Changes struct {
 // processing. It returns a copy of Plan with the changes populated.
 func (p *Plan) Calculate() *Plan {
 	changes := &Changes{}
+	for key, desired := range p.Desired {
+		if _, exists := p.Current[key]; !exists {
+			changes.Create = append(changes.Create, &endpoint.Endpoint{
+				DNSName:    key.DNSName,
+				RecordType: key.RecordType,
+				Targets:    desired,
+			})
+		} else if endpoint.TargetSliceEquals(p.Current[key], desired) {
+			log.Debugf("Skipping EndpointSet %s -> (%+v) because targets have not changed", key, desired)
+		} else {
+			changes.UpdateOld = append(changes.UpdateOld, &endpoint.Endpoint{
+				DNSName:    key.DNSName,
+				RecordType: key.RecordType,
+				Targets:    p.Current[key],
+				Labels:     p.Labels[key],
+			})
 
-	// Ensure all desired records exist. For each desired record make sure it's
-	// either created or updated.
-	for _, desired := range p.Desired {
-		// Get the matching current record if it exists.
-		current, exists := recordExists(desired, p.Current)
-
-		// If there's no current record create desired record.
-		if !exists {
-			changes.Create = append(changes.Create, desired)
-			continue
-		}
-
-		// If there already is a record update it if it changed.
-		if desired.Target != current.Target {
-			changes.UpdateOld = append(changes.UpdateOld, current)
-
-			desired.RecordType = current.RecordType // inherit the type from the dns provider
-			desired.MergeLabels(current.Labels)     // inherit the labels from the dns provider, including Owner ID
-			changes.UpdateNew = append(changes.UpdateNew, desired)
-			continue
-		}
-
-		log.Debugf("Skipping endpoint %v because target has not changed", desired)
-	}
-
-	// Ensure all undesired records are removed. Each current record that cannot
-	// be found in the list of desired records is removed.
-	for _, current := range p.Current {
-		if _, exists := recordExists(current, p.Desired); !exists {
-			changes.Delete = append(changes.Delete, current)
+			changes.UpdateNew = append(changes.UpdateNew, &endpoint.Endpoint{
+				DNSName:    key.DNSName,
+				RecordType: key.RecordType,
+				Targets:    desired,
+				Labels:     p.Labels[key],
+			})
 		}
 	}
 
-	// Apply policies to list of changes.
+	for key, current := range p.Current {
+		if _, exists := p.Desired[key]; !exists {
+			changes.Delete = append(changes.Delete, &endpoint.Endpoint{
+				DNSName:    key.DNSName,
+				RecordType: key.RecordType,
+				Targets:    current,
+				Labels:     p.Labels[key],
+			})
+		}
+	}
+
 	for _, pol := range p.Policies {
 		changes = pol.Apply(changes)
 	}
 
-	plan := &Plan{
+	return &Plan{
 		Current: p.Current,
 		Desired: p.Desired,
 		Changes: changes,
 	}
-
-	return plan
-}
-
-// recordExists checks whether a record can be found in a list of records.
-func recordExists(needle *endpoint.Endpoint, haystack []*endpoint.Endpoint) (*endpoint.Endpoint, bool) {
-	for _, record := range haystack {
-		if record.DNSName == needle.DNSName {
-			return record, true
-		}
-	}
-
-	return nil, false
 }

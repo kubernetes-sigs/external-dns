@@ -19,6 +19,7 @@ package testutils
 import (
 	"fmt"
 	"sort"
+	"testing"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
@@ -26,27 +27,38 @@ import (
 func ExampleSameEndpoints() {
 	eps := []*endpoint.Endpoint{
 		{
-			DNSName: "example.org",
-			Target:  "load-balancer.org",
+			DNSName:    "example.org",
+			Targets:    []string{"load-balancer.org"},
+			RecordType: endpoint.RecordTypeCNAME,
 		},
 		{
 			DNSName:    "example.org",
-			Target:     "load-balancer.org",
+			Targets:    []string{"load-balancer.org", "load-balancer.gov"},
+			RecordType: endpoint.RecordTypeCNAME,
+		},
+		{
+			DNSName:    "example.org",
+			Targets:    []string{"load-balancer.org", "load-balancer.gov, load-balancer.net"},
+			RecordType: endpoint.RecordTypeCNAME,
+		},
+		{
+			DNSName:    "example.org",
+			Targets:    []string{"load-balancer.org"},
 			RecordType: endpoint.RecordTypeTXT,
 		},
 		{
 			DNSName:    "abc.com",
-			Target:     "something",
+			Targets:    []string{"something"},
 			RecordType: endpoint.RecordTypeTXT,
 		},
 		{
 			DNSName:    "abc.com",
-			Target:     "1.2.3.4",
+			Targets:    []string{"1.2.3.4"},
 			RecordType: endpoint.RecordTypeA,
 		},
 		{
 			DNSName:    "bbc.com",
-			Target:     "foo.com",
+			Targets:    []string{"foo.com"},
 			RecordType: endpoint.RecordTypeCNAME,
 		},
 	}
@@ -55,9 +67,63 @@ func ExampleSameEndpoints() {
 		fmt.Println(ep)
 	}
 	// Output:
-	// abc.com -> 1.2.3.4 (type "A")
-	// abc.com -> something (type "TXT")
-	// bbc.com -> foo.com (type "CNAME")
-	// example.org -> load-balancer.org (type "")
-	// example.org -> load-balancer.org (type "TXT")
+	// abc.com -> [1.2.3.4] (type "A")
+	// abc.com -> [something] (type "TXT")
+	// bbc.com -> [foo.com] (type "CNAME")
+	// example.org -> [load-balancer.org] (type "CNAME")
+	// example.org -> [load-balancer.org] (type "TXT")
+	// example.org -> [load-balancer.gov load-balancer.org] (type "CNAME")
+	// example.org -> [load-balancer.gov, load-balancer.net load-balancer.org] (type "CNAME")
+
+}
+
+func TestSameEndpoints(t *testing.T) {
+	eps1 := []*endpoint.Endpoint{
+		{
+			DNSName:    "example.gov",
+			Targets:    []string{"load-balancer.net", "load-balancer.org"},
+			RecordType: endpoint.RecordTypeCNAME,
+		},
+		{
+			DNSName:    "example.org",
+			Targets:    []string{"load-balancer.org", "load-balancer.gov", "load-balancer.god"},
+			RecordType: endpoint.RecordTypeCNAME,
+		},
+		{
+			DNSName:    "example.gov",
+			Targets:    []string{"load-balancer.net"},
+			RecordType: endpoint.RecordTypeCNAME,
+		},
+		{
+			DNSName:    "zyx.org",
+			Targets:    []string{"load-balancer.org", "load-balancer.gov", "load-balancer.net"},
+			RecordType: endpoint.RecordTypeCNAME,
+		},
+	}
+	eps2 := []*endpoint.Endpoint{
+		{
+			DNSName:    "example.gov",
+			Targets:    []string{"load-balancer.org", "load-balancer.net"},
+			RecordType: endpoint.RecordTypeCNAME,
+		},
+		{
+			DNSName:    "example.gov",
+			Targets:    []string{"load-balancer.net"},
+			RecordType: endpoint.RecordTypeCNAME,
+		},
+		{
+			DNSName:    "example.org",
+			Targets:    []string{"load-balancer.org", "load-balancer.gov", "load-balancer.god"},
+			RecordType: endpoint.RecordTypeCNAME,
+		},
+		{
+			DNSName:    "zyx.org",
+			Targets:    []string{"load-balancer.net", "load-balancer.org", "load-balancer.gov"},
+			RecordType: endpoint.RecordTypeCNAME,
+		},
+	}
+
+	if !SameEndpoints(eps1, eps2) {
+		t.Errorf("endpoint (%v) does not match endpoint (%v)", eps1, eps2)
+	}
 }

@@ -20,17 +20,13 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/linki/instrumented_http"
-
-	dns "google.golang.org/api/dns/v1"
-
-	"golang.org/x/net/context"
-	"golang.org/x/oauth2/google"
-
-	googleapi "google.golang.org/api/googleapi"
-
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/linki/instrumented_http"
+	"golang.org/x/net/context"
+	"golang.org/x/oauth2/google"
+	dns "google.golang.org/api/dns/v1"
+	googleapi "google.golang.org/api/googleapi"
 )
 
 type managedZonesCreateCallInterface interface {
@@ -335,15 +331,20 @@ func newRecord(ep *endpoint.Endpoint) *dns.ResourceRecordSet {
 	// TODO(linki): works around appending a trailing dot to TXT records. I think
 	// we should go back to storing DNS names with a trailing dot internally. This
 	// way we can use it has is here and trim it off if it exists when necessary.
-	target := ep.Target
-	if ep.RecordType == endpoint.RecordTypeCNAME {
-		target = ensureTrailingDot(target)
+	resourceRecordSet := &dns.ResourceRecordSet{
+		Name: ensureTrailingDot(ep.DNSName),
+		Ttl:  300,
+		Type: ep.RecordType,
 	}
 
-	return &dns.ResourceRecordSet{
-		Name:    ensureTrailingDot(ep.DNSName),
-		Rrdatas: []string{target},
-		Ttl:     300,
-		Type:    ep.RecordType,
+	for _, target := range ep.Targets {
+		if ep.RecordType == endpoint.RecordTypeCNAME {
+			target = ensureTrailingDot(target)
+		}
+
+		resourceRecordSet.Rrdatas = append(resourceRecordSet.Rrdatas, target)
+
 	}
+
+	return resourceRecordSet
 }

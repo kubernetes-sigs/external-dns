@@ -22,17 +22,13 @@ import (
 	"strings"
 	"testing"
 
-	dns "google.golang.org/api/dns/v1"
-
-	"golang.org/x/net/context"
-
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
-
-	"google.golang.org/api/googleapi"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/net/context"
+	dns "google.golang.org/api/dns/v1"
+	"google.golang.org/api/googleapi"
 )
 
 var (

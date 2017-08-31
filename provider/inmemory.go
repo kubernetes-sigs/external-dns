@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
@@ -177,11 +176,13 @@ func (im *InMemoryProvider) ApplyChanges(changes *plan.Changes) error {
 func convertToInMemoryRecord(endpoints []*endpoint.Endpoint) []*inMemoryRecord {
 	records := []*inMemoryRecord{}
 	for _, ep := range endpoints {
-		records = append(records, &inMemoryRecord{
-			Type:   ep.RecordType,
-			Name:   ep.DNSName,
-			Target: ep.Target,
-		})
+		for _, target := range ep.Targets {
+			records = append(records, &inMemoryRecord{
+				Type:   ep.RecordType,
+				Name:   ep.DNSName,
+				Target: target,
+			})
+		}
 	}
 	return records
 }

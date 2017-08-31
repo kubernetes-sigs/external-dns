@@ -21,18 +21,15 @@ import (
 	"io/ioutil"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
-
-	yaml "gopkg.in/yaml.v2"
-
 	"github.com/Azure/azure-sdk-for-go/arm/dns"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
-
+	log "github.com/Sirupsen/logrus"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
+	yaml "gopkg.in/yaml.v2"
 )
 
 const (
@@ -152,10 +149,10 @@ func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				}
 				endpoint := endpoint.NewEndpoint(name, target, recordType)
 				log.Debugf(
-					"Found %s record for '%s' with target '%s'.",
+					"Found %s record for '%s' with targets '%v'.",
 					endpoint.RecordType,
 					endpoint.DNSName,
-					endpoint.Target,
+					endpoint.Targets,
 				)
 				endpoints = append(endpoints, endpoint)
 			default:
@@ -248,7 +245,7 @@ func (p *AzureProvider) mapChanges(zones []dns.Zone, changes *plan.Changes) (azu
 			}
 			return
 		}
-		// Ensure the record type is suitable
+
 		changeMap[zone] = append(changeMap[zone], change)
 	}
 
@@ -314,20 +311,20 @@ func (p *AzureProvider) updateRecords(updated azureChangeMap) {
 			name := p.recordSetNameForZone(zone, endpoint)
 			if p.dryRun {
 				log.Infof(
-					"Would update %s record named '%s' to '%s' for Azure DNS zone '%s'.",
+					"Would update %s record named '%s' to '%v' for Azure DNS zone '%s'.",
 					endpoint.RecordType,
 					name,
-					endpoint.Target,
+					endpoint.Targets,
 					*zone.Name,
 				)
 				continue
 			}
 
 			log.Infof(
-				"Updating %s record named '%s' to '%s' for Azure DNS zone '%s'.",
+				"Updating %s record named '%s' to '%v' for Azure DNS zone '%s'.",
 				endpoint.RecordType,
 				name,
-				endpoint.Target,
+				endpoint.Targets,
 				*zone.Name,
 			)
 
@@ -345,10 +342,10 @@ func (p *AzureProvider) updateRecords(updated azureChangeMap) {
 			}
 			if err != nil {
 				log.Errorf(
-					"Failed to update %s record named '%s' to '%s' for DNS zone '%s': %v",
+					"Failed to update %s record named '%s' to '%v' for DNS zone '%s': %v",
 					endpoint.RecordType,
 					name,
-					endpoint.Target,
+					endpoint.Targets,
 					*zone.Name,
 					err,
 				)
@@ -373,22 +370,28 @@ func (p *AzureProvider) recordSetNameForZone(zone *dns.Zone, endpoint *endpoint.
 func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet, error) {
 	switch dns.RecordType(endpoint.RecordType) {
 	case dns.A:
+		aRecords := []dns.ARecord{}
+		for _, target := range endpoint.Targets {
+			aRecords = append(aRecords, dns.ARecord{
+				Ipv4Address: to.StringPtr(target),
+			})
+		}
 		return dns.RecordSet{
 			RecordSetProperties: &dns.RecordSetProperties{
-				TTL: to.Int64Ptr(azureRecordTTL),
-				ARecords: &[]dns.ARecord{
-					{
-						Ipv4Address: to.StringPtr(endpoint.Target),
-					},
-				},
+				TTL:      to.Int64Ptr(azureRecordTTL),
+				ARecords: &aRecords,
 			},
 		}, nil
 	case dns.CNAME:
+		lenTargets := len(endpoint.Targets)
+		if lenTargets != 1 {
+			return dns.RecordSet{}, fmt.Errorf("unsupported CNAME record count '%s'", lenTargets)
+		}
 		return dns.RecordSet{
 			RecordSetProperties: &dns.RecordSetProperties{
 				TTL: to.Int64Ptr(azureRecordTTL),
 				CnameRecord: &dns.CnameRecord{
-					Cname: to.StringPtr(endpoint.Target),
+					Cname: to.StringPtr(endpoint.Targets[0]),
 				},
 			},
 		}, nil
@@ -398,9 +401,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 				TTL: to.Int64Ptr(azureRecordTTL),
 				TxtRecords: &[]dns.TxtRecord{
 					{
-						Value: &[]string{
-							endpoint.Target,
-						},
+						Value: &endpoint.Targets,
 					},
 				},
 			},
