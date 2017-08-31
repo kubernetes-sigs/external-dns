@@ -16,8 +16,11 @@ limitations under the License.
 
 package testutils
 
-import "github.com/kubernetes-incubator/external-dns/endpoint"
-import "sort"
+import (
+	"sort"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+)
 
 /** test utility functions for endpoints verifications */
 
@@ -30,21 +33,33 @@ func (b byAllFields) Less(i, j int) bool {
 		return true
 	}
 	if b[i].DNSName == b[j].DNSName {
-		if b[i].Target < b[j].Target {
-			return true
-		}
-		if b[i].Target == b[j].Target {
+		if endpoint.TargetSliceEquals(b[i].Targets, b[j].Targets) {
 			return b[i].RecordType <= b[j].RecordType
+		}
+		return isLesser(b[i].Targets, b[j].Targets)
+	}
+	return false
+}
+
+func isLesser(a, b []string) bool {
+	if len(a) < len(b) {
+		return true
+	} else if len(a) > len(b) {
+		return false
+	} else {
+		for i := range a {
+			if a[i] < b[i] {
+				return true
+			}
 		}
 		return false
 	}
-	return false
 }
 
 // SameEndpoint returns true if two endpoints are same
 // considers example.org. and example.org DNSName/Target as different endpoints
 func SameEndpoint(a, b *endpoint.Endpoint) bool {
-	return a.DNSName == b.DNSName && a.Target == b.Target && a.RecordType == b.RecordType &&
+	return a.DNSName == b.DNSName && endpoint.TargetSliceEquals(a.Targets, b.Targets) && a.RecordType == b.RecordType &&
 		a.Labels[endpoint.OwnerLabelKey] == b.Labels[endpoint.OwnerLabelKey]
 }
 

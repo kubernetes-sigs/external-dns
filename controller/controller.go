@@ -53,15 +53,11 @@ func (c *Controller) RunOnce() error {
 		return err
 	}
 
-	plan := &plan.Plan{
-		Policies: []plan.Policy{c.Policy},
-		Current:  records,
-		Desired:  endpoints,
-	}
+	p := plan.NewPlan(records, endpoints, []plan.Policy{c.Policy})
 
-	plan = plan.Calculate()
+	p = p.Calculate()
 
-	return c.Registry.ApplyChanges(plan.Changes)
+	return c.Registry.ApplyChanges(p.Changes)
 }
 
 // Run runs RunOnce in a loop with a delay until stopChan receives a value.

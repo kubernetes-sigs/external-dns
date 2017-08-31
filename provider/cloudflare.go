@@ -21,10 +21,8 @@ import (
 	"os"
 	"strings"
 
-	cloudflare "github.com/cloudflare/cloudflare-go"
-
 	log "github.com/Sirupsen/logrus"
-
+	cloudflare "github.com/cloudflare/cloudflare-go"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
@@ -270,22 +268,28 @@ func newCloudFlareChanges(action string, endpoints []*endpoint.Endpoint) []*clou
 	changes := make([]*cloudFlareChange, 0, len(endpoints))
 
 	for _, endpoint := range endpoints {
-		changes = append(changes, newCloudFlareChange(action, endpoint))
+		changes = append(changes, newCloudFlareChange(action, endpoint)...)
 	}
 
 	return changes
 }
 
-func newCloudFlareChange(action string, endpoint *endpoint.Endpoint) *cloudFlareChange {
-	return &cloudFlareChange{
-		Action: action,
-		ResourceRecordSet: cloudflare.DNSRecord{
-			Name: endpoint.DNSName,
-			// TTL Value of 1 is 'automatic'
-			TTL:     1,
-			Proxied: false,
-			Type:    endpoint.RecordType,
-			Content: endpoint.Target,
-		},
+func newCloudFlareChange(action string, endpoint *endpoint.Endpoint) []*cloudFlareChange {
+	changes := []*cloudFlareChange{}
+
+	for _, target := range endpoint.Targets {
+		changes = append(changes, &cloudFlareChange{
+			Action: action,
+			ResourceRecordSet: cloudflare.DNSRecord{
+				Name: endpoint.DNSName,
+				// TTL Value of 1 is 'automatic'
+				TTL:     1,
+				Proxied: false,
+				Type:    endpoint.RecordType,
+				Content: target,
+			},
+		})
 	}
+
+	return changes
 }

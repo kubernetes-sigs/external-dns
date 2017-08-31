@@ -82,7 +82,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	expectedRecords := []*endpoint.Endpoint{
 		{
 			DNSName:    "foo.test-zone.example.org",
-			Target:     "foo.loadbalancer.com",
+			Targets:    []string{"foo.loadbalancer.com"},
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "",
@@ -90,7 +90,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 		},
 		{
 			DNSName:    "bar.test-zone.example.org",
-			Target:     "my-domain.com",
+			Targets:    []string{"my-domain.com"},
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
@@ -98,7 +98,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 		},
 		{
 			DNSName:    "txt.bar.test-zone.example.org",
-			Target:     "baz.test-zone.example.org",
+			Targets:    []string{"baz.test-zone.example.org"},
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "",
@@ -106,7 +106,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 		},
 		{
 			DNSName:    "qux.test-zone.example.org",
-			Target:     "random",
+			Targets:    []string{"random"},
 			RecordType: endpoint.RecordTypeTXT,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "",
@@ -114,7 +114,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 		},
 		{
 			DNSName:    "tar.test-zone.example.org",
-			Target:     "tar.loadbalancer.com",
+			Targets:    []string{"tar.loadbalancer.com"},
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner-2",
@@ -122,7 +122,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 		},
 		{
 			DNSName:    "foobar.test-zone.example.org",
-			Target:     "foobar.loadbalancer.com",
+			Targets:    []string{"foobar.loadbalancer.com"},
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "",
@@ -154,7 +154,7 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 	expectedRecords := []*endpoint.Endpoint{
 		{
 			DNSName:    "foo.test-zone.example.org",
-			Target:     "foo.loadbalancer.com",
+			Targets:    []string{"foo.loadbalancer.com"},
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "",
@@ -162,7 +162,7 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 		},
 		{
 			DNSName:    "bar.test-zone.example.org",
-			Target:     "my-domain.com",
+			Targets:    []string{"my-domain.com"},
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "",
@@ -170,7 +170,7 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 		},
 		{
 			DNSName:    "txt.bar.test-zone.example.org",
-			Target:     "baz.test-zone.example.org",
+			Targets:    []string{"baz.test-zone.example.org"},
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
@@ -178,7 +178,7 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 		},
 		{
 			DNSName:    "qux.test-zone.example.org",
-			Target:     "random",
+			Targets:    []string{"random"},
 			RecordType: endpoint.RecordTypeTXT,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "",
@@ -186,7 +186,7 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 		},
 		{
 			DNSName:    "tar.test-zone.example.org",
-			Target:     "tar.loadbalancer.com",
+			Targets:    []string{"tar.loadbalancer.com"},
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "",
@@ -194,7 +194,7 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 		},
 		{
 			DNSName:    "foobar.test-zone.example.org",
-			Target:     "foobar.loadbalancer.com",
+			Targets:    []string{"foobar.loadbalancer.com"},
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",

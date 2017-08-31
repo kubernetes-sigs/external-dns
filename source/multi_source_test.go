@@ -40,8 +40,8 @@ func testMultiSourceImplementsSource(t *testing.T) {
 
 // testMultiSourceEndpoints tests merged endpoints from children are returned.
 func testMultiSourceEndpoints(t *testing.T) {
-	foo := &endpoint.Endpoint{DNSName: "foo", Target: "8.8.8.8"}
-	bar := &endpoint.Endpoint{DNSName: "bar", Target: "8.8.4.4"}
+	foo := &endpoint.Endpoint{DNSName: "foo", Targets: []string{"8.8.8.8"}}
+	bar := &endpoint.Endpoint{DNSName: "bar", Targets: []string{"8.8.4.4"}}
 
 	for _, tc := range []struct {
 		title           string

@@ -34,17 +34,17 @@ func validateEndpoints(t *testing.T, endpoints, expected []*endpoint.Endpoint) {
 	}
 }
 
-func validateEndpoint(t *testing.T, endpoint, expected *endpoint.Endpoint) {
-	if endpoint.DNSName != expected.DNSName {
-		t.Errorf("expected %s, got %s", expected.DNSName, endpoint.DNSName)
+func validateEndpoint(t *testing.T, ep, expected *endpoint.Endpoint) {
+	if ep.DNSName != expected.DNSName {
+		t.Errorf("expected %s, got %s", expected.DNSName, ep.DNSName)
 	}
 
-	if endpoint.Target != expected.Target {
-		t.Errorf("expected %s, got %s", expected.Target, endpoint.Target)
+	if !endpoint.TargetSliceEquals(ep.Targets, expected.Targets) {
+		t.Errorf("expected %v, got %v", expected.Targets, ep.Targets)
 	}
 
 	// if non-empty record type is expected, check that it matches.
-	if expected.RecordType != "" && endpoint.RecordType != expected.RecordType {
-		t.Errorf("expected %s, got %s", expected.RecordType, endpoint.RecordType)
+	if expected.RecordType != "" && ep.RecordType != expected.RecordType {
+		t.Errorf("expected %s, got %s", expected.RecordType, ep.RecordType)
 	}
 }

@@ -73,7 +73,7 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 			endpoints = append(endpoints, record)
 			continue
 		}
-		ownerID := im.extractOwnerID(record.Target)
+		ownerID := im.extractOwnerID(record.Targets[0])
 		if ownerID == "" {
 			//case when value of txt record cannot be identified
 			//record will not be removed as it will have empty owner

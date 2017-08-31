@@ -255,8 +255,8 @@ func TestAWSDeleteRecords(t *testing.T) {
 		endpoint.NewEndpoint("delete-test-cname-alias.zone-1.ext-dns-test-2.teapot.zalan.do", "foo.eu-central-1.elb.amazonaws.com", endpoint.RecordTypeCNAME),
 	}
 
-	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), false, originalEndpoints)
-
+	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), false, []*endpoint.Endpoint{})
+	require.NoError(t, provider.CreateRecords(originalEndpoints))
 	require.NoError(t, provider.DeleteRecords(originalEndpoints))
 
 	records, err := provider.Records()
@@ -496,7 +496,7 @@ func TestAWSCreateRecordsWithCNAME(t *testing.T) {
 	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), false, []*endpoint.Endpoint{})
 
 	records := []*endpoint.Endpoint{
-		{DNSName: "create-test.zone-1.ext-dns-test-2.teapot.zalan.do", Target: "foo.example.org", RecordType: endpoint.RecordTypeCNAME},
+		{DNSName: "create-test.zone-1.ext-dns-test-2.teapot.zalan.do", Targets: []string{"foo.example.org"}, RecordType: endpoint.RecordTypeCNAME},
 	}
 
 	require.NoError(t, provider.CreateRecords(records))
@@ -521,7 +521,7 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), false, []*endpoint.Endpoint{})
 
 	records := []*endpoint.Endpoint{
-		{DNSName: "create-test.zone-1.ext-dns-test-2.teapot.zalan.do", Target: "foo.eu-central-1.elb.amazonaws.com", RecordType: endpoint.RecordTypeCNAME},
+		{DNSName: "create-test.zone-1.ext-dns-test-2.teapot.zalan.do", Targets: []string{"foo.eu-central-1.elb.amazonaws.com"}, RecordType: endpoint.RecordTypeCNAME},
 	}
 
 	require.NoError(t, provider.CreateRecords(records))
@@ -536,7 +536,7 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 				HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
 			},
 			Name: aws.String("create-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
-			Type: aws.String(endpoint.RecordTypeA),
+			Type: aws.String(endpoint.RecordTypeCNAME),
 		},
 	})
 }
@@ -550,11 +550,8 @@ func TestAWSisLoadBalancer(t *testing.T) {
 		{"bar.eu-central-1.elb.amazonaws.com", endpoint.RecordTypeCNAME, true},
 		{"foo.example.org", endpoint.RecordTypeCNAME, false},
 	} {
-		ep := &endpoint.Endpoint{
-			Target:     tc.target,
-			RecordType: tc.recordType,
-		}
-		assert.Equal(t, tc.expected, isAWSLoadBalancer(ep))
+
+		assert.Equal(t, tc.expected, isAWSLoadBalancer(tc.recordType, tc.target))
 	}
 }
 

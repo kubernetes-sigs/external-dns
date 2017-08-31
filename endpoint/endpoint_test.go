@@ -24,7 +24,7 @@ import (
 
 func TestNewEndpoint(t *testing.T) {
 	e := NewEndpoint("example.org", "foo.com", "CNAME")
-	if e.DNSName != "example.org" || e.Target != "foo.com" || e.RecordType != "CNAME" {
+	if e.DNSName != "example.org" || e.Targets[0] != "foo.com" || e.RecordType != RecordTypeCNAME {
 		t.Error("endpoint is not initialized correctly")
 	}
 	if e.Labels == nil {
@@ -32,17 +32,30 @@ func TestNewEndpoint(t *testing.T) {
 	}
 
 	w := NewEndpoint("example.org.", "load-balancer.com.", "")
-	if w.DNSName != "example.org" || w.Target != "load-balancer.com" || w.RecordType != "" {
+	if w.DNSName != "example.org" || w.Targets[0] != "load-balancer.com" || w.RecordType != "" {
 		t.Error("endpoint is not initialized correctly")
 	}
 }
 
 func TestMergeLabels(t *testing.T) {
-	e := NewEndpoint("abc.com", "1.2.3.4", "A")
+	e := NewEndpoint("abc.com", "1.2.3.4", RecordTypeA)
 	e.Labels = map[string]string{
 		"foo": "bar",
 		"baz": "qux",
 	}
 	e.MergeLabels(map[string]string{"baz": "baz", "new": "fox"})
 	assert.Equal(t, map[string]string{"foo": "bar", "baz": "qux", "new": "fox"}, e.Labels)
+}
+
+func TestTargetSliceEquals(t *testing.T) {
+	targets1 := []string{"1.2.3.4", "1.2.3.5", "1.2.3.6"}
+	targets2 := []string{"1.2.3.6", "1.2.3.5", "1.2.3.4"}
+
+	assert.True(t, TargetSliceEquals(targets1, targets2), "targets are equal")
+
+	targets3 := []string{"1.2.3.4", "1.2.3.5", "1.2.3.6", "1.2.3.3"}
+
+	assert.False(t, TargetSliceEquals(targets1, targets3), "targets are not equal")
+
+	assert.True(t, TargetSliceEquals([]string{}, []string{}), "targets are equal")
 }

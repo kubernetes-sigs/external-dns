@@ -41,10 +41,25 @@ func TestCalculate(t *testing.T) {
 	labeledV2 := []*endpoint.Endpoint{newEndpointWithOwner("foo", "v2", "123")}
 	labeledV1 := []*endpoint.Endpoint{newEndpointWithOwner("foo", "v1", "123")}
 
-	// test case with type inheritance
-	noType := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", "")}
-	typedV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", endpoint.RecordTypeA)}
-	typedV1 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", endpoint.RecordTypeA)}
+	// multiple targets are merged
+	multiTarget := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("example.com", "1.2.3.4", endpoint.RecordTypeA),
+		endpoint.NewEndpoint("example.com", "1.2.3.5", endpoint.RecordTypeA),
+	}
+
+	multiTargetGrouped := []*endpoint.Endpoint{
+		{DNSName: "example.com", Targets: []string{"1.2.3.4", "1.2.3.5"}, RecordType: endpoint.RecordTypeA},
+	}
+
+	multiTargetv2 := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("example.com", "1.2.3.4", endpoint.RecordTypeA),
+		endpoint.NewEndpoint("example.com", "1.2.3.5", endpoint.RecordTypeA),
+		endpoint.NewEndpoint("example.com", "1.2.3.6", endpoint.RecordTypeA),
+	}
+
+	multiTargetGroupedv2 := []*endpoint.Endpoint{
+		{DNSName: "example.com", Targets: []string{"1.2.3.4", "1.2.3.5", "1.2.3.6"}, RecordType: endpoint.RecordTypeA},
+	}
 
 	for _, tc := range []struct {
 		policies                             []Policy
@@ -67,15 +82,13 @@ func TestCalculate(t *testing.T) {
 		{[]Policy{&UpsertOnlyPolicy{}}, fooV1, empty, empty, empty, empty, empty},
 		// Labels should be inherited
 		{[]Policy{&SyncPolicy{}}, labeledV1, noLabels, empty, labeledV1, labeledV2, empty},
-		// RecordType should be inherited
-		{[]Policy{&SyncPolicy{}}, typedV1, noType, empty, typedV1, typedV2, empty},
+		// targets should be merged
+		{[]Policy{&SyncPolicy{}}, empty, multiTarget, multiTargetGrouped, empty, empty, empty},
+		// targets should be merged
+		{[]Policy{&SyncPolicy{}}, multiTarget, multiTargetv2, empty, multiTargetGrouped, multiTargetGroupedv2, empty},
 	} {
 		// setup plan
-		plan := &Plan{
-			Policies: tc.policies,
-			Current:  tc.current,
-			Desired:  tc.desired,
-		}
+		plan := NewPlan(tc.current, tc.desired, tc.policies)
 		// calculate actions
 		plan = plan.Calculate()
 
@@ -94,10 +107,7 @@ func BenchmarkCalculate(b *testing.B) {
 	barV2 := endpoint.NewEndpoint("bar", "v2", "")
 	baz := endpoint.NewEndpoint("baz", "v1", "")
 
-	plan := &Plan{
-		Current: []*endpoint.Endpoint{foo, barV1},
-		Desired: []*endpoint.Endpoint{barV2, baz},
-	}
+	plan := NewPlan([]*endpoint.Endpoint{foo, barV1}, []*endpoint.Endpoint{barV2, baz}, []Policy{})
 
 	for i := 0; i < b.N; i++ {
 		plan.Calculate()
@@ -115,11 +125,7 @@ func ExamplePlan() {
 	// * foo should be deleted
 	// * bar should be updated from v1 to v2
 	// * baz should be created
-	plan := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  []*endpoint.Endpoint{foo, barV1},
-		Desired:  []*endpoint.Endpoint{barV2, baz},
-	}
+	plan := NewPlan([]*endpoint.Endpoint{foo, barV1}, []*endpoint.Endpoint{barV2, baz}, []Policy{&SyncPolicy{}})
 
 	// calculate actions
 	plan = plan.Calculate()

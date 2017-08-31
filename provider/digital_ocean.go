@@ -22,13 +22,11 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"golang.org/x/oauth2"
-
 	"github.com/digitalocean/godo"
 	"github.com/digitalocean/godo/context"
-
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -245,22 +243,26 @@ func newDigitalOceanChanges(action string, endpoints []*endpoint.Endpoint) []*Di
 	changes := make([]*DigitalOceanChange, 0, len(endpoints))
 
 	for _, endpoint := range endpoints {
-		changes = append(changes, newDigitalOceanChange(action, endpoint))
+		changes = append(changes, newDigitalOceanChange(action, endpoint)...)
 	}
 
 	return changes
 }
 
-func newDigitalOceanChange(action string, endpoint *endpoint.Endpoint) *DigitalOceanChange {
-	change := &DigitalOceanChange{
-		Action: action,
-		ResourceRecordSet: godo.DomainRecord{
-			Name: endpoint.DNSName,
-			Type: endpoint.RecordType,
-			Data: endpoint.Target,
-		},
+func newDigitalOceanChange(action string, endpoint *endpoint.Endpoint) []*DigitalOceanChange {
+	changes := []*DigitalOceanChange{}
+	for _, target := range endpoint.Targets {
+		changes = append(changes, &DigitalOceanChange{
+			Action: action,
+			ResourceRecordSet: godo.DomainRecord{
+				Name: endpoint.DNSName,
+				Type: endpoint.RecordType,
+				Data: target,
+			},
+		})
 	}
-	return change
+
+	return changes
 }
 
 // getRecordID returns the ID from a record.
