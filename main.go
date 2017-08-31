@@ -84,11 +84,12 @@ func main() {
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
 
 	domainFilter := provider.NewDomainFilter(cfg.DomainFilter)
+	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 
 	var p provider.Provider
 	switch cfg.Provider {
 	case "aws":
-		p, err = provider.NewAWSProvider(domainFilter, cfg.DryRun)
+		p, err = provider.NewAWSProvider(domainFilter, zoneTypeFilter, cfg.DryRun)
 	case "azure":
 		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, cfg.AzureResourceGroup, cfg.DryRun)
 	case "cloudflare":
