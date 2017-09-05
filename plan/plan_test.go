@@ -35,6 +35,13 @@ func TestCalculate(t *testing.T) {
 	fooV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", endpoint.RecordTypeCNAME)}
 	// another simple entry
 	bar := []*endpoint.Endpoint{endpoint.NewEndpoint("bar", "v1", endpoint.RecordTypeCNAME)}
+	// entry with aws route53 policy
+	awsRoute53PolicyV1, _ := endpoint.NewAWSRoute53Policy(1, "set-identifier-1")
+	awsRoute53PolicyV2, _ := endpoint.NewAWSRoute53Policy(1, "set-identifier-2")
+	fooV1awsRoute53PolicyV1 := endpoint.NewEndpoint("foo", "v1", endpoint.RecordTypeCNAME)
+	fooV1awsRoute53PolicyV1.Policy.AttachAWSRoute53Policy(awsRoute53PolicyV1)
+	fooV1awsRoute53PolicyV2 := endpoint.NewEndpoint("foo", "v2", endpoint.RecordTypeCNAME)
+	fooV1awsRoute53PolicyV2.Policy.AttachAWSRoute53Policy(awsRoute53PolicyV2)
 
 	// test case with labels
 	noLabels := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", endpoint.RecordTypeCNAME)}
@@ -45,6 +52,11 @@ func TestCalculate(t *testing.T) {
 	noType := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", "")}
 	typedV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", endpoint.RecordTypeA)}
 	typedV1 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", endpoint.RecordTypeA)}
+
+	// test case with policy
+	policy1 := []*endpoint.Endpoint{fooV1awsRoute53PolicyV1}
+	policy2 := []*endpoint.Endpoint{fooV1awsRoute53PolicyV2}
+	policyMultiple := append(policy1, policy2...)
 
 	for _, tc := range []struct {
 		policies                             []Policy
@@ -69,6 +81,20 @@ func TestCalculate(t *testing.T) {
 		{[]Policy{&SyncPolicy{}}, labeledV1, noLabels, empty, labeledV1, labeledV2, empty},
 		// RecordType should be inherited
 		{[]Policy{&SyncPolicy{}}, typedV1, noType, empty, typedV1, typedV2, empty},
+		// More desired than current creates the desired with aws  policy
+		{[]Policy{&SyncPolicy{}}, empty, policy1, policy1, empty, empty, empty},
+		// Multiple more desired than current creates the desired with aws  policy
+		{[]Policy{&SyncPolicy{}}, empty, policyMultiple, policyMultiple, empty, empty, empty},
+		// Nothing is desired deletes the current with aws  policy
+		{[]Policy{&SyncPolicy{}}, policy1, empty, empty, empty, empty, policy1},
+		// Nothing is desired deletes the multiple current with aws policy
+		{[]Policy{&SyncPolicy{}}, policyMultiple, empty, empty, empty, empty, policyMultiple},
+		// Multiple exist but only one is desired so deletes one
+		{[]Policy{&SyncPolicy{}}, policyMultiple, policy1, empty, empty, empty, policy2},
+		// Current has no policy but new does, does not update
+		{[]Policy{&SyncPolicy{}}, fooV1, policy1, empty, empty, empty, empty},
+		// Current has policy but new does not, does not update
+		{[]Policy{&SyncPolicy{}}, policy1, fooV1, empty, empty, empty, empty},
 	} {
 		// setup plan
 		plan := &Plan{

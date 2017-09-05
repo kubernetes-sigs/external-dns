@@ -29,6 +29,7 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"strconv"
 )
 
 // serviceSource is an implementation of Source for Kubernetes service objects.
@@ -178,14 +179,54 @@ func extractLoadBalancerEndpoints(svc *v1.Service, hostname string) []*endpoint.
 
 	// Create a corresponding endpoint for each configured external entrypoint.
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
+		var newEndpoint *endpoint.Endpoint
+
 		if lb.IP != "" {
 			//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, endpoint.RecordTypeA))
+			newEndpoint = endpoint.NewEndpoint(hostname, lb.IP, endpoint.RecordTypeA)
 		}
 		if lb.Hostname != "" {
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, endpoint.RecordTypeCNAME))
+			newEndpoint = endpoint.NewEndpoint(hostname, lb.Hostname, endpoint.RecordTypeCNAME)
 		}
+
+		if serviceHasAWSRoute53Policy(svc) {
+			log.Debugf("Setting AWS Route53 policy for service %s", svc.Name)
+			if ep, err := attachAWSRoute53Policy(svc, newEndpoint); err == nil {
+				newEndpoint = ep
+			} else {
+				log.Errorf("Error attaching AWS Route 53 Policy: %s", err)
+				continue
+			}
+		}
+		endpoints = append(endpoints, newEndpoint)
 	}
 
 	return endpoints
+}
+
+func serviceHasAWSRoute53Policy(svc *v1.Service) bool {
+	// TODO(jswoods): Support cluster and global weight scopes
+	if svc.Annotations[weightScopeAnnotationKey] == "cluster" &&
+		svc.Annotations[awsRoute53SetIdentifierAnnotationKey] != "" &&
+		svc.Annotations[awsRoute53WeightAnnotationKey] != "" {
+		return true
+	}
+	return false
+}
+
+func attachAWSRoute53Policy(svc *v1.Service, ep *endpoint.Endpoint) (*endpoint.Endpoint, error) {
+	weight, err := strconv.ParseInt(svc.Annotations[awsRoute53WeightAnnotationKey], 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	awsRoute53Policy, err := endpoint.NewAWSRoute53Policy(weight,
+		svc.Annotations[awsRoute53SetIdentifierAnnotationKey])
+
+	if err != nil {
+		return nil, err
+	}
+
+	ep.Policy.AttachAWSRoute53Policy(awsRoute53Policy)
+	return ep, nil
 }

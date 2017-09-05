@@ -488,6 +488,51 @@ func testServiceSourceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{},
 			true,
 		},
+		{
+			"annotated services with AWS Route53 policy return an endpoint with an AWS Route53 policy",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeLoadBalancer,
+			"",
+			"",
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey:                "foo.example.org.",
+				weightScopeAnnotationKey:             "cluster",
+				awsRoute53WeightAnnotationKey:        "1",
+				awsRoute53SetIdentifierAnnotationKey: "identifier-1",
+			},
+			"",
+			[]string{"1.2.3.4"},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "1.2.3.4", Policy: endpoint.Policy{
+					AWSRoute53: &endpoint.AWSRoute53Policy{Weight: 1,
+						SetIdentifier: "identifier-1"}},
+				},
+			},
+			false,
+		},
+		{
+			"annotated services with invalid AWS Route53 policy do not return an endpoint",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeLoadBalancer,
+			"",
+			"",
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey:                "foo.example.org.",
+				weightScopeAnnotationKey:             "cluster",
+				awsRoute53WeightAnnotationKey:        "-1",
+				awsRoute53SetIdentifierAnnotationKey: "identifier-1",
+			},
+			"",
+			[]string{"1.2.3.4"},
+			[]*endpoint.Endpoint{},
+			false,
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			// Create a Kubernetes testing client

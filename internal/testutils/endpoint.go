@@ -16,8 +16,10 @@ limitations under the License.
 
 package testutils
 
-import "github.com/kubernetes-incubator/external-dns/endpoint"
-import "sort"
+import (
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"sort"
+)
 
 /** test utility functions for endpoints verifications */
 

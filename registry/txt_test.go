@@ -36,6 +36,7 @@ func TestTXTRegistry(t *testing.T) {
 	t.Run("TestNewTXTRegistry", testTXTRegistryNew)
 	t.Run("TestRecords", testTXTRegistryRecords)
 	t.Run("TestApplyChanges", testTXTRegistryApplyChanges)
+	t.Run("testTXTRegistryApplyChangesMultipleRecordsPerOwner", testTXTRegistryApplyChangesMultipleRecordsPerOwner)
 }
 
 func testTXTRegistryNew(t *testing.T) {
@@ -343,6 +344,160 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func testTXTRegistryApplyChangesMultipleRecordsPerOwner(t *testing.T) {
+	t.Run("With Prefix AWS Route53", testTXTRegistryApplyChangesWithPrefixWithAWSRoute53Policy)
+	t.Run("No prefix AWS Route53", testTXTRegistryApplyChangesNoPrefixWithAWSRoute53Policy)
+}
+
+func testTXTRegistryApplyChangesWithPrefixWithAWSRoute53Policy(t *testing.T) {
+	p := provider.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	p.ApplyChanges(&plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithOwnerAndAWSRoute53Policy("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, "", 1, "id-1"),
+			newEndpointWithOwnerAndAWSRoute53Policy("bar.test-zone.example.org", "my-domain.com", endpoint.RecordTypeCNAME, "", 1, "id-1"),
+			newEndpointWithOwner("txt.bar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwnerAndAWSRoute53Policy("txt.bar.test-zone.example.org", "baz.test-zone.example.org", endpoint.RecordTypeCNAME, "", 1, "id-1"),
+			newEndpointWithOwner("qux.test-zone.example.org", "random", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwnerAndAWSRoute53Policy("tar.test-zone.example.org", "tar.loadbalancer-1.com", endpoint.RecordTypeCNAME, "", 1, "id-1"),
+			newEndpointWithOwnerAndAWSRoute53Policy("tar.test-zone.example.org", "tar.loadbalancer-2.com", endpoint.RecordTypeCNAME, "", 1, "id-2"),
+			newEndpointWithOwner("txt.tar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwnerAndAWSRoute53Policy("foobar-route53.test-zone.example.org", "foobar-1.loadbalancer.com", endpoint.RecordTypeCNAME, "", 1, "id-1"),
+			newEndpointWithOwnerAndAWSRoute53Policy("foobar-route53.test-zone.example.org", "foobar-2.loadbalancer.com", endpoint.RecordTypeCNAME, "", 1, "id-2"),
+			newEndpointWithOwner("txt.foobar-route53.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+		},
+	})
+	r, _ := NewTXTRegistry(p, "txt.", "owner")
+
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithOwnerAndAWSRoute53Policy("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", "", "", 1, "id-1"),
+			newEndpointWithOwnerAndAWSRoute53Policy("new-record-1.test-zone.example.org", "new-loadbalancer-2.lb.com", "", "", 1, "id-2"),
+		},
+		Delete: []*endpoint.Endpoint{
+			newEndpointWithOwnerAndAWSRoute53Policy("foobar-route53.test-zone.example.org", "foobar-1.loadbalancer.com", endpoint.RecordTypeCNAME, "owner", 1, "id-1"),
+			newEndpointWithOwnerAndAWSRoute53Policy("foobar-route53.test-zone.example.org", "foobar-2.loadbalancer.com", endpoint.RecordTypeCNAME, "owner", 1, "id-2"),
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			newEndpointWithOwnerAndAWSRoute53Policy("tar.test-zone.example.org", "new-tar.loadbalancer-1.com", endpoint.RecordTypeCNAME, "owner", 1, "id-1"),
+			newEndpointWithOwnerAndAWSRoute53Policy("tar.test-zone.example.org", "new-tar.loadbalancer-2.com", endpoint.RecordTypeCNAME, "owner", 1, "id-2"),
+		},
+		UpdateOld: []*endpoint.Endpoint{
+			newEndpointWithOwnerAndAWSRoute53Policy("tar.test-zone.example.org", "tar.loadbalancer-1.com", endpoint.RecordTypeCNAME, "owner", 1, "id-1"),
+			newEndpointWithOwnerAndAWSRoute53Policy("tar.test-zone.example.org", "tar.loadbalancer-2.com", endpoint.RecordTypeCNAME, "owner", 1, "id-2"),
+		},
+	}
+	expected := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithOwnerAndAWSRoute53Policy("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", "", "", 1, "id-1"),
+			newEndpointWithOwnerAndAWSRoute53Policy("new-record-1.test-zone.example.org", "new-loadbalancer-2.lb.com", "", "", 1, "id-2"),
+			newEndpointWithOwner("txt.new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+		},
+		Delete: []*endpoint.Endpoint{
+			newEndpointWithOwnerAndAWSRoute53Policy("foobar-route53.test-zone.example.org", "foobar-1.loadbalancer.com", endpoint.RecordTypeCNAME, "owner", 1, "id-1"),
+			newEndpointWithOwnerAndAWSRoute53Policy("foobar-route53.test-zone.example.org", "foobar-2.loadbalancer.com", endpoint.RecordTypeCNAME, "owner", 1, "id-2"),
+			newEndpointWithOwner("txt.foobar-route53.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			newEndpointWithOwnerAndAWSRoute53Policy("tar.test-zone.example.org", "new-tar.loadbalancer-1.com", endpoint.RecordTypeCNAME, "owner", 1, "id-1"),
+			newEndpointWithOwnerAndAWSRoute53Policy("tar.test-zone.example.org", "new-tar.loadbalancer-2.com", endpoint.RecordTypeCNAME, "owner", 1, "id-2"),
+		},
+		UpdateOld: []*endpoint.Endpoint{
+			newEndpointWithOwnerAndAWSRoute53Policy("tar.test-zone.example.org", "tar.loadbalancer-1.com", endpoint.RecordTypeCNAME, "owner", 1, "id-1"),
+			newEndpointWithOwnerAndAWSRoute53Policy("tar.test-zone.example.org", "tar.loadbalancer-2.com", endpoint.RecordTypeCNAME, "owner", 1, "id-2"),
+		},
+	}
+	p.OnApplyChanges = func(got *plan.Changes) {
+		mExpected := map[string][]*endpoint.Endpoint{
+			"Create":    expected.Create,
+			"UpdateNew": expected.UpdateNew,
+			"UpdateOld": expected.UpdateOld,
+			"Delete":    expected.Delete,
+		}
+		mGot := map[string][]*endpoint.Endpoint{
+			"Create":    got.Create,
+			"UpdateNew": got.UpdateNew,
+			"UpdateOld": got.UpdateOld,
+			"Delete":    got.Delete,
+		}
+		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+	}
+	err := r.ApplyChanges(changes)
+	require.NoError(t, err)
+}
+
+func testTXTRegistryApplyChangesNoPrefixWithAWSRoute53Policy(t *testing.T) {
+	p := provider.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	p.ApplyChanges(&plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithOwnerAndAWSRoute53Policy("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, "", 1, "id-1"),
+			newEndpointWithOwnerAndAWSRoute53Policy("bar.test-zone.example.org", "my-domain.com", endpoint.RecordTypeCNAME, "", 1, "id-1"),
+			newEndpointWithOwner("txt.bar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwner("txt.bar.test-zone.example.org", "baz.test-zone.example.org", endpoint.RecordTypeCNAME, ""),
+			newEndpointWithOwner("qux.test-zone.example.org", "random", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwnerAndAWSRoute53Policy("tar.test-zone.example.org", "tar.loadbalancer-1.com", endpoint.RecordTypeCNAME, "", 1, "id-1"),
+			newEndpointWithOwnerAndAWSRoute53Policy("tar.test-zone.example.org", "tar.loadbalancer-2.com", endpoint.RecordTypeCNAME, "", 1, "id-2"),
+			newEndpointWithOwner("txt.tar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwnerAndAWSRoute53Policy("foobar-route53.test-zone.example.org", "foobar-1.loadbalancer.com", endpoint.RecordTypeCNAME, "", 1, "id-1"),
+			newEndpointWithOwnerAndAWSRoute53Policy("foobar-route53.test-zone.example.org", "foobar-2.loadbalancer.com", endpoint.RecordTypeCNAME, "", 1, "id-2"),
+			newEndpointWithOwner("foobar-route53.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+		},
+	})
+	r, _ := NewTXTRegistry(p, "", "owner")
+
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithOwnerAndAWSRoute53Policy("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", "", "", 1, "id-1"),
+			newEndpointWithOwnerAndAWSRoute53Policy("new-record-1.test-zone.example.org", "new-loadbalancer-2.lb.com", "", "", 1, "id-2"),
+		},
+		Delete: []*endpoint.Endpoint{
+			newEndpointWithOwnerAndAWSRoute53Policy("foobar-route53.test-zone.example.org", "foobar-1.loadbalancer.com", endpoint.RecordTypeCNAME, "owner", 1, "id-1"),
+			newEndpointWithOwnerAndAWSRoute53Policy("foobar-route53.test-zone.example.org", "foobar-2.loadbalancer.com", endpoint.RecordTypeCNAME, "owner", 1, "id-2"),
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			newEndpointWithOwnerAndAWSRoute53Policy("tar.test-zone.example.org", "new-tar.loadbalancer-1.com", endpoint.RecordTypeCNAME, "owner-2", 1, "id-1"),
+			newEndpointWithOwnerAndAWSRoute53Policy("tar.test-zone.example.org", "new-tar.loadbalancer-2.com", endpoint.RecordTypeCNAME, "owner-2", 1, "id-2"),
+		},
+		UpdateOld: []*endpoint.Endpoint{
+			newEndpointWithOwnerAndAWSRoute53Policy("tar.test-zone.example.org", "tar.loadbalancer-1.com", endpoint.RecordTypeCNAME, "owner-2", 1, "id-1"),
+			newEndpointWithOwnerAndAWSRoute53Policy("tar.test-zone.example.org", "tar.loadbalancer-2.com", endpoint.RecordTypeCNAME, "owner-2", 1, "id-2"),
+		},
+	}
+	expected := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithOwnerAndAWSRoute53Policy("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", "", "", 1, "id-1"),
+			newEndpointWithOwnerAndAWSRoute53Policy("new-record-1.test-zone.example.org", "new-loadbalancer-2.lb.com", "", "", 1, "id-2"),
+			newEndpointWithOwnerAndAWSRoute53Policy("new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", 1, "id-1"),
+		},
+		Delete: []*endpoint.Endpoint{
+			newEndpointWithOwnerAndAWSRoute53Policy("foobar-route53.test-zone.example.org", "foobar-1.loadbalancer.com", endpoint.RecordTypeCNAME, "owner", 1, "id-1"),
+			newEndpointWithOwnerAndAWSRoute53Policy("foobar-route53.test-zone.example.org", "foobar-2.loadbalancer.com", endpoint.RecordTypeCNAME, "owner", 1, "id-2"),
+			newEndpointWithOwner("foobar-route53.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+		},
+		UpdateNew: []*endpoint.Endpoint{},
+		UpdateOld: []*endpoint.Endpoint{},
+	}
+	p.OnApplyChanges = func(got *plan.Changes) {
+		mExpected := map[string][]*endpoint.Endpoint{
+			"Create":    expected.Create,
+			"UpdateNew": expected.UpdateNew,
+			"UpdateOld": expected.UpdateOld,
+			"Delete":    expected.Delete,
+		}
+		mGot := map[string][]*endpoint.Endpoint{
+			"Create":    got.Create,
+			"UpdateNew": got.UpdateNew,
+			"UpdateOld": got.UpdateOld,
+			"Delete":    got.Delete,
+		}
+
+		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+	}
+	err := r.ApplyChanges(changes)
+	require.NoError(t, err)
+}
+
 /**
 
 helper methods
@@ -352,5 +507,12 @@ helper methods
 func newEndpointWithOwner(dnsName, target, recordType, ownerID string) *endpoint.Endpoint {
 	e := endpoint.NewEndpoint(dnsName, target, recordType)
 	e.Labels[endpoint.OwnerLabelKey] = ownerID
+	return e
+}
+
+func newEndpointWithOwnerAndAWSRoute53Policy(dnsName, target, recordType, ownerID string, weight int64, identifier string) *endpoint.Endpoint {
+	e := newEndpointWithOwner(dnsName, target, recordType, ownerID)
+	p, _ := endpoint.NewAWSRoute53Policy(weight, identifier)
+	e.Policy.AttachAWSRoute53Policy(p)
 	return e
 }

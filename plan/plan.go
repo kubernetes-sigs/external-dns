@@ -65,6 +65,30 @@ func (p *Plan) Calculate() *Plan {
 			continue
 		}
 
+		// Check for AWS Route 53 specific policies
+		if current.Policy.HasAWSRoute53Policy() {
+			// If there is a record with no policy but the desired has a policy, do not update
+			if !desired.Policy.HasAWSRoute53Policy() {
+				continue
+			}
+			// If there's no current record with the desired policy, create it.
+			current, exists = awsRecordExistsWithSetIdentifier(desired, p.Current)
+			if !exists {
+				log.Debugf("Endpoint %s does not exist with a set identifier. Will create it", desired.DNSName)
+				desired.Labels[endpoint.TxtOwnedLabelKey] = "true"
+				changes.Create = append(changes.Create, desired)
+				continue
+			}
+		} else {
+			// If there is a record with no policy but the desired has a policy, do not update as this is
+			// not supported by AWS
+			if desired.Policy.HasAWSRoute53Policy() {
+				log.Errorf("Cannot add record %s with a policy because there is an existing record "+
+					"by the same name that does not have a policy", desired.DNSName)
+				continue
+			}
+		}
+
 		// If there already is a record update it if it changed.
 		if desired.Target != current.Target {
 			changes.UpdateOld = append(changes.UpdateOld, current)
@@ -75,14 +99,53 @@ func (p *Plan) Calculate() *Plan {
 			continue
 		}
 
-		log.Debugf("Skipping endpoint %v because target has not changed", desired)
+		// If there is a policy and it doesn't match, update it.
+		if desired.Policy != current.Policy {
+			changes.UpdateOld = append(changes.UpdateOld, current)
+			desired.Policy = current.Policy
+		}
+		log.Debugf("Skipping endpoint %v because it has not changed", desired)
 	}
 
 	// Ensure all undesired records are removed. Each current record that cannot
 	// be found in the list of desired records is removed.
+	// TODO (jswoods): consider moving this out of plan and into its own type
+	referenceCounter := make(map[string]map[string][]*endpoint.Endpoint)
 	for _, current := range p.Current {
-		if _, exists := recordExists(current, p.Desired); !exists {
-			changes.Delete = append(changes.Delete, current)
+		if referenceCounter[current.DNSName] == nil {
+			referenceCounter[current.DNSName] = map[string][]*endpoint.Endpoint{}
+		}
+		if _, exists := recordExists(current, p.Desired); exists {
+			if current.Policy.HasAWSRoute53Policy() {
+
+				// Do not delete if any existing records do not have AWS policies
+				if !awsRecordHasSetIdentifier(p.Desired) {
+					continue
+				}
+				if _, SetIdentifierExists := awsRecordExistsWithSetIdentifier(current, p.Desired); !SetIdentifierExists {
+
+					log.Debugf("Adding endpoint %v with weight policy %v to reference counter",
+						current, current.Policy.AWSRoute53.Weight)
+
+					referenceCounter[current.DNSName]["delete"] =
+						append(referenceCounter[current.DNSName]["delete"], current)
+				} else {
+					referenceCounter[current.DNSName]["keep"] = append(referenceCounter[current.DNSName]["keep"], current)
+				}
+			}
+		} else {
+			referenceCounter[current.DNSName]["delete"] = append(referenceCounter[current.DNSName]["delete"], current)
+		}
+	}
+
+	for _, endpointsList := range referenceCounter {
+		for _, ep := range endpointsList["delete"] {
+			if ep.Policy.HasAWSRoute53Policy() {
+				if len(endpointsList["keep"]) != 0 {
+					ep.Labels[endpoint.TxtOwnedLabelKey] = "true"
+				}
+			}
+			changes.Delete = append(changes.Delete, ep)
 		}
 	}
 
@@ -109,4 +172,27 @@ func recordExists(needle *endpoint.Endpoint, haystack []*endpoint.Endpoint) (*en
 	}
 
 	return nil, false
+}
+
+// awsRecordExistsWithSetIdentifier checks whether a record with a Route53 policy exists in a list of records
+func awsRecordExistsWithSetIdentifier(needle *endpoint.Endpoint, haystack []*endpoint.Endpoint) (*endpoint.Endpoint, bool) {
+	for _, record := range haystack {
+		if record.DNSName == needle.DNSName && record.Policy.HasAWSRoute53Policy() &&
+			needle.Policy.HasAWSRoute53Policy() {
+			if record.Policy.AWSRoute53.SetIdentifier == needle.Policy.AWSRoute53.SetIdentifier {
+				return record, true
+			}
+		}
+	}
+
+	return nil, false
+}
+
+func awsRecordHasSetIdentifier(records []*endpoint.Endpoint) bool {
+	for _, record := range records {
+		if record.Policy.HasAWSRoute53Policy() {
+			return true
+		}
+	}
+	return false
 }

@@ -51,7 +51,7 @@ LDFLAGS       ?= -X github.com/kubernetes-incubator/external-dns/pkg/apis/extern
 build: build/$(BINARY)
 
 build/$(BINARY): $(SOURCES)
-	CGO_ENABLED=0 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
+	CGO_ENABLED=0 GOOS=linux go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
 
 build.push: build.docker
 	docker push "$(IMAGE):$(VERSION)"

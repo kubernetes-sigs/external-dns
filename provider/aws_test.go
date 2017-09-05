@@ -568,6 +568,63 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 	})
 }
 
+func TestAWSCreateRecordsWithCNAMEAndAWSRoute53Policy(t *testing.T) {
+	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), NewZoneTypeFilter(""), false, []*endpoint.Endpoint{})
+
+	awsRoute53Policy, _ := endpoint.NewAWSRoute53Policy(1, "cluster/identifier-1")
+
+	records := []*endpoint.Endpoint{
+		{DNSName: "create-test.zone-1.ext-dns-test-2.teapot.zalan.do", Target: "foo.example.org", RecordType: endpoint.RecordTypeCNAME, Policy: endpoint.Policy{AWSRoute53: awsRoute53Policy}},
+	}
+
+	require.NoError(t, provider.CreateRecords(records))
+
+	recordSets := listAWSRecords(t, provider.client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.")
+
+	validateRecords(t, recordSets, []*route53.ResourceRecordSet{
+		{
+			Name: aws.String("create-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type: aws.String(endpoint.RecordTypeCNAME),
+			TTL:  aws.Int64(300),
+			ResourceRecords: []*route53.ResourceRecord{
+				{
+					Value: aws.String("foo.example.org"),
+				},
+			},
+			Weight:        aws.Int64(1),
+			SetIdentifier: aws.String("cluster/identifier-1"),
+		},
+	})
+}
+
+func TestAWSCreateRecordsWithALIASAndWeight(t *testing.T) {
+	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), NewZoneTypeFilter(""), false, []*endpoint.Endpoint{})
+
+	awsRoute53Policy, _ := endpoint.NewAWSRoute53Policy(1, "cluster/identifier-1")
+
+	records := []*endpoint.Endpoint{
+		{DNSName: "create-test.zone-1.ext-dns-test-2.teapot.zalan.do", Target: "foo.eu-central-1.elb.amazonaws.com", RecordType: endpoint.RecordTypeCNAME, Policy: endpoint.Policy{AWSRoute53: awsRoute53Policy}},
+	}
+
+	require.NoError(t, provider.CreateRecords(records))
+
+	recordSets := listAWSRecords(t, provider.client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.")
+
+	validateRecords(t, recordSets, []*route53.ResourceRecordSet{
+		{
+			AliasTarget: &route53.AliasTarget{
+				DNSName:              aws.String("foo.eu-central-1.elb.amazonaws.com."),
+				EvaluateTargetHealth: aws.Bool(true),
+				HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
+			},
+			Name:          aws.String("create-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:          aws.String(endpoint.RecordTypeA),
+			Weight:        aws.Int64(1),
+			SetIdentifier: aws.String("cluster/identifier-1"),
+		},
+	})
+}
+
 func TestAWSisLoadBalancer(t *testing.T) {
 	for _, tc := range []struct {
 		target     string

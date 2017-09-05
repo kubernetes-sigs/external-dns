@@ -162,11 +162,23 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 			}
 
 			for _, rr := range r.ResourceRecords {
-				endpoints = append(endpoints, endpoint.NewEndpoint(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(rr.Value), aws.StringValue(r.Type)))
+				newEndpoint := endpoint.NewEndpoint(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(rr.Value), aws.StringValue(r.Type))
+				if route53WeightPolicy, err := endpoint.NewAWSRoute53Policy(aws.Int64Value(r.Weight), aws.StringValue(r.SetIdentifier)); err == nil {
+					newEndpoint.Policy.AttachAWSRoute53Policy(route53WeightPolicy)
+				} else {
+					log.Debugf("Will not attach Route53 policy to %s: %s", newEndpoint.DNSName, err)
+				}
+				endpoints = append(endpoints, newEndpoint)
 			}
 
 			if r.AliasTarget != nil {
-				endpoints = append(endpoints, endpoint.NewEndpoint(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.AliasTarget.DNSName), endpoint.RecordTypeCNAME))
+				newEndpoint := endpoint.NewEndpoint(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.AliasTarget.DNSName), endpoint.RecordTypeCNAME)
+				if route53WeightPolicy, err := endpoint.NewAWSRoute53Policy(aws.Int64Value(r.Weight), aws.StringValue(r.SetIdentifier)); err == nil {
+					newEndpoint.Policy.AttachAWSRoute53Policy(route53WeightPolicy)
+				} else {
+					log.Debugf("Will not attach Route53 policy to %s: %s", newEndpoint.DNSName, err)
+				}
+				endpoints = append(endpoints, newEndpoint)
 			}
 		}
 
@@ -317,6 +329,11 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 				Value: aws.String(endpoint.Target),
 			},
 		}
+	}
+
+	if endpoint.Policy.HasAWSRoute53Policy() {
+		change.ResourceRecordSet.Weight = aws.Int64(endpoint.Policy.AWSRoute53.Weight)
+		change.ResourceRecordSet.SetIdentifier = aws.String(endpoint.Policy.AWSRoute53.SetIdentifier)
 	}
 
 	return change

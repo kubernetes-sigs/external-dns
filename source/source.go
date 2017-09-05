@@ -29,7 +29,13 @@ const (
 	hostnameAnnotationKey = "external-dns.alpha.kubernetes.io/hostname"
 	// The annotation used for defining the desired ingress target
 	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
-	// The value of the controller annotation so that we feel resposible
+	// The annotation used for defining the desired weight scope for the record
+	weightScopeAnnotationKey = "external-dns.alpha.kubernetes.io/weight-scope"
+	// The annotation used for defining the desired weight for the record
+	awsRoute53WeightAnnotationKey = "external-dns.alpha.kubernetes.io/aws-route53-weight"
+	// The value of the suffix for the weighted policy id
+	awsRoute53SetIdentifierAnnotationKey = "external-dns.alpha.kubernetes.io/aws-route53-set-identifier"
+	// The value of the controller annotation so that we feel responsible
 	controllerAnnotationValue = "dns-controller"
 )
 

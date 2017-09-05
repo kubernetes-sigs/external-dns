@@ -26,6 +26,7 @@ import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
+	"github.com/kubernetes-incubator/external-dns/source"
 )
 
 var (
@@ -101,15 +102,38 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 		Delete:    filterOwnedRecords(im.ownerID, changes.Delete),
 	}
 
+	txtChanges := map[string][]*endpoint.Endpoint{
+		"create": {},
+		"delete": {},
+	}
+
 	for _, r := range filteredChanges.Create {
+		// If an endpoint already has a TXT record, do not add one
+		if r.Labels[endpoint.TxtOwnedLabelKey] == "true" {
+			continue
+		}
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), endpoint.RecordTypeTXT)
-		filteredChanges.Create = append(filteredChanges.Create, txt)
+		txtChanges["create"] = append(txtChanges["create"], txt)
 	}
 
 	for _, r := range filteredChanges.Delete {
+		// If there are multiple endpoints under a single TXT record, do not delete it
+		if r.Labels[endpoint.TxtOwnedLabelKey] == "true" {
+			continue
+		}
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), endpoint.RecordTypeTXT)
+		txtChanges["delete"] = append(txtChanges["delete"], txt)
 
-		filteredChanges.Delete = append(filteredChanges.Delete, txt)
+	}
+
+	txtSourceCreate := source.NewDedupSource(source.NewRawSource(txtChanges["create"]))
+	if endpoints, err := txtSourceCreate.Endpoints(); err == nil {
+		filteredChanges.Create = append(filteredChanges.Create, endpoints...)
+	}
+
+	txtSourceDelete := source.NewDedupSource(source.NewRawSource(txtChanges["delete"]))
+	if endpoints, err := txtSourceDelete.Endpoints(); err == nil {
+		filteredChanges.Delete = append(filteredChanges.Delete, endpoints...)
 	}
 
 	return im.provider.ApplyChanges(filteredChanges)

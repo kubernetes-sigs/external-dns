@@ -30,6 +30,8 @@ const (
 	RecordTypeCNAME = "CNAME"
 	// RecordTypeTXT is a RecordType enum value
 	RecordTypeTXT = "TXT"
+	// TxtOwnedLabelKey is label that helps determine when TXT records are created or deleted for the endpoint
+	TxtOwnedLabelKey = "txt-owned"
 )
 
 // Endpoint is a high-level way of a connection between a service and an IP
@@ -40,6 +42,8 @@ type Endpoint struct {
 	Target string
 	// RecordType type of record, e.g. CNAME, A, TXT etc
 	RecordType string
+	// Policy stores policies for the endpoint
+	Policy Policy
 	// Labels stores labels defined for the Endpoint
 	Labels map[string]string
 }
@@ -50,6 +54,7 @@ func NewEndpoint(dnsName, target, recordType string) *Endpoint {
 		DNSName:    strings.TrimSuffix(dnsName, "."),
 		Target:     strings.TrimSuffix(target, "."),
 		RecordType: recordType,
+		Policy:     Policy{},
 		Labels:     map[string]string{},
 	}
 }

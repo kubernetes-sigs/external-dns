@@ -47,4 +47,12 @@ func validateEndpoint(t *testing.T, endpoint, expected *endpoint.Endpoint) {
 	if expected.RecordType != "" && endpoint.RecordType != expected.RecordType {
 		t.Errorf("expected %s, got %s", expected.RecordType, endpoint.RecordType)
 	}
+
+	if endpoint.Policy.HasAWSRoute53Policy() {
+		if endpoint.Policy.AWSRoute53.SetIdentifier != expected.Policy.AWSRoute53.SetIdentifier &&
+			endpoint.Policy.AWSRoute53.Weight != expected.Policy.AWSRoute53.Weight {
+			t.Errorf("expected %s, got %s", expected.Policy.AWSRoute53.SetIdentifier,
+				endpoint.Policy.AWSRoute53.SetIdentifier)
+		}
+	}
 }
