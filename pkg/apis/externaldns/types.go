@@ -19,6 +19,7 @@ package externaldns
 import (
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/alecthomas/kingpin"
 )
 
@@ -49,7 +50,7 @@ type Config struct {
 	DryRun             bool
 	LogFormat          string
 	MetricsAddress     string
-	Debug              bool
+	LogLevel           string
 }
 
 var defaultConfig = &Config{
@@ -74,12 +75,21 @@ var defaultConfig = &Config{
 	DryRun:             false,
 	LogFormat:          "text",
 	MetricsAddress:     ":7979",
-	Debug:              false,
+	LogLevel:           logrus.InfoLevel.String(),
 }
 
 // NewConfig returns new Config object
 func NewConfig() *Config {
 	return &Config{}
+}
+
+// allLogLevelsAsStrings returns all logrus levels as a list of strings
+func allLogLevelsAsStrings() []string {
+	var levels []string
+	for _, level := range logrus.AllLevels {
+		levels = append(levels, level.String())
+	}
+	return levels
 }
 
 // ParseFlags adds and parses flags from command line
@@ -122,7 +132,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	// Miscellaneous flags
 	app.Flag("log-format", "The format in which log messages are printed (default: text, options: text, json)").Default(defaultConfig.LogFormat).EnumVar(&cfg.LogFormat, "text", "json")
 	app.Flag("metrics-address", "Specify where to serve the metrics and health check endpoint (default: :7979)").Default(defaultConfig.MetricsAddress).StringVar(&cfg.MetricsAddress)
-	app.Flag("debug", "When enabled, increases the logging output for debugging purposes (default: disabled)").BoolVar(&cfg.Debug)
+	app.Flag("log-level", "Set the level of logging. (default: info, options: panic, debug, info, warn, error, fatal").Default(defaultConfig.LogLevel).EnumVar(&cfg.LogLevel, allLogLevelsAsStrings()...)
 
 	_, err := app.Parse(args)
 	if err != nil {
