@@ -338,7 +338,7 @@ func (m *mockCloudFlareUpdateRecordsFail) ListZones(zoneID ...string) ([]cloudfl
 func TestNewCloudFlareChanges(t *testing.T) {
 	action := cloudFlareCreate
 	endpoints := []*endpoint.Endpoint{{DNSName: "new", Target: "target"}}
-	_ = newCloudFlareChanges(action, endpoints)
+	_ = newCloudFlareChanges(action, endpoints, true)
 }
 
 func TestCloudFlareZones(t *testing.T) {
@@ -382,13 +382,13 @@ func TestRecords(t *testing.T) {
 func TestNewCloudFlareProvider(t *testing.T) {
 	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
 	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
-	_, err := NewCloudFlareProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
+	_, err := NewCloudFlareProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), false, true)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
 	_ = os.Unsetenv("CF_API_KEY")
 	_ = os.Unsetenv("CF_API_EMAIL")
-	_, err = NewCloudFlareProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
+	_, err = NewCloudFlareProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), false, true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}

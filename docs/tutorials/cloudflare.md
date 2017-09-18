@@ -44,6 +44,7 @@ spec:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=cloudflare
+        - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
         env:
         - name: CF_API_KEY
           value: "YOUR_CLOUDFLARE_API_KEY"
