@@ -92,7 +92,7 @@ func main() {
 	case "azure":
 		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, cfg.AzureResourceGroup, cfg.DryRun)
 	case "cloudflare":
-		p, err = provider.NewCloudFlareProvider(domainFilter, cfg.DryRun)
+		p, err = provider.NewCloudFlareProvider(domainFilter, cfg.CloudflareProxied, cfg.DryRun)
 	case "google":
 		p, err = provider.NewGoogleProvider(cfg.GoogleProject, domainFilter, cfg.DryRun)
 	case "digitalocean":
