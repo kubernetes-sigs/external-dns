@@ -38,6 +38,7 @@ type Config struct {
 	Provider           string
 	GoogleProject      string
 	DomainFilter       []string
+	AWSZoneType        string
 	AzureConfigFile    string
 	AzureResourceGroup string
 	CloudflareProxied  bool
@@ -64,6 +65,7 @@ var defaultConfig = &Config{
 	Provider:           "",
 	GoogleProject:      "",
 	DomainFilter:       []string{},
+	AWSZoneType:        "",
 	AzureConfigFile:    "/etc/kubernetes/azure.json",
 	AzureResourceGroup: "",
 	CloudflareProxied:  false,
@@ -103,8 +105,9 @@ func (cfg *Config) ParseFlags(args []string) error {
 
 	// Flags related to providers
 	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, google, azure, cloudflare, digitalocean, inmemory)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "google", "azure", "cloudflare", "digitalocean", "inmemory")
-	app.Flag("google-project", "When using the Google provider, specify the Google project (required when --provider=google)").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
+	app.Flag("google-project", "When using the Google provider, specify the Google project (required when --provider=google)").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
+	app.Flag("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AWSZoneType).EnumVar(&cfg.AWSZoneType, "", "public", "private")
 	app.Flag("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure").Default(defaultConfig.AzureConfigFile).StringVar(&cfg.AzureConfigFile)
 	app.Flag("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (optional)").Default(defaultConfig.AzureResourceGroup).StringVar(&cfg.AzureResourceGroup)
 	app.Flag("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.CloudflareProxied)

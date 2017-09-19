@@ -71,10 +71,12 @@ type AWSProvider struct {
 	dryRun bool
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter DomainFilter
+	// filter hosted zones by type (e.g. private or public)
+	zoneTypeFilter ZoneTypeFilter
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
-func NewAWSProvider(domainFilter DomainFilter, dryRun bool) (*AWSProvider, error) {
+func NewAWSProvider(domainFilter DomainFilter, zoneTypeFilter ZoneTypeFilter, dryRun bool) (*AWSProvider, error) {
 	config := aws.NewConfig()
 
 	config = config.WithHTTPClient(
@@ -95,9 +97,10 @@ func NewAWSProvider(domainFilter DomainFilter, dryRun bool) (*AWSProvider, error
 	}
 
 	provider := &AWSProvider{
-		client:       route53.New(session),
-		domainFilter: domainFilter,
-		dryRun:       dryRun,
+		client:         route53.New(session),
+		domainFilter:   domainFilter,
+		zoneTypeFilter: zoneTypeFilter,
+		dryRun:         dryRun,
 	}
 
 	return provider, nil
@@ -109,9 +112,15 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 
 	f := func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool) {
 		for _, zone := range resp.HostedZones {
-			if p.domainFilter.Match(aws.StringValue(zone.Name)) {
-				zones[aws.StringValue(zone.Id)] = zone
+			if !p.zoneTypeFilter.Match(zone) {
+				continue
 			}
+
+			if !p.domainFilter.Match(aws.StringValue(zone.Name)) {
+				continue
+			}
+
+			zones[aws.StringValue(zone.Id)] = zone
 		}
 
 		return true
