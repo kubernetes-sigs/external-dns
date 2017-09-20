@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -49,7 +50,7 @@ var (
 		DryRun:             false,
 		LogFormat:          "text",
 		MetricsAddress:     ":7979",
-		Debug:              false,
+		LogLevel:           logrus.InfoLevel.String(),
 	}
 
 	overriddenConfig = &Config{
@@ -75,7 +76,7 @@ var (
 		DryRun:             true,
 		LogFormat:          "json",
 		MetricsAddress:     "127.0.0.1:9099",
-		Debug:              true,
+		LogLevel:           logrus.DebugLevel.String(),
 	}
 )
 
@@ -122,7 +123,7 @@ func TestParseFlags(t *testing.T) {
 				"--dry-run",
 				"--log-format=json",
 				"--metrics-address=127.0.0.1:9099",
-				"--debug",
+				"--log-level=debug",
 			},
 			envVars:  map[string]string{},
 			expected: overriddenConfig,
@@ -153,7 +154,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_DRY_RUN":              "1",
 				"EXTERNAL_DNS_LOG_FORMAT":           "json",
 				"EXTERNAL_DNS_METRICS_ADDRESS":      "127.0.0.1:9099",
-				"EXTERNAL_DNS_DEBUG":                "1",
+				"EXTERNAL_DNS_LOG_LEVEL":            "debug",
 			},
 			expected: overriddenConfig,
 		},

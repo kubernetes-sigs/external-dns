@@ -54,9 +54,12 @@ func main() {
 	if cfg.DryRun {
 		log.Info("running in dry-run mode. No changes to DNS records will be made.")
 	}
-	if cfg.Debug {
-		log.SetLevel(log.DebugLevel)
+
+	ll, err := log.ParseLevel(cfg.LogLevel)
+	if err != nil {
+		log.Fatalf("failed to parse log level: %v", err)
 	}
+	log.SetLevel(ll)
 
 	stopChan := make(chan struct{}, 1)
 
