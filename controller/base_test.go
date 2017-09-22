@@ -30,6 +30,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var _ Controller = &BaseController{}
+
 // mockProvider returns mock endpoints and validates changes.
 type mockProvider struct {
 	RecordsStore  []*endpoint.Endpoint
@@ -131,13 +133,12 @@ func TestRunOnce(t *testing.T) {
 	require.NoError(t, err)
 
 	// Run our controller once to trigger the validation.
-	ctrl := &Controller{
+	ctrl := NewBaseController(Config{
 		Source:   source,
 		Registry: r,
 		Policy:   &plan.SyncPolicy{},
-	}
-
-	assert.NoError(t, ctrl.RunOnce())
+	})
+	assert.NoError(t, ctrl.Run())
 
 	// Validate that the mock source was called.
 	source.AssertExpectations(t)
