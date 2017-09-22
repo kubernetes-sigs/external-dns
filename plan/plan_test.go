@@ -22,7 +22,97 @@ import (
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
+	"github.com/stretchr/testify/suite"
 )
+
+type PlanTestSuite struct {
+	suite.Suite
+	fooV1Cname *endpoint.Endpoint
+	fooV2Cname *endpoint.Endpoint
+	bar127A    *endpoint.Endpoint
+	bar192A    *endpoint.Endpoint
+	barV2Cname *endpoint.Endpoint
+	bazTXT     *endpoint.Endpoint
+}
+
+func (suite *PlanTestSuite) SetupTest() {
+	suite.fooV1Cname = &endpoint.Endpoint{
+		DNSName:    "foo",
+		Target:     "v1",
+		RecordType: "CNAME",
+	}
+	suite.fooV2Cname = &endpoint.Endpoint{
+		DNSName:    "foo",
+		Target:     "v2",
+		RecordType: "CNAME",
+	}
+	suite.bar127A = &endpoint.Endpoint{
+		DNSName:    "bar",
+		Target:     "127.0.0.1",
+		RecordType: "A",
+	}
+	suite.bar192A = &endpoint.Endpoint{
+		DNSName:    "bar",
+		Target:     "192.168.0.1",
+		RecordType: "A",
+	}
+	suite.barV2Cname = &endpoint.Endpoint{
+		DNSName:    "bar",
+		Target:     "v2",
+		RecordType: "A",
+	}
+}
+
+func (suite *PlanTestSuite) TestSyncFirstRound() {
+	current := []*endpoint.Endpoint{}
+	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.bar127A}
+	expectedCreate := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.bar127A}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+	}
+
+	validateEntries(suite.T(), p.Calculate().Changes.Create, expectedCreate)
+	validateEntries(suite.T(), p.Calculate().Changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), p.Calculate().Changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), p.Calculate().Changes.Delete, expectedDelete)
+}
+
+func (suite *PlanTestSuite) TestSyncSecondRound() {
+	current := []*endpoint.Endpoint{suite.fooV1Cname}
+	desired := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooV1Cname, suite.bar127A}
+	/** THIS IS THE EXPECTED CORRECT OUTPUT */
+	expectedCreate := []*endpoint.Endpoint{suite.fooV2Cname, suite.bar127A}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	/** THIS IS HOW PLAN CURRENTLY CALCULATES */
+	// expectedCreate := []*endpoint.Endpoint{suite.bar127A}
+	// expectedUpdateOld := []*endpoint.Endpoint{suite.fooV1Cname}
+	// expectedUpdateNew := []*endpoint.Endpoint{suite.fooV2Cname}
+	// expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+	}
+
+	validateEntries(suite.T(), p.Calculate().Changes.Create, expectedCreate)
+	validateEntries(suite.T(), p.Calculate().Changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), p.Calculate().Changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), p.Calculate().Changes.Delete, expectedDelete)
+}
+
+func TestPlan(t *testing.T) {
+	suite.Run(t, new(PlanTestSuite))
+}
 
 // TestCalculate tests that a plan can calculate actions to move a list of
 // current records to a list of desired records.
