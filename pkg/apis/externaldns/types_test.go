@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -36,8 +37,10 @@ var (
 		Provider:           "google",
 		GoogleProject:      "",
 		DomainFilter:       []string{""},
+		AWSZoneType:        "",
 		AzureConfigFile:    "/etc/kubernetes/azure.json",
 		AzureResourceGroup: "",
+		CloudflareProxied:  false,
 		Policy:             "sync",
 		Registry:           "txt",
 		TXTOwnerID:         "default",
@@ -47,7 +50,7 @@ var (
 		DryRun:             false,
 		LogFormat:          "text",
 		MetricsAddress:     ":7979",
-		Debug:              false,
+		LogLevel:           logrus.InfoLevel.String(),
 	}
 
 	overriddenConfig = &Config{
@@ -60,8 +63,10 @@ var (
 		Provider:           "google",
 		GoogleProject:      "project",
 		DomainFilter:       []string{"example.org", "company.com"},
+		AWSZoneType:        "private",
 		AzureConfigFile:    "azure.json",
 		AzureResourceGroup: "arg",
+		CloudflareProxied:  true,
 		Policy:             "upsert-only",
 		Registry:           "noop",
 		TXTOwnerID:         "owner-1",
@@ -71,7 +76,7 @@ var (
 		DryRun:             true,
 		LogFormat:          "json",
 		MetricsAddress:     "127.0.0.1:9099",
-		Debug:              true,
+		LogLevel:           logrus.DebugLevel.String(),
 	}
 )
 
@@ -105,8 +110,10 @@ func TestParseFlags(t *testing.T) {
 				"--google-project=project",
 				"--azure-config-file=azure.json",
 				"--azure-resource-group=arg",
+				"--cloudflare-proxied",
 				"--domain-filter=example.org",
 				"--domain-filter=company.com",
+				"--aws-zone-type=private",
 				"--policy=upsert-only",
 				"--registry=noop",
 				"--txt-owner-id=owner-1",
@@ -116,7 +123,7 @@ func TestParseFlags(t *testing.T) {
 				"--dry-run",
 				"--log-format=json",
 				"--metrics-address=127.0.0.1:9099",
-				"--debug",
+				"--log-level=debug",
 			},
 			envVars:  map[string]string{},
 			expected: overriddenConfig,
@@ -135,7 +142,9 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_GOOGLE_PROJECT":       "project",
 				"EXTERNAL_DNS_AZURE_CONFIG_FILE":    "azure.json",
 				"EXTERNAL_DNS_AZURE_RESOURCE_GROUP": "arg",
+				"EXTERNAL_DNS_CLOUDFLARE_PROXIED":   "1",
 				"EXTERNAL_DNS_DOMAIN_FILTER":        "example.org\ncompany.com",
+				"EXTERNAL_DNS_AWS_ZONE_TYPE":        "private",
 				"EXTERNAL_DNS_POLICY":               "upsert-only",
 				"EXTERNAL_DNS_REGISTRY":             "noop",
 				"EXTERNAL_DNS_TXT_OWNER_ID":         "owner-1",
@@ -145,7 +154,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_DRY_RUN":              "1",
 				"EXTERNAL_DNS_LOG_FORMAT":           "json",
 				"EXTERNAL_DNS_METRICS_ADDRESS":      "127.0.0.1:9099",
-				"EXTERNAL_DNS_DEBUG":                "1",
+				"EXTERNAL_DNS_LOG_LEVEL":            "debug",
 			},
 			expected: overriddenConfig,
 		},

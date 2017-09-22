@@ -14,24 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package provider
+package source
 
-import (
-	"testing"
-)
+import "testing"
 
-func TestEnsureTrailingDot(t *testing.T) {
+func TestSuitableType(t *testing.T) {
 	for _, tc := range []struct {
-		input, expected string
+		target, recordType, expected string
 	}{
-		{"example.org", "example.org."},
-		{"example.org.", "example.org."},
-		{"8.8.8.8", "8.8.8.8"},
+		{"8.8.8.8", "", "A"},
+		{"foo.example.org", "", "CNAME"},
+		{"bar.eu-central-1.elb.amazonaws.com", "", "CNAME"},
 	} {
-		output := ensureTrailingDot(tc.input)
 
-		if output != tc.expected {
-			t.Errorf("expected %s, got %s", tc.expected, output)
+		recordType := suitableType(tc.target)
+
+		if recordType != tc.expected {
+			t.Errorf("expected %s, got %s", tc.expected, recordType)
 		}
 	}
 }

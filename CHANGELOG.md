@@ -1,5 +1,36 @@
-  - The flag `--domain-filter` can be repeated multiple times like `--domain-filter=example.com --domain-filter=company.org.`.
-  - A trailing period is not required anymore for `--domain-filter` when AWS (or any other) provider is used.
+## v0.4.4 - 2017-08-17
+
+  - ExternalDNS now services of type `ClusterIP` with the use of the `--publish-internal-services`.  Enabling this will now create the apprioriate A records for the given service's internal ip.  @jrnt30
+  - Fix to have external target annotations on ingress resources replace existing endpoints instead of appending to them (#318)
+
+## v0.4.3 - 2017-08-10
+
+  - Support new `external-dns.alpha.kubernetes.io/target` annotation for Ingress (#312)
+  - Fix for wildcard domains in Route53 (#302)
+
+## v0.4.2 - 2017-08-03
+
+  - Fix to support multiple hostnames for Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes) compatibility (#301)
+
+## v0.4.1 - 2017-07-28
+
+  - Fix incorrect order of constructor parameters (#298)
+
+## v0.4.0 - 2017-07-21
+
+  - ExternalDNS now supports three more DNS providers:
+    * [AzureDNS](https://azure.microsoft.com/en-us/services/dns) @peterhuene
+    * [CloudFlare](https://www.cloudflare.com/de/dns) @njuettner
+    * [DigitalOcean](https://www.digitalocean.com/products/networking) @njuettner
+  - Fixed a bug that prevented ExternalDNS to be run on Tectonic clusters @sstarcher
+  - ExternalDNS is now a full replace for Molecule Software's `route53-kubernetes` @iterion
+  - The `external-dns.alpha.kubernetes.io/hostname` annotation accepts now a comma separated list of hostnames and a trailing period is not required anymore. @totallyunknown
+  - The flag `--domain-filter` can be repeated multiple times like `--domain-filter=example.com --domain-filter=company.org.`. @totallyunknown
+  - A trailing period is not required anymore for `--domain-filter` when AWS (or any other) provider is used. @totallyunknown
+  - We added a FakeSource that generates random endpoints and allows to run ExternalDNS without a Kubernetes cluster (e.g. for testing providers) @ismith
+  - All HTTP requests to external APIs (e.g. DNS providers) generate client side metrics. @linki
+  - The `--zone` parameter was removed in favor of a provider independent `--domain-filter` flag. @linki
+  - All flags can now also be set via environment variables. @linki
 
 ## v0.3.0 - 2017-05-08
 

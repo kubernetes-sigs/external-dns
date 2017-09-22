@@ -120,21 +120,21 @@ func TestCalculate(t *testing.T) {
 	// empty list of records
 	empty := []*endpoint.Endpoint{}
 	// a simple entry
-	fooV1 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", "CNAME")}
+	fooV1 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", endpoint.RecordTypeCNAME)}
 	// the same entry but with different target
-	fooV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", "CNAME")}
+	fooV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", endpoint.RecordTypeCNAME)}
 	// another simple entry
-	bar := []*endpoint.Endpoint{endpoint.NewEndpoint("bar", "v1", "CNAME")}
+	bar := []*endpoint.Endpoint{endpoint.NewEndpoint("bar", "v1", endpoint.RecordTypeCNAME)}
 
 	// test case with labels
-	noLabels := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", "CNAME")}
+	noLabels := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", endpoint.RecordTypeCNAME)}
 	labeledV2 := []*endpoint.Endpoint{newEndpointWithOwner("foo", "v2", "123")}
 	labeledV1 := []*endpoint.Endpoint{newEndpointWithOwner("foo", "v1", "123")}
 
 	// test case with type inheritance
 	noType := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", "")}
-	typedV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", "A")}
-	typedV1 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", "A")}
+	typedV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", endpoint.RecordTypeA)}
+	typedV1 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", endpoint.RecordTypeA)}
 
 	for _, tc := range []struct {
 		policies                             []Policy
@@ -255,7 +255,7 @@ func validateEntries(t *testing.T, entries, expected []*endpoint.Endpoint) {
 }
 
 func newEndpointWithOwner(dnsName, target, ownerID string) *endpoint.Endpoint {
-	e := endpoint.NewEndpoint(dnsName, target, "CNAME")
+	e := endpoint.NewEndpoint(dnsName, target, endpoint.RecordTypeCNAME)
 	e.Labels[endpoint.OwnerLabelKey] = ownerID
 	return e
 }
