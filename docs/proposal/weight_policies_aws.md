@@ -62,6 +62,7 @@ the plan will be to support multiple records for multiple owners, referred to as
 The endpoint.Endpoint type will include a Policy like so:
 
 ```go
+// Endpoint is a high-level way of a connection between a service and an IP
 type Endpoint struct {
   // The hostname of the DNS record
   DNSName string
@@ -76,84 +77,85 @@ type Endpoint struct {
 }
 ```
 
-The EndpointPolicy may include a number of policies depending on the source. In the case the source has the appropriate
-annotations, it may include a WeightPolicy like so:
+The EndpointPolicy may include a number of policies depending on the source or provider. In the case the source has the
+appropriate annotations, it may include a policy like so:
 
 ```go
-type EndpointPolicy struct {
-  // Weight is the weight policy for the endpoint
-  Weight WeightPolicy
+// AWSRoute53Policy stores the policy attributes for the Route53 record
+type AWSRoute53Policy struct {
+  // Weight is the weight of the RecordSet
+  Weight int64
+  // SetIdentifier for the RecordSet
+  SetIdentifier string
 }
 ```
 
-### Manage Weight Policies as an Interface
 
-We'll assume there will be other types other than AWS ELBs that will need weights as well. So WeightPolicy is an
-interface like:
+The AWSRoute53Policy is specific to Route53 and can be created via the following:
 
 ```go
-type Weight interface {
-  Amount() int64
-  ID() string
-}
-```
-
-The route53WeightPolicy type implments the WeightPolicy interface. It is specific to Route53 and can be created via the
-following:
-
-```go
-type route53WeightPolicy struct {
-  // scope is can be cluster or none
-  // TODO: Implement global weight scope in addition to cluster-only
-  scope string
-  // weight is the weight of the record
-  weight int64
-  // setidentifier for the weight policy
-  setIdentifier string
-}
-
-func NewRoute53WeightPolicy(weight int64, setIdentifier string) Weight {
-  return route53WeightPolicy{
-    scope: parseScope(setIdentifier),
-    weight: weight,
-    setIdentifier: setIdentifier,
+// NewAWSRoute53Policy does basic validation according to AWS requirements and returns the Route53 policy
+func NewAWSRoute53Policy(weight int64, setIdentifier string) (*AWSRoute53Policy, error) {
+  if weight < 0 || weight > 255 {
+    return &AWSRoute53Policy{}, fmt.Errorf("Weight must be between 0-255. Actual: %d", weight)
   }
+
+  if len(setIdentifier) < 1 || len(setIdentifier) > 128 {
+    return &AWSRoute53Policy{}, fmt.Errorf("Set Identifier must be between 1-128 characters. Actual: %s",
+      setIdentifier)
+  }
+
+  return &AWSRoute53Policy{
+    Weight:        weight,
+    SetIdentifier: setIdentifier,
+  }, nil
 }
 ```
 
-### How to Set Weight Policies from the Provider
+### How to Set Policies from the Provider
 
 Policies can be added to an endpoint through methods on the Endpoint type. For example, inside the AWS provider:
 
 ```go
-newEndpoint := endpoint.NewEndpoint(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(rr.Value), aws.StringValue(r.Type))
-newEndpoint.AttachWeightPolicy(endpoint.policies.NewRoute53WeightPolicy(aws.Int64Value(r.Weight), aws.aws.StringValue(r.SetIdentifier)))
-endpoints = append(endpoints, newEndpoint)
+if route53WeightPolicy, err := endpoint.NewAWSRoute53Policy(aws.Int64Value(r.Weight), aws.StringValue(r.SetIdentifier)); err == nil {
+  newEndpoint.Policy.AttachAWSRoute53Policy(route53WeightPolicy)
+}
 ```
 
-This assumes `r.SetIdentifier` is something like `cluster/service-a` or `global/us-east-1`. These are set in the next
-section.
+This assumes `r.SetIdentifier` is something like `service-a` or `us-east-1`. These are set in the next section.
 
-### How to Set Weight Polcies from the Source
+### How to Set Policies from the Source
 
 Policies can be added to an endpoint from the Source in the same fashion as the provider, but using values specified via
 the following annotations:
 
 ```go
-  // The annotation used for defining the desired weight for the record
-  weightAnnotationKey = "external-dns.alpha.kubernetes.io/weight"
-  // The annotation used for defining the desired weight scope for the record
-  weightScopeAnnotationKey = "external-dns.alpha.kubernetes.io/weight-scope"
-  // The annotation used for setting the value of suffix of the ID for the weight set
-  weightSuffixAnnotationKey = "external-dns.alpha.kubernetes.io/weight-suffix"
+// The annotation used for defining the desired weight scope for the record
+weightScopeAnnotationKey = "external-dns.alpha.kubernetes.io/weight-scope"
+// The annotation used for defining the desired weight for the record
+awsRoute53WeightAnnotationKey = "external-dns.alpha.kubernetes.io/aws-route53-weight"
+// The value of the suffix for the weighted policy id
+awsRoute53SetIdentifierAnnotationKey = "external-dns.alpha.kubernetes.io/aws-route53-set-identifier"
 ```
 
-A raw example would be:
+An example would be:
 
 ```go
-if svc.Annotations[weightScopeAnnotationKey] != "" && svc.Annotations[weightSuffixAnnotationKey] != "" && svc.Annotations[weightAnnotationKey] != "" {
-  weight, _ := strconv.ParseInt(svc.Annotations[weightAnnotationKey], 10, 64)
-  newEndpoint.AttachWeightPolicy(endpoint.policies.NewRoute53WeightPolicy(weight, fmt.Sprintf("%s/%s", svc.Annotations[weightScopeAnnotationKey], svc.Annotations[weightSuffixAnnotationKey])))
+func attachAWSRoute53Policy(svc *v1.Service, ep *endpoint.Endpoint) (*endpoint.Endpoint, error) {
+  weight, err := strconv.ParseInt(svc.Annotations[awsRoute53WeightAnnotationKey], 10, 64)
+  if err != nil {
+    return nil, err
+  }
+
+  awsRoute53Policy, err := endpoint.NewAWSRoute53Policy(weight,
+    svc.Annotations[awsRoute53SetIdentifierAnnotationKey])
+
+  if err != nil {
+    return nil, err
+  }
+
+  ep.Policy.AttachAWSRoute53Policy(awsRoute53Policy)
+  return ep, nil
 }
 ```
 
@@ -162,9 +164,9 @@ if svc.Annotations[weightScopeAnnotationKey] != "" && svc.Annotations[weightSuff
 The provider creates the records using the policy if it exists. For example:
 
 ```go
-if endpoint.Policy.HasWeightPolicy() {
-  change.ResourceRecordSet.Weight = aws.Int64(endpoint.Policy.Weight.Amount())
-  change.ResourceRecordSet.SetIdentifier = aws.String(endpoint.Policy.Weight.ID())
+if endpoint.Policy.HasAWSRoute53Policy() {
+  change.ResourceRecordSet.Weight = aws.Int64(endpoint.Policy.AWSRoute53.Weight)
+  change.ResourceRecordSet.SetIdentifier = aws.String(endpoint.Policy.AWSRoute53.SetIdentifier)
 }
 ```
 
@@ -176,16 +178,16 @@ In order for this to work, we must allow a single TXT record (owner) to manage m
 logic to the plan to do the following:
 
 * Create the record if it doesn't exist (existing behavior)
-* If the record already exists, check to see if the record supports weighting
-* If the record supports weighting, check to see if the ID of the weight policy matches the expected value
-* If the record does not match the expected value, flag the record as having an owner (via `Endpoint.Labels`) and create
-a new record with the desired ID
+* If the record already exists, check to see if the record has a policy
+* If the record has a policy, check to see if the policy matches the expected policy
+* If the record does not match the expected policy, flag the record as having an owner (via `Endpoint.Labels`) and
+create a new record with the desired ID
 
 To delete records that have been removed:
 
-* If the record exists but should not, check to see if the record supports weighting
-* Delete the record if it does not support weighting, continue if it does
-* Check to see if the ID of the weight policy matches the expected value of the record that should be deleted
+* If the record exists but should not, check to see if the record has a policy
+* Delete the record if it does not have a policy, continue if it does
+* Check to see if the ID of the policy matches the expected value of the record that should be deleted
 * If the record still exists but should not, keep a reference count for all records that use the same TXT owner
 * Add the value to the reference counter
 * After all records have been processed, loop over the reference counter and:
@@ -199,6 +201,5 @@ The txt `ApplyChanges` method will be adjusted to not inject the TXT record into
 following is true:
 
 * The record is set to be created but the endpoint has been marked by the plan as having an owner
-* The record is set to be delete but the endpoint has been marked by the plan as having an owner which is managing valid
- records
-
+* The record is set to be deleted but the endpoint has been marked by the plan as having an owner which is managing
+valid records
