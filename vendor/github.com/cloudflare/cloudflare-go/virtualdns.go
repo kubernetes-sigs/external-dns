@@ -31,9 +31,8 @@ type VirtualDNSListResponse struct {
 }
 
 // CreateVirtualDNS creates a new Virtual DNS cluster.
-// API reference:
-//   https://api.cloudflare.com/#virtual-dns-users--create-a-virtual-dns-cluster
-//   POST /user/virtual_dns
+//
+// API reference: https://api.cloudflare.com/#virtual-dns-users--create-a-virtual-dns-cluster
 func (api *API) CreateVirtualDNS(v *VirtualDNS) (*VirtualDNS, error) {
 	res, err := api.makeRequest("POST", "/user/virtual_dns", v)
 	if err != nil {
@@ -50,9 +49,8 @@ func (api *API) CreateVirtualDNS(v *VirtualDNS) (*VirtualDNS, error) {
 }
 
 // VirtualDNS fetches a single virtual DNS cluster.
-// API reference:
-//   https://api.cloudflare.com/#virtual-dns-users--get-a-virtual-dns-cluster
-//   GET /user/virtual_dns/:identifier
+//
+// API reference: https://api.cloudflare.com/#virtual-dns-users--get-a-virtual-dns-cluster
 func (api *API) VirtualDNS(virtualDNSID string) (*VirtualDNS, error) {
 	uri := "/user/virtual_dns/" + virtualDNSID
 	res, err := api.makeRequest("GET", uri, nil)
@@ -70,9 +68,8 @@ func (api *API) VirtualDNS(virtualDNSID string) (*VirtualDNS, error) {
 }
 
 // ListVirtualDNS lists the virtual DNS clusters associated with an account.
-// API reference:
-//   https://api.cloudflare.com/#virtual-dns-users--get-virtual-dns-clusters
-//   GET /user/virtual_dns
+//
+// API reference: https://api.cloudflare.com/#virtual-dns-users--get-virtual-dns-clusters
 func (api *API) ListVirtualDNS() ([]*VirtualDNS, error) {
 	res, err := api.makeRequest("GET", "/user/virtual_dns", nil)
 	if err != nil {
@@ -89,9 +86,8 @@ func (api *API) ListVirtualDNS() ([]*VirtualDNS, error) {
 }
 
 // UpdateVirtualDNS updates a Virtual DNS cluster.
-// API reference:
-//   https://api.cloudflare.com/#virtual-dns-users--modify-a-virtual-dns-cluster
-//   PATCH /user/virtual_dns/:identifier
+//
+// API reference: https://api.cloudflare.com/#virtual-dns-users--modify-a-virtual-dns-cluster
 func (api *API) UpdateVirtualDNS(virtualDNSID string, vv VirtualDNS) error {
 	uri := "/user/virtual_dns/" + virtualDNSID
 	res, err := api.makeRequest("PUT", uri, vv)
@@ -110,9 +106,8 @@ func (api *API) UpdateVirtualDNS(virtualDNSID string, vv VirtualDNS) error {
 
 // DeleteVirtualDNS deletes a Virtual DNS cluster. Note that this cannot be
 // undone, and will stop all traffic to that cluster.
-// API reference:
-//   https://api.cloudflare.com/#virtual-dns-users--delete-a-virtual-dns-cluster
-//   DELETE /user/virtual_dns/:identifier
+//
+// API reference: https://api.cloudflare.com/#virtual-dns-users--delete-a-virtual-dns-cluster
 func (api *API) DeleteVirtualDNS(virtualDNSID string) error {
 	uri := "/user/virtual_dns/" + virtualDNSID
 	res, err := api.makeRequest("DELETE", uri, nil)

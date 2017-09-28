@@ -62,10 +62,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Operations *OperationsService
 
@@ -77,10 +76,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewOperationsService(s *Service) *OperationsService {
@@ -101,16 +96,15 @@ type SpeechService struct {
 	s *Service
 }
 
-// AsyncRecognizeRequest: `AsyncRecognizeRequest` is the top-level
-// message sent by the client for
+// AsyncRecognizeRequest: The top-level message sent by the client for
 // the `AsyncRecognize` method.
 type AsyncRecognizeRequest struct {
-	// Audio: [Required] The audio data to be recognized.
+	// Audio: *Required* The audio data to be recognized.
 	Audio *RecognitionAudio `json:"audio,omitempty"`
 
-	// Config: [Required] The `config` message provides information to the
-	// recognizer
-	// that specifies how to process the request.
+	// Config: *Required* Provides information to the recognizer that
+	// specifies how to
+	// process the request.
 	Config *RecognitionConfig `json:"config,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Audio") to
@@ -134,11 +128,6 @@ func (s *AsyncRecognizeRequest) MarshalJSON() ([]byte, error) {
 	type noMethod AsyncRecognizeRequest
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// CancelOperationRequest: The request message for
-// Operations.CancelOperation.
-type CancelOperationRequest struct {
 }
 
 // Empty: A generic empty message that you can re-use to avoid defining
@@ -202,8 +191,8 @@ func (s *ListOperationsResponse) MarshalJSON() ([]byte, error) {
 type Operation struct {
 	// Done: If the value is `false`, it means the operation is still in
 	// progress.
-	// If true, the operation is completed, and either `error` or `response`
-	// is
+	// If `true`, the operation is completed, and either `error` or
+	// `response` is
 	// available.
 	Done bool `json:"done,omitempty"`
 
@@ -320,11 +309,11 @@ func (s *RecognitionAudio) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// RecognitionConfig: The `RecognitionConfig` message provides
-// information to the recognizer
-// that specifies how to process the request.
+// RecognitionConfig: Provides information to the recognizer that
+// specifies how to process the
+// request.
 type RecognitionConfig struct {
-	// Encoding: [Required] Encoding of audio data sent in all
+	// Encoding: *Required* Encoding of audio data sent in all
 	// `RecognitionAudio` messages.
 	//
 	// Possible values:
@@ -352,7 +341,7 @@ type RecognitionConfig struct {
 	// be 16000 Hz.
 	Encoding string `json:"encoding,omitempty"`
 
-	// LanguageCode: [Optional] The language of the supplied audio as a
+	// LanguageCode: *Optional* The language of the supplied audio as a
 	// BCP-47 language tag.
 	// Example: "en-GB"  https://www.rfc-editor.org/rfc/bcp/bcp47.txt
 	// If omitted, defaults to "en-US". See
@@ -361,7 +350,7 @@ type RecognitionConfig struct {
 	// for a list of the currently supported language codes.
 	LanguageCode string `json:"languageCode,omitempty"`
 
-	// MaxAlternatives: [Optional] Maximum number of recognition hypotheses
+	// MaxAlternatives: *Optional* Maximum number of recognition hypotheses
 	// to be returned.
 	// Specifically, the maximum number of `SpeechRecognitionAlternative`
 	// messages
@@ -369,10 +358,10 @@ type RecognitionConfig struct {
 	// The server may return fewer than `max_alternatives`.
 	// Valid values are `0`-`30`. A value of `0` or `1` will return a
 	// maximum of
-	// `1`. If omitted, defaults to `1`.
+	// one. If omitted, will return a maximum of one.
 	MaxAlternatives int64 `json:"maxAlternatives,omitempty"`
 
-	// ProfanityFilter: [Optional] If set to `true`, the server will attempt
+	// ProfanityFilter: *Optional* If set to `true`, the server will attempt
 	// to filter out
 	// profanities, replacing all but the initial character in each filtered
 	// word
@@ -381,7 +370,7 @@ type RecognitionConfig struct {
 	// won't be filtered out.
 	ProfanityFilter bool `json:"profanityFilter,omitempty"`
 
-	// SampleRate: [Required] Sample rate in Hertz of the audio data sent in
+	// SampleRate: *Required* Sample rate in Hertz of the audio data sent in
 	// all
 	// `RecognitionAudio` messages. Valid values are: 8000-48000.
 	// 16000 is optimal. For best results, set the sampling rate of the
@@ -391,7 +380,7 @@ type RecognitionConfig struct {
 	// the audio source (instead of re-sampling).
 	SampleRate int64 `json:"sampleRate,omitempty"`
 
-	// SpeechContext: [Optional] A means to provide context to assist the
+	// SpeechContext: *Optional* A means to provide context to assist the
 	// speech recognition.
 	SpeechContext *SpeechContext `json:"speechContext,omitempty"`
 
@@ -422,7 +411,7 @@ func (s *RecognitionConfig) MarshalJSON() ([]byte, error) {
 // specific words and phrases
 // in the results.
 type SpeechContext struct {
-	// Phrases: [Optional] A list of strings containing words and phrases
+	// Phrases: *Optional* A list of strings containing words and phrases
 	// "hints" so that
 	// the speech recognition is more likely to recognize them. This can be
 	// used
@@ -461,18 +450,22 @@ func (s *SpeechContext) MarshalJSON() ([]byte, error) {
 // SpeechRecognitionAlternative: Alternative hypotheses (a.k.a. n-best
 // list).
 type SpeechRecognitionAlternative struct {
-	// Confidence: [Output-only] The confidence estimate between 0.0 and
+	// Confidence: *Output-only* The confidence estimate between 0.0 and
 	// 1.0. A higher number
-	// means the system is more confident that the recognition is
-	// correct.
-	// This field is typically provided only for the top hypothesis, and
-	// only for
-	// `is_final=true` results.
-	// The default of 0.0 is a sentinel value indicating confidence was not
-	// set.
+	// indicates an estimated greater likelihood that the recognized words
+	// are
+	// correct. This field is typically provided only for the top
+	// hypothesis, and
+	// only for `is_final=true` results. Clients should not rely on
+	// the
+	// `confidence` field as it is not guaranteed to be accurate, or even
+	// set, in
+	// any of the results.
+	// The default of 0.0 is a sentinel value indicating `confidence` was
+	// not set.
 	Confidence float64 `json:"confidence,omitempty"`
 
-	// Transcript: [Output-only] Transcript text representing the words that
+	// Transcript: *Output-only* Transcript text representing the words that
 	// the user spoke.
 	Transcript string `json:"transcript,omitempty"`
 
@@ -516,7 +509,7 @@ func (s *SpeechRecognitionAlternative) UnmarshalJSON(data []byte) error {
 // SpeechRecognitionResult: A speech recognition result corresponding to
 // a portion of the audio.
 type SpeechRecognitionResult struct {
-	// Alternatives: [Output-only] May contain one or more recognition
+	// Alternatives: *Output-only* May contain one or more recognition
 	// hypotheses (up to the
 	// maximum specified in `max_alternatives`).
 	Alternatives []*SpeechRecognitionAlternative `json:"alternatives,omitempty"`
@@ -572,7 +565,7 @@ func (s *SpeechRecognitionResult) MarshalJSON() ([]byte, error) {
 // arbitrary
 // information about the error. There is a predefined set of error
 // detail types
-// in the package `google.rpc` which can be used for common error
+// in the package `google.rpc` that can be used for common error
 // conditions.
 //
 // # Language mapping
@@ -605,7 +598,7 @@ func (s *SpeechRecognitionResult) MarshalJSON() ([]byte, error) {
 //
 // - Workflow errors. A typical workflow has multiple steps. Each step
 // may
-//     have a `Status` message for error reporting purpose.
+//     have a `Status` message for error reporting.
 //
 // - Batch operations. If a client uses batch request and batch
 // response, the
@@ -628,9 +621,9 @@ type Status struct {
 	// google.rpc.Code.
 	Code int64 `json:"code,omitempty"`
 
-	// Details: A list of messages that carry the error details.  There will
-	// be a
-	// common set of message types for APIs to use.
+	// Details: A list of messages that carry the error details.  There is a
+	// common set of
+	// message types for APIs to use.
 	Details []googleapi.RawMessage `json:"details,omitempty"`
 
 	// Message: A developer-facing error message, which should be in
@@ -663,16 +656,15 @@ func (s *Status) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// SyncRecognizeRequest: `SyncRecognizeRequest` is the top-level message
-// sent by the client for
+// SyncRecognizeRequest: The top-level message sent by the client for
 // the `SyncRecognize` method.
 type SyncRecognizeRequest struct {
-	// Audio: [Required] The audio data to be recognized.
+	// Audio: *Required* The audio data to be recognized.
 	Audio *RecognitionAudio `json:"audio,omitempty"`
 
-	// Config: [Required] The `config` message provides information to the
-	// recognizer
-	// that specifies how to process the request.
+	// Config: *Required* Provides information to the recognizer that
+	// specifies how to
+	// process the request.
 	Config *RecognitionConfig `json:"config,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Audio") to
@@ -698,13 +690,13 @@ func (s *SyncRecognizeRequest) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// SyncRecognizeResponse: `SyncRecognizeResponse` is the only message
-// returned to the client by
-// `SyncRecognize`. It contains the result as zero or more
-// sequential
-// `SpeechRecognitionResult` messages.
+// SyncRecognizeResponse: The only message returned to the client by
+// `SyncRecognize`. method. It
+// contains the result as zero or more sequential
+// `SpeechRecognitionResult`
+// messages.
 type SyncRecognizeResponse struct {
-	// Results: [Output-only] Sequential list of transcription results
+	// Results: *Output-only* Sequential list of transcription results
 	// corresponding to
 	// sequential portions of audio.
 	Results []*SpeechRecognitionResult `json:"results,omitempty"`
@@ -739,12 +731,11 @@ func (s *SyncRecognizeResponse) MarshalJSON() ([]byte, error) {
 // method id "speech.operations.cancel":
 
 type OperationsCancelCall struct {
-	s                      *Service
-	name                   string
-	canceloperationrequest *CancelOperationRequest
-	urlParams_             gensupport.URLParams
-	ctx_                   context.Context
-	header_                http.Header
+	s          *Service
+	name       string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
 }
 
 // Cancel: Starts asynchronous cancellation on a long-running operation.
@@ -765,10 +756,9 @@ type OperationsCancelCall struct {
 // an Operation.error value with a google.rpc.Status.code of
 // 1,
 // corresponding to `Code.CANCELLED`.
-func (r *OperationsService) Cancel(name string, canceloperationrequest *CancelOperationRequest) *OperationsCancelCall {
+func (r *OperationsService) Cancel(name string) *OperationsCancelCall {
 	c := &OperationsCancelCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
-	c.canceloperationrequest = canceloperationrequest
 	return c
 }
 
@@ -803,13 +793,7 @@ func (c *OperationsCancelCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.canceloperationrequest)
-	if err != nil {
-		return nil, err
-	}
-	reqHeaders.Set("Content-Type", "application/json")
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "v1beta1/operations/{+name}:cancel")
 	urls += "?" + c.urlParams_.Encode()
@@ -876,9 +860,6 @@ func (c *OperationsCancelCall) Do(opts ...googleapi.CallOption) (*Empty, error) 
 	//     }
 	//   },
 	//   "path": "v1beta1/operations/{+name}:cancel",
-	//   "request": {
-	//     "$ref": "CancelOperationRequest"
-	//   },
 	//   "response": {
 	//     "$ref": "Empty"
 	//   },
@@ -943,7 +924,6 @@ func (c *OperationsDeleteCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "v1beta1/operations/{+name}")
@@ -1084,7 +1064,6 @@ func (c *OperationsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -1180,9 +1159,18 @@ type OperationsListCall struct {
 // server doesn't support this method, it returns
 // `UNIMPLEMENTED`.
 //
-// NOTE: the `name` binding below allows API services to override the
+// NOTE: the `name` binding allows API services to override the
 // binding
 // to use different resource name schemes, such as `users/*/operations`.
+// To
+// override the binding, API services can add a binding such
+// as
+// "/v1/{name=users/*}/operations" to their service configuration.
+// For backwards compatibility, the default name includes the
+// operations
+// collection id, however overriding users must ensure the name
+// binding
+// is the parent resource, without the operations collection id.
 func (r *OperationsService) List() *OperationsListCall {
 	c := &OperationsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
@@ -1195,8 +1183,8 @@ func (c *OperationsListCall) Filter(filter string) *OperationsListCall {
 	return c
 }
 
-// Name sets the optional parameter "name": The name of the operation
-// collection.
+// Name sets the optional parameter "name": The name of the operation's
+// parent resource.
 func (c *OperationsListCall) Name(name string) *OperationsListCall {
 	c.urlParams_.Set("name", name)
 	return c
@@ -1257,7 +1245,6 @@ func (c *OperationsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -1308,7 +1295,7 @@ func (c *OperationsListCall) Do(opts ...googleapi.CallOption) (*ListOperationsRe
 	}
 	return ret, nil
 	// {
-	//   "description": "Lists operations that match the specified filter in the request. If the\nserver doesn't support this method, it returns `UNIMPLEMENTED`.\n\nNOTE: the `name` binding below allows API services to override the binding\nto use different resource name schemes, such as `users/*/operations`.",
+	//   "description": "Lists operations that match the specified filter in the request. If the\nserver doesn't support this method, it returns `UNIMPLEMENTED`.\n\nNOTE: the `name` binding allows API services to override the binding\nto use different resource name schemes, such as `users/*/operations`. To\noverride the binding, API services can add a binding such as\n`\"/v1/{name=users/*}/operations\"` to their service configuration.\nFor backwards compatibility, the default name includes the operations\ncollection id, however overriding users must ensure the name binding\nis the parent resource, without the operations collection id.",
 	//   "flatPath": "v1beta1/operations",
 	//   "httpMethod": "GET",
 	//   "id": "speech.operations.list",
@@ -1320,7 +1307,7 @@ func (c *OperationsListCall) Do(opts ...googleapi.CallOption) (*ListOperationsRe
 	//       "type": "string"
 	//     },
 	//     "name": {
-	//       "description": "The name of the operation collection.",
+	//       "description": "The name of the operation's parent resource.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -1424,7 +1411,6 @@ func (c *SpeechAsyncrecognizeCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.asyncrecognizerequest)
 	if err != nil {
@@ -1547,7 +1533,6 @@ func (c *SpeechSyncrecognizeCall) doRequest(alt string) (*http.Response, error) 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.syncrecognizerequest)
 	if err != nil {

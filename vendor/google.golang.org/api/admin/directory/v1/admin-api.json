@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/5JjoP3Vg5udAY4zd2Hcsn9dKASM\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/JB19efQGH5f-JRT49yZz7BTyNQU\"",
  "discoveryVersion": "v1",
  "id": "admin:directory_v1",
  "name": "admin",
  "canonicalName": "directory",
  "version": "directory_v1",
- "revision": "20161214",
+ "revision": "20170830",
  "title": "Admin Directory API",
  "description": "The Admin SDK Directory API lets you view and manage enterprise resources such as users and groups, administrative notifications, security features, and more.",
  "ownerDomain": "google.com",
@@ -22,7 +22,7 @@
  "basePath": "/admin/directory/v1/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "admin/directory/v1/",
- "batchPath": "batch",
+ "batchPath": "batch/admin/directory_v1",
  "parameters": {
   "alt": {
    "type": "string",
@@ -277,6 +277,10 @@
      "type": "string",
      "description": "ETag of the resource."
     },
+    "generatedResourceName": {
+     "type": "string",
+     "description": "The auto-generated name of the calendar resource which includes metadata about the resource such as building name, floor, capacity, etc. For example, NYC-2-Training Room 1A (16)"
+    },
     "kind": {
      "type": "string",
      "description": "The type of the resource. For calendar resources, the value is admin#directory#resources#calendars#CalendarResource.",
@@ -292,21 +296,11 @@
     },
     "resourceId": {
      "type": "string",
-     "description": "The unique ID for the calendar resource.",
-     "annotations": {
-      "required": [
-       "directory.resources.calendars.insert"
-      ]
-     }
+     "description": "The unique ID for the calendar resource."
     },
     "resourceName": {
      "type": "string",
-     "description": "The name of the calendar resource. For example, Training Room 1A",
-     "annotations": {
-      "required": [
-       "directory.resources.calendars.insert"
-      ]
-     }
+     "description": "The name of the calendar resource. For example, Training Room 1A"
     },
     "resourceType": {
      "type": "string",
@@ -462,7 +456,7 @@
     },
     "lastSync": {
      "type": "string",
-     "description": "Date and time the device was last synchronized with the policy settings in the Google Apps administrator control panel (Read-only)",
+     "description": "Date and time the device was last synchronized with the policy settings in the G Suite administrator control panel (Read-only)",
      "format": "date-time"
     },
     "macAddress": {
@@ -579,6 +573,25 @@
     }
    }
   },
+  "ChromeOsMoveDevicesToOu": {
+   "id": "ChromeOsMoveDevicesToOu",
+   "type": "object",
+   "description": "JSON request template for moving ChromeOs Device to given OU in Directory Devices API.",
+   "properties": {
+    "deviceIds": {
+     "type": "array",
+     "description": "ChromeOs Devices to be moved to OU",
+     "items": {
+      "type": "string"
+     },
+     "annotations": {
+      "required": [
+       "directory.chromeosdevices.moveDevicesToOu"
+      ]
+     }
+    }
+   }
+  },
   "Customer": {
    "id": "Customer",
    "type": "object",
@@ -603,7 +616,7 @@
     },
     "id": {
      "type": "string",
-     "description": "The unique ID for the customer's Google account. (Readonly)"
+     "description": "The unique ID for the customer's G Suite account. (Readonly)"
     },
     "kind": {
      "type": "string",
@@ -1041,7 +1054,7 @@
     },
     "firstSync": {
      "type": "string",
-     "description": "Date and time the device was first synchronized with the policy settings in the Google Apps administrator control panel (Read-only)",
+     "description": "Date and time the device was first synchronized with the policy settings in the G Suite administrator control panel (Read-only)",
      "format": "date-time"
     },
     "hardware": {
@@ -1067,7 +1080,7 @@
     },
     "lastSync": {
      "type": "string",
-     "description": "Date and time the device was last synchronized with the policy settings in the Google Apps administrator control panel (Read-only)",
+     "description": "Date and time the device was last synchronized with the policy settings in the G Suite administrator control panel (Read-only)",
      "format": "date-time"
     },
     "managedAccountIsOnOwnerProfile": {
@@ -1792,7 +1805,7 @@
     },
     "creationTime": {
      "type": "string",
-     "description": "User's Google account creation time. (Read-only)",
+     "description": "User's G Suite account creation time. (Read-only)",
      "format": "date-time",
      "readOnly": true
     },
@@ -1822,6 +1835,9 @@
      "readOnly": true
     },
     "externalIds": {
+     "type": "any"
+    },
+    "gender": {
      "type": "any"
     },
     "hashFunction": {
@@ -1868,17 +1884,26 @@
      "description": "Is mailbox setup (Read-only)",
      "readOnly": true
     },
+    "keywords": {
+     "type": "any"
+    },
     "kind": {
      "type": "string",
      "description": "Kind of resource this is.",
      "default": "admin#directory#user",
      "readOnly": true
     },
+    "languages": {
+     "type": "any"
+    },
     "lastLoginTime": {
      "type": "string",
      "description": "User's last login time. (Read-only)",
      "format": "date-time",
      "readOnly": true
+    },
+    "locations": {
+     "type": "any"
     },
     "name": {
      "$ref": "UserName",
@@ -1919,6 +1944,9 @@
     "phones": {
      "type": "any"
     },
+    "posixAccounts": {
+     "type": "any"
+    },
     "primaryEmail": {
      "type": "string",
      "description": "username of User",
@@ -1929,6 +1957,9 @@
      }
     },
     "relations": {
+     "type": "any"
+    },
+    "sshPublicKeys": {
      "type": "any"
     },
     "suspended": {
@@ -2079,6 +2110,24 @@
     }
    }
   },
+  "UserGender": {
+   "id": "UserGender",
+   "type": "object",
+   "properties": {
+    "addressMeAs": {
+     "type": "string",
+     "description": "AddressMeAs. A human-readable string containing the proper way to refer to the profile owner by humans, for example \"he/him/his\" or \"they/them/their\"."
+    },
+    "customGender": {
+     "type": "string",
+     "description": "Custom gender."
+    },
+    "type": {
+     "type": "string",
+     "description": "Gender."
+    }
+   }
+  },
   "UserIm": {
    "id": "UserIm",
    "type": "object",
@@ -2107,6 +2156,75 @@
     "type": {
      "type": "string",
      "description": "Each entry can have a type which indicates standard types of that entry. For example instant messengers could be of home, work etc. In addition to the standard type, an entry can have a custom type and can take any value. Such types should have the CUSTOM value as type and also have a customType value."
+    }
+   }
+  },
+  "UserKeyword": {
+   "id": "UserKeyword",
+   "type": "object",
+   "description": "JSON template for a keyword entry.",
+   "properties": {
+    "customType": {
+     "type": "string",
+     "description": "Custom Type."
+    },
+    "type": {
+     "type": "string",
+     "description": "Each entry can have a type which indicates standard type of that entry. For example, keyword could be of type occupation or outlook. In addition to the standard type, an entry can have a custom type and can give it any name. Such types should have the CUSTOM value as type and also have a customType value."
+    },
+    "value": {
+     "type": "string",
+     "description": "Keyword."
+    }
+   }
+  },
+  "UserLanguage": {
+   "id": "UserLanguage",
+   "type": "object",
+   "description": "JSON template for a language entry.",
+   "properties": {
+    "customLanguage": {
+     "type": "string",
+     "description": "Other language. User can provide own language name if there is no corresponding Google III language code. If this is set LanguageCode can't be set"
+    },
+    "languageCode": {
+     "type": "string",
+     "description": "Language Code. Should be used for storing Google III LanguageCode string representation for language. Illegal values cause SchemaException."
+    }
+   }
+  },
+  "UserLocation": {
+   "id": "UserLocation",
+   "type": "object",
+   "description": "JSON template for a location entry.",
+   "properties": {
+    "area": {
+     "type": "string",
+     "description": "Textual location. This is most useful for display purposes to concisely describe the location. For example, \"Mountain View, CA\", \"Near Seattle\", \"US-NYC-9TH 9A209A\"."
+    },
+    "buildingId": {
+     "type": "string",
+     "description": "Building Identifier."
+    },
+    "customType": {
+     "type": "string",
+     "description": "Custom Type."
+    },
+    "deskCode": {
+     "type": "string",
+     "description": "Most specific textual code of individual desk location."
+    },
+    "floorName": {
+     "type": "string",
+     "description": "Floor name/number."
+    },
+    "floorSection": {
+     "type": "string",
+     "description": "Floor section. More specific location within the floor. For example, if a floor is divided into sections \"A\", \"B\", and \"C\", this field would identify one of those values."
+    },
+    "type": {
+     "type": "string",
+     "description": "Each entry can have a type which indicates standard types of that entry. For example location could be of types default and desk. In addition to standard type, an entry can have a custom type and can give it any name. Such types should have \"custom\" as type and also have a customType value."
     }
    }
   },
@@ -2179,6 +2297,11 @@
     "domain": {
      "type": "string",
      "description": "The domain to which the organization belongs to."
+    },
+    "fullTimeEquivalent": {
+     "type": "integer",
+     "description": "The full-time equivalent percent within the organization (100000 = 100%).",
+     "format": "int32"
     },
     "location": {
      "type": "string",
@@ -2277,6 +2400,47 @@
     }
    }
   },
+  "UserPosixAccount": {
+   "id": "UserPosixAccount",
+   "type": "object",
+   "description": "JSON template for a POSIX account entry. Description of the field family: go/fbs-posix.",
+   "properties": {
+    "gecos": {
+     "type": "string",
+     "description": "The GECOS (user information) for this account."
+    },
+    "gid": {
+     "type": "string",
+     "description": "The default group ID.",
+     "format": "uint64"
+    },
+    "homeDirectory": {
+     "type": "string",
+     "description": "The path to the home directory for this account."
+    },
+    "primary": {
+     "type": "boolean",
+     "description": "If this is user's primary account within the SystemId."
+    },
+    "shell": {
+     "type": "string",
+     "description": "The path to the login shell for this account."
+    },
+    "systemId": {
+     "type": "string",
+     "description": "System identifier for which account Username or Uid apply to."
+    },
+    "uid": {
+     "type": "string",
+     "description": "The POSIX compliant user ID.",
+     "format": "uint64"
+    },
+    "username": {
+     "type": "string",
+     "description": "The username of the account."
+    }
+   }
+  },
   "UserRelation": {
    "id": "UserRelation",
    "type": "object",
@@ -2293,6 +2457,27 @@
     "value": {
      "type": "string",
      "description": "The name of the relation."
+    }
+   }
+  },
+  "UserSshPublicKey": {
+   "id": "UserSshPublicKey",
+   "type": "object",
+   "description": "JSON template for a POSIX account entry.",
+   "properties": {
+    "expirationTimeUsec": {
+     "type": "string",
+     "description": "An expiration time in microseconds since epoch.",
+     "format": "int64"
+    },
+    "fingerprint": {
+     "type": "string",
+     "description": "A SHA-256 fingerprint of the SSH public key. (Read-only)",
+     "readOnly": true
+    },
+    "key": {
+     "type": "string",
+     "description": "An SSH public key."
     }
    }
   },
@@ -2526,13 +2711,13 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       },
       "resourceId": {
        "type": "string",
-       "description": "Immutable id of Chrome OS Device",
+       "description": "Immutable ID of Chrome OS Device",
        "required": true,
        "location": "path"
       }
@@ -2556,13 +2741,13 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       },
       "deviceId": {
        "type": "string",
-       "description": "Immutable id of Chrome OS Device",
+       "description": "Immutable ID of Chrome OS Device",
        "required": true,
        "location": "path"
       },
@@ -2600,7 +2785,7 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       },
@@ -2632,6 +2817,11 @@
         "Chromebook status.",
         "Chromebook support end date."
        ],
+       "location": "query"
+      },
+      "orgUnitPath": {
+       "type": "string",
+       "description": "Full path of the organization unit or its Id",
        "location": "query"
       },
       "pageToken": {
@@ -2682,6 +2872,36 @@
       "https://www.googleapis.com/auth/admin.directory.device.chromeos.readonly"
      ]
     },
+    "moveDevicesToOu": {
+     "id": "directory.chromeosdevices.moveDevicesToOu",
+     "path": "customer/{customerId}/devices/chromeos/moveDevicesToOu",
+     "httpMethod": "POST",
+     "description": "Move or insert multiple Chrome OS Devices to Organization Unit",
+     "parameters": {
+      "customerId": {
+       "type": "string",
+       "description": "Immutable ID of the G Suite account",
+       "required": true,
+       "location": "path"
+      },
+      "orgUnitPath": {
+       "type": "string",
+       "description": "Full path of the target organization unit or its Id",
+       "required": true,
+       "location": "query"
+      }
+     },
+     "parameterOrder": [
+      "customerId",
+      "orgUnitPath"
+     ],
+     "request": {
+      "$ref": "ChromeOsMoveDevicesToOu"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/admin.directory.device.chromeos"
+     ]
+    },
     "patch": {
      "id": "directory.chromeosdevices.patch",
      "path": "customer/{customerId}/devices/chromeos/{deviceId}",
@@ -2690,13 +2910,13 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       },
       "deviceId": {
        "type": "string",
-       "description": "Immutable id of Chrome OS Device",
+       "description": "Immutable ID of Chrome OS Device",
        "required": true,
        "location": "path"
       },
@@ -2736,13 +2956,13 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       },
       "deviceId": {
        "type": "string",
-       "description": "Immutable id of Chrome OS Device",
+       "description": "Immutable ID of Chrome OS Device",
        "required": true,
        "location": "path"
       },
@@ -2866,7 +3086,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account.",
+       "description": "Immutable ID of the G Suite account.",
        "required": true,
        "location": "path"
       },
@@ -2893,7 +3113,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account.",
+       "description": "Immutable ID of the G Suite account.",
        "required": true,
        "location": "path"
       },
@@ -2924,7 +3144,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account.",
+       "description": "Immutable ID of the G Suite account.",
        "required": true,
        "location": "path"
       }
@@ -2950,7 +3170,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account.",
+       "description": "Immutable ID of the G Suite account.",
        "required": true,
        "location": "path"
       },
@@ -2983,7 +3203,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account.",
+       "description": "Immutable ID of the G Suite account.",
        "required": true,
        "location": "path"
       },
@@ -3010,7 +3230,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account.",
+       "description": "Immutable ID of the G Suite account.",
        "required": true,
        "location": "path"
       },
@@ -3041,7 +3261,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account.",
+       "description": "Immutable ID of the G Suite account.",
        "required": true,
        "location": "path"
       }
@@ -3067,7 +3287,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account.",
+       "description": "Immutable ID of the G Suite account.",
        "required": true,
        "location": "path"
       }
@@ -3154,7 +3374,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account. In case of multi-domain, to fetch all groups for a customer, fill this field instead of domain.",
+       "description": "Immutable ID of the G Suite account. In case of multi-domain, to fetch all groups for a customer, fill this field instead of domain.",
        "location": "query"
       },
       "domain": {
@@ -3539,13 +3759,13 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       },
       "resourceId": {
        "type": "string",
-       "description": "Immutable id of Mobile Device",
+       "description": "Immutable ID of Mobile Device",
        "required": true,
        "location": "path"
       }
@@ -3570,13 +3790,13 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       },
       "resourceId": {
        "type": "string",
-       "description": "Immutable id of Mobile Device",
+       "description": "Immutable ID of Mobile Device",
        "required": true,
        "location": "path"
       }
@@ -3597,7 +3817,7 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       },
@@ -3616,7 +3836,7 @@
       },
       "resourceId": {
        "type": "string",
-       "description": "Immutable id of Mobile Device",
+       "description": "Immutable ID of Mobile Device",
        "required": true,
        "location": "path"
       }
@@ -3642,7 +3862,7 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       },
@@ -3739,7 +3959,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "The unique ID for the customer's Google account. The customerId is also returned as part of the Users resource.",
+       "description": "The unique ID for the customer's G Suite account. The customerId is also returned as part of the Users resource.",
        "required": true,
        "location": "path"
       },
@@ -3766,7 +3986,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "The unique ID for the customer's Google account. The customerId is also returned as part of the Users resource.",
+       "description": "The unique ID for the customer's G Suite account. The customerId is also returned as part of the Users resource.",
        "required": true,
        "location": "path"
       },
@@ -3796,7 +4016,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "The unique ID for the customer's Google account.",
+       "description": "The unique ID for the customer's G Suite account.",
        "required": true,
        "location": "path"
       },
@@ -3835,7 +4055,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "The unique ID for the customer's Google account.",
+       "description": "The unique ID for the customer's G Suite account.",
        "required": true,
        "location": "path"
       },
@@ -3868,7 +4088,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "The unique ID for the customer's Google account.",
+       "description": "The unique ID for the customer's G Suite account.",
        "required": true,
        "location": "path"
       },
@@ -3905,7 +4125,7 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       },
@@ -3933,7 +4153,7 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       },
@@ -3965,7 +4185,7 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       }
@@ -3991,7 +4211,7 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       },
@@ -4034,7 +4254,7 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       },
@@ -4068,7 +4288,7 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       },
@@ -4106,7 +4326,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "Immutable ID of the Google Apps account.",
+       "description": "Immutable ID of the G Suite account.",
        "required": true,
        "location": "path"
       }
@@ -4142,7 +4362,7 @@
         },
         "customer": {
          "type": "string",
-         "description": "The unique ID for the customer's Google account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+         "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
          "required": true,
          "location": "path"
         }
@@ -4169,7 +4389,7 @@
         },
         "customer": {
          "type": "string",
-         "description": "The unique ID for the customer's Google account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+         "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
          "required": true,
          "location": "path"
         }
@@ -4194,7 +4414,7 @@
        "parameters": {
         "customer": {
          "type": "string",
-         "description": "The unique ID for the customer's Google account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+         "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
          "required": true,
          "location": "path"
         }
@@ -4220,7 +4440,7 @@
        "parameters": {
         "customer": {
          "type": "string",
-         "description": "The unique ID for the customer's Google account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+         "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
          "required": true,
          "location": "path"
         },
@@ -4263,7 +4483,7 @@
         },
         "customer": {
          "type": "string",
-         "description": "The unique ID for the customer's Google account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+         "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
          "required": true,
          "location": "path"
         }
@@ -4296,7 +4516,7 @@
         },
         "customer": {
          "type": "string",
-         "description": "The unique ID for the customer's Google account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
+         "description": "The unique ID for the customer's G Suite account. As an account administrator, you can also use the my_customer alias to represent your account's customer ID.",
          "required": true,
          "location": "path"
         }
@@ -4329,7 +4549,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "Immutable ID of the Google Apps account.",
+       "description": "Immutable ID of the G Suite account.",
        "required": true,
        "location": "path"
       },
@@ -4356,7 +4576,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "Immutable ID of the Google Apps account.",
+       "description": "Immutable ID of the G Suite account.",
        "required": true,
        "location": "path"
       },
@@ -4387,7 +4607,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "Immutable ID of the Google Apps account.",
+       "description": "Immutable ID of the G Suite account.",
        "required": true,
        "location": "path"
       }
@@ -4413,7 +4633,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "Immutable ID of the Google Apps account.",
+       "description": "Immutable ID of the G Suite account.",
        "required": true,
        "location": "path"
       },
@@ -4464,7 +4684,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "Immutable ID of the Google Apps account.",
+       "description": "Immutable ID of the G Suite account.",
        "required": true,
        "location": "path"
       },
@@ -4491,7 +4711,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "Immutable ID of the Google Apps account.",
+       "description": "Immutable ID of the G Suite account.",
        "required": true,
        "location": "path"
       },
@@ -4522,7 +4742,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "Immutable ID of the Google Apps account.",
+       "description": "Immutable ID of the G Suite account.",
        "required": true,
        "location": "path"
       }
@@ -4548,7 +4768,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account.",
+       "description": "Immutable ID of the G Suite account.",
        "required": true,
        "location": "path"
       },
@@ -4585,7 +4805,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "Immutable ID of the Google Apps account.",
+       "description": "Immutable ID of the G Suite account.",
        "required": true,
        "location": "path"
       },
@@ -4618,7 +4838,7 @@
      "parameters": {
       "customer": {
        "type": "string",
-       "description": "Immutable ID of the Google Apps account.",
+       "description": "Immutable ID of the G Suite account.",
        "required": true,
        "location": "path"
       },
@@ -4655,7 +4875,7 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       },
@@ -4682,7 +4902,7 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       },
@@ -4713,7 +4933,7 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       }
@@ -4739,7 +4959,7 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       }
@@ -4763,7 +4983,7 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       },
@@ -4796,7 +5016,7 @@
      "parameters": {
       "customerId": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account",
+       "description": "Immutable ID of the G Suite account",
        "required": true,
        "location": "path"
       },
@@ -5016,7 +5236,7 @@
       },
       "customer": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account. In case of multi-domain, to fetch all users for a customer, fill this field instead of domain.",
+       "description": "Immutable ID of the G Suite account. In case of multi-domain, to fetch all users for a customer, fill this field instead of domain.",
        "location": "query"
       },
       "domain": {
@@ -5245,7 +5465,7 @@
       },
       "customer": {
        "type": "string",
-       "description": "Immutable id of the Google Apps account. In case of multi-domain, to fetch all users for a customer, fill this field instead of domain.",
+       "description": "Immutable ID of the G Suite account. In case of multi-domain, to fetch all users for a customer, fill this field instead of domain.",
        "location": "query"
       },
       "domain": {

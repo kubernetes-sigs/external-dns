@@ -1,7 +1,11 @@
 package: github.com/kubernetes-incubator/external-dns
 import:
+- package: github.com/sirupsen/logrus
+  version: ~0.11.5
 - package: github.com/Sirupsen/logrus
   version: ~0.11.5
+  repo: https://github.com/sirupsen/logrus.git
+  vcs: git
 - package: github.com/alecthomas/kingpin
   version: ~2.2.4
 - package: github.com/aws/aws-sdk-go
@@ -54,3 +58,5 @@ import:
 - package: github.com/digitalocean/godo
   version: ~1.1.0
 - package: github.com/coreos/go-oidc
+- package: github.com/infobloxopen/infoblox-go-client
+  version: master

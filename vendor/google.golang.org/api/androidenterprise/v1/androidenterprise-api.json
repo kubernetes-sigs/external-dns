@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/qmu3g-0qIQB7C8meI8fD39oNLuA\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/eOnhI7vohdeU44iGbzR45SHL-EI\"",
  "discoveryVersion": "v1",
  "id": "androidenterprise:v1",
  "name": "androidenterprise",
  "canonicalName": "Android Enterprise",
  "version": "v1",
- "revision": "20170131",
+ "revision": "20170911",
  "title": "Google Play EMM API",
  "description": "Manages the deployment of apps to Android for Work users.",
  "ownerDomain": "google.com",
@@ -21,7 +21,7 @@
  "basePath": "/androidenterprise/v1/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "androidenterprise/v1/",
- "batchPath": "batch",
+ "batchPath": "batch/androidenterprise/v1",
  "parameters": {
   "alt": {
    "type": "string",
@@ -124,6 +124,22 @@
      "items": {
       "type": "string"
      }
+    }
+   }
+  },
+  "AndroidDevicePolicyConfig": {
+   "id": "AndroidDevicePolicyConfig",
+   "type": "object",
+   "description": "The Android Device Policy configuration of an enterprise.",
+   "properties": {
+    "kind": {
+     "type": "string",
+     "description": "Identifies what kind of resource this is. Value: the fixed string \"androidenterprise#androidDevicePolicyConfig\".",
+     "default": "androidenterprise#androidDevicePolicyConfig"
+    },
+    "state": {
+     "type": "string",
+     "description": "The state of Android Device Policy. \"enabled\" indicates that Android Device Policy is enabled for the enterprise and the EMM is allowed to manage devices with Android Device Policy, while \"disabled\" means that it cannot."
     }
    }
   },
@@ -298,11 +314,11 @@
   "Device": {
    "id": "Device",
    "type": "object",
-   "description": "A device resource represents a mobile device managed by the EMM and belonging to a specific enterprise user.\n\nThis collection cannot be modified via the API; it is automatically populated as devices are set up to be managed.",
+   "description": "A Devices resource represents a mobile device managed by the EMM and belonging to a specific enterprise user.\n\nThis collection cannot be modified via the API. It is automatically populated as devices are set up to be managed.",
    "properties": {
     "androidId": {
      "type": "string",
-     "description": "The Google Play Services Android ID for the device encoded as a lowercase hex string, e.g. \"123456789abcdef0\"."
+     "description": "The Google Play Services Android ID for the device encoded as a lowercase hex string. For example, \"123456789abcdef0\"."
     },
     "kind": {
      "type": "string",
@@ -311,7 +327,7 @@
     },
     "managementType": {
      "type": "string",
-     "description": "Identifies the extent to which the device is controlled by a managed Google Play EMM in various deployment configurations.\n\nPossible values include: \n- \"managedDevice\", a device that has the EMM's device policy controller (DPC) as the device owner, \n- \"managedProfile\", a device that has a profile managed by the DPC (DPC is profile owner) in addition to a separate, personal profile that is unavailable to the DPC, \n- \"containerApp\", a device running the container App. The container App is managed by the DPC, \n- \"unmanagedProfile\", a device that has been allowed (by the domain's admin, using the Admin Console to enable the privilege) to use managed Google Play, but the profile is itself not owned by a DPC."
+     "description": "Identifies the extent to which the device is controlled by a managed Google Play EMM in various deployment configurations.\n\nPossible values include: \n- \"managedDevice\", a device that has the EMM's device policy controller (DPC) as the device owner. \n- \"managedProfile\", a device that has a profile managed by the DPC (DPC is profile owner) in addition to a separate, personal profile that is unavailable to the DPC. \n- \"containerApp\", no longer used (deprecated). \n- \"unmanagedProfile\", a device that has been allowed (by the domain's admin, using the Admin Console to enable the privilege) to use managed Google Play, but the profile is itself not owned by a DPC."
     }
    }
   },
@@ -438,7 +454,7 @@
   "Entitlement": {
    "id": "Entitlement",
    "type": "object",
-   "description": "The existence of an entitlement resource means that a user has the right to use a particular app on any of their devices. This might be because the app is free or because they have been allocated a license to the app from a group license purchased by the enterprise.\n\nIt should always be true that a user has an app installed on one of their devices only if they have an entitlement to it. So if an entitlement is deleted, the app will be uninstalled from all devices. Similarly if the user installs an app (and is permitted to do so), or the EMM triggers an install of the app, an entitlement to that app is automatically created. If this is impossible - e.g. the enterprise has not purchased sufficient licenses - then installation fails.\n\nNote that entitlements are always user specific, not device specific; a user may have an entitlement even though they have not installed the app anywhere. Once they have an entitlement they can install the app on multiple devices.\n\nThe API can be used to create an entitlement. If the app is a free app, a group license for that app is created. If it's a paid app, creating the entitlement consumes one license; it remains consumed until the entitlement is removed. Optionally an installation of the app on all the user's managed devices can be triggered at the time the entitlement is created. An entitlement cannot be created for an app if the app requires permissions that the enterprise has not yet accepted.\n\nEntitlements for paid apps that are due to purchases by the user on a non-managed profile will have \"userPurchase\" as entitlement reason; those entitlements cannot be removed via the API.",
+   "description": "The presence of an Entitlements resource indicates that a user has the right to use a particular app. Entitlements are user specific, not device specific. This allows a user with an entitlement to an app to install the app on all their devices. It's also possible for a user to hold an entitlement to an app without installing the app on any device.\n\nThe API can be used to create an entitlement. As an option, you can also use the API to trigger the installation of an app on all a user's managed devices at the same time the entitlement is created.\n\nIf the app is free, creating the entitlement also creates a group license for that app. For paid apps, creating the entitlement consumes one license, and that license remains consumed until the entitlement is removed. If the enterprise hasn't purchased enough licenses, then no entitlement is created and the installation fails. An entitlement is also not created for an app if the app requires permissions that the enterprise hasn't accepted.\n\nIf an entitlement is deleted, the app may be uninstalled from a user's device. As a best practice, uninstall the app by calling  Installs.delete() before deleting the entitlement.\n\nEntitlements for apps that a user pays for on an unmanaged profile have \"userPurchase\" as the entitlement reason. These entitlements cannot be removed via the API.",
    "properties": {
     "kind": {
      "type": "string",
@@ -447,11 +463,11 @@
     },
     "productId": {
      "type": "string",
-     "description": "The ID of the product that the entitlement is for, e.g. \"app:com.google.android.gm\"."
+     "description": "The ID of the product that the entitlement is for. For example, \"app:com.google.android.gm\"."
     },
     "reason": {
      "type": "string",
-     "description": "The reason for the entitlement, e.g. \"free\" for free apps. This is temporary, it will be replaced by the acquisition kind field of group licenses."
+     "description": "The reason for the entitlement. For example, \"free\" for free apps. This property is temporary: it will be replaced by the acquisition kind field of group licenses."
     }
    }
   },
@@ -477,15 +493,15 @@
   "GroupLicense": {
    "id": "GroupLicense",
    "type": "object",
-   "description": "A group license object indicates a product that an enterprise admin has approved for use in the enterprise. The product may be free or paid. For free products, a group license object is created in these cases: if the enterprise admin approves a product in Google Play, if the product is added to a collection, or if an entitlement for the product is created for a user via the API. For paid products, a group license object is only created as part of the first bulk purchase of that product in Google Play by the enterprise admin.\n\nThe API can be used to query group licenses; the available information includes the total number of licenses purchased (for paid products) and the total number of licenses that have been provisioned, that is, the total number of user entitlements in existence for the product.\n\nGroup license objects are never deleted. If, for example, a free app is added to a collection and then removed, the group license will remain, allowing the enterprise admin to keep track of any remaining entitlements. An enterprise admin may indicate they are no longer interested in the group license by marking it as unapproved in Google Play.",
+   "description": "Group license objects allow you to keep track of licenses (called entitlements) for both free and paid apps. For a free app, a group license is created when an enterprise admin first approves the product in Google Play or when the first entitlement for the product is created for a user via the API. For a paid app, a group license object is only created when an enterprise admin purchases the product in Google Play for the first time.\n\nUse the API to query group licenses. A Grouplicenses resource includes the total number of licenses purchased (paid apps only) and the total number of licenses currently in use. Iyn other words, the total number of Entitlements that exist for the product.\n\nOnly one group license object is created per product and group license objects are never deleted. If a product is unapproved, its group license remains. This allows enterprise admins to keep track of any remaining entitlements for the product.",
    "properties": {
     "acquisitionKind": {
      "type": "string",
-     "description": "How this group license was acquired. \"bulkPurchase\" means that this group license object was created because the enterprise purchased licenses for this product; this is \"free\" otherwise (for free products)."
+     "description": "How this group license was acquired. \"bulkPurchase\" means that this Grouplicenses resource was created because the enterprise purchased licenses for this product; otherwise, the value is \"free\" (for free products)."
     },
     "approval": {
      "type": "string",
-     "description": "Whether the product to which this group license relates is currently approved by the enterprise, as either \"approved\" or \"unapproved\". Products are approved when a group license is first created, but this approval may be revoked by an enterprise admin via Google Play. Unapproved products will not be visible to end users in collections and new entitlements to them should not normally be created."
+     "description": "Whether the product to which this group license relates is currently approved by the enterprise. Products are approved when a group license is first created, but this approval may be revoked by an enterprise admin via Google Play. Unapproved products will not be visible to end users in collections, and new entitlements to them should not normally be created."
     },
     "kind": {
      "type": "string",
@@ -499,12 +515,16 @@
     },
     "numPurchased": {
      "type": "integer",
-     "description": "The number of purchased licenses (possibly in multiple purchases). If this field is omitted then there is no limit on the number of licenses that can be provisioned (e.g. if the acquisition kind is \"free\").",
+     "description": "The number of purchased licenses (possibly in multiple purchases). If this field is omitted, then there is no limit on the number of licenses that can be provisioned (for example, if the acquisition kind is \"free\").",
      "format": "int32"
+    },
+    "permissions": {
+     "type": "string",
+     "description": "The permission approval status of the product. This field is only set if the product is approved. Possible states are: \n- \"currentApproved\", the current set of permissions is approved, but additional permissions will require the administrator to reapprove the product (If the product was approved without specifying the approved permissions setting, then this is the default behavior.), \n- \"needsReapproval\", the product has unapproved permissions. No additional product licenses can be assigned until the product is reapproved, \n- \"allCurrentAndFutureApproved\", the current permissions are approved and any future permission updates will be automatically approved without administrator review."
     },
     "productId": {
      "type": "string",
-     "description": "The ID of the product that the license is for, e.g. \"app:com.google.android.gm\"."
+     "description": "The ID of the product that the license is for. For example, \"app:com.google.android.gm\"."
     }
    }
   },
@@ -549,7 +569,7 @@
   "Install": {
    "id": "Install",
    "type": "object",
-   "description": "The existence of an install resource indicates that an app is installed on a particular device (or that an install is pending).\n\nThe API can be used to create an install resource using the update method. This triggers the actual install of the app on the device. If the user does not already have an entitlement for the app then an attempt is made to create one. If this fails (e.g. because the app is not free and there is no available license) then the creation of the install fails.\n\nThe API can also be used to update an installed app. If the update method is used on an existing install then the app will be updated to the latest available version.\n\nNote that it is not possible to force the installation of a specific version of an app; the version code is read-only.\n\nIf a user installs an app themselves (as permitted by the enterprise), then again an install resource and possibly an entitlement resource are automatically created.\n\nThe API can also be used to delete an install resource, which triggers the removal of the app from the device. Note that deleting an install does not automatically remove the corresponding entitlement, even if there are no remaining installs. The install resource will also be deleted if the user uninstalls the app themselves.",
+   "description": "The existence of an Installs resource indicates that an app is installed on a particular device (or that an install is pending).\n\nThe API can be used to create an install resource using the update method. This triggers the actual install of the app on the device. If the user does not already have an entitlement for the app, then an attempt is made to create one. If this fails (for example, because the app is not free and there is no available license), then the creation of the install fails.\n\nThe API can also be used to update an installed app. If the update method is used on an existing install, then the app will be updated to the latest available version.\n\nNote that it is not possible to force the installation of a specific version of an app: the version code is read-only.\n\nIf a user installs an app themselves (as permitted by the enterprise), then again an install resource and possibly an entitlement resource are automatically created.\n\nThe API can also be used to delete an install resource, which triggers the removal of the app from the device. Note that deleting an install does not automatically remove the corresponding entitlement, even if there are no remaining installs. The install resource will also be deleted if the user uninstalls the app themselves.",
    "properties": {
     "installState": {
      "type": "string",
@@ -562,7 +582,7 @@
     },
     "productId": {
      "type": "string",
-     "description": "The ID of the product that the install is for, e.g. \"app:com.google.android.gm\"."
+     "description": "The ID of the product that the install is for. For example, \"app:com.google.android.gm\"."
     },
     "versionCode": {
      "type": "integer",
@@ -760,7 +780,7 @@
     },
     "managementType": {
      "type": "string",
-     "description": "Identifies the extent to which the device is controlled by an Android for Work EMM in various deployment configurations.\n\nPossible values include: \n- \"managedDevice\", a device that has the EMM's device policy controller (DPC) as the device owner, \n- \"managedProfile\", a device that has a work profile managed by the DPC (DPC is profile owner) in addition to a separate, personal profile that is unavailable to the DPC,"
+     "description": "Identifies the extent to which the device is controlled by an Android EMM in various deployment configurations.\n\nPossible values include: \n- \"managedDevice\", a device where the DPC is set as device owner, \n- \"managedProfile\", a device where the DPC is set as profile owner."
     },
     "userId": {
      "type": "string",
@@ -822,6 +842,10 @@
      "$ref": "NewPermissionsEvent",
      "description": "Notifications about new app permissions."
     },
+    "notificationType": {
+     "type": "string",
+     "description": "Type of the notification."
+    },
     "productApprovalEvent": {
      "$ref": "ProductApprovalEvent",
      "description": "Notifications about changes to a product's approval status."
@@ -881,11 +905,11 @@
   "Permission": {
    "id": "Permission",
    "type": "object",
-   "description": "A permission represents some extra capability, to be granted to an Android app, which requires explicit consent. An enterprise admin must consent to these permissions on behalf of their users before an entitlement for the app can be created.\n\nThe permissions collection is read-only. The information provided for each permission (localized name and description) is intended to be used in the EMM user interface when obtaining consent from the enterprise.",
+   "description": "A Permissions resource represents some extra capability, to be granted to an Android app, which requires explicit consent. An enterprise admin must consent to these permissions on behalf of their users before an entitlement for the app can be created.\n\nThe permissions collection is read-only. The information provided for each permission (localized name and description) is intended to be used in the MDM user interface when obtaining consent from the enterprise.",
    "properties": {
     "description": {
      "type": "string",
-     "description": "A longer description of the permissions giving more details of what it affects."
+     "description": "A longer description of the Permissions resource, giving more details of what it affects."
     },
     "kind": {
      "type": "string",
@@ -909,14 +933,14 @@
    "properties": {
     "appVersion": {
      "type": "array",
-     "description": "App versions currently available for this product. The returned list contains only public versions. Alpha and beta versions are not included.",
+     "description": "App versions currently available for this product.",
      "items": {
       "$ref": "AppVersion"
      }
     },
     "authorName": {
      "type": "string",
-     "description": "The name of the author of the product (e.g. the app developer)."
+     "description": "The name of the author of the product (for example, the app developer)."
     },
     "detailsUrl": {
      "type": "string",
@@ -945,7 +969,11 @@
     },
     "requiresContainerApp": {
      "type": "boolean",
-     "description": "Whether this app can only be installed on devices using the Android container app."
+     "description": "Deprecated."
+    },
+    "signingCertificate": {
+     "$ref": "ProductSigningCertificate",
+     "description": "The certificate used to sign this product."
     },
     "smallIconUrl": {
      "type": "string",
@@ -1048,7 +1076,21 @@
     },
     "productSetBehavior": {
      "type": "string",
-     "description": "The interpretation of this product set. \"unknown\" should never be sent and is ignored if received. \"whitelist\" means that this product set constitutes a whitelist. \"includeAll\" means that all products are accessible, including products that are approved, products with revoked approval, and products that have never been approved. If the value is \"includeAll\", the value of the productId field is therefore ignored. If a value is not supplied, it is interpreted to be \"whitelist\" for backwards compatibility."
+     "description": "The interpretation of this product set. \"unknown\" should never be sent and is ignored if received. \"whitelist\" means that the user is entitled to access the product set. \"includeAll\" means that all products are accessible, including products that are approved, products with revoked approval, and products that have never been approved. \"allApproved\" means that the user is entitled to access all products that are approved for the enterprise. If the value is \"allApproved\" or \"includeAll\", the productId field is ignored. If no value is provided, it is interpreted as \"whitelist\" for backwards compatibility. Further \"allApproved\" or \"includeAll\" does not enable automatic visibility of \"alpha\" or \"beta\" tracks for Android app. Use ProductVisibility to enable \"alpha\" or \"beta\" tracks per user."
+    }
+   }
+  },
+  "ProductSigningCertificate": {
+   "id": "ProductSigningCertificate",
+   "type": "object",
+   "properties": {
+    "certificateHashSha1": {
+     "type": "string",
+     "description": "The base64 urlsafe encoded SHA1 hash of the certificate. (This field is deprecated in favor of SHA2-256. It should not be used and may be removed at any time.)"
+    },
+    "certificateHashSha256": {
+     "type": "string",
+     "description": "The base64 urlsafe encoded SHA2-256 hash of the certificate."
     }
    }
   },
@@ -1059,6 +1101,10 @@
     "approvalUrlInfo": {
      "$ref": "ApprovalUrlInfo",
      "description": "The approval URL that was shown to the user. Only the permissions shown to the user with that URL will be accepted, which may not be the product's entire set of permissions. For example, the URL may only display new permissions from an update after the product was approved, or not include new permissions if the product was updated since the URL was generated."
+    },
+    "approvedPermissions": {
+     "type": "string",
+     "description": "Sets how new permission requests for the product are handled. \"allPermissions\" automatically approves all current and future permissions for the product. \"currentPermissionsOnly\" approves the current set of permissions for the product, but any future permissions added through updates will require manual reapproval. If not specified, only the current set of permissions will be approved."
     }
    }
   },
@@ -1226,7 +1272,7 @@
    "properties": {
     "homepageId": {
      "type": "string",
-     "description": "The ID of the store page to be used as the homepage. The homepage will be used as the first page shown in the managed Google Play store.\n\nIf a homepage has not been set, the Play store shown on devices will be empty. Not specifying a homepage on a store layout effectively empties the store.\n\nIf there exists at least one page, this field must be set to the ID of a valid page."
+     "description": "The ID of the store page to be used as the homepage. The homepage is the first page shown in the managed Google Play Store.\n\nNot specifying a homepage is equivalent to setting the store layout type to \"basic\"."
     },
     "kind": {
      "type": "string",
@@ -1235,7 +1281,7 @@
     },
     "storeLayoutType": {
      "type": "string",
-     "description": "The store layout type. By default, this value is set to \"basic\". If set to \"custom\", \"homepageId\" must be specified. If set to \"basic\", the layout will consist of all approved apps accessible by the user, split in pages of 100 each; in this case, \"homepageId\" must not be specified. The \"basic\" setting takes precedence over any existing collections setup for this enterprise (if any). Should the enterprise use collectionViewers for controlling access rights, these will still be respected."
+     "description": "The store layout type. By default, this value is set to \"basic\" if the homepageId field is not set, and to \"custom\" otherwise. If set to \"basic\", the layout will consist of all approved apps that have been whitelisted for the user."
     }
    }
   },
@@ -1626,7 +1672,7 @@
      "id": "androidenterprise.enterprises.delete",
      "path": "enterprises/{enterpriseId}",
      "httpMethod": "DELETE",
-     "description": "Deletes the binding between the EMM and enterprise. This is now deprecated; use this to unenroll customers that were previously enrolled with the 'insert' call, then enroll them again with the 'enroll' call.",
+     "description": "Deletes the binding between the EMM and enterprise. This is now deprecated. Use this method only to unenroll customers that were previously enrolled with the insert call, then enroll them again with the enroll call.",
      "parameters": {
       "enterpriseId": {
        "type": "string",
@@ -1710,6 +1756,29 @@
       "https://www.googleapis.com/auth/androidenterprise"
      ]
     },
+    "getAndroidDevicePolicyConfig": {
+     "id": "androidenterprise.enterprises.getAndroidDevicePolicyConfig",
+     "path": "enterprises/{enterpriseId}/androidDevicePolicyConfig",
+     "httpMethod": "GET",
+     "description": "Returns the Android Device Policy config resource.",
+     "parameters": {
+      "enterpriseId": {
+       "type": "string",
+       "description": "The ID of the enterprise.",
+       "required": true,
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "enterpriseId"
+     ],
+     "response": {
+      "$ref": "AndroidDevicePolicyConfig"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/androidenterprise"
+     ]
+    },
     "getServiceAccount": {
      "id": "androidenterprise.enterprises.getServiceAccount",
      "path": "enterprises/{enterpriseId}/serviceAccount",
@@ -1750,7 +1819,7 @@
      "id": "androidenterprise.enterprises.getStoreLayout",
      "path": "enterprises/{enterpriseId}/storeLayout",
      "httpMethod": "GET",
-     "description": "Returns the store layout for the enterprise. If the store layout has not been set, or if the store layout has no homepageId set, returns a NOT_FOUND error.",
+     "description": "Returns the store layout for the enterprise. If the store layout has not been set, returns \"basic\" as the store layout type and no homepage.",
      "parameters": {
       "enterpriseId": {
        "type": "string",
@@ -1822,7 +1891,7 @@
      "id": "androidenterprise.enterprises.pullNotificationSet",
      "path": "enterprises/pullNotificationSet",
      "httpMethod": "POST",
-     "description": "Pulls and returns a notification set for the enterprises associated with the service account authenticated for the request. The notification set may be empty if no notification are pending.\nA notification set returned needs to be acknowledged within 20 seconds by calling Enterprises\u200b.AcknowledgeNotificationSet, unless the notification set is empty.\nNotifications that are not acknowledged within the 20 seconds will eventually be included again in the response to another PullNotificationSet request, and those that are never acknowledged will ultimately be deleted according to the Google Cloud Platform Pub/Sub system policy.\nMultiple requests might be performed concurrently to retrieve notifications, in which case the pending notifications (if any) will be split among each caller, if any are pending.\nIf no notifications are present, an empty notification list is returned. Subsequent requests may return more notifications once they become available.",
+     "description": "Pulls and returns a notification set for the enterprises associated with the service account authenticated for the request. The notification set may be empty if no notification are pending.\nA notification set returned needs to be acknowledged within 20 seconds by calling Enterprises.AcknowledgeNotificationSet, unless the notification set is empty.\nNotifications that are not acknowledged within the 20 seconds will eventually be included again in the response to another PullNotificationSet request, and those that are never acknowledged will ultimately be deleted according to the Google Cloud Platform Pub/Sub system policy.\nMultiple requests might be performed concurrently to retrieve notifications, in which case the pending notifications (if any) will be split among each caller, if any are pending.\nIf no notifications are present, an empty notification list is returned. Subsequent requests may return more notifications once they become available.",
      "parameters": {
       "requestMode": {
        "type": "string",
@@ -1849,7 +1918,7 @@
      "id": "androidenterprise.enterprises.sendTestPushNotification",
      "path": "enterprises/{enterpriseId}/sendTestPushNotification",
      "httpMethod": "POST",
-     "description": "Sends a test push notification to validate the EMM integration with the Google Cloud Pub/Sub service for this enterprise.",
+     "description": "Sends a test notification to validate the EMM integration with the Google Cloud Pub/Sub service for this enterprise.",
      "parameters": {
       "enterpriseId": {
        "type": "string",
@@ -1872,7 +1941,7 @@
      "id": "androidenterprise.enterprises.setAccount",
      "path": "enterprises/{enterpriseId}/account",
      "httpMethod": "PUT",
-     "description": "Set the account that will be used to authenticate to the API as the enterprise.",
+     "description": "Sets the account that will be used to authenticate to the API as the enterprise.",
      "parameters": {
       "enterpriseId": {
        "type": "string",
@@ -1894,11 +1963,37 @@
       "https://www.googleapis.com/auth/androidenterprise"
      ]
     },
+    "setAndroidDevicePolicyConfig": {
+     "id": "androidenterprise.enterprises.setAndroidDevicePolicyConfig",
+     "path": "enterprises/{enterpriseId}/androidDevicePolicyConfig",
+     "httpMethod": "PUT",
+     "description": "Sets the Android Device Policy config resource. EMM may use this method to enable or disable Android Device Policy support for the specified enterprise. To learn more about managing devices and apps with Android Device Policy, see the Android Management API.",
+     "parameters": {
+      "enterpriseId": {
+       "type": "string",
+       "description": "The ID of the enterprise.",
+       "required": true,
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "enterpriseId"
+     ],
+     "request": {
+      "$ref": "AndroidDevicePolicyConfig"
+     },
+     "response": {
+      "$ref": "AndroidDevicePolicyConfig"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/androidenterprise"
+     ]
+    },
     "setStoreLayout": {
      "id": "androidenterprise.enterprises.setStoreLayout",
      "path": "enterprises/{enterpriseId}/storeLayout",
      "httpMethod": "PUT",
-     "description": "Sets the store layout for the enterprise. By default, storeLayoutType is set to \"basic\" and the basic store layout is enabled. The basic layout only contains apps approved by the admin, and that have been added to the available product set for a user (using the  setAvailableProductSet call). Apps on the page are sorted in order of their product ID value. If you create a custom store layout (by setting storeLayoutType = \"custom\"), the basic store layout is disabled.",
+     "description": "Sets the store layout for the enterprise. By default, storeLayoutType is set to \"basic\" and the basic store layout is enabled. The basic layout only contains apps approved by the admin, and that have been added to the available product set for a user (using the  setAvailableProductSet call). Apps on the page are sorted in order of their product ID value. If you create a custom store layout (by setting storeLayoutType = \"custom\" and setting a homepage), the basic store layout is disabled.",
      "parameters": {
       "enterpriseId": {
        "type": "string",
@@ -1948,7 +2043,7 @@
      "id": "androidenterprise.entitlements.delete",
      "path": "enterprises/{enterpriseId}/users/{userId}/entitlements/{entitlementId}",
      "httpMethod": "DELETE",
-     "description": "Removes an entitlement to an app for a user and uninstalls it.",
+     "description": "Removes an entitlement to an app for a user.",
      "parameters": {
       "enterpriseId": {
        "type": "string",
@@ -2019,7 +2114,7 @@
      "id": "androidenterprise.entitlements.list",
      "path": "enterprises/{enterpriseId}/users/{userId}/entitlements",
      "httpMethod": "GET",
-     "description": "List of all entitlements for the specified user. Only the ID is set.",
+     "description": "Lists all entitlements for the specified user. Only the ID is set.",
      "parameters": {
       "enterpriseId": {
        "type": "string",
@@ -2356,7 +2451,7 @@
      "id": "androidenterprise.installs.patch",
      "path": "enterprises/{enterpriseId}/users/{userId}/devices/{deviceId}/installs/{installId}",
      "httpMethod": "PATCH",
-     "description": "Requests to install the latest version of an app to a device. If the app is already installed then it is updated to the latest version if necessary. This method supports patch semantics.",
+     "description": "Requests to install the latest version of an app to a device. If the app is already installed, then it is updated to the latest version if necessary. This method supports patch semantics.",
      "parameters": {
       "deviceId": {
        "type": "string",
@@ -2403,7 +2498,7 @@
      "id": "androidenterprise.installs.update",
      "path": "enterprises/{enterpriseId}/users/{userId}/devices/{deviceId}/installs/{installId}",
      "httpMethod": "PUT",
-     "description": "Requests to install the latest version of an app to a device. If the app is already installed then it is updated to the latest version if necessary.",
+     "description": "Requests to install the latest version of an app to a device. If the app is already installed, then it is updated to the latest version if necessary.",
      "parameters": {
       "deviceId": {
        "type": "string",
@@ -3087,7 +3182,7 @@
       },
       "token": {
        "type": "string",
-       "description": "A pagination token is contained in a request\u0092s response when there are more products. The token can be used in a subsequent request to obtain more products, and so forth. This parameter cannot be used in the initial request.",
+       "description": "A pagination token is contained in a request''s response when there are more products. The token can be used in a subsequent request to obtain more products, and so forth. This parameter cannot be used in the initial request.",
        "location": "query"
       }
      },

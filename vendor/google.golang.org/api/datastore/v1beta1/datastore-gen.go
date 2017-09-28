@@ -1,6 +1,6 @@
 // Package datastore provides access to the Google Cloud Datastore API.
 //
-// See https://developers.google.com/datastore/
+// See https://cloud.google.com/datastore/
 //
 // Usage example:
 //
@@ -43,7 +43,7 @@ var _ = ctxhttp.Do
 const apiId = "datastore:v1beta1"
 const apiName = "datastore"
 const apiVersion = "v1beta1"
-const basePath = "https://www.googleapis.com/datastore/v1beta1/datasets/"
+const basePath = "https://datastore.googleapis.com/"
 
 // OAuth2 scopes used by this API.
 const (
@@ -52,9 +52,6 @@ const (
 
 	// View and manage your Google Cloud Datastore data
 	DatastoreScope = "https://www.googleapis.com/auth/datastore"
-
-	// View your email address
-	UserinfoEmailScope = "https://www.googleapis.com/auth/userinfo.email"
 )
 
 func New(client *http.Client) (*Service, error) {
@@ -62,17 +59,16 @@ func New(client *http.Client) (*Service, error) {
 		return nil, errors.New("client is nil")
 	}
 	s := &Service{client: client, BasePath: basePath}
-	s.Datasets = NewDatasetsService(s)
+	s.Projects = NewProjectsService(s)
 	return s, nil
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
-	Datasets *DatasetsService
+	Projects *ProjectsService
 }
 
 func (s *Service) userAgent() string {
@@ -82,1304 +78,60 @@ func (s *Service) userAgent() string {
 	return googleapi.UserAgent + " " + s.UserAgent
 }
 
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
-}
-
-func NewDatasetsService(s *Service) *DatasetsService {
-	rs := &DatasetsService{s: s}
+func NewProjectsService(s *Service) *ProjectsService {
+	rs := &ProjectsService{s: s}
 	return rs
 }
 
-type DatasetsService struct {
+type ProjectsService struct {
 	s *Service
 }
 
-type AllocateIdsRequest struct {
-	// Keys: A list of keys with incomplete key paths to allocate IDs for.
-	// No key may be reserved/read-only.
-	Keys []*Key `json:"keys,omitempty"`
+// GoogleDatastoreAdminV1beta1CommonMetadata: Metadata common to all
+// Datastore Admin operations.
+type GoogleDatastoreAdminV1beta1CommonMetadata struct {
+	// EndTime: The time the operation ended, either successfully or
+	// otherwise.
+	EndTime string `json:"endTime,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "Keys") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
+	// Labels: The client-assigned labels which were provided when the
+	// operation was
+	// created. May also include additional labels.
+	Labels map[string]string `json:"labels,omitempty"`
 
-	// NullFields is a list of field names (e.g. "Keys") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *AllocateIdsRequest) MarshalJSON() ([]byte, error) {
-	type noMethod AllocateIdsRequest
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type AllocateIdsResponse struct {
-	Header *ResponseHeader `json:"header,omitempty"`
-
-	// Keys: The keys specified in the request (in the same order), each
-	// with its key path completed with a newly allocated ID.
-	Keys []*Key `json:"keys,omitempty"`
-
-	// ServerResponse contains the HTTP response code and headers from the
-	// server.
-	googleapi.ServerResponse `json:"-"`
-
-	// ForceSendFields is a list of field names (e.g. "Header") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Header") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *AllocateIdsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod AllocateIdsResponse
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type BeginTransactionRequest struct {
-	// IsolationLevel: The transaction isolation level. Either snapshot or
-	// serializable. The default isolation level is snapshot isolation,
-	// which means that another transaction may not concurrently modify the
-	// data that is modified by this transaction. Optionally, a transaction
-	// can request to be made serializable which means that another
-	// transaction cannot concurrently modify the data that is read or
-	// modified by this transaction.
-	IsolationLevel string `json:"isolationLevel,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "IsolationLevel") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "IsolationLevel") to
-	// include in API requests with the JSON null value. By default, fields
-	// with empty values are omitted from API requests. However, any field
-	// with an empty value appearing in NullFields will be sent to the
-	// server as null. It is an error if a field in this list has a
-	// non-empty value. This may be used to include null fields in Patch
-	// requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *BeginTransactionRequest) MarshalJSON() ([]byte, error) {
-	type noMethod BeginTransactionRequest
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type BeginTransactionResponse struct {
-	Header *ResponseHeader `json:"header,omitempty"`
-
-	// Transaction: The transaction identifier (always present).
-	Transaction string `json:"transaction,omitempty"`
-
-	// ServerResponse contains the HTTP response code and headers from the
-	// server.
-	googleapi.ServerResponse `json:"-"`
-
-	// ForceSendFields is a list of field names (e.g. "Header") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Header") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *BeginTransactionResponse) MarshalJSON() ([]byte, error) {
-	type noMethod BeginTransactionResponse
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type BlindWriteRequest struct {
-	// Mutation: The mutation to perform.
-	Mutation *Mutation `json:"mutation,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Mutation") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Mutation") to include in
-	// API requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *BlindWriteRequest) MarshalJSON() ([]byte, error) {
-	type noMethod BlindWriteRequest
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type BlindWriteResponse struct {
-	Header *ResponseHeader `json:"header,omitempty"`
-
-	// MutationResult: The result of performing the mutation (always
-	// present).
-	MutationResult *MutationResult `json:"mutationResult,omitempty"`
-
-	// ServerResponse contains the HTTP response code and headers from the
-	// server.
-	googleapi.ServerResponse `json:"-"`
-
-	// ForceSendFields is a list of field names (e.g. "Header") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Header") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *BlindWriteResponse) MarshalJSON() ([]byte, error) {
-	type noMethod BlindWriteResponse
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type CommitRequest struct {
-	IgnoreReadOnly bool `json:"ignoreReadOnly,omitempty"`
-
-	// Mutation: The mutation to perform. Optional.
-	Mutation *Mutation `json:"mutation,omitempty"`
-
-	// Transaction: The transaction identifier, returned by a call to
-	// beginTransaction. Must be set when mode is TRANSACTIONAL.
-	Transaction string `json:"transaction,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "IgnoreReadOnly") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "IgnoreReadOnly") to
-	// include in API requests with the JSON null value. By default, fields
-	// with empty values are omitted from API requests. However, any field
-	// with an empty value appearing in NullFields will be sent to the
-	// server as null. It is an error if a field in this list has a
-	// non-empty value. This may be used to include null fields in Patch
-	// requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *CommitRequest) MarshalJSON() ([]byte, error) {
-	type noMethod CommitRequest
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type CommitResponse struct {
-	Header *ResponseHeader `json:"header,omitempty"`
-
-	// MutationResult: The result of performing the mutation (if any).
-	MutationResult *MutationResult `json:"mutationResult,omitempty"`
-
-	// ServerResponse contains the HTTP response code and headers from the
-	// server.
-	googleapi.ServerResponse `json:"-"`
-
-	// ForceSendFields is a list of field names (e.g. "Header") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Header") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *CommitResponse) MarshalJSON() ([]byte, error) {
-	type noMethod CommitResponse
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// CompositeFilter: A filter that merges the multiple other filters
-// using the given operation.
-type CompositeFilter struct {
-	// Filters: The list of filters to combine. Must contain at least one
-	// filter.
-	Filters []*Filter `json:"filters,omitempty"`
-
-	// Operator: The operator for combining multiple filters. Only "and" is
-	// currently supported.
-	Operator string `json:"operator,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Filters") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Filters") to include in
-	// API requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *CompositeFilter) MarshalJSON() ([]byte, error) {
-	type noMethod CompositeFilter
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// Entity: An entity.
-type Entity struct {
-	// Key: The entity's key.
+	// OperationType: The type of the operation. Can be used as a filter
+	// in
+	// ListOperationsRequest.
 	//
-	// An entity must have a key, unless otherwise documented (for example,
-	// an entity in Value.entityValue may have no key). An entity's kind is
-	// its key's path's last element's kind, or null if it has no key.
-	Key *Key `json:"key,omitempty"`
-
-	// Properties: The entity's properties.
-	Properties map[string]Property `json:"properties,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Key") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Key") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *Entity) MarshalJSON() ([]byte, error) {
-	type noMethod Entity
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// EntityResult: The result of fetching an entity from the datastore.
-type EntityResult struct {
-	// Entity: The resulting entity.
-	Entity *Entity `json:"entity,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Entity") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Entity") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *EntityResult) MarshalJSON() ([]byte, error) {
-	type noMethod EntityResult
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// Filter: A holder for any type of filter. Exactly one field should be
-// specified.
-type Filter struct {
-	// CompositeFilter: A composite filter.
-	CompositeFilter *CompositeFilter `json:"compositeFilter,omitempty"`
-
-	// PropertyFilter: A filter on a property.
-	PropertyFilter *PropertyFilter `json:"propertyFilter,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "CompositeFilter") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "CompositeFilter") to
-	// include in API requests with the JSON null value. By default, fields
-	// with empty values are omitted from API requests. However, any field
-	// with an empty value appearing in NullFields will be sent to the
-	// server as null. It is an error if a field in this list has a
-	// non-empty value. This may be used to include null fields in Patch
-	// requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *Filter) MarshalJSON() ([]byte, error) {
-	type noMethod Filter
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// GqlQuery: A GQL query.
-type GqlQuery struct {
-	// AllowLiteral: When false, the query string must not contain a
-	// literal.
-	AllowLiteral bool `json:"allowLiteral,omitempty"`
-
-	// NameArgs: A named argument must set field GqlQueryArg.name. No two
-	// named arguments may have the same name. For each non-reserved named
-	// binding site in the query string, there must be a named argument with
-	// that name, but not necessarily the inverse.
-	NameArgs []*GqlQueryArg `json:"nameArgs,omitempty"`
-
-	// NumberArgs: Numbered binding site @1 references the first numbered
-	// argument, effectively using 1-based indexing, rather than the usual
-	// 0. A numbered argument must NOT set field GqlQueryArg.name. For each
-	// binding site numbered i in query_string, there must be an ith
-	// numbered argument. The inverse must also be true.
-	NumberArgs []*GqlQueryArg `json:"numberArgs,omitempty"`
-
-	// QueryString: The query string.
-	QueryString string `json:"queryString,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "AllowLiteral") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "AllowLiteral") to include
-	// in API requests with the JSON null value. By default, fields with
-	// empty values are omitted from API requests. However, any field with
-	// an empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *GqlQuery) MarshalJSON() ([]byte, error) {
-	type noMethod GqlQuery
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// GqlQueryArg: A binding argument for a GQL query.
-type GqlQueryArg struct {
-	Cursor string `json:"cursor,omitempty"`
-
-	// Name: Must match regex "[A-Za-z_$][A-Za-z_$0-9]*". Must not match
-	// regex "__.*__". Must not be "".
-	Name string `json:"name,omitempty"`
-
-	Value *Value `json:"value,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Cursor") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Cursor") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *GqlQueryArg) MarshalJSON() ([]byte, error) {
-	type noMethod GqlQueryArg
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// Key: A unique identifier for an entity.
-type Key struct {
-	// PartitionId: Entities are partitioned into subsets, currently
-	// identified by a dataset (usually implicitly specified by the project)
-	// and namespace ID. Queries are scoped to a single partition.
-	PartitionId *PartitionId `json:"partitionId,omitempty"`
-
-	// Path: The entity path. An entity path consists of one or more
-	// elements composed of a kind and a string or numerical identifier,
-	// which identify entities. The first element identifies a root entity,
-	// the second element identifies a child of the root entity, the third
-	// element a child of the second entity, and so forth. The entities
-	// identified by all prefixes of the path are called the element's
-	// ancestors. An entity path is always fully complete: ALL of the
-	// entity's ancestors are required to be in the path along with the
-	// entity identifier itself. The only exception is that in some
-	// documented cases, the identifier in the last path element (for the
-	// entity) itself may be omitted. A path can never be empty. The path
-	// can have at most 100 elements.
-	Path []*KeyPathElement `json:"path,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "PartitionId") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "PartitionId") to include
-	// in API requests with the JSON null value. By default, fields with
-	// empty values are omitted from API requests. However, any field with
-	// an empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *Key) MarshalJSON() ([]byte, error) {
-	type noMethod Key
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// KeyPathElement: A (kind, ID/name) pair used to construct a key
-// path.
-//
-// At most one of name or ID may be set. If either is set, the element
-// is complete. If neither is set, the element is incomplete.
-type KeyPathElement struct {
-	// Id: The ID of the entity. Never equal to zero. Values less than zero
-	// are discouraged and will not be supported in the future.
-	Id int64 `json:"id,omitempty,string"`
-
-	// Kind: The kind of the entity. A kind matching regex "__.*__" is
-	// reserved/read-only. A kind must not contain more than 500 characters.
-	// Cannot be "".
-	Kind string `json:"kind,omitempty"`
-
-	// Name: The name of the entity. A name matching regex "__.*__" is
-	// reserved/read-only. A name must not be more than 500 characters.
-	// Cannot be "".
-	Name string `json:"name,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Id") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Id") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *KeyPathElement) MarshalJSON() ([]byte, error) {
-	type noMethod KeyPathElement
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// KindExpression: A representation of a kind.
-type KindExpression struct {
-	// Name: The name of the kind.
-	Name string `json:"name,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Name") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Name") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *KindExpression) MarshalJSON() ([]byte, error) {
-	type noMethod KindExpression
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type LookupRequest struct {
-	// Keys: Keys of entities to look up from the datastore.
-	Keys []*Key `json:"keys,omitempty"`
-
-	// ReadOptions: Options for this lookup request. Optional.
-	ReadOptions *ReadOptions `json:"readOptions,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Keys") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Keys") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *LookupRequest) MarshalJSON() ([]byte, error) {
-	type noMethod LookupRequest
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type LookupResponse struct {
-	// Deferred: A list of keys that were not looked up due to resource
-	// constraints.
-	Deferred []*Key `json:"deferred,omitempty"`
-
-	// Found: Entities found.
-	Found []*EntityResult `json:"found,omitempty"`
-
-	Header *ResponseHeader `json:"header,omitempty"`
-
-	// Missing: Entities not found, with only the key populated.
-	Missing []*EntityResult `json:"missing,omitempty"`
-
-	// ServerResponse contains the HTTP response code and headers from the
-	// server.
-	googleapi.ServerResponse `json:"-"`
-
-	// ForceSendFields is a list of field names (e.g. "Deferred") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Deferred") to include in
-	// API requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *LookupResponse) MarshalJSON() ([]byte, error) {
-	type noMethod LookupResponse
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// Mutation: A set of changes to apply.
-type Mutation struct {
-	// Delete: Keys of entities to delete. Each key must have a complete key
-	// path and must not be reserved/read-only.
-	Delete []*Key `json:"delete,omitempty"`
-
-	// Force: Ignore a user specified read-only period. Optional.
-	Force bool `json:"force,omitempty"`
-
-	// Insert: Entities to insert. Each inserted entity's key must have a
-	// complete path and must not be reserved/read-only.
-	Insert []*Entity `json:"insert,omitempty"`
-
-	// InsertAutoId: Insert entities with a newly allocated ID. Each
-	// inserted entity's key must omit the final identifier in its path and
-	// must not be reserved/read-only.
-	InsertAutoId []*Entity `json:"insertAutoId,omitempty"`
-
-	// Update: Entities to update. Each updated entity's key must have a
-	// complete path and must not be reserved/read-only.
-	Update []*Entity `json:"update,omitempty"`
-
-	// Upsert: Entities to upsert. Each upserted entity's key must have a
-	// complete path and must not be reserved/read-only.
-	Upsert []*Entity `json:"upsert,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Delete") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Delete") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *Mutation) MarshalJSON() ([]byte, error) {
-	type noMethod Mutation
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type MutationResult struct {
-	// IndexUpdates: Number of index writes.
-	IndexUpdates int64 `json:"indexUpdates,omitempty"`
-
-	// InsertAutoIdKeys: Keys for insertAutoId entities. One per entity from
-	// the request, in the same order.
-	InsertAutoIdKeys []*Key `json:"insertAutoIdKeys,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "IndexUpdates") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "IndexUpdates") to include
-	// in API requests with the JSON null value. By default, fields with
-	// empty values are omitted from API requests. However, any field with
-	// an empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *MutationResult) MarshalJSON() ([]byte, error) {
-	type noMethod MutationResult
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// PartitionId: An identifier for a particular subset of
-// entities.
-//
-// Entities are partitioned into various subsets, each used by different
-// datasets and different namespaces within a dataset and so forth.
-type PartitionId struct {
-	// DatasetId: The dataset ID.
-	DatasetId string `json:"datasetId,omitempty"`
-
-	// Namespace: The namespace.
-	Namespace string `json:"namespace,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "DatasetId") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "DatasetId") to include in
-	// API requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *PartitionId) MarshalJSON() ([]byte, error) {
-	type noMethod PartitionId
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// Property: An entity property.
-type Property struct {
-	// Multi: If this property contains a list of values. Input values may
-	// explicitly set multi to false, but otherwise false is always
-	// represented by omitting multi.
-	Multi bool `json:"multi,omitempty"`
-
-	// Values: The value(s) of the property. When multi is false there is
-	// always exactly one value. When multi is true there are always one or
-	// more values. Each value can have only one value property populated.
-	// For example, you cannot have a values list of { values: [ {
-	// integerValue: 22, stringValue: "a" } ] }, but you can have { multi:
-	// true, values: [ { integerValue: 22 }, { stringValue: "a" } ] }.
-	Values []*Value `json:"values,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Multi") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Multi") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *Property) MarshalJSON() ([]byte, error) {
-	type noMethod Property
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// PropertyExpression: A representation of a property in a projection.
-type PropertyExpression struct {
-	// AggregationFunction: The aggregation function to apply to the
-	// property. Optional. Can only be used when grouping by at least one
-	// property. Must then be set on all properties in the projection that
-	// are not being grouped by. Aggregation functions: first selects the
-	// first result as determined by the query's order.
-	AggregationFunction string `json:"aggregationFunction,omitempty"`
-
-	// Property: The property to project.
-	Property *PropertyReference `json:"property,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "AggregationFunction")
-	// to unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "AggregationFunction") to
-	// include in API requests with the JSON null value. By default, fields
-	// with empty values are omitted from API requests. However, any field
-	// with an empty value appearing in NullFields will be sent to the
-	// server as null. It is an error if a field in this list has a
-	// non-empty value. This may be used to include null fields in Patch
-	// requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *PropertyExpression) MarshalJSON() ([]byte, error) {
-	type noMethod PropertyExpression
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// PropertyFilter: A filter on a specific property.
-type PropertyFilter struct {
-	// Operator: The operator to filter by. One of lessThan,
-	// lessThanOrEqual, greaterThan, greaterThanOrEqual, equal, or
-	// hasAncestor.
-	Operator string `json:"operator,omitempty"`
-
-	// Property: The property to filter by.
-	Property *PropertyReference `json:"property,omitempty"`
-
-	// Value: The value to compare the property to.
-	Value *Value `json:"value,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Operator") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Operator") to include in
-	// API requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *PropertyFilter) MarshalJSON() ([]byte, error) {
-	type noMethod PropertyFilter
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// PropertyOrder: The desired order for a specific property.
-type PropertyOrder struct {
-	// Direction: The direction to order by. One of ascending or descending.
-	// Optional, defaults to ascending.
-	Direction string `json:"direction,omitempty"`
-
-	// Property: The property to order by.
-	Property *PropertyReference `json:"property,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Direction") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Direction") to include in
-	// API requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *PropertyOrder) MarshalJSON() ([]byte, error) {
-	type noMethod PropertyOrder
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// PropertyReference: A reference to a property relative to the kind
-// expressions.
-type PropertyReference struct {
-	// Name: The name of the property.
-	Name string `json:"name,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Name") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Name") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *PropertyReference) MarshalJSON() ([]byte, error) {
-	type noMethod PropertyReference
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// Query: A query.
-type Query struct {
-	// EndCursor: An ending point for the query results. Optional. Query
-	// cursors are returned in query result batches.
-	EndCursor string `json:"endCursor,omitempty"`
-
-	// Filter: The filter to apply (optional).
-	Filter *Filter `json:"filter,omitempty"`
-
-	// GroupBy: The properties to group by (if empty, no grouping is applied
-	// to the result set).
-	GroupBy []*PropertyReference `json:"groupBy,omitempty"`
-
-	// Kinds: The kinds to query (if empty, returns entities from all
-	// kinds).
-	Kinds []*KindExpression `json:"kinds,omitempty"`
-
-	// Limit: The maximum number of results to return. Applies after all
-	// other constraints. Optional.
-	Limit int64 `json:"limit,omitempty"`
-
-	// Offset: The number of results to skip. Applies before limit, but
-	// after all other constraints (optional, defaults to 0).
-	Offset int64 `json:"offset,omitempty"`
-
-	// Order: The order to apply to the query results (if empty, order is
-	// unspecified).
-	Order []*PropertyOrder `json:"order,omitempty"`
-
-	// Projection: The projection to return. If not set the entire entity is
-	// returned.
-	Projection []*PropertyExpression `json:"projection,omitempty"`
-
-	// StartCursor: A starting point for the query results. Optional. Query
-	// cursors are returned in query result batches.
-	StartCursor string `json:"startCursor,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "EndCursor") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "EndCursor") to include in
-	// API requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *Query) MarshalJSON() ([]byte, error) {
-	type noMethod Query
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// QueryResultBatch: A batch of results produced by a query.
-type QueryResultBatch struct {
-	// EndCursor: A cursor that points to the position after the last result
-	// in the batch. May be absent. TODO(arfuller): Once all plans produce
-	// cursors update documentation here.
-	EndCursor string `json:"endCursor,omitempty"`
-
-	// EntityResultType: The result type for every entity in entityResults.
-	// full for full entities, projection for entities with only projected
-	// properties, keyOnly for entities with only a key.
-	EntityResultType string `json:"entityResultType,omitempty"`
-
-	// EntityResults: The results for this batch.
-	EntityResults []*EntityResult `json:"entityResults,omitempty"`
-
-	// MoreResults: The state of the query after the current batch. One of
-	// notFinished, moreResultsAfterLimit, noMoreResults.
-	MoreResults string `json:"moreResults,omitempty"`
-
-	// SkippedResults: The number of results skipped because of
-	// Query.offset.
-	SkippedResults int64 `json:"skippedResults,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "EndCursor") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "EndCursor") to include in
-	// API requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *QueryResultBatch) MarshalJSON() ([]byte, error) {
-	type noMethod QueryResultBatch
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type ReadOptions struct {
-	// ReadConsistency: The read consistency to use. One of default, strong,
-	// or eventual. Cannot be set when transaction is set. Lookup and
-	// ancestor queries default to strong, global queries default to
-	// eventual and cannot be set to strong. Optional. Default is default.
-	ReadConsistency string `json:"readConsistency,omitempty"`
-
-	// Transaction: The transaction to use. Optional.
-	Transaction string `json:"transaction,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "ReadConsistency") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "ReadConsistency") to
-	// include in API requests with the JSON null value. By default, fields
-	// with empty values are omitted from API requests. However, any field
-	// with an empty value appearing in NullFields will be sent to the
-	// server as null. It is an error if a field in this list has a
-	// non-empty value. This may be used to include null fields in Patch
-	// requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *ReadOptions) MarshalJSON() ([]byte, error) {
-	type noMethod ReadOptions
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type ResponseHeader struct {
-	// Kind: Identifies what kind of resource this is. Value: the fixed
-	// string "datastore#responseHeader".
-	Kind string `json:"kind,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Kind") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Kind") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *ResponseHeader) MarshalJSON() ([]byte, error) {
-	type noMethod ResponseHeader
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type RollbackRequest struct {
-	// Transaction: The transaction identifier, returned by a call to
-	// beginTransaction.
-	Transaction string `json:"transaction,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Transaction") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Transaction") to include
-	// in API requests with the JSON null value. By default, fields with
-	// empty values are omitted from API requests. However, any field with
-	// an empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *RollbackRequest) MarshalJSON() ([]byte, error) {
-	type noMethod RollbackRequest
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type RollbackResponse struct {
-	Header *ResponseHeader `json:"header,omitempty"`
-
-	// ServerResponse contains the HTTP response code and headers from the
-	// server.
-	googleapi.ServerResponse `json:"-"`
-
-	// ForceSendFields is a list of field names (e.g. "Header") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Header") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *RollbackResponse) MarshalJSON() ([]byte, error) {
-	type noMethod RollbackResponse
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type RunQueryRequest struct {
-	// GqlQuery: The GQL query to run. Either this field or field query must
-	// be set, but not both.
-	GqlQuery *GqlQuery `json:"gqlQuery,omitempty"`
-
-	// PartitionId: Entities are partitioned into subsets, identified by a
-	// dataset (usually implicitly specified by the project) and namespace
-	// ID. Queries are scoped to a single partition. This partition ID is
-	// normalized with the standard default context partition ID, but all
-	// other partition IDs in RunQueryRequest are normalized with this
-	// partition ID as the context partition ID.
-	PartitionId *PartitionId `json:"partitionId,omitempty"`
-
-	// Query: The query to run. Either this field or field gql_query must be
-	// set, but not both.
-	Query *Query `json:"query,omitempty"`
-
-	// ReadOptions: The options for this query.
-	ReadOptions *ReadOptions `json:"readOptions,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "GqlQuery") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "GqlQuery") to include in
-	// API requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *RunQueryRequest) MarshalJSON() ([]byte, error) {
-	type noMethod RunQueryRequest
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type RunQueryResponse struct {
-	// Batch: A batch of query results (always present).
-	Batch *QueryResultBatch `json:"batch,omitempty"`
-
-	Header *ResponseHeader `json:"header,omitempty"`
-
-	// ServerResponse contains the HTTP response code and headers from the
-	// server.
-	googleapi.ServerResponse `json:"-"`
-
-	// ForceSendFields is a list of field names (e.g. "Batch") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Batch") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *RunQueryResponse) MarshalJSON() ([]byte, error) {
-	type noMethod RunQueryResponse
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// Value: A message that can hold any of the supported value types and
-// associated metadata.
-type Value struct {
-	// BlobKeyValue: A blob key value.
-	BlobKeyValue string `json:"blobKeyValue,omitempty"`
-
-	// BlobValue: A blob value. May be a maximum of 1,000,000 bytes. When
-	// indexed is true, may have at most 500 bytes.
-	BlobValue string `json:"blobValue,omitempty"`
-
-	// BooleanValue: A boolean value.
-	BooleanValue bool `json:"booleanValue,omitempty"`
-
-	// DateTimeValue: A timestamp value.
-	DateTimeValue string `json:"dateTimeValue,omitempty"`
-
-	// DoubleValue: A double value.
-	DoubleValue float64 `json:"doubleValue,omitempty"`
-
-	// EntityValue: An entity value. May have no key. May have a key with an
-	// incomplete key path. May have a reserved/read-only key.
-	EntityValue *Entity `json:"entityValue,omitempty"`
-
-	// Indexed: If the value should be indexed.
+	// Possible values:
+	//   "OPERATION_TYPE_UNSPECIFIED" - Unspecified.
+	//   "EXPORT_ENTITIES" - ExportEntities.
+	//   "IMPORT_ENTITIES" - ImportEntities.
+	OperationType string `json:"operationType,omitempty"`
+
+	// StartTime: The time that work began on the operation.
+	StartTime string `json:"startTime,omitempty"`
+
+	// State: The current state of the Operation.
 	//
-	// The indexed property may be set for a null value. When indexed is
-	// true, stringValue is limited to 500 characters and the blob value is
-	// limited to 500 bytes. Input values by default have indexed set to
-	// true; however, you can explicitly set indexed to true if you want.
-	// (An output value never has indexed explicitly set to true.) If a
-	// value is itself an entity, it cannot have indexed set to true.
-	Indexed bool `json:"indexed,omitempty"`
+	// Possible values:
+	//   "STATE_UNSPECIFIED" - Unspecified.
+	//   "INITIALIZING" - Request is being prepared for processing.
+	//   "PROCESSING" - Request is actively being processed.
+	//   "CANCELLING" - Request is in the process of being cancelled after
+	// user called
+	// google.longrunning.Operations.CancelOperation on the operation.
+	//   "FINALIZING" - Request has been processed and is in its
+	// finalization stage.
+	//   "SUCCESSFUL" - Request has completed successfully.
+	//   "FAILED" - Request has finished being processed, but encountered an
+	// error.
+	//   "CANCELLED" - Request has finished being cancelled after user
+	// called
+	// google.longrunning.Operations.CancelOperation.
+	State string `json:"state,omitempty"`
 
-	// IntegerValue: An integer value.
-	IntegerValue int64 `json:"integerValue,omitempty,string"`
-
-	// KeyValue: A key value.
-	KeyValue *Key `json:"keyValue,omitempty"`
-
-	// Meaning: The meaning field is reserved and should not be used.
-	Meaning int64 `json:"meaning,omitempty"`
-
-	// StringValue: A UTF-8 encoded string value. When indexed is true, may
-	// have at most 500 characters.
-	StringValue string `json:"stringValue,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "BlobKeyValue") to
+	// ForceSendFields is a list of field names (e.g. "EndTime") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -1387,7 +139,183 @@ type Value struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "BlobKeyValue") to include
+	// NullFields is a list of field names (e.g. "EndTime") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GoogleDatastoreAdminV1beta1CommonMetadata) MarshalJSON() ([]byte, error) {
+	type noMethod GoogleDatastoreAdminV1beta1CommonMetadata
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GoogleDatastoreAdminV1beta1EntityFilter: Identifies a subset of
+// entities in a project. This is specified as
+// combinations of kinds and namespaces (either or both of which may be
+// all, as
+// described in the following examples).
+// Example usage:
+//
+// Entire project:
+//   kinds=[], namespace_ids=[]
+//
+// Kinds Foo and Bar in all namespaces:
+//   kinds=['Foo', 'Bar'], namespace_ids=[]
+//
+// Kinds Foo and Bar only in the default namespace:
+//   kinds=['Foo', 'Bar'], namespace_ids=['']
+//
+// Kinds Foo and Bar in both the default and Baz namespaces:
+//   kinds=['Foo', 'Bar'], namespace_ids=['', 'Baz']
+//
+// The entire Baz namespace:
+//   kinds=[], namespace_ids=['Baz']
+type GoogleDatastoreAdminV1beta1EntityFilter struct {
+	// Kinds: If empty, then this represents all kinds.
+	Kinds []string `json:"kinds,omitempty"`
+
+	// NamespaceIds: An empty list represents all namespaces. This is the
+	// preferred
+	// usage for projects that don't use namespaces.
+	//
+	// An empty string element represents the default namespace. This should
+	// be
+	// used if the project has data in non-default namespaces, but doesn't
+	// want to
+	// include them.
+	// Each namespace in this list must be unique.
+	NamespaceIds []string `json:"namespaceIds,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Kinds") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Kinds") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GoogleDatastoreAdminV1beta1EntityFilter) MarshalJSON() ([]byte, error) {
+	type noMethod GoogleDatastoreAdminV1beta1EntityFilter
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GoogleDatastoreAdminV1beta1ExportEntitiesMetadata: Metadata for
+// ExportEntities operations.
+type GoogleDatastoreAdminV1beta1ExportEntitiesMetadata struct {
+	// Common: Metadata common to all Datastore Admin operations.
+	Common *GoogleDatastoreAdminV1beta1CommonMetadata `json:"common,omitempty"`
+
+	// EntityFilter: Description of which entities are being exported.
+	EntityFilter *GoogleDatastoreAdminV1beta1EntityFilter `json:"entityFilter,omitempty"`
+
+	// OutputUrlPrefix: Location for the export metadata and data files.
+	// This will be the same
+	// value as
+	// the
+	// google.datastore.admin.v1beta1.ExportEntitiesRequest.output_url_pr
+	// efix
+	// field. The final output location is provided
+	// in
+	// google.datastore.admin.v1beta1.ExportEntitiesResponse.output_url.
+	OutputUrlPrefix string `json:"outputUrlPrefix,omitempty"`
+
+	// ProgressBytes: An estimate of the number of bytes processed.
+	ProgressBytes *GoogleDatastoreAdminV1beta1Progress `json:"progressBytes,omitempty"`
+
+	// ProgressEntities: An estimate of the number of entities processed.
+	ProgressEntities *GoogleDatastoreAdminV1beta1Progress `json:"progressEntities,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Common") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Common") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GoogleDatastoreAdminV1beta1ExportEntitiesMetadata) MarshalJSON() ([]byte, error) {
+	type noMethod GoogleDatastoreAdminV1beta1ExportEntitiesMetadata
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GoogleDatastoreAdminV1beta1ExportEntitiesRequest: The request
+// for
+// google.datastore.admin.v1beta1.DatastoreAdmin.ExportEntities.
+type GoogleDatastoreAdminV1beta1ExportEntitiesRequest struct {
+	// EntityFilter: Description of what data from the project is included
+	// in the export.
+	EntityFilter *GoogleDatastoreAdminV1beta1EntityFilter `json:"entityFilter,omitempty"`
+
+	// Labels: Client-assigned labels.
+	Labels map[string]string `json:"labels,omitempty"`
+
+	// OutputUrlPrefix: Location for the export metadata and data
+	// files.
+	//
+	// The full resource URL of the external storage location. Currently,
+	// only
+	// Google Cloud Storage is supported. So output_url_prefix should be of
+	// the
+	// form: `gs://BUCKET_NAME[/NAMESPACE_PATH]`, where `BUCKET_NAME` is
+	// the
+	// name of the Cloud Storage bucket and `NAMESPACE_PATH` is an optional
+	// Cloud
+	// Storage namespace path (this is not a Cloud Datastore namespace). For
+	// more
+	// information about Cloud Storage namespace paths, see
+	// [Object
+	// name
+	// considerations](https://cloud.google.com/storage/docs/naming#obje
+	// ct-considerations).
+	//
+	// The resulting files will be nested deeper than the specified URL
+	// prefix.
+	// The final output URL will be provided in
+	// the
+	// google.datastore.admin.v1beta1.ExportEntitiesResponse.output_url
+	// f
+	// ield. That value should be used for subsequent ImportEntities
+	// operations.
+	//
+	// By nesting the data files deeper, the same Cloud Storage bucket can
+	// be used
+	// in multiple ExportEntities operations without conflict.
+	OutputUrlPrefix string `json:"outputUrlPrefix,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "EntityFilter") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "EntityFilter") to include
 	// in API requests with the JSON null value. By default, fields with
 	// empty values are omitted from API requests. However, any field with
 	// an empty value appearing in NullFields will be sent to the server as
@@ -1396,50 +324,425 @@ type Value struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *Value) MarshalJSON() ([]byte, error) {
-	type noMethod Value
+func (s *GoogleDatastoreAdminV1beta1ExportEntitiesRequest) MarshalJSON() ([]byte, error) {
+	type noMethod GoogleDatastoreAdminV1beta1ExportEntitiesRequest
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-func (s *Value) UnmarshalJSON(data []byte) error {
-	type noMethod Value
-	var s1 struct {
-		DoubleValue gensupport.JSONFloat64 `json:"doubleValue"`
-		*noMethod
-	}
-	s1.noMethod = (*noMethod)(s)
-	if err := json.Unmarshal(data, &s1); err != nil {
-		return err
-	}
-	s.DoubleValue = float64(s1.DoubleValue)
-	return nil
+// GoogleDatastoreAdminV1beta1ExportEntitiesResponse: The response
+// for
+// google.datastore.admin.v1beta1.DatastoreAdmin.ExportEntities.
+type GoogleDatastoreAdminV1beta1ExportEntitiesResponse struct {
+	// OutputUrl: Location of the output metadata file. This can be used to
+	// begin an import
+	// into Cloud Datastore (this project or another project).
+	// See
+	// google.datastore.admin.v1beta1.ImportEntitiesRequest.input_url.
+	// On
+	// ly present if the operation completed successfully.
+	OutputUrl string `json:"outputUrl,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "OutputUrl") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "OutputUrl") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
 }
 
-// method id "datastore.datasets.allocateIds":
-
-type DatasetsAllocateIdsCall struct {
-	s                  *Service
-	datasetId          string
-	allocateidsrequest *AllocateIdsRequest
-	urlParams_         gensupport.URLParams
-	ctx_               context.Context
-	header_            http.Header
+func (s *GoogleDatastoreAdminV1beta1ExportEntitiesResponse) MarshalJSON() ([]byte, error) {
+	type noMethod GoogleDatastoreAdminV1beta1ExportEntitiesResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// AllocateIds: Allocate IDs for incomplete keys (useful for referencing
-// an entity before it is inserted).
-func (r *DatasetsService) AllocateIds(datasetId string, allocateidsrequest *AllocateIdsRequest) *DatasetsAllocateIdsCall {
-	c := &DatasetsAllocateIdsCall{s: r.s, urlParams_: make(gensupport.URLParams)}
-	c.datasetId = datasetId
-	c.allocateidsrequest = allocateidsrequest
+// GoogleDatastoreAdminV1beta1ImportEntitiesMetadata: Metadata for
+// ImportEntities operations.
+type GoogleDatastoreAdminV1beta1ImportEntitiesMetadata struct {
+	// Common: Metadata common to all Datastore Admin operations.
+	Common *GoogleDatastoreAdminV1beta1CommonMetadata `json:"common,omitempty"`
+
+	// EntityFilter: Description of which entities are being imported.
+	EntityFilter *GoogleDatastoreAdminV1beta1EntityFilter `json:"entityFilter,omitempty"`
+
+	// InputUrl: The location of the import metadata file. This will be the
+	// same value as
+	// the
+	// google.datastore.admin.v1beta1.ExportEntitiesResponse.output_url
+	// field
+	// .
+	InputUrl string `json:"inputUrl,omitempty"`
+
+	// ProgressBytes: An estimate of the number of bytes processed.
+	ProgressBytes *GoogleDatastoreAdminV1beta1Progress `json:"progressBytes,omitempty"`
+
+	// ProgressEntities: An estimate of the number of entities processed.
+	ProgressEntities *GoogleDatastoreAdminV1beta1Progress `json:"progressEntities,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Common") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Common") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GoogleDatastoreAdminV1beta1ImportEntitiesMetadata) MarshalJSON() ([]byte, error) {
+	type noMethod GoogleDatastoreAdminV1beta1ImportEntitiesMetadata
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GoogleDatastoreAdminV1beta1ImportEntitiesRequest: The request
+// for
+// google.datastore.admin.v1beta1.DatastoreAdmin.ImportEntities.
+type GoogleDatastoreAdminV1beta1ImportEntitiesRequest struct {
+	// EntityFilter: Optionally specify which kinds/namespaces are to be
+	// imported. If provided,
+	// the list must be a subset of the EntityFilter used in creating the
+	// export,
+	// otherwise a FAILED_PRECONDITION error will be returned. If no filter
+	// is
+	// specified then all entities from the export are imported.
+	EntityFilter *GoogleDatastoreAdminV1beta1EntityFilter `json:"entityFilter,omitempty"`
+
+	// InputUrl: The full resource URL of the external storage location.
+	// Currently, only
+	// Google Cloud Storage is supported. So input_url should be of the
+	// form:
+	// `gs://BUCKET_NAME[/NAMESPACE_PATH]/OVERALL_EXPORT_METADATA_FILE`
+	// , where
+	// `BUCKET_NAME` is the name of the Cloud Storage bucket,
+	// `NAMESPACE_PATH` is
+	// an optional Cloud Storage namespace path (this is not a Cloud
+	// Datastore
+	// namespace), and `OVERALL_EXPORT_METADATA_FILE` is the metadata file
+	// written
+	// by the ExportEntities operation. For more information about Cloud
+	// Storage
+	// namespace paths, see
+	// [Object
+	// name
+	// considerations](https://cloud.google.com/storage/docs/naming#obje
+	// ct-considerations).
+	//
+	// For more information,
+	// see
+	// google.datastore.admin.v1beta1.ExportEntitiesResponse.output_url.
+	InputUrl string `json:"inputUrl,omitempty"`
+
+	// Labels: Client-assigned labels.
+	Labels map[string]string `json:"labels,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "EntityFilter") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "EntityFilter") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GoogleDatastoreAdminV1beta1ImportEntitiesRequest) MarshalJSON() ([]byte, error) {
+	type noMethod GoogleDatastoreAdminV1beta1ImportEntitiesRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GoogleDatastoreAdminV1beta1Progress: Measures the progress of a
+// particular metric.
+type GoogleDatastoreAdminV1beta1Progress struct {
+	// WorkCompleted: The amount of work that has been completed. Note that
+	// this may be greater
+	// than work_estimated.
+	WorkCompleted int64 `json:"workCompleted,omitempty,string"`
+
+	// WorkEstimated: An estimate of how much work needs to be performed.
+	// May be zero if the
+	// work estimate is unavailable.
+	WorkEstimated int64 `json:"workEstimated,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "WorkCompleted") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "WorkCompleted") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GoogleDatastoreAdminV1beta1Progress) MarshalJSON() ([]byte, error) {
+	type noMethod GoogleDatastoreAdminV1beta1Progress
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GoogleLongrunningOperation: This resource represents a long-running
+// operation that is the result of a
+// network API call.
+type GoogleLongrunningOperation struct {
+	// Done: If the value is `false`, it means the operation is still in
+	// progress.
+	// If `true`, the operation is completed, and either `error` or
+	// `response` is
+	// available.
+	Done bool `json:"done,omitempty"`
+
+	// Error: The error result of the operation in case of failure or
+	// cancellation.
+	Error *Status `json:"error,omitempty"`
+
+	// Metadata: Service-specific metadata associated with the operation.
+	// It typically
+	// contains progress information and common metadata such as create
+	// time.
+	// Some services might not provide such metadata.  Any method that
+	// returns a
+	// long-running operation should document the metadata type, if any.
+	Metadata googleapi.RawMessage `json:"metadata,omitempty"`
+
+	// Name: The server-assigned name, which is only unique within the same
+	// service that
+	// originally returns it. If you use the default HTTP mapping,
+	// the
+	// `name` should have the format of `operations/some/unique/name`.
+	Name string `json:"name,omitempty"`
+
+	// Response: The normal response of the operation in case of success.
+	// If the original
+	// method returns no data on success, such as `Delete`, the response
+	// is
+	// `google.protobuf.Empty`.  If the original method is
+	// standard
+	// `Get`/`Create`/`Update`, the response should be the resource.  For
+	// other
+	// methods, the response should have the type `XxxResponse`, where
+	// `Xxx`
+	// is the original method name.  For example, if the original method
+	// name
+	// is `TakeSnapshot()`, the inferred response type
+	// is
+	// `TakeSnapshotResponse`.
+	Response googleapi.RawMessage `json:"response,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Done") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Done") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GoogleLongrunningOperation) MarshalJSON() ([]byte, error) {
+	type noMethod GoogleLongrunningOperation
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// Status: The `Status` type defines a logical error model that is
+// suitable for different
+// programming environments, including REST APIs and RPC APIs. It is
+// used by
+// [gRPC](https://github.com/grpc). The error model is designed to
+// be:
+//
+// - Simple to use and understand for most users
+// - Flexible enough to meet unexpected needs
+//
+// # Overview
+//
+// The `Status` message contains three pieces of data: error code, error
+// message,
+// and error details. The error code should be an enum value
+// of
+// google.rpc.Code, but it may accept additional error codes if needed.
+// The
+// error message should be a developer-facing English message that
+// helps
+// developers *understand* and *resolve* the error. If a localized
+// user-facing
+// error message is needed, put the localized message in the error
+// details or
+// localize it in the client. The optional error details may contain
+// arbitrary
+// information about the error. There is a predefined set of error
+// detail types
+// in the package `google.rpc` that can be used for common error
+// conditions.
+//
+// # Language mapping
+//
+// The `Status` message is the logical representation of the error
+// model, but it
+// is not necessarily the actual wire format. When the `Status` message
+// is
+// exposed in different client libraries and different wire protocols,
+// it can be
+// mapped differently. For example, it will likely be mapped to some
+// exceptions
+// in Java, but more likely mapped to some error codes in C.
+//
+// # Other uses
+//
+// The error model and the `Status` message can be used in a variety
+// of
+// environments, either with or without APIs, to provide a
+// consistent developer experience across different
+// environments.
+//
+// Example uses of this error model include:
+//
+// - Partial errors. If a service needs to return partial errors to the
+// client,
+//     it may embed the `Status` in the normal response to indicate the
+// partial
+//     errors.
+//
+// - Workflow errors. A typical workflow has multiple steps. Each step
+// may
+//     have a `Status` message for error reporting.
+//
+// - Batch operations. If a client uses batch request and batch
+// response, the
+//     `Status` message should be used directly inside batch response,
+// one for
+//     each error sub-response.
+//
+// - Asynchronous operations. If an API call embeds asynchronous
+// operation
+//     results in its response, the status of those operations should
+// be
+//     represented directly using the `Status` message.
+//
+// - Logging. If some API errors are stored in logs, the message
+// `Status` could
+//     be used directly after any stripping needed for security/privacy
+// reasons.
+type Status struct {
+	// Code: The status code, which should be an enum value of
+	// google.rpc.Code.
+	Code int64 `json:"code,omitempty"`
+
+	// Details: A list of messages that carry the error details.  There is a
+	// common set of
+	// message types for APIs to use.
+	Details []googleapi.RawMessage `json:"details,omitempty"`
+
+	// Message: A developer-facing error message, which should be in
+	// English. Any
+	// user-facing error message should be localized and sent in
+	// the
+	// google.rpc.Status.details field, or localized by the client.
+	Message string `json:"message,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Code") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Code") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *Status) MarshalJSON() ([]byte, error) {
+	type noMethod Status
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// method id "datastore.projects.export":
+
+type ProjectsExportCall struct {
+	s                                                *Service
+	projectId                                        string
+	googledatastoreadminv1beta1exportentitiesrequest *GoogleDatastoreAdminV1beta1ExportEntitiesRequest
+	urlParams_                                       gensupport.URLParams
+	ctx_                                             context.Context
+	header_                                          http.Header
+}
+
+// Export: Exports a copy of all or a subset of entities from Google
+// Cloud Datastore
+// to another storage system, such as Google Cloud Storage. Recent
+// updates to
+// entities may not be reflected in the export. The export occurs in
+// the
+// background and its progress can be monitored and managed via
+// the
+// Operation resource that is created. The output of an export may only
+// be
+// used once the associated operation is done. If an export operation
+// is
+// cancelled before completion it may leave partial data behind in
+// Google
+// Cloud Storage.
+func (r *ProjectsService) Export(projectId string, googledatastoreadminv1beta1exportentitiesrequest *GoogleDatastoreAdminV1beta1ExportEntitiesRequest) *ProjectsExportCall {
+	c := &ProjectsExportCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.projectId = projectId
+	c.googledatastoreadminv1beta1exportentitiesrequest = googledatastoreadminv1beta1exportentitiesrequest
 	return c
 }
 
 // Fields allows partial responses to be retrieved. See
 // https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
-func (c *DatasetsAllocateIdsCall) Fields(s ...googleapi.Field) *DatasetsAllocateIdsCall {
+func (c *ProjectsExportCall) Fields(s ...googleapi.Field) *ProjectsExportCall {
 	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
@@ -1447,188 +750,51 @@ func (c *DatasetsAllocateIdsCall) Fields(s ...googleapi.Field) *DatasetsAllocate
 // Context sets the context to be used in this call's Do method. Any
 // pending HTTP request will be aborted if the provided context is
 // canceled.
-func (c *DatasetsAllocateIdsCall) Context(ctx context.Context) *DatasetsAllocateIdsCall {
+func (c *ProjectsExportCall) Context(ctx context.Context) *ProjectsExportCall {
 	c.ctx_ = ctx
 	return c
 }
 
 // Header returns an http.Header that can be modified by the caller to
 // add HTTP headers to the request.
-func (c *DatasetsAllocateIdsCall) Header() http.Header {
+func (c *ProjectsExportCall) Header() http.Header {
 	if c.header_ == nil {
 		c.header_ = make(http.Header)
 	}
 	return c.header_
 }
 
-func (c *DatasetsAllocateIdsCall) doRequest(alt string) (*http.Response, error) {
+func (c *ProjectsExportCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := make(http.Header)
 	for k, v := range c.header_ {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.allocateidsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.googledatastoreadminv1beta1exportentitiesrequest)
 	if err != nil {
 		return nil, err
 	}
 	reqHeaders.Set("Content-Type", "application/json")
 	c.urlParams_.Set("alt", alt)
-	urls := googleapi.ResolveRelative(c.s.BasePath, "{datasetId}/allocateIds")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1beta1/projects/{projectId}:export")
 	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	req.Header = reqHeaders
 	googleapi.Expand(req.URL, map[string]string{
-		"datasetId": c.datasetId,
+		"projectId": c.projectId,
 	})
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
-// Do executes the "datastore.datasets.allocateIds" call.
-// Exactly one of *AllocateIdsResponse or error will be non-nil. Any
-// non-2xx status code is an error. Response headers are in either
-// *AllocateIdsResponse.ServerResponse.Header or (if a response was
-// returned at all) in error.(*googleapi.Error).Header. Use
-// googleapi.IsNotModified to check whether the returned error was
-// because http.StatusNotModified was returned.
-func (c *DatasetsAllocateIdsCall) Do(opts ...googleapi.CallOption) (*AllocateIdsResponse, error) {
-	gensupport.SetOptions(c.urlParams_, opts...)
-	res, err := c.doRequest("json")
-	if res != nil && res.StatusCode == http.StatusNotModified {
-		if res.Body != nil {
-			res.Body.Close()
-		}
-		return nil, &googleapi.Error{
-			Code:   res.StatusCode,
-			Header: res.Header,
-		}
-	}
-	if err != nil {
-		return nil, err
-	}
-	defer googleapi.CloseBody(res)
-	if err := googleapi.CheckResponse(res); err != nil {
-		return nil, err
-	}
-	ret := &AllocateIdsResponse{
-		ServerResponse: googleapi.ServerResponse{
-			Header:         res.Header,
-			HTTPStatusCode: res.StatusCode,
-		},
-	}
-	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
-		return nil, err
-	}
-	return ret, nil
-	// {
-	//   "description": "Allocate IDs for incomplete keys (useful for referencing an entity before it is inserted).",
-	//   "httpMethod": "POST",
-	//   "id": "datastore.datasets.allocateIds",
-	//   "parameterOrder": [
-	//     "datasetId"
-	//   ],
-	//   "parameters": {
-	//     "datasetId": {
-	//       "description": "Identifies the dataset.",
-	//       "location": "path",
-	//       "required": true,
-	//       "type": "string"
-	//     }
-	//   },
-	//   "path": "{datasetId}/allocateIds",
-	//   "request": {
-	//     "$ref": "AllocateIdsRequest"
-	//   },
-	//   "response": {
-	//     "$ref": "AllocateIdsResponse"
-	//   },
-	//   "scopes": [
-	//     "https://www.googleapis.com/auth/cloud-platform",
-	//     "https://www.googleapis.com/auth/datastore",
-	//     "https://www.googleapis.com/auth/userinfo.email"
-	//   ]
-	// }
-
-}
-
-// method id "datastore.datasets.beginTransaction":
-
-type DatasetsBeginTransactionCall struct {
-	s                       *Service
-	datasetId               string
-	begintransactionrequest *BeginTransactionRequest
-	urlParams_              gensupport.URLParams
-	ctx_                    context.Context
-	header_                 http.Header
-}
-
-// BeginTransaction: Begin a new transaction.
-func (r *DatasetsService) BeginTransaction(datasetId string, begintransactionrequest *BeginTransactionRequest) *DatasetsBeginTransactionCall {
-	c := &DatasetsBeginTransactionCall{s: r.s, urlParams_: make(gensupport.URLParams)}
-	c.datasetId = datasetId
-	c.begintransactionrequest = begintransactionrequest
-	return c
-}
-
-// Fields allows partial responses to be retrieved. See
-// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
-// for more information.
-func (c *DatasetsBeginTransactionCall) Fields(s ...googleapi.Field) *DatasetsBeginTransactionCall {
-	c.urlParams_.Set("fields", googleapi.CombineFields(s))
-	return c
-}
-
-// Context sets the context to be used in this call's Do method. Any
-// pending HTTP request will be aborted if the provided context is
-// canceled.
-func (c *DatasetsBeginTransactionCall) Context(ctx context.Context) *DatasetsBeginTransactionCall {
-	c.ctx_ = ctx
-	return c
-}
-
-// Header returns an http.Header that can be modified by the caller to
-// add HTTP headers to the request.
-func (c *DatasetsBeginTransactionCall) Header() http.Header {
-	if c.header_ == nil {
-		c.header_ = make(http.Header)
-	}
-	return c.header_
-}
-
-func (c *DatasetsBeginTransactionCall) doRequest(alt string) (*http.Response, error) {
-	reqHeaders := make(http.Header)
-	for k, v := range c.header_ {
-		reqHeaders[k] = v
-	}
-	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.begintransactionrequest)
-	if err != nil {
-		return nil, err
-	}
-	reqHeaders.Set("Content-Type", "application/json")
-	c.urlParams_.Set("alt", alt)
-	urls := googleapi.ResolveRelative(c.s.BasePath, "{datasetId}/beginTransaction")
-	urls += "?" + c.urlParams_.Encode()
-	req, _ := http.NewRequest("POST", urls, body)
-	req.Header = reqHeaders
-	googleapi.Expand(req.URL, map[string]string{
-		"datasetId": c.datasetId,
-	})
-	return gensupport.SendRequest(c.ctx_, c.s.client, req)
-}
-
-// Do executes the "datastore.datasets.beginTransaction" call.
-// Exactly one of *BeginTransactionResponse or error will be non-nil.
+// Do executes the "datastore.projects.export" call.
+// Exactly one of *GoogleLongrunningOperation or error will be non-nil.
 // Any non-2xx status code is an error. Response headers are in either
-// *BeginTransactionResponse.ServerResponse.Header or (if a response was
-// returned at all) in error.(*googleapi.Error).Header. Use
+// *GoogleLongrunningOperation.ServerResponse.Header or (if a response
+// was returned at all) in error.(*googleapi.Error).Header. Use
 // googleapi.IsNotModified to check whether the returned error was
 // because http.StatusNotModified was returned.
-func (c *DatasetsBeginTransactionCall) Do(opts ...googleapi.CallOption) (*BeginTransactionResponse, error) {
+func (c *ProjectsExportCall) Do(opts ...googleapi.CallOption) (*GoogleLongrunningOperation, error) {
 	gensupport.SetOptions(c.urlParams_, opts...)
 	res, err := c.doRequest("json")
 	if res != nil && res.StatusCode == http.StatusNotModified {
@@ -1647,7 +813,7 @@ func (c *DatasetsBeginTransactionCall) Do(opts ...googleapi.CallOption) (*BeginT
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	ret := &BeginTransactionResponse{
+	ret := &GoogleLongrunningOperation{
 		ServerResponse: googleapi.ServerResponse{
 			Header:         res.Header,
 			HTTPStatusCode: res.StatusCode,
@@ -1659,60 +825,68 @@ func (c *DatasetsBeginTransactionCall) Do(opts ...googleapi.CallOption) (*BeginT
 	}
 	return ret, nil
 	// {
-	//   "description": "Begin a new transaction.",
+	//   "description": "Exports a copy of all or a subset of entities from Google Cloud Datastore\nto another storage system, such as Google Cloud Storage. Recent updates to\nentities may not be reflected in the export. The export occurs in the\nbackground and its progress can be monitored and managed via the\nOperation resource that is created. The output of an export may only be\nused once the associated operation is done. If an export operation is\ncancelled before completion it may leave partial data behind in Google\nCloud Storage.",
+	//   "flatPath": "v1beta1/projects/{projectId}:export",
 	//   "httpMethod": "POST",
-	//   "id": "datastore.datasets.beginTransaction",
+	//   "id": "datastore.projects.export",
 	//   "parameterOrder": [
-	//     "datasetId"
+	//     "projectId"
 	//   ],
 	//   "parameters": {
-	//     "datasetId": {
-	//       "description": "Identifies the dataset.",
+	//     "projectId": {
+	//       "description": "Project ID against which to make the request.",
 	//       "location": "path",
 	//       "required": true,
 	//       "type": "string"
 	//     }
 	//   },
-	//   "path": "{datasetId}/beginTransaction",
+	//   "path": "v1beta1/projects/{projectId}:export",
 	//   "request": {
-	//     "$ref": "BeginTransactionRequest"
+	//     "$ref": "GoogleDatastoreAdminV1beta1ExportEntitiesRequest"
 	//   },
 	//   "response": {
-	//     "$ref": "BeginTransactionResponse"
+	//     "$ref": "GoogleLongrunningOperation"
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/cloud-platform",
-	//     "https://www.googleapis.com/auth/datastore",
-	//     "https://www.googleapis.com/auth/userinfo.email"
+	//     "https://www.googleapis.com/auth/datastore"
 	//   ]
 	// }
 
 }
 
-// method id "datastore.datasets.blindWrite":
+// method id "datastore.projects.import":
 
-type DatasetsBlindWriteCall struct {
-	s                 *Service
-	datasetId         string
-	blindwriterequest *BlindWriteRequest
-	urlParams_        gensupport.URLParams
-	ctx_              context.Context
-	header_           http.Header
+type ProjectsImportCall struct {
+	s                                                *Service
+	projectId                                        string
+	googledatastoreadminv1beta1importentitiesrequest *GoogleDatastoreAdminV1beta1ImportEntitiesRequest
+	urlParams_                                       gensupport.URLParams
+	ctx_                                             context.Context
+	header_                                          http.Header
 }
 
-// BlindWrite: Create, delete or modify some entities outside a
-// transaction.
-func (r *DatasetsService) BlindWrite(datasetId string, blindwriterequest *BlindWriteRequest) *DatasetsBlindWriteCall {
-	c := &DatasetsBlindWriteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
-	c.datasetId = datasetId
-	c.blindwriterequest = blindwriterequest
+// Import: Imports entities into Google Cloud Datastore. Existing
+// entities with the
+// same key are overwritten. The import occurs in the background and
+// its
+// progress can be monitored and managed via the Operation resource that
+// is
+// created. If an ImportEntities operation is cancelled, it is
+// possible
+// that a subset of the data has already been imported to Cloud
+// Datastore.
+func (r *ProjectsService) Import(projectId string, googledatastoreadminv1beta1importentitiesrequest *GoogleDatastoreAdminV1beta1ImportEntitiesRequest) *ProjectsImportCall {
+	c := &ProjectsImportCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.projectId = projectId
+	c.googledatastoreadminv1beta1importentitiesrequest = googledatastoreadminv1beta1importentitiesrequest
 	return c
 }
 
 // Fields allows partial responses to be retrieved. See
 // https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
-func (c *DatasetsBlindWriteCall) Fields(s ...googleapi.Field) *DatasetsBlindWriteCall {
+func (c *ProjectsImportCall) Fields(s ...googleapi.Field) *ProjectsImportCall {
 	c.urlParams_.Set("fields", googleapi.CombineFields(s))
 	return c
 }
@@ -1720,52 +894,51 @@ func (c *DatasetsBlindWriteCall) Fields(s ...googleapi.Field) *DatasetsBlindWrit
 // Context sets the context to be used in this call's Do method. Any
 // pending HTTP request will be aborted if the provided context is
 // canceled.
-func (c *DatasetsBlindWriteCall) Context(ctx context.Context) *DatasetsBlindWriteCall {
+func (c *ProjectsImportCall) Context(ctx context.Context) *ProjectsImportCall {
 	c.ctx_ = ctx
 	return c
 }
 
 // Header returns an http.Header that can be modified by the caller to
 // add HTTP headers to the request.
-func (c *DatasetsBlindWriteCall) Header() http.Header {
+func (c *ProjectsImportCall) Header() http.Header {
 	if c.header_ == nil {
 		c.header_ = make(http.Header)
 	}
 	return c.header_
 }
 
-func (c *DatasetsBlindWriteCall) doRequest(alt string) (*http.Response, error) {
+func (c *ProjectsImportCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := make(http.Header)
 	for k, v := range c.header_ {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.blindwriterequest)
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.googledatastoreadminv1beta1importentitiesrequest)
 	if err != nil {
 		return nil, err
 	}
 	reqHeaders.Set("Content-Type", "application/json")
 	c.urlParams_.Set("alt", alt)
-	urls := googleapi.ResolveRelative(c.s.BasePath, "{datasetId}/blindWrite")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1beta1/projects/{projectId}:import")
 	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	req.Header = reqHeaders
 	googleapi.Expand(req.URL, map[string]string{
-		"datasetId": c.datasetId,
+		"projectId": c.projectId,
 	})
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
-// Do executes the "datastore.datasets.blindWrite" call.
-// Exactly one of *BlindWriteResponse or error will be non-nil. Any
-// non-2xx status code is an error. Response headers are in either
-// *BlindWriteResponse.ServerResponse.Header or (if a response was
-// returned at all) in error.(*googleapi.Error).Header. Use
+// Do executes the "datastore.projects.import" call.
+// Exactly one of *GoogleLongrunningOperation or error will be non-nil.
+// Any non-2xx status code is an error. Response headers are in either
+// *GoogleLongrunningOperation.ServerResponse.Header or (if a response
+// was returned at all) in error.(*googleapi.Error).Header. Use
 // googleapi.IsNotModified to check whether the returned error was
 // because http.StatusNotModified was returned.
-func (c *DatasetsBlindWriteCall) Do(opts ...googleapi.CallOption) (*BlindWriteResponse, error) {
+func (c *ProjectsImportCall) Do(opts ...googleapi.CallOption) (*GoogleLongrunningOperation, error) {
 	gensupport.SetOptions(c.urlParams_, opts...)
 	res, err := c.doRequest("json")
 	if res != nil && res.StatusCode == http.StatusNotModified {
@@ -1784,7 +957,7 @@ func (c *DatasetsBlindWriteCall) Do(opts ...googleapi.CallOption) (*BlindWriteRe
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	ret := &BlindWriteResponse{
+	ret := &GoogleLongrunningOperation{
 		ServerResponse: googleapi.ServerResponse{
 			Header:         res.Header,
 			HTTPStatusCode: res.StatusCode,
@@ -1796,576 +969,31 @@ func (c *DatasetsBlindWriteCall) Do(opts ...googleapi.CallOption) (*BlindWriteRe
 	}
 	return ret, nil
 	// {
-	//   "description": "Create, delete or modify some entities outside a transaction.",
+	//   "description": "Imports entities into Google Cloud Datastore. Existing entities with the\nsame key are overwritten. The import occurs in the background and its\nprogress can be monitored and managed via the Operation resource that is\ncreated. If an ImportEntities operation is cancelled, it is possible\nthat a subset of the data has already been imported to Cloud Datastore.",
+	//   "flatPath": "v1beta1/projects/{projectId}:import",
 	//   "httpMethod": "POST",
-	//   "id": "datastore.datasets.blindWrite",
+	//   "id": "datastore.projects.import",
 	//   "parameterOrder": [
-	//     "datasetId"
+	//     "projectId"
 	//   ],
 	//   "parameters": {
-	//     "datasetId": {
-	//       "description": "Identifies the dataset.",
+	//     "projectId": {
+	//       "description": "Project ID against which to make the request.",
 	//       "location": "path",
 	//       "required": true,
 	//       "type": "string"
 	//     }
 	//   },
-	//   "path": "{datasetId}/blindWrite",
+	//   "path": "v1beta1/projects/{projectId}:import",
 	//   "request": {
-	//     "$ref": "BlindWriteRequest"
+	//     "$ref": "GoogleDatastoreAdminV1beta1ImportEntitiesRequest"
 	//   },
 	//   "response": {
-	//     "$ref": "BlindWriteResponse"
+	//     "$ref": "GoogleLongrunningOperation"
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/cloud-platform",
-	//     "https://www.googleapis.com/auth/datastore",
-	//     "https://www.googleapis.com/auth/userinfo.email"
-	//   ]
-	// }
-
-}
-
-// method id "datastore.datasets.commit":
-
-type DatasetsCommitCall struct {
-	s             *Service
-	datasetId     string
-	commitrequest *CommitRequest
-	urlParams_    gensupport.URLParams
-	ctx_          context.Context
-	header_       http.Header
-}
-
-// Commit: Commit a transaction, optionally creating, deleting or
-// modifying some entities.
-func (r *DatasetsService) Commit(datasetId string, commitrequest *CommitRequest) *DatasetsCommitCall {
-	c := &DatasetsCommitCall{s: r.s, urlParams_: make(gensupport.URLParams)}
-	c.datasetId = datasetId
-	c.commitrequest = commitrequest
-	return c
-}
-
-// Fields allows partial responses to be retrieved. See
-// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
-// for more information.
-func (c *DatasetsCommitCall) Fields(s ...googleapi.Field) *DatasetsCommitCall {
-	c.urlParams_.Set("fields", googleapi.CombineFields(s))
-	return c
-}
-
-// Context sets the context to be used in this call's Do method. Any
-// pending HTTP request will be aborted if the provided context is
-// canceled.
-func (c *DatasetsCommitCall) Context(ctx context.Context) *DatasetsCommitCall {
-	c.ctx_ = ctx
-	return c
-}
-
-// Header returns an http.Header that can be modified by the caller to
-// add HTTP headers to the request.
-func (c *DatasetsCommitCall) Header() http.Header {
-	if c.header_ == nil {
-		c.header_ = make(http.Header)
-	}
-	return c.header_
-}
-
-func (c *DatasetsCommitCall) doRequest(alt string) (*http.Response, error) {
-	reqHeaders := make(http.Header)
-	for k, v := range c.header_ {
-		reqHeaders[k] = v
-	}
-	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.commitrequest)
-	if err != nil {
-		return nil, err
-	}
-	reqHeaders.Set("Content-Type", "application/json")
-	c.urlParams_.Set("alt", alt)
-	urls := googleapi.ResolveRelative(c.s.BasePath, "{datasetId}/commit")
-	urls += "?" + c.urlParams_.Encode()
-	req, _ := http.NewRequest("POST", urls, body)
-	req.Header = reqHeaders
-	googleapi.Expand(req.URL, map[string]string{
-		"datasetId": c.datasetId,
-	})
-	return gensupport.SendRequest(c.ctx_, c.s.client, req)
-}
-
-// Do executes the "datastore.datasets.commit" call.
-// Exactly one of *CommitResponse or error will be non-nil. Any non-2xx
-// status code is an error. Response headers are in either
-// *CommitResponse.ServerResponse.Header or (if a response was returned
-// at all) in error.(*googleapi.Error).Header. Use
-// googleapi.IsNotModified to check whether the returned error was
-// because http.StatusNotModified was returned.
-func (c *DatasetsCommitCall) Do(opts ...googleapi.CallOption) (*CommitResponse, error) {
-	gensupport.SetOptions(c.urlParams_, opts...)
-	res, err := c.doRequest("json")
-	if res != nil && res.StatusCode == http.StatusNotModified {
-		if res.Body != nil {
-			res.Body.Close()
-		}
-		return nil, &googleapi.Error{
-			Code:   res.StatusCode,
-			Header: res.Header,
-		}
-	}
-	if err != nil {
-		return nil, err
-	}
-	defer googleapi.CloseBody(res)
-	if err := googleapi.CheckResponse(res); err != nil {
-		return nil, err
-	}
-	ret := &CommitResponse{
-		ServerResponse: googleapi.ServerResponse{
-			Header:         res.Header,
-			HTTPStatusCode: res.StatusCode,
-		},
-	}
-	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
-		return nil, err
-	}
-	return ret, nil
-	// {
-	//   "description": "Commit a transaction, optionally creating, deleting or modifying some entities.",
-	//   "httpMethod": "POST",
-	//   "id": "datastore.datasets.commit",
-	//   "parameterOrder": [
-	//     "datasetId"
-	//   ],
-	//   "parameters": {
-	//     "datasetId": {
-	//       "description": "Identifies the dataset.",
-	//       "location": "path",
-	//       "required": true,
-	//       "type": "string"
-	//     }
-	//   },
-	//   "path": "{datasetId}/commit",
-	//   "request": {
-	//     "$ref": "CommitRequest"
-	//   },
-	//   "response": {
-	//     "$ref": "CommitResponse"
-	//   },
-	//   "scopes": [
-	//     "https://www.googleapis.com/auth/cloud-platform",
-	//     "https://www.googleapis.com/auth/datastore",
-	//     "https://www.googleapis.com/auth/userinfo.email"
-	//   ]
-	// }
-
-}
-
-// method id "datastore.datasets.lookup":
-
-type DatasetsLookupCall struct {
-	s             *Service
-	datasetId     string
-	lookuprequest *LookupRequest
-	urlParams_    gensupport.URLParams
-	ctx_          context.Context
-	header_       http.Header
-}
-
-// Lookup: Look up some entities by key.
-func (r *DatasetsService) Lookup(datasetId string, lookuprequest *LookupRequest) *DatasetsLookupCall {
-	c := &DatasetsLookupCall{s: r.s, urlParams_: make(gensupport.URLParams)}
-	c.datasetId = datasetId
-	c.lookuprequest = lookuprequest
-	return c
-}
-
-// Fields allows partial responses to be retrieved. See
-// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
-// for more information.
-func (c *DatasetsLookupCall) Fields(s ...googleapi.Field) *DatasetsLookupCall {
-	c.urlParams_.Set("fields", googleapi.CombineFields(s))
-	return c
-}
-
-// Context sets the context to be used in this call's Do method. Any
-// pending HTTP request will be aborted if the provided context is
-// canceled.
-func (c *DatasetsLookupCall) Context(ctx context.Context) *DatasetsLookupCall {
-	c.ctx_ = ctx
-	return c
-}
-
-// Header returns an http.Header that can be modified by the caller to
-// add HTTP headers to the request.
-func (c *DatasetsLookupCall) Header() http.Header {
-	if c.header_ == nil {
-		c.header_ = make(http.Header)
-	}
-	return c.header_
-}
-
-func (c *DatasetsLookupCall) doRequest(alt string) (*http.Response, error) {
-	reqHeaders := make(http.Header)
-	for k, v := range c.header_ {
-		reqHeaders[k] = v
-	}
-	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.lookuprequest)
-	if err != nil {
-		return nil, err
-	}
-	reqHeaders.Set("Content-Type", "application/json")
-	c.urlParams_.Set("alt", alt)
-	urls := googleapi.ResolveRelative(c.s.BasePath, "{datasetId}/lookup")
-	urls += "?" + c.urlParams_.Encode()
-	req, _ := http.NewRequest("POST", urls, body)
-	req.Header = reqHeaders
-	googleapi.Expand(req.URL, map[string]string{
-		"datasetId": c.datasetId,
-	})
-	return gensupport.SendRequest(c.ctx_, c.s.client, req)
-}
-
-// Do executes the "datastore.datasets.lookup" call.
-// Exactly one of *LookupResponse or error will be non-nil. Any non-2xx
-// status code is an error. Response headers are in either
-// *LookupResponse.ServerResponse.Header or (if a response was returned
-// at all) in error.(*googleapi.Error).Header. Use
-// googleapi.IsNotModified to check whether the returned error was
-// because http.StatusNotModified was returned.
-func (c *DatasetsLookupCall) Do(opts ...googleapi.CallOption) (*LookupResponse, error) {
-	gensupport.SetOptions(c.urlParams_, opts...)
-	res, err := c.doRequest("json")
-	if res != nil && res.StatusCode == http.StatusNotModified {
-		if res.Body != nil {
-			res.Body.Close()
-		}
-		return nil, &googleapi.Error{
-			Code:   res.StatusCode,
-			Header: res.Header,
-		}
-	}
-	if err != nil {
-		return nil, err
-	}
-	defer googleapi.CloseBody(res)
-	if err := googleapi.CheckResponse(res); err != nil {
-		return nil, err
-	}
-	ret := &LookupResponse{
-		ServerResponse: googleapi.ServerResponse{
-			Header:         res.Header,
-			HTTPStatusCode: res.StatusCode,
-		},
-	}
-	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
-		return nil, err
-	}
-	return ret, nil
-	// {
-	//   "description": "Look up some entities by key.",
-	//   "httpMethod": "POST",
-	//   "id": "datastore.datasets.lookup",
-	//   "parameterOrder": [
-	//     "datasetId"
-	//   ],
-	//   "parameters": {
-	//     "datasetId": {
-	//       "description": "Identifies the dataset.",
-	//       "location": "path",
-	//       "required": true,
-	//       "type": "string"
-	//     }
-	//   },
-	//   "path": "{datasetId}/lookup",
-	//   "request": {
-	//     "$ref": "LookupRequest"
-	//   },
-	//   "response": {
-	//     "$ref": "LookupResponse"
-	//   },
-	//   "scopes": [
-	//     "https://www.googleapis.com/auth/cloud-platform",
-	//     "https://www.googleapis.com/auth/datastore",
-	//     "https://www.googleapis.com/auth/userinfo.email"
-	//   ]
-	// }
-
-}
-
-// method id "datastore.datasets.rollback":
-
-type DatasetsRollbackCall struct {
-	s               *Service
-	datasetId       string
-	rollbackrequest *RollbackRequest
-	urlParams_      gensupport.URLParams
-	ctx_            context.Context
-	header_         http.Header
-}
-
-// Rollback: Roll back a transaction.
-func (r *DatasetsService) Rollback(datasetId string, rollbackrequest *RollbackRequest) *DatasetsRollbackCall {
-	c := &DatasetsRollbackCall{s: r.s, urlParams_: make(gensupport.URLParams)}
-	c.datasetId = datasetId
-	c.rollbackrequest = rollbackrequest
-	return c
-}
-
-// Fields allows partial responses to be retrieved. See
-// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
-// for more information.
-func (c *DatasetsRollbackCall) Fields(s ...googleapi.Field) *DatasetsRollbackCall {
-	c.urlParams_.Set("fields", googleapi.CombineFields(s))
-	return c
-}
-
-// Context sets the context to be used in this call's Do method. Any
-// pending HTTP request will be aborted if the provided context is
-// canceled.
-func (c *DatasetsRollbackCall) Context(ctx context.Context) *DatasetsRollbackCall {
-	c.ctx_ = ctx
-	return c
-}
-
-// Header returns an http.Header that can be modified by the caller to
-// add HTTP headers to the request.
-func (c *DatasetsRollbackCall) Header() http.Header {
-	if c.header_ == nil {
-		c.header_ = make(http.Header)
-	}
-	return c.header_
-}
-
-func (c *DatasetsRollbackCall) doRequest(alt string) (*http.Response, error) {
-	reqHeaders := make(http.Header)
-	for k, v := range c.header_ {
-		reqHeaders[k] = v
-	}
-	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.rollbackrequest)
-	if err != nil {
-		return nil, err
-	}
-	reqHeaders.Set("Content-Type", "application/json")
-	c.urlParams_.Set("alt", alt)
-	urls := googleapi.ResolveRelative(c.s.BasePath, "{datasetId}/rollback")
-	urls += "?" + c.urlParams_.Encode()
-	req, _ := http.NewRequest("POST", urls, body)
-	req.Header = reqHeaders
-	googleapi.Expand(req.URL, map[string]string{
-		"datasetId": c.datasetId,
-	})
-	return gensupport.SendRequest(c.ctx_, c.s.client, req)
-}
-
-// Do executes the "datastore.datasets.rollback" call.
-// Exactly one of *RollbackResponse or error will be non-nil. Any
-// non-2xx status code is an error. Response headers are in either
-// *RollbackResponse.ServerResponse.Header or (if a response was
-// returned at all) in error.(*googleapi.Error).Header. Use
-// googleapi.IsNotModified to check whether the returned error was
-// because http.StatusNotModified was returned.
-func (c *DatasetsRollbackCall) Do(opts ...googleapi.CallOption) (*RollbackResponse, error) {
-	gensupport.SetOptions(c.urlParams_, opts...)
-	res, err := c.doRequest("json")
-	if res != nil && res.StatusCode == http.StatusNotModified {
-		if res.Body != nil {
-			res.Body.Close()
-		}
-		return nil, &googleapi.Error{
-			Code:   res.StatusCode,
-			Header: res.Header,
-		}
-	}
-	if err != nil {
-		return nil, err
-	}
-	defer googleapi.CloseBody(res)
-	if err := googleapi.CheckResponse(res); err != nil {
-		return nil, err
-	}
-	ret := &RollbackResponse{
-		ServerResponse: googleapi.ServerResponse{
-			Header:         res.Header,
-			HTTPStatusCode: res.StatusCode,
-		},
-	}
-	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
-		return nil, err
-	}
-	return ret, nil
-	// {
-	//   "description": "Roll back a transaction.",
-	//   "httpMethod": "POST",
-	//   "id": "datastore.datasets.rollback",
-	//   "parameterOrder": [
-	//     "datasetId"
-	//   ],
-	//   "parameters": {
-	//     "datasetId": {
-	//       "description": "Identifies the dataset.",
-	//       "location": "path",
-	//       "required": true,
-	//       "type": "string"
-	//     }
-	//   },
-	//   "path": "{datasetId}/rollback",
-	//   "request": {
-	//     "$ref": "RollbackRequest"
-	//   },
-	//   "response": {
-	//     "$ref": "RollbackResponse"
-	//   },
-	//   "scopes": [
-	//     "https://www.googleapis.com/auth/cloud-platform",
-	//     "https://www.googleapis.com/auth/datastore",
-	//     "https://www.googleapis.com/auth/userinfo.email"
-	//   ]
-	// }
-
-}
-
-// method id "datastore.datasets.runQuery":
-
-type DatasetsRunQueryCall struct {
-	s               *Service
-	datasetId       string
-	runqueryrequest *RunQueryRequest
-	urlParams_      gensupport.URLParams
-	ctx_            context.Context
-	header_         http.Header
-}
-
-// RunQuery: Query for entities.
-func (r *DatasetsService) RunQuery(datasetId string, runqueryrequest *RunQueryRequest) *DatasetsRunQueryCall {
-	c := &DatasetsRunQueryCall{s: r.s, urlParams_: make(gensupport.URLParams)}
-	c.datasetId = datasetId
-	c.runqueryrequest = runqueryrequest
-	return c
-}
-
-// Fields allows partial responses to be retrieved. See
-// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
-// for more information.
-func (c *DatasetsRunQueryCall) Fields(s ...googleapi.Field) *DatasetsRunQueryCall {
-	c.urlParams_.Set("fields", googleapi.CombineFields(s))
-	return c
-}
-
-// Context sets the context to be used in this call's Do method. Any
-// pending HTTP request will be aborted if the provided context is
-// canceled.
-func (c *DatasetsRunQueryCall) Context(ctx context.Context) *DatasetsRunQueryCall {
-	c.ctx_ = ctx
-	return c
-}
-
-// Header returns an http.Header that can be modified by the caller to
-// add HTTP headers to the request.
-func (c *DatasetsRunQueryCall) Header() http.Header {
-	if c.header_ == nil {
-		c.header_ = make(http.Header)
-	}
-	return c.header_
-}
-
-func (c *DatasetsRunQueryCall) doRequest(alt string) (*http.Response, error) {
-	reqHeaders := make(http.Header)
-	for k, v := range c.header_ {
-		reqHeaders[k] = v
-	}
-	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.runqueryrequest)
-	if err != nil {
-		return nil, err
-	}
-	reqHeaders.Set("Content-Type", "application/json")
-	c.urlParams_.Set("alt", alt)
-	urls := googleapi.ResolveRelative(c.s.BasePath, "{datasetId}/runQuery")
-	urls += "?" + c.urlParams_.Encode()
-	req, _ := http.NewRequest("POST", urls, body)
-	req.Header = reqHeaders
-	googleapi.Expand(req.URL, map[string]string{
-		"datasetId": c.datasetId,
-	})
-	return gensupport.SendRequest(c.ctx_, c.s.client, req)
-}
-
-// Do executes the "datastore.datasets.runQuery" call.
-// Exactly one of *RunQueryResponse or error will be non-nil. Any
-// non-2xx status code is an error. Response headers are in either
-// *RunQueryResponse.ServerResponse.Header or (if a response was
-// returned at all) in error.(*googleapi.Error).Header. Use
-// googleapi.IsNotModified to check whether the returned error was
-// because http.StatusNotModified was returned.
-func (c *DatasetsRunQueryCall) Do(opts ...googleapi.CallOption) (*RunQueryResponse, error) {
-	gensupport.SetOptions(c.urlParams_, opts...)
-	res, err := c.doRequest("json")
-	if res != nil && res.StatusCode == http.StatusNotModified {
-		if res.Body != nil {
-			res.Body.Close()
-		}
-		return nil, &googleapi.Error{
-			Code:   res.StatusCode,
-			Header: res.Header,
-		}
-	}
-	if err != nil {
-		return nil, err
-	}
-	defer googleapi.CloseBody(res)
-	if err := googleapi.CheckResponse(res); err != nil {
-		return nil, err
-	}
-	ret := &RunQueryResponse{
-		ServerResponse: googleapi.ServerResponse{
-			Header:         res.Header,
-			HTTPStatusCode: res.StatusCode,
-		},
-	}
-	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
-		return nil, err
-	}
-	return ret, nil
-	// {
-	//   "description": "Query for entities.",
-	//   "httpMethod": "POST",
-	//   "id": "datastore.datasets.runQuery",
-	//   "parameterOrder": [
-	//     "datasetId"
-	//   ],
-	//   "parameters": {
-	//     "datasetId": {
-	//       "description": "Identifies the dataset.",
-	//       "location": "path",
-	//       "required": true,
-	//       "type": "string"
-	//     }
-	//   },
-	//   "path": "{datasetId}/runQuery",
-	//   "request": {
-	//     "$ref": "RunQueryRequest"
-	//   },
-	//   "response": {
-	//     "$ref": "RunQueryResponse"
-	//   },
-	//   "scopes": [
-	//     "https://www.googleapis.com/auth/cloud-platform",
-	//     "https://www.googleapis.com/auth/datastore",
-	//     "https://www.googleapis.com/auth/userinfo.email"
+	//     "https://www.googleapis.com/auth/datastore"
 	//   ]
 	// }
 

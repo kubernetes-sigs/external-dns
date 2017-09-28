@@ -72,10 +72,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Projects *ProjectsService
 }
@@ -85,10 +84,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewProjectsService(s *Service) *ProjectsService {
@@ -172,25 +167,21 @@ type ProjectsTimeSeriesService struct {
 	s *Service
 }
 
-// BucketOptions: A Distribution may optionally contain a histogram of
-// the values in the population. The histogram is given in bucket_counts
-// as counts of values that fall into one of a sequence of
-// non-overlapping buckets. The sequence of buckets is described by
-// bucket_options.A bucket specifies an inclusive lower bound and
+// BucketOptions: BucketOptions describes the bucket boundaries used to
+// create a histogram for the distribution. The buckets can be in a
+// linear sequence, an exponential sequence, or each bucket can be
+// specified explicitly. BucketOptions does not include the number of
+// values in each bucket.A bucket has an inclusive lower bound and
 // exclusive upper bound for the values that are counted for that
-// bucket. The upper bound of a bucket is strictly greater than the
-// lower bound.The sequence of N buckets for a Distribution consists of
+// bucket. The upper bound of a bucket must be strictly greater than the
+// lower bound. The sequence of N buckets for a distribution consists of
 // an underflow bucket (number 0), zero or more finite buckets (number 1
 // through N - 2) and an overflow bucket (number N - 1). The buckets are
 // contiguous: the lower bound of bucket i (i > 0) is the same as the
 // upper bound of bucket i - 1. The buckets span the whole range of
 // finite values: lower bound of the underflow bucket is -infinity and
 // the upper bound of the overflow bucket is +infinity. The finite
-// buckets are so-called because both bounds are finite.BucketOptions
-// describes bucket boundaries in one of three ways. Two describe the
-// boundaries by giving parameters for a formula to generate boundaries
-// and one gives the bucket boundaries explicitly.If bucket_options is
-// not given, then no bucket_counts may be given.
+// buckets are so-called because both bounds are finite.
 type BucketOptions struct {
 	// ExplicitBuckets: The explicit buckets.
 	ExplicitBuckets *Explicit `json:"explicitBuckets,omitempty"`
@@ -277,6 +268,45 @@ func (s *CollectdPayload) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// CollectdPayloadError: Describes the error status for payloads that
+// were not written.
+type CollectdPayloadError struct {
+	// Error: Records the error status for the payload. If this field is
+	// present, the partial errors for nested values won't be populated.
+	Error *Status `json:"error,omitempty"`
+
+	// Index: The zero-based index in
+	// CreateCollectdTimeSeriesRequest.collectd_payloads.
+	Index int64 `json:"index,omitempty"`
+
+	// ValueErrors: Records the error status for values that were not
+	// written due to an error.Failed payloads for which nothing is written
+	// will not include partial value errors.
+	ValueErrors []*CollectdValueError `json:"valueErrors,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Error") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Error") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *CollectdPayloadError) MarshalJSON() ([]byte, error) {
+	type noMethod CollectdPayloadError
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // CollectdValue: A single data point from a collectd-based plugin.
 type CollectdValue struct {
 	// DataSourceName: The data source for the collectd value. For example
@@ -326,6 +356,39 @@ func (s *CollectdValue) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// CollectdValueError: Describes the error status for values that were
+// not written.
+type CollectdValueError struct {
+	// Error: Records the error status for the value.
+	Error *Status `json:"error,omitempty"`
+
+	// Index: The zero-based index in CollectdPayload.values within the
+	// parent CreateCollectdTimeSeriesRequest.collectd_payloads.
+	Index int64 `json:"index,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Error") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Error") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *CollectdValueError) MarshalJSON() ([]byte, error) {
+	type noMethod CollectdValueError
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // CreateCollectdTimeSeriesRequest: The CreateCollectdTimeSeries
 // request.
 type CreateCollectdTimeSeriesRequest struct {
@@ -366,6 +429,41 @@ func (s *CreateCollectdTimeSeriesRequest) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// CreateCollectdTimeSeriesResponse: The CreateCollectdTimeSeries
+// response.
+type CreateCollectdTimeSeriesResponse struct {
+	// PayloadErrors: Records the error status for points that were not
+	// written due to an error.Failed requests for which nothing is written
+	// will return an error response instead.
+	PayloadErrors []*CollectdPayloadError `json:"payloadErrors,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "PayloadErrors") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "PayloadErrors") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *CreateCollectdTimeSeriesResponse) MarshalJSON() ([]byte, error) {
+	type noMethod CreateCollectdTimeSeriesResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // CreateTimeSeriesRequest: The CreateTimeSeries request.
 type CreateTimeSeriesRequest struct {
 	// TimeSeries: The new data to be added to a list of time series. Adds
@@ -399,34 +497,36 @@ func (s *CreateTimeSeriesRequest) MarshalJSON() ([]byte, error) {
 }
 
 // Distribution: Distribution contains summary statistics for a
-// population of values and, optionally, a histogram representing the
-// distribution of those values across a specified set of histogram
-// buckets.The summary statistics are the count, mean, sum of the
-// squared deviation from the mean, the minimum, and the maximum of the
-// set of population of values.The histogram is based on a sequence of
-// buckets and gives a count of values that fall into each bucket. The
-// boundaries of the buckets are given either explicitly or by
-// specifying parameters for a method of computing them (buckets of
-// fixed width or buckets of exponentially increasing width).Although it
-// is not forbidden, it is generally a bad idea to include non-finite
-// values (infinities or NaNs) in the population of values, as this will
-// render the mean and sum_of_squared_deviation fields meaningless.
+// population of values. It optionally contains a histogram representing
+// the distribution of those values across a set of buckets.The summary
+// statistics are the count, mean, sum of the squared deviation from the
+// mean, the minimum, and the maximum of the set of population of
+// values. The histogram is based on a sequence of buckets and gives a
+// count of values that fall into each bucket. The boundaries of the
+// buckets are given either explicitly or by formulas for buckets of
+// fixed or exponentially increasing widths.Although it is not
+// forbidden, it is generally a bad idea to include non-finite values
+// (infinities or NaNs) in the population of values, as this will render
+// the mean and sum_of_squared_deviation fields meaningless.
 type Distribution struct {
-	// BucketCounts: If bucket_options is given, then the sum of the values
-	// in bucket_counts must equal the value in count. If bucket_options is
-	// not given, no bucket_counts fields may be given.Bucket counts are
-	// given in order under the numbering scheme described above (the
-	// underflow bucket has number 0; the finite buckets, if any, have
-	// numbers 1 through N-2; the overflow bucket has number N-1).The size
-	// of bucket_counts must be no greater than N as defined in
-	// bucket_options.Any suffix of trailing zero bucket_count fields may be
-	// omitted.
+	// BucketCounts: Required in the Stackdriver Monitoring API v3. The
+	// values for each bucket specified in bucket_options. The sum of the
+	// values in bucketCounts must equal the value in the count field of the
+	// Distribution object. The order of the bucket counts follows the
+	// numbering schemes described for the three bucket types. The underflow
+	// bucket has number 0; the finite buckets, if any, have numbers 1
+	// through N-2; and the overflow bucket has number N-1. The size of
+	// bucket_counts must not be greater than N. If the size is less than N,
+	// then the remaining buckets are assigned values of zero.
 	BucketCounts googleapi.Int64s `json:"bucketCounts,omitempty"`
 
-	// BucketOptions: Defines the histogram bucket boundaries.
+	// BucketOptions: Required in the Stackdriver Monitoring API v3. Defines
+	// the histogram bucket boundaries.
 	BucketOptions *BucketOptions `json:"bucketOptions,omitempty"`
 
 	// Count: The number of values in the population. Must be non-negative.
+	// This value must equal the sum of the values in bucket_counts if a
+	// histogram is provided.
 	Count int64 `json:"count,omitempty,string"`
 
 	// Mean: The arithmetic mean of the values in the population. If count
@@ -501,12 +601,13 @@ type Empty struct {
 	googleapi.ServerResponse `json:"-"`
 }
 
-// Explicit: A set of buckets with arbitrary widths.Defines size(bounds)
-// + 1 (= N) buckets with these boundaries for bucket i:Upper bound (0
-// <= i < N-1): boundsi  Lower bound (1 <= i < N); boundsi - 1There must
-// be at least one element in bounds. If bounds has only one element,
-// there are no finite buckets, and that single element is the common
-// boundary of the overflow and underflow buckets.
+// Explicit: Specifies a set of buckets with arbitrary widths.There are
+// size(bounds) + 1 (= N) buckets. Bucket i has the following
+// boundaries:Upper bound (0 <= i < N-1): boundsi  Lower bound (1 <= i <
+// N); boundsi - 1The bounds field must contain at least one element. If
+// bounds has only one element, then there are no finite buckets, and
+// that single element is the common boundary of the overflow and
+// underflow buckets.
 type Explicit struct {
 	// Bounds: The values must be monotonically increasing.
 	Bounds []float64 `json:"bounds,omitempty"`
@@ -534,11 +635,11 @@ func (s *Explicit) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Exponential: Specify a sequence of buckets that have a width that is
-// proportional to the value of the lower bound. Each bucket represents
-// a constant relative uncertainty on a specific value in the
-// bucket.Defines num_finite_buckets + 2 (= N) buckets with these
-// boundaries for bucket i:Upper bound (0 <= i < N-1): scale *
+// Exponential: Specifies an exponential sequence of buckets that have a
+// width that is proportional to the value of the lower bound. Each
+// bucket represents a constant relative uncertainty on a specific value
+// in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket
+// i has the following boundaries:Upper bound (0 <= i < N-1): scale *
 // (growth_factor ^ i).  Lower bound (1 <= i < N): scale *
 // (growth_factor ^ (i - 1)).
 type Exponential struct {
@@ -793,12 +894,12 @@ func (s *LabelDescriptor) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Linear: Specify a sequence of buckets that all have the same width
-// (except overflow and underflow). Each bucket represents a constant
-// absolute uncertainty on the specific value in the bucket.Defines
-// num_finite_buckets + 2 (= N) buckets with these boundaries for bucket
-// i:Upper bound (0 <= i < N-1): offset + (width * i).  Lower bound (1
-// <= i < N): offset + (width * (i - 1)).
+// Linear: Specifies a linear sequence of buckets that all have the same
+// width (except overflow and underflow). Each bucket represents a
+// constant absolute uncertainty on the specific value in the
+// bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has
+// the following boundaries:Upper bound (0 <= i < N-1): offset + (width
+// * i).  Lower bound (1 <= i < N): offset + (width * (i - 1)).
 type Linear struct {
 	// NumFiniteBuckets: Must be greater than 0.
 	NumFiniteBuckets int64 `json:"numFiniteBuckets,omitempty"`
@@ -966,7 +1067,7 @@ func (s *ListMetricDescriptorsResponse) MarshalJSON() ([]byte, error) {
 }
 
 // ListMonitoredResourceDescriptorsResponse: The
-// ListMonitoredResourcDescriptors response.
+// ListMonitoredResourceDescriptors response.
 type ListMonitoredResourceDescriptorsResponse struct {
 	// NextPageToken: If there are more results than have been returned,
 	// then this field is set to a non-empty value. To see the additional
@@ -1244,13 +1345,13 @@ func (s *MetricDescriptor) MarshalJSON() ([]byte, error) {
 //
 type MonitoredResource struct {
 	// Labels: Required. Values for all of the labels listed in the
-	// associated monitored resource descriptor. For example, Cloud SQL
-	// databases use the labels "database_id" and "zone".
+	// associated monitored resource descriptor. For example, Compute Engine
+	// VM instances use the labels "project_id", "instance_id", and "zone".
 	Labels map[string]string `json:"labels,omitempty"`
 
 	// Type: Required. The monitored resource type. This field must match
 	// the type field of a MonitoredResourceDescriptor object. For example,
-	// the type of a Cloud SQL database is "cloudsql_database".
+	// the type of a Compute Engine VM instance is gce_instance.
 	Type string `json:"type,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Labels") to
@@ -1498,6 +1599,82 @@ func (s *SourceContext) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// Status: The Status type defines a logical error model that is
+// suitable for different programming environments, including REST APIs
+// and RPC APIs. It is used by gRPC (https://github.com/grpc). The error
+// model is designed to be:
+// Simple to use and understand for most users
+// Flexible enough to meet unexpected needsOverviewThe Status message
+// contains three pieces of data: error code, error message, and error
+// details. The error code should be an enum value of google.rpc.Code,
+// but it may accept additional error codes if needed. The error message
+// should be a developer-facing English message that helps developers
+// understand and resolve the error. If a localized user-facing error
+// message is needed, put the localized message in the error details or
+// localize it in the client. The optional error details may contain
+// arbitrary information about the error. There is a predefined set of
+// error detail types in the package google.rpc that can be used for
+// common error conditions.Language mappingThe Status message is the
+// logical representation of the error model, but it is not necessarily
+// the actual wire format. When the Status message is exposed in
+// different client libraries and different wire protocols, it can be
+// mapped differently. For example, it will likely be mapped to some
+// exceptions in Java, but more likely mapped to some error codes in
+// C.Other usesThe error model and the Status message can be used in a
+// variety of environments, either with or without APIs, to provide a
+// consistent developer experience across different environments.Example
+// uses of this error model include:
+// Partial errors. If a service needs to return partial errors to the
+// client, it may embed the Status in the normal response to indicate
+// the partial errors.
+// Workflow errors. A typical workflow has multiple steps. Each step may
+// have a Status message for error reporting.
+// Batch operations. If a client uses batch request and batch response,
+// the Status message should be used directly inside batch response, one
+// for each error sub-response.
+// Asynchronous operations. If an API call embeds asynchronous operation
+// results in its response, the status of those operations should be
+// represented directly using the Status message.
+// Logging. If some API errors are stored in logs, the message Status
+// could be used directly after any stripping needed for
+// security/privacy reasons.
+type Status struct {
+	// Code: The status code, which should be an enum value of
+	// google.rpc.Code.
+	Code int64 `json:"code,omitempty"`
+
+	// Details: A list of messages that carry the error details. There is a
+	// common set of message types for APIs to use.
+	Details []googleapi.RawMessage `json:"details,omitempty"`
+
+	// Message: A developer-facing error message, which should be in
+	// English. Any user-facing error message should be localized and sent
+	// in the google.rpc.Status.details field, or localized by the client.
+	Message string `json:"message,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Code") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Code") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *Status) MarshalJSON() ([]byte, error) {
+	type noMethod Status
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // TimeInterval: A time interval extending just after a start time
 // through an end time. If the start time is the same as the end time,
 // then the interval represents a single point in time.
@@ -1571,8 +1748,8 @@ type TimeSeries struct {
 	// type, which must be BOOL, INT64, DOUBLE, or DISTRIBUTION.
 	Points []*Point `json:"points,omitempty"`
 
-	// Resource: The associated resource. A fully-specified monitored
-	// resource used to identify the time series.
+	// Resource: The associated monitored resource. Custom metrics can use
+	// only certain monitored resource types in their time series data.
 	Resource *MonitoredResource `json:"resource,omitempty"`
 
 	// ValueType: The value type of the time series. When listing time
@@ -1777,7 +1954,6 @@ func (c *ProjectsCollectdTimeSeriesCreateCall) doRequest(alt string) (*http.Resp
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.createcollectdtimeseriesrequest)
 	if err != nil {
@@ -1796,13 +1972,13 @@ func (c *ProjectsCollectdTimeSeriesCreateCall) doRequest(alt string) (*http.Resp
 }
 
 // Do executes the "monitoring.projects.collectdTimeSeries.create" call.
-// Exactly one of *Empty or error will be non-nil. Any non-2xx status
-// code is an error. Response headers are in either
-// *Empty.ServerResponse.Header or (if a response was returned at all)
-// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
-// check whether the returned error was because http.StatusNotModified
-// was returned.
-func (c *ProjectsCollectdTimeSeriesCreateCall) Do(opts ...googleapi.CallOption) (*Empty, error) {
+// Exactly one of *CreateCollectdTimeSeriesResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *CreateCollectdTimeSeriesResponse.ServerResponse.Header or (if
+// a response was returned at all) in error.(*googleapi.Error).Header.
+// Use googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ProjectsCollectdTimeSeriesCreateCall) Do(opts ...googleapi.CallOption) (*CreateCollectdTimeSeriesResponse, error) {
 	gensupport.SetOptions(c.urlParams_, opts...)
 	res, err := c.doRequest("json")
 	if res != nil && res.StatusCode == http.StatusNotModified {
@@ -1821,7 +1997,7 @@ func (c *ProjectsCollectdTimeSeriesCreateCall) Do(opts ...googleapi.CallOption) 
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	ret := &Empty{
+	ret := &CreateCollectdTimeSeriesResponse{
 		ServerResponse: googleapi.ServerResponse{
 			Header:         res.Header,
 			HTTPStatusCode: res.StatusCode,
@@ -1854,7 +2030,7 @@ func (c *ProjectsCollectdTimeSeriesCreateCall) Do(opts ...googleapi.CallOption) 
 	//     "$ref": "CreateCollectdTimeSeriesRequest"
 	//   },
 	//   "response": {
-	//     "$ref": "Empty"
+	//     "$ref": "CreateCollectdTimeSeriesResponse"
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/cloud-platform",
@@ -1922,7 +2098,6 @@ func (c *ProjectsGroupsCreateCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.group)
 	if err != nil {
@@ -2062,7 +2237,6 @@ func (c *ProjectsGroupsDeleteCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "v3/{+name}")
@@ -2200,7 +2374,6 @@ func (c *ProjectsGroupsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2388,7 +2561,6 @@ func (c *ProjectsGroupsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2576,7 +2748,6 @@ func (c *ProjectsGroupsUpdateCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.group)
 	if err != nil {
@@ -2770,7 +2941,6 @@ func (c *ProjectsGroupsMembersListCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2953,7 +3123,6 @@ func (c *ProjectsMetricDescriptorsCreateCall) doRequest(alt string) (*http.Respo
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.metricdescriptor)
 	if err != nil {
@@ -3090,7 +3259,6 @@ func (c *ProjectsMetricDescriptorsDeleteCall) doRequest(alt string) (*http.Respo
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "v3/{+name}")
@@ -3229,7 +3397,6 @@ func (c *ProjectsMetricDescriptorsGetCall) doRequest(alt string) (*http.Response
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3400,7 +3567,6 @@ func (c *ProjectsMetricDescriptorsListCall) doRequest(alt string) (*http.Respons
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3581,7 +3747,6 @@ func (c *ProjectsMonitoredResourceDescriptorsGetCall) doRequest(alt string) (*ht
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3752,7 +3917,6 @@ func (c *ProjectsMonitoredResourceDescriptorsListCall) doRequest(alt string) (*h
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3928,7 +4092,6 @@ func (c *ProjectsTimeSeriesCreateCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.createtimeseriesrequest)
 	if err != nil {
@@ -4238,7 +4401,6 @@ func (c *ProjectsTimeSeriesListCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}

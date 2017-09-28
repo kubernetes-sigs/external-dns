@@ -1,988 +1,459 @@
 {
- "kind": "discovery#restDescription",
- "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/exiNwA5EYULji4urf-Hcdv-K2mE\"",
- "discoveryVersion": "v1",
- "id": "datastore:v1beta1",
- "name": "datastore",
- "version": "v1beta1",
- "revision": "20160314",
- "title": "Google Cloud Datastore API",
- "description": "Stores and queries data in Google Cloud Datastore.",
- "ownerDomain": "google.com",
- "ownerName": "Google",
- "icons": {
-  "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-  "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
- },
- "documentationLink": "https://developers.google.com/datastore/",
- "protocol": "rest",
- "baseUrl": "https://www.googleapis.com/datastore/v1beta1/datasets/",
- "basePath": "/datastore/v1beta1/datasets/",
- "rootUrl": "https://www.googleapis.com/",
- "servicePath": "datastore/v1beta1/datasets/",
- "batchPath": "batch",
- "parameters": {
-  "alt": {
-   "type": "string",
-   "description": "Data format for the response.",
-   "default": "proto",
-   "enum": [
-    "json",
-    "proto"
-   ],
-   "enumDescriptions": [
-    "Responses with Content-Type of application/json",
-    "Responses with Content-Type of application/x-protobuf"
-   ],
-   "location": "query"
+  "batchPath": "batch",
+  "id": "datastore:v1beta1",
+  "revision": "20170912",
+  "documentationLink": "https://cloud.google.com/datastore/",
+  "title": "Google Cloud Datastore API",
+  "ownerName": "Google",
+  "discoveryVersion": "v1",
+  "version_module": true,
+  "resources": {
+    "projects": {
+      "methods": {
+        "export": {
+          "flatPath": "v1beta1/projects/{projectId}:export",
+          "id": "datastore.projects.export",
+          "path": "v1beta1/projects/{projectId}:export",
+          "request": {
+            "$ref": "GoogleDatastoreAdminV1beta1ExportEntitiesRequest"
+          },
+          "description": "Exports a copy of all or a subset of entities from Google Cloud Datastore\nto another storage system, such as Google Cloud Storage. Recent updates to\nentities may not be reflected in the export. The export occurs in the\nbackground and its progress can be monitored and managed via the\nOperation resource that is created. The output of an export may only be\nused once the associated operation is done. If an export operation is\ncancelled before completion it may leave partial data behind in Google\nCloud Storage.",
+          "response": {
+            "$ref": "GoogleLongrunningOperation"
+          },
+          "parameterOrder": [
+            "projectId"
+          ],
+          "httpMethod": "POST",
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/datastore"
+          ],
+          "parameters": {
+            "projectId": {
+              "location": "path",
+              "description": "Project ID against which to make the request.",
+              "type": "string",
+              "required": true
+            }
+          }
+        },
+        "import": {
+          "request": {
+            "$ref": "GoogleDatastoreAdminV1beta1ImportEntitiesRequest"
+          },
+          "description": "Imports entities into Google Cloud Datastore. Existing entities with the\nsame key are overwritten. The import occurs in the background and its\nprogress can be monitored and managed via the Operation resource that is\ncreated. If an ImportEntities operation is cancelled, it is possible\nthat a subset of the data has already been imported to Cloud Datastore.",
+          "response": {
+            "$ref": "GoogleLongrunningOperation"
+          },
+          "parameterOrder": [
+            "projectId"
+          ],
+          "httpMethod": "POST",
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/datastore"
+          ],
+          "parameters": {
+            "projectId": {
+              "location": "path",
+              "description": "Project ID against which to make the request.",
+              "type": "string",
+              "required": true
+            }
+          },
+          "flatPath": "v1beta1/projects/{projectId}:import",
+          "id": "datastore.projects.import",
+          "path": "v1beta1/projects/{projectId}:import"
+        }
+      }
+    }
   },
-  "fields": {
-   "type": "string",
-   "description": "Selector specifying which fields to include in a partial response.",
-   "location": "query"
-  },
-  "key": {
-   "type": "string",
-   "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
-   "location": "query"
-  },
-  "oauth_token": {
-   "type": "string",
-   "description": "OAuth 2.0 token for the current user.",
-   "location": "query"
-  },
-  "prettyPrint": {
-   "type": "boolean",
-   "description": "Returns response with indentations and line breaks.",
-   "default": "true",
-   "location": "query"
-  },
-  "quotaUser": {
-   "type": "string",
-   "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters. Overrides userIp if both are provided.",
-   "location": "query"
-  },
-  "userIp": {
-   "type": "string",
-   "description": "IP address of the site where the request originates. Use this if you want to enforce per-user limits.",
-   "location": "query"
-  }
- },
- "auth": {
-  "oauth2": {
-   "scopes": {
-    "https://www.googleapis.com/auth/cloud-platform": {
-     "description": "View and manage your data across Google Cloud Platform services"
+  "parameters": {
+    "upload_protocol": {
+      "location": "query",
+      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+      "type": "string"
     },
-    "https://www.googleapis.com/auth/datastore": {
-     "description": "View and manage your Google Cloud Datastore data"
+    "prettyPrint": {
+      "location": "query",
+      "description": "Returns response with indentations and line breaks.",
+      "default": "true",
+      "type": "boolean"
     },
-    "https://www.googleapis.com/auth/userinfo.email": {
-     "description": "View your email address"
-    }
-   }
-  }
- },
- "schemas": {
-  "AllocateIdsRequest": {
-   "id": "AllocateIdsRequest",
-   "type": "object",
-   "properties": {
-    "keys": {
-     "type": "array",
-     "description": "A list of keys with incomplete key paths to allocate IDs for. No key may be reserved/read-only.",
-     "items": {
-      "$ref": "Key"
-     }
-    }
-   }
-  },
-  "AllocateIdsResponse": {
-   "id": "AllocateIdsResponse",
-   "type": "object",
-   "properties": {
-    "header": {
-     "$ref": "ResponseHeader"
+    "fields": {
+      "location": "query",
+      "description": "Selector specifying which fields to include in a partial response.",
+      "type": "string"
     },
-    "keys": {
-     "type": "array",
-     "description": "The keys specified in the request (in the same order), each with its key path completed with a newly allocated ID.",
-     "items": {
-      "$ref": "Key"
-     }
-    }
-   }
-  },
-  "BeginTransactionRequest": {
-   "id": "BeginTransactionRequest",
-   "type": "object",
-   "properties": {
-    "isolationLevel": {
-     "type": "string",
-     "description": "The transaction isolation level. Either snapshot or serializable. The default isolation level is snapshot isolation, which means that another transaction may not concurrently modify the data that is modified by this transaction. Optionally, a transaction can request to be made serializable which means that another transaction cannot concurrently modify the data that is read or modified by this transaction."
-    }
-   }
-  },
-  "BeginTransactionResponse": {
-   "id": "BeginTransactionResponse",
-   "type": "object",
-   "properties": {
-    "header": {
-     "$ref": "ResponseHeader"
+    "uploadType": {
+      "location": "query",
+      "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
+      "type": "string"
     },
-    "transaction": {
-     "type": "string",
-     "description": "The transaction identifier (always present).",
-     "format": "byte"
-    }
-   }
-  },
-  "BlindWriteRequest": {
-   "id": "BlindWriteRequest",
-   "type": "object",
-   "properties": {
-    "mutation": {
-     "$ref": "Mutation",
-     "description": "The mutation to perform."
-    }
-   }
-  },
-  "BlindWriteResponse": {
-   "id": "BlindWriteResponse",
-   "type": "object",
-   "properties": {
-    "header": {
-     "$ref": "ResponseHeader"
+    "callback": {
+      "location": "query",
+      "description": "JSONP",
+      "type": "string"
     },
-    "mutationResult": {
-     "$ref": "MutationResult",
-     "description": "The result of performing the mutation (always present)."
-    }
-   }
-  },
-  "CommitRequest": {
-   "id": "CommitRequest",
-   "type": "object",
-   "properties": {
-    "ignoreReadOnly": {
-     "type": "boolean"
+    "$.xgafv": {
+      "enumDescriptions": [
+        "v1 error format",
+        "v2 error format"
+      ],
+      "location": "query",
+      "enum": [
+        "1",
+        "2"
+      ],
+      "description": "V1 error format.",
+      "type": "string"
     },
-    "mutation": {
-     "$ref": "Mutation",
-     "description": "The mutation to perform. Optional."
+    "alt": {
+      "enum": [
+        "json",
+        "media",
+        "proto"
+      ],
+      "type": "string",
+      "enumDescriptions": [
+        "Responses with Content-Type of application/json",
+        "Media download with context-dependent Content-Type",
+        "Responses with Content-Type of application/x-protobuf"
+      ],
+      "location": "query",
+      "description": "Data format for response.",
+      "default": "json"
     },
-    "transaction": {
-     "type": "string",
-     "description": "The transaction identifier, returned by a call to beginTransaction. Must be set when mode is TRANSACTIONAL.",
-     "format": "byte"
-    }
-   }
-  },
-  "CommitResponse": {
-   "id": "CommitResponse",
-   "type": "object",
-   "properties": {
-    "header": {
-     "$ref": "ResponseHeader"
+    "access_token": {
+      "description": "OAuth access token.",
+      "type": "string",
+      "location": "query"
     },
-    "mutationResult": {
-     "$ref": "MutationResult",
-     "description": "The result of performing the mutation (if any)."
-    }
-   }
-  },
-  "CompositeFilter": {
-   "id": "CompositeFilter",
-   "type": "object",
-   "description": "A filter that merges the multiple other filters using the given operation.",
-   "properties": {
-    "filters": {
-     "type": "array",
-     "description": "The list of filters to combine. Must contain at least one filter.",
-     "items": {
-      "$ref": "Filter"
-     }
-    },
-    "operator": {
-     "type": "string",
-     "description": "The operator for combining multiple filters. Only \"and\" is currently supported."
-    }
-   }
-  },
-  "Entity": {
-   "id": "Entity",
-   "type": "object",
-   "description": "An entity.",
-   "properties": {
     "key": {
-     "$ref": "Key",
-     "description": "The entity's key.\n\nAn entity must have a key, unless otherwise documented (for example, an entity in Value.entityValue may have no key). An entity's kind is its key's path's last element's kind, or null if it has no key."
+      "location": "query",
+      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+      "type": "string"
     },
-    "properties": {
-     "type": "object",
-     "description": "The entity's properties.",
-     "additionalProperties": {
-      "$ref": "Property",
-      "description": "The name of the property. A property name matching regex \"__.*__\" is reserved. A reserved property name is forbidden in certain documented contexts. The name must not contain more than 500 characters. Cannot be \"\"."
-     }
+    "quotaUser": {
+      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
+      "type": "string",
+      "location": "query"
+    },
+    "pp": {
+      "description": "Pretty-print response.",
+      "default": "true",
+      "type": "boolean",
+      "location": "query"
+    },
+    "oauth_token": {
+      "location": "query",
+      "description": "OAuth 2.0 token for the current user.",
+      "type": "string"
+    },
+    "bearer_token": {
+      "location": "query",
+      "description": "OAuth bearer token.",
+      "type": "string"
     }
-   }
   },
-  "EntityResult": {
-   "id": "EntityResult",
-   "type": "object",
-   "description": "The result of fetching an entity from the datastore.",
-   "properties": {
-    "entity": {
-     "$ref": "Entity",
-     "description": "The resulting entity."
+  "schemas": {
+    "GoogleDatastoreAdminV1beta1Progress": {
+      "description": "Measures the progress of a particular metric.",
+      "type": "object",
+      "properties": {
+        "workEstimated": {
+          "format": "int64",
+          "description": "An estimate of how much work needs to be performed. May be zero if the\nwork estimate is unavailable.",
+          "type": "string"
+        },
+        "workCompleted": {
+          "format": "int64",
+          "description": "The amount of work that has been completed. Note that this may be greater\nthan work_estimated.",
+          "type": "string"
+        }
+      },
+      "id": "GoogleDatastoreAdminV1beta1Progress"
+    },
+    "GoogleDatastoreAdminV1beta1EntityFilter": {
+      "description": "Identifies a subset of entities in a project. This is specified as\ncombinations of kinds and namespaces (either or both of which may be all, as\ndescribed in the following examples).\nExample usage:\n\nEntire project:\n  kinds=[], namespace_ids=[]\n\nKinds Foo and Bar in all namespaces:\n  kinds=['Foo', 'Bar'], namespace_ids=[]\n\nKinds Foo and Bar only in the default namespace:\n  kinds=['Foo', 'Bar'], namespace_ids=['']\n\nKinds Foo and Bar in both the default and Baz namespaces:\n  kinds=['Foo', 'Bar'], namespace_ids=['', 'Baz']\n\nThe entire Baz namespace:\n  kinds=[], namespace_ids=['Baz']",
+      "type": "object",
+      "properties": {
+        "kinds": {
+          "description": "If empty, then this represents all kinds.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "namespaceIds": {
+          "description": "An empty list represents all namespaces. This is the preferred\nusage for projects that don't use namespaces.\n\nAn empty string element represents the default namespace. This should be\nused if the project has data in non-default namespaces, but doesn't want to\ninclude them.\nEach namespace in this list must be unique.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "id": "GoogleDatastoreAdminV1beta1EntityFilter"
+    },
+    "GoogleLongrunningOperation": {
+      "description": "This resource represents a long-running operation that is the result of a\nnetwork API call.",
+      "type": "object",
+      "properties": {
+        "response": {
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          },
+          "description": "The normal response of the operation in case of success.  If the original\nmethod returns no data on success, such as `Delete`, the response is\n`google.protobuf.Empty`.  If the original method is standard\n`Get`/`Create`/`Update`, the response should be the resource.  For other\nmethods, the response should have the type `XxxResponse`, where `Xxx`\nis the original method name.  For example, if the original method name\nis `TakeSnapshot()`, the inferred response type is\n`TakeSnapshotResponse`.",
+          "type": "object"
+        },
+        "name": {
+          "description": "The server-assigned name, which is only unique within the same service that\noriginally returns it. If you use the default HTTP mapping, the\n`name` should have the format of `operations/some/unique/name`.",
+          "type": "string"
+        },
+        "error": {
+          "$ref": "Status",
+          "description": "The error result of the operation in case of failure or cancellation."
+        },
+        "metadata": {
+          "description": "Service-specific metadata associated with the operation.  It typically\ncontains progress information and common metadata such as create time.\nSome services might not provide such metadata.  Any method that returns a\nlong-running operation should document the metadata type, if any.",
+          "type": "object",
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          }
+        },
+        "done": {
+          "description": "If the value is `false`, it means the operation is still in progress.\nIf `true`, the operation is completed, and either `error` or `response` is\navailable.",
+          "type": "boolean"
+        }
+      },
+      "id": "GoogleLongrunningOperation"
+    },
+    "GoogleDatastoreAdminV1beta1CommonMetadata": {
+      "description": "Metadata common to all Datastore Admin operations.",
+      "type": "object",
+      "properties": {
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "The client-assigned labels which were provided when the operation was\ncreated. May also include additional labels.",
+          "type": "object"
+        },
+        "endTime": {
+          "format": "google-datetime",
+          "description": "The time the operation ended, either successfully or otherwise.",
+          "type": "string"
+        },
+        "state": {
+          "enumDescriptions": [
+            "Unspecified.",
+            "Request is being prepared for processing.",
+            "Request is actively being processed.",
+            "Request is in the process of being cancelled after user called\ngoogle.longrunning.Operations.CancelOperation on the operation.",
+            "Request has been processed and is in its finalization stage.",
+            "Request has completed successfully.",
+            "Request has finished being processed, but encountered an error.",
+            "Request has finished being cancelled after user called\ngoogle.longrunning.Operations.CancelOperation."
+          ],
+          "enum": [
+            "STATE_UNSPECIFIED",
+            "INITIALIZING",
+            "PROCESSING",
+            "CANCELLING",
+            "FINALIZING",
+            "SUCCESSFUL",
+            "FAILED",
+            "CANCELLED"
+          ],
+          "description": "The current state of the Operation.",
+          "type": "string"
+        },
+        "operationType": {
+          "enumDescriptions": [
+            "Unspecified.",
+            "ExportEntities.",
+            "ImportEntities."
+          ],
+          "enum": [
+            "OPERATION_TYPE_UNSPECIFIED",
+            "EXPORT_ENTITIES",
+            "IMPORT_ENTITIES"
+          ],
+          "description": "The type of the operation. Can be used as a filter in\nListOperationsRequest.",
+          "type": "string"
+        },
+        "startTime": {
+          "format": "google-datetime",
+          "description": "The time that work began on the operation.",
+          "type": "string"
+        }
+      },
+      "id": "GoogleDatastoreAdminV1beta1CommonMetadata"
+    },
+    "Status": {
+      "properties": {
+        "code": {
+          "format": "int32",
+          "description": "The status code, which should be an enum value of google.rpc.Code.",
+          "type": "integer"
+        },
+        "message": {
+          "description": "A developer-facing error message, which should be in English. Any\nuser-facing error message should be localized and sent in the\ngoogle.rpc.Status.details field, or localized by the client.",
+          "type": "string"
+        },
+        "details": {
+          "description": "A list of messages that carry the error details.  There is a common set of\nmessage types for APIs to use.",
+          "items": {
+            "additionalProperties": {
+              "description": "Properties of the object. Contains field @type with type URL.",
+              "type": "any"
+            },
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "id": "Status",
+      "description": "The `Status` type defines a logical error model that is suitable for different\nprogramming environments, including REST APIs and RPC APIs. It is used by\n[gRPC](https://github.com/grpc). The error model is designed to be:\n\n- Simple to use and understand for most users\n- Flexible enough to meet unexpected needs\n\n# Overview\n\nThe `Status` message contains three pieces of data: error code, error message,\nand error details. The error code should be an enum value of\ngoogle.rpc.Code, but it may accept additional error codes if needed.  The\nerror message should be a developer-facing English message that helps\ndevelopers *understand* and *resolve* the error. If a localized user-facing\nerror message is needed, put the localized message in the error details or\nlocalize it in the client. The optional error details may contain arbitrary\ninformation about the error. There is a predefined set of error detail types\nin the package `google.rpc` that can be used for common error conditions.\n\n# Language mapping\n\nThe `Status` message is the logical representation of the error model, but it\nis not necessarily the actual wire format. When the `Status` message is\nexposed in different client libraries and different wire protocols, it can be\nmapped differently. For example, it will likely be mapped to some exceptions\nin Java, but more likely mapped to some error codes in C.\n\n# Other uses\n\nThe error model and the `Status` message can be used in a variety of\nenvironments, either with or without APIs, to provide a\nconsistent developer experience across different environments.\n\nExample uses of this error model include:\n\n- Partial errors. If a service needs to return partial errors to the client,\n    it may embed the `Status` in the normal response to indicate the partial\n    errors.\n\n- Workflow errors. A typical workflow has multiple steps. Each step may\n    have a `Status` message for error reporting.\n\n- Batch operations. If a client uses batch request and batch response, the\n    `Status` message should be used directly inside batch response, one for\n    each error sub-response.\n\n- Asynchronous operations. If an API call embeds asynchronous operation\n    results in its response, the status of those operations should be\n    represented directly using the `Status` message.\n\n- Logging. If some API errors are stored in logs, the message `Status` could\n    be used directly after any stripping needed for security/privacy reasons.",
+      "type": "object"
+    },
+    "GoogleDatastoreAdminV1beta1ExportEntitiesRequest": {
+      "properties": {
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Client-assigned labels.",
+          "type": "object"
+        },
+        "outputUrlPrefix": {
+          "description": "Location for the export metadata and data files.\n\nThe full resource URL of the external storage location. Currently, only\nGoogle Cloud Storage is supported. So output_url_prefix should be of the\nform: `gs://BUCKET_NAME[/NAMESPACE_PATH]`, where `BUCKET_NAME` is the\nname of the Cloud Storage bucket and `NAMESPACE_PATH` is an optional Cloud\nStorage namespace path (this is not a Cloud Datastore namespace). For more\ninformation about Cloud Storage namespace paths, see\n[Object name\nconsiderations](https://cloud.google.com/storage/docs/naming#object-considerations).\n\nThe resulting files will be nested deeper than the specified URL prefix.\nThe final output URL will be provided in the\ngoogle.datastore.admin.v1beta1.ExportEntitiesResponse.output_url\nfield. That value should be used for subsequent ImportEntities operations.\n\nBy nesting the data files deeper, the same Cloud Storage bucket can be used\nin multiple ExportEntities operations without conflict.",
+          "type": "string"
+        },
+        "entityFilter": {
+          "$ref": "GoogleDatastoreAdminV1beta1EntityFilter",
+          "description": "Description of what data from the project is included in the export."
+        }
+      },
+      "id": "GoogleDatastoreAdminV1beta1ExportEntitiesRequest",
+      "description": "The request for\ngoogle.datastore.admin.v1beta1.DatastoreAdmin.ExportEntities.",
+      "type": "object"
+    },
+    "GoogleDatastoreAdminV1beta1ExportEntitiesMetadata": {
+      "description": "Metadata for ExportEntities operations.",
+      "type": "object",
+      "properties": {
+        "progressEntities": {
+          "$ref": "GoogleDatastoreAdminV1beta1Progress",
+          "description": "An estimate of the number of entities processed."
+        },
+        "common": {
+          "description": "Metadata common to all Datastore Admin operations.",
+          "$ref": "GoogleDatastoreAdminV1beta1CommonMetadata"
+        },
+        "progressBytes": {
+          "$ref": "GoogleDatastoreAdminV1beta1Progress",
+          "description": "An estimate of the number of bytes processed."
+        },
+        "outputUrlPrefix": {
+          "description": "Location for the export metadata and data files. This will be the same\nvalue as the\ngoogle.datastore.admin.v1beta1.ExportEntitiesRequest.output_url_prefix\nfield. The final output location is provided in\ngoogle.datastore.admin.v1beta1.ExportEntitiesResponse.output_url.",
+          "type": "string"
+        },
+        "entityFilter": {
+          "$ref": "GoogleDatastoreAdminV1beta1EntityFilter",
+          "description": "Description of which entities are being exported."
+        }
+      },
+      "id": "GoogleDatastoreAdminV1beta1ExportEntitiesMetadata"
+    },
+    "GoogleDatastoreAdminV1beta1ExportEntitiesResponse": {
+      "properties": {
+        "outputUrl": {
+          "description": "Location of the output metadata file. This can be used to begin an import\ninto Cloud Datastore (this project or another project). See\ngoogle.datastore.admin.v1beta1.ImportEntitiesRequest.input_url.\nOnly present if the operation completed successfully.",
+          "type": "string"
+        }
+      },
+      "id": "GoogleDatastoreAdminV1beta1ExportEntitiesResponse",
+      "description": "The response for\ngoogle.datastore.admin.v1beta1.DatastoreAdmin.ExportEntities.",
+      "type": "object"
+    },
+    "GoogleDatastoreAdminV1beta1ImportEntitiesRequest": {
+      "properties": {
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Client-assigned labels.",
+          "type": "object"
+        },
+        "inputUrl": {
+          "description": "The full resource URL of the external storage location. Currently, only\nGoogle Cloud Storage is supported. So input_url should be of the form:\n`gs://BUCKET_NAME[/NAMESPACE_PATH]/OVERALL_EXPORT_METADATA_FILE`, where\n`BUCKET_NAME` is the name of the Cloud Storage bucket, `NAMESPACE_PATH` is\nan optional Cloud Storage namespace path (this is not a Cloud Datastore\nnamespace), and `OVERALL_EXPORT_METADATA_FILE` is the metadata file written\nby the ExportEntities operation. For more information about Cloud Storage\nnamespace paths, see\n[Object name\nconsiderations](https://cloud.google.com/storage/docs/naming#object-considerations).\n\nFor more information, see\ngoogle.datastore.admin.v1beta1.ExportEntitiesResponse.output_url.",
+          "type": "string"
+        },
+        "entityFilter": {
+          "description": "Optionally specify which kinds/namespaces are to be imported. If provided,\nthe list must be a subset of the EntityFilter used in creating the export,\notherwise a FAILED_PRECONDITION error will be returned. If no filter is\nspecified then all entities from the export are imported.",
+          "$ref": "GoogleDatastoreAdminV1beta1EntityFilter"
+        }
+      },
+      "id": "GoogleDatastoreAdminV1beta1ImportEntitiesRequest",
+      "description": "The request for\ngoogle.datastore.admin.v1beta1.DatastoreAdmin.ImportEntities.",
+      "type": "object"
+    },
+    "GoogleDatastoreAdminV1beta1ImportEntitiesMetadata": {
+      "description": "Metadata for ImportEntities operations.",
+      "type": "object",
+      "properties": {
+        "inputUrl": {
+          "description": "The location of the import metadata file. This will be the same value as\nthe google.datastore.admin.v1beta1.ExportEntitiesResponse.output_url\nfield.",
+          "type": "string"
+        },
+        "progressBytes": {
+          "$ref": "GoogleDatastoreAdminV1beta1Progress",
+          "description": "An estimate of the number of bytes processed."
+        },
+        "entityFilter": {
+          "$ref": "GoogleDatastoreAdminV1beta1EntityFilter",
+          "description": "Description of which entities are being imported."
+        },
+        "progressEntities": {
+          "$ref": "GoogleDatastoreAdminV1beta1Progress",
+          "description": "An estimate of the number of entities processed."
+        },
+        "common": {
+          "$ref": "GoogleDatastoreAdminV1beta1CommonMetadata",
+          "description": "Metadata common to all Datastore Admin operations."
+        }
+      },
+      "id": "GoogleDatastoreAdminV1beta1ImportEntitiesMetadata"
     }
-   }
   },
-  "Filter": {
-   "id": "Filter",
-   "type": "object",
-   "description": "A holder for any type of filter. Exactly one field should be specified.",
-   "properties": {
-    "compositeFilter": {
-     "$ref": "CompositeFilter",
-     "description": "A composite filter."
-    },
-    "propertyFilter": {
-     "$ref": "PropertyFilter",
-     "description": "A filter on a property."
-    }
-   }
+  "protocol": "rest",
+  "icons": {
+    "x32": "http://www.google.com/images/icons/product/search-32.gif",
+    "x16": "http://www.google.com/images/icons/product/search-16.gif"
   },
-  "GqlQuery": {
-   "id": "GqlQuery",
-   "type": "object",
-   "description": "A GQL query.",
-   "properties": {
-    "allowLiteral": {
-     "type": "boolean",
-     "description": "When false, the query string must not contain a literal."
-    },
-    "nameArgs": {
-     "type": "array",
-     "description": "A named argument must set field GqlQueryArg.name. No two named arguments may have the same name. For each non-reserved named binding site in the query string, there must be a named argument with that name, but not necessarily the inverse.",
-     "items": {
-      "$ref": "GqlQueryArg"
-     }
-    },
-    "numberArgs": {
-     "type": "array",
-     "description": "Numbered binding site @1 references the first numbered argument, effectively using 1-based indexing, rather than the usual 0. A numbered argument must NOT set field GqlQueryArg.name. For each binding site numbered i in query_string, there must be an ith numbered argument. The inverse must also be true.",
-     "items": {
-      "$ref": "GqlQueryArg"
-     }
-    },
-    "queryString": {
-     "type": "string",
-     "description": "The query string."
-    }
-   }
-  },
-  "GqlQueryArg": {
-   "id": "GqlQueryArg",
-   "type": "object",
-   "description": "A binding argument for a GQL query.",
-   "properties": {
-    "cursor": {
-     "type": "string",
-     "format": "byte"
-    },
-    "name": {
-     "type": "string",
-     "description": "Must match regex \"[A-Za-z_$][A-Za-z_$0-9]*\". Must not match regex \"__.*__\". Must not be \"\"."
-    },
-    "value": {
-     "$ref": "Value"
-    }
-   }
-  },
-  "Key": {
-   "id": "Key",
-   "type": "object",
-   "description": "A unique identifier for an entity.",
-   "properties": {
-    "partitionId": {
-     "$ref": "PartitionId",
-     "description": "Entities are partitioned into subsets, currently identified by a dataset (usually implicitly specified by the project) and namespace ID. Queries are scoped to a single partition."
-    },
-    "path": {
-     "type": "array",
-     "description": "The entity path. An entity path consists of one or more elements composed of a kind and a string or numerical identifier, which identify entities. The first element identifies a root entity, the second element identifies a child of the root entity, the third element a child of the second entity, and so forth. The entities identified by all prefixes of the path are called the element's ancestors. An entity path is always fully complete: ALL of the entity's ancestors are required to be in the path along with the entity identifier itself. The only exception is that in some documented cases, the identifier in the last path element (for the entity) itself may be omitted. A path can never be empty. The path can have at most 100 elements.",
-     "items": {
-      "$ref": "KeyPathElement"
-     }
-    }
-   }
-  },
-  "KeyPathElement": {
-   "id": "KeyPathElement",
-   "type": "object",
-   "description": "A (kind, ID/name) pair used to construct a key path.\n\nAt most one of name or ID may be set. If either is set, the element is complete. If neither is set, the element is incomplete.",
-   "properties": {
-    "id": {
-     "type": "string",
-     "description": "The ID of the entity. Never equal to zero. Values less than zero are discouraged and will not be supported in the future.",
-     "format": "int64"
-    },
-    "kind": {
-     "type": "string",
-     "description": "The kind of the entity. A kind matching regex \"__.*__\" is reserved/read-only. A kind must not contain more than 500 characters. Cannot be \"\"."
-    },
-    "name": {
-     "type": "string",
-     "description": "The name of the entity. A name matching regex \"__.*__\" is reserved/read-only. A name must not be more than 500 characters. Cannot be \"\"."
-    }
-   }
-  },
-  "KindExpression": {
-   "id": "KindExpression",
-   "type": "object",
-   "description": "A representation of a kind.",
-   "properties": {
-    "name": {
-     "type": "string",
-     "description": "The name of the kind."
-    }
-   }
-  },
-  "LookupRequest": {
-   "id": "LookupRequest",
-   "type": "object",
-   "properties": {
-    "keys": {
-     "type": "array",
-     "description": "Keys of entities to look up from the datastore.",
-     "items": {
-      "$ref": "Key"
-     }
-    },
-    "readOptions": {
-     "$ref": "ReadOptions",
-     "description": "Options for this lookup request. Optional."
-    }
-   }
-  },
-  "LookupResponse": {
-   "id": "LookupResponse",
-   "type": "object",
-   "properties": {
-    "deferred": {
-     "type": "array",
-     "description": "A list of keys that were not looked up due to resource constraints.",
-     "items": {
-      "$ref": "Key"
-     }
-    },
-    "found": {
-     "type": "array",
-     "description": "Entities found.",
-     "items": {
-      "$ref": "EntityResult"
-     }
-    },
-    "header": {
-     "$ref": "ResponseHeader"
-    },
-    "missing": {
-     "type": "array",
-     "description": "Entities not found, with only the key populated.",
-     "items": {
-      "$ref": "EntityResult"
-     }
-    }
-   }
-  },
-  "Mutation": {
-   "id": "Mutation",
-   "type": "object",
-   "description": "A set of changes to apply.",
-   "properties": {
-    "delete": {
-     "type": "array",
-     "description": "Keys of entities to delete. Each key must have a complete key path and must not be reserved/read-only.",
-     "items": {
-      "$ref": "Key"
-     }
-    },
-    "force": {
-     "type": "boolean",
-     "description": "Ignore a user specified read-only period. Optional."
-    },
-    "insert": {
-     "type": "array",
-     "description": "Entities to insert. Each inserted entity's key must have a complete path and must not be reserved/read-only.",
-     "items": {
-      "$ref": "Entity"
-     }
-    },
-    "insertAutoId": {
-     "type": "array",
-     "description": "Insert entities with a newly allocated ID. Each inserted entity's key must omit the final identifier in its path and must not be reserved/read-only.",
-     "items": {
-      "$ref": "Entity"
-     }
-    },
-    "update": {
-     "type": "array",
-     "description": "Entities to update. Each updated entity's key must have a complete path and must not be reserved/read-only.",
-     "items": {
-      "$ref": "Entity"
-     }
-    },
-    "upsert": {
-     "type": "array",
-     "description": "Entities to upsert. Each upserted entity's key must have a complete path and must not be reserved/read-only.",
-     "items": {
-      "$ref": "Entity"
-     }
-    }
-   }
-  },
-  "MutationResult": {
-   "id": "MutationResult",
-   "type": "object",
-   "properties": {
-    "indexUpdates": {
-     "type": "integer",
-     "description": "Number of index writes.",
-     "format": "int32"
-    },
-    "insertAutoIdKeys": {
-     "type": "array",
-     "description": "Keys for insertAutoId entities. One per entity from the request, in the same order.",
-     "items": {
-      "$ref": "Key"
-     }
-    }
-   }
-  },
-  "PartitionId": {
-   "id": "PartitionId",
-   "type": "object",
-   "description": "An identifier for a particular subset of entities.\n\nEntities are partitioned into various subsets, each used by different datasets and different namespaces within a dataset and so forth.",
-   "properties": {
-    "datasetId": {
-     "type": "string",
-     "description": "The dataset ID."
-    },
-    "namespace": {
-     "type": "string",
-     "description": "The namespace."
-    }
-   }
-  },
-  "Property": {
-   "id": "Property",
-   "type": "object",
-   "description": "An entity property.",
-   "properties": {
-    "multi": {
-     "type": "boolean",
-     "description": "If this property contains a list of values. Input values may explicitly set multi to false, but otherwise false is always represented by omitting multi."
-    },
-    "values": {
-     "type": "array",
-     "description": "The value(s) of the property. When multi is false there is always exactly one value. When multi is true there are always one or more values. Each value can have only one value property populated. For example, you cannot have a values list of { values: [ { integerValue: 22, stringValue: \"a\" } ] }, but you can have { multi: true, values: [ { integerValue: 22 }, { stringValue: \"a\" } ] }.",
-     "items": {
-      "$ref": "Value"
-     }
-    }
-   }
-  },
-  "PropertyExpression": {
-   "id": "PropertyExpression",
-   "type": "object",
-   "description": "A representation of a property in a projection.",
-   "properties": {
-    "aggregationFunction": {
-     "type": "string",
-     "description": "The aggregation function to apply to the property. Optional. Can only be used when grouping by at least one property. Must then be set on all properties in the projection that are not being grouped by. Aggregation functions: first selects the first result as determined by the query's order."
-    },
-    "property": {
-     "$ref": "PropertyReference",
-     "description": "The property to project."
-    }
-   }
-  },
-  "PropertyFilter": {
-   "id": "PropertyFilter",
-   "type": "object",
-   "description": "A filter on a specific property.",
-   "properties": {
-    "operator": {
-     "type": "string",
-     "description": "The operator to filter by. One of lessThan, lessThanOrEqual, greaterThan, greaterThanOrEqual, equal, or hasAncestor."
-    },
-    "property": {
-     "$ref": "PropertyReference",
-     "description": "The property to filter by."
-    },
-    "value": {
-     "$ref": "Value",
-     "description": "The value to compare the property to."
-    }
-   }
-  },
-  "PropertyOrder": {
-   "id": "PropertyOrder",
-   "type": "object",
-   "description": "The desired order for a specific property.",
-   "properties": {
-    "direction": {
-     "type": "string",
-     "description": "The direction to order by. One of ascending or descending. Optional, defaults to ascending."
-    },
-    "property": {
-     "$ref": "PropertyReference",
-     "description": "The property to order by."
-    }
-   }
-  },
-  "PropertyReference": {
-   "id": "PropertyReference",
-   "type": "object",
-   "description": "A reference to a property relative to the kind expressions.",
-   "properties": {
-    "name": {
-     "type": "string",
-     "description": "The name of the property."
-    }
-   }
-  },
-  "Query": {
-   "id": "Query",
-   "type": "object",
-   "description": "A query.",
-   "properties": {
-    "endCursor": {
-     "type": "string",
-     "description": "An ending point for the query results. Optional. Query cursors are returned in query result batches.",
-     "format": "byte"
-    },
-    "filter": {
-     "$ref": "Filter",
-     "description": "The filter to apply (optional)."
-    },
-    "groupBy": {
-     "type": "array",
-     "description": "The properties to group by (if empty, no grouping is applied to the result set).",
-     "items": {
-      "$ref": "PropertyReference"
-     }
-    },
-    "kinds": {
-     "type": "array",
-     "description": "The kinds to query (if empty, returns entities from all kinds).",
-     "items": {
-      "$ref": "KindExpression"
-     }
-    },
-    "limit": {
-     "type": "integer",
-     "description": "The maximum number of results to return. Applies after all other constraints. Optional.",
-     "format": "int32"
-    },
-    "offset": {
-     "type": "integer",
-     "description": "The number of results to skip. Applies before limit, but after all other constraints (optional, defaults to 0).",
-     "format": "int32"
-    },
-    "order": {
-     "type": "array",
-     "description": "The order to apply to the query results (if empty, order is unspecified).",
-     "items": {
-      "$ref": "PropertyOrder"
-     }
-    },
-    "projection": {
-     "type": "array",
-     "description": "The projection to return. If not set the entire entity is returned.",
-     "items": {
-      "$ref": "PropertyExpression"
-     }
-    },
-    "startCursor": {
-     "type": "string",
-     "description": "A starting point for the query results. Optional. Query cursors are returned in query result batches.",
-     "format": "byte"
-    }
-   }
-  },
-  "QueryResultBatch": {
-   "id": "QueryResultBatch",
-   "type": "object",
-   "description": "A batch of results produced by a query.",
-   "properties": {
-    "endCursor": {
-     "type": "string",
-     "description": "A cursor that points to the position after the last result in the batch. May be absent. TODO(arfuller): Once all plans produce cursors update documentation here.",
-     "format": "byte"
-    },
-    "entityResultType": {
-     "type": "string",
-     "description": "The result type for every entity in entityResults. full for full entities, projection for entities with only projected properties, keyOnly for entities with only a key."
-    },
-    "entityResults": {
-     "type": "array",
-     "description": "The results for this batch.",
-     "items": {
-      "$ref": "EntityResult"
-     }
-    },
-    "moreResults": {
-     "type": "string",
-     "description": "The state of the query after the current batch. One of notFinished, moreResultsAfterLimit, noMoreResults."
-    },
-    "skippedResults": {
-     "type": "integer",
-     "description": "The number of results skipped because of Query.offset.",
-     "format": "int32"
-    }
-   }
-  },
-  "ReadOptions": {
-   "id": "ReadOptions",
-   "type": "object",
-   "properties": {
-    "readConsistency": {
-     "type": "string",
-     "description": "The read consistency to use. One of default, strong, or eventual. Cannot be set when transaction is set. Lookup and ancestor queries default to strong, global queries default to eventual and cannot be set to strong. Optional. Default is default."
-    },
-    "transaction": {
-     "type": "string",
-     "description": "The transaction to use. Optional.",
-     "format": "byte"
-    }
-   }
-  },
-  "ResponseHeader": {
-   "id": "ResponseHeader",
-   "type": "object",
-   "properties": {
-    "kind": {
-     "type": "string",
-     "description": "Identifies what kind of resource this is. Value: the fixed string \"datastore#responseHeader\".",
-     "default": "datastore#responseHeader"
-    }
-   }
-  },
-  "RollbackRequest": {
-   "id": "RollbackRequest",
-   "type": "object",
-   "properties": {
-    "transaction": {
-     "type": "string",
-     "description": "The transaction identifier, returned by a call to beginTransaction.",
-     "format": "byte"
-    }
-   }
-  },
-  "RollbackResponse": {
-   "id": "RollbackResponse",
-   "type": "object",
-   "properties": {
-    "header": {
-     "$ref": "ResponseHeader"
-    }
-   }
-  },
-  "RunQueryRequest": {
-   "id": "RunQueryRequest",
-   "type": "object",
-   "properties": {
-    "gqlQuery": {
-     "$ref": "GqlQuery",
-     "description": "The GQL query to run. Either this field or field query must be set, but not both."
-    },
-    "partitionId": {
-     "$ref": "PartitionId",
-     "description": "Entities are partitioned into subsets, identified by a dataset (usually implicitly specified by the project) and namespace ID. Queries are scoped to a single partition. This partition ID is normalized with the standard default context partition ID, but all other partition IDs in RunQueryRequest are normalized with this partition ID as the context partition ID."
-    },
-    "query": {
-     "$ref": "Query",
-     "description": "The query to run. Either this field or field gql_query must be set, but not both."
-    },
-    "readOptions": {
-     "$ref": "ReadOptions",
-     "description": "The options for this query."
-    }
-   }
-  },
-  "RunQueryResponse": {
-   "id": "RunQueryResponse",
-   "type": "object",
-   "properties": {
-    "batch": {
-     "$ref": "QueryResultBatch",
-     "description": "A batch of query results (always present)."
-    },
-    "header": {
-     "$ref": "ResponseHeader"
-    }
-   }
-  },
-  "Value": {
-   "id": "Value",
-   "type": "object",
-   "description": "A message that can hold any of the supported value types and associated metadata.",
-   "properties": {
-    "blobKeyValue": {
-     "type": "string",
-     "description": "A blob key value."
-    },
-    "blobValue": {
-     "type": "string",
-     "description": "A blob value. May be a maximum of 1,000,000 bytes. When indexed is true, may have at most 500 bytes.",
-     "format": "byte"
-    },
-    "booleanValue": {
-     "type": "boolean",
-     "description": "A boolean value."
-    },
-    "dateTimeValue": {
-     "type": "string",
-     "description": "A timestamp value.",
-     "format": "date-time"
-    },
-    "doubleValue": {
-     "type": "number",
-     "description": "A double value.",
-     "format": "double"
-    },
-    "entityValue": {
-     "$ref": "Entity",
-     "description": "An entity value. May have no key. May have a key with an incomplete key path. May have a reserved/read-only key."
-    },
-    "indexed": {
-     "type": "boolean",
-     "description": "If the value should be indexed.\n\nThe indexed property may be set for a null value. When indexed is true, stringValue is limited to 500 characters and the blob value is limited to 500 bytes. Input values by default have indexed set to true; however, you can explicitly set indexed to true if you want. (An output value never has indexed explicitly set to true.) If a value is itself an entity, it cannot have indexed set to true."
-    },
-    "integerValue": {
-     "type": "string",
-     "description": "An integer value.",
-     "format": "int64"
-    },
-    "keyValue": {
-     "$ref": "Key",
-     "description": "A key value."
-    },
-    "meaning": {
-     "type": "integer",
-     "description": "The meaning field is reserved and should not be used.",
-     "format": "int32"
-    },
-    "stringValue": {
-     "type": "string",
-     "description": "A UTF-8 encoded string value. When indexed is true, may have at most 500 characters."
-    }
-   }
-  }
- },
- "resources": {
-  "datasets": {
-   "methods": {
-    "allocateIds": {
-     "id": "datastore.datasets.allocateIds",
-     "path": "{datasetId}/allocateIds",
-     "httpMethod": "POST",
-     "description": "Allocate IDs for incomplete keys (useful for referencing an entity before it is inserted).",
-     "parameters": {
-      "datasetId": {
-       "type": "string",
-       "description": "Identifies the dataset.",
-       "required": true,
-       "location": "path"
+  "version": "v1beta1",
+  "baseUrl": "https://datastore.googleapis.com/",
+  "auth": {
+    "oauth2": {
+      "scopes": {
+        "https://www.googleapis.com/auth/datastore": {
+          "description": "View and manage your Google Cloud Datastore data"
+        },
+        "https://www.googleapis.com/auth/cloud-platform": {
+          "description": "View and manage your data across Google Cloud Platform services"
+        }
       }
-     },
-     "parameterOrder": [
-      "datasetId"
-     ],
-     "request": {
-      "$ref": "AllocateIdsRequest"
-     },
-     "response": {
-      "$ref": "AllocateIdsResponse"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/datastore",
-      "https://www.googleapis.com/auth/userinfo.email"
-     ]
-    },
-    "beginTransaction": {
-     "id": "datastore.datasets.beginTransaction",
-     "path": "{datasetId}/beginTransaction",
-     "httpMethod": "POST",
-     "description": "Begin a new transaction.",
-     "parameters": {
-      "datasetId": {
-       "type": "string",
-       "description": "Identifies the dataset.",
-       "required": true,
-       "location": "path"
-      }
-     },
-     "parameterOrder": [
-      "datasetId"
-     ],
-     "request": {
-      "$ref": "BeginTransactionRequest"
-     },
-     "response": {
-      "$ref": "BeginTransactionResponse"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/datastore",
-      "https://www.googleapis.com/auth/userinfo.email"
-     ]
-    },
-    "blindWrite": {
-     "id": "datastore.datasets.blindWrite",
-     "path": "{datasetId}/blindWrite",
-     "httpMethod": "POST",
-     "description": "Create, delete or modify some entities outside a transaction.",
-     "parameters": {
-      "datasetId": {
-       "type": "string",
-       "description": "Identifies the dataset.",
-       "required": true,
-       "location": "path"
-      }
-     },
-     "parameterOrder": [
-      "datasetId"
-     ],
-     "request": {
-      "$ref": "BlindWriteRequest"
-     },
-     "response": {
-      "$ref": "BlindWriteResponse"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/datastore",
-      "https://www.googleapis.com/auth/userinfo.email"
-     ]
-    },
-    "commit": {
-     "id": "datastore.datasets.commit",
-     "path": "{datasetId}/commit",
-     "httpMethod": "POST",
-     "description": "Commit a transaction, optionally creating, deleting or modifying some entities.",
-     "parameters": {
-      "datasetId": {
-       "type": "string",
-       "description": "Identifies the dataset.",
-       "required": true,
-       "location": "path"
-      }
-     },
-     "parameterOrder": [
-      "datasetId"
-     ],
-     "request": {
-      "$ref": "CommitRequest"
-     },
-     "response": {
-      "$ref": "CommitResponse"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/datastore",
-      "https://www.googleapis.com/auth/userinfo.email"
-     ]
-    },
-    "lookup": {
-     "id": "datastore.datasets.lookup",
-     "path": "{datasetId}/lookup",
-     "httpMethod": "POST",
-     "description": "Look up some entities by key.",
-     "parameters": {
-      "datasetId": {
-       "type": "string",
-       "description": "Identifies the dataset.",
-       "required": true,
-       "location": "path"
-      }
-     },
-     "parameterOrder": [
-      "datasetId"
-     ],
-     "request": {
-      "$ref": "LookupRequest"
-     },
-     "response": {
-      "$ref": "LookupResponse"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/datastore",
-      "https://www.googleapis.com/auth/userinfo.email"
-     ]
-    },
-    "rollback": {
-     "id": "datastore.datasets.rollback",
-     "path": "{datasetId}/rollback",
-     "httpMethod": "POST",
-     "description": "Roll back a transaction.",
-     "parameters": {
-      "datasetId": {
-       "type": "string",
-       "description": "Identifies the dataset.",
-       "required": true,
-       "location": "path"
-      }
-     },
-     "parameterOrder": [
-      "datasetId"
-     ],
-     "request": {
-      "$ref": "RollbackRequest"
-     },
-     "response": {
-      "$ref": "RollbackResponse"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/datastore",
-      "https://www.googleapis.com/auth/userinfo.email"
-     ]
-    },
-    "runQuery": {
-     "id": "datastore.datasets.runQuery",
-     "path": "{datasetId}/runQuery",
-     "httpMethod": "POST",
-     "description": "Query for entities.",
-     "parameters": {
-      "datasetId": {
-       "type": "string",
-       "description": "Identifies the dataset.",
-       "required": true,
-       "location": "path"
-      }
-     },
-     "parameterOrder": [
-      "datasetId"
-     ],
-     "request": {
-      "$ref": "RunQueryRequest"
-     },
-     "response": {
-      "$ref": "RunQueryResponse"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/datastore",
-      "https://www.googleapis.com/auth/userinfo.email"
-     ]
     }
-   }
-  }
- }
+  },
+  "kind": "discovery#restDescription",
+  "description": "Accesses the schemaless NoSQL database to provide fully managed, robust, scalable storage for your application.\n",
+  "servicePath": "",
+  "rootUrl": "https://datastore.googleapis.com/",
+  "basePath": "",
+  "ownerDomain": "google.com",
+  "name": "datastore"
 }

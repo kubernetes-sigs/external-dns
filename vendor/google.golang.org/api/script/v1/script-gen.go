@@ -47,7 +47,7 @@ const basePath = "https://script.googleapis.com/"
 
 // OAuth2 scopes used by this API.
 const (
-	// View and manage your mail
+	// Read, send, delete, and manage your email
 	MailGoogleComScope = "https://mail.google.com/"
 
 	// Manage your calendars
@@ -91,10 +91,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Scripts *ScriptsService
 }
@@ -104,10 +103,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewScriptsService(s *Service) *ScriptsService {
@@ -303,7 +298,10 @@ func (s *ExecutionResponse) MarshalJSON() ([]byte, error) {
 // the response body. Client libraries will automatically convert a 4XX
 // response into an exception class.</p>
 type Operation struct {
-	// Done: This field is not used.
+	// Done: This field is only used with asynchronous executions and
+	// indicates whether or not the script execution has completed. A
+	// completed execution has a populated response field containing the
+	// `ExecutionResponse` from function that was executed.
 	Done bool `json:"done,omitempty"`
 
 	// Error: If a `run` call succeeds but the script function (or Apps
@@ -315,9 +313,6 @@ type Operation struct {
 
 	// Metadata: This field is not used.
 	Metadata googleapi.RawMessage `json:"metadata,omitempty"`
-
-	// Name: This field is not used.
-	Name string `json:"name,omitempty"`
 
 	// Response: If the script function returns successfully, this field
 	// will contain an `ExecutionResponse` object with the function's return
@@ -388,7 +383,7 @@ func (s *ScriptStackTraceElement) MarshalJSON() ([]byte, error) {
 // will contain this `Status` object.
 type Status struct {
 	// Code: The status code. For this API, this value will always be 3,
-	// corresponding to an INVALID_ARGUMENT error.
+	// corresponding to an <code>INVALID_ARGUMENT</code> error.
 	Code int64 `json:"code,omitempty"`
 
 	// Details: An array that contains a single `ExecutionError` object that
@@ -488,7 +483,6 @@ func (c *ScriptsRunCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.executionrequest)
 	if err != nil {
@@ -553,7 +547,7 @@ func (c *ScriptsRunCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
 	//   ],
 	//   "parameters": {
 	//     "scriptId": {
-	//       "description": "The project key of the script to be executed. To find the project key, open\nthe project in the script editor and select **File \u003e Project properties**.",
+	//       "description": "The script ID of the script to be executed. To find the script ID, open\nthe project in the script editor and select **File \u003e Project properties**.",
 	//       "location": "path",
 	//       "required": true,
 	//       "type": "string"
