@@ -13,7 +13,7 @@ func TestDomains_ListDomains(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/domains", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"domains": [{"name":"foo.com"},{"name":"bar.com"}]}`)
 	})
 
@@ -33,7 +33,7 @@ func TestDomains_ListDomainsMultiplePages(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/domains", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"domains": [{"id":1},{"id":2}], "links":{"pages":{"next":"http://example.com/v2/domains/?page=2"}}}`)
 	})
 
@@ -63,7 +63,7 @@ func TestDomains_RetrievePageByNumber(t *testing.T) {
 	}`
 
 	mux.HandleFunc("/v2/domains", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, jBlob)
 	})
 
@@ -81,7 +81,7 @@ func TestDomains_GetDomain(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/domains/example.com", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"domain":{"name":"example.com"}}`)
 	})
 
@@ -112,7 +112,7 @@ func TestDomains_Create(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, createRequest) {
 			t.Errorf("Request body = %+v, expected %+v", v, createRequest)
 		}
@@ -136,7 +136,7 @@ func TestDomains_Destroy(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/domains/example.com", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 	})
 
 	_, err := client.Domains.Delete(ctx, "example.com")
@@ -150,7 +150,7 @@ func TestDomains_AllRecordsForDomainName(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/domains/example.com/records", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"domain_records":[{"id":1},{"id":2}]}`)
 	})
 
@@ -195,7 +195,7 @@ func TestDomains_GetRecordforDomainName(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/domains/example.com/records/1", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"domain_record":{"id":1}}`)
 	})
 
@@ -215,7 +215,7 @@ func TestDomains_DeleteRecordForDomainName(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/domains/example.com/records/1", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 	})
 
 	_, err := client.Domains.DeleteRecord(ctx, "example.com", 1)
@@ -247,7 +247,7 @@ func TestDomains_CreateRecordForDomainName(t *testing.T) {
 				t.Fatalf("decode json: %v", err)
 			}
 
-			testMethod(t, r, "POST")
+			testMethod(t, r, http.MethodPost)
 			if !reflect.DeepEqual(v, createRequest) {
 				t.Errorf("Request body = %+v, expected %+v", v, createRequest)
 			}

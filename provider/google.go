@@ -19,8 +19,8 @@ package provider
 import (
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/linki/instrumented_http"
+	log "github.com/sirupsen/logrus"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
@@ -269,24 +269,22 @@ func (p *GoogleProvider) submitChange(change *dns.Change) error {
 // separateChange separates a multi-zone change into a single change per zone.
 func separateChange(zones map[string]*dns.ManagedZone, change *dns.Change) map[string]*dns.Change {
 	changes := make(map[string]*dns.Change)
-	zoneNames := map[string]string{}
+	zoneNameIDMapper := zoneIDName{}
 	for _, z := range zones {
-		zoneNames[z.DnsName] = z.Name
+		zoneNameIDMapper[z.Name] = z.DnsName
 		changes[z.Name] = &dns.Change{
 			Additions: []*dns.ResourceRecordSet{},
 			Deletions: []*dns.ResourceRecordSet{},
 		}
 	}
 	for _, a := range change.Additions {
-		if zone := zoneFinder(ensureTrailingDot(a.Name), zoneNames); zone != "" {
-			zoneName := zoneNames[zone]
+		if zoneName, _ := zoneNameIDMapper.FindZone(ensureTrailingDot(a.Name)); zoneName != "" {
 			changes[zoneName].Additions = append(changes[zoneName].Additions, a)
 		}
 	}
 
 	for _, d := range change.Deletions {
-		if zone := zoneFinder(ensureTrailingDot(d.Name), zoneNames); zone != "" {
-			zoneName := zoneNames[zone]
+		if zoneName, _ := zoneNameIDMapper.FindZone(ensureTrailingDot(d.Name)); zoneName != "" {
 			changes[zoneName].Deletions = append(changes[zoneName].Deletions, d)
 		}
 	}

@@ -19,8 +19,8 @@ package provider
 import (
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/linki/instrumented_http"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -233,22 +233,21 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 // changesByZone separates a multi-zone change into a single change per zone.
 func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Change) map[string][]*route53.Change {
 	changes := make(map[string][]*route53.Change)
-	zoneNameIDMapper := map[string]string{}
+	zoneNameIDMapper := zoneIDName{}
 
 	for _, z := range zones {
-		zoneNameIDMapper[aws.StringValue(z.Name)] = aws.StringValue(z.Id)
+		zoneNameIDMapper.Add(aws.StringValue(z.Id), aws.StringValue(z.Name))
 		changes[aws.StringValue(z.Id)] = []*route53.Change{}
 	}
 
 	for _, c := range changeSet {
 		hostname := ensureTrailingDot(aws.StringValue(c.ResourceRecordSet.Name))
 
-		zone := zoneFinder(hostname, zoneNameIDMapper)
-		if zone == "" {
+		zoneID, _ := zoneNameIDMapper.FindZone(hostname)
+		if zoneID == "" {
 			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.String())
 			continue
 		}
-		zoneID := zoneNameIDMapper[zone]
 		changes[zoneID] = append(changes[zoneID], c)
 	}
 

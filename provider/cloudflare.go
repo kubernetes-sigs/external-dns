@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/cloudflare/cloudflare-go"
 
@@ -219,20 +219,19 @@ func (p *CloudFlareProvider) submitChanges(changes []*cloudFlareChange) error {
 // changesByZone separates a multi-zone change into a single change per zone.
 func (p *CloudFlareProvider) cloudflareChangesByZone(zones []cloudflare.Zone, changeSet []*cloudFlareChange) map[string][]*cloudFlareChange {
 	changes := make(map[string][]*cloudFlareChange)
-	zoneNameIDMapper := map[string]string{}
+	zoneNameIDMapper := zoneIDName{}
 
 	for _, z := range zones {
-		zoneNameIDMapper[z.Name] = z.ID
+		zoneNameIDMapper.Add(z.ID, z.Name)
 		changes[z.ID] = []*cloudFlareChange{}
 	}
 
 	for _, c := range changeSet {
-		zone := zoneFinder(c.ResourceRecordSet.Name, zoneNameIDMapper)
-		if zone == "" {
+		zoneID, _ := zoneNameIDMapper.FindZone(c.ResourceRecordSet.Name)
+		if zoneID == "" {
 			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.ResourceRecordSet.Name)
 			continue
 		}
-		zoneID := zoneNameIDMapper[zone]
 		changes[zoneID] = append(changes[zoneID], c)
 	}
 

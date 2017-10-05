@@ -224,7 +224,7 @@ func TestFirewalls_Get(t *testing.T) {
 	urlStr = path.Join(urlStr, fID)
 
 	mux.HandleFunc(urlStr, func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, firewallJSONResponse)
 	})
 
@@ -333,7 +333,7 @@ func TestFirewalls_Create(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, expectedFirewallRequest) {
 			t.Errorf("Request body = %+v, expected %+v", v, expectedFirewallRequest)
 		}
@@ -481,7 +481,7 @@ func TestFirewalls_Delete(t *testing.T) {
 	fID := "fe6b88f2-b42b-4bf7-bbd3-5ae20208f0b0"
 	urlStr = path.Join(urlStr, fID)
 	mux.HandleFunc(urlStr, func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 	})
 
 	_, err := client.Firewalls.Delete(ctx, fID)
@@ -496,7 +496,7 @@ func TestFirewalls_List(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/firewalls", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, firewallListJSONResponse)
 	})
 
@@ -517,7 +517,7 @@ func TestFirewalls_ListByDroplet(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/droplets/123/firewalls", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, firewallListJSONResponse)
 	})
 
@@ -550,7 +550,7 @@ func TestFirewalls_AddDroplets(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, dRequest) {
 			t.Errorf("Request body = %+v, expected %+v", v, dRequest)
 		}
@@ -589,7 +589,7 @@ func TestFirewalls_RemoveDroplets(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 		if !reflect.DeepEqual(v, dRequest) {
 			t.Errorf("Request body = %+v, expected %+v", v, dRequest)
 		}
@@ -628,7 +628,7 @@ func TestFirewalls_AddTags(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, tRequest) {
 			t.Errorf("Request body = %+v, expected %+v", v, tRequest)
 		}
@@ -666,7 +666,7 @@ func TestFirewalls_RemoveTags(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 		if !reflect.DeepEqual(v, tRequest) {
 			t.Errorf("Request body = %+v, expected %+v", v, tRequest)
 		}
@@ -721,7 +721,7 @@ func TestFirewalls_AddRules(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, rr) {
 			t.Errorf("Request body = %+v, expected %+v", v, rr)
 		}
@@ -776,7 +776,7 @@ func TestFirewalls_RemoveRules(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 		if !reflect.DeepEqual(v, rr) {
 			t.Errorf("Request body = %+v, expected %+v", v, rr)
 		}

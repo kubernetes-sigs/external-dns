@@ -18,24 +18,30 @@ package provider
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestZoneFinder(t *testing.T) {
-	var test = []struct {
-		hostname string
-		zones    map[string]string
-		expect   string
-	}{
-		{
-			"foobar.zone.com",
-			map[string]string{"zone.com": "1234567"},
-			"zone.com",
-		},
-	}
-	for _, v := range test {
-		suitableZone := zoneFinder(v.hostname, v.zones)
-		if suitableZone != v.expect {
-			t.Fatalf("expect %v, but got %v", v.expect, suitableZone)
-		}
-	}
+func TestZoneIDName(t *testing.T) {
+	z := zoneIDName{}
+	z.Add("123456", "foo.bar")
+	z.Add("123456", "qux.baz")
+	z.Add("654321", "foo.qux.baz")
+
+	assert.Equal(t, zoneIDName{
+		"123456": "qux.baz",
+		"654321": "foo.qux.baz",
+	}, z)
+
+	zoneID, zoneName := z.FindZone("name.qux.baz")
+	assert.Equal(t, "qux.baz", zoneName)
+	assert.Equal(t, "123456", zoneID)
+
+	zoneID, zoneName = z.FindZone("name.foo.qux.baz")
+	assert.Equal(t, "foo.qux.baz", zoneName)
+	assert.Equal(t, "654321", zoneID)
+
+	zoneID, zoneName = z.FindZone("name.qux.foo")
+	assert.Equal(t, "", zoneName)
+	assert.Equal(t, "", zoneID)
 }

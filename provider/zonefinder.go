@@ -18,16 +18,20 @@ package provider
 
 import "strings"
 
-// zoneFinder returns the most suitable zone for a given hostname
-// and a set of zones.
-func zoneFinder(hostname string, zones map[string]string) string {
-	var suitableZone string
-	for zoneName := range zones {
+type zoneIDName map[string]string
+
+func (z zoneIDName) Add(zoneID, zoneName string) {
+	z[zoneID] = zoneName
+}
+
+func (z zoneIDName) FindZone(hostname string) (suitableZoneID, suitableZoneName string) {
+	for zoneID, zoneName := range z {
 		if strings.HasSuffix(hostname, zoneName) {
-			if suitableZone == "" || len(zoneName) > len(suitableZone) {
-				suitableZone = zoneName
+			if suitableZoneName == "" || len(zoneName) > len(suitableZoneName) {
+				suitableZoneID = zoneID
+				suitableZoneName = zoneName
 			}
 		}
 	}
-	return suitableZone
+	return
 }

@@ -23,7 +23,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/Azure/azure-sdk-for-go/arm/dns"
 	"github.com/Azure/go-autorest/autorest"
@@ -237,12 +237,14 @@ func (p *AzureProvider) mapChanges(zones []dns.Zone, changes *plan.Changes) (azu
 	ignored := map[string]bool{}
 	deleted := azureChangeMap{}
 	updated := azureChangeMap{}
-	zoneNames := map[string]string{}
+	zoneNameIDMapper := zoneIDName{}
 	for _, z := range zones {
-		zoneNames[*z.Name] = *z.Name
+		if z.Name != nil {
+			zoneNameIDMapper.Add(*z.Name, *z.Name)
+		}
 	}
 	mapChange := func(changeMap azureChangeMap, change *endpoint.Endpoint) {
-		zone := zoneFinder(change.DNSName, zoneNames)
+		zone, _ := zoneNameIDMapper.FindZone(change.DNSName)
 		if zone == "" {
 			if _, ok := ignored[change.DNSName]; !ok {
 				ignored[change.DNSName] = true
