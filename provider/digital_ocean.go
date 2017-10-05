@@ -257,7 +257,7 @@ func newDigitalOceanChange(action string, endpoint *endpoint.Endpoint) *DigitalO
 		Action: action,
 		ResourceRecordSet: godo.DomainRecord{
 			Name: endpoint.DNSName,
-			Type: suitableType(endpoint),
+			Type: endpoint.RecordType,
 			Data: endpoint.Target,
 		},
 	}

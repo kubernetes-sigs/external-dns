@@ -16,13 +16,19 @@ limitations under the License.
 
 package source
 
-import "github.com/kubernetes-incubator/external-dns/endpoint"
+import (
+	"net"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+)
 
 const (
 	// The annotation used for figuring out which controller is responsible
 	controllerAnnotationKey = "external-dns.alpha.kubernetes.io/controller"
 	// The annotation used for defining the desired hostname
 	hostnameAnnotationKey = "external-dns.alpha.kubernetes.io/hostname"
+	// The annotation used for defining the desired ingress target
+	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
 	// The value of the controller annotation so that we feel resposible
 	controllerAnnotationValue = "dns-controller"
 )
@@ -30,4 +36,13 @@ const (
 // Source defines the interface Endpoint sources should implement.
 type Source interface {
 	Endpoints() ([]*endpoint.Endpoint, error)
+}
+
+// suitableType returns the DNS resource record type suitable for the target.
+// In this case type A for IPs and type CNAME for everything else.
+func suitableType(target string) string {
+	if net.ParseIP(target) != nil {
+		return endpoint.RecordTypeA
+	}
+	return endpoint.RecordTypeCNAME
 }

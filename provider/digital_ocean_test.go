@@ -459,22 +459,22 @@ func TestDigitalOceanGetRecordID(t *testing.T) {
 		{
 			ID:   1,
 			Name: "foo.com",
-			Type: "CNAME",
+			Type: endpoint.RecordTypeCNAME,
 		},
 		{
 			ID:   2,
 			Name: "baz.de",
-			Type: "A",
+			Type: endpoint.RecordTypeA,
 		},
 	}
 	assert.Equal(t, 1, p.getRecordID(records, godo.DomainRecord{
 		Name: "foo.com",
-		Type: "CNAME",
+		Type: endpoint.RecordTypeCNAME,
 	}))
 
 	assert.Equal(t, 0, p.getRecordID(records, godo.DomainRecord{
 		Name: "foo.com",
-		Type: "A",
+		Type: endpoint.RecordTypeA,
 	}))
 }
 

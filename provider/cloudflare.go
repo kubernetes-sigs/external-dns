@@ -20,9 +20,8 @@ import (
 	"fmt"
 	"os"
 
+	cloudflare "github.com/cloudflare/cloudflare-go"
 	log "github.com/sirupsen/logrus"
-
-	"github.com/cloudflare/cloudflare-go"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
@@ -83,6 +82,7 @@ type CloudFlareProvider struct {
 	Client cloudFlareDNS
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter DomainFilter
+	proxied      bool
 	DryRun       bool
 }
 
@@ -93,7 +93,7 @@ type cloudFlareChange struct {
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(domainFilter DomainFilter, dryRun bool) (*CloudFlareProvider, error) {
+func NewCloudFlareProvider(domainFilter DomainFilter, proxied bool, dryRun bool) (*CloudFlareProvider, error) {
 	// initialize via API email and API key and returns new API object
 	config, err := cloudflare.New(os.Getenv("CF_API_KEY"), os.Getenv("CF_API_EMAIL"))
 	if err != nil {
@@ -103,6 +103,7 @@ func NewCloudFlareProvider(domainFilter DomainFilter, dryRun bool) (*CloudFlareP
 		//Client: config,
 		Client:       zoneService{config},
 		domainFilter: domainFilter,
+		proxied:      proxied,
 		DryRun:       dryRun,
 	}
 	return provider, nil
@@ -154,9 +155,9 @@ func (p *CloudFlareProvider) Records() ([]*endpoint.Endpoint, error) {
 func (p *CloudFlareProvider) ApplyChanges(changes *plan.Changes) error {
 	combinedChanges := make([]*cloudFlareChange, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 
-	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareCreate, changes.Create)...)
-	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareUpdate, changes.UpdateNew)...)
-	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareDelete, changes.Delete)...)
+	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareCreate, changes.Create, p.proxied)...)
+	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareUpdate, changes.UpdateNew, p.proxied)...)
+	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareDelete, changes.Delete, p.proxied)...)
 
 	return p.submitChanges(combinedChanges)
 }
@@ -248,27 +249,25 @@ func (p *CloudFlareProvider) getRecordID(records []cloudflare.DNSRecord, record 
 }
 
 // newCloudFlareChanges returns a collection of Changes based on the given records and action.
-func newCloudFlareChanges(action string, endpoints []*endpoint.Endpoint) []*cloudFlareChange {
+func newCloudFlareChanges(action string, endpoints []*endpoint.Endpoint, proxied bool) []*cloudFlareChange {
 	changes := make([]*cloudFlareChange, 0, len(endpoints))
 
 	for _, endpoint := range endpoints {
-		changes = append(changes, newCloudFlareChange(action, endpoint))
+		changes = append(changes, newCloudFlareChange(action, endpoint, proxied))
 	}
 
 	return changes
 }
 
-func newCloudFlareChange(action string, endpoint *endpoint.Endpoint) *cloudFlareChange {
-	typ := suitableType(endpoint)
-
+func newCloudFlareChange(action string, endpoint *endpoint.Endpoint, proxied bool) *cloudFlareChange {
 	return &cloudFlareChange{
 		Action: action,
 		ResourceRecordSet: cloudflare.DNSRecord{
 			Name: endpoint.DNSName,
 			// TTL Value of 1 is 'automatic'
 			TTL:     1,
-			Proxied: false,
-			Type:    typ,
+			Proxied: proxied,
+			Type:    endpoint.RecordType,
 			Content: endpoint.Target,
 		},
 	}

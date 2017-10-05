@@ -19,6 +19,7 @@ package externaldns
 import (
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/alecthomas/kingpin"
 )
 
@@ -34,11 +35,14 @@ type Config struct {
 	Namespace          string
 	FQDNTemplate       string
 	Compatibility      string
+	PublishInternal    bool
 	Provider           string
 	GoogleProject      string
 	DomainFilter       []string
+	AWSZoneType        string
 	AzureConfigFile    string
 	AzureResourceGroup string
+	CloudflareProxied  bool
 	Policy             string
 	Registry           string
 	TXTOwnerID         string
@@ -48,7 +52,7 @@ type Config struct {
 	DryRun             bool
 	LogFormat          string
 	MetricsAddress     string
-	Debug              bool
+	LogLevel           string
 }
 
 var defaultConfig = &Config{
@@ -58,11 +62,14 @@ var defaultConfig = &Config{
 	Namespace:          "",
 	FQDNTemplate:       "",
 	Compatibility:      "",
+	PublishInternal:    false,
 	Provider:           "",
 	GoogleProject:      "",
 	DomainFilter:       []string{},
+	AWSZoneType:        "",
 	AzureConfigFile:    "/etc/kubernetes/azure.json",
 	AzureResourceGroup: "",
+	CloudflareProxied:  false,
 	Policy:             "sync",
 	Registry:           "txt",
 	TXTOwnerID:         "default",
@@ -72,12 +79,21 @@ var defaultConfig = &Config{
 	DryRun:             false,
 	LogFormat:          "text",
 	MetricsAddress:     ":7979",
-	Debug:              false,
+	LogLevel:           logrus.InfoLevel.String(),
 }
 
 // NewConfig returns new Config object
 func NewConfig() *Config {
 	return &Config{}
+}
+
+// allLogLevelsAsStrings returns all logrus levels as a list of strings
+func allLogLevelsAsStrings() []string {
+	var levels []string
+	for _, level := range logrus.AllLevels {
+		levels = append(levels, level.String())
+	}
+	return levels
 }
 
 // ParseFlags adds and parses flags from command line
@@ -95,13 +111,16 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
 	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional)").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
 	app.Flag("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule)").Default(defaultConfig.Compatibility).EnumVar(&cfg.Compatibility, "", "mate", "molecule")
+	app.Flag("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)").BoolVar(&cfg.PublishInternal)
 
 	// Flags related to providers
 	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, google, azure, cloudflare, digitalocean, inmemory)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "google", "azure", "cloudflare", "digitalocean", "inmemory")
-	app.Flag("google-project", "When using the Google provider, specify the Google project (required when --provider=google)").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
+	app.Flag("google-project", "When using the Google provider, specify the Google project (required when --provider=google)").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
+	app.Flag("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AWSZoneType).EnumVar(&cfg.AWSZoneType, "", "public", "private")
 	app.Flag("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure").Default(defaultConfig.AzureConfigFile).StringVar(&cfg.AzureConfigFile)
 	app.Flag("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (optional)").Default(defaultConfig.AzureResourceGroup).StringVar(&cfg.AzureResourceGroup)
+	app.Flag("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.CloudflareProxied)
 
 	// Flags related to policies
 	app.Flag("policy", "Modify how DNS records are sychronized between sources and providers (default: sync, options: sync, upsert-only)").Default(defaultConfig.Policy).EnumVar(&cfg.Policy, "sync", "upsert-only")
@@ -118,8 +137,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 
 	// Miscellaneous flags
 	app.Flag("log-format", "The format in which log messages are printed (default: text, options: text, json)").Default(defaultConfig.LogFormat).EnumVar(&cfg.LogFormat, "text", "json")
-	app.Flag("metrics-address", "Specify were to serve the metrics and health check endpoint (default: :7979)").Default(defaultConfig.MetricsAddress).StringVar(&cfg.MetricsAddress)
-	app.Flag("debug", "When enabled, increases the logging output for debugging purposes (default: disabled)").BoolVar(&cfg.Debug)
+	app.Flag("metrics-address", "Specify where to serve the metrics and health check endpoint (default: :7979)").Default(defaultConfig.MetricsAddress).StringVar(&cfg.MetricsAddress)
+	app.Flag("log-level", "Set the level of logging. (default: info, options: panic, debug, info, warn, error, fatal").Default(defaultConfig.LogLevel).EnumVar(&cfg.LogLevel, allLogLevelsAsStrings()...)
 
 	_, err := app.Parse(args)
 	if err != nil {

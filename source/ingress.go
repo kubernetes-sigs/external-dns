@@ -33,7 +33,8 @@ import (
 
 // ingressSource is an implementation of Source for Kubernetes ingress objects.
 // Ingress implementation will use the spec.rules.host value for the hostname
-// Ingress annotations are ignored
+// Use targetAnnotationKey to explicitly set Endpoint. (useful if the ingress
+// controller does not update, or to override with alternative endpoint)
 type ingressSource struct {
 	client       kubernetes.Interface
 	namespace    string
@@ -103,6 +104,24 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
+// get endpoints from optional "target" annotation
+// Returns empty endpoints array if none are found.
+func getEndpointsFromTargetAnnotation(ing *v1beta1.Ingress, hostname string) []*endpoint.Endpoint {
+	var endpoints []*endpoint.Endpoint
+
+	// Get the desired hostname of the ingress from the annotation.
+	targetAnnotation, exists := ing.Annotations[targetAnnotationKey]
+	if exists {
+		// splits the hostname annotation and removes the trailing periods
+		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
+		for _, targetHostname := range targetsList {
+			targetHostname = strings.TrimSuffix(targetHostname, ".")
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, targetHostname, suitableType(targetHostname)))
+		}
+	}
+	return endpoints
+}
+
 func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
@@ -113,12 +132,19 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 	}
 
 	hostname := buf.String()
+
+	endpoints = getEndpointsFromTargetAnnotation(ing, hostname)
+
+	if len(endpoints) != 0 {
+		return endpoints, nil
+	}
+
 	for _, lb := range ing.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, endpoint.RecordTypeA))
 		}
 		if lb.Hostname != "" {
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
+			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, endpoint.RecordTypeCNAME))
 		}
 	}
 
@@ -133,12 +159,20 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 		if rule.Host == "" {
 			continue
 		}
+
+		annotationEndpoints := getEndpointsFromTargetAnnotation(ing, rule.Host)
+
+		if len(annotationEndpoints) != 0 {
+			endpoints = append(endpoints, annotationEndpoints...)
+			continue
+		}
+
 		for _, lb := range ing.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
-				endpoints = append(endpoints, endpoint.NewEndpoint(rule.Host, lb.IP, ""))
+				endpoints = append(endpoints, endpoint.NewEndpoint(rule.Host, lb.IP, endpoint.RecordTypeA))
 			}
 			if lb.Hostname != "" {
-				endpoints = append(endpoints, endpoint.NewEndpoint(rule.Host, lb.Hostname, ""))
+				endpoints = append(endpoints, endpoint.NewEndpoint(rule.Host, lb.Hostname, endpoint.RecordTypeCNAME))
 			}
 		}
 	}
