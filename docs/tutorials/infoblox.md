@@ -189,11 +189,22 @@ Run the following command to view the A records for your Infoblox DNS zone:
 ```
 $ curl -kl \
       -X GET \
-      -d zone=example.com \
       -u ${EXTERNAL_DNS_INFOBLOX_WAPI_USERNAME}:${EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD} \
-         https://${EXTERNAL_DNS_INFOBLOX_GRID_HOST}:${EXTERNAL_DNS_INFOBLOX_WAPI_PORT}/wapi/v${EXTERNAL_DNS_INFOBLOX_WAPI_VERSION}/record:a
+         https://${EXTERNAL_DNS_INFOBLOX_GRID_HOST}:${EXTERNAL_DNS_INFOBLOX_WAPI_PORT}/wapi/v${EXTERNAL_DNS_INFOBLOX_WAPI_VERSION}/record:a?zone=example.com
 ```
 
 Substitute the zone for the one created above if a different domain was used.
 
 This should show the external IP address of the service as the A record for your domain ('@' indicates the record is for the zone itself).
+
+## Clean up
+
+Now that we have verified that ExternalDNS will automatically manage Infoblox DNS records, we can delete the tutorial's
+DNS zone:
+
+```
+$ curl -kl \
+      -X DELETE \
+      -u ${EXTERNAL_DNS_INFOBLOX_WAPI_USERNAME}:${EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD} \
+         https://${EXTERNAL_DNS_INFOBLOX_GRID_HOST}:${EXTERNAL_DNS_INFOBLOX_WAPI_PORT}/wapi/v${EXTERNAL_DNS_INFOBLOX_WAPI_VERSION}/zone_auth?fqdn=example.com
+```

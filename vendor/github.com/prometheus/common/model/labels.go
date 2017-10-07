@@ -17,8 +17,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
-	"unicode/utf8"
 )
 
 const (
@@ -80,29 +80,12 @@ const (
 	QuantileLabel = "quantile"
 )
 
-// LabelNameRE is a regular expression matching valid label names. Note that the
-// IsValid method of LabelName performs the same check but faster than a match
-// with this regular expression.
+// LabelNameRE is a regular expression matching valid label names.
 var LabelNameRE = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]*$")
 
 // A LabelName is a key for a LabelSet or Metric.  It has a value associated
 // therewith.
 type LabelName string
-
-// IsValid is true iff the label name matches the pattern of LabelNameRE. This
-// method, however, does not use LabelNameRE for the check but a much faster
-// hardcoded implementation.
-func (ln LabelName) IsValid() bool {
-	if len(ln) == 0 {
-		return false
-	}
-	for i, b := range ln {
-		if !((b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || b == '_' || (b >= '0' && b <= '9' && i > 0)) {
-			return false
-		}
-	}
-	return true
-}
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
 func (ln *LabelName) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -110,7 +93,7 @@ func (ln *LabelName) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := unmarshal(&s); err != nil {
 		return err
 	}
-	if !LabelName(s).IsValid() {
+	if !LabelNameRE.MatchString(s) {
 		return fmt.Errorf("%q is not a valid label name", s)
 	}
 	*ln = LabelName(s)
@@ -123,7 +106,7 @@ func (ln *LabelName) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &s); err != nil {
 		return err
 	}
-	if !LabelName(s).IsValid() {
+	if !LabelNameRE.MatchString(s) {
 		return fmt.Errorf("%q is not a valid label name", s)
 	}
 	*ln = LabelName(s)
@@ -156,11 +139,6 @@ func (l LabelNames) String() string {
 // A LabelValue is an associated value for a LabelName.
 type LabelValue string
 
-// IsValid returns true iff the string is a valid UTF8.
-func (lv LabelValue) IsValid() bool {
-	return utf8.ValidString(string(lv))
-}
-
 // LabelValues is a sortable LabelValue slice. It implements sort.Interface.
 type LabelValues []LabelValue
 
@@ -169,7 +147,7 @@ func (l LabelValues) Len() int {
 }
 
 func (l LabelValues) Less(i, j int) bool {
-	return string(l[i]) < string(l[j])
+	return sort.StringsAreSorted([]string{string(l[i]), string(l[j])})
 }
 
 func (l LabelValues) Swap(i, j int) {

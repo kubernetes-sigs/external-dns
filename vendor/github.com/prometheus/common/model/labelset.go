@@ -27,21 +27,6 @@ import (
 // match.
 type LabelSet map[LabelName]LabelValue
 
-// Validate checks whether all names and values in the label set
-// are valid.
-func (ls LabelSet) Validate() error {
-	for ln, lv := range ls {
-		if !ln.IsValid() {
-			return fmt.Errorf("invalid name %q", ln)
-		}
-		if !lv.IsValid() {
-			return fmt.Errorf("invalid value %q", lv)
-		}
-	}
-	return nil
-}
-
-// Equal returns true iff both label sets have exactly the same key/value pairs.
 func (ls LabelSet) Equal(o LabelSet) bool {
 	if len(ls) != len(o) {
 		return false
@@ -105,7 +90,6 @@ func (ls LabelSet) Before(o LabelSet) bool {
 	return false
 }
 
-// Clone returns a copy of the label set.
 func (ls LabelSet) Clone() LabelSet {
 	lsn := make(LabelSet, len(ls))
 	for ln, lv := range ls {
@@ -160,7 +144,7 @@ func (l *LabelSet) UnmarshalJSON(b []byte) error {
 	// LabelName as a string and does not call its UnmarshalJSON method.
 	// Thus, we have to replicate the behavior here.
 	for ln := range m {
-		if !ln.IsValid() {
+		if !LabelNameRE.MatchString(string(ln)) {
 			return fmt.Errorf("%q is not a valid label name", ln)
 		}
 	}

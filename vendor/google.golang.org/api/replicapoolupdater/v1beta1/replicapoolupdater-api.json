@@ -1,6 +1,6 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/UEKDxDt-gBRW5wBq_kkcVGVpuQc\"",
+ "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/UEKDxDt-gBRW5wBq_kkcVGVpuQc\"",
  "discoveryVersion": "v1",
  "id": "replicapoolupdater:v1beta1",
  "name": "replicapoolupdater",
@@ -23,7 +23,7 @@
  "basePath": "/replicapoolupdater/v1beta1/projects/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "replicapoolupdater/v1beta1/projects/",
- "batchPath": "batch/replicapoolupdater/v1beta1",
+ "batchPath": "batch",
  "parameters": {
   "alt": {
    "type": "string",

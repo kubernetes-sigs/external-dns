@@ -55,9 +55,10 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client    *http.Client
-	BasePath  string // API endpoint base URL
-	UserAgent string // optional additional User-Agent fragment
+	client                    *http.Client
+	BasePath                  string // API endpoint base URL
+	UserAgent                 string // optional additional User-Agent fragment
+	GoogleClientHeaderElement string // client header fragment, for Google use only
 
 	Cse *CseService
 }
@@ -67,6 +68,10 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
+}
+
+func (s *Service) clientHeader() string {
+	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewCseService(s *Service) *CseService {
@@ -238,6 +243,8 @@ type Query struct {
 	Count int64 `json:"count,omitempty"`
 
 	Cr string `json:"cr,omitempty"`
+
+	Cref string `json:"cref,omitempty"`
 
 	Cx string `json:"cx,omitempty"`
 
@@ -631,6 +638,13 @@ func (c *CseListCall) Cr(cr string) *CseListCall {
 	return c
 }
 
+// Cref sets the optional parameter "cref": The URL of a linked custom
+// search engine
+func (c *CseListCall) Cref(cref string) *CseListCall {
+	c.urlParams_.Set("cref", cref)
+	return c
+}
+
 // Cx sets the optional parameter "cx": The custom search engine ID to
 // scope this search query
 func (c *CseListCall) Cx(cx string) *CseListCall {
@@ -962,6 +976,7 @@ func (c *CseListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
+	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -1026,6 +1041,11 @@ func (c *CseListCall) Do(opts ...googleapi.CallOption) (*Search, error) {
 	//     },
 	//     "cr": {
 	//       "description": "Country restrict(s).",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "cref": {
+	//       "description": "The URL of a linked custom search engine",
 	//       "location": "query",
 	//       "type": "string"
 	//     },

@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/p_O8VQ1GgwnmLUmXhlZf5JsJdkk\"",
+ "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/QkjGIRroDT5nHgu1Wy3bp0C7GqA\"",
  "discoveryVersion": "v1",
  "id": "fusiontables:v2",
  "name": "fusiontables",
  "version": "v2",
- "revision": "20170413",
+ "revision": "20160526",
  "title": "Fusion Tables API",
  "description": "API for working with Fusion Tables data.",
  "ownerDomain": "google.com",
@@ -20,7 +20,7 @@
  "basePath": "/fusiontables/v2/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "fusiontables/v2/",
- "batchPath": "batch/fusiontables/v2",
+ "batchPath": "batch",
  "parameters": {
   "alt": {
    "type": "string",

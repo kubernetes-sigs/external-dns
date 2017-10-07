@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/3Wqk_k4XWB3JARQsnkZ477HngjY\"",
+ "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/OBUnP-P7ni-fogNkVJMH8BP7EG8\"",
  "discoveryVersion": "v1",
  "id": "dfareporting:v2.7",
  "name": "dfareporting",
  "version": "v2.7",
- "revision": "20170818",
+ "revision": "20161027",
  "title": "DCM/DFA Reporting And Trafficking API",
  "description": "Manages your DoubleClick Campaign Manager ad campaigns and reports.",
  "ownerDomain": "google.com",
@@ -20,7 +20,7 @@
  "basePath": "/dfareporting/v2.7/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "dfareporting/v2.7/",
- "batchPath": "batch/dfareporting/v2.7",
+ "batchPath": "batch",
  "parameters": {
   "alt": {
    "type": "string",
@@ -116,7 +116,6 @@
      "description": "Maximum number of active ads allowed for this account.",
      "enum": [
       "ACTIVE_ADS_TIER_100K",
-      "ACTIVE_ADS_TIER_1M",
       "ACTIVE_ADS_TIER_200K",
       "ACTIVE_ADS_TIER_300K",
       "ACTIVE_ADS_TIER_40K",
@@ -125,7 +124,6 @@
       "ACTIVE_ADS_TIER_75K"
      ],
      "enumDescriptions": [
-      "",
       "",
       "",
       "",
@@ -154,7 +152,7 @@
     },
     "currencyId": {
      "type": "string",
-     "description": "ID of currency associated with this account. This is a required field.\nAcceptable values are: \n- \"1\" for USD \n- \"2\" for GBP \n- \"3\" for ESP \n- \"4\" for SEK \n- \"5\" for CAD \n- \"6\" for JPY \n- \"7\" for DEM \n- \"8\" for AUD \n- \"9\" for FRF \n- \"10\" for ITL \n- \"11\" for DKK \n- \"12\" for NOK \n- \"13\" for FIM \n- \"14\" for ZAR \n- \"15\" for IEP \n- \"16\" for NLG \n- \"17\" for EUR \n- \"18\" for KRW \n- \"19\" for TWD \n- \"20\" for SGD \n- \"21\" for CNY \n- \"22\" for HKD \n- \"23\" for NZD \n- \"24\" for MYR \n- \"25\" for BRL \n- \"26\" for PTE \n- \"27\" for MXP \n- \"28\" for CLP \n- \"29\" for TRY \n- \"30\" for ARS \n- \"31\" for PEN \n- \"32\" for ILS \n- \"33\" for CHF \n- \"34\" for VEF \n- \"35\" for COP \n- \"36\" for GTQ \n- \"37\" for PLN \n- \"39\" for INR \n- \"40\" for THB \n- \"41\" for IDR \n- \"42\" for CZK \n- \"43\" for RON \n- \"44\" for HUF \n- \"45\" for RUB \n- \"46\" for AED \n- \"47\" for BGN \n- \"48\" for HRK \n- \"49\" for MXN",
+     "description": "ID of currency associated with this account. This is a required field.\nAcceptable values are: \n- \"1\" for USD \n- \"2\" for GBP \n- \"3\" for ESP \n- \"4\" for SEK \n- \"5\" for CAD \n- \"6\" for JPY \n- \"7\" for DEM \n- \"8\" for AUD \n- \"9\" for FRF \n- \"10\" for ITL \n- \"11\" for DKK \n- \"12\" for NOK \n- \"13\" for FIM \n- \"14\" for ZAR \n- \"15\" for IEP \n- \"16\" for NLG \n- \"17\" for EUR \n- \"18\" for KRW \n- \"19\" for TWD \n- \"20\" for SGD \n- \"21\" for CNY \n- \"22\" for HKD \n- \"23\" for NZD \n- \"24\" for MYR \n- \"25\" for BRL \n- \"26\" for PTE \n- \"27\" for MXP \n- \"28\" for CLP \n- \"29\" for TRY \n- \"30\" for ARS \n- \"31\" for PEN \n- \"32\" for ILS \n- \"33\" for CHF \n- \"34\" for VEF \n- \"35\" for COP \n- \"36\" for GTQ \n- \"37\" for PLN \n- \"39\" for INR \n- \"40\" for THB \n- \"41\" for IDR \n- \"42\" for CZK \n- \"43\" for RON \n- \"44\" for HUF \n- \"45\" for RUB \n- \"46\" for AED \n- \"47\" for BGN \n- \"48\" for HRK",
      "format": "int64"
     },
     "defaultCreativeSizeId": {
@@ -182,7 +180,7 @@
     },
     "maximumImageSize": {
      "type": "string",
-     "description": "Maximum image size allowed for this account, in kilobytes. Value must be greater than or equal to 1.",
+     "description": "Maximum image size allowed for this account.",
      "format": "int64"
     },
     "name": {
@@ -203,7 +201,7 @@
     },
     "teaserSizeLimit": {
      "type": "string",
-     "description": "File size limit in kilobytes of Rich Media teaser creatives. Acceptable values are 1 to 10240, inclusive.",
+     "description": "File size limit in kilobytes of Rich Media teaser creatives. Must be between 1 and 10240.",
      "format": "int64"
     }
    }
@@ -228,7 +226,6 @@
      "description": "Maximum number of active ads allowed for the account.",
      "enum": [
       "ACTIVE_ADS_TIER_100K",
-      "ACTIVE_ADS_TIER_1M",
       "ACTIVE_ADS_TIER_200K",
       "ACTIVE_ADS_TIER_300K",
       "ACTIVE_ADS_TIER_40K",
@@ -237,7 +234,6 @@
       "ACTIVE_ADS_TIER_75K"
      ],
      "enumDescriptions": [
-      "",
       "",
       "",
       "",
@@ -998,7 +994,7 @@
    "properties": {
     "allocation": {
      "type": "integer",
-     "description": "Weight allocated to this segment. The weight assigned will be understood in proportion to the weights assigned to other segments in the same segment group. Acceptable values are 1 to 1000, inclusive.",
+     "description": "Weight allocated to this segment. Must be between 1 and 1000. The weight assigned will be understood in proportion to the weights assigned to other segments in the same segment group.",
      "format": "int32"
     },
     "id": {
@@ -1838,7 +1834,7 @@
     },
     "status": {
      "type": "array",
-     "description": "The insert status of each conversion. Statuses are returned in the same order that conversions are inserted.",
+     "description": "The status of each conversion's insertion status. The status is returned in the same order that conversions are inserted.",
      "items": {
       "$ref": "ConversionStatus"
      }
@@ -2229,7 +2225,7 @@
     },
     "htmlCode": {
      "type": "string",
-     "description": "HTML code for the creative. This is a required field when applicable. This field is ignored if htmlCodeLocked is true. Applicable to the following creative types: all CUSTOM, FLASH_INPAGE, and HTML5_BANNER, and all RICH_MEDIA."
+     "description": "HTML code for the creative. This is a required field when applicable. This field is ignored if htmlCodeLocked is false. Applicable to the following creative types: all CUSTOM, FLASH_INPAGE, and HTML5_BANNER, and all RICH_MEDIA."
     },
     "htmlCodeLocked": {
      "type": "boolean",
@@ -2519,7 +2515,7 @@
     },
     "customStartTimeValue": {
      "type": "integer",
-     "description": "Custom start time in seconds for making the asset visible. Applicable to the following creative types: all RICH_MEDIA. Value must be greater than or equal to 0.",
+     "description": "Custom start time in seconds for making the asset visible. Applicable to the following creative types: all RICH_MEDIA.",
      "format": "int32"
     },
     "detectedFeatures": {
@@ -2695,7 +2691,7 @@
     },
     "duration": {
      "type": "integer",
-     "description": "Duration in seconds for which an asset will be displayed. Applicable to the following creative types: INSTREAM_VIDEO and VPAID_LINEAR_VIDEO. Value must be greater than or equal to 1.",
+     "description": "Duration in seconds for which an asset will be displayed. Applicable to the following creative types: INSTREAM_VIDEO and VPAID_LINEAR_VIDEO.",
      "format": "int32"
     },
     "durationType": {
@@ -2801,7 +2797,7 @@
     },
     "pushdownDuration": {
      "type": "number",
-     "description": "Pushdown duration in seconds for an asset. Applicable to the following creative types: all RICH_MEDIA.Additionally, only applicable when the asset pushdown field is true, the offsets are 0, the collapsedSize.width matches size.width, and the collapsedSize.height is less than size.height. Acceptable values are 0 to 9.99, inclusive.",
+     "description": "Pushdown duration in seconds for an asset. Must be between 0 and 9.99. Applicable to the following creative types: all RICH_MEDIA.Additionally, only applicable when the asset pushdown field is true, the offsets are 0, the collapsedSize.width matches size.width, and the collapsedSize.height is less than size.height.",
      "format": "float"
     },
     "role": {
@@ -2881,7 +2877,7 @@
     },
     "zIndex": {
      "type": "integer",
-     "description": "zIndex value of an asset. Applicable to the following creative types: all RICH_MEDIA.Additionally, only applicable to assets whose displayType is NOT one of the following types: ASSET_DISPLAY_TYPE_INPAGE or ASSET_DISPLAY_TYPE_OVERLAY. Acceptable values are -999999999 to 999999999, inclusive.",
+     "description": "zIndex value of an asset. This is a read-only field. Applicable to the following creative types: all RICH_MEDIA.Additionally, only applicable to assets whose displayType is NOT one of the following types: ASSET_DISPLAY_TYPE_INPAGE or ASSET_DISPLAY_TYPE_OVERLAY.",
      "format": "int32"
     },
     "zipFilename": {
@@ -3223,14 +3219,14 @@
     },
     "richMediaExitOverrides": {
      "type": "array",
-     "description": "Rich media exit overrides for this creative assignment.\nApplicable when the creative type is any of the following: \n- DISPLAY\n- RICH_MEDIA_INPAGE\n- RICH_MEDIA_INPAGE_FLOATING\n- RICH_MEDIA_IM_EXPAND\n- RICH_MEDIA_EXPANDING\n- RICH_MEDIA_INTERSTITIAL_FLOAT\n- RICH_MEDIA_MOBILE_IN_APP\n- RICH_MEDIA_MULTI_FLOATING\n- RICH_MEDIA_PEEL_DOWN\n- VPAID_LINEAR\n- VPAID_NON_LINEAR",
+     "description": "Rich media exit overrides for this creative assignment.\nApplicable when the creative type is any of the following: \n- RICH_MEDIA_INPAGE\n- RICH_MEDIA_INPAGE_FLOATING\n- RICH_MEDIA_IM_EXPAND\n- RICH_MEDIA_EXPANDING\n- RICH_MEDIA_INTERSTITIAL_FLOAT\n- RICH_MEDIA_MOBILE_IN_APP\n- RICH_MEDIA_MULTI_FLOATING\n- RICH_MEDIA_PEEL_DOWN\n- ADVANCED_BANNER\n- VPAID_LINEAR\n- VPAID_NON_LINEAR",
      "items": {
       "$ref": "RichMediaExitOverride"
      }
     },
     "sequence": {
      "type": "integer",
-     "description": "Sequence number of the creative assignment, applicable when the rotation type is CREATIVE_ROTATION_TYPE_SEQUENTIAL. Acceptable values are 1 to 65535, inclusive.",
+     "description": "Sequence number of the creative assignment, applicable when the rotation type is CREATIVE_ROTATION_TYPE_SEQUENTIAL.",
      "format": "int32"
     },
     "sslCompliant": {
@@ -3244,7 +3240,7 @@
     },
     "weight": {
      "type": "integer",
-     "description": "Weight of the creative assignment, applicable when the rotation type is CREATIVE_ROTATION_TYPE_RANDOM. Value must be greater than or equal to 1.",
+     "description": "Weight of the creative assignment, applicable when the rotation type is CREATIVE_ROTATION_TYPE_RANDOM.",
      "format": "int32"
     }
    }
@@ -3479,7 +3475,7 @@
     },
     "groupNumber": {
      "type": "integer",
-     "description": "Subgroup of the creative group. Assign your creative groups to a subgroup in order to filter or manage them more easily. This field is required on insertion and is read-only after insertion. Acceptable values are 1 to 2, inclusive.",
+     "description": "Subgroup of the creative group. Assign your creative groups to one of the following subgroups in order to filter or manage them more easily. This field is required on insertion and is read-only after insertion.\nAcceptable values are: \n- 1\n- 2",
      "format": "int32"
     },
     "id": {
@@ -4051,7 +4047,7 @@
     },
     "hoursOfDay": {
      "type": "array",
-     "description": "Hours of the day when the ad will serve, where 0 is midnight to 1 AM and 23 is 11 PM to midnight. Can be specified with days of week, in which case the ad would serve during these hours on the specified days. For example if Monday, Wednesday, Friday are the days of week specified and 9-10am, 3-5pm (hours 9, 15, and 16) is specified, the ad would serve Monday, Wednesdays, and Fridays at 9-10am and 3-5pm. Acceptable values are 0 to 23, inclusive.",
+     "description": "Hours of the day when the ad will serve. Must be an integer between 0 and 23 (inclusive), where 0 is midnight to 1 AM, and 23 is 11 PM to midnight. Can be specified with days of week, in which case the ad would serve during these hours on the specified days. For example, if Monday, Wednesday, Friday are the days of week specified and 9-10am, 3-5pm (hours 9, 15, and 16) is specified, the ad would serve Monday, Wednesdays, and Fridays at 9-10am and 3-5pm.",
      "items": {
       "type": "integer",
       "format": "int32"
@@ -4094,7 +4090,7 @@
     },
     "impressionRatio": {
      "type": "string",
-     "description": "Impression ratio for this ad. This ratio determines how often each ad is served relative to the others. For example, if ad A has an impression ratio of 1 and ad B has an impression ratio of 3, then DCM will serve ad B three times as often as ad A. Acceptable values are 1 to 10, inclusive.",
+     "description": "Impression ratio for this ad. This ratio determines how often each ad is served relative to the others. For example, if ad A has an impression ratio of 1 and ad B has an impression ratio of 3, then DCM will serve ad B three times as often as ad A. Must be between 1 and 10.",
      "format": "int64"
     },
     "priority": {
@@ -4339,17 +4335,17 @@
     },
     "countryId": {
      "type": "string",
-     "description": "Country ID of this directory site. This is a read-only field.",
+     "description": "Country ID of this directory site.",
      "format": "int64"
     },
     "currencyId": {
      "type": "string",
-     "description": "Currency ID of this directory site. This is a read-only field.\nPossible values are: \n- \"1\" for USD \n- \"2\" for GBP \n- \"3\" for ESP \n- \"4\" for SEK \n- \"5\" for CAD \n- \"6\" for JPY \n- \"7\" for DEM \n- \"8\" for AUD \n- \"9\" for FRF \n- \"10\" for ITL \n- \"11\" for DKK \n- \"12\" for NOK \n- \"13\" for FIM \n- \"14\" for ZAR \n- \"15\" for IEP \n- \"16\" for NLG \n- \"17\" for EUR \n- \"18\" for KRW \n- \"19\" for TWD \n- \"20\" for SGD \n- \"21\" for CNY \n- \"22\" for HKD \n- \"23\" for NZD \n- \"24\" for MYR \n- \"25\" for BRL \n- \"26\" for PTE \n- \"27\" for MXP \n- \"28\" for CLP \n- \"29\" for TRY \n- \"30\" for ARS \n- \"31\" for PEN \n- \"32\" for ILS \n- \"33\" for CHF \n- \"34\" for VEF \n- \"35\" for COP \n- \"36\" for GTQ \n- \"37\" for PLN \n- \"39\" for INR \n- \"40\" for THB \n- \"41\" for IDR \n- \"42\" for CZK \n- \"43\" for RON \n- \"44\" for HUF \n- \"45\" for RUB \n- \"46\" for AED \n- \"47\" for BGN \n- \"48\" for HRK \n- \"49\" for MXN",
+     "description": "Currency ID of this directory site.\nPossible values are: \n- \"1\" for USD \n- \"2\" for GBP \n- \"3\" for ESP \n- \"4\" for SEK \n- \"5\" for CAD \n- \"6\" for JPY \n- \"7\" for DEM \n- \"8\" for AUD \n- \"9\" for FRF \n- \"10\" for ITL \n- \"11\" for DKK \n- \"12\" for NOK \n- \"13\" for FIM \n- \"14\" for ZAR \n- \"15\" for IEP \n- \"16\" for NLG \n- \"17\" for EUR \n- \"18\" for KRW \n- \"19\" for TWD \n- \"20\" for SGD \n- \"21\" for CNY \n- \"22\" for HKD \n- \"23\" for NZD \n- \"24\" for MYR \n- \"25\" for BRL \n- \"26\" for PTE \n- \"27\" for MXP \n- \"28\" for CLP \n- \"29\" for TRY \n- \"30\" for ARS \n- \"31\" for PEN \n- \"32\" for ILS \n- \"33\" for CHF \n- \"34\" for VEF \n- \"35\" for COP \n- \"36\" for GTQ \n- \"37\" for PLN \n- \"39\" for INR \n- \"40\" for THB \n- \"41\" for IDR \n- \"42\" for CZK \n- \"43\" for RON \n- \"44\" for HUF \n- \"45\" for RUB \n- \"46\" for AED \n- \"47\" for BGN \n- \"48\" for HRK",
      "format": "int64"
     },
     "description": {
      "type": "string",
-     "description": "Description of this directory site. This is a read-only field."
+     "description": "Description of this directory site."
     },
     "id": {
      "type": "string",
@@ -4569,7 +4565,7 @@
     },
     "videoActiveViewOptOut": {
      "type": "boolean",
-     "description": "Whether this directory site has disabled active view for in-stream video creatives. This is a read-only field."
+     "description": "Whether this directory site has disabled active view for in-stream video creatives."
     }
    }
   },
@@ -5049,7 +5045,7 @@
     },
     "cacheBustingType": {
      "type": "string",
-     "description": "Code type used for cache busting in the generated tag. Applicable only when floodlightActivityGroupType is COUNTER and countingMethod is STANDARD_COUNTING or UNIQUE_COUNTING.",
+     "description": "Code type used for cache busting in the generated tag.",
      "enum": [
       "ACTIVE_SERVER_PAGE",
       "COLD_FUSION",
@@ -5200,7 +5196,7 @@
     },
     "userDefinedVariableTypes": {
      "type": "array",
-     "description": "List of the user-defined variables used by this conversion tag. These map to the \"u[1-100]=\" in the tags. Each of these can have a user defined type.\nAcceptable values are U1 to U100, inclusive.",
+     "description": "List of the user-defined variables used by this conversion tag. These map to the \"u[1-20]=\" in the tags. Each of these can have a user defined type.\nAcceptable values are:\n- \"U1\"\n- \"U2\"\n- \"U3\"\n- \"U4\"\n- \"U5\"\n- \"U6\"\n- \"U7\"\n- \"U8\"\n- \"U9\"\n- \"U10\"\n- \"U11\"\n- \"U12\"\n- \"U13\"\n- \"U14\"\n- \"U15\"\n- \"U16\"\n- \"U17\"\n- \"U18\"\n- \"U19\"\n- \"U20\"",
      "items": {
       "type": "string",
       "enum": [
@@ -5738,12 +5734,12 @@
    "properties": {
     "duration": {
      "type": "string",
-     "description": "Duration of time, in seconds, for this frequency cap. The maximum duration is 90 days. Acceptable values are 1 to 7776000, inclusive.",
+     "description": "Duration of time, in seconds, for this frequency cap. The maximum duration is 90 days in seconds, or 7,776,000.",
      "format": "int64"
     },
     "impressions": {
      "type": "string",
-     "description": "Number of times an individual user can be served the ad within the specified duration. Acceptable values are 1 to 15, inclusive.",
+     "description": "Number of times an individual user can be served the ad within the specified duration. The maximum allowed is 15.",
      "format": "int64"
     }
    }
@@ -6220,12 +6216,12 @@
    "properties": {
     "clickDuration": {
      "type": "integer",
-     "description": "Lookback window, in days, from the last time a given user clicked on one of your ads. If you enter 0, clicks will not be considered as triggering events for floodlight tracking. If you leave this field blank, the default value for your account will be used. Acceptable values are 0 to 90, inclusive.",
+     "description": "Lookback window, in days, from the last time a given user clicked on one of your ads. If you enter 0, clicks will not be considered as triggering events for floodlight tracking. If you leave this field blank, the default value for your account will be used.",
      "format": "int32"
     },
     "postImpressionActivitiesDuration": {
      "type": "integer",
-     "description": "Lookback window, in days, from the last time a given user viewed one of your ads. If you enter 0, impressions will not be considered as triggering events for floodlight tracking. If you leave this field blank, the default value for your account will be used. Acceptable values are 0 to 90, inclusive.",
+     "description": "Lookback window, in days, from the last time a given user viewed one of your ads. If you enter 0, impressions will not be considered as triggering events for floodlight tracking. If you leave this field blank, the default value for your account will be used.",
      "format": "int32"
     }
    }
@@ -6535,7 +6531,7 @@
     },
     "weight": {
      "type": "integer",
-     "description": "Weight associated with this optimization. The weight assigned will be understood in proportion to the weights assigned to the other optimization activities. Value must be greater than or equal to 1.",
+     "description": "Weight associated with this optimization. Must be greater than 1. The weight assigned will be understood in proportion to the weights assigned to the other optimization activities.",
      "format": "int32"
     }
    }
@@ -7064,7 +7060,7 @@
     },
     "tagFormats": {
      "type": "array",
-     "description": "Tag formats to generate for this placement. This field is required on insertion.\nAcceptable values are:\n- \"PLACEMENT_TAG_STANDARD\"\n- \"PLACEMENT_TAG_IFRAME_JAVASCRIPT\"\n- \"PLACEMENT_TAG_IFRAME_ILAYER\"\n- \"PLACEMENT_TAG_INTERNAL_REDIRECT\"\n- \"PLACEMENT_TAG_JAVASCRIPT\"\n- \"PLACEMENT_TAG_INTERSTITIAL_IFRAME_JAVASCRIPT\"\n- \"PLACEMENT_TAG_INTERSTITIAL_INTERNAL_REDIRECT\"\n- \"PLACEMENT_TAG_INTERSTITIAL_JAVASCRIPT\"\n- \"PLACEMENT_TAG_CLICK_COMMANDS\"\n- \"PLACEMENT_TAG_INSTREAM_VIDEO_PREFETCH\"\n- \"PLACEMENT_TAG_INSTREAM_VIDEO_PREFETCH_VAST_3\"\n- \"PLACEMENT_TAG_INSTREAM_VIDEO_PREFETCH_VAST_4\"\n- \"PLACEMENT_TAG_TRACKING\"\n- \"PLACEMENT_TAG_TRACKING_IFRAME\"\n- \"PLACEMENT_TAG_TRACKING_JAVASCRIPT\"",
+     "description": "Tag formats to generate for this placement. This field is required on insertion.\nAcceptable values are:\n- \"PLACEMENT_TAG_STANDARD\"\n- \"PLACEMENT_TAG_IFRAME_JAVASCRIPT\"\n- \"PLACEMENT_TAG_IFRAME_ILAYER\"\n- \"PLACEMENT_TAG_INTERNAL_REDIRECT\"\n- \"PLACEMENT_TAG_JAVASCRIPT\"\n- \"PLACEMENT_TAG_INTERSTITIAL_IFRAME_JAVASCRIPT\"\n- \"PLACEMENT_TAG_INTERSTITIAL_INTERNAL_REDIRECT\"\n- \"PLACEMENT_TAG_INTERSTITIAL_JAVASCRIPT\"\n- \"PLACEMENT_TAG_CLICK_COMMANDS\"\n- \"PLACEMENT_TAG_INSTREAM_VIDEO_PREFETCH\"\n- \"PLACEMENT_TAG_TRACKING\"\n- \"PLACEMENT_TAG_TRACKING_IFRAME\"\n- \"PLACEMENT_TAG_TRACKING_JAVASCRIPT\"",
      "items": {
       "type": "string",
       "enum": [
@@ -7074,7 +7070,6 @@
        "PLACEMENT_TAG_IFRAME_JAVASCRIPT_LEGACY",
        "PLACEMENT_TAG_INSTREAM_VIDEO_PREFETCH",
        "PLACEMENT_TAG_INSTREAM_VIDEO_PREFETCH_VAST_3",
-       "PLACEMENT_TAG_INSTREAM_VIDEO_PREFETCH_VAST_4",
        "PLACEMENT_TAG_INTERNAL_REDIRECT",
        "PLACEMENT_TAG_INTERSTITIAL_IFRAME_JAVASCRIPT",
        "PLACEMENT_TAG_INTERSTITIAL_IFRAME_JAVASCRIPT_LEGACY",
@@ -7089,7 +7084,6 @@
        "PLACEMENT_TAG_TRACKING_JAVASCRIPT"
       ],
       "enumDescriptions": [
-       "",
        "",
        "",
        "",
@@ -7125,7 +7119,7 @@
     },
     "vpaidAdapterChoice": {
      "type": "string",
-     "description": "VPAID adapter setting for this placement. Controls which VPAID format the measurement adapter will use for in-stream video creatives assigned to this placement.\n\nNote: Flash is no longer supported. This field now defaults to HTML5 when the following values are provided: FLASH, BOTH.",
+     "description": "VPAID adapter setting for this placement. Controls which VPAID format the measurement adapter will use for in-stream video creatives assigned to this placement.",
      "enum": [
       "BOTH",
       "DEFAULT",
@@ -7737,7 +7731,7 @@
     },
     "rateOrCostNanos": {
      "type": "string",
-     "description": "Rate or cost of this pricing period in nanos (i.e., multipled by 1000000000). Acceptable values are 0 to 1000000000000000000, inclusive.",
+     "description": "Rate or cost of this pricing period.",
      "format": "int64"
     },
     "startDate": {
@@ -7747,7 +7741,7 @@
     },
     "units": {
      "type": "string",
-     "description": "Units of this pricing period. Acceptable values are 0 to 10000000000, inclusive.",
+     "description": "Units of this pricing period.",
      "format": "int64"
     }
    }
@@ -8090,7 +8084,7 @@
     },
     "lifeSpan": {
      "type": "string",
-     "description": "Number of days that a user should remain in the remarketing list without an impression. Acceptable values are 1 to 540, inclusive.",
+     "description": "Number of days that a user should remain in the remarketing list without an impression.",
      "format": "int64"
     },
     "listPopulationRule": {
@@ -9017,7 +9011,7 @@
     },
     "vpaidAdapterChoiceTemplate": {
      "type": "string",
-     "description": "Default VPAID adapter setting for new placements created under this site. This value will be used to populate the placements.vpaidAdapterChoice field, when no value is specified for the new placement. Controls which VPAID format the measurement adapter will use for in-stream video creatives assigned to the placement. The publisher's specifications will typically determine this setting. For VPAID creatives, the adapter format will match the VPAID format (HTML5 VPAID creatives use the HTML5 adapter).\n\nNote: Flash is no longer supported. This field now defaults to HTML5 when the following values are provided: FLASH, BOTH.",
+     "description": "Default VPAID adapter setting for new placements created under this site. This value will be used to populate the placements.vpaidAdapterChoice field, when no value is specified for the new placement. Controls which VPAID format the measurement adapter will use for in-stream video creatives assigned to the placement. The publisher's specifications will typically determine this setting. For VPAID creatives, the adapter format will match the VPAID format (HTML5 VPAID creatives use the HTML5 adapter, and Flash VPAID creatives use the Flash adapter).",
      "enum": [
       "BOTH",
       "DEFAULT",
@@ -9063,7 +9057,7 @@
    "properties": {
     "height": {
      "type": "integer",
-     "description": "Height of this size. Acceptable values are 0 to 32767, inclusive.",
+     "description": "Height of this size.",
      "format": "int32"
     },
     "iab": {
@@ -9082,7 +9076,7 @@
     },
     "width": {
      "type": "integer",
-     "description": "Width of this size. Acceptable values are 0 to 32767, inclusive.",
+     "description": "Width of this size.",
      "format": "int32"
     }
    }
@@ -9222,7 +9216,7 @@
    "properties": {
     "adId": {
      "type": "string",
-     "description": "Ad associated with this placement tag. Applicable only when format is PLACEMENT_TAG_TRACKING.",
+     "description": "Ad associated with this placement tag.",
      "format": "int64"
     },
     "clickTag": {
@@ -9231,7 +9225,7 @@
     },
     "creativeId": {
      "type": "string",
-     "description": "Creative associated with this placement tag. Applicable only when format is PLACEMENT_TAG_TRACKING.",
+     "description": "Creative associated with this placement tag.",
      "format": "int64"
     },
     "format": {
@@ -9244,7 +9238,6 @@
       "PLACEMENT_TAG_IFRAME_JAVASCRIPT_LEGACY",
       "PLACEMENT_TAG_INSTREAM_VIDEO_PREFETCH",
       "PLACEMENT_TAG_INSTREAM_VIDEO_PREFETCH_VAST_3",
-      "PLACEMENT_TAG_INSTREAM_VIDEO_PREFETCH_VAST_4",
       "PLACEMENT_TAG_INTERNAL_REDIRECT",
       "PLACEMENT_TAG_INTERSTITIAL_IFRAME_JAVASCRIPT",
       "PLACEMENT_TAG_INTERSTITIAL_IFRAME_JAVASCRIPT_LEGACY",
@@ -9259,7 +9252,6 @@
       "PLACEMENT_TAG_TRACKING_JAVASCRIPT"
      ],
      "enumDescriptions": [
-      "",
       "",
       "",
       "",
@@ -10238,12 +10230,12 @@
    "properties": {
     "offsetPercentage": {
      "type": "integer",
-     "description": "Duration, as a percentage of video duration. Do not set when offsetSeconds is set. Acceptable values are 0 to 100, inclusive.",
+     "description": "Duration, as a percentage of video duration. Do not set when offsetSeconds is set.",
      "format": "int32"
     },
     "offsetSeconds": {
      "type": "integer",
-     "description": "Duration, in seconds. Do not set when offsetPercentage is set. Acceptable values are 0 to 86399, inclusive.",
+     "description": "Duration, in seconds. Do not set when offsetPercentage is set.",
      "format": "int32"
     }
    }
@@ -10512,10 +10504,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "pageToken": {
@@ -10538,7 +10527,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -10551,8 +10539,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -10705,10 +10692,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "pageToken": {
@@ -10731,7 +10715,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -10744,8 +10727,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -10983,10 +10965,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "overriddenEventTagId": {
@@ -11036,7 +11015,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -11049,8 +11027,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -11270,10 +11247,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "pageToken": {
@@ -11296,7 +11270,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -11309,8 +11282,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -11492,10 +11464,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "onlyParent": {
@@ -11523,7 +11492,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -11536,8 +11504,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -11723,10 +11690,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "pageToken": {
@@ -11743,8 +11707,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -11891,10 +11854,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "overriddenEventTagId": {
@@ -11923,7 +11883,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -11936,8 +11895,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -12127,10 +12085,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "minChangeTime": {
@@ -12489,10 +12444,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "pageToken": {
@@ -12515,7 +12467,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -12528,8 +12479,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -12899,10 +12849,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "pageToken": {
@@ -12925,7 +12872,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "VALUE"
@@ -12938,8 +12884,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -13155,10 +13100,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "pageToken": {
@@ -13181,7 +13123,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -13194,8 +13135,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -13359,8 +13299,6 @@
        "type": "integer",
        "description": "Select only creative groups that belong to this subgroup.",
        "format": "int32",
-       "minimum": "1",
-       "maximum": "2",
        "location": "query"
       },
       "ids": {
@@ -13373,10 +13311,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "pageToken": {
@@ -13399,7 +13334,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -13412,8 +13346,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -13612,10 +13545,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "pageToken": {
@@ -13652,7 +13582,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -13665,8 +13594,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -13827,7 +13755,6 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "100",
        "format": "int32",
        "minimum": "0",
        "maximum": "100",
@@ -13918,10 +13845,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "pageToken": {
@@ -13944,7 +13868,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -13957,8 +13880,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -14090,10 +14012,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "pageToken": {
@@ -14122,7 +14041,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -14135,8 +14053,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -14467,7 +14384,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -14480,8 +14396,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -14573,7 +14488,7 @@
      "id": "dfareporting.files.get",
      "path": "reports/{reportId}/files/{fileId}",
      "httpMethod": "GET",
-     "description": "Retrieves a report file by its report ID and file ID. This method supports media download.",
+     "description": "Retrieves a report file by its report ID and file ID.",
      "parameters": {
       "fileId": {
        "type": "string",
@@ -14611,7 +14526,6 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "10",
        "format": "int32",
        "minimum": "0",
        "maximum": "10",
@@ -14631,7 +14545,7 @@
       },
       "scope": {
        "type": "string",
-       "description": "The scope that defines which results are returned.",
+       "description": "The scope that defines which results are returned, default is 'MINE'.",
        "default": "MINE",
        "enum": [
         "ALL",
@@ -14661,7 +14575,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
+       "description": "Order of sorted results, default is 'DESCENDING'.",
        "default": "DESCENDING",
        "enum": [
         "ASCENDING",
@@ -14864,10 +14778,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "pageToken": {
@@ -14890,7 +14801,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -14903,8 +14813,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -15084,10 +14993,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "pageToken": {
@@ -15110,7 +15016,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -15123,8 +15028,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -15415,10 +15319,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "orderId": {
@@ -15457,7 +15358,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -15470,8 +15370,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -16034,10 +15933,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "orderId": {
@@ -16081,7 +15977,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -16094,8 +15989,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -16178,10 +16072,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "pageToken": {
@@ -16218,7 +16109,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -16231,8 +16121,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -16372,10 +16261,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "800",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "800",
        "location": "query"
       },
       "maxStartDate": {
@@ -16462,7 +16348,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -16475,8 +16360,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -16668,10 +16552,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "pageToken": {
@@ -16694,7 +16575,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -16707,8 +16587,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -16824,7 +16703,7 @@
       },
       "tagFormats": {
        "type": "string",
-       "description": "Tag formats to generate for these placements.\n\nNote: PLACEMENT_TAG_STANDARD can only be generated for 1x1 placements.",
+       "description": "Tag formats to generate for these placements.",
        "enum": [
         "PLACEMENT_TAG_CLICK_COMMANDS",
         "PLACEMENT_TAG_IFRAME_ILAYER",
@@ -16832,7 +16711,6 @@
         "PLACEMENT_TAG_IFRAME_JAVASCRIPT_LEGACY",
         "PLACEMENT_TAG_INSTREAM_VIDEO_PREFETCH",
         "PLACEMENT_TAG_INSTREAM_VIDEO_PREFETCH_VAST_3",
-        "PLACEMENT_TAG_INSTREAM_VIDEO_PREFETCH_VAST_4",
         "PLACEMENT_TAG_INTERNAL_REDIRECT",
         "PLACEMENT_TAG_INTERSTITIAL_IFRAME_JAVASCRIPT",
         "PLACEMENT_TAG_INTERSTITIAL_IFRAME_JAVASCRIPT_LEGACY",
@@ -16847,7 +16725,6 @@
         "PLACEMENT_TAG_TRACKING_JAVASCRIPT"
        ],
        "enumDescriptions": [
-        "",
         "",
         "",
         "",
@@ -17021,10 +16898,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "maxStartDate": {
@@ -17118,7 +16992,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -17131,8 +17004,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -17394,10 +17266,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "pageToken": {
@@ -17420,7 +17289,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -17433,8 +17301,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -17672,10 +17539,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "name": {
@@ -17698,7 +17562,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -17711,8 +17574,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -17898,7 +17760,6 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "10",
        "format": "int32",
        "minimum": "0",
        "maximum": "10",
@@ -17918,7 +17779,7 @@
       },
       "scope": {
        "type": "string",
-       "description": "The scope that defines which results are returned.",
+       "description": "The scope that defines which results are returned, default is 'MINE'.",
        "default": "MINE",
        "enum": [
         "ALL",
@@ -17948,7 +17809,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
+       "description": "Order of sorted results, default is 'DESCENDING'.",
        "default": "DESCENDING",
        "enum": [
         "ASCENDING",
@@ -18029,7 +17890,6 @@
       "synchronous": {
        "type": "boolean",
        "description": "If set and true, tries to run the report synchronously.",
-       "default": "false",
        "location": "query"
       }
      },
@@ -18118,7 +17978,7 @@
        "id": "dfareporting.reports.files.get",
        "path": "userprofiles/{profileId}/reports/{reportId}/files/{fileId}",
        "httpMethod": "GET",
-       "description": "Retrieves a report file. This method supports media download.",
+       "description": "Retrieves a report file.",
        "parameters": {
         "fileId": {
          "type": "string",
@@ -18164,7 +18024,6 @@
         "maxResults": {
          "type": "integer",
          "description": "Maximum number of results to return.",
-         "default": "10",
          "format": "int32",
          "minimum": "0",
          "maximum": "10",
@@ -18205,7 +18064,7 @@
         },
         "sortOrder": {
          "type": "string",
-         "description": "Order of sorted results.",
+         "description": "Order of sorted results, default is 'DESCENDING'.",
          "default": "DESCENDING",
          "enum": [
           "ASCENDING",
@@ -18349,10 +18208,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "pageToken": {
@@ -18375,7 +18231,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -18388,8 +18243,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -18557,8 +18411,6 @@
        "type": "integer",
        "description": "Select only sizes with this height.",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "32767",
        "location": "query"
       },
       "iabStandard": {
@@ -18584,8 +18436,6 @@
        "type": "integer",
        "description": "Select only sizes with this width.",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "32767",
        "location": "query"
       }
      },
@@ -18678,10 +18528,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "pageToken": {
@@ -18704,7 +18551,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -18717,8 +18563,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -18859,10 +18704,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "name": {
@@ -18885,7 +18727,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -18898,8 +18739,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -19007,10 +18847,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "pageToken": {
@@ -19033,7 +18870,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -19046,8 +18882,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"
@@ -19413,10 +19248,7 @@
       "maxResults": {
        "type": "integer",
        "description": "Maximum number of results to return.",
-       "default": "1000",
        "format": "int32",
-       "minimum": "0",
-       "maximum": "1000",
        "location": "query"
       },
       "pageToken": {
@@ -19439,7 +19271,6 @@
       "sortField": {
        "type": "string",
        "description": "Field by which to sort the list.",
-       "default": "ID",
        "enum": [
         "ID",
         "NAME"
@@ -19452,8 +19283,7 @@
       },
       "sortOrder": {
        "type": "string",
-       "description": "Order of sorted results.",
-       "default": "ASCENDING",
+       "description": "Order of sorted results, default is ASCENDING.",
        "enum": [
         "ASCENDING",
         "DESCENDING"

@@ -17,16 +17,27 @@ limitations under the License.
 package provider
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
-	ibclient "github.com/infobloxopen/infoblox-go-client"
+	ibclient "github.com/khrisrichardson/infoblox-go-client"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
+
+// InfobloxConfig clarifies the method signature
+type InfobloxConfig struct {
+	DomainFilter DomainFilter
+	Host         string
+	Port         int
+	Username     string
+	Password     string
+	Version      string
+	SSLVerify    bool
+	DryRun       bool
+}
 
 // InfobloxProvider implements the DNS provider for Infoblox.
 type InfobloxProvider struct {
@@ -35,31 +46,28 @@ type InfobloxProvider struct {
 	dryRun       bool
 }
 
+type ibObjRes struct {
+	obj ibclient.IBObject
+	res interface{}
+}
+
 // NewInfobloxProvider creates a new Infoblox provider.
-func NewInfobloxProvider(
-	domainFilter DomainFilter,
-	host string,
-	port int,
-	username string,
-	password string,
-	version string,
-	sslVerify bool,
-	dryRun bool) (*InfobloxProvider, error) {
+func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, error) {
 	hostConfig := ibclient.HostConfig{
-		Host:     host,
-		Port:     strconv.Itoa(port),
-		Username: username,
-		Password: password,
-		Version:  version,
+		Host:     infobloxConfig.Host,
+		Port:     strconv.Itoa(infobloxConfig.Port),
+		Username: infobloxConfig.Username,
+		Password: infobloxConfig.Password,
+		Version:  infobloxConfig.Version,
 	}
 
-	httpPoolConnections, _ := strconv.ParseInt(getEnv("EXTERNAL_DNS_INFOBLOX_HTTP_POOL_CONNECTIONS", "10"), 0, 0)
-	httpRequestTimeout, _ := strconv.ParseInt(getEnv("EXTERNAL_DNS_INFOBLOX_HTTP_REQUEST_TIMEOUT", "60"), 0, 0)
+	httpPoolConnections := lookupEnvAtoi("EXTERNAL_DNS_INFOBLOX_HTTP_POOL_CONNECTIONS", 10)
+	httpRequestTimeout := lookupEnvAtoi("EXTERNAL_DNS_INFOBLOX_HTTP_REQUEST_TIMEOUT", 60)
 
 	transportConfig := ibclient.NewTransportConfig(
-		strconv.FormatBool(sslVerify),
-		int(httpRequestTimeout),
-		int(httpPoolConnections),
+		strconv.FormatBool(infobloxConfig.SSLVerify),
+		httpRequestTimeout,
+		httpPoolConnections,
 	)
 
 	requestBuilder := &ibclient.WapiRequestBuilder{}
@@ -73,8 +81,8 @@ func NewInfobloxProvider(
 
 	provider := &InfobloxProvider{
 		client:       client,
-		domainFilter: domainFilter,
-		dryRun:       dryRun,
+		domainFilter: infobloxConfig.DomainFilter,
+		dryRun:       infobloxConfig.DryRun,
 	}
 
 	return provider, nil
@@ -102,6 +110,23 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, res.Ipv4Addr, endpoint.RecordTypeA))
 		}
 
+		// Include Host records since they should be treated synonymously with A records
+		var resH []ibclient.RecordHost
+		objH := ibclient.NewRecordHost(
+			ibclient.RecordHost{
+				Zone: zone.Fqdn,
+			},
+		)
+		err = p.client.GetObject(objH, "", &resH)
+		if err != nil {
+			return nil, err
+		}
+		for _, res := range resH {
+			for _, ip := range res.Ipv4Addrs {
+				endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, ip.Ipv4Addr, endpoint.RecordTypeA))
+			}
+		}
+
 		var resC []ibclient.RecordCNAME
 		objC := ibclient.NewRecordCNAME(
 			ibclient.RecordCNAME{
@@ -127,6 +152,8 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 			return nil, err
 		}
 		for _, res := range resT {
+			// The Infoblox API strips enclosing double quotes from TXT records lacking whitespace.
+			// Unhandled, the missing double quotes would break the extractOwnerID method of the registry package.
 			if _, err := strconv.Unquote(res.Text); err != nil {
 				res.Text = strconv.Quote(res.Text)
 			}
@@ -171,7 +198,6 @@ func (p *InfobloxProvider) zones() ([]ibclient.ZoneAuth, error) {
 type infobloxChangeMap map[string][]*endpoint.Endpoint
 
 func (p *InfobloxProvider) mapChanges(zones []ibclient.ZoneAuth, changes *plan.Changes) (infobloxChangeMap, infobloxChangeMap, infobloxChangeMap) {
-	ignored := map[string]bool{}
 	created := infobloxChangeMap{}
 	deleted := infobloxChangeMap{}
 	updated := infobloxChangeMap{}
@@ -179,27 +205,24 @@ func (p *InfobloxProvider) mapChanges(zones []ibclient.ZoneAuth, changes *plan.C
 	mapChange := func(changeMap infobloxChangeMap, change *endpoint.Endpoint) {
 		zone := p.findZone(zones, change.DNSName)
 		if zone == nil {
-			if _, ok := ignored[change.DNSName]; !ok {
-				ignored[change.DNSName] = true
-				logrus.Infof("Ignoring changes to '%s' because a suitable Infoblox DNS zone was not found.", change.DNSName)
-			}
+			logrus.Infof("Ignoring changes to '%s' because a suitable Infoblox DNS zone was not found.", change.DNSName)
 			return
 		}
 		// Ensure the record type is suitable
 		changeMap[zone.Fqdn] = append(changeMap[zone.Fqdn], change)
 	}
 
-	for _, change := range changes.Create {
-		mapChange(created, change)
-	}
 	for _, change := range changes.Delete {
 		mapChange(deleted, change)
 	}
-	for _, change := range changes.UpdateNew {
-		mapChange(updated, change)
-	}
 	for _, change := range changes.UpdateOld {
 		mapChange(deleted, change)
+	}
+	for _, change := range changes.Create {
+		mapChange(created, change)
+	}
+	for _, change := range changes.UpdateNew {
+		mapChange(created, change)
 	}
 
 	return created, deleted, updated
@@ -220,70 +243,81 @@ func (p *InfobloxProvider) findZone(zones []ibclient.ZoneAuth, name string) *ibc
 	return result
 }
 
-func (p *InfobloxProvider) newObject(e *endpoint.Endpoint, getRef bool) (obj ibclient.IBObject, ref string, err error) {
-	switch e.RecordType {
+func (p *InfobloxProvider) mapObjRes(ep *endpoint.Endpoint, getObject bool) (objRes ibObjRes, err error) {
+	var obj ibclient.IBObject
+	switch ep.RecordType {
 	case endpoint.RecordTypeA:
-		var records []ibclient.RecordA
+		var res []ibclient.RecordA
 		obj = ibclient.NewRecordA(
 			ibclient.RecordA{
-				Name:     e.DNSName,
-				Ipv4Addr: e.Target,
+				Name:     ep.DNSName,
+				Ipv4Addr: ep.Target,
 			},
 		)
-		if getRef {
-			p.client.GetObject(obj, "", &records)
-			if len(records) == 1 {
-				ref = records[0].Ref
+		if getObject {
+			err = p.client.GetObject(obj, "", &res)
+			if err != nil {
+				return
 			}
 		}
-		return obj, ref, nil
+		objRes = ibObjRes{
+			obj: obj,
+			res: &res,
+		}
 	case endpoint.RecordTypeCNAME:
-		var records []ibclient.RecordCNAME
+		var res []ibclient.RecordCNAME
 		obj = ibclient.NewRecordCNAME(
 			ibclient.RecordCNAME{
-				Name:      e.DNSName,
-				Canonical: e.Target,
+				Name:      ep.DNSName,
+				Canonical: ep.Target,
 			},
 		)
-		if getRef {
-			p.client.GetObject(obj, "", &records)
-			if len(records) == 1 {
-				ref = records[0].Ref
+		if getObject {
+			err = p.client.GetObject(obj, "", &res)
+			if err != nil {
+				return
 			}
 		}
-		return obj, ref, nil
+		objRes = ibObjRes{
+			obj: obj,
+			res: &res,
+		}
 	case endpoint.RecordTypeTXT:
-		var records []ibclient.RecordTXT
-		if target, err := strconv.Unquote(e.Target); err == nil && !strings.Contains(e.Target, " ") {
-			e.Target = target
+		var res []ibclient.RecordTXT
+		// The Infoblox API strips enclosing double quotes from TXT records lacking whitespace.
+		// Here we reconcile that fact by making this state match that reality.
+		if target, err := strconv.Unquote(ep.Target); err == nil && !strings.Contains(ep.Target, " ") {
+			ep.Target = target
 		}
 		obj = ibclient.NewRecordTXT(
 			ibclient.RecordTXT{
-				Name: e.DNSName,
-				Text: e.Target,
+				Name: ep.DNSName,
+				Text: ep.Target,
 			},
 		)
-		if getRef {
-			p.client.GetObject(obj, "", &records)
-			if len(records) == 1 {
-				ref = records[0].Ref
+		if getObject {
+			err = p.client.GetObject(obj, "", &res)
+			if err != nil {
+				return
 			}
 		}
-		return obj, ref, nil
-	default:
-		return nil, "", fmt.Errorf("unsupported record type '%s'", e.RecordType)
+		objRes = ibObjRes{
+			obj: obj,
+			res: &res,
+		}
 	}
+	return
 }
 
 func (p *InfobloxProvider) createRecords(created infobloxChangeMap) {
 	for zone, endpoints := range created {
-		for _, endpoint := range endpoints {
+		for _, ep := range endpoints {
 			if p.dryRun {
 				logrus.Infof(
 					"Would create %s record named '%s' to '%s' for Infoblox DNS zone '%s'.",
-					endpoint.RecordType,
-					endpoint.DNSName,
-					endpoint.Target,
+					ep.RecordType,
+					ep.DNSName,
+					ep.Target,
 					zone,
 				)
 				continue
@@ -291,22 +325,31 @@ func (p *InfobloxProvider) createRecords(created infobloxChangeMap) {
 
 			logrus.Infof(
 				"Creating %s record named '%s' to '%s' for Infoblox DNS zone '%s'.",
-				endpoint.RecordType,
-				endpoint.DNSName,
-				endpoint.Target,
+				ep.RecordType,
+				ep.DNSName,
+				ep.Target,
 				zone,
 			)
 
-			obj, _, err := p.newObject(endpoint, false)
-			if err == nil {
-				_, err = p.client.CreateObject(obj)
+			mapObjRes, err := p.mapObjRes(ep, false)
+			if err != nil {
+				logrus.Errorf(
+					"Failed to retrieve %s record named '%s' to '%s' for DNS zone '%s': %v",
+					ep.RecordType,
+					ep.DNSName,
+					ep.Target,
+					zone,
+					err,
+				)
+				continue
 			}
+			_, err = p.client.CreateObject(mapObjRes.obj)
 			if err != nil {
 				logrus.Errorf(
 					"Failed to create %s record named '%s' to '%s' for DNS zone '%s': %v",
-					endpoint.RecordType,
-					endpoint.DNSName,
-					endpoint.Target,
+					ep.RecordType,
+					ep.DNSName,
+					ep.Target,
 					zone,
 					err,
 				)
@@ -318,22 +361,45 @@ func (p *InfobloxProvider) createRecords(created infobloxChangeMap) {
 func (p *InfobloxProvider) deleteRecords(deleted infobloxChangeMap) {
 	// Delete records first
 	for zone, endpoints := range deleted {
-		for _, endpoint := range endpoints {
+		for _, ep := range endpoints {
 			if p.dryRun {
-				logrus.Infof("Would delete %s record named '%s' for Infoblox DNS zone '%s'.", endpoint.RecordType, endpoint.DNSName, zone)
+				logrus.Infof("Would delete %s record named '%s' for Infoblox DNS zone '%s'.", ep.RecordType, ep.DNSName, zone)
 			} else {
-				logrus.Infof("Deleting %s record named '%s' for Infoblox DNS zone '%s'.", endpoint.RecordType, endpoint.DNSName, zone)
-				_, ref, err := p.newObject(endpoint, true)
-				if err == nil {
-					if _, err = p.client.DeleteObject(ref); err != nil {
-						logrus.Errorf(
-							"Failed to delete %s record named '%s' for Infoblox DNS zone '%s': %v",
-							endpoint.RecordType,
-							endpoint.DNSName,
-							zone,
-							err,
-						)
+				logrus.Infof("Deleting %s record named '%s' for Infoblox DNS zone '%s'.", ep.RecordType, ep.DNSName, zone)
+				mapObjRes, err := p.mapObjRes(ep, true)
+				if err != nil {
+					logrus.Errorf(
+						"Failed to retrieve %s record named '%s' to '%s' for DNS zone '%s': %v",
+						ep.RecordType,
+						ep.DNSName,
+						ep.Target,
+						zone,
+						err,
+					)
+					continue
+				}
+				switch ep.RecordType {
+				case endpoint.RecordTypeA:
+					for _, record := range *mapObjRes.res.(*[]ibclient.RecordA) {
+						_, err = p.client.DeleteObject(record.Ref)
 					}
+				case endpoint.RecordTypeCNAME:
+					for _, record := range *mapObjRes.res.(*[]ibclient.RecordCNAME) {
+						_, err = p.client.DeleteObject(record.Ref)
+					}
+				case endpoint.RecordTypeTXT:
+					for _, record := range *mapObjRes.res.(*[]ibclient.RecordTXT) {
+						_, err = p.client.DeleteObject(record.Ref)
+					}
+				}
+				if err != nil {
+					logrus.Errorf(
+						"Failed to delete %s record named '%s' for Infoblox DNS zone '%s': %v",
+						ep.RecordType,
+						ep.DNSName,
+						zone,
+						err,
+					)
 				}
 			}
 		}
@@ -342,13 +408,13 @@ func (p *InfobloxProvider) deleteRecords(deleted infobloxChangeMap) {
 
 func (p *InfobloxProvider) updateRecords(updated infobloxChangeMap) {
 	for zone, endpoints := range updated {
-		for _, endpoint := range endpoints {
+		for _, ep := range endpoints {
 			if p.dryRun {
 				logrus.Infof(
 					"Would update %s record named '%s' to '%s' for Infoblox DNS zone '%s'.",
-					endpoint.RecordType,
-					endpoint.DNSName,
-					endpoint.Target,
+					ep.RecordType,
+					ep.DNSName,
+					ep.Target,
 					zone,
 				)
 				continue
@@ -356,22 +422,44 @@ func (p *InfobloxProvider) updateRecords(updated infobloxChangeMap) {
 
 			logrus.Infof(
 				"Updating %s record named '%s' to '%s' for Infoblox DNS zone '%s'.",
-				endpoint.RecordType,
-				endpoint.DNSName,
-				endpoint.Target,
+				ep.RecordType,
+				ep.DNSName,
+				ep.Target,
 				zone,
 			)
 
-			obj, ref, err := p.newObject(endpoint, true)
-			if err == nil {
-				_, err = p.client.UpdateObject(obj, ref)
+			mapObjRes, err := p.mapObjRes(ep, true)
+			if err != nil {
+				logrus.Errorf(
+					"Failed to retrieve %s record named '%s' to '%s' for DNS zone '%s': %v",
+					ep.RecordType,
+					ep.DNSName,
+					ep.Target,
+					zone,
+					err,
+				)
+				continue
+			}
+			switch ep.RecordType {
+			case endpoint.RecordTypeA:
+				for _, record := range *mapObjRes.res.(*[]ibclient.RecordA) {
+					_, err = p.client.UpdateObject(mapObjRes.obj, record.Ref)
+				}
+			case endpoint.RecordTypeCNAME:
+				for _, record := range *mapObjRes.res.(*[]ibclient.RecordCNAME) {
+					_, err = p.client.UpdateObject(mapObjRes.obj, record.Ref)
+				}
+			case endpoint.RecordTypeTXT:
+				for _, record := range *mapObjRes.res.(*[]ibclient.RecordTXT) {
+					_, err = p.client.UpdateObject(mapObjRes.obj, record.Ref)
+				}
 			}
 			if err != nil {
 				logrus.Errorf(
 					"Failed to update %s record named '%s' to '%s' for DNS zone '%s': %v",
-					endpoint.RecordType,
-					endpoint.DNSName,
-					endpoint.Target,
+					ep.RecordType,
+					ep.DNSName,
+					ep.Target,
 					zone,
 					err,
 				)
@@ -380,10 +468,16 @@ func (p *InfobloxProvider) updateRecords(updated infobloxChangeMap) {
 	}
 }
 
-func getEnv(key, fallback string) string {
-	value, exists := os.LookupEnv(key)
-	if !exists {
-		value = fallback
+func lookupEnvAtoi(key string, fallback int) (i int) {
+	val, ok := os.LookupEnv(key)
+	if !ok {
+		i = fallback
+		return
 	}
-	return value
+	i, err := strconv.Atoi(val)
+	if err != nil {
+		i = fallback
+		return
+	}
+	return
 }

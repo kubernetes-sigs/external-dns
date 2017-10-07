@@ -2,6 +2,7 @@ package godo
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/digitalocean/godo/context"
 )
@@ -101,7 +102,7 @@ func (s DomainsServiceOp) List(ctx context.Context, opt *ListOptions) ([]Domain,
 		return nil, nil, err
 	}
 
-	req, err := s.client.NewRequest(ctx, "GET", path, nil)
+	req, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -126,7 +127,7 @@ func (s *DomainsServiceOp) Get(ctx context.Context, name string) (*Domain, *Resp
 
 	path := fmt.Sprintf("%s/%s", domainsBasePath, name)
 
-	req, err := s.client.NewRequest(ctx, "GET", path, nil)
+	req, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -148,7 +149,7 @@ func (s *DomainsServiceOp) Create(ctx context.Context, createRequest *DomainCrea
 
 	path := domainsBasePath
 
-	req, err := s.client.NewRequest(ctx, "POST", path, createRequest)
+	req, err := s.client.NewRequest(ctx, http.MethodPost, path, createRequest)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -169,7 +170,7 @@ func (s *DomainsServiceOp) Delete(ctx context.Context, name string) (*Response, 
 
 	path := fmt.Sprintf("%s/%s", domainsBasePath, name)
 
-	req, err := s.client.NewRequest(ctx, "DELETE", path, nil)
+	req, err := s.client.NewRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +202,7 @@ func (s *DomainsServiceOp) Records(ctx context.Context, domain string, opt *List
 		return nil, nil, err
 	}
 
-	req, err := s.client.NewRequest(ctx, "GET", path, nil)
+	req, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -230,7 +231,7 @@ func (s *DomainsServiceOp) Record(ctx context.Context, domain string, id int) (*
 
 	path := fmt.Sprintf("%s/%s/records/%d", domainsBasePath, domain, id)
 
-	req, err := s.client.NewRequest(ctx, "GET", path, nil)
+	req, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -256,7 +257,7 @@ func (s *DomainsServiceOp) DeleteRecord(ctx context.Context, domain string, id i
 
 	path := fmt.Sprintf("%s/%s/records/%d", domainsBasePath, domain, id)
 
-	req, err := s.client.NewRequest(ctx, "DELETE", path, nil)
+	req, err := s.client.NewRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -313,7 +314,7 @@ func (s *DomainsServiceOp) CreateRecord(ctx context.Context,
 	}
 
 	path := fmt.Sprintf("%s/%s/records", domainsBasePath, domain)
-	req, err := s.client.NewRequest(ctx, "POST", path, createRequest)
+	req, err := s.client.NewRequest(ctx, http.MethodPost, path, createRequest)
 
 	if err != nil {
 		return nil, nil, err
