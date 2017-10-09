@@ -164,7 +164,7 @@ func newDnsimpleChange(action string, e *endpoint.Endpoint) *dnsimpleChange {
 		Action: action,
 		ResourceRecordSet: dnsimple.ZoneRecord{
 			Name:    e.DNSName,
-			Type:    suitableType(e),
+			Type:    e.RecordType,
 			Content: e.Target,
 		},
 	}
