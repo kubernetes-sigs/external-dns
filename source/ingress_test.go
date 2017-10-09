@@ -40,9 +40,10 @@ func TestIngress(t *testing.T) {
 
 func TestNewIngressSource(t *testing.T) {
 	for _, ti := range []struct {
-		title        string
-		fqdnTemplate string
-		expectError  bool
+		title               string
+		fqdnTemplate        string
+		ingressClassPattern string
+		expectError         bool
 	}{
 		{
 			title:        "invalid template",
@@ -58,12 +59,18 @@ func TestNewIngressSource(t *testing.T) {
 			expectError:  false,
 			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
 		},
+		{
+			title:               "non-empty ingress class pattern",
+			expectError:         false,
+			ingressClassPattern: "nginx",
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			_, err := NewIngressSource(
 				fake.NewSimpleClientset(),
 				"",
 				ti.fqdnTemplate,
+				ti.ingressClassPattern,
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -167,11 +174,13 @@ func testEndpointsFromIngress(t *testing.T) {
 func testIngressEndpoints(t *testing.T) {
 	namespace := "testing"
 	for _, ti := range []struct {
-		title           string
-		targetNamespace string
-		ingressItems    []fakeIngress
-		expected        []*endpoint.Endpoint
-		fqdnTemplate    string
+		title               string
+		targetNamespace     string
+		ingressItems        []fakeIngress
+		expected            []*endpoint.Endpoint
+		expectError         bool
+		fqdnTemplate        string
+		ingressClassPattern string
 	}{
 		{
 			title:           "no ingress",
@@ -441,6 +450,85 @@ func testIngressEndpoints(t *testing.T) {
 			},
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
 		},
+		{
+			title:           "complex valid matching ingress class pattern",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "nginx",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "example.org",
+					Target:  "8.8.8.8",
+				},
+			},
+			ingressClassPattern: "^(nginx|alb)$",
+		},
+		{
+			title:           "simple valid matching ingress class pattern",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "nginx",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "example.org",
+					Target:  "8.8.8.8",
+				},
+			},
+			ingressClassPattern: "nginx",
+		},
+		{
+			title:           "simple valid non-matching ingress class pattern",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "alb",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected:            []*endpoint.Endpoint{},
+			ingressClassPattern: "nginx",
+		},
+		{
+			title:           "simple invalid ingress class pattern",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "alb",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected:            []*endpoint.Endpoint{},
+			expectError:         true,
+			ingressClassPattern: "a(b",
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			ingresses := make([]*v1beta1.Ingress, 0)
@@ -453,6 +541,7 @@ func testIngressEndpoints(t *testing.T) {
 				fakeClient,
 				ti.targetNamespace,
 				ti.fqdnTemplate,
+				ti.ingressClassPattern,
 			)
 			for _, ingress := range ingresses {
 				_, err := fakeClient.Extensions().Ingresses(ingress.Namespace).Create(ingress)
@@ -460,7 +549,11 @@ func testIngressEndpoints(t *testing.T) {
 			}
 
 			res, err := ingressSource.Endpoints()
-			require.NoError(t, err)
+			if ti.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 
 			validateEndpoints(t, res, ti.expected)
 		})

@@ -35,10 +35,11 @@ var ErrSourceNotFound = errors.New("source not found")
 
 // Config holds shared configuration options for all Sources.
 type Config struct {
-	Namespace       string
-	FQDNTemplate    string
-	Compatibility   string
-	PublishInternal bool
+	Namespace           string
+	FQDNTemplate        string
+	Compatibility       string
+	PublishInternal     bool
+	IngressClassPattern string
 }
 
 // ClientGenerator provides clients
@@ -92,7 +93,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewIngressSource(client, cfg.Namespace, cfg.FQDNTemplate)
+		return NewIngressSource(client, cfg.Namespace, cfg.FQDNTemplate, cfg.IngressClassPattern)
 	case "fake":
 		return NewFakeSource(cfg.FQDNTemplate)
 	}

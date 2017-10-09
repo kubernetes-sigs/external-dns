@@ -19,6 +19,7 @@ package source
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -36,13 +37,14 @@ import (
 // Use targetAnnotationKey to explicitly set Endpoint. (useful if the ingress
 // controller does not update, or to override with alternative endpoint)
 type ingressSource struct {
-	client       kubernetes.Interface
-	namespace    string
-	fqdnTemplate *template.Template
+	client              kubernetes.Interface
+	namespace           string
+	fqdnTemplate        *template.Template
+	ingressClassPattern string
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate string) (Source, error) {
+func NewIngressSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate string, ingressClassPattern string) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -57,9 +59,10 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate s
 	}
 
 	return &ingressSource{
-		client:       kubeClient,
-		namespace:    namespace,
-		fqdnTemplate: tmpl,
+		client:              kubeClient,
+		namespace:           namespace,
+		fqdnTemplate:        tmpl,
+		ingressClassPattern: ingressClassPattern,
 	}, nil
 }
 
@@ -79,6 +82,19 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		if ok && controller != controllerAnnotationValue {
 			log.Debugf("Skipping ingress %s/%s because controller value does not match, found: %s, required: %s",
 				ing.Namespace, ing.Name, controller, controllerAnnotationValue)
+			continue
+		}
+
+		// Filter ingress classes not matching pattern
+		pattern := sc.ingressClassPattern
+		class := ing.Annotations["kubernetes.io/ingress.class"]
+		matched, err := regexp.MatchString(pattern, class)
+		if err != nil {
+			return nil, err
+		}
+		if len(pattern) > 0 && !matched {
+			log.Debugf("Skipping ingress %s/%s because 'kubernetes.io/ingress.class' annotation does not match pattern, found: %s, expected: %s",
+				ing.Namespace, ing.Name, class, pattern)
 			continue
 		}
 

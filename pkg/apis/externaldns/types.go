@@ -29,57 +29,59 @@ var (
 
 // Config is a project-wide configuration
 type Config struct {
-	Master             string
-	KubeConfig         string
-	Sources            []string
-	Namespace          string
-	FQDNTemplate       string
-	Compatibility      string
-	PublishInternal    bool
-	Provider           string
-	GoogleProject      string
-	DomainFilter       []string
-	AWSZoneType        string
-	AzureConfigFile    string
-	AzureResourceGroup string
-	CloudflareProxied  bool
-	Policy             string
-	Registry           string
-	TXTOwnerID         string
-	TXTPrefix          string
-	Interval           time.Duration
-	Once               bool
-	DryRun             bool
-	LogFormat          string
-	MetricsAddress     string
-	LogLevel           string
+	Master              string
+	KubeConfig          string
+	Sources             []string
+	Namespace           string
+	FQDNTemplate        string
+	Compatibility       string
+	PublishInternal     bool
+	Provider            string
+	GoogleProject       string
+	DomainFilter        []string
+	AWSZoneType         string
+	AzureConfigFile     string
+	AzureResourceGroup  string
+	CloudflareProxied   bool
+	Policy              string
+	Registry            string
+	TXTOwnerID          string
+	TXTPrefix           string
+	Interval            time.Duration
+	Once                bool
+	DryRun              bool
+	LogFormat           string
+	MetricsAddress      string
+	LogLevel            string
+	IngressClassPattern string
 }
 
 var defaultConfig = &Config{
-	Master:             "",
-	KubeConfig:         "",
-	Sources:            nil,
-	Namespace:          "",
-	FQDNTemplate:       "",
-	Compatibility:      "",
-	PublishInternal:    false,
-	Provider:           "",
-	GoogleProject:      "",
-	DomainFilter:       []string{},
-	AWSZoneType:        "",
-	AzureConfigFile:    "/etc/kubernetes/azure.json",
-	AzureResourceGroup: "",
-	CloudflareProxied:  false,
-	Policy:             "sync",
-	Registry:           "txt",
-	TXTOwnerID:         "default",
-	TXTPrefix:          "",
-	Interval:           time.Minute,
-	Once:               false,
-	DryRun:             false,
-	LogFormat:          "text",
-	MetricsAddress:     ":7979",
-	LogLevel:           logrus.InfoLevel.String(),
+	Master:              "",
+	KubeConfig:          "",
+	Sources:             nil,
+	Namespace:           "",
+	FQDNTemplate:        "",
+	Compatibility:       "",
+	PublishInternal:     false,
+	Provider:            "",
+	GoogleProject:       "",
+	DomainFilter:        []string{},
+	AWSZoneType:         "",
+	AzureConfigFile:     "/etc/kubernetes/azure.json",
+	AzureResourceGroup:  "",
+	CloudflareProxied:   false,
+	Policy:              "sync",
+	Registry:            "txt",
+	TXTOwnerID:          "default",
+	TXTPrefix:           "",
+	Interval:            time.Minute,
+	Once:                false,
+	DryRun:              false,
+	LogFormat:           "text",
+	MetricsAddress:      ":7979",
+	LogLevel:            logrus.InfoLevel.String(),
+	IngressClassPattern: "",
 }
 
 // NewConfig returns new Config object
@@ -139,6 +141,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("log-format", "The format in which log messages are printed (default: text, options: text, json)").Default(defaultConfig.LogFormat).EnumVar(&cfg.LogFormat, "text", "json")
 	app.Flag("metrics-address", "Specify where to serve the metrics and health check endpoint (default: :7979)").Default(defaultConfig.MetricsAddress).StringVar(&cfg.MetricsAddress)
 	app.Flag("log-level", "Set the level of logging. (default: info, options: panic, debug, info, warn, error, fatal").Default(defaultConfig.LogLevel).EnumVar(&cfg.LogLevel, allLogLevelsAsStrings()...)
+	app.Flag("ingress-class-pattern", "Limit ingress classes managed by external-dns via regexp pattern (default: all ingress classes)").Default(defaultConfig.IngressClassPattern).StringVar(&cfg.IngressClassPattern)
 
 	_, err := app.Parse(args)
 	if err != nil {
