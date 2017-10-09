@@ -160,30 +160,37 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*
 			endpoints = append(endpoints, extractServiceIps(svc, hostname)...)
 		}
 	}
-
 	return endpoints
 }
 
 func extractServiceIps(svc *v1.Service, hostname string) []*endpoint.Endpoint {
+	ttl, err := getTTLFromAnnotations(svc.Annotations)
+	if err != nil {
+		log.Warn(err)
+	}
 	if svc.Spec.ClusterIP == v1.ClusterIPNone {
 		log.Debugf("Unable to associate %s headless service with a Cluster IP", svc.Name)
 		return []*endpoint.Endpoint{}
 	}
 
-	return []*endpoint.Endpoint{endpoint.NewEndpoint(hostname, svc.Spec.ClusterIP, endpoint.RecordTypeA)}
+	return []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(hostname, svc.Spec.ClusterIP, endpoint.RecordTypeA, ttl)}
 }
 
 func extractLoadBalancerEndpoints(svc *v1.Service, hostname string) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
+	ttl, err := getTTLFromAnnotations(svc.Annotations)
+	if err != nil {
+		log.Warn(err)
+	}
 	// Create a corresponding endpoint for each configured external entrypoint.
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
 			//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, endpoint.RecordTypeA))
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.IP, endpoint.RecordTypeA, ttl))
 		}
 		if lb.Hostname != "" {
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, endpoint.RecordTypeCNAME))
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.Hostname, endpoint.RecordTypeCNAME, ttl))
 		}
 	}
 
