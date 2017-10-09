@@ -581,7 +581,7 @@ Consider the case that you needed to read a local database or a file to
 provide suggestions. You can dynamically generate the options
 
 ```
-func listHosts(args []string) []string {
+func listHosts() []string {
   // Provide a dynamic list of hosts from a hosts file or otherwise
   // for bash completion. In this example we simply return static slice.
 

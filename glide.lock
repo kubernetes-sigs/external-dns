@@ -1,5 +1,5 @@
-hash: 822180f83532b46c584fcf3fd8f2be95e94f9171ae70023ad020152fab8b1c95
-updated: 2017-06-23T14:28:21.128452268+02:00
+hash: e0cec95591c093025bbed4fec7ee5d0d53ce64422c7714c3fde004c41bd451f1
+updated: 2017-10-09T15:51:45.181636771+02:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -9,7 +9,7 @@ imports:
   - compute/metadata
   - internal
 - name: github.com/alecthomas/kingpin
-  version: 7f0871f2e17818990e4eed73f9b5c2f429501228
+  version: 1087e65c9441605df944fb12c33f0fe7072d18ca
 - name: github.com/alecthomas/template
   version: a0175ee3bccc567396460bf5acd36800cb10c49c
   subpackages:
@@ -83,7 +83,7 @@ imports:
 - name: github.com/dgrijalva/jwt-go
   version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
 - name: github.com/digitalocean/godo
-  version: 4fa9e9d999007b447089056a1c581b5594f0f851
+  version: 77ea48de76a7b31b234d854f15d003c68bb2fb90
   subpackages:
   - context
 - name: github.com/dnsimple/dnsimple-go
@@ -179,7 +179,7 @@ imports:
   version: 8a290539e2e8629dbc4e6bad948158f790ec31f4
 - name: github.com/PuerkitoBio/urlesc
   version: 5bd2802263f21d8788851d5305584c82a5c75d7e
-- name: github.com/Sirupsen/logrus
+- name: github.com/sirupsen/logrus
   version: ba1b36c82c5e05c4f912a88eab0dcd91a171688f
 - name: github.com/spf13/pflag
   version: 9ff6c6923cfffbcd502984b8e0c80539a94968b7
@@ -191,6 +191,7 @@ imports:
   - assert
   - mock
   - require
+  - suite
 - name: github.com/tent/http-link-go
   version: ac974c61c2f990f4115b119354b5e0b47550e888
 - name: github.com/ugorji/go
@@ -218,7 +219,7 @@ imports:
   - jws
   - jwt
 - name: golang.org/x/sys
-  version: e24f485414aeafb646f6fca458b0bf869c0880a1
+  version: 7de4796419dc3b554e6dab3a119a62469569d299
   subpackages:
   - unix
 - name: golang.org/x/text
@@ -256,9 +257,9 @@ imports:
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/yaml.v2
-  version: a3f3340b5840cee44f372bddb5880fcbc419b46a
+  version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
 - name: k8s.io/apimachinery
-  version: 75b8dd260ef0469d96d578705a87cffd0e09dab8
+  version: 85ace5365f33b16fc735c866a12e3c765b9700f2
   subpackages:
   - pkg/api/errors
   - pkg/api/meta
@@ -299,7 +300,7 @@ imports:
   - pkg/watch
   - third_party/forked/golang/reflect
 - name: k8s.io/client-go
-  version: 3627aeb7d4f6ade38f995d2c923e459146493c7e
+  version: 21300e3e11c918b8e6a70fb7293b310683d6c046
   subpackages:
   - discovery
   - discovery/fake

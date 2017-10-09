@@ -21,7 +21,7 @@ import (
 	"os"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 
 	"github.com/digitalocean/godo"

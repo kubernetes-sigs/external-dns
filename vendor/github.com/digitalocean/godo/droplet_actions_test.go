@@ -23,7 +23,7 @@ func TestDropletActions_Shutdown(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
 		}
@@ -61,7 +61,7 @@ func TestDropletActions_ShutdownByTag(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
 		}
@@ -95,7 +95,7 @@ func TestDropletAction_PowerOff(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
 		}
@@ -133,7 +133,7 @@ func TestDropletAction_PowerOffByTag(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
 		}
@@ -167,7 +167,7 @@ func TestDropletAction_PowerOn(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
 		}
@@ -205,7 +205,7 @@ func TestDropletAction_PowerOnByTag(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
 		}
@@ -238,7 +238,7 @@ func TestDropletAction_Reboot(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
 		}
@@ -274,7 +274,7 @@ func TestDropletAction_Restore(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
@@ -312,7 +312,7 @@ func TestDropletAction_Resize(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
@@ -349,7 +349,7 @@ func TestDropletAction_Rename(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
@@ -384,7 +384,7 @@ func TestDropletAction_PowerCycle(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
 		}
@@ -423,7 +423,7 @@ func TestDropletAction_PowerCycleByTag(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
 		}
@@ -458,7 +458,7 @@ func TestDropletAction_Snapshot(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
@@ -498,7 +498,7 @@ func TestDropletAction_SnapshotByTag(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
@@ -533,7 +533,7 @@ func TestDropletAction_EnableBackups(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
@@ -572,7 +572,7 @@ func TestDropletAction_EnableBackupsByTag(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
@@ -607,7 +607,7 @@ func TestDropletAction_DisableBackups(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
@@ -646,7 +646,7 @@ func TestDropletAction_DisableBackupsByTag(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
@@ -681,7 +681,7 @@ func TestDropletAction_PasswordReset(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
@@ -717,7 +717,7 @@ func TestDropletAction_RebuildByImageID(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = \n%#v, expected \n%#v", v, request)
@@ -753,7 +753,7 @@ func TestDropletAction_RebuildByImageSlug(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
@@ -789,7 +789,7 @@ func TestDropletAction_ChangeKernel(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
@@ -824,7 +824,7 @@ func TestDropletAction_EnableIPv6(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
@@ -863,7 +863,7 @@ func TestDropletAction_EnableIPv6ByTag(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
@@ -898,7 +898,7 @@ func TestDropletAction_EnablePrivateNetworking(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
@@ -937,7 +937,7 @@ func TestDropletAction_EnablePrivateNetworkingByTag(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
@@ -972,7 +972,7 @@ func TestDropletAction_Upgrade(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 
 		if !reflect.DeepEqual(v, request) {
 			t.Errorf("Request body = %+v, expected %+v", v, request)
@@ -997,7 +997,7 @@ func TestDropletActions_Get(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/droplets/123/actions/456", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprintf(w, `{"action":{"status":"in-progress"}}`)
 	})
 

@@ -12,7 +12,7 @@ func TestSizes_List(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/sizes", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"sizes":[{"slug":"1"},{"slug":"2"}]}`)
 	})
 
@@ -32,7 +32,7 @@ func TestSizes_ListSizesMultiplePages(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/sizes", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"sizes": [{"id":1},{"id":2}], "links":{"pages":{"next":"http://example.com/v2/sizes/?page=2"}}}`)
 	})
 
@@ -62,7 +62,7 @@ func TestSizes_RetrievePageByNumber(t *testing.T) {
 	}`
 
 	mux.HandleFunc("/v2/sizes", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, jBlob)
 	})
 

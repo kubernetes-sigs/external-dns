@@ -12,7 +12,7 @@ func TestRegions_List(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/regions", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"regions":[{"slug":"1"},{"slug":"2"}]}`)
 	})
 
@@ -32,7 +32,7 @@ func TestRegions_ListRegionsMultiplePages(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/regions", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"regions": [{"id":1},{"id":2}], "links":{"pages":{"next":"http://example.com/v2/regions/?page=2"}}}`)
 	})
 
@@ -62,7 +62,7 @@ func TestRegions_RetrievePageByNumber(t *testing.T) {
 	}`
 
 	mux.HandleFunc("/v2/regions", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, jBlob)
 	})
 
