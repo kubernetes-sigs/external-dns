@@ -19,8 +19,8 @@ package provider
 import (
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/linki/instrumented_http"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
