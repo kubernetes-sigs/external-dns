@@ -24,7 +24,7 @@ func TestFloatingIPsActions_Assign(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, assignRequest) {
 			t.Errorf("Request body = %#v, expected %#v", v, assignRequest)
 		}
@@ -59,7 +59,7 @@ func TestFloatingIPsActions_Unassign(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, unassignRequest) {
 			t.Errorf("Request body = %+v, expected %+v", v, unassignRequest)
 		}
@@ -83,7 +83,7 @@ func TestFloatingIPsActions_Get(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/floating_ips/192.168.0.1/actions/456", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprintf(w, `{"action":{"status":"in-progress"}}`)
 	})
 
@@ -103,7 +103,7 @@ func TestFloatingIPsActions_List(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/floating_ips/192.168.0.1/actions", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprintf(w, `{"actions":[{"status":"in-progress"}]}`)
 	})
 
@@ -123,7 +123,7 @@ func TestFloatingIPsActions_ListMultiplePages(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/floating_ips/192.168.0.1/actions", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"actions":[{"status":"in-progress"}], "links":{"pages":{"next":"http://example.com/v2/floating_ips/192.168.0.1/actions?page=2"}}}`)
 	})
 
@@ -153,7 +153,7 @@ func TestFloatingIPsActions_ListPageByNumber(t *testing.T) {
 	}`
 
 	mux.HandleFunc("/v2/floating_ips/192.168.0.1/actions", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, jBlob)
 	})
 
