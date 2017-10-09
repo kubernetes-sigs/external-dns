@@ -21,9 +21,9 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"gopkg.in/yaml.v2"
-
 	log "github.com/Sirupsen/logrus"
+
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/Azure/azure-sdk-for-go/arm/dns"
 	"github.com/Azure/go-autorest/autorest"
@@ -103,7 +103,7 @@ func NewAzureProvider(configFile string, domainFilter DomainFilter, resourceGrou
 
 	oauthConfig, err := adal.NewOAuthConfig(environment.ActiveDirectoryEndpoint, cfg.TenantID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retreive OAuth config: %v", err)
+		return nil, fmt.Errorf("failed to retrieve OAuth config: %v", err)
 	}
 
 	token, err := adal.NewServicePrincipalToken(*oauthConfig, cfg.ClientID, cfg.ClientSecret, environment.ResourceManagerEndpoint)
@@ -249,7 +249,6 @@ func (p *AzureProvider) mapChanges(zones []dns.Zone, changes *plan.Changes) (azu
 			return
 		}
 		// Ensure the record type is suitable
-		change.RecordType = suitableType(change)
 		changeMap[zone] = append(changeMap[zone], change)
 	}
 

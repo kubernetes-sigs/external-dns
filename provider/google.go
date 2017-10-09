@@ -22,10 +22,11 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/linki/instrumented_http"
 
+	dns "google.golang.org/api/dns/v1"
+
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
 
-	"google.golang.org/api/dns/v1"
 	googleapi "google.golang.org/api/googleapi"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -169,7 +170,7 @@ func (p *GoogleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 			// TODO(linki, ownership): Remove once ownership system is in place.
 			// See: https://github.com/kubernetes-incubator/external-dns/pull/122/files/74e2c3d3e237411e619aefc5aab694742001cdec#r109863370
 			switch r.Type {
-			case "A", "CNAME", "TXT":
+			case endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeTXT:
 				break
 			default:
 				continue
@@ -330,19 +331,19 @@ func newRecords(endpoints []*endpoint.Endpoint) []*dns.ResourceRecordSet {
 }
 
 // newRecord returns a RecordSet based on the given endpoint.
-func newRecord(endpoint *endpoint.Endpoint) *dns.ResourceRecordSet {
+func newRecord(ep *endpoint.Endpoint) *dns.ResourceRecordSet {
 	// TODO(linki): works around appending a trailing dot to TXT records. I think
 	// we should go back to storing DNS names with a trailing dot internally. This
 	// way we can use it has is here and trim it off if it exists when necessary.
-	target := endpoint.Target
-	if suitableType(endpoint) == "CNAME" {
+	target := ep.Target
+	if ep.RecordType == endpoint.RecordTypeCNAME {
 		target = ensureTrailingDot(target)
 	}
 
 	return &dns.ResourceRecordSet{
-		Name:    ensureTrailingDot(endpoint.DNSName),
+		Name:    ensureTrailingDot(ep.DNSName),
 		Rrdatas: []string{target},
 		Ttl:     300,
-		Type:    suitableType(endpoint),
+		Type:    ep.RecordType,
 	}
 }
