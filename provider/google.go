@@ -19,8 +19,8 @@ package provider
 import (
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/linki/instrumented_http"
+	log "github.com/sirupsen/logrus"
 
 	dns "google.golang.org/api/dns/v1"
 

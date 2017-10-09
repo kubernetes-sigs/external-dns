@@ -20,8 +20,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/alecthomas/kingpin"
+	"github.com/sirupsen/logrus"
 )
 
 var (
