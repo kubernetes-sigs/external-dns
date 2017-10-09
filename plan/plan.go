@@ -17,8 +17,8 @@ limitations under the License.
 package plan
 
 import (
-	log "github.com/Sirupsen/logrus"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	log "github.com/sirupsen/logrus"
 )
 
 // Plan can convert a list of desired and current records to a series of create,

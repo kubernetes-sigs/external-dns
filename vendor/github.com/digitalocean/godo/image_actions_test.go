@@ -21,7 +21,7 @@ func TestImageActions_Transfer(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, transferRequest) {
 			t.Errorf("Request body = %+v, expected %+v", v, transferRequest)
 		}
@@ -56,7 +56,7 @@ func TestImageActions_Convert(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, convertRequest) {
 			t.Errorf("Request body = %+v, expected %+v", v, convertRequest)
 		}
@@ -81,7 +81,7 @@ func TestImageActions_Get(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/images/123/actions/456", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprintf(w, `{"action":{"status":"in-progress"}}`)
 	})
 

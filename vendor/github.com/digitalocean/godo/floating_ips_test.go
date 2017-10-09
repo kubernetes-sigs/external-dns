@@ -13,7 +13,7 @@ func TestFloatingIPs_ListFloatingIPs(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/floating_ips", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"floating_ips": [{"region":{"slug":"nyc3"},"droplet":{"id":1},"ip":"192.168.0.1"},{"region":{"slug":"nyc3"},"droplet":{"id":2},"ip":"192.168.0.2"}]}`)
 	})
 
@@ -36,7 +36,7 @@ func TestFloatingIPs_ListFloatingIPsMultiplePages(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/floating_ips", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"floating_ips": [{"region":{"slug":"nyc3"},"droplet":{"id":1},"ip":"192.168.0.1"},{"region":{"slug":"nyc3"},"droplet":{"id":2},"ip":"192.168.0.2"}], "links":{"pages":{"next":"http://example.com/v2/floating_ips/?page=2"}}}`)
 	})
 
@@ -66,7 +66,7 @@ func TestFloatingIPs_RetrievePageByNumber(t *testing.T) {
 	}`
 
 	mux.HandleFunc("/v2/floating_ips", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, jBlob)
 	})
 
@@ -84,7 +84,7 @@ func TestFloatingIPs_Get(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/floating_ips/192.168.0.1", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"floating_ip":{"region":{"slug":"nyc3"},"droplet":{"id":1},"ip":"192.168.0.1"}}`)
 	})
 
@@ -115,7 +115,7 @@ func TestFloatingIPs_Create(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, createRequest) {
 			t.Errorf("Request body = %+v, expected %+v", v, createRequest)
 		}
@@ -139,7 +139,7 @@ func TestFloatingIPs_Destroy(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/floating_ips/192.168.0.1", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 	})
 
 	_, err := client.FloatingIPs.Delete(ctx, "192.168.0.1")

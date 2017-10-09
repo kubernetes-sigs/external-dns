@@ -2,6 +2,7 @@ package godo
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/digitalocean/godo/context"
 )
@@ -70,7 +71,7 @@ func (s *KeysServiceOp) List(ctx context.Context, opt *ListOptions) ([]Key, *Res
 		return nil, nil, err
 	}
 
-	req, err := s.client.NewRequest(ctx, "GET", path, nil)
+	req, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -89,7 +90,7 @@ func (s *KeysServiceOp) List(ctx context.Context, opt *ListOptions) ([]Key, *Res
 
 // Performs a get given a path
 func (s *KeysServiceOp) get(ctx context.Context, path string) (*Key, *Response, error) {
-	req, err := s.client.NewRequest(ctx, "GET", path, nil)
+	req, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -129,7 +130,7 @@ func (s *KeysServiceOp) Create(ctx context.Context, createRequest *KeyCreateRequ
 		return nil, nil, NewArgError("createRequest", "cannot be nil")
 	}
 
-	req, err := s.client.NewRequest(ctx, "POST", keysBasePath, createRequest)
+	req, err := s.client.NewRequest(ctx, http.MethodPost, keysBasePath, createRequest)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -195,7 +196,7 @@ func (s *KeysServiceOp) UpdateByFingerprint(ctx context.Context, fingerprint str
 
 // Delete key using a path
 func (s *KeysServiceOp) delete(ctx context.Context, path string) (*Response, error) {
-	req, err := s.client.NewRequest(ctx, "DELETE", path, nil)
+	req, err := s.client.NewRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return nil, err
 	}

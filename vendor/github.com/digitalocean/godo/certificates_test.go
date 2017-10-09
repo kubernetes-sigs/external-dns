@@ -55,7 +55,7 @@ func TestCertificates_Get(t *testing.T) {
 	cID := "892071a0-bb95-49bc-8021-3afd67a210bf"
 	urlStr = path.Join(urlStr, cID)
 	mux.HandleFunc(urlStr, func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, certJSONResponse)
 	})
 
@@ -81,7 +81,7 @@ func TestCertificates_List(t *testing.T) {
 
 	urlStr := "/v2/certificates"
 	mux.HandleFunc(urlStr, func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, certsJSONResponse)
 	})
 
@@ -130,7 +130,7 @@ func TestCertificates_Create(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		assert.Equal(t, createRequest, v)
 
 		fmt.Fprint(w, certJSONResponse)
@@ -160,7 +160,7 @@ func TestCertificates_Delete(t *testing.T) {
 	urlStr := "/v2/certificates"
 	urlStr = path.Join(urlStr, cID)
 	mux.HandleFunc(urlStr, func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 	})
 
 	_, err := client.Certificates.Delete(ctx, cID)

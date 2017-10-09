@@ -272,7 +272,7 @@ var lbUpdateJSONResponse = `
 }
 `
 
-func TestLoadBlanacers_Get(t *testing.T) {
+func TestLoadBalancers_Get(t *testing.T) {
 	setup()
 	defer teardown()
 
@@ -280,7 +280,7 @@ func TestLoadBlanacers_Get(t *testing.T) {
 	loadBalancerId := "37e6be88-01ec-4ec7-9bc6-a514d4719057"
 	path = fmt.Sprintf("%s/%s", path, loadBalancerId)
 	mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, lbGetJSONResponse)
 	})
 
@@ -333,7 +333,7 @@ func TestLoadBlanacers_Get(t *testing.T) {
 	assert.Equal(t, expected, loadBalancer)
 }
 
-func TestLoadBlanacers_Create(t *testing.T) {
+func TestLoadBalancers_Create(t *testing.T) {
 	setup()
 	defer teardown()
 
@@ -377,7 +377,7 @@ func TestLoadBlanacers_Create(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		assert.Equal(t, createRequest, v)
 
 		fmt.Fprint(w, lbCreateJSONResponse)
@@ -440,7 +440,7 @@ func TestLoadBlanacers_Create(t *testing.T) {
 	assert.Equal(t, expected, loadBalancer)
 }
 
-func TestLoadBlanacers_Update(t *testing.T) {
+func TestLoadBalancers_Update(t *testing.T) {
 	setup()
 	defer teardown()
 
@@ -547,13 +547,13 @@ func TestLoadBlanacers_Update(t *testing.T) {
 	assert.Equal(t, expected, loadBalancer)
 }
 
-func TestLoadBlanacers_List(t *testing.T) {
+func TestLoadBalancers_List(t *testing.T) {
 	setup()
 	defer teardown()
 
 	path := "/v2/load_balancers"
 	mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, lbListJSONResponse)
 	})
 
@@ -608,13 +608,13 @@ func TestLoadBlanacers_List(t *testing.T) {
 	assert.Equal(t, expected, loadBalancers)
 }
 
-func TestLoadBlanacers_List_Pagination(t *testing.T) {
+func TestLoadBalancers_List_Pagination(t *testing.T) {
 	setup()
 	defer teardown()
 
 	path := "/v2/load_balancers"
 	mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		testFormValues(t, r, map[string]string{"page": "2"})
 		fmt.Fprint(w, lbListJSONResponse)
 	})
@@ -630,7 +630,7 @@ func TestLoadBlanacers_List_Pagination(t *testing.T) {
 	assert.Equal(t, "http://localhost:3001/v2/load_balancers?page=3&per_page=1", resp.Links.Pages.Last)
 }
 
-func TestLoadBlanacers_Delete(t *testing.T) {
+func TestLoadBalancers_Delete(t *testing.T) {
 	setup()
 	defer teardown()
 
@@ -638,7 +638,7 @@ func TestLoadBlanacers_Delete(t *testing.T) {
 	path := "/v2/load_balancers"
 	path = fmt.Sprintf("%s/%s", path, lbID)
 	mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 	})
 
 	_, err := client.LoadBalancers.Delete(ctx, lbID)
@@ -648,7 +648,7 @@ func TestLoadBlanacers_Delete(t *testing.T) {
 	}
 }
 
-func TestLoadBlanacers_AddDroplets(t *testing.T) {
+func TestLoadBalancers_AddDroplets(t *testing.T) {
 	setup()
 	defer teardown()
 
@@ -665,7 +665,7 @@ func TestLoadBlanacers_AddDroplets(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		assert.Equal(t, dropletIdsRequest, v)
 
 		fmt.Fprint(w, nil)
@@ -678,7 +678,7 @@ func TestLoadBlanacers_AddDroplets(t *testing.T) {
 	}
 }
 
-func TestLoadBlanacers_RemoveDroplets(t *testing.T) {
+func TestLoadBalancers_RemoveDroplets(t *testing.T) {
 	setup()
 	defer teardown()
 
@@ -695,7 +695,7 @@ func TestLoadBlanacers_RemoveDroplets(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 		assert.Equal(t, dropletIdsRequest, v)
 
 		fmt.Fprint(w, nil)
@@ -708,7 +708,7 @@ func TestLoadBlanacers_RemoveDroplets(t *testing.T) {
 	}
 }
 
-func TestLoadBlanacers_AddForwardingRules(t *testing.T) {
+func TestLoadBalancers_AddForwardingRules(t *testing.T) {
 	setup()
 	defer teardown()
 
@@ -739,7 +739,7 @@ func TestLoadBlanacers_AddForwardingRules(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		assert.Equal(t, frr, v)
 
 		fmt.Fprint(w, nil)
@@ -752,7 +752,7 @@ func TestLoadBlanacers_AddForwardingRules(t *testing.T) {
 	}
 }
 
-func TestLoadBlanacers_RemoveForwardingRules(t *testing.T) {
+func TestLoadBalancers_RemoveForwardingRules(t *testing.T) {
 	setup()
 	defer teardown()
 
@@ -782,7 +782,7 @@ func TestLoadBlanacers_RemoveForwardingRules(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 		assert.Equal(t, frr, v)
 
 		fmt.Fprint(w, nil)
@@ -793,4 +793,109 @@ func TestLoadBlanacers_RemoveForwardingRules(t *testing.T) {
 	if err != nil {
 		t.Errorf("LoadBalancers.RemoveForwardingRules returned error: %v", err)
 	}
+}
+
+func TestLoadBalancers_AsRequest(t *testing.T) {
+	lb := &LoadBalancer{
+		ID:        "37e6be88-01ec-4ec7-9bc6-a514d4719057",
+		Name:      "test-loadbalancer",
+		IP:        "10.0.0.1",
+		Algorithm: "least_connections",
+		Status:    "active",
+		Created:   "2011-06-24T12:00:00Z",
+		HealthCheck: &HealthCheck{
+			Protocol:               "http",
+			Port:                   80,
+			Path:                   "/ping",
+			CheckIntervalSeconds:   30,
+			ResponseTimeoutSeconds: 10,
+			HealthyThreshold:       3,
+			UnhealthyThreshold:     3,
+		},
+		StickySessions: &StickySessions{
+			Type:             "cookies",
+			CookieName:       "nomnom",
+			CookieTtlSeconds: 32,
+		},
+		Region: &Region{
+			Slug: "lon1",
+		},
+		RedirectHttpToHttps: true,
+	}
+	lb.DropletIDs = make([]int, 1, 2)
+	lb.DropletIDs[0] = 12345
+	lb.ForwardingRules = make([]ForwardingRule, 1, 2)
+	lb.ForwardingRules[0] = ForwardingRule{
+		EntryProtocol:  "http",
+		EntryPort:      80,
+		TargetProtocol: "http",
+		TargetPort:     80,
+	}
+
+	want := &LoadBalancerRequest{
+		Name:      "test-loadbalancer",
+		Algorithm: "least_connections",
+		Region:    "lon1",
+		ForwardingRules: []ForwardingRule{ForwardingRule{
+			EntryProtocol:  "http",
+			EntryPort:      80,
+			TargetProtocol: "http",
+			TargetPort:     80,
+		}},
+		HealthCheck: &HealthCheck{
+			Protocol:               "http",
+			Port:                   80,
+			Path:                   "/ping",
+			CheckIntervalSeconds:   30,
+			ResponseTimeoutSeconds: 10,
+			HealthyThreshold:       3,
+			UnhealthyThreshold:     3,
+		},
+		StickySessions: &StickySessions{
+			Type:             "cookies",
+			CookieName:       "nomnom",
+			CookieTtlSeconds: 32,
+		},
+		DropletIDs:          []int{12345},
+		RedirectHttpToHttps: true,
+	}
+
+	r := lb.AsRequest()
+	assert.Equal(t, want, r)
+	assert.False(t, r.HealthCheck == lb.HealthCheck, "HealthCheck points to same struct")
+	assert.False(t, r.StickySessions == lb.StickySessions, "StickySessions points to same struct")
+
+	r.DropletIDs = append(r.DropletIDs, 54321)
+	r.ForwardingRules = append(r.ForwardingRules, ForwardingRule{
+		EntryProtocol:  "https",
+		EntryPort:      443,
+		TargetProtocol: "https",
+		TargetPort:     443,
+		TlsPassthrough: true,
+	})
+
+	// Check that original LoadBalancer hasn't changed
+	lb.DropletIDs = append(lb.DropletIDs, 13579)
+	lb.ForwardingRules = append(lb.ForwardingRules, ForwardingRule{
+		EntryProtocol:  "tcp",
+		EntryPort:      587,
+		TargetProtocol: "tcp",
+		TargetPort:     587,
+	})
+	assert.Equal(t, []int{12345, 54321}, r.DropletIDs)
+	assert.Equal(t, []ForwardingRule{
+		ForwardingRule{
+			EntryProtocol:  "http",
+			EntryPort:      80,
+			TargetProtocol: "http",
+			TargetPort:     80,
+		},
+		ForwardingRule{
+			EntryProtocol:  "https",
+			EntryPort:      443,
+			TargetProtocol: "https",
+			TargetPort:     443,
+			TlsPassthrough: true,
+		},
+	}, r.ForwardingRules)
 }

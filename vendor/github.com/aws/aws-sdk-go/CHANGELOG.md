@@ -1,3 +1,10 @@
+Release v1.8.44 (2017-06-16)
+===
+
+### Service Client Updates
+* `service/xray`: Updates service API, documentation, and paginators
+  * Add a response time histogram to the services in response of GetServiceGraph API.
+
 Release v1.8.43 (2017-06-15)
 ===
 

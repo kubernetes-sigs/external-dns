@@ -106,7 +106,7 @@ func testClientDefaultBaseURL(t *testing.T, c *Client) {
 
 func testClientDefaultUserAgent(t *testing.T, c *Client) {
 	if c.UserAgent != userAgent {
-		t.Errorf("NewClick UserAgent = %v, expected %v", c.UserAgent, userAgent)
+		t.Errorf("NewClient UserAgent = %v, expected %v", c.UserAgent, userAgent)
 	}
 }
 
@@ -138,7 +138,7 @@ func TestNewRequest(t *testing.T) {
 		`{"name":"l","region":"","size":"","image":0,`+
 			`"ssh_keys":null,"backups":false,"ipv6":false,`+
 			`"private_networking":false,"monitoring":false,"tags":null}`+"\n"
-	req, _ := c.NewRequest(ctx, "GET", inURL, inBody)
+	req, _ := c.NewRequest(ctx, http.MethodGet, inURL, inBody)
 
 	// test relative URL was expanded
 	if req.URL.String() != outURL {
@@ -166,7 +166,7 @@ func TestNewRequest_withUserData(t *testing.T) {
 		`{"name":"l","region":"","size":"","image":0,`+
 			`"ssh_keys":null,"backups":false,"ipv6":false,`+
 			`"private_networking":false,"monitoring":false,"user_data":"u","tags":null}`+"\n"
-	req, _ := c.NewRequest(ctx, "GET", inURL, inBody)
+	req, _ := c.NewRequest(ctx, http.MethodGet, inURL, inBody)
 
 	// test relative URL was expanded
 	if req.URL.String() != outURL {
@@ -188,21 +188,21 @@ func TestNewRequest_withUserData(t *testing.T) {
 
 func TestNewRequest_badURL(t *testing.T) {
 	c := NewClient(nil)
-	_, err := c.NewRequest(ctx, "GET", ":", nil)
+	_, err := c.NewRequest(ctx, http.MethodGet, ":", nil)
 	testURLParseError(t, err)
 }
 
 func TestNewRequest_withCustomUserAgent(t *testing.T) {
-	ua := "testing"
+	ua := "testing/0.0.1"
 	c, err := New(nil, SetUserAgent(ua))
 
 	if err != nil {
 		t.Fatalf("New() unexpected error: %v", err)
 	}
 
-	req, _ := c.NewRequest(ctx, "GET", "/foo", nil)
+	req, _ := c.NewRequest(ctx, http.MethodGet, "/foo", nil)
 
-	expected := fmt.Sprintf("%s+%s", ua, userAgent)
+	expected := fmt.Sprintf("%s %s", ua, userAgent)
 	if got := req.Header.Get("User-Agent"); got != expected {
 		t.Errorf("New() UserAgent = %s; expected %s", got, expected)
 	}
@@ -217,13 +217,13 @@ func TestDo(t *testing.T) {
 	}
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if m := "GET"; m != r.Method {
+		if m := http.MethodGet; m != r.Method {
 			t.Errorf("Request method = %v, expected %v", r.Method, m)
 		}
 		fmt.Fprint(w, `{"A":"a"}`)
 	})
 
-	req, _ := client.NewRequest(ctx, "GET", "/", nil)
+	req, _ := client.NewRequest(ctx, http.MethodGet, "/", nil)
 	body := new(foo)
 	_, err := client.Do(context.Background(), req, body)
 	if err != nil {
@@ -244,7 +244,7 @@ func TestDo_httpError(t *testing.T) {
 		http.Error(w, "Bad Request", 400)
 	})
 
-	req, _ := client.NewRequest(ctx, "GET", "/", nil)
+	req, _ := client.NewRequest(ctx, http.MethodGet, "/", nil)
 	_, err := client.Do(context.Background(), req, nil)
 
 	if err == nil {
@@ -262,7 +262,7 @@ func TestDo_redirectLoop(t *testing.T) {
 		http.Redirect(w, r, "/", http.StatusFound)
 	})
 
-	req, _ := client.NewRequest(ctx, "GET", "/", nil)
+	req, _ := client.NewRequest(ctx, http.MethodGet, "/", nil)
 	_, err := client.Do(context.Background(), req, nil)
 
 	if err == nil {
@@ -347,7 +347,7 @@ func TestDo_rateLimit(t *testing.T) {
 		t.Errorf("Client rate reset not initialized to zero value")
 	}
 
-	req, _ := client.NewRequest(ctx, "GET", "/", nil)
+	req, _ := client.NewRequest(ctx, http.MethodGet, "/", nil)
 	_, err := client.Do(context.Background(), req, nil)
 	if err != nil {
 		t.Fatalf("Do(): %v", err)
@@ -378,7 +378,7 @@ func TestDo_rateLimit_errorResponse(t *testing.T) {
 
 	var expected int
 
-	req, _ := client.NewRequest(ctx, "GET", "/", nil)
+	req, _ := client.NewRequest(ctx, http.MethodGet, "/", nil)
 	_, _ = client.Do(context.Background(), req, nil)
 
 	if expected = 60; client.Rate.Limit != expected {
@@ -414,13 +414,13 @@ func TestDo_completion_callback(t *testing.T) {
 	}
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if m := "GET"; m != r.Method {
+		if m := http.MethodGet; m != r.Method {
 			t.Errorf("Request method = %v, expected %v", r.Method, m)
 		}
 		fmt.Fprint(w, `{"A":"a"}`)
 	})
 
-	req, _ := client.NewRequest(ctx, "GET", "/", nil)
+	req, _ := client.NewRequest(ctx, http.MethodGet, "/", nil)
 	body := new(foo)
 	var completedReq *http.Request
 	var completedResp string
@@ -506,13 +506,14 @@ func TestAddOptions(t *testing.T) {
 }
 
 func TestCustomUserAgent(t *testing.T) {
-	c, err := New(nil, SetUserAgent("testing"))
+	ua := "testing/0.0.1"
+	c, err := New(nil, SetUserAgent(ua))
 
 	if err != nil {
 		t.Fatalf("New() unexpected error: %v", err)
 	}
 
-	expected := fmt.Sprintf("%s+%s", "testing", userAgent)
+	expected := fmt.Sprintf("%s %s", ua, userAgent)
 	if got := c.UserAgent; got != expected {
 		t.Errorf("New() UserAgent = %s; expected %s", got, expected)
 	}
