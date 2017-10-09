@@ -24,6 +24,12 @@ import (
 const (
 	// OwnerLabelKey is the name of the label that defines the owner of an Endpoint.
 	OwnerLabelKey = "owner"
+	// RecordTypeA is a RecordType enum value
+	RecordTypeA = "A"
+	// RecordTypeCNAME is a RecordType enum value
+	RecordTypeCNAME = "CNAME"
+	// RecordTypeTXT is a RecordType enum value
+	RecordTypeTXT = "TXT"
 )
 
 // TTL is a structure defining the TTL of a DNS record

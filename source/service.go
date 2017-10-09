@@ -124,6 +124,7 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 	}
 
 	hostname := buf.String()
+
 	endpoints = sc.generateEndpoints(svc, hostname)
 
 	return endpoints, nil
@@ -172,7 +173,7 @@ func extractServiceIps(svc *v1.Service, hostname string) []*endpoint.Endpoint {
 		return []*endpoint.Endpoint{}
 	}
 
-	return []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(hostname, svc.Spec.ClusterIP, "", ttl)}
+	return []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(hostname, svc.Spec.ClusterIP, endpoint.RecordTypeA, ttl)}
 }
 
 func extractLoadBalancerEndpoints(svc *v1.Service, hostname string) []*endpoint.Endpoint {
@@ -186,10 +187,10 @@ func extractLoadBalancerEndpoints(svc *v1.Service, hostname string) []*endpoint.
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
 			//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.IP, "", ttl))
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.IP, endpoint.RecordTypeA, ttl))
 		}
 		if lb.Hostname != "" {
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.Hostname, "", ttl))
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.Hostname, endpoint.RecordTypeCNAME, ttl))
 		}
 	}
 

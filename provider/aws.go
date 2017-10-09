@@ -71,10 +71,12 @@ type AWSProvider struct {
 	dryRun bool
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter DomainFilter
+	// filter hosted zones by type (e.g. private or public)
+	zoneTypeFilter ZoneTypeFilter
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
-func NewAWSProvider(domainFilter DomainFilter, dryRun bool) (*AWSProvider, error) {
+func NewAWSProvider(domainFilter DomainFilter, zoneTypeFilter ZoneTypeFilter, dryRun bool) (*AWSProvider, error) {
 	config := aws.NewConfig()
 
 	config = config.WithHTTPClient(
@@ -95,9 +97,10 @@ func NewAWSProvider(domainFilter DomainFilter, dryRun bool) (*AWSProvider, error
 	}
 
 	provider := &AWSProvider{
-		client:       route53.New(session),
-		domainFilter: domainFilter,
-		dryRun:       dryRun,
+		client:         route53.New(session),
+		domainFilter:   domainFilter,
+		zoneTypeFilter: zoneTypeFilter,
+		dryRun:         dryRun,
 	}
 
 	return provider, nil
@@ -109,9 +112,15 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 
 	f := func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool) {
 		for _, zone := range resp.HostedZones {
-			if p.domainFilter.Match(aws.StringValue(zone.Name)) {
-				zones[aws.StringValue(zone.Id)] = zone
+			if !p.zoneTypeFilter.Match(zone) {
+				continue
 			}
+
+			if !p.domainFilter.Match(aws.StringValue(zone.Name)) {
+				continue
+			}
+
+			zones[aws.StringValue(zone.Id)] = zone
 		}
 
 		return true
@@ -161,7 +170,7 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 			}
 
 			if r.AliasTarget != nil {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.AliasTarget.DNSName), "ALIAS", ttl))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.AliasTarget.DNSName), endpoint.RecordTypeCNAME, ttl))
 			}
 		}
 
@@ -305,7 +314,7 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 			EvaluateTargetHealth: aws.Bool(evaluateTargetHealth),
 		}
 	} else {
-		change.ResourceRecordSet.Type = aws.String(suitableType(endpoint))
+		change.ResourceRecordSet.Type = aws.String(endpoint.RecordType)
 		if !endpoint.RecordTTL.IsConfigured() {
 			change.ResourceRecordSet.TTL = aws.Int64(recordTTL)
 		} else {
@@ -338,11 +347,11 @@ func suitableZone(hostname string, zones map[string]*route53.HostedZone) *route5
 
 // isAWSLoadBalancer determines if a given hostname belongs to an AWS load balancer.
 func isAWSLoadBalancer(ep *endpoint.Endpoint) bool {
-	if ep.RecordType == "" {
+	if ep.RecordType == endpoint.RecordTypeCNAME {
 		return canonicalHostedZone(ep.Target) != ""
 	}
 
-	return ep.RecordType == "ALIAS"
+	return false
 }
 
 // canonicalHostedZone returns the matching canonical zone for a given hostname.

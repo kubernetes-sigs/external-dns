@@ -21,9 +21,9 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"gopkg.in/yaml.v2"
-
 	log "github.com/Sirupsen/logrus"
+
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/Azure/azure-sdk-for-go/arm/dns"
 	"github.com/Azure/go-autorest/autorest"
@@ -249,7 +249,6 @@ func (p *AzureProvider) mapChanges(zones []dns.Zone, changes *plan.Changes) (azu
 			return
 		}
 		// Ensure the record type is suitable
-		change.RecordType = suitableType(change)
 		changeMap[zone] = append(changeMap[zone], change)
 	}
 

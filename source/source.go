@@ -18,9 +18,11 @@ package source
 
 import (
 	"fmt"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"math"
+	"net"
 	"strconv"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
 const (
@@ -60,4 +62,13 @@ func getTTLFromAnnotations(annotations map[string]string) (endpoint.TTL, error) 
 		return ttlNotConfigured, fmt.Errorf("TTL value must be between [%d, %d]", ttlMinimum, ttlMaximum)
 	}
 	return endpoint.TTL(ttlValue), nil
+}
+
+// suitableType returns the DNS resource record type suitable for the target.
+// In this case type A for IPs and type CNAME for everything else.
+func suitableType(target string) string {
+	if net.ParseIP(target) != nil {
+		return endpoint.RecordTypeA
+	}
+	return endpoint.RecordTypeCNAME
 }

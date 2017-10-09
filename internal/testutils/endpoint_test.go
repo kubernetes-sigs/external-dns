@@ -32,22 +32,22 @@ func ExampleSameEndpoints() {
 		{
 			DNSName:    "example.org",
 			Target:     "load-balancer.org",
-			RecordType: "TXT",
+			RecordType: endpoint.RecordTypeTXT,
 		},
 		{
 			DNSName:    "abc.com",
 			Target:     "something",
-			RecordType: "TXT",
+			RecordType: endpoint.RecordTypeTXT,
 		},
 		{
 			DNSName:    "abc.com",
 			Target:     "1.2.3.4",
-			RecordType: "A",
+			RecordType: endpoint.RecordTypeA,
 		},
 		{
 			DNSName:    "bbc.com",
 			Target:     "foo.com",
-			RecordType: "CNAME",
+			RecordType: endpoint.RecordTypeCNAME,
 		},
 		{
 			DNSName:    "cbc.com",

@@ -1,5 +1,12 @@
   - [AWS Route53 provider] Support customization of DNS record TTL through the use of annotation `external-dns.alpha.kubernetes.io/ttl` on services or ingresses
 
+## v0.4.5 - 2017-09-24
+
+  - Add `--log-level` flag to control log verbosity and remove `--debug` flag in favour of `--log-level=debug` (#339) @ultimateboy
+  - AWS: Allow filtering for private and public zones via `--aws-zone-type` flag (#329) @linki
+  - CloudFlare: Add `--cloudflare-proxied` flag to toggle CloudFlare proxy feature (#340) @dunglas
+  - Kops Compatibility: Isolate ALIAS type in AWS provider (#248) @sethpollack
+
 ## v0.4.4 - 2017-08-17
 
   - ExternalDNS now services of type `ClusterIP` with the use of the `--publish-internal-services`.  Enabling this will now create the apprioriate A records for the given service's internal ip.  @jrnt30

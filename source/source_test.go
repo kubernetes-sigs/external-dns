@@ -18,9 +18,10 @@ package source
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestGetTTLFromAnnotations(t *testing.T) {
@@ -73,5 +74,21 @@ func TestGetTTLFromAnnotations(t *testing.T) {
 			assert.Equal(t, tc.expectedErr, err)
 		})
 	}
+}
 
+func TestSuitableType(t *testing.T) {
+	for _, tc := range []struct {
+		target, recordType, expected string
+	}{
+		{"8.8.8.8", "", "A"},
+		{"foo.example.org", "", "CNAME"},
+		{"bar.eu-central-1.elb.amazonaws.com", "", "CNAME"},
+	} {
+
+		recordType := suitableType(tc.target)
+
+		if recordType != tc.expected {
+			t.Errorf("expected %s, got %s", tc.expected, recordType)
+		}
+	}
 }
