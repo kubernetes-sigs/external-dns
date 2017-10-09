@@ -28,10 +28,11 @@ The current feature list includes:
 - [x] Cloudflare IPs
 - [x] User Administration (partial)
 - [x] Virtual DNS Management
+- [x] Custom hostnames
 - [ ] Organization Administration
 - [ ] [Railgun](https://www.cloudflare.com/railgun/) administration
 - [ ] [Keyless SSL](https://blog.cloudflare.com/keyless-ssl-the-nitty-gritty-technical-details/)
-- [ ] [Origin CA](https://blog.cloudflare.com/universal-ssl-encryption-all-the-way-to-the-origin-for-free/)
+- [x] [Origin CA](https://blog.cloudflare.com/universal-ssl-encryption-all-the-way-to-the-origin-for-free/)
 
 Pull Requests are welcome, but please open an issue (or comment in an existing issue) to discuss any
 non-trivial changes before submitting code.

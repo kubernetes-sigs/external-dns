@@ -13,7 +13,7 @@ func TestDroplets_ListDroplets(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/droplets", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"droplets": [{"id":1},{"id":2}]}`)
 	})
 
@@ -37,7 +37,7 @@ func TestDroplets_ListDropletsByTag(t *testing.T) {
 			t.Errorf("Droplets.ListByTag did not request with a tag parameter")
 		}
 
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"droplets": [{"id":1},{"id":2}]}`)
 	})
 
@@ -57,7 +57,7 @@ func TestDroplets_ListDropletsMultiplePages(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/droplets", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 
 		dr := dropletsRoot{
 			Droplets: []Droplet{
@@ -103,7 +103,7 @@ func TestDroplets_RetrievePageByNumber(t *testing.T) {
 	}`
 
 	mux.HandleFunc("/v2/droplets", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, jBlob)
 	})
 
@@ -121,7 +121,7 @@ func TestDroplets_GetDroplet(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/droplets/12345", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"droplet":{"id":12345}}`)
 	})
 
@@ -265,7 +265,7 @@ func TestDroplets_Destroy(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/droplets/12345", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 	})
 
 	_, err := client.Droplets.Delete(ctx, 12345)
@@ -283,7 +283,7 @@ func TestDroplets_DestroyByTag(t *testing.T) {
 			t.Errorf("Droplets.DeleteByTag did not request with a tag parameter")
 		}
 
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 	})
 
 	_, err := client.Droplets.DeleteByTag(ctx, "testing-1")
@@ -297,7 +297,7 @@ func TestDroplets_Kernels(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/droplets/12345/kernels", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"kernels": [{"id":1},{"id":2}]}`)
 	})
 
@@ -318,7 +318,7 @@ func TestDroplets_Snapshots(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/droplets/12345/snapshots", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"snapshots": [{"id":1},{"id":2}]}`)
 	})
 
@@ -339,7 +339,7 @@ func TestDroplets_Backups(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/droplets/12345/backups", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"backups": [{"id":1},{"id":2}]}`)
 	})
 
@@ -360,7 +360,7 @@ func TestDroplets_Actions(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/droplets/12345/actions", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"actions": [{"id":1},{"id":2}]}`)
 	})
 
@@ -381,7 +381,7 @@ func TestDroplets_Neighbors(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/droplets/12345/neighbors", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"droplets": [{"id":1},{"id":2}]}`)
 	})
 

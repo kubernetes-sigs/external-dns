@@ -14,7 +14,7 @@ func TestAction_List(t *testing.T) {
 
 	mux.HandleFunc("/v2/actions", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, `{"actions": [{"id":1},{"id":2}]}`)
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 	})
 
 	actions, _, err := client.Actions.List(ctx, nil)
@@ -34,7 +34,7 @@ func TestAction_ListActionMultiplePages(t *testing.T) {
 
 	mux.HandleFunc("/v2/actions", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, `{"actions": [{"id":1},{"id":2}], "links":{"pages":{"next":"http://example.com/v2/droplets/?page=2"}}}`)
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 	})
 
 	_, resp, err := client.Actions.List(ctx, nil)
@@ -63,7 +63,7 @@ func TestAction_RetrievePageByNumber(t *testing.T) {
 	}`
 
 	mux.HandleFunc("/v2/actions", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, jBlob)
 	})
 
@@ -82,7 +82,7 @@ func TestAction_Get(t *testing.T) {
 
 	mux.HandleFunc("/v2/actions/12345", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, `{"action": {"id":12345,"region":{"name":"name","slug":"slug","available":true,"sizes":["512mb"],"features":["virtio"]},"region_slug":"slug"}}`)
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 	})
 
 	action, _, err := client.Actions.Get(ctx, 12345)

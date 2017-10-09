@@ -13,7 +13,7 @@ func TestKeys_List(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/account/keys", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"ssh_keys":[{"id":1},{"id":2}]}`)
 	})
 
@@ -33,7 +33,7 @@ func TestKeys_ListKeysMultiplePages(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/account/keys", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"droplets": [{"id":1},{"id":2}], "links":{"pages":{"next":"http://example.com/v2/account/keys/?page=2"}}}`)
 	})
 
@@ -62,7 +62,7 @@ func TestKeys_RetrievePageByNumber(t *testing.T) {
 	}`
 
 	mux.HandleFunc("/v2/account/keys", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, jBlob)
 	})
 
@@ -79,7 +79,7 @@ func TestKeys_GetByID(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/account/keys/12345", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"ssh_key": {"id":12345}}`)
 	})
 
@@ -99,7 +99,7 @@ func TestKeys_GetByFingerprint(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/account/keys/aa:bb:cc", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"ssh_key": {"fingerprint":"aa:bb:cc"}}`)
 	})
 
@@ -130,7 +130,7 @@ func TestKeys_Create(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, createRequest) {
 			t.Errorf("Request body = %+v, expected %+v", v, createRequest)
 		}
@@ -226,7 +226,7 @@ func TestKeys_DestroyByID(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/account/keys/12345", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 	})
 
 	_, err := client.Keys.DeleteByID(ctx, 12345)
@@ -240,7 +240,7 @@ func TestKeys_DestroyByFingerprint(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/account/keys/aa:bb:cc", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 	})
 
 	_, err := client.Keys.DeleteByFingerprint(ctx, "aa:bb:cc")
