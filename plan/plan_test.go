@@ -49,12 +49,12 @@ func TestCalculate(t *testing.T) {
 	// test case with TTL
 	ttl := endpoint.TTL(300)
 	ttl2 := endpoint.TTL(50)
-	ttlV1 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v1", "CNAME", ttl)}
-	ttlV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", "CNAME")}
-	ttlV3 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v1", "CNAME", ttl)}
-	ttlV4 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v1", "CNAME", ttl2)}
-	ttlV5 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", "CNAME")}
-	ttlV6 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v2", "CNAME", ttl)}
+	ttlV1 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v1", endpoint.RecordTypeCNAME, ttl)}
+	ttlV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", endpoint.RecordTypeCNAME)}
+	ttlV3 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v1", endpoint.RecordTypeCNAME, ttl)}
+	ttlV4 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v1", endpoint.RecordTypeCNAME, ttl2)}
+	ttlV5 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", endpoint.RecordTypeCNAME)}
+	ttlV6 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v2", endpoint.RecordTypeCNAME, ttl)}
 
 	for _, tc := range []struct {
 		policies                             []Policy
