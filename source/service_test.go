@@ -44,9 +44,10 @@ func testServiceSourceImplementsSource(t *testing.T) {
 // testServiceSourceNewServiceSource tests that NewServiceSource doesn't return an error.
 func testServiceSourceNewServiceSource(t *testing.T) {
 	for _, ti := range []struct {
-		title        string
-		fqdnTemplate string
-		expectError  bool
+		title            string
+		fqdnTemplate     string
+		annotationFilter string
+		expectError      bool
 	}{
 		{
 			title:        "invalid template",
@@ -62,12 +63,18 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 			expectError:  false,
 			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
 		},
+		{
+			title:            "non-empty source annotation pattern",
+			expectError:      false,
+			annotationFilter: "kubernetes.io/ingress.class=nginx",
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			_, err := NewServiceSource(
 				fake.NewSimpleClientset(),
 				"",
 				ti.fqdnTemplate,
+				ti.annotationFilter,
 				"",
 				false,
 			)
@@ -84,19 +91,20 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 // testServiceSourceEndpoints tests that various services generate the correct endpoints.
 func testServiceSourceEndpoints(t *testing.T) {
 	for _, tc := range []struct {
-		title           string
-		targetNamespace string
-		svcNamespace    string
-		svcName         string
-		svcType         v1.ServiceType
-		compatibility   string
-		fqdnTemplate    string
-		labels          map[string]string
-		annotations     map[string]string
-		clusterIP       string
-		lbs             []string
-		expected        []*endpoint.Endpoint
-		expectError     bool
+		title            string
+		targetNamespace  string
+		svcNamespace     string
+		svcName          string
+		svcType          v1.ServiceType
+		compatibility    string
+		fqdnTemplate     string
+		annotationFilter string
+		labels           map[string]string
+		annotations      map[string]string
+		clusterIP        string
+		lbs              []string
+		expected         []*endpoint.Endpoint
+		expectError      bool
 	}{
 		{
 			"no annotated services return no endpoints",
@@ -104,6 +112,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"testing",
 			"foo",
 			v1.ServiceTypeLoadBalancer,
+			"",
 			"",
 			"",
 			map[string]string{},
@@ -119,6 +128,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"testing",
 			"foo",
 			v1.ServiceTypeLoadBalancer,
+			"",
 			"",
 			"",
 			map[string]string{},
@@ -140,6 +150,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeClusterIP,
 			"",
 			"",
+			"",
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
@@ -155,6 +166,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"testing",
 			"foo",
 			v1.ServiceTypeLoadBalancer,
+			"",
 			"",
 			"",
 			map[string]string{},
@@ -177,6 +189,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
+			"",
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org, bar.example.org",
@@ -197,6 +210,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
+			"",
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
@@ -214,6 +228,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"testing",
 			"foo",
 			v1.ServiceTypeLoadBalancer,
+			"",
 			"",
 			"",
 			map[string]string{},
@@ -236,6 +251,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
+			"",
 			map[string]string{},
 			map[string]string{
 				controllerAnnotationKey: controllerAnnotationValue,
@@ -256,6 +272,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"{{.Name}}.ext-dns.test.com",
+			"",
 			map[string]string{},
 			map[string]string{
 				controllerAnnotationKey: "some-other-tool",
@@ -272,6 +289,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"testing",
 			"foo",
 			v1.ServiceTypeLoadBalancer,
+			"",
 			"",
 			"",
 			map[string]string{},
@@ -293,6 +311,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
+			"",
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
@@ -308,6 +327,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"other-testing",
 			"foo",
 			v1.ServiceTypeLoadBalancer,
+			"",
 			"",
 			"",
 			map[string]string{},
@@ -329,6 +349,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
+			"",
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
@@ -344,6 +365,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"testing",
 			"foo",
 			v1.ServiceTypeLoadBalancer,
+			"",
 			"",
 			"",
 			map[string]string{},
@@ -366,6 +388,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
+			"",
 			map[string]string{},
 			map[string]string{
 				"zalando.org/dnsname": "foo.example.org.",
@@ -382,6 +405,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"foo",
 			v1.ServiceTypeLoadBalancer,
 			"mate",
+			"",
 			"",
 			map[string]string{},
 			map[string]string{
@@ -401,6 +425,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"foo",
 			v1.ServiceTypeLoadBalancer,
 			"molecule",
+			"",
 			"",
 			map[string]string{
 				"dns": "route53",
@@ -424,6 +449,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"{{.Name}}.bar.example.com",
+			"",
 			map[string]string{},
 			map[string]string{},
 			"",
@@ -442,6 +468,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"{{.Name}}.bar.example.com",
+			"",
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
@@ -462,6 +489,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"mate",
 			"{{.Name}}.bar.example.com",
+			"",
 			map[string]string{},
 			map[string]string{
 				"zalando.org/dnsname": "mate.example.org.",
@@ -481,8 +509,89 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"{{.Calibre}}.bar.example.com",
+			"",
 			map[string]string{},
 			map[string]string{},
+			"",
+			[]string{"1.2.3.4"},
+			[]*endpoint.Endpoint{},
+			true,
+		},
+		{
+			"complex valid matching source annotation filter",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeLoadBalancer,
+			"",
+			"",
+			"service.beta.kubernetes.io/external-traffic=^(OnlyLocal|Global)$",
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey:                         "foo.example.org.",
+				"service.beta.kubernetes.io/external-traffic": "OnlyLocal",
+			},
+			"",
+			[]string{"1.2.3.4"},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+			},
+			false,
+		},
+		{
+			"simple valid matching source annotation filter",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeLoadBalancer,
+			"",
+			"",
+			"service.beta.kubernetes.io/external-traffic=Global",
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey:                         "foo.example.org.",
+				"service.beta.kubernetes.io/external-traffic": "Global",
+			},
+			"",
+			[]string{"1.2.3.4"},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+			},
+			false,
+		},
+		{
+			"simple valid non-matching source annotation filter",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeLoadBalancer,
+			"",
+			"",
+			"service.beta.kubernetes.io/external-traffic=Global",
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey:                         "foo.example.org.",
+				"service.beta.kubernetes.io/external-traffic": "OnlyLocal",
+			},
+			"",
+			[]string{"1.2.3.4"},
+			[]*endpoint.Endpoint{},
+			false,
+		},
+		{
+			"simple invalid source annotation filter",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeLoadBalancer,
+			"",
+			"",
+			"service.beta.kubernetes.io/external-traffic=Only(Local",
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey:                         "foo.example.org.",
+				"service.beta.kubernetes.io/external-traffic": "OnlyLocal",
+			},
 			"",
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{},
@@ -529,6 +638,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				kubernetes,
 				tc.targetNamespace,
 				tc.fqdnTemplate,
+				tc.annotationFilter,
 				tc.compatibility,
 				false,
 			)
@@ -550,19 +660,20 @@ func testServiceSourceEndpoints(t *testing.T) {
 // testServiceSourceEndpoints tests that various services generate the correct endpoints.
 func TestClusterIpServices(t *testing.T) {
 	for _, tc := range []struct {
-		title           string
-		targetNamespace string
-		svcNamespace    string
-		svcName         string
-		svcType         v1.ServiceType
-		compatibility   string
-		fqdnTemplate    string
-		labels          map[string]string
-		annotations     map[string]string
-		clusterIP       string
-		lbs             []string
-		expected        []*endpoint.Endpoint
-		expectError     bool
+		title            string
+		targetNamespace  string
+		svcNamespace     string
+		svcName          string
+		svcType          v1.ServiceType
+		compatibility    string
+		fqdnTemplate     string
+		annotationFilter string
+		labels           map[string]string
+		annotations      map[string]string
+		clusterIP        string
+		lbs              []string
+		expected         []*endpoint.Endpoint
+		expectError      bool
 	}{
 		{
 			"annotated ClusterIp services return an endpoint with Cluster IP",
@@ -570,6 +681,7 @@ func TestClusterIpServices(t *testing.T) {
 			"testing",
 			"foo",
 			v1.ServiceTypeClusterIP,
+			"",
 			"",
 			"",
 			map[string]string{},
@@ -591,6 +703,7 @@ func TestClusterIpServices(t *testing.T) {
 			v1.ServiceTypeClusterIP,
 			"",
 			"{{.Name}}.bar.example.com",
+			"",
 			map[string]string{},
 			map[string]string{},
 			"4.5.6.7",
@@ -606,6 +719,7 @@ func TestClusterIpServices(t *testing.T) {
 			"testing",
 			"foo",
 			v1.ServiceTypeClusterIP,
+			"",
 			"",
 			"",
 			map[string]string{},
@@ -656,6 +770,7 @@ func TestClusterIpServices(t *testing.T) {
 				kubernetes,
 				tc.targetNamespace,
 				tc.fqdnTemplate,
+				tc.annotationFilter,
 				tc.compatibility,
 				true,
 			)
@@ -698,7 +813,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
 	require.NoError(b, err)
 
-	client, err := NewServiceSource(kubernetes, v1.NamespaceAll, "", "", false)
+	client, err := NewServiceSource(kubernetes, v1.NamespaceAll, "", "", "", false)
 	require.NoError(b, err)
 
 	for i := 0; i < b.N; i++ {

@@ -40,10 +40,10 @@ func TestIngress(t *testing.T) {
 
 func TestNewIngressSource(t *testing.T) {
 	for _, ti := range []struct {
-		title               string
-		fqdnTemplate        string
-		ingressClassPattern string
-		expectError         bool
+		title            string
+		fqdnTemplate     string
+		annotationFilter string
+		expectError      bool
 	}{
 		{
 			title:        "invalid template",
@@ -60,9 +60,9 @@ func TestNewIngressSource(t *testing.T) {
 			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
 		},
 		{
-			title:               "non-empty ingress class pattern",
-			expectError:         false,
-			ingressClassPattern: "nginx",
+			title:            "non-empty source annotation filter",
+			expectError:      false,
+			annotationFilter: "kubernetes.io/ingress.class=nginx",
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
@@ -70,7 +70,7 @@ func TestNewIngressSource(t *testing.T) {
 				fake.NewSimpleClientset(),
 				"",
 				ti.fqdnTemplate,
-				ti.ingressClassPattern,
+				ti.annotationFilter,
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -174,13 +174,13 @@ func testEndpointsFromIngress(t *testing.T) {
 func testIngressEndpoints(t *testing.T) {
 	namespace := "testing"
 	for _, ti := range []struct {
-		title               string
-		targetNamespace     string
-		ingressItems        []fakeIngress
-		expected            []*endpoint.Endpoint
-		expectError         bool
-		fqdnTemplate        string
-		ingressClassPattern string
+		title            string
+		targetNamespace  string
+		ingressItems     []fakeIngress
+		expected         []*endpoint.Endpoint
+		expectError      bool
+		fqdnTemplate     string
+		annotationFilter string
 	}{
 		{
 			title:           "no ingress",
@@ -451,7 +451,7 @@ func testIngressEndpoints(t *testing.T) {
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
 		},
 		{
-			title:           "complex valid matching ingress class pattern",
+			title:           "complex valid matching source annotation filter",
 			targetNamespace: "",
 			ingressItems: []fakeIngress{
 				{
@@ -470,10 +470,10 @@ func testIngressEndpoints(t *testing.T) {
 					Target:  "8.8.8.8",
 				},
 			},
-			ingressClassPattern: "^(nginx|alb)$",
+			annotationFilter: "kubernetes.io/ingress.class=^(nginx|alb)$",
 		},
 		{
-			title:           "simple valid matching ingress class pattern",
+			title:           "simple valid matching source annotation filter",
 			targetNamespace: "",
 			ingressItems: []fakeIngress{
 				{
@@ -492,10 +492,10 @@ func testIngressEndpoints(t *testing.T) {
 					Target:  "8.8.8.8",
 				},
 			},
-			ingressClassPattern: "nginx",
+			annotationFilter: "kubernetes.io/ingress.class=nginx",
 		},
 		{
-			title:           "simple valid non-matching ingress class pattern",
+			title:           "simple valid non-matching source annotation filter",
 			targetNamespace: "",
 			ingressItems: []fakeIngress{
 				{
@@ -508,11 +508,11 @@ func testIngressEndpoints(t *testing.T) {
 					ips:      []string{"8.8.8.8"},
 				},
 			},
-			expected:            []*endpoint.Endpoint{},
-			ingressClassPattern: "nginx",
+			expected:         []*endpoint.Endpoint{},
+			annotationFilter: "kubernetes.io/ingress.class=nginx",
 		},
 		{
-			title:           "simple invalid ingress class pattern",
+			title:           "simple invalid source annotation filter",
 			targetNamespace: "",
 			ingressItems: []fakeIngress{
 				{
@@ -525,9 +525,9 @@ func testIngressEndpoints(t *testing.T) {
 					ips:      []string{"8.8.8.8"},
 				},
 			},
-			expected:            []*endpoint.Endpoint{},
-			expectError:         true,
-			ingressClassPattern: "a(b",
+			expected:         []*endpoint.Endpoint{},
+			expectError:      true,
+			annotationFilter: "kubernetes.io/ingress.name=a(b",
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
@@ -541,7 +541,7 @@ func testIngressEndpoints(t *testing.T) {
 				fakeClient,
 				ti.targetNamespace,
 				ti.fqdnTemplate,
-				ti.ingressClassPattern,
+				ti.annotationFilter,
 			)
 			for _, ingress := range ingresses {
 				_, err := fakeClient.Extensions().Ingresses(ingress.Namespace).Create(ingress)

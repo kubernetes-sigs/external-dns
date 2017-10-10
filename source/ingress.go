@@ -37,14 +37,14 @@ import (
 // Use targetAnnotationKey to explicitly set Endpoint. (useful if the ingress
 // controller does not update, or to override with alternative endpoint)
 type ingressSource struct {
-	client              kubernetes.Interface
-	namespace           string
-	fqdnTemplate        *template.Template
-	ingressClassPattern string
+	client           kubernetes.Interface
+	namespace        string
+	fqdnTemplate     *template.Template
+	annotationFilter string
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate string, ingressClassPattern string) (Source, error) {
+func NewIngressSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate string, annotationFilter string) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -59,10 +59,10 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate s
 	}
 
 	return &ingressSource{
-		client:              kubeClient,
-		namespace:           namespace,
-		fqdnTemplate:        tmpl,
-		ingressClassPattern: ingressClassPattern,
+		client:           kubeClient,
+		namespace:        namespace,
+		fqdnTemplate:     tmpl,
+		annotationFilter: annotationFilter,
 	}, nil
 }
 
@@ -85,16 +85,16 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 
-		// Filter ingress classes not matching pattern
-		pattern := sc.ingressClassPattern
-		class := ing.Annotations["kubernetes.io/ingress.class"]
-		matched, err := regexp.MatchString(pattern, class)
+		// Skip sources not matching annotation filter
+		annotation, pattern := splitAnnotationFilter(sc.annotationFilter)
+		string := ing.Annotations[annotation]
+		matched, err := regexp.MatchString(pattern, string)
 		if err != nil {
 			return nil, err
 		}
 		if len(pattern) > 0 && !matched {
-			log.Debugf("Skipping ingress %s/%s because 'kubernetes.io/ingress.class' annotation does not match pattern, found: %s, expected: %s",
-				ing.Namespace, ing.Name, class, pattern)
+			log.Debugf("Skipping ingress %s/%s because '%s' annotation does not match pattern, found: %s, expected: %s",
+				ing.Namespace, ing.Name, annotation, string, pattern)
 			continue
 		}
 

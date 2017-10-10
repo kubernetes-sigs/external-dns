@@ -18,6 +18,7 @@ package source
 
 import (
 	"net"
+	"strings"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
@@ -45,4 +46,12 @@ func suitableType(target string) string {
 		return endpoint.RecordTypeA
 	}
 	return endpoint.RecordTypeCNAME
+}
+
+func splitAnnotationFilter(filter string) (annotation string, pattern string) {
+	split := strings.SplitN(filter, "=", 2)
+	if len(split) == 2 {
+		annotation, pattern = split[0], split[1]
+	}
+	return
 }

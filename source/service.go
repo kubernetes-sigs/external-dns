@@ -19,6 +19,7 @@ package source
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -40,13 +41,14 @@ type serviceSource struct {
 	client    kubernetes.Interface
 	namespace string
 	// process Services with legacy annotations
-	compatibility   string
-	fqdnTemplate    *template.Template
-	publishInternal bool
+	fqdnTemplate     *template.Template
+	annotationFilter string
+	compatibility    string
+	publishInternal  bool
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate, compatibility string, publishInternal bool) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate, annotationFilter string, compatibility string, publishInternal bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -61,11 +63,12 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate, 
 	}
 
 	return &serviceSource{
-		client:          kubeClient,
-		namespace:       namespace,
-		compatibility:   compatibility,
-		fqdnTemplate:    tmpl,
-		publishInternal: publishInternal,
+		client:           kubeClient,
+		namespace:        namespace,
+		compatibility:    compatibility,
+		fqdnTemplate:     tmpl,
+		annotationFilter: annotationFilter,
+		publishInternal:  publishInternal,
 	}, nil
 }
 
@@ -84,6 +87,19 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		if ok && controller != controllerAnnotationValue {
 			log.Debugf("Skipping service %s/%s because controller value does not match, found: %s, required: %s",
 				svc.Namespace, svc.Name, controller, controllerAnnotationValue)
+			continue
+		}
+
+		// Skip sources not matching annotation filter
+		annotation, pattern := splitAnnotationFilter(sc.annotationFilter)
+		string := svc.Annotations[annotation]
+		matched, err := regexp.MatchString(pattern, string)
+		if err != nil {
+			return nil, err
+		}
+		if len(pattern) > 0 && !matched {
+			log.Debugf("Skipping service %s/%s because '%s' annotation does not match pattern, found: %s, expected: %s",
+				svc.Namespace, svc.Name, annotation, string, pattern)
 			continue
 		}
 
