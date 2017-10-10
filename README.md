@@ -19,6 +19,8 @@ In a broader sense, ExternalDNS allows you to control DNS records dynamically vi
 
 The [FAQ](docs/faq.md) contains additional information and addresses several questions about key concepts of ExternalDNS.
 
+To see ExternalDNS in action, have a look at this [video](https://www.youtube.com/watch?v=9HQ2XgL9YVI).
+
 ## The Latest Release: v0.4
 
 ExternalDNS' current release is `v0.4`. This version allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
