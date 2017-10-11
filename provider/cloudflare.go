@@ -174,7 +174,7 @@ func (p *CloudFlareProvider) submitChanges(changes []*cloudFlareChange) error {
 		return err
 	}
 	// separate into per-zone change sets to be passed to the API.
-	changesByZone := p.cloudflareChangesByZone(zones, changes)
+	changesByZone := p.changesByZone(zones, changes)
 
 	for zoneID, changes := range changesByZone {
 		records, err := p.Client.DNSRecords(zoneID, cloudflare.DNSRecord{})
@@ -218,7 +218,7 @@ func (p *CloudFlareProvider) submitChanges(changes []*cloudFlareChange) error {
 }
 
 // changesByZone separates a multi-zone change into a single change per zone.
-func (p *CloudFlareProvider) cloudflareChangesByZone(zones []cloudflare.Zone, changeSet []*cloudFlareChange) map[string][]*cloudFlareChange {
+func (p *CloudFlareProvider) changesByZone(zones []cloudflare.Zone, changeSet []*cloudFlareChange) map[string][]*cloudFlareChange {
 	changes := make(map[string][]*cloudFlareChange)
 	zoneNameIDMapper := zoneIDName{}
 
