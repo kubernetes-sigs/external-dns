@@ -142,24 +142,23 @@ func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				return true
 			}
 			recordType := strings.TrimLeft(*recordSet.Type, "Microsoft.Network/dnszones/")
-			switch dns.RecordType(recordType) {
-			case dns.A, dns.CNAME, dns.TXT:
-				name := formatAzureDNSName(*recordSet.Name, *zone.Name)
-				target := extractAzureTarget(&recordSet)
-				if target == "" {
-					log.Errorf("Failed to extract target for '%s' with type '%s'.", name, recordType)
-					return true
-				}
-				endpoint := endpoint.NewEndpoint(name, target, recordType)
-				log.Debugf(
-					"Found %s record for '%s' with target '%s'.",
-					endpoint.RecordType,
-					endpoint.DNSName,
-					endpoint.Target,
-				)
-				endpoints = append(endpoints, endpoint)
-			default:
+			if !supportedRecordType(recordType) {
+				return true
 			}
+			name := formatAzureDNSName(*recordSet.Name, *zone.Name)
+			target := extractAzureTarget(&recordSet)
+			if target == "" {
+				log.Errorf("Failed to extract target for '%s' with type '%s'.", name, recordType)
+				return true
+			}
+			endpoint := endpoint.NewEndpoint(name, target, recordType)
+			log.Debugf(
+				"Found %s record for '%s' with target '%s'.",
+				endpoint.RecordType,
+				endpoint.DNSName,
+				endpoint.Target,
+			)
+			endpoints = append(endpoints, endpoint)
 			return true
 		})
 		if err != nil {
@@ -232,16 +231,21 @@ func (p *AzureProvider) iterateRecords(zoneName string, callback func(dns.Record
 	return nil
 }
 
-type azureChangeMap map[*dns.Zone][]*endpoint.Endpoint
+type azureChangeMap map[string][]*endpoint.Endpoint
 
 func (p *AzureProvider) mapChanges(zones []dns.Zone, changes *plan.Changes) (azureChangeMap, azureChangeMap) {
 	ignored := map[string]bool{}
 	deleted := azureChangeMap{}
 	updated := azureChangeMap{}
-
+	zoneNameIDMapper := zoneIDName{}
+	for _, z := range zones {
+		if z.Name != nil {
+			zoneNameIDMapper.Add(*z.Name, *z.Name)
+		}
+	}
 	mapChange := func(changeMap azureChangeMap, change *endpoint.Endpoint) {
-		zone := p.findZone(zones, change.DNSName)
-		if zone == nil {
+		zone, _ := zoneNameIDMapper.FindZone(change.DNSName)
+		if zone == "" {
 			if _, ok := ignored[change.DNSName]; !ok {
 				ignored[change.DNSName] = true
 				log.Infof("Ignoring changes to '%s' because a suitable Azure DNS zone was not found.", change.DNSName)
@@ -270,36 +274,21 @@ func (p *AzureProvider) mapChanges(zones []dns.Zone, changes *plan.Changes) (azu
 	return deleted, updated
 }
 
-func (p *AzureProvider) findZone(zones []dns.Zone, name string) *dns.Zone {
-	var result *dns.Zone
-
-	// Go through every zone looking for the longest name (i.e. most specific) as a matching suffix
-	for idx := range zones {
-		zone := &zones[idx]
-		if strings.HasSuffix(name, *zone.Name) {
-			if result == nil || len(*zone.Name) > len(*result.Name) {
-				result = zone
-			}
-		}
-	}
-	return result
-}
-
 func (p *AzureProvider) deleteRecords(deleted azureChangeMap) {
 	// Delete records first
 	for zone, endpoints := range deleted {
 		for _, endpoint := range endpoints {
 			name := p.recordSetNameForZone(zone, endpoint)
 			if p.dryRun {
-				log.Infof("Would delete %s record named '%s' for Azure DNS zone '%s'.", endpoint.RecordType, name, *zone.Name)
+				log.Infof("Would delete %s record named '%s' for Azure DNS zone '%s'.", endpoint.RecordType, name, zone)
 			} else {
-				log.Infof("Deleting %s record named '%s' for Azure DNS zone '%s'.", endpoint.RecordType, name, *zone.Name)
-				if _, err := p.recordsClient.Delete(p.resourceGroup, *zone.Name, name, dns.RecordType(endpoint.RecordType), ""); err != nil {
+				log.Infof("Deleting %s record named '%s' for Azure DNS zone '%s'.", endpoint.RecordType, name, zone)
+				if _, err := p.recordsClient.Delete(p.resourceGroup, zone, name, dns.RecordType(endpoint.RecordType), ""); err != nil {
 					log.Errorf(
 						"Failed to delete %s record named '%s' for Azure DNS zone '%s': %v",
 						endpoint.RecordType,
 						name,
-						*zone.Name,
+						zone,
 						err,
 					)
 				}
@@ -318,7 +307,7 @@ func (p *AzureProvider) updateRecords(updated azureChangeMap) {
 					endpoint.RecordType,
 					name,
 					endpoint.Target,
-					*zone.Name,
+					zone,
 				)
 				continue
 			}
@@ -328,14 +317,14 @@ func (p *AzureProvider) updateRecords(updated azureChangeMap) {
 				endpoint.RecordType,
 				name,
 				endpoint.Target,
-				*zone.Name,
+				zone,
 			)
 
 			recordSet, err := p.newRecordSet(endpoint)
 			if err == nil {
 				_, err = p.recordsClient.CreateOrUpdate(
 					p.resourceGroup,
-					*zone.Name,
+					zone,
 					name,
 					dns.RecordType(endpoint.RecordType),
 					recordSet,
@@ -349,7 +338,7 @@ func (p *AzureProvider) updateRecords(updated azureChangeMap) {
 					endpoint.RecordType,
 					name,
 					endpoint.Target,
-					*zone.Name,
+					zone,
 					err,
 				)
 			}
@@ -357,10 +346,10 @@ func (p *AzureProvider) updateRecords(updated azureChangeMap) {
 	}
 }
 
-func (p *AzureProvider) recordSetNameForZone(zone *dns.Zone, endpoint *endpoint.Endpoint) string {
+func (p *AzureProvider) recordSetNameForZone(zone string, endpoint *endpoint.Endpoint) string {
 	// Remove the zone from the record set
 	name := endpoint.DNSName
-	name = name[:len(name)-len(*zone.Name)]
+	name = name[:len(name)-len(zone)]
 	name = strings.TrimSuffix(name, ".")
 
 	// For root, use @
