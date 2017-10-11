@@ -28,7 +28,7 @@ func TestStoragesActions_Attach(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, attachRequest) {
 			t.Errorf("want=%#v", attachRequest)
 			t.Errorf("got=%#v", v)
@@ -60,7 +60,7 @@ func TestStoragesActions_DetachByDropletID(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, detachByDropletIDRequest) {
 			t.Errorf("want=%#v", detachByDropletIDRequest)
 			t.Errorf("got=%#v", v)
@@ -80,7 +80,7 @@ func TestStorageActions_Get(t *testing.T) {
 	volumeID := "98d414c6-295e-4e3a-ac58-eb9456c1e1d1"
 
 	mux.HandleFunc("/v2/volumes/"+volumeID+"/actions/456", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprintf(w, `{"action":{"status":"in-progress"}}`)
 	})
 
@@ -101,7 +101,7 @@ func TestStorageActions_List(t *testing.T) {
 	volumeID := "98d414c6-295e-4e3a-ac58-eb9456c1e1d1"
 
 	mux.HandleFunc("/v2/volumes/"+volumeID+"/actions", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprintf(w, `{"actions":[{"status":"in-progress"}]}`)
 	})
 
@@ -134,7 +134,7 @@ func TestStoragesActions_Resize(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, resizeRequest) {
 			t.Errorf("want=%#v", resizeRequest)
 			t.Errorf("got=%#v", v)

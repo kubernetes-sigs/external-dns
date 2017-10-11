@@ -614,25 +614,6 @@ func TestAWSCanonicalHostedZone(t *testing.T) {
 	}
 }
 
-func TestAWSSuitableZone(t *testing.T) {
-	zones := map[string]*route53.HostedZone{
-		"example-org":     {Id: aws.String("example-org"), Name: aws.String("example.org.")},
-		"bar-example-org": {Id: aws.String("bar-example-org"), Name: aws.String("bar.example.org.")},
-	}
-
-	for _, tc := range []struct {
-		hostname string
-		expected *route53.HostedZone
-	}{
-		{"foo.bar.example.org.", zones["bar-example-org"]},
-		{"foo.example.org.", zones["example-org"]},
-		{"foo.kubernetes.io.", nil},
-	} {
-		suitableZone := suitableZone(tc.hostname, zones)
-		assert.Equal(t, tc.expected, suitableZone)
-	}
-}
-
 func createAWSZone(t *testing.T, provider *AWSProvider, zone *route53.HostedZone) {
 	params := &route53.CreateHostedZoneInput{
 		CallerReference:  aws.String("external-dns.alpha.kubernetes.io/test-zone"),

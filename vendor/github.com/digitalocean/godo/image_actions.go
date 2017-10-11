@@ -2,6 +2,7 @@ package godo
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/digitalocean/godo/context"
 )
@@ -35,7 +36,7 @@ func (i *ImageActionsServiceOp) Transfer(ctx context.Context, imageID int, trans
 
 	path := fmt.Sprintf("v2/images/%d/actions", imageID)
 
-	req, err := i.client.NewRequest(ctx, "POST", path, transferRequest)
+	req, err := i.client.NewRequest(ctx, http.MethodPost, path, transferRequest)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -61,7 +62,7 @@ func (i *ImageActionsServiceOp) Convert(ctx context.Context, imageID int) (*Acti
 		"type": "convert",
 	}
 
-	req, err := i.client.NewRequest(ctx, "POST", path, convertRequest)
+	req, err := i.client.NewRequest(ctx, http.MethodPost, path, convertRequest)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -87,7 +88,7 @@ func (i *ImageActionsServiceOp) Get(ctx context.Context, imageID, actionID int) 
 
 	path := fmt.Sprintf("v2/images/%d/actions/%d", imageID, actionID)
 
-	req, err := i.client.NewRequest(ctx, "GET", path, nil)
+	req, err := i.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}

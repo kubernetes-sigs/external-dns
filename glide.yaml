@@ -1,6 +1,6 @@
 package: github.com/kubernetes-incubator/external-dns
 import:
-- package: github.com/Sirupsen/logrus
+- package: github.com/sirupsen/logrus
   version: ~0.11.5
 - package: github.com/alecthomas/kingpin
   version: ~2.2.4
@@ -49,6 +49,10 @@ import:
   version: ~8.0.0
 - package: github.com/dgrijalva/jwt-go
   version: ~3.0.0
+- package: github.com/dnsimple/dnsimple-go
+  version: ~0.14.0
+  subpackages:
+  - dnsimple
 - package: github.com/cloudflare/cloudflare-go
   version: ~0.7.3
 - package: github.com/digitalocean/godo

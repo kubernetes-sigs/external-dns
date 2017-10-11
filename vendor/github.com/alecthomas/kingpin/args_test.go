@@ -2,8 +2,8 @@ package kingpin
 
 import (
 	"io/ioutil"
-	"testing"
 	"os"
+	"testing"
 
 	"github.com/alecthomas/assert"
 )

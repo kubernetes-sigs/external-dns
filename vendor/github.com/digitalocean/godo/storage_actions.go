@@ -2,6 +2,7 @@ package godo
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/digitalocean/godo/context"
 )
@@ -77,7 +78,7 @@ func (s *StorageActionsServiceOp) Resize(ctx context.Context, volumeID string, s
 func (s *StorageActionsServiceOp) doAction(ctx context.Context, volumeID string, request *ActionRequest) (*Action, *Response, error) {
 	path := storageAllocationActionPath(volumeID)
 
-	req, err := s.client.NewRequest(ctx, "POST", path, request)
+	req, err := s.client.NewRequest(ctx, http.MethodPost, path, request)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -92,7 +93,7 @@ func (s *StorageActionsServiceOp) doAction(ctx context.Context, volumeID string,
 }
 
 func (s *StorageActionsServiceOp) get(ctx context.Context, path string) (*Action, *Response, error) {
-	req, err := s.client.NewRequest(ctx, "GET", path, nil)
+	req, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -107,7 +108,7 @@ func (s *StorageActionsServiceOp) get(ctx context.Context, path string) (*Action
 }
 
 func (s *StorageActionsServiceOp) list(ctx context.Context, path string) ([]Action, *Response, error) {
-	req, err := s.client.NewRequest(ctx, "GET", path, nil)
+	req, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}

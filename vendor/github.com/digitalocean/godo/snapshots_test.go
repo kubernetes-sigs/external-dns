@@ -14,7 +14,7 @@ func TestSnapshots_List(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/snapshots", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"snapshots":[{"id":"1"},{"id":"2", "size_gigabytes": 4.84}]}`)
 	})
 	ctx := context.Background()
@@ -34,7 +34,7 @@ func TestSnapshots_ListVolume(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/snapshots", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		expected := "volume"
 		actual := r.URL.Query().Get("resource_type")
 		if actual != expected {
@@ -60,7 +60,7 @@ func TestSnapshots_ListDroplet(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/snapshots", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		expected := "droplet"
 		actual := r.URL.Query().Get("resource_type")
 		if actual != expected {
@@ -87,7 +87,7 @@ func TestSnapshots_ListSnapshotsMultiplePages(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/snapshots", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"snapshots": [{"id":"1"},{"id":"2"}], "links":{"pages":{"next":"http://example.com/v2/snapshots/?page=2"}}}`)
 	})
 
@@ -117,7 +117,7 @@ func TestSnapshots_RetrievePageByNumber(t *testing.T) {
     }`
 
 	mux.HandleFunc("/v2/snapshots", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, jBlob)
 	})
 
@@ -136,7 +136,7 @@ func TestSnapshots_GetSnapshotByID(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/snapshots/12345", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"snapshot":{"id":"12345"}}`)
 	})
 
@@ -157,7 +157,7 @@ func TestSnapshots_Destroy(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/snapshots/12345", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 	})
 
 	ctx := context.Background()
