@@ -1,5 +1,5 @@
-hash: bd2f3e3117cc6b93553cb182322b717569d29c15d00892b87b04b52084fc3116
-updated: 2017-10-09T14:34:31.295501637+02:00
+hash: e0cec95591c093025bbed4fec7ee5d0d53ce64422c7714c3fde004c41bd451f1
+updated: 2017-10-09T15:51:45.181636771+02:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -86,6 +86,10 @@ imports:
   version: 77ea48de76a7b31b234d854f15d003c68bb2fb90
   subpackages:
   - context
+- name: github.com/dnsimple/dnsimple-go
+  version: d1105abc03b313d7b8d9b04364f6bd053b346e59
+  subpackages:
+  - dnsimple
 - name: github.com/docker/distribution
   version: cd27f179f2c10c5d300e6d09025b538c475b0d51
   subpackages:

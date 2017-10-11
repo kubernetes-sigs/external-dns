@@ -19,6 +19,8 @@ In a broader sense, ExternalDNS allows you to control DNS records dynamically vi
 
 The [FAQ](docs/faq.md) contains additional information and addresses several questions about key concepts of ExternalDNS.
 
+To see ExternalDNS in action, have a look at this [video](https://www.youtube.com/watch?v=9HQ2XgL9YVI).
+
 ## The Latest Release: v0.4
 
 ExternalDNS' current release is `v0.4`. This version allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
@@ -27,6 +29,7 @@ ExternalDNS' current release is `v0.4`. This version allows you to keep selected
 * [AzureDNS](https://azure.microsoft.com/en-us/services/dns)
 * [CloudFlare](https://www.cloudflare.com/de/dns)
 * [DigitalOcean](https://www.digitalocean.com/products/networking)
+* [DNSimple](https://dnsimple.com/)
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.4` with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -75,6 +78,14 @@ Annotate the Service with your desired external DNS name. Make sure to change `e
 ```console
 $ kubectl annotate service nginx "external-dns.alpha.kubernetes.io/hostname=nginx.example.org."
 ```
+
+Optionally, you can customize the TTL value of the resulting DNS record by using the `external-dns.alpha.kubernetes.io/ttl` annotation:
+
+```console
+$ kubectl annotate service nginx "external-dns.alpha.kubernetes.io/ttl=10"
+```
+
+For more details on configuring TTL, see [here](docs/ttl.md).
 
 Locally run a single sync loop of ExternalDNS.
 

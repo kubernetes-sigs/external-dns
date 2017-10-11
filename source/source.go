@@ -17,8 +17,10 @@ limitations under the License.
 package source
 
 import (
+	"fmt"
+	"math"
 	"net"
-	"strings"
+	"strconv"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
@@ -30,13 +32,36 @@ const (
 	hostnameAnnotationKey = "external-dns.alpha.kubernetes.io/hostname"
 	// The annotation used for defining the desired ingress target
 	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
-	// The value of the controller annotation so that we feel resposible
+	// The annotation used for defining the desired DNS record TTL
+	ttlAnnotationKey = "external-dns.alpha.kubernetes.io/ttl"
+	// The value of the controller annotation so that we feel responsible
 	controllerAnnotationValue = "dns-controller"
+)
+
+const (
+	ttlMinimum = 1
+	ttlMaximum = math.MaxUint32
 )
 
 // Source defines the interface Endpoint sources should implement.
 type Source interface {
 	Endpoints() ([]*endpoint.Endpoint, error)
+}
+
+func getTTLFromAnnotations(annotations map[string]string) (endpoint.TTL, error) {
+	ttlNotConfigured := endpoint.TTL(0)
+	ttlAnnotation, exists := annotations[ttlAnnotationKey]
+	if !exists {
+		return ttlNotConfigured, nil
+	}
+	ttlValue, err := strconv.ParseInt(ttlAnnotation, 10, 64)
+	if err != nil {
+		return ttlNotConfigured, fmt.Errorf("\"%v\" is not a valid TTL value", ttlAnnotation)
+	}
+	if ttlValue < ttlMinimum || ttlValue > ttlMaximum {
+		return ttlNotConfigured, fmt.Errorf("TTL value must be between [%d, %d]", ttlMinimum, ttlMaximum)
+	}
+	return endpoint.TTL(ttlValue), nil
 }
 
 // suitableType returns the DNS resource record type suitable for the target.
@@ -46,12 +71,4 @@ func suitableType(target string) string {
 		return endpoint.RecordTypeA
 	}
 	return endpoint.RecordTypeCNAME
-}
-
-func splitAnnotationFilter(filter string) (annotation string, pattern string) {
-	split := strings.SplitN(filter, "=", 2)
-	if len(split) == 2 {
-		annotation, pattern = split[0], split[1]
-	}
-	return
 }

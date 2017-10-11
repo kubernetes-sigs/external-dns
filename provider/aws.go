@@ -154,19 +154,22 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 		for _, r := range resp.ResourceRecordSets {
 			// TODO(linki, ownership): Remove once ownership system is in place.
 			// See: https://github.com/kubernetes-incubator/external-dns/pull/122/files/74e2c3d3e237411e619aefc5aab694742001cdec#r109863370
-			switch aws.StringValue(r.Type) {
-			case route53.RRTypeA, route53.RRTypeCname, route53.RRTypeTxt:
-				break
-			default:
+
+			if !supportedRecordType(aws.StringValue(r.Type)) {
 				continue
 			}
 
+			var ttl endpoint.TTL
+			if r.TTL != nil {
+				ttl = endpoint.TTL(*r.TTL)
+			}
+
 			for _, rr := range r.ResourceRecords {
-				endpoints = append(endpoints, endpoint.NewEndpoint(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(rr.Value), aws.StringValue(r.Type)))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(rr.Value), aws.StringValue(r.Type), ttl))
 			}
 
 			if r.AliasTarget != nil {
-				endpoints = append(endpoints, endpoint.NewEndpoint(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.AliasTarget.DNSName), endpoint.RecordTypeCNAME))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.AliasTarget.DNSName), endpoint.RecordTypeCNAME, ttl))
 			}
 		}
 
@@ -254,20 +257,22 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 // changesByZone separates a multi-zone change into a single change per zone.
 func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Change) map[string][]*route53.Change {
 	changes := make(map[string][]*route53.Change)
+	zoneNameIDMapper := zoneIDName{}
 
 	for _, z := range zones {
+		zoneNameIDMapper.Add(aws.StringValue(z.Id), aws.StringValue(z.Name))
 		changes[aws.StringValue(z.Id)] = []*route53.Change{}
 	}
 
 	for _, c := range changeSet {
 		hostname := ensureTrailingDot(aws.StringValue(c.ResourceRecordSet.Name))
 
-		zone := suitableZone(hostname, zones)
-		if zone == nil {
+		zoneID, _ := zoneNameIDMapper.FindZone(hostname)
+		if zoneID == "" {
 			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.String())
 			continue
 		}
-		changes[aws.StringValue(zone.Id)] = append(changes[aws.StringValue(zone.Id)], c)
+		changes[zoneID] = append(changes[zoneID], c)
 	}
 
 	// separating a change could lead to empty sub changes, remove them here.
@@ -311,7 +316,11 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 		}
 	} else {
 		change.ResourceRecordSet.Type = aws.String(endpoint.RecordType)
-		change.ResourceRecordSet.TTL = aws.Int64(recordTTL)
+		if !endpoint.RecordTTL.IsConfigured() {
+			change.ResourceRecordSet.TTL = aws.Int64(recordTTL)
+		} else {
+			change.ResourceRecordSet.TTL = aws.Int64(int64(endpoint.RecordTTL))
+		}
 		change.ResourceRecordSet.ResourceRecords = []*route53.ResourceRecord{
 			{
 				Value: aws.String(endpoint.Target),
@@ -320,21 +329,6 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 	}
 
 	return change
-}
-
-// suitableZone returns the most suitable zone for a given hostname and a set of zones.
-func suitableZone(hostname string, zones map[string]*route53.HostedZone) *route53.HostedZone {
-	var zone *route53.HostedZone
-
-	for _, z := range zones {
-		if strings.HasSuffix(hostname, aws.StringValue(z.Name)) {
-			if zone == nil || len(aws.StringValue(z.Name)) > len(aws.StringValue(zone.Name)) {
-				zone = z
-			}
-		}
-	}
-
-	return zone
 }
 
 // isAWSLoadBalancer determines if a given hostname belongs to an AWS load balancer.
