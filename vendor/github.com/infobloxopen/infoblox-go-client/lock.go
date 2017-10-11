@@ -2,7 +2,7 @@ package ibclient
 
 import (
 	"fmt"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"math/rand"
 	"time"
 )
