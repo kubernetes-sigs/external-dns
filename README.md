@@ -164,11 +164,22 @@ Have a look at [the milestones](https://github.com/kubernetes-incubator/external
 
 ## Contributing
 
-We encourage you to get involved with ExternalDNS, as users as well as contributors. Read the [contributing guidelines](CONTRIBUTING.md) and have a look at [the contributing docs](docs/contributing/getting-started.md) to learn about building the project, the project structure, and the purpose of each package.
+We encourage you to get involved with ExternalDNS, as users, contributors or as new maintainers that can take over some parts like different providers and help with code reviews.
+
+Providers which currently need maintainers:
+
+* Azure
+* Cloudflare
+* Digital Ocean
+* Google Cloud Platform
+
+Any provider should having at least one maintainer for each new provider would be really great.
+
+Read the [contributing guidelines](CONTRIBUTING.md) and have a look at [the contributing docs](docs/contributing/getting-started.md) to learn about building the project, the project structure, and the purpose of each package.
+
+If you are interested please reach out to us on the [Kubernetes slack](http://slack.k8s.io) in the #external-dns channel.
 
 For an overview on how to write new Sources and Providers check out [Sources and Providers](docs/contributing/sources-and-providers.md).
-
-Feel free to reach out to us on the [Kubernetes slack](http://slack.k8s.io) in the #sig-network channel.
 
 ## Heritage
 
