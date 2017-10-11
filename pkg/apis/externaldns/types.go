@@ -29,59 +29,59 @@ var (
 
 // Config is a project-wide configuration
 type Config struct {
-	Master                 string
-	KubeConfig             string
-	Sources                []string
-	Namespace              string
-	FQDNTemplate           string
-	Compatibility          string
-	PublishInternal        bool
-	Provider               string
-	GoogleProject          string
-	DomainFilter           []string
-	AWSZoneType            string
-	AzureConfigFile        string
-	AzureResourceGroup     string
-	CloudflareProxied      bool
-	Policy                 string
-	Registry               string
-	TXTOwnerID             string
-	TXTPrefix              string
-	Interval               time.Duration
-	Once                   bool
-	DryRun                 bool
-	LogFormat              string
-	MetricsAddress         string
-	LogLevel               string
-	SourceAnnotationFilter string
+	Master             string
+	KubeConfig         string
+	Sources            []string
+	Namespace          string
+	AnnotationFilter   string
+	FQDNTemplate       string
+	Compatibility      string
+	PublishInternal    bool
+	Provider           string
+	GoogleProject      string
+	DomainFilter       []string
+	AWSZoneType        string
+	AzureConfigFile    string
+	AzureResourceGroup string
+	CloudflareProxied  bool
+	Policy             string
+	Registry           string
+	TXTOwnerID         string
+	TXTPrefix          string
+	Interval           time.Duration
+	Once               bool
+	DryRun             bool
+	LogFormat          string
+	MetricsAddress     string
+	LogLevel           string
 }
 
 var defaultConfig = &Config{
-	Master:                 "",
-	KubeConfig:             "",
-	Sources:                nil,
-	Namespace:              "",
-	FQDNTemplate:           "",
-	Compatibility:          "",
-	PublishInternal:        false,
-	Provider:               "",
-	GoogleProject:          "",
-	DomainFilter:           []string{},
-	AWSZoneType:            "",
-	AzureConfigFile:        "/etc/kubernetes/azure.json",
-	AzureResourceGroup:     "",
-	CloudflareProxied:      false,
-	Policy:                 "sync",
-	Registry:               "txt",
-	TXTOwnerID:             "default",
-	TXTPrefix:              "",
-	Interval:               time.Minute,
-	Once:                   false,
-	DryRun:                 false,
-	LogFormat:              "text",
-	MetricsAddress:         ":7979",
-	LogLevel:               logrus.InfoLevel.String(),
-	SourceAnnotationFilter: "",
+	Master:             "",
+	KubeConfig:         "",
+	Sources:            nil,
+	Namespace:          "",
+	AnnotationFilter:   "",
+	FQDNTemplate:       "",
+	Compatibility:      "",
+	PublishInternal:    false,
+	Provider:           "",
+	GoogleProject:      "",
+	DomainFilter:       []string{},
+	AWSZoneType:        "",
+	AzureConfigFile:    "/etc/kubernetes/azure.json",
+	AzureResourceGroup: "",
+	CloudflareProxied:  false,
+	Policy:             "sync",
+	Registry:           "txt",
+	TXTOwnerID:         "default",
+	TXTPrefix:          "",
+	Interval:           time.Minute,
+	Once:               false,
+	DryRun:             false,
+	LogFormat:          "text",
+	MetricsAddress:     ":7979",
+	LogLevel:           logrus.InfoLevel.String(),
 }
 
 // NewConfig returns new Config object
@@ -111,6 +111,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	// Flags related to processing sources
 	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, fake)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "fake")
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
+	app.Flag("annotation-filter", "Filter sources managed by external-dns via annotation using label selector semantics (default: all sources)").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
 	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional)").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
 	app.Flag("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule)").Default(defaultConfig.Compatibility).EnumVar(&cfg.Compatibility, "", "mate", "molecule")
 	app.Flag("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)").BoolVar(&cfg.PublishInternal)
@@ -141,7 +142,6 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("log-format", "The format in which log messages are printed (default: text, options: text, json)").Default(defaultConfig.LogFormat).EnumVar(&cfg.LogFormat, "text", "json")
 	app.Flag("metrics-address", "Specify where to serve the metrics and health check endpoint (default: :7979)").Default(defaultConfig.MetricsAddress).StringVar(&cfg.MetricsAddress)
 	app.Flag("log-level", "Set the level of logging. (default: info, options: panic, debug, info, warn, error, fatal").Default(defaultConfig.LogLevel).EnumVar(&cfg.LogLevel, allLogLevelsAsStrings()...)
-	app.Flag("source-annotation-filter", "Filter sources managed by external-dns via annotation regexp pattern (default: all sources)").Default(defaultConfig.SourceAnnotationFilter).StringVar(&cfg.SourceAnnotationFilter)
 
 	_, err := app.Parse(args)
 	if err != nil {

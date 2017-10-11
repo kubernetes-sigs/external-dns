@@ -19,13 +19,13 @@ package source
 import (
 	"bytes"
 	"fmt"
-	"regexp"
 	"strings"
 	"text/template"
 
 	log "github.com/sirupsen/logrus"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 
@@ -38,17 +38,17 @@ import (
 // matched services' entrypoints it will return a corresponding
 // Endpoint object.
 type serviceSource struct {
-	client    kubernetes.Interface
-	namespace string
-	// process Services with legacy annotations
-	fqdnTemplate     *template.Template
+	client           kubernetes.Interface
+	namespace        string
 	annotationFilter string
-	compatibility    string
-	publishInternal  bool
+	// process Services with legacy annotations
+	fqdnTemplate    *template.Template
+	compatibility   string
+	publishInternal bool
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate, annotationFilter string, compatibility string, publishInternal bool) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate, compatibility string, publishInternal bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -65,9 +65,9 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate, 
 	return &serviceSource{
 		client:           kubeClient,
 		namespace:        namespace,
+		annotationFilter: annotationFilter,
 		compatibility:    compatibility,
 		fqdnTemplate:     tmpl,
-		annotationFilter: annotationFilter,
 		publishInternal:  publishInternal,
 	}, nil
 }
@@ -75,6 +75,10 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate, 
 // Endpoints returns endpoint objects for each service that should be processed.
 func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	services, err := sc.client.CoreV1().Services(sc.namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	services.Items, err = sc.filterByAnnotations(services.Items, sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -87,19 +91,6 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		if ok && controller != controllerAnnotationValue {
 			log.Debugf("Skipping service %s/%s because controller value does not match, found: %s, required: %s",
 				svc.Namespace, svc.Name, controller, controllerAnnotationValue)
-			continue
-		}
-
-		// Skip sources not matching annotation filter
-		annotation, pattern := splitAnnotationFilter(sc.annotationFilter)
-		string := svc.Annotations[annotation]
-		matched, err := regexp.MatchString(pattern, string)
-		if err != nil {
-			return nil, err
-		}
-		if len(pattern) > 0 && !matched {
-			log.Debugf("Skipping service %s/%s because '%s' annotation does not match pattern, found: %s, expected: %s",
-				svc.Namespace, svc.Name, annotation, string, pattern)
 			continue
 		}
 
@@ -162,6 +153,37 @@ func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 	}
 
 	return endpoints
+}
+
+// filterByAnnotations filters a list of services by a given annotation selector.
+func (sc *serviceSource) filterByAnnotations(services []v1.Service, annotationFilter string) ([]v1.Service, error) {
+	labelSelector, err := metav1.ParseToLabelSelector(annotationFilter)
+	if err != nil {
+		return nil, err
+	}
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		return nil, err
+	}
+
+	// empty filter returns original list
+	if selector.Empty() {
+		return services, nil
+	}
+
+	filteredList := []v1.Service{}
+
+	for _, service := range services {
+		// convert the service's annotations to an equivalent label selector
+		annotations := labels.Set(service.Annotations)
+
+		// include service if its annotations match the selector
+		if selector.Matches(annotations) {
+			filteredList = append(filteredList, service)
+		}
+	}
+
+	return filteredList, nil
 }
 
 func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*endpoint.Endpoint {

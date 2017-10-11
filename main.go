@@ -68,11 +68,11 @@ func main() {
 
 	// Create a source.Config from the flags passed by the user.
 	sourceCfg := &source.Config{
-		Namespace:              cfg.Namespace,
-		FQDNTemplate:           cfg.FQDNTemplate,
-		Compatibility:          cfg.Compatibility,
-		PublishInternal:        cfg.PublishInternal,
-		SourceAnnotationFilter: cfg.SourceAnnotationFilter,
+		Namespace:        cfg.Namespace,
+		AnnotationFilter: cfg.AnnotationFilter,
+		FQDNTemplate:     cfg.FQDNTemplate,
+		Compatibility:    cfg.Compatibility,
+		PublishInternal:  cfg.PublishInternal,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
