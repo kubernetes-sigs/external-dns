@@ -283,7 +283,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (rec
 		var res []ibclient.RecordTXT
 		// The Infoblox API strips enclosing double quotes from TXT records lacking whitespace.
 		// Here we reconcile that fact by making this state match that reality.
-		if target, err := strconv.Unquote(ep.Target); err == nil && !strings.Contains(ep.Target, " ") {
+		if target, err2 := strconv.Unquote(ep.Target); err2 == nil && !strings.Contains(ep.Target, " ") {
 			ep.Target = target
 		}
 		obj := ibclient.NewRecordTXT(
