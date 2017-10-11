@@ -1,3 +1,4 @@
+  - Added support for [DNSimple](https://dnsimple.com/) as DNS provider (#224) @jose5918
   - Add `--log-level` flag to control log verbosity and remove `--debug` flag in favour of `--log-level=debug` (#339) @ultimateboy
   - AWS: Allow filtering for private and public zones via `--aws-zone-type` flag (#329) @linki
   - CloudFlare: Add `--cloudflare-proxied` flag to toggle CloudFlare proxy feature (#340) @dunglas
