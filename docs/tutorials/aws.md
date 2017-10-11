@@ -184,6 +184,25 @@ $ curl nginx.external-dns-test.my-org.com.
 
 Ingress objects on AWS require a separately deployed Ingress controller which we'll describe in another tutorial.
 
+## Custom TTL
+
+The default DNS record TTL (Time-To-Live) is 300 seconds. You can customize this value by setting the annotation `external-dns.alpha.kubernetes.io/ttl`.
+e.g., modify the service manifest YAML file above:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com.
+    external-dns.alpha.kubernetes.io/ttl: 60
+spec:
+    ...
+```
+
+This will set the DNS record's TTL to 60 seconds.
+
 ## Clean up
 
 Make sure to delete all Service objects before terminating the cluster so all load balancers get cleaned up correctly.

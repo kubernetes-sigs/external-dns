@@ -86,6 +86,10 @@ imports:
   version: 77ea48de76a7b31b234d854f15d003c68bb2fb90
   subpackages:
   - context
+- name: github.com/dnsimple/dnsimple-go
+  version: d1105abc03b313d7b8d9b04364f6bd053b346e59
+  subpackages:
+  - dnsimple
 - name: github.com/docker/distribution
   version: cd27f179f2c10c5d300e6d09025b538c475b0d51
   subpackages:
