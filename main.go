@@ -103,6 +103,19 @@ func main() {
 		p, err = provider.NewDigitalOceanProvider(domainFilter, cfg.DryRun)
 	case "dnsimple":
 		p, err = provider.NewDnsimpleProvider(domainFilter, cfg.DryRun)
+	case "infoblox":
+		p, err = provider.NewInfobloxProvider(
+			provider.InfobloxConfig{
+				DomainFilter: domainFilter,
+				Host:         cfg.InfobloxGridHost,
+				Port:         cfg.InfobloxWapiPort,
+				Username:     cfg.InfobloxWapiUsername,
+				Password:     cfg.InfobloxWapiPassword,
+				Version:      cfg.InfobloxWapiVersion,
+				SSLVerify:    cfg.InfobloxSSLVerify,
+				DryRun:       cfg.DryRun,
+			},
+		)
 	case "inmemory":
 		p, err = provider.NewInMemoryProvider(provider.InMemoryWithDomain(domainFilter), provider.InMemoryWithLogging()), nil
 	default:
