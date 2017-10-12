@@ -2,7 +2,7 @@
 
 This tutorial describes how to setup ExternalDNS for usage with Infoblox.
 
-Make sure to use **>=0.4.5** version of ExternalDNS for this tutorial. The only WAPI version that
+Make sure to use **>=0.4.6** version of ExternalDNS for this tutorial. The only WAPI version that
 has been validated is **v2.3.1**. It is assumed that the API user has rights to create objects of
 the following types: `zone_auth`, `record:a`, `record:cname`, `record:txt`.
 
