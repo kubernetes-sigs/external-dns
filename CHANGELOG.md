@@ -1,5 +1,8 @@
+## v0.4.6 - 2017-10-12
+
   - [AWS Route53 provider] Support customization of DNS record TTL through the use of annotation `external-dns.alpha.kubernetes.io/ttl` on services or ingresses (#320) @kevinjqiu
   - Added support for [DNSimple](https://dnsimple.com/) as DNS provider (#224) @jose5918
+  - Added support for [Infoblox](https://www.infoblox.com/products/dns/) as DNS provider (#349) @khrisrichardson
 
 ## v0.4.5 - 2017-09-24
 
