@@ -30,6 +30,7 @@ ExternalDNS' current release is `v0.4`. This version allows you to keep selected
 * [CloudFlare](https://www.cloudflare.com/de/dns)
 * [DigitalOcean](https://www.digitalocean.com/products/networking)
 * [DNSimple](https://dnsimple.com/)
+* [Infoblox](https://www.infoblox.com/products/dns/)
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.4` with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -45,6 +46,7 @@ The following tutorials are provided:
 * [Azure](docs/tutorials/azure.md)
 * [Cloudflare](docs/tutorials/cloudflare.md)
 * [DigitalOcean](docs/tutorials/digitalocean.md)
+* [Infoblox](docs/tutorials/infoblox.md)
 * Google Container Engine
 	* [Using Google's Default Ingress Controller](docs/tutorials/gke.md)
 	* [Using the Nginx Ingress Controller](docs/tutorials/nginx-ingress.md)
