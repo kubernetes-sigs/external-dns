@@ -260,6 +260,23 @@ func newCloudFlareChanges(action string, endpoints []*endpoint.Endpoint, proxied
 }
 
 func newCloudFlareChange(action string, endpoint *endpoint.Endpoint, proxied bool) *cloudFlareChange {
+	if proxied {
+		// Exclude types not supported by Cloudflare
+		// See https://support.cloudflare.com/hc/en-us/articles/204643758-Which-Record-Types-does-Cloudflare-not-proxy-
+		var notSupported = map[string]bool{
+			"LOC": true,
+			"MX":  true,
+			"NS":  true,
+			"SPF": true,
+			"TXT": true,
+			"SRV": true,
+		}
+
+		if _, found := notSupported[endpoint.RecordType]; found {
+			proxied = false
+		}
+	}
+
 	return &cloudFlareChange{
 		Action: action,
 		ResourceRecordSet: cloudflare.DNSRecord{
