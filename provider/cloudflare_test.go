@@ -336,9 +336,34 @@ func (m *mockCloudFlareUpdateRecordsFail) ListZones(zoneID ...string) ([]cloudfl
 }
 
 func TestNewCloudFlareChanges(t *testing.T) {
-	action := cloudFlareCreate
 	endpoints := []*endpoint.Endpoint{{DNSName: "new", Target: "target"}}
-	_ = newCloudFlareChanges(action, endpoints, true)
+	newCloudFlareChanges(cloudFlareCreate, endpoints, true)
+}
+
+var cloudFlareTypes = []struct {
+	recordType string
+	proxiable  bool
+}{
+	{"A", true},
+	{"CNAME", true},
+	{"LOC", false},
+	{"MX", false},
+	{"NS", false},
+	{"SPF", false},
+	{"TXT", false},
+	{"SRV", false},
+}
+
+func TestNewCloudFlareChangeProxiable(t *testing.T) {
+	for _, cloudFlareType := range cloudFlareTypes {
+		change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: cloudFlareType.recordType, Target: "target"}, true)
+
+		if cloudFlareType.proxiable {
+			assert.True(t, change.ResourceRecordSet.Proxied)
+		} else {
+			assert.False(t, change.ResourceRecordSet.Proxied)
+		}
+	}
 }
 
 func TestCloudFlareZones(t *testing.T) {

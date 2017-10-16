@@ -269,7 +269,10 @@ func newCloudFlareChanges(action string, endpoints []*endpoint.Endpoint, proxied
 }
 
 func newCloudFlareChange(action string, endpoint *endpoint.Endpoint, proxied bool) *cloudFlareChange {
-	switch proxied { case cloudFlareTypeNotSupported[endpoint.RecordType]: proxied = false }
+	switch proxied {
+	case cloudFlareTypeNotSupported[endpoint.RecordType]:
+		proxied = false
+	}
 
 	return &cloudFlareChange{
 		Action: action,
