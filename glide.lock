@@ -1,5 +1,5 @@
-hash: e0cec95591c093025bbed4fec7ee5d0d53ce64422c7714c3fde004c41bd451f1
-updated: 2017-10-09T15:51:45.181636771+02:00
+hash: 12a6904c791453abda4f4bc4e22ccbcf4026d3a68b385cc3937f6d42d7f48ddf
+updated: 2017-10-10T15:15:51.794530929-07:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -133,6 +133,8 @@ imports:
   version: 3ca23474a7c7203e0a0a070fd33508f6efdb9b3d
 - name: github.com/imdario/mergo
   version: 6633656539c1639d9d78127b7d47c622b5d7b6dc
+- name: github.com/infobloxopen/infoblox-go-client
+  version: 80793a9e51c966af2c505167773c3f7cb220a4b2
 - name: github.com/jmespath/go-jmespath
   version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
 - name: github.com/jonboulle/clockwork
