@@ -25,6 +25,7 @@ import (
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
+	"strings"
 )
 
 const (
@@ -271,6 +272,7 @@ func newCloudFlareChanges(action string, endpoints []*endpoint.Endpoint, proxied
 func newCloudFlareChange(action string, endpoint *endpoint.Endpoint, proxied bool) *cloudFlareChange {
 	switch proxied {
 	case cloudFlareTypeNotSupported[endpoint.RecordType]:
+	case strings.Contains(endpoint.Target, "*"):
 		proxied = false
 	}
 

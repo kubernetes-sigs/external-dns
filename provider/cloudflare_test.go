@@ -364,6 +364,9 @@ func TestNewCloudFlareChangeProxiable(t *testing.T) {
 			assert.False(t, change.ResourceRecordSet.Proxied)
 		}
 	}
+
+	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: "A", Target: "*.foo"}, true)
+	assert.False(t, change.ResourceRecordSet.Proxied)
 }
 
 func TestCloudFlareZones(t *testing.T) {
