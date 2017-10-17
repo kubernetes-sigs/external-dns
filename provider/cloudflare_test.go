@@ -345,21 +345,21 @@ func TestNewCloudFlareChang(t *testing.T) {
 	assert.False(t, change.ResourceRecordSet.Proxied)
 }
 
-var cloudFlareTypes = []struct {
-	recordType string
-	proxiable  bool
-}{
-	{"A", true},
-	{"CNAME", true},
-	{"LOC", false},
-	{"MX", false},
-	{"NS", false},
-	{"SPF", false},
-	{"TXT", false},
-	{"SRV", false},
-}
-
 func TestNewCloudFlareChangeProxiable(t *testing.T) {
+	var cloudFlareTypes = []struct {
+		recordType string
+		proxiable  bool
+	}{
+		{"A", true},
+		{"CNAME", true},
+		{"LOC", false},
+		{"MX", false},
+		{"NS", false},
+		{"SPF", false},
+		{"TXT", false},
+		{"SRV", false},
+	}
+
 	for _, cloudFlareType := range cloudFlareTypes {
 		change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: cloudFlareType.recordType, Target: "target"}, true)
 
