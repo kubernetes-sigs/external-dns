@@ -1,3 +1,7 @@
+## v0.4.7 - 2017-10-18
+
+  - CloudFlare: Disable proxy mode for TXT and others (#361) @dunglas
+
 ## v0.4.6 - 2017-10-12
 
   - [AWS Route53 provider] Support customization of DNS record TTL through the use of annotation `external-dns.alpha.kubernetes.io/ttl` on services or ingresses (#320) @kevinjqiu

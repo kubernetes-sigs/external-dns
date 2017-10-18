@@ -19,6 +19,7 @@ package provider
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
 	log "github.com/sirupsen/logrus"
@@ -35,6 +36,15 @@ const (
 	// cloudFlareUpdate is a ChangeAction enum value
 	cloudFlareUpdate = "UPDATE"
 )
+
+var cloudFlareTypeNotSupported = map[string]bool{
+	"LOC": true,
+	"MX":  true,
+	"NS":  true,
+	"SPF": true,
+	"TXT": true,
+	"SRV": true,
+}
 
 // cloudFlareDNS is the subset of the CloudFlare API that we actually use.  Add methods as required. Signatures must match exactly.
 type cloudFlareDNS interface {
@@ -260,6 +270,10 @@ func newCloudFlareChanges(action string, endpoints []*endpoint.Endpoint, proxied
 }
 
 func newCloudFlareChange(action string, endpoint *endpoint.Endpoint, proxied bool) *cloudFlareChange {
+	if proxied && (cloudFlareTypeNotSupported[endpoint.RecordType] || strings.Contains(endpoint.DNSName, "*")) {
+		proxied = false
+	}
+
 	return &cloudFlareChange{
 		Action: action,
 		ResourceRecordSet: cloudflare.DNSRecord{
