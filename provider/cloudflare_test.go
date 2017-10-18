@@ -340,7 +340,7 @@ func TestNewCloudFlareChanges(t *testing.T) {
 	newCloudFlareChanges(cloudFlareCreate, endpoints, true)
 }
 
-func TestNewCloudFlareChang(t *testing.T) {
+func TestNewCloudFlareChangeNoProxied(t *testing.T) {
 	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: "A", Target: "target"}, false)
 	assert.False(t, change.ResourceRecordSet.Proxied)
 }

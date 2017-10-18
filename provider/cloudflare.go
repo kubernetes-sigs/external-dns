@@ -19,13 +19,13 @@ package provider
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
-	"strings"
 )
 
 const (
