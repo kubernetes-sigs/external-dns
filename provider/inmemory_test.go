@@ -553,8 +553,8 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 	}
 }
 
-func testInMemoryApplyChanges(t *testing.T) {
-	init := map[string]zone{
+func getInitData() map[string]zone {
+	return map[string]zone{
 		"org": {
 			"example.org": []*inMemoryRecord{
 				{
@@ -592,7 +592,9 @@ func testInMemoryApplyChanges(t *testing.T) {
 			},
 		},
 	}
+}
 
+func testInMemoryApplyChanges(t *testing.T) {
 	for _, ti := range []struct {
 		title              string
 		expectError        bool
@@ -615,7 +617,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 				UpdateOld: []*endpoint.Endpoint{},
 				Delete:    []*endpoint.Endpoint{},
 			},
-			expectedZonesState: init,
+			expectedZonesState: getInitData(),
 		},
 		{
 			title:       "unmatched zoneID, should be ignored in the apply step",
@@ -631,7 +633,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 				UpdateOld: []*endpoint.Endpoint{},
 				Delete:    []*endpoint.Endpoint{},
 			},
-			expectedZonesState: init,
+			expectedZonesState: getInitData(),
 		},
 		{
 			title:       "expect error",
@@ -788,7 +790,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 
 			im := NewInMemoryProvider()
 			c := &inMemoryClient{}
-			c.zones = init
+			c.zones = getInitData()
 			im.client = c
 
 			err := im.ApplyChanges(ti.changes)
