@@ -553,19 +553,73 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 	}
 }
 
+func getInitData() map[string]zone {
+	return map[string]zone{
+		"org": {
+			"example.org": []*inMemoryRecord{
+				{
+					Name:   "example.org",
+					Target: "8.8.8.8",
+					Type:   endpoint.RecordTypeA,
+				},
+				{
+					Name: "example.org",
+					Type: endpoint.RecordTypeTXT,
+				},
+			},
+			"foo.org": []*inMemoryRecord{
+				{
+					Name:   "foo.org",
+					Target: "4.4.4.4",
+					Type:   endpoint.RecordTypeCNAME,
+				},
+			},
+			"foo.bar.org": []*inMemoryRecord{
+				{
+					Name:   "foo.bar.org",
+					Target: "5.5.5.5",
+					Type:   endpoint.RecordTypeA,
+				},
+			},
+		},
+		"com": {
+			"example.com": []*inMemoryRecord{
+				{
+					Name:   "example.com",
+					Target: "4.4.4.4",
+					Type:   endpoint.RecordTypeCNAME,
+				},
+			},
+		},
+	}
+}
+
 func testInMemoryApplyChanges(t *testing.T) {
 	for _, ti := range []struct {
 		title              string
 		expectError        bool
 		init               map[string]zone
 		changes            *plan.Changes
-		zone               string
 		expectedZonesState map[string]zone
 	}{
 		{
+			title:       "unmatched zone, should be ignored in the apply step",
+			expectError: false,
+			changes: &plan.Changes{
+				Create: []*endpoint.Endpoint{{
+					DNSName:    "example.de",
+					Target:     "8.8.8.8",
+					RecordType: endpoint.RecordTypeA,
+				}},
+				UpdateNew: []*endpoint.Endpoint{},
+				UpdateOld: []*endpoint.Endpoint{},
+				Delete:    []*endpoint.Endpoint{},
+			},
+			expectedZonesState: getInitData(),
+		},
+		{
 			title:       "expect error",
 			expectError: true,
-			zone:        "org",
 			changes: &plan.Changes{
 				Create: []*endpoint.Endpoint{},
 				UpdateNew: []*endpoint.Endpoint{
@@ -588,7 +642,6 @@ func testInMemoryApplyChanges(t *testing.T) {
 		{
 			title:       "zones, update, right zone, valid batch - delete",
 			expectError: false,
-			zone:        "org",
 			changes: &plan.Changes{
 				Create:    []*endpoint.Endpoint{},
 				UpdateNew: []*endpoint.Endpoint{},
@@ -640,7 +693,6 @@ func testInMemoryApplyChanges(t *testing.T) {
 		{
 			title:       "zones, update, right zone, valid batch - update, create, delete",
 			expectError: false,
-			zone:        "org",
 			changes: &plan.Changes{
 				Create: []*endpoint.Endpoint{
 					{
@@ -714,47 +766,10 @@ func testInMemoryApplyChanges(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			init := map[string]zone{
-				"org": {
-					"example.org": []*inMemoryRecord{
-						{
-							Name:   "example.org",
-							Target: "8.8.8.8",
-							Type:   endpoint.RecordTypeA,
-						},
-						{
-							Name: "example.org",
-							Type: endpoint.RecordTypeTXT,
-						},
-					},
-					"foo.org": []*inMemoryRecord{
-						{
-							Name:   "foo.org",
-							Target: "4.4.4.4",
-							Type:   endpoint.RecordTypeCNAME,
-						},
-					},
-					"foo.bar.org": []*inMemoryRecord{
-						{
-							Name:   "foo.bar.org",
-							Target: "5.5.5.5",
-							Type:   endpoint.RecordTypeA,
-						},
-					},
-				},
-				"com": {
-					"example.com": []*inMemoryRecord{
-						{
-							Name:   "example.com",
-							Target: "4.4.4.4",
-							Type:   endpoint.RecordTypeCNAME,
-						},
-					},
-				},
-			}
+
 			im := NewInMemoryProvider()
 			c := &inMemoryClient{}
-			c.zones = init
+			c.zones = getInitData()
 			im.client = c
 
 			err := im.ApplyChanges(ti.changes)
