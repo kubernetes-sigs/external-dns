@@ -563,6 +563,21 @@ func testInMemoryApplyChanges(t *testing.T) {
 		expectedZonesState map[string]zone
 	}{
 		{
+			title:       "unmatched zoneID, should be ignored in the apply step",
+			expectError: false,
+			zone:        "org",
+			changes: &plan.Changes{
+				Create: []*endpoint.Endpoint{{
+					DNSName:    "example.com",
+					Target:     "8.8.8.8",
+					RecordType: endpoint.RecordTypeA,
+				}},
+				UpdateNew: []*endpoint.Endpoint{},
+				UpdateOld: []*endpoint.Endpoint{},
+				Delete:    []*endpoint.Endpoint{},
+			},
+		},
+		{
 			title:       "expect error",
 			expectError: true,
 			zone:        "org",
