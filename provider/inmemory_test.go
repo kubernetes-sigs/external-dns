@@ -17,7 +17,6 @@ limitations under the License.
 package provider
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -601,13 +600,11 @@ func testInMemoryApplyChanges(t *testing.T) {
 		expectError        bool
 		init               map[string]zone
 		changes            *plan.Changes
-		zone               string
 		expectedZonesState map[string]zone
 	}{
 		{
 			title:       "unmatched zone, should be ignored in the apply step",
 			expectError: false,
-			zone:        "de",
 			changes: &plan.Changes{
 				Create: []*endpoint.Endpoint{{
 					DNSName:    "example.de",
@@ -623,7 +620,6 @@ func testInMemoryApplyChanges(t *testing.T) {
 		{
 			title:       "expect error",
 			expectError: true,
-			zone:        "org",
 			changes: &plan.Changes{
 				Create: []*endpoint.Endpoint{},
 				UpdateNew: []*endpoint.Endpoint{
@@ -646,7 +642,6 @@ func testInMemoryApplyChanges(t *testing.T) {
 		{
 			title:       "zones, update, right zone, valid batch - delete",
 			expectError: false,
-			zone:        "org",
 			changes: &plan.Changes{
 				Create:    []*endpoint.Endpoint{},
 				UpdateNew: []*endpoint.Endpoint{},
@@ -698,7 +693,6 @@ func testInMemoryApplyChanges(t *testing.T) {
 		{
 			title:       "zones, update, right zone, valid batch - update, create, delete",
 			expectError: false,
-			zone:        "org",
 			changes: &plan.Changes{
 				Create: []*endpoint.Endpoint{
 					{
@@ -783,7 +777,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				assert.True(t, reflect.DeepEqual(ti.expectedZonesState, c.zones), "not equal data")
+				assert.Equal(t, ti.expectedZonesState, c.zones)
 			}
 		})
 	}
