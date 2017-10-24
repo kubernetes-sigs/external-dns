@@ -143,18 +143,30 @@ func (im *InMemoryProvider) ApplyChanges(changes *plan.Changes) error {
 
 	for _, ep := range changes.Create {
 		zoneID := im.filter.EndpointZoneID(ep, zones)
+		if zoneID == "" {
+			continue
+		}
 		perZoneChanges[zoneID].Create = append(perZoneChanges[zoneID].Create, ep)
 	}
 	for _, ep := range changes.UpdateNew {
 		zoneID := im.filter.EndpointZoneID(ep, zones)
+		if zoneID == "" {
+			continue
+		}
 		perZoneChanges[zoneID].UpdateNew = append(perZoneChanges[zoneID].UpdateNew, ep)
 	}
 	for _, ep := range changes.UpdateOld {
 		zoneID := im.filter.EndpointZoneID(ep, zones)
+		if zoneID == "" {
+			continue
+		}
 		perZoneChanges[zoneID].UpdateOld = append(perZoneChanges[zoneID].UpdateOld, ep)
 	}
 	for _, ep := range changes.Delete {
 		zoneID := im.filter.EndpointZoneID(ep, zones)
+		if zoneID == "" {
+			continue
+		}
 		perZoneChanges[zoneID].Delete = append(perZoneChanges[zoneID].Delete, ep)
 	}
 
