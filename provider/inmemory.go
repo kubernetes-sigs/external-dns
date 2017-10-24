@@ -79,6 +79,17 @@ func InMemoryWithDomain(domainFilter DomainFilter) InMemoryOption {
 	}
 }
 
+// InMemoryInitZones pre-seeds the InMemoryProvider with given zones
+func InMemoryInitZones(zones []string) InMemoryOption {
+	return func(p *InMemoryProvider) {
+		for _, z := range zones {
+			if err := p.CreateZone(z); err != nil {
+				log.Warnf("Unable to initialize zones for inmemory provider")
+			}
+		}
+	}
+}
+
 // NewInMemoryProvider returns InMemoryProvider DNS provider interface implementation
 func NewInMemoryProvider(opts ...InMemoryOption) *InMemoryProvider {
 	im := &InMemoryProvider{
