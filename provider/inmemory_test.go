@@ -554,6 +554,45 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 }
 
 func testInMemoryApplyChanges(t *testing.T) {
+	init := map[string]zone{
+		"org": {
+			"example.org": []*inMemoryRecord{
+				{
+					Name:   "example.org",
+					Target: "8.8.8.8",
+					Type:   endpoint.RecordTypeA,
+				},
+				{
+					Name: "example.org",
+					Type: endpoint.RecordTypeTXT,
+				},
+			},
+			"foo.org": []*inMemoryRecord{
+				{
+					Name:   "foo.org",
+					Target: "4.4.4.4",
+					Type:   endpoint.RecordTypeCNAME,
+				},
+			},
+			"foo.bar.org": []*inMemoryRecord{
+				{
+					Name:   "foo.bar.org",
+					Target: "5.5.5.5",
+					Type:   endpoint.RecordTypeA,
+				},
+			},
+		},
+		"com": {
+			"example.com": []*inMemoryRecord{
+				{
+					Name:   "example.com",
+					Target: "4.4.4.4",
+					Type:   endpoint.RecordTypeCNAME,
+				},
+			},
+		},
+	}
+
 	for _, ti := range []struct {
 		title              string
 		expectError        bool
@@ -562,6 +601,22 @@ func testInMemoryApplyChanges(t *testing.T) {
 		zone               string
 		expectedZonesState map[string]zone
 	}{
+		{
+			title:       "unmatched zone, should be ignored in the apply step",
+			expectError: false,
+			zone:        "de",
+			changes: &plan.Changes{
+				Create: []*endpoint.Endpoint{{
+					DNSName:    "example.de",
+					Target:     "8.8.8.8",
+					RecordType: endpoint.RecordTypeA,
+				}},
+				UpdateNew: []*endpoint.Endpoint{},
+				UpdateOld: []*endpoint.Endpoint{},
+				Delete:    []*endpoint.Endpoint{},
+			},
+			expectedZonesState: init,
+		},
 		{
 			title:       "unmatched zoneID, should be ignored in the apply step",
 			expectError: false,
@@ -576,6 +631,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 				UpdateOld: []*endpoint.Endpoint{},
 				Delete:    []*endpoint.Endpoint{},
 			},
+			expectedZonesState: init,
 		},
 		{
 			title:       "expect error",
@@ -729,44 +785,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			init := map[string]zone{
-				"org": {
-					"example.org": []*inMemoryRecord{
-						{
-							Name:   "example.org",
-							Target: "8.8.8.8",
-							Type:   endpoint.RecordTypeA,
-						},
-						{
-							Name: "example.org",
-							Type: endpoint.RecordTypeTXT,
-						},
-					},
-					"foo.org": []*inMemoryRecord{
-						{
-							Name:   "foo.org",
-							Target: "4.4.4.4",
-							Type:   endpoint.RecordTypeCNAME,
-						},
-					},
-					"foo.bar.org": []*inMemoryRecord{
-						{
-							Name:   "foo.bar.org",
-							Target: "5.5.5.5",
-							Type:   endpoint.RecordTypeA,
-						},
-					},
-				},
-				"com": {
-					"example.com": []*inMemoryRecord{
-						{
-							Name:   "example.com",
-							Target: "4.4.4.4",
-							Type:   endpoint.RecordTypeCNAME,
-						},
-					},
-				},
-			}
+
 			im := NewInMemoryProvider()
 			c := &inMemoryClient{}
 			c.zones = init
