@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -798,7 +799,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, ti.expectedZonesState, c.zones)
+				assert.True(t, reflect.DeepEqual(ti.expectedZonesState, c.zones), "not equal data")
 			}
 		})
 	}
