@@ -173,7 +173,10 @@ Providers which currently need maintainers:
 * Digital Ocean
 * Google Cloud Platform
 
-Any provider should having at least one maintainer for each new provider would be really great.
+Any provider should have at least one maintainer. It would be nice if you run it in production, but it is not required.
+You should check changes and make sure your provider is working correctly.
+
+It would be also great to have an automated end-to-end test for different cloud providers, so help from Kubernetes maintainers and their idea on how this can be done would be valuable.
 
 Read the [contributing guidelines](CONTRIBUTING.md) and have a look at [the contributing docs](docs/contributing/getting-started.md) to learn about building the project, the project structure, and the purpose of each package.
 
