@@ -117,7 +117,7 @@ func main() {
 			},
 		)
 	case "inmemory":
-		p, err = provider.NewInMemoryProvider(provider.InMemoryWithDomain(domainFilter), provider.InMemoryWithLogging()), nil
+		p, err = provider.NewInMemoryProvider(provider.InMemoryInitZones(cfg.InMemoryZones), provider.InMemoryWithDomain(domainFilter), provider.InMemoryWithLogging()), nil
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
