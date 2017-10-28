@@ -101,15 +101,26 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 		Delete:    filterOwnedRecords(im.ownerID, changes.Delete),
 	}
 
+	// create one create / delete TXT record per created/deleted DNSName
+
+	createdDomains := map[string]bool{}
+
 	for _, r := range filteredChanges.Create {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), endpoint.RecordTypeTXT)
-		filteredChanges.Create = append(filteredChanges.Create, txt)
+		if !createdDomains[r.DNSName] {
+			txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), endpoint.RecordTypeTXT)
+			filteredChanges.Create = append(filteredChanges.Create, txt)
+			createdDomains[r.DNSName] = true
+		}
 	}
 
-	for _, r := range filteredChanges.Delete {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), endpoint.RecordTypeTXT)
+	deletedDomains := map[string]bool{}
 
-		filteredChanges.Delete = append(filteredChanges.Delete, txt)
+	for _, r := range filteredChanges.Delete {
+		if !deletedDomains[r.DNSName] {
+			txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), endpoint.RecordTypeTXT)
+			filteredChanges.Delete = append(filteredChanges.Delete, txt)
+			deletedDomains[r.DNSName] = true
+		}
 	}
 
 	return im.provider.ApplyChanges(filteredChanges)
