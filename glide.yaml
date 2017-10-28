@@ -58,3 +58,4 @@ import:
 - package: github.com/digitalocean/godo
   version: ~1.1.0
 - package: github.com/coreos/go-oidc
+- package: github.com/infobloxopen/infoblox-go-client
