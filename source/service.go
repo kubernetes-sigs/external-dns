@@ -78,7 +78,7 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	if err != nil {
 		return nil, err
 	}
-	services.Items, err = sc.filterByAnnotations(services.Items, sc.annotationFilter)
+	services.Items, err = sc.filterByAnnotations(services.Items)
 	if err != nil {
 		return nil, err
 	}
@@ -156,8 +156,8 @@ func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 }
 
 // filterByAnnotations filters a list of services by a given annotation selector.
-func (sc *serviceSource) filterByAnnotations(services []v1.Service, annotationFilter string) ([]v1.Service, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(annotationFilter)
+func (sc *serviceSource) filterByAnnotations(services []v1.Service) ([]v1.Service, error) {
+	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}

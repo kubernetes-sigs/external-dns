@@ -73,7 +73,7 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	if err != nil {
 		return nil, err
 	}
-	ingresses.Items, err = sc.filterByAnnotations(ingresses.Items, sc.annotationFilter)
+	ingresses.Items, err = sc.filterByAnnotations(ingresses.Items)
 	if err != nil {
 		return nil, err
 	}
@@ -167,8 +167,8 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 }
 
 // filterByAnnotations filters a list of ingresses by a given annotation selector.
-func (sc *ingressSource) filterByAnnotations(ingresses []v1beta1.Ingress, annotationFilter string) ([]v1beta1.Ingress, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(annotationFilter)
+func (sc *ingressSource) filterByAnnotations(ingresses []v1beta1.Ingress) ([]v1beta1.Ingress, error) {
+	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
