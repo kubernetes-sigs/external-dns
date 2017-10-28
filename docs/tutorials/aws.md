@@ -70,6 +70,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: external-dns
+  namespace: external-dns
 spec:
   strategy:
     type: Recreate
@@ -80,18 +81,53 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.2
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.7
         args:
         - --source=service
         - --source=ingress
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+        - --aws-zone-type=public #only look at public hosted zones (valid values are public/private)
         - --registry=txt
         - --txt-owner-id=my-identifier
 ```
 
-## Verify ExternalDNS works
+## Arguments
+
+This list is not the full list, but a few arguments that where choosen.
+
+### aws-zone-type
+
+`aws-zone-type` allows filtering for private and public zones
+
+
+## Verify ExternalDNS works (Ingress example)
+Change your ingress resource manifest file. In example below, I am using nginx ingress controller
+
+```yaml
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: foo
+  namespace: dev
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    ingress.kubernetes.io/ssl-redirect: "true"
+    ingress.kubernetes.io/force-ssl-redirect: "true"
+    external-dns.alpha.kubernetes.io/hostname: foo.bar.com
+spec:
+  rules:
+  - host: foo.bar.com
+    http:
+      paths:
+      - backend:
+          serviceName: foo
+          servicePort: 80
+```
+
+## Verify ExternalDNS works (Service example)
 
 Create the following sample application to test that ExternalDNS works.
 
