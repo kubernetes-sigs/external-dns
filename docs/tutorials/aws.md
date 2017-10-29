@@ -65,6 +65,18 @@ In this case it's the ones shown above but your's will differ.
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
 Then apply the following manifest file to deploy ExternalDNS.
 
+Create namespace first:
+
+```yaml
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: external-dns
+```
+
+Then create deployment manifest:
+
 ```yaml
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -103,6 +115,7 @@ This list is not the full list, but a few arguments that where choosen.
 
 
 ## Verify ExternalDNS works (Ingress example)
+
 Change your ingress resource manifest file. In example below, I am using nginx ingress controller
 
 ```yaml
@@ -111,7 +124,6 @@ apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: foo
-  namespace: dev
   annotations:
     kubernetes.io/ingress.class: "nginx"
     ingress.kubernetes.io/ssl-redirect: "true"
