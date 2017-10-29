@@ -118,6 +118,9 @@ This list is not the full list, but a few arguments that where choosen.
 
 Change your ingress resource manifest file. In example below, I am using nginx ingress controller
 
+> For ingress objects ExternalDNS will create a DNS record based on the host specified for the ingress object.
+
+
 ```yaml
 
 apiVersion: extensions/v1beta1
@@ -128,7 +131,6 @@ metadata:
     kubernetes.io/ingress.class: "nginx"
     ingress.kubernetes.io/ssl-redirect: "true"
     ingress.kubernetes.io/force-ssl-redirect: "true"
-    external-dns.alpha.kubernetes.io/hostname: foo.bar.com
 spec:
   rules:
   - host: foo.bar.com
@@ -142,6 +144,8 @@ spec:
 ## Verify ExternalDNS works (Service example)
 
 Create the following sample application to test that ExternalDNS works.
+
+> For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the corresponding value.
 
 ```yaml
 apiVersion: v1
