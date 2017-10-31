@@ -88,7 +88,9 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 		}
 
 		endpointDNSName := im.mapper.toEndpointName(record.DNSName)
-		im.ownerMap[endpointDNSName] = ownerID
+		if endpointDNSName != "" {
+			im.ownerMap[endpointDNSName] = ownerID
+		}
 	}
 
 	log.Debugf("after scanning: ownerMap: %s, recCount: %s", im.ownerMap, im.recCount)
