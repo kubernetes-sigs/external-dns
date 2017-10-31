@@ -73,7 +73,7 @@ func (p *Plan) Calculate() *Plan {
 		}
 
 		changes.UpdateOld = append(changes.UpdateOld, current)
-		desired.MergeLabels(current.Labels)     // inherit the labels from the dns provider, including Owner ID
+		desired.MergeLabels(current.Labels)     // inherit the labels from the dns provider
 		desired.RecordType = current.RecordType // inherit the type from the dns provider
 
 		changes.UpdateNew = append(changes.UpdateNew, desired)

@@ -20,6 +20,7 @@ import (
 	"errors"
 
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"regexp"
 	"strings"
 
@@ -38,6 +39,8 @@ type TXTRegistry struct {
 	provider provider.Provider
 	ownerID  string //refers to the owner id of the current instance
 	mapper   nameMapper
+	ownerMap map[string]string // map DNSName => ownerID
+	recCount map[string]int    // map DNSName => number of records
 }
 
 // NewTXTRegistry returns new TXTRegistry object
@@ -66,13 +69,16 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	ownerMap := map[string]string{}
+	im.ownerMap = make(map[string]string)
+	im.recCount = make(map[string]int)
 
 	for _, record := range records {
 		if record.RecordType != endpoint.RecordTypeTXT {
 			endpoints = append(endpoints, record)
+			im.recCount[record.DNSName]++
 			continue
 		}
+
 		ownerID := im.extractOwnerID(record.Target)
 		if ownerID == "" {
 			//case when value of txt record cannot be identified
@@ -80,13 +86,12 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 			endpoints = append(endpoints, record)
 			continue
 		}
+
 		endpointDNSName := im.mapper.toEndpointName(record.DNSName)
-		ownerMap[endpointDNSName] = ownerID
+		im.ownerMap[endpointDNSName] = ownerID
 	}
 
-	for _, ep := range endpoints {
-		ep.Labels[endpoint.OwnerLabelKey] = ownerMap[ep.DNSName]
-	}
+	log.Debugf("after scanning: ownerMap: %s, recCount: %s", im.ownerMap, im.recCount)
 
 	return endpoints, err
 }
@@ -94,36 +99,66 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 // ApplyChanges updates dns provider with the changes
 // for each created/deleted record it will also take into account TXT records for creation/deletion
 func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
-	filteredChanges := &plan.Changes{
-		Create:    changes.Create,
-		UpdateNew: filterOwnedRecords(im.ownerID, changes.UpdateNew),
-		UpdateOld: filterOwnedRecords(im.ownerID, changes.UpdateOld),
-		Delete:    filterOwnedRecords(im.ownerID, changes.Delete),
-	}
-
-	// create one create / delete TXT record per created/deleted DNSName
-
-	createdDomains := map[string]bool{}
-
-	for _, r := range filteredChanges.Create {
-		if !createdDomains[r.DNSName] {
-			txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), endpoint.RecordTypeTXT)
-			filteredChanges.Create = append(filteredChanges.Create, txt)
-			createdDomains[r.DNSName] = true
+	if im.ownerMap == nil {
+		// Records() never called yet or error during last ApplyChanges() call => rescan
+		_, err := im.Records()
+		if err != nil {
+			return err
 		}
 	}
 
-	deletedDomains := map[string]bool{}
+	filteredChanges := &plan.Changes{
+		Create:    []*endpoint.Endpoint{},
+		UpdateNew: im.filterOwnedRecords(changes.UpdateNew),
+		UpdateOld: im.filterOwnedRecords(changes.UpdateOld),
+		Delete:    im.filterOwnedRecords(changes.Delete),
+	}
+
+	for _, r := range changes.Create {
+		rOwner := im.ownerMap[r.DNSName]
+
+		if rOwner == "" || rOwner == im.ownerID {
+			filteredChanges.Create = append(filteredChanges.Create, r)
+
+			im.ownerMap[r.DNSName] = im.ownerID
+			im.recCount[r.DNSName]++
+
+			if 1 == im.recCount[r.DNSName] {
+				txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), endpoint.RecordTypeTXT)
+				filteredChanges.Create = append(filteredChanges.Create, txt)
+			}
+		}
+	}
 
 	for _, r := range filteredChanges.Delete {
-		if !deletedDomains[r.DNSName] {
+		if im.recCount[r.DNSName]--; im.recCount[r.DNSName] <= 0 {
+			im.recCount[r.DNSName] = 0
+			delete(im.ownerMap, r.DNSName)
 			txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), endpoint.RecordTypeTXT)
 			filteredChanges.Delete = append(filteredChanges.Delete, txt)
-			deletedDomains[r.DNSName] = true
 		}
 	}
 
-	return im.provider.ApplyChanges(filteredChanges)
+	log.Debugf("before provider.ApplyChanges: ownerMap: %s, recCount: %s", im.ownerMap, im.recCount)
+
+	err := im.provider.ApplyChanges(filteredChanges)
+	if err != nil {
+		// error occured in the provider => we don't know which records were stored => force re-scanning on the next call
+		im.ownerMap = nil
+	}
+	return err
+}
+
+func (im *TXTRegistry) filterOwnedRecords(eps []*endpoint.Endpoint) []*endpoint.Endpoint {
+	filtered := []*endpoint.Endpoint{}
+	for _, ep := range eps {
+		if endpointOwner, ok := im.ownerMap[ep.DNSName]; !ok || endpointOwner != im.ownerID {
+			log.Debugf(`Skipping endpoint %v because owner id does not match, found: "%s", required: "%s"`, ep, endpointOwner, im.ownerID)
+			continue
+		}
+		filtered = append(filtered, ep)
+	}
+	return filtered
 }
 
 /**
