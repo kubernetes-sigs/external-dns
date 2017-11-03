@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_env_attrs")
+load("@io_bazel_rules_go//go:def.bzl", "GoLibrary")
 
 go_filetype = ["*.go"]
 
@@ -11,29 +11,33 @@ def _compute_genrule_variables(resolved_srcs, resolved_outs):
     variables["@"] = list(resolved_outs)[0].path
   return variables
 
-def _go_sources_aspect_impl(target, ctx):
-  transitive_sources = set(target.go_sources)
-  for dep in ctx.rule.attr.deps:
-    transitive_sources = transitive_sources | dep.transitive_sources
-  return struct(transitive_sources = transitive_sources)
-
-go_sources_aspect = aspect(
-    attr_aspects = ["deps"],
-    implementation = _go_sources_aspect_impl,
-)
-
 def _compute_genrule_command(ctx):
+  workspace_root = '$$(pwd)'
+  if ctx.build_file_path.startswith('external/'):
+    # We want GO_WORKSPACE to point at the root directory of the Bazel
+    # workspace containing this go_genrule's BUILD file. If it's being
+    # included in a different workspace as an external dependency, the
+    # link target must point to the external subtree instead of the main
+    # workspace (which contains code we don't care about).
+    #
+    # Given a build file path like "external/foo/bar/BUILD", the following
+    # slash split+join sets external_dep_prefix to "external/foo" and the
+    # effective workspace root to "$PWD/external/foo/".
+    external_dep_prefix = '/'.join(ctx.build_file_path.split('/')[:2])
+    workspace_root = '$$(pwd)/' + external_dep_prefix
+
   cmd = [
       'set -e',
-      # setup GOROOT
-      'export GOROOT=$$(pwd)/' + ctx.file.go_tool.dirname + '/..',
       # setup main GOPATH
-      'export GOPATH=/tmp/gopath',
+      'GENRULE_TMPDIR=$$(mktemp -d $${TMPDIR:-/tmp}/bazel_%s_XXXXXXXX)' % ctx.attr.name,
+      'export GOPATH=$${GENRULE_TMPDIR}/gopath',
       'export GO_WORKSPACE=$${GOPATH}/src/' + ctx.attr.go_prefix.go_prefix,
       'mkdir -p $${GO_WORKSPACE%/*}',
-      'ln -s $$(pwd) $${GO_WORKSPACE}',
+      'ln -s %s/ $${GO_WORKSPACE}' % (workspace_root,),
+      'if [[ ! -e $${GO_WORKSPACE}/external ]]; then ln -s $$(pwd)/external/ $${GO_WORKSPACE}/; fi',
+      'if [[ ! -e $${GO_WORKSPACE}/bazel-out ]]; then ln -s $$(pwd)/bazel-out/ $${GO_WORKSPACE}/; fi',
       # setup genfile GOPATH
-      'export GENGOPATH=/tmp/gengopath',
+      'export GENGOPATH=$${GENRULE_TMPDIR}/gengopath',
       'export GENGO_WORKSPACE=$${GENGOPATH}/src/' + ctx.attr.go_prefix.go_prefix,
       'mkdir -p $${GENGO_WORKSPACE%/*}',
       'ln -s $$(pwd)/$(GENDIR) $${GENGO_WORKSPACE}',
@@ -46,14 +50,18 @@ def _compute_genrule_command(ctx):
   return '\n'.join(cmd)
 
 def _go_genrule_impl(ctx):
-  all_srcs = set(ctx.files.go_src)
+  go_toolchain = ctx.toolchains["@io_bazel_rules_go//go:toolchain"]
+  all_srcs = depset(go_toolchain.data.stdlib)
   label_dict = {}
 
   for dep in ctx.attr.go_deps:
-    all_srcs = all_srcs | dep.transitive_sources
+    lib = dep[GoLibrary]
+    all_srcs += lib.srcs
+    for transitive_lib in lib.transitive:
+      all_srcs += transitive_lib.srcs
 
   for dep in ctx.attr.srcs:
-    all_srcs = all_srcs | dep.files
+    all_srcs += dep.files
     label_dict[dep.label] = dep.files
 
   cmd = _compute_genrule_command(ctx)
@@ -62,7 +70,7 @@ def _go_genrule_impl(ctx):
       command=cmd,
       attribute="cmd",
       expand_locations=True,
-      make_variables=_compute_genrule_variables(all_srcs, set(ctx.outputs.outs)),
+      make_variables=_compute_genrule_variables(all_srcs, depset(ctx.outputs.outs)),
       tools=ctx.attr.tools,
       label_dict=label_dict
   )
@@ -70,7 +78,7 @@ def _go_genrule_impl(ctx):
   ctx.action(
       inputs = list(all_srcs) + resolved_inputs,
       outputs = ctx.outputs.outs,
-      env = ctx.configuration.default_shell_env,
+      env = ctx.configuration.default_shell_env + go_toolchain.env,
       command = argv,
       progress_message = "%s %s" % (ctx.attr.message, ctx),
       mnemonic = "GoGenrule",
@@ -81,7 +89,7 @@ def _go_genrule_impl(ctx):
 # some amount transitive go src of dependencies. This go_genrule enables
 # the creation of these sandboxes.
 go_genrule = rule(
-    attrs = go_env_attrs + {
+    attrs = {
         "srcs": attr.label_list(allow_files = True),
         "tools": attr.label_list(
             cfg = "host",
@@ -89,12 +97,23 @@ go_genrule = rule(
         ),
         "outs": attr.output_list(mandatory = True),
         "cmd": attr.string(mandatory = True),
-        "go_deps": attr.label_list(
-            aspects = [go_sources_aspect],
-        ),
+        "go_deps": attr.label_list(),
         "message": attr.string(),
         "executable": attr.bool(default = False),
+        # Next rule copied from bazelbuild/rules_go@a9df110cf04e167b33f10473c7e904d780d921e6
+        # and then modified a bit.
+        # I'm not sure if this is correct anymore.
+        "go_prefix": attr.label(
+            providers = ["go_prefix"],
+            default = Label(
+                "//:go_prefix",
+                relative_to_caller_repository = True,
+            ),
+            allow_files = False,
+            cfg = "host",
+        ),
     },
     output_to_genfiles = True,
+    toolchains = ["@io_bazel_rules_go//go:toolchain"],
     implementation = _go_genrule_impl,
 )

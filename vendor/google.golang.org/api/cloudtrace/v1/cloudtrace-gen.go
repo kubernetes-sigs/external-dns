@@ -67,10 +67,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Projects *ProjectsService
 }
@@ -80,10 +79,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewProjectsService(s *Service) *ProjectsService {
@@ -241,7 +236,40 @@ type TraceSpan struct {
 
 	// Labels: Collection of labels associated with the span. Label keys
 	// must be less than
-	// 128 bytes. Label values must be less than 16 kilobytes.
+	// 128 bytes. Label values must be less than 16 kilobytes (10MB
+	// for
+	// `/stacktrace` values).
+	//
+	// Some predefined label keys exist, or you may create your own. When
+	// creating
+	// your own, we recommend the following formats:
+	//
+	// * `/category/product/key` for agents of well-known products (e.g.
+	//   `/db/mongodb/read_size`).
+	// * `short_host/path/key` for domain-specific keys (e.g.
+	//   `foo.com/myproduct/bar`)
+	//
+	// Predefined labels include:
+	//
+	// *   `/agent`
+	// *   `/component`
+	// *   `/error/message`
+	// *   `/error/name`
+	// *   `/http/client_city`
+	// *   `/http/client_country`
+	// *   `/http/client_protocol`
+	// *   `/http/client_region`
+	// *   `/http/host`
+	// *   `/http/method`
+	// *   `/http/redirected_url`
+	// *   `/http/request/size`
+	// *   `/http/response/size`
+	// *   `/http/status_code`
+	// *   `/http/url`
+	// *   `/http/user_agent`
+	// *   `/pid`
+	// *   `/stacktrace`
+	// *   `/tid`
 	Labels map[string]string `json:"labels,omitempty"`
 
 	// Name: Name of the span. Must be less than 128 bytes. The span name is
@@ -376,7 +404,6 @@ func (c *ProjectsPatchTracesCall) doRequest(alt string) (*http.Response, error) 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.traces)
 	if err != nil {
@@ -523,7 +550,6 @@ func (c *ProjectsTracesGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -631,7 +657,7 @@ func (r *ProjectsTracesService) List(projectId string) *ProjectsTracesListCall {
 	return c
 }
 
-// EndTime sets the optional parameter "endTime": Start of the time
+// EndTime sets the optional parameter "endTime": End of the time
 // interval (inclusive) during which the trace data was
 // collected from the application.
 func (c *ProjectsTracesListCall) EndTime(endTime string) *ProjectsTracesListCall {
@@ -639,8 +665,46 @@ func (c *ProjectsTracesListCall) EndTime(endTime string) *ProjectsTracesListCall
 	return c
 }
 
-// Filter sets the optional parameter "filter": An optional filter for
-// the request.
+// Filter sets the optional parameter "filter": An optional filter
+// against labels for the request.
+//
+// By default, searches use prefix matching. To specify exact match,
+// prepend
+// a plus symbol (`+`) to the search term.
+// Multiple terms are ANDed. Syntax:
+//
+// *   `root:NAME_PREFIX` or `NAME_PREFIX`: Return traces where any
+// root
+//     span starts with `NAME_PREFIX`.
+// *   `+root:NAME` or `+NAME`: Return traces where any root span's name
+// is
+//     exactly `NAME`.
+// *   `span:NAME_PREFIX`: Return traces where any span starts with
+//     `NAME_PREFIX`.
+// *   `+span:NAME`: Return traces where any span's name is exactly
+//     `NAME`.
+// *   `latency:DURATION`: Return traces whose overall latency is
+//     greater or equal to than `DURATION`. Accepted units are
+// nanoseconds
+//     (`ns`), milliseconds (`ms`), and seconds (`s`). Default is `ms`.
+// For
+//     example, `latency:24ms` returns traces whose overall latency
+//     is greater than or equal to 24 milliseconds.
+// *   `label:LABEL_KEY`: Return all traces containing the specified
+//     label key (exact match, case-sensitive) regardless of the
+// key:value
+//     pair's value (including empty values).
+// *   `LABEL_KEY:VALUE_PREFIX`: Return all traces containing the
+// specified
+//     label key (exact match, case-sensitive) whose value starts with
+//     `VALUE_PREFIX`. Both a key and a value must be specified.
+// *   `+LABEL_KEY:VALUE`: Return all traces containing a key:value
+// pair
+//     exactly matching the specified text. Both a key and a value must
+// be
+//     specified.
+// *   `method:VALUE`: Equivalent to `/http/method:VALUE`.
+// *   `url:VALUE`: Equivalent to `/http/url:VALUE`.
 func (c *ProjectsTracesListCall) Filter(filter string) *ProjectsTracesListCall {
 	c.urlParams_.Set("filter", filter)
 	return c
@@ -685,7 +749,7 @@ func (c *ProjectsTracesListCall) PageToken(pageToken string) *ProjectsTracesList
 	return c
 }
 
-// StartTime sets the optional parameter "startTime": End of the time
+// StartTime sets the optional parameter "startTime": Start of the time
 // interval (inclusive) during which the trace data was
 // collected from the application.
 func (c *ProjectsTracesListCall) StartTime(startTime string) *ProjectsTracesListCall {
@@ -748,7 +812,6 @@ func (c *ProjectsTracesListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -811,13 +874,13 @@ func (c *ProjectsTracesListCall) Do(opts ...googleapi.CallOption) (*ListTracesRe
 	//   ],
 	//   "parameters": {
 	//     "endTime": {
-	//       "description": "Start of the time interval (inclusive) during which the trace data was\ncollected from the application.",
+	//       "description": "End of the time interval (inclusive) during which the trace data was\ncollected from the application.",
 	//       "format": "google-datetime",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
 	//     "filter": {
-	//       "description": "An optional filter for the request.",
+	//       "description": "An optional filter against labels for the request.\n\nBy default, searches use prefix matching. To specify exact match, prepend\na plus symbol (`+`) to the search term.\nMultiple terms are ANDed. Syntax:\n\n*   `root:NAME_PREFIX` or `NAME_PREFIX`: Return traces where any root\n    span starts with `NAME_PREFIX`.\n*   `+root:NAME` or `+NAME`: Return traces where any root span's name is\n    exactly `NAME`.\n*   `span:NAME_PREFIX`: Return traces where any span starts with\n    `NAME_PREFIX`.\n*   `+span:NAME`: Return traces where any span's name is exactly\n    `NAME`.\n*   `latency:DURATION`: Return traces whose overall latency is\n    greater or equal to than `DURATION`. Accepted units are nanoseconds\n    (`ns`), milliseconds (`ms`), and seconds (`s`). Default is `ms`. For\n    example, `latency:24ms` returns traces whose overall latency\n    is greater than or equal to 24 milliseconds.\n*   `label:LABEL_KEY`: Return all traces containing the specified\n    label key (exact match, case-sensitive) regardless of the key:value\n    pair's value (including empty values).\n*   `LABEL_KEY:VALUE_PREFIX`: Return all traces containing the specified\n    label key (exact match, case-sensitive) whose value starts with\n    `VALUE_PREFIX`. Both a key and a value must be specified.\n*   `+LABEL_KEY:VALUE`: Return all traces containing a key:value pair\n    exactly matching the specified text. Both a key and a value must be\n    specified.\n*   `method:VALUE`: Equivalent to `/http/method:VALUE`.\n*   `url:VALUE`: Equivalent to `/http/url:VALUE`.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -844,7 +907,7 @@ func (c *ProjectsTracesListCall) Do(opts ...googleapi.CallOption) (*ListTracesRe
 	//       "type": "string"
 	//     },
 	//     "startTime": {
-	//       "description": "End of the time interval (inclusive) during which the trace data was\ncollected from the application.",
+	//       "description": "Start of the time interval (inclusive) during which the trace data was\ncollected from the application.",
 	//       "format": "google-datetime",
 	//       "location": "query",
 	//       "type": "string"

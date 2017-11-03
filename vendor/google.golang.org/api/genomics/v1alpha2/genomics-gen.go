@@ -68,10 +68,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Operations *OperationsService
 
@@ -83,10 +82,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewOperationsService(s *Service) *OperationsService {
@@ -223,6 +218,15 @@ type Disk struct {
 	// parameters. Must be 1 - 63 characters.
 	// The name "boot" is reserved for system use.
 	Name string `json:"name,omitempty"`
+
+	// ReadOnly: Specifies how a sourced-base persistent disk will be
+	// mounted.
+	// See
+	// https://cloud.google.com/compute/docs/disks/persistent-disks#use_m
+	// ulti_instances
+	// for more details.
+	// Can only be set at create time.
+	ReadOnly bool `json:"readOnly,omitempty"`
 
 	// SizeGb: The size of the disk. Defaults to 500 (GB).
 	// This field is not applicable for local SSD.
@@ -557,8 +561,8 @@ func (s *LoggingOptions) MarshalJSON() ([]byte, error) {
 type Operation struct {
 	// Done: If the value is `false`, it means the operation is still in
 	// progress.
-	// If true, the operation is completed, and either `error` or `response`
-	// is
+	// If `true`, the operation is completed, and either `error` or
+	// `response` is
 	// available.
 	Done bool `json:"done,omitempty"`
 
@@ -577,7 +581,7 @@ type Operation struct {
 
 	// Response: If importing ReadGroupSets, an ImportReadGroupSetsResponse
 	// is returned. If importing Variants, an ImportVariantsResponse is
-	// returned. For pipelines and exports, an empty response is returned.
+	// returned. For pipelines and exports, an Empty response is returned.
 	Response googleapi.RawMessage `json:"response,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -955,6 +959,23 @@ func (s *PipelineParameter) MarshalJSON() ([]byte, error) {
 
 // PipelineResources: The system resources for the pipeline run.
 type PipelineResources struct {
+	// AcceleratorCount: Optional. The number of accelerators of the
+	// specified type to attach.
+	// By specifying this parameter, you will download and install the
+	// following
+	// third-party software onto your managed GCE instances: NVIDIA®
+	// Tesla®
+	// drivers and NVIDIA® CUDA toolkit.
+	AcceleratorCount int64 `json:"acceleratorCount,omitempty,string"`
+
+	// AcceleratorType: Optional. The GCE defined accelerator type.
+	// By specifying this parameter, you will download and install the
+	// following
+	// third-party software onto your managed GCE instances: NVIDIA®
+	// Tesla®
+	// drivers and NVIDIA® CUDA toolkit.
+	AcceleratorType string `json:"acceleratorType,omitempty"`
+
 	// BootDiskSizeGb: The size of the boot disk. Defaults to 10 (GB).
 	BootDiskSizeGb int64 `json:"bootDiskSizeGb,omitempty"`
 
@@ -984,9 +1005,10 @@ type PipelineResources struct {
 	// may
 	// only load docker images from Google Container Registry and not Docker
 	// Hub.
-	// ** Note: To use this option, your project must be in Google Access
-	// for
-	// Private IPs Early Access Program.**
+	// Before using this, you must
+	// [configure access to Google services from internal
+	// IPs](https://cloud.google.com/compute/docs/configure-private-google-ac
+	// cess#configuring_access_to_google_services_from_internal_ips).
 	NoAddress bool `json:"noAddress,omitempty"`
 
 	// Preemptible: Whether to use preemptible VMs. Defaults to `false`. In
@@ -1001,7 +1023,7 @@ type PipelineResources struct {
 	// creation will restricted. If empty, any zone may be chosen.
 	Zones []string `json:"zones,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "BootDiskSizeGb") to
+	// ForceSendFields is a list of field names (e.g. "AcceleratorCount") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -1009,7 +1031,7 @@ type PipelineResources struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "BootDiskSizeGb") to
+	// NullFields is a list of field names (e.g. "AcceleratorCount") to
 	// include in API requests with the JSON null value. By default, fields
 	// with empty values are omitted from API requests. However, any field
 	// with an empty value appearing in NullFields will be sent to the
@@ -1371,7 +1393,9 @@ type SetOperationStatusRequest struct {
 	//  (a) Use `UNAVAILABLE` if the client can retry just the failing
 	// call.
 	//  (b) Use `ABORTED` if the client should retry at a higher level
-	//      (e.g., restarting a read-modify-write sequence).
+	//      (e.g., when a client-specified test-and-set fails, indicating
+	// the
+	//      client should restart a read-modify-write sequence).
 	//  (c) Use `FAILED_PRECONDITION` if the client should not retry until
 	//      the system state has been explicitly fixed.  E.g., if an
 	// "rmdir"
@@ -1497,7 +1521,7 @@ func (s *SetOperationStatusRequest) MarshalJSON() ([]byte, error) {
 // arbitrary
 // information about the error. There is a predefined set of error
 // detail types
-// in the package `google.rpc` which can be used for common error
+// in the package `google.rpc` that can be used for common error
 // conditions.
 //
 // # Language mapping
@@ -1530,7 +1554,7 @@ func (s *SetOperationStatusRequest) MarshalJSON() ([]byte, error) {
 //
 // - Workflow errors. A typical workflow has multiple steps. Each step
 // may
-//     have a `Status` message for error reporting purpose.
+//     have a `Status` message for error reporting.
 //
 // - Batch operations. If a client uses batch request and batch
 // response, the
@@ -1553,9 +1577,9 @@ type Status struct {
 	// google.rpc.Code.
 	Code int64 `json:"code,omitempty"`
 
-	// Details: A list of messages that carry the error details.  There will
-	// be a
-	// common set of message types for APIs to use.
+	// Details: A list of messages that carry the error details.  There is a
+	// common set of
+	// message types for APIs to use.
 	Details []googleapi.RawMessage `json:"details,omitempty"`
 
 	// Message: A developer-facing error message, which should be in
@@ -1675,7 +1699,6 @@ func (c *OperationsCancelCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.canceloperationrequest)
 	if err != nil {
@@ -1825,7 +1848,6 @@ func (c *OperationsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2009,7 +2031,6 @@ func (c *OperationsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2077,7 +2098,7 @@ func (c *OperationsListCall) Do(opts ...googleapi.CallOption) (*ListOperationsRe
 	//       "type": "string"
 	//     },
 	//     "name": {
-	//       "description": "The name of the operation collection.",
+	//       "description": "The name of the operation's parent resource.",
 	//       "location": "path",
 	//       "pattern": "^operations$",
 	//       "required": true,
@@ -2183,7 +2204,6 @@ func (c *PipelinesCreateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.pipeline)
 	if err != nil {
@@ -2307,7 +2327,6 @@ func (c *PipelinesDeleteCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "v1alpha2/pipelines/{pipelineId}")
@@ -2446,7 +2465,6 @@ func (c *PipelinesGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2599,7 +2617,6 @@ func (c *PipelinesGetControllerConfigCall) doRequest(alt string) (*http.Response
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2772,7 +2789,6 @@ func (c *PipelinesListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2945,7 +2961,6 @@ func (c *PipelinesRunCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.runpipelinerequest)
 	if err != nil {
@@ -3072,7 +3087,6 @@ func (c *PipelinesSetOperationStatusCall) doRequest(alt string) (*http.Response,
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.setoperationstatusrequest)
 	if err != nil {

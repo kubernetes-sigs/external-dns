@@ -47,6 +47,10 @@ const basePath = "https://language.googleapis.com/"
 
 // OAuth2 scopes used by this API.
 const (
+	// Apply machine learning models to reveal the structure and meaning of
+	// text
+	CloudLanguageScope = "https://www.googleapis.com/auth/cloud-language"
+
 	// View and manage your data across Google Cloud Platform services
 	CloudPlatformScope = "https://www.googleapis.com/auth/cloud-platform"
 )
@@ -61,10 +65,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Documents *DocumentsService
 }
@@ -74,10 +77,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewDocumentsService(s *Service) *DocumentsService {
@@ -149,7 +148,7 @@ type AnalyzeEntitiesResponse struct {
 	// language specified
 	// in the request or, if not specified, the automatically-detected
 	// language.
-	// See `Document.language` field for more details.
+	// See Document.language field for more details.
 	Language string `json:"language,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -179,11 +178,102 @@ func (s *AnalyzeEntitiesResponse) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// AnalyzeEntitySentimentRequest: The entity-level sentiment analysis
+// request message.
+type AnalyzeEntitySentimentRequest struct {
+	// Document: Input document.
+	Document *Document `json:"document,omitempty"`
+
+	// EncodingType: The encoding type used by the API to calculate offsets.
+	//
+	// Possible values:
+	//   "NONE" - If `EncodingType` is not specified, encoding-dependent
+	// information (such as
+	// `begin_offset`) will be set at `-1`.
+	//   "UTF8" - Encoding-dependent information (such as `begin_offset`) is
+	// calculated based
+	// on the UTF-8 encoding of the input. C++ and Go are examples of
+	// languages
+	// that use this encoding natively.
+	//   "UTF16" - Encoding-dependent information (such as `begin_offset`)
+	// is calculated based
+	// on the UTF-16 encoding of the input. Java and Javascript are examples
+	// of
+	// languages that use this encoding natively.
+	//   "UTF32" - Encoding-dependent information (such as `begin_offset`)
+	// is calculated based
+	// on the UTF-32 encoding of the input. Python is an example of a
+	// language
+	// that uses this encoding natively.
+	EncodingType string `json:"encodingType,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Document") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Document") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *AnalyzeEntitySentimentRequest) MarshalJSON() ([]byte, error) {
+	type noMethod AnalyzeEntitySentimentRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// AnalyzeEntitySentimentResponse: The entity-level sentiment analysis
+// response message.
+type AnalyzeEntitySentimentResponse struct {
+	// Entities: The recognized entities in the input document with
+	// associated sentiments.
+	Entities []*Entity `json:"entities,omitempty"`
+
+	// Language: The language of the text, which will be the same as the
+	// language specified
+	// in the request or, if not specified, the automatically-detected
+	// language.
+	// See Document.language field for more details.
+	Language string `json:"language,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Entities") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Entities") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *AnalyzeEntitySentimentResponse) MarshalJSON() ([]byte, error) {
+	type noMethod AnalyzeEntitySentimentResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // AnalyzeSentimentRequest: The sentiment analysis request message.
 type AnalyzeSentimentRequest struct {
-	// Document: Input document. Currently, `analyzeSentiment` only supports
-	// English text
-	// (Document.language="EN").
+	// Document: Input document.
 	Document *Document `json:"document,omitempty"`
 
 	// EncodingType: The encoding type used by the API to calculate sentence
@@ -242,7 +332,7 @@ type AnalyzeSentimentResponse struct {
 	// language specified
 	// in the request or, if not specified, the automatically-detected
 	// language.
-	// See `Document.language` field for more details.
+	// See Document.language field for more details.
 	Language string `json:"language,omitempty"`
 
 	// Sentences: The sentiment for all the sentences in the document.
@@ -333,7 +423,7 @@ type AnalyzeSyntaxResponse struct {
 	// language specified
 	// in the request or, if not specified, the automatically-detected
 	// language.
-	// See `Document.language` field for more details.
+	// See Document.language field for more details.
 	Language string `json:"language,omitempty"`
 
 	// Sentences: Sentences in the input document.
@@ -428,6 +518,9 @@ func (s *AnnotateTextRequest) MarshalJSON() ([]byte, error) {
 
 // AnnotateTextResponse: The text annotations response message.
 type AnnotateTextResponse struct {
+	// Categories: Categories identified in the input document.
+	Categories []*ClassificationCategory `json:"categories,omitempty"`
+
 	// DocumentSentiment: The overall sentiment for the document. Populated
 	// if the user
 	// enables
@@ -445,7 +538,7 @@ type AnnotateTextResponse struct {
 	// language specified
 	// in the request or, if not specified, the automatically-detected
 	// language.
-	// See `Document.language` field for more details.
+	// See Document.language field for more details.
 	Language string `json:"language,omitempty"`
 
 	// Sentences: Sentences in the input document. Populated if the user
@@ -464,26 +557,133 @@ type AnnotateTextResponse struct {
 	// server.
 	googleapi.ServerResponse `json:"-"`
 
-	// ForceSendFields is a list of field names (e.g. "DocumentSentiment")
-	// to unconditionally include in API requests. By default, fields with
+	// ForceSendFields is a list of field names (e.g. "Categories") to
+	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
 	// server regardless of whether the field is empty or not. This may be
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "DocumentSentiment") to
-	// include in API requests with the JSON null value. By default, fields
-	// with empty values are omitted from API requests. However, any field
-	// with an empty value appearing in NullFields will be sent to the
-	// server as null. It is an error if a field in this list has a
-	// non-empty value. This may be used to include null fields in Patch
-	// requests.
+	// NullFields is a list of field names (e.g. "Categories") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
 	NullFields []string `json:"-"`
 }
 
 func (s *AnnotateTextResponse) MarshalJSON() ([]byte, error) {
 	type noMethod AnnotateTextResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// ClassificationCategory: Represents a category returned from the text
+// classifier.
+type ClassificationCategory struct {
+	// Confidence: The classifier's confidence of the category. Number
+	// represents how certain
+	// the classifier is that this category represents the given text.
+	Confidence float64 `json:"confidence,omitempty"`
+
+	// Name: The name of the category representing the document.
+	Name string `json:"name,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Confidence") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Confidence") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *ClassificationCategory) MarshalJSON() ([]byte, error) {
+	type noMethod ClassificationCategory
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+func (s *ClassificationCategory) UnmarshalJSON(data []byte) error {
+	type noMethod ClassificationCategory
+	var s1 struct {
+		Confidence gensupport.JSONFloat64 `json:"confidence"`
+		*noMethod
+	}
+	s1.noMethod = (*noMethod)(s)
+	if err := json.Unmarshal(data, &s1); err != nil {
+		return err
+	}
+	s.Confidence = float64(s1.Confidence)
+	return nil
+}
+
+// ClassifyTextRequest: The document classification request message.
+type ClassifyTextRequest struct {
+	// Document: Input document.
+	Document *Document `json:"document,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Document") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Document") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *ClassifyTextRequest) MarshalJSON() ([]byte, error) {
+	type noMethod ClassifyTextRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// ClassifyTextResponse: The document classification response message.
+type ClassifyTextResponse struct {
+	// Categories: Categories representing the input document.
+	Categories []*ClassificationCategory `json:"categories,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Categories") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Categories") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *ClassifyTextResponse) MarshalJSON() ([]byte, error) {
+	type noMethod ClassifyTextResponse
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -587,6 +787,12 @@ type DependencyEdge struct {
 	//   "COP" - Copula
 	//   "DISLOCATED" - Dislocated relation (for fronted/topicalized
 	// elements)
+	//   "ASP" - Aspect marker
+	//   "GMOD" - Genitive modifier
+	//   "GOBJ" - Genitive object
+	//   "INFMOD" - Infinitival modifier
+	//   "MES" - Measure
+	//   "NCOMP" - Nominal complement of a noun
 	Label string `json:"label,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "HeadTokenIndex") to
@@ -636,10 +842,8 @@ type Document struct {
 	// automatically detected). Both ISO and BCP-47 language codes
 	// are
 	// accepted.<br>
-	// **Current Language Restrictions:**
-	//
-	//  * Only English, Spanish, and Japanese textual content are
-	// supported.
+	// [Language Support](/natural-language/docs/languages)
+	// lists currently supported languages for each API method.
 	// If the language (either specified by the caller or automatically
 	// detected)
 	// is not supported by the called API method, an `INVALID_ARGUMENT`
@@ -714,6 +918,14 @@ type Entity struct {
 	// salient.
 	Salience float64 `json:"salience,omitempty"`
 
+	// Sentiment: For calls to AnalyzeEntitySentiment or
+	// if
+	// AnnotateTextRequest.Features.extract_entity_sentiment is set to
+	// true, this field will contain the aggregate sentiment expressed for
+	// this
+	// entity in the provided document.
+	Sentiment *Sentiment `json:"sentiment,omitempty"`
+
 	// Type: The entity type.
 	//
 	// Possible values:
@@ -768,6 +980,14 @@ func (s *Entity) UnmarshalJSON(data []byte) error {
 // Currently, proper noun
 // mentions are supported.
 type EntityMention struct {
+	// Sentiment: For calls to AnalyzeEntitySentiment or
+	// if
+	// AnnotateTextRequest.Features.extract_entity_sentiment is set to
+	// true, this field will contain the sentiment expressed for this
+	// mention of
+	// the entity in the provided document.
+	Sentiment *Sentiment `json:"sentiment,omitempty"`
+
 	// Text: The mention text.
 	Text *TextSpan `json:"text,omitempty"`
 
@@ -779,7 +999,7 @@ type EntityMention struct {
 	//   "COMMON" - Common noun (or noun compound)
 	Type string `json:"type,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "Text") to
+	// ForceSendFields is a list of field names (e.g. "Sentiment") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -787,8 +1007,8 @@ type EntityMention struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "Text") to include in API
-	// requests with the JSON null value. By default, fields with empty
+	// NullFields is a list of field names (e.g. "Sentiment") to include in
+	// API requests with the JSON null value. By default, fields with empty
 	// values are omitted from API requests. However, any field with an
 	// empty value appearing in NullFields will be sent to the server as
 	// null. It is an error if a field in this list has a non-empty value.
@@ -807,31 +1027,36 @@ func (s *EntityMention) MarshalJSON() ([]byte, error) {
 // Setting each one to true will enable that specific analysis for the
 // input.
 type Features struct {
+	// ClassifyText: Classify the full document into categories.
+	ClassifyText bool `json:"classifyText,omitempty"`
+
 	// ExtractDocumentSentiment: Extract document-level sentiment.
 	ExtractDocumentSentiment bool `json:"extractDocumentSentiment,omitempty"`
 
 	// ExtractEntities: Extract entities.
 	ExtractEntities bool `json:"extractEntities,omitempty"`
 
+	// ExtractEntitySentiment: Extract entities and their associated
+	// sentiment.
+	ExtractEntitySentiment bool `json:"extractEntitySentiment,omitempty"`
+
 	// ExtractSyntax: Extract syntax information.
 	ExtractSyntax bool `json:"extractSyntax,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g.
-	// "ExtractDocumentSentiment") to unconditionally include in API
-	// requests. By default, fields with empty values are omitted from API
-	// requests. However, any non-pointer, non-interface field appearing in
-	// ForceSendFields will be sent to the server regardless of whether the
-	// field is empty or not. This may be used to include empty fields in
-	// Patch requests.
+	// ForceSendFields is a list of field names (e.g. "ClassifyText") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "ExtractDocumentSentiment")
-	// to include in API requests with the JSON null value. By default,
-	// fields with empty values are omitted from API requests. However, any
-	// field with an empty value appearing in NullFields will be sent to the
-	// server as null. It is an error if a field in this list has a
-	// non-empty value. This may be used to include null fields in Patch
-	// requests.
+	// NullFields is a list of field names (e.g. "ClassifyText") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
 	NullFields []string `json:"-"`
 }
 
@@ -1142,7 +1367,7 @@ func (s *Sentiment) UnmarshalJSON(data []byte) error {
 // arbitrary
 // information about the error. There is a predefined set of error
 // detail types
-// in the package `google.rpc` which can be used for common error
+// in the package `google.rpc` that can be used for common error
 // conditions.
 //
 // # Language mapping
@@ -1175,7 +1400,7 @@ func (s *Sentiment) UnmarshalJSON(data []byte) error {
 //
 // - Workflow errors. A typical workflow has multiple steps. Each step
 // may
-//     have a `Status` message for error reporting purpose.
+//     have a `Status` message for error reporting.
 //
 // - Batch operations. If a client uses batch request and batch
 // response, the
@@ -1198,9 +1423,9 @@ type Status struct {
 	// google.rpc.Code.
 	Code int64 `json:"code,omitempty"`
 
-	// Details: A list of messages that carry the error details.  There will
-	// be a
-	// common set of message types for APIs to use.
+	// Details: A list of messages that carry the error details.  There is a
+	// common set of
+	// message types for APIs to use.
 	Details []googleapi.RawMessage `json:"details,omitempty"`
 
 	// Message: A developer-facing error message, which should be in
@@ -1315,10 +1540,11 @@ type DocumentsAnalyzeEntitiesCall struct {
 	header_                http.Header
 }
 
-// AnalyzeEntities: Finds named entities (currently finds proper names)
-// in the text,
-// entity types, salience, mentions for each entity, and other
-// properties.
+// AnalyzeEntities: Finds named entities (currently proper names and
+// common nouns) in the text
+// along with entity types, salience, mentions for each entity,
+// and
+// other properties.
 func (r *DocumentsService) AnalyzeEntities(analyzeentitiesrequest *AnalyzeEntitiesRequest) *DocumentsAnalyzeEntitiesCall {
 	c := &DocumentsAnalyzeEntitiesCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.analyzeentitiesrequest = analyzeentitiesrequest
@@ -1356,7 +1582,6 @@ func (c *DocumentsAnalyzeEntitiesCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.analyzeentitiesrequest)
 	if err != nil {
@@ -1409,7 +1634,7 @@ func (c *DocumentsAnalyzeEntitiesCall) Do(opts ...googleapi.CallOption) (*Analyz
 	}
 	return ret, nil
 	// {
-	//   "description": "Finds named entities (currently finds proper names) in the text,\nentity types, salience, mentions for each entity, and other properties.",
+	//   "description": "Finds named entities (currently proper names and common nouns) in the text\nalong with entity types, salience, mentions for each entity, and\nother properties.",
 	//   "flatPath": "v1/documents:analyzeEntities",
 	//   "httpMethod": "POST",
 	//   "id": "language.documents.analyzeEntities",
@@ -1423,6 +1648,130 @@ func (c *DocumentsAnalyzeEntitiesCall) Do(opts ...googleapi.CallOption) (*Analyz
 	//     "$ref": "AnalyzeEntitiesResponse"
 	//   },
 	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-language",
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// method id "language.documents.analyzeEntitySentiment":
+
+type DocumentsAnalyzeEntitySentimentCall struct {
+	s                             *Service
+	analyzeentitysentimentrequest *AnalyzeEntitySentimentRequest
+	urlParams_                    gensupport.URLParams
+	ctx_                          context.Context
+	header_                       http.Header
+}
+
+// AnalyzeEntitySentiment: Finds entities, similar to AnalyzeEntities in
+// the text and analyzes
+// sentiment associated with each entity and its mentions.
+func (r *DocumentsService) AnalyzeEntitySentiment(analyzeentitysentimentrequest *AnalyzeEntitySentimentRequest) *DocumentsAnalyzeEntitySentimentCall {
+	c := &DocumentsAnalyzeEntitySentimentCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.analyzeentitysentimentrequest = analyzeentitysentimentrequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *DocumentsAnalyzeEntitySentimentCall) Fields(s ...googleapi.Field) *DocumentsAnalyzeEntitySentimentCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *DocumentsAnalyzeEntitySentimentCall) Context(ctx context.Context) *DocumentsAnalyzeEntitySentimentCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *DocumentsAnalyzeEntitySentimentCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *DocumentsAnalyzeEntitySentimentCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.analyzeentitysentimentrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/documents:analyzeEntitySentiment")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "language.documents.analyzeEntitySentiment" call.
+// Exactly one of *AnalyzeEntitySentimentResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *AnalyzeEntitySentimentResponse.ServerResponse.Header or (if a
+// response was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *DocumentsAnalyzeEntitySentimentCall) Do(opts ...googleapi.CallOption) (*AnalyzeEntitySentimentResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &AnalyzeEntitySentimentResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Finds entities, similar to AnalyzeEntities in the text and analyzes\nsentiment associated with each entity and its mentions.",
+	//   "flatPath": "v1/documents:analyzeEntitySentiment",
+	//   "httpMethod": "POST",
+	//   "id": "language.documents.analyzeEntitySentiment",
+	//   "parameterOrder": [],
+	//   "parameters": {},
+	//   "path": "v1/documents:analyzeEntitySentiment",
+	//   "request": {
+	//     "$ref": "AnalyzeEntitySentimentRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "AnalyzeEntitySentimentResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-language",
 	//     "https://www.googleapis.com/auth/cloud-platform"
 	//   ]
 	// }
@@ -1477,7 +1826,6 @@ func (c *DocumentsAnalyzeSentimentCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.analyzesentimentrequest)
 	if err != nil {
@@ -1544,6 +1892,7 @@ func (c *DocumentsAnalyzeSentimentCall) Do(opts ...googleapi.CallOption) (*Analy
 	//     "$ref": "AnalyzeSentimentResponse"
 	//   },
 	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-language",
 	//     "https://www.googleapis.com/auth/cloud-platform"
 	//   ]
 	// }
@@ -1602,7 +1951,6 @@ func (c *DocumentsAnalyzeSyntaxCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.analyzesyntaxrequest)
 	if err != nil {
@@ -1669,6 +2017,7 @@ func (c *DocumentsAnalyzeSyntaxCall) Do(opts ...googleapi.CallOption) (*AnalyzeS
 	//     "$ref": "AnalyzeSyntaxResponse"
 	//   },
 	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-language",
 	//     "https://www.googleapis.com/auth/cloud-platform"
 	//   ]
 	// }
@@ -1725,7 +2074,6 @@ func (c *DocumentsAnnotateTextCall) doRequest(alt string) (*http.Response, error
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.annotatetextrequest)
 	if err != nil {
@@ -1792,6 +2140,128 @@ func (c *DocumentsAnnotateTextCall) Do(opts ...googleapi.CallOption) (*AnnotateT
 	//     "$ref": "AnnotateTextResponse"
 	//   },
 	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-language",
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// method id "language.documents.classifyText":
+
+type DocumentsClassifyTextCall struct {
+	s                   *Service
+	classifytextrequest *ClassifyTextRequest
+	urlParams_          gensupport.URLParams
+	ctx_                context.Context
+	header_             http.Header
+}
+
+// ClassifyText: Classifies a document into categories.
+func (r *DocumentsService) ClassifyText(classifytextrequest *ClassifyTextRequest) *DocumentsClassifyTextCall {
+	c := &DocumentsClassifyTextCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.classifytextrequest = classifytextrequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *DocumentsClassifyTextCall) Fields(s ...googleapi.Field) *DocumentsClassifyTextCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *DocumentsClassifyTextCall) Context(ctx context.Context) *DocumentsClassifyTextCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *DocumentsClassifyTextCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *DocumentsClassifyTextCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.classifytextrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/documents:classifyText")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "language.documents.classifyText" call.
+// Exactly one of *ClassifyTextResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ClassifyTextResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *DocumentsClassifyTextCall) Do(opts ...googleapi.CallOption) (*ClassifyTextResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &ClassifyTextResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Classifies a document into categories.",
+	//   "flatPath": "v1/documents:classifyText",
+	//   "httpMethod": "POST",
+	//   "id": "language.documents.classifyText",
+	//   "parameterOrder": [],
+	//   "parameters": {},
+	//   "path": "v1/documents:classifyText",
+	//   "request": {
+	//     "$ref": "ClassifyTextRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "ClassifyTextResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-language",
 	//     "https://www.googleapis.com/auth/cloud-platform"
 	//   ]
 	// }

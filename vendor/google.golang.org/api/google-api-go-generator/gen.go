@@ -52,6 +52,8 @@ var (
 	contextPkg     = flag.String("context_pkg", "golang.org/x/net/context", "Go package path of the 'context' package.")
 	gensupportPkg  = flag.String("gensupport_pkg", "google.golang.org/api/gensupport", "Go package path of the 'api/gensupport' support package.")
 	googleapiPkg   = flag.String("googleapi_pkg", "google.golang.org/api/googleapi", "Go package path of the 'api/googleapi' support package.")
+
+	serviceTypes = []string{"Service", "APIService"}
 )
 
 // API represents an API to generate, as well as its state while it's
@@ -392,10 +394,15 @@ func (a *API) Target() string {
 // (typically "Service").
 func (a *API) ServiceType() string {
 	switch a.Name {
-	case "appengine", "content", "servicemanagement", "serviceuser":
+	case "appengine", "content": // retained for historical compatibility.
 		return "APIService"
 	default:
-		return "Service"
+		for _, t := range serviceTypes {
+			if _, ok := a.schemas[t]; !ok {
+				return t
+			}
+		}
+		panic("all service types are used, please consider introducing a new type to serviceTypes.")
 	}
 }
 
@@ -573,6 +580,7 @@ func (a *API) GenerateCode() ([]byte, error) {
 	pn("const basePath = %q", a.apiBaseURL())
 
 	a.generateScopeConstants()
+	a.PopulateSchemas()
 
 	service := a.ServiceType()
 
@@ -593,7 +601,6 @@ func (a *API) GenerateCode() ([]byte, error) {
 	pn(" client *http.Client")
 	pn(" BasePath string // API endpoint base URL")
 	pn(" UserAgent string // optional additional User-Agent fragment")
-	pn(" GoogleClientHeaderElement string // client header fragment, for Google use only")
 
 	for _, res := range a.doc.Resources {
 		pn("\n\t%s\t*%s", resourceGoField(res), resourceGoType(res))
@@ -603,15 +610,10 @@ func (a *API) GenerateCode() ([]byte, error) {
 	pn(` if s.UserAgent == "" { return googleapi.UserAgent }`)
 	pn(` return googleapi.UserAgent + " " + s.UserAgent`)
 	pn("}\n")
-	pn("\nfunc (s *%s) clientHeader() string {", service)
-	pn("  return gensupport.GoogleClientHeader(%q, s.GoogleClientHeaderElement)", generatorVersion)
-	pn("}\n")
 
 	for _, res := range a.doc.Resources {
 		a.generateResource(res)
 	}
-
-	a.PopulateSchemas()
 
 	a.responseTypes = make(map[string]bool)
 	for _, meth := range a.APIMethods() {
@@ -763,11 +765,17 @@ type fieldName struct {
 // This makes it possible to distinguish between a field being unset vs having
 // an empty value.
 var pointerFields = []fieldName{
+	{api: "androidpublisher:v2", schema: "SubscriptionPurchase", field: "CancelReason"},
+	{api: "androidpublisher:v2", schema: "SubscriptionPurchase", field: "PaymentState"},
 	{api: "cloudmonitoring:v2beta2", schema: "Point", field: "BoolValue"},
 	{api: "cloudmonitoring:v2beta2", schema: "Point", field: "DoubleValue"},
 	{api: "cloudmonitoring:v2beta2", schema: "Point", field: "Int64Value"},
 	{api: "cloudmonitoring:v2beta2", schema: "Point", field: "StringValue"},
+	{api: "compute:alpha", schema: "Scheduling", field: "AutomaticRestart"},
+	{api: "compute:beta", schema: "MetadataItems", field: "Value"},
+	{api: "compute:beta", schema: "Scheduling", field: "AutomaticRestart"},
 	{api: "compute:v1", schema: "MetadataItems", field: "Value"},
+	{api: "compute:v1", schema: "Scheduling", field: "AutomaticRestart"},
 	{api: "content:v2", schema: "AccountUser", field: "Admin"},
 	{api: "datastore:v1beta2", schema: "Property", field: "BlobKeyValue"},
 	{api: "datastore:v1beta2", schema: "Property", field: "BlobValue"},
@@ -792,6 +800,9 @@ var pointerFields = []fieldName{
 	{api: "servicecontrol:v1", schema: "MetricValue", field: "DoubleValue"},
 	{api: "servicecontrol:v1", schema: "MetricValue", field: "Int64Value"},
 	{api: "servicecontrol:v1", schema: "MetricValue", field: "StringValue"},
+	{api: "sqladmin:v1beta4", schema: "Settings", field: "StorageAutoResize"},
+	{api: "storage:v1", schema: "BucketLifecycleRuleCondition", field: "IsLive"},
+	{api: "storage:v1beta2", schema: "BucketLifecycleRuleCondition", field: "IsLive"},
 	{api: "tasks:v1", schema: "Task", field: "Completed"},
 	{api: "youtube:v3", schema: "ChannelSectionSnippet", field: "Position"},
 }
@@ -1586,12 +1597,7 @@ func (meth *Method) generateCode() {
 	}
 
 	if meth.supportsMediaUpload() {
-		// At most one of media_ and resumbableBuffer_ will be set.
-		pn(" media_     io.Reader")
-		pn(" mediaBuffer_ *gensupport.MediaBuffer")
-		pn(" mediaType_ string")
-		pn(" mediaSize_  int64 // mediaSize, if known.  Used only for calls to progressUpdater_.")
-		pn(" progressUpdater_  googleapi.ProgressUpdater")
+		pn(" mediaInfo_ *gensupport.MediaInfo")
 	}
 	pn(" ctx_ context.Context")
 	pn(" header_ http.Header")
@@ -1700,12 +1706,7 @@ func (meth *Method) generateCode() {
 				pn("  }")
 			}
 		}
-		pn(" opts := googleapi.ProcessMediaOptions(options)")
-		pn(" chunkSize := opts.ChunkSize")
-		pn(" if !opts.ForceEmptyContentType {")
-		pn("  r, c.mediaType_ = gensupport.DetermineContentType(r, opts.ContentType)")
-		pn(" }")
-		pn(" c.media_, c.mediaBuffer_ = gensupport.PrepareUpload(r, chunkSize)")
+		pn(" c.mediaInfo_ = gensupport.NewInfoFromMedia(r, options)")
 		pn(" return c")
 		pn("}")
 		comment = "ResumableMedia specifies the media to upload in chunks and can be canceled with ctx. " +
@@ -1718,11 +1719,7 @@ func (meth *Method) generateCode() {
 		p("\n%s", asComment("", comment))
 		pn("func (c *%s) ResumableMedia(ctx context.Context, r io.ReaderAt, size int64, mediaType string) *%s {", callName, callName)
 		pn(" c.ctx_ = ctx")
-		pn(" rdr := gensupport.ReaderAtToReader(r, size)")
-		pn(" rdr, c.mediaType_ = gensupport.DetermineContentType(rdr, mediaType)")
-		pn(" c.mediaBuffer_ = gensupport.NewMediaBuffer(rdr, googleapi.DefaultUploadChunkSize)")
-		pn(" c.media_ = nil")
-		pn(" c.mediaSize_ = size")
+		pn(" c.mediaInfo_ = gensupport.NewInfoFromResumableMedia(r, size, mediaType)")
 		pn(" return c")
 		pn("}")
 		comment = "ProgressUpdater provides a callback function that will be called after every chunk. " +
@@ -1730,7 +1727,7 @@ func (meth *Method) generateCode() {
 			"This should only be called when using ResumableMedia (as opposed to Media)."
 		p("\n%s", asComment("", comment))
 		pn("func (c *%s) ProgressUpdater(pu googleapi.ProgressUpdater) *%s {", callName, callName)
-		pn(`c.progressUpdater_ = pu`)
+		pn(`c.mediaInfo_.SetProgressUpdater(pu)`)
 		pn("return c")
 		pn("}")
 	}
@@ -1792,7 +1789,6 @@ func (meth *Method) generateCode() {
 	pn(" reqHeaders[k] = v")
 	pn("}")
 	pn(`reqHeaders.Set("User-Agent",c.s.userAgent())`)
-	pn(`reqHeaders.Set("x-goog-api-client", c.s.clientHeader())`)
 	if httpMethod == "GET" {
 		pn(`if c.ifNoneMatch_ != "" {`)
 		pn(` reqHeaders.Set("If-None-Match",  c.ifNoneMatch_)`)
@@ -1812,31 +1808,20 @@ func (meth *Method) generateCode() {
 
 	pn("urls := googleapi.ResolveRelative(c.s.BasePath, %q)", meth.m.Path)
 	if meth.supportsMediaUpload() {
-		pn("if c.media_ != nil || c.mediaBuffer_ != nil{")
+		pn("if c.mediaInfo_ != nil {")
 		// Hack guess, since we get a 404 otherwise:
 		//pn("urls = googleapi.ResolveRelative(%q, %q)", a.apiBaseURL(), meth.mediaUploadPath())
 		// Further hack.  Discovery doc is wrong?
 		pn("  urls = strings.Replace(urls, %q, %q, 1)", "https://www.googleapis.com/", "https://www.googleapis.com/upload/")
-		pn(`  protocol := "multipart"`)
-		pn("  if c.mediaBuffer_ != nil {")
-		pn(`   protocol = "resumable"`)
-		pn("  }")
-		pn(`  c.urlParams_.Set("uploadType", protocol)`)
+		pn(`  c.urlParams_.Set("uploadType", c.mediaInfo_.UploadType())`)
 		pn("}")
 
 		pn("if body == nil {")
 		pn(" body = new(bytes.Buffer)")
 		pn(` reqHeaders.Set("Content-Type", "application/json")`)
 		pn("}")
-		pn(`if c.media_ != nil {`)
-		pn(`  combined, ctype := gensupport.CombineBodyMedia(body, "application/json", c.media_, c.mediaType_)`)
-		pn("  defer combined.Close()")
-		pn(`  reqHeaders.Set("Content-Type", ctype)`)
-		pn("  body = combined")
-		pn("}")
-		pn(`if c.mediaBuffer_ != nil && c.mediaType_ != ""{`)
-		pn(` reqHeaders.Set("X-Upload-Content-Type", c.mediaType_)`)
-		pn("}")
+		pn("body, cleanup := c.mediaInfo_.UploadRequest(reqHeaders, body)")
+		pn("defer cleanup()")
 	}
 	pn("urls += \"?\" + c.urlParams_.Encode()")
 	pn("req, _ := http.NewRequest(%q, urls, body)", httpMethod)
@@ -1905,20 +1890,10 @@ func (meth *Method) generateCode() {
 	pn("defer googleapi.CloseBody(res)")
 	pn("if err := googleapi.CheckResponse(res); err != nil { return %serr }", nilRet)
 	if meth.supportsMediaUpload() {
-		pn("if c.mediaBuffer_ != nil {")
-		pn(` loc := res.Header.Get("Location")`)
-		pn(" rx := &gensupport.ResumableUpload{")
-		pn("  Client:        c.s.client,")
-		pn("  UserAgent:     c.s.userAgent(),")
-		pn("  URI:           loc,")
-		pn("  Media:         c.mediaBuffer_,")
-		pn("  MediaType:     c.mediaType_,")
-		pn("  Callback:      func(curr int64){")
-		pn("   if c.progressUpdater_ != nil {")
-		pn("    c.progressUpdater_(curr, c.mediaSize_)")
-		pn("   }")
-		pn("  },")
-		pn(" }")
+		pn(`rx := c.mediaInfo_.ResumableUpload(res.Header.Get("Location"))`)
+		pn("if rx != nil {")
+		pn(" rx.Client = c.s.client")
+		pn(" rx.UserAgent = c.s.userAgent()")
 		pn(" ctx := c.ctx_")
 		pn(" if ctx == nil {")
 		// TODO(mcgreevy): Require context when calling Media, or Do.

@@ -23,22 +23,62 @@ import subprocess
 import sys
 import tempfile
 
+def _workspace_status_dict(root):
+    d = {}
+    for f in ("stable-status.txt", "volatile-status.txt"):
+        with open(os.path.join(root, f)) as info_file:
+            for info_line in info_file:
+                info_line = info_line.strip("\n")
+                key, value = info_line.split(" ")
+                d[key] = value
+    return d
 
 def main(argv):
     scratch = tempfile.mkdtemp(prefix="bazel-gcs.")
     atexit.register(lambda: shutil.rmtree(scratch))
 
+    workspace_status = _workspace_status_dict(argv.root)
     with open(argv.manifest) as manifest:
         for artifact in manifest:
-            artifact = artifact.strip()
+            artifact = artifact.strip("\n")
+            src_file, dest_dir = artifact.split("\t")
+            dest_dir = dest_dir.format(**workspace_status)
+            scratch_dest_dir = os.path.join(scratch, dest_dir)
             try:
-                os.makedirs(os.path.join(scratch, os.path.dirname(artifact)))
+                os.makedirs(scratch_dest_dir)
             except (OSError):
                 # skip directory already exists errors
                 pass
-            os.symlink(os.path.join(argv.root, artifact), os.path.join(scratch, artifact))
 
-    sys.exit(subprocess.call(["gsutil", "-m", "rsync", "-C", "-r", scratch, argv.gcs_path]))
+            src = os.path.join(argv.root, src_file)
+            dest = os.path.join(scratch_dest_dir, os.path.basename(src_file))
+            os.symlink(src, dest)
+
+    ret = 0
+    uploaded_paths = []
+    for gcs_path in argv.gcs_paths:
+        gcs_path = gcs_path.format(**workspace_status)
+        local_path = None
+        if gcs_path.startswith("file://"):
+            local_path = gcs_path[len("file://"):]
+        elif "://" not in gcs_path:
+            local_path = gcs_path
+        if local_path and not os.path.exists(local_path):
+            os.makedirs(local_path)
+
+        cmd = ["gsutil"]
+        # When rsyncing to a local directory, parallelization thrashes the disk.
+        # It also seems to be buggy, causing frequent "File exists" errors.
+        # To mitigate, only use parallel mode when rsyncing to a remote path.
+        if not local_path:
+            cmd.append("-m")
+        cmd.extend(["rsync", "-C", "-r", scratch, gcs_path])
+        ret |= subprocess.call(cmd)
+
+        uploaded_paths.append(gcs_path)
+
+    print "Uploaded to %s" % " ".join(uploaded_paths)
+    sys.exit(ret)
 
 
 if __name__ == '__main__':
@@ -46,6 +86,6 @@ if __name__ == '__main__':
 
     parser.add_argument("--manifest", required=True, help="path to manifest of targets")
     parser.add_argument("--root", required=True, help="path to root of workspace")
-    parser.add_argument("gcs_path", help="path in gcs to push targets")
+    parser.add_argument("gcs_paths", nargs="+", help="path in gcs to push targets")
 
     main(parser.parse_args())

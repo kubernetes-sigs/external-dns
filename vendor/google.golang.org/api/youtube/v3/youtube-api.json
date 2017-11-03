@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/4auVy5GLotTS3CICB9zLFhVaxUM\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/AIWw-yWxHTNchYNbx8LfngbqcZ8\"",
  "discoveryVersion": "v1",
  "id": "youtube:v3",
  "name": "youtube",
  "canonicalName": "YouTube",
  "version": "v3",
- "revision": "20161202",
+ "revision": "20170918",
  "title": "YouTube Data API",
  "description": "Supports core YouTube features, such as uploading videos, creating and managing playlists, searching for content, and much more.",
  "ownerDomain": "google.com",
@@ -21,7 +21,7 @@
  "basePath": "/youtube/v3/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "youtube/v3/",
- "batchPath": "batch",
+ "batchPath": "batch/youtube/v3",
  "parameters": {
   "alt": {
    "type": "string",
@@ -1480,6 +1480,13 @@
    "type": "object",
    "description": "Freebase topic information related to the channel.",
    "properties": {
+    "topicCategories": {
+     "type": "array",
+     "description": "A list of Wikipedia URLs that describe the channel's content.",
+     "items": {
+      "type": "string"
+     }
+    },
     "topicIds": {
      "type": "array",
      "description": "A list of Freebase topic IDs associated with the channel. You can retrieve information about each topic using the Freebase Topic API.",
@@ -1764,7 +1771,7 @@
   "ContentRating": {
    "id": "ContentRating",
    "type": "object",
-   "description": "Ratings schemes. The country-specific ratings are mostly for movies and shows. NEXT_ID: 69",
+   "description": "Ratings schemes. The country-specific ratings are mostly for movies and shows. NEXT_ID: 71",
    "properties": {
     "acbRating": {
      "type": "string",
@@ -2800,6 +2807,24 @@
       ""
      ]
     },
+    "menaMpaaRating": {
+     "type": "string",
+     "description": "The rating system for MENA countries, a clone of MPAA. It is needed to",
+     "enum": [
+      "menaMpaaG",
+      "menaMpaaPg",
+      "menaMpaaPg13",
+      "menaMpaaR",
+      "menaMpaaUnrated"
+     ],
+     "enumDescriptions": [
+      "",
+      "",
+      "",
+      "",
+      ""
+     ]
+    },
     "mibacRating": {
      "type": "string",
      "description": "The video's rating from the Ministero dei Beni e delle Attività Culturali e del Turismo (Italy).",
@@ -2884,6 +2909,18 @@
       "",
       "",
       "",
+      "",
+      ""
+     ]
+    },
+    "mpaatRating": {
+     "type": "string",
+     "description": "The rating system for trailer, DVD, and Ad in the US. See http://movielabs.com/md/ratings/v2.3/html/US_MPAAT_Ratings.html.",
+     "enum": [
+      "mpaatGb",
+      "mpaatRb"
+     ],
+     "enumDescriptions": [
       "",
       ""
      ]
@@ -3872,9 +3909,6 @@
     "status": {
      "$ref": "LiveBroadcastStatus",
      "description": "The status object contains information about the event's status."
-    },
-    "topicDetails": {
-     "$ref": "LiveBroadcastTopicDetails"
     }
    }
   },
@@ -3940,6 +3974,24 @@
      "type": "boolean",
      "description": "Indicates whether this broadcast has low latency enabled."
     },
+    "latencyPreference": {
+     "type": "string",
+     "description": "If both this and enable_low_latency are set, they must match. LATENCY_NORMAL should match enable_low_latency=false LATENCY_LOW should match enable_low_latency=true LATENCY_ULTRA_LOW should have enable_low_latency omitted.",
+     "enum": [
+      "low",
+      "normal",
+      "ultraLow"
+     ],
+     "enumDescriptions": [
+      "",
+      "",
+      ""
+     ]
+    },
+    "mesh": {
+     "type": "string",
+     "format": "byte"
+    },
     "monitorStream": {
      "$ref": "MonitorStreamInfo",
      "description": "The monitorStream object contains information about the monitor stream, which the broadcaster can use to review the event content before the broadcast stream is shown publicly."
@@ -3949,9 +4001,11 @@
      "description": "The projection format of this broadcast. This defaults to rectangular.",
      "enum": [
       "360",
+      "mesh",
       "rectangular"
      ],
      "enumDescriptions": [
+      "",
       "",
       ""
      ]
@@ -4187,56 +4241,6 @@
     }
    }
   },
-  "LiveBroadcastTopic": {
-   "id": "LiveBroadcastTopic",
-   "type": "object",
-   "properties": {
-    "snippet": {
-     "$ref": "LiveBroadcastTopicSnippet",
-     "description": "Information about the topic matched."
-    },
-    "type": {
-     "type": "string",
-     "description": "The type of the topic.",
-     "enum": [
-      "videoGame"
-     ],
-     "enumDescriptions": [
-      ""
-     ]
-    },
-    "unmatched": {
-     "type": "boolean",
-     "description": "If this flag is set it means that we have not been able to match the topic title and type provided to a known entity."
-    }
-   }
-  },
-  "LiveBroadcastTopicDetails": {
-   "id": "LiveBroadcastTopicDetails",
-   "type": "object",
-   "properties": {
-    "topics": {
-     "type": "array",
-     "items": {
-      "$ref": "LiveBroadcastTopic"
-     }
-    }
-   }
-  },
-  "LiveBroadcastTopicSnippet": {
-   "id": "LiveBroadcastTopicSnippet",
-   "type": "object",
-   "properties": {
-    "name": {
-     "type": "string",
-     "description": "The name of the topic."
-    },
-    "releaseDate": {
-     "type": "string",
-     "description": "The date at which the topic was released. Filled for types: videoGame"
-    }
-   }
-  },
   "LiveChatBan": {
    "id": "LiveChatBan",
    "type": "object",
@@ -4454,7 +4458,7 @@
    "properties": {
     "authorChannelId": {
      "type": "string",
-     "description": "The ID of the user that authored this message, this field is not always filled. textMessageEvent - the user that wrote the message fanFundingEvent - the user that funded the broadcast newSponsorEvent - the user that just became a sponsor messageDeletedEvent - the moderator that took the action messageRetractedEvent - the author that retracted their message userBannedEvent - the moderator that took the action"
+     "description": "The ID of the user that authored this message, this field is not always filled. textMessageEvent - the user that wrote the message fanFundingEvent - the user that funded the broadcast newSponsorEvent - the user that just became a sponsor messageDeletedEvent - the moderator that took the action messageRetractedEvent - the author that retracted their message userBannedEvent - the moderator that took the action superChatEvent - the user that made the purchase"
     },
     "displayMessage": {
      "type": "string",
@@ -4494,6 +4498,10 @@
      "description": "The date and time when the message was orignally published. The value is specified in ISO 8601 (YYYY-MM-DDThh:mm:ss.sZ) format.",
      "format": "date-time"
     },
+    "superChatDetails": {
+     "$ref": "LiveChatSuperChatDetails",
+     "description": "Details about the Super Chat event, this is only set if the type is 'superChatEvent'."
+    },
     "textMessageDetails": {
      "$ref": "LiveChatTextMessageDetails",
      "description": "Details about the text message, this is only set if the type is 'textMessageEvent'."
@@ -4513,11 +4521,13 @@
       "pollVotedEvent",
       "sponsorOnlyModeEndedEvent",
       "sponsorOnlyModeStartedEvent",
+      "superChatEvent",
       "textMessageEvent",
       "tombstone",
       "userBannedEvent"
      ],
      "enumDescriptions": [
+      "",
       "",
       "",
       "",
@@ -4691,6 +4701,34 @@
     "pollId": {
      "type": "string",
      "description": "The poll the user voted on."
+    }
+   }
+  },
+  "LiveChatSuperChatDetails": {
+   "id": "LiveChatSuperChatDetails",
+   "type": "object",
+   "properties": {
+    "amountDisplayString": {
+     "type": "string",
+     "description": "A rendered string that displays the fund amount and currency to the user."
+    },
+    "amountMicros": {
+     "type": "string",
+     "description": "The amount purchased by the user, in micros (1,750,000 micros = 1.75).",
+     "format": "uint64"
+    },
+    "currency": {
+     "type": "string",
+     "description": "The currency in which the purchase was made."
+    },
+    "tier": {
+     "type": "integer",
+     "description": "The tier in which the amount belongs to. Lower amounts belong to lower tiers. Starts at 1.",
+     "format": "uint32"
+    },
+    "userComment": {
+     "type": "string",
+     "description": "The comment added by the user to this Super Chat event."
     }
    }
   },
@@ -5948,6 +5986,111 @@
     }
    }
   },
+  "SuperChatEvent": {
+   "id": "SuperChatEvent",
+   "type": "object",
+   "description": "A superChatEvent resource represents a Super Chat purchase on a YouTube channel.",
+   "properties": {
+    "etag": {
+     "type": "string",
+     "description": "Etag of this resource."
+    },
+    "id": {
+     "type": "string",
+     "description": "The ID that YouTube assigns to uniquely identify the Super Chat event."
+    },
+    "kind": {
+     "type": "string",
+     "description": "Identifies what kind of resource this is. Value: the fixed string \"youtube#superChatEvent\".",
+     "default": "youtube#superChatEvent"
+    },
+    "snippet": {
+     "$ref": "SuperChatEventSnippet",
+     "description": "The snippet object contains basic details about the Super Chat event."
+    }
+   }
+  },
+  "SuperChatEventListResponse": {
+   "id": "SuperChatEventListResponse",
+   "type": "object",
+   "properties": {
+    "etag": {
+     "type": "string",
+     "description": "Etag of this resource."
+    },
+    "eventId": {
+     "type": "string",
+     "description": "Serialized EventId of the request which produced this response."
+    },
+    "items": {
+     "type": "array",
+     "description": "A list of Super Chat purchases that match the request criteria.",
+     "items": {
+      "$ref": "SuperChatEvent"
+     }
+    },
+    "kind": {
+     "type": "string",
+     "description": "Identifies what kind of resource this is. Value: the fixed string \"youtube#superChatEventListResponse\".",
+     "default": "youtube#superChatEventListResponse"
+    },
+    "nextPageToken": {
+     "type": "string",
+     "description": "The token that can be used as the value of the pageToken parameter to retrieve the next page in the result set."
+    },
+    "pageInfo": {
+     "$ref": "PageInfo"
+    },
+    "tokenPagination": {
+     "$ref": "TokenPagination"
+    },
+    "visitorId": {
+     "type": "string",
+     "description": "The visitorId identifies the visitor."
+    }
+   }
+  },
+  "SuperChatEventSnippet": {
+   "id": "SuperChatEventSnippet",
+   "type": "object",
+   "properties": {
+    "amountMicros": {
+     "type": "string",
+     "description": "The purchase amount, in micros of the purchase currency. e.g., 1 is represented as 1000000.",
+     "format": "uint64"
+    },
+    "channelId": {
+     "type": "string",
+     "description": "Channel id where the event occurred."
+    },
+    "commentText": {
+     "type": "string",
+     "description": "The text contents of the comment left by the user."
+    },
+    "createdAt": {
+     "type": "string",
+     "description": "The date and time when the event occurred. The value is specified in ISO 8601 (YYYY-MM-DDThh:mm:ss.sZ) format.",
+     "format": "date-time"
+    },
+    "currency": {
+     "type": "string",
+     "description": "The currency in which the purchase was made. ISO 4217."
+    },
+    "displayString": {
+     "type": "string",
+     "description": "A rendered string that displays the purchase amount and currency (e.g., \"$1.00\"). The string is rendered for the given language."
+    },
+    "messageType": {
+     "type": "integer",
+     "description": "The tier for the paid message, which is based on the amount of money spent to purchase the message.",
+     "format": "uint32"
+    },
+    "supporterDetails": {
+     "$ref": "ChannelProfileDetails",
+     "description": "Details about the supporter."
+    }
+   }
+  },
   "Thumbnail": {
    "id": "Thumbnail",
    "type": "object",
@@ -7141,9 +7284,11 @@
        "docFile",
        "imageFile",
        "notAVideoFile",
-       "projectFile"
+       "projectFile",
+       "unsupportedSpatialAudioLayout"
       ],
       "enumDescriptions": [
+       "",
        "",
        "",
        "",
@@ -7159,12 +7304,16 @@
      "items": {
       "type": "string",
       "enum": [
+       "hdrVideo",
        "nonStreamableMov",
-       "procsesingHintSpatialAudio",
-       "procsesingHintSphericalVideo",
-       "sendBestQualityVideo"
+       "sendBestQualityVideo",
+       "spatialAudio",
+       "sphericalVideo",
+       "vrVideo"
       ],
       "enumDescriptions": [
+       "",
+       "",
        "",
        "",
        "",
@@ -7181,12 +7330,22 @@
        "hasEditlist",
        "inconsistentResolution",
        "problematicAudioCodec",
+       "problematicHdrLookupTable",
        "problematicVideoCodec",
        "unknownAudioCodec",
        "unknownContainer",
-       "unknownVideoCodec"
+       "unknownVideoCodec",
+       "unsupportedHdrColorMetadata",
+       "unsupportedHdrPixelFormat",
+       "unsupportedSphericalProjectionType",
+       "unsupportedVrStereoMode"
       ],
       "enumDescriptions": [
+       "",
+       "",
+       "",
+       "",
+       "",
        "",
        "",
        "",
@@ -7232,6 +7391,13 @@
     "relevantTopicIds": {
      "type": "array",
      "description": "Similar to topic_id, except that these topics are merely relevant to the video. These are topics that may be mentioned in, or appear in the video. You can retrieve information about each topic using Freebase Topic API.",
+     "items": {
+      "type": "string"
+     }
+    },
+    "topicCategories": {
+     "type": "array",
+     "description": "A list of Wikipedia URLs that provide a high-level description of the video's content.",
      "items": {
       "type": "string"
      }
@@ -7635,6 +7801,11 @@
      "httpMethod": "POST",
      "description": "Uploads a channel banner image to YouTube. This method represents the first two steps in a three-step process to update the banner image for a channel:\n\n- Call the channelBanners.insert method to upload the binary image data to YouTube. The image must have a 16:9 aspect ratio and be at least 2120x1192 pixels.\n- Extract the url property's value from the response that the API returns for step 1.\n- Call the channels.update method to update the channel's branding settings. Set the brandingSettings.image.bannerExternalUrl property's value to the URL obtained in step 2.",
      "parameters": {
+      "channelId": {
+       "type": "string",
+       "description": "The channelId parameter identifies the YouTube channel to which the banner is uploaded. The channelId parameter was introduced as a required parameter in May 2017. As this was a backward-incompatible change, channelBanners.insert requests that do not specify this parameter will not return an error until six months have passed from the time that the parameter was introduced. Please see the API Terms of Service for the official policy regarding backward incompatible changes and the API revision history for the exact date that the parameter was introduced.",
+       "location": "query"
+      },
       "onBehalfOfContentOwner": {
        "type": "string",
        "description": "Note: This parameter is intended exclusively for YouTube content partners.\n\nThe onBehalfOfContentOwner parameter indicates that the request's authorization credentials identify a YouTube CMS user who is acting on behalf of the content owner specified in the parameter value. This parameter is intended for YouTube content partners that own and manage many different YouTube channels. It allows content owners to authenticate once and get access to all their video and channel data, without having to provide authentication credentials for each individual channel. The CMS account that the user authenticates with must be linked to the specified YouTube content owner.",
@@ -10108,6 +10279,54 @@
       "https://www.googleapis.com/auth/youtube.force-ssl",
       "https://www.googleapis.com/auth/youtube.readonly",
       "https://www.googleapis.com/auth/youtubepartner"
+     ]
+    }
+   }
+  },
+  "superChatEvents": {
+   "methods": {
+    "list": {
+     "id": "youtube.superChatEvents.list",
+     "path": "superChatEvents",
+     "httpMethod": "GET",
+     "description": "Lists Super Chat events for a channel.",
+     "parameters": {
+      "hl": {
+       "type": "string",
+       "description": "The hl parameter instructs the API to retrieve localized resource metadata for a specific application language that the YouTube website supports. The parameter value must be a language code included in the list returned by the i18nLanguages.list method.\n\nIf localized resource details are available in that language, the resource's snippet.localized object will contain the localized values. However, if localized details are not available, the snippet.localized object will contain resource details in the resource's default language.",
+       "location": "query"
+      },
+      "maxResults": {
+       "type": "integer",
+       "description": "The maxResults parameter specifies the maximum number of items that should be returned in the result set.",
+       "default": "5",
+       "format": "uint32",
+       "minimum": "1",
+       "maximum": "50",
+       "location": "query"
+      },
+      "pageToken": {
+       "type": "string",
+       "description": "The pageToken parameter identifies a specific page in the result set that should be returned. In an API response, the nextPageToken and prevPageToken properties identify other pages that could be retrieved.",
+       "location": "query"
+      },
+      "part": {
+       "type": "string",
+       "description": "The part parameter specifies the superChatEvent resource parts that the API response will include. Supported values are id and snippet.",
+       "required": true,
+       "location": "query"
+      }
+     },
+     "parameterOrder": [
+      "part"
+     ],
+     "response": {
+      "$ref": "SuperChatEventListResponse"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/youtube",
+      "https://www.googleapis.com/auth/youtube.force-ssl",
+      "https://www.googleapis.com/auth/youtube.readonly"
      ]
     }
    }

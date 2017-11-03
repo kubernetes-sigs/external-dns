@@ -72,10 +72,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Accounts *AccountsService
 
@@ -107,10 +106,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewAccountsService(s *Service) *AccountsService {
@@ -291,8 +286,10 @@ type AccountBidderLocation struct {
 	// - PROTOCOL_OPENRTB_2_2
 	// - PROTOCOL_OPENRTB_2_3
 	// - PROTOCOL_OPENRTB_2_4
+	// - PROTOCOL_OPENRTB_2_5
 	// - PROTOCOL_OPENRTB_PROTOBUF_2_3
 	// - PROTOCOL_OPENRTB_PROTOBUF_2_4
+	// - PROTOCOL_OPENRTB_PROTOBUF_2_5
 	BidProtocol string `json:"bidProtocol,omitempty"`
 
 	// MaximumQps: The maximum queries per second the Ad Exchange will send.
@@ -763,7 +760,7 @@ type Creative struct {
 	AdvertiserId googleapi.Int64s `json:"advertiserId,omitempty"`
 
 	// AdvertiserName: The name of the company being advertised in the
-	// creative.
+	// creative. The value provided must exist in the advertisers.txt file.
 	AdvertiserName string `json:"advertiserName,omitempty"`
 
 	// AgencyId: The agency id for this creative.
@@ -775,8 +772,9 @@ type Creative struct {
 	// timestamp).
 	ApiUploadTimestamp string `json:"apiUploadTimestamp,omitempty"`
 
-	// Attribute: All attributes for the ads that may be shown from this
-	// snippet.
+	// Attribute: List of buyer selectable attributes for the ads that may
+	// be shown from this snippet. Each attribute is represented by an
+	// integer as defined in  buyer-declarable-creative-attributes.txt.
 	Attribute []int64 `json:"attribute,omitempty"`
 
 	// BuyerCreativeId: A buyer-specific id identifying the creative in this
@@ -833,27 +831,34 @@ type Creative struct {
 	// ServingRestrictions directly.
 	OpenAuctionStatus string `json:"openAuctionStatus,omitempty"`
 
-	// ProductCategories: Detected product categories, if any. Read-only.
-	// This field should not be set in requests.
+	// ProductCategories: Detected product categories, if any. Each category
+	// is represented by an integer as defined in
+	// ad-product-categories.txt. Read-only. This field should not be set in
+	// requests.
 	ProductCategories []int64 `json:"productCategories,omitempty"`
 
 	// RestrictedCategories: All restricted categories for the ads that may
-	// be shown from this snippet.
+	// be shown from this snippet. Each category is represented by an
+	// integer as defined in the  ad-restricted-categories.txt.
 	RestrictedCategories []int64 `json:"restrictedCategories,omitempty"`
 
-	// SensitiveCategories: Detected sensitive categories, if any.
-	// Read-only. This field should not be set in requests.
+	// SensitiveCategories: Detected sensitive categories, if any. Each
+	// category is represented by an integer as defined in
+	// ad-sensitive-categories.txt. Read-only. This field should not be set
+	// in requests.
 	SensitiveCategories []int64 `json:"sensitiveCategories,omitempty"`
 
 	// ServingRestrictions: The granular status of this ad in specific
 	// contexts. A context here relates to where something ultimately serves
 	// (for example, a physical location, a platform, an HTTPS vs HTTP
 	// request, or the type of auction). Read-only. This field should not be
-	// set in requests.
+	// set in requests. See the examples in the Creatives guide for more
+	// details.
 	ServingRestrictions []*CreativeServingRestrictions `json:"servingRestrictions,omitempty"`
 
-	// VendorType: All vendor types for the ads that may be shown from this
-	// snippet.
+	// VendorType: List of vendor types for the ads that may be shown from
+	// this snippet. Each vendor type is represented by an integer as
+	// defined in vendors.txt.
 	VendorType []int64 `json:"vendorType,omitempty"`
 
 	// Version: The version for this creative. Read-only. This field should
@@ -1008,8 +1013,8 @@ type CreativeFilteringReasonsReasons struct {
 	// exchange.
 	FilteringCount int64 `json:"filteringCount,omitempty,string"`
 
-	// FilteringStatus: The filtering status code. Please refer to the
-	// creative-status-codes.txt file for different statuses.
+	// FilteringStatus: The filtering status code as defined in
+	// creative-status-codes.txt.
 	FilteringStatus int64 `json:"filteringStatus,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "FilteringCount") to
@@ -1266,7 +1271,9 @@ type CreativeServingRestrictionsContexts struct {
 	ContextType string `json:"contextType,omitempty"`
 
 	// GeoCriteriaId: Only set when contextType=LOCATION. Represents the geo
-	// criterias this restriction applies to.
+	// criterias this restriction applies to. Impressions are considered to
+	// match a context if either the user location or publisher location
+	// matches a given geoCriteriaId.
 	GeoCriteriaId []int64 `json:"geoCriteriaId,omitempty"`
 
 	// Platform: Only set when contextType=PLATFORM. Represents the
@@ -1437,19 +1444,24 @@ func (s *CreativesList) MarshalJSON() ([]byte, error) {
 }
 
 type DealServingMetadata struct {
+	// AlcoholAdsAllowed: True if alcohol ads are allowed for this deal
+	// (read-only). This field is only populated when querying for finalized
+	// orders using the method GetFinalizedOrderDeals
+	AlcoholAdsAllowed bool `json:"alcoholAdsAllowed,omitempty"`
+
 	// DealPauseStatus: Tracks which parties (if any) have paused a deal.
 	// (readonly, except via PauseResumeOrderDeals action)
 	DealPauseStatus *DealServingMetadataDealPauseStatus `json:"dealPauseStatus,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "DealPauseStatus") to
-	// unconditionally include in API requests. By default, fields with
+	// ForceSendFields is a list of field names (e.g. "AlcoholAdsAllowed")
+	// to unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
 	// server regardless of whether the field is empty or not. This may be
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "DealPauseStatus") to
+	// NullFields is a list of field names (e.g. "AlcoholAdsAllowed") to
 	// include in API requests with the JSON null value. By default, fields
 	// with empty values are omitted from API requests. However, any field
 	// with an empty value appearing in NullFields will be sent to the
@@ -1620,8 +1632,8 @@ func (s *DealTermsGuaranteedFixedPriceTerms) MarshalJSON() ([]byte, error) {
 type DealTermsGuaranteedFixedPriceTermsBillingInfo struct {
 	// CurrencyConversionTimeMs: The timestamp (in ms since epoch) when the
 	// original reservation price for the deal was first converted to DFP
-	// currency. This is used to convert the contracted price into
-	// advertiser's currency without discrepancy.
+	// currency. This is used to convert the contracted price into buyer's
+	// currency without discrepancy.
 	CurrencyConversionTimeMs int64 `json:"currencyConversionTimeMs,omitempty,string"`
 
 	// DfpLineItemId: The DFP line item id associated with this deal. For
@@ -2257,6 +2269,10 @@ type MarketplaceDeal struct {
 	// RFP template is created by buyer and not based on seller created
 	// products.
 	IsRfpTemplate bool `json:"isRfpTemplate,omitempty"`
+
+	// IsSetupComplete: True, if the buyside inventory setup is complete for
+	// this deal. (readonly, except via OrderSetupCompleted action)
+	IsSetupComplete bool `json:"isSetupComplete,omitempty"`
 
 	// Kind: Identifies what kind of resource this is. Value: the fixed
 	// string "adexchangebuyer#marketplaceDeal".
@@ -2996,16 +3012,17 @@ func (s *Price) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// PricePerBuyer: Used to specify pricing rules for buyers/advertisers.
-// Each PricePerBuyer in an product can become [0,1] deals. To check if
-// there is a PricePerBuyer for a particular buyer or buyer/advertiser
-// pair, we look for the most specific matching rule - we first look for
-// a rule matching the buyer and advertiser, next a rule with the buyer
-// but an empty advertiser list, and otherwise look for a matching rule
-// where no buyer is set.
+// PricePerBuyer: Used to specify pricing rules for buyers. Each
+// PricePerBuyer in a product can become [0,1] deals. To check if there
+// is a PricePerBuyer for a particular buyer we look for the most
+// specific matching rule - we first look for a rule matching the buyer
+// and otherwise look for a matching rule where no buyer is set.
 type PricePerBuyer struct {
 	// AuctionTier: Optional access type for this buyer.
 	AuctionTier string `json:"auctionTier,omitempty"`
+
+	// BilledBuyer: Reference to the buyer that will get billed.
+	BilledBuyer *Buyer `json:"billedBuyer,omitempty"`
 
 	// Buyer: The buyer who will pay this price. If unset, all buyers can
 	// pay this price (if the advertisers match, and there's no more
@@ -3076,12 +3093,24 @@ func (s *PrivateData) MarshalJSON() ([]byte, error) {
 // (seller-readonly) - Only the buyer can set this field. (updatable) -
 // The field is updatable at all times by either buyer or the seller.
 type Product struct {
+	// BilledBuyer: The billed buyer corresponding to the buyer that created
+	// the offer. (readonly, except on create)
+	BilledBuyer *Buyer `json:"billedBuyer,omitempty"`
+
+	// Buyer: The buyer that created the offer if this is a buyer initiated
+	// offer (readonly, except on create)
+	Buyer *Buyer `json:"buyer,omitempty"`
+
 	// CreationTimeMs: Creation time in ms. since epoch (readonly)
 	CreationTimeMs int64 `json:"creationTimeMs,omitempty,string"`
 
 	// CreatorContacts: Optional contact information for the creator of this
 	// product. (buyer-readonly)
 	CreatorContacts []*ContactInformation `json:"creatorContacts,omitempty"`
+
+	// CreatorRole: The role that created the offer. Set to BUYER for buyer
+	// initiated offers.
+	CreatorRole string `json:"creatorRole,omitempty"`
 
 	// DeliveryControl: The set of fields around delivery control that are
 	// interesting for a buyer to see but are non-negotiable. These are set
@@ -3181,7 +3210,7 @@ type Product struct {
 	// server.
 	googleapi.ServerResponse `json:"-"`
 
-	// ForceSendFields is a list of field names (e.g. "CreationTimeMs") to
+	// ForceSendFields is a list of field names (e.g. "BilledBuyer") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -3189,13 +3218,12 @@ type Product struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "CreationTimeMs") to
-	// include in API requests with the JSON null value. By default, fields
-	// with empty values are omitted from API requests. However, any field
-	// with an empty value appearing in NullFields will be sent to the
-	// server as null. It is an error if a field in this list has a
-	// non-empty value. This may be used to include null fields in Patch
-	// requests.
+	// NullFields is a list of field names (e.g. "BilledBuyer") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
 	NullFields []string `json:"-"`
 }
 
@@ -3255,6 +3283,7 @@ type Proposal struct {
 
 	// IsSetupComplete: True, if the buyside inventory setup is complete for
 	// this proposal. (readonly, except via OrderSetupCompleted action)
+	// Deprecated in favor of deal level setup complete flag.
 	IsSetupComplete bool `json:"isSetupComplete,omitempty"`
 
 	// Kind: Identifies what kind of resource this is. Value: the fixed
@@ -3332,7 +3361,8 @@ func (s *Proposal) MarshalJSON() ([]byte, error) {
 }
 
 type PublisherProfileApiProto struct {
-	// AccountId: The account id of the seller.
+	// AccountId: Deprecated: use the seller.account_id. The account id of
+	// the seller.
 	AccountId string `json:"accountId,omitempty"`
 
 	// Audience: Publisher provided info on its audience.
@@ -3577,6 +3607,9 @@ type TargetingValueCreativeSize struct {
 	// CreativeSizeType: The Creative size type.
 	CreativeSizeType string `json:"creativeSizeType,omitempty"`
 
+	// NativeTemplate: The native template for native ad.
+	NativeTemplate string `json:"nativeTemplate,omitempty"`
+
 	// Size: For regular or video creative size type, specifies the size of
 	// the creative.
 	Size *TargetingValueSize `json:"size,omitempty"`
@@ -3797,7 +3830,6 @@ func (c *AccountsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3934,7 +3966,6 @@ func (c *AccountsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4058,7 +4089,6 @@ func (c *AccountsPatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.account)
 	if err != nil {
@@ -4206,7 +4236,6 @@ func (c *AccountsUpdateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.account)
 	if err != nil {
@@ -4356,7 +4385,6 @@ func (c *BillingInfoGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4494,7 +4522,6 @@ func (c *BillingInfoListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4621,7 +4648,6 @@ func (c *BudgetGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4764,7 +4790,6 @@ func (c *BudgetPatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.budget)
 	if err != nil {
@@ -4912,7 +4937,6 @@ func (c *BudgetUpdateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.budget)
 	if err != nil {
@@ -5058,7 +5082,6 @@ func (c *CreativesAddDealCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "creatives/{accountId}/{buyerCreativeId}/addDeal/{dealId}")
@@ -5186,7 +5209,6 @@ func (c *CreativesGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -5322,7 +5344,6 @@ func (c *CreativesInsertCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.creative)
 	if err != nil {
@@ -5521,7 +5542,6 @@ func (c *CreativesListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -5730,7 +5750,6 @@ func (c *CreativesListDealsCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -5870,7 +5889,6 @@ func (c *CreativesRemoveDealCall) doRequest(alt string) (*http.Response, error) 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "creatives/{accountId}/{buyerCreativeId}/removeDeal/{dealId}")
@@ -5986,7 +6004,6 @@ func (c *MarketplacedealsDeleteCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.deleteorderdealsrequest)
 	if err != nil {
@@ -6120,7 +6137,6 @@ func (c *MarketplacedealsInsertCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.addorderdealsrequest)
 	if err != nil {
@@ -6270,7 +6286,6 @@ func (c *MarketplacedealsListCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -6405,7 +6420,6 @@ func (c *MarketplacedealsUpdateCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.editallorderdealsrequest)
 	if err != nil {
@@ -6539,7 +6553,6 @@ func (c *MarketplacenotesInsertCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.addordernotesrequest)
 	if err != nil {
@@ -6691,7 +6704,6 @@ func (c *MarketplacenotesListCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -6825,7 +6837,6 @@ func (c *MarketplaceprivateauctionUpdateproposalCall) doRequest(alt string) (*ht
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.updateprivateauctionproposalrequest)
 	if err != nil {
@@ -6958,7 +6969,6 @@ func (c *PerformanceReportListCall) doRequest(alt string) (*http.Response, error
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -7112,7 +7122,6 @@ func (c *PretargetingConfigDeleteCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "pretargetingconfigs/{accountId}/{configId}")
@@ -7231,7 +7240,6 @@ func (c *PretargetingConfigGetCall) doRequest(alt string) (*http.Response, error
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -7370,7 +7378,6 @@ func (c *PretargetingConfigInsertCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.pretargetingconfig)
 	if err != nil {
@@ -7515,7 +7522,6 @@ func (c *PretargetingConfigListCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -7648,7 +7654,6 @@ func (c *PretargetingConfigPatchCall) doRequest(alt string) (*http.Response, err
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.pretargetingconfig)
 	if err != nil {
@@ -7794,7 +7799,6 @@ func (c *PretargetingConfigUpdateCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.pretargetingconfig)
 	if err != nil {
@@ -7947,7 +7951,6 @@ func (c *ProductsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -8090,7 +8093,6 @@ func (c *ProductsSearchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -8221,7 +8223,6 @@ func (c *ProposalsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -8348,7 +8349,6 @@ func (c *ProposalsInsertCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.createordersrequest)
 	if err != nil {
@@ -8473,7 +8473,6 @@ func (c *ProposalsPatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.proposal)
 	if err != nil {
@@ -8654,7 +8653,6 @@ func (c *ProposalsSearchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -8775,7 +8773,6 @@ func (c *ProposalsSetupcompleteCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "proposals/{proposalId}/setupcomplete")
@@ -8877,7 +8874,6 @@ func (c *ProposalsUpdateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.proposal)
 	if err != nil {
@@ -9053,7 +9049,6 @@ func (c *PubprofilesListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}

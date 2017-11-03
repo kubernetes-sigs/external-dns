@@ -50,6 +50,10 @@ const (
 	// View and manage the files in your Google Drive
 	DriveScope = "https://www.googleapis.com/auth/drive"
 
+	// View and manage Google Drive files and folders that you have opened
+	// or created with this app
+	DriveFileScope = "https://www.googleapis.com/auth/drive.file"
+
 	// View the files in your Google Drive
 	DriveReadonlyScope = "https://www.googleapis.com/auth/drive.readonly"
 
@@ -70,10 +74,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Spreadsheets *SpreadsheetsService
 }
@@ -85,12 +88,9 @@ func (s *Service) userAgent() string {
 	return googleapi.UserAgent + " " + s.UserAgent
 }
 
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
-}
-
 func NewSpreadsheetsService(s *Service) *SpreadsheetsService {
 	rs := &SpreadsheetsService{s: s}
+	rs.DeveloperMetadata = NewSpreadsheetsDeveloperMetadataService(s)
 	rs.Sheets = NewSpreadsheetsSheetsService(s)
 	rs.Values = NewSpreadsheetsValuesService(s)
 	return rs
@@ -99,9 +99,20 @@ func NewSpreadsheetsService(s *Service) *SpreadsheetsService {
 type SpreadsheetsService struct {
 	s *Service
 
+	DeveloperMetadata *SpreadsheetsDeveloperMetadataService
+
 	Sheets *SpreadsheetsSheetsService
 
 	Values *SpreadsheetsValuesService
+}
+
+func NewSpreadsheetsDeveloperMetadataService(s *Service) *SpreadsheetsDeveloperMetadataService {
+	rs := &SpreadsheetsDeveloperMetadataService{s: s}
+	return rs
+}
+
+type SpreadsheetsDeveloperMetadataService struct {
+	s *Service
 }
 
 func NewSpreadsheetsSheetsService(s *Service) *SpreadsheetsSheetsService {
@@ -691,7 +702,6 @@ func (s *AutoFillRequest) MarshalJSON() ([]byte, error) {
 // of the cells in that dimension.
 type AutoResizeDimensionsRequest struct {
 	// Dimensions: The dimensions to automatically resize.
-	// Only COLUMNS are supported.
 	Dimensions *DimensionRange `json:"dimensions,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Dimensions") to
@@ -863,6 +873,9 @@ type BasicChartAxis struct {
 	// from headers of the data.
 	Title string `json:"title,omitempty"`
 
+	// TitleTextPosition: The axis title text position.
+	TitleTextPosition *TextPosition `json:"titleTextPosition,omitempty"`
+
 	// ForceSendFields is a list of field names (e.g. "Format") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
@@ -894,6 +907,10 @@ type BasicChartDomain struct {
 	// over time,
 	// this is the data representing the dates.
 	Domain *ChartData `json:"domain,omitempty"`
+
+	// Reversed: True to reverse the order of the domain values (horizontal
+	// axis).
+	Reversed bool `json:"reversed,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Domain") to
 	// unconditionally include in API requests. By default, fields with
@@ -974,6 +991,9 @@ type BasicChartSeries struct {
 	// chart</a>.
 	//   "COMBO" - A <a
 	// href="/chart/interactive/docs/gallery/combochart">combo chart</a>.
+	//   "STEPPED_AREA" - A <a
+	// href="/chart/interactive/docs/gallery/steppedareachart">stepped area
+	// chart</a>.
 	Type string `json:"type,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Series") to
@@ -1023,10 +1043,26 @@ type BasicChartSpec struct {
 	// chart</a>.
 	//   "COMBO" - A <a
 	// href="/chart/interactive/docs/gallery/combochart">combo chart</a>.
+	//   "STEPPED_AREA" - A <a
+	// href="/chart/interactive/docs/gallery/steppedareachart">stepped area
+	// chart</a>.
 	ChartType string `json:"chartType,omitempty"`
 
+	// CompareMode: The behavior of tooltips and data highlighting when
+	// hovering on data and
+	// chart area.
+	//
+	// Possible values:
+	//   "BASIC_CHART_COMPARE_MODE_UNSPECIFIED" - Default value, do not use.
+	//   "DATUM" - Only the focused data element is highlighted and shown in
+	// the tooltip.
+	//   "CATEGORY" - All data elements with the same category (e.g., domain
+	// value) are
+	// highlighted and shown in the tooltip.
+	CompareMode string `json:"compareMode,omitempty"`
+
 	// Domains: The domain of data this is charting.
-	// Only a single domain is currently supported.
+	// Only a single domain is supported.
 	Domains []*BasicChartDomain `json:"domains,omitempty"`
 
 	// HeaderCount: The number of rows or columns in the data that are
@@ -1038,6 +1074,14 @@ type BasicChartSpec struct {
 	// (Note that BasicChartAxis.title may override the axis title
 	//  inferred from the header values.)
 	HeaderCount int64 `json:"headerCount,omitempty"`
+
+	// InterpolateNulls: If some values in a series are missing, gaps may
+	// appear in the chart (e.g,
+	// segments of lines in a line chart will be missing).  To eliminate
+	// these
+	// gaps set this to true.
+	// Applies to Line, Area, and Combo charts.
+	InterpolateNulls bool `json:"interpolateNulls,omitempty"`
 
 	// LegendPosition: The position of the chart legend.
 	//
@@ -1052,8 +1096,32 @@ type BasicChartSpec struct {
 	//   "NO_LEGEND" - No legend is rendered.
 	LegendPosition string `json:"legendPosition,omitempty"`
 
+	// LineSmoothing: Gets whether all lines should be rendered smooth or
+	// straight by default.
+	// Applies to Line charts.
+	LineSmoothing bool `json:"lineSmoothing,omitempty"`
+
 	// Series: The data this chart is visualizing.
 	Series []*BasicChartSeries `json:"series,omitempty"`
+
+	// StackedType: The stacked type for charts that support vertical
+	// stacking.
+	// Applies to Area, Bar, Column, and Stepped Area charts.
+	//
+	// Possible values:
+	//   "BASIC_CHART_STACKED_TYPE_UNSPECIFIED" - Default value, do not use.
+	//   "NOT_STACKED" - Series are not stacked.
+	//   "STACKED" - Series values are stacked, each value is rendered
+	// vertically beginning
+	// from the top of the value below it.
+	//   "PERCENT_STACKED" - Vertical stacks are stretched to reach the top
+	// of the chart, with
+	// values laid out as percentages of each other.
+	StackedType string `json:"stackedType,omitempty"`
+
+	// ThreeDimensional: True to make the chart 3D.
+	// Applies to Bar and Column charts.
+	ThreeDimensional bool `json:"threeDimensional,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Axis") to
 	// unconditionally include in API requests. By default, fields with
@@ -1117,6 +1185,76 @@ func (s *BasicFilter) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// BatchClearValuesByDataFilterRequest: The request for clearing more
+// than one range selected by a
+// DataFilter in a spreadsheet.
+type BatchClearValuesByDataFilterRequest struct {
+	// DataFilters: The DataFilters used to determine which ranges to clear.
+	DataFilters []*DataFilter `json:"dataFilters,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DataFilters") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DataFilters") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *BatchClearValuesByDataFilterRequest) MarshalJSON() ([]byte, error) {
+	type noMethod BatchClearValuesByDataFilterRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// BatchClearValuesByDataFilterResponse: The response when clearing a
+// range of values selected with
+// DataFilters in a spreadsheet.
+type BatchClearValuesByDataFilterResponse struct {
+	// ClearedRanges: The ranges that were cleared, in A1 notation.
+	// (If the requests were for an unbounded range or a ranger larger
+	//  than the bounds of the sheet, this will be the actual ranges
+	//  that were cleared, bounded to the sheet's limits.)
+	ClearedRanges []string `json:"clearedRanges,omitempty"`
+
+	// SpreadsheetId: The spreadsheet the updates were applied to.
+	SpreadsheetId string `json:"spreadsheetId,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "ClearedRanges") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ClearedRanges") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *BatchClearValuesByDataFilterResponse) MarshalJSON() ([]byte, error) {
+	type noMethod BatchClearValuesByDataFilterResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // BatchClearValuesRequest: The request for clearing more than one range
 // of values in a spreadsheet.
 type BatchClearValuesRequest struct {
@@ -1146,7 +1284,7 @@ func (s *BatchClearValuesRequest) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// BatchClearValuesResponse: The response when updating a range of
+// BatchClearValuesResponse: The response when clearing a range of
 // values in a spreadsheet.
 type BatchClearValuesResponse struct {
 	// ClearedRanges: The ranges that were cleared, in A1 notation.
@@ -1181,6 +1319,150 @@ type BatchClearValuesResponse struct {
 
 func (s *BatchClearValuesResponse) MarshalJSON() ([]byte, error) {
 	type noMethod BatchClearValuesResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// BatchGetValuesByDataFilterRequest: The request for retrieving a range
+// of values in a spreadsheet selected by a
+// set of DataFilters.
+type BatchGetValuesByDataFilterRequest struct {
+	// DataFilters: The data filters used to match the ranges of values to
+	// retrieve.  Ranges
+	// that match any of the specified data filters will be included in
+	// the
+	// response.
+	DataFilters []*DataFilter `json:"dataFilters,omitempty"`
+
+	// DateTimeRenderOption: How dates, times, and durations should be
+	// represented in the output.
+	// This is ignored if value_render_option is
+	// FORMATTED_VALUE.
+	// The default dateTime render option is
+	// [DateTimeRenderOption.SERIAL_NUMBER].
+	//
+	// Possible values:
+	//   "SERIAL_NUMBER" - Instructs date, time, datetime, and duration
+	// fields to be output
+	// as doubles in "serial number" format, as popularized by Lotus
+	// 1-2-3.
+	// The whole number portion of the value (left of the decimal)
+	// counts
+	// the days since December 30th 1899. The fractional portion (right
+	// of
+	// the decimal) counts the time as a fraction of the day. For
+	// example,
+	// January 1st 1900 at noon would be 2.5, 2 because it's 2 days
+	// after
+	// December 30st 1899, and .5 because noon is half a day.  February
+	// 1st
+	// 1900 at 3pm would be 33.625. This correctly treats the year 1900
+	// as
+	// not a leap year.
+	//   "FORMATTED_STRING" - Instructs date, time, datetime, and duration
+	// fields to be output
+	// as strings in their given number format (which is dependent
+	// on the spreadsheet locale).
+	DateTimeRenderOption string `json:"dateTimeRenderOption,omitempty"`
+
+	// MajorDimension: The major dimension that results should use.
+	//
+	// For example, if the spreadsheet data is: `A1=1,B1=2,A2=3,B2=4`,
+	// then a request that selects that range and sets `majorDimension=ROWS`
+	// will
+	// return `[[1,2],[3,4]]`,
+	// whereas a request that sets `majorDimension=COLUMNS` will
+	// return
+	// `[[1,3],[2,4]]`.
+	//
+	// Possible values:
+	//   "DIMENSION_UNSPECIFIED" - The default value, do not use.
+	//   "ROWS" - Operates on the rows of a sheet.
+	//   "COLUMNS" - Operates on the columns of a sheet.
+	MajorDimension string `json:"majorDimension,omitempty"`
+
+	// ValueRenderOption: How values should be represented in the
+	// output.
+	// The default render option is ValueRenderOption.FORMATTED_VALUE.
+	//
+	// Possible values:
+	//   "FORMATTED_VALUE" - Values will be calculated & formatted in the
+	// reply according to the
+	// cell's formatting.  Formatting is based on the spreadsheet's
+	// locale,
+	// not the requesting user's locale.
+	// For example, if `A1` is `1.23` and `A2` is `=A1` and formatted as
+	// currency,
+	// then `A2` would return "$1.23".
+	//   "UNFORMATTED_VALUE" - Values will be calculated, but not formatted
+	// in the reply.
+	// For example, if `A1` is `1.23` and `A2` is `=A1` and formatted as
+	// currency,
+	// then `A2` would return the number `1.23`.
+	//   "FORMULA" - Values will not be calculated.  The reply will include
+	// the formulas.
+	// For example, if `A1` is `1.23` and `A2` is `=A1` and formatted as
+	// currency,
+	// then A2 would return "=A1".
+	ValueRenderOption string `json:"valueRenderOption,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DataFilters") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DataFilters") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *BatchGetValuesByDataFilterRequest) MarshalJSON() ([]byte, error) {
+	type noMethod BatchGetValuesByDataFilterRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// BatchGetValuesByDataFilterResponse: The response when retrieving more
+// than one range of values in a spreadsheet
+// selected by DataFilters.
+type BatchGetValuesByDataFilterResponse struct {
+	// SpreadsheetId: The ID of the spreadsheet the data was retrieved from.
+	SpreadsheetId string `json:"spreadsheetId,omitempty"`
+
+	// ValueRanges: The requested values with the list of data filters that
+	// matched them.
+	ValueRanges []*MatchedValueRange `json:"valueRanges,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "SpreadsheetId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "SpreadsheetId") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *BatchGetValuesByDataFilterResponse) MarshalJSON() ([]byte, error) {
+	type noMethod BatchGetValuesByDataFilterResponse
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -1232,6 +1514,8 @@ type BatchUpdateSpreadsheetRequest struct {
 	IncludeSpreadsheetInResponse bool `json:"includeSpreadsheetInResponse,omitempty"`
 
 	// Requests: A list of updates to apply to the spreadsheet.
+	// Requests will be applied in the order they are specified.
+	// If any request is not valid, no requests will be applied.
 	Requests []*Request `json:"requests,omitempty"`
 
 	// ResponseIncludeGridData: True if grid data should be returned.
@@ -1315,6 +1599,180 @@ func (s *BatchUpdateSpreadsheetResponse) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// BatchUpdateValuesByDataFilterRequest: The request for updating more
+// than one range of values in a spreadsheet.
+type BatchUpdateValuesByDataFilterRequest struct {
+	// Data: The new values to apply to the spreadsheet.  If more than one
+	// range is
+	// matched by the specified DataFilter the specified values will
+	// be
+	// applied to all of those ranges.
+	Data []*DataFilterValueRange `json:"data,omitempty"`
+
+	// IncludeValuesInResponse: Determines if the update response should
+	// include the values
+	// of the cells that were updated. By default, responses
+	// do not include the updated values. The `updatedData` field
+	// within
+	// each of the BatchUpdateValuesResponse.responses will contain
+	// the updated values. If the range to write was larger than than the
+	// range
+	// actually written, the response will include all values in the
+	// requested
+	// range (excluding trailing empty rows and columns).
+	IncludeValuesInResponse bool `json:"includeValuesInResponse,omitempty"`
+
+	// ResponseDateTimeRenderOption: Determines how dates, times, and
+	// durations in the response should be
+	// rendered. This is ignored if response_value_render_option
+	// is
+	// FORMATTED_VALUE.
+	// The default dateTime render option
+	// is
+	// DateTimeRenderOption.SERIAL_NUMBER.
+	//
+	// Possible values:
+	//   "SERIAL_NUMBER" - Instructs date, time, datetime, and duration
+	// fields to be output
+	// as doubles in "serial number" format, as popularized by Lotus
+	// 1-2-3.
+	// The whole number portion of the value (left of the decimal)
+	// counts
+	// the days since December 30th 1899. The fractional portion (right
+	// of
+	// the decimal) counts the time as a fraction of the day. For
+	// example,
+	// January 1st 1900 at noon would be 2.5, 2 because it's 2 days
+	// after
+	// December 30st 1899, and .5 because noon is half a day.  February
+	// 1st
+	// 1900 at 3pm would be 33.625. This correctly treats the year 1900
+	// as
+	// not a leap year.
+	//   "FORMATTED_STRING" - Instructs date, time, datetime, and duration
+	// fields to be output
+	// as strings in their given number format (which is dependent
+	// on the spreadsheet locale).
+	ResponseDateTimeRenderOption string `json:"responseDateTimeRenderOption,omitempty"`
+
+	// ResponseValueRenderOption: Determines how values in the response
+	// should be rendered.
+	// The default render option is ValueRenderOption.FORMATTED_VALUE.
+	//
+	// Possible values:
+	//   "FORMATTED_VALUE" - Values will be calculated & formatted in the
+	// reply according to the
+	// cell's formatting.  Formatting is based on the spreadsheet's
+	// locale,
+	// not the requesting user's locale.
+	// For example, if `A1` is `1.23` and `A2` is `=A1` and formatted as
+	// currency,
+	// then `A2` would return "$1.23".
+	//   "UNFORMATTED_VALUE" - Values will be calculated, but not formatted
+	// in the reply.
+	// For example, if `A1` is `1.23` and `A2` is `=A1` and formatted as
+	// currency,
+	// then `A2` would return the number `1.23`.
+	//   "FORMULA" - Values will not be calculated.  The reply will include
+	// the formulas.
+	// For example, if `A1` is `1.23` and `A2` is `=A1` and formatted as
+	// currency,
+	// then A2 would return "=A1".
+	ResponseValueRenderOption string `json:"responseValueRenderOption,omitempty"`
+
+	// ValueInputOption: How the input data should be interpreted.
+	//
+	// Possible values:
+	//   "INPUT_VALUE_OPTION_UNSPECIFIED" - Default input value. This value
+	// must not be used.
+	//   "RAW" - The values the user has entered will not be parsed and will
+	// be stored
+	// as-is.
+	//   "USER_ENTERED" - The values will be parsed as if the user typed
+	// them into the UI.
+	// Numbers will stay as numbers, but strings may be converted to
+	// numbers,
+	// dates, etc. following the same rules that are applied when
+	// entering
+	// text into a cell via the Google Sheets UI.
+	ValueInputOption string `json:"valueInputOption,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Data") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Data") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *BatchUpdateValuesByDataFilterRequest) MarshalJSON() ([]byte, error) {
+	type noMethod BatchUpdateValuesByDataFilterRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// BatchUpdateValuesByDataFilterResponse: The response when updating a
+// range of values in a spreadsheet.
+type BatchUpdateValuesByDataFilterResponse struct {
+	// Responses: The response for each range updated.
+	Responses []*UpdateValuesByDataFilterResponse `json:"responses,omitempty"`
+
+	// SpreadsheetId: The spreadsheet the updates were applied to.
+	SpreadsheetId string `json:"spreadsheetId,omitempty"`
+
+	// TotalUpdatedCells: The total number of cells updated.
+	TotalUpdatedCells int64 `json:"totalUpdatedCells,omitempty"`
+
+	// TotalUpdatedColumns: The total number of columns where at least one
+	// cell in the column was
+	// updated.
+	TotalUpdatedColumns int64 `json:"totalUpdatedColumns,omitempty"`
+
+	// TotalUpdatedRows: The total number of rows where at least one cell in
+	// the row was updated.
+	TotalUpdatedRows int64 `json:"totalUpdatedRows,omitempty"`
+
+	// TotalUpdatedSheets: The total number of sheets where at least one
+	// cell in the sheet was
+	// updated.
+	TotalUpdatedSheets int64 `json:"totalUpdatedSheets,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Responses") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Responses") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *BatchUpdateValuesByDataFilterResponse) MarshalJSON() ([]byte, error) {
+	type noMethod BatchUpdateValuesByDataFilterResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // BatchUpdateValuesRequest: The request for updating more than one
 // range of values in a spreadsheet.
 type BatchUpdateValuesRequest struct {
@@ -1339,22 +1797,28 @@ type BatchUpdateValuesRequest struct {
 	// rendered. This is ignored if response_value_render_option
 	// is
 	// FORMATTED_VALUE.
-	// The default dateTime render option is
-	// [DateTimeRenderOption.SERIAL_NUMBER].
+	// The default dateTime render option
+	// is
+	// DateTimeRenderOption.SERIAL_NUMBER.
 	//
 	// Possible values:
 	//   "SERIAL_NUMBER" - Instructs date, time, datetime, and duration
 	// fields to be output
 	// as doubles in "serial number" format, as popularized by Lotus
 	// 1-2-3.
-	// Days are counted from December 31st 1899 and are incremented by
-	// 1,
-	// and times are fractions of a day.  For example, January 1st 1900 at
-	// noon
-	// would be 1.5, 1 because it's 1 day offset from December 31st
-	// 1899,
-	// and .5 because noon is half a day.  February 1st 1900 at 3pm would
-	// be 32.625. This correctly treats the year 1900 as not a leap year.
+	// The whole number portion of the value (left of the decimal)
+	// counts
+	// the days since December 30th 1899. The fractional portion (right
+	// of
+	// the decimal) counts the time as a fraction of the day. For
+	// example,
+	// January 1st 1900 at noon would be 2.5, 2 because it's 2 days
+	// after
+	// December 30st 1899, and .5 because noon is half a day.  February
+	// 1st
+	// 1900 at 3pm would be 33.625. This correctly treats the year 1900
+	// as
+	// not a leap year.
 	//   "FORMATTED_STRING" - Instructs date, time, datetime, and duration
 	// fields to be output
 	// as strings in their given number format (which is dependent
@@ -1774,6 +2238,262 @@ func (s *Borders) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// BubbleChartSpec: A <a
+// href="/chart/interactive/docs/gallery/bubblechart">bubble chart</a>.
+type BubbleChartSpec struct {
+	// BubbleBorderColor: The bubble border color.
+	BubbleBorderColor *Color `json:"bubbleBorderColor,omitempty"`
+
+	// BubbleLabels: The data containing the bubble labels.  These do not
+	// need to be unique.
+	BubbleLabels *ChartData `json:"bubbleLabels,omitempty"`
+
+	// BubbleMaxRadiusSize: The max radius size of the bubbles, in
+	// pixels.
+	// If specified, the field must be a positive value.
+	BubbleMaxRadiusSize int64 `json:"bubbleMaxRadiusSize,omitempty"`
+
+	// BubbleMinRadiusSize: The minimum radius size of the bubbles, in
+	// pixels.
+	// If specific, the field must be a positive value.
+	BubbleMinRadiusSize int64 `json:"bubbleMinRadiusSize,omitempty"`
+
+	// BubbleOpacity: The opacity of the bubbles between 0 and 1.0.
+	// 0 is fully transparent and 1 is fully opaque.
+	BubbleOpacity float64 `json:"bubbleOpacity,omitempty"`
+
+	// BubbleSizes: The data contianing the bubble sizes.  Bubble sizes are
+	// used to draw
+	// the bubbles at different sizes relative to each other.
+	// If specified, group_ids must also be specified.  This field
+	// is
+	// optional.
+	BubbleSizes *ChartData `json:"bubbleSizes,omitempty"`
+
+	// BubbleTextStyle: The format of the text inside the bubbles.
+	// Underline and Strikethrough are not supported.
+	BubbleTextStyle *TextFormat `json:"bubbleTextStyle,omitempty"`
+
+	// Domain: The data containing the bubble x-values.  These values locate
+	// the bubbles
+	// in the chart horizontally.
+	Domain *ChartData `json:"domain,omitempty"`
+
+	// GroupIds: The data containing the bubble group IDs. All bubbles with
+	// the same group
+	// ID will be drawn in the same color. If bubble_sizes is specified
+	// then
+	// this field must also be specified but may contain blank values.
+	// This field is optional.
+	GroupIds *ChartData `json:"groupIds,omitempty"`
+
+	// LegendPosition: Where the legend of the chart should be drawn.
+	//
+	// Possible values:
+	//   "BUBBLE_CHART_LEGEND_POSITION_UNSPECIFIED" - Default value, do not
+	// use.
+	//   "BOTTOM_LEGEND" - The legend is rendered on the bottom of the
+	// chart.
+	//   "LEFT_LEGEND" - The legend is rendered on the left of the chart.
+	//   "RIGHT_LEGEND" - The legend is rendered on the right of the chart.
+	//   "TOP_LEGEND" - The legend is rendered on the top of the chart.
+	//   "NO_LEGEND" - No legend is rendered.
+	//   "INSIDE_LEGEND" - The legend is rendered inside the chart area.
+	LegendPosition string `json:"legendPosition,omitempty"`
+
+	// Series: The data contianing the bubble y-values.  These values locate
+	// the bubbles
+	// in the chart vertically.
+	Series *ChartData `json:"series,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "BubbleBorderColor")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "BubbleBorderColor") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *BubbleChartSpec) MarshalJSON() ([]byte, error) {
+	type noMethod BubbleChartSpec
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+func (s *BubbleChartSpec) UnmarshalJSON(data []byte) error {
+	type noMethod BubbleChartSpec
+	var s1 struct {
+		BubbleOpacity gensupport.JSONFloat64 `json:"bubbleOpacity"`
+		*noMethod
+	}
+	s1.noMethod = (*noMethod)(s)
+	if err := json.Unmarshal(data, &s1); err != nil {
+		return err
+	}
+	s.BubbleOpacity = float64(s1.BubbleOpacity)
+	return nil
+}
+
+// CandlestickChartSpec: A <a
+// href="/chart/interactive/docs/gallery/candlestickchart">candlestick
+// chart</a>.
+type CandlestickChartSpec struct {
+	// Data: The Candlestick chart data.
+	// Only one CandlestickData is supported.
+	Data []*CandlestickData `json:"data,omitempty"`
+
+	// Domain: The domain data (horizontal axis) for the candlestick chart.
+	// String data
+	// will be treated as discrete labels, other data will be treated
+	// as
+	// continuous values.
+	Domain *CandlestickDomain `json:"domain,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Data") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Data") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *CandlestickChartSpec) MarshalJSON() ([]byte, error) {
+	type noMethod CandlestickChartSpec
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// CandlestickData: The Candlestick chart data, each containing the low,
+// open, close, and high
+// values for a series.
+type CandlestickData struct {
+	// CloseSeries: The range data (vertical axis) for the close/final value
+	// for each candle.
+	// This is the top of the candle body.  If greater than the open value
+	// the
+	// candle will be filled.  Otherwise the candle will be hollow.
+	CloseSeries *CandlestickSeries `json:"closeSeries,omitempty"`
+
+	// HighSeries: The range data (vertical axis) for the high/maximum value
+	// for each
+	// candle. This is the top of the candle's center line.
+	HighSeries *CandlestickSeries `json:"highSeries,omitempty"`
+
+	// LowSeries: The range data (vertical axis) for the low/minimum value
+	// for each candle.
+	// This is the bottom of the candle's center line.
+	LowSeries *CandlestickSeries `json:"lowSeries,omitempty"`
+
+	// OpenSeries: The range data (vertical axis) for the open/initial value
+	// for each
+	// candle. This is the bottom of the candle body.  If less than the
+	// close
+	// value the candle will be filled.  Otherwise the candle will be
+	// hollow.
+	OpenSeries *CandlestickSeries `json:"openSeries,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "CloseSeries") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "CloseSeries") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *CandlestickData) MarshalJSON() ([]byte, error) {
+	type noMethod CandlestickData
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// CandlestickDomain: The domain of a CandlestickChart.
+type CandlestickDomain struct {
+	// Data: The data of the CandlestickDomain.
+	Data *ChartData `json:"data,omitempty"`
+
+	// Reversed: True to reverse the order of the domain values (horizontal
+	// axis).
+	Reversed bool `json:"reversed,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Data") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Data") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *CandlestickDomain) MarshalJSON() ([]byte, error) {
+	type noMethod CandlestickDomain
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// CandlestickSeries: The series of a CandlestickData.
+type CandlestickSeries struct {
+	// Data: The data of the CandlestickSeries.
+	Data *ChartData `json:"data,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Data") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Data") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *CandlestickSeries) MarshalJSON() ([]byte, error) {
+	type noMethod CandlestickSeries
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // CellData: Data about a specific cell.
 type CellData struct {
 	// DataValidation: A data validation rule on the cell, if any.
@@ -1805,7 +2525,9 @@ type CellData struct {
 	FormattedValue string `json:"formattedValue,omitempty"`
 
 	// Hyperlink: A hyperlink this cell points to, if any.
-	// This field is read-only.  (To set it, use a `=HYPERLINK` formula.)
+	// This field is read-only.  (To set it, use a `=HYPERLINK` formula
+	// in the userEnteredValue.formulaValue
+	// field.)
 	Hyperlink string `json:"hyperlink,omitempty"`
 
 	// Note: Any note on the cell.
@@ -1923,6 +2645,9 @@ type CellFormat struct {
 	// TextFormat: The format of the text in the cell (unless overridden by
 	// a format run).
 	TextFormat *TextFormat `json:"textFormat,omitempty"`
+
+	// TextRotation: The rotation applied to text in a cell
+	TextRotation *TextRotation `json:"textRotation,omitempty"`
 
 	// VerticalAlignment: The vertical alignment of the value in the cell.
 	//
@@ -2084,11 +2809,33 @@ func (s *ChartSourceRange) MarshalJSON() ([]byte, error) {
 
 // ChartSpec: The specifications of a chart.
 type ChartSpec struct {
+	// AltText: The alternative text that describes the chart.  This is
+	// often used
+	// for accessibility.
+	AltText string `json:"altText,omitempty"`
+
+	// BackgroundColor: The background color of the entire chart.
+	// Not applicable to Org charts.
+	BackgroundColor *Color `json:"backgroundColor,omitempty"`
+
 	// BasicChart: A basic chart specification, can be one of many kinds of
 	// charts.
 	// See BasicChartType for the list of all
 	// charts this supports.
 	BasicChart *BasicChartSpec `json:"basicChart,omitempty"`
+
+	// BubbleChart: A bubble chart specification.
+	BubbleChart *BubbleChartSpec `json:"bubbleChart,omitempty"`
+
+	// CandlestickChart: A candlestick chart specification.
+	CandlestickChart *CandlestickChartSpec `json:"candlestickChart,omitempty"`
+
+	// FontName: The name of the font to use by default for all chart text
+	// (e.g. title,
+	// axis labels, legend).  If a font is specified for a specific part of
+	// the
+	// chart it will override this font name.
+	FontName string `json:"fontName,omitempty"`
 
 	// HiddenDimensionStrategy: Determines how the charts will use hidden
 	// rows or columns.
@@ -2103,13 +2850,44 @@ type ChartSpec struct {
 	//   "SHOW_ALL" - Charts will not skip any hidden rows or columns.
 	HiddenDimensionStrategy string `json:"hiddenDimensionStrategy,omitempty"`
 
+	// HistogramChart: A histogram chart specification.
+	HistogramChart *HistogramChartSpec `json:"histogramChart,omitempty"`
+
+	// Maximized: True to make a chart fill the entire space in which it's
+	// rendered with
+	// minimum padding.  False to use the default padding.
+	// (Not applicable to Geo and Org charts.)
+	Maximized bool `json:"maximized,omitempty"`
+
+	// OrgChart: An org chart specification.
+	OrgChart *OrgChartSpec `json:"orgChart,omitempty"`
+
 	// PieChart: A pie chart specification.
 	PieChart *PieChartSpec `json:"pieChart,omitempty"`
+
+	// Subtitle: The subtitle of the chart.
+	Subtitle string `json:"subtitle,omitempty"`
+
+	// SubtitleTextFormat: The subtitle text format.
+	// Strikethrough and underline are not supported.
+	SubtitleTextFormat *TextFormat `json:"subtitleTextFormat,omitempty"`
+
+	// SubtitleTextPosition: The subtitle text position.
+	// This field is optional.
+	SubtitleTextPosition *TextPosition `json:"subtitleTextPosition,omitempty"`
 
 	// Title: The title of the chart.
 	Title string `json:"title,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "BasicChart") to
+	// TitleTextFormat: The title text format.
+	// Strikethrough and underline are not supported.
+	TitleTextFormat *TextFormat `json:"titleTextFormat,omitempty"`
+
+	// TitleTextPosition: The title text position.
+	// This field is optional.
+	TitleTextPosition *TextPosition `json:"titleTextPosition,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AltText") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -2117,7 +2895,7 @@ type ChartSpec struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "BasicChart") to include in
+	// NullFields is a list of field names (e.g. "AltText") to include in
 	// API requests with the JSON null value. By default, fields with empty
 	// values are omitted from API requests. However, any field with an
 	// empty value appearing in NullFields will be sent to the server as
@@ -2584,6 +3362,66 @@ func (s *CopySheetToAnotherSpreadsheetRequest) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// CreateDeveloperMetadataRequest: A request to create developer
+// metadata.
+type CreateDeveloperMetadataRequest struct {
+	// DeveloperMetadata: The developer metadata to create.
+	DeveloperMetadata *DeveloperMetadata `json:"developerMetadata,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DeveloperMetadata")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DeveloperMetadata") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *CreateDeveloperMetadataRequest) MarshalJSON() ([]byte, error) {
+	type noMethod CreateDeveloperMetadataRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// CreateDeveloperMetadataResponse: The response from creating developer
+// metadata.
+type CreateDeveloperMetadataResponse struct {
+	// DeveloperMetadata: The developer metadata that was created.
+	DeveloperMetadata *DeveloperMetadata `json:"developerMetadata,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DeveloperMetadata")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DeveloperMetadata") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *CreateDeveloperMetadataResponse) MarshalJSON() ([]byte, error) {
+	type noMethod CreateDeveloperMetadataResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // CutPasteRequest: Moves data from the source to the destination.
 type CutPasteRequest struct {
 	// Destination: The top-left coordinate where the data should be pasted.
@@ -2627,6 +3465,93 @@ type CutPasteRequest struct {
 
 func (s *CutPasteRequest) MarshalJSON() ([]byte, error) {
 	type noMethod CutPasteRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// DataFilter: Filter that describes what data should be selected or
+// returned from a
+// request.
+type DataFilter struct {
+	// A1Range: Selects data that matches the specified A1 range.
+	A1Range string `json:"a1Range,omitempty"`
+
+	// DeveloperMetadataLookup: Selects data associated with the developer
+	// metadata matching the criteria
+	// described by this DeveloperMetadataLookup.
+	DeveloperMetadataLookup *DeveloperMetadataLookup `json:"developerMetadataLookup,omitempty"`
+
+	// GridRange: Selects data that matches the range described by the
+	// GridRange.
+	GridRange *GridRange `json:"gridRange,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "A1Range") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "A1Range") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *DataFilter) MarshalJSON() ([]byte, error) {
+	type noMethod DataFilter
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// DataFilterValueRange: A range of values whose location is specified
+// by a DataFilter.
+type DataFilterValueRange struct {
+	// DataFilter: The data filter describing the location of the values in
+	// the spreadsheet.
+	DataFilter *DataFilter `json:"dataFilter,omitempty"`
+
+	// MajorDimension: The major dimension of the values.
+	//
+	// Possible values:
+	//   "DIMENSION_UNSPECIFIED" - The default value, do not use.
+	//   "ROWS" - Operates on the rows of a sheet.
+	//   "COLUMNS" - Operates on the columns of a sheet.
+	MajorDimension string `json:"majorDimension,omitempty"`
+
+	// Values: The data to be written.  If the provided values exceed any of
+	// the ranges
+	// matched by the data filter then the request will fail.  If the
+	// provided
+	// values are less than the matched ranges only the specified values
+	// will be
+	// written, existing values in the matched ranges will remain
+	// unaffected.
+	Values [][]interface{} `json:"values,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DataFilter") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DataFilter") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *DataFilterValueRange) MarshalJSON() ([]byte, error) {
+	type noMethod DataFilterValueRange
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -2758,6 +3683,68 @@ type DeleteConditionalFormatRuleResponse struct {
 
 func (s *DeleteConditionalFormatRuleResponse) MarshalJSON() ([]byte, error) {
 	type noMethod DeleteConditionalFormatRuleResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// DeleteDeveloperMetadataRequest: A request to delete developer
+// metadata.
+type DeleteDeveloperMetadataRequest struct {
+	// DataFilter: The data filter describing the criteria used to select
+	// which developer
+	// metadata entry to delete.
+	DataFilter *DataFilter `json:"dataFilter,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DataFilter") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DataFilter") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *DeleteDeveloperMetadataRequest) MarshalJSON() ([]byte, error) {
+	type noMethod DeleteDeveloperMetadataRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// DeleteDeveloperMetadataResponse: The response from deleting developer
+// metadata.
+type DeleteDeveloperMetadataResponse struct {
+	// DeletedDeveloperMetadata: The metadata that was deleted.
+	DeletedDeveloperMetadata []*DeveloperMetadata `json:"deletedDeveloperMetadata,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "DeletedDeveloperMetadata") to unconditionally include in API
+	// requests. By default, fields with empty values are omitted from API
+	// requests. However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DeletedDeveloperMetadata")
+	// to include in API requests with the JSON null value. By default,
+	// fields with empty values are omitted from API requests. However, any
+	// field with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *DeleteDeveloperMetadataResponse) MarshalJSON() ([]byte, error) {
+	type noMethod DeleteDeveloperMetadataResponse
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -2975,8 +3962,294 @@ func (s *DeleteSheetRequest) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// DeveloperMetadata: Developer metadata associated with a location or
+// object in a spreadsheet.
+// Developer metadata may be used to associate arbitrary data with
+// various
+// parts of a spreadsheet and will remain associated at those locations
+// as they
+// move around and the spreadsheet is edited.  For example, if
+// developer
+// metadata is associated with row 5 and another row is then
+// subsequently
+// inserted above row 5, that original metadata will still be associated
+// with
+// the row it was first associated with (what is now row 6). If the
+// associated
+// object is deleted its metadata will be deleted too.
+type DeveloperMetadata struct {
+	// Location: The location where the metadata is associated.
+	Location *DeveloperMetadataLocation `json:"location,omitempty"`
+
+	// MetadataId: The spreadsheet-scoped unique ID that identifies the
+	// metadata. IDs may be
+	// specified when metadata is created, otherwise one will be
+	// randomly
+	// generated and assigned. Must be positive.
+	MetadataId int64 `json:"metadataId,omitempty"`
+
+	// MetadataKey: The metadata key. There may be multiple metadata in a
+	// spreadsheet with the
+	// same key.  Developer metadata must always have a key specified.
+	MetadataKey string `json:"metadataKey,omitempty"`
+
+	// MetadataValue: Data associated with the metadata's key.
+	MetadataValue string `json:"metadataValue,omitempty"`
+
+	// Visibility: The metadata visibility.  Developer metadata must always
+	// have a visibility
+	// specified.
+	//
+	// Possible values:
+	//   "DEVELOPER_METADATA_VISIBILITY_UNSPECIFIED" - Default value.
+	//   "DOCUMENT" - Document-visible metadata is accessible from any
+	// developer project with
+	// access to the document.
+	//   "PROJECT" - Project-visible metadata is only visible to and
+	// accessible by the developer
+	// project that created the metadata.
+	Visibility string `json:"visibility,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Location") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Location") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *DeveloperMetadata) MarshalJSON() ([]byte, error) {
+	type noMethod DeveloperMetadata
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// DeveloperMetadataLocation: A location where metadata may be
+// associated in a spreadsheet.
+type DeveloperMetadataLocation struct {
+	// DimensionRange: Represents the row or column when metadata is
+	// associated with
+	// a dimension. The specified DimensionRange must represent a single
+	// row
+	// or column; it cannot be unbounded or span multiple rows or columns.
+	DimensionRange *DimensionRange `json:"dimensionRange,omitempty"`
+
+	// LocationType: The type of location this object represents.  This
+	// field is read-only.
+	//
+	// Possible values:
+	//   "DEVELOPER_METADATA_LOCATION_TYPE_UNSPECIFIED" - Default value.
+	//   "ROW" - Developer metadata associated on an entire row dimension.
+	//   "COLUMN" - Developer metadata associated on an entire column
+	// dimension.
+	//   "SHEET" - Developer metadata associated on an entire sheet.
+	//   "SPREADSHEET" - Developer metadata associated on the entire
+	// spreadsheet.
+	LocationType string `json:"locationType,omitempty"`
+
+	// SheetId: The ID of the sheet when metadata is associated with an
+	// entire sheet.
+	SheetId int64 `json:"sheetId,omitempty"`
+
+	// Spreadsheet: True when metadata is associated with an entire
+	// spreadsheet.
+	Spreadsheet bool `json:"spreadsheet,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DimensionRange") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DimensionRange") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *DeveloperMetadataLocation) MarshalJSON() ([]byte, error) {
+	type noMethod DeveloperMetadataLocation
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// DeveloperMetadataLookup: Selects DeveloperMetadata that matches all
+// of the specified fields.  For
+// example, if only a metadata ID is specified this considers
+// the
+// DeveloperMetadata with that particular unique ID. If a metadata key
+// is
+// specified, this considers all developer metadata with that key.  If
+// a
+// key, visibility, and location type are all specified, this considers
+// all
+// developer metadata with that key and visibility that are associated
+// with a
+// location of that type.  In general, this
+// selects all DeveloperMetadata that matches the intersection of all
+// the
+// specified fields; any field or combination of fields may be
+// specified.
+type DeveloperMetadataLookup struct {
+	// LocationMatchingStrategy: Determines how this lookup matches the
+	// location.  If this field is
+	// specified as EXACT, only developer metadata associated on the
+	// exact
+	// location specified is matched.  If this field is specified to
+	// INTERSECTING,
+	// developer metadata associated on intersecting locations is
+	// also
+	// matched.  If left unspecified, this field assumes a default value
+	// of
+	// INTERSECTING.
+	// If this field is specified, a metadataLocation
+	// must also be specified.
+	//
+	// Possible values:
+	//   "DEVELOPER_METADATA_LOCATION_MATCHING_STRATEGY_UNSPECIFIED" -
+	// Default value. This value must not be used.
+	//   "EXACT_LOCATION" - Indicates that a specified location should be
+	// matched exactly.  For
+	// example, if row three were specified as a location this matching
+	// strategy
+	// would only match developer metadata also associated on row three.
+	// Metadata
+	// associated on other locations would not be considered.
+	//   "INTERSECTING_LOCATION" - Indicates that a specified location
+	// should match that exact location as
+	// well as any intersecting locations.  For example, if row three
+	// were
+	// specified as a location this matching strategy would match
+	// developer
+	// metadata associated on row three as well as metadata associated
+	// on
+	// locations that intersect row three.  If, for instance, there was
+	// developer
+	// metadata associated on column B, this matching strategy would also
+	// match
+	// that location because column B intersects row three.
+	LocationMatchingStrategy string `json:"locationMatchingStrategy,omitempty"`
+
+	// LocationType: Limits the selected developer metadata to those entries
+	// which are
+	// associated with locations of the specified type.  For example, when
+	// this
+	// field is specified as ROW this lookup
+	// only considers developer metadata associated on rows.  If the field
+	// is left
+	// unspecified, all location types are considered.  This field cannot
+	// be
+	// specified as SPREADSHEET when
+	// the locationMatchingStrategy
+	// is specified as INTERSECTING or when the
+	// metadataLocation is specified as a
+	// non-spreadsheet location: spreadsheet metadata cannot intersect any
+	// other
+	// developer metadata location.  This field also must be left
+	// unspecified when
+	// the locationMatchingStrategy
+	// is specified as EXACT.
+	//
+	// Possible values:
+	//   "DEVELOPER_METADATA_LOCATION_TYPE_UNSPECIFIED" - Default value.
+	//   "ROW" - Developer metadata associated on an entire row dimension.
+	//   "COLUMN" - Developer metadata associated on an entire column
+	// dimension.
+	//   "SHEET" - Developer metadata associated on an entire sheet.
+	//   "SPREADSHEET" - Developer metadata associated on the entire
+	// spreadsheet.
+	LocationType string `json:"locationType,omitempty"`
+
+	// MetadataId: Limits the selected developer metadata to that which has
+	// a matching
+	// DeveloperMetadata.metadata_id.
+	MetadataId int64 `json:"metadataId,omitempty"`
+
+	// MetadataKey: Limits the selected developer metadata to that which has
+	// a matching
+	// DeveloperMetadata.metadata_key.
+	MetadataKey string `json:"metadataKey,omitempty"`
+
+	// MetadataLocation: Limits the selected developer metadata to those
+	// entries associated with
+	// the specified location.  This field either matches exact locations or
+	// all
+	// intersecting locations according the
+	// specified
+	// locationMatchingStrategy.
+	MetadataLocation *DeveloperMetadataLocation `json:"metadataLocation,omitempty"`
+
+	// MetadataValue: Limits the selected developer metadata to that which
+	// has a matching
+	// DeveloperMetadata.metadata_value.
+	MetadataValue string `json:"metadataValue,omitempty"`
+
+	// Visibility: Limits the selected developer metadata to that which has
+	// a matching
+	// DeveloperMetadata.visibility.  If left unspecified, all
+	// developer
+	// metadata visibile to the requesting project is considered.
+	//
+	// Possible values:
+	//   "DEVELOPER_METADATA_VISIBILITY_UNSPECIFIED" - Default value.
+	//   "DOCUMENT" - Document-visible metadata is accessible from any
+	// developer project with
+	// access to the document.
+	//   "PROJECT" - Project-visible metadata is only visible to and
+	// accessible by the developer
+	// project that created the metadata.
+	Visibility string `json:"visibility,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "LocationMatchingStrategy") to unconditionally include in API
+	// requests. By default, fields with empty values are omitted from API
+	// requests. However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "LocationMatchingStrategy")
+	// to include in API requests with the JSON null value. By default,
+	// fields with empty values are omitted from API requests. However, any
+	// field with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *DeveloperMetadataLookup) MarshalJSON() ([]byte, error) {
+	type noMethod DeveloperMetadataLookup
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // DimensionProperties: Properties about a dimension.
 type DimensionProperties struct {
+	// DeveloperMetadata: The developer metadata associated with a single
+	// row or column.
+	DeveloperMetadata []*DeveloperMetadata `json:"developerMetadata,omitempty"`
+
 	// HiddenByFilter: True if this dimension is being filtered.
 	// This field is read-only.
 	HiddenByFilter bool `json:"hiddenByFilter,omitempty"`
@@ -2988,15 +4261,15 @@ type DimensionProperties struct {
 	// dimension in pixels.
 	PixelSize int64 `json:"pixelSize,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "HiddenByFilter") to
-	// unconditionally include in API requests. By default, fields with
+	// ForceSendFields is a list of field names (e.g. "DeveloperMetadata")
+	// to unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
 	// server regardless of whether the field is empty or not. This may be
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "HiddenByFilter") to
+	// NullFields is a list of field names (e.g. "DeveloperMetadata") to
 	// include in API requests with the JSON null value. By default, fields
 	// with empty values are omitted from API requests. However, any field
 	// with an empty value appearing in NullFields will be sent to the
@@ -3610,6 +4883,41 @@ func (s *FindReplaceResponse) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// GetSpreadsheetByDataFilterRequest: The request for retrieving a
+// Spreadsheet.
+type GetSpreadsheetByDataFilterRequest struct {
+	// DataFilters: The DataFilters used to select which ranges to retrieve
+	// from
+	// the spreadsheet.
+	DataFilters []*DataFilter `json:"dataFilters,omitempty"`
+
+	// IncludeGridData: True if grid data should be returned.
+	// This parameter is ignored if a field mask was set in the request.
+	IncludeGridData bool `json:"includeGridData,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DataFilters") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DataFilters") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GetSpreadsheetByDataFilterRequest) MarshalJSON() ([]byte, error) {
+	type noMethod GetSpreadsheetByDataFilterRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // GradientRule: A rule that applies a gradient color scale format,
 // based on
 // the interpolation points listed. The format of a cell will vary
@@ -3848,6 +5156,140 @@ func (s *GridRange) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// HistogramChartSpec: A <a
+// href="/chart/interactive/docs/gallery/histogram">histogram
+// chart</a>.
+// A histogram chart groups data items into bins, displaying each bin as
+// a
+// column of stacked items.  Histograms are used to display the
+// distribution
+// of a dataset.  Each column of items represents a range into which
+// those
+// items fall.  The number of bins can be chosen automatically or
+// specified
+// explicitly.
+type HistogramChartSpec struct {
+	// BucketSize: By default the bucket size (the range of values stacked
+	// in a single
+	// column) is chosen automatically, but it may be overridden here.
+	// E.g., A bucket size of 1.5 results in buckets from 0 - 1.5, 1.5 -
+	// 3.0, etc.
+	// Cannot be negative.
+	// This field is optional.
+	BucketSize float64 `json:"bucketSize,omitempty"`
+
+	// LegendPosition: The position of the chart legend.
+	//
+	// Possible values:
+	//   "HISTOGRAM_CHART_LEGEND_POSITION_UNSPECIFIED" - Default value, do
+	// not use.
+	//   "BOTTOM_LEGEND" - The legend is rendered on the bottom of the
+	// chart.
+	//   "LEFT_LEGEND" - The legend is rendered on the left of the chart.
+	//   "RIGHT_LEGEND" - The legend is rendered on the right of the chart.
+	//   "TOP_LEGEND" - The legend is rendered on the top of the chart.
+	//   "NO_LEGEND" - No legend is rendered.
+	//   "INSIDE_LEGEND" - The legend is rendered inside the chart area.
+	LegendPosition string `json:"legendPosition,omitempty"`
+
+	// OutlierPercentile: The outlier percentile is used to ensure that
+	// outliers do not adversely
+	// affect the calculation of bucket sizes.  For example, setting an
+	// outlier
+	// percentile of 0.05 indicates that the top and bottom 5% of values
+	// when
+	// calculating buckets.  The values are still included in the chart,
+	// they will
+	// be added to the first or last buckets instead of their own
+	// buckets.
+	// Must be between 0.0 and 0.5.
+	OutlierPercentile float64 `json:"outlierPercentile,omitempty"`
+
+	// Series: The series for a histogram may be either a single series of
+	// values to be
+	// bucketed or multiple series, each of the same length, containing the
+	// name
+	// of the series followed by the values to be bucketed for that series.
+	Series []*HistogramSeries `json:"series,omitempty"`
+
+	// ShowItemDividers: Whether horizontal divider lines should be
+	// displayed between items in each
+	// column.
+	ShowItemDividers bool `json:"showItemDividers,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "BucketSize") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "BucketSize") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *HistogramChartSpec) MarshalJSON() ([]byte, error) {
+	type noMethod HistogramChartSpec
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+func (s *HistogramChartSpec) UnmarshalJSON(data []byte) error {
+	type noMethod HistogramChartSpec
+	var s1 struct {
+		BucketSize        gensupport.JSONFloat64 `json:"bucketSize"`
+		OutlierPercentile gensupport.JSONFloat64 `json:"outlierPercentile"`
+		*noMethod
+	}
+	s1.noMethod = (*noMethod)(s)
+	if err := json.Unmarshal(data, &s1); err != nil {
+		return err
+	}
+	s.BucketSize = float64(s1.BucketSize)
+	s.OutlierPercentile = float64(s1.OutlierPercentile)
+	return nil
+}
+
+// HistogramSeries: A histogram series containing the series color and
+// data.
+type HistogramSeries struct {
+	// BarColor: The color of the column representing this series in each
+	// bucket.
+	// This field is optional.
+	BarColor *Color `json:"barColor,omitempty"`
+
+	// Data: The data for this histogram series.
+	Data *ChartData `json:"data,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "BarColor") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "BarColor") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *HistogramSeries) MarshalJSON() ([]byte, error) {
+	type noMethod HistogramSeries
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // InsertDimensionRequest: Inserts rows or columns in a sheet at a
 // particular index.
 type InsertDimensionRequest struct {
@@ -4007,6 +5449,127 @@ func (s *InterpolationPoint) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// IterativeCalculationSettings: Settings to control how circular
+// dependencies are resolved with iterative
+// calculation.
+type IterativeCalculationSettings struct {
+	// ConvergenceThreshold: When iterative calculation is enabled and
+	// successive results differ by
+	// less than this threshold value, the calculation rounds stop.
+	ConvergenceThreshold float64 `json:"convergenceThreshold,omitempty"`
+
+	// MaxIterations: When iterative calculation is enabled, the maximum
+	// number of calculation
+	// rounds to perform.
+	MaxIterations int64 `json:"maxIterations,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "ConvergenceThreshold") to unconditionally include in API requests.
+	// By default, fields with empty values are omitted from API requests.
+	// However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ConvergenceThreshold") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *IterativeCalculationSettings) MarshalJSON() ([]byte, error) {
+	type noMethod IterativeCalculationSettings
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+func (s *IterativeCalculationSettings) UnmarshalJSON(data []byte) error {
+	type noMethod IterativeCalculationSettings
+	var s1 struct {
+		ConvergenceThreshold gensupport.JSONFloat64 `json:"convergenceThreshold"`
+		*noMethod
+	}
+	s1.noMethod = (*noMethod)(s)
+	if err := json.Unmarshal(data, &s1); err != nil {
+		return err
+	}
+	s.ConvergenceThreshold = float64(s1.ConvergenceThreshold)
+	return nil
+}
+
+// MatchedDeveloperMetadata: A developer metadata entry and the data
+// filters specified in the original
+// request that matched it.
+type MatchedDeveloperMetadata struct {
+	// DataFilters: All filters matching the returned developer metadata.
+	DataFilters []*DataFilter `json:"dataFilters,omitempty"`
+
+	// DeveloperMetadata: The developer metadata matching the specified
+	// filters.
+	DeveloperMetadata *DeveloperMetadata `json:"developerMetadata,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DataFilters") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DataFilters") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *MatchedDeveloperMetadata) MarshalJSON() ([]byte, error) {
+	type noMethod MatchedDeveloperMetadata
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// MatchedValueRange: A value range that was matched by one or more data
+// filers.
+type MatchedValueRange struct {
+	// DataFilters: The DataFilters from the request that matched the range
+	// of
+	// values.
+	DataFilters []*DataFilter `json:"dataFilters,omitempty"`
+
+	// ValueRange: The values matched by the DataFilter.
+	ValueRange *ValueRange `json:"valueRange,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DataFilters") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DataFilters") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *MatchedValueRange) MarshalJSON() ([]byte, error) {
+	type noMethod MatchedValueRange
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // MergeCellsRequest: Merges all cells in the range.
 type MergeCellsRequest struct {
 	// MergeType: How the cells should be merged.
@@ -4129,8 +5692,8 @@ type NumberFormat struct {
 	// Pattern: Pattern string used for formatting.  If not set, a default
 	// pattern based on
 	// the user's locale will be used if necessary for the given type.
-	// See the [Date and Number Formats guide](/sheets/guides/formats) for
-	// more
+	// See the [Date and Number Formats guide](/sheets/api/guides/formats)
+	// for more
 	// information about the supported patterns.
 	Pattern string `json:"pattern,omitempty"`
 
@@ -4171,6 +5734,81 @@ type NumberFormat struct {
 
 func (s *NumberFormat) MarshalJSON() ([]byte, error) {
 	type noMethod NumberFormat
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// OrgChartSpec: An <a
+// href="/chart/interactive/docs/gallery/orgchart">org chart</a>.
+// Org charts require a unique set of labels in labels and
+// may
+// optionally include parent_labels and tooltips.
+// parent_labels contain, for each node, the label identifying the
+// parent
+// node.  tooltips contain, for each node, an optional tooltip.
+//
+// For example, to describe an OrgChart with Alice as the CEO, Bob as
+// the
+// President (reporting to Alice) and Cathy as VP of Sales (also
+// reporting to
+// Alice), have labels contain "Alice", "Bob", "Cathy",
+// parent_labels contain "", "Alice", "Alice" and tooltips
+// contain
+// "CEO", "President", "VP Sales".
+type OrgChartSpec struct {
+	// Labels: The data containing the labels for all the nodes in the
+	// chart.  Labels
+	// must be unique.
+	Labels *ChartData `json:"labels,omitempty"`
+
+	// NodeColor: The color of the org chart nodes.
+	NodeColor *Color `json:"nodeColor,omitempty"`
+
+	// NodeSize: The size of the org chart nodes.
+	//
+	// Possible values:
+	//   "ORG_CHART_LABEL_SIZE_UNSPECIFIED" - Default value, do not use.
+	//   "SMALL" - The small org chart node size.
+	//   "MEDIUM" - The medium org chart node size.
+	//   "LARGE" - The large org chart node size.
+	NodeSize string `json:"nodeSize,omitempty"`
+
+	// ParentLabels: The data containing the label of the parent for the
+	// corresponding node.
+	// A blank value indicates that the node has no parent and is a
+	// top-level
+	// node.
+	// This field is optional.
+	ParentLabels *ChartData `json:"parentLabels,omitempty"`
+
+	// SelectedNodeColor: The color of the selected org chart nodes.
+	SelectedNodeColor *Color `json:"selectedNodeColor,omitempty"`
+
+	// Tooltips: The data containing the tooltip for the corresponding node.
+	//  A blank value
+	// results in no tooltip being displayed for the node.
+	// This field is optional.
+	Tooltips *ChartData `json:"tooltips,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Labels") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Labels") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *OrgChartSpec) MarshalJSON() ([]byte, error) {
+	type noMethod OrgChartSpec
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -4611,9 +6249,7 @@ type PivotValue struct {
 	// with an `=` character.
 	Formula string `json:"formula,omitempty"`
 
-	// Name: A name to use for the value. This is only used if formula was
-	// set.
-	// Otherwise, the column name is used.
+	// Name: A name to use for the value.
 	Name string `json:"name,omitempty"`
 
 	// SourceColumnOffset: The column offset of the source range that this
@@ -4758,6 +6394,34 @@ func (s *ProtectedRange) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// RandomizeRangeRequest: Randomizes the order of the rows in a range.
+type RandomizeRangeRequest struct {
+	// Range: The range to randomize.
+	Range *GridRange `json:"range,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Range") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Range") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *RandomizeRangeRequest) MarshalJSON() ([]byte, error) {
+	type noMethod RandomizeRangeRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // RepeatCellRequest: Updates all cells in the range to the values in
 // the given Cell object.
 // Only the fields listed in the fields field are updated; others
@@ -4855,6 +6519,9 @@ type Request struct {
 	// CopyPaste: Copies data from one area and pastes it to another.
 	CopyPaste *CopyPasteRequest `json:"copyPaste,omitempty"`
 
+	// CreateDeveloperMetadata: Creates new developer metadata
+	CreateDeveloperMetadata *CreateDeveloperMetadataRequest `json:"createDeveloperMetadata,omitempty"`
+
 	// CutPaste: Cuts data from one area and pastes it to another.
 	CutPaste *CutPasteRequest `json:"cutPaste,omitempty"`
 
@@ -4864,6 +6531,9 @@ type Request struct {
 	// DeleteConditionalFormatRule: Deletes an existing conditional format
 	// rule.
 	DeleteConditionalFormatRule *DeleteConditionalFormatRuleRequest `json:"deleteConditionalFormatRule,omitempty"`
+
+	// DeleteDeveloperMetadata: Deletes developer metadata
+	DeleteDeveloperMetadata *DeleteDeveloperMetadataRequest `json:"deleteDeveloperMetadata,omitempty"`
 
 	// DeleteDimension: Deletes rows or columns in a sheet.
 	DeleteDimension *DeleteDimensionRequest `json:"deleteDimension,omitempty"`
@@ -4914,6 +6584,9 @@ type Request struct {
 	// PasteData: Pastes data (HTML or delimited) into a sheet.
 	PasteData *PasteDataRequest `json:"pasteData,omitempty"`
 
+	// RandomizeRange: Randomizes the order of the rows in a range.
+	RandomizeRange *RandomizeRangeRequest `json:"randomizeRange,omitempty"`
+
 	// RepeatCell: Repeats a single cell across a range.
 	RepeatCell *RepeatCellRequest `json:"repeatCell,omitempty"`
 
@@ -4947,6 +6620,9 @@ type Request struct {
 	// UpdateConditionalFormatRule: Updates an existing conditional format
 	// rule.
 	UpdateConditionalFormatRule *UpdateConditionalFormatRuleRequest `json:"updateConditionalFormatRule,omitempty"`
+
+	// UpdateDeveloperMetadata: Updates an existing developer metadata entry
+	UpdateDeveloperMetadata *UpdateDeveloperMetadataRequest `json:"updateDeveloperMetadata,omitempty"`
 
 	// UpdateDimensionProperties: Updates dimensions' properties.
 	UpdateDimensionProperties *UpdateDimensionPropertiesRequest `json:"updateDimensionProperties,omitempty"`
@@ -5013,9 +6689,17 @@ type Response struct {
 	// AddSheet: A reply from adding a sheet.
 	AddSheet *AddSheetResponse `json:"addSheet,omitempty"`
 
+	// CreateDeveloperMetadata: A reply from creating a developer metadata
+	// entry.
+	CreateDeveloperMetadata *CreateDeveloperMetadataResponse `json:"createDeveloperMetadata,omitempty"`
+
 	// DeleteConditionalFormatRule: A reply from deleting a conditional
 	// format rule.
 	DeleteConditionalFormatRule *DeleteConditionalFormatRuleResponse `json:"deleteConditionalFormatRule,omitempty"`
+
+	// DeleteDeveloperMetadata: A reply from deleting a developer metadata
+	// entry.
+	DeleteDeveloperMetadata *DeleteDeveloperMetadataResponse `json:"deleteDeveloperMetadata,omitempty"`
 
 	// DuplicateFilterView: A reply from duplicating a filter view.
 	DuplicateFilterView *DuplicateFilterViewResponse `json:"duplicateFilterView,omitempty"`
@@ -5029,6 +6713,10 @@ type Response struct {
 	// UpdateConditionalFormatRule: A reply from updating a conditional
 	// format rule.
 	UpdateConditionalFormatRule *UpdateConditionalFormatRuleResponse `json:"updateConditionalFormatRule,omitempty"`
+
+	// UpdateDeveloperMetadata: A reply from updating a developer metadata
+	// entry.
+	UpdateDeveloperMetadata *UpdateDeveloperMetadataResponse `json:"updateDeveloperMetadata,omitempty"`
 
 	// UpdateEmbeddedObjectPosition: A reply from updating an embedded
 	// object's position.
@@ -5081,6 +6769,76 @@ type RowData struct {
 
 func (s *RowData) MarshalJSON() ([]byte, error) {
 	type noMethod RowData
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// SearchDeveloperMetadataRequest: A request to retrieve all developer
+// metadata matching the set of specified
+// criteria.
+type SearchDeveloperMetadataRequest struct {
+	// DataFilters: The data filters describing the criteria used to
+	// determine which
+	// DeveloperMetadata entries to return.  DeveloperMetadata matching any
+	// of the
+	// specified filters will be included in the response.
+	DataFilters []*DataFilter `json:"dataFilters,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DataFilters") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DataFilters") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *SearchDeveloperMetadataRequest) MarshalJSON() ([]byte, error) {
+	type noMethod SearchDeveloperMetadataRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// SearchDeveloperMetadataResponse: A reply to a developer metadata
+// search request.
+type SearchDeveloperMetadataResponse struct {
+	// MatchedDeveloperMetadata: The metadata matching the criteria of the
+	// search request.
+	MatchedDeveloperMetadata []*MatchedDeveloperMetadata `json:"matchedDeveloperMetadata,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "MatchedDeveloperMetadata") to unconditionally include in API
+	// requests. By default, fields with empty values are omitted from API
+	// requests. However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "MatchedDeveloperMetadata")
+	// to include in API requests with the JSON null value. By default,
+	// fields with empty values are omitted from API requests. However, any
+	// field with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *SearchDeveloperMetadataResponse) MarshalJSON() ([]byte, error) {
+	type noMethod SearchDeveloperMetadataResponse
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -5175,6 +6933,9 @@ type Sheet struct {
 	// while the second one will have `startRow 14` (zero-based row 15),
 	// and `startColumn 3` (zero-based column D).
 	Data []*GridData `json:"data,omitempty"`
+
+	// DeveloperMetadata: The developer metadata associated with a sheet.
+	DeveloperMetadata []*DeveloperMetadata `json:"developerMetadata,omitempty"`
 
 	// FilterViews: The filter views in this sheet.
 	FilterViews []*FilterView `json:"filterViews,omitempty"`
@@ -5409,6 +7170,10 @@ func (s *SourceAndDestination) MarshalJSON() ([]byte, error) {
 
 // Spreadsheet: Resource that represents a spreadsheet.
 type Spreadsheet struct {
+	// DeveloperMetadata: The developer metadata associated with a
+	// spreadsheet.
+	DeveloperMetadata []*DeveloperMetadata `json:"developerMetadata,omitempty"`
+
 	// NamedRanges: The named ranges defined in a spreadsheet.
 	NamedRanges []*NamedRange `json:"namedRanges,omitempty"`
 
@@ -5430,20 +7195,21 @@ type Spreadsheet struct {
 	// server.
 	googleapi.ServerResponse `json:"-"`
 
-	// ForceSendFields is a list of field names (e.g. "NamedRanges") to
-	// unconditionally include in API requests. By default, fields with
+	// ForceSendFields is a list of field names (e.g. "DeveloperMetadata")
+	// to unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
 	// server regardless of whether the field is empty or not. This may be
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "NamedRanges") to include
-	// in API requests with the JSON null value. By default, fields with
-	// empty values are omitted from API requests. However, any field with
-	// an empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
+	// NullFields is a list of field names (e.g. "DeveloperMetadata") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
 	NullFields []string `json:"-"`
 }
 
@@ -5473,6 +7239,13 @@ type SpreadsheetProperties struct {
 	// cell's format is equal to this default format.
 	// This field is read-only.
 	DefaultFormat *CellFormat `json:"defaultFormat,omitempty"`
+
+	// IterativeCalculationSettings: Determines whether and how circular
+	// references are resolved with iterative
+	// calculation.  Absence of this field means that circular references
+	// will
+	// result in calculation errors.
+	IterativeCalculationSettings *IterativeCalculationSettings `json:"iterativeCalculationSettings,omitempty"`
 
 	// Locale: The locale of the spreadsheet in one of the following
 	// formats:
@@ -5599,6 +7372,95 @@ type TextFormatRun struct {
 
 func (s *TextFormatRun) MarshalJSON() ([]byte, error) {
 	type noMethod TextFormatRun
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// TextPosition: Position settings for text.
+type TextPosition struct {
+	// HorizontalAlignment: Horizontal alignment setting for the piece of
+	// text.
+	//
+	// Possible values:
+	//   "HORIZONTAL_ALIGN_UNSPECIFIED" - The horizontal alignment is not
+	// specified. Do not use this.
+	//   "LEFT" - The text is explicitly aligned to the left of the cell.
+	//   "CENTER" - The text is explicitly aligned to the center of the
+	// cell.
+	//   "RIGHT" - The text is explicitly aligned to the right of the cell.
+	HorizontalAlignment string `json:"horizontalAlignment,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "HorizontalAlignment")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "HorizontalAlignment") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *TextPosition) MarshalJSON() ([]byte, error) {
+	type noMethod TextPosition
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// TextRotation: The rotation applied to text in a cell.
+type TextRotation struct {
+	// Angle: The angle between the standard orientation and the desired
+	// orientation.
+	// Measured in degrees. Valid values are between -90 and 90.
+	// Positive
+	// angles are angled upwards, negative are angled downwards.
+	//
+	// Note: For LTR text direction positive angles are in the
+	// counterclockwise
+	// direction, whereas for RTL they are in the clockwise direction
+	Angle int64 `json:"angle,omitempty"`
+
+	// Vertical: If true, text reads top to bottom, but the orientation of
+	// individual
+	// characters is unchanged.
+	// For example:
+	//
+	//     | V |
+	//     | e |
+	//     | r |
+	//     | t |
+	//     | i |
+	//     | c |
+	//     | a |
+	//     | l |
+	Vertical bool `json:"vertical,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Angle") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Angle") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *TextRotation) MarshalJSON() ([]byte, error) {
+	type noMethod TextRotation
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -5936,6 +7798,86 @@ func (s *UpdateConditionalFormatRuleResponse) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// UpdateDeveloperMetadataRequest: A request to update properties of
+// developer metadata.
+// Updates the properties of the developer metadata selected by the
+// filters to
+// the values provided in the DeveloperMetadata resource.  Callers
+// must
+// specify the properties they wish to update in the fields parameter,
+// as well
+// as specify at least one DataFilter matching the metadata they wish
+// to
+// update.
+type UpdateDeveloperMetadataRequest struct {
+	// DataFilters: The filters matching the developer metadata entries to
+	// update.
+	DataFilters []*DataFilter `json:"dataFilters,omitempty"`
+
+	// DeveloperMetadata: The value that all metadata matched by the data
+	// filters will be updated to.
+	DeveloperMetadata *DeveloperMetadata `json:"developerMetadata,omitempty"`
+
+	// Fields: The fields that should be updated.  At least one field must
+	// be specified.
+	// The root `developerMetadata` is implied and should not be
+	// specified.
+	// A single "*" can be used as short-hand for listing every field.
+	Fields string `json:"fields,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DataFilters") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DataFilters") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *UpdateDeveloperMetadataRequest) MarshalJSON() ([]byte, error) {
+	type noMethod UpdateDeveloperMetadataRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// UpdateDeveloperMetadataResponse: The response from updating developer
+// metadata.
+type UpdateDeveloperMetadataResponse struct {
+	// DeveloperMetadata: The updated developer metadata.
+	DeveloperMetadata []*DeveloperMetadata `json:"developerMetadata,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DeveloperMetadata")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DeveloperMetadata") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *UpdateDeveloperMetadataResponse) MarshalJSON() ([]byte, error) {
+	type noMethod UpdateDeveloperMetadataResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // UpdateDimensionPropertiesRequest: Updates properties of dimensions
 // within the specified range.
 type UpdateDimensionPropertiesRequest struct {
@@ -6229,6 +8171,58 @@ func (s *UpdateSpreadsheetPropertiesRequest) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// UpdateValuesByDataFilterResponse: The response when updating a range
+// of values by a data filter in a
+// spreadsheet.
+type UpdateValuesByDataFilterResponse struct {
+	// DataFilter: The data filter that selected the range that was updated.
+	DataFilter *DataFilter `json:"dataFilter,omitempty"`
+
+	// UpdatedCells: The number of cells updated.
+	UpdatedCells int64 `json:"updatedCells,omitempty"`
+
+	// UpdatedColumns: The number of columns where at least one cell in the
+	// column was updated.
+	UpdatedColumns int64 `json:"updatedColumns,omitempty"`
+
+	// UpdatedData: The values of the cells in the range matched by the
+	// dataFilter after all
+	// updates were applied. This is only included if the
+	// request's
+	// `includeValuesInResponse` field was `true`.
+	UpdatedData *ValueRange `json:"updatedData,omitempty"`
+
+	// UpdatedRange: The range (in A1 notation) that updates were applied
+	// to.
+	UpdatedRange string `json:"updatedRange,omitempty"`
+
+	// UpdatedRows: The number of rows where at least one cell in the row
+	// was updated.
+	UpdatedRows int64 `json:"updatedRows,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DataFilter") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DataFilter") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *UpdateValuesByDataFilterResponse) MarshalJSON() ([]byte, error) {
+	type noMethod UpdateValuesByDataFilterResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // UpdateValuesResponse: The response when updating a range of values in
 // a spreadsheet.
 type UpdateValuesResponse struct {
@@ -6439,7 +8433,6 @@ func (c *SpreadsheetsBatchUpdateCall) doRequest(alt string) (*http.Response, err
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.batchupdatespreadsheetrequest)
 	if err != nil {
@@ -6519,6 +8512,7 @@ func (c *SpreadsheetsBatchUpdateCall) Do(opts ...googleapi.CallOption) (*BatchUp
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
 	//     "https://www.googleapis.com/auth/spreadsheets"
 	//   ]
 	// }
@@ -6574,7 +8568,6 @@ func (c *SpreadsheetsCreateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.spreadsheet)
 	if err != nil {
@@ -6642,6 +8635,7 @@ func (c *SpreadsheetsCreateCall) Do(opts ...googleapi.CallOption) (*Spreadsheet,
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
 	//     "https://www.googleapis.com/auth/spreadsheets"
 	//   ]
 	// }
@@ -6746,7 +8740,6 @@ func (c *SpreadsheetsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -6832,9 +8825,472 @@ func (c *SpreadsheetsGetCall) Do(opts ...googleapi.CallOption) (*Spreadsheet, er
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
 	//     "https://www.googleapis.com/auth/drive.readonly",
 	//     "https://www.googleapis.com/auth/spreadsheets",
 	//     "https://www.googleapis.com/auth/spreadsheets.readonly"
+	//   ]
+	// }
+
+}
+
+// method id "sheets.spreadsheets.getByDataFilter":
+
+type SpreadsheetsGetByDataFilterCall struct {
+	s                                 *Service
+	spreadsheetId                     string
+	getspreadsheetbydatafilterrequest *GetSpreadsheetByDataFilterRequest
+	urlParams_                        gensupport.URLParams
+	ctx_                              context.Context
+	header_                           http.Header
+}
+
+// GetByDataFilter: Returns the spreadsheet at the given ID.
+// The caller must specify the spreadsheet ID.
+//
+// This method differs from GetSpreadsheet in that it allows
+// selecting
+// which subsets of spreadsheet data to return by specifying
+// a
+// dataFilters parameter.
+// Multiple DataFilters can be specified.  Specifying one or
+// more data filters will return the portions of the spreadsheet
+// that
+// intersect ranges matched by any of the filters.
+//
+// By default, data within grids will not be returned.
+// You can include grid data one of two ways:
+//
+// * Specify a field mask listing your desired fields using the `fields`
+// URL
+// parameter in HTTP
+//
+// * Set the includeGridData
+// parameter to true.  If a field mask is set, the
+// `includeGridData`
+// parameter is ignored
+//
+// For large spreadsheets, it is recommended to retrieve only the
+// specific
+// fields of the spreadsheet that you want.
+func (r *SpreadsheetsService) GetByDataFilter(spreadsheetId string, getspreadsheetbydatafilterrequest *GetSpreadsheetByDataFilterRequest) *SpreadsheetsGetByDataFilterCall {
+	c := &SpreadsheetsGetByDataFilterCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.spreadsheetId = spreadsheetId
+	c.getspreadsheetbydatafilterrequest = getspreadsheetbydatafilterrequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *SpreadsheetsGetByDataFilterCall) Fields(s ...googleapi.Field) *SpreadsheetsGetByDataFilterCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SpreadsheetsGetByDataFilterCall) Context(ctx context.Context) *SpreadsheetsGetByDataFilterCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *SpreadsheetsGetByDataFilterCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *SpreadsheetsGetByDataFilterCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.getspreadsheetbydatafilterrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v4/spreadsheets/{spreadsheetId}:getByDataFilter")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"spreadsheetId": c.spreadsheetId,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "sheets.spreadsheets.getByDataFilter" call.
+// Exactly one of *Spreadsheet or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *Spreadsheet.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *SpreadsheetsGetByDataFilterCall) Do(opts ...googleapi.CallOption) (*Spreadsheet, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Spreadsheet{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Returns the spreadsheet at the given ID.\nThe caller must specify the spreadsheet ID.\n\nThis method differs from GetSpreadsheet in that it allows selecting\nwhich subsets of spreadsheet data to return by specifying a\ndataFilters parameter.\nMultiple DataFilters can be specified.  Specifying one or\nmore data filters will return the portions of the spreadsheet that\nintersect ranges matched by any of the filters.\n\nBy default, data within grids will not be returned.\nYou can include grid data one of two ways:\n\n* Specify a field mask listing your desired fields using the `fields` URL\nparameter in HTTP\n\n* Set the includeGridData\nparameter to true.  If a field mask is set, the `includeGridData`\nparameter is ignored\n\nFor large spreadsheets, it is recommended to retrieve only the specific\nfields of the spreadsheet that you want.",
+	//   "flatPath": "v4/spreadsheets/{spreadsheetId}:getByDataFilter",
+	//   "httpMethod": "POST",
+	//   "id": "sheets.spreadsheets.getByDataFilter",
+	//   "parameterOrder": [
+	//     "spreadsheetId"
+	//   ],
+	//   "parameters": {
+	//     "spreadsheetId": {
+	//       "description": "The spreadsheet to request.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v4/spreadsheets/{spreadsheetId}:getByDataFilter",
+	//   "request": {
+	//     "$ref": "GetSpreadsheetByDataFilterRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "Spreadsheet"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/spreadsheets"
+	//   ]
+	// }
+
+}
+
+// method id "sheets.spreadsheets.developerMetadata.get":
+
+type SpreadsheetsDeveloperMetadataGetCall struct {
+	s             *Service
+	spreadsheetId string
+	metadataId    int64
+	urlParams_    gensupport.URLParams
+	ifNoneMatch_  string
+	ctx_          context.Context
+	header_       http.Header
+}
+
+// Get: Returns the developer metadata with the specified ID.
+// The caller must specify the spreadsheet ID and the developer
+// metadata's
+// unique metadataId.
+func (r *SpreadsheetsDeveloperMetadataService) Get(spreadsheetId string, metadataId int64) *SpreadsheetsDeveloperMetadataGetCall {
+	c := &SpreadsheetsDeveloperMetadataGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.spreadsheetId = spreadsheetId
+	c.metadataId = metadataId
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *SpreadsheetsDeveloperMetadataGetCall) Fields(s ...googleapi.Field) *SpreadsheetsDeveloperMetadataGetCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *SpreadsheetsDeveloperMetadataGetCall) IfNoneMatch(entityTag string) *SpreadsheetsDeveloperMetadataGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SpreadsheetsDeveloperMetadataGetCall) Context(ctx context.Context) *SpreadsheetsDeveloperMetadataGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *SpreadsheetsDeveloperMetadataGetCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *SpreadsheetsDeveloperMetadataGetCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v4/spreadsheets/{spreadsheetId}/developerMetadata/{metadataId}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"spreadsheetId": c.spreadsheetId,
+		"metadataId":    strconv.FormatInt(c.metadataId, 10),
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "sheets.spreadsheets.developerMetadata.get" call.
+// Exactly one of *DeveloperMetadata or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *DeveloperMetadata.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *SpreadsheetsDeveloperMetadataGetCall) Do(opts ...googleapi.CallOption) (*DeveloperMetadata, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &DeveloperMetadata{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Returns the developer metadata with the specified ID.\nThe caller must specify the spreadsheet ID and the developer metadata's\nunique metadataId.",
+	//   "flatPath": "v4/spreadsheets/{spreadsheetId}/developerMetadata/{metadataId}",
+	//   "httpMethod": "GET",
+	//   "id": "sheets.spreadsheets.developerMetadata.get",
+	//   "parameterOrder": [
+	//     "spreadsheetId",
+	//     "metadataId"
+	//   ],
+	//   "parameters": {
+	//     "metadataId": {
+	//       "description": "The ID of the developer metadata to retrieve.",
+	//       "format": "int32",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "integer"
+	//     },
+	//     "spreadsheetId": {
+	//       "description": "The ID of the spreadsheet to retrieve metadata from.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v4/spreadsheets/{spreadsheetId}/developerMetadata/{metadataId}",
+	//   "response": {
+	//     "$ref": "DeveloperMetadata"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/spreadsheets"
+	//   ]
+	// }
+
+}
+
+// method id "sheets.spreadsheets.developerMetadata.search":
+
+type SpreadsheetsDeveloperMetadataSearchCall struct {
+	s                              *Service
+	spreadsheetId                  string
+	searchdevelopermetadatarequest *SearchDeveloperMetadataRequest
+	urlParams_                     gensupport.URLParams
+	ctx_                           context.Context
+	header_                        http.Header
+}
+
+// Search: Returns all developer metadata matching the specified
+// DataFilter.
+// If the provided DataFilter represents a DeveloperMetadataLookup
+// object,
+// this will return all DeveloperMetadata entries selected by it. If
+// the
+// DataFilter represents a location in a spreadsheet, this will return
+// all
+// developer metadata associated with locations intersecting that
+// region.
+func (r *SpreadsheetsDeveloperMetadataService) Search(spreadsheetId string, searchdevelopermetadatarequest *SearchDeveloperMetadataRequest) *SpreadsheetsDeveloperMetadataSearchCall {
+	c := &SpreadsheetsDeveloperMetadataSearchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.spreadsheetId = spreadsheetId
+	c.searchdevelopermetadatarequest = searchdevelopermetadatarequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *SpreadsheetsDeveloperMetadataSearchCall) Fields(s ...googleapi.Field) *SpreadsheetsDeveloperMetadataSearchCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SpreadsheetsDeveloperMetadataSearchCall) Context(ctx context.Context) *SpreadsheetsDeveloperMetadataSearchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *SpreadsheetsDeveloperMetadataSearchCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *SpreadsheetsDeveloperMetadataSearchCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.searchdevelopermetadatarequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v4/spreadsheets/{spreadsheetId}/developerMetadata:search")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"spreadsheetId": c.spreadsheetId,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "sheets.spreadsheets.developerMetadata.search" call.
+// Exactly one of *SearchDeveloperMetadataResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *SearchDeveloperMetadataResponse.ServerResponse.Header or (if
+// a response was returned at all) in error.(*googleapi.Error).Header.
+// Use googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *SpreadsheetsDeveloperMetadataSearchCall) Do(opts ...googleapi.CallOption) (*SearchDeveloperMetadataResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &SearchDeveloperMetadataResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Returns all developer metadata matching the specified DataFilter.\nIf the provided DataFilter represents a DeveloperMetadataLookup object,\nthis will return all DeveloperMetadata entries selected by it. If the\nDataFilter represents a location in a spreadsheet, this will return all\ndeveloper metadata associated with locations intersecting that region.",
+	//   "flatPath": "v4/spreadsheets/{spreadsheetId}/developerMetadata:search",
+	//   "httpMethod": "POST",
+	//   "id": "sheets.spreadsheets.developerMetadata.search",
+	//   "parameterOrder": [
+	//     "spreadsheetId"
+	//   ],
+	//   "parameters": {
+	//     "spreadsheetId": {
+	//       "description": "The ID of the spreadsheet to retrieve metadata from.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v4/spreadsheets/{spreadsheetId}/developerMetadata:search",
+	//   "request": {
+	//     "$ref": "SearchDeveloperMetadataRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "SearchDeveloperMetadataResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/spreadsheets"
 	//   ]
 	// }
 
@@ -6894,7 +9350,6 @@ func (c *SpreadsheetsSheetsCopyToCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.copysheettoanotherspreadsheetrequest)
 	if err != nil {
@@ -6983,6 +9438,7 @@ func (c *SpreadsheetsSheetsCopyToCall) Do(opts ...googleapi.CallOption) (*SheetP
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
 	//     "https://www.googleapis.com/auth/spreadsheets"
 	//   ]
 	// }
@@ -7009,9 +9465,9 @@ type SpreadsheetsValuesAppendCall struct {
 // of
 // the table. See
 // the
-// [guide](/sheets/guides/values#appending_values)
+// [guide](/sheets/api/guides/values#appending_values)
 // and
-// [sample code](/sheets/samples/writing#append_values)
+// [sample code](/sheets/api/samples/writing#append_values)
 // for specific details of how tables are detected and data is
 // appended.
 //
@@ -7125,7 +9581,6 @@ func (c *SpreadsheetsValuesAppendCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.valuerange)
 	if err != nil {
@@ -7182,7 +9637,7 @@ func (c *SpreadsheetsValuesAppendCall) Do(opts ...googleapi.CallOption) (*Append
 	}
 	return ret, nil
 	// {
-	//   "description": "Appends values to a spreadsheet. The input range is used to search for\nexisting data and find a \"table\" within that range. Values will be\nappended to the next row of the table, starting with the first column of\nthe table. See the\n[guide](/sheets/guides/values#appending_values)\nand\n[sample code](/sheets/samples/writing#append_values)\nfor specific details of how tables are detected and data is appended.\n\nThe caller must specify the spreadsheet ID, range, and\na valueInputOption.  The `valueInputOption` only\ncontrols how the input data will be added to the sheet (column-wise or\nrow-wise), it does not influence what cell the data starts being written\nto.",
+	//   "description": "Appends values to a spreadsheet. The input range is used to search for\nexisting data and find a \"table\" within that range. Values will be\nappended to the next row of the table, starting with the first column of\nthe table. See the\n[guide](/sheets/api/guides/values#appending_values)\nand\n[sample code](/sheets/api/samples/writing#append_values)\nfor specific details of how tables are detected and data is appended.\n\nThe caller must specify the spreadsheet ID, range, and\na valueInputOption.  The `valueInputOption` only\ncontrols how the input data will be added to the sheet (column-wise or\nrow-wise), it does not influence what cell the data starts being written\nto.",
 	//   "flatPath": "v4/spreadsheets/{spreadsheetId}/values/{range}:append",
 	//   "httpMethod": "POST",
 	//   "id": "sheets.spreadsheets.values.append",
@@ -7256,6 +9711,7 @@ func (c *SpreadsheetsValuesAppendCall) Do(opts ...googleapi.CallOption) (*Append
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
 	//     "https://www.googleapis.com/auth/spreadsheets"
 	//   ]
 	// }
@@ -7318,7 +9774,6 @@ func (c *SpreadsheetsValuesBatchClearCall) doRequest(alt string) (*http.Response
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.batchclearvaluesrequest)
 	if err != nil {
@@ -7398,6 +9853,151 @@ func (c *SpreadsheetsValuesBatchClearCall) Do(opts ...googleapi.CallOption) (*Ba
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/spreadsheets"
+	//   ]
+	// }
+
+}
+
+// method id "sheets.spreadsheets.values.batchClearByDataFilter":
+
+type SpreadsheetsValuesBatchClearByDataFilterCall struct {
+	s                                   *Service
+	spreadsheetId                       string
+	batchclearvaluesbydatafilterrequest *BatchClearValuesByDataFilterRequest
+	urlParams_                          gensupport.URLParams
+	ctx_                                context.Context
+	header_                             http.Header
+}
+
+// BatchClearByDataFilter: Clears one or more ranges of values from a
+// spreadsheet.
+// The caller must specify the spreadsheet ID and one or
+// more
+// DataFilters. Ranges matching any of the specified data
+// filters will be cleared.  Only values are cleared -- all other
+// properties
+// of the cell (such as formatting, data validation, etc..) are kept.
+func (r *SpreadsheetsValuesService) BatchClearByDataFilter(spreadsheetId string, batchclearvaluesbydatafilterrequest *BatchClearValuesByDataFilterRequest) *SpreadsheetsValuesBatchClearByDataFilterCall {
+	c := &SpreadsheetsValuesBatchClearByDataFilterCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.spreadsheetId = spreadsheetId
+	c.batchclearvaluesbydatafilterrequest = batchclearvaluesbydatafilterrequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *SpreadsheetsValuesBatchClearByDataFilterCall) Fields(s ...googleapi.Field) *SpreadsheetsValuesBatchClearByDataFilterCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SpreadsheetsValuesBatchClearByDataFilterCall) Context(ctx context.Context) *SpreadsheetsValuesBatchClearByDataFilterCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *SpreadsheetsValuesBatchClearByDataFilterCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *SpreadsheetsValuesBatchClearByDataFilterCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.batchclearvaluesbydatafilterrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v4/spreadsheets/{spreadsheetId}/values:batchClearByDataFilter")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"spreadsheetId": c.spreadsheetId,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "sheets.spreadsheets.values.batchClearByDataFilter" call.
+// Exactly one of *BatchClearValuesByDataFilterResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *BatchClearValuesByDataFilterResponse.ServerResponse.Header or
+// (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *SpreadsheetsValuesBatchClearByDataFilterCall) Do(opts ...googleapi.CallOption) (*BatchClearValuesByDataFilterResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &BatchClearValuesByDataFilterResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Clears one or more ranges of values from a spreadsheet.\nThe caller must specify the spreadsheet ID and one or more\nDataFilters. Ranges matching any of the specified data\nfilters will be cleared.  Only values are cleared -- all other properties\nof the cell (such as formatting, data validation, etc..) are kept.",
+	//   "flatPath": "v4/spreadsheets/{spreadsheetId}/values:batchClearByDataFilter",
+	//   "httpMethod": "POST",
+	//   "id": "sheets.spreadsheets.values.batchClearByDataFilter",
+	//   "parameterOrder": [
+	//     "spreadsheetId"
+	//   ],
+	//   "parameters": {
+	//     "spreadsheetId": {
+	//       "description": "The ID of the spreadsheet to update.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v4/spreadsheets/{spreadsheetId}/values:batchClearByDataFilter",
+	//   "request": {
+	//     "$ref": "BatchClearValuesByDataFilterRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "BatchClearValuesByDataFilterResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
 	//     "https://www.googleapis.com/auth/spreadsheets"
 	//   ]
 	// }
@@ -7521,7 +10121,6 @@ func (c *SpreadsheetsValuesBatchGetCall) doRequest(alt string) (*http.Response, 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -7631,9 +10230,152 @@ func (c *SpreadsheetsValuesBatchGetCall) Do(opts ...googleapi.CallOption) (*Batc
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
 	//     "https://www.googleapis.com/auth/drive.readonly",
 	//     "https://www.googleapis.com/auth/spreadsheets",
 	//     "https://www.googleapis.com/auth/spreadsheets.readonly"
+	//   ]
+	// }
+
+}
+
+// method id "sheets.spreadsheets.values.batchGetByDataFilter":
+
+type SpreadsheetsValuesBatchGetByDataFilterCall struct {
+	s                                 *Service
+	spreadsheetId                     string
+	batchgetvaluesbydatafilterrequest *BatchGetValuesByDataFilterRequest
+	urlParams_                        gensupport.URLParams
+	ctx_                              context.Context
+	header_                           http.Header
+}
+
+// BatchGetByDataFilter: Returns one or more ranges of values that match
+// the specified data filters.
+// The caller must specify the spreadsheet ID and one or
+// more
+// DataFilters.  Ranges that match any of the data filters in
+// the request will be returned.
+func (r *SpreadsheetsValuesService) BatchGetByDataFilter(spreadsheetId string, batchgetvaluesbydatafilterrequest *BatchGetValuesByDataFilterRequest) *SpreadsheetsValuesBatchGetByDataFilterCall {
+	c := &SpreadsheetsValuesBatchGetByDataFilterCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.spreadsheetId = spreadsheetId
+	c.batchgetvaluesbydatafilterrequest = batchgetvaluesbydatafilterrequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *SpreadsheetsValuesBatchGetByDataFilterCall) Fields(s ...googleapi.Field) *SpreadsheetsValuesBatchGetByDataFilterCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SpreadsheetsValuesBatchGetByDataFilterCall) Context(ctx context.Context) *SpreadsheetsValuesBatchGetByDataFilterCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *SpreadsheetsValuesBatchGetByDataFilterCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *SpreadsheetsValuesBatchGetByDataFilterCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.batchgetvaluesbydatafilterrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v4/spreadsheets/{spreadsheetId}/values:batchGetByDataFilter")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"spreadsheetId": c.spreadsheetId,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "sheets.spreadsheets.values.batchGetByDataFilter" call.
+// Exactly one of *BatchGetValuesByDataFilterResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *BatchGetValuesByDataFilterResponse.ServerResponse.Header or
+// (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *SpreadsheetsValuesBatchGetByDataFilterCall) Do(opts ...googleapi.CallOption) (*BatchGetValuesByDataFilterResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &BatchGetValuesByDataFilterResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Returns one or more ranges of values that match the specified data filters.\nThe caller must specify the spreadsheet ID and one or more\nDataFilters.  Ranges that match any of the data filters in\nthe request will be returned.",
+	//   "flatPath": "v4/spreadsheets/{spreadsheetId}/values:batchGetByDataFilter",
+	//   "httpMethod": "POST",
+	//   "id": "sheets.spreadsheets.values.batchGetByDataFilter",
+	//   "parameterOrder": [
+	//     "spreadsheetId"
+	//   ],
+	//   "parameters": {
+	//     "spreadsheetId": {
+	//       "description": "The ID of the spreadsheet to retrieve data from.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v4/spreadsheets/{spreadsheetId}/values:batchGetByDataFilter",
+	//   "request": {
+	//     "$ref": "BatchGetValuesByDataFilterRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "BatchGetValuesByDataFilterResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/spreadsheets"
 	//   ]
 	// }
 
@@ -7692,7 +10434,6 @@ func (c *SpreadsheetsValuesBatchUpdateCall) doRequest(alt string) (*http.Respons
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.batchupdatevaluesrequest)
 	if err != nil {
@@ -7772,6 +10513,148 @@ func (c *SpreadsheetsValuesBatchUpdateCall) Do(opts ...googleapi.CallOption) (*B
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
+	//     "https://www.googleapis.com/auth/spreadsheets"
+	//   ]
+	// }
+
+}
+
+// method id "sheets.spreadsheets.values.batchUpdateByDataFilter":
+
+type SpreadsheetsValuesBatchUpdateByDataFilterCall struct {
+	s                                    *Service
+	spreadsheetId                        string
+	batchupdatevaluesbydatafilterrequest *BatchUpdateValuesByDataFilterRequest
+	urlParams_                           gensupport.URLParams
+	ctx_                                 context.Context
+	header_                              http.Header
+}
+
+// BatchUpdateByDataFilter: Sets values in one or more ranges of a
+// spreadsheet.
+// The caller must specify the spreadsheet ID,
+// a valueInputOption, and one or more
+// DataFilterValueRanges.
+func (r *SpreadsheetsValuesService) BatchUpdateByDataFilter(spreadsheetId string, batchupdatevaluesbydatafilterrequest *BatchUpdateValuesByDataFilterRequest) *SpreadsheetsValuesBatchUpdateByDataFilterCall {
+	c := &SpreadsheetsValuesBatchUpdateByDataFilterCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.spreadsheetId = spreadsheetId
+	c.batchupdatevaluesbydatafilterrequest = batchupdatevaluesbydatafilterrequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *SpreadsheetsValuesBatchUpdateByDataFilterCall) Fields(s ...googleapi.Field) *SpreadsheetsValuesBatchUpdateByDataFilterCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *SpreadsheetsValuesBatchUpdateByDataFilterCall) Context(ctx context.Context) *SpreadsheetsValuesBatchUpdateByDataFilterCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *SpreadsheetsValuesBatchUpdateByDataFilterCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *SpreadsheetsValuesBatchUpdateByDataFilterCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.batchupdatevaluesbydatafilterrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v4/spreadsheets/{spreadsheetId}/values:batchUpdateByDataFilter")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"spreadsheetId": c.spreadsheetId,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "sheets.spreadsheets.values.batchUpdateByDataFilter" call.
+// Exactly one of *BatchUpdateValuesByDataFilterResponse or error will
+// be non-nil. Any non-2xx status code is an error. Response headers are
+// in either
+// *BatchUpdateValuesByDataFilterResponse.ServerResponse.Header or (if a
+// response was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *SpreadsheetsValuesBatchUpdateByDataFilterCall) Do(opts ...googleapi.CallOption) (*BatchUpdateValuesByDataFilterResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &BatchUpdateValuesByDataFilterResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Sets values in one or more ranges of a spreadsheet.\nThe caller must specify the spreadsheet ID,\na valueInputOption, and one or more\nDataFilterValueRanges.",
+	//   "flatPath": "v4/spreadsheets/{spreadsheetId}/values:batchUpdateByDataFilter",
+	//   "httpMethod": "POST",
+	//   "id": "sheets.spreadsheets.values.batchUpdateByDataFilter",
+	//   "parameterOrder": [
+	//     "spreadsheetId"
+	//   ],
+	//   "parameters": {
+	//     "spreadsheetId": {
+	//       "description": "The ID of the spreadsheet to update.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v4/spreadsheets/{spreadsheetId}/values:batchUpdateByDataFilter",
+	//   "request": {
+	//     "$ref": "BatchUpdateValuesByDataFilterRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "BatchUpdateValuesByDataFilterResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
 	//     "https://www.googleapis.com/auth/spreadsheets"
 	//   ]
 	// }
@@ -7834,7 +10717,6 @@ func (c *SpreadsheetsValuesClearCall) doRequest(alt string) (*http.Response, err
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.clearvaluesrequest)
 	if err != nil {
@@ -7922,6 +10804,7 @@ func (c *SpreadsheetsValuesClearCall) Do(opts ...googleapi.CallOption) (*ClearVa
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
 	//     "https://www.googleapis.com/auth/spreadsheets"
 	//   ]
 	// }
@@ -8039,7 +10922,6 @@ func (c *SpreadsheetsValuesGetCall) doRequest(alt string) (*http.Response, error
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -8151,6 +11033,7 @@ func (c *SpreadsheetsValuesGetCall) Do(opts ...googleapi.CallOption) (*ValueRang
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
 	//     "https://www.googleapis.com/auth/drive.readonly",
 	//     "https://www.googleapis.com/auth/spreadsheets",
 	//     "https://www.googleapis.com/auth/spreadsheets.readonly"
@@ -8271,7 +11154,6 @@ func (c *SpreadsheetsValuesUpdateCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.valuerange)
 	if err != nil {
@@ -8393,6 +11275,7 @@ func (c *SpreadsheetsValuesUpdateCall) Do(opts ...googleapi.CallOption) (*Update
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/drive",
+	//     "https://www.googleapis.com/auth/drive.file",
 	//     "https://www.googleapis.com/auth/spreadsheets"
 	//   ]
 	// }

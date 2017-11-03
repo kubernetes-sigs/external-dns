@@ -2,6 +2,7 @@ package ibclient
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 )
@@ -368,6 +369,7 @@ func (objMgr *ObjectManager) CreateEADefinition(eadef EADefinition) (*EADefiniti
 	return newEadef, err
 }
 
+// CreateMultiObject unmarshals the result into slice of maps
 func (objMgr *ObjectManager) CreateMultiObject(req *MultiRequest) ([]map[string]interface{}, error) {
 
 	conn := objMgr.connector.(*Connector)
@@ -386,4 +388,66 @@ func (objMgr *ObjectManager) CreateMultiObject(req *MultiRequest) ([]map[string]
 	}
 
 	return result, nil
+}
+
+// GetUpgradeStatus returns the grid upgrade information
+func (objMgr *ObjectManager) GetUpgradeStatus(statusType string) ([]UpgradeStatus, error) {
+	var res []UpgradeStatus
+
+	if statusType == "" {
+		// TODO option may vary according to the WAPI version, need to
+		// throw relevant  error.
+		msg := fmt.Sprintf("Status type can not be nil")
+		return res, errors.New(msg)
+	}
+	upgradestatus := NewUpgradeStatus(UpgradeStatus{Type: statusType})
+	err := objMgr.connector.GetObject(upgradestatus, "", &res)
+
+	return res, err
+}
+
+// GetAllMembers returns all members information
+func (objMgr *ObjectManager) GetAllMembers() ([]Member, error) {
+	var res []Member
+
+	memberObj := NewMember(Member{})
+	err := objMgr.connector.GetObject(memberObj, "", &res)
+	return res, err
+}
+
+// GetCapacityReport returns all capacity for members
+func (objMgr *ObjectManager) GetCapacityReport(name string) ([]CapacityReport, error) {
+	var res []CapacityReport
+
+	capacityObj := CapacityReport{Name: name}
+	capacityReport := NewCapcityReport(capacityObj)
+	err := objMgr.connector.GetObject(capacityReport, "", &res)
+	return res, err
+}
+
+// GetLicense returns the license details for member
+func (objMgr *ObjectManager) GetLicense() ([]License, error) {
+	var res []License
+
+	licenseObj := NewLicense(License{})
+	err := objMgr.connector.GetObject(licenseObj, "", &res)
+	return res, err
+}
+
+// GetLicense returns the license details for grid
+func (objMgr *ObjectManager) GetGridLicense() ([]License, error) {
+	var res []License
+
+	licenseObj := NewGridLicense(License{})
+	err := objMgr.connector.GetObject(licenseObj, "", &res)
+	return res, err
+}
+
+// GetGridInfo returns the details for grid
+func (objMgr *ObjectManager) GetGridInfo() ([]Grid, error) {
+	var res []Grid
+
+	gridObj := NewGrid(Grid{})
+	err := objMgr.connector.GetObject(gridObj, "", &res)
+	return res, err
 }

@@ -1,6 +1,8 @@
 package ibclient
 
 import (
+	"errors"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -45,6 +47,16 @@ func (c *fakeConnector) GetObject(obj IBObject, ref string, res interface{}) (er
 			*res.(*[]FixedAddress) = c.resultObject.([]FixedAddress)
 		case *EADefinition:
 			*res.(*[]EADefinition) = c.resultObject.([]EADefinition)
+		case *CapacityReport:
+			*res.(*[]CapacityReport) = c.resultObject.([]CapacityReport)
+		case *UpgradeStatus:
+			*res.(*[]UpgradeStatus) = c.resultObject.([]UpgradeStatus)
+		case *Member:
+			*res.(*[]Member) = c.resultObject.([]Member)
+		case *Grid:
+			*res.(*[]Grid) = c.resultObject.([]Grid)
+		case *License:
+			*res.(*[]License) = c.resultObject.([]License)
 		}
 	} else {
 		switch obj.(type) {
@@ -608,4 +620,162 @@ var _ = Describe("Object Manager", func() {
 		})
 	})
 
+	Describe("Get Capacity report", func() {
+		cmpType := "Heka"
+		tenantID := "0123"
+		var name string = "Member1"
+		fakeRefReturn := fmt.Sprintf("member/ZG5zLmJpbmRfY25h:/%s", name)
+
+		fakeConnector := &fakeConnector{
+			getObjectObj: NewCapcityReport(CapacityReport{Name: name}),
+			getObjectRef: "",
+			resultObject: []CapacityReport{*NewCapcityReport(CapacityReport{
+				Ref:  fakeRefReturn,
+				Name: name,
+			})},
+			fakeRefReturn: fakeRefReturn,
+		}
+
+		objMgr := NewObjectManager(fakeConnector, cmpType, tenantID)
+
+		var actualReport []CapacityReport
+		var err error
+
+		It("should pass expected Capacityreport object to GetObject", func() {
+			actualReport, err = objMgr.GetCapacityReport(name)
+		})
+		It("should return expected CapacityReport Object", func() {
+			Expect(actualReport[0]).To(Equal(fakeConnector.resultObject.([]CapacityReport)[0]))
+			Expect(err).To(BeNil())
+		})
+	})
+
+	Describe("Get upgrade status", func() {
+		cmpType := "Heka"
+		tenantID := "0123"
+		var StatusType string = "GRID"
+		fakeRefReturn := fmt.Sprintf("upgradestatus/Li51cGdyYWRlc3RhdHVzJHVwZ3JhZGVfc3RhdHVz:test")
+
+		USFakeConnector := &fakeConnector{
+			getObjectObj: NewUpgradeStatus(UpgradeStatus{Type: StatusType}),
+			getObjectRef: "",
+			resultObject: []UpgradeStatus{*NewUpgradeStatus(UpgradeStatus{
+				Ref:  fakeRefReturn,
+				Type: StatusType,
+			})},
+			fakeRefReturn: fakeRefReturn,
+		}
+
+		objMgr := NewObjectManager(USFakeConnector, cmpType, tenantID)
+
+		var actualStatus []UpgradeStatus
+		var err error
+
+		It("should pass expected upgradestatus object to GetObject", func() {
+			actualStatus, err = objMgr.GetUpgradeStatus(StatusType)
+		})
+		It("should return expected upgradestatus Object", func() {
+			Expect(actualStatus[0]).To(Equal(USFakeConnector.resultObject.([]UpgradeStatus)[0]))
+			Expect(err).To(BeNil())
+		})
+
+	})
+	Describe("Get upgrade status Error case", func() {
+		cmpType := "Heka"
+		tenantID := "0123"
+		StatusType := ""
+		fakeRefReturn := fmt.Sprintf("upgradestatus/Li51cGdyYWRlc3RhdHVzJHVwZ3JhZGVfc3RhdHVz:test")
+		expectErr := errors.New("Status type can not be nil")
+		USFakeConnector := &fakeConnector{
+			getObjectObj: NewUpgradeStatus(UpgradeStatus{Type: StatusType}),
+			getObjectRef: "",
+			resultObject: []UpgradeStatus{*NewUpgradeStatus(UpgradeStatus{
+				Ref:  fakeRefReturn,
+				Type: StatusType,
+			})},
+			fakeRefReturn: fakeRefReturn,
+		}
+		objMgr := NewObjectManager(USFakeConnector, cmpType, tenantID)
+		It("upgradestatus object to GetObject", func() {
+			_, err := objMgr.GetUpgradeStatus(StatusType)
+			Expect(err).To(Equal(expectErr))
+		})
+
+	})
+	Describe("GetAllMembers", func() {
+		cmpType := "Heka"
+		tenantID := "0123"
+		var err error
+		fakeRefReturn := fmt.Sprintf("member/Li51cGdyYWRlc3RhdHVzJHVwZ3JhZGVfc3RhdHVz:test")
+		returnFields := []string{"host_name", "node_info", "time_zone"}
+		MemFakeConnector := &fakeConnector{
+			getObjectObj: NewMember(Member{}),
+			getObjectRef: "",
+			resultObject: []Member{*NewMember(Member{
+				Ref: fakeRefReturn,
+			})},
+			fakeRefReturn: fakeRefReturn,
+		}
+		objMgr := NewObjectManager(MemFakeConnector, cmpType, tenantID)
+		var actualMembers []Member
+		It("should return expected member Object", func() {
+			actualMembers, err = objMgr.GetAllMembers()
+			Expect(actualMembers[0]).To(Equal(MemFakeConnector.resultObject.([]Member)[0]))
+			Expect(actualMembers[0].returnFields).To(Equal(returnFields))
+			Expect(err).To(BeNil())
+		})
+	})
+
+	Describe("GetGridInfo", func() {
+		cmpType := "Heka"
+		tenantID := "0123"
+		var err error
+		fakeRefReturn := fmt.Sprintf("grid/Li511cGdyYWRlc3RhdHVzJHVwZ3JhZGVfc3RhdHVz:test")
+		returnFields := []string{"name", "ntp_setting"}
+		GridFakeConnector := &fakeConnector{
+			getObjectObj: NewGrid(Grid{}),
+			getObjectRef: "",
+			resultObject: []Grid{*NewGrid(Grid{
+				Ref: fakeRefReturn,
+			})},
+			fakeRefReturn: fakeRefReturn,
+		}
+		objMgr := NewObjectManager(GridFakeConnector, cmpType, tenantID)
+		var actualGridInfo []Grid
+		It("should return expected Grid Object", func() {
+			actualGridInfo, err = objMgr.GetGridInfo()
+			Expect(actualGridInfo[0]).To(Equal(GridFakeConnector.resultObject.([]Grid)[0]))
+			Expect(actualGridInfo[0].returnFields).To(Equal(returnFields))
+			Expect(err).To(BeNil())
+		})
+	})
+
+	Describe("GetGridLicense", func() {
+		cmpType := "Heka"
+		tenantID := "0123"
+		var err error
+		fakeRefReturn := fmt.Sprintf("license/Li511cGdyYWRlc3RhdHVzJHVwZ3JhZGVfc3RhdHVz:test")
+		returnFields := []string{"expiration_status",
+			"expiry_date",
+			"key",
+			"limit",
+			"limit_context",
+			"type"}
+		LicFakeConnector := &fakeConnector{
+			getObjectObj: NewGridLicense(License{}),
+			getObjectRef: "",
+			resultObject: []License{*NewGridLicense(License{
+				Ref: fakeRefReturn,
+			})},
+			fakeRefReturn: fakeRefReturn,
+		}
+		objMgr := NewObjectManager(LicFakeConnector, cmpType, tenantID)
+		var actualGridLicense []License
+		It("should return expected License Object", func() {
+			actualGridLicense, err = objMgr.GetGridLicense()
+			Expect(actualGridLicense[0]).To(Equal(LicFakeConnector.resultObject.([]License)[0]))
+			Expect(actualGridLicense[0].returnFields).To(Equal(returnFields))
+			Expect(err).To(BeNil())
+		})
+	})
 })

@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/yqKB9BQKsZgrBWW3iONCdWrCiGU\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/wuXXb8IGofo72qEZZoPGmfkdIx0\"",
  "discoveryVersion": "v1",
  "id": "spectrum:v1explorer",
  "name": "spectrum",
  "version": "v1explorer",
- "revision": "20160606",
+ "revision": "20170306",
  "title": "Google Spectrum Database API",
  "description": "API for spectrum-management functions.",
  "ownerDomain": "google.com",
@@ -20,7 +20,7 @@
  "basePath": "/spectrum/v1explorer/paws/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "spectrum/v1explorer/paws/",
- "batchPath": "batch",
+ "batchPath": "batch/spectrum/v1explorer",
  "parameters": {
   "alt": {
    "type": "string",
