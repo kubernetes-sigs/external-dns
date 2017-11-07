@@ -71,20 +71,29 @@ func testNoopApplyChanges(t *testing.T) {
 	providerRecords := []*endpoint.Endpoint{
 		{
 			DNSName:    "example.org",
-			Target:     "old-lb.com",
+			Target:     "example-lb.com",
 			RecordType: endpoint.RecordTypeCNAME,
+			RecordTTL:  50,
 		},
 	}
 	expectedUpdate := []*endpoint.Endpoint{
 		{
 			DNSName:    "example.org",
-			Target:     "new-example-lb.com",
+			Target:     "example-lb.com",
 			RecordType: endpoint.RecordTypeCNAME,
+			RecordTTL:  150,
+		},
+		{
+			DNSName:    "example.org",
+			Target:     "example-lb-2.com",
+			RecordType: endpoint.RecordTypeCNAME,
+			RecordTTL:  50,
 		},
 		{
 			DNSName:    "new-record.org",
 			Target:     "new-lb.org",
 			RecordType: endpoint.RecordTypeCNAME,
+			RecordTTL:  42,
 		},
 	}
 
@@ -98,8 +107,9 @@ func testNoopApplyChanges(t *testing.T) {
 		Create: []*endpoint.Endpoint{
 			{
 				DNSName:    "example.org",
-				Target:     "lb.com",
+				Target:     "example-lb.com",
 				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  100,
 			},
 		},
 	})
@@ -109,23 +119,32 @@ func testNoopApplyChanges(t *testing.T) {
 	require.NoError(t, r.ApplyChanges(&plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{
+				DNSName:    "example.org",
+				Target:     "example-lb-2.com",
+				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  50,
+			},
+			{
 				DNSName:    "new-record.org",
 				Target:     "new-lb.org",
 				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  42,
 			},
 		},
 		UpdateNew: []*endpoint.Endpoint{
 			{
 				DNSName:    "example.org",
-				Target:     "new-example-lb.com",
+				Target:     "example-lb.com",
 				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  150,
 			},
 		},
 		UpdateOld: []*endpoint.Endpoint{
 			{
 				DNSName:    "example.org",
-				Target:     "old-lb.com",
+				Target:     "example-lb.com",
 				RecordType: endpoint.RecordTypeCNAME,
+				RecordTTL:  50,
 			},
 		},
 	}))
