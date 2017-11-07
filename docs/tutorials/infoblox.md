@@ -73,7 +73,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.5
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.6
         args:
         - --source=service
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
