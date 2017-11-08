@@ -195,6 +195,7 @@ func testTXTRegistryApplyChanges(t *testing.T) {
 	t.Run("Multitarget delete", testTXTRegistryMultitargetDelete)
 	t.Run("Multitarget delete all", testTXTRegistryMultitargetDeleteAll)
 	t.Run("Multitarget try to add to non-owned cluster", testTXTRegistryMultitargetAddForeign)
+	t.Run("Multitarget try to add to unowned cluster", testTXTRegistryMultitargetAddUnowned)
 	t.Run("Multitarget create, update and delete", testTXTRegistryMultitargetCreateDeleteUpdate)
 	t.Run("Multitarget change target via delete and create", testTXTRegistryMultitargetDeleteAndCreate)
 }
@@ -544,6 +545,52 @@ func testTXTRegistryMultitargetAddForeign(t *testing.T) {
 			endpoint.NewEndpoint("multitarget.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA),
 			endpoint.NewEndpoint("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA),
 			endpoint.NewEndpoint("multitarget.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=notme\"", endpoint.RecordTypeTXT),
+		},
+	})
+	r, _ := NewTXTRegistry(p, "", "owner")
+
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "3.3.3.3", endpoint.RecordTypeA),
+		},
+	}
+	expected := &plan.Changes{
+		Create: []*endpoint.Endpoint{},
+	}
+	p.OnApplyChanges = func(got *plan.Changes) {
+		mExpected := map[string][]*endpoint.Endpoint{
+			"Create":    expected.Create,
+			"UpdateNew": expected.UpdateNew,
+			"UpdateOld": expected.UpdateOld,
+			"Delete":    expected.Delete,
+		}
+		mGot := map[string][]*endpoint.Endpoint{
+			"Create":    got.Create,
+			"UpdateNew": got.UpdateNew,
+			"UpdateOld": got.UpdateOld,
+			"Delete":    got.Delete,
+		}
+		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+	}
+
+	err := r.ApplyChanges(changes)
+	require.NoError(t, err)
+
+	finalRecords, err := r.Records()
+	require.NoError(t, err)
+	assert.True(t, testutils.SameEndpoints(finalRecords, []*endpoint.Endpoint{
+		endpoint.NewEndpoint("multitarget.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA),
+		endpoint.NewEndpoint("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA),
+	}))
+}
+
+func testTXTRegistryMultitargetAddUnowned(t *testing.T) {
+	p := provider.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	p.ApplyChanges(&plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA),
 		},
 	})
 	r, _ := NewTXTRegistry(p, "", "owner")

@@ -119,7 +119,7 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 	for _, r := range changes.Create {
 		rOwner := im.ownerMap[r.DNSName]
 
-		if rOwner == "" || rOwner == im.ownerID {
+		if rOwner == im.ownerID || im.recCount[r.DNSName] == 0 { // only change anything if we own r.DNSName or it doesn't exist yet
 			filteredChanges.Create = append(filteredChanges.Create, r)
 
 			im.ownerMap[r.DNSName] = im.ownerID
