@@ -32,7 +32,7 @@ var (
 )
 
 func TestInMemoryProvider(t *testing.T) {
-	t.Run("findByType", testInMemoryFindByType)
+	t.Run("findRecord", testInMemoryFindRecord)
 	t.Run("Records", testInMemoryRecords)
 	t.Run("validateChangeBatch", testInMemoryValidateChangeBatch)
 	t.Run("ApplyChanges", testInMemoryApplyChanges)
@@ -40,81 +40,119 @@ func TestInMemoryProvider(t *testing.T) {
 	t.Run("CreateZone", testInMemoryCreateZone)
 }
 
-func testInMemoryFindByType(t *testing.T) {
+func testInMemoryFindRecord(t *testing.T) {
 	for _, ti := range []struct {
 		title         string
-		findType      string
+		needle        *inMemoryRecord
 		records       []*inMemoryRecord
 		expected      *inMemoryRecord
 		expectedEmpty bool
 	}{
 		{
 			title:         "no records, empty type",
-			findType:      "",
+			needle:        nil,
 			records:       nil,
 			expected:      nil,
 			expectedEmpty: true,
 		},
 		{
-			title:         "no records, non-empty type",
-			findType:      endpoint.RecordTypeA,
+			title: "no records, non-empty needle",
+			needle: &inMemoryRecord{
+				Type: endpoint.RecordTypeA,
+			},
 			records:       nil,
 			expected:      nil,
 			expectedEmpty: true,
 		},
 		{
-			title:    "one record, empty type",
-			findType: "",
+			title: "one record, empty type",
+			needle: &inMemoryRecord{
+				Type:   "",
+				Name:   "foo.com",
+				Target: "1.1.1.1",
+			},
 			records: []*inMemoryRecord{
 				{
-					Type: endpoint.RecordTypeA,
+					Type:   endpoint.RecordTypeA,
+					Name:   "foo.com",
+					Target: "1.1.1.1",
 				},
 			},
 			expected:      nil,
 			expectedEmpty: true,
 		},
 		{
-			title:    "one record, wrong type",
-			findType: endpoint.RecordTypeCNAME,
+			title: "one record, wrong type",
+			needle: &inMemoryRecord{
+				Type:   endpoint.RecordTypeA,
+				Name:   "foo.com",
+				Target: "1.1.1.1",
+			},
 			records: []*inMemoryRecord{
 				{
-					Type: endpoint.RecordTypeA,
+					Type:   endpoint.RecordTypeCNAME,
+					Name:   "foo.com",
+					Target: "1.1.1.1",
 				},
 			},
 			expected:      nil,
 			expectedEmpty: true,
 		},
 		{
-			title:    "one record, right type",
-			findType: endpoint.RecordTypeA,
+			title: "one record, matching",
+			needle: &inMemoryRecord{
+				Type:      endpoint.RecordTypeA,
+				Name:      "foo.com",
+				Target:    "1.1.1.1",
+				RecordTTL: 100,
+			},
 			records: []*inMemoryRecord{
 				{
-					Type: endpoint.RecordTypeA,
+					Type:      endpoint.RecordTypeA,
+					Name:      "foo.com",
+					Target:    "1.1.1.1",
+					RecordTTL: 42,
 				},
 			},
 			expected: &inMemoryRecord{
-				Type: endpoint.RecordTypeA,
+				Type:      endpoint.RecordTypeA,
+				Name:      "foo.com",
+				Target:    "1.1.1.1",
+				RecordTTL: 42,
 			},
 		},
 		{
-			title:    "multiple records, right type",
-			findType: endpoint.RecordTypeA,
+			title: "multiple records, pme matching",
+			needle: &inMemoryRecord{
+				Type:      endpoint.RecordTypeA,
+				Name:      "foo.com",
+				Target:    "1.1.1.1",
+				RecordTTL: 100,
+			},
 			records: []*inMemoryRecord{
 				{
-					Type: endpoint.RecordTypeA,
+					Type:      endpoint.RecordTypeA,
+					Name:      "foo.com",
+					Target:    "2.2.2.2",
+					RecordTTL: 42,
 				},
 				{
-					Type: endpoint.RecordTypeTXT,
+					Type:      endpoint.RecordTypeA,
+					Name:      "foo.com",
+					Target:    "1.1.1.1",
+					RecordTTL: 42,
 				},
 			},
 			expected: &inMemoryRecord{
-				Type: endpoint.RecordTypeA,
+				Type:      endpoint.RecordTypeA,
+				Name:      "foo.com",
+				Target:    "1.1.1.1",
+				RecordTTL: 42,
 			},
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			c := newInMemoryClient()
-			record := c.findByType(ti.findType, ti.records)
+			record := findRecord(ti.needle, ti.records)
 			if ti.expectedEmpty {
 				assert.Nil(t, record)
 			} else {
@@ -245,6 +283,7 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 					Name:   "foo.bar.org",
 					Target: "5.5.5.5",
 					Type:   endpoint.RecordTypeA,
+					RecordTTL:  50,
 				},
 			},
 		},
@@ -519,8 +558,9 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 				UpdateNew: []*endpoint.Endpoint{
 					{
 						DNSName:    "foo.bar.org",
-						Target:     "4.8.8.4",
+						Target:     "5.5.5.5",
 						RecordType: endpoint.RecordTypeA,
+						RecordTTL:  100,
 					},
 				},
 				UpdateOld: []*endpoint.Endpoint{
@@ -579,6 +619,7 @@ func getInitData() map[string]zone {
 					Name:   "foo.bar.org",
 					Target: "5.5.5.5",
 					Type:   endpoint.RecordTypeA,
+					RecordTTL: 50,
 				},
 			},
 		},
@@ -704,8 +745,9 @@ func testInMemoryApplyChanges(t *testing.T) {
 				UpdateNew: []*endpoint.Endpoint{
 					{
 						DNSName:    "foo.bar.org",
-						Target:     "4.8.8.4",
+						Target:     "5.5.5.5",
 						RecordType: endpoint.RecordTypeA,
+						RecordTTL:  100,
 					},
 				},
 				UpdateOld: []*endpoint.Endpoint{
@@ -741,8 +783,9 @@ func testInMemoryApplyChanges(t *testing.T) {
 					"foo.bar.org": []*inMemoryRecord{
 						{
 							Name:   "foo.bar.org",
-							Target: "4.8.8.4",
+							Target: "5.5.5.5",
 							Type:   endpoint.RecordTypeA,
+							RecordTTL:  100,
 						},
 					},
 					"foo.bar.new.org": []*inMemoryRecord{

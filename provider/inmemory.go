@@ -130,7 +130,7 @@ func (im *InMemoryProvider) Records() ([]*endpoint.Endpoint, error) {
 		}
 
 		for _, record := range records {
-			endpoints = append(endpoints, endpoint.NewEndpoint(record.Name, record.Target, record.Type))
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(record.Name, record.Target, record.Type, record.RecordTTL))
 		}
 	}
 
@@ -201,9 +201,10 @@ func convertToInMemoryRecord(endpoints []*endpoint.Endpoint) []*inMemoryRecord {
 	records := []*inMemoryRecord{}
 	for _, ep := range endpoints {
 		records = append(records, &inMemoryRecord{
-			Type:   ep.RecordType,
-			Name:   ep.DNSName,
-			Target: ep.Target,
+			Type:      ep.RecordType,
+			Name:      ep.DNSName,
+			Target:    ep.Target,
+			RecordTTL: ep.RecordTTL,
 		})
 	}
 	return records
@@ -241,10 +242,12 @@ func (f *filter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[string]st
 // Type - type of record
 // Name - DNS name assigned to the record
 // Target - target of the record
+// RecordTTL - TTL of the record
 type inMemoryRecord struct {
-	Type   string
-	Name   string
-	Target string
+	Type      string
+	Name      string
+	Target    string
+	RecordTTL endpoint.TTL
 }
 
 type zone map[string][]*inMemoryRecord
@@ -303,18 +306,17 @@ func (c *inMemoryClient) ApplyChanges(zoneID string, changes *inMemoryChange) er
 		}
 		c.zones[zoneID][newEndpoint.Name] = append(c.zones[zoneID][newEndpoint.Name], newEndpoint)
 	}
-	for _, updateEndpoint := range changes.UpdateNew {
-		for _, rec := range c.zones[zoneID][updateEndpoint.Name] {
-			if rec.Type == updateEndpoint.Type {
-				rec.Target = updateEndpoint.Target
-				break
-			}
+	for i, updateOld := range changes.UpdateOld {
+		if rec := findRecord(updateOld, c.zones[zoneID][updateOld.Name]); rec != nil {
+			updateNew := changes.UpdateNew[i]
+			rec.Target = updateNew.Target
+			rec.RecordTTL = updateNew.RecordTTL
 		}
 	}
 	for _, deleteEndpoint := range changes.Delete {
 		newSet := make([]*inMemoryRecord, 0)
 		for _, rec := range c.zones[zoneID][deleteEndpoint.Name] {
-			if rec.Type != deleteEndpoint.Type {
+			if rec.Type != deleteEndpoint.Type || rec.Target != deleteEndpoint.Target {
 				newSet = append(newSet, rec)
 			}
 		}
@@ -323,15 +325,29 @@ func (c *inMemoryClient) ApplyChanges(zoneID string, changes *inMemoryChange) er
 	return nil
 }
 
-func (c *inMemoryClient) updateMesh(mesh map[string]map[string]bool, record *inMemoryRecord) error {
+// mesh: map DNSName => map Type => map Target => bool
+func (c *inMemoryClient) updateMesh(mesh map[string]map[string]map[string]bool, record *inMemoryRecord) error {
 	if _, exists := mesh[record.Name]; exists {
-		if mesh[record.Name][record.Type] {
-			return ErrDuplicateRecordFound
+		if _, exists := mesh[record.Name][record.Type]; exists {
+			if mesh[record.Name][record.Type][record.Target] {
+				return ErrDuplicateRecordFound
+			}
+
+			mesh[record.Name][record.Type][record.Target] = true
+			return nil
 		}
-		mesh[record.Name][record.Type] = true
+
+		mesh[record.Name][record.Type] = map[string]bool{
+			record.Target: true,
+		}
 		return nil
 	}
-	mesh[record.Name] = map[string]bool{record.Type: true}
+
+	mesh[record.Name] = map[string]map[string]bool{
+		record.Type: {
+			record.Target: true,
+		},
+	}
 	return nil
 }
 
@@ -341,9 +357,9 @@ func (c *inMemoryClient) validateChangeBatch(zone string, changes *inMemoryChang
 	if !ok {
 		return ErrZoneNotFound
 	}
-	mesh := map[string]map[string]bool{}
+	mesh := map[string]map[string]map[string]bool{}
 	for _, newEndpoint := range changes.Create {
-		if c.findByType(newEndpoint.Type, curZone[newEndpoint.Name]) != nil {
+		if findRecord(newEndpoint, curZone[newEndpoint.Name]) != nil {
 			return ErrRecordAlreadyExists
 		}
 		if err := c.updateMesh(mesh, newEndpoint); err != nil {
@@ -351,7 +367,7 @@ func (c *inMemoryClient) validateChangeBatch(zone string, changes *inMemoryChang
 		}
 	}
 	for _, updateEndpoint := range changes.UpdateNew {
-		if c.findByType(updateEndpoint.Type, curZone[updateEndpoint.Name]) == nil {
+		if findRecord(updateEndpoint, curZone[updateEndpoint.Name]) == nil {
 			return ErrRecordNotFound
 		}
 		if err := c.updateMesh(mesh, updateEndpoint); err != nil {
@@ -359,12 +375,12 @@ func (c *inMemoryClient) validateChangeBatch(zone string, changes *inMemoryChang
 		}
 	}
 	for _, updateOldEndpoint := range changes.UpdateOld {
-		if rec := c.findByType(updateOldEndpoint.Type, curZone[updateOldEndpoint.Name]); rec == nil || rec.Target != updateOldEndpoint.Target {
+		if findRecord(updateOldEndpoint, curZone[updateOldEndpoint.Name]) == nil {
 			return ErrRecordNotFound
 		}
 	}
 	for _, deleteEndpoint := range changes.Delete {
-		if rec := c.findByType(deleteEndpoint.Type, curZone[deleteEndpoint.Name]); rec == nil || rec.Target != deleteEndpoint.Target {
+		if findRecord(deleteEndpoint, curZone[deleteEndpoint.Name]) == nil {
 			return ErrRecordNotFound
 		}
 		if err := c.updateMesh(mesh, deleteEndpoint); err != nil {
@@ -374,9 +390,9 @@ func (c *inMemoryClient) validateChangeBatch(zone string, changes *inMemoryChang
 	return nil
 }
 
-func (c *inMemoryClient) findByType(recordType string, records []*inMemoryRecord) *inMemoryRecord {
+func findRecord(needle *inMemoryRecord, records []*inMemoryRecord) *inMemoryRecord {
 	for _, record := range records {
-		if record.Type == recordType {
+		if record.Type == needle.Type && record.Name == needle.Name && record.Target == needle.Target {
 			return record
 		}
 	}
