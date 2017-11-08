@@ -280,10 +280,10 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 			},
 			"foo.bar.org": []*inMemoryRecord{
 				{
-					Name:   "foo.bar.org",
-					Target: "5.5.5.5",
-					Type:   endpoint.RecordTypeA,
-					RecordTTL:  50,
+					Name:      "foo.bar.org",
+					Target:    "5.5.5.5",
+					Type:      endpoint.RecordTypeA,
+					RecordTTL: 50,
 				},
 			},
 		},
@@ -616,9 +616,9 @@ func getInitData() map[string]zone {
 			},
 			"foo.bar.org": []*inMemoryRecord{
 				{
-					Name:   "foo.bar.org",
-					Target: "5.5.5.5",
-					Type:   endpoint.RecordTypeA,
+					Name:      "foo.bar.org",
+					Target:    "5.5.5.5",
+					Type:      endpoint.RecordTypeA,
 					RecordTTL: 50,
 				},
 			},
@@ -782,10 +782,10 @@ func testInMemoryApplyChanges(t *testing.T) {
 					},
 					"foo.bar.org": []*inMemoryRecord{
 						{
-							Name:   "foo.bar.org",
-							Target: "5.5.5.5",
-							Type:   endpoint.RecordTypeA,
-							RecordTTL:  100,
+							Name:      "foo.bar.org",
+							Target:    "5.5.5.5",
+							Type:      endpoint.RecordTypeA,
+							RecordTTL: 100,
 						},
 					},
 					"foo.bar.new.org": []*inMemoryRecord{

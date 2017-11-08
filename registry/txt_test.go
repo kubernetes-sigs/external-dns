@@ -190,6 +190,13 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 func testTXTRegistryApplyChanges(t *testing.T) {
 	t.Run("With Prefix", testTXTRegistryApplyChangesWithPrefix)
 	t.Run("No prefix", testTXTRegistryApplyChangesNoPrefix)
+	t.Run("Multitarget create", testTXTRegistryMultitargetCreate)
+	t.Run("Multitarget add", testTXTRegistryMultitargetAdd)
+	t.Run("Multitarget delete", testTXTRegistryMultitargetDelete)
+	t.Run("Multitarget delete all", testTXTRegistryMultitargetDeleteAll)
+	t.Run("Multitarget try to add to non-owned cluster", testTXTRegistryMultitargetAddForeign)
+	t.Run("Multitarget create, update and delete", testTXTRegistryMultitargetCreateDeleteUpdate)
+	t.Run("Multitarget change target via delete and create", testTXTRegistryMultitargetDeleteAndCreate)
 }
 
 func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
@@ -213,37 +220,39 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", ""),
-		},
-		Delete: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME),
-		},
-		UpdateNew: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multiadd.test-zone.example.org", "backend1.lb.com", ""),
+			endpoint.NewEndpoint("multiadd.test-zone.example.org", "backend2.lb.com", ""),
 			endpoint.NewEndpoint("tar.test-zone.example.org", "new-tar.loadbalancer.com", endpoint.RecordTypeCNAME),
 		},
-		UpdateOld: []*endpoint.Endpoint{
+		Delete: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("tar.test-zone.example.org", "tar.loadbalancer.com", endpoint.RecordTypeCNAME),
+			endpoint.NewEndpoint("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME),
 		},
+		UpdateNew: []*endpoint.Endpoint{},
+		UpdateOld: []*endpoint.Endpoint{},
 	}
 	expected := &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", ""),
 			endpoint.NewEndpoint("txt.new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT),
+			endpoint.NewEndpoint("multiadd.test-zone.example.org", "backend1.lb.com", ""),
+			endpoint.NewEndpoint("multiadd.test-zone.example.org", "backend2.lb.com", ""),
+			endpoint.NewEndpoint("txt.multiadd.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT),
+			endpoint.NewEndpoint("tar.test-zone.example.org", "new-tar.loadbalancer.com", endpoint.RecordTypeCNAME),
 		},
 		Delete: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("tar.test-zone.example.org", "tar.loadbalancer.com", endpoint.RecordTypeCNAME),
 			endpoint.NewEndpoint("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME),
 			endpoint.NewEndpoint("txt.foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT),
 		},
-		UpdateNew: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("tar.test-zone.example.org", "new-tar.loadbalancer.com", endpoint.RecordTypeCNAME),
-		},
-		UpdateOld: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("tar.test-zone.example.org", "tar.loadbalancer.com", endpoint.RecordTypeCNAME),
-		},
+		UpdateNew: []*endpoint.Endpoint{},
+		UpdateOld: []*endpoint.Endpoint{},
 	}
 	expectedOwnerMap := map[string]string{
 		"bar.test-zone.example.org":          "owner",
 		"tar.test-zone.example.org":          "owner",
 		"new-record-1.test-zone.example.org": "owner",
+		"multiadd.test-zone.example.org":     "owner",
 	}
 	p.OnApplyChanges = func(got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
@@ -286,6 +295,8 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", ""),
+			endpoint.NewEndpoint("multiadd.test-zone.example.org", "backend1.lb.com", ""),
+			endpoint.NewEndpoint("multiadd.test-zone.example.org", "backend2.lb.com", ""),
 		},
 		Delete: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME),
@@ -301,6 +312,9 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 		Create: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", ""),
 			endpoint.NewEndpoint("new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT),
+			endpoint.NewEndpoint("multiadd.test-zone.example.org", "backend1.lb.com", ""),
+			endpoint.NewEndpoint("multiadd.test-zone.example.org", "backend2.lb.com", ""),
+			endpoint.NewEndpoint("multiadd.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT),
 		},
 		Delete: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME),
@@ -313,6 +327,7 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 		"txt.bar.test-zone.example.org":      "owner",
 		"txt.tar.test-zone.example.org":      "owner",
 		"new-record-1.test-zone.example.org": "owner",
+		"multiadd.test-zone.example.org":     "owner",
 	}
 	p.OnApplyChanges = func(got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
@@ -332,4 +347,363 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 	err := r.ApplyChanges(changes)
 	require.NoError(t, err)
 	assert.Equal(t, expectedOwnerMap, r.ownerMap)
+}
+
+func testTXTRegistryMultitargetCreate(t *testing.T) {
+	p := provider.NewInMemoryProvider()
+	p.CreateZone(testZone)
+
+	r, _ := NewTXTRegistry(p, "", "owner")
+
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA),
+		},
+	}
+	expected := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT),
+		},
+	}
+	p.OnApplyChanges = func(got *plan.Changes) {
+		mExpected := map[string][]*endpoint.Endpoint{
+			"Create":    expected.Create,
+			"UpdateNew": expected.UpdateNew,
+			"UpdateOld": expected.UpdateOld,
+			"Delete":    expected.Delete,
+		}
+		mGot := map[string][]*endpoint.Endpoint{
+			"Create":    got.Create,
+			"UpdateNew": got.UpdateNew,
+			"UpdateOld": got.UpdateOld,
+			"Delete":    got.Delete,
+		}
+		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+	}
+	err := r.ApplyChanges(changes)
+	require.NoError(t, err)
+}
+
+func testTXTRegistryMultitargetAdd(t *testing.T) {
+	p := provider.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	p.ApplyChanges(&plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT),
+		},
+	})
+	r, _ := NewTXTRegistry(p, "", "owner")
+
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "3.3.3.3", endpoint.RecordTypeA),
+		},
+	}
+	expected := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "3.3.3.3", endpoint.RecordTypeA),
+		},
+	}
+	p.OnApplyChanges = func(got *plan.Changes) {
+		mExpected := map[string][]*endpoint.Endpoint{
+			"Create":    expected.Create,
+			"UpdateNew": expected.UpdateNew,
+			"UpdateOld": expected.UpdateOld,
+			"Delete":    expected.Delete,
+		}
+		mGot := map[string][]*endpoint.Endpoint{
+			"Create":    got.Create,
+			"UpdateNew": got.UpdateNew,
+			"UpdateOld": got.UpdateOld,
+			"Delete":    got.Delete,
+		}
+		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+	}
+
+	err := r.ApplyChanges(changes)
+	require.NoError(t, err)
+
+	finalRecords, err := r.Records()
+	require.NoError(t, err)
+	assert.True(t, testutils.SameEndpoints(finalRecords, []*endpoint.Endpoint{
+		endpoint.NewEndpoint("multitarget.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA),
+		endpoint.NewEndpoint("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA),
+		endpoint.NewEndpoint("multitarget.test-zone.example.org", "3.3.3.3", endpoint.RecordTypeA),
+	}))
+}
+
+func testTXTRegistryMultitargetDelete(t *testing.T) {
+	p := provider.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	p.ApplyChanges(&plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "3.3.3.3", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT),
+		},
+	})
+	r, _ := NewTXTRegistry(p, "", "owner")
+
+	changes := &plan.Changes{
+		Delete: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA),
+		},
+	}
+	expected := &plan.Changes{
+		Delete: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA),
+		},
+	}
+	p.OnApplyChanges = func(got *plan.Changes) {
+		mExpected := map[string][]*endpoint.Endpoint{
+			"Create":    expected.Create,
+			"UpdateNew": expected.UpdateNew,
+			"UpdateOld": expected.UpdateOld,
+			"Delete":    expected.Delete,
+		}
+		mGot := map[string][]*endpoint.Endpoint{
+			"Create":    got.Create,
+			"UpdateNew": got.UpdateNew,
+			"UpdateOld": got.UpdateOld,
+			"Delete":    got.Delete,
+		}
+		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+	}
+
+	err := r.ApplyChanges(changes)
+	require.NoError(t, err)
+
+	finalRecords, err := r.Records()
+	require.NoError(t, err)
+	assert.True(t, testutils.SameEndpoints(finalRecords, []*endpoint.Endpoint{
+		endpoint.NewEndpoint("multitarget.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA),
+		endpoint.NewEndpoint("multitarget.test-zone.example.org", "3.3.3.3", endpoint.RecordTypeA),
+	}))
+}
+
+func testTXTRegistryMultitargetDeleteAll(t *testing.T) {
+	p := provider.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	p.ApplyChanges(&plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT),
+		},
+	})
+	r, _ := NewTXTRegistry(p, "", "owner")
+
+	changes := &plan.Changes{
+		Delete: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA),
+		},
+	}
+	expected := &plan.Changes{
+		Delete: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT),
+		},
+	}
+	p.OnApplyChanges = func(got *plan.Changes) {
+		mExpected := map[string][]*endpoint.Endpoint{
+			"Create":    expected.Create,
+			"UpdateNew": expected.UpdateNew,
+			"UpdateOld": expected.UpdateOld,
+			"Delete":    expected.Delete,
+		}
+		mGot := map[string][]*endpoint.Endpoint{
+			"Create":    got.Create,
+			"UpdateNew": got.UpdateNew,
+			"UpdateOld": got.UpdateOld,
+			"Delete":    got.Delete,
+		}
+		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+	}
+
+	err := r.ApplyChanges(changes)
+	require.NoError(t, err)
+
+	finalRecords, err := r.Records()
+	require.NoError(t, err)
+	assert.True(t, testutils.SameEndpoints(finalRecords, []*endpoint.Endpoint{}))
+}
+
+func testTXTRegistryMultitargetAddForeign(t *testing.T) {
+	p := provider.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	p.ApplyChanges(&plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=notme\"", endpoint.RecordTypeTXT),
+		},
+	})
+	r, _ := NewTXTRegistry(p, "", "owner")
+
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "3.3.3.3", endpoint.RecordTypeA),
+		},
+	}
+	expected := &plan.Changes{
+		Create: []*endpoint.Endpoint{},
+	}
+	p.OnApplyChanges = func(got *plan.Changes) {
+		mExpected := map[string][]*endpoint.Endpoint{
+			"Create":    expected.Create,
+			"UpdateNew": expected.UpdateNew,
+			"UpdateOld": expected.UpdateOld,
+			"Delete":    expected.Delete,
+		}
+		mGot := map[string][]*endpoint.Endpoint{
+			"Create":    got.Create,
+			"UpdateNew": got.UpdateNew,
+			"UpdateOld": got.UpdateOld,
+			"Delete":    got.Delete,
+		}
+		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+	}
+
+	err := r.ApplyChanges(changes)
+	require.NoError(t, err)
+
+	finalRecords, err := r.Records()
+	require.NoError(t, err)
+	assert.True(t, testutils.SameEndpoints(finalRecords, []*endpoint.Endpoint{
+		endpoint.NewEndpoint("multitarget.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA),
+		endpoint.NewEndpoint("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA),
+	}))
+}
+
+func testTXTRegistryMultitargetCreateDeleteUpdate(t *testing.T) {
+	p := provider.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	p.ApplyChanges(&plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA),
+			endpoint.NewEndpointWithTTL("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA, 50),
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT),
+			endpoint.NewEndpoint("target2.test-zone.example.org", "9.9.9.9", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("target2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT),
+		},
+	})
+	r, _ := NewTXTRegistry(p, "", "owner")
+
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "3.3.3.3", endpoint.RecordTypeA),
+		},
+		UpdateOld: []*endpoint.Endpoint{
+			endpoint.NewEndpointWithTTL("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA, 50),
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			endpoint.NewEndpointWithTTL("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA, 100),
+		},
+		Delete: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("target2.test-zone.example.org", "9.9.9.9", endpoint.RecordTypeA),
+		},
+	}
+	expected := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "3.3.3.3", endpoint.RecordTypeA),
+		},
+		UpdateOld: []*endpoint.Endpoint{
+			endpoint.NewEndpointWithTTL("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA, 50),
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			endpoint.NewEndpointWithTTL("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA, 100),
+		},
+		Delete: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("target2.test-zone.example.org", "9.9.9.9", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("target2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT),
+		},
+	}
+	p.OnApplyChanges = func(got *plan.Changes) {
+		mExpected := map[string][]*endpoint.Endpoint{
+			"Create":    expected.Create,
+			"UpdateNew": expected.UpdateNew,
+			"UpdateOld": expected.UpdateOld,
+			"Delete":    expected.Delete,
+		}
+		mGot := map[string][]*endpoint.Endpoint{
+			"Create":    got.Create,
+			"UpdateNew": got.UpdateNew,
+			"UpdateOld": got.UpdateOld,
+			"Delete":    got.Delete,
+		}
+		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+	}
+
+	err := r.ApplyChanges(changes)
+	require.NoError(t, err)
+
+	finalRecords, err := r.Records()
+	require.NoError(t, err)
+	assert.True(t, testutils.SameEndpoints(finalRecords, []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA, 100),
+		endpoint.NewEndpoint("multitarget.test-zone.example.org", "3.3.3.3", endpoint.RecordTypeA),
+	}))
+}
+
+func testTXTRegistryMultitargetDeleteAndCreate(t *testing.T) {
+	p := provider.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	p.ApplyChanges(&plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA),
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT),
+		},
+	})
+	r, _ := NewTXTRegistry(p, "", "owner")
+
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA),
+		},
+		Delete: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA),
+		},
+	}
+	expected := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA),
+		},
+		Delete: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("multitarget.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA),
+		},
+	}
+	p.OnApplyChanges = func(got *plan.Changes) {
+		mExpected := map[string][]*endpoint.Endpoint{
+			"Create":    expected.Create,
+			"UpdateNew": expected.UpdateNew,
+			"UpdateOld": expected.UpdateOld,
+			"Delete":    expected.Delete,
+		}
+		mGot := map[string][]*endpoint.Endpoint{
+			"Create":    got.Create,
+			"UpdateNew": got.UpdateNew,
+			"UpdateOld": got.UpdateOld,
+			"Delete":    got.Delete,
+		}
+		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+	}
+
+	err := r.ApplyChanges(changes)
+	require.NoError(t, err)
+
+	finalRecords, err := r.Records()
+	require.NoError(t, err)
+	assert.True(t, testutils.SameEndpoints(finalRecords, []*endpoint.Endpoint{
+		endpoint.NewEndpoint("multitarget.test-zone.example.org", "2.2.2.2", endpoint.RecordTypeA),
+	}))
 }
