@@ -40,9 +40,10 @@ func TestIngress(t *testing.T) {
 
 func TestNewIngressSource(t *testing.T) {
 	for _, ti := range []struct {
-		title        string
-		fqdnTemplate string
-		expectError  bool
+		title            string
+		annotationFilter string
+		fqdnTemplate     string
+		expectError      bool
 	}{
 		{
 			title:        "invalid template",
@@ -58,11 +59,17 @@ func TestNewIngressSource(t *testing.T) {
 			expectError:  false,
 			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
 		},
+		{
+			title:            "non-empty annotation filter label",
+			expectError:      false,
+			annotationFilter: "kubernetes.io/ingress.class=nginx",
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			_, err := NewIngressSource(
 				fake.NewSimpleClientset(),
 				"",
+				ti.annotationFilter,
 				ti.fqdnTemplate,
 			)
 			if ti.expectError {
@@ -167,11 +174,13 @@ func testEndpointsFromIngress(t *testing.T) {
 func testIngressEndpoints(t *testing.T) {
 	namespace := "testing"
 	for _, ti := range []struct {
-		title           string
-		targetNamespace string
-		ingressItems    []fakeIngress
-		expected        []*endpoint.Endpoint
-		fqdnTemplate    string
+		title            string
+		targetNamespace  string
+		annotationFilter string
+		ingressItems     []fakeIngress
+		expected         []*endpoint.Endpoint
+		expectError      bool
+		fqdnTemplate     string
 	}{
 		{
 			title:           "no ingress",
@@ -256,6 +265,102 @@ func testIngressEndpoints(t *testing.T) {
 					Target:  "8.8.8.8",
 				},
 			},
+		},
+		{
+			title:            "valid matching annotation filter expression",
+			targetNamespace:  "",
+			annotationFilter: "kubernetes.io/ingress.class in (alb, nginx)",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "nginx",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "example.org",
+					Target:  "8.8.8.8",
+				},
+			},
+		},
+		{
+			title:            "valid non-matching annotation filter expression",
+			targetNamespace:  "",
+			annotationFilter: "kubernetes.io/ingress.class in (alb, nginx)",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "tectonic",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title:            "invalid annotation filter expression",
+			targetNamespace:  "",
+			annotationFilter: "kubernetes.io/ingress.name in (a b)",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "alb",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected:    []*endpoint.Endpoint{},
+			expectError: true,
+		},
+		{
+			title:            "valid matching annotation filter label",
+			targetNamespace:  "",
+			annotationFilter: "kubernetes.io/ingress.class=nginx",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "nginx",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "example.org",
+					Target:  "8.8.8.8",
+				},
+			},
+		},
+		{
+			title:            "valid non-matching annotation filter label",
+			targetNamespace:  "",
+			annotationFilter: "kubernetes.io/ingress.class=nginx",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "alb",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
 		},
 		{
 			title:           "our controller type is dns-controller",
@@ -490,6 +595,7 @@ func testIngressEndpoints(t *testing.T) {
 			ingressSource, _ := NewIngressSource(
 				fakeClient,
 				ti.targetNamespace,
+				ti.annotationFilter,
 				ti.fqdnTemplate,
 			)
 			for _, ingress := range ingresses {
@@ -498,7 +604,11 @@ func testIngressEndpoints(t *testing.T) {
 			}
 
 			res, err := ingressSource.Endpoints()
-			require.NoError(t, err)
+			if ti.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 
 			validateEndpoints(t, res, ti.expected)
 		})
