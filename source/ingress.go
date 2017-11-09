@@ -25,6 +25,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 
@@ -36,13 +37,14 @@ import (
 // Use targetAnnotationKey to explicitly set Endpoint. (useful if the ingress
 // controller does not update, or to override with alternative endpoint)
 type ingressSource struct {
-	client       kubernetes.Interface
-	namespace    string
-	fqdnTemplate *template.Template
+	client           kubernetes.Interface
+	namespace        string
+	annotationFilter string
+	fqdnTemplate     *template.Template
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate string) (Source, error) {
+func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -57,9 +59,10 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate s
 	}
 
 	return &ingressSource{
-		client:       kubeClient,
-		namespace:    namespace,
-		fqdnTemplate: tmpl,
+		client:           kubeClient,
+		namespace:        namespace,
+		annotationFilter: annotationFilter,
+		fqdnTemplate:     tmpl,
 	}, nil
 }
 
@@ -67,6 +70,10 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate s
 // Retrieves all ingress resources on all namespaces
 func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	ingresses, err := sc.client.Extensions().Ingresses(sc.namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	ingresses.Items, err = sc.filterByAnnotations(ingresses.Items)
 	if err != nil {
 		return nil, err
 	}
@@ -157,6 +164,37 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 	}
 
 	return endpoints, nil
+}
+
+// filterByAnnotations filters a list of ingresses by a given annotation selector.
+func (sc *ingressSource) filterByAnnotations(ingresses []v1beta1.Ingress) ([]v1beta1.Ingress, error) {
+	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
+	if err != nil {
+		return nil, err
+	}
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		return nil, err
+	}
+
+	// empty filter returns original list
+	if selector.Empty() {
+		return ingresses, nil
+	}
+
+	filteredList := []v1beta1.Ingress{}
+
+	for _, ingress := range ingresses {
+		// convert the ingress' annotations to an equivalent label selector
+		annotations := labels.Set(ingress.Annotations)
+
+		// include ingress if its annotations match the selector
+		if selector.Matches(annotations) {
+			filteredList = append(filteredList, ingress)
+		}
+	}
+
+	return filteredList, nil
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object

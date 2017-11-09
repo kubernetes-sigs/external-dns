@@ -25,6 +25,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 
@@ -37,8 +38,9 @@ import (
 // matched services' entrypoints it will return a corresponding
 // Endpoint object.
 type serviceSource struct {
-	client    kubernetes.Interface
-	namespace string
+	client           kubernetes.Interface
+	namespace        string
+	annotationFilter string
 	// process Services with legacy annotations
 	compatibility   string
 	fqdnTemplate    *template.Template
@@ -46,7 +48,7 @@ type serviceSource struct {
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate, compatibility string, publishInternal bool) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate, compatibility string, publishInternal bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -61,17 +63,22 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate, 
 	}
 
 	return &serviceSource{
-		client:          kubeClient,
-		namespace:       namespace,
-		compatibility:   compatibility,
-		fqdnTemplate:    tmpl,
-		publishInternal: publishInternal,
+		client:           kubeClient,
+		namespace:        namespace,
+		annotationFilter: annotationFilter,
+		compatibility:    compatibility,
+		fqdnTemplate:     tmpl,
+		publishInternal:  publishInternal,
 	}, nil
 }
 
 // Endpoints returns endpoint objects for each service that should be processed.
 func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	services, err := sc.client.CoreV1().Services(sc.namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	services.Items, err = sc.filterByAnnotations(services.Items)
 	if err != nil {
 		return nil, err
 	}
@@ -146,6 +153,37 @@ func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 	}
 
 	return endpoints
+}
+
+// filterByAnnotations filters a list of services by a given annotation selector.
+func (sc *serviceSource) filterByAnnotations(services []v1.Service) ([]v1.Service, error) {
+	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
+	if err != nil {
+		return nil, err
+	}
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		return nil, err
+	}
+
+	// empty filter returns original list
+	if selector.Empty() {
+		return services, nil
+	}
+
+	filteredList := []v1.Service{}
+
+	for _, service := range services {
+		// convert the service's annotations to an equivalent label selector
+		annotations := labels.Set(service.Annotations)
+
+		// include service if its annotations match the selector
+		if selector.Matches(annotations) {
+			filteredList = append(filteredList, service)
+		}
+	}
+
+	return filteredList, nil
 }
 
 func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*endpoint.Endpoint {
