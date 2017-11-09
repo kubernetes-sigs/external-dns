@@ -1,3 +1,7 @@
+## v0.4.8 - 2017-11-09
+
+  - AWS: Added change batch limiting to a maximum of 4000 Route53 updates in one API call.  Changes exceeding the limit will be dropped but all related changes by hostname are preserved within the limit. (#368) @bitvector2
+
 ## v0.4.7 - 2017-10-18
 
   - CloudFlare: Disable proxy mode for TXT and others (#361) @dunglas
