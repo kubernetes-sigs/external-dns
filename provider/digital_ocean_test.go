@@ -82,7 +82,7 @@ func (m *mockDigitalOceanClient) Record(ctx context.Context, domain string, id i
 func (m *mockDigitalOceanClient) Records(ctx context.Context, domain string, opt *godo.ListOptions) ([]godo.DomainRecord, *godo.Response, error) {
 	if domain == "foo.com" {
 		if opt == nil || opt.Page == 0 {
-			return []godo.DomainRecord{{ID: 1, Name: "foobar.ext-dns-test.foo.com."}, {ID: 2}}, &godo.Response{
+			return []godo.DomainRecord{{ID: 1, Name: "foo.ext-dns-test.foo.com.", Type: "CNAME"}, {ID: 2, Name: "bar.ext-dns-test.foo.com.", Type: "CNAME"}}, &godo.Response{
 				Links: &godo.Links{
 					Pages: &godo.Pages{
 						Next: "http://example.com/v2/domains/?page=2",
@@ -91,7 +91,7 @@ func (m *mockDigitalOceanClient) Records(ctx context.Context, domain string, opt
 				},
 			}, nil
 		}
-		return []godo.DomainRecord{{ID: 3, Name: "baz.ext-dns-test.foo.com."}}, nil, nil
+		return []godo.DomainRecord{{ID: 3, Name: "baz.ext-dns-test.foo.com.", Type: "A"}}, nil, nil
 	}
 	return nil, nil, nil
 }
@@ -459,39 +459,23 @@ func TestDigitalOceanGetRecordID(t *testing.T) {
 		{
 			ID:   1,
 			Name: "foo.com",
-			Type: "CNAME",
+			Type: endpoint.RecordTypeCNAME,
 		},
 		{
 			ID:   2,
 			Name: "baz.de",
-			Type: "A",
+			Type: endpoint.RecordTypeA,
 		},
 	}
 	assert.Equal(t, 1, p.getRecordID(records, godo.DomainRecord{
 		Name: "foo.com",
-		Type: "CNAME",
+		Type: endpoint.RecordTypeCNAME,
 	}))
 
 	assert.Equal(t, 0, p.getRecordID(records, godo.DomainRecord{
 		Name: "foo.com",
-		Type: "A",
+		Type: endpoint.RecordTypeA,
 	}))
-}
-
-func TestDigitalOceanSuitableZone(t *testing.T) {
-	domains := []godo.Domain{
-		{
-			Name: "foo.com",
-		},
-		{
-			Name: "bar.foo.com",
-		},
-		{
-			Name: "baz.com",
-		},
-	}
-	assert.Nil(t, digitalOceanSuitableZone("foo.de", domains))
-	assert.Equal(t, "bar.foo.com", digitalOceanSuitableZone("record.bar.foo.com", domains).Name)
 }
 
 func validateDigitalOceanZones(t *testing.T, zones []godo.Domain, expected []godo.Domain) {

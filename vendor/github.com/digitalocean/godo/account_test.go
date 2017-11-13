@@ -12,7 +12,7 @@ func TestAccountGet(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/account", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 
 		response := `
 		{ "account": {

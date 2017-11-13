@@ -42,4 +42,13 @@ func validateEndpoint(t *testing.T, endpoint, expected *endpoint.Endpoint) {
 	if endpoint.Target != expected.Target {
 		t.Errorf("expected %s, got %s", expected.Target, endpoint.Target)
 	}
+
+	if endpoint.RecordTTL != expected.RecordTTL {
+		t.Errorf("expected %v, got %v", expected.RecordTTL, endpoint.RecordTTL)
+	}
+
+	// if non-empty record type is expected, check that it matches.
+	if expected.RecordType != "" && endpoint.RecordType != expected.RecordType {
+		t.Errorf("expected %s, got %s", expected.RecordType, endpoint.RecordType)
+	}
 }

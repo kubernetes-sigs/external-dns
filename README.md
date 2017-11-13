@@ -1,8 +1,13 @@
+<p align="center">
+	<img src="img/external-dns.png" width="40%" align="center" alt="ExternalDNS">
+</p>
+
 # ExternalDNS
 [![Build Status](https://travis-ci.org/kubernetes-incubator/external-dns.svg?branch=master)](https://travis-ci.org/kubernetes-incubator/external-dns)
 [![Coverage Status](https://coveralls.io/repos/github/kubernetes-incubator/external-dns/badge.svg?branch=master)](https://coveralls.io/github/kubernetes-incubator/external-dns?branch=master)
 [![GitHub release](https://img.shields.io/github/release/kubernetes-incubator/external-dns.svg)](https://github.com/kubernetes-incubator/external-dns/releases)
 [![go-doc](https://godoc.org/github.com/kubernetes-incubator/external-dns?status.svg)](https://godoc.org/github.com/kubernetes-incubator/external-dns)
+[![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes-incubator/external-dns)](https://goreportcard.com/report/github.com/kubernetes-incubator/external-dns)
 
 ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 
@@ -14,15 +19,39 @@ In a broader sense, ExternalDNS allows you to control DNS records dynamically vi
 
 The [FAQ](docs/faq.md) contains additional information and addresses several questions about key concepts of ExternalDNS.
 
-## Getting started
+To see ExternalDNS in action, have a look at this [video](https://www.youtube.com/watch?v=9HQ2XgL9YVI).
 
-ExternalDNS' current release is `v0.3`. This version allows you to keep selected zones (via `--domain-filter`) in Google's [CloudDNS](https://cloud.google.com/dns/docs/) or [AWS' Route 53](https://aws.amazon.com/route53/) synchronized with Ingresses and Services of `type=LoadBalancer` in your cluster.
+## The Latest Release: v0.4
 
-From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.3` with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
+ExternalDNS' current release is `v0.4`. This version allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
+* [Google CloudDNS](https://cloud.google.com/dns/docs/)
+* [AWS Route 53](https://aws.amazon.com/route53/)
+* [AzureDNS](https://azure.microsoft.com/en-us/services/dns)
+* [CloudFlare](https://www.cloudflare.com/de/dns)
+* [DigitalOcean](https://www.digitalocean.com/products/networking)
+* [DNSimple](https://dnsimple.com/)
+* [Infoblox](https://www.infoblox.com/products/dns/)
+
+From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.4` with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
 Note that all flags can be replaced with environment variables; for instance,
 `--dry-run` could be replaced with `EXTERNAL_DNS_DRY_RUN=1`, or
 `--registry txt` could be replaced with `EXTERNAL_DNS_REGISTRY=txt`.
+
+## Deploying to a Cluster
+
+The following tutorials are provided:
+
+* [AWS](docs/tutorials/aws.md)
+* [Azure](docs/tutorials/azure.md)
+* [Cloudflare](docs/tutorials/cloudflare.md)
+* [DigitalOcean](docs/tutorials/digitalocean.md)
+* [Infoblox](docs/tutorials/infoblox.md)
+* Google Container Engine
+	* [Using Google's Default Ingress Controller](docs/tutorials/gke.md)
+	* [Using the Nginx Ingress Controller](docs/tutorials/nginx-ingress.md)
+
+## Running Locally
 
 ### Technical Requirements
 
@@ -51,6 +80,14 @@ Annotate the Service with your desired external DNS name. Make sure to change `e
 ```console
 $ kubectl annotate service nginx "external-dns.alpha.kubernetes.io/hostname=nginx.example.org."
 ```
+
+Optionally, you can customize the TTL value of the resulting DNS record by using the `external-dns.alpha.kubernetes.io/ttl` annotation:
+
+```console
+$ kubectl annotate service nginx "external-dns.alpha.kubernetes.io/ttl=10"
+```
+
+For more details on configuring TTL, see [here](docs/ttl.md).
 
 Locally run a single sync loop of ExternalDNS.
 
@@ -97,16 +134,23 @@ Here's a rough outline on what is to come (subject to change):
 - [x] Support for AWS Route 53
 - [x] Support for Kubernetes Ingresses
 
-### v0.3 - _current version_
+### v0.3
 
 - [x] Support for AWS Route 53 via ALIAS
 - [x] Support for multiple zones
 - [x] Ownership System
 
+### v0.4 - _current version_
+
+- [x] Support for AzureDNS
+- [x] Support for CloudFlare
+- [x] Support for DigitalOcean
+- [x] Multiple DNS names per Service
+
 ### v1.0
 
 - [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller)
-- [ ] Ability to replace Zalando's [Mate](https://github.com/zalando-incubator/mate)
+- [x] Ability to replace Zalando's [Mate](https://github.com/linki/mate)
 - [x] Ability to replace Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 
 ### Yet to be defined
@@ -122,18 +166,32 @@ Have a look at [the milestones](https://github.com/kubernetes-incubator/external
 
 ## Contributing
 
-We encourage you to get involved with ExternalDNS, as users as well as contributors. Read the [contributing guidelines](CONTRIBUTING.md) and have a look at [the contributing docs](docs/contributing/getting-started.md) to learn about building the project, the project structure, and the purpose of each package.
+We encourage you to get involved with ExternalDNS, as users, contributors or as new maintainers that can take over some parts like different providers and help with code reviews.
+
+Providers which currently need maintainers:
+
+* Azure
+* Cloudflare
+* Digital Ocean
+* Google Cloud Platform
+
+Any provider should have at least one maintainer. It would be nice if you run it in production, but it is not required.
+You should check changes and make sure your provider is working correctly.
+
+It would be also great to have an automated end-to-end test for different cloud providers, so help from Kubernetes maintainers and their idea on how this can be done would be valuable.
+
+Read the [contributing guidelines](CONTRIBUTING.md) and have a look at [the contributing docs](docs/contributing/getting-started.md) to learn about building the project, the project structure, and the purpose of each package.
+
+If you are interested please reach out to us on the [Kubernetes slack](http://slack.k8s.io) in the #external-dns channel.
 
 For an overview on how to write new Sources and Providers check out [Sources and Providers](docs/contributing/sources-and-providers.md).
-
-Feel free to reach out to us on the [Kubernetes slack](http://slack.k8s.io) in the #sig-network channel.
 
 ## Heritage
 
 ExternalDNS is an effort to unify the following similar projects in order to bring the Kubernetes community an easy and predictable way of managing DNS records across cloud providers based on their Kubernetes resources:
 
 * Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller)
-* Zalando's [Mate](https://github.com/zalando-incubator/mate)
+* Zalando's [Mate](https://github.com/linki/mate)
 * Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 
 ## Kubernetes Incubator

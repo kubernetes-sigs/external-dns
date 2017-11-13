@@ -16,18 +16,59 @@ limitations under the License.
 
 package source
 
-import "github.com/kubernetes-incubator/external-dns/endpoint"
+import (
+	"fmt"
+	"math"
+	"net"
+	"strconv"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+)
 
 const (
 	// The annotation used for figuring out which controller is responsible
 	controllerAnnotationKey = "external-dns.alpha.kubernetes.io/controller"
 	// The annotation used for defining the desired hostname
 	hostnameAnnotationKey = "external-dns.alpha.kubernetes.io/hostname"
-	// The value of the controller annotation so that we feel resposible
+	// The annotation used for defining the desired ingress target
+	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
+	// The annotation used for defining the desired DNS record TTL
+	ttlAnnotationKey = "external-dns.alpha.kubernetes.io/ttl"
+	// The value of the controller annotation so that we feel responsible
 	controllerAnnotationValue = "dns-controller"
+)
+
+const (
+	ttlMinimum = 1
+	ttlMaximum = math.MaxUint32
 )
 
 // Source defines the interface Endpoint sources should implement.
 type Source interface {
 	Endpoints() ([]*endpoint.Endpoint, error)
+}
+
+func getTTLFromAnnotations(annotations map[string]string) (endpoint.TTL, error) {
+	ttlNotConfigured := endpoint.TTL(0)
+	ttlAnnotation, exists := annotations[ttlAnnotationKey]
+	if !exists {
+		return ttlNotConfigured, nil
+	}
+	ttlValue, err := strconv.ParseInt(ttlAnnotation, 10, 64)
+	if err != nil {
+		return ttlNotConfigured, fmt.Errorf("\"%v\" is not a valid TTL value", ttlAnnotation)
+	}
+	if ttlValue < ttlMinimum || ttlValue > ttlMaximum {
+		return ttlNotConfigured, fmt.Errorf("TTL value must be between [%d, %d]", ttlMinimum, ttlMaximum)
+	}
+	return endpoint.TTL(ttlValue), nil
+}
+
+// suitableType returns the DNS resource record type suitable for the target.
+// In this case type A for IPs and type CNAME for everything else.
+func suitableType(target string) string {
+	if net.ParseIP(target) != nil {
+		return endpoint.RecordTypeA
+	}
+	return endpoint.RecordTypeCNAME
 }

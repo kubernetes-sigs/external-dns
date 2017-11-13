@@ -42,5 +42,15 @@ func ValidateConfig(cfg *externaldns.Config) error {
 			return errors.New("no Azure config file specified")
 		}
 	}
+
+	// Infoblox provider specific validations
+	if cfg.Provider == "infoblox" {
+		if cfg.InfobloxGridHost == "" {
+			return errors.New("no Infoblox Grid Manager host specified")
+		}
+		if cfg.InfobloxWapiPassword == "" {
+			return errors.New("no Infoblox WAPI password specified")
+		}
+	}
 	return nil
 }

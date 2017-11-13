@@ -12,12 +12,12 @@
 			"Rev": "95361a2573b1fa92a00c5fc2707a80308483c6f9"
 		},
 		{
-			"ImportPath": "github.com/Sirupsen/logrus",
+			"ImportPath": "github.com/sirupsen/logrus",
 			"Comment": "v0.7.3",
 			"Rev": "55eb11d21d2a31a3cc93838241d04800f52e823d"
 		},
 		{
-			"ImportPath": "github.com/Sirupsen/logrus/formatters/logstash",
+			"ImportPath": "github.com/sirupsen/logrus/formatters/logstash",
 			"Comment": "v0.7.3",
 			"Rev": "55eb11d21d2a31a3cc93838241d04800f52e823d"
 		},

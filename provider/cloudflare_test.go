@@ -39,7 +39,7 @@ func (m *mockCloudFlareClient) CreateDNSRecord(zoneID string, rr cloudflare.DNSR
 func (m *mockCloudFlareClient) DNSRecords(zoneID string, rr cloudflare.DNSRecord) ([]cloudflare.DNSRecord, error) {
 	if zoneID == "1234567890" {
 		return []cloudflare.DNSRecord{
-				{ID: "1234567890", Name: "foobar.ext-dns-test.zalando.to.", Type: "A"},
+				{ID: "1234567890", Name: "foobar.ext-dns-test.zalando.to.", Type: endpoint.RecordTypeA},
 				{ID: "1231231233", Name: "foo.bar.com"}},
 			nil
 	}
@@ -336,9 +336,42 @@ func (m *mockCloudFlareUpdateRecordsFail) ListZones(zoneID ...string) ([]cloudfl
 }
 
 func TestNewCloudFlareChanges(t *testing.T) {
-	action := cloudFlareCreate
 	endpoints := []*endpoint.Endpoint{{DNSName: "new", Target: "target"}}
-	_ = newCloudFlareChanges(action, endpoints)
+	newCloudFlareChanges(cloudFlareCreate, endpoints, true)
+}
+
+func TestNewCloudFlareChangeNoProxied(t *testing.T) {
+	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: "A", Target: "target"}, false)
+	assert.False(t, change.ResourceRecordSet.Proxied)
+}
+
+func TestNewCloudFlareChangeProxiable(t *testing.T) {
+	var cloudFlareTypes = []struct {
+		recordType string
+		proxiable  bool
+	}{
+		{"A", true},
+		{"CNAME", true},
+		{"LOC", false},
+		{"MX", false},
+		{"NS", false},
+		{"SPF", false},
+		{"TXT", false},
+		{"SRV", false},
+	}
+
+	for _, cloudFlareType := range cloudFlareTypes {
+		change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: cloudFlareType.recordType, Target: "target"}, true)
+
+		if cloudFlareType.proxiable {
+			assert.True(t, change.ResourceRecordSet.Proxied)
+		} else {
+			assert.False(t, change.ResourceRecordSet.Proxied)
+		}
+	}
+
+	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "*.foo", RecordType: "A", Target: "target"}, true)
+	assert.False(t, change.ResourceRecordSet.Proxied)
 }
 
 func TestCloudFlareZones(t *testing.T) {
@@ -382,13 +415,13 @@ func TestRecords(t *testing.T) {
 func TestNewCloudFlareProvider(t *testing.T) {
 	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
 	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
-	_, err := NewCloudFlareProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
+	_, err := NewCloudFlareProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), false, true)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
 	_ = os.Unsetenv("CF_API_KEY")
 	_ = os.Unsetenv("CF_API_EMAIL")
-	_, err = NewCloudFlareProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
+	_, err = NewCloudFlareProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), false, true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
@@ -425,45 +458,24 @@ func TestCloudFlareGetRecordID(t *testing.T) {
 	records := []cloudflare.DNSRecord{
 		{
 			Name: "foo.com",
-			Type: "CNAME",
+			Type: endpoint.RecordTypeCNAME,
 			ID:   "1",
 		},
 		{
 			Name: "bar.de",
-			Type: "A",
+			Type: endpoint.RecordTypeA,
 			ID:   "2",
 		},
 	}
 
 	assert.Equal(t, "", p.getRecordID(records, cloudflare.DNSRecord{
 		Name: "foo.com",
-		Type: "A",
+		Type: endpoint.RecordTypeA,
 	}))
 	assert.Equal(t, "2", p.getRecordID(records, cloudflare.DNSRecord{
 		Name: "bar.de",
-		Type: "A",
+		Type: endpoint.RecordTypeA,
 	}))
-}
-
-func TestCloudflareSuitableZone(t *testing.T) {
-	zones := []cloudflare.Zone{
-		{
-			ID:   "1",
-			Name: "foo.com",
-		},
-		{
-			ID:   "2",
-			Name: "foo.bar.com",
-		},
-		{
-			ID:   "3",
-			Name: "bar.com",
-		},
-	}
-	hostname := "a.foo.bar.com"
-	zone := cloudflareSuitableZone(hostname, zones)
-	assert.NotNil(t, zone)
-	assert.Equal(t, "2", zone.ID)
 }
 
 func validateCloudFlareZones(t *testing.T, zones []cloudflare.Zone, expected []cloudflare.Zone) {

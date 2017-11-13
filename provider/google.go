@@ -19,13 +19,14 @@ package provider
 import (
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/linki/instrumented_http"
+	log "github.com/sirupsen/logrus"
+
+	dns "google.golang.org/api/dns/v1"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
 
-	"google.golang.org/api/dns/v1"
 	googleapi "google.golang.org/api/googleapi"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -166,18 +167,12 @@ func (p *GoogleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 
 	f := func(resp *dns.ResourceRecordSetsListResponse) error {
 		for _, r := range resp.Rrsets {
-			// TODO(linki, ownership): Remove once ownership system is in place.
-			// See: https://github.com/kubernetes-incubator/external-dns/pull/122/files/74e2c3d3e237411e619aefc5aab694742001cdec#r109863370
-			switch r.Type {
-			case "A", "CNAME", "TXT":
-				break
-			default:
-				continue
-			}
 
 			for _, rr := range r.Rrdatas {
 				// each page is processed sequentially, no need for a mutex here.
-				endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, rr, r.Type))
+				if supportedRecordType(r.Type) {
+					endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, rr, r.Type))
+				}
 			}
 		}
 
@@ -273,23 +268,23 @@ func (p *GoogleProvider) submitChange(change *dns.Change) error {
 // separateChange separates a multi-zone change into a single change per zone.
 func separateChange(zones map[string]*dns.ManagedZone, change *dns.Change) map[string]*dns.Change {
 	changes := make(map[string]*dns.Change)
-
+	zoneNameIDMapper := zoneIDName{}
 	for _, z := range zones {
+		zoneNameIDMapper[z.Name] = z.DnsName
 		changes[z.Name] = &dns.Change{
 			Additions: []*dns.ResourceRecordSet{},
 			Deletions: []*dns.ResourceRecordSet{},
 		}
 	}
-
 	for _, a := range change.Additions {
-		if zone := suitableManagedZone(ensureTrailingDot(a.Name), zones); zone != nil {
-			changes[zone.Name].Additions = append(changes[zone.Name].Additions, a)
+		if zoneName, _ := zoneNameIDMapper.FindZone(ensureTrailingDot(a.Name)); zoneName != "" {
+			changes[zoneName].Additions = append(changes[zoneName].Additions, a)
 		}
 	}
 
 	for _, d := range change.Deletions {
-		if zone := suitableManagedZone(ensureTrailingDot(d.Name), zones); zone != nil {
-			changes[zone.Name].Deletions = append(changes[zone.Name].Deletions, d)
+		if zoneName, _ := zoneNameIDMapper.FindZone(ensureTrailingDot(d.Name)); zoneName != "" {
+			changes[zoneName].Deletions = append(changes[zoneName].Deletions, d)
 		}
 	}
 
@@ -301,21 +296,6 @@ func separateChange(zones map[string]*dns.ManagedZone, change *dns.Change) map[s
 	}
 
 	return changes
-}
-
-// suitableManagedZone returns the most suitable zone for a given hostname and a set of zones.
-func suitableManagedZone(hostname string, zones map[string]*dns.ManagedZone) *dns.ManagedZone {
-	var zone *dns.ManagedZone
-
-	for _, z := range zones {
-		if strings.HasSuffix(hostname, z.DnsName) {
-			if zone == nil || len(z.DnsName) > len(zone.DnsName) {
-				zone = z
-			}
-		}
-	}
-
-	return zone
 }
 
 // newRecords returns a collection of RecordSets based on the given endpoints.
@@ -330,19 +310,19 @@ func newRecords(endpoints []*endpoint.Endpoint) []*dns.ResourceRecordSet {
 }
 
 // newRecord returns a RecordSet based on the given endpoint.
-func newRecord(endpoint *endpoint.Endpoint) *dns.ResourceRecordSet {
+func newRecord(ep *endpoint.Endpoint) *dns.ResourceRecordSet {
 	// TODO(linki): works around appending a trailing dot to TXT records. I think
 	// we should go back to storing DNS names with a trailing dot internally. This
 	// way we can use it has is here and trim it off if it exists when necessary.
-	target := endpoint.Target
-	if suitableType(endpoint) == "CNAME" {
+	target := ep.Target
+	if ep.RecordType == endpoint.RecordTypeCNAME {
 		target = ensureTrailingDot(target)
 	}
 
 	return &dns.ResourceRecordSet{
-		Name:    ensureTrailingDot(endpoint.DNSName),
+		Name:    ensureTrailingDot(ep.DNSName),
 		Rrdatas: []string{target},
 		Ttl:     300,
-		Type:    suitableType(endpoint),
+		Type:    ep.RecordType,
 	}
 }

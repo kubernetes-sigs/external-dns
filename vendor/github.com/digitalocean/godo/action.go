@@ -2,6 +2,7 @@ package godo
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/digitalocean/godo/context"
 )
@@ -61,7 +62,7 @@ func (s *ActionsServiceOp) List(ctx context.Context, opt *ListOptions) ([]Action
 		return nil, nil, err
 	}
 
-	req, err := s.client.NewRequest(ctx, "GET", path, nil)
+	req, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -85,7 +86,7 @@ func (s *ActionsServiceOp) Get(ctx context.Context, id int) (*Action, *Response,
 	}
 
 	path := fmt.Sprintf("%s/%d", actionsBasePath, id)
-	req, err := s.client.NewRequest(ctx, "GET", path, nil)
+	req, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}
