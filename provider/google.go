@@ -149,9 +149,9 @@ func (p *GoogleProvider) Zones() (map[string]*dns.ManagedZone, error) {
 		for _, zone := range resp.ManagedZones {
 			if p.domainFilter.Match(zone.DnsName) {
 				zones[zone.Name] = zone
-				log.Debugf("Matched %s (zone: %s)", zone.DnsName, zone.Name)				
+				log.Debugf("Matched %s (zone: %s)", zone.DnsName, zone.Name)
 			} else {
-				log.Debugf("Filtered %s (zone: %s)", zone.DnsName, zone.Name)				
+				log.Debugf("Filtered %s (zone: %s)", zone.DnsName, zone.Name)
 			}
 		}
 
@@ -262,13 +262,6 @@ func (p *GoogleProvider) submitChange(change *dns.Change) error {
 		return nil
 	}
 
-	for _, del := range change.Deletions {
-		log.Debugf("Plan requests record deletion: %s %s %s %d", del.Name, del.Type, del.Rrdatas, del.Ttl)
-	}
-	for _, add := range change.Additions {
-		log.Debugf("Plan requests record addition: %s %s %s %d", add.Name, add.Type, add.Rrdatas, add.Ttl)
-	}
-
 	zones, err := p.Zones()
 	if err != nil {
 		return err
@@ -276,7 +269,7 @@ func (p *GoogleProvider) submitChange(change *dns.Change) error {
 
 	// separate into per-zone change sets to be passed to the API.
 	changes := separateChange(zones, change)
-	
+
 	for z, c := range changes {
 		log.Infof("Change zone: %v", z)
 		for _, del := range c.Deletions {

@@ -1,3 +1,6 @@
+
+  - Google: Improve logging to help trace misconfigurations. (#388) @stealthybox
+
 ## v0.4.8 - 2017-11-22
 
   - Allow filtering by source annotation via `--annotation-filter` (#354) @khrisrichardson
