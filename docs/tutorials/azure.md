@@ -83,7 +83,7 @@ A Service Principal with a minimum access level of contribute to the resource gr
 }
 
 # use the id from the previous step in the scopes argument
->az ad sp create-for-rbac --role="Contributor" --scopes="/subscriptions/670d2139-c4ef-4a98-8f38-b7052d5a06b2/resourceGroups/MyDnsResourceGroup"
+>az ad sp create-for-rbac --role="Contributor" --scopes="/subscriptions/670d2139-c4ef-4a98-8f38-b7052d5a06b2/resourceGroups/MyDnsResourceGroup" -n ExternalDnsServicePrincipal
 {
   "appId": "a0b083bd-c0fc-473d-be48-e2a4df3ec908",  <-- aadClientId value
   ...
