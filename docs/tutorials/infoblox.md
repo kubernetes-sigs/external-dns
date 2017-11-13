@@ -9,14 +9,11 @@ the following types: `zone_auth`, `record:a`, `record:cname`, `record:txt`.
 This tutorial assumes you have substituted the correct values for the following environment variables:
 
 ```
-export EXTERNAL_DNS_INFOBLOX_GRID_HOST=127.0.0.1
-export EXTERNAL_DNS_INFOBLOX_HTTP_POOL_CONNECTIONS=10
-export EXTERNAL_DNS_INFOBLOX_HTTP_REQUEST_TIMEOUT=60
-export EXTERNAL_DNS_INFOBLOX_SSL_VERIFY=1
-export EXTERNAL_DNS_INFOBLOX_WAPI_PORT=443
-export EXTERNAL_DNS_INFOBLOX_WAPI_VERSION=2.3.1
-export EXTERNAL_DNS_INFOBLOX_WAPI_USERNAME=admin
-export EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD=infoblox
+export GRID_HOST=127.0.0.1
+export WAPI_PORT=443
+export WAPI_VERSION=2.3.1
+export WAPI_USERNAME=admin
+export WAPI_PASSWORD=infoblox
 ```
 
 ## Creating an Infoblox DNS zone
@@ -30,8 +27,8 @@ Create an Infoblox DNS zone for "example.com":
 $ curl -kl \
       -X POST \
       -d fqdn=example.com \
-      -u ${EXTERNAL_DNS_INFOBLOX_WAPI_USERNAME}:${EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD} \
-         https://${EXTERNAL_DNS_INFOBLOX_GRID_HOST}:${EXTERNAL_DNS_INFOBLOX_WAPI_PORT}/wapi/v${EXTERNAL_DNS_INFOBLOX_WAPI_VERSION}/zone_auth
+      -u ${WAPI_USERNAME}:${WAPI_PASSWORD} \
+         https://${GRID_HOST}:${WAPI_PORT}/wapi/v${WAPI_VERSION}/zone_auth
 ```
 
 Substitute a domain you own for "example.com" if desired.
@@ -44,21 +41,16 @@ To create the secret:
 
 ```
 $ kubectl create secret generic external-dns \
-      --from-literal=EXTERNAL_DNS_INFOBLOX_GRID_HOST=${EXTERNAL_DNS_INFOBLOX_GRID_HOST} \
-      --from-literal=EXTERNAL_DNS_INFOBLOX_HTTP_POOL_CONNECTIONS=${EXTERNAL_DNS_INFOBLOX_HTTP_POOL_CONNECTIONS} \
-      --from-literal=EXTERNAL_DNS_INFOBLOX_HTTP_REQUEST_TIMEOUT=${EXTERNAL_DNS_INFOBLOX_HTTP_REQUEST_TIMEOUT} \
-      --from-literal=EXTERNAL_DNS_INFOBLOX_SSL_VERIFY=${EXTERNAL_DNS_INFOBLOX_SSL_VERIFY} \
-      --from-literal=EXTERNAL_DNS_INFOBLOX_WAPI_PORT=${EXTERNAL_DNS_INFOBLOX_WAPI_PORT} \
-      --from-literal=EXTERNAL_DNS_INFOBLOX_WAPI_VERSION=${EXTERNAL_DNS_INFOBLOX_WAPI_VERSION} \
-      --from-literal=EXTERNAL_DNS_INFOBLOX_WAPI_USERNAME=${EXTERNAL_DNS_INFOBLOX_WAPI_USERNAME} \
-      --from-literal=EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD=${EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD}
+      --from-literal=EXTERNAL_DNS_INFOBLOX_WAPI_USERNAME=${WAPI_USERNAME} \
+      --from-literal=EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD=${WAPI_PASSWORD}
 ```
 
 ## Deploy ExternalDNS
 
 Create a deployment file called `externaldns.yaml` with the following contents:
 
-```yaml
+```
+$ cat > externaldns.yaml <<EOF
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -76,39 +68,17 @@ spec:
         image: registry.opensource.zalan.do/teapot/external-dns:v0.4.6
         args:
         - --source=service
-        - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
+        - --domain-filter=example.com       # (optional) limit to only example.com domains.
         - --provider=infoblox
+        - --infoblox-grid-host=${GRID_HOST} # (required) IP of the Infoblox Grid host.
+        - --infoblox-wapi-port=443          # (optional) Infoblox WAPI port. The default is "443".
+        - --infoblox-wapi-version=2.3.1     # (optional) Infoblox WAPI version. The default is "2.3.1"
+        - --infoblox-ssl-verify             # (optional) Use --no-infoblox-ssl-verify to skip server certificate verification.
         env:
-        - name: EXTERNAL_DNS_INFOBLOX_GRID_HOST
-          valueFrom:
-            secretKeyRef:
-              name: external-dns
-              key: EXTERNAL_DNS_INFOBLOX_GRID_HOST
         - name: EXTERNAL_DNS_INFOBLOX_HTTP_POOL_CONNECTIONS
-          valueFrom:
-            secretKeyRef:
-              name: external-dns
-              key: EXTERNAL_DNS_INFOBLOX_HTTP_POOL_CONNECTIONS
+          value: "10" # (optional) Infoblox WAPI request connection pool size. The default is "10".
         - name: EXTERNAL_DNS_INFOBLOX_HTTP_REQUEST_TIMEOUT
-          valueFrom:
-            secretKeyRef:
-              name: external-dns
-              key: EXTERNAL_DNS_INFOBLOX_HTTP_REQUEST_TIMEOUT
-        - name: EXTERNAL_DNS_INFOBLOX_SSL_VERIFY
-          valueFrom:
-            secretKeyRef:
-              name: external-dns
-              key: EXTERNAL_DNS_INFOBLOX_SSL_VERIFY
-        - name: EXTERNAL_DNS_INFOBLOX_WAPI_PORT
-          valueFrom:
-            secretKeyRef:
-              name: external-dns
-              key: EXTERNAL_DNS_INFOBLOX_WAPI_PORT
-        - name: EXTERNAL_DNS_INFOBLOX_WAPI_VERSION
-          valueFrom:
-            secretKeyRef:
-              name: external-dns
-              key: EXTERNAL_DNS_INFOBLOX_WAPI_VERSION
+          value: "60" # (optional) Infoblox WAPI request timeout in seconds. The default is "60".
         - name: EXTERNAL_DNS_INFOBLOX_WAPI_USERNAME
           valueFrom:
             secretKeyRef:
@@ -119,6 +89,7 @@ spec:
             secretKeyRef:
               name: external-dns
               key: EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD
+EOF
 ```
 
 Create the deployment for ExternalDNS:
@@ -189,8 +160,8 @@ Run the following command to view the A records for your Infoblox DNS zone:
 ```
 $ curl -kl \
       -X GET \
-      -u ${EXTERNAL_DNS_INFOBLOX_WAPI_USERNAME}:${EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD} \
-         https://${EXTERNAL_DNS_INFOBLOX_GRID_HOST}:${EXTERNAL_DNS_INFOBLOX_WAPI_PORT}/wapi/v${EXTERNAL_DNS_INFOBLOX_WAPI_VERSION}/record:a?zone=example.com
+      -u ${WAPI_USERNAME}:${WAPI_PASSWORD} \
+         https://${GRID_HOST}:${WAPI_PORT}/wapi/v${WAPI_VERSION}/record:a?zone=example.com
 ```
 
 Substitute the zone for the one created above if a different domain was used.
@@ -205,6 +176,6 @@ DNS zone:
 ```
 $ curl -kl \
       -X DELETE \
-      -u ${EXTERNAL_DNS_INFOBLOX_WAPI_USERNAME}:${EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD} \
-         https://${EXTERNAL_DNS_INFOBLOX_GRID_HOST}:${EXTERNAL_DNS_INFOBLOX_WAPI_PORT}/wapi/v${EXTERNAL_DNS_INFOBLOX_WAPI_VERSION}/zone_auth?fqdn=example.com
+      -u ${WAPI_USERNAME}:${WAPI_PASSWORD} \
+         https://${GRID_HOST}:${WAPI_PORT}/wapi/v${WAPI_VERSION}/zone_auth?fqdn=example.com
 ```
