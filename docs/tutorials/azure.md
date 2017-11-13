@@ -34,20 +34,66 @@ name servers to the values in the `nameServers` field from the JSON data returne
 Please consult your registrar's documentation on how to do that.
 
 ## Creating Azure Credentials Secret
+The Azure DNS provider expects, by default, that the configuration file is at `/etc/kubernetes/azure.json`.  This can be overridden with
+the `--azure-config-file` option when starting ExternalDNS.
 
-When your Kubernetes cluster is created by Azure Container Services, a file named `/etc/kubernetes/azure.json` is created to store
+### Azure Container Services
+When your Kubernetes cluster is created by ACS, a file named `/etc/kubernetes/azure.json` is created to store
 the Azure credentials for API access.  Kubernetes uses this file for the Azure cloud provider.
 
 For ExternalDNS to access the Azure API, it also needs access to this file.  However, we will be deploying ExternalDNS inside of
 the Kubernetes cluster so we will need to use a Kubernetes secret.
 
-The Azure DNS provider expects, by default, that the configuration file is at `/etc/kubernetes/azure.json`.  This can be overridden with
-the `--azure-config-file` option when starting ExternalDNS.
-
 To create the secret:
 
 ```
 $ kubectl create secret generic azure-config-file --from-file=/etc/kubernetes/azure.json
+```
+### Other hosting providers
+If the Kubernetes cluster is not hosted by Azure Container Services and you still want to use Azure DNS, you need to create the secret manually. The secret should contain an object named azure.json with content similar to this:
+```
+{
+  "tenantId": "837b898d-7dd5-4967-b718-7dfd25878104",
+  "subscriptionId": "670d2139-c4ef-4a98-8f38-b7052d5a06b2",
+  "aadClientId": "a0b083bd-c0fc-473d-be48-e2a4df3ec908",
+  "aadClientSecret": "11c78103-8109-40af-a6d4-3db265fed095",
+  "resourceGroup": "MyDnsResourceGroup",
+}
+```
+If you have all the information necessary: create a file called azure.json containing the json structure above and substitute the values. Otherwise create a service principal as shown below before creating the Kubernetes secret.
+
+Then add the secret to the Kubernetes cluster before continuing:
+```
+kubectl create secret generic azure-config-file --from-file=azure.json
+```
+
+#### (Optional) Create service principal
+A Service Principal with a minimum access level of contribute to the resource group containing the Azure DNS zone(s) is necessary for ExternalDNS to be able to edit DNS records. This is an Azure CLI example of how you can create a resource group, service principal and dns resource pointing out key information you need to put in the azure.json file.
+
+```
+>az login
+...
+# find the relevant subscription and set the az context. This is the "subscriptionId" value.
+>az account set --subscription "670d2139-c4ef-4a98-8f38-b7052d5a06b2"
+...
+>az group create --name MyDnsResourceGroup --location "West Europe"
+{
+  "id": "/subscriptions/670d2139-c4ef-4a98-8f38-b7052d5a06b2/resourceGroups/MyDnsResourceGroup",
+  ...
+}
+
+# use the id from the previous step in the scopes argument
+>az ad sp create-for-rbac --role="Contributor" --scopes="/subscriptions/670d2139-c4ef-4a98-8f38-b7052d5a06b2/resourceGroups/MyDnsResourceGroup" -n ExternalDnsServicePrincipal
+{
+  "appId": "a0b083bd-c0fc-473d-be48-e2a4df3ec908",  <-- aadClientId value
+  ...
+  "password": "11c78103-8109-40af-a6d4-3db265fed095",  <-- aadClientSecret value
+  "tenant": "837b898d-7dd5-4967-b718-7dfd25878104"  <-- tenantId value
+}
+
+>az network dns zone create -g MyDnsResourceGroup -n example.com
+...
+
 ```
 
 ## Deploy ExternalDNS
