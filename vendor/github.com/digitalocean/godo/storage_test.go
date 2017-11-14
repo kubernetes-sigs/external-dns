@@ -48,7 +48,7 @@ func TestStorageVolumes_ListStorageVolumes(t *testing.T) {
 	}`
 
 	mux.HandleFunc("/v2/volumes/", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, jBlob)
 	})
 
@@ -114,7 +114,7 @@ func TestStorageVolumes_Get(t *testing.T) {
 	}`
 
 	mux.HandleFunc("/v2/volumes/80d414c6-295e-4e3a-ac58-eb9456c1e1d1", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, jBlob)
 	})
 
@@ -166,7 +166,7 @@ func TestStorageVolumes_ListVolumesByName(t *testing.T) {
 		if r.URL.Query().Get("name") != "myvolume" || r.URL.Query().Get("region") != "nyc3" {
 			t.Errorf("Storage.GetVolumeByName did not request the correct name or region")
 		}
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, jBlob)
 	})
 
@@ -222,7 +222,7 @@ func TestStorageVolumes_Create(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, createRequest) {
 			t.Errorf("Request body = %+v, expected %+v", v, createRequest)
 		}
@@ -277,7 +277,7 @@ func TestStorageVolumes_CreateFromSnapshot(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, createRequest) {
 			t.Errorf("Request body = %+v, expected %+v", v, createRequest)
 		}
@@ -299,7 +299,7 @@ func TestStorageVolumes_Destroy(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/volumes/80d414c6-295e-4e3a-ac58-eb9456c1e1d1", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 	})
 
 	_, err := client.Storage.DeleteVolume(ctx, "80d414c6-295e-4e3a-ac58-eb9456c1e1d1")
@@ -342,7 +342,7 @@ func TestStorageSnapshots_ListStorageSnapshots(t *testing.T) {
 	}`
 
 	mux.HandleFunc("/v2/volumes/98d414c6-295e-4e3a-ac58-eb9456c1e1d1/snapshots", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, jBlob)
 	})
 
@@ -402,7 +402,7 @@ func TestStorageSnapshots_Get(t *testing.T) {
 	}`
 
 	mux.HandleFunc("/v2/snapshots/80d414c6-295e-4e3a-ac58-eb9456c1e1d1", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, jBlob)
 	})
 
@@ -459,7 +459,7 @@ func TestStorageSnapshots_Create(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, createRequest) {
 			t.Errorf("Request body = %+v, expected %+v", v, createRequest)
 		}
@@ -481,7 +481,7 @@ func TestStorageSnapshots_Destroy(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/snapshots/80d414c6-295e-4e3a-ac58-eb9456c1e1d1", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 	})
 
 	_, err := client.Storage.DeleteSnapshot(ctx, "80d414c6-295e-4e3a-ac58-eb9456c1e1d1")

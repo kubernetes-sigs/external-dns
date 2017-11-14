@@ -18,31 +18,7 @@ package provider
 
 import (
 	"testing"
-
-	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
-
-func TestSuitableType(t *testing.T) {
-	for _, tc := range []struct {
-		target, recordType, expected string
-	}{
-		{"8.8.8.8", "", "A"},
-		{"foo.example.org", "", "CNAME"},
-		{"foo.example.org", "ALIAS", "ALIAS"},
-		{"bar.eu-central-1.elb.amazonaws.com", "CNAME", "CNAME"},
-	} {
-		ep := &endpoint.Endpoint{
-			Target:     tc.target,
-			RecordType: tc.recordType,
-		}
-
-		recordType := suitableType(ep)
-
-		if recordType != tc.expected {
-			t.Errorf("expected %s, got %s", tc.expected, recordType)
-		}
-	}
-}
 
 func TestEnsureTrailingDot(t *testing.T) {
 	for _, tc := range []struct {

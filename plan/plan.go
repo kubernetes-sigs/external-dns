@@ -17,8 +17,8 @@ limitations under the License.
 package plan
 
 import (
-	log "github.com/Sirupsen/logrus"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	log "github.com/sirupsen/logrus"
 )
 
 // Plan can convert a list of desired and current records to a series of create,
@@ -65,17 +65,26 @@ func (p *Plan) Calculate() *Plan {
 			continue
 		}
 
-		// If there already is a record update it if it changed.
-		if desired.Target != current.Target {
-			changes.UpdateOld = append(changes.UpdateOld, current)
+		targetChanged := targetChanged(desired, current)
+		shouldUpdateTTL := shouldUpdateTTL(desired, current)
 
-			desired.RecordType = current.RecordType // inherit the type from the dns provider
-			desired.MergeLabels(current.Labels)     // inherit the labels from the dns provider, including Owner ID
-			changes.UpdateNew = append(changes.UpdateNew, desired)
+		if !targetChanged && !shouldUpdateTTL {
+			log.Debugf("Skipping endpoint %v because nothing has changed", desired)
 			continue
 		}
 
-		log.Debugf("Skipping endpoint %v because target has not changed", desired)
+		changes.UpdateOld = append(changes.UpdateOld, current)
+		desired.MergeLabels(current.Labels) // inherit the labels from the dns provider, including Owner ID
+
+		if targetChanged {
+			desired.RecordType = current.RecordType // inherit the type from the dns provider
+		}
+
+		if !shouldUpdateTTL {
+			desired.RecordTTL = current.RecordTTL
+		}
+
+		changes.UpdateNew = append(changes.UpdateNew, desired)
 	}
 
 	// Ensure all undesired records are removed. Each current record that cannot
@@ -98,6 +107,17 @@ func (p *Plan) Calculate() *Plan {
 	}
 
 	return plan
+}
+
+func targetChanged(desired, current *endpoint.Endpoint) bool {
+	return desired.Target != current.Target
+}
+
+func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
+	if !desired.RecordTTL.IsConfigured() {
+		return false
+	}
+	return desired.RecordTTL != current.RecordTTL
 }
 
 // recordExists checks whether a record can be found in a list of records.

@@ -22,9 +22,10 @@ import (
 	"strings"
 	"text/template"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 
@@ -33,15 +34,17 @@ import (
 
 // ingressSource is an implementation of Source for Kubernetes ingress objects.
 // Ingress implementation will use the spec.rules.host value for the hostname
-// Ingress annotations are ignored
+// Use targetAnnotationKey to explicitly set Endpoint. (useful if the ingress
+// controller does not update, or to override with alternative endpoint)
 type ingressSource struct {
-	client       kubernetes.Interface
-	namespace    string
-	fqdnTemplate *template.Template
+	client           kubernetes.Interface
+	namespace        string
+	annotationFilter string
+	fqdnTemplate     *template.Template
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate string) (Source, error) {
+func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -56,9 +59,10 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate s
 	}
 
 	return &ingressSource{
-		client:       kubeClient,
-		namespace:    namespace,
-		fqdnTemplate: tmpl,
+		client:           kubeClient,
+		namespace:        namespace,
+		annotationFilter: annotationFilter,
+		fqdnTemplate:     tmpl,
 	}, nil
 }
 
@@ -66,6 +70,10 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, fqdnTemplate s
 // Retrieves all ingress resources on all namespaces
 func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	ingresses, err := sc.client.Extensions().Ingresses(sc.namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	ingresses.Items, err = sc.filterByAnnotations(ingresses.Items)
 	if err != nil {
 		return nil, err
 	}
@@ -103,6 +111,28 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
+// get endpoints from optional "target" annotation
+// Returns empty endpoints array if none are found.
+func getEndpointsFromTargetAnnotation(ing *v1beta1.Ingress, hostname string) []*endpoint.Endpoint {
+	var endpoints []*endpoint.Endpoint
+
+	// Get the desired hostname of the ingress from the annotation.
+	targetAnnotation, exists := ing.Annotations[targetAnnotationKey]
+	if exists {
+		ttl, err := getTTLFromAnnotations(ing.Annotations)
+		if err != nil {
+			log.Warn(err)
+		}
+		// splits the hostname annotation and removes the trailing periods
+		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
+		for _, targetHostname := range targetsList {
+			targetHostname = strings.TrimSuffix(targetHostname, ".")
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, targetHostname, suitableType(targetHostname), ttl))
+		}
+	}
+	return endpoints
+}
+
 func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
@@ -113,16 +143,58 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 	}
 
 	hostname := buf.String()
+
+	endpoints = getEndpointsFromTargetAnnotation(ing, hostname)
+
+	if len(endpoints) != 0 {
+		return endpoints, nil
+	}
+
+	ttl, err := getTTLFromAnnotations(ing.Annotations)
+	if err != nil {
+		log.Warn(err)
+	}
 	for _, lb := range ing.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.IP, ""))
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.IP, endpoint.RecordTypeA, ttl))
 		}
 		if lb.Hostname != "" {
-			endpoints = append(endpoints, endpoint.NewEndpoint(hostname, lb.Hostname, ""))
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.Hostname, endpoint.RecordTypeCNAME, ttl))
 		}
 	}
 
 	return endpoints, nil
+}
+
+// filterByAnnotations filters a list of ingresses by a given annotation selector.
+func (sc *ingressSource) filterByAnnotations(ingresses []v1beta1.Ingress) ([]v1beta1.Ingress, error) {
+	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
+	if err != nil {
+		return nil, err
+	}
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		return nil, err
+	}
+
+	// empty filter returns original list
+	if selector.Empty() {
+		return ingresses, nil
+	}
+
+	filteredList := []v1beta1.Ingress{}
+
+	for _, ingress := range ingresses {
+		// convert the ingress' annotations to an equivalent label selector
+		annotations := labels.Set(ingress.Annotations)
+
+		// include ingress if its annotations match the selector
+		if selector.Matches(annotations) {
+			filteredList = append(filteredList, ingress)
+		}
+	}
+
+	return filteredList, nil
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object
@@ -133,12 +205,25 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 		if rule.Host == "" {
 			continue
 		}
+
+		annotationEndpoints := getEndpointsFromTargetAnnotation(ing, rule.Host)
+
+		if len(annotationEndpoints) != 0 {
+			endpoints = append(endpoints, annotationEndpoints...)
+			continue
+		}
+
+		ttl, err := getTTLFromAnnotations(ing.Annotations)
+		if err != nil {
+			log.Warn(err)
+		}
+
 		for _, lb := range ing.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
-				endpoints = append(endpoints, endpoint.NewEndpoint(rule.Host, lb.IP, ""))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rule.Host, lb.IP, endpoint.RecordTypeA, ttl))
 			}
 			if lb.Hostname != "" {
-				endpoints = append(endpoints, endpoint.NewEndpoint(rule.Host, lb.Hostname, ""))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rule.Host, lb.Hostname, endpoint.RecordTypeCNAME, ttl))
 			}
 		}
 	}

@@ -20,7 +20,7 @@ import (
 	"errors"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
@@ -76,6 +76,17 @@ func InMemoryWithLogging() InMemoryOption {
 func InMemoryWithDomain(domainFilter DomainFilter) InMemoryOption {
 	return func(p *InMemoryProvider) {
 		p.domain = domainFilter
+	}
+}
+
+// InMemoryInitZones pre-seeds the InMemoryProvider with given zones
+func InMemoryInitZones(zones []string) InMemoryOption {
+	return func(p *InMemoryProvider) {
+		for _, z := range zones {
+			if err := p.CreateZone(z); err != nil {
+				log.Warnf("Unable to initialize zones for inmemory provider")
+			}
+		}
 	}
 }
 
@@ -143,18 +154,30 @@ func (im *InMemoryProvider) ApplyChanges(changes *plan.Changes) error {
 
 	for _, ep := range changes.Create {
 		zoneID := im.filter.EndpointZoneID(ep, zones)
+		if zoneID == "" {
+			continue
+		}
 		perZoneChanges[zoneID].Create = append(perZoneChanges[zoneID].Create, ep)
 	}
 	for _, ep := range changes.UpdateNew {
 		zoneID := im.filter.EndpointZoneID(ep, zones)
+		if zoneID == "" {
+			continue
+		}
 		perZoneChanges[zoneID].UpdateNew = append(perZoneChanges[zoneID].UpdateNew, ep)
 	}
 	for _, ep := range changes.UpdateOld {
 		zoneID := im.filter.EndpointZoneID(ep, zones)
+		if zoneID == "" {
+			continue
+		}
 		perZoneChanges[zoneID].UpdateOld = append(perZoneChanges[zoneID].UpdateOld, ep)
 	}
 	for _, ep := range changes.Delete {
 		zoneID := im.filter.EndpointZoneID(ep, zones)
+		if zoneID == "" {
+			continue
+		}
 		perZoneChanges[zoneID].Delete = append(perZoneChanges[zoneID].Delete, ep)
 	}
 
@@ -178,7 +201,7 @@ func convertToInMemoryRecord(endpoints []*endpoint.Endpoint) []*inMemoryRecord {
 	records := []*inMemoryRecord{}
 	for _, ep := range endpoints {
 		records = append(records, &inMemoryRecord{
-			Type:   suitableType(ep),
+			Type:   ep.RecordType,
 			Name:   ep.DNSName,
 			Target: ep.Target,
 		})

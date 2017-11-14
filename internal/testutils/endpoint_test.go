@@ -32,22 +32,28 @@ func ExampleSameEndpoints() {
 		{
 			DNSName:    "example.org",
 			Target:     "load-balancer.org",
-			RecordType: "TXT",
+			RecordType: endpoint.RecordTypeTXT,
 		},
 		{
 			DNSName:    "abc.com",
 			Target:     "something",
-			RecordType: "TXT",
+			RecordType: endpoint.RecordTypeTXT,
 		},
 		{
 			DNSName:    "abc.com",
 			Target:     "1.2.3.4",
-			RecordType: "A",
+			RecordType: endpoint.RecordTypeA,
 		},
 		{
 			DNSName:    "bbc.com",
 			Target:     "foo.com",
+			RecordType: endpoint.RecordTypeCNAME,
+		},
+		{
+			DNSName:    "cbc.com",
+			Target:     "foo.com",
 			RecordType: "CNAME",
+			RecordTTL:  endpoint.TTL(60),
 		},
 	}
 	sort.Sort(byAllFields(eps))
@@ -55,9 +61,10 @@ func ExampleSameEndpoints() {
 		fmt.Println(ep)
 	}
 	// Output:
-	// abc.com -> 1.2.3.4 (type "A")
-	// abc.com -> something (type "TXT")
-	// bbc.com -> foo.com (type "CNAME")
-	// example.org -> load-balancer.org (type "")
-	// example.org -> load-balancer.org (type "TXT")
+	// abc.com 0 IN A 1.2.3.4
+	// abc.com 0 IN TXT something
+	// bbc.com 0 IN CNAME foo.com
+	// cbc.com 60 IN CNAME foo.com
+	// example.org 0 IN  load-balancer.org
+	// example.org 0 IN TXT load-balancer.org
 }
