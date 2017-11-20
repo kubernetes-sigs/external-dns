@@ -121,6 +121,30 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
+func (sc *serviceSource) extractHeadlessEndpoint(svc *v1.Service, hostname string) []*endpoint.Endpoint {
+
+	var endpoints []*endpoint.Endpoint
+
+	pods, err := sc.client.CoreV1().Pods(svc.Namespace).List(metav1.ListOptions{LabelSelector: labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String()})
+
+	if err != nil {
+		log.Errorf("List Pods of service[%s] error:%v", svc.GetName(), err)
+		return endpoints
+	}
+
+	for _, v := range pods.Items {
+		headlessDomain := v.Spec.Hostname + "." + hostname
+		log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, v.Status.HostIP)
+		// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
+		if v.Status.Phase == v1.PodRunning {
+			endpoints = append(endpoints, endpoint.NewEndpoint(headlessDomain, v.Status.HostIP, endpoint.RecordTypeA))
+		} else {
+			log.Debugf("Pod %s is not in running phase", v.Spec.Hostname)
+		}
+	}
+
+	return endpoints
+}
 func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
@@ -197,6 +221,10 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*
 		if sc.publishInternal {
 			endpoints = append(endpoints, extractServiceIps(svc, hostname)...)
 		}
+		if svc.Spec.ClusterIP == v1.ClusterIPNone {
+			endpoints = append(endpoints, sc.extractHeadlessEndpoint(svc, hostname)...)
+		}
+
 	}
 	return endpoints
 }
