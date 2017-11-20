@@ -1011,6 +1011,7 @@ func TestHeadlessServices(t *testing.T) {
 			client, _ := NewServiceSource(
 				kubernetes,
 				tc.targetNamespace,
+				"",
 				tc.fqdnTemplate,
 				tc.compatibility,
 				true,
