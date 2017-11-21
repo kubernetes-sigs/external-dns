@@ -19,6 +19,7 @@ package provider
 import (
 	"fmt"
 	"net"
+	"sort"
 	"strings"
 	"testing"
 
@@ -738,6 +739,8 @@ func TestAWSSuitableZones(t *testing.T) {
 		{"foo.kubernetes.io.", nil},
 	} {
 		suitableZones := suitableZones(tc.hostname, zones)
+		sort.Slice(suitableZones, func(i, j int) bool { return *suitableZones[i].Id < *suitableZones[j].Id })
+		sort.Slice(tc.expected, func(i, j int) bool { return *tc.expected[i].Id < *tc.expected[j].Id })
 		assert.Equal(t, tc.expected, suitableZones)
 	}
 }
