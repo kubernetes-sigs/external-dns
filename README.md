@@ -120,7 +120,7 @@ The [tutorials](docs/tutorials) section contains examples, including Ingress res
 
 # Note
 
-If using a txt registry and attempting to use a CNAME the `--txt-prefix` must be set to avoid conflicts.
+If using a txt registry and attempting to use a CNAME the `--txt-prefix` must be set to avoid conflicts.  Changing `--txt-prefix` will result in lost ownership over previously created records.
 
 # Roadmap
 
