@@ -78,7 +78,7 @@ Brief summary of open PRs and what they are trying to address:
     
     *what it does* : attempts to fix issues with `plan` described in `Current Behaviour` section above. Included tests reveal the current problem with `plan`
     
-    *action*: rebase on master and make necessary changes to satisfy requirements listed in this document 
+    *action*: rebase on master and make necessary changes to satisfy requirements listed in this document including back-reference to owning record
     
 3. https://github.com/kubernetes-incubator/external-dns/pull/326 - attempt to add multiple target support. 
     
@@ -115,5 +115,5 @@ The following steps are needed:
   
 ## Open questions 
 
-- Handling cases when ingress/service targets include both hostnames and IPs
-- "Weighted records scope": https://github.com/kubernetes-incubator/external-dns/issues/196 
+- Handling cases when ingress/service targets include both hostnames and IPs - postpone this until use cases occurs
+- "Weighted records scope": https://github.com/kubernetes-incubator/external-dns/issues/196 - this should be considered once multi-target support is implemented
