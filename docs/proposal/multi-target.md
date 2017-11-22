@@ -104,7 +104,7 @@ The following steps are needed:
     
     c. Change Endpoint struct to support multiple targets - based on #326 - integrate it with new `plan` @sethpollack
     
-    d. Make sure new endpoint format can still be used in providers which have only partial support for multi targets **TODO**: how ? 
+    d. Make sure new endpoint format can still be used in providers which have only partial support for multi targets ~~**TODO**: how ?~~ . This is to be done by simply using first target in the targets list. 
     
     e. Add support for multi target which are already addressed in #326. It goes alongside c. and can be based on the same PR @sethpollack. New providers 
     added since then should maintain same functionality.  
