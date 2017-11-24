@@ -84,16 +84,16 @@ spec:
         requests:
           storage:  500Gi
    ```
-Very important here, is to set the `hostport`(only works if the PodSecurityPolicy allows it)! and in case your app requires an actual hostname inside the container, unlike Kafka, which can advertise on another adress, the `hostname` annotation.
+Very important here, is to set the `hostport`(only works if the PodSecurityPolicy allows it)! and in case your app requires an actual hostname inside the container, unlike Kafka, which can advertise on another address, you have to set the hostname yourself.
 
 ### Headless Service
 
-Now we need to define a headless service to expose the Kafka pods. There are generally two approaches to use expose the nodeport of a Headless service:
+Now we need to define a headless service to use to expose the Kafka pods. There are generally two approaches to use expose the nodeport of a Headless service:
 
 1. Add `--fqdn-template={{name}}.example.org`
 2. Use a full annotation 
 
-If you go with #1, you just need to define the headless service, here is an example of the cas #2:
+If you go with #1, you just need to define the headless service, here is an example of the case #2:
 
 ```yaml
 ---
@@ -119,7 +119,7 @@ kafka-2.example.org
 ```
 
 If you set `--fqdn-template={{name}}.example.org` you can ommit the annotation.
-Generally its a better approach to use  `--fqdn-template={{name}}.example.org`, because then
+Generally it is a better approach to use  `--fqdn-template={{name}}.example.org`, because then
 you would get the service name inside the generated A records:
 
 ```
