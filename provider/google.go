@@ -164,7 +164,11 @@ func (p *GoogleProvider) Zones() (map[string]*dns.ManagedZone, error) {
 	}
 
 	if len(zones) == 0 {
-		log.Warnf("No zones match domain filters: %v", p.domainFilter.filters)
+		if p.domainFilter.IsConfigured() {
+			log.Warnf("No zones in the project, %s, match domain filters: %v", p.project, p.domainFilter.filters)
+		} else {
+			log.Warnf("No zones found in the project, %s", p.project)
+		}
 	}
 
 	return zones, nil
@@ -204,7 +208,7 @@ func (p *GoogleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 func (p *GoogleProvider) CreateRecords(endpoints []*endpoint.Endpoint) error {
 	change := &dns.Change{}
 
-	change.Additions = append(change.Additions, p.newRecords(endpoints)...)
+	change.Additions = append(change.Additions, p.newFilteredRecords(endpoints)...)
 
 	return p.submitChange(change)
 }
@@ -213,8 +217,8 @@ func (p *GoogleProvider) CreateRecords(endpoints []*endpoint.Endpoint) error {
 func (p *GoogleProvider) UpdateRecords(records, oldRecords []*endpoint.Endpoint) error {
 	change := &dns.Change{}
 
-	change.Additions = append(change.Additions, p.newRecords(records)...)
-	change.Deletions = append(change.Deletions, p.newRecords(oldRecords)...)
+	change.Additions = append(change.Additions, p.newFilteredRecords(records)...)
+	change.Deletions = append(change.Deletions, p.newFilteredRecords(oldRecords)...)
 
 	return p.submitChange(change)
 }
@@ -223,7 +227,7 @@ func (p *GoogleProvider) UpdateRecords(records, oldRecords []*endpoint.Endpoint)
 func (p *GoogleProvider) DeleteRecords(endpoints []*endpoint.Endpoint) error {
 	change := &dns.Change{}
 
-	change.Deletions = append(change.Deletions, p.newRecords(endpoints)...)
+	change.Deletions = append(change.Deletions, p.newFilteredRecords(endpoints)...)
 
 	return p.submitChange(change)
 }
@@ -232,18 +236,18 @@ func (p *GoogleProvider) DeleteRecords(endpoints []*endpoint.Endpoint) error {
 func (p *GoogleProvider) ApplyChanges(changes *plan.Changes) error {
 	change := &dns.Change{}
 
-	change.Additions = append(change.Additions, p.newRecords(changes.Create)...)
+	change.Additions = append(change.Additions, p.newFilteredRecords(changes.Create)...)
 
-	change.Additions = append(change.Additions, p.newRecords(changes.UpdateNew)...)
-	change.Deletions = append(change.Deletions, p.newRecords(changes.UpdateOld)...)
+	change.Additions = append(change.Additions, p.newFilteredRecords(changes.UpdateNew)...)
+	change.Deletions = append(change.Deletions, p.newFilteredRecords(changes.UpdateOld)...)
 
-	change.Deletions = append(change.Deletions, p.newRecords(changes.Delete)...)
+	change.Deletions = append(change.Deletions, p.newFilteredRecords(changes.Delete)...)
 
 	return p.submitChange(change)
 }
 
-// newRecords returns a collection of RecordSets based on the given endpoints and domainFilter.
-func (p *GoogleProvider) newRecords(endpoints []*endpoint.Endpoint) []*dns.ResourceRecordSet {
+// newFilteredRecords returns a collection of RecordSets based on the given endpoints and domainFilter.
+func (p *GoogleProvider) newFilteredRecords(endpoints []*endpoint.Endpoint) []*dns.ResourceRecordSet {
 	records := []*dns.ResourceRecordSet{}
 
 	for _, endpoint := range endpoints {

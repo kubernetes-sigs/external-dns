@@ -456,8 +456,10 @@ func TestGoogleApplyChangesEmpty(t *testing.T) {
 	assert.NoError(t, provider.ApplyChanges(&plan.Changes{}))
 }
 
-func TestNewRecords(t *testing.T) {
-	records := newRecords([]*endpoint.Endpoint{
+func TestNewFilteredRecords(t *testing.T) {
+	provider := newGoogleProvider(t, NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), false, []*endpoint.Endpoint{})
+
+	records := provider.newFilteredRecords([]*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA, 1),
 		endpoint.NewEndpointWithTTL("delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA, 120),
 		endpoint.NewEndpointWithTTL("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "bar.elb.amazonaws.com", endpoint.RecordTypeCNAME, 4000),
