@@ -51,11 +51,11 @@ type Changes struct {
 /*
 planTable: (-> = target)
 --------------------------------------------------------
-DNSName | Current record | Desired Records			   |
+DNSName | Current record | Desired Records             |
 --------------------------------------------------------
 foo.com | -> 1.1.1.1     | [->1.1.1.1, ->elb.com]  	   |  = no action
 --------------------------------------------------------
-bar.com | 				 | [->191.1.1.1, ->190.1.1.1]  |  = create (bar.com -> 190.1.1.1)
+bar.com |                | [->191.1.1.1, ->190.1.1.1]  |  = create (bar.com -> 190.1.1.1)
 --------------------------------------------------------
 "=", i.e. result of calculation relies on supplied ConflictResolver
 */
