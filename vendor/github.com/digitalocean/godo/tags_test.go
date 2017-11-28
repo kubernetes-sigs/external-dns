@@ -169,7 +169,7 @@ func TestTags_List(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/tags", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, listJSON)
 	})
 
@@ -190,7 +190,7 @@ func TestTags_ListEmpty(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/tags", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, listEmptyJSON)
 	})
 
@@ -210,7 +210,7 @@ func TestTags_ListPaging(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/tags", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, listJSON)
 	})
 
@@ -226,7 +226,7 @@ func TestTags_Get(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/tags/testing-1", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, getJSON)
 	})
 
@@ -263,7 +263,7 @@ func TestTags_Create(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, createRequest) {
 			t.Errorf("Request body = %+v, expected %+v", v, createRequest)
 		}
@@ -287,7 +287,7 @@ func TestTags_Delete(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/tags/testing-1", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 	})
 
 	_, err := client.Tags.Delete(ctx, "testing-1")
@@ -312,7 +312,7 @@ func TestTags_TagResource(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "POST")
+		testMethod(t, r, http.MethodPost)
 		if !reflect.DeepEqual(v, tagResourcesRequest) {
 			t.Errorf("Request body = %+v, expected %+v", v, tagResourcesRequest)
 		}
@@ -341,7 +341,7 @@ func TestTags_UntagResource(t *testing.T) {
 			t.Fatalf("decode json: %v", err)
 		}
 
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 		if !reflect.DeepEqual(v, untagResourcesRequest) {
 			t.Errorf("Request body = %+v, expected %+v", v, untagResourcesRequest)
 		}

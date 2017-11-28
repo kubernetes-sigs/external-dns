@@ -20,17 +20,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/linki/instrumented_http"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	log "github.com/sirupsen/logrus"
 
-	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/kubernetes-incubator/external-dns/controller"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
@@ -58,70 +54,71 @@ func main() {
 	if cfg.DryRun {
 		log.Info("running in dry-run mode. No changes to DNS records will be made.")
 	}
-	if cfg.Debug {
-		log.SetLevel(log.DebugLevel)
+
+	ll, err := log.ParseLevel(cfg.LogLevel)
+	if err != nil {
+		log.Fatalf("failed to parse log level: %v", err)
 	}
+	log.SetLevel(ll)
 
 	stopChan := make(chan struct{}, 1)
 
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(stopChan)
 
-	var client *kubernetes.Clientset
-
-	// create only those services we explicitly ask for in cfg.Sources
-	for _, sourceType := range cfg.Sources {
-		// we only need a k8s client if we're creating a non-fake source, and
-		// have not already instantiated a k8s client
-		if sourceType != "fake" && client == nil {
-			var err error
-			client, err = newClient(cfg)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-
-		var src source.Source
-		var err error
-		switch sourceType {
-		case "fake":
-			src, err = source.NewFakeSource(cfg.FqdnTemplate)
-		case "service":
-			src, err = source.NewServiceSource(client, cfg.Namespace, cfg.FqdnTemplate, cfg.Compatibility)
-		case "ingress":
-			src, err = source.NewIngressSource(client, cfg.Namespace, cfg.FqdnTemplate)
-		default:
-			log.Fatalf("Don't know how to handle sourceType '%s'", sourceType)
-		}
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		source.Register(sourceType, src)
+	// Create a source.Config from the flags passed by the user.
+	sourceCfg := &source.Config{
+		Namespace:        cfg.Namespace,
+		AnnotationFilter: cfg.AnnotationFilter,
+		FQDNTemplate:     cfg.FQDNTemplate,
+		Compatibility:    cfg.Compatibility,
+		PublishInternal:  cfg.PublishInternal,
 	}
 
-	sources, err := source.LookupMultiple(cfg.Sources)
+	// Lookup all the selected sources by names and pass them the desired configuration.
+	sources, err := source.ByNames(&source.SingletonClientGenerator{
+		KubeConfig: cfg.KubeConfig,
+		KubeMaster: cfg.Master,
+	}, cfg.Sources, sourceCfg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// Combine multiple sources into a single, deduplicated source.
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
+
+	domainFilter := provider.NewDomainFilter(cfg.DomainFilter)
+	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 
 	var p provider.Provider
 	switch cfg.Provider {
 	case "aws":
-		p, err = provider.NewAWSProvider(cfg.DomainFilter, cfg.DryRun)
+		p, err = provider.NewAWSProvider(domainFilter, zoneTypeFilter, cfg.DryRun)
 	case "azure":
-		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, cfg.DomainFilter, cfg.AzureResourceGroup, cfg.DryRun)
+		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, cfg.AzureResourceGroup, cfg.DryRun)
 	case "cloudflare":
-		p, err = provider.NewCloudFlareProvider(cfg.DomainFilter, cfg.DryRun)
+		p, err = provider.NewCloudFlareProvider(domainFilter, cfg.CloudflareProxied, cfg.DryRun)
 	case "google":
-		p, err = provider.NewGoogleProvider(cfg.GoogleProject, cfg.DomainFilter, cfg.DryRun)
+		p, err = provider.NewGoogleProvider(cfg.GoogleProject, domainFilter, cfg.DryRun)
 	case "digitalocean":
-		p, err = provider.NewDigitalOceanProvider(cfg.DomainFilter, cfg.DryRun)
+		p, err = provider.NewDigitalOceanProvider(domainFilter, cfg.DryRun)
+	case "dnsimple":
+		p, err = provider.NewDnsimpleProvider(domainFilter, cfg.DryRun)
+	case "infoblox":
+		p, err = provider.NewInfobloxProvider(
+			provider.InfobloxConfig{
+				DomainFilter: domainFilter,
+				Host:         cfg.InfobloxGridHost,
+				Port:         cfg.InfobloxWapiPort,
+				Username:     cfg.InfobloxWapiUsername,
+				Password:     cfg.InfobloxWapiPassword,
+				Version:      cfg.InfobloxWapiVersion,
+				SSLVerify:    cfg.InfobloxSSLVerify,
+				DryRun:       cfg.DryRun,
+			},
+		)
 	case "inmemory":
-		p, err = provider.NewInMemoryProvider(provider.InMemoryWithDomain(cfg.DomainFilter), provider.InMemoryWithLogging()), nil
+		p, err = provider.NewInMemoryProvider(provider.InMemoryInitZones(cfg.InMemoryZones), provider.InMemoryWithDomain(domainFilter), provider.InMemoryWithLogging()), nil
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
@@ -177,37 +174,6 @@ func handleSigterm(stopChan chan struct{}) {
 	<-signals
 	log.Info("Received SIGTERM. Terminating...")
 	close(stopChan)
-}
-
-func newClient(cfg *externaldns.Config) (*kubernetes.Clientset, error) {
-	if cfg.KubeConfig == "" {
-		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
-			cfg.KubeConfig = clientcmd.RecommendedHomeFile
-		}
-	}
-
-	config, err := clientcmd.BuildConfigFromFlags(cfg.Master, cfg.KubeConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
-		return instrumented_http.NewTransport(rt, &instrumented_http.Callbacks{
-			PathProcessor: func(path string) string {
-				parts := strings.Split(path, "/")
-				return parts[len(parts)-1]
-			},
-		})
-	}
-
-	client, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Infof("Connected to cluster at %s", config.Host)
-
-	return client, nil
 }
 
 func serveMetrics(address string) {

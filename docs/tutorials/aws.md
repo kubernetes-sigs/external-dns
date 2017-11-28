@@ -1,6 +1,6 @@
 # Setting up ExternalDNS for Services on AWS
 
-This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster on AWS. Make sure to use **>=0.3** version of ExternalDNS for this tutorial
+This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster on AWS. Make sure to use **>=0.4** version of ExternalDNS for this tutorial
 
 ## IAM Permissions
 
@@ -80,11 +80,11 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.3.0
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.2
         args:
         - --source=service
         - --source=ingress
-        - --domain-filter=external-dns-test.my-org.com. # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
+        - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
         - --registry=txt
@@ -183,6 +183,25 @@ $ curl nginx.external-dns-test.my-org.com.
 ```
 
 Ingress objects on AWS require a separately deployed Ingress controller which we'll describe in another tutorial.
+
+## Custom TTL
+
+The default DNS record TTL (Time-To-Live) is 300 seconds. You can customize this value by setting the annotation `external-dns.alpha.kubernetes.io/ttl`.
+e.g., modify the service manifest YAML file above:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com.
+    external-dns.alpha.kubernetes.io/ttl: 60
+spec:
+    ...
+```
+
+This will set the DNS record's TTL to 60 seconds.
 
 ## Clean up
 

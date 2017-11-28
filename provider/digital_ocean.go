@@ -19,9 +19,8 @@ package provider
 import (
 	"fmt"
 	"os"
-	"strings"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 
 	"github.com/digitalocean/godo"
@@ -44,7 +43,7 @@ const (
 type DigitalOceanProvider struct {
 	Client godo.DomainsService
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter string
+	domainFilter DomainFilter
 	DryRun       bool
 }
 
@@ -55,7 +54,7 @@ type DigitalOceanChange struct {
 }
 
 // NewDigitalOceanProvider initializes a new DigitalOcean DNS based Provider.
-func NewDigitalOceanProvider(domainFilter string, dryRun bool) (*DigitalOceanProvider, error) {
+func NewDigitalOceanProvider(domainFilter DomainFilter, dryRun bool) (*DigitalOceanProvider, error) {
 	token, ok := os.LookupEnv("DO_TOKEN")
 	if !ok {
 		return nil, fmt.Errorf("No token found")
@@ -83,7 +82,7 @@ func (p *DigitalOceanProvider) Zones() ([]godo.Domain, error) {
 	}
 
 	for _, zone := range zones {
-		if strings.HasSuffix(zone.Name, p.domainFilter) {
+		if p.domainFilter.Match(zone.Name) {
 			result = append(result, zone)
 		}
 	}
@@ -105,7 +104,9 @@ func (p *DigitalOceanProvider) Records() ([]*endpoint.Endpoint, error) {
 		}
 
 		for _, r := range records {
-			endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Data, r.Type))
+			if supportedRecordType(r.Type) {
+				endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Data, r.Type))
+			}
 		}
 	}
 
@@ -256,7 +257,7 @@ func newDigitalOceanChange(action string, endpoint *endpoint.Endpoint) *DigitalO
 		Action: action,
 		ResourceRecordSet: godo.DomainRecord{
 			Name: endpoint.DNSName,
-			Type: endpoint.SuitableType(),
+			Type: endpoint.RecordType,
 			Data: endpoint.Target,
 		},
 	}
@@ -277,34 +278,20 @@ func (p *DigitalOceanProvider) getRecordID(records []godo.DomainRecord, record g
 // digitalOceanchangesByZone separates a multi-zone change into a single change per zone.
 func digitalOceanChangesByZone(zones []godo.Domain, changeSet []*DigitalOceanChange) map[string][]*DigitalOceanChange {
 	changes := make(map[string][]*DigitalOceanChange)
-
+	zoneNameIDMapper := zoneIDName{}
 	for _, z := range zones {
+		zoneNameIDMapper.Add(z.Name, z.Name)
 		changes[z.Name] = []*DigitalOceanChange{}
 	}
 
 	for _, c := range changeSet {
-		zone := digitalOceanSuitableZone(c.ResourceRecordSet.Name, zones)
-		if zone == nil {
+		zone, _ := zoneNameIDMapper.FindZone(c.ResourceRecordSet.Name)
+		if zone == "" {
 			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.ResourceRecordSet.Name)
 			continue
 		}
-		changes[zone.Name] = append(changes[zone.Name], c)
+		changes[zone] = append(changes[zone], c)
 	}
 
 	return changes
-}
-
-// digitalOceanSuitableZone returns the most suitable zone for a given hostname
-// and a set of zones.
-func digitalOceanSuitableZone(hostname string, zones []godo.Domain) *godo.Domain {
-	var result *godo.Domain
-	for i := range zones {
-		zone := &zones[i]
-		if strings.HasSuffix(hostname, zone.Name) {
-			if result == nil || len(zone.Name) > len(result.Name) {
-				result = zone
-			}
-		}
-	}
-	return result
 }

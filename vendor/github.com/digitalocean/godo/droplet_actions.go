@@ -2,6 +2,7 @@ package godo
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 
 	"github.com/digitalocean/godo/context"
@@ -247,7 +248,7 @@ func (s *DropletActionsServiceOp) doAction(ctx context.Context, id int, request 
 
 	path := dropletActionPath(id)
 
-	req, err := s.client.NewRequest(ctx, "POST", path, request)
+	req, err := s.client.NewRequest(ctx, http.MethodPost, path, request)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -272,7 +273,7 @@ func (s *DropletActionsServiceOp) doActionByTag(ctx context.Context, tag string,
 
 	path := dropletActionPathByTag(tag)
 
-	req, err := s.client.NewRequest(ctx, "POST", path, request)
+	req, err := s.client.NewRequest(ctx, http.MethodPost, path, request)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -312,7 +313,7 @@ func (s *DropletActionsServiceOp) GetByURI(ctx context.Context, rawurl string) (
 }
 
 func (s *DropletActionsServiceOp) get(ctx context.Context, path string) (*Action, *Response, error) {
-	req, err := s.client.NewRequest(ctx, "GET", path, nil)
+	req, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}

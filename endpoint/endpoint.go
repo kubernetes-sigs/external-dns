@@ -18,14 +18,29 @@ package endpoint
 
 import (
 	"fmt"
-	"net"
 	"strings"
 )
 
 const (
 	// OwnerLabelKey is the name of the label that defines the owner of an Endpoint.
 	OwnerLabelKey = "owner"
+	// Resource is the name of the label that identifies k8s resource which wants to acquire the DNS name
+	ResourceLabelKey = "resource"
+	// RecordTypeA is a RecordType enum value
+	RecordTypeA = "A"
+	// RecordTypeCNAME is a RecordType enum value
+	RecordTypeCNAME = "CNAME"
+	// RecordTypeTXT is a RecordType enum value
+	RecordTypeTXT = "TXT"
 )
+
+// TTL is a structure defining the TTL of a DNS record
+type TTL int64
+
+// IsConfigured returns true if TTL is configured, false otherwise
+func (ttl TTL) IsConfigured() bool {
+	return ttl > 0
+}
 
 // Endpoint is a high-level way of a connection between a service and an IP
 type Endpoint struct {
@@ -35,17 +50,25 @@ type Endpoint struct {
 	Target string
 	// RecordType type of record, e.g. CNAME, A, TXT etc
 	RecordType string
+	// TTL for the record
+	RecordTTL TTL
 	// Labels stores labels defined for the Endpoint
 	Labels map[string]string
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
 func NewEndpoint(dnsName, target, recordType string) *Endpoint {
+	return NewEndpointWithTTL(dnsName, target, recordType, TTL(0))
+}
+
+// NewEndpointWithTTL initialization method to be used to create an endpoint with a TTL struct
+func NewEndpointWithTTL(dnsName, target, recordType string, ttl TTL) *Endpoint {
 	return &Endpoint{
 		DNSName:    strings.TrimSuffix(dnsName, "."),
 		Target:     strings.TrimSuffix(target, "."),
 		RecordType: recordType,
 		Labels:     map[string]string{},
+		RecordTTL:  ttl,
 	}
 }
 
@@ -59,17 +82,5 @@ func (e *Endpoint) MergeLabels(labels map[string]string) {
 }
 
 func (e *Endpoint) String() string {
-	return fmt.Sprintf(`%s -> %s (type "%s")`, e.DNSName, e.Target, e.RecordType)
-}
-
-// SuitableType returns the DNS resource record type suitable for the target.
-// In this case type A for IPs and type CNAME for everything else.
-func (e *Endpoint) SuitableType() string {
-	if e.RecordType != "" {
-		return e.RecordType
-	}
-	if net.ParseIP(e.Target) != nil {
-		return "A"
-	}
-	return "CNAME"
+	return fmt.Sprintf("%s %d IN %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.Target)
 }

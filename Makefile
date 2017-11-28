@@ -56,11 +56,8 @@ build/$(BINARY): $(SOURCES)
 build.push: build.docker
 	docker push "$(IMAGE):$(VERSION)"
 
-build.docker: build/linux-amd64/$(BINARY)
+build.docker:
 	docker build --rm --tag "$(IMAGE):$(VERSION)" .
-
-build/linux-amd64/$(BINARY): $(SOURCES)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o build/linux-amd64/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
 
 clean:
 	@rm -rf build

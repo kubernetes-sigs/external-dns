@@ -21,9 +21,8 @@ import (
 	"os"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
-
-	"github.com/cloudflare/cloudflare-go"
+	cloudflare "github.com/cloudflare/cloudflare-go"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
@@ -37,6 +36,15 @@ const (
 	// cloudFlareUpdate is a ChangeAction enum value
 	cloudFlareUpdate = "UPDATE"
 )
+
+var cloudFlareTypeNotSupported = map[string]bool{
+	"LOC": true,
+	"MX":  true,
+	"NS":  true,
+	"SPF": true,
+	"TXT": true,
+	"SRV": true,
+}
 
 // cloudFlareDNS is the subset of the CloudFlare API that we actually use.  Add methods as required. Signatures must match exactly.
 type cloudFlareDNS interface {
@@ -83,7 +91,8 @@ func (z zoneService) DeleteDNSRecord(zoneID, recordID string) error {
 type CloudFlareProvider struct {
 	Client cloudFlareDNS
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter string
+	domainFilter DomainFilter
+	proxied      bool
 	DryRun       bool
 }
 
@@ -94,7 +103,7 @@ type cloudFlareChange struct {
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(domainFilter string, dryRun bool) (*CloudFlareProvider, error) {
+func NewCloudFlareProvider(domainFilter DomainFilter, proxied bool, dryRun bool) (*CloudFlareProvider, error) {
 	// initialize via API email and API key and returns new API object
 	config, err := cloudflare.New(os.Getenv("CF_API_KEY"), os.Getenv("CF_API_EMAIL"))
 	if err != nil {
@@ -104,6 +113,7 @@ func NewCloudFlareProvider(domainFilter string, dryRun bool) (*CloudFlareProvide
 		//Client: config,
 		Client:       zoneService{config},
 		domainFilter: domainFilter,
+		proxied:      proxied,
 		DryRun:       dryRun,
 	}
 	return provider, nil
@@ -119,7 +129,7 @@ func (p *CloudFlareProvider) Zones() ([]cloudflare.Zone, error) {
 	}
 
 	for _, zone := range zones {
-		if strings.HasSuffix(zone.Name, p.domainFilter) {
+		if p.domainFilter.Match(zone.Name) {
 			result = append(result, zone)
 		}
 	}
@@ -142,13 +152,9 @@ func (p *CloudFlareProvider) Records() ([]*endpoint.Endpoint, error) {
 		}
 
 		for _, r := range records {
-			switch r.Type {
-			case "A", "CNAME", "TXT":
-				break
-			default:
-				continue
+			if supportedRecordType(r.Type) {
+				endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Content, r.Type))
 			}
-			endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Content, r.Type))
 		}
 	}
 
@@ -159,9 +165,9 @@ func (p *CloudFlareProvider) Records() ([]*endpoint.Endpoint, error) {
 func (p *CloudFlareProvider) ApplyChanges(changes *plan.Changes) error {
 	combinedChanges := make([]*cloudFlareChange, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 
-	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareCreate, changes.Create)...)
-	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareUpdate, changes.UpdateNew)...)
-	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareDelete, changes.Delete)...)
+	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareCreate, changes.Create, p.proxied)...)
+	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareUpdate, changes.UpdateNew, p.proxied)...)
+	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareDelete, changes.Delete, p.proxied)...)
 
 	return p.submitChanges(combinedChanges)
 }
@@ -178,7 +184,7 @@ func (p *CloudFlareProvider) submitChanges(changes []*cloudFlareChange) error {
 		return err
 	}
 	// separate into per-zone change sets to be passed to the API.
-	changesByZone := cloudflareChangesByZone(zones, changes)
+	changesByZone := p.changesByZone(zones, changes)
 
 	for zoneID, changes := range changesByZone {
 		records, err := p.Client.DNSRecords(zoneID, cloudflare.DNSRecord{})
@@ -222,38 +228,25 @@ func (p *CloudFlareProvider) submitChanges(changes []*cloudFlareChange) error {
 }
 
 // changesByZone separates a multi-zone change into a single change per zone.
-func cloudflareChangesByZone(zones []cloudflare.Zone, changeSet []*cloudFlareChange) map[string][]*cloudFlareChange {
+func (p *CloudFlareProvider) changesByZone(zones []cloudflare.Zone, changeSet []*cloudFlareChange) map[string][]*cloudFlareChange {
 	changes := make(map[string][]*cloudFlareChange)
+	zoneNameIDMapper := zoneIDName{}
 
 	for _, z := range zones {
+		zoneNameIDMapper.Add(z.ID, z.Name)
 		changes[z.ID] = []*cloudFlareChange{}
 	}
 
 	for _, c := range changeSet {
-		zone := cloudflareSuitableZone(c.ResourceRecordSet.Name, zones)
-		if zone == nil {
+		zoneID, _ := zoneNameIDMapper.FindZone(c.ResourceRecordSet.Name)
+		if zoneID == "" {
 			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.ResourceRecordSet.Name)
 			continue
 		}
-		changes[zone.ID] = append(changes[zone.ID], c)
+		changes[zoneID] = append(changes[zoneID], c)
 	}
 
 	return changes
-}
-
-// cloudflareSuitableZone returns the most suitable zone for a given hostname
-// and a set of zones.
-func cloudflareSuitableZone(hostname string, zones []cloudflare.Zone) *cloudflare.Zone {
-	var result *cloudflare.Zone
-	for i := range zones {
-		zone := &zones[i]
-		if strings.HasSuffix(hostname, zone.Name) {
-			if result == nil || len(zone.Name) > len(result.Name) {
-				result = zone
-			}
-		}
-	}
-	return result
 }
 
 func (p *CloudFlareProvider) getRecordID(records []cloudflare.DNSRecord, record cloudflare.DNSRecord) string {
@@ -266,18 +259,20 @@ func (p *CloudFlareProvider) getRecordID(records []cloudflare.DNSRecord, record 
 }
 
 // newCloudFlareChanges returns a collection of Changes based on the given records and action.
-func newCloudFlareChanges(action string, endpoints []*endpoint.Endpoint) []*cloudFlareChange {
+func newCloudFlareChanges(action string, endpoints []*endpoint.Endpoint, proxied bool) []*cloudFlareChange {
 	changes := make([]*cloudFlareChange, 0, len(endpoints))
 
 	for _, endpoint := range endpoints {
-		changes = append(changes, newCloudFlareChange(action, endpoint))
+		changes = append(changes, newCloudFlareChange(action, endpoint, proxied))
 	}
 
 	return changes
 }
 
-func newCloudFlareChange(action string, endpoint *endpoint.Endpoint) *cloudFlareChange {
-	typ := endpoint.SuitableType()
+func newCloudFlareChange(action string, endpoint *endpoint.Endpoint, proxied bool) *cloudFlareChange {
+	if proxied && (cloudFlareTypeNotSupported[endpoint.RecordType] || strings.Contains(endpoint.DNSName, "*")) {
+		proxied = false
+	}
 
 	return &cloudFlareChange{
 		Action: action,
@@ -285,8 +280,8 @@ func newCloudFlareChange(action string, endpoint *endpoint.Endpoint) *cloudFlare
 			Name: endpoint.DNSName,
 			// TTL Value of 1 is 'automatic'
 			TTL:     1,
-			Proxied: false,
-			Type:    typ,
+			Proxied: proxied,
+			Type:    endpoint.RecordType,
 			Content: endpoint.Target,
 		},
 	}

@@ -13,7 +13,7 @@ func TestImages_List(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/images", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"images":[{"id":1},{"id":2}]}`)
 	})
 
@@ -33,7 +33,7 @@ func TestImages_ListDistribution(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/images", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		expected := "distribution"
 		actual := r.URL.Query().Get("type")
 		if actual != expected {
@@ -58,7 +58,7 @@ func TestImages_ListApplication(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/images", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		expected := "application"
 		actual := r.URL.Query().Get("type")
 		if actual != expected {
@@ -83,7 +83,7 @@ func TestImages_ListUser(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/images", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		expected := "true"
 		actual := r.URL.Query().Get("private")
 		if actual != expected {
@@ -109,7 +109,7 @@ func TestImages_ListImagesMultiplePages(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/images", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"images": [{"id":1},{"id":2}], "links":{"pages":{"next":"http://example.com/v2/images/?page=2"}}}`)
 	})
 
@@ -138,7 +138,7 @@ func TestImages_RetrievePageByNumber(t *testing.T) {
 	}`
 
 	mux.HandleFunc("/v2/images", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, jBlob)
 	})
 
@@ -156,7 +156,7 @@ func TestImages_GetImageByID(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/images/12345", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"image":{"id":12345}}`)
 	})
 
@@ -176,7 +176,7 @@ func TestImages_GetImageBySlug(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/images/ubuntu", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
+		testMethod(t, r, http.MethodGet)
 		fmt.Fprint(w, `{"image":{"id":12345}}`)
 	})
 
@@ -232,7 +232,7 @@ func TestImages_Destroy(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/v2/images/12345", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "DELETE")
+		testMethod(t, r, http.MethodDelete)
 	})
 
 	_, err := client.Images.Delete(ctx, 12345)

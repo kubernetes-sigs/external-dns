@@ -12,10 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM alpine:3.5
+# builder image
+FROM golang:1.8 as builder
 
-RUN apk --update --no-cache add ca-certificates
+WORKDIR /go/src/github.com/kubernetes-incubator/external-dns
+COPY . .
+RUN make test
+RUN make build
 
-COPY build/linux-amd64/external-dns /external-dns
+# final image
+FROM registry.opensource.zalan.do/stups/alpine:latest
+MAINTAINER Team Teapot @ Zalando SE <team-teapot@zalando.de>
 
-ENTRYPOINT ["/external-dns"]
+COPY --from=builder /go/src/github.com/kubernetes-incubator/external-dns/build/external-dns /bin/external-dns
+
+ENTRYPOINT ["/bin/external-dns"]
