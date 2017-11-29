@@ -98,7 +98,7 @@ func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*en
 			// compare "update" to "current" to figure out if actual update is required
 			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) {
 				// inherit owner
-				update.Labels[endpoint.OwnerLabelKey] = row.current.Labels[endpoint.OwnerLabelKey]
+				inheritOwner(row.current, update)
 				updateNew = append(updateNew, update)
 				updateOld = append(updateOld, row.current)
 			}
@@ -154,6 +154,16 @@ func (p *Plan) Calculate() *Plan {
 	}
 
 	return plan
+}
+
+func inheritOwner(from, to *endpoint.Endpoint) {
+	if to.Labels == nil {
+		to.Labels = map[string]string{}
+	}
+	if from.Labels == nil {
+		from.Labels = map[string]string{}
+	}
+	to.Labels[endpoint.OwnerLabelKey] = from.Labels[endpoint.OwnerLabelKey]
 }
 
 func targetChanged(desired, current *endpoint.Endpoint) bool {
