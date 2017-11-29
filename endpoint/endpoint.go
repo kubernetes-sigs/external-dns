@@ -24,7 +24,7 @@ import (
 const (
 	// OwnerLabelKey is the name of the label that defines the owner of an Endpoint.
 	OwnerLabelKey = "owner"
-	// Resource is the name of the label that identifies k8s resource which wants to acquire the DNS name
+	// ResourceLabelKey is the name of the label that identifies k8s resource which wants to acquire the DNS name
 	ResourceLabelKey = "resource"
 	// RecordTypeA is a RecordType enum value
 	RecordTypeA = "A"
