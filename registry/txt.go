@@ -19,18 +19,11 @@ package registry
 import (
 	"errors"
 
-	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
-)
-
-var (
-	txtLabelRegex  = regexp.MustCompile("^\"heritage=external-dns,external-dns/owner=(.+)\"")
-	txtLabelFormat = "\"heritage=external-dns,external-dns/owner=%s\""
 )
 
 // TXTRegistry implements registry interface with ownership implemented via associated TXT records
@@ -66,29 +59,40 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	ownerMap := map[string]string{}
+	labelMap := map[string]map[string]string{}
 
 	for _, record := range records {
 		if record.RecordType != endpoint.RecordTypeTXT {
 			endpoints = append(endpoints, record)
 			continue
 		}
-		ownerID := im.extractOwnerID(record.Target)
-		if ownerID == "" {
+		labels, err := deserialize(record.Target)
+		if err == invalidHeritage { // if no heritage is found or it is invalid
 			//case when value of txt record cannot be identified
 			//record will not be removed as it will have empty owner
 			endpoints = append(endpoints, record)
 			continue
 		}
+		if err != nil {
+			return nil, err
+		}
 		endpointDNSName := im.mapper.toEndpointName(record.DNSName)
-		ownerMap[endpointDNSName] = ownerID
+		labelMap[endpointDNSName] = labels
 	}
 
 	for _, ep := range endpoints {
-		ep.Labels[endpoint.OwnerLabelKey] = ownerMap[ep.DNSName]
+		if labels, ok := labelMap[ep.DNSName]; ok {
+			ep.Labels = labels
+		} else {
+			//this indicates that owner could not be identified, set empty string
+			// so that record will not be modified by external-dns
+			ep.Labels = map[string]string{
+				endpoint.OwnerLabelKey: "",
+			}
+		}
 	}
 
-	return endpoints, err
+	return endpoints, nil
 }
 
 // ApplyChanges updates dns provider with the changes
@@ -100,16 +104,30 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 		UpdateOld: filterOwnedRecords(im.ownerID, changes.UpdateOld),
 		Delete:    filterOwnedRecords(im.ownerID, changes.Delete),
 	}
-
 	for _, r := range filteredChanges.Create {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), endpoint.RecordTypeTXT)
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.createTXTLabel(r), endpoint.RecordTypeTXT)
 		filteredChanges.Create = append(filteredChanges.Create, txt)
 	}
 
 	for _, r := range filteredChanges.Delete {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), endpoint.RecordTypeTXT)
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.createTXTLabel(r), endpoint.RecordTypeTXT)
 
+		//TODO:when we delete TXT records for which value has changed (due to new label) does it really work for all dns providers ?
+		//TODO: instead of generating TXT record value, we should considering storing somewhere (maybe in the endpoints list returned from Records() call)
 		filteredChanges.Delete = append(filteredChanges.Delete, txt)
+	}
+
+	// make sure TXT records are consistently updated as well
+	for _, r := range filteredChanges.UpdateNew {
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.createTXTLabel(r), endpoint.RecordTypeTXT)
+		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, txt)
+	}
+	// make sure TXT records are consistently updated as well
+	for _, r := range filteredChanges.UpdateOld {
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.createTXTLabel(r), endpoint.RecordTypeTXT)
+		//TODO: when we updateOld TXT records for which value has changed (due to new label) does it really work for all dns providers ?
+		//TODO: instead of generating TXT record value, we should considering storing somewhere (maybe in the endpoints list returned from Records() call)
+		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, txt)
 	}
 
 	return im.provider.ApplyChanges(filteredChanges)
@@ -119,15 +137,13 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
   TXT registry specific private methods
 */
 
-func (im *TXTRegistry) getTXTLabel() string {
-	return fmt.Sprintf(txtLabelFormat, im.ownerID)
-}
-
-func (im *TXTRegistry) extractOwnerID(txtLabel string) string {
-	if matches := txtLabelRegex.FindStringSubmatch(txtLabel); len(matches) == 2 {
-		return matches[1]
+func (im *TXTRegistry) createTXTLabel(e *endpoint.Endpoint) string {
+	labels := map[string]string{}
+	for k, v := range e.Labels {
+		labels[k] = v
 	}
-	return ""
+	labels[endpoint.OwnerLabelKey] = im.ownerID
+	return serialize(labels, true)
 }
 
 /**

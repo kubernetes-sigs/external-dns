@@ -97,7 +97,6 @@ func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*en
 			update := t.resolver.ResolveUpdate(row.current, row.candidates)
 			// compare "update" to "current" to figure out if actual update is required
 			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) {
-				// inherit owner
 				inheritOwner(row.current, update)
 				updateNew = append(updateNew, update)
 				updateOld = append(updateOld, row.current)
