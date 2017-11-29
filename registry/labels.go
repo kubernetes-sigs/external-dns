@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	invalidHeritage = errors.New("heritage is unknown or not found")
+	errInvalidHeritage = errors.New("heritage is unknown or not found")
 )
 
 // known keys
@@ -66,7 +66,7 @@ func deserializeLabel(labelText string) (map[string]string, error) {
 		key := strings.Split(token, "=")[0]
 		val := strings.Split(token, "=")[1]
 		if key == "heritage" && val != heritage {
-			return nil, invalidHeritage
+			return nil, errInvalidHeritage
 		}
 		if key == "heritage" {
 			foundExternalDNSHeritage = true
@@ -78,7 +78,7 @@ func deserializeLabel(labelText string) (map[string]string, error) {
 	}
 
 	if !foundExternalDNSHeritage {
-		return nil, invalidHeritage
+		return nil, errInvalidHeritage
 	}
 
 	return endpointLabels, nil

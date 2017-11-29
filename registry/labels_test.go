@@ -76,15 +76,15 @@ func (suite *ParserSuite) TestDeserialize() {
 	suite.Equal(suite.barTextAsMap, bar, "should reconstruct original label map")
 
 	noHeritage, err := deserializeLabel(suite.noHeritageText)
-	suite.Equal(invalidHeritage, err, "should fail if no heritage is found")
+	suite.Equal(errInvalidHeritage, err, "should fail if no heritage is found")
 	suite.Nil(noHeritage, "should return nil")
 
 	wrongHeritage, err := deserializeLabel(suite.wrongHeritageText)
-	suite.Equal(invalidHeritage, err, "should fail if wrong heritage is found")
+	suite.Equal(errInvalidHeritage, err, "should fail if wrong heritage is found")
 	suite.Nil(wrongHeritage, "if error should return nil")
 
 	multipleHeritage, err := deserializeLabel(suite.multipleHeritageText)
-	suite.Equal(invalidHeritage, err, "should fail if multiple heritage is found")
+	suite.Equal(errInvalidHeritage, err, "should fail if multiple heritage is found")
 	suite.Nil(multipleHeritage, "if error should return nil")
 }
 

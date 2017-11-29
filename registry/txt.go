@@ -67,7 +67,7 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 		labels, err := deserializeLabel(record.Target)
-		if err == invalidHeritage { // if no heritage is found or it is invalid
+		if err == errInvalidHeritage { // if no heritage is found or it is invalid
 			//case when value of txt record cannot be identified
 			//record will not be removed as it will have empty owner
 			endpoints = append(endpoints, record)
