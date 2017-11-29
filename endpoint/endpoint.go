@@ -53,7 +53,7 @@ type Endpoint struct {
 	// TTL for the record
 	RecordTTL TTL
 	// Labels stores labels defined for the Endpoint
-	Labels map[string]string
+	Labels map[string]string //TODO: this should be a struct of its own, to have easier validation
 }
 
 // NewEndpoint initialization method to be used to create an endpoint

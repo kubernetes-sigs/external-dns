@@ -67,7 +67,8 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 		labels, err := deserializeLabel(record.Target)
-		if err == errInvalidHeritage { // if no heritage is found or it is invalid
+		if err == errInvalidHeritage {
+			//if no heritage is found or it is invalid
 			//case when value of txt record cannot be identified
 			//record will not be removed as it will have empty owner
 			endpoints = append(endpoints, record)
@@ -112,8 +113,8 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 	for _, r := range filteredChanges.Delete {
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.createTXTLabel(r), endpoint.RecordTypeTXT)
 
-		//TODO:when we delete TXT records for which value has changed (due to new label) does it really work for all dns providers ?
-		//TODO: instead of generating TXT record value, we should considering storing somewhere (maybe in the endpoints list returned from Records() call)
+		// when we delete TXT records for which value has changed (due to new label) this would still work because
+		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
 		filteredChanges.Delete = append(filteredChanges.Delete, txt)
 	}
 
@@ -125,8 +126,8 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateOld {
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.createTXTLabel(r), endpoint.RecordTypeTXT)
-		//TODO: when we updateOld TXT records for which value has changed (due to new label) does it really work for all dns providers ?
-		//TODO: instead of generating TXT record value, we should considering storing somewhere (maybe in the endpoints list returned from Records() call)
+		// when we updateOld TXT records for which value has changed (due to new label) this would still work because
+		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
 		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, txt)
 	}
 
