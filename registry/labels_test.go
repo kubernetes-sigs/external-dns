@@ -58,32 +58,32 @@ func (suite *ParserSuite) SetupTest() {
 }
 
 func (suite *ParserSuite) TestSerialize() {
-	suite.Equal(suite.fooAsText, serialize(suite.foo, false), "should serialize")
-	suite.Equal(suite.fooAsTextWithQuotes, serialize(suite.foo, true), "should serialize")
+	suite.Equal(suite.fooAsText, serializeLabel(suite.foo, false), "should serializeLabel")
+	suite.Equal(suite.fooAsTextWithQuotes, serializeLabel(suite.foo, true), "should serializeLabel")
 }
 
 func (suite *ParserSuite) TestDeserialize() {
-	foo, err := deserialize(suite.fooAsText)
+	foo, err := deserializeLabel(suite.fooAsText)
 	suite.NoError(err, "should succeed for valid label text")
 	suite.Equal(suite.foo, foo, "should reconstruct original label map")
 
-	foo, err = deserialize(suite.fooAsTextWithQuotes)
+	foo, err = deserializeLabel(suite.fooAsTextWithQuotes)
 	suite.NoError(err, "should succeed for valid label text")
 	suite.Equal(suite.foo, foo, "should reconstruct original label map")
 
-	bar, err := deserialize(suite.barText)
+	bar, err := deserializeLabel(suite.barText)
 	suite.NoError(err, "should succeed for valid label text")
 	suite.Equal(suite.barTextAsMap, bar, "should reconstruct original label map")
 
-	noHeritage, err := deserialize(suite.noHeritageText)
+	noHeritage, err := deserializeLabel(suite.noHeritageText)
 	suite.Equal(invalidHeritage, err, "should fail if no heritage is found")
 	suite.Nil(noHeritage, "should return nil")
 
-	wrongHeritage, err := deserialize(suite.wrongHeritageText)
+	wrongHeritage, err := deserializeLabel(suite.wrongHeritageText)
 	suite.Equal(invalidHeritage, err, "should fail if wrong heritage is found")
 	suite.Nil(wrongHeritage, "if error should return nil")
 
-	multipleHeritage, err := deserialize(suite.multipleHeritageText)
+	multipleHeritage, err := deserializeLabel(suite.multipleHeritageText)
 	suite.Equal(invalidHeritage, err, "should fail if multiple heritage is found")
 	suite.Nil(multipleHeritage, "if error should return nil")
 }

@@ -32,8 +32,8 @@ const (
 	heritage = "external-dns"
 )
 
-// serialize transforms endpoints labels into a external-dns format string
-func serialize(labels map[string]string, surroundQuotes bool) string {
+// serializeLabel transforms endpoints labels into a external-dns format string
+func serializeLabel(labels map[string]string, surroundQuotes bool) string {
 	var tokens []string
 	tokens = append(tokens, fmt.Sprintf("heritage=%s", heritage))
 	var keys []string
@@ -51,10 +51,10 @@ func serialize(labels map[string]string, surroundQuotes bool) string {
 	return strings.Join(tokens, ",")
 }
 
-// deserialize constructs endpoints labels from a provided format string
+// deserializeLabel constructs endpoints labels from a provided format string
 // if heritage set to another value is found then error is returned
 // no heritage automatically assumes is not owned by external-dns
-func deserialize(labelText string) (map[string]string, error) {
+func deserializeLabel(labelText string) (map[string]string, error) {
 	endpointLabels := map[string]string{}
 	labelText = strings.Trim(labelText, "\"") // drop quotes
 	tokens := strings.Split(labelText, ",")

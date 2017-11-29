@@ -66,7 +66,7 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 			endpoints = append(endpoints, record)
 			continue
 		}
-		labels, err := deserialize(record.Target)
+		labels, err := deserializeLabel(record.Target)
 		if err == invalidHeritage { // if no heritage is found or it is invalid
 			//case when value of txt record cannot be identified
 			//record will not be removed as it will have empty owner
@@ -143,7 +143,7 @@ func (im *TXTRegistry) createTXTLabel(e *endpoint.Endpoint) string {
 		labels[k] = v
 	}
 	labels[endpoint.OwnerLabelKey] = im.ownerID
-	return serialize(labels, true)
+	return serializeLabel(labels, true)
 }
 
 /**
