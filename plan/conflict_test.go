@@ -35,6 +35,7 @@ type ResolverSuite struct {
 	fooA5               *endpoint.Endpoint
 	bar127A             *endpoint.Endpoint
 	bar192A             *endpoint.Endpoint
+	bar127AAnother      *endpoint.Endpoint
 	legacyBar192A       *endpoint.Endpoint // record created in AWS now without resource label
 	suite.Suite
 }
@@ -82,6 +83,14 @@ func (suite *ResolverSuite) SetupTest() {
 			endpoint.ResourceLabelKey: "ingress/default/bar-127",
 		},
 	}
+	suite.bar127AAnother = &endpoint.Endpoint{ //TODO: remove this once we move to multiple targets under same endpoint
+		DNSName:    "bar",
+		Target:     "8.8.8.8",
+		RecordType: "A",
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "ingress/default/bar-127",
+		},
+	}
 	suite.bar192A = &endpoint.Endpoint{
 		DNSName:    "bar",
 		Target:     "192.168.0.1",
@@ -104,6 +113,7 @@ func (suite *ResolverSuite) TestStrictResolver() {
 	suite.Equal(suite.fooV1Cname, suite.perResource.ResolveCreate([]*endpoint.Endpoint{suite.fooV2Cname, suite.fooV1Cname}), "should pick min one")
 
 	//test that perResource resolver preserves resource if it still exists
+	suite.Equal(suite.bar127A, suite.perResource.ResolveUpdate(suite.bar127A, []*endpoint.Endpoint{suite.bar127AAnother, suite.bar127A}), "should pick min for update when same resource endpoint occurs multiple times (remove after multiple-target support") // TODO:remove this test
 	suite.Equal(suite.bar127A, suite.perResource.ResolveUpdate(suite.bar127A, []*endpoint.Endpoint{suite.bar192A, suite.bar127A}), "should pick existing resource")
 	suite.Equal(suite.fooV2Cname, suite.perResource.ResolveUpdate(suite.fooV2Cname, []*endpoint.Endpoint{suite.fooV2Cname, suite.fooV2CnameDuplicate}), "should pick existing resource even if targets are same")
 	suite.Equal(suite.fooA5, suite.perResource.ResolveUpdate(suite.fooV1Cname, []*endpoint.Endpoint{suite.fooA5, suite.fooV2Cname}), "should pick new if resource was deleted")

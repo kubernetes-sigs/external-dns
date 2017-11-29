@@ -16,7 +16,11 @@ limitations under the License.
 
 package plan
 
-import "github.com/kubernetes-incubator/external-dns/endpoint"
+import (
+	"sort"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+)
 
 // ConflictResolver is used to make a decision in case of two or more different kubernetes resources
 // are trying to acquire same DNS name
@@ -45,6 +49,11 @@ func (s PerResource) ResolveCreate(candidates []*endpoint.Endpoint) *endpoint.En
 // if it doesn't exist then pick min
 func (s PerResource) ResolveUpdate(current *endpoint.Endpoint, candidates []*endpoint.Endpoint) *endpoint.Endpoint {
 	currentResource := current.Labels[endpoint.ResourceLabelKey] // resource which has already acquired the DNS
+	// TODO: sort candidates only needed because we can still have two endpoints from same resource here. We sort for consistency
+	// TODO: remove once single endpoint can have multiple targets
+	sort.SliceStable(candidates, func(i, j int) bool {
+		return s.less(candidates[i], candidates[j])
+	})
 	for _, ep := range candidates {
 		if ep.Labels[endpoint.ResourceLabelKey] == currentResource {
 			return ep
