@@ -24,6 +24,7 @@ import (
 )
 
 var (
+	// ErrInvalidHeritage is returned when heritage was not found, or different heritage is found
 	ErrInvalidHeritage = errors.New("heritage is unknown or not found")
 )
 
