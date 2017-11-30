@@ -57,17 +57,17 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 		return nil, err
 	}
 
-	endpoints := make([]*endpoint.Endpoint, 0)
+	endpoints := []*endpoint.Endpoint{}
 
-	labelMap := map[string]map[string]string{}
+	labelMap := map[string]endpoint.Labels{}
 
 	for _, record := range records {
 		if record.RecordType != endpoint.RecordTypeTXT {
 			endpoints = append(endpoints, record)
 			continue
 		}
-		labels, err := deserializeLabel(record.Target)
-		if err == errInvalidHeritage {
+		labels, err := endpoint.NewLabelsFromString(record.Target)
+		if err == endpoint.ErrInvalidHeritage {
 			//if no heritage is found or it is invalid
 			//case when value of txt record cannot be identified
 			//record will not be removed as it will have empty owner
@@ -85,11 +85,8 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 		if labels, ok := labelMap[ep.DNSName]; ok {
 			ep.Labels = labels
 		} else {
-			//this indicates that owner could not be identified, set empty string
-			// so that record will not be modified by external-dns
-			ep.Labels = map[string]string{
-				endpoint.OwnerLabelKey: "",
-			}
+			//this indicates that owner could not be identified, as there is no corresponding TXT record
+			ep.Labels = endpoint.NewLabels()
 		}
 	}
 
@@ -106,12 +103,13 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 		Delete:    filterOwnedRecords(im.ownerID, changes.Delete),
 	}
 	for _, r := range filteredChanges.Create {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.createTXTLabel(r), endpoint.RecordTypeTXT)
+		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), r.Labels.Serialize(true), endpoint.RecordTypeTXT)
 		filteredChanges.Create = append(filteredChanges.Create, txt)
 	}
 
 	for _, r := range filteredChanges.Delete {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.createTXTLabel(r), endpoint.RecordTypeTXT)
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), r.Labels.Serialize(true), endpoint.RecordTypeTXT)
 
 		// when we delete TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
@@ -120,12 +118,12 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateNew {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.createTXTLabel(r), endpoint.RecordTypeTXT)
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), r.Labels.Serialize(true), endpoint.RecordTypeTXT)
 		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, txt)
 	}
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateOld {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.createTXTLabel(r), endpoint.RecordTypeTXT)
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), r.Labels.Serialize(true), endpoint.RecordTypeTXT)
 		// when we updateOld TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
 		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, txt)
@@ -137,15 +135,6 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 /**
   TXT registry specific private methods
 */
-
-func (im *TXTRegistry) createTXTLabel(e *endpoint.Endpoint) string {
-	labels := map[string]string{}
-	for k, v := range e.Labels {
-		labels[k] = v
-	}
-	labels[endpoint.OwnerLabelKey] = im.ownerID
-	return serializeLabel(labels, true)
-}
 
 /**
   nameMapper defines interface which maps the dns name defined for the source

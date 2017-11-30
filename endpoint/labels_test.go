@@ -14,30 +14,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package registry
+package endpoint
 
 import (
-	"testing"
-
 	"fmt"
+	"testing"
 
 	"github.com/stretchr/testify/suite"
 )
 
-type ParserSuite struct {
+type LabelsSuite struct {
 	suite.Suite
-	foo                  map[string]string
+	foo                  Labels
 	fooAsText            string
 	fooAsTextWithQuotes  string
 	barText              string
-	barTextAsMap         map[string]string
+	barTextAsMap         Labels
 	noHeritageText       string
-	noHeritageAsMap      map[string]string
+	noHeritageAsMap      Labels
 	wrongHeritageText    string
 	multipleHeritageText string //considered invalid
 }
 
-func (suite *ParserSuite) SetupTest() {
+func (suite *LabelsSuite) SetupTest() {
 	suite.foo = map[string]string{
 		"owner":    "foo-owner",
 		"resource": "foo-resource",
@@ -57,37 +56,37 @@ func (suite *ParserSuite) SetupTest() {
 	suite.multipleHeritageText = "heritage=mate,heritage=external-dns,external-dns/owner=random-owner"
 }
 
-func (suite *ParserSuite) TestSerialize() {
-	suite.Equal(suite.fooAsText, serializeLabel(suite.foo, false), "should serializeLabel")
-	suite.Equal(suite.fooAsTextWithQuotes, serializeLabel(suite.foo, true), "should serializeLabel")
+func (suite *LabelsSuite) TestSerialize() {
+	suite.Equal(suite.fooAsText, suite.foo.Serialize(false), "should serializeLabel")
+	suite.Equal(suite.fooAsTextWithQuotes, suite.foo.Serialize(true), "should serializeLabel")
 }
 
-func (suite *ParserSuite) TestDeserialize() {
-	foo, err := deserializeLabel(suite.fooAsText)
+func (suite *LabelsSuite) TestDeserialize() {
+	foo, err := NewLabelsFromString(suite.fooAsText)
 	suite.NoError(err, "should succeed for valid label text")
 	suite.Equal(suite.foo, foo, "should reconstruct original label map")
 
-	foo, err = deserializeLabel(suite.fooAsTextWithQuotes)
+	foo, err = NewLabelsFromString(suite.fooAsTextWithQuotes)
 	suite.NoError(err, "should succeed for valid label text")
 	suite.Equal(suite.foo, foo, "should reconstruct original label map")
 
-	bar, err := deserializeLabel(suite.barText)
+	bar, err := NewLabelsFromString(suite.barText)
 	suite.NoError(err, "should succeed for valid label text")
 	suite.Equal(suite.barTextAsMap, bar, "should reconstruct original label map")
 
-	noHeritage, err := deserializeLabel(suite.noHeritageText)
-	suite.Equal(errInvalidHeritage, err, "should fail if no heritage is found")
+	noHeritage, err := NewLabelsFromString(suite.noHeritageText)
+	suite.Equal(ErrInvalidHeritage, err, "should fail if no heritage is found")
 	suite.Nil(noHeritage, "should return nil")
 
-	wrongHeritage, err := deserializeLabel(suite.wrongHeritageText)
-	suite.Equal(errInvalidHeritage, err, "should fail if wrong heritage is found")
+	wrongHeritage, err := NewLabelsFromString(suite.wrongHeritageText)
+	suite.Equal(ErrInvalidHeritage, err, "should fail if wrong heritage is found")
 	suite.Nil(wrongHeritage, "if error should return nil")
 
-	multipleHeritage, err := deserializeLabel(suite.multipleHeritageText)
-	suite.Equal(errInvalidHeritage, err, "should fail if multiple heritage is found")
+	multipleHeritage, err := NewLabelsFromString(suite.multipleHeritageText)
+	suite.Equal(ErrInvalidHeritage, err, "should fail if multiple heritage is found")
 	suite.Nil(multipleHeritage, "if error should return nil")
 }
 
-func TestParser(t *testing.T) {
-	suite.Run(t, new(ParserSuite))
+func TestLabels(t *testing.T) {
+	suite.Run(t, new(LabelsSuite))
 }
