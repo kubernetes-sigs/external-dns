@@ -33,6 +33,10 @@ import (
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
+const (
+	googleRecordTTL = 300
+)
+
 type managedZonesCreateCallInterface interface {
 	Do(opts ...googleapi.CallOption) (*dns.ManagedZone, error)
 }
@@ -153,6 +157,10 @@ func (p *GoogleProvider) Zones() (map[string]*dns.ManagedZone, error) {
 
 	if err := p.managedZonesClient.List(p.project).Pages(context.TODO(), f); err != nil {
 		return nil, err
+	}
+
+	for _, zone := range zones {
+		log.Debugf("Considering zone: %s (domain: %s)", zone.Name, zone.DnsName)
 	}
 
 	return zones, nil
@@ -319,10 +327,16 @@ func newRecord(ep *endpoint.Endpoint) *dns.ResourceRecordSet {
 		target = ensureTrailingDot(target)
 	}
 
+	// no annotation results in a Ttl of 0, default to 300 for backwards-compatability
+	var ttl int64 = googleRecordTTL
+	if ep.RecordTTL.IsConfigured() {
+		ttl = int64(ep.RecordTTL)
+	}
+
 	return &dns.ResourceRecordSet{
 		Name:    ensureTrailingDot(ep.DNSName),
 		Rrdatas: []string{target},
-		Ttl:     300,
+		Ttl:     ttl,
 		Type:    ep.RecordType,
 	}
 }
