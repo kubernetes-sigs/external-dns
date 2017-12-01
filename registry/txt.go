@@ -28,9 +28,12 @@ import (
 	"github.com/kubernetes-incubator/external-dns/provider"
 )
 
-var (
-	txtLabelRegex  = regexp.MustCompile("^\"heritage=external-dns,external-dns/owner=(.+)\"")
+const (
 	txtLabelFormat = "\"heritage=external-dns,external-dns/owner=%s\""
+)
+
+var (
+	txtLabelRegex = regexp.MustCompile("^\"heritage=external-dns,external-dns/owner=(.+)\"")
 )
 
 // TXTRegistry implements registry interface with ownership implemented via associated TXT records
