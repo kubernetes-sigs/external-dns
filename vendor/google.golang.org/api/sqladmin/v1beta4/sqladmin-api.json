@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/t9edOSlewaa7VyZ4dauqNzzg4MU\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/qGR3q9t_cRz9md0zXxOmhlJ1eX0\"",
  "discoveryVersion": "v1",
  "id": "sqladmin:v1beta4",
  "name": "sqladmin",
  "canonicalName": "SQL Admin",
  "version": "v1beta4",
- "revision": "20161220",
+ "revision": "20171011",
  "title": "Cloud SQL Administration API",
  "description": "Creates and configures Cloud SQL instances, which provide fully-managed MySQL databases.",
  "ownerDomain": "google.com",
@@ -21,7 +21,7 @@
  "basePath": "/sql/v1beta4/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "sql/v1beta4/",
- "batchPath": "batch",
+ "batchPath": "batch/sqladmin/v1beta4",
  "parameters": {
   "alt": {
    "type": "string",
@@ -344,7 +344,7 @@
     },
     "databaseVersion": {
      "type": "string",
-     "description": "The database engine type and version. The databaseVersion can not be changed after instance creation. Can be MYSQL_5_5, MYSQL_5_6 or MYSQL_5_7. Defaults to MYSQL_5_6. MYSQL_5_7 is applicable only to Second Generation instances."
+     "description": "The database engine type and version. The databaseVersion field can not be changed after instance creation. MySQL Second Generation instances: MYSQL_5_7 (default) or MYSQL_5_6. PostgreSQL instances: POSTGRES_9_6 MySQL First Generation instances: MYSQL_5_6 (default) or MYSQL_5_5"
     },
     "etag": {
      "type": "string",
@@ -363,6 +363,10 @@
        "description": "The name of the failover replica. If specified at instance creation, a failover replica is created for the instance. The name doesn't include the project ID. This property is applicable only to Second Generation instances."
       }
      }
+    },
+    "gceZone": {
+     "type": "string",
+     "description": "The GCE zone that the instance is serving from. In case when the instance is failed over to standby zone, this value may be different with what user specified in the settings."
     },
     "instanceType": {
      "type": "string",
@@ -476,6 +480,74 @@
      "type": "string",
      "description": "This is always sql#databasesList.",
      "default": "sql#databasesList"
+    }
+   }
+  },
+  "DemoteMasterConfiguration": {
+   "id": "DemoteMasterConfiguration",
+   "type": "object",
+   "description": "Read-replica configuration for connecting to the on-premises master.",
+   "properties": {
+    "kind": {
+     "type": "string",
+     "description": "This is always sql#demoteMasterConfiguration.",
+     "default": "sql#demoteMasterConfiguration"
+    },
+    "mysqlReplicaConfiguration": {
+     "$ref": "DemoteMasterMySqlReplicaConfiguration",
+     "description": "MySQL specific configuration when replicating from a MySQL on-premises master. Replication configuration information such as the username, password, certificates, and keys are not stored in the instance metadata. The configuration information is used only to set up the replication connection and is stored by MySQL in a file named master.info in the data directory."
+    }
+   }
+  },
+  "DemoteMasterContext": {
+   "id": "DemoteMasterContext",
+   "type": "object",
+   "description": "Database instance demote master context.",
+   "properties": {
+    "kind": {
+     "type": "string",
+     "description": "This is always sql#demoteMasterContext.",
+     "default": "sql#demoteMasterContext"
+    },
+    "masterInstanceName": {
+     "type": "string",
+     "description": "The name of the instance which will act as on-premises master in the replication setup."
+    },
+    "replicaConfiguration": {
+     "$ref": "DemoteMasterConfiguration",
+     "description": "Configuration specific to read-replicas replicating from the on-premises master."
+    }
+   }
+  },
+  "DemoteMasterMySqlReplicaConfiguration": {
+   "id": "DemoteMasterMySqlReplicaConfiguration",
+   "type": "object",
+   "description": "Read-replica configuration specific to MySQL databases.",
+   "properties": {
+    "caCertificate": {
+     "type": "string",
+     "description": "PEM representation of the trusted CA's x509 certificate."
+    },
+    "clientCertificate": {
+     "type": "string",
+     "description": "PEM representation of the slave's x509 certificate."
+    },
+    "clientKey": {
+     "type": "string",
+     "description": "PEM representation of the slave's private key. The corresponsing public key is encoded in the client's certificate. The format of the slave's private key can be either PKCS #1 or PKCS #8."
+    },
+    "kind": {
+     "type": "string",
+     "description": "This is always sql#demoteMasterMysqlReplicaConfiguration.",
+     "default": "sql#demoteMasterMysqlReplicaConfiguration"
+    },
+    "password": {
+     "type": "string",
+     "description": "The password for the replication connection."
+    },
+    "username": {
+     "type": "string",
+     "description": "The username for the replication connection."
     }
    }
   },
@@ -647,6 +719,10 @@
      "type": "string",
      "description": "The file type for the specified uri.\nSQL: The file contains SQL statements.\nCSV: The file contains CSV data."
     },
+    "importUser": {
+     "type": "string",
+     "description": "The PostgreSQL user for this import operation. Defaults to cloudsqlsuperuser. Used only for PostgreSQL instances."
+    },
     "kind": {
      "type": "string",
      "description": "This is always sql#importContext.",
@@ -666,6 +742,17 @@
     "cloneContext": {
      "$ref": "CloneContext",
      "description": "Contains details about the clone operation."
+    }
+   }
+  },
+  "InstancesDemoteMasterRequest": {
+   "id": "InstancesDemoteMasterRequest",
+   "type": "object",
+   "description": "Database demote master request.",
+   "properties": {
+    "demoteMasterContext": {
+     "$ref": "DemoteMasterContext",
+     "description": "Contains details about the demoteMaster operation."
     }
    }
   },
@@ -765,7 +852,7 @@
     },
     "requireSsl": {
      "type": "boolean",
-     "description": "Whether the mysqld should default to 'REQUIRE X509' for users connecting over IP."
+     "description": "Whether SSL connections over IP should be enforced or not."
     }
    }
   },
@@ -962,8 +1049,7 @@
      "description": "Name of the database instance related to this operation."
     },
     "targetLink": {
-     "type": "string",
-     "description": "The URI of the instance related to the operation."
+     "type": "string"
     },
     "targetProject": {
      "type": "string",
@@ -1099,6 +1185,10 @@
       "type": "string"
      }
     },
+    "availabilityType": {
+     "type": "string",
+     "description": "Reserved for future use."
+    },
     "backupConfiguration": {
      "$ref": "BackupConfiguration",
      "description": "The daily backup configuration for the instance."
@@ -1164,7 +1254,12 @@
     },
     "storageAutoResize": {
      "type": "boolean",
-     "description": "Configuration to increase storage size automatically. The default value is false. Applies only to Second Generation instances."
+     "description": "Configuration to increase storage size automatically. The default value is true. Applies only to Second Generation instances."
+    },
+    "storageAutoResizeLimit": {
+     "type": "string",
+     "description": "The maximum size to which storage capacity can be automatically increased. The default value is 0, which specifies that there is no limit. Applies only to Second Generation instances.",
+     "format": "int64"
     },
     "tier": {
      "type": "string",
@@ -1174,6 +1269,14 @@
        "sql.instances.insert",
        "sql.instances.update"
       ]
+     }
+    },
+    "userLabels": {
+     "type": "object",
+     "description": "User-provided labels, represented as a dictionary where each label is a single key value pair.",
+     "additionalProperties": {
+      "type": "string",
+      "description": "An individual label entry, composed of a key and a value."
      }
     }
    }
@@ -1825,6 +1928,13 @@
      "path": "flags",
      "httpMethod": "GET",
      "description": "List all available database flags for Google Cloud SQL instances.",
+     "parameters": {
+      "databaseVersion": {
+       "type": "string",
+       "description": "Database version for flag retrieval. Flags are specific to the database version.",
+       "location": "query"
+      }
+     },
      "response": {
       "$ref": "FlagsListResponse"
      },
@@ -1894,6 +2004,40 @@
       "project",
       "instance"
      ],
+     "response": {
+      "$ref": "Operation"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/sqlservice.admin"
+     ]
+    },
+    "demoteMaster": {
+     "id": "sql.instances.demoteMaster",
+     "path": "projects/{project}/instances/{instance}/demoteMaster",
+     "httpMethod": "POST",
+     "description": "Demotes the standalone instance to be a read replica Cloud SQL instance of an on-premises master.",
+     "parameters": {
+      "instance": {
+       "type": "string",
+       "description": "Cloud SQL instance name.",
+       "required": true,
+       "location": "path"
+      },
+      "project": {
+       "type": "string",
+       "description": "ID of the project that contains the instance.",
+       "required": true,
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "instance"
+     ],
+     "request": {
+      "$ref": "InstancesDemoteMasterRequest"
+     },
      "response": {
       "$ref": "Operation"
      },
@@ -2066,6 +2210,11 @@
      "httpMethod": "GET",
      "description": "Lists instances under a given project in the alphabetical order of the instance name.",
      "parameters": {
+      "filter": {
+       "type": "string",
+       "description": "An expression for filtering the results of the request, such as by name or label.",
+       "location": "query"
+      },
       "maxResults": {
        "type": "integer",
        "description": "The maximum number of results to return per response.",

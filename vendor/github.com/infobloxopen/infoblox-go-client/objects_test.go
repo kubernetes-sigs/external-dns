@@ -9,6 +9,67 @@ import (
 
 var _ = Describe("Objects", func() {
 
+	Context("Grid object", func() {
+
+		tesNtpserver := NTPserver{
+			Address:              "16.4.1.2",
+			Burst:                true,
+			EnableAuthentication: true,
+			IBurst:               true,
+			Preffered:            true,
+		}
+		grid := Grid{Name: "test", NTPSetting: &NTPSetting{EnableNTP: true,
+			NTPAcl:     nil,
+			NTPKeys:    nil,
+			NTPKod:     false,
+			NTPServers: []NTPserver{tesNtpserver},
+		},
+		}
+		gridJSON := `{
+			"name": "test",
+			"ntp_setting": {
+				"enable_ntp": true,
+				"ntp_servers": [{
+					"address": "16.4.1.2",
+					"burst": true,
+					"enable_authentication": true,
+					"iburst": true,
+					"preffered": true
+					}]
+				}
+				}`
+
+		Context("Marshalling", func() {
+			Context("expected JSON is returned", func() {
+				js, err := json.Marshal(grid)
+
+				It("should not error", func() {
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("should match json expected", func() {
+					Expect(js).To(MatchJSON(gridJSON))
+				})
+			})
+		})
+
+		Context("Unmarshalling", func() {
+			Context("expected object is returned", func() {
+				var actualGrid Grid
+				err := json.Unmarshal([]byte(gridJSON), &actualGrid)
+
+				It("should not error", func() {
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("should match object expected", func() {
+					Expect(actualGrid).To(Equal(grid))
+				})
+			})
+		})
+
+	})
+
 	Context("EA Object", func() {
 
 		ea := EA{

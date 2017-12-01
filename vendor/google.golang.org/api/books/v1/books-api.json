@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/jiS-k8EAx6v4TcA5Qg2LzgfBvoI\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/q1aPzEOdugLS9_Y8FK61EmJhEHg\"",
  "discoveryVersion": "v1",
  "id": "books:v1",
  "name": "books",
  "version": "v1",
- "revision": "20161206",
+ "revision": "20170313",
  "title": "Books API",
  "description": "Searches for books and manages your Google Books library.",
  "ownerDomain": "google.com",
@@ -20,7 +20,7 @@
  "basePath": "/books/v1/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "books/v1/",
- "batchPath": "batch",
+ "batchPath": "batch/books/v1",
  "parameters": {
   "alt": {
    "type": "string",
@@ -1453,6 +1453,14 @@
        }
       },
       "moreFromSeries": {
+       "type": "object",
+       "properties": {
+        "opted_state": {
+         "type": "string"
+        }
+       }
+      },
+      "rewardExpirations": {
        "type": "object",
        "properties": {
         "opted_state": {
@@ -3160,6 +3168,11 @@
        "httpMethod": "POST",
        "description": "Inserts a new annotation.",
        "parameters": {
+        "annotationId": {
+         "type": "string",
+         "description": "The ID for the annotation to insert.",
+         "location": "query"
+        },
         "country": {
          "type": "string",
          "description": "ISO-3166-1 code to override the IP-based location.",

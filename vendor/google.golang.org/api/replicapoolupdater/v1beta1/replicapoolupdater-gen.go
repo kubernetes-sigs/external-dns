@@ -71,10 +71,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	RollingUpdates *RollingUpdatesService
 
@@ -86,10 +85,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewRollingUpdatesService(s *Service) *RollingUpdatesService {
@@ -149,8 +144,8 @@ type InstanceUpdate struct {
 }
 
 func (s *InstanceUpdate) MarshalJSON() ([]byte, error) {
-	type noMethod InstanceUpdate
-	raw := noMethod(*s)
+	type NoMethod InstanceUpdate
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -178,8 +173,8 @@ type InstanceUpdateError struct {
 }
 
 func (s *InstanceUpdateError) MarshalJSON() ([]byte, error) {
-	type noMethod InstanceUpdateError
-	raw := noMethod(*s)
+	type NoMethod InstanceUpdateError
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -212,8 +207,8 @@ type InstanceUpdateErrorErrors struct {
 }
 
 func (s *InstanceUpdateErrorErrors) MarshalJSON() ([]byte, error) {
-	type noMethod InstanceUpdateErrorErrors
-	raw := noMethod(*s)
+	type NoMethod InstanceUpdateErrorErrors
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -253,8 +248,8 @@ type InstanceUpdateList struct {
 }
 
 func (s *InstanceUpdateList) MarshalJSON() ([]byte, error) {
-	type noMethod InstanceUpdateList
-	raw := noMethod(*s)
+	type NoMethod InstanceUpdateList
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -352,8 +347,8 @@ type Operation struct {
 }
 
 func (s *Operation) MarshalJSON() ([]byte, error) {
-	type noMethod Operation
-	raw := noMethod(*s)
+	type NoMethod Operation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -382,8 +377,8 @@ type OperationError struct {
 }
 
 func (s *OperationError) MarshalJSON() ([]byte, error) {
-	type noMethod OperationError
-	raw := noMethod(*s)
+	type NoMethod OperationError
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -416,8 +411,8 @@ type OperationErrorErrors struct {
 }
 
 func (s *OperationErrorErrors) MarshalJSON() ([]byte, error) {
-	type noMethod OperationErrorErrors
-	raw := noMethod(*s)
+	type NoMethod OperationErrorErrors
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -450,8 +445,8 @@ type OperationWarnings struct {
 }
 
 func (s *OperationWarnings) MarshalJSON() ([]byte, error) {
-	type noMethod OperationWarnings
-	raw := noMethod(*s)
+	type NoMethod OperationWarnings
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -480,8 +475,8 @@ type OperationWarningsData struct {
 }
 
 func (s *OperationWarningsData) MarshalJSON() ([]byte, error) {
-	type noMethod OperationWarningsData
-	raw := noMethod(*s)
+	type NoMethod OperationWarningsData
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -526,8 +521,8 @@ type OperationList struct {
 }
 
 func (s *OperationList) MarshalJSON() ([]byte, error) {
-	type noMethod OperationList
-	raw := noMethod(*s)
+	type NoMethod OperationList
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -633,8 +628,8 @@ type RollingUpdate struct {
 }
 
 func (s *RollingUpdate) MarshalJSON() ([]byte, error) {
-	type noMethod RollingUpdate
-	raw := noMethod(*s)
+	type NoMethod RollingUpdate
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -663,8 +658,8 @@ type RollingUpdateError struct {
 }
 
 func (s *RollingUpdateError) MarshalJSON() ([]byte, error) {
-	type noMethod RollingUpdateError
-	raw := noMethod(*s)
+	type NoMethod RollingUpdateError
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -697,8 +692,8 @@ type RollingUpdateErrorErrors struct {
 }
 
 func (s *RollingUpdateErrorErrors) MarshalJSON() ([]byte, error) {
-	type noMethod RollingUpdateErrorErrors
-	raw := noMethod(*s)
+	type NoMethod RollingUpdateErrorErrors
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -755,8 +750,8 @@ type RollingUpdatePolicy struct {
 }
 
 func (s *RollingUpdatePolicy) MarshalJSON() ([]byte, error) {
-	type noMethod RollingUpdatePolicy
-	raw := noMethod(*s)
+	type NoMethod RollingUpdatePolicy
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -796,8 +791,8 @@ type RollingUpdateList struct {
 }
 
 func (s *RollingUpdateList) MarshalJSON() ([]byte, error) {
-	type noMethod RollingUpdateList
-	raw := noMethod(*s)
+	type NoMethod RollingUpdateList
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -855,7 +850,6 @@ func (c *RollingUpdatesCancelCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/zones/{zone}/rollingUpdates/{rollingUpdate}/cancel")
@@ -903,7 +897,7 @@ func (c *RollingUpdatesCancelCall) Do(opts ...googleapi.CallOption) (*Operation,
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1013,7 +1007,6 @@ func (c *RollingUpdatesGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -1064,7 +1057,7 @@ func (c *RollingUpdatesGetCall) Do(opts ...googleapi.CallOption) (*RollingUpdate
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1165,7 +1158,6 @@ func (c *RollingUpdatesInsertCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.rollingupdate)
 	if err != nil {
@@ -1217,7 +1209,7 @@ func (c *RollingUpdatesInsertCall) Do(opts ...googleapi.CallOption) (*Operation,
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1345,7 +1337,6 @@ func (c *RollingUpdatesListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -1395,7 +1386,7 @@ func (c *RollingUpdatesListCall) Do(opts ...googleapi.CallOption) (*RollingUpdat
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1564,7 +1555,6 @@ func (c *RollingUpdatesListInstanceUpdatesCall) doRequest(alt string) (*http.Res
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -1615,7 +1605,7 @@ func (c *RollingUpdatesListInstanceUpdatesCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1758,7 +1748,6 @@ func (c *RollingUpdatesPauseCall) doRequest(alt string) (*http.Response, error) 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/zones/{zone}/rollingUpdates/{rollingUpdate}/pause")
@@ -1806,7 +1795,7 @@ func (c *RollingUpdatesPauseCall) Do(opts ...googleapi.CallOption) (*Operation, 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1906,7 +1895,6 @@ func (c *RollingUpdatesResumeCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/zones/{zone}/rollingUpdates/{rollingUpdate}/resume")
@@ -1954,7 +1942,7 @@ func (c *RollingUpdatesResumeCall) Do(opts ...googleapi.CallOption) (*Operation,
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2055,7 +2043,6 @@ func (c *RollingUpdatesRollbackCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{project}/zones/{zone}/rollingUpdates/{rollingUpdate}/rollback")
@@ -2103,7 +2090,7 @@ func (c *RollingUpdatesRollbackCall) Do(opts ...googleapi.CallOption) (*Operatio
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2212,7 +2199,6 @@ func (c *ZoneOperationsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2263,7 +2249,7 @@ func (c *ZoneOperationsGetCall) Do(opts ...googleapi.CallOption) (*Operation, er
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2394,7 +2380,6 @@ func (c *ZoneOperationsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2444,7 +2429,7 @@ func (c *ZoneOperationsListCall) Do(opts ...googleapi.CallOption) (*OperationLis
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

@@ -61,10 +61,9 @@ func New(client *http.Client) (*APIService, error) {
 }
 
 type APIService struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Orders *OrdersService
 }
@@ -74,10 +73,6 @@ func (s *APIService) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *APIService) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewOrdersService(s *APIService) *OrdersService {
@@ -118,8 +113,8 @@ type Error struct {
 }
 
 func (s *Error) MarshalJSON() ([]byte, error) {
-	type noMethod Error
-	raw := noMethod(*s)
+	type NoMethod Error
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -152,8 +147,8 @@ type Errors struct {
 }
 
 func (s *Errors) MarshalJSON() ([]byte, error) {
-	type noMethod Errors
-	raw := noMethod(*s)
+	type NoMethod Errors
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -201,7 +196,7 @@ type Order struct {
 	PlacedDate string `json:"placedDate,omitempty"`
 
 	// Promotions: The details of the merchant provided promotions applied
-	// to the order. More details about the program are  here.
+	// to the order. More details about the program are here.
 	Promotions []*OrderPromotion `json:"promotions,omitempty"`
 
 	// Refunds: Refunds for the order.
@@ -244,8 +239,8 @@ type Order struct {
 }
 
 func (s *Order) MarshalJSON() ([]byte, error) {
-	type noMethod Order
-	raw := noMethod(*s)
+	type NoMethod Order
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -299,8 +294,8 @@ type OrderAddress struct {
 }
 
 func (s *OrderAddress) MarshalJSON() ([]byte, error) {
-	type noMethod OrderAddress
-	raw := noMethod(*s)
+	type NoMethod OrderAddress
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -342,8 +337,8 @@ type OrderCancellation struct {
 }
 
 func (s *OrderCancellation) MarshalJSON() ([]byte, error) {
-	type noMethod OrderCancellation
-	raw := noMethod(*s)
+	type NoMethod OrderCancellation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -379,8 +374,8 @@ type OrderCustomer struct {
 }
 
 func (s *OrderCustomer) MarshalJSON() ([]byte, error) {
-	type noMethod OrderCustomer
-	raw := noMethod(*s)
+	type NoMethod OrderCustomer
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -409,8 +404,8 @@ type OrderDeliveryDetails struct {
 }
 
 func (s *OrderDeliveryDetails) MarshalJSON() ([]byte, error) {
-	type noMethod OrderDeliveryDetails
-	raw := noMethod(*s)
+	type NoMethod OrderDeliveryDetails
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -478,8 +473,8 @@ type OrderLineItem struct {
 }
 
 func (s *OrderLineItem) MarshalJSON() ([]byte, error) {
-	type noMethod OrderLineItem
-	raw := noMethod(*s)
+	type NoMethod OrderLineItem
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -552,8 +547,8 @@ type OrderLineItemProduct struct {
 }
 
 func (s *OrderLineItemProduct) MarshalJSON() ([]byte, error) {
-	type noMethod OrderLineItemProduct
-	raw := noMethod(*s)
+	type NoMethod OrderLineItemProduct
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -582,8 +577,8 @@ type OrderLineItemProductVariantAttribute struct {
 }
 
 func (s *OrderLineItemProductVariantAttribute) MarshalJSON() ([]byte, error) {
-	type noMethod OrderLineItemProductVariantAttribute
-	raw := noMethod(*s)
+	type NoMethod OrderLineItemProductVariantAttribute
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -615,8 +610,8 @@ type OrderLineItemReturnInfo struct {
 }
 
 func (s *OrderLineItemReturnInfo) MarshalJSON() ([]byte, error) {
-	type noMethod OrderLineItemReturnInfo
-	raw := noMethod(*s)
+	type NoMethod OrderLineItemReturnInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -648,13 +643,14 @@ type OrderLineItemShippingDetails struct {
 }
 
 func (s *OrderLineItemShippingDetails) MarshalJSON() ([]byte, error) {
-	type noMethod OrderLineItemShippingDetails
-	raw := noMethod(*s)
+	type NoMethod OrderLineItemShippingDetails
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 type OrderLineItemShippingDetailsMethod struct {
-	// Carrier: The carrier for the shipping. Optional.
+	// Carrier: The carrier for the shipping. Optional. See
+	// shipments[].carrier for a list of acceptable values.
 	Carrier string `json:"carrier,omitempty"`
 
 	// MaxDaysInTransit: Maximum transit time.
@@ -684,8 +680,8 @@ type OrderLineItemShippingDetailsMethod struct {
 }
 
 func (s *OrderLineItemShippingDetailsMethod) MarshalJSON() ([]byte, error) {
-	type noMethod OrderLineItemShippingDetailsMethod
-	raw := noMethod(*s)
+	type NoMethod OrderLineItemShippingDetailsMethod
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -706,7 +702,16 @@ type OrderPaymentMethod struct {
 	// PhoneNumber: The billing phone number.
 	PhoneNumber string `json:"phoneNumber,omitempty"`
 
-	// Type: The type of instrument (VISA, Mastercard, etc).
+	// Type: The type of instrument.
+	//
+	// Acceptable values are:
+	// - "AMEX"
+	// - "DISCOVER"
+	// - "JCB"
+	// - "MASTERCARD"
+	// - "UNIONPAY"
+	// - "VISA"
+	// - ""
 	Type string `json:"type,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "BillingAddress") to
@@ -728,8 +733,8 @@ type OrderPaymentMethod struct {
 }
 
 func (s *OrderPaymentMethod) MarshalJSON() ([]byte, error) {
-	type noMethod OrderPaymentMethod
-	raw := noMethod(*s)
+	type NoMethod OrderPaymentMethod
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -781,8 +786,8 @@ type OrderPromotion struct {
 }
 
 func (s *OrderPromotion) MarshalJSON() ([]byte, error) {
-	type noMethod OrderPromotion
-	raw := noMethod(*s)
+	type NoMethod OrderPromotion
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -825,8 +830,8 @@ type OrderPromotionBenefit struct {
 }
 
 func (s *OrderPromotionBenefit) MarshalJSON() ([]byte, error) {
-	type noMethod OrderPromotionBenefit
-	raw := noMethod(*s)
+	type NoMethod OrderPromotionBenefit
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -865,8 +870,8 @@ type OrderRefund struct {
 }
 
 func (s *OrderRefund) MarshalJSON() ([]byte, error) {
-	type noMethod OrderRefund
-	raw := noMethod(*s)
+	type NoMethod OrderRefund
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -905,13 +910,31 @@ type OrderReturn struct {
 }
 
 func (s *OrderReturn) MarshalJSON() ([]byte, error) {
-	type noMethod OrderReturn
-	raw := noMethod(*s)
+	type NoMethod OrderReturn
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 type OrderShipment struct {
 	// Carrier: The carrier handling the shipment.
+	//
+	// Acceptable values are:
+	// - "gsx"
+	// - "ups"
+	// - "usps"
+	// - "fedex"
+	// - "dhl"
+	// - "ecourier"
+	// - "cxt"
+	// - "google"
+	// - "ontrac"
+	// - "emsy"
+	// - "ont"
+	// - "deliv"
+	// - "dynamex"
+	// - "lasership"
+	// - "mpx"
+	// - "uds"
 	Carrier string `json:"carrier,omitempty"`
 
 	// CreationDate: Date on which the shipment has been created, in ISO
@@ -952,14 +975,19 @@ type OrderShipment struct {
 }
 
 func (s *OrderShipment) MarshalJSON() ([]byte, error) {
-	type noMethod OrderShipment
-	raw := noMethod(*s)
+	type NoMethod OrderShipment
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 type OrderShipmentLineItemShipment struct {
-	// LineItemId: The id of the line item that is shipped.
+	// LineItemId: The id of the line item that is shipped. Either
+	// lineItemId or productId is required.
 	LineItemId string `json:"lineItemId,omitempty"`
+
+	// ProductId: The ID of the product to ship. This is the REST ID used in
+	// the products service. Either lineItemId or productId is required.
+	ProductId string `json:"productId,omitempty"`
 
 	// Quantity: The quantity that is shipped.
 	Quantity int64 `json:"quantity,omitempty"`
@@ -982,8 +1010,8 @@ type OrderShipmentLineItemShipment struct {
 }
 
 func (s *OrderShipmentLineItemShipment) MarshalJSON() ([]byte, error) {
-	type noMethod OrderShipmentLineItemShipment
-	raw := noMethod(*s)
+	type NoMethod OrderShipmentLineItemShipment
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1010,8 +1038,8 @@ type OrdersAcknowledgeRequest struct {
 }
 
 func (s *OrdersAcknowledgeRequest) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersAcknowledgeRequest
-	raw := noMethod(*s)
+	type NoMethod OrdersAcknowledgeRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1046,8 +1074,8 @@ type OrdersAcknowledgeResponse struct {
 }
 
 func (s *OrdersAcknowledgeResponse) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersAcknowledgeResponse
-	raw := noMethod(*s)
+	type NoMethod OrdersAcknowledgeResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1078,8 +1106,8 @@ type OrdersAdvanceTestOrderResponse struct {
 }
 
 func (s *OrdersAdvanceTestOrderResponse) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersAdvanceTestOrderResponse
-	raw := noMethod(*s)
+	type NoMethod OrdersAdvanceTestOrderResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1090,12 +1118,27 @@ type OrdersCancelLineItemRequest struct {
 	// left on the order.
 	Amount *Price `json:"amount,omitempty"`
 
-	// LineItemId: The ID of the line item to cancel.
+	// AmountPretax: Amount to refund for the cancelation. Optional. If not
+	// set, Google will calculate the default based on the price and tax of
+	// the items involved. The amount must not be larger than the net amount
+	// left on the order.
+	AmountPretax *Price `json:"amountPretax,omitempty"`
+
+	// AmountTax: Tax amount that correspond to cancellation amount in
+	// amountPretax.
+	AmountTax *Price `json:"amountTax,omitempty"`
+
+	// LineItemId: The ID of the line item to cancel. Either lineItemId or
+	// productId is required.
 	LineItemId string `json:"lineItemId,omitempty"`
 
 	// OperationId: The ID of the operation. Unique across all operations
 	// for a given order.
 	OperationId string `json:"operationId,omitempty"`
+
+	// ProductId: The ID of the product to cancel. This is the REST ID used
+	// in the products service. Either lineItemId or productId is required.
+	ProductId string `json:"productId,omitempty"`
 
 	// Quantity: The quantity to cancel.
 	Quantity int64 `json:"quantity,omitempty"`
@@ -1124,8 +1167,8 @@ type OrdersCancelLineItemRequest struct {
 }
 
 func (s *OrdersCancelLineItemRequest) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersCancelLineItemRequest
-	raw := noMethod(*s)
+	type NoMethod OrdersCancelLineItemRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1160,8 +1203,8 @@ type OrdersCancelLineItemResponse struct {
 }
 
 func (s *OrdersCancelLineItemResponse) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersCancelLineItemResponse
-	raw := noMethod(*s)
+	type NoMethod OrdersCancelLineItemResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1194,8 +1237,8 @@ type OrdersCancelRequest struct {
 }
 
 func (s *OrdersCancelRequest) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersCancelRequest
-	raw := noMethod(*s)
+	type NoMethod OrdersCancelRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1230,8 +1273,8 @@ type OrdersCancelResponse struct {
 }
 
 func (s *OrdersCancelResponse) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersCancelResponse
-	raw := noMethod(*s)
+	type NoMethod OrdersCancelResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1262,8 +1305,8 @@ type OrdersCreateTestOrderRequest struct {
 }
 
 func (s *OrdersCreateTestOrderRequest) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersCreateTestOrderRequest
-	raw := noMethod(*s)
+	type NoMethod OrdersCreateTestOrderRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1297,8 +1340,8 @@ type OrdersCreateTestOrderResponse struct {
 }
 
 func (s *OrdersCreateTestOrderResponse) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersCreateTestOrderResponse
-	raw := noMethod(*s)
+	type NoMethod OrdersCreateTestOrderResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1324,8 +1367,8 @@ type OrdersCustomBatchRequest struct {
 }
 
 func (s *OrdersCustomBatchRequest) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersCustomBatchRequest
-	raw := noMethod(*s)
+	type NoMethod OrdersCustomBatchRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1388,8 +1431,8 @@ type OrdersCustomBatchRequestEntry struct {
 }
 
 func (s *OrdersCustomBatchRequestEntry) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersCustomBatchRequestEntry
-	raw := noMethod(*s)
+	type NoMethod OrdersCustomBatchRequestEntry
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1418,8 +1461,8 @@ type OrdersCustomBatchRequestEntryCancel struct {
 }
 
 func (s *OrdersCustomBatchRequestEntryCancel) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersCustomBatchRequestEntryCancel
-	raw := noMethod(*s)
+	type NoMethod OrdersCustomBatchRequestEntryCancel
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1430,8 +1473,23 @@ type OrdersCustomBatchRequestEntryCancelLineItem struct {
 	// left on the order.
 	Amount *Price `json:"amount,omitempty"`
 
-	// LineItemId: The ID of the line item to cancel.
+	// AmountPretax: Amount to refund for the cancelation. Optional. If not
+	// set, Google will calculate the default based on the price and tax of
+	// the items involved. The amount must not be larger than the net amount
+	// left on the order.
+	AmountPretax *Price `json:"amountPretax,omitempty"`
+
+	// AmountTax: Tax amount that correspond to cancellation amount in
+	// amountPretax.
+	AmountTax *Price `json:"amountTax,omitempty"`
+
+	// LineItemId: The ID of the line item to cancel. Either lineItemId or
+	// productId is required.
 	LineItemId string `json:"lineItemId,omitempty"`
+
+	// ProductId: The ID of the product to cancel. This is the REST ID used
+	// in the products service. Either lineItemId or productId is required.
+	ProductId string `json:"productId,omitempty"`
 
 	// Quantity: The quantity to cancel.
 	Quantity int64 `json:"quantity,omitempty"`
@@ -1460,14 +1518,22 @@ type OrdersCustomBatchRequestEntryCancelLineItem struct {
 }
 
 func (s *OrdersCustomBatchRequestEntryCancelLineItem) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersCustomBatchRequestEntryCancelLineItem
-	raw := noMethod(*s)
+	type NoMethod OrdersCustomBatchRequestEntryCancelLineItem
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 type OrdersCustomBatchRequestEntryRefund struct {
 	// Amount: The amount that is refunded.
 	Amount *Price `json:"amount,omitempty"`
+
+	// AmountPretax: The amount that is refunded. Either amount or
+	// amountPretax and amountTax should be filled.
+	AmountPretax *Price `json:"amountPretax,omitempty"`
+
+	// AmountTax: Tax amount that correspond to refund amount in
+	// amountPretax.
+	AmountTax *Price `json:"amountTax,omitempty"`
 
 	// Reason: The reason for the refund.
 	Reason string `json:"reason,omitempty"`
@@ -1493,14 +1559,19 @@ type OrdersCustomBatchRequestEntryRefund struct {
 }
 
 func (s *OrdersCustomBatchRequestEntryRefund) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersCustomBatchRequestEntryRefund
-	raw := noMethod(*s)
+	type NoMethod OrdersCustomBatchRequestEntryRefund
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 type OrdersCustomBatchRequestEntryReturnLineItem struct {
-	// LineItemId: The ID of the line item to return.
+	// LineItemId: The ID of the line item to return. Either lineItemId or
+	// productId is required.
 	LineItemId string `json:"lineItemId,omitempty"`
+
+	// ProductId: The ID of the product to return. This is the REST ID used
+	// in the products service. Either lineItemId or productId is required.
+	ProductId string `json:"productId,omitempty"`
 
 	// Quantity: The quantity to return.
 	Quantity int64 `json:"quantity,omitempty"`
@@ -1529,17 +1600,61 @@ type OrdersCustomBatchRequestEntryReturnLineItem struct {
 }
 
 func (s *OrdersCustomBatchRequestEntryReturnLineItem) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersCustomBatchRequestEntryReturnLineItem
-	raw := noMethod(*s)
+	type NoMethod OrdersCustomBatchRequestEntryReturnLineItem
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 type OrdersCustomBatchRequestEntryShipLineItems struct {
-	// Carrier: The carrier handling the shipment.
+	// Carrier: Deprecated. Please use shipmentInfo instead. The carrier
+	// handling the shipment. See shipments[].carrier in the  Orders
+	// resource representation for a list of acceptable values.
 	Carrier string `json:"carrier,omitempty"`
 
 	// LineItems: Line items to ship.
 	LineItems []*OrderShipmentLineItemShipment `json:"lineItems,omitempty"`
+
+	// ShipmentId: Deprecated. Please use shipmentInfo instead. The ID of
+	// the shipment.
+	ShipmentId string `json:"shipmentId,omitempty"`
+
+	// ShipmentInfos: Shipment information. This field is repeated because a
+	// single line item can be shipped in several packages (and have several
+	// tracking IDs).
+	ShipmentInfos []*OrdersCustomBatchRequestEntryShipLineItemsShipmentInfo `json:"shipmentInfos,omitempty"`
+
+	// TrackingId: Deprecated. Please use shipmentInfo instead. The tracking
+	// id for the shipment.
+	TrackingId string `json:"trackingId,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Carrier") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Carrier") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *OrdersCustomBatchRequestEntryShipLineItems) MarshalJSON() ([]byte, error) {
+	type NoMethod OrdersCustomBatchRequestEntryShipLineItems
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+type OrdersCustomBatchRequestEntryShipLineItemsShipmentInfo struct {
+	// Carrier: The carrier handling the shipment. See shipments[].carrier
+	// in the  Orders resource representation for a list of acceptable
+	// values.
+	Carrier string `json:"carrier,omitempty"`
 
 	// ShipmentId: The ID of the shipment.
 	ShipmentId string `json:"shipmentId,omitempty"`
@@ -1564,14 +1679,16 @@ type OrdersCustomBatchRequestEntryShipLineItems struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *OrdersCustomBatchRequestEntryShipLineItems) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersCustomBatchRequestEntryShipLineItems
-	raw := noMethod(*s)
+func (s *OrdersCustomBatchRequestEntryShipLineItemsShipmentInfo) MarshalJSON() ([]byte, error) {
+	type NoMethod OrdersCustomBatchRequestEntryShipLineItemsShipmentInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 type OrdersCustomBatchRequestEntryUpdateShipment struct {
 	// Carrier: The carrier handling the shipment. Not updated if missing.
+	// See shipments[].carrier in the  Orders resource representation for a
+	// list of acceptable values.
 	Carrier string `json:"carrier,omitempty"`
 
 	// ShipmentId: The ID of the shipment.
@@ -1601,8 +1718,8 @@ type OrdersCustomBatchRequestEntryUpdateShipment struct {
 }
 
 func (s *OrdersCustomBatchRequestEntryUpdateShipment) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersCustomBatchRequestEntryUpdateShipment
-	raw := noMethod(*s)
+	type NoMethod OrdersCustomBatchRequestEntryUpdateShipment
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1636,8 +1753,8 @@ type OrdersCustomBatchResponse struct {
 }
 
 func (s *OrdersCustomBatchResponse) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersCustomBatchResponse
-	raw := noMethod(*s)
+	type NoMethod OrdersCustomBatchResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1679,8 +1796,8 @@ type OrdersCustomBatchResponseEntry struct {
 }
 
 func (s *OrdersCustomBatchResponseEntry) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersCustomBatchResponseEntry
-	raw := noMethod(*s)
+	type NoMethod OrdersCustomBatchResponseEntry
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1714,8 +1831,8 @@ type OrdersGetByMerchantOrderIdResponse struct {
 }
 
 func (s *OrdersGetByMerchantOrderIdResponse) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersGetByMerchantOrderIdResponse
-	raw := noMethod(*s)
+	type NoMethod OrdersGetByMerchantOrderIdResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1749,8 +1866,8 @@ type OrdersGetTestOrderTemplateResponse struct {
 }
 
 func (s *OrdersGetTestOrderTemplateResponse) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersGetTestOrderTemplateResponse
-	raw := noMethod(*s)
+	type NoMethod OrdersGetTestOrderTemplateResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1787,14 +1904,22 @@ type OrdersListResponse struct {
 }
 
 func (s *OrdersListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersListResponse
-	raw := noMethod(*s)
+	type NoMethod OrdersListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 type OrdersRefundRequest struct {
 	// Amount: The amount that is refunded.
 	Amount *Price `json:"amount,omitempty"`
+
+	// AmountPretax: The amount that is refunded. Either amount or
+	// amountPretax and amountTax should be filled.
+	AmountPretax *Price `json:"amountPretax,omitempty"`
+
+	// AmountTax: Tax amount that correspond to refund amount in
+	// amountPretax.
+	AmountTax *Price `json:"amountTax,omitempty"`
 
 	// OperationId: The ID of the operation. Unique across all operations
 	// for a given order.
@@ -1824,8 +1949,8 @@ type OrdersRefundRequest struct {
 }
 
 func (s *OrdersRefundRequest) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersRefundRequest
-	raw := noMethod(*s)
+	type NoMethod OrdersRefundRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1860,18 +1985,23 @@ type OrdersRefundResponse struct {
 }
 
 func (s *OrdersRefundResponse) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersRefundResponse
-	raw := noMethod(*s)
+	type NoMethod OrdersRefundResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 type OrdersReturnLineItemRequest struct {
-	// LineItemId: The ID of the line item to return.
+	// LineItemId: The ID of the line item to return. Either lineItemId or
+	// productId is required.
 	LineItemId string `json:"lineItemId,omitempty"`
 
 	// OperationId: The ID of the operation. Unique across all operations
 	// for a given order.
 	OperationId string `json:"operationId,omitempty"`
+
+	// ProductId: The ID of the product to return. This is the REST ID used
+	// in the products service. Either lineItemId or productId is required.
+	ProductId string `json:"productId,omitempty"`
 
 	// Quantity: The quantity to return.
 	Quantity int64 `json:"quantity,omitempty"`
@@ -1900,8 +2030,8 @@ type OrdersReturnLineItemRequest struct {
 }
 
 func (s *OrdersReturnLineItemRequest) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersReturnLineItemRequest
-	raw := noMethod(*s)
+	type NoMethod OrdersReturnLineItemRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1936,13 +2066,15 @@ type OrdersReturnLineItemResponse struct {
 }
 
 func (s *OrdersReturnLineItemResponse) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersReturnLineItemResponse
-	raw := noMethod(*s)
+	type NoMethod OrdersReturnLineItemResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 type OrdersShipLineItemsRequest struct {
-	// Carrier: The carrier handling the shipment.
+	// Carrier: Deprecated. Please use shipmentInfo instead. The carrier
+	// handling the shipment. See shipments[].carrier in the  Orders
+	// resource representation for a list of acceptable values.
 	Carrier string `json:"carrier,omitempty"`
 
 	// LineItems: Line items to ship.
@@ -1952,10 +2084,17 @@ type OrdersShipLineItemsRequest struct {
 	// for a given order.
 	OperationId string `json:"operationId,omitempty"`
 
-	// ShipmentId: The ID of the shipment.
+	// ShipmentId: Deprecated. Please use shipmentInfo instead. The ID of
+	// the shipment.
 	ShipmentId string `json:"shipmentId,omitempty"`
 
-	// TrackingId: The tracking id for the shipment.
+	// ShipmentInfos: Shipment information. This field is repeated because a
+	// single line item can be shipped in several packages (and have several
+	// tracking IDs).
+	ShipmentInfos []*OrdersCustomBatchRequestEntryShipLineItemsShipmentInfo `json:"shipmentInfos,omitempty"`
+
+	// TrackingId: Deprecated. Please use shipmentInfo instead. The tracking
+	// id for the shipment.
 	TrackingId string `json:"trackingId,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Carrier") to
@@ -1976,8 +2115,8 @@ type OrdersShipLineItemsRequest struct {
 }
 
 func (s *OrdersShipLineItemsRequest) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersShipLineItemsRequest
-	raw := noMethod(*s)
+	type NoMethod OrdersShipLineItemsRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2012,8 +2151,8 @@ type OrdersShipLineItemsResponse struct {
 }
 
 func (s *OrdersShipLineItemsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersShipLineItemsResponse
-	raw := noMethod(*s)
+	type NoMethod OrdersShipLineItemsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2045,8 +2184,8 @@ type OrdersUpdateMerchantOrderIdRequest struct {
 }
 
 func (s *OrdersUpdateMerchantOrderIdRequest) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersUpdateMerchantOrderIdRequest
-	raw := noMethod(*s)
+	type NoMethod OrdersUpdateMerchantOrderIdRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2081,13 +2220,15 @@ type OrdersUpdateMerchantOrderIdResponse struct {
 }
 
 func (s *OrdersUpdateMerchantOrderIdResponse) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersUpdateMerchantOrderIdResponse
-	raw := noMethod(*s)
+	type NoMethod OrdersUpdateMerchantOrderIdResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 type OrdersUpdateShipmentRequest struct {
 	// Carrier: The carrier handling the shipment. Not updated if missing.
+	// See shipments[].carrier in the  Orders resource representation for a
+	// list of acceptable values.
 	Carrier string `json:"carrier,omitempty"`
 
 	// OperationId: The ID of the operation. Unique across all operations
@@ -2121,8 +2262,8 @@ type OrdersUpdateShipmentRequest struct {
 }
 
 func (s *OrdersUpdateShipmentRequest) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersUpdateShipmentRequest
-	raw := noMethod(*s)
+	type NoMethod OrdersUpdateShipmentRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2157,8 +2298,8 @@ type OrdersUpdateShipmentResponse struct {
 }
 
 func (s *OrdersUpdateShipmentResponse) MarshalJSON() ([]byte, error) {
-	type noMethod OrdersUpdateShipmentResponse
-	raw := noMethod(*s)
+	type NoMethod OrdersUpdateShipmentResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2187,8 +2328,8 @@ type Price struct {
 }
 
 func (s *Price) MarshalJSON() ([]byte, error) {
-	type noMethod Price
-	raw := noMethod(*s)
+	type NoMethod Price
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2204,6 +2345,10 @@ type TestOrder struct {
 	// be provided.
 	LineItems []*TestOrderLineItem `json:"lineItems,omitempty"`
 
+	// NotificationMode: Determines if test order must be pulled by merchant
+	// or pushed to merchant via push integration.
+	NotificationMode string `json:"notificationMode,omitempty"`
+
 	// PaymentMethod: The details of the payment method.
 	PaymentMethod *TestOrderPaymentMethod `json:"paymentMethod,omitempty"`
 
@@ -2212,7 +2357,7 @@ type TestOrder struct {
 	PredefinedDeliveryAddress string `json:"predefinedDeliveryAddress,omitempty"`
 
 	// Promotions: The details of the merchant provided promotions applied
-	// to the order. More details about the program are  here.
+	// to the order. More details about the program are here.
 	Promotions []*OrderPromotion `json:"promotions,omitempty"`
 
 	// ShippingCost: The total cost of shipping for all items.
@@ -2242,8 +2387,8 @@ type TestOrder struct {
 }
 
 func (s *TestOrder) MarshalJSON() ([]byte, error) {
-	type noMethod TestOrder
-	raw := noMethod(*s)
+	type NoMethod TestOrder
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2279,8 +2424,8 @@ type TestOrderCustomer struct {
 }
 
 func (s *TestOrderCustomer) MarshalJSON() ([]byte, error) {
-	type noMethod TestOrderCustomer
-	raw := noMethod(*s)
+	type NoMethod TestOrderCustomer
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2318,8 +2463,8 @@ type TestOrderLineItem struct {
 }
 
 func (s *TestOrderLineItem) MarshalJSON() ([]byte, error) {
-	type noMethod TestOrderLineItem
-	raw := noMethod(*s)
+	type NoMethod TestOrderLineItem
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2383,8 +2528,8 @@ type TestOrderLineItemProduct struct {
 }
 
 func (s *TestOrderLineItemProduct) MarshalJSON() ([]byte, error) {
-	type noMethod TestOrderLineItemProduct
-	raw := noMethod(*s)
+	type NoMethod TestOrderLineItemProduct
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2425,8 +2570,8 @@ type TestOrderPaymentMethod struct {
 }
 
 func (s *TestOrderPaymentMethod) MarshalJSON() ([]byte, error) {
-	type noMethod TestOrderPaymentMethod
-	raw := noMethod(*s)
+	type NoMethod TestOrderPaymentMethod
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2442,8 +2587,7 @@ type OrdersAcknowledgeCall struct {
 	header_                  http.Header
 }
 
-// Acknowledge: Marks an order as acknowledged. This method can only be
-// called for non-multi-client accounts.
+// Acknowledge: Marks an order as acknowledged.
 func (r *OrdersService) Acknowledge(merchantId uint64, orderId string, ordersacknowledgerequest *OrdersAcknowledgeRequest) *OrdersAcknowledgeCall {
 	c := &OrdersAcknowledgeCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.merchantId = merchantId
@@ -2483,7 +2627,6 @@ func (c *OrdersAcknowledgeCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.ordersacknowledgerequest)
 	if err != nil {
@@ -2535,12 +2678,12 @@ func (c *OrdersAcknowledgeCall) Do(opts ...googleapi.CallOption) (*OrdersAcknowl
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Marks an order as acknowledged. This method can only be called for non-multi-client accounts.",
+	//   "description": "Marks an order as acknowledged.",
 	//   "httpMethod": "POST",
 	//   "id": "content.orders.acknowledge",
 	//   "parameterOrder": [
@@ -2549,7 +2692,7 @@ func (c *OrdersAcknowledgeCall) Do(opts ...googleapi.CallOption) (*OrdersAcknowl
 	//   ],
 	//   "parameters": {
 	//     "merchantId": {
-	//       "description": "The ID of the managing account.",
+	//       "description": "The ID of the account that manages the order. This cannot be a multi-client account.",
 	//       "format": "uint64",
 	//       "location": "path",
 	//       "required": true,
@@ -2588,8 +2731,7 @@ type OrdersAdvancetestorderCall struct {
 }
 
 // Advancetestorder: Sandbox only. Moves a test order from state
-// "inProgress" to state "pendingShipment". This method can only be
-// called for non-multi-client accounts.
+// "inProgress" to state "pendingShipment".
 func (r *OrdersService) Advancetestorder(merchantId uint64, orderId string) *OrdersAdvancetestorderCall {
 	c := &OrdersAdvancetestorderCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.merchantId = merchantId
@@ -2628,7 +2770,6 @@ func (c *OrdersAdvancetestorderCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{merchantId}/testorders/{orderId}/advance")
@@ -2675,12 +2816,12 @@ func (c *OrdersAdvancetestorderCall) Do(opts ...googleapi.CallOption) (*OrdersAd
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Sandbox only. Moves a test order from state \"inProgress\" to state \"pendingShipment\". This method can only be called for non-multi-client accounts.",
+	//   "description": "Sandbox only. Moves a test order from state \"inProgress\" to state \"pendingShipment\".",
 	//   "httpMethod": "POST",
 	//   "id": "content.orders.advancetestorder",
 	//   "parameterOrder": [
@@ -2689,7 +2830,7 @@ func (c *OrdersAdvancetestorderCall) Do(opts ...googleapi.CallOption) (*OrdersAd
 	//   ],
 	//   "parameters": {
 	//     "merchantId": {
-	//       "description": "The ID of the managing account.",
+	//       "description": "The ID of the account that manages the order. This cannot be a multi-client account.",
 	//       "format": "uint64",
 	//       "location": "path",
 	//       "required": true,
@@ -2725,8 +2866,7 @@ type OrdersCancelCall struct {
 	header_             http.Header
 }
 
-// Cancel: Cancels all line items in an order. This method can only be
-// called for non-multi-client accounts.
+// Cancel: Cancels all line items in an order, making a full refund.
 func (r *OrdersService) Cancel(merchantId uint64, orderId string, orderscancelrequest *OrdersCancelRequest) *OrdersCancelCall {
 	c := &OrdersCancelCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.merchantId = merchantId
@@ -2766,7 +2906,6 @@ func (c *OrdersCancelCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.orderscancelrequest)
 	if err != nil {
@@ -2818,12 +2957,12 @@ func (c *OrdersCancelCall) Do(opts ...googleapi.CallOption) (*OrdersCancelRespon
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Cancels all line items in an order. This method can only be called for non-multi-client accounts.",
+	//   "description": "Cancels all line items in an order, making a full refund.",
 	//   "httpMethod": "POST",
 	//   "id": "content.orders.cancel",
 	//   "parameterOrder": [
@@ -2832,7 +2971,7 @@ func (c *OrdersCancelCall) Do(opts ...googleapi.CallOption) (*OrdersCancelRespon
 	//   ],
 	//   "parameters": {
 	//     "merchantId": {
-	//       "description": "The ID of the managing account.",
+	//       "description": "The ID of the account that manages the order. This cannot be a multi-client account.",
 	//       "format": "uint64",
 	//       "location": "path",
 	//       "required": true,
@@ -2871,8 +3010,7 @@ type OrdersCancellineitemCall struct {
 	header_                     http.Header
 }
 
-// Cancellineitem: Cancels a line item. This method can only be called
-// for non-multi-client accounts.
+// Cancellineitem: Cancels a line item, making a full refund.
 func (r *OrdersService) Cancellineitem(merchantId uint64, orderId string, orderscancellineitemrequest *OrdersCancelLineItemRequest) *OrdersCancellineitemCall {
 	c := &OrdersCancellineitemCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.merchantId = merchantId
@@ -2912,7 +3050,6 @@ func (c *OrdersCancellineitemCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.orderscancellineitemrequest)
 	if err != nil {
@@ -2964,12 +3101,12 @@ func (c *OrdersCancellineitemCall) Do(opts ...googleapi.CallOption) (*OrdersCanc
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Cancels a line item. This method can only be called for non-multi-client accounts.",
+	//   "description": "Cancels a line item, making a full refund.",
 	//   "httpMethod": "POST",
 	//   "id": "content.orders.cancellineitem",
 	//   "parameterOrder": [
@@ -2978,7 +3115,7 @@ func (c *OrdersCancellineitemCall) Do(opts ...googleapi.CallOption) (*OrdersCanc
 	//   ],
 	//   "parameters": {
 	//     "merchantId": {
-	//       "description": "The ID of the managing account.",
+	//       "description": "The ID of the account that manages the order. This cannot be a multi-client account.",
 	//       "format": "uint64",
 	//       "location": "path",
 	//       "required": true,
@@ -3016,8 +3153,7 @@ type OrdersCreatetestorderCall struct {
 	header_                      http.Header
 }
 
-// Createtestorder: Sandbox only. Creates a test order. This method can
-// only be called for non-multi-client accounts.
+// Createtestorder: Sandbox only. Creates a test order.
 func (r *OrdersService) Createtestorder(merchantId uint64, orderscreatetestorderrequest *OrdersCreateTestOrderRequest) *OrdersCreatetestorderCall {
 	c := &OrdersCreatetestorderCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.merchantId = merchantId
@@ -3056,7 +3192,6 @@ func (c *OrdersCreatetestorderCall) doRequest(alt string) (*http.Response, error
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.orderscreatetestorderrequest)
 	if err != nil {
@@ -3107,12 +3242,12 @@ func (c *OrdersCreatetestorderCall) Do(opts ...googleapi.CallOption) (*OrdersCre
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Sandbox only. Creates a test order. This method can only be called for non-multi-client accounts.",
+	//   "description": "Sandbox only. Creates a test order.",
 	//   "httpMethod": "POST",
 	//   "id": "content.orders.createtestorder",
 	//   "parameterOrder": [
@@ -3120,7 +3255,7 @@ func (c *OrdersCreatetestorderCall) Do(opts ...googleapi.CallOption) (*OrdersCre
 	//   ],
 	//   "parameters": {
 	//     "merchantId": {
-	//       "description": "The ID of the managing account.",
+	//       "description": "The ID of the account that should manage the order. This cannot be a multi-client account.",
 	//       "format": "uint64",
 	//       "location": "path",
 	//       "required": true,
@@ -3152,8 +3287,7 @@ type OrdersCustombatchCall struct {
 }
 
 // Custombatch: Retrieves or modifies multiple orders in a single
-// request. This method can only be called for non-multi-client
-// accounts.
+// request.
 func (r *OrdersService) Custombatch(orderscustombatchrequest *OrdersCustomBatchRequest) *OrdersCustombatchCall {
 	c := &OrdersCustombatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.orderscustombatchrequest = orderscustombatchrequest
@@ -3191,7 +3325,6 @@ func (c *OrdersCustombatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.orderscustombatchrequest)
 	if err != nil {
@@ -3239,12 +3372,12 @@ func (c *OrdersCustombatchCall) Do(opts ...googleapi.CallOption) (*OrdersCustomB
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Retrieves or modifies multiple orders in a single request. This method can only be called for non-multi-client accounts.",
+	//   "description": "Retrieves or modifies multiple orders in a single request.",
 	//   "httpMethod": "POST",
 	//   "id": "content.orders.custombatch",
 	//   "path": "orders/batch",
@@ -3273,8 +3406,7 @@ type OrdersGetCall struct {
 	header_      http.Header
 }
 
-// Get: Retrieves an order from your Merchant Center account. This
-// method can only be called for non-multi-client accounts.
+// Get: Retrieves an order from your Merchant Center account.
 func (r *OrdersService) Get(merchantId uint64, orderId string) *OrdersGetCall {
 	c := &OrdersGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.merchantId = merchantId
@@ -3323,7 +3455,6 @@ func (c *OrdersGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3373,12 +3504,12 @@ func (c *OrdersGetCall) Do(opts ...googleapi.CallOption) (*Order, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Retrieves an order from your Merchant Center account. This method can only be called for non-multi-client accounts.",
+	//   "description": "Retrieves an order from your Merchant Center account.",
 	//   "httpMethod": "GET",
 	//   "id": "content.orders.get",
 	//   "parameterOrder": [
@@ -3387,7 +3518,7 @@ func (c *OrdersGetCall) Do(opts ...googleapi.CallOption) (*Order, error) {
 	//   ],
 	//   "parameters": {
 	//     "merchantId": {
-	//       "description": "The ID of the managing account.",
+	//       "description": "The ID of the account that manages the order. This cannot be a multi-client account.",
 	//       "format": "uint64",
 	//       "location": "path",
 	//       "required": true,
@@ -3424,7 +3555,6 @@ type OrdersGetbymerchantorderidCall struct {
 }
 
 // Getbymerchantorderid: Retrieves an order using merchant order id.
-// This method can only be called for non-multi-client accounts.
 func (r *OrdersService) Getbymerchantorderid(merchantId uint64, merchantOrderId string) *OrdersGetbymerchantorderidCall {
 	c := &OrdersGetbymerchantorderidCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.merchantId = merchantId
@@ -3473,7 +3603,6 @@ func (c *OrdersGetbymerchantorderidCall) doRequest(alt string) (*http.Response, 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3524,12 +3653,12 @@ func (c *OrdersGetbymerchantorderidCall) Do(opts ...googleapi.CallOption) (*Orde
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Retrieves an order using merchant order id. This method can only be called for non-multi-client accounts.",
+	//   "description": "Retrieves an order using merchant order id.",
 	//   "httpMethod": "GET",
 	//   "id": "content.orders.getbymerchantorderid",
 	//   "parameterOrder": [
@@ -3538,7 +3667,7 @@ func (c *OrdersGetbymerchantorderidCall) Do(opts ...googleapi.CallOption) (*Orde
 	//   ],
 	//   "parameters": {
 	//     "merchantId": {
-	//       "description": "The ID of the managing account.",
+	//       "description": "The ID of the account that manages the order. This cannot be a multi-client account.",
 	//       "format": "uint64",
 	//       "location": "path",
 	//       "required": true,
@@ -3575,8 +3704,7 @@ type OrdersGettestordertemplateCall struct {
 }
 
 // Gettestordertemplate: Sandbox only. Retrieves an order template that
-// can be used to quickly create a new order in sandbox. This method can
-// only be called for non-multi-client accounts.
+// can be used to quickly create a new order in sandbox.
 func (r *OrdersService) Gettestordertemplate(merchantId uint64, templateName string) *OrdersGettestordertemplateCall {
 	c := &OrdersGettestordertemplateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.merchantId = merchantId
@@ -3625,7 +3753,6 @@ func (c *OrdersGettestordertemplateCall) doRequest(alt string) (*http.Response, 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3676,12 +3803,12 @@ func (c *OrdersGettestordertemplateCall) Do(opts ...googleapi.CallOption) (*Orde
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Sandbox only. Retrieves an order template that can be used to quickly create a new order in sandbox. This method can only be called for non-multi-client accounts.",
+	//   "description": "Sandbox only. Retrieves an order template that can be used to quickly create a new order in sandbox.",
 	//   "httpMethod": "GET",
 	//   "id": "content.orders.gettestordertemplate",
 	//   "parameterOrder": [
@@ -3690,7 +3817,7 @@ func (c *OrdersGettestordertemplateCall) Do(opts ...googleapi.CallOption) (*Orde
 	//   ],
 	//   "parameters": {
 	//     "merchantId": {
-	//       "description": "The ID of the managing account.",
+	//       "description": "The ID of the account that should manage the order. This cannot be a multi-client account.",
 	//       "format": "uint64",
 	//       "location": "path",
 	//       "required": true,
@@ -3737,8 +3864,7 @@ type OrdersListCall struct {
 	header_      http.Header
 }
 
-// List: Lists the orders in your Merchant Center account. This method
-// can only be called for non-multi-client accounts.
+// List: Lists the orders in your Merchant Center account.
 func (r *OrdersService) List(merchantId uint64) *OrdersListCall {
 	c := &OrdersListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.merchantId = merchantId
@@ -3870,7 +3996,6 @@ func (c *OrdersListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3919,12 +4044,12 @@ func (c *OrdersListCall) Do(opts ...googleapi.CallOption) (*OrdersListResponse, 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Lists the orders in your Merchant Center account. This method can only be called for non-multi-client accounts.",
+	//   "description": "Lists the orders in your Merchant Center account.",
 	//   "httpMethod": "GET",
 	//   "id": "content.orders.list",
 	//   "parameterOrder": [
@@ -3943,7 +4068,7 @@ func (c *OrdersListCall) Do(opts ...googleapi.CallOption) (*OrdersListResponse, 
 	//       "type": "integer"
 	//     },
 	//     "merchantId": {
-	//       "description": "The ID of the managing account.",
+	//       "description": "The ID of the account that manages the order. This cannot be a multi-client account.",
 	//       "format": "uint64",
 	//       "location": "path",
 	//       "required": true,
@@ -4055,7 +4180,6 @@ type OrdersRefundCall struct {
 }
 
 // Refund: Refund a portion of the order, up to the full amount paid.
-// This method can only be called for non-multi-client accounts.
 func (r *OrdersService) Refund(merchantId uint64, orderId string, ordersrefundrequest *OrdersRefundRequest) *OrdersRefundCall {
 	c := &OrdersRefundCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.merchantId = merchantId
@@ -4095,7 +4219,6 @@ func (c *OrdersRefundCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.ordersrefundrequest)
 	if err != nil {
@@ -4147,12 +4270,12 @@ func (c *OrdersRefundCall) Do(opts ...googleapi.CallOption) (*OrdersRefundRespon
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Refund a portion of the order, up to the full amount paid. This method can only be called for non-multi-client accounts.",
+	//   "description": "Refund a portion of the order, up to the full amount paid.",
 	//   "httpMethod": "POST",
 	//   "id": "content.orders.refund",
 	//   "parameterOrder": [
@@ -4161,7 +4284,7 @@ func (c *OrdersRefundCall) Do(opts ...googleapi.CallOption) (*OrdersRefundRespon
 	//   ],
 	//   "parameters": {
 	//     "merchantId": {
-	//       "description": "The ID of the managing account.",
+	//       "description": "The ID of the account that manages the order. This cannot be a multi-client account.",
 	//       "format": "uint64",
 	//       "location": "path",
 	//       "required": true,
@@ -4200,8 +4323,7 @@ type OrdersReturnlineitemCall struct {
 	header_                     http.Header
 }
 
-// Returnlineitem: Returns a line item. This method can only be called
-// for non-multi-client accounts.
+// Returnlineitem: Returns a line item.
 func (r *OrdersService) Returnlineitem(merchantId uint64, orderId string, ordersreturnlineitemrequest *OrdersReturnLineItemRequest) *OrdersReturnlineitemCall {
 	c := &OrdersReturnlineitemCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.merchantId = merchantId
@@ -4241,7 +4363,6 @@ func (c *OrdersReturnlineitemCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.ordersreturnlineitemrequest)
 	if err != nil {
@@ -4293,12 +4414,12 @@ func (c *OrdersReturnlineitemCall) Do(opts ...googleapi.CallOption) (*OrdersRetu
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns a line item. This method can only be called for non-multi-client accounts.",
+	//   "description": "Returns a line item.",
 	//   "httpMethod": "POST",
 	//   "id": "content.orders.returnlineitem",
 	//   "parameterOrder": [
@@ -4307,7 +4428,7 @@ func (c *OrdersReturnlineitemCall) Do(opts ...googleapi.CallOption) (*OrdersRetu
 	//   ],
 	//   "parameters": {
 	//     "merchantId": {
-	//       "description": "The ID of the managing account.",
+	//       "description": "The ID of the account that manages the order. This cannot be a multi-client account.",
 	//       "format": "uint64",
 	//       "location": "path",
 	//       "required": true,
@@ -4346,8 +4467,7 @@ type OrdersShiplineitemsCall struct {
 	header_                    http.Header
 }
 
-// Shiplineitems: Marks line item(s) as shipped. This method can only be
-// called for non-multi-client accounts.
+// Shiplineitems: Marks line item(s) as shipped.
 func (r *OrdersService) Shiplineitems(merchantId uint64, orderId string, ordersshiplineitemsrequest *OrdersShipLineItemsRequest) *OrdersShiplineitemsCall {
 	c := &OrdersShiplineitemsCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.merchantId = merchantId
@@ -4387,7 +4507,6 @@ func (c *OrdersShiplineitemsCall) doRequest(alt string) (*http.Response, error) 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.ordersshiplineitemsrequest)
 	if err != nil {
@@ -4439,12 +4558,12 @@ func (c *OrdersShiplineitemsCall) Do(opts ...googleapi.CallOption) (*OrdersShipL
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Marks line item(s) as shipped. This method can only be called for non-multi-client accounts.",
+	//   "description": "Marks line item(s) as shipped.",
 	//   "httpMethod": "POST",
 	//   "id": "content.orders.shiplineitems",
 	//   "parameterOrder": [
@@ -4453,7 +4572,7 @@ func (c *OrdersShiplineitemsCall) Do(opts ...googleapi.CallOption) (*OrdersShipL
 	//   ],
 	//   "parameters": {
 	//     "merchantId": {
-	//       "description": "The ID of the managing account.",
+	//       "description": "The ID of the account that manages the order. This cannot be a multi-client account.",
 	//       "format": "uint64",
 	//       "location": "path",
 	//       "required": true,
@@ -4493,7 +4612,7 @@ type OrdersUpdatemerchantorderidCall struct {
 }
 
 // Updatemerchantorderid: Updates the merchant order ID for a given
-// order. This method can only be called for non-multi-client accounts.
+// order.
 func (r *OrdersService) Updatemerchantorderid(merchantId uint64, orderId string, ordersupdatemerchantorderidrequest *OrdersUpdateMerchantOrderIdRequest) *OrdersUpdatemerchantorderidCall {
 	c := &OrdersUpdatemerchantorderidCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.merchantId = merchantId
@@ -4533,7 +4652,6 @@ func (c *OrdersUpdatemerchantorderidCall) doRequest(alt string) (*http.Response,
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.ordersupdatemerchantorderidrequest)
 	if err != nil {
@@ -4586,12 +4704,12 @@ func (c *OrdersUpdatemerchantorderidCall) Do(opts ...googleapi.CallOption) (*Ord
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Updates the merchant order ID for a given order. This method can only be called for non-multi-client accounts.",
+	//   "description": "Updates the merchant order ID for a given order.",
 	//   "httpMethod": "POST",
 	//   "id": "content.orders.updatemerchantorderid",
 	//   "parameterOrder": [
@@ -4600,7 +4718,7 @@ func (c *OrdersUpdatemerchantorderidCall) Do(opts ...googleapi.CallOption) (*Ord
 	//   ],
 	//   "parameters": {
 	//     "merchantId": {
-	//       "description": "The ID of the managing account.",
+	//       "description": "The ID of the account that manages the order. This cannot be a multi-client account.",
 	//       "format": "uint64",
 	//       "location": "path",
 	//       "required": true,
@@ -4640,7 +4758,7 @@ type OrdersUpdateshipmentCall struct {
 }
 
 // Updateshipment: Updates a shipment's status, carrier, and/or tracking
-// ID. This method can only be called for non-multi-client accounts.
+// ID.
 func (r *OrdersService) Updateshipment(merchantId uint64, orderId string, ordersupdateshipmentrequest *OrdersUpdateShipmentRequest) *OrdersUpdateshipmentCall {
 	c := &OrdersUpdateshipmentCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.merchantId = merchantId
@@ -4680,7 +4798,6 @@ func (c *OrdersUpdateshipmentCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.ordersupdateshipmentrequest)
 	if err != nil {
@@ -4732,12 +4849,12 @@ func (c *OrdersUpdateshipmentCall) Do(opts ...googleapi.CallOption) (*OrdersUpda
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Updates a shipment's status, carrier, and/or tracking ID. This method can only be called for non-multi-client accounts.",
+	//   "description": "Updates a shipment's status, carrier, and/or tracking ID.",
 	//   "httpMethod": "POST",
 	//   "id": "content.orders.updateshipment",
 	//   "parameterOrder": [
@@ -4746,7 +4863,7 @@ func (c *OrdersUpdateshipmentCall) Do(opts ...googleapi.CallOption) (*OrdersUpda
 	//   ],
 	//   "parameters": {
 	//     "merchantId": {
-	//       "description": "The ID of the managing account.",
+	//       "description": "The ID of the account that manages the order. This cannot be a multi-client account.",
 	//       "format": "uint64",
 	//       "location": "path",
 	//       "required": true,

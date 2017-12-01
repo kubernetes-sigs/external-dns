@@ -67,10 +67,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Accounts *AccountsService
 
@@ -92,10 +91,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewAccountsService(s *Service) *AccountsService {
@@ -218,8 +213,8 @@ type Account struct {
 }
 
 func (s *Account) MarshalJSON() ([]byte, error) {
-	type noMethod Account
-	raw := noMethod(*s)
+	type NoMethod Account
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -257,8 +252,8 @@ type AccountBidderLocation struct {
 }
 
 func (s *AccountBidderLocation) MarshalJSON() ([]byte, error) {
-	type noMethod AccountBidderLocation
-	raw := noMethod(*s)
+	type NoMethod AccountBidderLocation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -294,8 +289,8 @@ type AccountsList struct {
 }
 
 func (s *AccountsList) MarshalJSON() ([]byte, error) {
-	type noMethod AccountsList
-	raw := noMethod(*s)
+	type NoMethod AccountsList
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -337,8 +332,8 @@ type BillingInfo struct {
 }
 
 func (s *BillingInfo) MarshalJSON() ([]byte, error) {
-	type noMethod BillingInfo
-	raw := noMethod(*s)
+	type NoMethod BillingInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -374,8 +369,8 @@ type BillingInfoList struct {
 }
 
 func (s *BillingInfoList) MarshalJSON() ([]byte, error) {
-	type noMethod BillingInfoList
-	raw := noMethod(*s)
+	type NoMethod BillingInfoList
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -426,8 +421,8 @@ type Budget struct {
 }
 
 func (s *Budget) MarshalJSON() ([]byte, error) {
-	type noMethod Budget
-	raw := noMethod(*s)
+	type NoMethod Budget
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -551,8 +546,8 @@ type Creative struct {
 }
 
 func (s *Creative) MarshalJSON() ([]byte, error) {
-	type noMethod Creative
-	raw := noMethod(*s)
+	type NoMethod Creative
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -581,8 +576,8 @@ type CreativeCorrections struct {
 }
 
 func (s *CreativeCorrections) MarshalJSON() ([]byte, error) {
-	type noMethod CreativeCorrections
-	raw := noMethod(*s)
+	type NoMethod CreativeCorrections
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -611,8 +606,8 @@ type CreativeDisapprovalReasons struct {
 }
 
 func (s *CreativeDisapprovalReasons) MarshalJSON() ([]byte, error) {
-	type noMethod CreativeDisapprovalReasons
-	raw := noMethod(*s)
+	type NoMethod CreativeDisapprovalReasons
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -644,8 +639,8 @@ type CreativeFilteringReasons struct {
 }
 
 func (s *CreativeFilteringReasons) MarshalJSON() ([]byte, error) {
-	type noMethod CreativeFilteringReasons
-	raw := noMethod(*s)
+	type NoMethod CreativeFilteringReasons
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -678,8 +673,8 @@ type CreativeFilteringReasonsReasons struct {
 }
 
 func (s *CreativeFilteringReasonsReasons) MarshalJSON() ([]byte, error) {
-	type noMethod CreativeFilteringReasonsReasons
-	raw := noMethod(*s)
+	type NoMethod CreativeFilteringReasonsReasons
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -743,18 +738,18 @@ type CreativeNativeAd struct {
 }
 
 func (s *CreativeNativeAd) MarshalJSON() ([]byte, error) {
-	type noMethod CreativeNativeAd
-	raw := noMethod(*s)
+	type NoMethod CreativeNativeAd
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *CreativeNativeAd) UnmarshalJSON(data []byte) error {
-	type noMethod CreativeNativeAd
+	type NoMethod CreativeNativeAd
 	var s1 struct {
 		StarRating gensupport.JSONFloat64 `json:"starRating"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -788,8 +783,8 @@ type CreativeNativeAdAppIcon struct {
 }
 
 func (s *CreativeNativeAdAppIcon) MarshalJSON() ([]byte, error) {
-	type noMethod CreativeNativeAdAppIcon
-	raw := noMethod(*s)
+	type NoMethod CreativeNativeAdAppIcon
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -819,8 +814,8 @@ type CreativeNativeAdImage struct {
 }
 
 func (s *CreativeNativeAdImage) MarshalJSON() ([]byte, error) {
-	type noMethod CreativeNativeAdImage
-	raw := noMethod(*s)
+	type NoMethod CreativeNativeAdImage
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -850,8 +845,8 @@ type CreativeNativeAdLogo struct {
 }
 
 func (s *CreativeNativeAdLogo) MarshalJSON() ([]byte, error) {
-	type noMethod CreativeNativeAdLogo
-	raw := noMethod(*s)
+	type NoMethod CreativeNativeAdLogo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -892,8 +887,8 @@ type CreativesList struct {
 }
 
 func (s *CreativesList) MarshalJSON() ([]byte, error) {
-	type noMethod CreativesList
-	raw := noMethod(*s)
+	type NoMethod CreativesList
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -982,8 +977,8 @@ type DirectDeal struct {
 }
 
 func (s *DirectDeal) MarshalJSON() ([]byte, error) {
-	type noMethod DirectDeal
-	raw := noMethod(*s)
+	type NoMethod DirectDeal
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1019,8 +1014,8 @@ type DirectDealsList struct {
 }
 
 func (s *DirectDealsList) MarshalJSON() ([]byte, error) {
-	type noMethod DirectDealsList
-	raw := noMethod(*s)
+	type NoMethod DirectDealsList
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1128,13 +1123,13 @@ type PerformanceReport struct {
 }
 
 func (s *PerformanceReport) MarshalJSON() ([]byte, error) {
-	type noMethod PerformanceReport
-	raw := noMethod(*s)
+	type NoMethod PerformanceReport
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *PerformanceReport) UnmarshalJSON(data []byte) error {
-	type noMethod PerformanceReport
+	type NoMethod PerformanceReport
 	var s1 struct {
 		BidRate                 gensupport.JSONFloat64 `json:"bidRate"`
 		BidRequestRate          gensupport.JSONFloat64 `json:"bidRequestRate"`
@@ -1151,9 +1146,9 @@ func (s *PerformanceReport) UnmarshalJSON(data []byte) error {
 		QuotaThrottledLimit     gensupport.JSONFloat64 `json:"quotaThrottledLimit"`
 		SuccessfulRequestRate   gensupport.JSONFloat64 `json:"successfulRequestRate"`
 		UnsuccessfulRequestRate gensupport.JSONFloat64 `json:"unsuccessfulRequestRate"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -1207,8 +1202,8 @@ type PerformanceReportList struct {
 }
 
 func (s *PerformanceReportList) MarshalJSON() ([]byte, error) {
-	type noMethod PerformanceReportList
-	raw := noMethod(*s)
+	type NoMethod PerformanceReportList
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1332,8 +1327,8 @@ type PretargetingConfig struct {
 }
 
 func (s *PretargetingConfig) MarshalJSON() ([]byte, error) {
-	type noMethod PretargetingConfig
-	raw := noMethod(*s)
+	type NoMethod PretargetingConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1362,8 +1357,8 @@ type PretargetingConfigDimensions struct {
 }
 
 func (s *PretargetingConfigDimensions) MarshalJSON() ([]byte, error) {
-	type noMethod PretargetingConfigDimensions
-	raw := noMethod(*s)
+	type NoMethod PretargetingConfigDimensions
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1394,8 +1389,8 @@ type PretargetingConfigExcludedPlacements struct {
 }
 
 func (s *PretargetingConfigExcludedPlacements) MarshalJSON() ([]byte, error) {
-	type noMethod PretargetingConfigExcludedPlacements
-	raw := noMethod(*s)
+	type NoMethod PretargetingConfigExcludedPlacements
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1426,8 +1421,8 @@ type PretargetingConfigPlacements struct {
 }
 
 func (s *PretargetingConfigPlacements) MarshalJSON() ([]byte, error) {
-	type noMethod PretargetingConfigPlacements
-	raw := noMethod(*s)
+	type NoMethod PretargetingConfigPlacements
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1460,8 +1455,8 @@ type PretargetingConfigList struct {
 }
 
 func (s *PretargetingConfigList) MarshalJSON() ([]byte, error) {
-	type noMethod PretargetingConfigList
-	raw := noMethod(*s)
+	type NoMethod PretargetingConfigList
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1524,7 +1519,6 @@ func (c *AccountsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -1573,7 +1567,7 @@ func (c *AccountsGetCall) Do(opts ...googleapi.CallOption) (*Account, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1661,7 +1655,6 @@ func (c *AccountsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -1707,7 +1700,7 @@ func (c *AccountsListCall) Do(opts ...googleapi.CallOption) (*AccountsList, erro
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1777,7 +1770,6 @@ func (c *AccountsPatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.account)
 	if err != nil {
@@ -1828,7 +1820,7 @@ func (c *AccountsPatchCall) Do(opts ...googleapi.CallOption) (*Account, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1912,7 +1904,6 @@ func (c *AccountsUpdateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.account)
 	if err != nil {
@@ -1963,7 +1954,7 @@ func (c *AccountsUpdateCall) Do(opts ...googleapi.CallOption) (*Account, error) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2057,7 +2048,6 @@ func (c *BillingInfoGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2106,7 +2096,7 @@ func (c *BillingInfoGetCall) Do(opts ...googleapi.CallOption) (*BillingInfo, err
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2195,7 +2185,6 @@ func (c *BillingInfoListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2241,7 +2230,7 @@ func (c *BillingInfoListCall) Do(opts ...googleapi.CallOption) (*BillingInfoList
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2322,7 +2311,6 @@ func (c *BudgetGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2372,7 +2360,7 @@ func (c *BudgetGetCall) Do(opts ...googleapi.CallOption) (*Budget, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2465,7 +2453,6 @@ func (c *BudgetPatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.budget)
 	if err != nil {
@@ -2517,7 +2504,7 @@ func (c *BudgetPatchCall) Do(opts ...googleapi.CallOption) (*Budget, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2613,7 +2600,6 @@ func (c *BudgetUpdateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.budget)
 	if err != nil {
@@ -2665,7 +2651,7 @@ func (c *BudgetUpdateCall) Do(opts ...googleapi.CallOption) (*Budget, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2769,7 +2755,6 @@ func (c *CreativesGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2819,7 +2804,7 @@ func (c *CreativesGetCall) Do(opts ...googleapi.CallOption) (*Creative, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2905,7 +2890,6 @@ func (c *CreativesInsertCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.creative)
 	if err != nil {
@@ -2953,7 +2937,7 @@ func (c *CreativesInsertCall) Do(opts ...googleapi.CallOption) (*Creative, error
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3081,7 +3065,6 @@ func (c *CreativesListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3127,7 +3110,7 @@ func (c *CreativesListCall) Do(opts ...googleapi.CallOption) (*CreativesList, er
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3269,7 +3252,6 @@ func (c *DirectDealsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3318,7 +3300,7 @@ func (c *DirectDealsGetCall) Do(opts ...googleapi.CallOption) (*DirectDeal, erro
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3406,7 +3388,6 @@ func (c *DirectDealsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3452,7 +3433,7 @@ func (c *DirectDealsListCall) Do(opts ...googleapi.CallOption) (*DirectDealsList
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3548,7 +3529,6 @@ func (c *PerformanceReportListCall) doRequest(alt string) (*http.Response, error
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3594,7 +3574,7 @@ func (c *PerformanceReportListCall) Do(opts ...googleapi.CallOption) (*Performan
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3702,7 +3682,6 @@ func (c *PretargetingConfigDeleteCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "pretargetingconfigs/{accountId}/{configId}")
@@ -3821,7 +3800,6 @@ func (c *PretargetingConfigGetCall) doRequest(alt string) (*http.Response, error
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3871,7 +3849,7 @@ func (c *PretargetingConfigGetCall) Do(opts ...googleapi.CallOption) (*Pretarget
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3960,7 +3938,6 @@ func (c *PretargetingConfigInsertCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.pretargetingconfig)
 	if err != nil {
@@ -4011,7 +3988,7 @@ func (c *PretargetingConfigInsertCall) Do(opts ...googleapi.CallOption) (*Pretar
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4105,7 +4082,6 @@ func (c *PretargetingConfigListCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4154,7 +4130,7 @@ func (c *PretargetingConfigListCall) Do(opts ...googleapi.CallOption) (*Pretarge
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4238,7 +4214,6 @@ func (c *PretargetingConfigPatchCall) doRequest(alt string) (*http.Response, err
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.pretargetingconfig)
 	if err != nil {
@@ -4290,7 +4265,7 @@ func (c *PretargetingConfigPatchCall) Do(opts ...googleapi.CallOption) (*Pretarg
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4384,7 +4359,6 @@ func (c *PretargetingConfigUpdateCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.pretargetingconfig)
 	if err != nil {
@@ -4436,7 +4410,7 @@ func (c *PretargetingConfigUpdateCall) Do(opts ...googleapi.CallOption) (*Pretar
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
