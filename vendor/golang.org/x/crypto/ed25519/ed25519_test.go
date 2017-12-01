@@ -91,7 +91,7 @@ func TestCryptoSigner(t *testing.T) {
 
 func TestGolden(t *testing.T) {
 	// sign.input.gz is a selection of test cases from
-	// https://ed25519.cr.yp.to/python/sign.input
+	// http://ed25519.cr.yp.to/python/sign.input
 	testDataZ, err := os.Open("testdata/sign.input.gz")
 	if err != nil {
 		t.Fatal(err)

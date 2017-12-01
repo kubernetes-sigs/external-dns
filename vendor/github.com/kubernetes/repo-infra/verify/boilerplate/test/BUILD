@@ -13,5 +13,6 @@ go_library(
         "fail.go",
         "pass.go",
     ],
+    importpath = "k8s.io/repo-infra/verify/boilerplate/test",
     tags = ["automanaged"],
 )

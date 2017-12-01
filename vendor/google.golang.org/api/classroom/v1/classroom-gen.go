@@ -387,8 +387,8 @@ type Announcement struct {
 }
 
 func (s *Announcement) MarshalJSON() ([]byte, error) {
-	type noMethod Announcement
-	raw := noMethod(*s)
+	type NoMethod Announcement
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -418,8 +418,8 @@ type Assignment struct {
 }
 
 func (s *Assignment) MarshalJSON() ([]byte, error) {
-	type noMethod Assignment
-	raw := noMethod(*s)
+	type NoMethod Assignment
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -457,8 +457,8 @@ type AssignmentSubmission struct {
 }
 
 func (s *AssignmentSubmission) MarshalJSON() ([]byte, error) {
-	type noMethod AssignmentSubmission
-	raw := noMethod(*s)
+	type NoMethod AssignmentSubmission
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -496,8 +496,8 @@ type Attachment struct {
 }
 
 func (s *Attachment) MarshalJSON() ([]byte, error) {
-	type noMethod Attachment
-	raw := noMethod(*s)
+	type NoMethod Attachment
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -532,8 +532,8 @@ type CloudPubsubTopic struct {
 }
 
 func (s *CloudPubsubTopic) MarshalJSON() ([]byte, error) {
-	type noMethod CloudPubsubTopic
-	raw := noMethod(*s)
+	type NoMethod CloudPubsubTopic
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -741,8 +741,8 @@ type Course struct {
 }
 
 func (s *Course) MarshalJSON() ([]byte, error) {
-	type noMethod Course
-	raw := noMethod(*s)
+	type NoMethod Course
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -805,8 +805,8 @@ type CourseAlias struct {
 }
 
 func (s *CourseAlias) MarshalJSON() ([]byte, error) {
-	type noMethod CourseAlias
-	raw := noMethod(*s)
+	type NoMethod CourseAlias
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -843,8 +843,8 @@ type CourseMaterial struct {
 }
 
 func (s *CourseMaterial) MarshalJSON() ([]byte, error) {
-	type noMethod CourseMaterial
-	raw := noMethod(*s)
+	type NoMethod CourseMaterial
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -878,8 +878,8 @@ type CourseMaterialSet struct {
 }
 
 func (s *CourseMaterialSet) MarshalJSON() ([]byte, error) {
-	type noMethod CourseMaterialSet
-	raw := noMethod(*s)
+	type NoMethod CourseMaterialSet
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -908,8 +908,8 @@ type CourseRosterChangesInfo struct {
 }
 
 func (s *CourseRosterChangesInfo) MarshalJSON() ([]byte, error) {
-	type noMethod CourseRosterChangesInfo
-	raw := noMethod(*s)
+	type NoMethod CourseRosterChangesInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1103,18 +1103,18 @@ type CourseWork struct {
 }
 
 func (s *CourseWork) MarshalJSON() ([]byte, error) {
-	type noMethod CourseWork
-	raw := noMethod(*s)
+	type NoMethod CourseWork
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *CourseWork) UnmarshalJSON(data []byte) error {
-	type noMethod CourseWork
+	type NoMethod CourseWork
 	var s1 struct {
 		MaxPoints gensupport.JSONFloat64 `json:"maxPoints"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -1167,8 +1167,8 @@ type Date struct {
 }
 
 func (s *Date) MarshalJSON() ([]byte, error) {
-	type noMethod Date
-	raw := noMethod(*s)
+	type NoMethod Date
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1211,8 +1211,8 @@ type DriveFile struct {
 }
 
 func (s *DriveFile) MarshalJSON() ([]byte, error) {
-	type noMethod DriveFile
-	raw := noMethod(*s)
+	type NoMethod DriveFile
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1250,8 +1250,8 @@ type DriveFolder struct {
 }
 
 func (s *DriveFolder) MarshalJSON() ([]byte, error) {
-	type noMethod DriveFolder
-	raw := noMethod(*s)
+	type NoMethod DriveFolder
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1331,8 +1331,8 @@ type Feed struct {
 }
 
 func (s *Feed) MarshalJSON() ([]byte, error) {
-	type noMethod Feed
-	raw := noMethod(*s)
+	type NoMethod Feed
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1377,8 +1377,8 @@ type Form struct {
 }
 
 func (s *Form) MarshalJSON() ([]byte, error) {
-	type noMethod Form
-	raw := noMethod(*s)
+	type NoMethod Form
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1411,8 +1411,8 @@ type GlobalPermission struct {
 }
 
 func (s *GlobalPermission) MarshalJSON() ([]byte, error) {
-	type noMethod GlobalPermission
-	raw := noMethod(*s)
+	type NoMethod GlobalPermission
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1464,19 +1464,19 @@ type GradeHistory struct {
 }
 
 func (s *GradeHistory) MarshalJSON() ([]byte, error) {
-	type noMethod GradeHistory
-	raw := noMethod(*s)
+	type NoMethod GradeHistory
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *GradeHistory) UnmarshalJSON(data []byte) error {
-	type noMethod GradeHistory
+	type NoMethod GradeHistory
 	var s1 struct {
 		MaxPoints    gensupport.JSONFloat64 `json:"maxPoints"`
 		PointsEarned gensupport.JSONFloat64 `json:"pointsEarned"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -1526,8 +1526,8 @@ type Guardian struct {
 }
 
 func (s *Guardian) MarshalJSON() ([]byte, error) {
-	type noMethod Guardian
-	raw := noMethod(*s)
+	type NoMethod Guardian
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1585,8 +1585,8 @@ type GuardianInvitation struct {
 }
 
 func (s *GuardianInvitation) MarshalJSON() ([]byte, error) {
-	type noMethod GuardianInvitation
-	raw := noMethod(*s)
+	type NoMethod GuardianInvitation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1618,8 +1618,8 @@ type IndividualStudentsOptions struct {
 }
 
 func (s *IndividualStudentsOptions) MarshalJSON() ([]byte, error) {
-	type noMethod IndividualStudentsOptions
-	raw := noMethod(*s)
+	type NoMethod IndividualStudentsOptions
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1676,8 +1676,8 @@ type Invitation struct {
 }
 
 func (s *Invitation) MarshalJSON() ([]byte, error) {
-	type noMethod Invitation
-	raw := noMethod(*s)
+	type NoMethod Invitation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1716,8 +1716,8 @@ type Link struct {
 }
 
 func (s *Link) MarshalJSON() ([]byte, error) {
-	type noMethod Link
-	raw := noMethod(*s)
+	type NoMethod Link
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1753,8 +1753,8 @@ type ListAnnouncementsResponse struct {
 }
 
 func (s *ListAnnouncementsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListAnnouncementsResponse
-	raw := noMethod(*s)
+	type NoMethod ListAnnouncementsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1790,8 +1790,8 @@ type ListCourseAliasesResponse struct {
 }
 
 func (s *ListCourseAliasesResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListCourseAliasesResponse
-	raw := noMethod(*s)
+	type NoMethod ListCourseAliasesResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1827,8 +1827,8 @@ type ListCourseWorkResponse struct {
 }
 
 func (s *ListCourseWorkResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListCourseWorkResponse
-	raw := noMethod(*s)
+	type NoMethod ListCourseWorkResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1864,8 +1864,8 @@ type ListCoursesResponse struct {
 }
 
 func (s *ListCoursesResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListCoursesResponse
-	raw := noMethod(*s)
+	type NoMethod ListCoursesResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1904,8 +1904,8 @@ type ListGuardianInvitationsResponse struct {
 }
 
 func (s *ListGuardianInvitationsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListGuardianInvitationsResponse
-	raw := noMethod(*s)
+	type NoMethod ListGuardianInvitationsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1943,8 +1943,8 @@ type ListGuardiansResponse struct {
 }
 
 func (s *ListGuardiansResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListGuardiansResponse
-	raw := noMethod(*s)
+	type NoMethod ListGuardiansResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1980,8 +1980,8 @@ type ListInvitationsResponse struct {
 }
 
 func (s *ListInvitationsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListInvitationsResponse
-	raw := noMethod(*s)
+	type NoMethod ListInvitationsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2018,8 +2018,8 @@ type ListStudentSubmissionsResponse struct {
 }
 
 func (s *ListStudentSubmissionsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListStudentSubmissionsResponse
-	raw := noMethod(*s)
+	type NoMethod ListStudentSubmissionsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2055,8 +2055,8 @@ type ListStudentsResponse struct {
 }
 
 func (s *ListStudentsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListStudentsResponse
-	raw := noMethod(*s)
+	type NoMethod ListStudentsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2092,8 +2092,8 @@ type ListTeachersResponse struct {
 }
 
 func (s *ListTeachersResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListTeachersResponse
-	raw := noMethod(*s)
+	type NoMethod ListTeachersResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2133,8 +2133,8 @@ type Material struct {
 }
 
 func (s *Material) MarshalJSON() ([]byte, error) {
-	type noMethod Material
-	raw := noMethod(*s)
+	type NoMethod Material
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2176,8 +2176,8 @@ type ModifyAnnouncementAssigneesRequest struct {
 }
 
 func (s *ModifyAnnouncementAssigneesRequest) MarshalJSON() ([]byte, error) {
-	type noMethod ModifyAnnouncementAssigneesRequest
-	raw := noMethod(*s)
+	type NoMethod ModifyAnnouncementAssigneesRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2209,8 +2209,8 @@ type ModifyAttachmentsRequest struct {
 }
 
 func (s *ModifyAttachmentsRequest) MarshalJSON() ([]byte, error) {
-	type noMethod ModifyAttachmentsRequest
-	raw := noMethod(*s)
+	type NoMethod ModifyAttachmentsRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2252,8 +2252,8 @@ type ModifyCourseWorkAssigneesRequest struct {
 }
 
 func (s *ModifyCourseWorkAssigneesRequest) MarshalJSON() ([]byte, error) {
-	type noMethod ModifyCourseWorkAssigneesRequest
-	raw := noMethod(*s)
+	type NoMethod ModifyCourseWorkAssigneesRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2289,8 +2289,8 @@ type ModifyIndividualStudentsOptions struct {
 }
 
 func (s *ModifyIndividualStudentsOptions) MarshalJSON() ([]byte, error) {
-	type noMethod ModifyIndividualStudentsOptions
-	raw := noMethod(*s)
+	type NoMethod ModifyIndividualStudentsOptions
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2318,8 +2318,8 @@ type MultipleChoiceQuestion struct {
 }
 
 func (s *MultipleChoiceQuestion) MarshalJSON() ([]byte, error) {
-	type noMethod MultipleChoiceQuestion
-	raw := noMethod(*s)
+	type NoMethod MultipleChoiceQuestion
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2347,8 +2347,8 @@ type MultipleChoiceSubmission struct {
 }
 
 func (s *MultipleChoiceSubmission) MarshalJSON() ([]byte, error) {
-	type noMethod MultipleChoiceSubmission
-	raw := noMethod(*s)
+	type NoMethod MultipleChoiceSubmission
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2389,8 +2389,8 @@ type Name struct {
 }
 
 func (s *Name) MarshalJSON() ([]byte, error) {
-	type noMethod Name
-	raw := noMethod(*s)
+	type NoMethod Name
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2447,8 +2447,8 @@ type Registration struct {
 }
 
 func (s *Registration) MarshalJSON() ([]byte, error) {
-	type noMethod Registration
-	raw := noMethod(*s)
+	type NoMethod Registration
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2490,8 +2490,8 @@ type SharedDriveFile struct {
 }
 
 func (s *SharedDriveFile) MarshalJSON() ([]byte, error) {
-	type noMethod SharedDriveFile
-	raw := noMethod(*s)
+	type NoMethod SharedDriveFile
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2518,8 +2518,8 @@ type ShortAnswerSubmission struct {
 }
 
 func (s *ShortAnswerSubmission) MarshalJSON() ([]byte, error) {
-	type noMethod ShortAnswerSubmission
-	raw := noMethod(*s)
+	type NoMethod ShortAnswerSubmission
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2570,8 +2570,8 @@ type StateHistory struct {
 }
 
 func (s *StateHistory) MarshalJSON() ([]byte, error) {
-	type noMethod StateHistory
-	raw := noMethod(*s)
+	type NoMethod StateHistory
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2627,8 +2627,8 @@ type Student struct {
 }
 
 func (s *Student) MarshalJSON() ([]byte, error) {
-	type noMethod Student
-	raw := noMethod(*s)
+	type NoMethod Student
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2792,19 +2792,19 @@ type StudentSubmission struct {
 }
 
 func (s *StudentSubmission) MarshalJSON() ([]byte, error) {
-	type noMethod StudentSubmission
-	raw := noMethod(*s)
+	type NoMethod StudentSubmission
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *StudentSubmission) UnmarshalJSON(data []byte) error {
-	type noMethod StudentSubmission
+	type NoMethod StudentSubmission
 	var s1 struct {
 		AssignedGrade gensupport.JSONFloat64 `json:"assignedGrade"`
 		DraftGrade    gensupport.JSONFloat64 `json:"draftGrade"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -2843,8 +2843,8 @@ type SubmissionHistory struct {
 }
 
 func (s *SubmissionHistory) MarshalJSON() ([]byte, error) {
-	type noMethod SubmissionHistory
-	raw := noMethod(*s)
+	type NoMethod SubmissionHistory
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2893,8 +2893,8 @@ type Teacher struct {
 }
 
 func (s *Teacher) MarshalJSON() ([]byte, error) {
-	type noMethod Teacher
-	raw := noMethod(*s)
+	type NoMethod Teacher
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2940,8 +2940,8 @@ type TimeOfDay struct {
 }
 
 func (s *TimeOfDay) MarshalJSON() ([]byte, error) {
-	type noMethod TimeOfDay
-	raw := noMethod(*s)
+	type NoMethod TimeOfDay
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3009,8 +3009,8 @@ type UserProfile struct {
 }
 
 func (s *UserProfile) MarshalJSON() ([]byte, error) {
-	type noMethod UserProfile
-	raw := noMethod(*s)
+	type NoMethod UserProfile
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3054,8 +3054,8 @@ type YouTubeVideo struct {
 }
 
 func (s *YouTubeVideo) MarshalJSON() ([]byte, error) {
-	type noMethod YouTubeVideo
-	raw := noMethod(*s)
+	type NoMethod YouTubeVideo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3171,7 +3171,7 @@ func (c *CoursesCreateCall) Do(opts ...googleapi.CallOption) (*Course, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3296,7 +3296,7 @@ func (c *CoursesDeleteCall) Do(opts ...googleapi.CallOption) (*Empty, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3441,7 +3441,7 @@ func (c *CoursesGetCall) Do(opts ...googleapi.CallOption) (*Course, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3650,7 +3650,7 @@ func (c *CoursesListCall) Do(opts ...googleapi.CallOption) (*ListCoursesResponse
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3871,7 +3871,7 @@ func (c *CoursesPatchCall) Do(opts ...googleapi.CallOption) (*Course, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4020,7 +4020,7 @@ func (c *CoursesUpdateCall) Do(opts ...googleapi.CallOption) (*Course, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4166,7 +4166,7 @@ func (c *CoursesAliasesCreateCall) Do(opts ...googleapi.CallOption) (*CourseAlia
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4307,7 +4307,7 @@ func (c *CoursesAliasesDeleteCall) Do(opts ...googleapi.CallOption) (*Empty, err
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4483,7 +4483,7 @@ func (c *CoursesAliasesListCall) Do(opts ...googleapi.CallOption) (*ListCourseAl
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4659,7 +4659,7 @@ func (c *CoursesAnnouncementsCreateCall) Do(opts ...googleapi.CallOption) (*Anno
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4807,7 +4807,7 @@ func (c *CoursesAnnouncementsDeleteCall) Do(opts ...googleapi.CallOption) (*Empt
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4963,7 +4963,7 @@ func (c *CoursesAnnouncementsGetCall) Do(opts ...googleapi.CallOption) (*Announc
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5174,7 +5174,7 @@ func (c *CoursesAnnouncementsListCall) Do(opts ...googleapi.CallOption) (*ListAn
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5370,7 +5370,7 @@ func (c *CoursesAnnouncementsModifyAssigneesCall) Do(opts ...googleapi.CallOptio
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5549,7 +5549,7 @@ func (c *CoursesAnnouncementsPatchCall) Do(opts ...googleapi.CallOption) (*Annou
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5719,7 +5719,7 @@ func (c *CoursesCourseWorkCreateCall) Do(opts ...googleapi.CallOption) (*CourseW
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5867,7 +5867,7 @@ func (c *CoursesCourseWorkDeleteCall) Do(opts ...googleapi.CallOption) (*Empty, 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6023,7 +6023,7 @@ func (c *CoursesCourseWorkGetCall) Do(opts ...googleapi.CallOption) (*CourseWork
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6238,7 +6238,7 @@ func (c *CoursesCourseWorkListCall) Do(opts ...googleapi.CallOption) (*ListCours
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6436,7 +6436,7 @@ func (c *CoursesCourseWorkModifyAssigneesCall) Do(opts ...googleapi.CallOption) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6634,7 +6634,7 @@ func (c *CoursesCourseWorkPatchCall) Do(opts ...googleapi.CallOption) (*CourseWo
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6803,7 +6803,7 @@ func (c *CoursesCourseWorkStudentSubmissionsGetCall) Do(opts ...googleapi.CallOp
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7047,7 +7047,7 @@ func (c *CoursesCourseWorkStudentSubmissionsListCall) Do(opts ...googleapi.CallO
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7281,7 +7281,7 @@ func (c *CoursesCourseWorkStudentSubmissionsModifyAttachmentsCall) Do(opts ...go
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7473,7 +7473,7 @@ func (c *CoursesCourseWorkStudentSubmissionsPatchCall) Do(opts ...googleapi.Call
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7664,7 +7664,7 @@ func (c *CoursesCourseWorkStudentSubmissionsReclaimCall) Do(opts ...googleapi.Ca
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7847,7 +7847,7 @@ func (c *CoursesCourseWorkStudentSubmissionsReturnCall) Do(opts ...googleapi.Cal
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -8027,7 +8027,7 @@ func (c *CoursesCourseWorkStudentSubmissionsTurnInCall) Do(opts ...googleapi.Cal
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -8202,7 +8202,7 @@ func (c *CoursesStudentsCreateCall) Do(opts ...googleapi.CallOption) (*Student, 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -8348,7 +8348,7 @@ func (c *CoursesStudentsDeleteCall) Do(opts ...googleapi.CallOption) (*Empty, er
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -8505,7 +8505,7 @@ func (c *CoursesStudentsGetCall) Do(opts ...googleapi.CallOption) (*Student, err
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -8681,7 +8681,7 @@ func (c *CoursesStudentsListCall) Do(opts ...googleapi.CallOption) (*ListStudent
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -8864,7 +8864,7 @@ func (c *CoursesTeachersCreateCall) Do(opts ...googleapi.CallOption) (*Teacher, 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -9008,7 +9008,7 @@ func (c *CoursesTeachersDeleteCall) Do(opts ...googleapi.CallOption) (*Empty, er
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -9165,7 +9165,7 @@ func (c *CoursesTeachersGetCall) Do(opts ...googleapi.CallOption) (*Teacher, err
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -9341,7 +9341,7 @@ func (c *CoursesTeachersListCall) Do(opts ...googleapi.CallOption) (*ListTeacher
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -9516,7 +9516,7 @@ func (c *InvitationsAcceptCall) Do(opts ...googleapi.CallOption) (*Empty, error)
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -9657,7 +9657,7 @@ func (c *InvitationsCreateCall) Do(opts ...googleapi.CallOption) (*Invitation, e
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -9782,7 +9782,7 @@ func (c *InvitationsDeleteCall) Do(opts ...googleapi.CallOption) (*Empty, error)
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -9927,7 +9927,7 @@ func (c *InvitationsGetCall) Do(opts ...googleapi.CallOption) (*Invitation, erro
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -10113,7 +10113,7 @@ func (c *InvitationsListCall) Do(opts ...googleapi.CallOption) (*ListInvitations
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -10314,7 +10314,7 @@ func (c *RegistrationsCreateCall) Do(opts ...googleapi.CallOption) (*Registratio
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -10436,7 +10436,7 @@ func (c *RegistrationsDeleteCall) Do(opts ...googleapi.CallOption) (*Empty, erro
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -10584,7 +10584,7 @@ func (c *UserProfilesGetCall) Do(opts ...googleapi.CallOption) (*UserProfile, er
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -10763,7 +10763,7 @@ func (c *UserProfilesGuardianInvitationsCreateCall) Do(opts ...googleapi.CallOpt
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -10926,7 +10926,7 @@ func (c *UserProfilesGuardianInvitationsGetCall) Do(opts ...googleapi.CallOption
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -11142,7 +11142,7 @@ func (c *UserProfilesGuardianInvitationsListCall) Do(opts ...googleapi.CallOptio
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -11367,7 +11367,7 @@ func (c *UserProfilesGuardianInvitationsPatchCall) Do(opts ...googleapi.CallOpti
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -11534,7 +11534,7 @@ func (c *UserProfilesGuardiansDeleteCall) Do(opts ...googleapi.CallOption) (*Emp
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -11703,7 +11703,7 @@ func (c *UserProfilesGuardiansGetCall) Do(opts ...googleapi.CallOption) (*Guardi
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -11914,7 +11914,7 @@ func (c *UserProfilesGuardiansListCall) Do(opts ...googleapi.CallOption) (*ListG
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

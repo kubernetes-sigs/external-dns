@@ -1,5 +1,5 @@
 hash: 9f1bc270ce828fb6bc7ab7af69f2419a670eadfba41d1298ff1e3c435336000d
-updated: 2017-11-03T12:39:01.772949034Z
+updated: 2017-12-01T11:10:40.494044308+01:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -101,7 +101,7 @@ imports:
 - name: github.com/ghodss/yaml
   version: 73d445a93680fa1a78ae23a5839bad48f32ba1ee
 - name: github.com/go-ini/ini
-  version: f280b3ba517bf5fc98922624f21fb0e7a92adaec
+  version: 32e4c1e6bc4e7d0d8451aa6b75200d19e37a536a
 - name: github.com/go-openapi/jsonpointer
   version: 46af16f9f7b149af66e5d1bd010e3574dc06de98
 - name: github.com/go-openapi/jsonreference
@@ -134,13 +134,13 @@ imports:
 - name: github.com/infobloxopen/infoblox-go-client
   version: e2811d86bed7bb487eeb0806337b6f9e9d93d5e7
 - name: github.com/jmespath/go-jmespath
-  version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
+  version: dd801d4f4ce7ac746e7e7b4489d2fa600b3b096b
 - name: github.com/jonboulle/clockwork
   version: 72f9bd7c4e0c2a40055ab3d0f09654f730cce982
 - name: github.com/juju/ratelimit
   version: 77ed1c8a01217656d2080ad51981f6e99adaa177
 - name: github.com/kubernetes/repo-infra
-  version: ae4e9a3906ace4ba657b7a09242610c6266e832c
+  version: 2d2eb5e12b4663fc4d764b5db9daab39334d3f37
 - name: github.com/linki/instrumented_http
   version: 508103cfb3b315fa9752b5bcd4fb2d97bbc26d89
 - name: github.com/mailru/easyjson
@@ -165,11 +165,11 @@ imports:
   - prometheus
   - prometheus/promhttp
 - name: github.com/prometheus/client_model
-  version: 6f3806018612930941127f2a7c6c453ba2c527d2
+  version: 99fa1f4be8e564e8a6b613da7fa6f46c9edafc6c
   subpackages:
   - go
 - name: github.com/prometheus/common
-  version: 1bab55dd05dbff384524a6a1c99006d9eb5f139b
+  version: 2e54d0b93cba2fd133edc32211dcc32c06ef72ca
   subpackages:
   - expfmt
   - internal/bitbucket.org/ww/goautoneg
@@ -202,7 +202,7 @@ imports:
   subpackages:
   - codec
 - name: golang.org/x/crypto
-  version: bd6f299fb381e4c3393d1c4b1f0b94f5e77650c8
+  version: d172538b2cfce0c13cee31e647d0367aa8cd2486
   subpackages:
   - ssh/terminal
 - name: golang.org/x/net
@@ -225,7 +225,6 @@ imports:
   version: 8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9
   subpackages:
   - unix
-  - windows
 - name: golang.org/x/text
   version: 2910a502d2bf9e43193af9d68ca516529614eed3
   subpackages:
@@ -240,7 +239,7 @@ imports:
   - unicode/norm
   - width
 - name: google.golang.org/api
-  version: 532986bc317f5cf61f4e7ef35d9dae8b75b3f56f
+  version: a0ff90edab763c86aa88f2b1eb4f3301b82f6336
   subpackages:
   - dns/v1
   - gensupport

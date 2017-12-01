@@ -122,8 +122,8 @@ type BatchDeletePhotosRequest struct {
 }
 
 func (s *BatchDeletePhotosRequest) MarshalJSON() ([]byte, error) {
-	type noMethod BatchDeletePhotosRequest
-	raw := noMethod(*s)
+	type NoMethod BatchDeletePhotosRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -157,8 +157,8 @@ type BatchDeletePhotosResponse struct {
 }
 
 func (s *BatchDeletePhotosResponse) MarshalJSON() ([]byte, error) {
-	type noMethod BatchDeletePhotosResponse
-	raw := noMethod(*s)
+	type NoMethod BatchDeletePhotosResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -192,8 +192,8 @@ type BatchGetPhotosResponse struct {
 }
 
 func (s *BatchGetPhotosResponse) MarshalJSON() ([]byte, error) {
-	type noMethod BatchGetPhotosResponse
-	raw := noMethod(*s)
+	type NoMethod BatchGetPhotosResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -224,8 +224,8 @@ type BatchUpdatePhotosRequest struct {
 }
 
 func (s *BatchUpdatePhotosRequest) MarshalJSON() ([]byte, error) {
-	type noMethod BatchUpdatePhotosRequest
-	raw := noMethod(*s)
+	type NoMethod BatchUpdatePhotosRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -260,8 +260,8 @@ type BatchUpdatePhotosResponse struct {
 }
 
 func (s *BatchUpdatePhotosResponse) MarshalJSON() ([]byte, error) {
-	type noMethod BatchUpdatePhotosResponse
-	raw := noMethod(*s)
+	type NoMethod BatchUpdatePhotosResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -291,8 +291,8 @@ type Connection struct {
 }
 
 func (s *Connection) MarshalJSON() ([]byte, error) {
-	type noMethod Connection
-	raw := noMethod(*s)
+	type NoMethod Connection
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -350,19 +350,19 @@ type LatLng struct {
 }
 
 func (s *LatLng) MarshalJSON() ([]byte, error) {
-	type noMethod LatLng
-	raw := noMethod(*s)
+	type NoMethod LatLng
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *LatLng) UnmarshalJSON(data []byte) error {
-	type noMethod LatLng
+	type NoMethod LatLng
 	var s1 struct {
 		Latitude  gensupport.JSONFloat64 `json:"latitude"`
 		Longitude gensupport.JSONFloat64 `json:"longitude"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -406,18 +406,18 @@ type Level struct {
 }
 
 func (s *Level) MarshalJSON() ([]byte, error) {
-	type noMethod Level
-	raw := noMethod(*s)
+	type NoMethod Level
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *Level) UnmarshalJSON(data []byte) error {
-	type noMethod Level
+	type NoMethod Level
 	var s1 struct {
 		Number gensupport.JSONFloat64 `json:"number"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -461,8 +461,8 @@ type ListPhotosResponse struct {
 }
 
 func (s *ListPhotosResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListPhotosResponse
-	raw := noMethod(*s)
+	type NoMethod ListPhotosResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -532,8 +532,8 @@ type Operation struct {
 }
 
 func (s *Operation) MarshalJSON() ([]byte, error) {
-	type noMethod Operation
-	raw := noMethod(*s)
+	type NoMethod Operation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -607,8 +607,8 @@ type Photo struct {
 }
 
 func (s *Photo) MarshalJSON() ([]byte, error) {
-	type noMethod Photo
-	raw := noMethod(*s)
+	type NoMethod Photo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -635,8 +635,8 @@ type PhotoId struct {
 }
 
 func (s *PhotoId) MarshalJSON() ([]byte, error) {
-	type noMethod PhotoId
-	raw := noMethod(*s)
+	type NoMethod PhotoId
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -674,8 +674,8 @@ type PhotoResponse struct {
 }
 
 func (s *PhotoResponse) MarshalJSON() ([]byte, error) {
-	type noMethod PhotoResponse
-	raw := noMethod(*s)
+	type NoMethod PhotoResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -704,8 +704,8 @@ type Place struct {
 }
 
 func (s *Place) MarshalJSON() ([]byte, error) {
-	type noMethod Place
-	raw := noMethod(*s)
+	type NoMethod Place
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -771,21 +771,21 @@ type Pose struct {
 }
 
 func (s *Pose) MarshalJSON() ([]byte, error) {
-	type noMethod Pose
-	raw := noMethod(*s)
+	type NoMethod Pose
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *Pose) UnmarshalJSON(data []byte) error {
-	type noMethod Pose
+	type NoMethod Pose
 	var s1 struct {
 		Altitude gensupport.JSONFloat64 `json:"altitude"`
 		Heading  gensupport.JSONFloat64 `json:"heading"`
 		Pitch    gensupport.JSONFloat64 `json:"pitch"`
 		Roll     gensupport.JSONFloat64 `json:"roll"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -910,8 +910,8 @@ type Status struct {
 }
 
 func (s *Status) MarshalJSON() ([]byte, error) {
-	type noMethod Status
-	raw := noMethod(*s)
+	type NoMethod Status
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -973,8 +973,8 @@ type UpdatePhotoRequest struct {
 }
 
 func (s *UpdatePhotoRequest) MarshalJSON() ([]byte, error) {
-	type noMethod UpdatePhotoRequest
-	raw := noMethod(*s)
+	type NoMethod UpdatePhotoRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1010,8 +1010,8 @@ type UploadRef struct {
 }
 
 func (s *UploadRef) MarshalJSON() ([]byte, error) {
-	type noMethod UploadRef
-	raw := noMethod(*s)
+	type NoMethod UploadRef
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1137,7 +1137,7 @@ func (c *PhotoCreateCall) Do(opts ...googleapi.CallOption) (*Photo, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1262,7 +1262,7 @@ func (c *PhotoDeleteCall) Do(opts ...googleapi.CallOption) (*Empty, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1421,7 +1421,7 @@ func (c *PhotoGetCall) Do(opts ...googleapi.CallOption) (*Photo, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1581,7 +1581,7 @@ func (c *PhotoStartUploadCall) Do(opts ...googleapi.CallOption) (*UploadRef, err
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1764,7 +1764,7 @@ func (c *PhotoUpdateCall) Do(opts ...googleapi.CallOption) (*Photo, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1918,7 +1918,7 @@ func (c *PhotosBatchDeleteCall) Do(opts ...googleapi.CallOption) (*BatchDeletePh
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2086,7 +2086,7 @@ func (c *PhotosBatchGetCall) Do(opts ...googleapi.CallOption) (*BatchGetPhotosRe
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2252,7 +2252,7 @@ func (c *PhotosBatchUpdateCall) Do(opts ...googleapi.CallOption) (*BatchUpdatePh
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2426,7 +2426,7 @@ func (c *PhotosListCall) Do(opts ...googleapi.CallOption) (*ListPhotosResponse, 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

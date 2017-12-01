@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/fm1lLUTWZSUICVWbDd1LodZO4xA\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/dTaDGpxiMHj3lFlb8pUnNUoP8XA\"",
  "discoveryVersion": "v1",
  "id": "deploymentmanager:alpha",
  "name": "deploymentmanager",
  "canonicalName": "Deployment Manager Alpha",
  "version": "alpha",
- "revision": "20171025",
+ "revision": "20171102",
  "title": "Google Cloud Deployment Manager Alpha API",
  "description": "The Deployment Manager API allows users to declaratively configure, deploy and run complex solutions on the Google Cloud Platform.",
  "ownerDomain": "google.com",
@@ -232,7 +232,7 @@
     },
     "name": {
      "type": "string",
-     "description": "Name of the composite type."
+     "description": "Name of the composite type, must follow the expression: [a-z]([-a-z0-9_.]{0,61}[a-z0-9])?."
     },
     "operation": {
      "$ref": "Operation",
@@ -1624,7 +1624,7 @@
        "type": "string",
        "description": "The name of the type for this request.",
        "required": true,
-       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "pattern": "[a-z](?:[-a-z0-9_.]{0,61}[a-z0-9])?",
        "location": "path"
       },
       "project": {
@@ -1657,7 +1657,7 @@
        "type": "string",
        "description": "The name of the composite type for this request.",
        "required": true,
-       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "pattern": "[a-z](?:[-a-z0-9_.]{0,61}[a-z0-9])?",
        "location": "path"
       },
       "project": {
@@ -1770,7 +1770,7 @@
        "type": "string",
        "description": "The name of the composite type for this request.",
        "required": true,
-       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "pattern": "[a-z](?:[-a-z0-9_.]{0,61}[a-z0-9])?",
        "location": "path"
       },
       "project": {
@@ -1806,7 +1806,7 @@
        "type": "string",
        "description": "The name of the composite type for this request.",
        "required": true,
-       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "pattern": "[a-z](?:[-a-z0-9_.]{0,61}[a-z0-9])?",
        "location": "path"
       },
       "project": {

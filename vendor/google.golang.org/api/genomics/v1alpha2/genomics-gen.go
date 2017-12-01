@@ -142,8 +142,8 @@ type ComputeEngine struct {
 }
 
 func (s *ComputeEngine) MarshalJSON() ([]byte, error) {
-	type noMethod ComputeEngine
-	raw := noMethod(*s)
+	type NoMethod ComputeEngine
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -191,8 +191,8 @@ type ControllerConfig struct {
 }
 
 func (s *ControllerConfig) MarshalJSON() ([]byte, error) {
-	type noMethod ControllerConfig
-	raw := noMethod(*s)
+	type NoMethod ControllerConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -277,8 +277,8 @@ type Disk struct {
 }
 
 func (s *Disk) MarshalJSON() ([]byte, error) {
-	type noMethod Disk
-	raw := noMethod(*s)
+	type NoMethod Disk
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -319,8 +319,8 @@ type DockerExecutor struct {
 }
 
 func (s *DockerExecutor) MarshalJSON() ([]byte, error) {
-	type noMethod DockerExecutor
-	raw := noMethod(*s)
+	type NoMethod DockerExecutor
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -366,8 +366,8 @@ type ImportReadGroupSetsResponse struct {
 }
 
 func (s *ImportReadGroupSetsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ImportReadGroupSetsResponse
-	raw := noMethod(*s)
+	type NoMethod ImportReadGroupSetsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -394,8 +394,8 @@ type ImportVariantsResponse struct {
 }
 
 func (s *ImportVariantsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ImportVariantsResponse
-	raw := noMethod(*s)
+	type NoMethod ImportVariantsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -431,8 +431,8 @@ type ListOperationsResponse struct {
 }
 
 func (s *ListOperationsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListOperationsResponse
-	raw := noMethod(*s)
+	type NoMethod ListOperationsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -473,8 +473,8 @@ type ListPipelinesResponse struct {
 }
 
 func (s *ListPipelinesResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListPipelinesResponse
-	raw := noMethod(*s)
+	type NoMethod ListPipelinesResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -513,8 +513,8 @@ type LocalCopy struct {
 }
 
 func (s *LocalCopy) MarshalJSON() ([]byte, error) {
-	type noMethod LocalCopy
-	raw := noMethod(*s)
+	type NoMethod LocalCopy
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -550,8 +550,8 @@ type LoggingOptions struct {
 }
 
 func (s *LoggingOptions) MarshalJSON() ([]byte, error) {
-	type noMethod LoggingOptions
-	raw := noMethod(*s)
+	type NoMethod LoggingOptions
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -606,8 +606,8 @@ type Operation struct {
 }
 
 func (s *Operation) MarshalJSON() ([]byte, error) {
-	type noMethod Operation
-	raw := noMethod(*s)
+	type NoMethod Operation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -643,8 +643,8 @@ type OperationEvent struct {
 }
 
 func (s *OperationEvent) MarshalJSON() ([]byte, error) {
-	type noMethod OperationEvent
-	raw := noMethod(*s)
+	type NoMethod OperationEvent
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -708,8 +708,8 @@ type OperationMetadata struct {
 }
 
 func (s *OperationMetadata) MarshalJSON() ([]byte, error) {
-	type noMethod OperationMetadata
-	raw := noMethod(*s)
+	type NoMethod OperationMetadata
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -791,8 +791,8 @@ type Pipeline struct {
 }
 
 func (s *Pipeline) MarshalJSON() ([]byte, error) {
-	type noMethod Pipeline
-	raw := noMethod(*s)
+	type NoMethod Pipeline
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -952,8 +952,8 @@ type PipelineParameter struct {
 }
 
 func (s *PipelineParameter) MarshalJSON() ([]byte, error) {
-	type noMethod PipelineParameter
-	raw := noMethod(*s)
+	type NoMethod PipelineParameter
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -963,17 +963,21 @@ type PipelineResources struct {
 	// specified type to attach.
 	// By specifying this parameter, you will download and install the
 	// following
-	// third-party software onto your managed GCE instances: NVIDIA®
-	// Tesla®
-	// drivers and NVIDIA® CUDA toolkit.
+	// third-party software onto your managed Compute Engine
+	// instances:
+	// NVIDIA® Tesla® drivers and NVIDIA® CUDA toolkit.
 	AcceleratorCount int64 `json:"acceleratorCount,omitempty,string"`
 
-	// AcceleratorType: Optional. The GCE defined accelerator type.
+	// AcceleratorType: Optional. The Compute Engine defined accelerator
+	// type.
 	// By specifying this parameter, you will download and install the
 	// following
-	// third-party software onto your managed GCE instances: NVIDIA®
-	// Tesla®
-	// drivers and NVIDIA® CUDA toolkit.
+	// third-party software onto your managed Compute Engine instances:
+	// NVIDIA®
+	// Tesla® drivers and NVIDIA® CUDA toolkit.
+	// Please see https://cloud.google.com/compute/docs/gpus/ for a list
+	// of
+	// available accelerator types.
 	AcceleratorType string `json:"acceleratorType,omitempty"`
 
 	// BootDiskSizeGb: The size of the boot disk. Defaults to 10 (GB).
@@ -1042,18 +1046,18 @@ type PipelineResources struct {
 }
 
 func (s *PipelineResources) MarshalJSON() ([]byte, error) {
-	type noMethod PipelineResources
-	raw := noMethod(*s)
+	type NoMethod PipelineResources
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *PipelineResources) UnmarshalJSON(data []byte) error {
-	type noMethod PipelineResources
+	type NoMethod PipelineResources
 	var s1 struct {
 		MinimumRamGb gensupport.JSONFloat64 `json:"minimumRamGb"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -1082,8 +1086,8 @@ type RepeatedString struct {
 }
 
 func (s *RepeatedString) MarshalJSON() ([]byte, error) {
-	type noMethod RepeatedString
-	raw := noMethod(*s)
+	type NoMethod RepeatedString
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1180,8 +1184,8 @@ type RunPipelineArgs struct {
 }
 
 func (s *RunPipelineArgs) MarshalJSON() ([]byte, error) {
-	type noMethod RunPipelineArgs
-	raw := noMethod(*s)
+	type NoMethod RunPipelineArgs
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1224,8 +1228,8 @@ type RunPipelineRequest struct {
 }
 
 func (s *RunPipelineRequest) MarshalJSON() ([]byte, error) {
-	type noMethod RunPipelineRequest
-	raw := noMethod(*s)
+	type NoMethod RunPipelineRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1256,8 +1260,8 @@ type RuntimeMetadata struct {
 }
 
 func (s *RuntimeMetadata) MarshalJSON() ([]byte, error) {
-	type noMethod RuntimeMetadata
-	raw := noMethod(*s)
+	type NoMethod RuntimeMetadata
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1297,8 +1301,8 @@ type ServiceAccount struct {
 }
 
 func (s *ServiceAccount) MarshalJSON() ([]byte, error) {
-	type noMethod ServiceAccount
-	raw := noMethod(*s)
+	type NoMethod ServiceAccount
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1488,8 +1492,8 @@ type SetOperationStatusRequest struct {
 }
 
 func (s *SetOperationStatusRequest) MarshalJSON() ([]byte, error) {
-	type noMethod SetOperationStatusRequest
-	raw := noMethod(*s)
+	type NoMethod SetOperationStatusRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1607,8 +1611,8 @@ type Status struct {
 }
 
 func (s *Status) MarshalJSON() ([]byte, error) {
-	type noMethod Status
-	raw := noMethod(*s)
+	type NoMethod Status
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1640,8 +1644,8 @@ type TimestampEvent struct {
 }
 
 func (s *TimestampEvent) MarshalJSON() ([]byte, error) {
-	type noMethod TimestampEvent
-	raw := noMethod(*s)
+	type NoMethod TimestampEvent
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1749,7 +1753,7 @@ func (c *OperationsCancelCall) Do(opts ...googleapi.CallOption) (*Empty, error) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1896,7 +1900,7 @@ func (c *OperationsGetCall) Do(opts ...googleapi.CallOption) (*Operation, error)
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2079,7 +2083,7 @@ func (c *OperationsListCall) Do(opts ...googleapi.CallOption) (*ListOperationsRe
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2251,7 +2255,7 @@ func (c *PipelinesCreateCall) Do(opts ...googleapi.CallOption) (*Pipeline, error
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2372,7 +2376,7 @@ func (c *PipelinesDeleteCall) Do(opts ...googleapi.CallOption) (*Empty, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2513,7 +2517,7 @@ func (c *PipelinesGetCall) Do(opts ...googleapi.CallOption) (*Pipeline, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2662,7 +2666,7 @@ func (c *PipelinesGetControllerConfigCall) Do(opts ...googleapi.CallOption) (*Co
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2834,7 +2838,7 @@ func (c *PipelinesListCall) Do(opts ...googleapi.CallOption) (*ListPipelinesResp
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3008,7 +3012,7 @@ func (c *PipelinesRunCall) Do(opts ...googleapi.CallOption) (*Operation, error) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3134,7 +3138,7 @@ func (c *PipelinesSetOperationStatusCall) Do(opts ...googleapi.CallOption) (*Emp
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

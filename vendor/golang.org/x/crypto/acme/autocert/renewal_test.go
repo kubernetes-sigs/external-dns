@@ -5,7 +5,6 @@
 package autocert
 
 import (
-	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -32,7 +31,7 @@ func TestRenewalNext(t *testing.T) {
 		expiry   time.Time
 		min, max time.Duration
 	}{
-		{now.Add(90 * 24 * time.Hour), 83*24*time.Hour - renewJitter, 83 * 24 * time.Hour},
+		{now.Add(90 * 24 * time.Hour), 83*24*time.Hour - maxRandRenew, 83 * 24 * time.Hour},
 		{now.Add(time.Hour), 0, 1},
 		{now, 0, 1},
 		{now.Add(-time.Hour), 0, 1},
@@ -53,7 +52,7 @@ func TestRenewFromCache(t *testing.T) {
 	// ACME CA server stub
 	var ca *httptest.Server
 	ca = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Replay-Nonce", "nonce")
+		w.Header().Set("replay-nonce", "nonce")
 		if r.Method == "HEAD" {
 			// a nonce request
 			return
@@ -70,7 +69,7 @@ func TestRenewFromCache(t *testing.T) {
 			w.Write([]byte("{}"))
 		// domain authorization
 		case "/new-authz":
-			w.Header().Set("Location", ca.URL+"/authz/1")
+			w.Header().Set("location", ca.URL+"/authz/1")
 			w.WriteHeader(http.StatusCreated)
 			w.Write([]byte(`{"status": "valid"}`))
 		// cert request
@@ -89,7 +88,7 @@ func TestRenewFromCache(t *testing.T) {
 				t.Fatalf("new-cert: dummyCert: %v", err)
 			}
 			chainUp := fmt.Sprintf("<%s/ca-cert>; rel=up", ca.URL)
-			w.Header().Set("Link", chainUp)
+			w.Header().Set("link", chainUp)
 			w.WriteHeader(http.StatusCreated)
 			w.Write(der)
 		// CA chain cert
@@ -112,7 +111,7 @@ func TestRenewFromCache(t *testing.T) {
 	}
 	man := &Manager{
 		Prompt:      AcceptTOS,
-		Cache:       newMemCache(),
+		Cache:       make(memCache),
 		RenewBefore: 24 * time.Hour,
 		Client: &acme.Client{
 			Key:          key,
@@ -128,7 +127,7 @@ func TestRenewFromCache(t *testing.T) {
 		t.Fatal(err)
 	}
 	tlscert := &tls.Certificate{PrivateKey: key, Certificate: [][]byte{cert}}
-	if err := man.cachePut(context.Background(), domain, tlscert); err != nil {
+	if err := man.cachePut(domain, tlscert); err != nil {
 		t.Fatal(err)
 	}
 
@@ -152,7 +151,7 @@ func TestRenewFromCache(t *testing.T) {
 
 		// ensure the new cert is cached
 		after := time.Now().Add(future)
-		tlscert, err := man.cacheGet(context.Background(), domain)
+		tlscert, err := man.cacheGet(domain)
 		if err != nil {
 			t.Fatalf("man.cacheGet: %v", err)
 		}

@@ -282,8 +282,8 @@ type Build struct {
 }
 
 func (s *Build) MarshalJSON() ([]byte, error) {
-	type noMethod Build
-	raw := noMethod(*s)
+	type NoMethod Build
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -310,14 +310,27 @@ type BuildOperationMetadata struct {
 }
 
 func (s *BuildOperationMetadata) MarshalJSON() ([]byte, error) {
-	type noMethod BuildOperationMetadata
-	raw := noMethod(*s)
+	type NoMethod BuildOperationMetadata
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 // BuildOptions: Optional arguments to enable specific features of
 // builds.
 type BuildOptions struct {
+	// DiskSizeGb: Requested disk size for the VM that runs the build. Note
+	// that this is *NOT*
+	// "disk free"; some of the space will be used by the operating system
+	// and
+	// build utilities. Also note that this is the minimum disk size that
+	// will be
+	// allocated for the build -- the build may run with a larger disk
+	// than
+	// requested. At present, the maximum disk size is 1000GB; builds that
+	// request
+	// more than the maximum are rejected with an error.
+	DiskSizeGb int64 `json:"diskSizeGb,omitempty,string"`
+
 	// LogStreamingOption: LogStreamingOption to define build log streaming
 	// behavior to Google Cloud
 	// Storage.
@@ -331,6 +344,14 @@ type BuildOptions struct {
 	// Storage; they will be
 	// written when the build is completed.
 	LogStreamingOption string `json:"logStreamingOption,omitempty"`
+
+	// MachineType: GCE VM size to run the build on.
+	//
+	// Possible values:
+	//   "UNSPECIFIED" - Standard machine type.
+	//   "N1_HIGHCPU_8" - Highcpu machine with 8 CPUs.
+	//   "N1_HIGHCPU_32" - Highcpu machine with 32 CPUs.
+	MachineType string `json:"machineType,omitempty"`
 
 	// RequestedVerifyOption: Requested verifiability options.
 	//
@@ -357,27 +378,26 @@ type BuildOptions struct {
 	// checks.
 	SubstitutionOption string `json:"substitutionOption,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "LogStreamingOption")
-	// to unconditionally include in API requests. By default, fields with
+	// ForceSendFields is a list of field names (e.g. "DiskSizeGb") to
+	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
 	// server regardless of whether the field is empty or not. This may be
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "LogStreamingOption") to
-	// include in API requests with the JSON null value. By default, fields
-	// with empty values are omitted from API requests. However, any field
-	// with an empty value appearing in NullFields will be sent to the
-	// server as null. It is an error if a field in this list has a
-	// non-empty value. This may be used to include null fields in Patch
-	// requests.
+	// NullFields is a list of field names (e.g. "DiskSizeGb") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
 	NullFields []string `json:"-"`
 }
 
 func (s *BuildOptions) MarshalJSON() ([]byte, error) {
-	type noMethod BuildOptions
-	raw := noMethod(*s)
+	type NoMethod BuildOptions
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -495,8 +515,8 @@ type BuildStep struct {
 }
 
 func (s *BuildStep) MarshalJSON() ([]byte, error) {
-	type noMethod BuildStep
-	raw := noMethod(*s)
+	type NoMethod BuildStep
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -563,8 +583,8 @@ type BuildTrigger struct {
 }
 
 func (s *BuildTrigger) MarshalJSON() ([]byte, error) {
-	type noMethod BuildTrigger
-	raw := noMethod(*s)
+	type NoMethod BuildTrigger
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -596,8 +616,8 @@ type BuiltImage struct {
 }
 
 func (s *BuiltImage) MarshalJSON() ([]byte, error) {
-	type noMethod BuiltImage
-	raw := noMethod(*s)
+	type NoMethod BuiltImage
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -654,8 +674,8 @@ type FileHashes struct {
 }
 
 func (s *FileHashes) MarshalJSON() ([]byte, error) {
-	type noMethod FileHashes
-	raw := noMethod(*s)
+	type NoMethod FileHashes
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -689,8 +709,8 @@ type Hash struct {
 }
 
 func (s *Hash) MarshalJSON() ([]byte, error) {
-	type noMethod Hash
-	raw := noMethod(*s)
+	type NoMethod Hash
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -723,8 +743,8 @@ type ListBuildTriggersResponse struct {
 }
 
 func (s *ListBuildTriggersResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListBuildTriggersResponse
-	raw := noMethod(*s)
+	type NoMethod ListBuildTriggersResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -758,8 +778,8 @@ type ListBuildsResponse struct {
 }
 
 func (s *ListBuildsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListBuildsResponse
-	raw := noMethod(*s)
+	type NoMethod ListBuildsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -795,8 +815,8 @@ type ListOperationsResponse struct {
 }
 
 func (s *ListOperationsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListOperationsResponse
-	raw := noMethod(*s)
+	type NoMethod ListOperationsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -870,8 +890,8 @@ type Operation struct {
 }
 
 func (s *Operation) MarshalJSON() ([]byte, error) {
-	type noMethod Operation
-	raw := noMethod(*s)
+	type NoMethod Operation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -919,8 +939,8 @@ type RepoSource struct {
 }
 
 func (s *RepoSource) MarshalJSON() ([]byte, error) {
-	type noMethod RepoSource
-	raw := noMethod(*s)
+	type NoMethod RepoSource
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -953,8 +973,8 @@ type Results struct {
 }
 
 func (s *Results) MarshalJSON() ([]byte, error) {
-	type noMethod Results
-	raw := noMethod(*s)
+	type NoMethod Results
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -999,8 +1019,8 @@ type Secret struct {
 }
 
 func (s *Secret) MarshalJSON() ([]byte, error) {
-	type noMethod Secret
-	raw := noMethod(*s)
+	type NoMethod Secret
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1034,8 +1054,8 @@ type Source struct {
 }
 
 func (s *Source) MarshalJSON() ([]byte, error) {
-	type noMethod Source
-	raw := noMethod(*s)
+	type NoMethod Source
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1089,8 +1109,8 @@ type SourceProvenance struct {
 }
 
 func (s *SourceProvenance) MarshalJSON() ([]byte, error) {
-	type noMethod SourceProvenance
-	raw := noMethod(*s)
+	type NoMethod SourceProvenance
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1208,8 +1228,8 @@ type Status struct {
 }
 
 func (s *Status) MarshalJSON() ([]byte, error) {
-	type noMethod Status
-	raw := noMethod(*s)
+	type NoMethod Status
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1254,8 +1274,8 @@ type StorageSource struct {
 }
 
 func (s *StorageSource) MarshalJSON() ([]byte, error) {
-	type noMethod StorageSource
-	raw := noMethod(*s)
+	type NoMethod StorageSource
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1296,8 +1316,8 @@ type Volume struct {
 }
 
 func (s *Volume) MarshalJSON() ([]byte, error) {
-	type noMethod Volume
-	raw := noMethod(*s)
+	type NoMethod Volume
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1418,7 +1438,7 @@ func (c *OperationsCancelCall) Do(opts ...googleapi.CallOption) (*Empty, error) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1564,7 +1584,7 @@ func (c *OperationsGetCall) Do(opts ...googleapi.CallOption) (*Operation, error)
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1740,7 +1760,7 @@ func (c *OperationsListCall) Do(opts ...googleapi.CallOption) (*ListOperationsRe
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1912,7 +1932,7 @@ func (c *ProjectsBuildsCancelCall) Do(opts ...googleapi.CallOption) (*Build, err
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2059,7 +2079,7 @@ func (c *ProjectsBuildsCreateCall) Do(opts ...googleapi.CallOption) (*Operation,
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2207,7 +2227,7 @@ func (c *ProjectsBuildsGetCall) Do(opts ...googleapi.CallOption) (*Build, error)
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2377,7 +2397,7 @@ func (c *ProjectsBuildsListCall) Do(opts ...googleapi.CallOption) (*ListBuildsRe
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2584,7 +2604,7 @@ func (c *ProjectsBuildsRetryCall) Do(opts ...googleapi.CallOption) (*Operation, 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2727,7 +2747,7 @@ func (c *ProjectsTriggersCreateCall) Do(opts ...googleapi.CallOption) (*BuildTri
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2860,7 +2880,7 @@ func (c *ProjectsTriggersDeleteCall) Do(opts ...googleapi.CallOption) (*Empty, e
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3010,7 +3030,7 @@ func (c *ProjectsTriggersGetCall) Do(opts ...googleapi.CallOption) (*BuildTrigge
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3157,7 +3177,7 @@ func (c *ProjectsTriggersListCall) Do(opts ...googleapi.CallOption) (*ListBuildT
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3294,7 +3314,7 @@ func (c *ProjectsTriggersPatchCall) Do(opts ...googleapi.CallOption) (*BuildTrig
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3438,7 +3458,7 @@ func (c *ProjectsTriggersRunCall) Do(opts ...googleapi.CallOption) (*Operation, 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

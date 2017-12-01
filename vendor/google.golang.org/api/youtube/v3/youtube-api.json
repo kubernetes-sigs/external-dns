@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/AIWw-yWxHTNchYNbx8LfngbqcZ8\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/4-8iVRS7XjXc8_q8wbRC_IRggBY\"",
  "discoveryVersion": "v1",
  "id": "youtube:v3",
  "name": "youtube",
  "canonicalName": "YouTube",
  "version": "v3",
- "revision": "20170918",
+ "revision": "20171101",
  "title": "YouTube Data API",
  "description": "Supports core YouTube features, such as uploading videos, creating and managing playlists, searching for content, and much more.",
  "ownerDomain": "google.com",
@@ -3066,9 +3066,11 @@
       "oflcR18",
       "oflcRp13",
       "oflcRp16",
+      "oflcRp18",
       "oflcUnrated"
      ],
      "enumDescriptions": [
+      "",
       "",
       "",
       "",
@@ -4868,6 +4870,7 @@
       "videoBitrateMismatch",
       "videoCodec",
       "videoCodecMismatch",
+      "videoIngestionFasterThanRealtime",
       "videoIngestionStarved",
       "videoInterlaceMismatch",
       "videoProfileMismatch",
@@ -4875,6 +4878,7 @@
       "videoResolutionUnsupported"
      ],
      "enumDescriptions": [
+      "",
       "",
       "",
       "",

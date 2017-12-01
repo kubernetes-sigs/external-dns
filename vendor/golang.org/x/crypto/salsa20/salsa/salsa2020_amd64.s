@@ -5,23 +5,29 @@
 // +build amd64,!appengine,!gccgo
 
 // This code was translated into a form compatible with 6a from the public
-// domain sources in SUPERCOP: https://bench.cr.yp.to/supercop.html
+// domain sources in SUPERCOP: http://bench.cr.yp.to/supercop.html
 
 // func salsa2020XORKeyStream(out, in *byte, n uint64, nonce, key *byte)
-// This needs up to 64 bytes at 360(SP); hence the non-obvious frame size.
-TEXT ·salsa2020XORKeyStream(SB),0,$456-40 // frame = 424 + 32 byte alignment
+TEXT ·salsa2020XORKeyStream(SB),0,$512-40
 	MOVQ out+0(FP),DI
 	MOVQ in+8(FP),SI
 	MOVQ n+16(FP),DX
 	MOVQ nonce+24(FP),CX
 	MOVQ key+32(FP),R8
 
-	MOVQ SP,R12
-	MOVQ SP,R9
-	ADDQ $31, R9
-	ANDQ $~31, R9
-	MOVQ R9, SP
+	MOVQ SP,R11
+	MOVQ $31,R9
+	NOTQ R9
+	ANDQ R9,SP
+	ADDQ $32,SP
 
+	MOVQ R11,352(SP)
+	MOVQ R12,360(SP)
+	MOVQ R13,368(SP)
+	MOVQ R14,376(SP)
+	MOVQ R15,384(SP)
+	MOVQ BX,392(SP)
+	MOVQ BP,400(SP)
 	MOVQ DX,R9
 	MOVQ CX,DX
 	MOVQ R8,R10
@@ -127,7 +133,7 @@ TEXT ·salsa2020XORKeyStream(SB),0,$456-40 // frame = 424 + 32 byte alignment
 	SHRQ $32,CX
 	MOVL DX,16(SP)
 	MOVL CX, 36 (SP)
-	MOVQ R9,352(SP)
+	MOVQ R9,408(SP)
 	MOVQ $20,DX
 	MOVOA 64(SP),X0
 	MOVOA 80(SP),X1
@@ -644,7 +650,7 @@ TEXT ·salsa2020XORKeyStream(SB),0,$456-40 // frame = 424 + 32 byte alignment
 	MOVL CX,244(DI)
 	MOVL R8,248(DI)
 	MOVL R9,252(DI)
-	MOVQ 352(SP),R9
+	MOVQ 408(SP),R9
 	SUBQ $256,R9
 	ADDQ $256,SI
 	ADDQ $256,DI
@@ -656,13 +662,13 @@ TEXT ·salsa2020XORKeyStream(SB),0,$456-40 // frame = 424 + 32 byte alignment
 	CMPQ R9,$64
 	JAE NOCOPY
 	MOVQ DI,DX
-	LEAQ 360(SP),DI
+	LEAQ 416(SP),DI
 	MOVQ R9,CX
 	REP; MOVSB
-	LEAQ 360(SP),DI
-	LEAQ 360(SP),SI
+	LEAQ 416(SP),DI
+	LEAQ 416(SP),SI
 	NOCOPY:
-	MOVQ R9,352(SP)
+	MOVQ R9,408(SP)
 	MOVOA 48(SP),X0
 	MOVOA 0(SP),X1
 	MOVOA 16(SP),X2
@@ -861,7 +867,7 @@ TEXT ·salsa2020XORKeyStream(SB),0,$456-40 // frame = 424 + 32 byte alignment
 	MOVL R8,44(DI)
 	MOVL R9,28(DI)
 	MOVL AX,12(DI)
-	MOVQ 352(SP),R9
+	MOVQ 408(SP),R9
 	MOVL 16(SP),CX
 	MOVL  36 (SP),R8
 	ADDQ $1,CX
@@ -880,7 +886,14 @@ TEXT ·salsa2020XORKeyStream(SB),0,$456-40 // frame = 424 + 32 byte alignment
 	REP; MOVSB
 	BYTESATLEAST64:
 	DONE:
-	MOVQ R12,SP
+	MOVQ 352(SP),R11
+	MOVQ 360(SP),R12
+	MOVQ 368(SP),R13
+	MOVQ 376(SP),R14
+	MOVQ 384(SP),R15
+	MOVQ 392(SP),BX
+	MOVQ 400(SP),BP
+	MOVQ R11,SP
 	RET
 	BYTESATLEAST65:
 	SUBQ $64,R9

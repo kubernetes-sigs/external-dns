@@ -118,8 +118,7 @@ type ScriptsService struct {
 // of an error resulting
 // from an attempted execution of a script function using the Apps
 // Script API.
-// If a run or
-// runAsync call
+// If a run call
 // succeeds but the script function (or Apps Script itself) throws an
 // exception,
 // the response body's error field
@@ -161,8 +160,8 @@ type ExecutionError struct {
 }
 
 func (s *ExecutionError) MarshalJSON() ([]byte, error) {
-	type noMethod ExecutionError
-	raw := noMethod(*s)
+	type NoMethod ExecutionError
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -237,8 +236,8 @@ type ExecutionRequest struct {
 }
 
 func (s *ExecutionRequest) MarshalJSON() ([]byte, error) {
-	type noMethod ExecutionRequest
-	raw := noMethod(*s)
+	type NoMethod ExecutionRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -278,20 +277,19 @@ type ExecutionResponse struct {
 }
 
 func (s *ExecutionResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ExecutionResponse
-	raw := noMethod(*s)
+	type NoMethod ExecutionResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 // Operation: A representation of a execution of an Apps Script function
-// that is started using run or runAsync. The execution response does
-// not arrive until the function finishes executing. The maximum
-// execution runtime is listed in the [Apps Script quotas
+// that is started using run. The execution response does not arrive
+// until the function finishes executing. The maximum execution runtime
+// is listed in the [Apps Script quotas
 // guide](/apps-script/guides/services/quotas#current_limitations).
-// <p>Af
-// ter the execution is started, it can have one of four
-// outcomes:</p>
-// <ul> <li> If the script function returns successfully, the
+// <p>After the execution is started, it can have one of four
+// outcomes:</p> <ul> <li> If the script function returns successfully,
+// the
 //   response field contains an
 //   ExecutionResponse object
 //   with the function's return value in the object's `result`
@@ -303,12 +301,11 @@ func (s *ExecutionResponse) MarshalJSON() ([]byte, error) {
 //   field contains an array with a single
 //   ExecutionError object that
 //   provides information about the nature of the error.</li>
-// <li> If the execution was asynchronous and has not yet completed,
+// <li> If the execution has not yet completed,
 //   the done field is `false` and
 //   the neither the `response` nor `error` fields are
 // present.</li>
-// <li> If the `run` or `runAsync` call itself fails (for example,
-// because of a
+// <li> If the `run` call itself fails (for example, because of a
 //   malformed request or an authorization error), the method returns an
 // HTTP
 //   response code in the 4XX range with a different format for the
@@ -318,17 +315,16 @@ func (s *ExecutionResponse) MarshalJSON() ([]byte, error) {
 //   exception class.</li>
 // </ul>
 type Operation struct {
-	// Done: This field is only used with asynchronous executions. It
-	// indicates whether the script execution has completed. A completed
-	// execution has a populated `response` field containing the
-	// ExecutionResponse from function that was executed.
+	// Done: This field indicates whether the script execution has
+	// completed. A completed execution has a populated `response` field
+	// containing the ExecutionResponse from function that was executed.
 	Done bool `json:"done,omitempty"`
 
-	// Error: If a `run` or `runAsync` call succeeds but the script function
-	// (or Apps Script itself) throws an exception, this field contains a
-	// Status object. The `Status` object's `details` field contains an
-	// array with a single ExecutionError object that provides information
-	// about the nature of the error.
+	// Error: If a `run` call succeeds but the script function (or Apps
+	// Script itself) throws an exception, this field contains a Status
+	// object. The `Status` object's `details` field contains an array with
+	// a single ExecutionError object that provides information about the
+	// nature of the error.
 	Error *Status `json:"error,omitempty"`
 
 	// Response: If the script function returns successfully, this field
@@ -358,8 +354,8 @@ type Operation struct {
 }
 
 func (s *Operation) MarshalJSON() ([]byte, error) {
-	type noMethod Operation
-	raw := noMethod(*s)
+	type NoMethod Operation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -390,18 +386,18 @@ type ScriptStackTraceElement struct {
 }
 
 func (s *ScriptStackTraceElement) MarshalJSON() ([]byte, error) {
-	type noMethod ScriptStackTraceElement
-	raw := noMethod(*s)
+	type NoMethod ScriptStackTraceElement
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Status: If a `run` or `runAsync` call succeeds but the script
-// function (or Apps Script itself) throws an exception, the response
-// body's error field contains this `Status` object.
+// Status: If a `run` call succeeds but the script function (or Apps
+// Script itself) throws an exception, the response body's error field
+// contains this `Status` object.
 type Status struct {
-	// Code: The status code. For this API, this value either:
-	// <ul> <li> 3, indicating an `INVALID_ARGUMENT` error, or</li> <li> 1,
-	// indicating a `CANCELLED` asynchronous execution.</li> </ul>
+	// Code: The status code. For this API, this value either: <ul> <li> 3,
+	// indicating an `INVALID_ARGUMENT` error, or</li> <li> 1, indicating a
+	// `CANCELLED` execution.</li> </ul>
 	Code int64 `json:"code,omitempty"`
 
 	// Details: An array that contains a single ExecutionError object that
@@ -432,8 +428,8 @@ type Status struct {
 }
 
 func (s *Status) MarshalJSON() ([]byte, error) {
-	type noMethod Status
-	raw := noMethod(*s)
+	type NoMethod Status
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -551,7 +547,7 @@ func (c *ScriptsRunCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
