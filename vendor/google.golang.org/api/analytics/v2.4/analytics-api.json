@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"bRFOOrZKfO9LweMbPqu0kcu6De8/ha01xiJ2F_tfXi994F2t-6KbS0Y\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/kYN47VW3boRYzE7pkj4HK3FyEC0\"",
  "discoveryVersion": "v1",
  "id": "analytics:v2.4",
  "name": "analytics",
  "version": "v2.4",
- "revision": "20160308",
+ "revision": "20170807",
  "title": "Google Analytics API",
  "description": "Views and manages your Google Analytics data.",
  "ownerDomain": "google.com",
@@ -20,7 +20,7 @@
  "basePath": "/analytics/v2.4/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "analytics/v2.4/",
- "batchPath": "batch",
+ "batchPath": "batch/analytics/v2.4",
  "parameters": {
   "alt": {
    "type": "string",

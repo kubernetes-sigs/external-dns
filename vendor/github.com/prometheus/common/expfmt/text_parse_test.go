@@ -434,8 +434,10 @@ func testTextParseError(t testing.TB) {
 	}{
 		// 0: No new-line at end of input.
 		{
-			in:  `bla 3.14`,
-			err: "EOF",
+			in: `
+bla 3.14
+blubber 42`,
+			err: "text format parsing error in line 3: unexpected end of input stream",
 		},
 		// 1: Invalid escape sequence in label value.
 		{
@@ -556,6 +558,11 @@ metric 4.12
 metric_bucket{le="bla"} 3.14
 `,
 			err: "text format parsing error in line 3: expected float as value for 'le' label",
+		},
+		// 19: Invalid UTF-8 in label value.
+		{
+			in:  "metric{l=\"\xbd\"} 3.14\n",
+			err: "text format parsing error in line 1: invalid label value \"\\xbd\"",
 		},
 	}
 

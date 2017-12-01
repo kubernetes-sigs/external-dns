@@ -79,10 +79,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	RegionViews *RegionViewsService
 
@@ -94,10 +93,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewRegionViewsService(s *Service) *RegionViewsService {
@@ -144,8 +139,8 @@ type Label struct {
 }
 
 func (s *Label) MarshalJSON() ([]byte, error) {
-	type noMethod Label
-	raw := noMethod(*s)
+	type NoMethod Label
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -173,8 +168,8 @@ type RegionViewsAddResourcesRequest struct {
 }
 
 func (s *RegionViewsAddResourcesRequest) MarshalJSON() ([]byte, error) {
-	type noMethod RegionViewsAddResourcesRequest
-	raw := noMethod(*s)
+	type NoMethod RegionViewsAddResourcesRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -206,8 +201,8 @@ type RegionViewsInsertResponse struct {
 }
 
 func (s *RegionViewsInsertResponse) MarshalJSON() ([]byte, error) {
-	type noMethod RegionViewsInsertResponse
-	raw := noMethod(*s)
+	type NoMethod RegionViewsInsertResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -242,8 +237,8 @@ type RegionViewsListResourcesResponse struct {
 }
 
 func (s *RegionViewsListResourcesResponse) MarshalJSON() ([]byte, error) {
-	type noMethod RegionViewsListResourcesResponse
-	raw := noMethod(*s)
+	type NoMethod RegionViewsListResourcesResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -278,8 +273,8 @@ type RegionViewsListResponse struct {
 }
 
 func (s *RegionViewsListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod RegionViewsListResponse
-	raw := noMethod(*s)
+	type NoMethod RegionViewsListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -307,8 +302,8 @@ type RegionViewsRemoveResourcesRequest struct {
 }
 
 func (s *RegionViewsRemoveResourcesRequest) MarshalJSON() ([]byte, error) {
-	type noMethod RegionViewsRemoveResourcesRequest
-	raw := noMethod(*s)
+	type NoMethod RegionViewsRemoveResourcesRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -366,8 +361,8 @@ type ResourceView struct {
 }
 
 func (s *ResourceView) MarshalJSON() ([]byte, error) {
-	type noMethod ResourceView
-	raw := noMethod(*s)
+	type NoMethod ResourceView
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -395,8 +390,8 @@ type ZoneViewsAddResourcesRequest struct {
 }
 
 func (s *ZoneViewsAddResourcesRequest) MarshalJSON() ([]byte, error) {
-	type noMethod ZoneViewsAddResourcesRequest
-	raw := noMethod(*s)
+	type NoMethod ZoneViewsAddResourcesRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -427,8 +422,8 @@ type ZoneViewsInsertResponse struct {
 }
 
 func (s *ZoneViewsInsertResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ZoneViewsInsertResponse
-	raw := noMethod(*s)
+	type NoMethod ZoneViewsInsertResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -463,8 +458,8 @@ type ZoneViewsListResourcesResponse struct {
 }
 
 func (s *ZoneViewsListResourcesResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ZoneViewsListResourcesResponse
-	raw := noMethod(*s)
+	type NoMethod ZoneViewsListResourcesResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -499,8 +494,8 @@ type ZoneViewsListResponse struct {
 }
 
 func (s *ZoneViewsListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ZoneViewsListResponse
-	raw := noMethod(*s)
+	type NoMethod ZoneViewsListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -528,8 +523,8 @@ type ZoneViewsRemoveResourcesRequest struct {
 }
 
 func (s *ZoneViewsRemoveResourcesRequest) MarshalJSON() ([]byte, error) {
-	type noMethod ZoneViewsRemoveResourcesRequest
-	raw := noMethod(*s)
+	type NoMethod ZoneViewsRemoveResourcesRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -587,7 +582,6 @@ func (c *RegionViewsAddresourcesCall) doRequest(alt string) (*http.Response, err
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionviewsaddresourcesrequest)
 	if err != nil {
@@ -713,7 +707,6 @@ func (c *RegionViewsDeleteCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{projectName}/regions/{region}/resourceViews/{resourceViewName}")
@@ -842,7 +835,6 @@ func (c *RegionViewsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -893,7 +885,7 @@ func (c *RegionViewsGetCall) Do(opts ...googleapi.CallOption) (*ResourceView, er
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -994,7 +986,6 @@ func (c *RegionViewsInsertCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.resourceview)
 	if err != nil {
@@ -1046,7 +1037,7 @@ func (c *RegionViewsInsertCall) Do(opts ...googleapi.CallOption) (*RegionViewsIn
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1166,7 +1157,6 @@ func (c *RegionViewsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -1216,7 +1206,7 @@ func (c *RegionViewsListCall) Do(opts ...googleapi.CallOption) (*RegionViewsList
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1362,7 +1352,6 @@ func (c *RegionViewsListresourcesCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{projectName}/regions/{region}/resourceViews/{resourceViewName}/resources")
@@ -1410,7 +1399,7 @@ func (c *RegionViewsListresourcesCall) Do(opts ...googleapi.CallOption) (*Region
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1548,7 +1537,6 @@ func (c *RegionViewsRemoveresourcesCall) doRequest(alt string) (*http.Response, 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionviewsremoveresourcesrequest)
 	if err != nil {
@@ -1676,7 +1664,6 @@ func (c *ZoneViewsAddresourcesCall) doRequest(alt string) (*http.Response, error
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.zoneviewsaddresourcesrequest)
 	if err != nil {
@@ -1802,7 +1789,6 @@ func (c *ZoneViewsDeleteCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{projectName}/zones/{zone}/resourceViews/{resourceViewName}")
@@ -1931,7 +1917,6 @@ func (c *ZoneViewsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -1982,7 +1967,7 @@ func (c *ZoneViewsGetCall) Do(opts ...googleapi.CallOption) (*ResourceView, erro
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2083,7 +2068,6 @@ func (c *ZoneViewsInsertCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.resourceview)
 	if err != nil {
@@ -2135,7 +2119,7 @@ func (c *ZoneViewsInsertCall) Do(opts ...googleapi.CallOption) (*ZoneViewsInsert
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2255,7 +2239,6 @@ func (c *ZoneViewsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2305,7 +2288,7 @@ func (c *ZoneViewsListCall) Do(opts ...googleapi.CallOption) (*ZoneViewsListResp
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2451,7 +2434,6 @@ func (c *ZoneViewsListresourcesCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "{projectName}/zones/{zone}/resourceViews/{resourceViewName}/resources")
@@ -2499,7 +2481,7 @@ func (c *ZoneViewsListresourcesCall) Do(opts ...googleapi.CallOption) (*ZoneView
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2637,7 +2619,6 @@ func (c *ZoneViewsRemoveresourcesCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.zoneviewsremoveresourcesrequest)
 	if err != nil {

@@ -95,10 +95,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Activities *ActivitiesService
 
@@ -118,10 +117,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewActivitiesService(s *Service) *ActivitiesService {
@@ -210,8 +205,8 @@ type Acl struct {
 }
 
 func (s *Acl) MarshalJSON() ([]byte, error) {
-	type noMethod Acl
-	raw := noMethod(*s)
+	type NoMethod Acl
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -311,8 +306,8 @@ type Activity struct {
 }
 
 func (s *Activity) MarshalJSON() ([]byte, error) {
-	type noMethod Activity
-	raw := noMethod(*s)
+	type NoMethod Activity
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -359,8 +354,8 @@ type ActivityActor struct {
 }
 
 func (s *ActivityActor) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityActor
-	raw := noMethod(*s)
+	type NoMethod ActivityActor
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -389,8 +384,8 @@ type ActivityActorClientSpecificActorInfo struct {
 }
 
 func (s *ActivityActorClientSpecificActorInfo) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityActorClientSpecificActorInfo
-	raw := noMethod(*s)
+	type NoMethod ActivityActorClientSpecificActorInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -418,8 +413,8 @@ type ActivityActorClientSpecificActorInfoYoutubeActorInfo struct {
 }
 
 func (s *ActivityActorClientSpecificActorInfoYoutubeActorInfo) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityActorClientSpecificActorInfoYoutubeActorInfo
-	raw := noMethod(*s)
+	type NoMethod ActivityActorClientSpecificActorInfoYoutubeActorInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -448,8 +443,8 @@ type ActivityActorImage struct {
 }
 
 func (s *ActivityActorImage) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityActorImage
-	raw := noMethod(*s)
+	type NoMethod ActivityActorImage
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -480,8 +475,8 @@ type ActivityActorName struct {
 }
 
 func (s *ActivityActorName) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityActorName
-	raw := noMethod(*s)
+	type NoMethod ActivityActorName
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -508,8 +503,8 @@ type ActivityActorVerification struct {
 }
 
 func (s *ActivityActorVerification) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityActorVerification
-	raw := noMethod(*s)
+	type NoMethod ActivityActorVerification
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -574,8 +569,8 @@ type ActivityObject struct {
 }
 
 func (s *ActivityObject) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityObject
-	raw := noMethod(*s)
+	type NoMethod ActivityObject
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -622,8 +617,8 @@ type ActivityObjectActor struct {
 }
 
 func (s *ActivityObjectActor) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityObjectActor
-	raw := noMethod(*s)
+	type NoMethod ActivityObjectActor
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -652,8 +647,8 @@ type ActivityObjectActorClientSpecificActorInfo struct {
 }
 
 func (s *ActivityObjectActorClientSpecificActorInfo) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityObjectActorClientSpecificActorInfo
-	raw := noMethod(*s)
+	type NoMethod ActivityObjectActorClientSpecificActorInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -681,8 +676,8 @@ type ActivityObjectActorClientSpecificActorInfoYoutubeActorInfo struct {
 }
 
 func (s *ActivityObjectActorClientSpecificActorInfoYoutubeActorInfo) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityObjectActorClientSpecificActorInfoYoutubeActorInfo
-	raw := noMethod(*s)
+	type NoMethod ActivityObjectActorClientSpecificActorInfoYoutubeActorInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -710,8 +705,8 @@ type ActivityObjectActorImage struct {
 }
 
 func (s *ActivityObjectActorImage) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityObjectActorImage
-	raw := noMethod(*s)
+	type NoMethod ActivityObjectActorImage
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -738,8 +733,8 @@ type ActivityObjectActorVerification struct {
 }
 
 func (s *ActivityObjectActorVerification) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityObjectActorVerification
-	raw := noMethod(*s)
+	type NoMethod ActivityObjectActorVerification
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -804,8 +799,8 @@ type ActivityObjectAttachments struct {
 }
 
 func (s *ActivityObjectAttachments) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityObjectAttachments
-	raw := noMethod(*s)
+	type NoMethod ActivityObjectAttachments
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -836,8 +831,8 @@ type ActivityObjectAttachmentsEmbed struct {
 }
 
 func (s *ActivityObjectAttachmentsEmbed) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityObjectAttachmentsEmbed
-	raw := noMethod(*s)
+	type NoMethod ActivityObjectAttachmentsEmbed
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -874,8 +869,8 @@ type ActivityObjectAttachmentsFullImage struct {
 }
 
 func (s *ActivityObjectAttachmentsFullImage) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityObjectAttachmentsFullImage
-	raw := noMethod(*s)
+	type NoMethod ActivityObjectAttachmentsFullImage
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -912,8 +907,8 @@ type ActivityObjectAttachmentsImage struct {
 }
 
 func (s *ActivityObjectAttachmentsImage) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityObjectAttachmentsImage
-	raw := noMethod(*s)
+	type NoMethod ActivityObjectAttachmentsImage
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -939,8 +934,8 @@ type ActivityObjectAttachmentsPreviewThumbnails struct {
 }
 
 func (s *ActivityObjectAttachmentsPreviewThumbnails) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityObjectAttachmentsPreviewThumbnails
-	raw := noMethod(*s)
+	type NoMethod ActivityObjectAttachmentsPreviewThumbnails
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -972,8 +967,8 @@ type ActivityObjectAttachmentsThumbnails struct {
 }
 
 func (s *ActivityObjectAttachmentsThumbnails) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityObjectAttachmentsThumbnails
-	raw := noMethod(*s)
+	type NoMethod ActivityObjectAttachmentsThumbnails
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1009,8 +1004,8 @@ type ActivityObjectAttachmentsThumbnailsImage struct {
 }
 
 func (s *ActivityObjectAttachmentsThumbnailsImage) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityObjectAttachmentsThumbnailsImage
-	raw := noMethod(*s)
+	type NoMethod ActivityObjectAttachmentsThumbnailsImage
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1041,8 +1036,8 @@ type ActivityObjectPlusoners struct {
 }
 
 func (s *ActivityObjectPlusoners) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityObjectPlusoners
-	raw := noMethod(*s)
+	type NoMethod ActivityObjectPlusoners
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1073,8 +1068,8 @@ type ActivityObjectReplies struct {
 }
 
 func (s *ActivityObjectReplies) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityObjectReplies
-	raw := noMethod(*s)
+	type NoMethod ActivityObjectReplies
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1104,8 +1099,8 @@ type ActivityObjectResharers struct {
 }
 
 func (s *ActivityObjectResharers) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityObjectResharers
-	raw := noMethod(*s)
+	type NoMethod ActivityObjectResharers
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1145,8 +1140,8 @@ type ActivityObjectStatusForViewer struct {
 }
 
 func (s *ActivityObjectStatusForViewer) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityObjectStatusForViewer
-	raw := noMethod(*s)
+	type NoMethod ActivityObjectStatusForViewer
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1174,8 +1169,8 @@ type ActivityProvider struct {
 }
 
 func (s *ActivityProvider) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityProvider
-	raw := noMethod(*s)
+	type NoMethod ActivityProvider
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1234,8 +1229,8 @@ type ActivityFeed struct {
 }
 
 func (s *ActivityFeed) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityFeed
-	raw := noMethod(*s)
+	type NoMethod ActivityFeed
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1280,8 +1275,8 @@ type Audience struct {
 }
 
 func (s *Audience) MarshalJSON() ([]byte, error) {
-	type noMethod Audience
-	raw := noMethod(*s)
+	type NoMethod Audience
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1327,8 +1322,8 @@ type AudiencesFeed struct {
 }
 
 func (s *AudiencesFeed) MarshalJSON() ([]byte, error) {
-	type noMethod AudiencesFeed
-	raw := noMethod(*s)
+	type NoMethod AudiencesFeed
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1376,8 +1371,8 @@ type Circle struct {
 }
 
 func (s *Circle) MarshalJSON() ([]byte, error) {
-	type noMethod Circle
-	raw := noMethod(*s)
+	type NoMethod Circle
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1404,8 +1399,8 @@ type CirclePeople struct {
 }
 
 func (s *CirclePeople) MarshalJSON() ([]byte, error) {
-	type noMethod CirclePeople
-	raw := noMethod(*s)
+	type NoMethod CirclePeople
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1460,8 +1455,8 @@ type CircleFeed struct {
 }
 
 func (s *CircleFeed) MarshalJSON() ([]byte, error) {
-	type noMethod CircleFeed
-	raw := noMethod(*s)
+	type NoMethod CircleFeed
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1525,8 +1520,8 @@ type Comment struct {
 }
 
 func (s *Comment) MarshalJSON() ([]byte, error) {
-	type noMethod Comment
-	raw := noMethod(*s)
+	type NoMethod Comment
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1570,8 +1565,8 @@ type CommentActor struct {
 }
 
 func (s *CommentActor) MarshalJSON() ([]byte, error) {
-	type noMethod CommentActor
-	raw := noMethod(*s)
+	type NoMethod CommentActor
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1600,8 +1595,8 @@ type CommentActorClientSpecificActorInfo struct {
 }
 
 func (s *CommentActorClientSpecificActorInfo) MarshalJSON() ([]byte, error) {
-	type noMethod CommentActorClientSpecificActorInfo
-	raw := noMethod(*s)
+	type NoMethod CommentActorClientSpecificActorInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1629,8 +1624,8 @@ type CommentActorClientSpecificActorInfoYoutubeActorInfo struct {
 }
 
 func (s *CommentActorClientSpecificActorInfoYoutubeActorInfo) MarshalJSON() ([]byte, error) {
-	type noMethod CommentActorClientSpecificActorInfoYoutubeActorInfo
-	raw := noMethod(*s)
+	type NoMethod CommentActorClientSpecificActorInfoYoutubeActorInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1659,8 +1654,8 @@ type CommentActorImage struct {
 }
 
 func (s *CommentActorImage) MarshalJSON() ([]byte, error) {
-	type noMethod CommentActorImage
-	raw := noMethod(*s)
+	type NoMethod CommentActorImage
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1687,8 +1682,8 @@ type CommentActorVerification struct {
 }
 
 func (s *CommentActorVerification) MarshalJSON() ([]byte, error) {
-	type noMethod CommentActorVerification
-	raw := noMethod(*s)
+	type NoMethod CommentActorVerification
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1717,8 +1712,8 @@ type CommentInReplyTo struct {
 }
 
 func (s *CommentInReplyTo) MarshalJSON() ([]byte, error) {
-	type noMethod CommentInReplyTo
-	raw := noMethod(*s)
+	type NoMethod CommentInReplyTo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1754,8 +1749,8 @@ type CommentObject struct {
 }
 
 func (s *CommentObject) MarshalJSON() ([]byte, error) {
-	type noMethod CommentObject
-	raw := noMethod(*s)
+	type NoMethod CommentObject
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1782,8 +1777,8 @@ type CommentPlusoners struct {
 }
 
 func (s *CommentPlusoners) MarshalJSON() ([]byte, error) {
-	type noMethod CommentPlusoners
-	raw := noMethod(*s)
+	type NoMethod CommentPlusoners
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1838,8 +1833,8 @@ type CommentFeed struct {
 }
 
 func (s *CommentFeed) MarshalJSON() ([]byte, error) {
-	type noMethod CommentFeed
-	raw := noMethod(*s)
+	type NoMethod CommentFeed
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1932,8 +1927,8 @@ type Media struct {
 }
 
 func (s *Media) MarshalJSON() ([]byte, error) {
-	type noMethod Media
-	raw := noMethod(*s)
+	type NoMethod Media
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1969,8 +1964,8 @@ type MediaAuthor struct {
 }
 
 func (s *MediaAuthor) MarshalJSON() ([]byte, error) {
-	type noMethod MediaAuthor
-	raw := noMethod(*s)
+	type NoMethod MediaAuthor
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1999,8 +1994,8 @@ type MediaAuthorImage struct {
 }
 
 func (s *MediaAuthorImage) MarshalJSON() ([]byte, error) {
-	type noMethod MediaAuthorImage
-	raw := noMethod(*s)
+	type NoMethod MediaAuthorImage
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2028,8 +2023,8 @@ type MediaExif struct {
 }
 
 func (s *MediaExif) MarshalJSON() ([]byte, error) {
-	type noMethod MediaExif
-	raw := noMethod(*s)
+	type NoMethod MediaExif
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2084,8 +2079,8 @@ type PeopleFeed struct {
 }
 
 func (s *PeopleFeed) MarshalJSON() ([]byte, error) {
-	type noMethod PeopleFeed
-	raw := noMethod(*s)
+	type NoMethod PeopleFeed
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2223,8 +2218,8 @@ type Person struct {
 }
 
 func (s *Person) MarshalJSON() ([]byte, error) {
-	type noMethod Person
-	raw := noMethod(*s)
+	type NoMethod Person
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2259,8 +2254,8 @@ type PersonCover struct {
 }
 
 func (s *PersonCover) MarshalJSON() ([]byte, error) {
-	type noMethod PersonCover
-	raw := noMethod(*s)
+	type NoMethod PersonCover
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2295,8 +2290,8 @@ type PersonCoverCoverInfo struct {
 }
 
 func (s *PersonCoverCoverInfo) MarshalJSON() ([]byte, error) {
-	type noMethod PersonCoverCoverInfo
-	raw := noMethod(*s)
+	type NoMethod PersonCoverCoverInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2329,8 +2324,8 @@ type PersonCoverCoverPhoto struct {
 }
 
 func (s *PersonCoverCoverPhoto) MarshalJSON() ([]byte, error) {
-	type noMethod PersonCoverCoverPhoto
-	raw := noMethod(*s)
+	type NoMethod PersonCoverCoverPhoto
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2364,8 +2359,8 @@ type PersonEmails struct {
 }
 
 func (s *PersonEmails) MarshalJSON() ([]byte, error) {
-	type noMethod PersonEmails
-	raw := noMethod(*s)
+	type NoMethod PersonEmails
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2397,8 +2392,8 @@ type PersonImage struct {
 }
 
 func (s *PersonImage) MarshalJSON() ([]byte, error) {
-	type noMethod PersonImage
-	raw := noMethod(*s)
+	type NoMethod PersonImage
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2444,8 +2439,8 @@ type PersonName struct {
 }
 
 func (s *PersonName) MarshalJSON() ([]byte, error) {
-	type noMethod PersonName
-	raw := noMethod(*s)
+	type NoMethod PersonName
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2500,8 +2495,8 @@ type PersonOrganizations struct {
 }
 
 func (s *PersonOrganizations) MarshalJSON() ([]byte, error) {
-	type noMethod PersonOrganizations
-	raw := noMethod(*s)
+	type NoMethod PersonOrganizations
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2532,8 +2527,8 @@ type PersonPlacesLived struct {
 }
 
 func (s *PersonPlacesLived) MarshalJSON() ([]byte, error) {
-	type noMethod PersonPlacesLived
-	raw := noMethod(*s)
+	type NoMethod PersonPlacesLived
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2571,8 +2566,8 @@ type PersonUrls struct {
 }
 
 func (s *PersonUrls) MarshalJSON() ([]byte, error) {
-	type noMethod PersonUrls
-	raw := noMethod(*s)
+	type NoMethod PersonUrls
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2610,8 +2605,8 @@ type Place struct {
 }
 
 func (s *Place) MarshalJSON() ([]byte, error) {
-	type noMethod Place
-	raw := noMethod(*s)
+	type NoMethod Place
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2638,8 +2633,8 @@ type PlaceAddress struct {
 }
 
 func (s *PlaceAddress) MarshalJSON() ([]byte, error) {
-	type noMethod PlaceAddress
-	raw := noMethod(*s)
+	type NoMethod PlaceAddress
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2669,19 +2664,19 @@ type PlacePosition struct {
 }
 
 func (s *PlacePosition) MarshalJSON() ([]byte, error) {
-	type noMethod PlacePosition
-	raw := noMethod(*s)
+	type NoMethod PlacePosition
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *PlacePosition) UnmarshalJSON(data []byte) error {
-	type noMethod PlacePosition
+	type NoMethod PlacePosition
 	var s1 struct {
 		Latitude  gensupport.JSONFloat64 `json:"latitude"`
 		Longitude gensupport.JSONFloat64 `json:"longitude"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -2728,8 +2723,8 @@ type PlusDomainsAclentryResource struct {
 }
 
 func (s *PlusDomainsAclentryResource) MarshalJSON() ([]byte, error) {
-	type noMethod PlusDomainsAclentryResource
-	raw := noMethod(*s)
+	type NoMethod PlusDomainsAclentryResource
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2764,8 +2759,8 @@ type Videostream struct {
 }
 
 func (s *Videostream) MarshalJSON() ([]byte, error) {
-	type noMethod Videostream
-	raw := noMethod(*s)
+	type NoMethod Videostream
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2828,7 +2823,6 @@ func (c *ActivitiesGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2877,7 +2871,7 @@ func (c *ActivitiesGetCall) Do(opts ...googleapi.CallOption) (*Activity, error) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2968,7 +2962,6 @@ func (c *ActivitiesInsertCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.activity)
 	if err != nil {
@@ -3019,7 +3012,7 @@ func (c *ActivitiesInsertCall) Do(opts ...googleapi.CallOption) (*Activity, erro
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3139,7 +3132,6 @@ func (c *ActivitiesListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3189,7 +3181,7 @@ func (c *ActivitiesListCall) Do(opts ...googleapi.CallOption) (*ActivityFeed, er
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3346,7 +3338,6 @@ func (c *AudiencesListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3395,7 +3386,7 @@ func (c *AudiencesListCall) Do(opts ...googleapi.CallOption) (*AudiencesFeed, er
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3525,7 +3516,6 @@ func (c *CirclesAddPeopleCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "circles/{circleId}/people")
@@ -3571,7 +3561,7 @@ func (c *CirclesAddPeopleCall) Do(opts ...googleapi.CallOption) (*Circle, error)
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3673,7 +3663,6 @@ func (c *CirclesGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3722,7 +3711,7 @@ func (c *CirclesGetCall) Do(opts ...googleapi.CallOption) (*Circle, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3803,7 +3792,6 @@ func (c *CirclesInsertCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.circle)
 	if err != nil {
@@ -3854,7 +3842,7 @@ func (c *CirclesInsertCall) Do(opts ...googleapi.CallOption) (*Circle, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3966,7 +3954,6 @@ func (c *CirclesListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4015,7 +4002,7 @@ func (c *CirclesListCall) Do(opts ...googleapi.CallOption) (*CircleFeed, error) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4133,7 +4120,6 @@ func (c *CirclesPatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.circle)
 	if err != nil {
@@ -4184,7 +4170,7 @@ func (c *CirclesPatchCall) Do(opts ...googleapi.CallOption) (*Circle, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4266,7 +4252,6 @@ func (c *CirclesRemoveCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "circles/{circleId}")
@@ -4377,7 +4362,6 @@ func (c *CirclesRemovePeopleCall) doRequest(alt string) (*http.Response, error) 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "circles/{circleId}/people")
@@ -4488,7 +4472,6 @@ func (c *CirclesUpdateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.circle)
 	if err != nil {
@@ -4539,7 +4522,7 @@ func (c *CirclesUpdateCall) Do(opts ...googleapi.CallOption) (*Circle, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4632,7 +4615,6 @@ func (c *CommentsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4681,7 +4663,7 @@ func (c *CommentsGetCall) Do(opts ...googleapi.CallOption) (*Comment, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4762,7 +4744,6 @@ func (c *CommentsInsertCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.comment)
 	if err != nil {
@@ -4813,7 +4794,7 @@ func (c *CommentsInsertCall) Do(opts ...googleapi.CallOption) (*Comment, error) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4935,7 +4916,6 @@ func (c *CommentsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4984,7 +4964,7 @@ func (c *CommentsListCall) Do(opts ...googleapi.CallOption) (*CommentFeed, error
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5067,18 +5047,14 @@ func (c *CommentsListCall) Pages(ctx context.Context, f func(*CommentFeed) error
 // method id "plusDomains.media.insert":
 
 type MediaInsertCall struct {
-	s                *Service
-	userId           string
-	collection       string
-	media            *Media
-	urlParams_       gensupport.URLParams
-	media_           io.Reader
-	mediaBuffer_     *gensupport.MediaBuffer
-	mediaType_       string
-	mediaSize_       int64 // mediaSize, if known.  Used only for calls to progressUpdater_.
-	progressUpdater_ googleapi.ProgressUpdater
-	ctx_             context.Context
-	header_          http.Header
+	s          *Service
+	userId     string
+	collection string
+	media      *Media
+	urlParams_ gensupport.URLParams
+	mediaInfo_ *gensupport.MediaInfo
+	ctx_       context.Context
+	header_    http.Header
 }
 
 // Insert: Add a new media item to an album. The current upload size
@@ -5102,12 +5078,7 @@ func (r *MediaService) Insert(userId string, collection string, media *Media) *M
 // supplied.
 // At most one of Media and ResumableMedia may be set.
 func (c *MediaInsertCall) Media(r io.Reader, options ...googleapi.MediaOption) *MediaInsertCall {
-	opts := googleapi.ProcessMediaOptions(options)
-	chunkSize := opts.ChunkSize
-	if !opts.ForceEmptyContentType {
-		r, c.mediaType_ = gensupport.DetermineContentType(r, opts.ContentType)
-	}
-	c.media_, c.mediaBuffer_ = gensupport.PrepareUpload(r, chunkSize)
+	c.mediaInfo_ = gensupport.NewInfoFromMedia(r, options)
 	return c
 }
 
@@ -5122,11 +5093,7 @@ func (c *MediaInsertCall) Media(r io.Reader, options ...googleapi.MediaOption) *
 // supersede any context previously provided to the Context method.
 func (c *MediaInsertCall) ResumableMedia(ctx context.Context, r io.ReaderAt, size int64, mediaType string) *MediaInsertCall {
 	c.ctx_ = ctx
-	rdr := gensupport.ReaderAtToReader(r, size)
-	rdr, c.mediaType_ = gensupport.DetermineContentType(rdr, mediaType)
-	c.mediaBuffer_ = gensupport.NewMediaBuffer(rdr, googleapi.DefaultUploadChunkSize)
-	c.media_ = nil
-	c.mediaSize_ = size
+	c.mediaInfo_ = gensupport.NewInfoFromResumableMedia(r, size, mediaType)
 	return c
 }
 
@@ -5135,7 +5102,7 @@ func (c *MediaInsertCall) ResumableMedia(ctx context.Context, r io.ReaderAt, siz
 // not slow down the upload operation. This should only be called when
 // using ResumableMedia (as opposed to Media).
 func (c *MediaInsertCall) ProgressUpdater(pu googleapi.ProgressUpdater) *MediaInsertCall {
-	c.progressUpdater_ = pu
+	c.mediaInfo_.SetProgressUpdater(pu)
 	return c
 }
 
@@ -5172,7 +5139,6 @@ func (c *MediaInsertCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.media)
 	if err != nil {
@@ -5181,27 +5147,16 @@ func (c *MediaInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders.Set("Content-Type", "application/json")
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "people/{userId}/media/{collection}")
-	if c.media_ != nil || c.mediaBuffer_ != nil {
+	if c.mediaInfo_ != nil {
 		urls = strings.Replace(urls, "https://www.googleapis.com/", "https://www.googleapis.com/upload/", 1)
-		protocol := "multipart"
-		if c.mediaBuffer_ != nil {
-			protocol = "resumable"
-		}
-		c.urlParams_.Set("uploadType", protocol)
+		c.urlParams_.Set("uploadType", c.mediaInfo_.UploadType())
 	}
 	if body == nil {
 		body = new(bytes.Buffer)
 		reqHeaders.Set("Content-Type", "application/json")
 	}
-	if c.media_ != nil {
-		combined, ctype := gensupport.CombineBodyMedia(body, "application/json", c.media_, c.mediaType_)
-		defer combined.Close()
-		reqHeaders.Set("Content-Type", ctype)
-		body = combined
-	}
-	if c.mediaBuffer_ != nil && c.mediaType_ != "" {
-		reqHeaders.Set("X-Upload-Content-Type", c.mediaType_)
-	}
+	body, cleanup := c.mediaInfo_.UploadRequest(reqHeaders, body)
+	defer cleanup()
 	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	req.Header = reqHeaders
@@ -5238,20 +5193,10 @@ func (c *MediaInsertCall) Do(opts ...googleapi.CallOption) (*Media, error) {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	if c.mediaBuffer_ != nil {
-		loc := res.Header.Get("Location")
-		rx := &gensupport.ResumableUpload{
-			Client:    c.s.client,
-			UserAgent: c.s.userAgent(),
-			URI:       loc,
-			Media:     c.mediaBuffer_,
-			MediaType: c.mediaType_,
-			Callback: func(curr int64) {
-				if c.progressUpdater_ != nil {
-					c.progressUpdater_(curr, c.mediaSize_)
-				}
-			},
-		}
+	rx := c.mediaInfo_.ResumableUpload(res.Header.Get("Location"))
+	if rx != nil {
+		rx.Client = c.s.client
+		rx.UserAgent = c.s.userAgent()
 		ctx := c.ctx_
 		if ctx == nil {
 			ctx = context.TODO()
@@ -5272,7 +5217,7 @@ func (c *MediaInsertCall) Do(opts ...googleapi.CallOption) (*Media, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5395,7 +5340,6 @@ func (c *PeopleGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -5444,7 +5388,7 @@ func (c *PeopleGetCall) Do(opts ...googleapi.CallOption) (*Person, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5568,7 +5512,6 @@ func (c *PeopleListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -5618,7 +5561,7 @@ func (c *PeopleListCall) Do(opts ...googleapi.CallOption) (*PeopleFeed, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5791,7 +5734,6 @@ func (c *PeopleListByActivityCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -5841,7 +5783,7 @@ func (c *PeopleListByActivityCall) Do(opts ...googleapi.CallOption) (*PeopleFeed
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6001,7 +5943,6 @@ func (c *PeopleListByCircleCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -6050,7 +5991,7 @@ func (c *PeopleListByCircleCall) Do(opts ...googleapi.CallOption) (*PeopleFeed, 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

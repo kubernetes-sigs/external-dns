@@ -54,10 +54,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 }
 
 func (s *Service) userAgent() string {
@@ -65,10 +64,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 // Utilization: CPU utilization policy.
@@ -97,19 +92,19 @@ type Utilization struct {
 }
 
 func (s *Utilization) MarshalJSON() ([]byte, error) {
-	type noMethod Utilization
-	raw := noMethod(*s)
+	type NoMethod Utilization
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *Utilization) UnmarshalJSON(data []byte) error {
-	type noMethod Utilization
+	type NoMethod Utilization
 	var s1 struct {
 		Average gensupport.JSONFloat64 `json:"average"`
 		Target  gensupport.JSONFloat64 `json:"target"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
