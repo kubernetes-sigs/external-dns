@@ -93,7 +93,7 @@ func (t planTable) addCandidate(e *endpoint.Endpoint) {
 // TODO: allows record type change, which might not be supported by all dns providers
 func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*endpoint.Endpoint) {
 	for _, row := range t.rows {
-		if row.current != nil && len(row.candidates) != 0 { //dns name is taken
+		if row.current != nil && len(row.candidates) > 0 { //dns name is taken
 			update := t.resolver.ResolveUpdate(row.current, row.candidates)
 			// compare "update" to "current" to figure out if actual update is required
 			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) {
