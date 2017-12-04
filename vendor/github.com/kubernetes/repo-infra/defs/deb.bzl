@@ -4,17 +4,15 @@ KUBERNETES_AUTHORS = "Kubernetes Authors <kubernetes-dev+release@googlegroups.co
 
 KUBERNETES_HOMEPAGE = "http://kubernetes.io"
 
-def k8s_deb(name, depends = [], description = ""):
+def k8s_deb(name, **kwargs):
   pkg_deb(
       name = name,
       architecture = "amd64",
       data = name + "-data",
-      depends = depends,
-      description = description,
       homepage = KUBERNETES_HOMEPAGE,
       maintainer = KUBERNETES_AUTHORS,
       package =  name,
-      version = "1.6.0-alpha",
+      **kwargs
   )
 
 def deb_data(name, data = []):
@@ -24,7 +22,7 @@ def deb_data(name, data = []):
     deps += [dname]
     pkg_tar(
         name = dname,
-        files = info["files"],
+        srcs = info["files"],
         mode = info["mode"],
         package_dir = info["dir"],
     )

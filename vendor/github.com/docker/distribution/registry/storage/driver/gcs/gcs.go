@@ -37,7 +37,7 @@ import (
 	"google.golang.org/cloud"
 	"google.golang.org/cloud/storage"
 
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 
 	ctx "github.com/docker/distribution/context"
 	storagedriver "github.com/docker/distribution/registry/storage/driver"

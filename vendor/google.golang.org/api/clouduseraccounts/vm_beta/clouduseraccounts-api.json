@@ -1,6 +1,6 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"jQLIOHBVnDZie4rQHGH1WJF-INE/NOgAExjYfIWiV_BL3FlcslmjncY\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/NOgAExjYfIWiV_BL3FlcslmjncY\"",
  "discoveryVersion": "v1",
  "id": "clouduseraccounts:vm_beta",
  "name": "clouduseraccounts",
@@ -21,7 +21,7 @@
  "basePath": "/clouduseraccounts/vm_beta/projects/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "clouduseraccounts/vm_beta/projects/",
- "batchPath": "batch",
+ "batchPath": "batch/clouduseraccounts/vm_beta",
  "parameters": {
   "alt": {
    "type": "string",

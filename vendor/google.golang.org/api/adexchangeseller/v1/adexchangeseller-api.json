@@ -1,6 +1,6 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"C5oy1hgQsABtYOYIOXWcR3BgYqU/EberIAMM9RntL16aqUh0FmyQxWY\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/EberIAMM9RntL16aqUh0FmyQxWY\"",
  "discoveryVersion": "v1",
  "id": "adexchangeseller:v1",
  "name": "adexchangeseller",
@@ -21,7 +21,7 @@
  "basePath": "/adexchangeseller/v1/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "adexchangeseller/v1/",
- "batchPath": "batch",
+ "batchPath": "batch/adexchangeseller/v1",
  "parameters": {
   "alt": {
    "type": "string",

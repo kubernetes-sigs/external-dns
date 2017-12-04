@@ -1,4 +1,4 @@
-// Package appsactivity provides access to the Google Apps Activity API.
+// Package appsactivity provides access to the G Suite Activity API.
 //
 // See https://developers.google.com/google-apps/activity/
 //
@@ -47,7 +47,7 @@ const basePath = "https://www.googleapis.com/appsactivity/v1/"
 
 // OAuth2 scopes used by this API.
 const (
-	// View the activity history of your Google Apps
+	// View the activity history of your Google apps
 	ActivityScope = "https://www.googleapis.com/auth/activity"
 
 	// View and manage the files in your Google Drive
@@ -73,10 +73,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Activities *ActivitiesService
 }
@@ -86,10 +85,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewActivitiesService(s *Service) *ActivitiesService {
@@ -130,8 +125,8 @@ type Activity struct {
 }
 
 func (s *Activity) MarshalJSON() ([]byte, error) {
-	type noMethod Activity
-	raw := noMethod(*s)
+	type NoMethod Activity
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -220,8 +215,8 @@ type Event struct {
 }
 
 func (s *Event) MarshalJSON() ([]byte, error) {
-	type noMethod Event
-	raw := noMethod(*s)
+	type NoMethod Event
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -257,8 +252,8 @@ type ListActivitiesResponse struct {
 }
 
 func (s *ListActivitiesResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListActivitiesResponse
-	raw := noMethod(*s)
+	type NoMethod ListActivitiesResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -289,8 +284,8 @@ type Move struct {
 }
 
 func (s *Move) MarshalJSON() ([]byte, error) {
-	type noMethod Move
-	raw := noMethod(*s)
+	type NoMethod Move
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -324,8 +319,8 @@ type Parent struct {
 }
 
 func (s *Parent) MarshalJSON() ([]byte, error) {
-	type noMethod Parent
-	raw := noMethod(*s)
+	type NoMethod Parent
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -385,8 +380,8 @@ type Permission struct {
 }
 
 func (s *Permission) MarshalJSON() ([]byte, error) {
-	type noMethod Permission
-	raw := noMethod(*s)
+	type NoMethod Permission
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -419,8 +414,8 @@ type PermissionChange struct {
 }
 
 func (s *PermissionChange) MarshalJSON() ([]byte, error) {
-	type noMethod PermissionChange
-	raw := noMethod(*s)
+	type NoMethod PermissionChange
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -447,8 +442,8 @@ type Photo struct {
 }
 
 func (s *Photo) MarshalJSON() ([]byte, error) {
-	type noMethod Photo
-	raw := noMethod(*s)
+	type NoMethod Photo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -478,8 +473,8 @@ type Rename struct {
 }
 
 func (s *Rename) MarshalJSON() ([]byte, error) {
-	type noMethod Rename
-	raw := noMethod(*s)
+	type NoMethod Rename
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -514,8 +509,8 @@ type Target struct {
 }
 
 func (s *Target) MarshalJSON() ([]byte, error) {
-	type noMethod Target
-	raw := noMethod(*s)
+	type NoMethod Target
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -558,8 +553,8 @@ type User struct {
 }
 
 func (s *User) MarshalJSON() ([]byte, error) {
-	type noMethod User
-	raw := noMethod(*s)
+	type NoMethod User
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -683,7 +678,6 @@ func (c *ActivitiesListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -729,7 +723,7 @@ func (c *ActivitiesListCall) Do(opts ...googleapi.CallOption) (*ListActivitiesRe
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

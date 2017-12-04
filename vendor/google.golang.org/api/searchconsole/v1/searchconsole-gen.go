@@ -55,10 +55,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	UrlTestingTools *UrlTestingToolsService
 }
@@ -68,10 +67,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewUrlTestingToolsService(s *Service) *UrlTestingToolsService {
@@ -118,8 +113,8 @@ type BlockedResource struct {
 }
 
 func (s *BlockedResource) MarshalJSON() ([]byte, error) {
-	type noMethod BlockedResource
-	raw := noMethod(*s)
+	type NoMethod BlockedResource
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -151,8 +146,8 @@ type Image struct {
 }
 
 func (s *Image) MarshalJSON() ([]byte, error) {
-	type noMethod Image
-	raw := noMethod(*s)
+	type NoMethod Image
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -212,8 +207,8 @@ type MobileFriendlyIssue struct {
 }
 
 func (s *MobileFriendlyIssue) MarshalJSON() ([]byte, error) {
-	type noMethod MobileFriendlyIssue
-	raw := noMethod(*s)
+	type NoMethod MobileFriendlyIssue
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -241,8 +236,8 @@ type ResourceIssue struct {
 }
 
 func (s *ResourceIssue) MarshalJSON() ([]byte, error) {
-	type noMethod ResourceIssue
-	raw := noMethod(*s)
+	type NoMethod ResourceIssue
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -274,8 +269,8 @@ type RunMobileFriendlyTestRequest struct {
 }
 
 func (s *RunMobileFriendlyTestRequest) MarshalJSON() ([]byte, error) {
-	type noMethod RunMobileFriendlyTestRequest
-	raw := noMethod(*s)
+	type NoMethod RunMobileFriendlyTestRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -329,8 +324,8 @@ type RunMobileFriendlyTestResponse struct {
 }
 
 func (s *RunMobileFriendlyTestResponse) MarshalJSON() ([]byte, error) {
-	type noMethod RunMobileFriendlyTestResponse
-	raw := noMethod(*s)
+	type NoMethod RunMobileFriendlyTestResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -374,8 +369,8 @@ type TestStatus struct {
 }
 
 func (s *TestStatus) MarshalJSON() ([]byte, error) {
-	type noMethod TestStatus
-	raw := noMethod(*s)
+	type NoMethod TestStatus
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -427,7 +422,6 @@ func (c *UrlTestingToolsMobileFriendlyTestRunCall) doRequest(alt string) (*http.
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.runmobilefriendlytestrequest)
 	if err != nil {
@@ -475,7 +469,7 @@ func (c *UrlTestingToolsMobileFriendlyTestRunCall) Do(opts ...googleapi.CallOpti
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
