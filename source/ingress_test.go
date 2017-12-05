@@ -161,19 +161,15 @@ func testEndpointsFromIngress(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "foo.bar",
-					Targets: endpoint.Targets{"8.8.8.8"},
-				},
-				{
-					DNSName: "foo.bar",
-					Targets: endpoint.Targets{"127.0.0.1"},
-				},
-				{
-					DNSName: "foo.bar",
 					Targets: endpoint.Targets{"elb.com"},
 				},
 				{
 					DNSName: "foo.bar",
 					Targets: endpoint.Targets{"alb.com"},
+				},
+				{
+					DNSName: "foo.bar",
+					Targets: endpoint.Targets{"8.8.8.8", "127.0.0.1"},
 				},
 			},
 		},
@@ -455,11 +451,11 @@ func testIngressEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "fake1.ext-dns.test.com",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					Targets: endpoint.Targets{"elb.com"},
 				},
 				{
 					DNSName: "fake1.ext-dns.test.com",
-					Targets: endpoint.Targets{"elb.com"},
+					Targets: endpoint.Targets{"8.8.8.8"},
 				},
 			},
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",

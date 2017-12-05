@@ -114,24 +114,21 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 // get endpoints from optional "target" annotation
 // Returns empty endpoints array if none are found.
-func getEndpointsFromTargetAnnotation(ing *v1beta1.Ingress, hostname string) []*endpoint.Endpoint {
-	var endpoints []*endpoint.Endpoint
+// FIXME(dereulenspiegel) For now we won't use this method.
+func getTargetsFromTargetAnnotation(ing *v1beta1.Ingress) endpoint.Targets {
+	var targets endpoint.Targets
 
 	// Get the desired hostname of the ingress from the annotation.
 	targetAnnotation, exists := ing.Annotations[targetAnnotationKey]
 	if exists {
-		ttl, err := getTTLFromAnnotations(ing.Annotations)
-		if err != nil {
-			log.Warn(err)
-		}
 		// splits the hostname annotation and removes the trailing periods
 		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
 		for _, targetHostname := range targetsList {
 			targetHostname = strings.TrimSuffix(targetHostname, ".")
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, targetHostname, suitableType(targetHostname), ttl))
+			targets = append(targets, targetHostname)
 		}
 	}
-	return endpoints
+	return targets
 }
 
 func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoint.Endpoint, error) {
@@ -145,23 +142,57 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 
 	hostname := buf.String()
 
-	endpoints = getEndpointsFromTargetAnnotation(ing, hostname)
+	ttl, err := getTTLFromAnnotations(ing.Annotations)
+	if err != nil {
+		log.Warn(err)
+	}
+
+	// FIXME(dereulenspiegel) Only disabled for now, don't know how make this useful again
+	targets := getTargetsFromTargetAnnotation(ing)
+
+	var annotationIps endpoint.Targets
+
+	for _, t := range targets {
+		if suitableType(t) == endpoint.RecordTypeCNAME {
+			ep := endpoint.NewEndpointWithTTL(hostname, t, endpoint.RecordTypeCNAME, ttl)
+			endpoints = append(endpoints, ep)
+		} else {
+			annotationIps = append(annotationIps, t)
+		}
+	}
+
+	if len(annotationIps) > 0 {
+		ep := endpoint.NewEndpoint(hostname, annotationIps[0], endpoint.RecordTypeA)
+		if len(annotationIps) > 1 {
+			ep.Targets = append(ep.Targets, annotationIps[1:]...)
+		}
+		endpoints = append(endpoints, ep)
+	}
 
 	if len(endpoints) != 0 {
 		return endpoints, nil
 	}
 
-	ttl, err := getTTLFromAnnotations(ing.Annotations)
-	if err != nil {
-		log.Warn(err)
+	ep := &endpoint.Endpoint{
+		DNSName:    strings.TrimSuffix(hostname, "."),
+		RecordTTL:  ttl,
+		RecordType: endpoint.RecordTypeA,
+		Targets:    make(endpoint.Targets, 0, len(ing.Status.LoadBalancer.Ingress)),
+		Labels:     endpoint.NewLabels(),
 	}
+
 	for _, lb := range ing.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.IP, endpoint.RecordTypeA, ttl))
+			ep.Targets = append(ep.Targets, lb.IP)
 		}
 		if lb.Hostname != "" {
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.Hostname, endpoint.RecordTypeCNAME, ttl))
+			cnameEp := endpoint.NewEndpointWithTTL(hostname, lb.Hostname, endpoint.RecordTypeCNAME, ttl)
+			endpoints = append(endpoints, cnameEp)
 		}
+	}
+
+	if len(ep.Targets) > 0 {
+		endpoints = append(endpoints, ep)
 	}
 
 	return endpoints, nil
@@ -212,26 +243,57 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 		if rule.Host == "" {
 			continue
 		}
-
-		annotationEndpoints := getEndpointsFromTargetAnnotation(ing, rule.Host)
-
-		if len(annotationEndpoints) != 0 {
-			endpoints = append(endpoints, annotationEndpoints...)
-			continue
-		}
-
 		ttl, err := getTTLFromAnnotations(ing.Annotations)
 		if err != nil {
 			log.Warn(err)
 		}
 
+		// FIXME(dereulenspiegel) Right now we won't look for these kind of annotations.
+		// They make selecting the right record type way harder etc.
+		annotationTargets := getTargetsFromTargetAnnotation(ing)
+
+		var annotationIpTargets endpoint.Targets
+
+		for _, t := range annotationTargets {
+			if suitableType(t) == endpoint.RecordTypeCNAME {
+				ep := endpoint.NewEndpointWithTTL(rule.Host, t, endpoint.RecordTypeCNAME, ttl)
+				endpoints = append(endpoints, ep)
+			} else {
+				annotationIpTargets = append(annotationIpTargets, t)
+			}
+		}
+
+		ep := &endpoint.Endpoint{
+			DNSName:    strings.TrimSuffix(rule.Host, "."),
+			Targets:    make(endpoint.Targets, 0, len(ing.Status.LoadBalancer.Ingress)),
+			RecordTTL:  ttl,
+			RecordType: endpoint.RecordTypeA,
+			Labels:     endpoint.NewLabels(),
+		}
+
+		if len(annotationIpTargets) > 0 {
+			ep.Targets = append(ep.Targets, annotationIpTargets...)
+			endpoints = append(endpoints, ep)
+		}
+
+		if len(annotationTargets) > 0 {
+			return endpoints
+		}
+
+		hasIps := false
 		for _, lb := range ing.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rule.Host, lb.IP, endpoint.RecordTypeA, ttl))
+				ep.Targets = append(ep.Targets, lb.IP)
+				hasIps = true
 			}
 			if lb.Hostname != "" {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rule.Host, lb.Hostname, endpoint.RecordTypeCNAME, ttl))
+				cnameEp := endpoint.NewEndpointWithTTL(ep.DNSName, lb.Hostname, endpoint.RecordTypeCNAME, ttl)
+				endpoints = append(endpoints, cnameEp)
 			}
+		}
+		if hasIps {
+			ep.Targets = append(ep.Targets, annotationIpTargets...)
+			endpoints = append(endpoints, ep)
 		}
 	}
 
