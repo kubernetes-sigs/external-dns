@@ -163,7 +163,7 @@ func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				"Found %s record for '%s' with target '%s'.",
 				ep.RecordType,
 				ep.DNSName,
-				ep.Target,
+				ep.Targets,
 			)
 			endpoints = append(endpoints, ep)
 			return true
@@ -323,7 +323,7 @@ func (p *AzureProvider) updateRecords(updated azureChangeMap) {
 					"Would update %s record named '%s' to '%s' for Azure DNS zone '%s'.",
 					endpoint.RecordType,
 					name,
-					endpoint.Target,
+					endpoint.Targets,
 					zone,
 				)
 				continue
@@ -333,7 +333,7 @@ func (p *AzureProvider) updateRecords(updated azureChangeMap) {
 				"Updating %s record named '%s' to '%s' for Azure DNS zone '%s'.",
 				endpoint.RecordType,
 				name,
-				endpoint.Target,
+				endpoint.Targets,
 				zone,
 			)
 
@@ -354,7 +354,7 @@ func (p *AzureProvider) updateRecords(updated azureChangeMap) {
 					"Failed to update %s record named '%s' to '%s' for DNS zone '%s': %v",
 					endpoint.RecordType,
 					name,
-					endpoint.Target,
+					endpoint.Targets,
 					zone,
 					err,
 				)
@@ -388,7 +388,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 				TTL: to.Int64Ptr(ttl),
 				ARecords: &[]dns.ARecord{
 					{
-						Ipv4Address: to.StringPtr(endpoint.Target),
+						Ipv4Address: to.StringPtr(endpoint.Targets[0]),
 					},
 				},
 			},
@@ -398,7 +398,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 			RecordSetProperties: &dns.RecordSetProperties{
 				TTL: to.Int64Ptr(ttl),
 				CnameRecord: &dns.CnameRecord{
-					Cname: to.StringPtr(endpoint.Target),
+					Cname: to.StringPtr(endpoint.Targets[0]),
 				},
 			},
 		}, nil
@@ -409,7 +409,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 				TxtRecords: &[]dns.TxtRecord{
 					{
 						Value: &[]string{
-							endpoint.Target,
+							endpoint.Targets[0],
 						},
 					},
 				},

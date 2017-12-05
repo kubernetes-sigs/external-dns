@@ -191,7 +191,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 			false,
 		},
@@ -229,8 +229,8 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
-				{DNSName: "bar.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "bar.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 			false,
 		},
@@ -250,8 +250,8 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
-				{DNSName: "bar.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "bar.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 			false,
 		},
@@ -271,7 +271,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"lb.example.com"}, // Kubernetes omits the trailing dot
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "lb.example.com"},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"lb.example.com"}},
 			},
 			false,
 		},
@@ -291,8 +291,8 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"1.2.3.4", "lb.example.com"}, // Kubernetes omits the trailing dot
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
-				{DNSName: "foo.example.org", Target: "lb.example.com"},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"lb.example.com"}},
 			},
 			false,
 		},
@@ -313,7 +313,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 			false,
 		},
@@ -352,7 +352,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 			false,
 		},
@@ -390,7 +390,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 			false,
 		},
@@ -411,7 +411,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 			false,
 		},
@@ -470,7 +470,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 			false,
 		},
@@ -527,8 +527,8 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"1.2.3.4", "8.8.8.8"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
-				{DNSName: "foo.example.org", Target: "8.8.8.8"},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"8.8.8.8"}},
 			},
 			false,
 		},
@@ -566,7 +566,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 			false,
 		},
@@ -588,8 +588,8 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
-				{DNSName: "bar.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "bar.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 			false,
 		},
@@ -607,8 +607,8 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"1.2.3.4", "elb.com"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.bar.example.com", Target: "1.2.3.4"},
-				{DNSName: "foo.bar.example.com", Target: "elb.com"},
+				{DNSName: "foo.bar.example.com", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.bar.example.com", Targets: endpoint.Targets{"elb.com"}},
 			},
 			false,
 		},
@@ -628,8 +628,8 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"1.2.3.4", "elb.com"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
-				{DNSName: "foo.example.org", Target: "elb.com"},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"elb.com"}},
 			},
 			false,
 		},
@@ -649,7 +649,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "mate.example.org", Target: "1.2.3.4"},
+				{DNSName: "mate.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 			false,
 		},
@@ -685,7 +685,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4", RecordTTL: endpoint.TTL(0)},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(0)},
 			},
 			false,
 		},
@@ -706,7 +706,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4", RecordTTL: endpoint.TTL(0)},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(0)},
 			},
 			false,
 		},
@@ -727,7 +727,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4", RecordTTL: endpoint.TTL(10)},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(10)},
 			},
 			false,
 		},
@@ -748,7 +748,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"1.2.3.4"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4", RecordTTL: endpoint.TTL(0)},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(0)},
 			},
 			false,
 		},
@@ -846,7 +846,7 @@ func TestClusterIpServices(t *testing.T) {
 			"1.2.3.4",
 			[]string{},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 			false,
 		},
@@ -864,7 +864,7 @@ func TestClusterIpServices(t *testing.T) {
 			"4.5.6.7",
 			[]string{},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.bar.example.com", Target: "4.5.6.7"},
+				{DNSName: "foo.bar.example.com", Targets: endpoint.Targets{"4.5.6.7"}},
 			},
 			false,
 		},
@@ -988,8 +988,8 @@ func TestHeadlessServices(t *testing.T) {
 			[]string{"foo-0", "foo-1"},
 			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo-0.service.example.org", Target: "1.1.1.1"},
-				{DNSName: "foo-1.service.example.org", Target: "1.1.1.1"},
+				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
+				{DNSName: "foo-1.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
 			},
 			false,
 		},
@@ -1015,7 +1015,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]string{"foo-0", "foo-1"},
 			[]v1.PodPhase{v1.PodRunning, v1.PodFailed},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo-0.service.example.org", Target: "1.1.1.1"},
+				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
 			},
 			false,
 		},

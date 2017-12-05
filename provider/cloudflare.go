@@ -290,7 +290,7 @@ func newCloudFlareChange(action string, endpoint *endpoint.Endpoint, proxied boo
 			TTL:     1,
 			Proxied: proxied,
 			Type:    endpoint.RecordType,
-			Content: endpoint.Target,
+			Content: endpoint.Targets[0],
 		},
 	}
 }

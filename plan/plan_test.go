@@ -39,7 +39,7 @@ type PlanTestSuite struct {
 func (suite *PlanTestSuite) SetupTest() {
 	suite.fooV1Cname = &endpoint.Endpoint{
 		DNSName:    "foo",
-		Target:     "v1",
+		Targets:    endpoint.Targets{"v1"},
 		RecordType: "CNAME",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/foo-v1",
@@ -49,7 +49,7 @@ func (suite *PlanTestSuite) SetupTest() {
 	// same resource as fooV1Cname, but target is different. It will never be picked because its target lexicographically bigger than "v1"
 	suite.fooV3CnameSameResource = &endpoint.Endpoint{ // TODO: remove this once endpoint can support multiple targets
 		DNSName:    "foo",
-		Target:     "v3",
+		Targets:    endpoint.Targets{"v3"},
 		RecordType: "CNAME",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/foo-v1",
@@ -58,7 +58,7 @@ func (suite *PlanTestSuite) SetupTest() {
 	}
 	suite.fooV2Cname = &endpoint.Endpoint{
 		DNSName:    "foo",
-		Target:     "v2",
+		Targets:    endpoint.Targets{"v2"},
 		RecordType: "CNAME",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/foo-v2",
@@ -66,12 +66,12 @@ func (suite *PlanTestSuite) SetupTest() {
 	}
 	suite.fooV2CnameNoLabel = &endpoint.Endpoint{
 		DNSName:    "foo",
-		Target:     "v2",
+		Targets:    endpoint.Targets{"v2"},
 		RecordType: "CNAME",
 	}
 	suite.fooA5 = &endpoint.Endpoint{
 		DNSName:    "foo",
-		Target:     "5.5.5.5",
+		Targets:    endpoint.Targets{"5.5.5.5"},
 		RecordType: "A",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/foo-5",
@@ -79,7 +79,7 @@ func (suite *PlanTestSuite) SetupTest() {
 	}
 	suite.bar127A = &endpoint.Endpoint{
 		DNSName:    "bar",
-		Target:     "127.0.0.1",
+		Targets:    endpoint.Targets{"127.0.0.1"},
 		RecordType: "A",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/bar-127",
@@ -87,7 +87,7 @@ func (suite *PlanTestSuite) SetupTest() {
 	}
 	suite.bar127AWithTTL = &endpoint.Endpoint{
 		DNSName:    "bar",
-		Target:     "127.0.0.1",
+		Targets:    endpoint.Targets{"127.0.0.1"},
 		RecordType: "A",
 		RecordTTL:  300,
 		Labels: map[string]string{
@@ -96,7 +96,7 @@ func (suite *PlanTestSuite) SetupTest() {
 	}
 	suite.bar192A = &endpoint.Endpoint{
 		DNSName:    "bar",
-		Target:     "192.168.0.1",
+		Targets:    endpoint.Targets{"192.168.0.1"},
 		RecordType: "A",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/bar-192",
@@ -196,7 +196,7 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithOwnerInherited() {
 	expectedUpdateOld := []*endpoint.Endpoint{suite.fooV1Cname}
 	expectedUpdateNew := []*endpoint.Endpoint{{
 		DNSName:    suite.fooV2Cname.DNSName,
-		Target:     suite.fooV2Cname.Target,
+		Targets:    suite.fooV2Cname.Targets,
 		RecordType: suite.fooV2Cname.RecordType,
 		RecordTTL:  suite.fooV2Cname.RecordTTL,
 		Labels: map[string]string{
