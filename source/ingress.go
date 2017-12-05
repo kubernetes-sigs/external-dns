@@ -147,7 +147,6 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 		log.Warn(err)
 	}
 
-	// FIXME(dereulenspiegel) Only disabled for now, don't know how make this useful again
 	targets := getTargetsFromTargetAnnotation(ing)
 
 	var annotationIps endpoint.Targets
