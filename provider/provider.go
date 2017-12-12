@@ -38,3 +38,12 @@ func ensureTrailingDot(hostname string) string {
 
 	return strings.TrimSuffix(hostname, ".") + "."
 }
+
+// // ensureTrailingDot ensures that the hostname receives a trailing dot if it hasn't already.
+// func ensureTrailingDots(hostnames []string) (sanitizedHostnames []string) {
+// 	for _, h := range hostnames {
+// 		sanitizedHostnames = append(sanitizedHostnames, ensureTrailingDot(h))
+// 	}
+//
+// 	return
+// }

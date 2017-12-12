@@ -68,7 +68,7 @@ func (sc *fakeSource) Endpoints() ([]*endpoint.Endpoint, error) {
 func (sc *fakeSource) generateEndpoint() (*endpoint.Endpoint, error) {
 	ep := endpoint.NewEndpoint(
 		generateDNSName(4, sc.dnsName),
-		generateIPAddress(),
+		[]string{generateIPAddress()},
 		endpoint.RecordTypeA,
 	)
 

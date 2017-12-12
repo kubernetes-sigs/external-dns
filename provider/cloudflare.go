@@ -153,7 +153,7 @@ func (p *CloudFlareProvider) Records() ([]*endpoint.Endpoint, error) {
 
 		for _, r := range records {
 			if supportedRecordType(r.Type) {
-				endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Content, r.Type))
+				endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, []string{r.Content}, r.Type))
 			}
 		}
 	}
@@ -274,6 +274,11 @@ func newCloudFlareChange(action string, endpoint *endpoint.Endpoint, proxied boo
 		proxied = false
 	}
 
+	// TODO: test
+	if len(endpoint.Targets) == 0 {
+		return &cloudFlareChange{}
+	}
+
 	return &cloudFlareChange{
 		Action: action,
 		ResourceRecordSet: cloudflare.DNSRecord{
@@ -282,7 +287,7 @@ func newCloudFlareChange(action string, endpoint *endpoint.Endpoint, proxied boo
 			TTL:     1,
 			Proxied: proxied,
 			Type:    endpoint.RecordType,
-			Content: endpoint.Target,
+			Content: endpoint.Targets[0],
 		},
 	}
 }

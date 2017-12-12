@@ -76,7 +76,7 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 			endpoints = append(endpoints, record)
 			continue
 		}
-		ownerID := im.extractOwnerID(record.Target)
+		ownerID := im.extractOwnerID(record.Targets[0])
 		if ownerID == "" {
 			//case when value of txt record cannot be identified
 			//record will not be removed as it will have empty owner
@@ -105,12 +105,12 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 	}
 
 	for _, r := range filteredChanges.Create {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), endpoint.RecordTypeTXT)
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), []string{im.getTXTLabel()}, endpoint.RecordTypeTXT)
 		filteredChanges.Create = append(filteredChanges.Create, txt)
 	}
 
 	for _, r := range filteredChanges.Delete {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), endpoint.RecordTypeTXT)
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), []string{im.getTXTLabel()}, endpoint.RecordTypeTXT)
 
 		filteredChanges.Delete = append(filteredChanges.Delete, txt)
 	}

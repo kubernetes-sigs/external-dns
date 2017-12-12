@@ -39,8 +39,14 @@ func validateEndpoint(t *testing.T, endpoint, expected *endpoint.Endpoint) {
 		t.Errorf("expected %s, got %s", expected.DNSName, endpoint.DNSName)
 	}
 
-	if endpoint.Target != expected.Target {
-		t.Errorf("expected %s, got %s", expected.Target, endpoint.Target)
+	if len(endpoint.Targets) != len(expected.Targets) {
+		t.Fatalf("expected %d targets, got %d", len(expected.Targets), len(endpoint.Targets))
+	}
+
+	for i := range endpoint.Targets {
+		if endpoint.Targets[i] != expected.Targets[i] {
+			t.Errorf("expected %s, got %s", expected.Targets[i], endpoint.Targets[i])
+		}
 	}
 
 	if endpoint.RecordTTL != expected.RecordTTL {

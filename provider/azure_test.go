@@ -119,7 +119,7 @@ func (client *mockRecordsClient) Delete(resourceGroupName string, zoneName strin
 		client.deletedEndpoints,
 		endpoint.NewEndpoint(
 			formatAzureDNSName(relativeRecordSetName, zoneName),
-			"",
+			[]string{""},
 			string(recordType),
 		),
 	)
@@ -131,7 +131,7 @@ func (client *mockRecordsClient) CreateOrUpdate(resourceGroupName string, zoneNa
 		client.updatedEndpoints,
 		endpoint.NewEndpoint(
 			formatAzureDNSName(relativeRecordSetName, zoneName),
-			extractAzureTarget(&parameters),
+			[]string{extractAzureTarget(&parameters)},
 			string(recordType),
 		),
 	)
@@ -176,11 +176,11 @@ func TestAzureRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("example.com", "123.123.123.122", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("example.com", "heritage=external-dns,external-dns/owner=default", endpoint.RecordTypeTXT),
-		endpoint.NewEndpoint("nginx.example.com", "123.123.123.123", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("nginx.example.com", "heritage=external-dns,external-dns/owner=default", endpoint.RecordTypeTXT),
-		endpoint.NewEndpoint("hack.example.com", "hack.azurewebsites.net", endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("example.com", []string{"123.123.123.122"}, endpoint.RecordTypeA),
+		endpoint.NewEndpoint("example.com", []string{"heritage=external-dns,external-dns/owner=default"}, endpoint.RecordTypeTXT),
+		endpoint.NewEndpoint("nginx.example.com", []string{"123.123.123.123"}, endpoint.RecordTypeA),
+		endpoint.NewEndpoint("nginx.example.com", []string{"heritage=external-dns,external-dns/owner=default"}, endpoint.RecordTypeTXT),
+		endpoint.NewEndpoint("hack.example.com", []string{"hack.azurewebsites.net"}, endpoint.RecordTypeCNAME),
 	}
 
 	validateEndpoints(t, actual, expected)
@@ -192,23 +192,23 @@ func TestAzureApplyChanges(t *testing.T) {
 	testAzureApplyChangesInternal(t, false, &recordsClient)
 
 	validateEndpoints(t, recordsClient.deletedEndpoints, []*endpoint.Endpoint{
-		endpoint.NewEndpoint("old.example.com", "", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("oldcname.example.com", "", endpoint.RecordTypeCNAME),
-		endpoint.NewEndpoint("deleted.example.com", "", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("deletedcname.example.com", "", endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("old.example.com", []string{""}, endpoint.RecordTypeA),
+		endpoint.NewEndpoint("oldcname.example.com", []string{""}, endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("deleted.example.com", []string{""}, endpoint.RecordTypeA),
+		endpoint.NewEndpoint("deletedcname.example.com", []string{""}, endpoint.RecordTypeCNAME),
 	})
 
 	validateEndpoints(t, recordsClient.updatedEndpoints, []*endpoint.Endpoint{
-		endpoint.NewEndpoint("example.com", "1.2.3.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("example.com", "tag", endpoint.RecordTypeTXT),
-		endpoint.NewEndpoint("foo.example.com", "1.2.3.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("foo.example.com", "tag", endpoint.RecordTypeTXT),
-		endpoint.NewEndpoint("bar.example.com", "other.com", endpoint.RecordTypeCNAME),
-		endpoint.NewEndpoint("bar.example.com", "tag", endpoint.RecordTypeTXT),
-		endpoint.NewEndpoint("other.com", "5.6.7.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("other.com", "tag", endpoint.RecordTypeTXT),
-		endpoint.NewEndpoint("new.example.com", "111.222.111.222", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("newcname.example.com", "other.com", endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("example.com", []string{"1.2.3.4"}, endpoint.RecordTypeA),
+		endpoint.NewEndpoint("example.com", []string{"tag"}, endpoint.RecordTypeTXT),
+		endpoint.NewEndpoint("foo.example.com", []string{"1.2.3.4"}, endpoint.RecordTypeA),
+		endpoint.NewEndpoint("foo.example.com", []string{"tag"}, endpoint.RecordTypeTXT),
+		endpoint.NewEndpoint("bar.example.com", []string{"other.com"}, endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("bar.example.com", []string{"tag"}, endpoint.RecordTypeTXT),
+		endpoint.NewEndpoint("other.com", []string{"5.6.7.8"}, endpoint.RecordTypeA),
+		endpoint.NewEndpoint("other.com", []string{"tag"}, endpoint.RecordTypeTXT),
+		endpoint.NewEndpoint("new.example.com", []string{"111.222.111.222"}, endpoint.RecordTypeA),
+		endpoint.NewEndpoint("newcname.example.com", []string{"other.com"}, endpoint.RecordTypeCNAME),
 	})
 }
 
@@ -239,33 +239,33 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordsClie
 	)
 
 	createRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("example.com", "1.2.3.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("example.com", "tag", endpoint.RecordTypeTXT),
-		endpoint.NewEndpoint("foo.example.com", "1.2.3.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("foo.example.com", "tag", endpoint.RecordTypeTXT),
-		endpoint.NewEndpoint("bar.example.com", "other.com", endpoint.RecordTypeCNAME),
-		endpoint.NewEndpoint("bar.example.com", "tag", endpoint.RecordTypeTXT),
-		endpoint.NewEndpoint("other.com", "5.6.7.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("other.com", "tag", endpoint.RecordTypeTXT),
-		endpoint.NewEndpoint("nope.com", "4.4.4.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("nope.com", "tag", endpoint.RecordTypeTXT),
+		endpoint.NewEndpoint("example.com", []string{"1.2.3.4"}, endpoint.RecordTypeA),
+		endpoint.NewEndpoint("example.com", []string{"tag"}, endpoint.RecordTypeTXT),
+		endpoint.NewEndpoint("foo.example.com", []string{"1.2.3.4"}, endpoint.RecordTypeA),
+		endpoint.NewEndpoint("foo.example.com", []string{"tag"}, endpoint.RecordTypeTXT),
+		endpoint.NewEndpoint("bar.example.com", []string{"other.com"}, endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("bar.example.com", []string{"tag"}, endpoint.RecordTypeTXT),
+		endpoint.NewEndpoint("other.com", []string{"5.6.7.8"}, endpoint.RecordTypeA),
+		endpoint.NewEndpoint("other.com", []string{"tag"}, endpoint.RecordTypeTXT),
+		endpoint.NewEndpoint("nope.com", []string{"4.4.4.4"}, endpoint.RecordTypeA),
+		endpoint.NewEndpoint("nope.com", []string{"tag"}, endpoint.RecordTypeTXT),
 	}
 
 	currentRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("old.example.com", "121.212.121.212", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("oldcname.example.com", "other.com", endpoint.RecordTypeCNAME),
-		endpoint.NewEndpoint("old.nope.com", "121.212.121.212", endpoint.RecordTypeA),
+		endpoint.NewEndpoint("old.example.com", []string{"121.212.121.212"}, endpoint.RecordTypeA),
+		endpoint.NewEndpoint("oldcname.example.com", []string{"other.com"}, endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("old.nope.com", []string{"121.212.121.212"}, endpoint.RecordTypeA),
 	}
 	updatedRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("new.example.com", "111.222.111.222", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("newcname.example.com", "other.com", endpoint.RecordTypeCNAME),
-		endpoint.NewEndpoint("new.nope.com", "222.111.222.111", endpoint.RecordTypeA),
+		endpoint.NewEndpoint("new.example.com", []string{"111.222.111.222"}, endpoint.RecordTypeA),
+		endpoint.NewEndpoint("newcname.example.com", []string{"other.com"}, endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("new.nope.com", []string{"222.111.222.111"}, endpoint.RecordTypeA),
 	}
 
 	deleteRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("deleted.example.com", "111.222.111.222", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("deletedcname.example.com", "other.com", endpoint.RecordTypeCNAME),
-		endpoint.NewEndpoint("deleted.nope.com", "222.111.222.111", endpoint.RecordTypeA),
+		endpoint.NewEndpoint("deleted.example.com", []string{"111.222.111.222"}, endpoint.RecordTypeA),
+		endpoint.NewEndpoint("deletedcname.example.com", []string{"other.com"}, endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("deleted.nope.com", []string{"222.111.222.111"}, endpoint.RecordTypeA),
 	}
 
 	changes := &plan.Changes{

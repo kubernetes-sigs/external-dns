@@ -386,7 +386,7 @@ func (m *mockDigitalOceanCreateRecordsFail) Records(ctx context.Context, domain 
 
 func TestNewDigitalOceanChanges(t *testing.T) {
 	action := DigitalOceanCreate
-	endpoints := []*endpoint.Endpoint{{DNSName: "new", Target: "target"}}
+	endpoints := []*endpoint.Endpoint{{DNSName: "new", Targets: []string{"target"}}}
 	_ = newDigitalOceanChanges(action, endpoints)
 }
 
@@ -430,10 +430,10 @@ func TestDigitalOceanApplyChanges(t *testing.T) {
 	provider := &DigitalOceanProvider{
 		Client: &mockDigitalOceanClient{},
 	}
-	changes.Create = []*endpoint.Endpoint{{DNSName: "new.ext-dns-test.bar.com", Target: "target"}, {DNSName: "new.ext-dns-test.unexpected.com", Target: "target"}}
-	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.bar.com", Target: "target"}}
-	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.bar.de", Target: "target-old"}}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.foo.com", Target: "target-new"}}
+	changes.Create = []*endpoint.Endpoint{{DNSName: "new.ext-dns-test.bar.com", Targets: []string{"target"}}, {DNSName: "new.ext-dns-test.unexpected.com", Targets: []string{"target"}}}
+	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.bar.com", Targets: []string{"target"}}}
+	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.bar.de", Targets: []string{"target-old"}}}
+	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.foo.com", Targets: []string{"target-new"}}}
 	err := provider.ApplyChanges(changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)

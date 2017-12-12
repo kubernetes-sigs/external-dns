@@ -40,53 +40,62 @@ func testDedupEndpoints(t *testing.T) {
 		{
 			"one endpoint returns one endpoint",
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Targets: []string{"1.2.3.4"}},
 			},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Targets: []string{"1.2.3.4"}},
 			},
 		},
 		{
 			"two different endpoints return two endpoints",
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
-				{DNSName: "bar.example.org", Target: "4.5.6.7"},
+				{DNSName: "foo.example.org", Targets: []string{"1.2.3.4"}},
+				{DNSName: "bar.example.org", Targets: []string{"4.5.6.7"}},
 			},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
-				{DNSName: "bar.example.org", Target: "4.5.6.7"},
+				{DNSName: "foo.example.org", Targets: []string{"1.2.3.4"}},
+				{DNSName: "bar.example.org", Targets: []string{"4.5.6.7"}},
 			},
 		},
 		{
 			"two endpoints with same dnsname and different targets return two endpoints",
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
-				{DNSName: "foo.example.org", Target: "4.5.6.7"},
+				{DNSName: "foo.example.org", Targets: []string{"1.2.3.4"}},
+				{DNSName: "foo.example.org", Targets: []string{"4.5.6.7"}},
 			},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
-				{DNSName: "foo.example.org", Target: "4.5.6.7"},
+				{DNSName: "foo.example.org", Targets: []string{"1.2.3.4"}},
+				{DNSName: "foo.example.org", Targets: []string{"4.5.6.7"}},
 			},
 		},
 		{
 			"two endpoints with different dnsname and same target return two endpoints",
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
-				{DNSName: "bar.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Targets: []string{"1.2.3.4"}},
+				{DNSName: "bar.example.org", Targets: []string{"1.2.3.4"}},
 			},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
-				{DNSName: "bar.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Targets: []string{"1.2.3.4"}},
+				{DNSName: "bar.example.org", Targets: []string{"1.2.3.4"}},
 			},
 		},
 		{
 			"two endpoints with same dnsname and same target return one endpoint",
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Targets: []string{"1.2.3.4"}},
+				{DNSName: "foo.example.org", Targets: []string{"1.2.3.4"}},
 			},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Target: "1.2.3.4"},
+				{DNSName: "foo.example.org", Targets: []string{"1.2.3.4"}},
+			},
+		},
+		{
+			"one endpoint with multiple targets returns one endpoint with original targets",
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Targets: []string{"1.2.3.4", "4.5.6.7"}},
+			},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Targets: []string{"1.2.3.4", "4.5.6.7"}},
 			},
 		},
 	} {

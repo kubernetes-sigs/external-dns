@@ -43,32 +43,20 @@ func (p *mockProvider) Records() ([]*endpoint.Endpoint, error) {
 
 // ApplyChanges validates that the passed in changes satisfy the assumtions.
 func (p *mockProvider) ApplyChanges(changes *plan.Changes) error {
-	if len(changes.Create) != len(p.ExpectChanges.Create) {
-		return errors.New("number of created records is wrong")
+	if !testutils.SameEndpoints(p.ExpectChanges.Create, changes.Create) {
+		return errors.New("created record is wrong")
 	}
 
-	for i := range changes.Create {
-		if changes.Create[i].DNSName != p.ExpectChanges.Create[i].DNSName || changes.Create[i].Target != p.ExpectChanges.Create[i].Target {
-			return errors.New("created record is wrong")
-		}
+	if !testutils.SameEndpoints(p.ExpectChanges.UpdateNew, changes.UpdateNew) {
+		return errors.New("created record is wrong")
 	}
 
-	for i := range changes.UpdateNew {
-		if changes.UpdateNew[i].DNSName != p.ExpectChanges.UpdateNew[i].DNSName || changes.UpdateNew[i].Target != p.ExpectChanges.UpdateNew[i].Target {
-			return errors.New("delete record is wrong")
-		}
+	if !testutils.SameEndpoints(p.ExpectChanges.UpdateOld, changes.UpdateOld) {
+		return errors.New("created record is wrong")
 	}
 
-	for i := range changes.UpdateOld {
-		if changes.UpdateOld[i].DNSName != p.ExpectChanges.UpdateOld[i].DNSName || changes.UpdateOld[i].Target != p.ExpectChanges.UpdateOld[i].Target {
-			return errors.New("delete record is wrong")
-		}
-	}
-
-	for i := range changes.Delete {
-		if changes.Delete[i].DNSName != p.ExpectChanges.Delete[i].DNSName || changes.Delete[i].Target != p.ExpectChanges.Delete[i].Target {
-			return errors.New("delete record is wrong")
-		}
+	if !testutils.SameEndpoints(p.ExpectChanges.Delete, changes.Delete) {
+		return errors.New("created record is wrong")
 	}
 
 	return nil
@@ -91,11 +79,11 @@ func TestRunOnce(t *testing.T) {
 	source.On("Endpoints").Return([]*endpoint.Endpoint{
 		{
 			DNSName: "create-record",
-			Target:  "1.2.3.4",
+			Targets: []string{"1.2.3.4"},
 		},
 		{
 			DNSName: "update-record",
-			Target:  "8.8.4.4",
+			Targets: []string{"8.8.4.4"},
 		},
 	}, nil)
 
@@ -104,25 +92,25 @@ func TestRunOnce(t *testing.T) {
 		[]*endpoint.Endpoint{
 			{
 				DNSName: "update-record",
-				Target:  "8.8.8.8",
+				Targets: []string{"8.8.8.8"},
 			},
 			{
 				DNSName: "delete-record",
-				Target:  "4.3.2.1",
+				Targets: []string{"4.3.2.1"},
 			},
 		},
 		&plan.Changes{
 			Create: []*endpoint.Endpoint{
-				{DNSName: "create-record", Target: "1.2.3.4"},
+				{DNSName: "create-record", Targets: []string{"1.2.3.4"}},
 			},
 			UpdateNew: []*endpoint.Endpoint{
-				{DNSName: "update-record", Target: "8.8.4.4"},
+				{DNSName: "update-record", Targets: []string{"8.8.4.4"}},
 			},
 			UpdateOld: []*endpoint.Endpoint{
-				{DNSName: "update-record", Target: "8.8.8.8"},
+				{DNSName: "update-record", Targets: []string{"8.8.8.8"}},
 			},
 			Delete: []*endpoint.Endpoint{
-				{DNSName: "delete-record", Target: "4.3.2.1"},
+				{DNSName: "delete-record", Targets: []string{"4.3.2.1"}},
 			},
 		},
 	)

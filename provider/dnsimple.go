@@ -152,7 +152,7 @@ func (p *dnsimpleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 			default:
 				continue
 			}
-			endpoints = append(endpoints, endpoint.NewEndpoint(record.Name+"."+record.ZoneID, record.Content, record.Type))
+			endpoints = append(endpoints, endpoint.NewEndpoint(record.Name+"."+record.ZoneID, []string{record.Content}, record.Type))
 		}
 	}
 	return endpoints, nil
@@ -160,12 +160,17 @@ func (p *dnsimpleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 
 // newDnsimpleChange initializes a new change to dns records
 func newDnsimpleChange(action string, e *endpoint.Endpoint) *dnsimpleChange {
+	// TODO: test
+	if len(e.Targets) == 0 {
+		return &dnsimpleChange{}
+	}
+
 	change := &dnsimpleChange{
 		Action: action,
 		ResourceRecordSet: dnsimple.ZoneRecord{
 			Name:    e.DNSName,
 			Type:    e.RecordType,
-			Content: e.Target,
+			Content: e.Targets[0],
 		},
 	}
 	return change

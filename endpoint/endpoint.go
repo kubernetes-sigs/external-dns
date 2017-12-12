@@ -44,8 +44,8 @@ func (ttl TTL) IsConfigured() bool {
 type Endpoint struct {
 	// The hostname of the DNS record
 	DNSName string
-	// The target the DNS record points to
-	Target string
+	// The targets the DNS record points to
+	Targets []string
 	// RecordType type of record, e.g. CNAME, A, TXT etc
 	RecordType string
 	// TTL for the record
@@ -55,18 +55,34 @@ type Endpoint struct {
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
-func NewEndpoint(dnsName, target, recordType string) *Endpoint {
-	return NewEndpointWithTTL(dnsName, target, recordType, TTL(0))
+func NewEndpoint(dnsName string, targets []string, recordType string) *Endpoint {
+	return NewEndpointWithTTL(dnsName, targets, recordType, TTL(0))
 }
 
 // NewEndpointWithTTL initialization method to be used to create an endpoint with a TTL struct
-func NewEndpointWithTTL(dnsName, target, recordType string, ttl TTL) *Endpoint {
+func NewEndpointWithTTL(dnsName string, targets []string, recordType string, ttl TTL) *Endpoint {
+	for i := range targets {
+		targets[i] = strings.TrimSuffix(targets[i], ".")
+	}
 	return &Endpoint{
 		DNSName:    strings.TrimSuffix(dnsName, "."),
-		Target:     strings.TrimSuffix(target, "."),
+		Targets:    targets,
 		RecordType: recordType,
 		Labels:     map[string]string{},
 		RecordTTL:  ttl,
+	}
+}
+
+func NewEndpointWithLabels(dnsName string, targets []string, recordType string, labels map[string]string) *Endpoint {
+	for i := range targets {
+		targets[i] = strings.TrimSuffix(targets[i], ".")
+	}
+	return &Endpoint{
+		DNSName:    strings.TrimSuffix(dnsName, "."),
+		Targets:    targets,
+		RecordType: recordType,
+		Labels:     labels,
+		RecordTTL:  TTL(0),
 	}
 }
 
@@ -80,5 +96,5 @@ func (e *Endpoint) MergeLabels(labels map[string]string) {
 }
 
 func (e *Endpoint) String() string {
-	return fmt.Sprintf("%s %d IN %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.Target)
+	return fmt.Sprintf("%s %d IN %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.Targets, e.Labels)
 }
