@@ -94,8 +94,9 @@ func TestRunOnce(t *testing.T) {
 			Target:  "1.2.3.4",
 		},
 		{
-			DNSName: "update-record",
-			Target:  "8.8.4.4",
+			DNSName:   "update-record",
+			Target:    "8.8.4.4",
+			RecordTTL: 100,
 		},
 	}, nil)
 
@@ -103,8 +104,9 @@ func TestRunOnce(t *testing.T) {
 	provider := newMockProvider(
 		[]*endpoint.Endpoint{
 			{
-				DNSName: "update-record",
-				Target:  "8.8.8.8",
+				DNSName:   "update-record",
+				Target:    "8.8.4.4",
+				RecordTTL: 50,
 			},
 			{
 				DNSName: "delete-record",
@@ -116,10 +118,10 @@ func TestRunOnce(t *testing.T) {
 				{DNSName: "create-record", Target: "1.2.3.4"},
 			},
 			UpdateNew: []*endpoint.Endpoint{
-				{DNSName: "update-record", Target: "8.8.4.4"},
+				{DNSName: "update-record", Target: "8.8.4.4", RecordTTL: 100},
 			},
 			UpdateOld: []*endpoint.Endpoint{
-				{DNSName: "update-record", Target: "8.8.8.8"},
+				{DNSName: "update-record", Target: "8.8.4.4", RecordTTL: 50},
 			},
 			Delete: []*endpoint.Endpoint{
 				{DNSName: "delete-record", Target: "4.3.2.1"},

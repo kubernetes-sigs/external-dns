@@ -19,7 +19,6 @@ package registry
 import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
-	log "github.com/sirupsen/logrus"
 )
 
 // Registry is an interface which should enables ownership concept in external-dns
@@ -29,17 +28,4 @@ import (
 type Registry interface {
 	Records() ([]*endpoint.Endpoint, error)
 	ApplyChanges(changes *plan.Changes) error
-}
-
-//TODO(ideahitme): consider moving this to Plan
-func filterOwnedRecords(ownerID string, eps []*endpoint.Endpoint) []*endpoint.Endpoint {
-	filtered := []*endpoint.Endpoint{}
-	for _, ep := range eps {
-		if endpointOwner, ok := ep.Labels[endpoint.OwnerLabelKey]; !ok || endpointOwner != ownerID {
-			log.Debugf(`Skipping endpoint %v because owner id does not match, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
-			continue
-		}
-		filtered = append(filtered, ep)
-	}
-	return filtered
 }

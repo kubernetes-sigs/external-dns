@@ -65,24 +65,16 @@ func (p *Plan) Calculate() *Plan {
 			continue
 		}
 
-		targetChanged := targetChanged(desired, current)
 		shouldUpdateTTL := shouldUpdateTTL(desired, current)
 
-		if !targetChanged && !shouldUpdateTTL {
+		if !shouldUpdateTTL {
 			log.Debugf("Skipping endpoint %v because nothing has changed", desired)
 			continue
 		}
 
 		changes.UpdateOld = append(changes.UpdateOld, current)
-		desired.MergeLabels(current.Labels) // inherit the labels from the dns provider, including Owner ID
-
-		if targetChanged {
-			desired.RecordType = current.RecordType // inherit the type from the dns provider
-		}
-
-		if !shouldUpdateTTL {
-			desired.RecordTTL = current.RecordTTL
-		}
+		desired.MergeLabels(current.Labels)     // inherit the labels from the dns provider
+		desired.RecordType = current.RecordType // inherit the type from the dns provider
 
 		changes.UpdateNew = append(changes.UpdateNew, desired)
 	}
@@ -109,10 +101,6 @@ func (p *Plan) Calculate() *Plan {
 	return plan
 }
 
-func targetChanged(desired, current *endpoint.Endpoint) bool {
-	return desired.Target != current.Target
-}
-
 func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 	if !desired.RecordTTL.IsConfigured() {
 		return false
@@ -123,7 +111,7 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 // recordExists checks whether a record can be found in a list of records.
 func recordExists(needle *endpoint.Endpoint, haystack []*endpoint.Endpoint) (*endpoint.Endpoint, bool) {
 	for _, record := range haystack {
-		if record.DNSName == needle.DNSName {
+		if record.DNSName == needle.DNSName && record.Target == needle.Target {
 			return record, true
 		}
 	}

@@ -27,34 +27,37 @@ import (
 // TestCalculate tests that a plan can calculate actions to move a list of
 // current records to a list of desired records.
 func TestCalculate(t *testing.T) {
+	// we need different TTLs to create differing Endpoints with the same name and target
+	ttl := endpoint.TTL(300)
+	ttl2 := endpoint.TTL(50)
+
 	// empty list of records
 	empty := []*endpoint.Endpoint{}
 	// a simple entry
 	fooV1 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", endpoint.RecordTypeCNAME)}
 	// the same entry but with different target
 	fooV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", endpoint.RecordTypeCNAME)}
+	// the same entry as before but with varying TTLs
+	fooV2ttl1 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v2", endpoint.RecordTypeCNAME, ttl)}
+	fooV2ttl2 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v2", endpoint.RecordTypeCNAME, ttl2)}
 	// another simple entry
 	bar := []*endpoint.Endpoint{endpoint.NewEndpoint("bar", "v1", endpoint.RecordTypeCNAME)}
 
 	// test case with labels
-	noLabels := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", endpoint.RecordTypeCNAME)}
-	labeledV2 := []*endpoint.Endpoint{newEndpointWithOwner("foo", "v2", "123")}
-	labeledV1 := []*endpoint.Endpoint{newEndpointWithOwner("foo", "v1", "123")}
+	unlabeledTTL2 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v2", endpoint.RecordTypeCNAME, ttl2)}
+	labeledTTL1 := []*endpoint.Endpoint{newEndpointWithOwnerAndTTL("foo", "v2", "123", ttl)}
+	labeledTTL2 := []*endpoint.Endpoint{newEndpointWithOwnerAndTTL("foo", "v2", "123", ttl2)}
 
 	// test case with type inheritance
-	noType := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", "")}
-	typedV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", endpoint.RecordTypeA)}
-	typedV1 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", endpoint.RecordTypeA)}
+	untypedTTL2 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v2", "", ttl2)}
+	typedTTL1 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v2", endpoint.RecordTypeA, ttl)}
+	typedTTL2 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v2", endpoint.RecordTypeA, ttl2)}
 
-	// test case with TTL
-	ttl := endpoint.TTL(300)
-	ttl2 := endpoint.TTL(50)
+	// explicit TTL test cases
 	ttlV1 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v1", endpoint.RecordTypeCNAME, ttl)}
 	ttlV2 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v1", endpoint.RecordTypeCNAME)}
 	ttlV3 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v1", endpoint.RecordTypeCNAME, ttl)}
 	ttlV4 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v1", endpoint.RecordTypeCNAME, ttl2)}
-	ttlV5 := []*endpoint.Endpoint{endpoint.NewEndpoint("foo", "v2", endpoint.RecordTypeCNAME)}
-	ttlV6 := []*endpoint.Endpoint{endpoint.NewEndpointWithTTL("foo", "v2", endpoint.RecordTypeCNAME, ttl)}
 
 	for _, tc := range []struct {
 		policies                             []Policy
@@ -69,24 +72,24 @@ func TestCalculate(t *testing.T) {
 		{[]Policy{&SyncPolicy{}}, fooV1, fooV1, empty, empty, empty, empty},
 		// Nothing is desired deletes the current.
 		{[]Policy{&SyncPolicy{}}, fooV1, empty, empty, empty, empty, fooV1},
-		// Current and desired match but Target is different triggers an update.
-		{[]Policy{&SyncPolicy{}}, fooV1, fooV2, empty, fooV1, fooV2, empty},
+		// Current and desired match but TTL is different triggers an update.
+		{[]Policy{&SyncPolicy{}}, fooV2ttl1, fooV2ttl2, empty, fooV2ttl1, fooV2ttl2, empty},
 		// Both exist but are different creates desired and deletes current.
 		{[]Policy{&SyncPolicy{}}, fooV1, bar, bar, empty, empty, fooV1},
+		// Same thing with current and desired only having different targets
+		{[]Policy{&SyncPolicy{}}, fooV1, fooV2, fooV2, empty, empty, fooV1},
 		// Nothing is desired but policy doesn't allow deletions.
 		{[]Policy{&UpsertOnlyPolicy{}}, fooV1, empty, empty, empty, empty, empty},
 		// Labels should be inherited
-		{[]Policy{&SyncPolicy{}}, labeledV1, noLabels, empty, labeledV1, labeledV2, empty},
+		{[]Policy{&SyncPolicy{}}, labeledTTL1, unlabeledTTL2, empty, labeledTTL1, labeledTTL2, empty},
 		// RecordType should be inherited
-		{[]Policy{&SyncPolicy{}}, typedV1, noType, empty, typedV1, typedV2, empty},
+		{[]Policy{&SyncPolicy{}}, typedTTL1, untypedTTL2, empty, typedTTL1, typedTTL2, empty},
 		// If desired TTL is not configured, do not update
 		{[]Policy{&SyncPolicy{}}, ttlV1, ttlV2, empty, empty, empty, empty},
 		// If desired TTL is configured but is the same as current TTL, do not update
 		{[]Policy{&SyncPolicy{}}, ttlV1, ttlV3, empty, empty, empty, empty},
 		// If desired TTL is configured and is not the same as current TTL, need to update
 		{[]Policy{&SyncPolicy{}}, ttlV1, ttlV4, empty, ttlV1, ttlV4, empty},
-		// If target changed and desired TTL is not configured, do not update TTL
-		{[]Policy{&SyncPolicy{}}, ttlV1, ttlV5, empty, ttlV1, ttlV6, empty},
 	} {
 		// setup plan
 		plan := &Plan{
@@ -185,5 +188,12 @@ func validateEntries(t *testing.T, entries, expected []*endpoint.Endpoint) {
 func newEndpointWithOwner(dnsName, target, ownerID string) *endpoint.Endpoint {
 	e := endpoint.NewEndpoint(dnsName, target, endpoint.RecordTypeCNAME)
 	e.Labels[endpoint.OwnerLabelKey] = ownerID
+	return e
+}
+
+func newEndpointWithOwnerAndTTL(dnsName, target, ownerID string, ttl endpoint.TTL) *endpoint.Endpoint {
+	e := endpoint.NewEndpoint(dnsName, target, endpoint.RecordTypeCNAME)
+	e.Labels[endpoint.OwnerLabelKey] = ownerID
+	e.RecordTTL = ttl
 	return e
 }
