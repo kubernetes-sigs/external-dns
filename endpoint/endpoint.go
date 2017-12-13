@@ -39,8 +39,10 @@ func (ttl TTL) IsConfigured() bool {
 	return ttl > 0
 }
 
+// Targets is a representation of a list of targets for an endpoint.
 type Targets []string
 
+// NewTargets is a convenience method to create a new Targets object from a vararg of strings
 func NewTargets(target ...string) Targets {
 	t := make(Targets, 0, len(target))
 	t = append(t, target...)
@@ -63,6 +65,7 @@ func (t Targets) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
+// Same compares to Targets and returns true if they are completely identical
 func (t Targets) Same(o Targets) bool {
 	if len(t) != len(o) {
 		return false
