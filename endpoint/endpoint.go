@@ -47,13 +47,6 @@ func NewTargets(target ...string) Targets {
 	return t
 }
 
-func (t Targets) Add(target string) {
-	if t == nil {
-		t = make(Targets, 0, 10)
-	}
-	t = append(t, strings.TrimSuffix(target, "."))
-}
-
 func (t Targets) String() string {
 	return strings.Join(t, ";")
 }
