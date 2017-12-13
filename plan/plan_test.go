@@ -245,7 +245,7 @@ func (suite *PlanTestSuite) TestDifferentTypes() {
 	desired := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooA5}
 	expectedCreate := []*endpoint.Endpoint{}
 	expectedUpdateOld := []*endpoint.Endpoint{suite.fooV1Cname}
-	expectedUpdateNew := []*endpoint.Endpoint{suite.fooV2Cname}
+	expectedUpdateNew := []*endpoint.Endpoint{suite.fooA5}
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{

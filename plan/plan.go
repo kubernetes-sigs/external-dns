@@ -65,7 +65,7 @@ type planTable struct {
 }
 
 func newPlanTable() planTable { //TODO: make resolver configurable
-	return planTable{map[string]*planTableRow{}, PreferMax{}}
+	return planTable{map[string]*planTableRow{}, PerResource{}}
 }
 
 // planTableRow
