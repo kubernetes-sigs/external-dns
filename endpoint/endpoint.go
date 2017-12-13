@@ -78,6 +78,9 @@ func (t Targets) Same(o Targets) bool {
 	return true
 }
 
+// IsLess should fulfill the requirement to compare two targets and chosse the 'lesser' one.
+// In the past target was a simple string so simple string comparison could be used. Now we define 'less'
+// as either being the shorter list of targets or where the first entry is less.
 // FIXME We really need to define under which circumstances a list Targets is considered 'less'
 // than another.
 func (t Targets) IsLess(o Targets) bool {
