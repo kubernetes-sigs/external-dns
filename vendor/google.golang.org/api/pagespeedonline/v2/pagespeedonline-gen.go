@@ -55,10 +55,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Pagespeedapi *PagespeedapiService
 }
@@ -68,10 +67,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewPagespeedapiService(s *Service) *PagespeedapiService {
@@ -111,8 +106,8 @@ type PagespeedApiFormatStringV2 struct {
 }
 
 func (s *PagespeedApiFormatStringV2) MarshalJSON() ([]byte, error) {
-	type noMethod PagespeedApiFormatStringV2
-	raw := noMethod(*s)
+	type NoMethod PagespeedApiFormatStringV2
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -157,8 +152,8 @@ type PagespeedApiFormatStringV2Args struct {
 }
 
 func (s *PagespeedApiFormatStringV2Args) MarshalJSON() ([]byte, error) {
-	type noMethod PagespeedApiFormatStringV2Args
-	raw := noMethod(*s)
+	type NoMethod PagespeedApiFormatStringV2Args
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -193,8 +188,8 @@ type PagespeedApiFormatStringV2ArgsRects struct {
 }
 
 func (s *PagespeedApiFormatStringV2ArgsRects) MarshalJSON() ([]byte, error) {
-	type noMethod PagespeedApiFormatStringV2ArgsRects
-	raw := noMethod(*s)
+	type NoMethod PagespeedApiFormatStringV2ArgsRects
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -229,8 +224,8 @@ type PagespeedApiFormatStringV2ArgsSecondaryRects struct {
 }
 
 func (s *PagespeedApiFormatStringV2ArgsSecondaryRects) MarshalJSON() ([]byte, error) {
-	type noMethod PagespeedApiFormatStringV2ArgsSecondaryRects
-	raw := noMethod(*s)
+	type NoMethod PagespeedApiFormatStringV2ArgsSecondaryRects
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -272,8 +267,8 @@ type PagespeedApiImageV2 struct {
 }
 
 func (s *PagespeedApiImageV2) MarshalJSON() ([]byte, error) {
-	type noMethod PagespeedApiImageV2
-	raw := noMethod(*s)
+	type NoMethod PagespeedApiImageV2
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -310,8 +305,8 @@ type PagespeedApiImageV2PageRect struct {
 }
 
 func (s *PagespeedApiImageV2PageRect) MarshalJSON() ([]byte, error) {
-	type noMethod PagespeedApiImageV2PageRect
-	raw := noMethod(*s)
+	type NoMethod PagespeedApiImageV2PageRect
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -375,8 +370,8 @@ type Result struct {
 }
 
 func (s *Result) MarshalJSON() ([]byte, error) {
-	type noMethod Result
-	raw := noMethod(*s)
+	type NoMethod Result
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -409,8 +404,8 @@ type ResultFormattedResults struct {
 }
 
 func (s *ResultFormattedResults) MarshalJSON() ([]byte, error) {
-	type noMethod ResultFormattedResults
-	raw := noMethod(*s)
+	type NoMethod ResultFormattedResults
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -464,18 +459,18 @@ type ResultFormattedResultsRuleResults struct {
 }
 
 func (s *ResultFormattedResultsRuleResults) MarshalJSON() ([]byte, error) {
-	type noMethod ResultFormattedResultsRuleResults
-	raw := noMethod(*s)
+	type NoMethod ResultFormattedResultsRuleResults
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *ResultFormattedResultsRuleResults) UnmarshalJSON(data []byte) error {
-	type noMethod ResultFormattedResultsRuleResults
+	type NoMethod ResultFormattedResultsRuleResults
 	var s1 struct {
 		RuleImpact gensupport.JSONFloat64 `json:"ruleImpact"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -509,8 +504,8 @@ type ResultFormattedResultsRuleResultsUrlBlocks struct {
 }
 
 func (s *ResultFormattedResultsRuleResultsUrlBlocks) MarshalJSON() ([]byte, error) {
-	type noMethod ResultFormattedResultsRuleResultsUrlBlocks
-	raw := noMethod(*s)
+	type NoMethod ResultFormattedResultsRuleResultsUrlBlocks
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -541,8 +536,8 @@ type ResultFormattedResultsRuleResultsUrlBlocksUrls struct {
 }
 
 func (s *ResultFormattedResultsRuleResultsUrlBlocksUrls) MarshalJSON() ([]byte, error) {
-	type noMethod ResultFormattedResultsRuleResultsUrlBlocksUrls
-	raw := noMethod(*s)
+	type NoMethod ResultFormattedResultsRuleResultsUrlBlocksUrls
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -617,8 +612,8 @@ type ResultPageStats struct {
 }
 
 func (s *ResultPageStats) MarshalJSON() ([]byte, error) {
-	type noMethod ResultPageStats
-	raw := noMethod(*s)
+	type NoMethod ResultPageStats
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -649,8 +644,8 @@ type ResultRuleGroups struct {
 }
 
 func (s *ResultRuleGroups) MarshalJSON() ([]byte, error) {
-	type noMethod ResultRuleGroups
-	raw := noMethod(*s)
+	type NoMethod ResultRuleGroups
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -683,8 +678,8 @@ type ResultVersion struct {
 }
 
 func (s *ResultVersion) MarshalJSON() ([]byte, error) {
-	type noMethod ResultVersion
-	raw := noMethod(*s)
+	type NoMethod ResultVersion
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -788,7 +783,6 @@ func (c *PagespeedapiRunpagespeedCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -834,7 +828,7 @@ func (c *PagespeedapiRunpagespeedCall) Do(opts ...googleapi.CallOption) (*Result
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

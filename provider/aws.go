@@ -131,6 +131,10 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 		return nil, err
 	}
 
+	for _, zone := range zones {
+		log.Debugf("Considering zone: %s (domain: %s)", aws.StringValue(zone.Id), aws.StringValue(zone.Name))
+	}
+
 	return zones, nil
 }
 

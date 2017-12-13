@@ -71,10 +71,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Acl *AclService
 
@@ -98,10 +97,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewAclService(s *Service) *AclService {
@@ -219,8 +214,8 @@ type Acl struct {
 }
 
 func (s *Acl) MarshalJSON() ([]byte, error) {
-	type noMethod Acl
-	raw := noMethod(*s)
+	type NoMethod Acl
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -274,8 +269,8 @@ type AclRule struct {
 }
 
 func (s *AclRule) MarshalJSON() ([]byte, error) {
-	type noMethod AclRule
-	raw := noMethod(*s)
+	type NoMethod AclRule
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -312,8 +307,8 @@ type AclRuleScope struct {
 }
 
 func (s *AclRuleScope) MarshalJSON() ([]byte, error) {
-	type noMethod AclRuleScope
-	raw := noMethod(*s)
+	type NoMethod AclRuleScope
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -364,8 +359,8 @@ type Calendar struct {
 }
 
 func (s *Calendar) MarshalJSON() ([]byte, error) {
-	type noMethod Calendar
-	raw := noMethod(*s)
+	type NoMethod Calendar
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -412,8 +407,8 @@ type CalendarList struct {
 }
 
 func (s *CalendarList) MarshalJSON() ([]byte, error) {
-	type noMethod CalendarList
-	raw := noMethod(*s)
+	type NoMethod CalendarList
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -526,8 +521,8 @@ type CalendarListEntry struct {
 }
 
 func (s *CalendarListEntry) MarshalJSON() ([]byte, error) {
-	type noMethod CalendarListEntry
-	raw := noMethod(*s)
+	type NoMethod CalendarListEntry
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -555,8 +550,8 @@ type CalendarListEntryNotificationSettings struct {
 }
 
 func (s *CalendarListEntryNotificationSettings) MarshalJSON() ([]byte, error) {
-	type noMethod CalendarListEntryNotificationSettings
-	raw := noMethod(*s)
+	type NoMethod CalendarListEntryNotificationSettings
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -566,7 +561,7 @@ type CalendarNotification struct {
 	// - "email" - Reminders are sent via email.
 	// - "sms" - Reminders are sent via SMS. This value is read-only and is
 	// ignored on inserts and updates. SMS reminders are only available for
-	// Google Apps for Work, Education, and Government customers.
+	// G Suite customers.
 	Method string `json:"method,omitempty"`
 
 	// Type: The type of notification. Possible values are:
@@ -598,8 +593,8 @@ type CalendarNotification struct {
 }
 
 func (s *CalendarNotification) MarshalJSON() ([]byte, error) {
-	type noMethod CalendarNotification
-	raw := noMethod(*s)
+	type NoMethod CalendarNotification
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -663,8 +658,8 @@ type Channel struct {
 }
 
 func (s *Channel) MarshalJSON() ([]byte, error) {
-	type noMethod Channel
-	raw := noMethod(*s)
+	type NoMethod Channel
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -695,8 +690,8 @@ type ColorDefinition struct {
 }
 
 func (s *ColorDefinition) MarshalJSON() ([]byte, error) {
-	type noMethod ColorDefinition
-	raw := noMethod(*s)
+	type NoMethod ColorDefinition
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -740,8 +735,8 @@ type Colors struct {
 }
 
 func (s *Colors) MarshalJSON() ([]byte, error) {
-	type noMethod Colors
-	raw := noMethod(*s)
+	type NoMethod Colors
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -780,8 +775,8 @@ type Error struct {
 }
 
 func (s *Error) MarshalJSON() ([]byte, error) {
-	type noMethod Error
-	raw := noMethod(*s)
+	type NoMethod Error
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -964,9 +959,11 @@ type Event struct {
 
 	// Transparency: Whether the event blocks time on the calendar.
 	// Optional. Possible values are:
-	// - "opaque" - The event blocks time on the calendar. This is the
-	// default value.
-	// - "transparent" - The event does not block time on the calendar.
+	// - "opaque" - Default value. The event does block time on the
+	// calendar. This is equivalent to setting Show me as to Busy in the
+	// Calendar UI.
+	// - "transparent" - The event does not block time on the calendar. This
+	// is equivalent to setting Show me as to Available in the Calendar UI.
 	Transparency string `json:"transparency,omitempty"`
 
 	// Updated: Last modification time of the event (as a RFC3339
@@ -1008,8 +1005,8 @@ type Event struct {
 }
 
 func (s *Event) MarshalJSON() ([]byte, error) {
-	type noMethod Event
-	raw := noMethod(*s)
+	type NoMethod Event
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1047,8 +1044,8 @@ type EventCreator struct {
 }
 
 func (s *EventCreator) MarshalJSON() ([]byte, error) {
-	type noMethod EventCreator
-	raw := noMethod(*s)
+	type NoMethod EventCreator
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1080,8 +1077,8 @@ type EventExtendedProperties struct {
 }
 
 func (s *EventExtendedProperties) MarshalJSON() ([]byte, error) {
-	type noMethod EventExtendedProperties
-	raw := noMethod(*s)
+	type NoMethod EventExtendedProperties
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1135,8 +1132,8 @@ type EventGadget struct {
 }
 
 func (s *EventGadget) MarshalJSON() ([]byte, error) {
-	type noMethod EventGadget
-	raw := noMethod(*s)
+	type NoMethod EventGadget
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1178,8 +1175,8 @@ type EventOrganizer struct {
 }
 
 func (s *EventOrganizer) MarshalJSON() ([]byte, error) {
-	type noMethod EventOrganizer
-	raw := noMethod(*s)
+	type NoMethod EventOrganizer
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1214,8 +1211,8 @@ type EventReminders struct {
 }
 
 func (s *EventReminders) MarshalJSON() ([]byte, error) {
-	type noMethod EventReminders
-	raw := noMethod(*s)
+	type NoMethod EventReminders
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1250,8 +1247,8 @@ type EventSource struct {
 }
 
 func (s *EventSource) MarshalJSON() ([]byte, error) {
-	type noMethod EventSource
-	raw := noMethod(*s)
+	type NoMethod EventSource
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1293,8 +1290,8 @@ type EventAttachment struct {
 }
 
 func (s *EventAttachment) MarshalJSON() ([]byte, error) {
-	type noMethod EventAttachment
-	raw := noMethod(*s)
+	type NoMethod EventAttachment
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1363,8 +1360,8 @@ type EventAttendee struct {
 }
 
 func (s *EventAttendee) MarshalJSON() ([]byte, error) {
-	type noMethod EventAttendee
-	raw := noMethod(*s)
+	type NoMethod EventAttendee
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1403,17 +1400,17 @@ type EventDateTime struct {
 }
 
 func (s *EventDateTime) MarshalJSON() ([]byte, error) {
-	type noMethod EventDateTime
-	raw := noMethod(*s)
+	type NoMethod EventDateTime
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 type EventReminder struct {
 	// Method: The method used by this reminder. Possible values are:
 	// - "email" - Reminders are sent via email.
-	// - "sms" - Reminders are sent via SMS. These are only available for
-	// Google Apps for Work, Education, and Government customers. Requests
-	// to set SMS reminders for other account types are ignored.
+	// - "sms" - Reminders are sent via SMS. These are only available for G
+	// Suite customers. Requests to set SMS reminders for other account
+	// types are ignored.
 	// - "popup" - Reminders are sent via a UI popup.
 	Method string `json:"method,omitempty"`
 
@@ -1440,8 +1437,8 @@ type EventReminder struct {
 }
 
 func (s *EventReminder) MarshalJSON() ([]byte, error) {
-	type noMethod EventReminder
-	raw := noMethod(*s)
+	type NoMethod EventReminder
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1523,8 +1520,8 @@ type Events struct {
 }
 
 func (s *Events) MarshalJSON() ([]byte, error) {
-	type noMethod Events
-	raw := noMethod(*s)
+	type NoMethod Events
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1554,8 +1551,8 @@ type FreeBusyCalendar struct {
 }
 
 func (s *FreeBusyCalendar) MarshalJSON() ([]byte, error) {
-	type noMethod FreeBusyCalendar
-	raw := noMethod(*s)
+	type NoMethod FreeBusyCalendar
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1584,8 +1581,8 @@ type FreeBusyGroup struct {
 }
 
 func (s *FreeBusyGroup) MarshalJSON() ([]byte, error) {
-	type noMethod FreeBusyGroup
-	raw := noMethod(*s)
+	type NoMethod FreeBusyGroup
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1632,8 +1629,8 @@ type FreeBusyRequest struct {
 }
 
 func (s *FreeBusyRequest) MarshalJSON() ([]byte, error) {
-	type noMethod FreeBusyRequest
-	raw := noMethod(*s)
+	type NoMethod FreeBusyRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1659,8 +1656,8 @@ type FreeBusyRequestItem struct {
 }
 
 func (s *FreeBusyRequestItem) MarshalJSON() ([]byte, error) {
-	type noMethod FreeBusyRequestItem
-	raw := noMethod(*s)
+	type NoMethod FreeBusyRequestItem
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1702,8 +1699,8 @@ type FreeBusyResponse struct {
 }
 
 func (s *FreeBusyResponse) MarshalJSON() ([]byte, error) {
-	type noMethod FreeBusyResponse
-	raw := noMethod(*s)
+	type NoMethod FreeBusyResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1744,8 +1741,8 @@ type Setting struct {
 }
 
 func (s *Setting) MarshalJSON() ([]byte, error) {
-	type noMethod Setting
-	raw := noMethod(*s)
+	type NoMethod Setting
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1792,8 +1789,8 @@ type Settings struct {
 }
 
 func (s *Settings) MarshalJSON() ([]byte, error) {
-	type noMethod Settings
-	raw := noMethod(*s)
+	type NoMethod Settings
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1822,8 +1819,8 @@ type TimePeriod struct {
 }
 
 func (s *TimePeriod) MarshalJSON() ([]byte, error) {
-	type noMethod TimePeriod
-	raw := noMethod(*s)
+	type NoMethod TimePeriod
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1877,7 +1874,6 @@ func (c *AclDeleteCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "calendars/{calendarId}/acl/{ruleId}")
@@ -1994,7 +1990,6 @@ func (c *AclGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2044,7 +2039,7 @@ func (c *AclGetCall) Do(opts ...googleapi.CallOption) (*AclRule, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2101,6 +2096,14 @@ func (r *AclService) Insert(calendarId string, aclrule *AclRule) *AclInsertCall 
 	return c
 }
 
+// SendNotifications sets the optional parameter "sendNotifications":
+// Whether to send notifications about the calendar sharing change.  The
+// default is True.
+func (c *AclInsertCall) SendNotifications(sendNotifications bool) *AclInsertCall {
+	c.urlParams_.Set("sendNotifications", fmt.Sprint(sendNotifications))
+	return c
+}
+
 // Fields allows partial responses to be retrieved. See
 // https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
@@ -2132,7 +2135,6 @@ func (c *AclInsertCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.aclrule)
 	if err != nil {
@@ -2183,7 +2185,7 @@ func (c *AclInsertCall) Do(opts ...googleapi.CallOption) (*AclRule, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2200,6 +2202,11 @@ func (c *AclInsertCall) Do(opts ...googleapi.CallOption) (*AclRule, error) {
 	//       "location": "path",
 	//       "required": true,
 	//       "type": "string"
+	//     },
+	//     "sendNotifications": {
+	//       "description": "Whether to send notifications about the calendar sharing change. Optional. The default is True.",
+	//       "location": "query",
+	//       "type": "boolean"
 	//     }
 	//   },
 	//   "path": "calendars/{calendarId}/acl",
@@ -2315,7 +2322,6 @@ func (c *AclListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2364,7 +2370,7 @@ func (c *AclListCall) Do(opts ...googleapi.CallOption) (*Acl, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2460,6 +2466,15 @@ func (r *AclService) Patch(calendarId string, ruleId string, aclrule *AclRule) *
 	return c
 }
 
+// SendNotifications sets the optional parameter "sendNotifications":
+// Whether to send notifications about the calendar sharing change. Note
+// that there are no notifications on access removal.  The default is
+// True.
+func (c *AclPatchCall) SendNotifications(sendNotifications bool) *AclPatchCall {
+	c.urlParams_.Set("sendNotifications", fmt.Sprint(sendNotifications))
+	return c
+}
+
 // Fields allows partial responses to be retrieved. See
 // https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
@@ -2491,7 +2506,6 @@ func (c *AclPatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.aclrule)
 	if err != nil {
@@ -2543,7 +2557,7 @@ func (c *AclPatchCall) Do(opts ...googleapi.CallOption) (*AclRule, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2567,6 +2581,11 @@ func (c *AclPatchCall) Do(opts ...googleapi.CallOption) (*AclRule, error) {
 	//       "location": "path",
 	//       "required": true,
 	//       "type": "string"
+	//     },
+	//     "sendNotifications": {
+	//       "description": "Whether to send notifications about the calendar sharing change. Note that there are no notifications on access removal. Optional. The default is True.",
+	//       "location": "query",
+	//       "type": "boolean"
 	//     }
 	//   },
 	//   "path": "calendars/{calendarId}/acl/{ruleId}",
@@ -2604,6 +2623,15 @@ func (r *AclService) Update(calendarId string, ruleId string, aclrule *AclRule) 
 	return c
 }
 
+// SendNotifications sets the optional parameter "sendNotifications":
+// Whether to send notifications about the calendar sharing change. Note
+// that there are no notifications on access removal.  The default is
+// True.
+func (c *AclUpdateCall) SendNotifications(sendNotifications bool) *AclUpdateCall {
+	c.urlParams_.Set("sendNotifications", fmt.Sprint(sendNotifications))
+	return c
+}
+
 // Fields allows partial responses to be retrieved. See
 // https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
@@ -2635,7 +2663,6 @@ func (c *AclUpdateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.aclrule)
 	if err != nil {
@@ -2687,7 +2714,7 @@ func (c *AclUpdateCall) Do(opts ...googleapi.CallOption) (*AclRule, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2711,6 +2738,11 @@ func (c *AclUpdateCall) Do(opts ...googleapi.CallOption) (*AclRule, error) {
 	//       "location": "path",
 	//       "required": true,
 	//       "type": "string"
+	//     },
+	//     "sendNotifications": {
+	//       "description": "Whether to send notifications about the calendar sharing change. Note that there are no notifications on access removal. Optional. The default is True.",
+	//       "location": "query",
+	//       "type": "boolean"
 	//     }
 	//   },
 	//   "path": "calendars/{calendarId}/acl/{ruleId}",
@@ -2817,7 +2849,6 @@ func (c *AclWatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.channel)
 	if err != nil {
@@ -2868,7 +2899,7 @@ func (c *AclWatchCall) Do(opts ...googleapi.CallOption) (*Channel, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2973,7 +3004,6 @@ func (c *CalendarListDeleteCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "users/me/calendarList/{calendarId}")
@@ -3080,7 +3110,6 @@ func (c *CalendarListGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3129,7 +3158,7 @@ func (c *CalendarListGetCall) Do(opts ...googleapi.CallOption) (*CalendarListEnt
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3218,7 +3247,6 @@ func (c *CalendarListInsertCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.calendarlistentry)
 	if err != nil {
@@ -3266,7 +3294,7 @@ func (c *CalendarListInsertCall) Do(opts ...googleapi.CallOption) (*CalendarList
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3417,7 +3445,6 @@ func (c *CalendarListListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3463,7 +3490,7 @@ func (c *CalendarListListCall) Do(opts ...googleapi.CallOption) (*CalendarList, 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3612,7 +3639,6 @@ func (c *CalendarListPatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.calendarlistentry)
 	if err != nil {
@@ -3663,7 +3689,7 @@ func (c *CalendarListPatchCall) Do(opts ...googleapi.CallOption) (*CalendarListE
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3761,7 +3787,6 @@ func (c *CalendarListUpdateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.calendarlistentry)
 	if err != nil {
@@ -3812,7 +3837,7 @@ func (c *CalendarListUpdateCall) Do(opts ...googleapi.CallOption) (*CalendarList
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3963,7 +3988,6 @@ func (c *CalendarListWatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.channel)
 	if err != nil {
@@ -4011,7 +4035,7 @@ func (c *CalendarListWatchCall) Do(opts ...googleapi.CallOption) (*Channel, erro
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4131,7 +4155,6 @@ func (c *CalendarsClearCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "calendars/{calendarId}/clear")
@@ -4228,7 +4251,6 @@ func (c *CalendarsDeleteCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "calendars/{calendarId}")
@@ -4335,7 +4357,6 @@ func (c *CalendarsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4384,7 +4405,7 @@ func (c *CalendarsGetCall) Do(opts ...googleapi.CallOption) (*Calendar, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4463,7 +4484,6 @@ func (c *CalendarsInsertCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.calendar)
 	if err != nil {
@@ -4511,7 +4531,7 @@ func (c *CalendarsInsertCall) Do(opts ...googleapi.CallOption) (*Calendar, error
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4584,7 +4604,6 @@ func (c *CalendarsPatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.calendar)
 	if err != nil {
@@ -4635,7 +4654,7 @@ func (c *CalendarsPatchCall) Do(opts ...googleapi.CallOption) (*Calendar, error)
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4718,7 +4737,6 @@ func (c *CalendarsUpdateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.calendar)
 	if err != nil {
@@ -4769,7 +4787,7 @@ func (c *CalendarsUpdateCall) Do(opts ...googleapi.CallOption) (*Calendar, error
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4850,7 +4868,6 @@ func (c *ChannelsStopCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.channel)
 	if err != nil {
@@ -4951,7 +4968,6 @@ func (c *ColorsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4997,7 +5013,7 @@ func (c *ColorsGetCall) Do(opts ...googleapi.CallOption) (*Colors, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5075,7 +5091,6 @@ func (c *EventsDeleteCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "calendars/{calendarId}/events/{eventId}")
@@ -5225,7 +5240,6 @@ func (c *EventsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -5275,7 +5289,7 @@ func (c *EventsGetCall) Do(opts ...googleapi.CallOption) (*Event, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5389,7 +5403,6 @@ func (c *EventsImportCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.event)
 	if err != nil {
@@ -5440,7 +5453,7 @@ func (c *EventsImportCall) Do(opts ...googleapi.CallOption) (*Event, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5553,7 +5566,6 @@ func (c *EventsInsertCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.event)
 	if err != nil {
@@ -5604,7 +5616,7 @@ func (c *EventsInsertCall) Do(opts ...googleapi.CallOption) (*Event, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5792,7 +5804,6 @@ func (c *EventsInstancesCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -5842,7 +5853,7 @@ func (c *EventsInstancesCall) Do(opts ...googleapi.CallOption) (*Events, error) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6000,8 +6011,12 @@ func (c *EventsListCall) MaxAttendees(maxAttendees int64) *EventsListCall {
 }
 
 // MaxResults sets the optional parameter "maxResults": Maximum number
-// of events returned on one result page. By default the value is 250
-// events. The page size can never be larger than 2500 events.
+// of events returned on one result page. The number of events in the
+// resulting page may be less than this value, or none at all, even if
+// there are more events matching the query. Incomplete pages can be
+// detected by a non-empty nextPageToken field in the response. By
+// default the value is 250 events. The page size can never be larger
+// than 2500 events.
 func (c *EventsListCall) MaxResults(maxResults int64) *EventsListCall {
 	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
@@ -6117,7 +6132,7 @@ func (c *EventsListCall) SyncToken(syncToken string) *EventsListCall {
 // not to filter by start time. Must be an RFC3339 timestamp with
 // mandatory time zone offset, e.g., 2011-06-03T10:00:00-07:00,
 // 2011-06-03T10:00:00Z. Milliseconds may be provided but will be
-// ignored.
+// ignored. If timeMin is set, timeMax must be greater than timeMin.
 func (c *EventsListCall) TimeMax(timeMax string) *EventsListCall {
 	c.urlParams_.Set("timeMax", timeMax)
 	return c
@@ -6128,7 +6143,7 @@ func (c *EventsListCall) TimeMax(timeMax string) *EventsListCall {
 // to filter by end time. Must be an RFC3339 timestamp with mandatory
 // time zone offset, e.g., 2011-06-03T10:00:00-07:00,
 // 2011-06-03T10:00:00Z. Milliseconds may be provided but will be
-// ignored.
+// ignored. If timeMax is set, timeMin must be smaller than timeMax.
 func (c *EventsListCall) TimeMin(timeMin string) *EventsListCall {
 	c.urlParams_.Set("timeMin", timeMin)
 	return c
@@ -6192,7 +6207,6 @@ func (c *EventsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -6241,7 +6255,7 @@ func (c *EventsListCall) Do(opts ...googleapi.CallOption) (*Events, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6278,7 +6292,7 @@ func (c *EventsListCall) Do(opts ...googleapi.CallOption) (*Events, error) {
 	//     },
 	//     "maxResults": {
 	//       "default": "250",
-	//       "description": "Maximum number of events returned on one result page. By default the value is 250 events. The page size can never be larger than 2500 events. Optional.",
+	//       "description": "Maximum number of events returned on one result page. The number of events in the resulting page may be less than this value, or none at all, even if there are more events matching the query. Incomplete pages can be detected by a non-empty nextPageToken field in the response. By default the value is 250 events. The page size can never be larger than 2500 events. Optional.",
 	//       "format": "int32",
 	//       "location": "query",
 	//       "minimum": "1",
@@ -6340,13 +6354,13 @@ func (c *EventsListCall) Do(opts ...googleapi.CallOption) (*Events, error) {
 	//       "type": "string"
 	//     },
 	//     "timeMax": {
-	//       "description": "Upper bound (exclusive) for an event's start time to filter by. Optional. The default is not to filter by start time. Must be an RFC3339 timestamp with mandatory time zone offset, e.g., 2011-06-03T10:00:00-07:00, 2011-06-03T10:00:00Z. Milliseconds may be provided but will be ignored.",
+	//       "description": "Upper bound (exclusive) for an event's start time to filter by. Optional. The default is not to filter by start time. Must be an RFC3339 timestamp with mandatory time zone offset, e.g., 2011-06-03T10:00:00-07:00, 2011-06-03T10:00:00Z. Milliseconds may be provided but will be ignored. If timeMin is set, timeMax must be greater than timeMin.",
 	//       "format": "date-time",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
 	//     "timeMin": {
-	//       "description": "Lower bound (inclusive) for an event's end time to filter by. Optional. The default is not to filter by end time. Must be an RFC3339 timestamp with mandatory time zone offset, e.g., 2011-06-03T10:00:00-07:00, 2011-06-03T10:00:00Z. Milliseconds may be provided but will be ignored.",
+	//       "description": "Lower bound (inclusive) for an event's end time to filter by. Optional. The default is not to filter by end time. Must be an RFC3339 timestamp with mandatory time zone offset, e.g., 2011-06-03T10:00:00-07:00, 2011-06-03T10:00:00Z. Milliseconds may be provided but will be ignored. If timeMax is set, timeMin must be smaller than timeMax.",
 	//       "format": "date-time",
 	//       "location": "query",
 	//       "type": "string"
@@ -6457,7 +6471,6 @@ func (c *EventsMoveCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "calendars/{calendarId}/events/{eventId}/move")
@@ -6504,7 +6517,7 @@ func (c *EventsMoveCall) Do(opts ...googleapi.CallOption) (*Event, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6642,7 +6655,6 @@ func (c *EventsPatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.event)
 	if err != nil {
@@ -6694,7 +6706,7 @@ func (c *EventsPatchCall) Do(opts ...googleapi.CallOption) (*Event, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6813,7 +6825,6 @@ func (c *EventsQuickAddCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "calendars/{calendarId}/events/quickAdd")
@@ -6859,7 +6870,7 @@ func (c *EventsQuickAddCall) Do(opts ...googleapi.CallOption) (*Event, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6990,7 +7001,6 @@ func (c *EventsUpdateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.event)
 	if err != nil {
@@ -7042,7 +7052,7 @@ func (c *EventsUpdateCall) Do(opts ...googleapi.CallOption) (*Event, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7152,8 +7162,12 @@ func (c *EventsWatchCall) MaxAttendees(maxAttendees int64) *EventsWatchCall {
 }
 
 // MaxResults sets the optional parameter "maxResults": Maximum number
-// of events returned on one result page. By default the value is 250
-// events. The page size can never be larger than 2500 events.
+// of events returned on one result page. The number of events in the
+// resulting page may be less than this value, or none at all, even if
+// there are more events matching the query. Incomplete pages can be
+// detected by a non-empty nextPageToken field in the response. By
+// default the value is 250 events. The page size can never be larger
+// than 2500 events.
 func (c *EventsWatchCall) MaxResults(maxResults int64) *EventsWatchCall {
 	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
 	return c
@@ -7269,7 +7283,7 @@ func (c *EventsWatchCall) SyncToken(syncToken string) *EventsWatchCall {
 // not to filter by start time. Must be an RFC3339 timestamp with
 // mandatory time zone offset, e.g., 2011-06-03T10:00:00-07:00,
 // 2011-06-03T10:00:00Z. Milliseconds may be provided but will be
-// ignored.
+// ignored. If timeMin is set, timeMax must be greater than timeMin.
 func (c *EventsWatchCall) TimeMax(timeMax string) *EventsWatchCall {
 	c.urlParams_.Set("timeMax", timeMax)
 	return c
@@ -7280,7 +7294,7 @@ func (c *EventsWatchCall) TimeMax(timeMax string) *EventsWatchCall {
 // to filter by end time. Must be an RFC3339 timestamp with mandatory
 // time zone offset, e.g., 2011-06-03T10:00:00-07:00,
 // 2011-06-03T10:00:00Z. Milliseconds may be provided but will be
-// ignored.
+// ignored. If timeMax is set, timeMin must be smaller than timeMax.
 func (c *EventsWatchCall) TimeMin(timeMin string) *EventsWatchCall {
 	c.urlParams_.Set("timeMin", timeMin)
 	return c
@@ -7334,7 +7348,6 @@ func (c *EventsWatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.channel)
 	if err != nil {
@@ -7385,7 +7398,7 @@ func (c *EventsWatchCall) Do(opts ...googleapi.CallOption) (*Channel, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7422,7 +7435,7 @@ func (c *EventsWatchCall) Do(opts ...googleapi.CallOption) (*Channel, error) {
 	//     },
 	//     "maxResults": {
 	//       "default": "250",
-	//       "description": "Maximum number of events returned on one result page. By default the value is 250 events. The page size can never be larger than 2500 events. Optional.",
+	//       "description": "Maximum number of events returned on one result page. The number of events in the resulting page may be less than this value, or none at all, even if there are more events matching the query. Incomplete pages can be detected by a non-empty nextPageToken field in the response. By default the value is 250 events. The page size can never be larger than 2500 events. Optional.",
 	//       "format": "int32",
 	//       "location": "query",
 	//       "minimum": "1",
@@ -7484,13 +7497,13 @@ func (c *EventsWatchCall) Do(opts ...googleapi.CallOption) (*Channel, error) {
 	//       "type": "string"
 	//     },
 	//     "timeMax": {
-	//       "description": "Upper bound (exclusive) for an event's start time to filter by. Optional. The default is not to filter by start time. Must be an RFC3339 timestamp with mandatory time zone offset, e.g., 2011-06-03T10:00:00-07:00, 2011-06-03T10:00:00Z. Milliseconds may be provided but will be ignored.",
+	//       "description": "Upper bound (exclusive) for an event's start time to filter by. Optional. The default is not to filter by start time. Must be an RFC3339 timestamp with mandatory time zone offset, e.g., 2011-06-03T10:00:00-07:00, 2011-06-03T10:00:00Z. Milliseconds may be provided but will be ignored. If timeMin is set, timeMax must be greater than timeMin.",
 	//       "format": "date-time",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
 	//     "timeMin": {
-	//       "description": "Lower bound (inclusive) for an event's end time to filter by. Optional. The default is not to filter by end time. Must be an RFC3339 timestamp with mandatory time zone offset, e.g., 2011-06-03T10:00:00-07:00, 2011-06-03T10:00:00Z. Milliseconds may be provided but will be ignored.",
+	//       "description": "Lower bound (inclusive) for an event's end time to filter by. Optional. The default is not to filter by end time. Must be an RFC3339 timestamp with mandatory time zone offset, e.g., 2011-06-03T10:00:00-07:00, 2011-06-03T10:00:00Z. Milliseconds may be provided but will be ignored. If timeMax is set, timeMin must be smaller than timeMax.",
 	//       "format": "date-time",
 	//       "location": "query",
 	//       "type": "string"
@@ -7572,7 +7585,6 @@ func (c *FreebusyQueryCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.freebusyrequest)
 	if err != nil {
@@ -7620,7 +7632,7 @@ func (c *FreebusyQueryCall) Do(opts ...googleapi.CallOption) (*FreeBusyResponse,
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7702,7 +7714,6 @@ func (c *SettingsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -7751,7 +7762,7 @@ func (c *SettingsGetCall) Do(opts ...googleapi.CallOption) (*Setting, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7868,7 +7879,6 @@ func (c *SettingsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -7914,7 +7924,7 @@ func (c *SettingsListCall) Do(opts ...googleapi.CallOption) (*Settings, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -8052,7 +8062,6 @@ func (c *SettingsWatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.channel)
 	if err != nil {
@@ -8100,7 +8109,7 @@ func (c *SettingsWatchCall) Do(opts ...googleapi.CallOption) (*Channel, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

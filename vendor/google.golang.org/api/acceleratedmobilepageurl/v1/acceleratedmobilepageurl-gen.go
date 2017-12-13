@@ -55,10 +55,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	AmpUrls *AmpUrlsService
 }
@@ -68,10 +67,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewAmpUrlsService(s *Service) *AmpUrlsService {
@@ -114,8 +109,8 @@ type AmpUrl struct {
 }
 
 func (s *AmpUrl) MarshalJSON() ([]byte, error) {
-	type noMethod AmpUrl
-	raw := noMethod(*s)
+	type NoMethod AmpUrl
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -171,8 +166,8 @@ type AmpUrlError struct {
 }
 
 func (s *AmpUrlError) MarshalJSON() ([]byte, error) {
-	type noMethod AmpUrlError
-	raw := noMethod(*s)
+	type NoMethod AmpUrlError
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -223,8 +218,8 @@ type BatchGetAmpUrlsRequest struct {
 }
 
 func (s *BatchGetAmpUrlsRequest) MarshalJSON() ([]byte, error) {
-	type noMethod BatchGetAmpUrlsRequest
-	raw := noMethod(*s)
+	type NoMethod BatchGetAmpUrlsRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -263,8 +258,8 @@ type BatchGetAmpUrlsResponse struct {
 }
 
 func (s *BatchGetAmpUrlsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod BatchGetAmpUrlsResponse
-	raw := noMethod(*s)
+	type NoMethod BatchGetAmpUrlsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -317,7 +312,6 @@ func (c *AmpUrlsBatchGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.batchgetampurlsrequest)
 	if err != nil {
@@ -365,7 +359,7 @@ func (c *AmpUrlsBatchGetCall) Do(opts ...googleapi.CallOption) (*BatchGetAmpUrls
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

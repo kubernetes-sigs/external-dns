@@ -64,10 +64,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	WebResource *WebResourceService
 }
@@ -77,10 +76,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewWebResourceService(s *Service) *WebResourceService {
@@ -119,8 +114,8 @@ type SiteVerificationWebResourceGettokenRequest struct {
 }
 
 func (s *SiteVerificationWebResourceGettokenRequest) MarshalJSON() ([]byte, error) {
-	type noMethod SiteVerificationWebResourceGettokenRequest
-	raw := noMethod(*s)
+	type NoMethod SiteVerificationWebResourceGettokenRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -154,8 +149,8 @@ type SiteVerificationWebResourceGettokenRequestSite struct {
 }
 
 func (s *SiteVerificationWebResourceGettokenRequestSite) MarshalJSON() ([]byte, error) {
-	type noMethod SiteVerificationWebResourceGettokenRequestSite
-	raw := noMethod(*s)
+	type NoMethod SiteVerificationWebResourceGettokenRequestSite
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -194,8 +189,8 @@ type SiteVerificationWebResourceGettokenResponse struct {
 }
 
 func (s *SiteVerificationWebResourceGettokenResponse) MarshalJSON() ([]byte, error) {
-	type noMethod SiteVerificationWebResourceGettokenResponse
-	raw := noMethod(*s)
+	type NoMethod SiteVerificationWebResourceGettokenResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -225,8 +220,8 @@ type SiteVerificationWebResourceListResponse struct {
 }
 
 func (s *SiteVerificationWebResourceListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod SiteVerificationWebResourceListResponse
-	raw := noMethod(*s)
+	type NoMethod SiteVerificationWebResourceListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -265,8 +260,8 @@ type SiteVerificationWebResourceResource struct {
 }
 
 func (s *SiteVerificationWebResourceResource) MarshalJSON() ([]byte, error) {
-	type noMethod SiteVerificationWebResourceResource
-	raw := noMethod(*s)
+	type NoMethod SiteVerificationWebResourceResource
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -299,8 +294,8 @@ type SiteVerificationWebResourceResourceSite struct {
 }
 
 func (s *SiteVerificationWebResourceResourceSite) MarshalJSON() ([]byte, error) {
-	type noMethod SiteVerificationWebResourceResourceSite
-	raw := noMethod(*s)
+	type NoMethod SiteVerificationWebResourceResourceSite
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -352,7 +347,6 @@ func (c *WebResourceDeleteCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "webResource/{id}")
@@ -459,7 +453,6 @@ func (c *WebResourceGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -509,7 +502,7 @@ func (c *WebResourceGetCall) Do(opts ...googleapi.CallOption) (*SiteVerification
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -588,7 +581,6 @@ func (c *WebResourceGetTokenCall) doRequest(alt string) (*http.Response, error) 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.siteverificationwebresourcegettokenrequest)
 	if err != nil {
@@ -638,7 +630,7 @@ func (c *WebResourceGetTokenCall) Do(opts ...googleapi.CallOption) (*SiteVerific
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -710,7 +702,6 @@ func (c *WebResourceInsertCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.siteverificationwebresourceresource)
 	if err != nil {
@@ -759,7 +750,7 @@ func (c *WebResourceInsertCall) Do(opts ...googleapi.CallOption) (*SiteVerificat
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -850,7 +841,6 @@ func (c *WebResourceListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -897,7 +887,7 @@ func (c *WebResourceListCall) Do(opts ...googleapi.CallOption) (*SiteVerificatio
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -967,7 +957,6 @@ func (c *WebResourcePatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.siteverificationwebresourceresource)
 	if err != nil {
@@ -1019,7 +1008,7 @@ func (c *WebResourcePatchCall) Do(opts ...googleapi.CallOption) (*SiteVerificati
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1102,7 +1091,6 @@ func (c *WebResourceUpdateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.siteverificationwebresourceresource)
 	if err != nil {
@@ -1154,7 +1142,7 @@ func (c *WebResourceUpdateCall) Do(opts ...googleapi.CallOption) (*SiteVerificat
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

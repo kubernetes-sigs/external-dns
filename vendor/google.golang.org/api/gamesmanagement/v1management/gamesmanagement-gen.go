@@ -72,10 +72,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Achievements *AchievementsService
 
@@ -99,10 +98,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewAchievementsService(s *Service) *AchievementsService {
@@ -209,8 +204,8 @@ type AchievementResetAllResponse struct {
 }
 
 func (s *AchievementResetAllResponse) MarshalJSON() ([]byte, error) {
-	type noMethod AchievementResetAllResponse
-	raw := noMethod(*s)
+	type NoMethod AchievementResetAllResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -244,8 +239,8 @@ type AchievementResetMultipleForAllRequest struct {
 }
 
 func (s *AchievementResetMultipleForAllRequest) MarshalJSON() ([]byte, error) {
-	type noMethod AchievementResetMultipleForAllRequest
-	raw := noMethod(*s)
+	type NoMethod AchievementResetMultipleForAllRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -294,8 +289,8 @@ type AchievementResetResponse struct {
 }
 
 func (s *AchievementResetResponse) MarshalJSON() ([]byte, error) {
-	type noMethod AchievementResetResponse
-	raw := noMethod(*s)
+	type NoMethod AchievementResetResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -327,8 +322,8 @@ type EventsResetMultipleForAllRequest struct {
 }
 
 func (s *EventsResetMultipleForAllRequest) MarshalJSON() ([]byte, error) {
-	type noMethod EventsResetMultipleForAllRequest
-	raw := noMethod(*s)
+	type NoMethod EventsResetMultipleForAllRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -361,8 +356,8 @@ type GamesPlayedResource struct {
 }
 
 func (s *GamesPlayedResource) MarshalJSON() ([]byte, error) {
-	type noMethod GamesPlayedResource
-	raw := noMethod(*s)
+	type NoMethod GamesPlayedResource
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -404,8 +399,8 @@ type GamesPlayerExperienceInfoResource struct {
 }
 
 func (s *GamesPlayerExperienceInfoResource) MarshalJSON() ([]byte, error) {
-	type noMethod GamesPlayerExperienceInfoResource
-	raw := noMethod(*s)
+	type NoMethod GamesPlayerExperienceInfoResource
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -439,8 +434,8 @@ type GamesPlayerLevelResource struct {
 }
 
 func (s *GamesPlayerLevelResource) MarshalJSON() ([]byte, error) {
-	type noMethod GamesPlayerLevelResource
-	raw := noMethod(*s)
+	type NoMethod GamesPlayerLevelResource
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -475,8 +470,8 @@ type HiddenPlayer struct {
 }
 
 func (s *HiddenPlayer) MarshalJSON() ([]byte, error) {
-	type noMethod HiddenPlayer
-	raw := noMethod(*s)
+	type NoMethod HiddenPlayer
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -515,8 +510,8 @@ type HiddenPlayerList struct {
 }
 
 func (s *HiddenPlayerList) MarshalJSON() ([]byte, error) {
-	type noMethod HiddenPlayerList
-	raw := noMethod(*s)
+	type NoMethod HiddenPlayerList
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -589,8 +584,8 @@ type Player struct {
 }
 
 func (s *Player) MarshalJSON() ([]byte, error) {
-	type noMethod Player
-	raw := noMethod(*s)
+	type NoMethod Player
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -623,8 +618,8 @@ type PlayerName struct {
 }
 
 func (s *PlayerName) MarshalJSON() ([]byte, error) {
-	type noMethod PlayerName
-	raw := noMethod(*s)
+	type NoMethod PlayerName
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -660,8 +655,8 @@ type PlayerScoreResetAllResponse struct {
 }
 
 func (s *PlayerScoreResetAllResponse) MarshalJSON() ([]byte, error) {
-	type noMethod PlayerScoreResetAllResponse
-	raw := noMethod(*s)
+	type NoMethod PlayerScoreResetAllResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -705,8 +700,8 @@ type PlayerScoreResetResponse struct {
 }
 
 func (s *PlayerScoreResetResponse) MarshalJSON() ([]byte, error) {
-	type noMethod PlayerScoreResetResponse
-	raw := noMethod(*s)
+	type NoMethod PlayerScoreResetResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -738,8 +733,8 @@ type ProfileSettings struct {
 }
 
 func (s *ProfileSettings) MarshalJSON() ([]byte, error) {
-	type noMethod ProfileSettings
-	raw := noMethod(*s)
+	type NoMethod ProfileSettings
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -771,8 +766,8 @@ type QuestsResetMultipleForAllRequest struct {
 }
 
 func (s *QuestsResetMultipleForAllRequest) MarshalJSON() ([]byte, error) {
-	type noMethod QuestsResetMultipleForAllRequest
-	raw := noMethod(*s)
+	type NoMethod QuestsResetMultipleForAllRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -804,8 +799,8 @@ type ScoresResetMultipleForAllRequest struct {
 }
 
 func (s *ScoresResetMultipleForAllRequest) MarshalJSON() ([]byte, error) {
-	type noMethod ScoresResetMultipleForAllRequest
-	raw := noMethod(*s)
+	type NoMethod ScoresResetMultipleForAllRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -859,7 +854,6 @@ func (c *AchievementsResetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "achievements/{achievementId}/reset")
@@ -905,7 +899,7 @@ func (c *AchievementsResetCall) Do(opts ...googleapi.CallOption) (*AchievementRe
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -984,7 +978,6 @@ func (c *AchievementsResetAllCall) doRequest(alt string) (*http.Response, error)
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "achievements/reset")
@@ -1027,7 +1020,7 @@ func (c *AchievementsResetAllCall) Do(opts ...googleapi.CallOption) (*Achievemen
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1095,7 +1088,6 @@ func (c *AchievementsResetAllForAllPlayersCall) doRequest(alt string) (*http.Res
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "achievements/resetAllForAllPlayers")
@@ -1180,7 +1172,6 @@ func (c *AchievementsResetForAllPlayersCall) doRequest(alt string) (*http.Respon
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "achievements/{achievementId}/resetForAllPlayers")
@@ -1279,7 +1270,6 @@ func (c *AchievementsResetMultipleForAllPlayersCall) doRequest(alt string) (*htt
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.achievementresetmultipleforallrequest)
 	if err != nil {
@@ -1399,7 +1389,6 @@ func (c *ApplicationsListHiddenCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -1448,7 +1437,7 @@ func (c *ApplicationsListHiddenCall) Do(opts ...googleapi.CallOption) (*HiddenPl
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1564,7 +1553,6 @@ func (c *EventsResetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "events/{eventId}/reset")
@@ -1662,7 +1650,6 @@ func (c *EventsResetAllCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "events/reset")
@@ -1745,7 +1732,6 @@ func (c *EventsResetAllForAllPlayersCall) doRequest(alt string) (*http.Response,
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "events/resetAllForAllPlayers")
@@ -1831,7 +1817,6 @@ func (c *EventsResetForAllPlayersCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "events/{eventId}/resetForAllPlayers")
@@ -1931,7 +1916,6 @@ func (c *EventsResetMultipleForAllPlayersCall) doRequest(alt string) (*http.Resp
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.eventsresetmultipleforallrequest)
 	if err != nil {
@@ -2026,7 +2010,6 @@ func (c *PlayersHideCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "applications/{applicationId}/players/hidden/{playerId}")
@@ -2135,7 +2118,6 @@ func (c *PlayersUnhideCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "applications/{applicationId}/players/hidden/{playerId}")
@@ -2242,7 +2224,6 @@ func (c *QuestsResetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "quests/{questId}/reset")
@@ -2339,7 +2320,6 @@ func (c *QuestsResetAllCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "quests/reset")
@@ -2421,7 +2401,6 @@ func (c *QuestsResetAllForAllPlayersCall) doRequest(alt string) (*http.Response,
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "quests/resetAllForAllPlayers")
@@ -2506,7 +2485,6 @@ func (c *QuestsResetForAllPlayersCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "quests/{questId}/resetForAllPlayers")
@@ -2605,7 +2583,6 @@ func (c *QuestsResetMultipleForAllPlayersCall) doRequest(alt string) (*http.Resp
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.questsresetmultipleforallrequest)
 	if err != nil {
@@ -2696,7 +2673,6 @@ func (c *RoomsResetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rooms/reset")
@@ -2779,7 +2755,6 @@ func (c *RoomsResetForAllPlayersCall) doRequest(alt string) (*http.Response, err
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "rooms/resetForAllPlayers")
@@ -2864,7 +2839,6 @@ func (c *ScoresResetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "leaderboards/{leaderboardId}/scores/reset")
@@ -2910,7 +2884,7 @@ func (c *ScoresResetCall) Do(opts ...googleapi.CallOption) (*PlayerScoreResetRes
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2989,7 +2963,6 @@ func (c *ScoresResetAllCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "scores/reset")
@@ -3032,7 +3005,7 @@ func (c *ScoresResetAllCall) Do(opts ...googleapi.CallOption) (*PlayerScoreReset
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3100,7 +3073,6 @@ func (c *ScoresResetAllForAllPlayersCall) doRequest(alt string) (*http.Response,
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "scores/resetAllForAllPlayers")
@@ -3185,7 +3157,6 @@ func (c *ScoresResetForAllPlayersCall) doRequest(alt string) (*http.Response, er
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "leaderboards/{leaderboardId}/scores/resetForAllPlayers")
@@ -3285,7 +3256,6 @@ func (c *ScoresResetMultipleForAllPlayersCall) doRequest(alt string) (*http.Resp
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.scoresresetmultipleforallrequest)
 	if err != nil {
@@ -3375,7 +3345,6 @@ func (c *TurnBasedMatchesResetCall) doRequest(alt string) (*http.Response, error
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "turnbasedmatches/reset")
@@ -3459,7 +3428,6 @@ func (c *TurnBasedMatchesResetForAllPlayersCall) doRequest(alt string) (*http.Re
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "turnbasedmatches/resetForAllPlayers")
