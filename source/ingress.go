@@ -105,6 +105,7 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		}
 
 		log.Debugf("Endpoints generated from ingress: %s/%s: %v", ing.Namespace, ing.Name, ingEndpoints)
+		sc.setResourceLabel(ing, ingEndpoints)
 		endpoints = append(endpoints, ingEndpoints...)
 	}
 
@@ -195,6 +196,12 @@ func (sc *ingressSource) filterByAnnotations(ingresses []v1beta1.Ingress) ([]v1b
 	}
 
 	return filteredList, nil
+}
+
+func (sc *ingressSource) setResourceLabel(ingress v1beta1.Ingress, endpoints []*endpoint.Endpoint) {
+	for _, ep := range endpoints {
+		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("ingress/%s/%s", ingress.Namespace, ingress.Name)
+	}
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object

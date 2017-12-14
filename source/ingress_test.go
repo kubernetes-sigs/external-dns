@@ -28,12 +28,50 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
 // Validates that ingressSource is a Source
 var _ Source = &ingressSource{}
 
+type IngressSuite struct {
+	suite.Suite
+	sc             Source
+	fooWithTargets *v1beta1.Ingress
+}
+
+func (suite *IngressSuite) SetupTest() {
+	fakeClient := fake.NewSimpleClientset()
+	var err error
+
+	suite.sc, err = NewIngressSource(
+		fakeClient,
+		"",
+		"",
+		"{{.Name}}",
+	)
+	suite.NoError(err, "should initialize ingress source")
+
+	suite.fooWithTargets = (fakeIngress{
+		name:      "foo-with-targets",
+		namespace: "default",
+		dnsnames:  []string{"foo"},
+		ips:       []string{"8.8.8.8"},
+		hostnames: []string{"v1"},
+	}).Ingress()
+	_, err = fakeClient.Extensions().Ingresses(suite.fooWithTargets.Namespace).Create(suite.fooWithTargets)
+	suite.NoError(err, "should succeed")
+}
+
+func (suite *IngressSuite) TestResourceLabelIsSet() {
+	endpoints, _ := suite.sc.Endpoints()
+	for _, ep := range endpoints {
+		suite.Equal("ingress/default/foo-with-targets", ep.Labels[endpoint.ResourceLabelKey], "should set correct resource label")
+	}
+}
+
 func TestIngress(t *testing.T) {
+	suite.Run(t, new(IngressSuite))
 	t.Run("endpointsFromIngress", testEndpointsFromIngress)
 	t.Run("Endpoints", testIngressEndpoints)
 }
