@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/QkjGIRroDT5nHgu1Wy3bp0C7GqA\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/_bC0Z0nYODnrZBcW4xrPKn1ZzhA\"",
  "discoveryVersion": "v1",
  "id": "fusiontables:v2",
  "name": "fusiontables",
  "version": "v2",
- "revision": "20160526",
+ "revision": "20171117",
  "title": "Fusion Tables API",
  "description": "API for working with Fusion Tables data.",
  "ownerDomain": "google.com",
@@ -20,7 +20,7 @@
  "basePath": "/fusiontables/v2/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "fusiontables/v2/",
- "batchPath": "batch",
+ "batchPath": "batch/fusiontables/v2",
  "parameters": {
   "alt": {
    "type": "string",
@@ -1525,6 +1525,29 @@
      },
      "response": {
       "$ref": "Table"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/fusiontables"
+     ]
+    },
+    "refetchSheet": {
+     "id": "fusiontables.table.refetchSheet",
+     "path": "tables/{tableId}/refetch",
+     "httpMethod": "POST",
+     "description": "Replaces rows of the table with the rows of the spreadsheet that is first imported from. Current rows remain visible until all replacement rows are ready.",
+     "parameters": {
+      "tableId": {
+       "type": "string",
+       "description": "Table whose rows will be replaced from the spreadsheet.",
+       "required": true,
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "tableId"
+     ],
+     "response": {
+      "$ref": "Task"
      },
      "scopes": [
       "https://www.googleapis.com/auth/fusiontables"

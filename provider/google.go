@@ -171,6 +171,10 @@ func (p *GoogleProvider) Zones() (map[string]*dns.ManagedZone, error) {
 		}
 	}
 
+	for _, zone := range zones {
+		log.Debugf("Considering zone: %s (domain: %s)", zone.Name, zone.DnsName)
+	}
+
 	return zones, nil
 }
 

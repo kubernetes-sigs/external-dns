@@ -64,10 +64,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Relyingparty *RelyingpartyService
 }
@@ -77,10 +76,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewRelyingpartyService(s *Service) *RelyingpartyService {
@@ -123,6 +118,9 @@ type CreateAuthUriResponse struct {
 	// verifyAssertion request.
 	SessionId string `json:"sessionId,omitempty"`
 
+	// SigninMethods: All sign-in methods this user has used.
+	SigninMethods []string `json:"signinMethods,omitempty"`
+
 	// ServerResponse contains the HTTP response code and headers from the
 	// server.
 	googleapi.ServerResponse `json:"-"`
@@ -145,8 +143,8 @@ type CreateAuthUriResponse struct {
 }
 
 func (s *CreateAuthUriResponse) MarshalJSON() ([]byte, error) {
-	type noMethod CreateAuthUriResponse
-	raw := noMethod(*s)
+	type NoMethod CreateAuthUriResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -177,8 +175,8 @@ type DeleteAccountResponse struct {
 }
 
 func (s *DeleteAccountResponse) MarshalJSON() ([]byte, error) {
-	type noMethod DeleteAccountResponse
-	raw := noMethod(*s)
+	type NoMethod DeleteAccountResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -216,8 +214,58 @@ type DownloadAccountResponse struct {
 }
 
 func (s *DownloadAccountResponse) MarshalJSON() ([]byte, error) {
-	type noMethod DownloadAccountResponse
-	raw := noMethod(*s)
+	type NoMethod DownloadAccountResponse
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// EmailLinkSigninResponse: Response of email signIn.
+type EmailLinkSigninResponse struct {
+	// Email: The user's email.
+	Email string `json:"email,omitempty"`
+
+	// ExpiresIn: Expiration time of STS id token in seconds.
+	ExpiresIn int64 `json:"expiresIn,omitempty,string"`
+
+	// IdToken: The STS id token to login the newly signed in user.
+	IdToken string `json:"idToken,omitempty"`
+
+	// IsNewUser: Whether the user is new.
+	IsNewUser bool `json:"isNewUser,omitempty"`
+
+	// Kind: The fixed string "identitytoolkit#EmailLinkSigninResponse".
+	Kind string `json:"kind,omitempty"`
+
+	// LocalId: The RP local ID of the user.
+	LocalId string `json:"localId,omitempty"`
+
+	// RefreshToken: The refresh token for the signed in user.
+	RefreshToken string `json:"refreshToken,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Email") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Email") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *EmailLinkSigninResponse) MarshalJSON() ([]byte, error) {
+	type NoMethod EmailLinkSigninResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -259,8 +307,8 @@ type EmailTemplate struct {
 }
 
 func (s *EmailTemplate) MarshalJSON() ([]byte, error) {
-	type noMethod EmailTemplate
-	raw := noMethod(*s)
+	type NoMethod EmailTemplate
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -294,8 +342,8 @@ type GetAccountInfoResponse struct {
 }
 
 func (s *GetAccountInfoResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GetAccountInfoResponse
-	raw := noMethod(*s)
+	type NoMethod GetAccountInfoResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -334,8 +382,8 @@ type GetOobConfirmationCodeResponse struct {
 }
 
 func (s *GetOobConfirmationCodeResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GetOobConfirmationCodeResponse
-	raw := noMethod(*s)
+	type NoMethod GetOobConfirmationCodeResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -373,8 +421,8 @@ type GetRecaptchaParamResponse struct {
 }
 
 func (s *GetRecaptchaParamResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GetRecaptchaParamResponse
-	raw := noMethod(*s)
+	type NoMethod GetRecaptchaParamResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -455,8 +503,8 @@ type IdentitytoolkitRelyingpartyCreateAuthUriRequest struct {
 }
 
 func (s *IdentitytoolkitRelyingpartyCreateAuthUriRequest) MarshalJSON() ([]byte, error) {
-	type noMethod IdentitytoolkitRelyingpartyCreateAuthUriRequest
-	raw := noMethod(*s)
+	type NoMethod IdentitytoolkitRelyingpartyCreateAuthUriRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -493,8 +541,8 @@ type IdentitytoolkitRelyingpartyDeleteAccountRequest struct {
 }
 
 func (s *IdentitytoolkitRelyingpartyDeleteAccountRequest) MarshalJSON() ([]byte, error) {
-	type noMethod IdentitytoolkitRelyingpartyDeleteAccountRequest
-	raw := noMethod(*s)
+	type NoMethod IdentitytoolkitRelyingpartyDeleteAccountRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -536,8 +584,43 @@ type IdentitytoolkitRelyingpartyDownloadAccountRequest struct {
 }
 
 func (s *IdentitytoolkitRelyingpartyDownloadAccountRequest) MarshalJSON() ([]byte, error) {
-	type noMethod IdentitytoolkitRelyingpartyDownloadAccountRequest
-	raw := noMethod(*s)
+	type NoMethod IdentitytoolkitRelyingpartyDownloadAccountRequest
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// IdentitytoolkitRelyingpartyEmailLinkSigninRequest: Request to sign in
+// with email.
+type IdentitytoolkitRelyingpartyEmailLinkSigninRequest struct {
+	// Email: The email address of the user.
+	Email string `json:"email,omitempty"`
+
+	// IdToken: Token for linking flow.
+	IdToken string `json:"idToken,omitempty"`
+
+	// OobCode: The confirmation code.
+	OobCode string `json:"oobCode,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Email") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Email") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *IdentitytoolkitRelyingpartyEmailLinkSigninRequest) MarshalJSON() ([]byte, error) {
+	type NoMethod IdentitytoolkitRelyingpartyEmailLinkSigninRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -556,6 +639,10 @@ type IdentitytoolkitRelyingpartyGetAccountInfoRequest struct {
 
 	// LocalId: The list of local ID's of the users to inquiry.
 	LocalId []string `json:"localId,omitempty"`
+
+	// PhoneNumber: Privileged caller can query users by specified phone
+	// number.
+	PhoneNumber []string `json:"phoneNumber,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g.
 	// "DelegatedProjectNumber") to unconditionally include in API requests.
@@ -577,8 +664,8 @@ type IdentitytoolkitRelyingpartyGetAccountInfoRequest struct {
 }
 
 func (s *IdentitytoolkitRelyingpartyGetAccountInfoRequest) MarshalJSON() ([]byte, error) {
-	type noMethod IdentitytoolkitRelyingpartyGetAccountInfoRequest
-	raw := noMethod(*s)
+	type NoMethod IdentitytoolkitRelyingpartyGetAccountInfoRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -643,8 +730,8 @@ type IdentitytoolkitRelyingpartyGetProjectConfigResponse struct {
 }
 
 func (s *IdentitytoolkitRelyingpartyGetProjectConfigResponse) MarshalJSON() ([]byte, error) {
-	type noMethod IdentitytoolkitRelyingpartyGetProjectConfigResponse
-	raw := noMethod(*s)
+	type NoMethod IdentitytoolkitRelyingpartyGetProjectConfigResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -681,8 +768,80 @@ type IdentitytoolkitRelyingpartyResetPasswordRequest struct {
 }
 
 func (s *IdentitytoolkitRelyingpartyResetPasswordRequest) MarshalJSON() ([]byte, error) {
-	type noMethod IdentitytoolkitRelyingpartyResetPasswordRequest
-	raw := noMethod(*s)
+	type NoMethod IdentitytoolkitRelyingpartyResetPasswordRequest
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// IdentitytoolkitRelyingpartySendVerificationCodeRequest: Request for
+// Identitytoolkit-SendVerificationCode
+type IdentitytoolkitRelyingpartySendVerificationCodeRequest struct {
+	// IosReceipt: Receipt of successful app token validation with APNS.
+	IosReceipt string `json:"iosReceipt,omitempty"`
+
+	// IosSecret: Secret delivered to iOS app via APNS.
+	IosSecret string `json:"iosSecret,omitempty"`
+
+	// PhoneNumber: The phone number to send the verification code to in
+	// E.164 format.
+	PhoneNumber string `json:"phoneNumber,omitempty"`
+
+	// RecaptchaToken: Recaptcha solution.
+	RecaptchaToken string `json:"recaptchaToken,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "IosReceipt") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "IosReceipt") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *IdentitytoolkitRelyingpartySendVerificationCodeRequest) MarshalJSON() ([]byte, error) {
+	type NoMethod IdentitytoolkitRelyingpartySendVerificationCodeRequest
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// IdentitytoolkitRelyingpartySendVerificationCodeResponse: Response for
+// Identitytoolkit-SendVerificationCode
+type IdentitytoolkitRelyingpartySendVerificationCodeResponse struct {
+	// SessionInfo: Encrypted session information
+	SessionInfo string `json:"sessionInfo,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "SessionInfo") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "SessionInfo") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *IdentitytoolkitRelyingpartySendVerificationCodeResponse) MarshalJSON() ([]byte, error) {
+	type NoMethod IdentitytoolkitRelyingpartySendVerificationCodeResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -697,6 +856,10 @@ type IdentitytoolkitRelyingpartySetAccountInfoRequest struct {
 
 	// CreatedAt: The timestamp when the account is created.
 	CreatedAt int64 `json:"createdAt,omitempty,string"`
+
+	// CustomAttributes: The custom attributes to be set in the user's id
+	// token.
+	CustomAttributes string `json:"customAttributes,omitempty"`
 
 	// DelegatedProjectNumber: GCP project number of the requesting
 	// delegated app. Currently only intended for Firebase V1 migration.
@@ -738,6 +901,10 @@ type IdentitytoolkitRelyingpartySetAccountInfoRequest struct {
 	// Password: The new password of the user.
 	Password string `json:"password,omitempty"`
 
+	// PhoneNumber: Privileged caller can update user with specified phone
+	// number.
+	PhoneNumber string `json:"phoneNumber,omitempty"`
+
 	// PhotoUrl: The photo url of the user.
 	PhotoUrl string `json:"photoUrl,omitempty"`
 
@@ -773,8 +940,8 @@ type IdentitytoolkitRelyingpartySetAccountInfoRequest struct {
 }
 
 func (s *IdentitytoolkitRelyingpartySetAccountInfoRequest) MarshalJSON() ([]byte, error) {
-	type noMethod IdentitytoolkitRelyingpartySetAccountInfoRequest
-	raw := noMethod(*s)
+	type NoMethod IdentitytoolkitRelyingpartySetAccountInfoRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -834,8 +1001,8 @@ type IdentitytoolkitRelyingpartySetProjectConfigRequest struct {
 }
 
 func (s *IdentitytoolkitRelyingpartySetProjectConfigRequest) MarshalJSON() ([]byte, error) {
-	type noMethod IdentitytoolkitRelyingpartySetProjectConfigRequest
-	raw := noMethod(*s)
+	type NoMethod IdentitytoolkitRelyingpartySetProjectConfigRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -867,8 +1034,8 @@ type IdentitytoolkitRelyingpartySetProjectConfigResponse struct {
 }
 
 func (s *IdentitytoolkitRelyingpartySetProjectConfigResponse) MarshalJSON() ([]byte, error) {
-	type noMethod IdentitytoolkitRelyingpartySetProjectConfigResponse
-	raw := noMethod(*s)
+	type NoMethod IdentitytoolkitRelyingpartySetProjectConfigResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -899,8 +1066,8 @@ type IdentitytoolkitRelyingpartySignOutUserRequest struct {
 }
 
 func (s *IdentitytoolkitRelyingpartySignOutUserRequest) MarshalJSON() ([]byte, error) {
-	type noMethod IdentitytoolkitRelyingpartySignOutUserRequest
-	raw := noMethod(*s)
+	type NoMethod IdentitytoolkitRelyingpartySignOutUserRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -932,8 +1099,8 @@ type IdentitytoolkitRelyingpartySignOutUserResponse struct {
 }
 
 func (s *IdentitytoolkitRelyingpartySignOutUserResponse) MarshalJSON() ([]byte, error) {
-	type noMethod IdentitytoolkitRelyingpartySignOutUserResponse
-	raw := noMethod(*s)
+	type NoMethod IdentitytoolkitRelyingpartySignOutUserResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -972,6 +1139,10 @@ type IdentitytoolkitRelyingpartySignupNewUserRequest struct {
 	// Password: The new password of the user.
 	Password string `json:"password,omitempty"`
 
+	// PhoneNumber: Privileged caller can create user with specified phone
+	// number.
+	PhoneNumber string `json:"phoneNumber,omitempty"`
+
 	// PhotoUrl: The photo url of the user.
 	PhotoUrl string `json:"photoUrl,omitempty"`
 
@@ -994,8 +1165,8 @@ type IdentitytoolkitRelyingpartySignupNewUserRequest struct {
 }
 
 func (s *IdentitytoolkitRelyingpartySignupNewUserRequest) MarshalJSON() ([]byte, error) {
-	type noMethod IdentitytoolkitRelyingpartySignupNewUserRequest
-	raw := noMethod(*s)
+	type NoMethod IdentitytoolkitRelyingpartySignupNewUserRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1006,9 +1177,16 @@ type IdentitytoolkitRelyingpartyUploadAccountRequest struct {
 	// local_id exists.
 	AllowOverwrite bool `json:"allowOverwrite,omitempty"`
 
+	BlockSize int64 `json:"blockSize,omitempty"`
+
+	// CpuMemCost: The following 4 fields are for standard scrypt algorithm.
+	CpuMemCost int64 `json:"cpuMemCost,omitempty"`
+
 	// DelegatedProjectNumber: GCP project number of the requesting
 	// delegated app. Currently only intended for Firebase V1 migration.
 	DelegatedProjectNumber int64 `json:"delegatedProjectNumber,omitempty,string"`
+
+	DkLen int64 `json:"dkLen,omitempty"`
 
 	// HashAlgorithm: The password hash algorithm.
 	HashAlgorithm string `json:"hashAlgorithm,omitempty"`
@@ -1016,6 +1194,8 @@ type IdentitytoolkitRelyingpartyUploadAccountRequest struct {
 	// MemoryCost: Memory cost for hash calculation. Used by scrypt similar
 	// algorithms.
 	MemoryCost int64 `json:"memoryCost,omitempty"`
+
+	Parallelization int64 `json:"parallelization,omitempty"`
 
 	// Rounds: Rounds for hash calculation. Used by scrypt and similar
 	// algorithms.
@@ -1057,14 +1237,19 @@ type IdentitytoolkitRelyingpartyUploadAccountRequest struct {
 }
 
 func (s *IdentitytoolkitRelyingpartyUploadAccountRequest) MarshalJSON() ([]byte, error) {
-	type noMethod IdentitytoolkitRelyingpartyUploadAccountRequest
-	raw := noMethod(*s)
+	type NoMethod IdentitytoolkitRelyingpartyUploadAccountRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 // IdentitytoolkitRelyingpartyVerifyAssertionRequest: Request to verify
 // the IDP assertion.
 type IdentitytoolkitRelyingpartyVerifyAssertionRequest struct {
+	// AutoCreate: When it's true, automatically creates a new account if
+	// the user doesn't exist. When it's false, allows existing user to sign
+	// in normally and throws exception if the user doesn't exist.
+	AutoCreate bool `json:"autoCreate,omitempty"`
+
 	// DelegatedProjectNumber: GCP project number of the requesting
 	// delegated app. Currently only intended for Firebase V1 migration.
 	DelegatedProjectNumber int64 `json:"delegatedProjectNumber,omitempty,string"`
@@ -1101,28 +1286,26 @@ type IdentitytoolkitRelyingpartyVerifyAssertionRequest struct {
 	// createAuthUri request.
 	SessionId string `json:"sessionId,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g.
-	// "DelegatedProjectNumber") to unconditionally include in API requests.
-	// By default, fields with empty values are omitted from API requests.
-	// However, any non-pointer, non-interface field appearing in
-	// ForceSendFields will be sent to the server regardless of whether the
-	// field is empty or not. This may be used to include empty fields in
-	// Patch requests.
+	// ForceSendFields is a list of field names (e.g. "AutoCreate") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "DelegatedProjectNumber")
-	// to include in API requests with the JSON null value. By default,
-	// fields with empty values are omitted from API requests. However, any
-	// field with an empty value appearing in NullFields will be sent to the
-	// server as null. It is an error if a field in this list has a
-	// non-empty value. This may be used to include null fields in Patch
-	// requests.
+	// NullFields is a list of field names (e.g. "AutoCreate") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
 	NullFields []string `json:"-"`
 }
 
 func (s *IdentitytoolkitRelyingpartyVerifyAssertionRequest) MarshalJSON() ([]byte, error) {
-	type noMethod IdentitytoolkitRelyingpartyVerifyAssertionRequest
-	raw := noMethod(*s)
+	type NoMethod IdentitytoolkitRelyingpartyVerifyAssertionRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1163,8 +1346,8 @@ type IdentitytoolkitRelyingpartyVerifyCustomTokenRequest struct {
 }
 
 func (s *IdentitytoolkitRelyingpartyVerifyCustomTokenRequest) MarshalJSON() ([]byte, error) {
-	type noMethod IdentitytoolkitRelyingpartyVerifyCustomTokenRequest
-	raw := noMethod(*s)
+	type NoMethod IdentitytoolkitRelyingpartyVerifyCustomTokenRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1220,8 +1403,100 @@ type IdentitytoolkitRelyingpartyVerifyPasswordRequest struct {
 }
 
 func (s *IdentitytoolkitRelyingpartyVerifyPasswordRequest) MarshalJSON() ([]byte, error) {
-	type noMethod IdentitytoolkitRelyingpartyVerifyPasswordRequest
-	raw := noMethod(*s)
+	type NoMethod IdentitytoolkitRelyingpartyVerifyPasswordRequest
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest: Request for
+// Identitytoolkit-VerifyPhoneNumber
+type IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest struct {
+	Code string `json:"code,omitempty"`
+
+	IdToken string `json:"idToken,omitempty"`
+
+	Operation string `json:"operation,omitempty"`
+
+	PhoneNumber string `json:"phoneNumber,omitempty"`
+
+	// SessionInfo: The session info previously returned by
+	// IdentityToolkit-SendVerificationCode.
+	SessionInfo string `json:"sessionInfo,omitempty"`
+
+	TemporaryProof string `json:"temporaryProof,omitempty"`
+
+	VerificationProof string `json:"verificationProof,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Code") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Code") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest) MarshalJSON() ([]byte, error) {
+	type NoMethod IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse: Response for
+// Identitytoolkit-VerifyPhoneNumber
+type IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse struct {
+	ExpiresIn int64 `json:"expiresIn,omitempty,string"`
+
+	IdToken string `json:"idToken,omitempty"`
+
+	IsNewUser bool `json:"isNewUser,omitempty"`
+
+	LocalId string `json:"localId,omitempty"`
+
+	PhoneNumber string `json:"phoneNumber,omitempty"`
+
+	RefreshToken string `json:"refreshToken,omitempty"`
+
+	TemporaryProof string `json:"temporaryProof,omitempty"`
+
+	TemporaryProofExpiresIn int64 `json:"temporaryProofExpiresIn,omitempty,string"`
+
+	VerificationProof string `json:"verificationProof,omitempty"`
+
+	VerificationProofExpiresIn int64 `json:"verificationProofExpiresIn,omitempty,string"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "ExpiresIn") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ExpiresIn") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse) MarshalJSON() ([]byte, error) {
+	type NoMethod IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1264,22 +1539,49 @@ type IdpConfig struct {
 }
 
 func (s *IdpConfig) MarshalJSON() ([]byte, error) {
-	type noMethod IdpConfig
-	raw := noMethod(*s)
+	type NoMethod IdpConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 // Relyingparty: Request of getting a code for user confirmation (reset
 // password, change email etc.)
 type Relyingparty struct {
+	// AndroidInstallApp: whether or not to install the android app on the
+	// device where the link is opened
+	AndroidInstallApp bool `json:"androidInstallApp,omitempty"`
+
+	// AndroidMinimumVersion: minimum version of the app. if the version on
+	// the device is lower than this version then the user is taken to the
+	// play store to upgrade the app
+	AndroidMinimumVersion string `json:"androidMinimumVersion,omitempty"`
+
+	// AndroidPackageName: android package name of the android app to handle
+	// the action code
+	AndroidPackageName string `json:"androidPackageName,omitempty"`
+
+	// CanHandleCodeInApp: whether or not the app can handle the oob code
+	// without first going to web
+	CanHandleCodeInApp bool `json:"canHandleCodeInApp,omitempty"`
+
 	// CaptchaResp: The recaptcha response from the user.
 	CaptchaResp string `json:"captchaResp,omitempty"`
 
 	// Challenge: The recaptcha challenge presented to the user.
 	Challenge string `json:"challenge,omitempty"`
 
+	// ContinueUrl: The url to continue to the Gitkit app
+	ContinueUrl string `json:"continueUrl,omitempty"`
+
 	// Email: The email of the user.
 	Email string `json:"email,omitempty"`
+
+	// IOSAppStoreId: iOS app store id to download the app if it's not
+	// already installed
+	IOSAppStoreId string `json:"iOSAppStoreId,omitempty"`
+
+	// IOSBundleId: the iOS bundle id of iOS app to handle the action code
+	IOSBundleId string `json:"iOSBundleId,omitempty"`
 
 	// IdToken: The user's Gitkit login token for email change.
 	IdToken string `json:"idToken,omitempty"`
@@ -1296,26 +1598,27 @@ type Relyingparty struct {
 	// UserIp: The IP address of the user.
 	UserIp string `json:"userIp,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "CaptchaResp") to
-	// unconditionally include in API requests. By default, fields with
+	// ForceSendFields is a list of field names (e.g. "AndroidInstallApp")
+	// to unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
 	// server regardless of whether the field is empty or not. This may be
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "CaptchaResp") to include
-	// in API requests with the JSON null value. By default, fields with
-	// empty values are omitted from API requests. However, any field with
-	// an empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
+	// NullFields is a list of field names (e.g. "AndroidInstallApp") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
 	NullFields []string `json:"-"`
 }
 
 func (s *Relyingparty) MarshalJSON() ([]byte, error) {
-	type noMethod Relyingparty
-	raw := noMethod(*s)
+	type NoMethod Relyingparty
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1357,8 +1660,8 @@ type ResetPasswordResponse struct {
 }
 
 func (s *ResetPasswordResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ResetPasswordResponse
-	raw := noMethod(*s)
+	type NoMethod ResetPasswordResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1424,8 +1727,8 @@ type SetAccountInfoResponse struct {
 }
 
 func (s *SetAccountInfoResponse) MarshalJSON() ([]byte, error) {
-	type noMethod SetAccountInfoResponse
-	raw := noMethod(*s)
+	type NoMethod SetAccountInfoResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1462,8 +1765,8 @@ type SetAccountInfoResponseProviderUserInfo struct {
 }
 
 func (s *SetAccountInfoResponseProviderUserInfo) MarshalJSON() ([]byte, error) {
-	type noMethod SetAccountInfoResponseProviderUserInfo
-	raw := noMethod(*s)
+	type NoMethod SetAccountInfoResponseProviderUserInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1515,8 +1818,8 @@ type SignupNewUserResponse struct {
 }
 
 func (s *SignupNewUserResponse) MarshalJSON() ([]byte, error) {
-	type noMethod SignupNewUserResponse
-	raw := noMethod(*s)
+	type NoMethod SignupNewUserResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1550,8 +1853,8 @@ type UploadAccountResponse struct {
 }
 
 func (s *UploadAccountResponse) MarshalJSON() ([]byte, error) {
-	type noMethod UploadAccountResponse
-	raw := noMethod(*s)
+	type NoMethod UploadAccountResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1580,8 +1883,8 @@ type UploadAccountResponseError struct {
 }
 
 func (s *UploadAccountResponseError) MarshalJSON() ([]byte, error) {
-	type noMethod UploadAccountResponseError
-	raw := noMethod(*s)
+	type NoMethod UploadAccountResponseError
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1589,6 +1892,10 @@ func (s *UploadAccountResponseError) MarshalJSON() ([]byte, error) {
 type UserInfo struct {
 	// CreatedAt: User creation timestamp.
 	CreatedAt int64 `json:"createdAt,omitempty,string"`
+
+	// CustomAttributes: The custom attributes to be set in the user's id
+	// token.
+	CustomAttributes string `json:"customAttributes,omitempty"`
 
 	// CustomAuth: Whether the user is authenticated by the developer.
 	CustomAuth bool `json:"customAuth,omitempty"`
@@ -1616,6 +1923,9 @@ type UserInfo struct {
 
 	// PasswordUpdatedAt: The timestamp when the password was last updated.
 	PasswordUpdatedAt float64 `json:"passwordUpdatedAt,omitempty"`
+
+	// PhoneNumber: User's phone number.
+	PhoneNumber string `json:"phoneNumber,omitempty"`
 
 	// PhotoUrl: The URL of the user profile photo.
 	PhotoUrl string `json:"photoUrl,omitempty"`
@@ -1656,18 +1966,18 @@ type UserInfo struct {
 }
 
 func (s *UserInfo) MarshalJSON() ([]byte, error) {
-	type noMethod UserInfo
-	raw := noMethod(*s)
+	type NoMethod UserInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *UserInfo) UnmarshalJSON(data []byte) error {
-	type noMethod UserInfo
+	type NoMethod UserInfo
 	var s1 struct {
 		PasswordUpdatedAt gensupport.JSONFloat64 `json:"passwordUpdatedAt"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -1684,6 +1994,9 @@ type UserInfoProviderUserInfo struct {
 
 	// FederatedId: User's identifier at IDP.
 	FederatedId string `json:"federatedId,omitempty"`
+
+	// PhoneNumber: User's phone number.
+	PhoneNumber string `json:"phoneNumber,omitempty"`
 
 	// PhotoUrl: The user's photo url at the IDP.
 	PhotoUrl string `json:"photoUrl,omitempty"`
@@ -1717,8 +2030,8 @@ type UserInfoProviderUserInfo struct {
 }
 
 func (s *UserInfoProviderUserInfo) MarshalJSON() ([]byte, error) {
-	type noMethod UserInfoProviderUserInfo
-	raw := noMethod(*s)
+	type NoMethod UserInfoProviderUserInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1883,8 +2196,8 @@ type VerifyAssertionResponse struct {
 }
 
 func (s *VerifyAssertionResponse) MarshalJSON() ([]byte, error) {
-	type noMethod VerifyAssertionResponse
-	raw := noMethod(*s)
+	type NoMethod VerifyAssertionResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1896,6 +2209,10 @@ type VerifyCustomTokenResponse struct {
 
 	// IdToken: The GITKit token for authenticated user.
 	IdToken string `json:"idToken,omitempty"`
+
+	// IsNewUser: True if it's a new user sign-in, false if it's a returning
+	// user.
+	IsNewUser bool `json:"isNewUser,omitempty"`
 
 	// Kind: The fixed string "identitytoolkit#VerifyCustomTokenResponse".
 	Kind string `json:"kind,omitempty"`
@@ -1926,8 +2243,8 @@ type VerifyCustomTokenResponse struct {
 }
 
 func (s *VerifyCustomTokenResponse) MarshalJSON() ([]byte, error) {
-	type noMethod VerifyCustomTokenResponse
-	raw := noMethod(*s)
+	type NoMethod VerifyCustomTokenResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1995,8 +2312,8 @@ type VerifyPasswordResponse struct {
 }
 
 func (s *VerifyPasswordResponse) MarshalJSON() ([]byte, error) {
-	type noMethod VerifyPasswordResponse
-	raw := noMethod(*s)
+	type NoMethod VerifyPasswordResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2049,7 +2366,6 @@ func (c *RelyingpartyCreateAuthUriCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.identitytoolkitrelyingpartycreateauthurirequest)
 	if err != nil {
@@ -2097,7 +2413,7 @@ func (c *RelyingpartyCreateAuthUriCall) Do(opts ...googleapi.CallOption) (*Creat
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2167,7 +2483,6 @@ func (c *RelyingpartyDeleteAccountCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.identitytoolkitrelyingpartydeleteaccountrequest)
 	if err != nil {
@@ -2215,7 +2530,7 @@ func (c *RelyingpartyDeleteAccountCall) Do(opts ...googleapi.CallOption) (*Delet
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2285,7 +2600,6 @@ func (c *RelyingpartyDownloadAccountCall) doRequest(alt string) (*http.Response,
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.identitytoolkitrelyingpartydownloadaccountrequest)
 	if err != nil {
@@ -2333,7 +2647,7 @@ func (c *RelyingpartyDownloadAccountCall) Do(opts ...googleapi.CallOption) (*Dow
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2375,6 +2689,123 @@ func (c *RelyingpartyDownloadAccountCall) Pages(ctx context.Context, f func(*Dow
 		}
 		c.identitytoolkitrelyingpartydownloadaccountrequest.NextPageToken = x.NextPageToken
 	}
+}
+
+// method id "identitytoolkit.relyingparty.emailLinkSignin":
+
+type RelyingpartyEmailLinkSigninCall struct {
+	s                                                 *Service
+	identitytoolkitrelyingpartyemaillinksigninrequest *IdentitytoolkitRelyingpartyEmailLinkSigninRequest
+	urlParams_                                        gensupport.URLParams
+	ctx_                                              context.Context
+	header_                                           http.Header
+}
+
+// EmailLinkSignin: Reset password for a user.
+func (r *RelyingpartyService) EmailLinkSignin(identitytoolkitrelyingpartyemaillinksigninrequest *IdentitytoolkitRelyingpartyEmailLinkSigninRequest) *RelyingpartyEmailLinkSigninCall {
+	c := &RelyingpartyEmailLinkSigninCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.identitytoolkitrelyingpartyemaillinksigninrequest = identitytoolkitrelyingpartyemaillinksigninrequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *RelyingpartyEmailLinkSigninCall) Fields(s ...googleapi.Field) *RelyingpartyEmailLinkSigninCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RelyingpartyEmailLinkSigninCall) Context(ctx context.Context) *RelyingpartyEmailLinkSigninCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *RelyingpartyEmailLinkSigninCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *RelyingpartyEmailLinkSigninCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.identitytoolkitrelyingpartyemaillinksigninrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "emailLinkSignin")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "identitytoolkit.relyingparty.emailLinkSignin" call.
+// Exactly one of *EmailLinkSigninResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *EmailLinkSigninResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RelyingpartyEmailLinkSigninCall) Do(opts ...googleapi.CallOption) (*EmailLinkSigninResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &EmailLinkSigninResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Reset password for a user.",
+	//   "httpMethod": "POST",
+	//   "id": "identitytoolkit.relyingparty.emailLinkSignin",
+	//   "path": "emailLinkSignin",
+	//   "request": {
+	//     "$ref": "IdentitytoolkitRelyingpartyEmailLinkSigninRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "EmailLinkSigninResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
 }
 
 // method id "identitytoolkit.relyingparty.getAccountInfo":
@@ -2425,7 +2856,6 @@ func (c *RelyingpartyGetAccountInfoCall) doRequest(alt string) (*http.Response, 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.identitytoolkitrelyingpartygetaccountinforequest)
 	if err != nil {
@@ -2473,7 +2903,7 @@ func (c *RelyingpartyGetAccountInfoCall) Do(opts ...googleapi.CallOption) (*GetA
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2543,7 +2973,6 @@ func (c *RelyingpartyGetOobConfirmationCodeCall) doRequest(alt string) (*http.Re
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.relyingparty)
 	if err != nil {
@@ -2591,7 +3020,7 @@ func (c *RelyingpartyGetOobConfirmationCodeCall) Do(opts ...googleapi.CallOption
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2685,7 +3114,6 @@ func (c *RelyingpartyGetProjectConfigCall) doRequest(alt string) (*http.Response
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2733,7 +3161,7 @@ func (c *RelyingpartyGetProjectConfigCall) Do(opts ...googleapi.CallOption) (*Id
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2821,7 +3249,6 @@ func (c *RelyingpartyGetPublicKeysCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2847,7 +3274,7 @@ func (c *RelyingpartyGetPublicKeysCall) Do(opts ...googleapi.CallOption) (map[st
 	}
 	var ret map[string]string
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2923,7 +3350,6 @@ func (c *RelyingpartyGetRecaptchaParamCall) doRequest(alt string) (*http.Respons
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2969,7 +3395,7 @@ func (c *RelyingpartyGetRecaptchaParamCall) Do(opts ...googleapi.CallOption) (*G
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3036,7 +3462,6 @@ func (c *RelyingpartyResetPasswordCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.identitytoolkitrelyingpartyresetpasswordrequest)
 	if err != nil {
@@ -3084,7 +3509,7 @@ func (c *RelyingpartyResetPasswordCall) Do(opts ...googleapi.CallOption) (*Reset
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3098,6 +3523,126 @@ func (c *RelyingpartyResetPasswordCall) Do(opts ...googleapi.CallOption) (*Reset
 	//   },
 	//   "response": {
 	//     "$ref": "ResetPasswordResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// method id "identitytoolkit.relyingparty.sendVerificationCode":
+
+type RelyingpartySendVerificationCodeCall struct {
+	s                                                      *Service
+	identitytoolkitrelyingpartysendverificationcoderequest *IdentitytoolkitRelyingpartySendVerificationCodeRequest
+	urlParams_                                             gensupport.URLParams
+	ctx_                                                   context.Context
+	header_                                                http.Header
+}
+
+// SendVerificationCode: Send SMS verification code.
+func (r *RelyingpartyService) SendVerificationCode(identitytoolkitrelyingpartysendverificationcoderequest *IdentitytoolkitRelyingpartySendVerificationCodeRequest) *RelyingpartySendVerificationCodeCall {
+	c := &RelyingpartySendVerificationCodeCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.identitytoolkitrelyingpartysendverificationcoderequest = identitytoolkitrelyingpartysendverificationcoderequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *RelyingpartySendVerificationCodeCall) Fields(s ...googleapi.Field) *RelyingpartySendVerificationCodeCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RelyingpartySendVerificationCodeCall) Context(ctx context.Context) *RelyingpartySendVerificationCodeCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *RelyingpartySendVerificationCodeCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *RelyingpartySendVerificationCodeCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.identitytoolkitrelyingpartysendverificationcoderequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "sendVerificationCode")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "identitytoolkit.relyingparty.sendVerificationCode" call.
+// Exactly one of
+// *IdentitytoolkitRelyingpartySendVerificationCodeResponse or error
+// will be non-nil. Any non-2xx status code is an error. Response
+// headers are in either
+// *IdentitytoolkitRelyingpartySendVerificationCodeResponse.ServerRespons
+// e.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *RelyingpartySendVerificationCodeCall) Do(opts ...googleapi.CallOption) (*IdentitytoolkitRelyingpartySendVerificationCodeResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &IdentitytoolkitRelyingpartySendVerificationCodeResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Send SMS verification code.",
+	//   "httpMethod": "POST",
+	//   "id": "identitytoolkit.relyingparty.sendVerificationCode",
+	//   "path": "sendVerificationCode",
+	//   "request": {
+	//     "$ref": "IdentitytoolkitRelyingpartySendVerificationCodeRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "IdentitytoolkitRelyingpartySendVerificationCodeResponse"
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/cloud-platform"
@@ -3154,7 +3699,6 @@ func (c *RelyingpartySetAccountInfoCall) doRequest(alt string) (*http.Response, 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.identitytoolkitrelyingpartysetaccountinforequest)
 	if err != nil {
@@ -3202,7 +3746,7 @@ func (c *RelyingpartySetAccountInfoCall) Do(opts ...googleapi.CallOption) (*SetA
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3272,7 +3816,6 @@ func (c *RelyingpartySetProjectConfigCall) doRequest(alt string) (*http.Response
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.identitytoolkitrelyingpartysetprojectconfigrequest)
 	if err != nil {
@@ -3322,7 +3865,7 @@ func (c *RelyingpartySetProjectConfigCall) Do(opts ...googleapi.CallOption) (*Id
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3392,7 +3935,6 @@ func (c *RelyingpartySignOutUserCall) doRequest(alt string) (*http.Response, err
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.identitytoolkitrelyingpartysignoutuserrequest)
 	if err != nil {
@@ -3442,7 +3984,7 @@ func (c *RelyingpartySignOutUserCall) Do(opts ...googleapi.CallOption) (*Identit
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3512,7 +4054,6 @@ func (c *RelyingpartySignupNewUserCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.identitytoolkitrelyingpartysignupnewuserrequest)
 	if err != nil {
@@ -3560,7 +4101,7 @@ func (c *RelyingpartySignupNewUserCall) Do(opts ...googleapi.CallOption) (*Signu
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3630,7 +4171,6 @@ func (c *RelyingpartyUploadAccountCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.identitytoolkitrelyingpartyuploadaccountrequest)
 	if err != nil {
@@ -3678,7 +4218,7 @@ func (c *RelyingpartyUploadAccountCall) Do(opts ...googleapi.CallOption) (*Uploa
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3749,7 +4289,6 @@ func (c *RelyingpartyVerifyAssertionCall) doRequest(alt string) (*http.Response,
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.identitytoolkitrelyingpartyverifyassertionrequest)
 	if err != nil {
@@ -3797,7 +4336,7 @@ func (c *RelyingpartyVerifyAssertionCall) Do(opts ...googleapi.CallOption) (*Ver
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3867,7 +4406,6 @@ func (c *RelyingpartyVerifyCustomTokenCall) doRequest(alt string) (*http.Respons
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.identitytoolkitrelyingpartyverifycustomtokenrequest)
 	if err != nil {
@@ -3915,7 +4453,7 @@ func (c *RelyingpartyVerifyCustomTokenCall) Do(opts ...googleapi.CallOption) (*V
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3985,7 +4523,6 @@ func (c *RelyingpartyVerifyPasswordCall) doRequest(alt string) (*http.Response, 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.identitytoolkitrelyingpartyverifypasswordrequest)
 	if err != nil {
@@ -4033,7 +4570,7 @@ func (c *RelyingpartyVerifyPasswordCall) Do(opts ...googleapi.CallOption) (*Veri
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4047,6 +4584,126 @@ func (c *RelyingpartyVerifyPasswordCall) Do(opts ...googleapi.CallOption) (*Veri
 	//   },
 	//   "response": {
 	//     "$ref": "VerifyPasswordResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// method id "identitytoolkit.relyingparty.verifyPhoneNumber":
+
+type RelyingpartyVerifyPhoneNumberCall struct {
+	s                                                   *Service
+	identitytoolkitrelyingpartyverifyphonenumberrequest *IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest
+	urlParams_                                          gensupport.URLParams
+	ctx_                                                context.Context
+	header_                                             http.Header
+}
+
+// VerifyPhoneNumber: Verifies ownership of a phone number and
+// creates/updates the user account accordingly.
+func (r *RelyingpartyService) VerifyPhoneNumber(identitytoolkitrelyingpartyverifyphonenumberrequest *IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest) *RelyingpartyVerifyPhoneNumberCall {
+	c := &RelyingpartyVerifyPhoneNumberCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.identitytoolkitrelyingpartyverifyphonenumberrequest = identitytoolkitrelyingpartyverifyphonenumberrequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *RelyingpartyVerifyPhoneNumberCall) Fields(s ...googleapi.Field) *RelyingpartyVerifyPhoneNumberCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RelyingpartyVerifyPhoneNumberCall) Context(ctx context.Context) *RelyingpartyVerifyPhoneNumberCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *RelyingpartyVerifyPhoneNumberCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *RelyingpartyVerifyPhoneNumberCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.identitytoolkitrelyingpartyverifyphonenumberrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "verifyPhoneNumber")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "identitytoolkit.relyingparty.verifyPhoneNumber" call.
+// Exactly one of *IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse
+// or error will be non-nil. Any non-2xx status code is an error.
+// Response headers are in either
+// *IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse.ServerResponse.H
+// eader or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *RelyingpartyVerifyPhoneNumberCall) Do(opts ...googleapi.CallOption) (*IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Verifies ownership of a phone number and creates/updates the user account accordingly.",
+	//   "httpMethod": "POST",
+	//   "id": "identitytoolkit.relyingparty.verifyPhoneNumber",
+	//   "path": "verifyPhoneNumber",
+	//   "request": {
+	//     "$ref": "IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse"
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/cloud-platform"

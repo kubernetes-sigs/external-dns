@@ -1,5 +1,9 @@
-
   - Google: Improve logging to help trace misconfigurations. (#388) @stealthybox
+  - Every record managed by External DNS is now mapped to a kubernetes resource (service/ingress) @ideahitme
+    - New field is stored in TXT DNS record which reflects which kubernetes resource has acquired the DNS name
+    - Target of DNS record is changed only if corresponding kubernetes resource target changes
+    - If kubernetes resource is deleted, then another resource may acquire DNS name
+    - "Flapping" target issue is resolved by providing a consistent and defined mechanism for choosing a target
 
 ## v0.4.8 - 2017-11-22
 

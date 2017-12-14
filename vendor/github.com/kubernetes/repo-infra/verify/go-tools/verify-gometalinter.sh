@@ -17,8 +17,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-for d in $(find . -type d -not -iwholename '*.git*' -a -not -iname '.tool' -a -not -iwholename '*vendor*'); do
-  gometalinter --deadline=50s --vendor \
+gometalinter --deadline=50s --vendor \
     --cyclo-over=50 --dupl-threshold=100 \
     --exclude=".*should not use dot imports \(golint\)$" \
     --disable-all \
@@ -27,5 +26,8 @@ for d in $(find . -type d -not -iwholename '*.git*' -a -not -iname '.tool' -a -n
     --enable=golint \
     --enable=vetshadow \
     --enable=gocyclo \
-    --tests "${d}"
-done
+    --skip=.git \
+    --skip=.tool \
+    --skip=vendor \
+    --tests \
+    ./...

@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"C5oy1hgQsABtYOYIOXWcR3BgYqU/VWub4J15NN4SkSidNp3dhsb_pzo\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/IR4BQMr8Q3ird-zy2LyAA9diRwI\"",
  "discoveryVersion": "v1",
  "id": "calendar:v3",
  "name": "calendar",
  "version": "v3",
- "revision": "20160927",
+ "revision": "20171010",
  "title": "Calendar API",
  "description": "Manipulates events and other calendar data.",
  "ownerDomain": "google.com",
@@ -20,7 +20,7 @@
  "basePath": "/calendar/v3/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "calendar/v3/",
- "batchPath": "batch",
+ "batchPath": "batch/calendar/v3",
  "parameters": {
   "alt": {
    "type": "string",
@@ -337,7 +337,7 @@
    "properties": {
     "method": {
      "type": "string",
-     "description": "The method used to deliver the notification. Possible values are:  \n- \"email\" - Reminders are sent via email. \n- \"sms\" - Reminders are sent via SMS. This value is read-only and is ignored on inserts and updates. SMS reminders are only available for Google Apps for Work, Education, and Government customers.",
+     "description": "The method used to deliver the notification. Possible values are:  \n- \"email\" - Reminders are sent via email. \n- \"sms\" - Reminders are sent via SMS. This value is read-only and is ignored on inserts and updates. SMS reminders are only available for G Suite customers.",
      "annotations": {
       "required": [
        "calendar.calendarList.insert",
@@ -769,7 +769,7 @@
     },
     "transparency": {
      "type": "string",
-     "description": "Whether the event blocks time on the calendar. Optional. Possible values are:  \n- \"opaque\" - The event blocks time on the calendar. This is the default value. \n- \"transparent\" - The event does not block time on the calendar.",
+     "description": "Whether the event blocks time on the calendar. Optional. Possible values are:  \n- \"opaque\" - Default value. The event does block time on the calendar. This is equivalent to setting Show me as to Busy in the Calendar UI. \n- \"transparent\" - The event does not block time on the calendar. This is equivalent to setting Show me as to Available in the Calendar UI.",
      "default": "opaque"
     },
     "updated": {
@@ -901,7 +901,7 @@
    "properties": {
     "method": {
      "type": "string",
-     "description": "The method used by this reminder. Possible values are:  \n- \"email\" - Reminders are sent via email. \n- \"sms\" - Reminders are sent via SMS. These are only available for Google Apps for Work, Education, and Government customers. Requests to set SMS reminders for other account types are ignored. \n- \"popup\" - Reminders are sent via a UI popup.",
+     "description": "The method used by this reminder. Possible values are:  \n- \"email\" - Reminders are sent via email. \n- \"sms\" - Reminders are sent via SMS. These are only available for G Suite customers. Requests to set SMS reminders for other account types are ignored. \n- \"popup\" - Reminders are sent via a UI popup.",
      "annotations": {
       "required": [
        "calendar.calendarList.insert",
@@ -1253,6 +1253,11 @@
        "description": "Calendar identifier. To retrieve calendar IDs call the calendarList.list method. If you want to access the primary calendar of the currently logged in user, use the \"primary\" keyword.",
        "required": true,
        "location": "path"
+      },
+      "sendNotifications": {
+       "type": "boolean",
+       "description": "Whether to send notifications about the calendar sharing change. Optional. The default is True.",
+       "location": "query"
       }
      },
      "parameterOrder": [
@@ -1331,6 +1336,11 @@
        "description": "ACL rule identifier.",
        "required": true,
        "location": "path"
+      },
+      "sendNotifications": {
+       "type": "boolean",
+       "description": "Whether to send notifications about the calendar sharing change. Note that there are no notifications on access removal. Optional. The default is True.",
+       "location": "query"
       }
      },
      "parameterOrder": [
@@ -1364,6 +1374,11 @@
        "description": "ACL rule identifier.",
        "required": true,
        "location": "path"
+      },
+      "sendNotifications": {
+       "type": "boolean",
+       "description": "Whether to send notifications about the calendar sharing change. Note that there are no notifications on access removal. Optional. The default is True.",
+       "location": "query"
       }
      },
      "parameterOrder": [
@@ -2128,7 +2143,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "Maximum number of events returned on one result page. By default the value is 250 events. The page size can never be larger than 2500 events. Optional.",
+       "description": "Maximum number of events returned on one result page. The number of events in the resulting page may be less than this value, or none at all, even if there are more events matching the query. Incomplete pages can be detected by a non-empty nextPageToken field in the response. By default the value is 250 events. The page size can never be larger than 2500 events. Optional.",
        "default": "250",
        "format": "int32",
        "minimum": "1",
@@ -2191,13 +2206,13 @@
       },
       "timeMax": {
        "type": "string",
-       "description": "Upper bound (exclusive) for an event's start time to filter by. Optional. The default is not to filter by start time. Must be an RFC3339 timestamp with mandatory time zone offset, e.g., 2011-06-03T10:00:00-07:00, 2011-06-03T10:00:00Z. Milliseconds may be provided but will be ignored.",
+       "description": "Upper bound (exclusive) for an event's start time to filter by. Optional. The default is not to filter by start time. Must be an RFC3339 timestamp with mandatory time zone offset, e.g., 2011-06-03T10:00:00-07:00, 2011-06-03T10:00:00Z. Milliseconds may be provided but will be ignored. If timeMin is set, timeMax must be greater than timeMin.",
        "format": "date-time",
        "location": "query"
       },
       "timeMin": {
        "type": "string",
-       "description": "Lower bound (inclusive) for an event's end time to filter by. Optional. The default is not to filter by end time. Must be an RFC3339 timestamp with mandatory time zone offset, e.g., 2011-06-03T10:00:00-07:00, 2011-06-03T10:00:00Z. Milliseconds may be provided but will be ignored.",
+       "description": "Lower bound (inclusive) for an event's end time to filter by. Optional. The default is not to filter by end time. Must be an RFC3339 timestamp with mandatory time zone offset, e.g., 2011-06-03T10:00:00-07:00, 2011-06-03T10:00:00Z. Milliseconds may be provided but will be ignored. If timeMax is set, timeMin must be smaller than timeMax.",
        "format": "date-time",
        "location": "query"
       },
@@ -2443,7 +2458,7 @@
       },
       "maxResults": {
        "type": "integer",
-       "description": "Maximum number of events returned on one result page. By default the value is 250 events. The page size can never be larger than 2500 events. Optional.",
+       "description": "Maximum number of events returned on one result page. The number of events in the resulting page may be less than this value, or none at all, even if there are more events matching the query. Incomplete pages can be detected by a non-empty nextPageToken field in the response. By default the value is 250 events. The page size can never be larger than 2500 events. Optional.",
        "default": "250",
        "format": "int32",
        "minimum": "1",
@@ -2506,13 +2521,13 @@
       },
       "timeMax": {
        "type": "string",
-       "description": "Upper bound (exclusive) for an event's start time to filter by. Optional. The default is not to filter by start time. Must be an RFC3339 timestamp with mandatory time zone offset, e.g., 2011-06-03T10:00:00-07:00, 2011-06-03T10:00:00Z. Milliseconds may be provided but will be ignored.",
+       "description": "Upper bound (exclusive) for an event's start time to filter by. Optional. The default is not to filter by start time. Must be an RFC3339 timestamp with mandatory time zone offset, e.g., 2011-06-03T10:00:00-07:00, 2011-06-03T10:00:00Z. Milliseconds may be provided but will be ignored. If timeMin is set, timeMax must be greater than timeMin.",
        "format": "date-time",
        "location": "query"
       },
       "timeMin": {
        "type": "string",
-       "description": "Lower bound (inclusive) for an event's end time to filter by. Optional. The default is not to filter by end time. Must be an RFC3339 timestamp with mandatory time zone offset, e.g., 2011-06-03T10:00:00-07:00, 2011-06-03T10:00:00Z. Milliseconds may be provided but will be ignored.",
+       "description": "Lower bound (inclusive) for an event's end time to filter by. Optional. The default is not to filter by end time. Must be an RFC3339 timestamp with mandatory time zone offset, e.g., 2011-06-03T10:00:00-07:00, 2011-06-03T10:00:00Z. Milliseconds may be provided but will be ignored. If timeMax is set, timeMin must be smaller than timeMax.",
        "format": "date-time",
        "location": "query"
       },

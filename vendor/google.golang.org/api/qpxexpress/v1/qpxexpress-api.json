@@ -1,6 +1,6 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/2IuExnuYIfWTklADntnFv6u9T0g\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/2IuExnuYIfWTklADntnFv6u9T0g\"",
  "discoveryVersion": "v1",
  "id": "qpxExpress:v1",
  "name": "qpxExpress",
@@ -21,7 +21,7 @@
  "basePath": "/qpxExpress/v1/trips/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "qpxExpress/v1/trips/",
- "batchPath": "batch",
+ "batchPath": "batch/qpxExpress/v1",
  "parameters": {
   "alt": {
    "type": "string",

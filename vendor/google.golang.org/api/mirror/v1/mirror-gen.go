@@ -69,10 +69,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Accounts *AccountsService
 
@@ -92,10 +91,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewAccountsService(s *Service) *AccountsService {
@@ -197,8 +192,8 @@ type Account struct {
 }
 
 func (s *Account) MarshalJSON() ([]byte, error) {
-	type noMethod Account
-	raw := noMethod(*s)
+	type NoMethod Account
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -241,8 +236,8 @@ type Attachment struct {
 }
 
 func (s *Attachment) MarshalJSON() ([]byte, error) {
-	type noMethod Attachment
-	raw := noMethod(*s)
+	type NoMethod Attachment
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -277,8 +272,8 @@ type AttachmentsListResponse struct {
 }
 
 func (s *AttachmentsListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod AttachmentsListResponse
-	raw := noMethod(*s)
+	type NoMethod AttachmentsListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -305,8 +300,8 @@ type AuthToken struct {
 }
 
 func (s *AuthToken) MarshalJSON() ([]byte, error) {
-	type noMethod AuthToken
-	raw := noMethod(*s)
+	type NoMethod AuthToken
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -338,8 +333,8 @@ type Command struct {
 }
 
 func (s *Command) MarshalJSON() ([]byte, error) {
-	type noMethod Command
-	raw := noMethod(*s)
+	type NoMethod Command
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -429,8 +424,8 @@ type Contact struct {
 }
 
 func (s *Contact) MarshalJSON() ([]byte, error) {
-	type noMethod Contact
-	raw := noMethod(*s)
+	type NoMethod Contact
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -466,8 +461,8 @@ type ContactsListResponse struct {
 }
 
 func (s *ContactsListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ContactsListResponse
-	raw := noMethod(*s)
+	type NoMethod ContactsListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -522,20 +517,20 @@ type Location struct {
 }
 
 func (s *Location) MarshalJSON() ([]byte, error) {
-	type noMethod Location
-	raw := noMethod(*s)
+	type NoMethod Location
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *Location) UnmarshalJSON(data []byte) error {
-	type noMethod Location
+	type NoMethod Location
 	var s1 struct {
 		Accuracy  gensupport.JSONFloat64 `json:"accuracy"`
 		Latitude  gensupport.JSONFloat64 `json:"latitude"`
 		Longitude gensupport.JSONFloat64 `json:"longitude"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -576,8 +571,8 @@ type LocationsListResponse struct {
 }
 
 func (s *LocationsListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod LocationsListResponse
-	raw := noMethod(*s)
+	type NoMethod LocationsListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -670,8 +665,8 @@ type MenuItem struct {
 }
 
 func (s *MenuItem) MarshalJSON() ([]byte, error) {
-	type noMethod MenuItem
-	raw := noMethod(*s)
+	type NoMethod MenuItem
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -712,8 +707,8 @@ type MenuValue struct {
 }
 
 func (s *MenuValue) MarshalJSON() ([]byte, error) {
-	type noMethod MenuValue
-	raw := noMethod(*s)
+	type NoMethod MenuValue
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -758,8 +753,8 @@ type Notification struct {
 }
 
 func (s *Notification) MarshalJSON() ([]byte, error) {
-	type noMethod Notification
-	raw := noMethod(*s)
+	type NoMethod Notification
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -793,8 +788,8 @@ type NotificationConfig struct {
 }
 
 func (s *NotificationConfig) MarshalJSON() ([]byte, error) {
-	type noMethod NotificationConfig
-	raw := noMethod(*s)
+	type NoMethod NotificationConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -836,8 +831,8 @@ type Setting struct {
 }
 
 func (s *Setting) MarshalJSON() ([]byte, error) {
-	type noMethod Setting
-	raw := noMethod(*s)
+	type NoMethod Setting
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -907,8 +902,8 @@ type Subscription struct {
 }
 
 func (s *Subscription) MarshalJSON() ([]byte, error) {
-	type noMethod Subscription
-	raw := noMethod(*s)
+	type NoMethod Subscription
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -944,8 +939,8 @@ type SubscriptionsListResponse struct {
 }
 
 func (s *SubscriptionsListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod SubscriptionsListResponse
-	raw := noMethod(*s)
+	type NoMethod SubscriptionsListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1137,8 +1132,8 @@ type TimelineItem struct {
 }
 
 func (s *TimelineItem) MarshalJSON() ([]byte, error) {
-	type noMethod TimelineItem
-	raw := noMethod(*s)
+	type NoMethod TimelineItem
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1177,8 +1172,8 @@ type TimelineListResponse struct {
 }
 
 func (s *TimelineListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod TimelineListResponse
-	raw := noMethod(*s)
+	type NoMethod TimelineListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1223,8 +1218,8 @@ type UserAction struct {
 }
 
 func (s *UserAction) MarshalJSON() ([]byte, error) {
-	type noMethod UserAction
-	raw := noMethod(*s)
+	type NoMethod UserAction
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1251,8 +1246,8 @@ type UserData struct {
 }
 
 func (s *UserData) MarshalJSON() ([]byte, error) {
-	type noMethod UserData
-	raw := noMethod(*s)
+	type NoMethod UserData
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1310,7 +1305,6 @@ func (c *AccountsInsertCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.account)
 	if err != nil {
@@ -1363,7 +1357,7 @@ func (c *AccountsInsertCall) Do(opts ...googleapi.CallOption) (*Account, error) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1455,7 +1449,6 @@ func (c *ContactsDeleteCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "contacts/{id}")
@@ -1562,7 +1555,6 @@ func (c *ContactsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -1611,7 +1603,7 @@ func (c *ContactsGetCall) Do(opts ...googleapi.CallOption) (*Contact, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1689,7 +1681,6 @@ func (c *ContactsInsertCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.contact)
 	if err != nil {
@@ -1737,7 +1728,7 @@ func (c *ContactsInsertCall) Do(opts ...googleapi.CallOption) (*Contact, error) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1816,7 +1807,6 @@ func (c *ContactsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -1862,7 +1852,7 @@ func (c *ContactsListCall) Do(opts ...googleapi.CallOption) (*ContactsListRespon
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1932,7 +1922,6 @@ func (c *ContactsPatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.contact)
 	if err != nil {
@@ -1983,7 +1972,7 @@ func (c *ContactsPatchCall) Do(opts ...googleapi.CallOption) (*Contact, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2066,7 +2055,6 @@ func (c *ContactsUpdateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.contact)
 	if err != nil {
@@ -2117,7 +2105,7 @@ func (c *ContactsUpdateCall) Do(opts ...googleapi.CallOption) (*Contact, error) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2209,7 +2197,6 @@ func (c *LocationsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2258,7 +2245,7 @@ func (c *LocationsGetCall) Do(opts ...googleapi.CallOption) (*Location, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2346,7 +2333,6 @@ func (c *LocationsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2392,7 +2378,7 @@ func (c *LocationsListCall) Do(opts ...googleapi.CallOption) (*LocationsListResp
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2471,7 +2457,6 @@ func (c *SettingsGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2520,7 +2505,7 @@ func (c *SettingsGetCall) Do(opts ...googleapi.CallOption) (*Setting, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2598,7 +2583,6 @@ func (c *SubscriptionsDeleteCall) doRequest(alt string) (*http.Response, error) 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "subscriptions/{id}")
@@ -2694,7 +2678,6 @@ func (c *SubscriptionsInsertCall) doRequest(alt string) (*http.Response, error) 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.subscription)
 	if err != nil {
@@ -2742,7 +2725,7 @@ func (c *SubscriptionsInsertCall) Do(opts ...googleapi.CallOption) (*Subscriptio
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2822,7 +2805,6 @@ func (c *SubscriptionsListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -2868,7 +2850,7 @@ func (c *SubscriptionsListCall) Do(opts ...googleapi.CallOption) (*Subscriptions
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2937,7 +2919,6 @@ func (c *SubscriptionsUpdateCall) doRequest(alt string) (*http.Response, error) 
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.subscription)
 	if err != nil {
@@ -2988,7 +2969,7 @@ func (c *SubscriptionsUpdateCall) Do(opts ...googleapi.CallOption) (*Subscriptio
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3069,7 +3050,6 @@ func (c *TimelineDeleteCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "timeline/{id}")
@@ -3177,7 +3157,6 @@ func (c *TimelineGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3226,7 +3205,7 @@ func (c *TimelineGetCall) Do(opts ...googleapi.CallOption) (*TimelineItem, error
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3260,16 +3239,12 @@ func (c *TimelineGetCall) Do(opts ...googleapi.CallOption) (*TimelineItem, error
 // method id "mirror.timeline.insert":
 
 type TimelineInsertCall struct {
-	s                *Service
-	timelineitem     *TimelineItem
-	urlParams_       gensupport.URLParams
-	media_           io.Reader
-	mediaBuffer_     *gensupport.MediaBuffer
-	mediaType_       string
-	mediaSize_       int64 // mediaSize, if known.  Used only for calls to progressUpdater_.
-	progressUpdater_ googleapi.ProgressUpdater
-	ctx_             context.Context
-	header_          http.Header
+	s            *Service
+	timelineitem *TimelineItem
+	urlParams_   gensupport.URLParams
+	mediaInfo_   *gensupport.MediaInfo
+	ctx_         context.Context
+	header_      http.Header
 }
 
 // Insert: Inserts a new item into the timeline.
@@ -3288,12 +3263,7 @@ func (r *TimelineService) Insert(timelineitem *TimelineItem) *TimelineInsertCall
 // supplied.
 // At most one of Media and ResumableMedia may be set.
 func (c *TimelineInsertCall) Media(r io.Reader, options ...googleapi.MediaOption) *TimelineInsertCall {
-	opts := googleapi.ProcessMediaOptions(options)
-	chunkSize := opts.ChunkSize
-	if !opts.ForceEmptyContentType {
-		r, c.mediaType_ = gensupport.DetermineContentType(r, opts.ContentType)
-	}
-	c.media_, c.mediaBuffer_ = gensupport.PrepareUpload(r, chunkSize)
+	c.mediaInfo_ = gensupport.NewInfoFromMedia(r, options)
 	return c
 }
 
@@ -3308,11 +3278,7 @@ func (c *TimelineInsertCall) Media(r io.Reader, options ...googleapi.MediaOption
 // supersede any context previously provided to the Context method.
 func (c *TimelineInsertCall) ResumableMedia(ctx context.Context, r io.ReaderAt, size int64, mediaType string) *TimelineInsertCall {
 	c.ctx_ = ctx
-	rdr := gensupport.ReaderAtToReader(r, size)
-	rdr, c.mediaType_ = gensupport.DetermineContentType(rdr, mediaType)
-	c.mediaBuffer_ = gensupport.NewMediaBuffer(rdr, googleapi.DefaultUploadChunkSize)
-	c.media_ = nil
-	c.mediaSize_ = size
+	c.mediaInfo_ = gensupport.NewInfoFromResumableMedia(r, size, mediaType)
 	return c
 }
 
@@ -3321,7 +3287,7 @@ func (c *TimelineInsertCall) ResumableMedia(ctx context.Context, r io.ReaderAt, 
 // not slow down the upload operation. This should only be called when
 // using ResumableMedia (as opposed to Media).
 func (c *TimelineInsertCall) ProgressUpdater(pu googleapi.ProgressUpdater) *TimelineInsertCall {
-	c.progressUpdater_ = pu
+	c.mediaInfo_.SetProgressUpdater(pu)
 	return c
 }
 
@@ -3358,7 +3324,6 @@ func (c *TimelineInsertCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.timelineitem)
 	if err != nil {
@@ -3367,27 +3332,16 @@ func (c *TimelineInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders.Set("Content-Type", "application/json")
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "timeline")
-	if c.media_ != nil || c.mediaBuffer_ != nil {
+	if c.mediaInfo_ != nil {
 		urls = strings.Replace(urls, "https://www.googleapis.com/", "https://www.googleapis.com/upload/", 1)
-		protocol := "multipart"
-		if c.mediaBuffer_ != nil {
-			protocol = "resumable"
-		}
-		c.urlParams_.Set("uploadType", protocol)
+		c.urlParams_.Set("uploadType", c.mediaInfo_.UploadType())
 	}
 	if body == nil {
 		body = new(bytes.Buffer)
 		reqHeaders.Set("Content-Type", "application/json")
 	}
-	if c.media_ != nil {
-		combined, ctype := gensupport.CombineBodyMedia(body, "application/json", c.media_, c.mediaType_)
-		defer combined.Close()
-		reqHeaders.Set("Content-Type", ctype)
-		body = combined
-	}
-	if c.mediaBuffer_ != nil && c.mediaType_ != "" {
-		reqHeaders.Set("X-Upload-Content-Type", c.mediaType_)
-	}
+	body, cleanup := c.mediaInfo_.UploadRequest(reqHeaders, body)
+	defer cleanup()
 	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	req.Header = reqHeaders
@@ -3420,20 +3374,10 @@ func (c *TimelineInsertCall) Do(opts ...googleapi.CallOption) (*TimelineItem, er
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	if c.mediaBuffer_ != nil {
-		loc := res.Header.Get("Location")
-		rx := &gensupport.ResumableUpload{
-			Client:    c.s.client,
-			UserAgent: c.s.userAgent(),
-			URI:       loc,
-			Media:     c.mediaBuffer_,
-			MediaType: c.mediaType_,
-			Callback: func(curr int64) {
-				if c.progressUpdater_ != nil {
-					c.progressUpdater_(curr, c.mediaSize_)
-				}
-			},
-		}
+	rx := c.mediaInfo_.ResumableUpload(res.Header.Get("Location"))
+	if rx != nil {
+		rx.Client = c.s.client
+		rx.UserAgent = c.s.userAgent()
 		ctx := c.ctx_
 		if ctx == nil {
 			ctx = context.TODO()
@@ -3454,7 +3398,7 @@ func (c *TimelineInsertCall) Do(opts ...googleapi.CallOption) (*TimelineItem, er
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3608,7 +3552,6 @@ func (c *TimelineListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -3654,7 +3597,7 @@ func (c *TimelineListCall) Do(opts ...googleapi.CallOption) (*TimelineListRespon
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3792,7 +3735,6 @@ func (c *TimelinePatchCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.timelineitem)
 	if err != nil {
@@ -3843,7 +3785,7 @@ func (c *TimelinePatchCall) Do(opts ...googleapi.CallOption) (*TimelineItem, err
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3880,17 +3822,13 @@ func (c *TimelinePatchCall) Do(opts ...googleapi.CallOption) (*TimelineItem, err
 // method id "mirror.timeline.update":
 
 type TimelineUpdateCall struct {
-	s                *Service
-	id               string
-	timelineitem     *TimelineItem
-	urlParams_       gensupport.URLParams
-	media_           io.Reader
-	mediaBuffer_     *gensupport.MediaBuffer
-	mediaType_       string
-	mediaSize_       int64 // mediaSize, if known.  Used only for calls to progressUpdater_.
-	progressUpdater_ googleapi.ProgressUpdater
-	ctx_             context.Context
-	header_          http.Header
+	s            *Service
+	id           string
+	timelineitem *TimelineItem
+	urlParams_   gensupport.URLParams
+	mediaInfo_   *gensupport.MediaInfo
+	ctx_         context.Context
+	header_      http.Header
 }
 
 // Update: Updates a timeline item in place.
@@ -3910,12 +3848,7 @@ func (r *TimelineService) Update(id string, timelineitem *TimelineItem) *Timelin
 // supplied.
 // At most one of Media and ResumableMedia may be set.
 func (c *TimelineUpdateCall) Media(r io.Reader, options ...googleapi.MediaOption) *TimelineUpdateCall {
-	opts := googleapi.ProcessMediaOptions(options)
-	chunkSize := opts.ChunkSize
-	if !opts.ForceEmptyContentType {
-		r, c.mediaType_ = gensupport.DetermineContentType(r, opts.ContentType)
-	}
-	c.media_, c.mediaBuffer_ = gensupport.PrepareUpload(r, chunkSize)
+	c.mediaInfo_ = gensupport.NewInfoFromMedia(r, options)
 	return c
 }
 
@@ -3930,11 +3863,7 @@ func (c *TimelineUpdateCall) Media(r io.Reader, options ...googleapi.MediaOption
 // supersede any context previously provided to the Context method.
 func (c *TimelineUpdateCall) ResumableMedia(ctx context.Context, r io.ReaderAt, size int64, mediaType string) *TimelineUpdateCall {
 	c.ctx_ = ctx
-	rdr := gensupport.ReaderAtToReader(r, size)
-	rdr, c.mediaType_ = gensupport.DetermineContentType(rdr, mediaType)
-	c.mediaBuffer_ = gensupport.NewMediaBuffer(rdr, googleapi.DefaultUploadChunkSize)
-	c.media_ = nil
-	c.mediaSize_ = size
+	c.mediaInfo_ = gensupport.NewInfoFromResumableMedia(r, size, mediaType)
 	return c
 }
 
@@ -3943,7 +3872,7 @@ func (c *TimelineUpdateCall) ResumableMedia(ctx context.Context, r io.ReaderAt, 
 // not slow down the upload operation. This should only be called when
 // using ResumableMedia (as opposed to Media).
 func (c *TimelineUpdateCall) ProgressUpdater(pu googleapi.ProgressUpdater) *TimelineUpdateCall {
-	c.progressUpdater_ = pu
+	c.mediaInfo_.SetProgressUpdater(pu)
 	return c
 }
 
@@ -3980,7 +3909,6 @@ func (c *TimelineUpdateCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.timelineitem)
 	if err != nil {
@@ -3989,27 +3917,16 @@ func (c *TimelineUpdateCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders.Set("Content-Type", "application/json")
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "timeline/{id}")
-	if c.media_ != nil || c.mediaBuffer_ != nil {
+	if c.mediaInfo_ != nil {
 		urls = strings.Replace(urls, "https://www.googleapis.com/", "https://www.googleapis.com/upload/", 1)
-		protocol := "multipart"
-		if c.mediaBuffer_ != nil {
-			protocol = "resumable"
-		}
-		c.urlParams_.Set("uploadType", protocol)
+		c.urlParams_.Set("uploadType", c.mediaInfo_.UploadType())
 	}
 	if body == nil {
 		body = new(bytes.Buffer)
 		reqHeaders.Set("Content-Type", "application/json")
 	}
-	if c.media_ != nil {
-		combined, ctype := gensupport.CombineBodyMedia(body, "application/json", c.media_, c.mediaType_)
-		defer combined.Close()
-		reqHeaders.Set("Content-Type", ctype)
-		body = combined
-	}
-	if c.mediaBuffer_ != nil && c.mediaType_ != "" {
-		reqHeaders.Set("X-Upload-Content-Type", c.mediaType_)
-	}
+	body, cleanup := c.mediaInfo_.UploadRequest(reqHeaders, body)
+	defer cleanup()
 	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("PUT", urls, body)
 	req.Header = reqHeaders
@@ -4045,20 +3962,10 @@ func (c *TimelineUpdateCall) Do(opts ...googleapi.CallOption) (*TimelineItem, er
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	if c.mediaBuffer_ != nil {
-		loc := res.Header.Get("Location")
-		rx := &gensupport.ResumableUpload{
-			Client:    c.s.client,
-			UserAgent: c.s.userAgent(),
-			URI:       loc,
-			Media:     c.mediaBuffer_,
-			MediaType: c.mediaType_,
-			Callback: func(curr int64) {
-				if c.progressUpdater_ != nil {
-					c.progressUpdater_(curr, c.mediaSize_)
-				}
-			},
-		}
+	rx := c.mediaInfo_.ResumableUpload(res.Header.Get("Location"))
+	if rx != nil {
+		rx.Client = c.s.client
+		rx.UserAgent = c.s.userAgent()
 		ctx := c.ctx_
 		if ctx == nil {
 			ctx = context.TODO()
@@ -4079,7 +3986,7 @@ func (c *TimelineUpdateCall) Do(opts ...googleapi.CallOption) (*TimelineItem, er
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4182,7 +4089,6 @@ func (c *TimelineAttachmentsDeleteCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "timeline/{itemId}/attachments/{attachmentId}")
@@ -4300,7 +4206,6 @@ func (c *TimelineAttachmentsGetCall) doRequest(alt string) (*http.Response, erro
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4366,7 +4271,7 @@ func (c *TimelineAttachmentsGetCall) Do(opts ...googleapi.CallOption) (*Attachme
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4407,16 +4312,12 @@ func (c *TimelineAttachmentsGetCall) Do(opts ...googleapi.CallOption) (*Attachme
 // method id "mirror.timeline.attachments.insert":
 
 type TimelineAttachmentsInsertCall struct {
-	s                *Service
-	itemId           string
-	urlParams_       gensupport.URLParams
-	media_           io.Reader
-	mediaBuffer_     *gensupport.MediaBuffer
-	mediaType_       string
-	mediaSize_       int64 // mediaSize, if known.  Used only for calls to progressUpdater_.
-	progressUpdater_ googleapi.ProgressUpdater
-	ctx_             context.Context
-	header_          http.Header
+	s          *Service
+	itemId     string
+	urlParams_ gensupport.URLParams
+	mediaInfo_ *gensupport.MediaInfo
+	ctx_       context.Context
+	header_    http.Header
 }
 
 // Insert: Adds a new attachment to a timeline item.
@@ -4435,12 +4336,7 @@ func (r *TimelineAttachmentsService) Insert(itemId string) *TimelineAttachmentsI
 // supplied.
 // At most one of Media and ResumableMedia may be set.
 func (c *TimelineAttachmentsInsertCall) Media(r io.Reader, options ...googleapi.MediaOption) *TimelineAttachmentsInsertCall {
-	opts := googleapi.ProcessMediaOptions(options)
-	chunkSize := opts.ChunkSize
-	if !opts.ForceEmptyContentType {
-		r, c.mediaType_ = gensupport.DetermineContentType(r, opts.ContentType)
-	}
-	c.media_, c.mediaBuffer_ = gensupport.PrepareUpload(r, chunkSize)
+	c.mediaInfo_ = gensupport.NewInfoFromMedia(r, options)
 	return c
 }
 
@@ -4455,11 +4351,7 @@ func (c *TimelineAttachmentsInsertCall) Media(r io.Reader, options ...googleapi.
 // supersede any context previously provided to the Context method.
 func (c *TimelineAttachmentsInsertCall) ResumableMedia(ctx context.Context, r io.ReaderAt, size int64, mediaType string) *TimelineAttachmentsInsertCall {
 	c.ctx_ = ctx
-	rdr := gensupport.ReaderAtToReader(r, size)
-	rdr, c.mediaType_ = gensupport.DetermineContentType(rdr, mediaType)
-	c.mediaBuffer_ = gensupport.NewMediaBuffer(rdr, googleapi.DefaultUploadChunkSize)
-	c.media_ = nil
-	c.mediaSize_ = size
+	c.mediaInfo_ = gensupport.NewInfoFromResumableMedia(r, size, mediaType)
 	return c
 }
 
@@ -4468,7 +4360,7 @@ func (c *TimelineAttachmentsInsertCall) ResumableMedia(ctx context.Context, r io
 // not slow down the upload operation. This should only be called when
 // using ResumableMedia (as opposed to Media).
 func (c *TimelineAttachmentsInsertCall) ProgressUpdater(pu googleapi.ProgressUpdater) *TimelineAttachmentsInsertCall {
-	c.progressUpdater_ = pu
+	c.mediaInfo_.SetProgressUpdater(pu)
 	return c
 }
 
@@ -4505,31 +4397,19 @@ func (c *TimelineAttachmentsInsertCall) doRequest(alt string) (*http.Response, e
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "timeline/{itemId}/attachments")
-	if c.media_ != nil || c.mediaBuffer_ != nil {
+	if c.mediaInfo_ != nil {
 		urls = strings.Replace(urls, "https://www.googleapis.com/", "https://www.googleapis.com/upload/", 1)
-		protocol := "multipart"
-		if c.mediaBuffer_ != nil {
-			protocol = "resumable"
-		}
-		c.urlParams_.Set("uploadType", protocol)
+		c.urlParams_.Set("uploadType", c.mediaInfo_.UploadType())
 	}
 	if body == nil {
 		body = new(bytes.Buffer)
 		reqHeaders.Set("Content-Type", "application/json")
 	}
-	if c.media_ != nil {
-		combined, ctype := gensupport.CombineBodyMedia(body, "application/json", c.media_, c.mediaType_)
-		defer combined.Close()
-		reqHeaders.Set("Content-Type", ctype)
-		body = combined
-	}
-	if c.mediaBuffer_ != nil && c.mediaType_ != "" {
-		reqHeaders.Set("X-Upload-Content-Type", c.mediaType_)
-	}
+	body, cleanup := c.mediaInfo_.UploadRequest(reqHeaders, body)
+	defer cleanup()
 	urls += "?" + c.urlParams_.Encode()
 	req, _ := http.NewRequest("POST", urls, body)
 	req.Header = reqHeaders
@@ -4565,20 +4445,10 @@ func (c *TimelineAttachmentsInsertCall) Do(opts ...googleapi.CallOption) (*Attac
 	if err := googleapi.CheckResponse(res); err != nil {
 		return nil, err
 	}
-	if c.mediaBuffer_ != nil {
-		loc := res.Header.Get("Location")
-		rx := &gensupport.ResumableUpload{
-			Client:    c.s.client,
-			UserAgent: c.s.userAgent(),
-			URI:       loc,
-			Media:     c.mediaBuffer_,
-			MediaType: c.mediaType_,
-			Callback: func(curr int64) {
-				if c.progressUpdater_ != nil {
-					c.progressUpdater_(curr, c.mediaSize_)
-				}
-			},
-		}
+	rx := c.mediaInfo_.ResumableUpload(res.Header.Get("Location"))
+	if rx != nil {
+		rx.Client = c.s.client
+		rx.UserAgent = c.s.userAgent()
 		ctx := c.ctx_
 		if ctx == nil {
 			ctx = context.TODO()
@@ -4599,7 +4469,7 @@ func (c *TimelineAttachmentsInsertCall) Do(opts ...googleapi.CallOption) (*Attac
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4707,7 +4577,6 @@ func (c *TimelineAttachmentsListCall) doRequest(alt string) (*http.Response, err
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -4756,7 +4625,7 @@ func (c *TimelineAttachmentsListCall) Do(opts ...googleapi.CallOption) (*Attachm
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
