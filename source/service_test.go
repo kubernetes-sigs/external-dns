@@ -28,9 +28,62 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
+type ServiceSuite struct {
+	suite.Suite
+	sc             Source
+	fooWithTargets *v1.Service
+}
+
+func (suite *ServiceSuite) SetupTest() {
+	fakeClient := fake.NewSimpleClientset()
+	var err error
+
+	suite.sc, err = NewServiceSource(
+		fakeClient,
+		"",
+		"",
+		"{{.Name}}",
+		"",
+		false,
+	)
+	suite.fooWithTargets = &v1.Service{
+		Spec: v1.ServiceSpec{
+			Type: v1.ServiceTypeLoadBalancer,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:   "default",
+			Name:        "foo-with-targets",
+			Annotations: map[string]string{},
+		},
+		Status: v1.ServiceStatus{
+			LoadBalancer: v1.LoadBalancerStatus{
+				Ingress: []v1.LoadBalancerIngress{
+					{IP: "8.8.8.8"},
+					{Hostname: "foo"},
+				},
+			},
+		},
+	}
+
+	suite.NoError(err, "should initialize service source")
+
+	_, err = fakeClient.CoreV1().Services(suite.fooWithTargets.Namespace).Create(suite.fooWithTargets)
+	suite.NoError(err, "should successfully create service")
+
+}
+
+func (suite *ServiceSuite) TestResourceLabelIsSet() {
+	endpoints, _ := suite.sc.Endpoints()
+	for _, ep := range endpoints {
+		suite.Equal("service/default/foo-with-targets", ep.Labels[endpoint.ResourceLabelKey], "should set correct resource label")
+	}
+}
+
 func TestServiceSource(t *testing.T) {
+	suite.Run(t, new(ServiceSuite))
 	t.Run("Interface", testServiceSourceImplementsSource)
 	t.Run("NewServiceSource", testServiceSourceNewServiceSource)
 	t.Run("Endpoints", testServiceSourceEndpoints)
