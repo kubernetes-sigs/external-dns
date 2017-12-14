@@ -93,7 +93,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.7
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.8
         args:
         - --source=service
         - --source=ingress
@@ -158,6 +158,7 @@ spec:
   type: LoadBalancer
   ports:
   - port: 80
+    name: http
     targetPort: 80
   selector:
     app: nginx
@@ -179,6 +180,7 @@ spec:
         name: nginx
         ports:
         - containerPort: 80
+          name: http
 ```
 
 After roughly two minutes check that a corresponding DNS record for your service was created.

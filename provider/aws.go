@@ -17,23 +17,23 @@ limitations under the License.
 package provider
 
 import (
+	"sort"
 	"strings"
-
-	"github.com/linki/instrumented_http"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
-
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/linki/instrumented_http"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
 	elbHostnameSuffix    = ".elb.amazonaws.com"
 	evaluateTargetHealth = true
 	recordTTL            = 300
+	maxChangeCount       = 4000
 )
 
 var (
@@ -129,6 +129,10 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 	err := p.client.ListHostedZonesPages(&route53.ListHostedZonesInput{}, f)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, zone := range zones {
+		log.Debugf("Considering zone: %s (domain: %s)", aws.StringValue(zone.Id), aws.StringValue(zone.Name))
 	}
 
 	return zones, nil
@@ -232,14 +236,17 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 	changesByZone := changesByZone(zones, changes)
 
 	for z, cs := range changesByZone {
-		for _, c := range cs {
-			log.Infof("Changing records: %s %s ...", aws.StringValue(c.Action), c.String())
+		limCs := limitChangeSet(cs, maxChangeCount)
+
+		for _, c := range limCs {
+			log.Infof("Desired change: %s %s %s", *c.Action, *c.ResourceRecordSet.Name, *c.ResourceRecordSet.Type)
 		}
+
 		if !p.dryRun {
 			params := &route53.ChangeResourceRecordSetsInput{
 				HostedZoneId: aws.String(z),
 				ChangeBatch: &route53.ChangeBatch{
-					Changes: cs,
+					Changes: limCs,
 				},
 			}
 
@@ -252,6 +259,58 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 	}
 
 	return nil
+}
+
+func limitChangeSet(cs []*route53.Change, limit int) []*route53.Change {
+	if len(cs) <= limit {
+		return cs
+	}
+
+	log.Warningf("Initial change batch count is %d", len(cs))
+
+	changesByName := make(map[string][]*route53.Change, 0)
+	for _, v := range cs {
+		changesByName[*v.ResourceRecordSet.Name] = append(changesByName[*v.ResourceRecordSet.Name], v)
+	}
+
+	names := make([]string, 0)
+	for v := range changesByName {
+		names = append(names, v)
+	}
+	sort.Strings(names)
+
+	limCs := make([]*route53.Change, 0)
+	for i := 0; i < len(names); i++ {
+		changes := changesByName[names[i]]
+		if (limit - len(limCs)) >= len(changes) {
+			limCs = append(limCs, changes...)
+		}
+	}
+	limCs = sortChangesByActionNameType(limCs)
+
+	log.Warningf("Limited change batch count to %d", len(limCs))
+
+	return limCs
+}
+
+func sortChangesByActionNameType(cs []*route53.Change) []*route53.Change {
+	sort.SliceStable(cs, func(i, j int) bool {
+		if *cs[i].Action < *cs[j].Action {
+			return true
+		}
+		if *cs[i].Action > *cs[j].Action {
+			return false
+		}
+		if *cs[i].ResourceRecordSet.Name < *cs[j].ResourceRecordSet.Name {
+			return true
+		}
+		if *cs[i].ResourceRecordSet.Name > *cs[j].ResourceRecordSet.Name {
+			return false
+		}
+		return *cs[i].ResourceRecordSet.Type < *cs[j].ResourceRecordSet.Type
+	})
+
+	return cs
 }
 
 // changesByZone separates a multi-zone change into a single change per zone.

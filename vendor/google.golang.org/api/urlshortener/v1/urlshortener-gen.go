@@ -61,10 +61,9 @@ func New(client *http.Client) (*Service, error) {
 }
 
 type Service struct {
-	client                    *http.Client
-	BasePath                  string // API endpoint base URL
-	UserAgent                 string // optional additional User-Agent fragment
-	GoogleClientHeaderElement string // client header fragment, for Google use only
+	client    *http.Client
+	BasePath  string // API endpoint base URL
+	UserAgent string // optional additional User-Agent fragment
 
 	Url *UrlService
 }
@@ -74,10 +73,6 @@ func (s *Service) userAgent() string {
 		return googleapi.UserAgent
 	}
 	return googleapi.UserAgent + " " + s.UserAgent
-}
-
-func (s *Service) clientHeader() string {
-	return gensupport.GoogleClientHeader("20170210", s.GoogleClientHeaderElement)
 }
 
 func NewUrlService(s *Service) *UrlService {
@@ -132,8 +127,8 @@ type AnalyticsSnapshot struct {
 }
 
 func (s *AnalyticsSnapshot) MarshalJSON() ([]byte, error) {
-	type noMethod AnalyticsSnapshot
-	raw := noMethod(*s)
+	type NoMethod AnalyticsSnapshot
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -171,8 +166,8 @@ type AnalyticsSummary struct {
 }
 
 func (s *AnalyticsSummary) MarshalJSON() ([]byte, error) {
-	type noMethod AnalyticsSummary
-	raw := noMethod(*s)
+	type NoMethod AnalyticsSummary
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -202,8 +197,8 @@ type StringCount struct {
 }
 
 func (s *StringCount) MarshalJSON() ([]byte, error) {
-	type noMethod StringCount
-	raw := noMethod(*s)
+	type NoMethod StringCount
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -254,8 +249,8 @@ type Url struct {
 }
 
 func (s *Url) MarshalJSON() ([]byte, error) {
-	type noMethod Url
-	raw := noMethod(*s)
+	type NoMethod Url
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -300,8 +295,8 @@ type UrlHistory struct {
 }
 
 func (s *UrlHistory) MarshalJSON() ([]byte, error) {
-	type noMethod UrlHistory
-	raw := noMethod(*s)
+	type NoMethod UrlHistory
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -376,7 +371,6 @@ func (c *UrlGetCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -422,7 +416,7 @@ func (c *UrlGetCall) Do(opts ...googleapi.CallOption) (*Url, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -515,7 +509,6 @@ func (c *UrlInsertCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	var body io.Reader = nil
 	body, err := googleapi.WithoutDataWrapper.JSONReader(c.url)
 	if err != nil {
@@ -563,7 +556,7 @@ func (c *UrlInsertCall) Do(opts ...googleapi.CallOption) (*Url, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -660,7 +653,6 @@ func (c *UrlListCall) doRequest(alt string) (*http.Response, error) {
 		reqHeaders[k] = v
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
-	reqHeaders.Set("x-goog-api-client", c.s.clientHeader())
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
@@ -706,7 +698,7 @@ func (c *UrlListCall) Do(opts ...googleapi.CallOption) (*UrlHistory, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

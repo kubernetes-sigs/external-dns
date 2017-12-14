@@ -27,7 +27,6 @@ import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -492,6 +491,87 @@ func TestAWSChangesByZones(t *testing.T) {
 	})
 }
 
+func TestAWSsubmitChanges(t *testing.T) {
+	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), NewZoneTypeFilter(""), false, []*endpoint.Endpoint{})
+	const subnets = 16
+	const hosts = maxChangeCount / subnets
+
+	endpoints := make([]*endpoint.Endpoint, 0)
+	for i := 0; i < subnets; i++ {
+		for j := 1; j < (hosts + 1); j++ {
+			hostname := fmt.Sprintf("subnet%dhost%d.zone-1.ext-dns-test-2.teapot.zalan.do", i, j)
+			ip := fmt.Sprintf("1.1.%d.%d", i, j)
+			ep := endpoint.NewEndpointWithTTL(hostname, ip, endpoint.RecordTypeA, endpoint.TTL(recordTTL))
+			endpoints = append(endpoints, ep)
+		}
+	}
+
+	cs := make([]*route53.Change, 0, len(endpoints))
+	cs = append(cs, newChanges(route53.ChangeActionCreate, endpoints)...)
+
+	require.NoError(t, provider.submitChanges(cs))
+
+	records, err := provider.Records()
+	require.NoError(t, err)
+
+	validateEndpoints(t, records, endpoints)
+}
+
+func TestAWSLimitChangeSet(t *testing.T) {
+	var cs []*route53.Change
+
+	for i := 1; i <= maxChangeCount; i += 2 {
+		cs = append(cs, &route53.Change{
+			Action: aws.String(route53.ChangeActionCreate),
+			ResourceRecordSet: &route53.ResourceRecordSet{
+				Name: aws.String(fmt.Sprintf("host-%d", i)),
+				Type: aws.String("A"),
+			},
+		})
+		cs = append(cs, &route53.Change{
+			Action: aws.String(route53.ChangeActionCreate),
+			ResourceRecordSet: &route53.ResourceRecordSet{
+				Name: aws.String(fmt.Sprintf("host-%d", i)),
+				Type: aws.String("TXT"),
+			},
+		})
+	}
+
+	limCs := limitChangeSet(cs, maxChangeCount)
+
+	// sorting cs not needed as it should be returned as is
+	validateAWSChangeRecords(t, limCs, cs)
+}
+
+func TestAWSLimitChangeSetExceeding(t *testing.T) {
+	var cs []*route53.Change
+	const testCount = 100
+	const testLimit = 11
+	const expectedCount = 10
+
+	for i := 1; i <= testCount; i += 2 {
+		cs = append(cs, &route53.Change{
+			Action: aws.String(route53.ChangeActionCreate),
+			ResourceRecordSet: &route53.ResourceRecordSet{
+				Name: aws.String(fmt.Sprintf("host-%d", i)),
+				Type: aws.String("A"),
+			},
+		})
+		cs = append(cs, &route53.Change{
+			Action: aws.String(route53.ChangeActionCreate),
+			ResourceRecordSet: &route53.ResourceRecordSet{
+				Name: aws.String(fmt.Sprintf("host-%d", i)),
+				Type: aws.String("TXT"),
+			},
+		})
+	}
+
+	limCs := limitChangeSet(cs, testLimit)
+
+	// sorting cs needed to match limCs
+	validateAWSChangeRecords(t, limCs, sortChangesByActionNameType(cs)[0:expectedCount])
+}
+
 func validateEndpoints(t *testing.T, endpoints []*endpoint.Endpoint, expected []*endpoint.Endpoint) {
 	assert.True(t, testutils.SameEndpoints(endpoints, expected), "expected and actual endpoints don't match. %s:%s", endpoints, expected)
 }
@@ -520,6 +600,7 @@ func validateAWSChangeRecords(t *testing.T, records []*route53.Change, expected 
 func validateAWSChangeRecord(t *testing.T, record *route53.Change, expected *route53.Change) {
 	assert.Equal(t, aws.StringValue(expected.Action), aws.StringValue(record.Action))
 	assert.Equal(t, aws.StringValue(expected.ResourceRecordSet.Name), aws.StringValue(record.ResourceRecordSet.Name))
+	assert.Equal(t, aws.StringValue(expected.ResourceRecordSet.Type), aws.StringValue(record.ResourceRecordSet.Type))
 }
 
 func TestAWSCreateRecordsWithCNAME(t *testing.T) {

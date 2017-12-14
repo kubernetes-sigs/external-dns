@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 

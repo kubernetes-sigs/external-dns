@@ -398,6 +398,27 @@ func TestGoogleApplyChangesEmpty(t *testing.T) {
 	assert.NoError(t, provider.ApplyChanges(&plan.Changes{}))
 }
 
+func TestNewRecords(t *testing.T) {
+	records := newRecords([]*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA, 1),
+		endpoint.NewEndpointWithTTL("delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA, 120),
+		endpoint.NewEndpointWithTTL("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "bar.elb.amazonaws.com", endpoint.RecordTypeCNAME, 4000),
+		// test fallback to Ttl:300 when Ttl==0 :
+		endpoint.NewEndpointWithTTL("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA, 0),
+		endpoint.NewEndpoint("delete-test.zone-1.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
+		endpoint.NewEndpoint("delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "qux.elb.amazonaws.com", endpoint.RecordTypeCNAME),
+	})
+
+	validateChangeRecords(t, records, []*dns.ResourceRecordSet{
+		{Name: "update-test.zone-2.ext-dns-test-2.gcp.zalan.do.", Rrdatas: []string{"8.8.4.4"}, Type: "A", Ttl: 1},
+		{Name: "delete-test.zone-2.ext-dns-test-2.gcp.zalan.do.", Rrdatas: []string{"8.8.4.4"}, Type: "A", Ttl: 120},
+		{Name: "update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do.", Rrdatas: []string{"bar.elb.amazonaws.com."}, Type: "CNAME", Ttl: 4000},
+		{Name: "update-test.zone-1.ext-dns-test-2.gcp.zalan.do.", Rrdatas: []string{"8.8.8.8"}, Type: "A", Ttl: 300},
+		{Name: "delete-test.zone-1.ext-dns-test-2.gcp.zalan.do.", Rrdatas: []string{"8.8.8.8"}, Type: "A", Ttl: 300},
+		{Name: "delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do.", Rrdatas: []string{"qux.elb.amazonaws.com."}, Type: "CNAME", Ttl: 300},
+	})
+}
+
 func TestSeparateChanges(t *testing.T) {
 	change := &dns.Change{
 		Additions: []*dns.ResourceRecordSet{
@@ -475,7 +496,9 @@ func validateChangeRecords(t *testing.T, records []*dns.ResourceRecordSet, expec
 
 func validateChangeRecord(t *testing.T, record *dns.ResourceRecordSet, expected *dns.ResourceRecordSet) {
 	assert.Equal(t, expected.Name, record.Name)
+	assert.Equal(t, expected.Rrdatas, record.Rrdatas)
 	assert.Equal(t, expected.Ttl, record.Ttl)
+	assert.Equal(t, expected.Type, record.Type)
 }
 
 func newGoogleProvider(t *testing.T, domainFilter DomainFilter, dryRun bool, records []*endpoint.Endpoint) *GoogleProvider {

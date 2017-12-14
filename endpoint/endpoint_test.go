@@ -18,8 +18,6 @@ package endpoint
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNewEndpoint(t *testing.T) {
@@ -35,14 +33,4 @@ func TestNewEndpoint(t *testing.T) {
 	if w.DNSName != "example.org" || w.Target != "load-balancer.com" || w.RecordType != "" {
 		t.Error("endpoint is not initialized correctly")
 	}
-}
-
-func TestMergeLabels(t *testing.T) {
-	e := NewEndpoint("abc.com", "1.2.3.4", "A")
-	e.Labels = map[string]string{
-		"foo": "bar",
-		"baz": "qux",
-	}
-	e.MergeLabels(map[string]string{"baz": "baz", "new": "fox"})
-	assert.Equal(t, map[string]string{"foo": "bar", "baz": "qux", "new": "fox"}, e.Labels)
 }
