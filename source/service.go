@@ -122,7 +122,7 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
-func (sc *serviceSource) extractHeadlessEndpoint(svc *v1.Service, hostname string) []*endpoint.Endpoint {
+func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname string) []*endpoint.Endpoint {
 
 	var endpoints []*endpoint.Endpoint
 
@@ -138,6 +138,7 @@ func (sc *serviceSource) extractHeadlessEndpoint(svc *v1.Service, hostname strin
 		if v.Spec.Hostname != "" {
 			headlessDomain = v.Spec.Hostname + "." + headlessDomain
 		}
+
 		log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, v.Status.HostIP)
 		// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
 		if v.Status.Phase == v1.PodRunning {
@@ -221,54 +222,85 @@ func (sc *serviceSource) setResourceLabel(service v1.Service, endpoints []*endpo
 }
 
 func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*endpoint.Endpoint {
-	var endpoints []*endpoint.Endpoint
-
 	hostname = strings.TrimSuffix(hostname, ".")
+	ttl, err := getTTLFromAnnotations(svc.Annotations)
+	if err != nil {
+		log.Warn(err)
+	}
+
+	epA := &endpoint.Endpoint{
+		RecordTTL:  ttl,
+		RecordType: endpoint.RecordTypeA,
+		Labels:     endpoint.NewLabels(),
+		Targets:    make(endpoint.Targets, 0, 10),
+		DNSName:    hostname,
+	}
+
+	epCNAME := &endpoint.Endpoint{
+		RecordTTL:  ttl,
+		RecordType: endpoint.RecordTypeCNAME,
+		Labels:     endpoint.NewLabels(),
+		Targets:    make(endpoint.Targets, 0, 10),
+		DNSName:    hostname,
+	}
+
+	var endpoints []*endpoint.Endpoint
+	var targets endpoint.Targets
+
 	switch svc.Spec.Type {
 	case v1.ServiceTypeLoadBalancer:
-		endpoints = append(endpoints, extractLoadBalancerEndpoints(svc, hostname)...)
+		targets = append(targets, extractLoadBalancerTargets(svc)...)
 	case v1.ServiceTypeClusterIP:
 		if sc.publishInternal {
-			endpoints = append(endpoints, extractServiceIps(svc, hostname)...)
+			targets = append(targets, extractServiceIps(svc)...)
 		}
 		if svc.Spec.ClusterIP == v1.ClusterIPNone {
-			endpoints = append(endpoints, sc.extractHeadlessEndpoint(svc, hostname)...)
+			endpoints = append(endpoints, sc.extractHeadlessEndpoints(svc, hostname)...)
 		}
 
+	}
+
+	for _, t := range targets {
+		if suitableType(t) == endpoint.RecordTypeA {
+			epA.Targets = append(epA.Targets, t)
+		}
+		if suitableType(t) == endpoint.RecordTypeCNAME {
+			epCNAME.Targets = append(epCNAME.Targets, t)
+		}
+	}
+
+	if len(epA.Targets) > 0 {
+		endpoints = append(endpoints, epA)
+	}
+	if len(epCNAME.Targets) > 0 {
+		endpoints = append(endpoints, epCNAME)
 	}
 	return endpoints
 }
 
-func extractServiceIps(svc *v1.Service, hostname string) []*endpoint.Endpoint {
-	ttl, err := getTTLFromAnnotations(svc.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
+func extractServiceIps(svc *v1.Service) endpoint.Targets {
+	var targets endpoint.Targets
 	if svc.Spec.ClusterIP == v1.ClusterIPNone {
 		log.Debugf("Unable to associate %s headless service with a Cluster IP", svc.Name)
-		return []*endpoint.Endpoint{}
+		return targets
 	}
+	targets = append(targets, svc.Spec.ClusterIP)
 
-	return []*endpoint.Endpoint{endpoint.NewEndpointWithTTL(hostname, svc.Spec.ClusterIP, endpoint.RecordTypeA, ttl)}
+	return targets
 }
 
-func extractLoadBalancerEndpoints(svc *v1.Service, hostname string) []*endpoint.Endpoint {
-	var endpoints []*endpoint.Endpoint
+func extractLoadBalancerTargets(svc *v1.Service) endpoint.Targets {
+	var targets endpoint.Targets
 
-	ttl, err := getTTLFromAnnotations(svc.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
 	// Create a corresponding endpoint for each configured external entrypoint.
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
-			//TODO(ideahitme): consider retrieving record type from resource annotation instead of empty
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.IP, endpoint.RecordTypeA, ttl))
+			targets = append(targets, lb.IP)
 		}
 		if lb.Hostname != "" {
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.Hostname, endpoint.RecordTypeCNAME, ttl))
+			targets = append(targets, lb.Hostname)
 		}
 	}
 
-	return endpoints
+	return targets
 }

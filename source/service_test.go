@@ -512,7 +512,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			false,
 		},
 		{
-			"multiple external entrypoints return multiple endpoints",
+			"multiple external entrypoints return a single endpoint with multiple targets",
 			"",
 			"",
 			"testing",
@@ -527,8 +527,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			[]string{"1.2.3.4", "8.8.8.8"},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
-				{DNSName: "foo.example.org", Targets: endpoint.Targets{"8.8.8.8"}},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4", "8.8.8.8"}},
 			},
 			false,
 		},
