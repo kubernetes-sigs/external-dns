@@ -48,6 +48,16 @@ func TestZoneIDFilterMatch(t *testing.T) {
 			false,
 		},
 		{
+			[]string{"ZTST1"},
+			zone,
+			true,
+		},
+		{
+			[]string{"ZTST2"},
+			zone,
+			false,
+		},
+		{
 			[]string{"/hostedzone/ZTST1", "/hostedzone/ZTST2"},
 			zone,
 			true,

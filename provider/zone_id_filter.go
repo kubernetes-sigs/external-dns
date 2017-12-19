@@ -16,6 +16,8 @@ limitations under the License.
 
 package provider
 
+import "strings"
+
 // ZoneIDFilter holds a list of zone ids to filter by
 type ZoneIDFilter struct {
 	zoneIDs []string
@@ -34,7 +36,7 @@ func (f ZoneIDFilter) Match(zoneID string) bool {
 	}
 
 	for _, id := range f.zoneIDs {
-		if id == zoneID {
+		if strings.HasSuffix(zoneID, id) {
 			return true
 		}
 	}
