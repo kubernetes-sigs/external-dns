@@ -115,7 +115,7 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 
 	f := func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool) {
 		for _, zone := range resp.HostedZones {
-			if !p.zoneIDFilter.Match(zone) {
+			if !p.zoneIDFilter.Match(aws.StringValue(zone.Id)) {
 				continue
 			}
 

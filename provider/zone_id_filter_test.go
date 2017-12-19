@@ -19,20 +19,17 @@ package provider
 import (
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/route53"
-
 	"github.com/stretchr/testify/assert"
 )
 
 type zoneIDFilterTest struct {
 	zoneIDFilter []string
-	zone         *route53.HostedZone
+	zone         string
 	expected     bool
 }
 
 func TestZoneIDFilterMatch(t *testing.T) {
-	zone := &route53.HostedZone{Id: aws.String("/hostedzone/ZTST1")}
+	zone := "/hostedzone/ZTST1"
 
 	for _, tt := range []zoneIDFilterTest{
 		{

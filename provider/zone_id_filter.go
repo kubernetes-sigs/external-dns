@@ -16,10 +16,6 @@ limitations under the License.
 
 package provider
 
-import (
-	"github.com/aws/aws-sdk-go/service/route53"
-)
-
 // ZoneIDFilter holds a list of zone ids to filter by
 type ZoneIDFilter struct {
 	zoneIDs []string
@@ -31,14 +27,14 @@ func NewZoneIDFilter(zoneIDs []string) ZoneIDFilter {
 }
 
 // Match checks whether a zone matches one of the provided zone ids
-func (f ZoneIDFilter) Match(zone *route53.HostedZone) bool {
+func (f ZoneIDFilter) Match(zoneID string) bool {
 	// An empty filter includes all zones.
 	if len(f.zoneIDs) == 0 {
 		return true
 	}
 
 	for _, id := range f.zoneIDs {
-		if id == *zone.Id {
+		if id == zoneID {
 			return true
 		}
 	}
