@@ -37,8 +37,9 @@ type mockRecordsClient struct {
 	updatedEndpoints []*endpoint.Endpoint
 }
 
-func createMockZone(zone string) dns.Zone {
+func createMockZone(zone string, id string) dns.Zone {
 	return dns.Zone{
+		ID:   to.StringPtr(id),
 		Name: to.StringPtr(zone),
 	}
 }
@@ -138,9 +139,10 @@ func (client *mockRecordsClient) CreateOrUpdate(resourceGroupName string, zoneNa
 	return parameters, nil
 }
 
-func newAzureProvider(domainFilter DomainFilter, dryRun bool, resourceGroup string, zonesClient ZonesClient, recordsClient RecordsClient) *AzureProvider {
+func newAzureProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, zonesClient ZonesClient, recordsClient RecordsClient) *AzureProvider {
 	return &AzureProvider{
 		domainFilter:  domainFilter,
+		zoneIDFilter:  zoneIDFilter,
 		dryRun:        dryRun,
 		resourceGroup: resourceGroup,
 		zonesClient:   zonesClient,
@@ -152,7 +154,7 @@ func TestAzureRecord(t *testing.T) {
 	zonesClient := mockZonesClient{
 		mockZoneListResult: &dns.ZoneListResult{
 			Value: &[]dns.Zone{
-				createMockZone("example.com"),
+				createMockZone("example.com", "/dnszones/example.com"),
 			},
 		},
 	}
@@ -169,7 +171,7 @@ func TestAzureRecord(t *testing.T) {
 		},
 	}
 
-	provider := newAzureProvider(NewDomainFilter([]string{"example.com"}), true, "k8s", &zonesClient, &recordsClient)
+	provider := newAzureProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s", &zonesClient, &recordsClient)
 	actual, err := provider.Records()
 
 	if err != nil {
@@ -225,13 +227,14 @@ func TestAzureApplyChangesDryRun(t *testing.T) {
 func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordsClient) {
 	provider := newAzureProvider(
 		NewDomainFilter([]string{""}),
+		NewZoneIDFilter([]string{""}),
 		dryRun,
 		"group",
 		&mockZonesClient{
 			mockZoneListResult: &dns.ZoneListResult{
 				Value: &[]dns.Zone{
-					createMockZone("example.com"),
-					createMockZone("other.com"),
+					createMockZone("example.com", "/dnszones/example.com"),
+					createMockZone("other.com", "/dnszones/other.com"),
 				},
 			},
 		},
