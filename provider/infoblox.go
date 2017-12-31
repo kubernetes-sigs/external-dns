@@ -30,6 +30,7 @@ import (
 // InfobloxConfig clarifies the method signature
 type InfobloxConfig struct {
 	DomainFilter DomainFilter
+	ZoneIDFilter ZoneIDFilter
 	Host         string
 	Port         int
 	Username     string
@@ -43,6 +44,7 @@ type InfobloxConfig struct {
 type InfobloxProvider struct {
 	client       ibclient.IBConnector
 	domainFilter DomainFilter
+	zoneIDFilter ZoneIDFilter
 	dryRun       bool
 }
 
@@ -82,6 +84,7 @@ func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, erro
 	provider := &InfobloxProvider{
 		client:       client,
 		domainFilter: infobloxConfig.DomainFilter,
+		zoneIDFilter: infobloxConfig.ZoneIDFilter,
 		dryRun:       infobloxConfig.DryRun,
 	}
 
@@ -186,9 +189,15 @@ func (p *InfobloxProvider) zones() ([]ibclient.ZoneAuth, error) {
 	}
 
 	for _, zone := range res {
-		if p.domainFilter.Match(zone.Fqdn) {
-			result = append(result, zone)
+		if !p.domainFilter.Match(zone.Fqdn) {
+			continue
 		}
+
+		if !p.zoneIDFilter.Match(zone.Ref) {
+			continue
+		}
+
+		result = append(result, zone)
 	}
 
 	return result, nil

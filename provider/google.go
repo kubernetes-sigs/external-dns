@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/linki/instrumented_http"
@@ -102,6 +103,8 @@ type GoogleProvider struct {
 	dryRun bool
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter DomainFilter
+	// only consider hosted zones ending with this zone id
+	zoneIDFilter ZoneIDFilter
 	// A client for managing resource record sets
 	resourceRecordSetsClient resourceRecordSetsClientInterface
 	// A client for managing hosted zones
@@ -111,7 +114,7 @@ type GoogleProvider struct {
 }
 
 // NewGoogleProvider initializes a new Google CloudDNS based Provider.
-func NewGoogleProvider(project string, domainFilter DomainFilter, dryRun bool) (*GoogleProvider, error) {
+func NewGoogleProvider(project string, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool) (*GoogleProvider, error) {
 	gcloud, err := google.DefaultClient(context.TODO(), dns.NdevClouddnsReadwriteScope)
 	if err != nil {
 		return nil, err
@@ -132,6 +135,7 @@ func NewGoogleProvider(project string, domainFilter DomainFilter, dryRun bool) (
 	provider := &GoogleProvider{
 		project:      project,
 		domainFilter: domainFilter,
+		zoneIDFilter: zoneIDFilter,
 		dryRun:       dryRun,
 		resourceRecordSetsClient: resourceRecordSetsService{dnsClient.ResourceRecordSets},
 		managedZonesClient:       managedZonesService{dnsClient.ManagedZones},
@@ -147,7 +151,7 @@ func (p *GoogleProvider) Zones() (map[string]*dns.ManagedZone, error) {
 
 	f := func(resp *dns.ManagedZonesListResponse) error {
 		for _, zone := range resp.ManagedZones {
-			if p.domainFilter.Match(zone.DnsName) {
+			if p.domainFilter.Match(zone.DnsName) || p.zoneIDFilter.Match(fmt.Sprintf("%v", zone.Id)) {
 				zones[zone.Name] = zone
 				log.Debugf("Matched %s (zone: %s)", zone.DnsName, zone.Name)
 			} else {

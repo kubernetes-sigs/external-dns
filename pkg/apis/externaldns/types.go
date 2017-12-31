@@ -41,6 +41,7 @@ type Config struct {
 	Provider             string
 	GoogleProject        string
 	DomainFilter         []string
+	ZoneIDFilter         []string
 	AWSZoneType          string
 	AzureConfigFile      string
 	AzureResourceGroup   string
@@ -134,6 +135,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	// Flags related to providers
 	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, google, azure, cloudflare, digitalocean, dnsimple, infoblox, inmemory)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "google", "azure", "cloudflare", "digitalocean", "dnsimple", "infoblox", "inmemory")
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
+	app.Flag("zone-id-filter", "Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.ZoneIDFilter)
 	app.Flag("google-project", "When using the Google provider, specify the Google project (required when --provider=google)").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
 	app.Flag("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AWSZoneType).EnumVar(&cfg.AWSZoneType, "", "public", "private")
 	app.Flag("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure").Default(defaultConfig.AzureConfigFile).StringVar(&cfg.AzureConfigFile)
