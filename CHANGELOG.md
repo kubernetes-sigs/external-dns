@@ -4,7 +4,7 @@
     - Target of DNS record is changed only if corresponding kubernetes resource target changes
     - If kubernetes resource is deleted, then another resource may acquire DNS name
     - "Flapping" target issue is resolved by providing a consistent and defined mechanism for choosing a target
-  - New `--zone-id-filter` parameter allows filtering by zone id
+  - New `--zone-id-filter` parameter allows filtering by zone id (#422) @vboginskey
 
 ## v0.4.8 - 2017-11-22
 
