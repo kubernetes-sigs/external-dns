@@ -19,6 +19,7 @@ package provider
 import (
 	"fmt"
 	"net"
+	"sort"
 	"strings"
 	"testing"
 
@@ -453,6 +454,11 @@ func TestAWSChangesByZones(t *testing.T) {
 			Id:   aws.String("bar-example-org"),
 			Name: aws.String("bar.example.org."),
 		},
+		"bar-example-org-private": {
+			Id:     aws.String("bar-example-org-private"),
+			Name:   aws.String("bar.example.org."),
+			Config: &route53.HostedZoneConfig{PrivateZone: aws.Bool(true)},
+		},
 		"baz-example-org": {
 			Id:   aws.String("baz-example-org"),
 			Name: aws.String("baz.example.org."),
@@ -460,7 +466,7 @@ func TestAWSChangesByZones(t *testing.T) {
 	}
 
 	changesByZone := changesByZone(zones, changes)
-	require.Len(t, changesByZone, 2)
+	require.Len(t, changesByZone, 3)
 
 	validateAWSChangeRecords(t, changesByZone["foo-example-org"], []*route53.Change{
 		{
@@ -478,6 +484,21 @@ func TestAWSChangesByZones(t *testing.T) {
 	})
 
 	validateAWSChangeRecords(t, changesByZone["bar-example-org"], []*route53.Change{
+		{
+			Action: aws.String(route53.ChangeActionCreate),
+			ResourceRecordSet: &route53.ResourceRecordSet{
+				Name: aws.String("qux.bar.example.org"), TTL: aws.Int64(2),
+			},
+		},
+		{
+			Action: aws.String(route53.ChangeActionDelete),
+			ResourceRecordSet: &route53.ResourceRecordSet{
+				Name: aws.String("wambo.bar.example.org"), TTL: aws.Int64(20),
+			},
+		},
+	})
+
+	validateAWSChangeRecords(t, changesByZone["bar-example-org-private"], []*route53.Change{
 		{
 			Action: aws.String(route53.ChangeActionCreate),
 			ResourceRecordSet: &route53.ResourceRecordSet{
@@ -694,6 +715,35 @@ func TestAWSCanonicalHostedZone(t *testing.T) {
 	} {
 		zone := canonicalHostedZone(tc.hostname)
 		assert.Equal(t, tc.expected, zone)
+	}
+}
+
+func TestAWSSuitableZones(t *testing.T) {
+	zones := map[string]*route53.HostedZone{
+		// Public domain
+		"example-org": {Id: aws.String("example-org"), Name: aws.String("example.org.")},
+		// Public subdomain
+		"bar-example-org": {Id: aws.String("bar-example-org"), Name: aws.String("bar.example.org."), Config: &route53.HostedZoneConfig{PrivateZone: aws.Bool(false)}},
+		// Public subdomain
+		"longfoo-bar-example-org": {Id: aws.String("longfoo-bar-example-org"), Name: aws.String("longfoo.bar.example.org.")},
+		// Private domain
+		"example-org-private": {Id: aws.String("example-org-private"), Name: aws.String("example.org."), Config: &route53.HostedZoneConfig{PrivateZone: aws.Bool(true)}},
+		// Private subdomain
+		"bar-example-org-private": {Id: aws.String("bar-example-org-private"), Name: aws.String("bar.example.org."), Config: &route53.HostedZoneConfig{PrivateZone: aws.Bool(true)}},
+	}
+
+	for _, tc := range []struct {
+		hostname string
+		expected []*route53.HostedZone
+	}{
+		{"foo.bar.example.org.", []*route53.HostedZone{zones["example-org-private"], zones["bar-example-org-private"], zones["bar-example-org"]}},
+		{"foo.example.org.", []*route53.HostedZone{zones["example-org-private"], zones["example-org"]}},
+		{"foo.kubernetes.io.", nil},
+	} {
+		suitableZones := suitableZones(tc.hostname, zones)
+		sort.Slice(suitableZones, func(i, j int) bool { return *suitableZones[i].Id < *suitableZones[j].Id })
+		sort.Slice(tc.expected, func(i, j int) bool { return *tc.expected[i].Id < *tc.expected[j].Id })
+		assert.Equal(t, tc.expected, suitableZones)
 	}
 }
 

@@ -323,22 +323,23 @@ func sortChangesByActionNameType(cs []*route53.Change) []*route53.Change {
 // changesByZone separates a multi-zone change into a single change per zone.
 func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Change) map[string][]*route53.Change {
 	changes := make(map[string][]*route53.Change)
-	zoneNameIDMapper := zoneIDName{}
 
 	for _, z := range zones {
-		zoneNameIDMapper.Add(aws.StringValue(z.Id), aws.StringValue(z.Name))
 		changes[aws.StringValue(z.Id)] = []*route53.Change{}
 	}
 
 	for _, c := range changeSet {
 		hostname := ensureTrailingDot(aws.StringValue(c.ResourceRecordSet.Name))
 
-		zoneID, _ := zoneNameIDMapper.FindZone(hostname)
-		if zoneID == "" {
+		zones := suitableZones(hostname, zones)
+		if len(zones) == 0 {
 			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.String())
 			continue
 		}
-		changes[zoneID] = append(changes[zoneID], c)
+		for _, z := range zones {
+			changes[aws.StringValue(z.Id)] = append(changes[aws.StringValue(z.Id)], c)
+			log.Debugf("Adding %s to zone %s [Id: %s]", hostname, aws.StringValue(z.Name), aws.StringValue(z.Id))
+		}
 	}
 
 	// separating a change could lead to empty sub changes, remove them here.
@@ -395,6 +396,33 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 	}
 
 	return change
+}
+
+// suitableZones returns all suitable private zones and the most suitable public zone
+//   for a given hostname and a set of zones.
+func suitableZones(hostname string, zones map[string]*route53.HostedZone) []*route53.HostedZone {
+	var matchingZones []*route53.HostedZone
+	var publicZone *route53.HostedZone
+
+	for _, z := range zones {
+		if strings.HasSuffix(hostname, aws.StringValue(z.Name)) {
+			if z.Config == nil || !aws.BoolValue(z.Config.PrivateZone) {
+				// Only select the best matching public zone
+				if publicZone == nil || len(aws.StringValue(z.Name)) > len(aws.StringValue(publicZone.Name)) {
+					publicZone = z
+				}
+			} else {
+				// Include all private zones
+				matchingZones = append(matchingZones, z)
+			}
+		}
+	}
+
+	if publicZone != nil {
+		matchingZones = append(matchingZones, publicZone)
+	}
+
+	return matchingZones
 }
 
 // isAWSLoadBalancer determines if a given hostname belongs to an AWS load balancer.
