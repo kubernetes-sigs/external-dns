@@ -325,7 +325,7 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Ch
 		hostname := ensureTrailingDot(aws.StringValue(c.ResourceRecordSet.Name))
 
 		zones := suitableZones(hostname, zones)
-		if zones == nil {
+		if len(zones) == 0 {
 			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.String())
 			continue
 		}
