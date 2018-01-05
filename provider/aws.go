@@ -123,8 +123,14 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 				continue
 			}
 
-			if !p.domainFilter.Match(aws.StringValue(zone.Name)) {
-				continue
+			if p.domainFilter.ContainsDot() {
+				if !p.domainFilter.Match(aws.StringValue(zone.Name)) {
+					continue
+				}
+			} else {
+				if !p.domainFilter.Match(aws.StringValue(zone.Id)) {
+					continue
+				}
 			}
 
 			zones[aws.StringValue(zone.Id)] = zone
