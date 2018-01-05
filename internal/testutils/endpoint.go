@@ -16,8 +16,11 @@ limitations under the License.
 
 package testutils
 
-import "github.com/kubernetes-incubator/external-dns/endpoint"
-import "sort"
+import (
+	"sort"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+)
 
 /** test utility functions for endpoints verifications */
 
@@ -45,7 +48,8 @@ func (b byAllFields) Less(i, j int) bool {
 // considers example.org. and example.org DNSName/Target as different endpoints
 func SameEndpoint(a, b *endpoint.Endpoint) bool {
 	return a.DNSName == b.DNSName && a.Target == b.Target && a.RecordType == b.RecordType &&
-		a.Labels[endpoint.OwnerLabelKey] == b.Labels[endpoint.OwnerLabelKey] && a.RecordTTL == b.RecordTTL
+		a.Labels[endpoint.OwnerLabelKey] == b.Labels[endpoint.OwnerLabelKey] && a.RecordTTL == b.RecordTTL &&
+		a.Labels[endpoint.ResourceLabelKey] == b.Labels[endpoint.ResourceLabelKey]
 }
 
 // SameEndpoints compares two slices of endpoints regardless of order

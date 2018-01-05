@@ -92,6 +92,7 @@ type CloudFlareProvider struct {
 	Client cloudFlareDNS
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter DomainFilter
+	zoneIDFilter ZoneIDFilter
 	proxied      bool
 	DryRun       bool
 }
@@ -103,7 +104,7 @@ type cloudFlareChange struct {
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(domainFilter DomainFilter, proxied bool, dryRun bool) (*CloudFlareProvider, error) {
+func NewCloudFlareProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, proxied bool, dryRun bool) (*CloudFlareProvider, error) {
 	// initialize via API email and API key and returns new API object
 	config, err := cloudflare.New(os.Getenv("CF_API_KEY"), os.Getenv("CF_API_EMAIL"))
 	if err != nil {
@@ -113,6 +114,7 @@ func NewCloudFlareProvider(domainFilter DomainFilter, proxied bool, dryRun bool)
 		//Client: config,
 		Client:       zoneService{config},
 		domainFilter: domainFilter,
+		zoneIDFilter: zoneIDFilter,
 		proxied:      proxied,
 		DryRun:       dryRun,
 	}
@@ -129,9 +131,15 @@ func (p *CloudFlareProvider) Zones() ([]cloudflare.Zone, error) {
 	}
 
 	for _, zone := range zones {
-		if p.domainFilter.Match(zone.Name) {
-			result = append(result, zone)
+		if !p.domainFilter.Match(zone.Name) {
+			continue
 		}
+
+		if !p.zoneIDFilter.Match(zone.ID) {
+			continue
+		}
+
+		result = append(result, zone)
 	}
 
 	return result, nil
