@@ -11,8 +11,7 @@ Please fill out either the individual or corporate Contributor License Agreement
   * If you are an individual writing original source code and you're sure you own the intellectual property, then you'll need to sign an individual CLA.
   * If you work for a company that wants to allow you to contribute your work, then you'll need to sign a corporate CLA.
 
-To sign and submit a CLA, see the
-[CLA-FAQ](https://github.com/kubernetes/kubernetes/wiki/CLA-FAQ).
+To sign and submit a CLA, see the [CLA doc](https://git.k8s.io/community/CLA.md).
 
 ### Contributing A Patch
 
