@@ -1,19 +1,20 @@
   - Google: Improve logging to help trace misconfigurations (#388) @stealthybox
-  - New `--zone-id-filter` parameter allows filtering by zone id (#422) @vboginskey
+  - AWS: In addition to the one best public hosted zone, records will be added to all matching private hosted zones (#356) @coreypobrien
   - Every record managed by External DNS is now mapped to a kubernetes resource (service/ingress) @ideahitme
     - New field is stored in TXT DNS record which reflects which kubernetes resource has acquired the DNS name
     - Target of DNS record is changed only if corresponding kubernetes resource target changes
     - If kubernetes resource is deleted, then another resource may acquire DNS name
     - "Flapping" target issue is resolved by providing a consistent and defined mechanism for choosing a target
-      
+  - New `--zone-id-filter` parameter allows filtering by zone id (#422) @vboginskey
+
 ## v0.4.8 - 2017-11-22
 
   - Allow filtering by source annotation via `--annotation-filter` (#354) @khrisrichardson
-  - Add support for Headless hostPort services (#324)
+  - Add support for Headless hostPort services (#324) @Arttii
   - AWS: Added change batch limiting to a maximum of 4000 Route53 updates in one API call.  Changes exceeding the limit will be dropped but all related changes by hostname are preserved within the limit. (#368) @bitvector2
   - Google: Support configuring TTL by annotation: `external-dns.alpha.kubernetes.io/ttl`. (#389) @stealthybox
-  - Infoblox: add option `--no-infoblox-ssl-verify` (#378)
-  - Inmemory: add support to specify zones for inmemory provider via command line (#366)
+  - Infoblox: add option `--no-infoblox-ssl-verify` (#378) @khrisrichardson
+  - Inmemory: add support to specify zones for inmemory provider via command line (#366) @ffledgling
 
 ## v0.4.7 - 2017-10-18
 

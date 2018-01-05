@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -164,10 +163,6 @@ func main() {
 	}
 
 	ctrl.Run(stopChan)
-	for {
-		log.Info("Pod waiting to be deleted")
-		time.Sleep(time.Second * 30)
-	}
 }
 
 func handleSigterm(stopChan chan struct{}) {
