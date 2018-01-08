@@ -372,11 +372,15 @@ func (p *AzureProvider) recordSetNameForZone(zone string, endpoint *endpoint.End
 }
 
 func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet, error) {
+	var ttl int64 = azureRecordTTL
+	if endpoint.RecordTTL.IsConfigured() {
+		ttl = int64(endpoint.RecordTTL)
+	}
 	switch dns.RecordType(endpoint.RecordType) {
 	case dns.A:
 		return dns.RecordSet{
 			RecordSetProperties: &dns.RecordSetProperties{
-				TTL: to.Int64Ptr(azureRecordTTL),
+				TTL: to.Int64Ptr(ttl),
 				ARecords: &[]dns.ARecord{
 					{
 						Ipv4Address: to.StringPtr(endpoint.Target),
@@ -387,7 +391,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 	case dns.CNAME:
 		return dns.RecordSet{
 			RecordSetProperties: &dns.RecordSetProperties{
-				TTL: to.Int64Ptr(azureRecordTTL),
+				TTL: to.Int64Ptr(ttl),
 				CnameRecord: &dns.CnameRecord{
 					Cname: to.StringPtr(endpoint.Target),
 				},
@@ -396,7 +400,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 	case dns.TXT:
 		return dns.RecordSet{
 			RecordSetProperties: &dns.RecordSetProperties{
-				TTL: to.Int64Ptr(azureRecordTTL),
+				TTL: to.Int64Ptr(ttl),
 				TxtRecords: &[]dns.TxtRecord{
 					{
 						Value: &[]string{
