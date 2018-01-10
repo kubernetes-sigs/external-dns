@@ -153,7 +153,12 @@ func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				log.Errorf("Failed to extract target for '%s' with type '%s'.", name, recordType)
 				return true
 			}
-			ep := endpoint.NewEndpoint(name, target, recordType)
+			var ttl endpoint.TTL
+			if recordSet.TTL != nil {
+				ttl = endpoint.TTL(*recordSet.TTL)
+			}
+
+			ep := endpoint.NewEndpointWithTTL(name, target, recordType, endpoint.TTL(ttl))
 			log.Debugf(
 				"Found %s record for '%s' with target '%s'.",
 				ep.RecordType,
