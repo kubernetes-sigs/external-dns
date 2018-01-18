@@ -153,7 +153,12 @@ func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				log.Errorf("Failed to extract target for '%s' with type '%s'.", name, recordType)
 				return true
 			}
-			ep := endpoint.NewEndpoint(name, target, recordType)
+			var ttl endpoint.TTL
+			if recordSet.TTL != nil {
+				ttl = endpoint.TTL(*recordSet.TTL)
+			}
+
+			ep := endpoint.NewEndpointWithTTL(name, target, recordType, endpoint.TTL(ttl))
 			log.Debugf(
 				"Found %s record for '%s' with target '%s'.",
 				ep.RecordType,
@@ -372,11 +377,15 @@ func (p *AzureProvider) recordSetNameForZone(zone string, endpoint *endpoint.End
 }
 
 func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet, error) {
+	var ttl int64 = azureRecordTTL
+	if endpoint.RecordTTL.IsConfigured() {
+		ttl = int64(endpoint.RecordTTL)
+	}
 	switch dns.RecordType(endpoint.RecordType) {
 	case dns.A:
 		return dns.RecordSet{
 			RecordSetProperties: &dns.RecordSetProperties{
-				TTL: to.Int64Ptr(azureRecordTTL),
+				TTL: to.Int64Ptr(ttl),
 				ARecords: &[]dns.ARecord{
 					{
 						Ipv4Address: to.StringPtr(endpoint.Target),
@@ -387,7 +396,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 	case dns.CNAME:
 		return dns.RecordSet{
 			RecordSetProperties: &dns.RecordSetProperties{
-				TTL: to.Int64Ptr(azureRecordTTL),
+				TTL: to.Int64Ptr(ttl),
 				CnameRecord: &dns.CnameRecord{
 					Cname: to.StringPtr(endpoint.Target),
 				},
@@ -396,7 +405,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 	case dns.TXT:
 		return dns.RecordSet{
 			RecordSetProperties: &dns.RecordSetProperties{
-				TTL: to.Int64Ptr(azureRecordTTL),
+				TTL: to.Int64Ptr(ttl),
 				TxtRecords: &[]dns.TxtRecord{
 					{
 						Value: &[]string{
