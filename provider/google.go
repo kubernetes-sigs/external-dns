@@ -18,6 +18,7 @@ package provider
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/linki/instrumented_http"
@@ -203,6 +204,7 @@ func (p *GoogleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				// each page is processed sequentially, no need for a mutex here.
 				ep.Targets = append(ep.Targets, strings.TrimSuffix(rr, "."))
 			}
+			sort.Sort(ep.Targets)
 			endpoints = append(endpoints, ep)
 		}
 
