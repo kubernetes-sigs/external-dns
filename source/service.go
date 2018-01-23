@@ -19,6 +19,7 @@ package source
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -117,6 +118,10 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		log.Debugf("Endpoints generated from service: %s/%s: %v", svc.Namespace, svc.Name, svcEndpoints)
 		sc.setResourceLabel(svc, svcEndpoints)
 		endpoints = append(endpoints, svcEndpoints...)
+	}
+
+	for _, ep := range endpoints {
+		sort.Sort(ep.Targets)
 	}
 
 	return endpoints, nil

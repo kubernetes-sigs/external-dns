@@ -19,6 +19,7 @@ package source
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -107,6 +108,10 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		log.Debugf("Endpoints generated from ingress: %s/%s: %v", ing.Namespace, ing.Name, ingEndpoints)
 		sc.setResourceLabel(ing, ingEndpoints)
 		endpoints = append(endpoints, ingEndpoints...)
+	}
+
+	for _, ep := range endpoints {
+		sort.Sort(ep.Targets)
 	}
 
 	return endpoints, nil
