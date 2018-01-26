@@ -65,24 +65,11 @@ In this case it's the ones shown above but your's will differ.
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
 Then apply the following manifest file to deploy ExternalDNS.
 
-Create namespace first:
-
-```yaml
-
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: external-dns
-```
-
-Then create deployment manifest:
-
 ```yaml
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: external-dns
-  namespace: external-dns
 spec:
   strategy:
     type: Recreate
@@ -100,14 +87,14 @@ spec:
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
-        - --aws-zone-type=public #only look at public hosted zones (valid values are public/private)
+        - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
         - --txt-owner-id=my-identifier
 ```
 
 ## Arguments
 
-This list is not the full list, but a few arguments that where choosen.
+This list is not the full list, but a few arguments that where chosen.
 
 ### aws-zone-type
 
@@ -116,21 +103,17 @@ This list is not the full list, but a few arguments that where choosen.
 
 ## Verify ExternalDNS works (Ingress example)
 
-Change your ingress resource manifest file. In example below, I am using nginx ingress controller
+Create an ingress resource manifest file.
 
 > For ingress objects ExternalDNS will create a DNS record based on the host specified for the ingress object.
 
-
 ```yaml
-
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: foo
   annotations:
-    kubernetes.io/ingress.class: "nginx"
-    ingress.kubernetes.io/ssl-redirect: "true"
-    ingress.kubernetes.io/force-ssl-redirect: "true"
+    kubernetes.io/ingress.class: "nginx" # use the one that corresponds to your ingress controller.
 spec:
   rules:
   - host: foo.bar.com
