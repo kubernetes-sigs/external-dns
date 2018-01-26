@@ -87,13 +87,48 @@ spec:
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+        - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
         - --txt-owner-id=my-identifier
 ```
 
-## Verify ExternalDNS works
+## Arguments
+
+This list is not the full list, but a few arguments that where chosen.
+
+### aws-zone-type
+
+`aws-zone-type` allows filtering for private and public zones
+
+
+## Verify ExternalDNS works (Ingress example)
+
+Create an ingress resource manifest file.
+
+> For ingress objects ExternalDNS will create a DNS record based on the host specified for the ingress object.
+
+```yaml
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: foo
+  annotations:
+    kubernetes.io/ingress.class: "nginx" # use the one that corresponds to your ingress controller.
+spec:
+  rules:
+  - host: foo.bar.com
+    http:
+      paths:
+      - backend:
+          serviceName: foo
+          servicePort: 80
+```
+
+## Verify ExternalDNS works (Service example)
 
 Create the following sample application to test that ExternalDNS works.
+
+> For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the corresponding value.
 
 ```yaml
 apiVersion: v1
