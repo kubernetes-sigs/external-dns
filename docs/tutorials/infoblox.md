@@ -49,8 +49,46 @@ $ kubectl create secret generic external-dns \
 
 Create a deployment file called `externaldns.yaml` with the following contents:
 
-```
-$ cat > externaldns.yaml <<EOF
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: external-dns
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: external-dns
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - get
+  - watch
+  - list
+- apiGroups:
+  - extensions
+  resources:
+  - ingresses
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: external-dns-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: external-dns
+subjects:
+- kind: ServiceAccount
+  name: external-dns
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -89,7 +127,6 @@ spec:
             secretKeyRef:
               name: external-dns
               key: EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD
-EOF
 ```
 
 Create the deployment for ExternalDNS:
