@@ -52,6 +52,7 @@ var (
 		"eu-central-1" + elbHostnameSuffix:   "Z215JYRZR1TBD5",
 		"eu-west-1" + elbHostnameSuffix:      "Z32O12XQLNTSW2",
 		"eu-west-2" + elbHostnameSuffix:      "ZHURV8PSTC4K8",
+		"eu-west-3" + elbHostnameSuffix:      "Z3Q77PNBQS71R4",
 		"sa-east-1" + elbHostnameSuffix:      "Z2P70J7HTTTPLU",
 	}
 )
