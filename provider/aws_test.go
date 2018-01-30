@@ -710,6 +710,7 @@ func TestAWSCanonicalHostedZone(t *testing.T) {
 		{"foo.eu-central-1.elb.amazonaws.com", "Z215JYRZR1TBD5"},
 		{"foo.eu-west-1.elb.amazonaws.com", "Z32O12XQLNTSW2"},
 		{"foo.eu-west-2.elb.amazonaws.com", "ZHURV8PSTC4K8"},
+		{"foo.eu-west-3.elb.amazonaws.com", "Z3Q77PNBQS71R4"},
 		{"foo.sa-east-1.elb.amazonaws.com", "Z2P70J7HTTTPLU"},
 		{"foo.example.org", ""},
 	} {
