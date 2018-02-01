@@ -61,6 +61,32 @@ func (t Targets) Less(i, j int) bool {
 	return t[i] < t[j]
 }
 
+// Has checks whether a Targets array
+// contains a dedicated target
+func (t Targets) Has(target string) bool {
+	for _, e := range t {
+		if e == target {
+			return true
+		}
+	}
+	return false
+}
+
+// Remove removes an entry from the array if it is present
+// and returns the resulting target array.
+func (t Targets) Remove(target string) Targets {
+	n := Targets{}
+	for _, e := range t {
+		if e != target {
+			n = append(n, e)
+		}
+	}
+	if len(t) == len(n) {
+		return t
+	}
+	return n
+}
+
 func (t Targets) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }

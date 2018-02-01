@@ -85,7 +85,8 @@ func main() {
 	}
 
 	// Combine multiple sources into a single, deduplicated source.
-	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
+	log.Infof("found %d cidr filters %+v", len(cfg.CidrIgnore), cfg.CidrIgnore)
+	endpointsSource := source.NewDedupSource(source.NewFilterSource(source.CIDRs(cfg.CidrIgnore), source.NewMultiSource(sources)))
 
 	domainFilter := provider.NewDomainFilter(cfg.DomainFilter)
 	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
