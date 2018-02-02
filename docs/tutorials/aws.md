@@ -63,7 +63,37 @@ In this case it's the ones shown above but your's will differ.
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
-Then apply the following manifest file to deploy ExternalDNS.
+Then apply one of the following manifests file to deploy ExternalDNS.
+
+### Manifest (for clusters without RBAC enabled)
+```yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: external-dns
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: external-dns
+    spec:
+      containers:
+      - name: external-dns
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.8
+        args:
+        - --source=service
+        - --source=ingress
+        - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
+        - --provider=aws
+        - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+        - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
+        - --registry=txt
+        - --txt-owner-id=my-identifier
+```
+
+### Manifest (for clusters with RBAC enabled)
 
 ```yaml
 apiVersion: v1
@@ -76,22 +106,12 @@ kind: ClusterRole
 metadata:
   name: external-dns
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - services
-  verbs:
-  - get
-  - watch
-  - list
-- apiGroups:
-  - extensions
-  resources:
-  - ingresses
-  verbs:
-  - get
-  - list
-  - watch
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["extensions"] 
+  resources: ["ingresses"] 
+  verbs: ["get","watch","list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
@@ -130,6 +150,8 @@ spec:
         - --registry=txt
         - --txt-owner-id=my-identifier
 ```
+
+
 
 ## Arguments
 

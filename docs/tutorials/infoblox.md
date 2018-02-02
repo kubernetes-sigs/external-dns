@@ -47,7 +47,52 @@ $ kubectl create secret generic external-dns \
 
 ## Deploy ExternalDNS
 
-Create a deployment file called `externaldns.yaml` with the following contents:
+Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
+Then apply one of the following manifests file to deploy ExternalDNS.
+
+### Manifest (for clusters without RBAC enabled)
+```yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: external-dns
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: external-dns
+    spec:
+      containers:
+      - name: external-dns
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.8
+        args:
+        - --source=service
+        - --domain-filter=example.com       # (optional) limit to only example.com domains.
+        - --provider=infoblox
+        - --infoblox-grid-host=${GRID_HOST} # (required) IP of the Infoblox Grid host.
+        - --infoblox-wapi-port=443          # (optional) Infoblox WAPI port. The default is "443".
+        - --infoblox-wapi-version=2.3.1     # (optional) Infoblox WAPI version. The default is "2.3.1"
+        - --infoblox-ssl-verify             # (optional) Use --no-infoblox-ssl-verify to skip server certificate verification.
+        env:
+        - name: EXTERNAL_DNS_INFOBLOX_HTTP_POOL_CONNECTIONS
+          value: "10" # (optional) Infoblox WAPI request connection pool size. The default is "10".
+        - name: EXTERNAL_DNS_INFOBLOX_HTTP_REQUEST_TIMEOUT
+          value: "60" # (optional) Infoblox WAPI request timeout in seconds. The default is "60".
+        - name: EXTERNAL_DNS_INFOBLOX_WAPI_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: external-dns
+              key: EXTERNAL_DNS_INFOBLOX_WAPI_USERNAME
+        - name: EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: external-dns
+              key: EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD
+```
+
+### Manifest (for clusters with RBAC enabled)
 
 ```yaml
 apiVersion: v1
@@ -60,22 +105,12 @@ kind: ClusterRole
 metadata:
   name: external-dns
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - services
-  verbs:
-  - get
-  - watch
-  - list
-- apiGroups:
-  - extensions
-  resources:
-  - ingresses
-  verbs:
-  - get
-  - list
-  - watch
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["extensions"] 
+  resources: ["ingresses"] 
+  verbs: ["get","watch","list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
@@ -129,11 +164,6 @@ spec:
               key: EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD
 ```
 
-Create the deployment for ExternalDNS:
-
-```
-$ kubectl create -f externaldns.yaml
-```
 
 ## Deploying an Nginx Service
 

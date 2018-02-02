@@ -12,6 +12,32 @@ We will go through a small example of deploying a simple Kafka with use of a hea
 ### Exernal DNS
 
 A simple deploy could look like this:
+### Manifest (for clusters without RBAC enabled)
+```yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: exeternal-dns
+spec:
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      containers:
+      - name: external-dns
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.8
+        args:
+        - --debug
+        - --source=service
+        - --source=ingress
+        - --namespace=dev
+        - --domain-filter=example.org. 
+        - --provider=aws
+        - --registry=txt
+        - --txt-owner-id=dev.example.org
+```
+
+### Manifest (for clusters with RBAC enabled)
 ```yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -23,22 +49,12 @@ kind: ClusterRole
 metadata:
   name: external-dns
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - services
-  verbs:
-  - get
-  - watch
-  - list
-- apiGroups:
-  - extensions
-  resources:
-  - ingresses
-  verbs:
-  - get
-  - list
-  - watch
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["extensions"] 
+  resources: ["ingresses"] 
+  verbs: ["get","watch","list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
@@ -81,7 +97,6 @@ spec:
 First lets deploy a Kafka Stateful set, a simple example(a lot of stuff is missing) with a headless service called `kafka-hsvc`
 
 ```yaml
----
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
@@ -122,7 +137,7 @@ spec:
       resources:
         requests:
           storage:  500Gi
-   ```
+```
 Very important here, is to set the `hostport`(only works if the PodSecurityPolicy allows it)! and in case your app requires an actual hostname inside the container, unlike Kafka, which can advertise on another address, you have to set the hostname yourself.
 
 ### Headless Service
@@ -135,7 +150,6 @@ Now we need to define a headless service to use to expose the Kafka pods. There 
 If you go with #1, you just need to define the headless service, here is an example of the case #2:
 
 ```yaml
----
 apiVersion: v1
 kind: Service
 metadata:
