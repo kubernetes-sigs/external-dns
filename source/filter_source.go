@@ -18,12 +18,14 @@ package source
 
 import (
 	"net"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
+// CIDRs convert an array of strings into an array of CIDR objects.
 func CIDRs(raw []string) []*net.IPNet {
 	cidrs := make([]*net.IPNet, len(raw))
 	for i, f := range raw {
@@ -36,23 +38,22 @@ func CIDRs(raw []string) []*net.IPNet {
 	return cidrs
 }
 
-func FilterSources(cidrs []*net.IPNet, sources ...Source) []Source {
-	result := make([]Source, len(sources))
-	for i, s := range sources {
-		result[i] = NewFilterSource(cidrs, s)
-	}
-	return result
-}
-
 // filterSource is a Source that removes duplicate endpoints from its wrapped source.
 type filterSource struct {
 	ignoreCIDRs []*net.IPNet
+	ignoreDNS   []string
 	source      Source
 }
 
 // NewFilterSource creates a new FilterSource wrapping the provided Source.
-func NewFilterSource(cidrs []*net.IPNet, source Source) Source {
-	return &filterSource{ignoreCIDRs: cidrs, source: source}
+func NewFilterSource(cidrs []*net.IPNet, dns []string, source Source) Source {
+	if cidrs == nil {
+		cidrs = []*net.IPNet{}
+	}
+	if dns == nil {
+		dns = []string{}
+	}
+	return &filterSource{ignoreCIDRs: cidrs, ignoreDNS: dns, source: source}
 }
 
 // Endpoints collects endpoints from its wrapped source and returns them without filtered IPs.
@@ -65,6 +66,7 @@ func (ms *filterSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	}
 
 EPS:
+	// filter IPs
 	for _, ep := range endpoints {
 		if ep.RecordType == endpoint.RecordTypeA {
 			for _, t := range ep.Targets {
@@ -85,8 +87,31 @@ EPS:
 			}
 		}
 
+		// filter DNS entries
+		for _, dns := range ms.ignoreDNS {
+			if ms.matchDNS(ep.DNSName, dns) {
+				log.Debugf("Removing endpoint %s omitted because of DNS %s", ep, dns)
+				continue EPS
+			}
+		}
+
 		result = append(result, ep)
 	}
 
 	return result, nil
+}
+
+func (ms *filterSource) matchDNS(name, pattern string) bool {
+	if strings.HasPrefix(pattern, "*.") {
+		if strings.HasPrefix(name, "*.") {
+			return false
+		}
+		i := strings.Index(name, ".")
+		if i >= 0 {
+			if name[i+1:] == pattern[2:] {
+				return true
+			}
+		}
+	}
+	return name == pattern
 }

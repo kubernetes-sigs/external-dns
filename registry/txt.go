@@ -82,7 +82,7 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 		}
 		endpointDNSName := im.mapper.toEndpointName(record.DNSName)
 		labelMap[endpointDNSName] = labels
-    log.Debugf("found %s TXT: %s -> %v",endpointDNSName, record.Target, labels)
+		log.Debugf("found %s TXT: %v -> %v", endpointDNSName, record.Targets, labels)
 	}
 
 	for _, ep := range endpoints {
@@ -165,11 +165,11 @@ func newPrefixNameMapper(prefix string) prefixNameMapper {
 // This happens lways if the entry prefix is set.
 func (pr prefixNameMapper) toEndpointName(txtDNSName string) string {
 	if strings.HasPrefix(txtDNSName, pr.prefix) {
-		n:=strings.TrimPrefix(txtDNSName, pr.prefix)
-    if strings.HasPrefix(n, "\\052.") {
-      return "*"+strings.TrimPrefix(n, "\\052")
-    }
-    return n
+		n := strings.TrimPrefix(txtDNSName, pr.prefix)
+		if strings.HasPrefix(n, "\\052.") {
+			return "*" + strings.TrimPrefix(n, "\\052")
+		}
+		return n
 	}
 	return ""
 }
