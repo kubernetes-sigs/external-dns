@@ -1,0 +1,53 @@
+---
+version: 1
+rwmutex: {}
+interactions:
+- request:
+    body: '{"user_name":"dynect-user","password":"p@55w0rd","customer_name":"go-dynect"}'
+    form: {}
+    headers:
+      Auth-Token:
+      - ""
+      Content-Type:
+      - application/json
+    url: https://api.dynect.net/REST/Session
+    method: POST
+  response:
+    body: '{"status": "success", "data": {"token": "+cG++GbemK1hoYxrvq2SFGz00mY78zRZhWntTbLxYF42k22o7w/d0Vk+sEvJayq5jSo8ivphahLFmZV8b99TJMRNZFcpFC0NyYeyL/7l8Grsdpplh6l1pMmkInSe3mXVuvgKS5cVSUN5Z8e6DVf9K0Jz/aLZBeL70Qc5VQktaKc=",
+      "version": "3.7.9"}, "job_id": 4340980452, "msgs": [{"INFO": "login: Login successful",
+      "SOURCE": "BLL", "ERR_CD": null, "LVL": "INFO"}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 20 Dec 2017 02:46:34 GMT
+      Server:
+      - nginx/1.4.6 (Ubuntu)
+    status: 200 OK
+    code: 200
+- request:
+    body: ""
+    form: {}
+    headers:
+      Auth-Token:
+      - +cG++GbemK1hoYxrvq2SFGz00mY78zRZhWntTbLxYF42k22o7w/d0Vk+sEvJayq5jSo8ivphahLFmZV8b99TJMRNZFcpFC0NyYeyL/7l8Grsdpplh6l1pMmkInSe3mXVuvgKS5cVSUN5Z8e6DVf9K0Jz/aLZBeL70Qc5VQktaKc=
+      Content-Type:
+      - application/json
+    url: https://api.dynect.net/REST/Session
+    method: DELETE
+  response:
+    body: '{"status": "success", "data": {}, "job_id": 4340980466, "msgs": [{"INFO":
+      "logout: Logout successful", "SOURCE": "BLL", "ERR_CD": null, "LVL": "INFO"}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 20 Dec 2017 02:46:34 GMT
+      Server:
+      - nginx/1.4.6 (Ubuntu)
+    status: 200 OK
+    code: 200

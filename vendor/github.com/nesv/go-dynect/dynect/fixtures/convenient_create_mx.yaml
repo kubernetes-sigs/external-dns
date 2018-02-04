@@ -1,0 +1,161 @@
+---
+version: 1
+rwmutex: {}
+interactions:
+- request:
+    body: '{"user_name":"dynect-user","password":"p@55w0rd","customer_name":"go-dynect"}'
+    form: {}
+    headers:
+      Auth-Token:
+      - ""
+      Content-Type:
+      - application/json
+    url: https://api.dynect.net/REST/Session
+    method: POST
+  response:
+    body: '{"status": "success", "data": {"token": "5Trj0G1M2B0g1t1IY09yFwGpn31tjWNRNU81RhYHaUp6kxGa3UVK5F9hQqlZBu9SNLxkj6cAk6q93ndW246hIesr496yLD+eOHeJSdBtxxKgB+Gmk4ydsrR1trDIlK0Yq3l9J2XVPTT+/pKtyKmRxLWwNGHvhdJDfs92MiS3+7M=",
+      "version": "3.7.9"}, "job_id": 4342593698, "msgs": [{"INFO": "login: Login successful",
+      "SOURCE": "BLL", "ERR_CD": null, "LVL": "INFO"}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 20 Dec 2017 14:45:37 GMT
+      Server:
+      - nginx/1.4.6 (Ubuntu)
+    status: 200 OK
+    code: 200
+- request:
+    body: '{"rdata":{"exchange":"mx.example.com.","preference":123},"ttl":"12345"}'
+    form: {}
+    headers:
+      Auth-Token:
+      - 5Trj0G1M2B0g1t1IY09yFwGpn31tjWNRNU81RhYHaUp6kxGa3UVK5F9hQqlZBu9SNLxkj6cAk6q93ndW246hIesr496yLD+eOHeJSdBtxxKgB+Gmk4ydsrR1trDIlK0Yq3l9J2XVPTT+/pKtyKmRxLWwNGHvhdJDfs92MiS3+7M=
+      Content-Type:
+      - application/json
+    url: https://api.dynect.net/REST/MXRecord/go-dynect.test/go-dynect.test
+    method: POST
+  response:
+    body: '{"status": "success", "data": {"zone": "go-dynect.test", "ttl": 12345,
+      "fqdn": "go-dynect.test", "record_type": "MX", "rdata": {"preference": 123,
+      "exchange": "mx.example.com."}, "record_id": 0}, "job_id": 4342593703, "msgs":
+      [{"INFO": "add: Record added", "SOURCE": "BLL", "ERR_CD": null, "LVL": "INFO"}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 20 Dec 2017 14:45:37 GMT
+      Server:
+      - nginx/1.4.6 (Ubuntu)
+    status: 200 OK
+    code: 200
+- request:
+    body: '{"publish":true}'
+    form: {}
+    headers:
+      Auth-Token:
+      - 5Trj0G1M2B0g1t1IY09yFwGpn31tjWNRNU81RhYHaUp6kxGa3UVK5F9hQqlZBu9SNLxkj6cAk6q93ndW246hIesr496yLD+eOHeJSdBtxxKgB+Gmk4ydsrR1trDIlK0Yq3l9J2XVPTT+/pKtyKmRxLWwNGHvhdJDfs92MiS3+7M=
+      Content-Type:
+      - application/json
+    url: https://api.dynect.net/REST/Zone/go-dynect.test
+    method: PUT
+  response:
+    body: '{"status": "success", "data": {"zone_type": "Primary", "task_id": "230305365",
+      "serial": 2017122005, "serial_style": "day", "zone": "go-dynect.test"}, "job_id":
+      4342593710, "msgs": [{"INFO": "publish: go-dynect.test published", "SOURCE":
+      "BLL", "ERR_CD": null, "LVL": "INFO"}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 20 Dec 2017 14:45:37 GMT
+      Server:
+      - nginx/1.4.6 (Ubuntu)
+    status: 200 OK
+    code: 200
+- request:
+    body: ""
+    form: {}
+    headers:
+      Auth-Token:
+      - 5Trj0G1M2B0g1t1IY09yFwGpn31tjWNRNU81RhYHaUp6kxGa3UVK5F9hQqlZBu9SNLxkj6cAk6q93ndW246hIesr496yLD+eOHeJSdBtxxKgB+Gmk4ydsrR1trDIlK0Yq3l9J2XVPTT+/pKtyKmRxLWwNGHvhdJDfs92MiS3+7M=
+      Content-Type:
+      - application/json
+    url: https://api.dynect.net/REST/AllRecord/go-dynect.test/go-dynect.test
+    method: GET
+  response:
+    body: '{"status": "success", "data": ["/REST/CNAMERecord/go-dynect.test/foo.go-dynect.test/318905322",
+      "/REST/SOARecord/go-dynect.test/go-dynect.test/318812133", "/REST/MXRecord/go-dynect.test/go-dynect.test/319018246",
+      "/REST/NSRecord/go-dynect.test/go-dynect.test/318812135", "/REST/NSRecord/go-dynect.test/go-dynect.test/318812136",
+      "/REST/NSRecord/go-dynect.test/go-dynect.test/318812137", "/REST/NSRecord/go-dynect.test/go-dynect.test/318812138",
+      "/REST/ARecord/go-dynect.test/foobar.go-dynect.test/319014258"], "job_id": 4342593722,
+      "msgs": [{"INFO": "get_tree: Here is your zone tree", "SOURCE": "BLL", "ERR_CD":
+      null, "LVL": "INFO"}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 20 Dec 2017 14:45:37 GMT
+      Server:
+      - nginx/1.4.6 (Ubuntu)
+    status: 200 OK
+    code: 200
+- request:
+    body: ""
+    form: {}
+    headers:
+      Auth-Token:
+      - 5Trj0G1M2B0g1t1IY09yFwGpn31tjWNRNU81RhYHaUp6kxGa3UVK5F9hQqlZBu9SNLxkj6cAk6q93ndW246hIesr496yLD+eOHeJSdBtxxKgB+Gmk4ydsrR1trDIlK0Yq3l9J2XVPTT+/pKtyKmRxLWwNGHvhdJDfs92MiS3+7M=
+      Content-Type:
+      - application/json
+    url: https://api.dynect.net/REST/MXRecord/go-dynect.test/go-dynect.test/319018246
+    method: GET
+  response:
+    body: '{"status": "success", "data": {"zone": "go-dynect.test", "ttl": 12345,
+      "fqdn": "go-dynect.test", "record_type": "MX", "rdata": {"preference": 123,
+      "exchange": "mx.example.com."}, "record_id": 319018246}, "job_id": 4342593727,
+      "msgs": [{"INFO": "get: Found the record", "SOURCE": "API-B", "ERR_CD": null,
+      "LVL": "INFO"}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 20 Dec 2017 14:45:37 GMT
+      Server:
+      - nginx/1.4.6 (Ubuntu)
+    status: 200 OK
+    code: 200
+- request:
+    body: ""
+    form: {}
+    headers:
+      Auth-Token:
+      - 5Trj0G1M2B0g1t1IY09yFwGpn31tjWNRNU81RhYHaUp6kxGa3UVK5F9hQqlZBu9SNLxkj6cAk6q93ndW246hIesr496yLD+eOHeJSdBtxxKgB+Gmk4ydsrR1trDIlK0Yq3l9J2XVPTT+/pKtyKmRxLWwNGHvhdJDfs92MiS3+7M=
+      Content-Type:
+      - application/json
+    url: https://api.dynect.net/REST/Session
+    method: DELETE
+  response:
+    body: '{"status": "success", "data": {}, "job_id": 4342593732, "msgs": [{"INFO":
+      "logout: Logout successful", "SOURCE": "BLL", "ERR_CD": null, "LVL": "INFO"}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 20 Dec 2017 14:45:37 GMT
+      Server:
+      - nginx/1.4.6 (Ubuntu)
+    status: 200 OK
+    code: 200
