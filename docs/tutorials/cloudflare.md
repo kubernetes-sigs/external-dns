@@ -99,6 +99,7 @@ spec:
       labels:
         app: external-dns
     spec:
+      serviceAccountName: external-dns
       containers:
       - name: external-dns
         image: registry.opensource.zalan.do/teapot/external-dns:v0.4.8
