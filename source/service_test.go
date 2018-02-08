@@ -960,6 +960,7 @@ func TestHeadlessServices(t *testing.T) {
 		hostIP          string
 		selector        map[string]string
 		lbs             []string
+		podnames        []string
 		hostnames       []string
 		phases          []v1.PodPhase
 		expected        []*endpoint.Endpoint
@@ -983,6 +984,7 @@ func TestHeadlessServices(t *testing.T) {
 				"component": "foo",
 			},
 			[]string{},
+			[]string{"foo-0", "foo-1"},
 			[]string{"foo-0", "foo-1"},
 			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
 			[]*endpoint.Endpoint{
@@ -1010,9 +1012,37 @@ func TestHeadlessServices(t *testing.T) {
 			},
 			[]string{},
 			[]string{"foo-0", "foo-1"},
+			[]string{"foo-0", "foo-1"},
 			[]v1.PodPhase{v1.PodRunning, v1.PodFailed},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Target: "1.1.1.1"},
+			},
+			false,
+		},
+		{
+			"annotated Headless services return endpoints for pods missing hostname",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			map[string]string{"component": "foo"},
+			map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+			},
+			v1.ClusterIPNone,
+			"1.1.1.1",
+			map[string]string{
+				"component": "foo",
+			},
+			[]string{},
+			[]string{"foo-0", "foo-1"},
+			[]string{"", ""},
+			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
+			[]*endpoint.Endpoint{
+				{DNSName: "service.example.org", Target: "1.1.1.1"},
+				{DNSName: "service.example.org", Target: "1.1.1.1"},
 			},
 			false,
 		},
@@ -1038,15 +1068,15 @@ func TestHeadlessServices(t *testing.T) {
 			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
 			require.NoError(t, err)
 
-			for i, hostname := range tc.hostnames {
+			for i, podname := range tc.podnames {
 				pod := &v1.Pod{
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{},
-						Hostname:   hostname,
+						Hostname:   tc.hostnames[i],
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace:   tc.svcNamespace,
-						Name:        hostname,
+						Name:        podname,
 						Labels:      tc.labels,
 						Annotations: tc.annotations,
 					},
