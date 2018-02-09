@@ -24,7 +24,7 @@ entrypoint   frontend.example.org,backend.example.org   35.186.250.78   80      
 
 But there's nothing that actually makes clients resolve those hostnames to the Ingress' IP address. Again, you normally have to register each entry with your DNS provider. Only if you're lucky can you use a wildcard, like in the example above.
 
-EnternalDNS can solve this for you as well.
+ExternalDNS can solve this for you as well.
 
 ### Which DNS providers are supported?
 
@@ -208,7 +208,7 @@ Sometimes you need to run an internal and an external dns service.
 The internal one should provision hostnames used on the internal network (perhaps inside a VPC), and the external
 one to expose DNS to the internet.
 
-To do this with external-dns you can use the `--annotation-filter` to specifically tie an instance of external-dns to 
+To do this with ExternalDNS you can use the `--annotation-filter` to specifically tie an instance of ExternalDNS to 
 an instance of a ingress controller. Let's assume you have two ingress controllers `nginx-internal` and `nginx-external`
-then you can start two external-dns providers one with `--annotation-filter=kubernetes.io/ingress.class=nginx-internal` 
-and one with `--annotation-filter=kubernetes.io/ingress.class=nginx-external`  
+then you can start two ExternalDNS providers one with `--annotation-filter=kubernetes.io/ingress.class=nginx-internal` 
+and one with `--annotation-filter=kubernetes.io/ingress.class=nginx-external`.
