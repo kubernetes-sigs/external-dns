@@ -23,6 +23,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/provider"
 )
 
 // CIDRs convert an array of strings into an array of CIDR objects.
@@ -40,20 +41,27 @@ func CIDRs(raw []string) []*net.IPNet {
 
 // filterSource is a Source that removes duplicate endpoints from its wrapped source.
 type filterSource struct {
-	ignoreCIDRs []*net.IPNet
-	ignoreDNS   []string
-	source      Source
+	domainFilter provider.DomainFilter
+	ignoreCIDRs  []*net.IPNet
+	ignoreDNS    []string
+	source       Source
 }
 
 // NewFilterSource creates a new FilterSource wrapping the provided Source.
-func NewFilterSource(cidrs []*net.IPNet, dns []string, source Source) Source {
+func NewFilterSource(domainFilter provider.DomainFilter,
+	cidrs []*net.IPNet, dns []string, source Source) Source {
 	if cidrs == nil {
 		cidrs = []*net.IPNet{}
 	}
 	if dns == nil {
 		dns = []string{}
 	}
-	return &filterSource{ignoreCIDRs: cidrs, ignoreDNS: dns, source: source}
+	return &filterSource{
+		domainFilter: domainFilter,
+		ignoreCIDRs:  cidrs,
+		ignoreDNS:    dns,
+		source:       source,
+	}
 }
 
 // Endpoints collects endpoints from its wrapped source and returns them without filtered IPs.
@@ -95,6 +103,11 @@ EPS:
 			}
 		}
 
+		// filter DNS entries by base domain
+		if !ms.domainFilter.Match(ep.DNSName) {
+			log.Debugf("Removing endpoint %s omitted because of base domain", ep)
+			continue EPS
+		}
 		result = append(result, ep)
 	}
 

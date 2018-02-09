@@ -49,6 +49,7 @@ type Config struct {
 	GoogleProject            string
 	DomainFilter             []string
 	ZoneIDFilter             []string
+	BaseDomainFilter         []string
 	CidrIgnore               []string
 	DNSIgnore                []string
 	AWSZoneType              string
@@ -94,6 +95,7 @@ var defaultConfig = &Config{
 	Provider:                 "",
 	GoogleProject:            "",
 	DomainFilter:             []string{},
+	BaseDomainFilter:         nil,
 	CidrIgnore:               nil,
 	DNSIgnore:                nil,
 	AWSZoneType:              "",
@@ -172,8 +174,9 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, google, azure, cloudflare, digitalocean, dnsimple, infoblox, dyn, designate, inmemory, pdns)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "google", "azure", "cloudflare", "digitalocean", "dnsimple", "infoblox", "dyn", "desginate", "inmemory", "pdns")
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("zone-id-filter", "Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.ZoneIDFilter)
-	app.Flag("cidr-ignore", "Limit DNS entries excluding IP addresses in given ranges").StringsVar(&cfg.CidrIgnore)
-	app.Flag("dns-ignore", "Limit DNS entries excluding given DNS (wirldcard) names").StringsVar(&cfg.DNSIgnore)
+	app.Flag("basedomain-filter", "Limit possible DNS entries by a domain suffix; specify multiple times for multiple domains (optional)").StringsVar(&cfg.BaseDomainFilter)
+	app.Flag("cidr-ignore", "Limit DNS entries excluding IP addresses in given ranges; specify multiple times for multiple CIDRs (optional)").StringsVar(&cfg.CidrIgnore)
+	app.Flag("dns-ignore", "Limit DNS entries excluding given DNS (or wildcard DNS) names; specify multiple times for multiple DNS names (optional)").StringsVar(&cfg.DNSIgnore)
 	app.Flag("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
 	app.Flag("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AWSZoneType).EnumVar(&cfg.AWSZoneType, "", "public", "private")
 	app.Flag("aws-assume-role", "When using the AWS provider, assume this IAM role. Useful for hosted zones in another AWS account. Specify the full ARN, e.g. `arn:aws:iam::123455567:role/external-dns` (optional)").Default(defaultConfig.AWSAssumeRole).StringVar(&cfg.AWSAssumeRole)
