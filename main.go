@@ -118,6 +118,18 @@ func main() {
 				DryRun:       cfg.DryRun,
 			},
 		)
+	case "dyn":
+		p, err = provider.NewDynProvider(
+			provider.DynConfig{
+				DomainFilter: domainFilter,
+				ZoneIDFilter: zoneIDFilter,
+				DryRun:       cfg.DryRun,
+				CustomerName: cfg.DynCustomerName,
+				Username:     cfg.DynUsername,
+				Password:     cfg.DynPassword,
+				AppVersion:   externaldns.Version,
+			},
+		)
 	case "inmemory":
 		p, err = provider.NewInMemoryProvider(provider.InMemoryInitZones(cfg.InMemoryZones), provider.InMemoryWithDomain(domainFilter), provider.InMemoryWithLogging()), nil
 	default:

@@ -59,3 +59,7 @@ ignored = ["github.com/kubernetes/repo-infra/kazel"]
 [[override]]
   name = "github.com/kubernetes/repo-infra"
   revision = "2d2eb5e12b4663fc4d764b5db9daab39334d3f37"
+
+[[constraint]]
+  name = "github.com/nesv/go-dynect"
+  version = "0.6.0"
