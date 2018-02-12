@@ -54,3 +54,11 @@ func (df DomainFilter) Match(domain string) bool {
 
 	return false
 }
+
+// IsConfigured returns true if DomainFilter is configured, false otherwise
+func (df DomainFilter) IsConfigured() bool {
+	if len(df.filters) == 1 {
+		return df.filters[0] != ""
+	}
+	return len(df.filters) > 0
+}

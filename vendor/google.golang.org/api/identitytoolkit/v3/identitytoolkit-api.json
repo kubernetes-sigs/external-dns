@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/Eza5dkILxsH0BZXGL1UuGyoKbqY\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/-CIGDhyktArHgwyopFUaXBy_0sc\"",
  "discoveryVersion": "v1",
  "id": "identitytoolkit:v3",
  "name": "identitytoolkit",
  "canonicalName": "Identity Toolkit",
  "version": "v3",
- "revision": "20170203",
+ "revision": "20170927",
  "title": "Google Identity Toolkit API",
  "description": "Help the third party sites to implement federated login.",
  "ownerDomain": "google.com",
@@ -21,7 +21,7 @@
  "basePath": "/identitytoolkit/v3/relyingparty/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "identitytoolkit/v3/relyingparty/",
- "batchPath": "batch",
+ "batchPath": "batch/identitytoolkit/v3",
  "parameters": {
   "alt": {
    "type": "string",
@@ -120,6 +120,13 @@
     "sessionId": {
      "type": "string",
      "description": "Session ID which should be passed in the following verifyAssertion request."
+    },
+    "signinMethods": {
+     "type": "array",
+     "description": "All sign-in methods this user has used.",
+     "items": {
+      "type": "string"
+     }
     }
    }
   },
@@ -155,6 +162,43 @@
      "items": {
       "$ref": "UserInfo"
      }
+    }
+   }
+  },
+  "EmailLinkSigninResponse": {
+   "id": "EmailLinkSigninResponse",
+   "type": "object",
+   "description": "Response of email signIn.",
+   "properties": {
+    "email": {
+     "type": "string",
+     "description": "The user's email."
+    },
+    "expiresIn": {
+     "type": "string",
+     "description": "Expiration time of STS id token in seconds.",
+     "format": "int64"
+    },
+    "idToken": {
+     "type": "string",
+     "description": "The STS id token to login the newly signed in user."
+    },
+    "isNewUser": {
+     "type": "boolean",
+     "description": "Whether the user is new."
+    },
+    "kind": {
+     "type": "string",
+     "description": "The fixed string \"identitytoolkit#EmailLinkSigninResponse\".",
+     "default": "identitytoolkit#EmailLinkSigninResponse"
+    },
+    "localId": {
+     "type": "string",
+     "description": "The RP local ID of the user."
+    },
+    "refreshToken": {
+     "type": "string",
+     "description": "The refresh token for the signed in user."
     }
    }
   },
@@ -360,6 +404,25 @@
     }
    }
   },
+  "IdentitytoolkitRelyingpartyEmailLinkSigninRequest": {
+   "id": "IdentitytoolkitRelyingpartyEmailLinkSigninRequest",
+   "type": "object",
+   "description": "Request to sign in with email.",
+   "properties": {
+    "email": {
+     "type": "string",
+     "description": "The email address of the user."
+    },
+    "idToken": {
+     "type": "string",
+     "description": "Token for linking flow."
+    },
+    "oobCode": {
+     "type": "string",
+     "description": "The confirmation code."
+    }
+   }
+  },
   "IdentitytoolkitRelyingpartyGetAccountInfoRequest": {
    "id": "IdentitytoolkitRelyingpartyGetAccountInfoRequest",
    "type": "object",
@@ -384,6 +447,13 @@
     "localId": {
      "type": "array",
      "description": "The list of local ID's of the users to inquiry.",
+     "items": {
+      "type": "string"
+     }
+    },
+    "phoneNumber": {
+     "type": "array",
+     "description": "Privileged caller can query users by specified phone number.",
      "items": {
       "type": "string"
      }
@@ -481,6 +551,40 @@
     }
    }
   },
+  "IdentitytoolkitRelyingpartySendVerificationCodeRequest": {
+   "id": "IdentitytoolkitRelyingpartySendVerificationCodeRequest",
+   "type": "object",
+   "description": "Request for Identitytoolkit-SendVerificationCode",
+   "properties": {
+    "iosReceipt": {
+     "type": "string",
+     "description": "Receipt of successful app token validation with APNS."
+    },
+    "iosSecret": {
+     "type": "string",
+     "description": "Secret delivered to iOS app via APNS."
+    },
+    "phoneNumber": {
+     "type": "string",
+     "description": "The phone number to send the verification code to in E.164 format."
+    },
+    "recaptchaToken": {
+     "type": "string",
+     "description": "Recaptcha solution."
+    }
+   }
+  },
+  "IdentitytoolkitRelyingpartySendVerificationCodeResponse": {
+   "id": "IdentitytoolkitRelyingpartySendVerificationCodeResponse",
+   "type": "object",
+   "description": "Response for Identitytoolkit-SendVerificationCode",
+   "properties": {
+    "sessionInfo": {
+     "type": "string",
+     "description": "Encrypted session information"
+    }
+   }
+  },
   "IdentitytoolkitRelyingpartySetAccountInfoRequest": {
    "id": "IdentitytoolkitRelyingpartySetAccountInfoRequest",
    "type": "object",
@@ -498,6 +602,10 @@
      "type": "string",
      "description": "The timestamp when the account is created.",
      "format": "int64"
+    },
+    "customAttributes": {
+     "type": "string",
+     "description": "The custom attributes to be set in the user's id token."
     },
     "delegatedProjectNumber": {
      "type": "string",
@@ -558,6 +666,10 @@
     "password": {
      "type": "string",
      "description": "The new password of the user."
+    },
+    "phoneNumber": {
+     "type": "string",
+     "description": "Privileged caller can update user with specified phone number."
     },
     "photoUrl": {
      "type": "string",
@@ -725,6 +837,10 @@
      "type": "string",
      "description": "The new password of the user."
     },
+    "phoneNumber": {
+     "type": "string",
+     "description": "Privileged caller can create user with specified phone number."
+    },
     "photoUrl": {
      "type": "string",
      "description": "The photo url of the user."
@@ -740,10 +856,23 @@
      "type": "boolean",
      "description": "Whether allow overwrite existing account when user local_id exists."
     },
+    "blockSize": {
+     "type": "integer",
+     "format": "int32"
+    },
+    "cpuMemCost": {
+     "type": "integer",
+     "description": "The following 4 fields are for standard scrypt algorithm.",
+     "format": "int32"
+    },
     "delegatedProjectNumber": {
      "type": "string",
      "description": "GCP project number of the requesting delegated app. Currently only intended for Firebase V1 migration.",
      "format": "int64"
+    },
+    "dkLen": {
+     "type": "integer",
+     "format": "int32"
     },
     "hashAlgorithm": {
      "type": "string",
@@ -752,6 +881,10 @@
     "memoryCost": {
      "type": "integer",
      "description": "Memory cost for hash calculation. Used by scrypt similar algorithms.",
+     "format": "int32"
+    },
+    "parallelization": {
+     "type": "integer",
      "format": "int32"
     },
     "rounds": {
@@ -791,6 +924,10 @@
    "type": "object",
    "description": "Request to verify the IDP assertion.",
    "properties": {
+    "autoCreate": {
+     "type": "boolean",
+     "description": "When it's true, automatically creates a new account if the user doesn't exist. When it's false, allows existing user to sign in normally and throws exception if the user doesn't exist."
+    },
     "delegatedProjectNumber": {
      "type": "string",
      "description": "GCP project number of the requesting delegated app. Currently only intended for Firebase V1 migration.",
@@ -902,6 +1039,75 @@
     }
    }
   },
+  "IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest": {
+   "id": "IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest",
+   "type": "object",
+   "description": "Request for Identitytoolkit-VerifyPhoneNumber",
+   "properties": {
+    "code": {
+     "type": "string"
+    },
+    "idToken": {
+     "type": "string"
+    },
+    "operation": {
+     "type": "string"
+    },
+    "phoneNumber": {
+     "type": "string"
+    },
+    "sessionInfo": {
+     "type": "string",
+     "description": "The session info previously returned by IdentityToolkit-SendVerificationCode."
+    },
+    "temporaryProof": {
+     "type": "string"
+    },
+    "verificationProof": {
+     "type": "string"
+    }
+   }
+  },
+  "IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse": {
+   "id": "IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse",
+   "type": "object",
+   "description": "Response for Identitytoolkit-VerifyPhoneNumber",
+   "properties": {
+    "expiresIn": {
+     "type": "string",
+     "format": "int64"
+    },
+    "idToken": {
+     "type": "string"
+    },
+    "isNewUser": {
+     "type": "boolean"
+    },
+    "localId": {
+     "type": "string"
+    },
+    "phoneNumber": {
+     "type": "string"
+    },
+    "refreshToken": {
+     "type": "string"
+    },
+    "temporaryProof": {
+     "type": "string"
+    },
+    "temporaryProofExpiresIn": {
+     "type": "string",
+     "format": "int64"
+    },
+    "verificationProof": {
+     "type": "string"
+    },
+    "verificationProofExpiresIn": {
+     "type": "string",
+     "format": "int64"
+    }
+   }
+  },
   "IdpConfig": {
    "id": "IdpConfig",
    "type": "object",
@@ -942,6 +1148,22 @@
    "type": "object",
    "description": "Request of getting a code for user confirmation (reset password, change email etc.)",
    "properties": {
+    "androidInstallApp": {
+     "type": "boolean",
+     "description": "whether or not to install the android app on the device where the link is opened"
+    },
+    "androidMinimumVersion": {
+     "type": "string",
+     "description": "minimum version of the app. if the version on the device is lower than this version then the user is taken to the play store to upgrade the app"
+    },
+    "androidPackageName": {
+     "type": "string",
+     "description": "android package name of the android app to handle the action code"
+    },
+    "canHandleCodeInApp": {
+     "type": "boolean",
+     "description": "whether or not the app can handle the oob code without first going to web"
+    },
     "captchaResp": {
      "type": "string",
      "description": "The recaptcha response from the user."
@@ -950,9 +1172,21 @@
      "type": "string",
      "description": "The recaptcha challenge presented to the user."
     },
+    "continueUrl": {
+     "type": "string",
+     "description": "The url to continue to the Gitkit app"
+    },
     "email": {
      "type": "string",
      "description": "The email of the user."
+    },
+    "iOSAppStoreId": {
+     "type": "string",
+     "description": "iOS app store id to download the app if it's not already installed"
+    },
+    "iOSBundleId": {
+     "type": "string",
+     "description": "the iOS bundle id of iOS app to handle the action code"
     },
     "idToken": {
      "type": "string",
@@ -1157,6 +1391,10 @@
      "description": "User creation timestamp.",
      "format": "int64"
     },
+    "customAttributes": {
+     "type": "string",
+     "description": "The custom attributes to be set in the user's id token."
+    },
     "customAuth": {
      "type": "boolean",
      "description": "Whether the user is authenticated by the developer."
@@ -1196,6 +1434,10 @@
      "description": "The timestamp when the password was last updated.",
      "format": "double"
     },
+    "phoneNumber": {
+     "type": "string",
+     "description": "User's phone number."
+    },
     "photoUrl": {
      "type": "string",
      "description": "The URL of the user profile photo."
@@ -1217,6 +1459,10 @@
        "federatedId": {
         "type": "string",
         "description": "User's identifier at IDP."
+       },
+       "phoneNumber": {
+        "type": "string",
+        "description": "User's phone number."
        },
        "photoUrl": {
         "type": "string",
@@ -1445,6 +1691,10 @@
      "type": "string",
      "description": "The GITKit token for authenticated user."
     },
+    "isNewUser": {
+     "type": "boolean",
+     "description": "True if it's a new user sign-in, false if it's a returning user."
+    },
     "kind": {
      "type": "string",
      "description": "The fixed string \"identitytoolkit#VerifyCustomTokenResponse\".",
@@ -1564,6 +1814,21 @@
       "https://www.googleapis.com/auth/firebase"
      ]
     },
+    "emailLinkSignin": {
+     "id": "identitytoolkit.relyingparty.emailLinkSignin",
+     "path": "emailLinkSignin",
+     "httpMethod": "POST",
+     "description": "Reset password for a user.",
+     "request": {
+      "$ref": "IdentitytoolkitRelyingpartyEmailLinkSigninRequest"
+     },
+     "response": {
+      "$ref": "EmailLinkSigninResponse"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform"
+     ]
+    },
     "getAccountInfo": {
      "id": "identitytoolkit.relyingparty.getAccountInfo",
      "path": "getAccountInfo",
@@ -1652,6 +1917,21 @@
      },
      "response": {
       "$ref": "ResetPasswordResponse"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform"
+     ]
+    },
+    "sendVerificationCode": {
+     "id": "identitytoolkit.relyingparty.sendVerificationCode",
+     "path": "sendVerificationCode",
+     "httpMethod": "POST",
+     "description": "Send SMS verification code.",
+     "request": {
+      "$ref": "IdentitytoolkitRelyingpartySendVerificationCodeRequest"
+     },
+     "response": {
+      "$ref": "IdentitytoolkitRelyingpartySendVerificationCodeResponse"
      },
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform"
@@ -1773,6 +2053,21 @@
      },
      "response": {
       "$ref": "VerifyPasswordResponse"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform"
+     ]
+    },
+    "verifyPhoneNumber": {
+     "id": "identitytoolkit.relyingparty.verifyPhoneNumber",
+     "path": "verifyPhoneNumber",
+     "httpMethod": "POST",
+     "description": "Verifies ownership of a phone number and creates/updates the user account accordingly.",
+     "request": {
+      "$ref": "IdentitytoolkitRelyingpartyVerifyPhoneNumberRequest"
+     },
+     "response": {
+      "$ref": "IdentitytoolkitRelyingpartyVerifyPhoneNumberResponse"
      },
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform"

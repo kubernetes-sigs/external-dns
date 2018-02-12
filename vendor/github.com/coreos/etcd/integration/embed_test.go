@@ -15,13 +15,16 @@
 package integration
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/embed"
 )
 
@@ -44,7 +47,7 @@ func TestEmbedEtcd(t *testing.T) {
 		{werr: "expected IP"},
 	}
 
-	urls := newEmbedURLs(10)
+	urls := newEmbedURLs(false, 10)
 
 	// setup defaults
 	for i := range tests {
@@ -102,9 +105,70 @@ func TestEmbedEtcd(t *testing.T) {
 	}
 }
 
-func newEmbedURLs(n int) (urls []url.URL) {
+func TestEmbedEtcdGracefulStopSecure(t *testing.T)   { testEmbedEtcdGracefulStop(t, true) }
+func TestEmbedEtcdGracefulStopInsecure(t *testing.T) { testEmbedEtcdGracefulStop(t, false) }
+
+// testEmbedEtcdGracefulStop ensures embedded server stops
+// cutting existing transports.
+func testEmbedEtcdGracefulStop(t *testing.T, secure bool) {
+	cfg := embed.NewConfig()
+	if secure {
+		cfg.ClientTLSInfo = testTLSInfo
+		cfg.PeerTLSInfo = testTLSInfo
+	}
+
+	urls := newEmbedURLs(secure, 2)
+	setupEmbedCfg(cfg, []url.URL{urls[0]}, []url.URL{urls[1]})
+
+	cfg.Dir = filepath.Join(os.TempDir(), fmt.Sprintf("embed-etcd"))
+	os.RemoveAll(cfg.Dir)
+	defer os.RemoveAll(cfg.Dir)
+
+	e, err := embed.StartEtcd(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	<-e.Server.ReadyNotify() // wait for e.Server to join the cluster
+
+	clientCfg := clientv3.Config{
+		Endpoints: []string{urls[0].String()},
+	}
+	if secure {
+		clientCfg.TLS, err = testTLSInfo.ClientConfig()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	cli, err := clientv3.New(clientCfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cli.Close()
+
+	// open watch connection
+	cli.Watch(context.Background(), "foo")
+
+	donec := make(chan struct{})
+	go func() {
+		e.Close()
+		close(donec)
+	}()
+	select {
+	case err := <-e.Err():
+		t.Fatal(err)
+	case <-donec:
+	case <-time.After(2*time.Second + e.Server.Cfg.ReqTimeout()):
+		t.Fatalf("took too long to close server")
+	}
+}
+
+func newEmbedURLs(secure bool, n int) (urls []url.URL) {
+	scheme := "unix"
+	if secure {
+		scheme = "unixs"
+	}
 	for i := 0; i < n; i++ {
-		u, _ := url.Parse(fmt.Sprintf("unix://localhost:%d%06d", os.Getpid(), i))
+		u, _ := url.Parse(fmt.Sprintf("%s://localhost:%d%06d", scheme, os.Getpid(), i))
 		urls = append(urls, *u)
 	}
 	return

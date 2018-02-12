@@ -1,4 +1,5 @@
 # Kubernetes repository infrastructure
+[![Build Status](https://travis-ci.org/kubernetes/repo-infra.svg?branch=master)](https://travis-ci.org/kubernetes/repo-infra)  [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/repo-infra)](https://goreportcard.com/report/github.com/kubernetes/repo-infra)
 
 This repository contains repository infrastructure tools for use in
 `kubernetes` and `kubernetes-incubator` repositories.  Examples:
@@ -19,7 +20,7 @@ This repository can be used via some golang "vendoring" mechanism
 
 The exact mechanism to pull in this repository will vary depending on
 the tool you use. However, unless you end up having this repository
-at the root of your project's repository you wll probably need to 
+at the root of your project's repository you will probably need to 
 make sure you use the `--rootdir` command line parameter to let the
 `verify-boilerplate.sh` know its location, eg:
 
@@ -54,8 +55,8 @@ After this command, you will have:
 1.  A `repo-infra` directory in your project containing the content of **this**
     project
 2.  2 new commits in the active branch:
-  1.  A commit that squashes the git history of the `repo-infra` project
-  2.  A merge commit whose ancestors are:
-    1.  The `HEAD` of the branch prior to when you ran `git subtree add`
-    2.  The commit containing the squashed `repo-infra` commits
+    1.  A commit that squashes the git history of the `repo-infra` project
+    2.  A merge commit whose ancestors are:
+        1.  The `HEAD` of the branch prior to when you ran `git subtree add`
+        2.  The commit containing the squashed `repo-infra` commits
 

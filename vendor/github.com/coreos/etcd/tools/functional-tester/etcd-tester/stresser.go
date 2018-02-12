@@ -21,10 +21,7 @@ import (
 	"time"
 
 	"golang.org/x/time/rate"
-	"google.golang.org/grpc/grpclog"
 )
-
-func init() { grpclog.SetLogger(plog) }
 
 type Stresser interface {
 	// Stress starts to stress the etcd cluster

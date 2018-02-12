@@ -84,6 +84,7 @@ type dnsimpleProvider struct {
 	identity     identityService
 	accountID    string
 	domainFilter DomainFilter
+	zoneIDFilter ZoneIDFilter
 	dryRun       bool
 }
 
@@ -99,7 +100,7 @@ const (
 )
 
 // NewDnsimpleProvider initializes a new Dnsimple based provider
-func NewDnsimpleProvider(domainFilter DomainFilter, dryRun bool) (Provider, error) {
+func NewDnsimpleProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool) (Provider, error) {
 	oauthToken := os.Getenv("DNSIMPLE_OAUTH")
 	if len(oauthToken) == 0 {
 		return nil, fmt.Errorf("No dnsimple oauth token provided")
@@ -109,6 +110,7 @@ func NewDnsimpleProvider(domainFilter DomainFilter, dryRun bool) (Provider, erro
 		client:       dnsimpleZoneService{service: client.Zones},
 		identity:     identityService{service: client.Identity},
 		domainFilter: domainFilter,
+		zoneIDFilter: zoneIDFilter,
 		dryRun:       dryRun,
 	}
 	whoamiResponse, err := provider.identity.service.Whoami()
@@ -119,7 +121,7 @@ func NewDnsimpleProvider(domainFilter DomainFilter, dryRun bool) (Provider, erro
 	return provider, nil
 }
 
-// Returns a list of Zones that end with the provider's domainFilter
+// Returns a list of filtered Zones
 func (p *dnsimpleProvider) Zones() (map[string]dnsimple.Zone, error) {
 	zones := make(map[string]dnsimple.Zone)
 	zonesResponse, err := p.client.ListZones(p.accountID, &dnsimple.ZoneListOptions{})
@@ -127,9 +129,15 @@ func (p *dnsimpleProvider) Zones() (map[string]dnsimple.Zone, error) {
 		return nil, err
 	}
 	for _, zone := range zonesResponse.Data {
-		if p.domainFilter.Match(zone.Name) {
-			zones[strconv.Itoa(zone.ID)] = zone
+		if !p.domainFilter.Match(zone.Name) {
+			continue
 		}
+
+		if !p.zoneIDFilter.Match(strconv.Itoa(zone.ID)) {
+			continue
+		}
+
+		zones[strconv.Itoa(zone.ID)] = zone
 	}
 	return zones, nil
 }

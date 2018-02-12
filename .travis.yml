@@ -6,8 +6,7 @@ os:
 language: go
 
 go:
-- 1.7
-- 1.8
+- 1.9
 - tip
 
 matrix:
@@ -16,7 +15,7 @@ matrix:
 
 before_install:
 - go get github.com/mattn/goveralls
-- go get -u github.com/alecthomas/gometalinter
+- go get github.com/alecthomas/gometalinter
 
 install:
 - gometalinter --install

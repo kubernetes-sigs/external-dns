@@ -25,7 +25,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/boltdb/bolt"
+	bolt "github.com/coreos/bbolt"
 	"github.com/coreos/pkg/capnslog"
 )
 
@@ -370,10 +370,10 @@ func defragdb(odb, tmpdb *bolt.DB, limit int) error {
 		}
 
 		tmpb, berr := tmptx.CreateBucketIfNotExists(next)
-		tmpb.FillPercent = 0.9 // for seq write in for each
 		if berr != nil {
 			return berr
 		}
+		tmpb.FillPercent = 0.9 // for seq write in for each
 
 		b.ForEach(func(k, v []byte) error {
 			count++

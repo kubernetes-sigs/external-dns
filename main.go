@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -68,10 +67,11 @@ func main() {
 
 	// Create a source.Config from the flags passed by the user.
 	sourceCfg := &source.Config{
-		Namespace:       cfg.Namespace,
-		FQDNTemplate:    cfg.FQDNTemplate,
-		Compatibility:   cfg.Compatibility,
-		PublishInternal: cfg.PublishInternal,
+		Namespace:        cfg.Namespace,
+		AnnotationFilter: cfg.AnnotationFilter,
+		FQDNTemplate:     cfg.FQDNTemplate,
+		Compatibility:    cfg.Compatibility,
+		PublishInternal:  cfg.PublishInternal,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
@@ -87,26 +87,28 @@ func main() {
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
 
 	domainFilter := provider.NewDomainFilter(cfg.DomainFilter)
+	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 
 	var p provider.Provider
 	switch cfg.Provider {
 	case "aws":
-		p, err = provider.NewAWSProvider(domainFilter, zoneTypeFilter, cfg.DryRun)
+		p, err = provider.NewAWSProvider(domainFilter, zoneIDFilter, zoneTypeFilter, cfg.DryRun)
 	case "azure":
-		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, cfg.AzureResourceGroup, cfg.DryRun)
+		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.DryRun)
 	case "cloudflare":
-		p, err = provider.NewCloudFlareProvider(domainFilter, cfg.CloudflareProxied, cfg.DryRun)
+		p, err = provider.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareProxied, cfg.DryRun)
 	case "google":
-		p, err = provider.NewGoogleProvider(cfg.GoogleProject, domainFilter, cfg.DryRun)
+		p, err = provider.NewGoogleProvider(cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.DryRun)
 	case "digitalocean":
 		p, err = provider.NewDigitalOceanProvider(domainFilter, cfg.DryRun)
 	case "dnsimple":
-		p, err = provider.NewDnsimpleProvider(domainFilter, cfg.DryRun)
+		p, err = provider.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "infoblox":
 		p, err = provider.NewInfobloxProvider(
 			provider.InfobloxConfig{
 				DomainFilter: domainFilter,
+				ZoneIDFilter: zoneIDFilter,
 				Host:         cfg.InfobloxGridHost,
 				Port:         cfg.InfobloxWapiPort,
 				Username:     cfg.InfobloxWapiUsername,
@@ -116,10 +118,22 @@ func main() {
 				DryRun:       cfg.DryRun,
 			},
 		)
-	case "inmemory":
-		p, err = provider.NewInMemoryProvider(provider.InMemoryInitZones(cfg.InMemoryZones), provider.InMemoryWithDomain(domainFilter), provider.InMemoryWithLogging()), nil
+	case "dyn":
+		p, err = provider.NewDynProvider(
+			provider.DynConfig{
+				DomainFilter: domainFilter,
+				ZoneIDFilter: zoneIDFilter,
+				DryRun:       cfg.DryRun,
+				CustomerName: cfg.DynCustomerName,
+				Username:     cfg.DynUsername,
+				Password:     cfg.DynPassword,
+				AppVersion:   externaldns.Version,
+			},
+		)
 	case "coredns", "skydns":
 		p, err = provider.NewCoreDNSProvider(domainFilter, cfg.DryRun)
+	case "inmemory":
+		p, err = provider.NewInMemoryProvider(provider.InMemoryInitZones(cfg.InMemoryZones), provider.InMemoryWithDomain(domainFilter), provider.InMemoryWithLogging()), nil
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
@@ -163,10 +177,6 @@ func main() {
 	}
 
 	ctrl.Run(stopChan)
-	for {
-		log.Info("Pod waiting to be deleted")
-		time.Sleep(time.Second * 30)
-	}
 }
 
 func handleSigterm(stopChan chan struct{}) {
