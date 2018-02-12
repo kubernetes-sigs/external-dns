@@ -124,6 +124,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: external-dns
+  namespace: default
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
