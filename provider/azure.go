@@ -66,6 +66,7 @@ type RecordsClient interface {
 // AzureProvider implements the DNS provider for Microsoft's Azure cloud platform.
 type AzureProvider struct {
 	domainFilter  DomainFilter
+	zoneIDFilter  ZoneIDFilter
 	dryRun        bool
 	resourceGroup string
 	zonesClient   ZonesClient
@@ -75,7 +76,7 @@ type AzureProvider struct {
 // NewAzureProvider creates a new Azure provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAzureProvider(configFile string, domainFilter DomainFilter, resourceGroup string, dryRun bool) (*AzureProvider, error) {
+func NewAzureProvider(configFile string, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, resourceGroup string, dryRun bool) (*AzureProvider, error) {
 	contents, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
@@ -118,6 +119,7 @@ func NewAzureProvider(configFile string, domainFilter DomainFilter, resourceGrou
 
 	provider := &AzureProvider{
 		domainFilter:  domainFilter,
+		zoneIDFilter:  zoneIDFilter,
 		dryRun:        dryRun,
 		resourceGroup: cfg.ResourceGroup,
 		zonesClient:   zonesClient,
@@ -151,7 +153,12 @@ func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				log.Errorf("Failed to extract target for '%s' with type '%s'.", name, recordType)
 				return true
 			}
-			ep := endpoint.NewEndpoint(name, target, recordType)
+			var ttl endpoint.TTL
+			if recordSet.TTL != nil {
+				ttl = endpoint.TTL(*recordSet.TTL)
+			}
+
+			ep := endpoint.NewEndpointWithTTL(name, target, recordType, endpoint.TTL(ttl))
 			log.Debugf(
 				"Found %s record for '%s' with target '%s'.",
 				ep.RecordType,
@@ -194,9 +201,19 @@ func (p *AzureProvider) zones() ([]dns.Zone, error) {
 
 	for list.Value != nil && len(*list.Value) > 0 {
 		for _, zone := range *list.Value {
-			if zone.Name != nil && p.domainFilter.Match(*zone.Name) {
-				zones = append(zones, zone)
+			if zone.Name == nil {
+				continue
 			}
+
+			if !p.domainFilter.Match(*zone.Name) {
+				continue
+			}
+
+			if !p.zoneIDFilter.Match(*zone.ID) {
+				continue
+			}
+
+			zones = append(zones, zone)
 		}
 
 		list, err = p.zonesClient.ListByResourceGroupNextResults(list)
@@ -360,11 +377,15 @@ func (p *AzureProvider) recordSetNameForZone(zone string, endpoint *endpoint.End
 }
 
 func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet, error) {
+	var ttl int64 = azureRecordTTL
+	if endpoint.RecordTTL.IsConfigured() {
+		ttl = int64(endpoint.RecordTTL)
+	}
 	switch dns.RecordType(endpoint.RecordType) {
 	case dns.A:
 		return dns.RecordSet{
 			RecordSetProperties: &dns.RecordSetProperties{
-				TTL: to.Int64Ptr(azureRecordTTL),
+				TTL: to.Int64Ptr(ttl),
 				ARecords: &[]dns.ARecord{
 					{
 						Ipv4Address: to.StringPtr(endpoint.Target),
@@ -375,7 +396,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 	case dns.CNAME:
 		return dns.RecordSet{
 			RecordSetProperties: &dns.RecordSetProperties{
-				TTL: to.Int64Ptr(azureRecordTTL),
+				TTL: to.Int64Ptr(ttl),
 				CnameRecord: &dns.CnameRecord{
 					Cname: to.StringPtr(endpoint.Target),
 				},
@@ -384,7 +405,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 	case dns.TXT:
 		return dns.RecordSet{
 			RecordSetProperties: &dns.RecordSetProperties{
-				TTL: to.Int64Ptr(azureRecordTTL),
+				TTL: to.Int64Ptr(ttl),
 				TxtRecords: &[]dns.TxtRecord{
 					{
 						Value: &[]string{

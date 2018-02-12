@@ -44,6 +44,7 @@ import (
 
 type serveCtx struct {
 	l        net.Listener
+	addr     string
 	secure   bool
 	insecure bool
 
@@ -52,20 +53,34 @@ type serveCtx struct {
 
 	userHandlers    map[string]http.Handler
 	serviceRegister func(*grpc.Server)
-	grpcServerC     chan *grpc.Server
+	serversC        chan *servers
+}
+
+type servers struct {
+	secure bool
+	grpc   *grpc.Server
+	http   *http.Server
 }
 
 func newServeCtx() *serveCtx {
 	ctx, cancel := context.WithCancel(context.Background())
-	return &serveCtx{ctx: ctx, cancel: cancel, userHandlers: make(map[string]http.Handler),
-		grpcServerC: make(chan *grpc.Server, 2), // in case sctx.insecure,sctx.secure true
+	return &serveCtx{
+		ctx:          ctx,
+		cancel:       cancel,
+		userHandlers: make(map[string]http.Handler),
+		serversC:     make(chan *servers, 2), // in case sctx.insecure,sctx.secure true
 	}
 }
 
 // serve accepts incoming connections on the listener l,
 // creating a new service goroutine for each. The service goroutines
 // read requests and then call handler to reply to them.
-func (sctx *serveCtx) serve(s *etcdserver.EtcdServer, tlscfg *tls.Config, handler http.Handler, errHandler func(error)) error {
+func (sctx *serveCtx) serve(
+	s *etcdserver.EtcdServer,
+	tlscfg *tls.Config,
+	handler http.Handler,
+	errHandler func(error),
+	gopts ...grpc.ServerOption) error {
 	logger := defaultLog.New(ioutil.Discard, "etcdhttp", 0)
 	<-s.ReadyNotify()
 	plog.Info("ready to serve client requests")
@@ -76,8 +91,7 @@ func (sctx *serveCtx) serve(s *etcdserver.EtcdServer, tlscfg *tls.Config, handle
 	servLock := v3lock.NewLockServer(v3c)
 
 	if sctx.insecure {
-		gs := v3rpc.Server(s, nil)
-		sctx.grpcServerC <- gs
+		gs := v3rpc.Server(s, nil, gopts...)
 		v3electionpb.RegisterElectionServer(gs, servElection)
 		v3lockpb.RegisterLockServer(gs, servLock)
 		if sctx.serviceRegister != nil {
@@ -86,9 +100,7 @@ func (sctx *serveCtx) serve(s *etcdserver.EtcdServer, tlscfg *tls.Config, handle
 		grpcl := m.Match(cmux.HTTP2())
 		go func() { errHandler(gs.Serve(grpcl)) }()
 
-		opts := []grpc.DialOption{
-			grpc.WithInsecure(),
-		}
+		opts := []grpc.DialOption{grpc.WithInsecure()}
 		gwmux, err := sctx.registerGateway(opts)
 		if err != nil {
 			return err
@@ -102,12 +114,13 @@ func (sctx *serveCtx) serve(s *etcdserver.EtcdServer, tlscfg *tls.Config, handle
 		}
 		httpl := m.Match(cmux.HTTP1())
 		go func() { errHandler(srvhttp.Serve(httpl)) }()
+
+		sctx.serversC <- &servers{grpc: gs, http: srvhttp}
 		plog.Noticef("serving insecure client requests on %s, this is strongly discouraged!", sctx.l.Addr().String())
 	}
 
 	if sctx.secure {
-		gs := v3rpc.Server(s, tlscfg)
-		sctx.grpcServerC <- gs
+		gs := v3rpc.Server(s, tlscfg, gopts...)
 		v3electionpb.RegisterElectionServer(gs, servElection)
 		v3lockpb.RegisterLockServer(gs, servLock)
 		if sctx.serviceRegister != nil {
@@ -136,10 +149,11 @@ func (sctx *serveCtx) serve(s *etcdserver.EtcdServer, tlscfg *tls.Config, handle
 		}
 		go func() { errHandler(srv.Serve(tlsl)) }()
 
+		sctx.serversC <- &servers{secure: true, grpc: gs, http: srv}
 		plog.Infof("serving client requests on %s", sctx.l.Addr().String())
 	}
 
-	close(sctx.grpcServerC)
+	close(sctx.serversC)
 	return m.Serve()
 }
 
@@ -160,28 +174,38 @@ func grpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Ha
 	})
 }
 
-type registerHandlerFunc func(context.Context, *gw.ServeMux, string, []grpc.DialOption) error
+type registerHandlerFunc func(context.Context, *gw.ServeMux, *grpc.ClientConn) error
 
 func (sctx *serveCtx) registerGateway(opts []grpc.DialOption) (*gw.ServeMux, error) {
 	ctx := sctx.ctx
-	addr := sctx.l.Addr().String()
+	conn, err := grpc.DialContext(ctx, sctx.addr, opts...)
+	if err != nil {
+		return nil, err
+	}
 	gwmux := gw.NewServeMux()
 
 	handlers := []registerHandlerFunc{
-		etcdservergw.RegisterKVHandlerFromEndpoint,
-		etcdservergw.RegisterWatchHandlerFromEndpoint,
-		etcdservergw.RegisterLeaseHandlerFromEndpoint,
-		etcdservergw.RegisterClusterHandlerFromEndpoint,
-		etcdservergw.RegisterMaintenanceHandlerFromEndpoint,
-		etcdservergw.RegisterAuthHandlerFromEndpoint,
-		v3lockgw.RegisterLockHandlerFromEndpoint,
-		v3electiongw.RegisterElectionHandlerFromEndpoint,
+		etcdservergw.RegisterKVHandler,
+		etcdservergw.RegisterWatchHandler,
+		etcdservergw.RegisterLeaseHandler,
+		etcdservergw.RegisterClusterHandler,
+		etcdservergw.RegisterMaintenanceHandler,
+		etcdservergw.RegisterAuthHandler,
+		v3lockgw.RegisterLockHandler,
+		v3electiongw.RegisterElectionHandler,
 	}
 	for _, h := range handlers {
-		if err := h(ctx, gwmux, addr, opts); err != nil {
+		if err := h(ctx, gwmux, conn); err != nil {
 			return nil, err
 		}
 	}
+	go func() {
+		<-ctx.Done()
+		if cerr := conn.Close(); cerr != nil {
+			plog.Warningf("failed to close conn to %s: %v", sctx.l.Addr().String(), cerr)
+		}
+	}()
+
 	return gwmux, nil
 }
 

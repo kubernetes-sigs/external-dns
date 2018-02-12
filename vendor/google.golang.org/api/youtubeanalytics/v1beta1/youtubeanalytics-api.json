@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"tbys6C40o18GZwyMen5GMkdK-3s/GbWyz3kSqUOq8ROslYTuFkmV1gg\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/7ntJIFhXAMpoi22k7BYPHzYytS0\"",
  "discoveryVersion": "v1",
  "id": "youtubeAnalytics:v1beta1",
  "name": "youtubeAnalytics",
  "canonicalName": "YouTube Analytics",
  "version": "v1beta1",
- "revision": "20170111",
+ "revision": "20170913",
  "title": "YouTube Analytics API",
  "description": "Retrieves your YouTube Analytics data.",
  "ownerDomain": "google.com",
@@ -24,7 +24,7 @@
  "basePath": "/youtube/analytics/v1beta1/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "youtube/analytics/v1beta1/",
- "batchPath": "batch",
+ "batchPath": "batch/youtubeAnalytics/v1beta1",
  "parameters": {
   "alt": {
    "type": "string",
@@ -486,6 +486,11 @@
        "description": "Identifies the YouTube channel or content owner for which you are retrieving YouTube Analytics data.\n- To request data for a YouTube user, set the ids parameter value to channel==CHANNEL_ID, where CHANNEL_ID specifies the unique YouTube channel ID.\n- To request data for a YouTube CMS content owner, set the ids parameter value to contentOwner==OWNER_NAME, where OWNER_NAME is the CMS name of the content owner.",
        "required": true,
        "pattern": "[a-zA-Z]+==[a-zA-Z0-9_+-]+",
+       "location": "query"
+      },
+      "include-historical-channel-data": {
+       "type": "boolean",
+       "description": "If set to true historical data (i.e. channel data from before the linking of the channel to the content owner) will be retrieved.",
        "location": "query"
       },
       "max-results": {

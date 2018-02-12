@@ -22,8 +22,6 @@ import (
 )
 
 const (
-	// OwnerLabelKey is the name of the label that defines the owner of an Endpoint.
-	OwnerLabelKey = "owner"
 	// RecordTypeA is a RecordType enum value
 	RecordTypeA = "A"
 	// RecordTypeCNAME is a RecordType enum value
@@ -51,7 +49,7 @@ type Endpoint struct {
 	// TTL for the record
 	RecordTTL TTL
 	// Labels stores labels defined for the Endpoint
-	Labels map[string]string
+	Labels Labels
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
@@ -65,17 +63,8 @@ func NewEndpointWithTTL(dnsName, target, recordType string, ttl TTL) *Endpoint {
 		DNSName:    strings.TrimSuffix(dnsName, "."),
 		Target:     strings.TrimSuffix(target, "."),
 		RecordType: recordType,
-		Labels:     map[string]string{},
+		Labels:     NewLabels(),
 		RecordTTL:  ttl,
-	}
-}
-
-// MergeLabels adds keys to labels if not defined for the endpoint
-func (e *Endpoint) MergeLabels(labels map[string]string) {
-	for k, v := range labels {
-		if e.Labels[k] == "" {
-			e.Labels[k] = v
-		}
 	}
 }
 

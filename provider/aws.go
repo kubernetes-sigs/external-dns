@@ -17,23 +17,23 @@ limitations under the License.
 package provider
 
 import (
+	"sort"
 	"strings"
-
-	"github.com/linki/instrumented_http"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
-
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/linki/instrumented_http"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
 	elbHostnameSuffix    = ".elb.amazonaws.com"
 	evaluateTargetHealth = true
 	recordTTL            = 300
+	maxChangeCount       = 4000
 )
 
 var (
@@ -52,6 +52,7 @@ var (
 		"eu-central-1" + elbHostnameSuffix:   "Z215JYRZR1TBD5",
 		"eu-west-1" + elbHostnameSuffix:      "Z32O12XQLNTSW2",
 		"eu-west-2" + elbHostnameSuffix:      "ZHURV8PSTC4K8",
+		"eu-west-3" + elbHostnameSuffix:      "Z3Q77PNBQS71R4",
 		"sa-east-1" + elbHostnameSuffix:      "Z2P70J7HTTTPLU",
 	}
 )
@@ -71,12 +72,14 @@ type AWSProvider struct {
 	dryRun bool
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter DomainFilter
+	// filter hosted zones by id
+	zoneIDFilter ZoneIDFilter
 	// filter hosted zones by type (e.g. private or public)
 	zoneTypeFilter ZoneTypeFilter
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
-func NewAWSProvider(domainFilter DomainFilter, zoneTypeFilter ZoneTypeFilter, dryRun bool) (*AWSProvider, error) {
+func NewAWSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zoneTypeFilter ZoneTypeFilter, dryRun bool) (*AWSProvider, error) {
 	config := aws.NewConfig()
 
 	config = config.WithHTTPClient(
@@ -99,6 +102,7 @@ func NewAWSProvider(domainFilter DomainFilter, zoneTypeFilter ZoneTypeFilter, dr
 	provider := &AWSProvider{
 		client:         route53.New(session),
 		domainFilter:   domainFilter,
+		zoneIDFilter:   zoneIDFilter,
 		zoneTypeFilter: zoneTypeFilter,
 		dryRun:         dryRun,
 	}
@@ -112,6 +116,10 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 
 	f := func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool) {
 		for _, zone := range resp.HostedZones {
+			if !p.zoneIDFilter.Match(aws.StringValue(zone.Id)) {
+				continue
+			}
+
 			if !p.zoneTypeFilter.Match(zone) {
 				continue
 			}
@@ -129,6 +137,10 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 	err := p.client.ListHostedZonesPages(&route53.ListHostedZonesInput{}, f)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, zone := range zones {
+		log.Debugf("Considering zone: %s (domain: %s)", aws.StringValue(zone.Id), aws.StringValue(zone.Name))
 	}
 
 	return zones, nil
@@ -232,14 +244,17 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 	changesByZone := changesByZone(zones, changes)
 
 	for z, cs := range changesByZone {
-		for _, c := range cs {
-			log.Infof("Changing records: %s %s ...", aws.StringValue(c.Action), c.String())
+		limCs := limitChangeSet(cs, maxChangeCount)
+
+		for _, c := range limCs {
+			log.Infof("Desired change: %s %s %s", *c.Action, *c.ResourceRecordSet.Name, *c.ResourceRecordSet.Type)
 		}
+
 		if !p.dryRun {
 			params := &route53.ChangeResourceRecordSetsInput{
 				HostedZoneId: aws.String(z),
 				ChangeBatch: &route53.ChangeBatch{
-					Changes: cs,
+					Changes: limCs,
 				},
 			}
 
@@ -254,25 +269,78 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 	return nil
 }
 
+func limitChangeSet(cs []*route53.Change, limit int) []*route53.Change {
+	if len(cs) <= limit {
+		return cs
+	}
+
+	log.Warningf("Initial change batch count is %d", len(cs))
+
+	changesByName := make(map[string][]*route53.Change, 0)
+	for _, v := range cs {
+		changesByName[*v.ResourceRecordSet.Name] = append(changesByName[*v.ResourceRecordSet.Name], v)
+	}
+
+	names := make([]string, 0)
+	for v := range changesByName {
+		names = append(names, v)
+	}
+	sort.Strings(names)
+
+	limCs := make([]*route53.Change, 0)
+	for i := 0; i < len(names); i++ {
+		changes := changesByName[names[i]]
+		if (limit - len(limCs)) >= len(changes) {
+			limCs = append(limCs, changes...)
+		}
+	}
+	limCs = sortChangesByActionNameType(limCs)
+
+	log.Warningf("Limited change batch count to %d", len(limCs))
+
+	return limCs
+}
+
+func sortChangesByActionNameType(cs []*route53.Change) []*route53.Change {
+	sort.SliceStable(cs, func(i, j int) bool {
+		if *cs[i].Action < *cs[j].Action {
+			return true
+		}
+		if *cs[i].Action > *cs[j].Action {
+			return false
+		}
+		if *cs[i].ResourceRecordSet.Name < *cs[j].ResourceRecordSet.Name {
+			return true
+		}
+		if *cs[i].ResourceRecordSet.Name > *cs[j].ResourceRecordSet.Name {
+			return false
+		}
+		return *cs[i].ResourceRecordSet.Type < *cs[j].ResourceRecordSet.Type
+	})
+
+	return cs
+}
+
 // changesByZone separates a multi-zone change into a single change per zone.
 func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Change) map[string][]*route53.Change {
 	changes := make(map[string][]*route53.Change)
-	zoneNameIDMapper := zoneIDName{}
 
 	for _, z := range zones {
-		zoneNameIDMapper.Add(aws.StringValue(z.Id), aws.StringValue(z.Name))
 		changes[aws.StringValue(z.Id)] = []*route53.Change{}
 	}
 
 	for _, c := range changeSet {
 		hostname := ensureTrailingDot(aws.StringValue(c.ResourceRecordSet.Name))
 
-		zoneID, _ := zoneNameIDMapper.FindZone(hostname)
-		if zoneID == "" {
+		zones := suitableZones(hostname, zones)
+		if len(zones) == 0 {
 			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.String())
 			continue
 		}
-		changes[zoneID] = append(changes[zoneID], c)
+		for _, z := range zones {
+			changes[aws.StringValue(z.Id)] = append(changes[aws.StringValue(z.Id)], c)
+			log.Debugf("Adding %s to zone %s [Id: %s]", hostname, aws.StringValue(z.Name), aws.StringValue(z.Id))
+		}
 	}
 
 	// separating a change could lead to empty sub changes, remove them here.
@@ -329,6 +397,33 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 	}
 
 	return change
+}
+
+// suitableZones returns all suitable private zones and the most suitable public zone
+//   for a given hostname and a set of zones.
+func suitableZones(hostname string, zones map[string]*route53.HostedZone) []*route53.HostedZone {
+	var matchingZones []*route53.HostedZone
+	var publicZone *route53.HostedZone
+
+	for _, z := range zones {
+		if strings.HasSuffix(hostname, aws.StringValue(z.Name)) {
+			if z.Config == nil || !aws.BoolValue(z.Config.PrivateZone) {
+				// Only select the best matching public zone
+				if publicZone == nil || len(aws.StringValue(z.Name)) > len(aws.StringValue(publicZone.Name)) {
+					publicZone = z
+				}
+			} else {
+				// Include all private zones
+				matchingZones = append(matchingZones, z)
+			}
+		}
+	}
+
+	if publicZone != nil {
+		matchingZones = append(matchingZones, publicZone)
+	}
+
+	return matchingZones
 }
 
 // isAWSLoadBalancer determines if a given hostname belongs to an AWS load balancer.

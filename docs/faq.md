@@ -24,7 +24,7 @@ entrypoint   frontend.example.org,backend.example.org   35.186.250.78   80      
 
 But there's nothing that actually makes clients resolve those hostnames to the Ingress' IP address. Again, you normally have to register each entry with your DNS provider. Only if you're lucky can you use a wildcard, like in the example above.
 
-EnternalDNS can solve this for you as well.
+ExternalDNS can solve this for you as well.
 
 ### Which DNS providers are supported?
 
@@ -156,7 +156,7 @@ $ docker run \
   -e EXTERNAL_DNS_SOURCE=$'service\ningress' \
   -e EXTERNAL_DNS_PROVIDER=google \
   -e EXTERNAL_DNS_DOMAIN_FILTER=$'foo.com\nbar.com' \
-  registry.opensource.zalan.do/teapot/external-dns:v0.4.2
+  registry.opensource.zalan.do/teapot/external-dns:v0.4.8
 time="2017-08-08T14:10:26Z" level=info msg="config: &{Master: KubeConfig: Sources:[service ingress] Namespace: ...
 ```
 
@@ -200,3 +200,15 @@ spec:
         service
         ingress
 ```
+
+
+### Running an internal and external dns service
+
+Sometimes you need to run an internal and an external dns service.
+The internal one should provision hostnames used on the internal network (perhaps inside a VPC), and the external
+one to expose DNS to the internet.
+
+To do this with ExternalDNS you can use the `--annotation-filter` to specifically tie an instance of ExternalDNS to 
+an instance of a ingress controller. Let's assume you have two ingress controllers `nginx-internal` and `nginx-external`
+then you can start two ExternalDNS providers one with `--annotation-filter=kubernetes.io/ingress.class=nginx-internal` 
+and one with `--annotation-filter=kubernetes.io/ingress.class=nginx-external`.

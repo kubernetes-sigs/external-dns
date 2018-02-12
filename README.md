@@ -31,6 +31,7 @@ ExternalDNS' current release is `v0.4`. This version allows you to keep selected
 * [DigitalOcean](https://www.digitalocean.com/products/networking)
 * [DNSimple](https://dnsimple.com/)
 * [Infoblox](https://www.infoblox.com/products/dns/)
+* [Dyn](https://dyn.com/dns/)
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.4` with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -47,6 +48,7 @@ The following tutorials are provided:
 * [Cloudflare](docs/tutorials/cloudflare.md)
 * [DigitalOcean](docs/tutorials/digitalocean.md)
 * [Infoblox](docs/tutorials/infoblox.md)
+* [Dyn](docs/tutorials/dyn.md)
 * Google Container Engine
 	* [Using Google's Default Ingress Controller](docs/tutorials/gke.md)
 	* [Using the Nginx Ingress Controller](docs/tutorials/nginx-ingress.md)
@@ -117,6 +119,10 @@ Now you can experiment and watch how ExternalDNS makes sure that your DNS record
 * Remove Services to clean up your managed zone.
 
 The [tutorials](docs/tutorials) section contains examples, including Ingress resources, and shows you how to set up ExternalDNS in different environments such as other cloud providers and alternative Ingress controllers.
+
+# Note
+
+If using a txt registry and attempting to use a CNAME the `--txt-prefix` must be set to avoid conflicts.  Changing `--txt-prefix` will result in lost ownership over previously created records.
 
 # Roadmap
 
