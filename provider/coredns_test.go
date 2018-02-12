@@ -276,7 +276,7 @@ func applyServiceChanges(provider coreDNSProvider, changes *plan.Changes) {
 		for _, record := range col {
 			for _, existingRecord := range records {
 				if existingRecord.DNSName == record.DNSName && existingRecord.RecordType == record.RecordType {
-					record.MergeLabels(existingRecord.Labels)
+					mergeLabels(record, existingRecord.Labels)
 				}
 			}
 		}
@@ -302,6 +302,15 @@ func validateServices(services, expectedServices map[string]*Service, t *testing
 		}
 		if value.Text != expectedService.Text {
 			t.Errorf("wrong text for service %s: %s != %s on step %d", key, value.Text, expectedService.Text, step)
+		}
+	}
+}
+
+// mergeLabels adds keys to labels if not defined for the endpoint
+func mergeLabels(e *endpoint.Endpoint, labels map[string]string) {
+	for k, v := range labels {
+		if e.Labels[k] == "" {
+			e.Labels[k] = v
 		}
 	}
 }
