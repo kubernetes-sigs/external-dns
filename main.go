@@ -62,8 +62,10 @@ func main() {
 
 	stopChan := make(chan struct{}, 1)
 
-	go serveMetrics(cfg.MetricsAddress)
-	go handleSigterm(stopChan)
+	if !cfg.Once && !cfg.Cleanup {
+		go serveMetrics(cfg.MetricsAddress)
+		go handleSigterm(stopChan)
+	}
 
 	// Create a source.Config from the flags passed by the user.
 	sourceCfg := &source.Config{
@@ -75,21 +77,29 @@ func main() {
 		PublishInternal:          cfg.PublishInternal,
 	}
 
-	// Lookup all the selected sources by names and pass them the desired configuration.
-	sources, err := source.ByNames(&source.SingletonClientGenerator{
-		KubeConfig: cfg.KubeConfig,
-		KubeMaster: cfg.Master,
-	}, cfg.Sources, sourceCfg)
-	if err != nil {
-		log.Fatal(err)
+	var endpointsSource source.Source
+
+	if cfg.Cleanup {
+		log.Infof("cleanup DNS entries")
+		endpointsSource = source.NewMultiSource([]source.Source{})
+	} else {
+		// Lookup all the selected sources by names and pass them the desired configuration.
+		var sources []source.Source
+		sources, err = source.ByNames(&source.SingletonClientGenerator{
+			KubeConfig: cfg.KubeConfig,
+			KubeMaster: cfg.Master,
+		}, cfg.Sources, sourceCfg)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		baseDomainFilter := provider.NewDomainFilter(cfg.BaseDomainFilter)
+
+		// Combine multiple sources into a single, deduplicated source.
+		log.Infof("found %d cidr filters %+v", len(cfg.CidrIgnore), cfg.CidrIgnore)
+		log.Infof("found %d dns filters %+v", len(cfg.DNSIgnore), cfg.DNSIgnore)
+		endpointsSource = source.NewDedupSource(source.NewFilterSource(baseDomainFilter, source.CIDRs(cfg.CidrIgnore), cfg.DNSIgnore, source.NewMultiSource(sources)))
 	}
-
-	baseDomainFilter := provider.NewDomainFilter(cfg.BaseDomainFilter)
-
-	// Combine multiple sources into a single, deduplicated source.
-	log.Infof("found %d cidr filters %+v", len(cfg.CidrIgnore), cfg.CidrIgnore)
-	log.Infof("found %d dns filters %+v", len(cfg.DNSIgnore), cfg.DNSIgnore)
-	endpointsSource := source.NewDedupSource(source.NewFilterSource(baseDomainFilter, source.CIDRs(cfg.CidrIgnore), cfg.DNSIgnore, source.NewMultiSource(sources)))
 
 	domainFilter := provider.NewDomainFilter(cfg.DomainFilter)
 	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
@@ -175,7 +185,7 @@ func main() {
 		Interval: cfg.Interval,
 	}
 
-	if cfg.Once {
+	if cfg.Once || cfg.Cleanup {
 		err := ctrl.RunOnce()
 		if err != nil {
 			log.Fatal(err)
