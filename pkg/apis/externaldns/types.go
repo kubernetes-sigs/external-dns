@@ -17,11 +17,16 @@ limitations under the License.
 package externaldns
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/sirupsen/logrus"
+)
+
+const (
+	passwordMask = "******"
 )
 
 var (
@@ -107,6 +112,19 @@ var defaultConfig = &Config{
 // NewConfig returns new Config object
 func NewConfig() *Config {
 	return &Config{}
+}
+
+func (cfg *Config) String() string {
+	// prevent logging of sensitive information
+	temp := *cfg
+	if temp.DynPassword != "" {
+		temp.DynPassword = passwordMask
+	}
+	if temp.InfobloxWapiPassword != "" {
+		temp.InfobloxWapiPassword = passwordMask
+	}
+
+	return fmt.Sprintf("%+v", temp)
 }
 
 // allLogLevelsAsStrings returns all logrus levels as a list of strings
