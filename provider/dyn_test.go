@@ -255,10 +255,13 @@ func TestDyn_filterAndFixLinks(t *testing.T) {
 }
 
 func TestDyn_fixMissingTTL(t *testing.T) {
-	assert.Equal(t, fmt.Sprintf("%v", dynDefaultTTL), fixMissingTTL(endpoint.TTL(0)))
+	assert.Equal(t, fmt.Sprintf("%v", dynDefaultTTL), fixMissingTTL(endpoint.TTL(0), 0))
 
 	// nothing to fix
-	assert.Equal(t, "111", fixMissingTTL(endpoint.TTL(111)))
+	assert.Equal(t, "111", fixMissingTTL(endpoint.TTL(111), 25))
+
+	// apply min TTL
+	assert.Equal(t, "1992", fixMissingTTL(endpoint.TTL(111), 1992))
 }
 
 func TestDyn_cachePut(t *testing.T) {

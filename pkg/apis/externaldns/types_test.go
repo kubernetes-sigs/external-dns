@@ -18,6 +18,7 @@ package externaldns
 
 import (
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -221,4 +222,16 @@ func restoreEnv(t *testing.T, originalEnv map[string]string) {
 	for k, v := range originalEnv {
 		require.NoError(t, os.Setenv(k, v))
 	}
+}
+
+func TestPasswordsNotLogged(t *testing.T) {
+	cfg := Config{
+		DynPassword:          "dyn-pass",
+		InfobloxWapiPassword: "infoblox-pass",
+	}
+
+	s := cfg.String()
+
+	assert.False(t, strings.Contains(s, "dyn-pass"))
+	assert.False(t, strings.Contains(s, "infoblox-pass"))
 }

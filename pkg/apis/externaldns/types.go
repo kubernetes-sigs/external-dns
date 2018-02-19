@@ -61,6 +61,7 @@ type Config struct {
 	DynCustomerName      string
 	DynUsername          string
 	DynPassword          string
+	DynMinTTLSeconds     int
 	InMemoryZones        []string
 	Policy               string
 	Registry             string
@@ -172,6 +173,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("dyn-customer-name", "When using the Dyn provider, specify the Customer Name").Default("").StringVar(&cfg.DynCustomerName)
 	app.Flag("dyn-username", "When using the Dyn provider, specify the Username").Default("").StringVar(&cfg.DynUsername)
 	app.Flag("dyn-password", "When using the Dyn provider, specify the pasword").Default("").StringVar(&cfg.DynPassword)
+	app.Flag("dyn-min-ttl", "Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.").IntVar(&cfg.DynMinTTLSeconds)
+
 	app.Flag("inmemory-zone", "Provide a list of pre-configured zones for the inmemory provider; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.InMemoryZones)
 
 	// Flags related to policies
