@@ -214,7 +214,7 @@ func merge(updateOld, updateNew []*endpoint.Endpoint) []*endpoint.Endpoint {
 			continue
 		}
 
-		if matchingNew.Targets.Same(old.Targets) {
+		if !matchingNew.Targets.Same(old.Targets) {
 			// new target: always update, TTL will be overwritten too if necessary
 			result = append(result, matchingNew)
 			continue
