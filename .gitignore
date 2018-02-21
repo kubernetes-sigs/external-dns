@@ -43,3 +43,6 @@ cscope.*
 cover.out
 *.coverprofile
 external-dns
+
+# vendor dir
+vendor/
