@@ -19,6 +19,7 @@ package provider
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
@@ -196,12 +197,13 @@ func (p *DigitalOceanProvider) submitChanges(changes []*DigitalOceanChange) erro
 			if p.DryRun {
 				continue
 			}
+			changeName := strings.TrimSuffix(change.ResourceRecordSet.Name, "."+zoneName)
 			switch change.Action {
 			case DigitalOceanCreate:
 				_, _, err = p.Client.CreateRecord(context.TODO(), zoneName,
 					&godo.DomainRecordEditRequest{
 						Data: change.ResourceRecordSet.Data,
-						Name: change.ResourceRecordSet.Name,
+						Name: changeName,
 						Type: change.ResourceRecordSet.Type,
 					})
 				if err != nil {
@@ -218,7 +220,7 @@ func (p *DigitalOceanProvider) submitChanges(changes []*DigitalOceanChange) erro
 				_, _, err = p.Client.EditRecord(context.TODO(), zoneName, recordID,
 					&godo.DomainRecordEditRequest{
 						Data: change.ResourceRecordSet.Data,
-						Name: change.ResourceRecordSet.Name,
+						Name: changeName,
 						Type: change.ResourceRecordSet.Type,
 					})
 				if err != nil {
