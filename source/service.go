@@ -288,14 +288,12 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*
 }
 
 func extractServiceIps(svc *v1.Service) endpoint.Targets {
-	var targets endpoint.Targets
-	if svc.Spec.ClusterIP == v1.ClusterIPNone {
-		log.Debugf("Unable to associate %s headless service with a Cluster IP", svc.Name)
-		return targets
+	if svc.Spec.ClusterIP != v1.ClusterIPNone {
+		return endpoint.Targets{svc.Spec.ClusterIP}
 	}
-	targets = append(targets, svc.Spec.ClusterIP)
+	log.Debugf("Unable to associate %s headless service with a Cluster IP", svc.Name)
 
-	return targets
+	return endpoint.Targets{}
 }
 
 func extractLoadBalancerTargets(svc *v1.Service) endpoint.Targets {
