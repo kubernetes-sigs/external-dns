@@ -1,5 +1,6 @@
   - DigitalOcean: DigitalOcean creates entries with host in them twice (#459) @njuettner
   - Bugfix: Retrive all DNSimple response pages (#468) @jbowes
+  - external-dns does now provide support for multiple targets for A records. This is currently only supported by the Google Cloud DNS provider (#418) @dereulenspiegel
   - Graceful handling of misconfigure password for dyn provider (#470) @jvassev
   - Don't log sensitive data on start (#463) @jvassev
   - Google: Improve logging to help trace misconfigurations (#388) @stealthybox
