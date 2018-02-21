@@ -52,5 +52,18 @@ func ValidateConfig(cfg *externaldns.Config) error {
 			return errors.New("no Infoblox WAPI password specified")
 		}
 	}
+
+	if cfg.Provider == "dyn" {
+		if cfg.DynUsername == "" {
+			return errors.New("no Dyn username specified")
+		}
+		if cfg.DynCustomerName == "" {
+			return errors.New("no Dyn customer name specified")
+		}
+
+		if cfg.DynMinTTLSeconds < 0 {
+			return errors.New("TTL specified for Dyn is negative")
+		}
+	}
 	return nil
 }
