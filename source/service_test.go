@@ -1040,8 +1040,8 @@ func TestHeadlessServices(t *testing.T) {
 			[]string{"", ""},
 			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
 			[]*endpoint.Endpoint{
-				{DNSName: "service.example.org", Target: "1.1.1.1"},
-				{DNSName: "service.example.org", Target: "1.1.1.1"},
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
 			},
 			false,
 		},

@@ -119,7 +119,6 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 // get endpoints from optional "target" annotation
 // Returns empty endpoints array if none are found.
-// FIXME(dereulenspiegel) For now we won't use this method.
 func getTargetsFromTargetAnnotation(ing *v1beta1.Ingress) endpoint.Targets {
 	var targets endpoint.Targets
 
@@ -154,7 +153,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 	targets := getTargetsFromTargetAnnotation(ing)
 
 	if len(targets) == 0 {
-		targets = targetsFromLb(ing.Status)
+		targets = targetsFromIngressStatus(ing.Status)
 	}
 
 	return endpointsForHostname(hostname, targets, ttl), nil
@@ -209,7 +208,7 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 	targets := getTargetsFromTargetAnnotation(ing)
 
 	if len(targets) == 0 {
-		targets = targetsFromLb(ing.Status)
+		targets = targetsFromIngressStatus(ing.Status)
 	}
 
 	for _, rule := range ing.Spec.Rules {
@@ -228,9 +227,10 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 	var cnameTargets endpoint.Targets
 
 	for _, t := range targets {
-		if suitableType(t) == endpoint.RecordTypeA {
+		switch suitableType(t) {
+		case endpoint.RecordTypeA:
 			aTargets = append(aTargets, t)
-		} else {
+		default:
 			cnameTargets = append(cnameTargets, t)
 		}
 	}
@@ -260,7 +260,7 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 	return endpoints
 }
 
-func targetsFromLb(status v1beta1.IngressStatus) endpoint.Targets {
+func targetsFromIngressStatus(status v1beta1.IngressStatus) endpoint.Targets {
 	var targets endpoint.Targets
 
 	for _, lb := range status.LoadBalancer.Ingress {

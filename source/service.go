@@ -33,6 +33,10 @@ import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
+const (
+	defaultTargetsCapacity = 10
+)
+
 // serviceSource is an implementation of Source for Kubernetes service objects.
 // It will find all services that are under our jurisdiction, i.e. annotated
 // desired hostname and matching or no controller annotation. For each of the
@@ -237,7 +241,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*
 		RecordTTL:  ttl,
 		RecordType: endpoint.RecordTypeA,
 		Labels:     endpoint.NewLabels(),
-		Targets:    make(endpoint.Targets, 0, 10),
+		Targets:    make(endpoint.Targets, 0, defaultTargetsCapacity),
 		DNSName:    hostname,
 	}
 
@@ -245,7 +249,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*
 		RecordTTL:  ttl,
 		RecordType: endpoint.RecordTypeCNAME,
 		Labels:     endpoint.NewLabels(),
-		Targets:    make(endpoint.Targets, 0, 10),
+		Targets:    make(endpoint.Targets, 0, defaultTargetsCapacity),
 		DNSName:    hostname,
 	}
 
