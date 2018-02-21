@@ -1,3 +1,4 @@
+  - DigitalOcean: DigitalOcean creates entries with host in them twice (#459) @njuettner
   - Bugfix: Retrive all DNSimple response pages (#468) @jbowes
   - Graceful handling of misconfigure password for dyn provider (#470) @jvassev
   - Don't log sensitive data on start (#463) @jvassev

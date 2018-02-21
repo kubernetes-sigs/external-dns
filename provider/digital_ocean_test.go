@@ -41,7 +41,7 @@ type mockDigitalOceanClient struct{}
 
 func (m *mockDigitalOceanClient) List(ctx context.Context, opt *godo.ListOptions) ([]godo.Domain, *godo.Response, error) {
 	if opt == nil || opt.Page == 0 {
-		return []godo.Domain{{Name: "foo.com"}}, &godo.Response{
+		return []godo.Domain{{Name: "foo.com"}, {Name: "example.com"}}, &godo.Response{
 			Links: &godo.Links{
 				Pages: &godo.Pages{
 					Next: "http://example.com/v2/domains/?page=2",
@@ -58,7 +58,7 @@ func (m *mockDigitalOceanClient) Create(context.Context, *godo.DomainCreateReque
 }
 
 func (m *mockDigitalOceanClient) CreateRecord(context.Context, string, *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
-	return &godo.DomainRecord{ID: 1}, nil, nil
+	return &godo.DomainRecord{ID: 1, Name: "new", Type: "CNAME"}, nil, nil
 }
 
 func (m *mockDigitalOceanClient) Delete(context.Context, string) (*godo.Response, error) {
@@ -80,9 +80,10 @@ func (m *mockDigitalOceanClient) Record(ctx context.Context, domain string, id i
 }
 
 func (m *mockDigitalOceanClient) Records(ctx context.Context, domain string, opt *godo.ListOptions) ([]godo.DomainRecord, *godo.Response, error) {
-	if domain == "foo.com" {
+	switch domain {
+	case "foo.com":
 		if opt == nil || opt.Page == 0 {
-			return []godo.DomainRecord{{ID: 1, Name: "foo.ext-dns-test.foo.com.", Type: "CNAME"}, {ID: 2, Name: "bar.ext-dns-test.foo.com.", Type: "CNAME"}}, &godo.Response{
+			return []godo.DomainRecord{{ID: 1, Name: "foo.ext-dns-test", Type: "CNAME"}, {ID: 2, Name: "bar.ext-dns-test", Type: "CNAME"}}, &godo.Response{
 				Links: &godo.Links{
 					Pages: &godo.Pages{
 						Next: "http://example.com/v2/domains/?page=2",
@@ -91,9 +92,22 @@ func (m *mockDigitalOceanClient) Records(ctx context.Context, domain string, opt
 				},
 			}, nil
 		}
-		return []godo.DomainRecord{{ID: 3, Name: "baz.ext-dns-test.foo.com.", Type: "A"}}, nil, nil
+		return []godo.DomainRecord{{ID: 3, Name: "baz.ext-dns-test", Type: "A"}}, nil, nil
+	case "example.com":
+		if opt == nil || opt.Page == 0 {
+			return []godo.DomainRecord{{ID: 1, Name: "new", Type: "CNAME"}}, &godo.Response{
+				Links: &godo.Links{
+					Pages: &godo.Pages{
+						Next: "http://example.com/v2/domains/?page=2",
+						Last: "1234",
+					},
+				},
+			}, nil
+		}
+		return nil, nil, nil
+	default:
+		return nil, nil, nil
 	}
-	return nil, nil, nil
 }
 
 type mockDigitalOceanListFail struct{}
@@ -402,27 +416,8 @@ func TestDigitalOceanZones(t *testing.T) {
 	}
 
 	validateDigitalOceanZones(t, zones, []godo.Domain{
-		{Name: "foo.com"}, {Name: "bar.com"},
+		{Name: "foo.com"}, {Name: "example.com"}, {Name: "bar.com"},
 	})
-}
-
-func TestDigitalOceanRecords(t *testing.T) {
-	provider := &DigitalOceanProvider{
-		Client: &mockDigitalOceanClient{},
-	}
-
-	records, err := provider.Records()
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-
-	assert.Equal(t, 3, len(records))
-
-	provider.Client = &mockDigitalOceanRecordsFail{}
-	_, err = provider.Records()
-	if err == nil {
-		t.Errorf("expected to fail, %s", err)
-	}
 }
 
 func TestDigitalOceanApplyChanges(t *testing.T) {
@@ -483,5 +478,39 @@ func validateDigitalOceanZones(t *testing.T, zones []godo.Domain, expected []god
 
 	for i, zone := range zones {
 		assert.Equal(t, expected[i].Name, zone.Name)
+	}
+}
+
+func TestDigitalOceanRecord(t *testing.T) {
+	provider := &DigitalOceanProvider{
+		Client: &mockDigitalOceanClient{},
+	}
+
+	records, err := provider.fetchRecords("example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := []godo.DomainRecord{{ID: 1, Name: "new", Type: "CNAME"}}
+	require.Len(t, records, len(expected))
+	for i, record := range records {
+		assert.Equal(t, expected[i].Name, record.Name)
+	}
+}
+
+func TestDigitalOceanAllRecords(t *testing.T) {
+	provider := &DigitalOceanProvider{
+		Client: &mockDigitalOceanClient{},
+	}
+
+	records, err := provider.Records()
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
+	require.Equal(t, 4, len(records))
+
+	provider.Client = &mockDigitalOceanRecordsFail{}
+	_, err = provider.Records()
+	if err == nil {
+		t.Errorf("expected to fail, %s", err)
 	}
 }
