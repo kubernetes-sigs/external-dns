@@ -121,13 +121,14 @@ func main() {
 	case "dyn":
 		p, err = provider.NewDynProvider(
 			provider.DynConfig{
-				DomainFilter: domainFilter,
-				ZoneIDFilter: zoneIDFilter,
-				DryRun:       cfg.DryRun,
-				CustomerName: cfg.DynCustomerName,
-				Username:     cfg.DynUsername,
-				Password:     cfg.DynPassword,
-				AppVersion:   externaldns.Version,
+				DomainFilter:  domainFilter,
+				ZoneIDFilter:  zoneIDFilter,
+				DryRun:        cfg.DryRun,
+				CustomerName:  cfg.DynCustomerName,
+				Username:      cfg.DynUsername,
+				Password:      cfg.DynPassword,
+				MinTTLSeconds: cfg.DynMinTTLSeconds,
+				AppVersion:    externaldns.Version,
 			},
 		)
 	case "inmemory":
