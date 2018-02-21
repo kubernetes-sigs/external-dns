@@ -64,9 +64,15 @@ Make sure you have the following prerequisites:
 
 First, get ExternalDNS:
 
+**To install all dependencies, make sure to install [dep](https://github.com/golang/dep) first.**
+
 ```console
-$ go get -u github.com/kubernetes-incubator/external-dns
+$ git clone https://github.com/kubernetes-incubator/external-dns.git && cd external-dns
+$ dep ensure -vendor-only
+$ make
 ```
+
+This will create external-dns in the build directory directly from master.
 
 Next, run an application and expose it via a Kubernetes Service:
 
