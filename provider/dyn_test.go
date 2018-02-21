@@ -32,13 +32,13 @@ func TestDynMerge_NoUpdateOnTTL0Changes(t *testing.T) {
 	updateOld := []*endpoint.Endpoint{
 		{
 			DNSName:    "name1",
-			Target:     "target1",
+			Targets:    endpoint.Targets{"target1"},
 			RecordTTL:  endpoint.TTL(1),
 			RecordType: endpoint.RecordTypeA,
 		},
 		{
 			DNSName:    "name2",
-			Target:     "target2",
+			Targets:    endpoint.Targets{"target2"},
 			RecordTTL:  endpoint.TTL(1),
 			RecordType: endpoint.RecordTypeA,
 		},
@@ -47,13 +47,13 @@ func TestDynMerge_NoUpdateOnTTL0Changes(t *testing.T) {
 	updateNew := []*endpoint.Endpoint{
 		{
 			DNSName:    "name1",
-			Target:     "target1",
+			Targets:    endpoint.Targets{"target1"},
 			RecordTTL:  endpoint.TTL(0),
 			RecordType: endpoint.RecordTypeCNAME,
 		},
 		{
 			DNSName:    "name2",
-			Target:     "target2",
+			Targets:    endpoint.Targets{"target2"},
 			RecordTTL:  endpoint.TTL(0),
 			RecordType: endpoint.RecordTypeCNAME,
 		},
@@ -66,13 +66,13 @@ func TestDynMerge_UpdateOnTTLChanges(t *testing.T) {
 	updateOld := []*endpoint.Endpoint{
 		{
 			DNSName:    "name1",
-			Target:     "target1",
+			Targets:    endpoint.Targets{"target1"},
 			RecordTTL:  endpoint.TTL(1),
 			RecordType: endpoint.RecordTypeCNAME,
 		},
 		{
 			DNSName:    "name2",
-			Target:     "target2",
+			Targets:    endpoint.Targets{"target2"},
 			RecordTTL:  endpoint.TTL(1),
 			RecordType: endpoint.RecordTypeCNAME,
 		},
@@ -81,13 +81,13 @@ func TestDynMerge_UpdateOnTTLChanges(t *testing.T) {
 	updateNew := []*endpoint.Endpoint{
 		{
 			DNSName:    "name1",
-			Target:     "target1",
+			Targets:    endpoint.Targets{"target1"},
 			RecordTTL:  endpoint.TTL(77),
 			RecordType: endpoint.RecordTypeCNAME,
 		},
 		{
 			DNSName:    "name2",
-			Target:     "target2",
+			Targets:    endpoint.Targets{"target2"},
 			RecordTTL:  endpoint.TTL(10),
 			RecordType: endpoint.RecordTypeCNAME,
 		},
@@ -102,13 +102,13 @@ func TestDynMerge_AlwaysUpdateTarget(t *testing.T) {
 	updateOld := []*endpoint.Endpoint{
 		{
 			DNSName:    "name1",
-			Target:     "target1",
+			Targets:    endpoint.Targets{"target1"},
 			RecordTTL:  endpoint.TTL(1),
 			RecordType: endpoint.RecordTypeCNAME,
 		},
 		{
 			DNSName:    "name2",
-			Target:     "target2",
+			Targets:    endpoint.Targets{"target2"},
 			RecordTTL:  endpoint.TTL(1),
 			RecordType: endpoint.RecordTypeCNAME,
 		},
@@ -117,13 +117,13 @@ func TestDynMerge_AlwaysUpdateTarget(t *testing.T) {
 	updateNew := []*endpoint.Endpoint{
 		{
 			DNSName:    "name1",
-			Target:     "target1-changed",
+			Targets:    endpoint.Targets{"target1-changed"},
 			RecordTTL:  endpoint.TTL(0),
 			RecordType: endpoint.RecordTypeCNAME,
 		},
 		{
 			DNSName:    "name2",
-			Target:     "target2",
+			Targets:    endpoint.Targets{"target2"},
 			RecordTTL:  endpoint.TTL(0),
 			RecordType: endpoint.RecordTypeCNAME,
 		},
@@ -131,20 +131,20 @@ func TestDynMerge_AlwaysUpdateTarget(t *testing.T) {
 
 	merged := merge(updateOld, updateNew)
 	assert.Equal(t, 1, len(merged))
-	assert.Equal(t, "target1-changed", merged[0].Target)
+	assert.Equal(t, "target1-changed", merged[0].Targets[0])
 }
 
 func TestDynMerge_NoUpdateIfTTLUnchanged(t *testing.T) {
 	updateOld := []*endpoint.Endpoint{
 		{
 			DNSName:    "name1",
-			Target:     "target1",
+			Targets:    endpoint.Targets{"target1"},
 			RecordTTL:  endpoint.TTL(55),
 			RecordType: endpoint.RecordTypeCNAME,
 		},
 		{
 			DNSName:    "name2",
-			Target:     "target2",
+			Targets:    endpoint.Targets{"target2"},
 			RecordTTL:  endpoint.TTL(55),
 			RecordType: endpoint.RecordTypeCNAME,
 		},
@@ -153,13 +153,13 @@ func TestDynMerge_NoUpdateIfTTLUnchanged(t *testing.T) {
 	updateNew := []*endpoint.Endpoint{
 		{
 			DNSName:    "name1",
-			Target:     "target1",
+			Targets:    endpoint.Targets{"target1"},
 			RecordTTL:  endpoint.TTL(55),
 			RecordType: endpoint.RecordTypeCNAME,
 		},
 		{
 			DNSName:    "name2",
-			Target:     "target2",
+			Targets:    endpoint.Targets{"target2"},
 			RecordTTL:  endpoint.TTL(55),
 			RecordType: endpoint.RecordTypeCNAME,
 		},
@@ -271,7 +271,7 @@ func TestDyn_cachePut(t *testing.T) {
 
 	c.Put("link", &endpoint.Endpoint{
 		DNSName:    "name",
-		Target:     "target",
+		Targets:    endpoint.Targets{"target"},
 		RecordTTL:  endpoint.TTL(10000),
 		RecordType: "A",
 	})
@@ -287,7 +287,7 @@ func TestDyn_cachePutExpired(t *testing.T) {
 
 	c.Put("link", &endpoint.Endpoint{
 		DNSName:    "name",
-		Target:     "target",
+		Targets:    endpoint.Targets{"target"},
 		RecordTTL:  endpoint.TTL(0),
 		RecordType: "A",
 	})

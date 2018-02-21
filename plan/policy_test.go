@@ -28,12 +28,12 @@ func TestApply(t *testing.T) {
 	// empty list of records
 	empty := []*endpoint.Endpoint{}
 	// a simple entry
-	fooV1 := []*endpoint.Endpoint{{DNSName: "foo", Target: "v1"}}
+	fooV1 := []*endpoint.Endpoint{{DNSName: "foo", Targets: endpoint.Targets{"v1"}}}
 	// the same entry but with different target
-	fooV2 := []*endpoint.Endpoint{{DNSName: "foo", Target: "v2"}}
+	fooV2 := []*endpoint.Endpoint{{DNSName: "foo", Targets: endpoint.Targets{"v2"}}}
 	// another two simple entries
-	bar := []*endpoint.Endpoint{{DNSName: "bar", Target: "v1"}}
-	baz := []*endpoint.Endpoint{{DNSName: "baz", Target: "v1"}}
+	bar := []*endpoint.Endpoint{{DNSName: "bar", Targets: endpoint.Targets{"v1"}}}
+	baz := []*endpoint.Endpoint{{DNSName: "baz", Targets: endpoint.Targets{"v1"}}}
 
 	for _, tc := range []struct {
 		policy   Policy
