@@ -17,6 +17,7 @@ limitations under the License.
 package externaldns
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -24,8 +25,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	passwordMask = "******"
+)
+
 var (
-	version = "unknown"
+	// Version is the current version of the app, generated at build time
+	Version = "unknown"
 )
 
 // Config is a project-wide configuration
@@ -52,6 +58,10 @@ type Config struct {
 	InfobloxWapiPassword string
 	InfobloxWapiVersion  string
 	InfobloxSSLVerify    bool
+	DynCustomerName      string
+	DynUsername          string
+	DynPassword          string
+	DynMinTTLSeconds     int
 	InMemoryZones        []string
 	Policy               string
 	Registry             string
@@ -105,6 +115,19 @@ func NewConfig() *Config {
 	return &Config{}
 }
 
+func (cfg *Config) String() string {
+	// prevent logging of sensitive information
+	temp := *cfg
+	if temp.DynPassword != "" {
+		temp.DynPassword = passwordMask
+	}
+	if temp.InfobloxWapiPassword != "" {
+		temp.InfobloxWapiPassword = passwordMask
+	}
+
+	return fmt.Sprintf("%+v", temp)
+}
+
 // allLogLevelsAsStrings returns all logrus levels as a list of strings
 func allLogLevelsAsStrings() []string {
 	var levels []string
@@ -117,7 +140,7 @@ func allLogLevelsAsStrings() []string {
 // ParseFlags adds and parses flags from command line
 func (cfg *Config) ParseFlags(args []string) error {
 	app := kingpin.New("external-dns", "ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.\n\nNote that all flags may be replaced with env vars - `--flag` -> `EXTERNAL_DNS_FLAG=1` or `--flag value` -> `EXTERNAL_DNS_FLAG=value`")
-	app.Version(version)
+	app.Version(Version)
 	app.DefaultEnvars()
 
 	// Flags related to Kubernetes
@@ -133,7 +156,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)").BoolVar(&cfg.PublishInternal)
 
 	// Flags related to providers
-	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, google, azure, cloudflare, digitalocean, dnsimple, infoblox, inmemory)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "google", "azure", "cloudflare", "digitalocean", "dnsimple", "infoblox", "inmemory")
+	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, google, azure, cloudflare, digitalocean, dnsimple, infoblox, dyn, inmemory)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "google", "azure", "cloudflare", "digitalocean", "dnsimple", "infoblox", "dyn", "inmemory")
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("zone-id-filter", "Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.ZoneIDFilter)
 	app.Flag("google-project", "When using the Google provider, specify the Google project (required when --provider=google)").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
@@ -147,6 +170,11 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("infoblox-wapi-password", "When using the Infoblox provider, specify the WAPI password (required when --provider=infoblox)").Default(defaultConfig.InfobloxWapiPassword).StringVar(&cfg.InfobloxWapiPassword)
 	app.Flag("infoblox-wapi-version", "When using the Infoblox provider, specify the WAPI version (default: 2.3.1)").Default(defaultConfig.InfobloxWapiVersion).StringVar(&cfg.InfobloxWapiVersion)
 	app.Flag("infoblox-ssl-verify", "When using the Infoblox provider, specify whether to verify the SSL certificate (default: true, disable with --no-infoblox-ssl-verify)").Default(strconv.FormatBool(defaultConfig.InfobloxSSLVerify)).BoolVar(&cfg.InfobloxSSLVerify)
+	app.Flag("dyn-customer-name", "When using the Dyn provider, specify the Customer Name").Default("").StringVar(&cfg.DynCustomerName)
+	app.Flag("dyn-username", "When using the Dyn provider, specify the Username").Default("").StringVar(&cfg.DynUsername)
+	app.Flag("dyn-password", "When using the Dyn provider, specify the pasword").Default("").StringVar(&cfg.DynPassword)
+	app.Flag("dyn-min-ttl", "Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.").IntVar(&cfg.DynMinTTLSeconds)
+
 	app.Flag("inmemory-zone", "Provide a list of pre-configured zones for the inmemory provider; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.InMemoryZones)
 
 	// Flags related to policies
