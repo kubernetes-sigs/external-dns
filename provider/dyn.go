@@ -214,7 +214,7 @@ func merge(updateOld, updateNew []*endpoint.Endpoint) []*endpoint.Endpoint {
 			continue
 		}
 
-		if matchingNew.Target != old.Target {
+		if !matchingNew.Targets.Same(old.Targets) {
 			// new target: always update, TTL will be overwritten too if necessary
 			result = append(result, matchingNew)
 			continue
@@ -275,7 +275,7 @@ func (d *dynProviderState) recordLinkToEndpoint(client *dynect.Client, recordLin
 		DNSName:    rec.Data.FQDN,
 		RecordTTL:  endpoint.TTL(rec.Data.TTL),
 		RecordType: rec.Data.RecordType,
-		Target:     target,
+		Targets:    endpoint.Targets{target},
 	}
 
 	log.Debugf("Fetched new endpoint for %s: %+v", recordLink, result)
@@ -297,11 +297,11 @@ func endpointToRecord(ep *endpoint.Endpoint) *dynect.DataBlock {
 	result := dynect.DataBlock{}
 
 	if ep.RecordType == endpoint.RecordTypeA {
-		result.Address = ep.Target
+		result.Address = ep.Targets[0]
 	} else if ep.RecordType == endpoint.RecordTypeCNAME {
-		result.CName = ep.Target
+		result.CName = ep.Targets[0]
 	} else if ep.RecordType == endpoint.RecordTypeTXT {
-		result.TxtData = ep.Target
+		result.TxtData = ep.Targets[0]
 	}
 
 	return &result

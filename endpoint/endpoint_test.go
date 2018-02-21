@@ -22,7 +22,7 @@ import (
 
 func TestNewEndpoint(t *testing.T) {
 	e := NewEndpoint("example.org", "foo.com", "CNAME")
-	if e.DNSName != "example.org" || e.Target != "foo.com" || e.RecordType != "CNAME" {
+	if e.DNSName != "example.org" || e.Targets[0] != "foo.com" || e.RecordType != "CNAME" {
 		t.Error("endpoint is not initialized correctly")
 	}
 	if e.Labels == nil {
@@ -30,7 +30,7 @@ func TestNewEndpoint(t *testing.T) {
 	}
 
 	w := NewEndpoint("example.org.", "load-balancer.com.", "")
-	if w.DNSName != "example.org" || w.Target != "load-balancer.com" || w.RecordType != "" {
+	if w.DNSName != "example.org" || w.Targets[0] != "load-balancer.com" || w.RecordType != "" {
 		t.Error("endpoint is not initialized correctly")
 	}
 }

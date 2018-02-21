@@ -203,7 +203,7 @@ func convertToInMemoryRecord(endpoints []*endpoint.Endpoint) []*inMemoryRecord {
 		records = append(records, &inMemoryRecord{
 			Type:   ep.RecordType,
 			Name:   ep.DNSName,
-			Target: ep.Target,
+			Target: ep.Targets[0],
 		})
 	}
 	return records

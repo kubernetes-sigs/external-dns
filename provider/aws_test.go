@@ -630,7 +630,7 @@ func TestAWSCreateRecordsWithCNAME(t *testing.T) {
 	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), NewZoneIDFilter([]string{}), NewZoneTypeFilter(""), false, []*endpoint.Endpoint{})
 
 	records := []*endpoint.Endpoint{
-		{DNSName: "create-test.zone-1.ext-dns-test-2.teapot.zalan.do", Target: "foo.example.org", RecordType: endpoint.RecordTypeCNAME},
+		{DNSName: "create-test.zone-1.ext-dns-test-2.teapot.zalan.do", Targets: endpoint.Targets{"foo.example.org"}, RecordType: endpoint.RecordTypeCNAME},
 	}
 
 	require.NoError(t, provider.CreateRecords(records))
@@ -655,7 +655,7 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), NewZoneIDFilter([]string{}), NewZoneTypeFilter(""), false, []*endpoint.Endpoint{})
 
 	records := []*endpoint.Endpoint{
-		{DNSName: "create-test.zone-1.ext-dns-test-2.teapot.zalan.do", Target: "foo.eu-central-1.elb.amazonaws.com", RecordType: endpoint.RecordTypeCNAME},
+		{DNSName: "create-test.zone-1.ext-dns-test-2.teapot.zalan.do", Targets: endpoint.Targets{"foo.eu-central-1.elb.amazonaws.com"}, RecordType: endpoint.RecordTypeCNAME},
 	}
 
 	require.NoError(t, provider.CreateRecords(records))
@@ -685,7 +685,7 @@ func TestAWSisLoadBalancer(t *testing.T) {
 		{"foo.example.org", endpoint.RecordTypeCNAME, false},
 	} {
 		ep := &endpoint.Endpoint{
-			Target:     tc.target,
+			Targets:    endpoint.Targets{tc.target},
 			RecordType: tc.recordType,
 		}
 		assert.Equal(t, tc.expected, isAWSLoadBalancer(ep))

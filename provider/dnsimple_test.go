@@ -138,9 +138,9 @@ func testDnsimpleProviderRecords(t *testing.T) {
 }
 func testDnsimpleProviderApplyChanges(t *testing.T) {
 	changes := &plan.Changes{}
-	changes.Create = []*endpoint.Endpoint{{DNSName: "example.example.com", Target: "target", RecordType: endpoint.RecordTypeCNAME}}
-	changes.Delete = []*endpoint.Endpoint{{DNSName: "example-beta.example.com", Target: "127.0.0.1", RecordType: endpoint.RecordTypeA}}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "example.example.com", Target: "target", RecordType: endpoint.RecordTypeCNAME}}
+	changes.Create = []*endpoint.Endpoint{{DNSName: "example.example.com", Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeCNAME}}
+	changes.Delete = []*endpoint.Endpoint{{DNSName: "example-beta.example.com", Targets: endpoint.Targets{"127.0.0.1"}, RecordType: endpoint.RecordTypeA}}
+	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "example.example.com", Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeCNAME}}
 
 	mockProvider.accountID = "1"
 	err := mockProvider.ApplyChanges(changes)

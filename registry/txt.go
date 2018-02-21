@@ -66,7 +66,8 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 			endpoints = append(endpoints, record)
 			continue
 		}
-		labels, err := endpoint.NewLabelsFromString(record.Target)
+		// We simply assume that TXT records for the registry will always have only one target.
+		labels, err := endpoint.NewLabelsFromString(record.Targets[0])
 		if err == endpoint.ErrInvalidHeritage {
 			//if no heritage is found or it is invalid
 			//case when value of txt record cannot be identified

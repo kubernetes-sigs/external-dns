@@ -166,7 +166,7 @@ func inheritOwner(from, to *endpoint.Endpoint) {
 }
 
 func targetChanged(desired, current *endpoint.Endpoint) bool {
-	return desired.Target != current.Target
+	return !desired.Targets.Same(current.Targets)
 }
 
 func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
