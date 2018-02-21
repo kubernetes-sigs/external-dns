@@ -14,6 +14,8 @@ matrix:
   - go: tip
 
 before_install:
+- go get -u github.com/golang/dep/cmd/dep
+- dep ensure -vendor-only
 - go get github.com/mattn/goveralls
 - go get github.com/alecthomas/gometalinter
 
