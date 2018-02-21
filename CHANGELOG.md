@@ -1,4 +1,5 @@
   - Bugfix: Retrive all DNSimple response pages (#468) @jbowes
+  - Don't log sensitive data on start (#463) @jvassev
   - Google: Improve logging to help trace misconfigurations (#388) @stealthybox
   - AWS: In addition to the one best public hosted zone, records will be added to all matching private hosted zones (#356) @coreypobrien
   - Every record managed by External DNS is now mapped to a kubernetes resource (service/ingress) @ideahitme
