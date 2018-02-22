@@ -17,6 +17,7 @@ FROM golang:1.9 as builder
 
 WORKDIR /go/src/github.com/kubernetes-incubator/external-dns
 COPY . .
+RUN make dep
 RUN make test
 RUN make build
 
