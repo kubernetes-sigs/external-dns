@@ -1,3 +1,4 @@
+  - Fix docker build and delete vendor files which were not deleted (#473) @njuettner
   - DigitalOcean: DigitalOcean creates entries with host in them twice (#459) @njuettner
   - Bugfix: Retrive all DNSimple response pages (#468) @jbowes
   - external-dns does now provide support for multiple targets for A records. This is currently only supported by the Google Cloud DNS provider (#418) @dereulenspiegel

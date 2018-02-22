@@ -27,6 +27,9 @@ cover:
 cover-html: cover
 	go tool cover -html cover.out
 
+dep:
+	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+	dep ensure -vendor-only
 
 # The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: verify test
