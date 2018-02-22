@@ -46,7 +46,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.9.0
+        image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.11.0
         livenessProbe:
           failureThreshold: 3
           httpGet:
@@ -149,7 +149,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.9.0
+        image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.11.0
         livenessProbe:
           failureThreshold: 3
           httpGet:
