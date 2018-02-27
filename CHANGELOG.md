@@ -1,3 +1,4 @@
+  - Add custom TTL support for DNSimple (#477) @jbowes
   - Fix docker build and delete vendor files which were not deleted (#473) @njuettner
   - DigitalOcean: DigitalOcean creates entries with host in them twice (#459) @njuettner
   - Bugfix: Retrive all DNSimple response pages (#468) @jbowes
