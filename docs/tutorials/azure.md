@@ -98,8 +98,11 @@ A Service Principal with a minimum access level of contribute to the resource gr
 
 ## Deploy ExternalDNS
 
-Create a deployment file called `externaldns.yaml` with the following contents:
 
+Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
+Then apply one of the following manifests file to deploy ExternalDNS.
+
+### Manifest (for clusters without RBAC enabled)
 ```yaml
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -113,6 +116,69 @@ spec:
       labels:
         app: external-dns
     spec:
+      containers:
+      - name: external-dns
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.8
+        args:
+        - --source=service
+        - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
+        - --provider=azure
+        - --azure-resource-group=externaldns # (optional) use the DNS zones from the tutorial's resource group
+        volumeMounts:
+        - name: azure-config-file
+          mountPath: /etc/kubernetes
+          readOnly: true
+      volumes:
+      - name: azure-config-file
+        secret:
+          secretName: azure-config-file
+```
+
+### Manifest (for clusters with RBAC enabled)
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: external-dns
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: external-dns
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["extensions"] 
+  resources: ["ingresses"] 
+  verbs: ["get","watch","list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: external-dns-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: external-dns
+subjects:
+- kind: ServiceAccount
+  name: external-dns
+  namespace: default
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: external-dns
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: external-dns
+    spec:
+      serviceAccountName: external-dns
       containers:
       - name: external-dns
         image: registry.opensource.zalan.do/teapot/external-dns:v0.4.8
