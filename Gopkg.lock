@@ -78,6 +78,8 @@
     "aws/request",
     "aws/session",
     "aws/signer/v4",
+    "internal/sdkio",
+    "internal/sdkrand",
     "internal/shareddefaults",
     "private/protocol",
     "private/protocol/query",
@@ -88,8 +90,8 @@
     "service/route53",
     "service/sts"
   ]
-  revision = "96358b8282b1a3aa66836d2f2fe66216cc419668"
-  version = "v1.8.44"
+  revision = "9b0098a71f6d4d473a26ec8ad3c2feaac6eb1da6"
+  version = "v1.13.32"
 
 [[projects]]
   branch = "master"
@@ -235,7 +237,17 @@
 [[projects]]
   branch = "master"
   name = "github.com/gophercloud/gophercloud"
-  packages = ["."]
+  packages = [
+    ".",
+    "openstack",
+    "openstack/dns/v2/recordsets",
+    "openstack/dns/v2/zones",
+    "openstack/identity/v2/tenants",
+    "openstack/identity/v2/tokens",
+    "openstack/identity/v3/tokens",
+    "openstack/utils",
+    "pagination"
+  ]
   revision = "bfc4756e1a693a850d7d459f4b28b21f35a24b5a"
 
 [[projects]]
@@ -255,10 +267,9 @@
   revision = "e2811d86bed7bb487eeb0806337b6f9e9d93d5e7"
 
 [[projects]]
-  branch = "master"
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
-  revision = "dd801d4f4ce7ac746e7e7b4489d2fa600b3b096b"
+  revision = "0b12d6b5"
 
 [[projects]]
   name = "github.com/jonboulle/clockwork"
@@ -634,6 +645,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3cc043ee8be5b7cdba42793f12259ad23e13608d4b6a18523e540e14f029c0b0"
+  inputs-digest = "fe45c175af381b4250e119e8683aaa1d25c69461c58d9df7012c97afbc7caa9d"
   solver-name = "gps-cdcl"
   solver-version = 1
