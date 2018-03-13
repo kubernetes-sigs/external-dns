@@ -1,3 +1,4 @@
+  - Google Provider: Add auto-detection of Google Project when running on GCP (#492) @drzero42
   - Add custom TTL support for DNSimple (#477) @jbowes
   - Fix docker build and delete vendor files which were not deleted (#473) @njuettner
   - DigitalOcean: DigitalOcean creates entries with host in them twice (#459) @njuettner

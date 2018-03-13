@@ -21,6 +21,7 @@ import (
 	"sort"
 	"strings"
 
+	"cloud.google.com/go/compute/metadata"
 	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
 
@@ -131,6 +132,14 @@ func NewGoogleProvider(project string, domainFilter DomainFilter, zoneIDFilter Z
 	dnsClient, err := dns.New(gcloud)
 	if err != nil {
 		return nil, err
+	}
+
+	if project == "" {
+		mProject, mErr := metadata.ProjectID()
+		if mErr == nil {
+			log.Infof("Google project auto-detected: %s", mProject)
+			project = mProject
+		}
 	}
 
 	provider := &GoogleProvider{
