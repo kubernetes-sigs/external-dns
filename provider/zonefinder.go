@@ -26,7 +26,7 @@ func (z zoneIDName) Add(zoneID, zoneName string) {
 
 func (z zoneIDName) FindZone(hostname string) (suitableZoneID, suitableZoneName string) {
 	for zoneID, zoneName := range z {
-		if strings.HasSuffix(hostname, zoneName) {
+		if hostname == zoneName || strings.HasSuffix(hostname, "."+zoneName) {
 			if suitableZoneName == "" || len(zoneName) > len(suitableZoneName) {
 				suitableZoneID = zoneID
 				suitableZoneName = zoneName
