@@ -176,7 +176,7 @@ func (p *dnsimpleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				default:
 					continue
 				}
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(record.Name+"."+record.ZoneID, record.Content, record.Type, endpoint.TTL(record.TTL)))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(record.Name+"."+record.ZoneID, record.Type, endpoint.TTL(record.TTL), record.Content))
 			}
 			page++
 			if page > records.Pagination.TotalPages {
