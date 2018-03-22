@@ -176,12 +176,18 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				ttl = endpoint.TTL(*r.TTL)
 			}
 
-			for _, rr := range r.ResourceRecords {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(rr.Value), aws.StringValue(r.Type), ttl))
-			}
-
 			if r.AliasTarget != nil {
 				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.AliasTarget.DNSName), endpoint.RecordTypeCNAME, ttl))
+			} else if aws.StringValue(r.Type) == "TXT" {
+				for _, rr := range r.ResourceRecords {
+					endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(rr.Value), aws.StringValue(r.Type), ttl))
+				}
+			} else {
+				var endpointTargets = make([]string, len(r.ResourceRecords))
+				for i, rr := range r.ResourceRecords {
+					endpointTargets[i] = aws.StringValue(rr.Value)
+				}
+				endpoints = append(endpoints, endpoint.NewMultiTargetEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), endpointTargets, aws.StringValue(r.Type), ttl))
 			}
 		}
 
@@ -389,10 +395,11 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 		} else {
 			change.ResourceRecordSet.TTL = aws.Int64(int64(endpoint.RecordTTL))
 		}
-		change.ResourceRecordSet.ResourceRecords = []*route53.ResourceRecord{
-			{
-				Value: aws.String(endpoint.Targets[0]),
-			},
+		change.ResourceRecordSet.ResourceRecords = make([]*route53.ResourceRecord, len(endpoint.Targets))
+		for i, v := range endpoint.Targets {
+			change.ResourceRecordSet.ResourceRecords[i] = &route53.ResourceRecord{
+				Value: aws.String(v),
+			}
 		}
 	}
 

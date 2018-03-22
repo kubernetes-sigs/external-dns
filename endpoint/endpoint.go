@@ -126,9 +126,16 @@ func NewEndpoint(dnsName, target, recordType string) *Endpoint {
 
 // NewEndpointWithTTL initialization method to be used to create an endpoint with a TTL struct
 func NewEndpointWithTTL(dnsName, target, recordType string, ttl TTL) *Endpoint {
+	return NewMultiTargetEndpointWithTTL(dnsName, Targets{target}, recordType, ttl)
+}
+
+func NewMultiTargetEndpointWithTTL(dnsName string, targets Targets, recordType string, ttl TTL) *Endpoint {
+	for i, v := range targets {
+		targets[i] = strings.TrimSuffix(v, ".")
+	}
 	return &Endpoint{
 		DNSName:    strings.TrimSuffix(dnsName, "."),
-		Targets:    Targets{strings.TrimSuffix(target, ".")},
+		Targets:    targets,
 		RecordType: recordType,
 		Labels:     NewLabels(),
 		RecordTTL:  ttl,

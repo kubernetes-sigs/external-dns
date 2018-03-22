@@ -263,6 +263,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*
 		if sc.publishInternal {
 			targets = append(targets, extractServiceIps(svc)...)
 		}
+		targets = append(targets, extractExternalIps(svc)...)
 		if svc.Spec.ClusterIP == v1.ClusterIPNone {
 			endpoints = append(endpoints, sc.extractHeadlessEndpoints(svc, hostname)...)
 		}
@@ -306,6 +307,16 @@ func extractLoadBalancerTargets(svc *v1.Service) endpoint.Targets {
 		if lb.Hostname != "" {
 			targets = append(targets, lb.Hostname)
 		}
+	}
+
+	return targets
+}
+
+func extractExternalIps(svc *v1.Service) endpoint.Targets {
+	var targets = make(endpoint.Targets, len(svc.Spec.ExternalIPs))
+
+	for i, ip := range svc.Spec.ExternalIPs {
+		targets[i] = ip
 	}
 
 	return targets
