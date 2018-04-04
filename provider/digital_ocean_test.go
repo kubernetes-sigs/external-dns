@@ -83,14 +83,18 @@ func (m *mockDigitalOceanClient) Records(ctx context.Context, domain string, opt
 	switch domain {
 	case "foo.com":
 		if opt == nil || opt.Page == 0 {
-			return []godo.DomainRecord{{ID: 1, Name: "foo.ext-dns-test", Type: "CNAME"}, {ID: 2, Name: "bar.ext-dns-test", Type: "CNAME"}}, &godo.Response{
-				Links: &godo.Links{
-					Pages: &godo.Pages{
-						Next: "http://example.com/v2/domains/?page=2",
-						Last: "1234",
+			return []godo.DomainRecord{
+					{ID: 1, Name: "foo.ext-dns-test", Type: "CNAME"},
+					{ID: 2, Name: "bar.ext-dns-test", Type: "CNAME"},
+					{ID: 3, Name: "@", Type: endpoint.RecordTypeCNAME},
+				}, &godo.Response{
+					Links: &godo.Links{
+						Pages: &godo.Pages{
+							Next: "http://example.com/v2/domains/?page=2",
+							Last: "1234",
+						},
 					},
-				},
-			}, nil
+				}, nil
 		}
 		return []godo.DomainRecord{{ID: 3, Name: "baz.ext-dns-test", Type: "A"}}, nil, nil
 	case "example.com":
@@ -425,7 +429,11 @@ func TestDigitalOceanApplyChanges(t *testing.T) {
 	provider := &DigitalOceanProvider{
 		Client: &mockDigitalOceanClient{},
 	}
-	changes.Create = []*endpoint.Endpoint{{DNSName: "new.ext-dns-test.bar.com", Targets: endpoint.Targets{"target"}}, {DNSName: "new.ext-dns-test.unexpected.com", Targets: endpoint.Targets{"target"}}}
+	changes.Create = []*endpoint.Endpoint{
+		{DNSName: "new.ext-dns-test.bar.com", Targets: endpoint.Targets{"target"}},
+		{DNSName: "new.ext-dns-test.unexpected.com", Targets: endpoint.Targets{"target"}},
+		{DNSName: "bar.com", Targets: endpoint.Targets{"target"}},
+	}
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.bar.com", Targets: endpoint.Targets{"target"}}}
 	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.bar.de", Targets: endpoint.Targets{"target-old"}}}
 	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.foo.com", Targets: endpoint.Targets{"target-new"}}}
@@ -506,7 +514,7 @@ func TestDigitalOceanAllRecords(t *testing.T) {
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
-	require.Equal(t, 4, len(records))
+	require.Equal(t, 5, len(records))
 
 	provider.Client = &mockDigitalOceanRecordsFail{}
 	_, err = provider.Records()
