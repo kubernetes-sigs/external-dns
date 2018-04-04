@@ -174,8 +174,8 @@ func (p *InfobloxProvider) ApplyChanges(changes *plan.Changes) error {
 	}
 
 	created, deleted := p.mapChanges(zones, changes)
-	p.createRecords(created)
 	p.deleteRecords(deleted)
+	p.createRecords(created)
 	return nil
 }
 
