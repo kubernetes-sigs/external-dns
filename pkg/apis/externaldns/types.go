@@ -36,78 +36,80 @@ var (
 
 // Config is a project-wide configuration
 type Config struct {
-	Master               string
-	KubeConfig           string
-	Sources              []string
-	Namespace            string
-	AnnotationFilter     string
-	FQDNTemplate         string
-	Compatibility        string
-	PublishInternal      bool
-	Provider             string
-	GoogleProject        string
-	DomainFilter         []string
-	ZoneIDFilter         []string
-	AWSZoneType          string
-	AzureConfigFile      string
-	AzureResourceGroup   string
-	CloudflareProxied    bool
-	InfobloxGridHost     string
-	InfobloxWapiPort     int
-	InfobloxWapiUsername string
-	InfobloxWapiPassword string
-	InfobloxWapiVersion  string
-	InfobloxSSLVerify    bool
-	DynCustomerName      string
-	DynUsername          string
-	DynPassword          string
-	DynMinTTLSeconds     int
-	InMemoryZones        []string
-	Policy               string
-	Registry             string
-	TXTOwnerID           string
-	TXTPrefix            string
-	Interval             time.Duration
-	Once                 bool
-	DryRun               bool
-	LogFormat            string
-	MetricsAddress       string
-	LogLevel             string
+	Master                   string
+	KubeConfig               string
+	Sources                  []string
+	Namespace                string
+	AnnotationFilter         string
+	FQDNTemplate             string
+	CombineFQDNAndAnnotation bool
+	Compatibility            string
+	PublishInternal          bool
+	Provider                 string
+	GoogleProject            string
+	DomainFilter             []string
+	ZoneIDFilter             []string
+	AWSZoneType              string
+	AzureConfigFile          string
+	AzureResourceGroup       string
+	CloudflareProxied        bool
+	InfobloxGridHost         string
+	InfobloxWapiPort         int
+	InfobloxWapiUsername     string
+	InfobloxWapiPassword     string
+	InfobloxWapiVersion      string
+	InfobloxSSLVerify        bool
+	DynCustomerName          string
+	DynUsername              string
+	DynPassword              string
+	DynMinTTLSeconds         int
+	InMemoryZones            []string
+	Policy                   string
+	Registry                 string
+	TXTOwnerID               string
+	TXTPrefix                string
+	Interval                 time.Duration
+	Once                     bool
+	DryRun                   bool
+	LogFormat                string
+	MetricsAddress           string
+	LogLevel                 string
 }
 
 var defaultConfig = &Config{
-	Master:               "",
-	KubeConfig:           "",
-	Sources:              nil,
-	Namespace:            "",
-	AnnotationFilter:     "",
-	FQDNTemplate:         "",
-	Compatibility:        "",
-	PublishInternal:      false,
-	Provider:             "",
-	GoogleProject:        "",
-	DomainFilter:         []string{},
-	AWSZoneType:          "",
-	AzureConfigFile:      "/etc/kubernetes/azure.json",
-	AzureResourceGroup:   "",
-	CloudflareProxied:    false,
-	InfobloxGridHost:     "",
-	InfobloxWapiPort:     443,
-	InfobloxWapiUsername: "admin",
-	InfobloxWapiPassword: "",
-	InfobloxWapiVersion:  "2.3.1",
-	InfobloxSSLVerify:    true,
-	InMemoryZones:        []string{},
-	Policy:               "sync",
-	Registry:             "txt",
-	TXTOwnerID:           "default",
-	TXTPrefix:            "",
-	Interval:             time.Minute,
-	Once:                 false,
-	DryRun:               false,
-	LogFormat:            "text",
-	MetricsAddress:       ":7979",
-	LogLevel:             logrus.InfoLevel.String(),
+	Master:                   "",
+	KubeConfig:               "",
+	Sources:                  nil,
+	Namespace:                "",
+	AnnotationFilter:         "",
+	FQDNTemplate:             "",
+	CombineFQDNAndAnnotation: false,
+	Compatibility:            "",
+	PublishInternal:          false,
+	Provider:                 "",
+	GoogleProject:            "",
+	DomainFilter:             []string{},
+	AWSZoneType:              "",
+	AzureConfigFile:          "/etc/kubernetes/azure.json",
+	AzureResourceGroup:       "",
+	CloudflareProxied:        false,
+	InfobloxGridHost:         "",
+	InfobloxWapiPort:         443,
+	InfobloxWapiUsername:     "admin",
+	InfobloxWapiPassword:     "",
+	InfobloxWapiVersion:      "2.3.1",
+	InfobloxSSLVerify:        true,
+	InMemoryZones:            []string{},
+	Policy:                   "sync",
+	Registry:                 "txt",
+	TXTOwnerID:               "default",
+	TXTPrefix:                "",
+	Interval:                 time.Minute,
+	Once:                     false,
+	DryRun:                   false,
+	LogFormat:                "text",
+	MetricsAddress:           ":7979",
+	LogLevel:                 logrus.InfoLevel.String(),
 }
 
 // NewConfig returns new Config object
@@ -152,6 +154,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
 	app.Flag("annotation-filter", "Filter sources managed by external-dns via annotation using label selector semantics (default: all sources)").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
 	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
+	app.Flag("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting").BoolVar(&cfg.CombineFQDNAndAnnotation)
 	app.Flag("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule)").Default(defaultConfig.Compatibility).EnumVar(&cfg.Compatibility, "", "mate", "molecule")
 	app.Flag("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)").BoolVar(&cfg.PublishInternal)
 
