@@ -47,13 +47,14 @@ type serviceSource struct {
 	namespace        string
 	annotationFilter string
 	// process Services with legacy annotations
-	compatibility   string
-	fqdnTemplate    *template.Template
-	publishInternal bool
+	compatibility         string
+	fqdnTemplate          *template.Template
+	combineFQDNAnnotation bool
+	publishInternal       bool
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate, compatibility string, publishInternal bool) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -68,12 +69,13 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	}
 
 	return &serviceSource{
-		client:           kubeClient,
-		namespace:        namespace,
-		annotationFilter: annotationFilter,
-		compatibility:    compatibility,
-		fqdnTemplate:     tmpl,
-		publishInternal:  publishInternal,
+		client:                kubeClient,
+		namespace:             namespace,
+		annotationFilter:      annotationFilter,
+		compatibility:         compatibility,
+		fqdnTemplate:          tmpl,
+		combineFQDNAnnotation: combineFqdnAnnotation,
+		publishInternal:       publishInternal,
 	}, nil
 }
 
@@ -107,10 +109,16 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		}
 
 		// apply template if none of the above is found
-		if len(svcEndpoints) == 0 && sc.fqdnTemplate != nil {
-			svcEndpoints, err = sc.endpointsFromTemplate(&svc)
+		if (sc.combineFQDNAnnotation || len(svcEndpoints) == 0) && sc.fqdnTemplate != nil {
+			sEndpoints, err := sc.endpointsFromTemplate(&svc)
 			if err != nil {
 				return nil, err
+			}
+
+			if sc.combineFQDNAnnotation {
+				svcEndpoints = append(svcEndpoints, sEndpoints...)
+			} else {
+				svcEndpoints = sEndpoints
 			}
 		}
 

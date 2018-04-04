@@ -38,14 +38,15 @@ import (
 // Use targetAnnotationKey to explicitly set Endpoint. (useful if the ingress
 // controller does not update, or to override with alternative endpoint)
 type ingressSource struct {
-	client           kubernetes.Interface
-	namespace        string
-	annotationFilter string
-	fqdnTemplate     *template.Template
+	client                kubernetes.Interface
+	namespace             string
+	annotationFilter      string
+	fqdnTemplate          *template.Template
+	combineFQDNAnnotation bool
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string) (Source, error) {
+func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -60,10 +61,11 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	}
 
 	return &ingressSource{
-		client:           kubeClient,
-		namespace:        namespace,
-		annotationFilter: annotationFilter,
-		fqdnTemplate:     tmpl,
+		client:                kubeClient,
+		namespace:             namespace,
+		annotationFilter:      annotationFilter,
+		fqdnTemplate:          tmpl,
+		combineFQDNAnnotation: combineFqdnAnnotation,
 	}, nil
 }
 
@@ -93,10 +95,16 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		ingEndpoints := endpointsFromIngress(&ing)
 
 		// apply template if host is missing on ingress
-		if len(ingEndpoints) == 0 && sc.fqdnTemplate != nil {
-			ingEndpoints, err = sc.endpointsFromTemplate(&ing)
+		if (sc.combineFQDNAnnotation || len(ingEndpoints) == 0) && sc.fqdnTemplate != nil {
+			iEndpoints, err := sc.endpointsFromTemplate(&ing)
 			if err != nil {
 				return nil, err
+			}
+
+			if sc.combineFQDNAnnotation {
+				ingEndpoints = append(ingEndpoints, iEndpoints...)
+			} else {
+				ingEndpoints = iEndpoints
 			}
 		}
 
