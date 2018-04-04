@@ -162,15 +162,17 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
+	// Process the whole template string
 	var buf bytes.Buffer
 	err := sc.fqdnTemplate.Execute(&buf, svc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to apply template on service %s: %v", svc.String(), err)
 	}
 
-	hostname := buf.String()
-
-	endpoints = sc.generateEndpoints(svc, hostname)
+	hostnameList := strings.Split(strings.Replace(buf.String(), " ", "", -1), ",")
+	for _, hostname := range hostnameList {
+		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname)...)
+	}
 
 	return endpoints, nil
 }

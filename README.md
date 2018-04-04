@@ -159,6 +159,15 @@ Here's a rough outline on what is to come (subject to change):
 - [x] Support for DigitalOcean
 - [x] Multiple DNS names per Service
 
+
+### v0.5
+
+- [ ] Support for creating DNS records to multiple targets
+
+### v0.6
+
+- [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller) (This could also directly become `v1.0`)
+
 ### v1.0
 
 - [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller)
@@ -167,11 +176,11 @@ Here's a rough outline on what is to come (subject to change):
 
 ### Yet to be defined
 
-* Support for CoreDNS and Azure DNS
+* Support for CoreDNS
 * Support for record weights
 * Support for different behavioral policies
 * Support for Services with `type=NodePort`
-* Support for TPRs
+* Support for CRDs
 * Support for more advanced DNS record configurations
 
 Have a look at [the milestones](https://github.com/kubernetes-incubator/external-dns/milestones) to get an idea of where we currently stand.

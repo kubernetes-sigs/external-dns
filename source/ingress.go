@@ -136,14 +136,14 @@ func getTargetsFromTargetAnnotation(ing *v1beta1.Ingress) endpoint.Targets {
 }
 
 func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoint.Endpoint, error) {
-
+	// Process the whole template string
 	var buf bytes.Buffer
 	err := sc.fqdnTemplate.Execute(&buf, ing)
 	if err != nil {
 		return nil, fmt.Errorf("failed to apply template on ingress %s: %v", ing.String(), err)
 	}
 
-	hostname := buf.String()
+	hostnames := buf.String()
 
 	ttl, err := getTTLFromAnnotations(ing.Annotations)
 	if err != nil {
@@ -156,7 +156,14 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 		targets = targetsFromIngressStatus(ing.Status)
 	}
 
-	return endpointsForHostname(hostname, targets, ttl), nil
+	var endpoints []*endpoint.Endpoint
+	// splits the FQDN template and removes the trailing periods
+	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
+	for _, hostname := range hostnameList {
+		hostname = strings.TrimSuffix(hostname, ".")
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl)...)
+	}
+	return endpoints, nil
 }
 
 // filterByAnnotations filters a list of ingresses by a given annotation selector.
