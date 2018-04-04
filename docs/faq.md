@@ -40,13 +40,17 @@ Services exposed via `type=LoadBalancer` and for the hostnames defined in Ingres
 
 ### How do I specify DNS name for my Kubernetes objects?
 
-There are three sources of information for ExternalDNS to decide on DNS name. ExternalDNS will pick one in order as listed below: 
+There are three sources of information for ExternalDNS to decide on DNS name. ExternalDNS will pick one in order as listed below:
 
 1. For ingress objects ExternalDNS will create a DNS record based on the host specified for the ingress object. For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the corresponding value.
 
 2. If compatibility mode is enabled (e.g. `--compatibility={mate,molecule}` flag), External DNS will parse annotations used by Zalando/Mate, wearemolecule/route53-kubernetes. Compatibility mode with Kops DNS Controller is planned to be added in the future.
 
 3. If `--fqdn-template` flag is specified, e.g. `--fqdn-template={{.Name}}.my-org.com`, ExternalDNS will use service/ingress specifications for the provided template to generate DNS name.
+
+### Can I specify multiple global FQDN templates?
+
+Yes, yes you can. Pass in a comma separated list to `--fqdn-template`. Beaware this will double (triple, etc) the amount of DNS entries based on how many services, ingresses and so on you have and will get you faster towards the API request limit of your DNS provider.
 
 ### Which Service and Ingress controllers are supported?
 
@@ -91,13 +95,13 @@ Yes — Zalando replaced [Mate](https://github.com/linki/mate) with ExternalDNS 
 
 ### How can we start using ExternalDNS?
 
-Check out the following descriptive tutorials on how to run ExternalDNS in [GKE](tutorials/gke.md) and [AWS](tutorials/aws.md). 
+Check out the following descriptive tutorials on how to run ExternalDNS in [GKE](tutorials/gke.md) and [AWS](tutorials/aws.md).
 
 ### Why is ExternalDNS only adding a single IP address in Route 53 on AWS when using the `nginx-ingress-controller`? How do I get it to use the FQDN of the ELB assigned to my `nginx-ingress-controller` Service instead?
 
 By default the `nginx-ingress-controller` assigns a single IP address to an Ingress resource when it's created. ExternalDNS uses what's assigned to the Ingress resource, so it too will use this single IP address when adding the record in Route 53.
 
-In most AWS deployments, you'll instead want the Route 53 entry to be the FQDN of the ELB that is assigned to the `nginx-ingress-controller` Service. To accomplish this, when you create the `nginx-ingress-controller` Deployment, you need to provide the `--publish-service` option to the `/nginx-ingress-controller` executable under `args`. Once this is deployed new Ingress resources will get the ELB's FQDN and ExternalDNS will use the same when creating records in Route 53. 
+In most AWS deployments, you'll instead want the Route 53 entry to be the FQDN of the ELB that is assigned to the `nginx-ingress-controller` Service. To accomplish this, when you create the `nginx-ingress-controller` Deployment, you need to provide the `--publish-service` option to the `/nginx-ingress-controller` executable under `args`. Once this is deployed new Ingress resources will get the ELB's FQDN and ExternalDNS will use the same when creating records in Route 53.
 
 According to the `nginx-ingress-controller` [docs](https://github.com/kubernetes/ingress/tree/master/controllers/nginx) the value you need to provide `--publish-service` is:
 
@@ -208,7 +212,7 @@ Sometimes you need to run an internal and an external dns service.
 The internal one should provision hostnames used on the internal network (perhaps inside a VPC), and the external
 one to expose DNS to the internet.
 
-To do this with ExternalDNS you can use the `--annotation-filter` to specifically tie an instance of ExternalDNS to 
+To do this with ExternalDNS you can use the `--annotation-filter` to specifically tie an instance of ExternalDNS to
 an instance of a ingress controller. Let's assume you have two ingress controllers `nginx-internal` and `nginx-external`
-then you can start two ExternalDNS providers one with `--annotation-filter=kubernetes.io/ingress.class=nginx-internal` 
+then you can start two ExternalDNS providers one with `--annotation-filter=kubernetes.io/ingress.class=nginx-internal`
 and one with `--annotation-filter=kubernetes.io/ingress.class=nginx-external`.
