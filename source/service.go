@@ -218,9 +218,10 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service, nodeTargets endp
 		return nil, fmt.Errorf("failed to apply template on service %s: %v", svc.String(), err)
 	}
 
+	providerSpecific := getProviderSpecificAnnotations(svc.Annotations)
 	hostnameList := strings.Split(strings.Replace(buf.String(), " ", "", -1), ",")
 	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, nodeTargets)...)
+		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, nodeTargets, providerSpecific)...)
 	}
 
 	return endpoints, nil
@@ -230,9 +231,10 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service, nodeTargets endp
 func (sc *serviceSource) endpoints(svc *v1.Service, nodeTargets endpoint.Targets) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
+	providerSpecific := getProviderSpecificAnnotations(svc.Annotations)
 	hostnameList := getHostnamesFromAnnotations(svc.Annotations)
 	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, nodeTargets)...)
+		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, nodeTargets, providerSpecific)...)
 	}
 
 	return endpoints
@@ -288,7 +290,7 @@ func (sc *serviceSource) setResourceLabel(service v1.Service, endpoints []*endpo
 	}
 }
 
-func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, nodeTargets endpoint.Targets) []*endpoint.Endpoint {
+func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, nodeTargets endpoint.Targets, providerSpecific endpoint.ProviderSpecific) []*endpoint.Endpoint {
 	hostname = strings.TrimSuffix(hostname, ".")
 	ttl, err := getTTLFromAnnotations(svc.Annotations)
 	if err != nil {
@@ -296,19 +298,21 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, nod
 	}
 
 	epA := &endpoint.Endpoint{
-		RecordTTL:  ttl,
-		RecordType: endpoint.RecordTypeA,
-		Labels:     endpoint.NewLabels(),
-		Targets:    make(endpoint.Targets, 0, defaultTargetsCapacity),
-		DNSName:    hostname,
+		RecordTTL:        ttl,
+		RecordType:       endpoint.RecordTypeA,
+		Labels:           endpoint.NewLabels(),
+		Targets:          make(endpoint.Targets, 0, defaultTargetsCapacity),
+		DNSName:          hostname,
+		ProviderSpecific: providerSpecific,
 	}
 
 	epCNAME := &endpoint.Endpoint{
-		RecordTTL:  ttl,
-		RecordType: endpoint.RecordTypeCNAME,
-		Labels:     endpoint.NewLabels(),
-		Targets:    make(endpoint.Targets, 0, defaultTargetsCapacity),
-		DNSName:    hostname,
+		RecordTTL:        ttl,
+		RecordType:       endpoint.RecordTypeCNAME,
+		Labels:           endpoint.NewLabels(),
+		Targets:          make(endpoint.Targets, 0, defaultTargetsCapacity),
+		DNSName:          hostname,
+		ProviderSpecific: providerSpecific,
 	}
 
 	var endpoints []*endpoint.Endpoint
