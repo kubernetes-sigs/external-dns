@@ -196,3 +196,7 @@ Now that we have verified that ExternalDNS will automatically manage Cloudflare 
 $ kubectl delete service -f nginx.yaml
 $ kubectl delete service -f externaldns.yaml
 ```
+
+## Setting cloudflare-proxied on a per-ingress basis
+
+Using the `external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"` annotation on your ingress, you can specify if the proxy feature of Cloudflare should be enabled for that record. This setting will override the global `--cloudflare-proxied` setting.
