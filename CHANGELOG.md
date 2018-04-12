@@ -1,3 +1,6 @@
+  - Add a flag that allows FQDN template and annotations to combine (#513) @helgi
+  - Fix: Use PodIP instead of HostIP for headless Services (#498) @nrobert13
+  - Support a comma separated list for the FQDN template (#512) @helgi
   - Google Provider: Add auto-detection of Google Project when running on GCP (#492) @drzero42
   - Add custom TTL support for DNSimple (#477) @jbowes
   - Fix docker build and delete vendor files which were not deleted (#473) @njuettner
