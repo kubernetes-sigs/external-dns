@@ -241,12 +241,24 @@ func NewDesignateProvider(domainFilter DomainFilter, dryRun bool) (Provider, err
 	}, nil
 }
 
-// converts domain name to FQDN
-func canonicalizeDomainName(domain string) string {
-	if !strings.HasSuffix(domain, ".") {
-		domain += "."
+// converts domain names to FQDN
+func canonicalizeDomainNames(domains []string) []string {
+	var cDomains []string
+	for _, d := range domains {
+		if !strings.HasSuffix(d, ".") {
+			d += "."
+			cDomains = append(cDomains, strings.ToLower(d))
+		}
 	}
-	return strings.ToLower(domain)
+	return cDomains
+}
+
+// converts domain name to FQDN
+func canonicalizeDomainName(d string) string {
+	if !strings.HasSuffix(d, ".") {
+		d += "."
+	}
+	return strings.ToLower(d)
 }
 
 // returns ZoneID -> ZoneName mapping for zones that are managed by the Designate and match domain filter
@@ -352,11 +364,13 @@ func addEndpoint(ep *endpoint.Endpoint, recordSets map[string]*recordSet, delete
 			rs.names[rec] = true
 		}
 	}
-	target := ep.Target
+	targets := ep.Targets
 	if ep.RecordType == endpoint.RecordTypeCNAME {
-		target = canonicalizeDomainName(target)
+		targets = canonicalizeDomainNames(targets)
 	}
-	rs.names[target] = !delete
+	for _, t := range targets {
+		rs.names[t] = !delete
+	}
 	recordSets[key] = rs
 }
 
