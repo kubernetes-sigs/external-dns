@@ -6,7 +6,7 @@ os:
 language: go
 
 go:
-- 1.9
+- 1.x
 - tip
 
 matrix:
@@ -16,6 +16,7 @@ matrix:
 before_install:
 - make dep
 - go get github.com/mattn/goveralls
+- go get github.com/lawrencewoodman/roveralls
 - go get github.com/alecthomas/gometalinter
 
 install:
@@ -24,4 +25,5 @@ install:
 script:
 - vendor/github.com/kubernetes/repo-infra/verify/verify-boilerplate.sh --rootdir=$(pwd)
 - vendor/github.com/kubernetes/repo-infra/verify/verify-go-src.sh -v --rootdir $(pwd)
-- travis_wait 20 goveralls -service=travis-ci
+- travis_wait 20 roveralls
+- goveralls -coverprofile=roveralls.coverprofile -service=travis-ci

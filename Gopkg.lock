@@ -227,6 +227,12 @@
   revision = "44d81051d367757e1c7c6a5a86423ece9afcf63c"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/gophercloud/gophercloud"
+  packages = ["."]
+  revision = "bfc4756e1a693a850d7d459f4b28b21f35a24b5a"
+
+[[projects]]
   name = "github.com/howeyc/gopass"
   packages = ["."]
   revision = "3ca23474a7c7203e0a0a070fd33508f6efdb9b3d"
@@ -622,6 +628,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "7af57b8d195abce34060c82b92243ddba947f5d882be8f9a08b1aa827a9061fa"
+  inputs-digest = "3cc043ee8be5b7cdba42793f12259ad23e13608d4b6a18523e540e14f029c0b0"
   solver-name = "gps-cdcl"
   solver-version = 1
