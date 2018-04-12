@@ -181,7 +181,7 @@ func TestDesignateRecords(t *testing.T) {
 		{
 			DNSName:    "www.example.com",
 			RecordType: endpoint.RecordTypeA,
-			Targets:    []string{"10.1.1.1"},
+			Targets:    endpoint.Targets{"10.1.1.1"},
 			Labels: map[string]string{
 				designateRecordSetID:     rs11ID,
 				designateZoneID:          zone1ID,
@@ -191,7 +191,7 @@ func TestDesignateRecords(t *testing.T) {
 		{
 			DNSName:    "www.example.com",
 			RecordType: endpoint.RecordTypeTXT,
-			Targets:    []string{"text1"},
+			Targets:    endpoint.Targets{"text1"},
 			Labels: map[string]string{
 				designateRecordSetID:     rs12ID,
 				designateZoneID:          zone1ID,
@@ -201,7 +201,7 @@ func TestDesignateRecords(t *testing.T) {
 		{
 			DNSName:    "ftp.example.com",
 			RecordType: endpoint.RecordTypeA,
-			Targets:    []string{"10.1.1.2"},
+			Targets:    endpoint.Targets{"10.1.1.2"},
 			Labels: map[string]string{
 				designateRecordSetID:     rs14ID,
 				designateZoneID:          zone1ID,
@@ -211,7 +211,7 @@ func TestDesignateRecords(t *testing.T) {
 		{
 			DNSName:    "srv.test.net",
 			RecordType: endpoint.RecordTypeA,
-			Targets:    []string{"10.2.1.1"},
+			Targets:    endpoint.Targets{"10.2.1.1"},
 			Labels: map[string]string{
 				designateRecordSetID:     rs21ID,
 				designateZoneID:          zone2ID,
@@ -221,7 +221,7 @@ func TestDesignateRecords(t *testing.T) {
 		{
 			DNSName:    "srv.test.net",
 			RecordType: endpoint.RecordTypeA,
-			Targets:    []string{"10.2.1.2"},
+			Targets:    endpoint.Targets{"10.2.1.2"},
 			Labels: map[string]string{
 				designateRecordSetID:     rs21ID,
 				designateZoneID:          zone2ID,
@@ -231,7 +231,7 @@ func TestDesignateRecords(t *testing.T) {
 		{
 			DNSName:    "db.test.net",
 			RecordType: endpoint.RecordTypeCNAME,
-			Targets:    []string{"sql.test.net"},
+			Targets:    endpoint.Targets{"sql.test.net"},
 			Labels: map[string]string{
 				designateRecordSetID:     rs22ID,
 				designateZoneID:          zone2ID,
@@ -278,37 +278,37 @@ func testDesignateCreateRecords(t *testing.T, client *fakeDesignateClient) []*re
 		{
 			DNSName:    "www.example.com",
 			RecordType: endpoint.RecordTypeA,
-			Targets:    []string{"10.1.1.1"},
+			Targets:    endpoint.Targets{"10.1.1.1"},
 			Labels:     map[string]string{},
 		},
 		{
 			DNSName:    "www.example.com",
 			RecordType: endpoint.RecordTypeTXT,
-			Targets:    []string{"text1"},
+			Targets:    endpoint.Targets{"text1"},
 			Labels:     map[string]string{},
 		},
 		{
 			DNSName:    "ftp.example.com",
 			RecordType: endpoint.RecordTypeA,
-			Targets:    []string{"10.1.1.2"},
+			Targets:    endpoint.Targets{"10.1.1.2"},
 			Labels:     map[string]string{},
 		},
 		{
 			DNSName:    "srv.test.net",
 			RecordType: endpoint.RecordTypeA,
-			Targets:    []string{"10.2.1.1"},
+			Targets:    endpoint.Targets{"10.2.1.1"},
 			Labels:     map[string]string{},
 		},
 		{
 			DNSName:    "srv.test.net",
 			RecordType: endpoint.RecordTypeA,
-			Targets:    []string{"10.2.1.2"},
+			Targets:    endpoint.Targets{"10.2.1.2"},
 			Labels:     map[string]string{},
 		},
 		{
 			DNSName:    "db.test.net",
 			RecordType: endpoint.RecordTypeCNAME,
-			Targets:    []string{"sql.test.net"},
+			Targets:    endpoint.Targets{"sql.test.net"},
 			Labels:     map[string]string{},
 		},
 	}
@@ -389,7 +389,7 @@ func testDesignateUpdateRecords(t *testing.T, client *fakeDesignateClient) []*re
 		{
 			DNSName:    "ftp.example.com",
 			RecordType: endpoint.RecordTypeA,
-			Targets:    []string{"10.1.1.2"},
+			Targets:    endpoint.Targets{"10.1.1.2"},
 			Labels: map[string]string{
 				designateZoneID:          "zone-1",
 				designateRecordSetID:     expected[2].ID,
@@ -399,7 +399,7 @@ func testDesignateUpdateRecords(t *testing.T, client *fakeDesignateClient) []*re
 		{
 			DNSName:    "srv.test.net.",
 			RecordType: endpoint.RecordTypeA,
-			Targets:    []string{"10.2.1.2"},
+			Targets:    endpoint.Targets{"10.2.1.2"},
 			Labels: map[string]string{
 				designateZoneID:          "zone-2",
 				designateRecordSetID:     expected[3].ID,
@@ -411,7 +411,7 @@ func testDesignateUpdateRecords(t *testing.T, client *fakeDesignateClient) []*re
 		{
 			DNSName:    "ftp.example.com",
 			RecordType: endpoint.RecordTypeA,
-			Targets:    []string{"10.3.3.1"},
+			Targets:    endpoint.Targets{"10.3.3.1"},
 			Labels: map[string]string{
 				designateZoneID:          "zone-1",
 				designateRecordSetID:     expected[2].ID,
@@ -421,7 +421,7 @@ func testDesignateUpdateRecords(t *testing.T, client *fakeDesignateClient) []*re
 		{
 			DNSName:    "srv.test.net.",
 			RecordType: endpoint.RecordTypeA,
-			Targets:    []string{"10.3.3.2"},
+			Targets:    endpoint.Targets{"10.3.3.2"},
 			Labels: map[string]string{
 				designateZoneID:          "zone-2",
 				designateRecordSetID:     expected[3].ID,
@@ -472,7 +472,7 @@ func testDesignateDeleteRecords(t *testing.T, client *fakeDesignateClient) {
 		{
 			DNSName:    "www.example.com.",
 			RecordType: endpoint.RecordTypeA,
-			Targets:    []string{"10.1.1.1"},
+			Targets:    endpoint.Targets{"10.1.1.1"},
 			Labels: map[string]string{
 				designateZoneID:          "zone-1",
 				designateRecordSetID:     expected[0].ID,
@@ -482,7 +482,7 @@ func testDesignateDeleteRecords(t *testing.T, client *fakeDesignateClient) {
 		{
 			DNSName:    "srv.test.net.",
 			RecordType: endpoint.RecordTypeA,
-			Targets:    []string{"10.2.1.1"},
+			Targets:    endpoint.Targets{"10.2.1.1"},
 			Labels: map[string]string{
 				designateZoneID:          "zone-2",
 				designateRecordSetID:     expected[3].ID,
