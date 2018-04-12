@@ -34,3 +34,44 @@ func TestNewEndpoint(t *testing.T) {
 		t.Error("endpoint is not initialized correctly")
 	}
 }
+
+func TestTargetsSame(t *testing.T) {
+	tests := []Targets{
+		{""},
+		{"1.2.3.4"},
+		{"8.8.8.8", "8.8.4.4"},
+	}
+
+	for _, d := range tests {
+		if d.Same(d) != true {
+			t.Errorf("%#v should equal %#v", d, d)
+		}
+	}
+}
+
+func TestSameFailures(t *testing.T) {
+	tests := []struct {
+		a Targets
+		b Targets
+	}{
+		{
+			[]string{"1.2.3.4"},
+			[]string{"4.3.2.1"},
+		}, {
+			[]string{"1.2.3.4"},
+			[]string{"1.2.3.4", "4.3.2.1"},
+		}, {
+			[]string{"1.2.3.4", "4.3.2.1"},
+			[]string{"1.2.3.4"},
+		}, {
+			[]string{"1.2.3.4", "4.3.2.1"},
+			[]string{"8.8.8.8", "8.8.4.4"},
+		},
+	}
+
+	for _, d := range tests {
+		if d.a.Same(d.b) == true {
+			t.Errorf("%#v should not equal %#v", d.a, d.b)
+		}
+	}
+}
