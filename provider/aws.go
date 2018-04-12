@@ -21,8 +21,10 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/linki/instrumented_http"
@@ -79,7 +81,7 @@ type AWSProvider struct {
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
-func NewAWSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zoneTypeFilter ZoneTypeFilter, dryRun bool) (*AWSProvider, error) {
+func NewAWSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zoneTypeFilter ZoneTypeFilter, assumeRole string, dryRun bool) (*AWSProvider, error) {
 	config := aws.NewConfig()
 
 	config = config.WithHTTPClient(
@@ -97,6 +99,29 @@ func NewAWSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zoneTy
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if assumeRole != "" {
+		svc := sts.New(session)
+
+		params := &sts.AssumeRoleInput{
+			RoleArn:         aws.String(assumeRole),
+			RoleSessionName: aws.String("external-dns"),
+		}
+
+		log.Infof("Assuming role %s..", aws.StringValue(params.RoleArn))
+
+		resp, err := svc.AssumeRole(params)
+		if err != nil {
+			return nil, err
+		}
+
+		session.Config.WithCredentials(credentials.NewStaticCredentialsFromCreds(credentials.Value{
+			AccessKeyID:     aws.StringValue(resp.Credentials.AccessKeyId),
+			SecretAccessKey: aws.StringValue(resp.Credentials.SecretAccessKey),
+			SessionToken:    aws.StringValue(resp.Credentials.SessionToken),
+			ProviderName:    "assumeRoleProvider",
+		}))
 	}
 
 	provider := &AWSProvider{
