@@ -64,6 +64,8 @@ type Config struct {
 	DynPassword              string
 	DynMinTTLSeconds         int
 	InMemoryZones            []string
+	PDNSServer               string
+	PDNSAPIKey               string
 	Policy                   string
 	Registry                 string
 	TXTOwnerID               string
@@ -100,6 +102,8 @@ var defaultConfig = &Config{
 	InfobloxWapiVersion:      "2.3.1",
 	InfobloxSSLVerify:        true,
 	InMemoryZones:            []string{},
+	PDNSServer:               "http://localhost:8081",
+	PDNSAPIKey:               "",
 	Policy:                   "sync",
 	Registry:                 "txt",
 	TXTOwnerID:               "default",
@@ -159,7 +163,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)").BoolVar(&cfg.PublishInternal)
 
 	// Flags related to providers
-	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, google, azure, cloudflare, digitalocean, dnsimple, infoblox, dyn, designate, inmemory)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "google", "azure", "cloudflare", "digitalocean", "dnsimple", "infoblox", "dyn", "desginate", "inmemory")
+	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, google, azure, cloudflare, digitalocean, dnsimple, infoblox, dyn, designate, inmemory, pdns)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "google", "azure", "cloudflare", "digitalocean", "dnsimple", "infoblox", "dyn", "desginate", "inmemory", "pdns")
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("zone-id-filter", "Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.ZoneIDFilter)
 	app.Flag("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
@@ -179,6 +183,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("dyn-min-ttl", "Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.").IntVar(&cfg.DynMinTTLSeconds)
 
 	app.Flag("inmemory-zone", "Provide a list of pre-configured zones for the inmemory provider; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.InMemoryZones)
+	app.Flag("pdns-server", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)").Default(defaultConfig.PDNSServer).StringVar(&cfg.PDNSServer)
+	app.Flag("pdns-api-key", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)").Default(defaultConfig.PDNSAPIKey).StringVar(&cfg.PDNSAPIKey)
 
 	// Flags related to policies
 	app.Flag("policy", "Modify how DNS records are sychronized between sources and providers (default: sync, options: sync, upsert-only)").Default(defaultConfig.Policy).EnumVar(&cfg.Policy, "sync", "upsert-only")
