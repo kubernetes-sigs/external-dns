@@ -167,6 +167,12 @@
   revision = "09691a3b6378b740595c1002f40c34dd5f218a22"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/ffledgling/pdns-go"
+  packages = ["."]
+  revision = "524e7daccd99651cdb56426eb15b7d61f9597a5c"
+
+[[projects]]
   name = "github.com/ghodss/yaml"
   packages = ["."]
   revision = "73d445a93680fa1a78ae23a5839bad48f32ba1ee"
