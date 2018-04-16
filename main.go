@@ -136,6 +136,8 @@ func main() {
 		p, err = provider.NewInMemoryProvider(provider.InMemoryInitZones(cfg.InMemoryZones), provider.InMemoryWithDomain(domainFilter), provider.InMemoryWithLogging()), nil
 	case "designate":
 		p, err = provider.NewDesignateProvider(domainFilter, cfg.DryRun)
+	case "pdns":
+		p, err = provider.NewPDNSProvider(cfg.PDNSServer, cfg.PDNSAPIKey, domainFilter, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
