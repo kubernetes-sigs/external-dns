@@ -54,6 +54,16 @@ $ gcloud dns record-sets transaction execute --zone "gcp-zalan-do"
 
 ## Deploy ExternalDNS
 
+### Role-Based Access Control (RBAC)
+
+[RBAC]("https://cloud.google.com/kubernetes-engine/docs/how-to/role-based-access-control") is enabled by default on all Container clusters which are running Kubernetes version 1.6 or higher.
+
+Because of the way Container Engine checks permissions when you create a Role or ClusterRole, you must first create a RoleBinding that grants you all of the permissions included in the role you want to create.
+
+```console
+kubectl create clusterrolebinding your-user-cluster-admin-binding --clusterrole=cluster-admin --user=your.google.cloud.email@example.org
+```
+
 Connect your `kubectl` client to the cluster you just created.
 
 ```console
