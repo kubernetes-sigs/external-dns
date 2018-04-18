@@ -110,7 +110,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 			return nil, err
 		}
 		for _, res := range resA {
-			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, res.Ipv4Addr, endpoint.RecordTypeA))
+			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, endpoint.RecordTypeA, res.Ipv4Addr))
 		}
 
 		// Include Host records since they should be treated synonymously with A records
@@ -126,7 +126,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 		}
 		for _, res := range resH {
 			for _, ip := range res.Ipv4Addrs {
-				endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, ip.Ipv4Addr, endpoint.RecordTypeA))
+				endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, endpoint.RecordTypeA, ip.Ipv4Addr))
 			}
 		}
 
@@ -141,7 +141,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 			return nil, err
 		}
 		for _, res := range resC {
-			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, res.Canonical, endpoint.RecordTypeCNAME))
+			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, endpoint.RecordTypeCNAME, res.Canonical))
 		}
 
 		var resT []ibclient.RecordTXT
@@ -160,7 +160,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 			if _, err := strconv.Unquote(res.Text); err != nil {
 				res.Text = strconv.Quote(res.Text)
 			}
-			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, res.Text, endpoint.RecordTypeTXT))
+			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, endpoint.RecordTypeTXT, res.Text))
 		}
 	}
 	return endpoints, nil

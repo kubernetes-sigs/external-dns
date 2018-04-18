@@ -316,7 +316,7 @@ func (p designateProvider) Records() ([]*endpoint.Endpoint, error) {
 					return nil
 				}
 				for _, record := range recordSet.Records {
-					ep := endpoint.NewEndpoint(recordSet.Name, record, recordSet.Type)
+					ep := endpoint.NewEndpoint(recordSet.Name, recordSet.Type, record)
 					ep.Labels[designateRecordSetID] = recordSet.ID
 					ep.Labels[designateZoneID] = recordSet.ZoneID
 					ep.Labels[designateOriginalRecords] = strings.Join(recordSet.Records, "\000")
