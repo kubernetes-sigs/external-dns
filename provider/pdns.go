@@ -194,7 +194,7 @@ func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) (endpoints []*endpo
 	for _, record := range rr.Records {
 		// If a record is "Disabled", it's not supposed to be "visible"
 		if !record.Disabled {
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rr.Name, record.Content, rr.Type_, endpoint.TTL(rr.Ttl)))
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rr.Name, rr.Type_, endpoint.TTL(rr.Ttl), record.Content))
 		}
 	}
 
