@@ -1,3 +1,4 @@
+  - AWS: add support for AWS Network Load Balancers (#531) @linki
   - Fix docker build and delete vendor files which were not deleted (#473) @njuettner
   - DigitalOcean: DigitalOcean creates entries with host in them twice (#459) @njuettner
   - Bugfix: Retrive all DNSimple response pages (#468) @jbowes
