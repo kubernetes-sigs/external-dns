@@ -120,15 +120,20 @@ type Endpoint struct {
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
-func NewEndpoint(dnsName, target, recordType string) *Endpoint {
-	return NewEndpointWithTTL(dnsName, target, recordType, TTL(0))
+func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
+	return NewEndpointWithTTL(dnsName, recordType, TTL(0), targets...)
 }
 
 // NewEndpointWithTTL initialization method to be used to create an endpoint with a TTL struct
-func NewEndpointWithTTL(dnsName, target, recordType string, ttl TTL) *Endpoint {
+func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) *Endpoint {
+	cleanTargets := make([]string, len(targets))
+	for idx, target := range targets {
+		cleanTargets[idx] = strings.TrimSuffix(target, ".")
+	}
+
 	return &Endpoint{
 		DNSName:    strings.TrimSuffix(dnsName, "."),
-		Targets:    Targets{strings.TrimSuffix(target, ".")},
+		Targets:    cleanTargets,
 		RecordType: recordType,
 		Labels:     NewLabels(),
 		RecordTTL:  ttl,

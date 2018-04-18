@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -96,10 +97,10 @@ type AWSProvider struct {
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
-func NewAWSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zoneTypeFilter ZoneTypeFilter, dryRun bool) (*AWSProvider, error) {
+func NewAWSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zoneTypeFilter ZoneTypeFilter, assumeRole string, dryRun bool) (*AWSProvider, error) {
 	config := aws.NewConfig()
 
-	config = config.WithHTTPClient(
+	config.WithHTTPClient(
 		instrumented_http.NewClient(config.HTTPClient, &instrumented_http.Callbacks{
 			PathProcessor: func(path string) string {
 				parts := strings.Split(path, "/")
@@ -114,6 +115,11 @@ func NewAWSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zoneTy
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if assumeRole != "" {
+		log.Infof("Assuming role: %s", assumeRole)
+		session.Config.WithCredentials(stscreds.NewCredentials(session, assumeRole))
 	}
 
 	provider := &AWSProvider{
@@ -193,12 +199,17 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				ttl = endpoint.TTL(*r.TTL)
 			}
 
-			for _, rr := range r.ResourceRecords {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(rr.Value), aws.StringValue(r.Type), ttl))
+			if len(r.ResourceRecords) > 0 {
+				targets := make([]string, len(r.ResourceRecords))
+				for idx, rr := range r.ResourceRecords {
+					targets[idx] = aws.StringValue(rr.Value)
+				}
+
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.Type), ttl, targets...))
 			}
 
 			if r.AliasTarget != nil {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.AliasTarget.DNSName), endpoint.RecordTypeCNAME, ttl))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), endpoint.RecordTypeCNAME, ttl, aws.StringValue(r.AliasTarget.DNSName)))
 			}
 		}
 
@@ -406,10 +417,11 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 		} else {
 			change.ResourceRecordSet.TTL = aws.Int64(int64(endpoint.RecordTTL))
 		}
-		change.ResourceRecordSet.ResourceRecords = []*route53.ResourceRecord{
-			{
-				Value: aws.String(endpoint.Targets[0]),
-			},
+		change.ResourceRecordSet.ResourceRecords = make([]*route53.ResourceRecord, len(endpoint.Targets))
+		for idx, val := range endpoint.Targets {
+			change.ResourceRecordSet.ResourceRecords[idx] = &route53.ResourceRecord{
+				Value: aws.String(val),
+			}
 		}
 	}
 

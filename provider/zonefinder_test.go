@@ -33,15 +33,28 @@ func TestZoneIDName(t *testing.T) {
 		"654321": "foo.qux.baz",
 	}, z)
 
+	// simple entry in a domain
 	zoneID, zoneName := z.FindZone("name.qux.baz")
 	assert.Equal(t, "qux.baz", zoneName)
 	assert.Equal(t, "123456", zoneID)
 
+	// simple entry in a domain's subdomain.
 	zoneID, zoneName = z.FindZone("name.foo.qux.baz")
 	assert.Equal(t, "foo.qux.baz", zoneName)
 	assert.Equal(t, "654321", zoneID)
 
+	// no possible zone for entry
 	zoneID, zoneName = z.FindZone("name.qux.foo")
 	assert.Equal(t, "", zoneName)
 	assert.Equal(t, "", zoneID)
+
+	// entry's suffix matches a subdomain but doesn't belong there
+	zoneID, zoneName = z.FindZone("name-foo.qux.baz")
+	assert.Equal(t, "qux.baz", zoneName)
+	assert.Equal(t, "123456", zoneID)
+
+	// entry is an exact match of the domain (e.g. azure provider)
+	zoneID, zoneName = z.FindZone("foo.qux.baz")
+	assert.Equal(t, "foo.qux.baz", zoneName)
+	assert.Equal(t, "654321", zoneID)
 }

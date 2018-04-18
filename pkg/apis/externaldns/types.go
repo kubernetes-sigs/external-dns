@@ -36,78 +36,86 @@ var (
 
 // Config is a project-wide configuration
 type Config struct {
-	Master               string
-	KubeConfig           string
-	Sources              []string
-	Namespace            string
-	AnnotationFilter     string
-	FQDNTemplate         string
-	Compatibility        string
-	PublishInternal      bool
-	Provider             string
-	GoogleProject        string
-	DomainFilter         []string
-	ZoneIDFilter         []string
-	AWSZoneType          string
-	AzureConfigFile      string
-	AzureResourceGroup   string
-	CloudflareProxied    bool
-	InfobloxGridHost     string
-	InfobloxWapiPort     int
-	InfobloxWapiUsername string
-	InfobloxWapiPassword string
-	InfobloxWapiVersion  string
-	InfobloxSSLVerify    bool
-	DynCustomerName      string
-	DynUsername          string
-	DynPassword          string
-	DynMinTTLSeconds     int
-	InMemoryZones        []string
-	Policy               string
-	Registry             string
-	TXTOwnerID           string
-	TXTPrefix            string
-	Interval             time.Duration
-	Once                 bool
-	DryRun               bool
-	LogFormat            string
-	MetricsAddress       string
-	LogLevel             string
+	Master                   string
+	KubeConfig               string
+	Sources                  []string
+	Namespace                string
+	AnnotationFilter         string
+	FQDNTemplate             string
+	CombineFQDNAndAnnotation bool
+	Compatibility            string
+	PublishInternal          bool
+	Provider                 string
+	GoogleProject            string
+	DomainFilter             []string
+	ZoneIDFilter             []string
+	AWSZoneType              string
+	AWSAssumeRole            string
+	AzureConfigFile          string
+	AzureResourceGroup       string
+	CloudflareProxied        bool
+	InfobloxGridHost         string
+	InfobloxWapiPort         int
+	InfobloxWapiUsername     string
+	InfobloxWapiPassword     string
+	InfobloxWapiVersion      string
+	InfobloxSSLVerify        bool
+	DynCustomerName          string
+	DynUsername              string
+	DynPassword              string
+	DynMinTTLSeconds         int
+	InMemoryZones            []string
+	PDNSServer               string
+	PDNSAPIKey               string
+	Policy                   string
+	Registry                 string
+	TXTOwnerID               string
+	TXTPrefix                string
+	Interval                 time.Duration
+	Once                     bool
+	DryRun                   bool
+	LogFormat                string
+	MetricsAddress           string
+	LogLevel                 string
 }
 
 var defaultConfig = &Config{
-	Master:               "",
-	KubeConfig:           "",
-	Sources:              nil,
-	Namespace:            "",
-	AnnotationFilter:     "",
-	FQDNTemplate:         "",
-	Compatibility:        "",
-	PublishInternal:      false,
-	Provider:             "",
-	GoogleProject:        "",
-	DomainFilter:         []string{},
-	AWSZoneType:          "",
-	AzureConfigFile:      "/etc/kubernetes/azure.json",
-	AzureResourceGroup:   "",
-	CloudflareProxied:    false,
-	InfobloxGridHost:     "",
-	InfobloxWapiPort:     443,
-	InfobloxWapiUsername: "admin",
-	InfobloxWapiPassword: "",
-	InfobloxWapiVersion:  "2.3.1",
-	InfobloxSSLVerify:    true,
-	InMemoryZones:        []string{},
-	Policy:               "sync",
-	Registry:             "txt",
-	TXTOwnerID:           "default",
-	TXTPrefix:            "",
-	Interval:             time.Minute,
-	Once:                 false,
-	DryRun:               false,
-	LogFormat:            "text",
-	MetricsAddress:       ":7979",
-	LogLevel:             logrus.InfoLevel.String(),
+	Master:                   "",
+	KubeConfig:               "",
+	Sources:                  nil,
+	Namespace:                "",
+	AnnotationFilter:         "",
+	FQDNTemplate:             "",
+	CombineFQDNAndAnnotation: false,
+	Compatibility:            "",
+	PublishInternal:          false,
+	Provider:                 "",
+	GoogleProject:            "",
+	DomainFilter:             []string{},
+	AWSZoneType:              "",
+	AWSAssumeRole:            "",
+	AzureConfigFile:          "/etc/kubernetes/azure.json",
+	AzureResourceGroup:       "",
+	CloudflareProxied:        false,
+	InfobloxGridHost:         "",
+	InfobloxWapiPort:         443,
+	InfobloxWapiUsername:     "admin",
+	InfobloxWapiPassword:     "",
+	InfobloxWapiVersion:      "2.3.1",
+	InfobloxSSLVerify:        true,
+	InMemoryZones:            []string{},
+	PDNSServer:               "http://localhost:8081",
+	PDNSAPIKey:               "",
+	Policy:                   "sync",
+	Registry:                 "txt",
+	TXTOwnerID:               "default",
+	TXTPrefix:                "",
+	Interval:                 time.Minute,
+	Once:                     false,
+	DryRun:                   false,
+	LogFormat:                "text",
+	MetricsAddress:           ":7979",
+	LogLevel:                 logrus.InfoLevel.String(),
 }
 
 // NewConfig returns new Config object
@@ -151,16 +159,18 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, fake)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "fake")
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
 	app.Flag("annotation-filter", "Filter sources managed by external-dns via annotation using label selector semantics (default: all sources)").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
-	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional)").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
+	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
+	app.Flag("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting").BoolVar(&cfg.CombineFQDNAndAnnotation)
 	app.Flag("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule)").Default(defaultConfig.Compatibility).EnumVar(&cfg.Compatibility, "", "mate", "molecule")
 	app.Flag("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)").BoolVar(&cfg.PublishInternal)
 
 	// Flags related to providers
-	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, google, azure, cloudflare, digitalocean, dnsimple, infoblox, dyn, inmemory)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "google", "azure", "cloudflare", "digitalocean", "dnsimple", "infoblox", "dyn", "inmemory")
+	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, google, azure, cloudflare, digitalocean, dnsimple, infoblox, dyn, designate, inmemory, pdns)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "google", "azure", "cloudflare", "digitalocean", "dnsimple", "infoblox", "dyn", "desginate", "inmemory", "pdns")
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("zone-id-filter", "Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.ZoneIDFilter)
-	app.Flag("google-project", "When using the Google provider, specify the Google project (required when --provider=google)").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
+	app.Flag("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
 	app.Flag("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AWSZoneType).EnumVar(&cfg.AWSZoneType, "", "public", "private")
+	app.Flag("aws-assume-role", "When using the AWS provider, assume this IAM role. Useful for hosted zones in another AWS account. Specify the full ARN, e.g. `arn:aws:iam::123455567:role/external-dns` (optional)").Default(defaultConfig.AWSAssumeRole).StringVar(&cfg.AWSAssumeRole)
 	app.Flag("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure").Default(defaultConfig.AzureConfigFile).StringVar(&cfg.AzureConfigFile)
 	app.Flag("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (optional)").Default(defaultConfig.AzureResourceGroup).StringVar(&cfg.AzureResourceGroup)
 	app.Flag("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.CloudflareProxied)
@@ -176,6 +186,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("dyn-min-ttl", "Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.").IntVar(&cfg.DynMinTTLSeconds)
 
 	app.Flag("inmemory-zone", "Provide a list of pre-configured zones for the inmemory provider; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.InMemoryZones)
+	app.Flag("pdns-server", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)").Default(defaultConfig.PDNSServer).StringVar(&cfg.PDNSServer)
+	app.Flag("pdns-api-key", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)").Default(defaultConfig.PDNSAPIKey).StringVar(&cfg.PDNSAPIKey)
 
 	// Flags related to policies
 	app.Flag("policy", "Modify how DNS records are sychronized between sources and providers (default: sync, options: sync, upsert-only)").Default(defaultConfig.Policy).EnumVar(&cfg.Policy, "sync", "upsert-only")
