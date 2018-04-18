@@ -112,9 +112,9 @@ func NewAzureProvider(configFile string, domainFilter DomainFilter, zoneIDFilter
 		return nil, fmt.Errorf("failed to create service principal token: %v", err)
 	}
 
-	zonesClient := dns.NewZonesClient(cfg.SubscriptionID)
+	zonesClient := dns.NewZonesClientWithBaseURI(environment.ResourceManagerEndpoint, cfg.SubscriptionID)
 	zonesClient.Authorizer = autorest.NewBearerAuthorizer(token)
-	recordsClient := dns.NewRecordSetsClient(cfg.SubscriptionID)
+	recordsClient := dns.NewRecordSetsClientWithBaseURI(environment.ResourceManagerEndpoint, cfg.SubscriptionID)
 	recordsClient.Authorizer = autorest.NewBearerAuthorizer(token)
 
 	provider := &AzureProvider{
@@ -158,7 +158,7 @@ func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				ttl = endpoint.TTL(*recordSet.TTL)
 			}
 
-			ep := endpoint.NewEndpointWithTTL(name, target, recordType, endpoint.TTL(ttl))
+			ep := endpoint.NewEndpointWithTTL(name, recordType, endpoint.TTL(ttl), target)
 			log.Debugf(
 				"Found %s record for '%s' with target '%s'.",
 				ep.RecordType,

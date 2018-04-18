@@ -28,6 +28,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const dnsimpleRecordTTL = 3600 // Default TTL of 1 hour if not set (DNSimple's default)
+
 type identityService struct {
 	service *dnsimple.IdentityService
 }
@@ -174,7 +176,7 @@ func (p *dnsimpleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				default:
 					continue
 				}
-				endpoints = append(endpoints, endpoint.NewEndpoint(record.Name+"."+record.ZoneID, record.Content, record.Type))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(record.Name+"."+record.ZoneID, record.Type, endpoint.TTL(record.TTL), record.Content))
 			}
 			page++
 			if page > records.Pagination.TotalPages {
@@ -187,12 +189,18 @@ func (p *dnsimpleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 
 // newDnsimpleChange initializes a new change to dns records
 func newDnsimpleChange(action string, e *endpoint.Endpoint) *dnsimpleChange {
+	ttl := dnsimpleRecordTTL
+	if e.RecordTTL.IsConfigured() {
+		ttl = int(e.RecordTTL)
+	}
+
 	change := &dnsimpleChange{
 		Action: action,
 		ResourceRecordSet: dnsimple.ZoneRecord{
 			Name:    e.DNSName,
 			Type:    e.RecordType,
 			Content: e.Targets[0],
+			TTL:     ttl,
 		},
 	}
 	return change

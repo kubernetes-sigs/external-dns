@@ -67,11 +67,12 @@ func main() {
 
 	// Create a source.Config from the flags passed by the user.
 	sourceCfg := &source.Config{
-		Namespace:        cfg.Namespace,
-		AnnotationFilter: cfg.AnnotationFilter,
-		FQDNTemplate:     cfg.FQDNTemplate,
-		Compatibility:    cfg.Compatibility,
-		PublishInternal:  cfg.PublishInternal,
+		Namespace:                cfg.Namespace,
+		AnnotationFilter:         cfg.AnnotationFilter,
+		FQDNTemplate:             cfg.FQDNTemplate,
+		CombineFQDNAndAnnotation: cfg.CombineFQDNAndAnnotation,
+		Compatibility:            cfg.Compatibility,
+		PublishInternal:          cfg.PublishInternal,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
@@ -93,7 +94,7 @@ func main() {
 	var p provider.Provider
 	switch cfg.Provider {
 	case "aws":
-		p, err = provider.NewAWSProvider(domainFilter, zoneIDFilter, zoneTypeFilter, cfg.DryRun)
+		p, err = provider.NewAWSProvider(domainFilter, zoneIDFilter, zoneTypeFilter, cfg.AWSAssumeRole, cfg.DryRun)
 	case "azure":
 		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.DryRun)
 	case "cloudflare":
@@ -133,6 +134,10 @@ func main() {
 		)
 	case "inmemory":
 		p, err = provider.NewInMemoryProvider(provider.InMemoryInitZones(cfg.InMemoryZones), provider.InMemoryWithDomain(domainFilter), provider.InMemoryWithLogging()), nil
+	case "designate":
+		p, err = provider.NewDesignateProvider(domainFilter, cfg.DryRun)
+	case "pdns":
+		p, err = provider.NewPDNSProvider(cfg.PDNSServer, cfg.PDNSAPIKey, domainFilter, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}

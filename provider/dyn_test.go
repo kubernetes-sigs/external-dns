@@ -190,9 +190,9 @@ func TestDyn_endpointToRecord(t *testing.T) {
 		ep        *endpoint.Endpoint
 		extractor func(*dynect.DataBlock) string
 	}{
-		{endpoint.NewEndpoint("address", "the-target", "A"), func(b *dynect.DataBlock) string { return b.Address }},
-		{endpoint.NewEndpoint("cname", "the-target", "CNAME"), func(b *dynect.DataBlock) string { return b.CName }},
-		{endpoint.NewEndpoint("text", "the-target", "TXT"), func(b *dynect.DataBlock) string { return b.TxtData }},
+		{endpoint.NewEndpoint("address", "A", "the-target"), func(b *dynect.DataBlock) string { return b.Address }},
+		{endpoint.NewEndpoint("cname", "CNAME", "the-target"), func(b *dynect.DataBlock) string { return b.CName }},
+		{endpoint.NewEndpoint("text", "TXT", "the-target"), func(b *dynect.DataBlock) string { return b.TxtData }},
 	}
 
 	for _, tc := range tests {
@@ -213,11 +213,11 @@ func TestDyn_buildLinkToRecord(t *testing.T) {
 		ep   *endpoint.Endpoint
 		link string
 	}{
-		{endpoint.NewEndpoint("sub.the-target.example.com", "address", "A"), "ARecord/example.com/sub.the-target.example.com/"},
-		{endpoint.NewEndpoint("the-target.example.com", "cname", "CNAME"), "CNAMERecord/example.com/the-target.example.com/"},
-		{endpoint.NewEndpoint("the-target.example.com", "text", "TXT"), "TXTRecord/example.com/the-target.example.com/"},
-		{endpoint.NewEndpoint("the-target.google.com", "text", "TXT"), ""},
-		{endpoint.NewEndpoint("mail.example.com", "text", "TXT"), ""},
+		{endpoint.NewEndpoint("sub.the-target.example.com", "A", "address"), "ARecord/example.com/sub.the-target.example.com/"},
+		{endpoint.NewEndpoint("the-target.example.com", "CNAME", "cname"), "CNAMERecord/example.com/the-target.example.com/"},
+		{endpoint.NewEndpoint("the-target.example.com", "TXT", "text"), "TXTRecord/example.com/the-target.example.com/"},
+		{endpoint.NewEndpoint("the-target.google.com", "TXT", "text"), ""},
+		{endpoint.NewEndpoint("mail.example.com", "TXT", "text"), ""},
 		{nil, ""},
 	}
 

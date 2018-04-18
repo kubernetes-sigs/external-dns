@@ -47,13 +47,14 @@ type serviceSource struct {
 	namespace        string
 	annotationFilter string
 	// process Services with legacy annotations
-	compatibility   string
-	fqdnTemplate    *template.Template
-	publishInternal bool
+	compatibility         string
+	fqdnTemplate          *template.Template
+	combineFQDNAnnotation bool
+	publishInternal       bool
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate, compatibility string, publishInternal bool) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -68,12 +69,13 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	}
 
 	return &serviceSource{
-		client:           kubeClient,
-		namespace:        namespace,
-		annotationFilter: annotationFilter,
-		compatibility:    compatibility,
-		fqdnTemplate:     tmpl,
-		publishInternal:  publishInternal,
+		client:                kubeClient,
+		namespace:             namespace,
+		annotationFilter:      annotationFilter,
+		compatibility:         compatibility,
+		fqdnTemplate:          tmpl,
+		combineFQDNAnnotation: combineFqdnAnnotation,
+		publishInternal:       publishInternal,
 	}, nil
 }
 
@@ -107,10 +109,16 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		}
 
 		// apply template if none of the above is found
-		if len(svcEndpoints) == 0 && sc.fqdnTemplate != nil {
-			svcEndpoints, err = sc.endpointsFromTemplate(&svc)
+		if (sc.combineFQDNAnnotation || len(svcEndpoints) == 0) && sc.fqdnTemplate != nil {
+			sEndpoints, err := sc.endpointsFromTemplate(&svc)
 			if err != nil {
 				return nil, err
+			}
+
+			if sc.combineFQDNAnnotation {
+				svcEndpoints = append(svcEndpoints, sEndpoints...)
+			} else {
+				svcEndpoints = sEndpoints
 			}
 		}
 
@@ -148,10 +156,10 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 			headlessDomain = v.Spec.Hostname + "." + headlessDomain
 		}
 
-		log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, v.Status.HostIP)
+		log.Debugf("Generating matching endpoint %s with PodIP %s", headlessDomain, v.Status.PodIP)
 		// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
 		if v.Status.Phase == v1.PodRunning {
-			endpoints = append(endpoints, endpoint.NewEndpoint(headlessDomain, v.Status.HostIP, endpoint.RecordTypeA))
+			endpoints = append(endpoints, endpoint.NewEndpoint(headlessDomain, endpoint.RecordTypeA, v.Status.PodIP))
 		} else {
 			log.Debugf("Pod %s is not in running phase", v.Spec.Hostname)
 		}
@@ -162,15 +170,17 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
+	// Process the whole template string
 	var buf bytes.Buffer
 	err := sc.fqdnTemplate.Execute(&buf, svc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to apply template on service %s: %v", svc.String(), err)
 	}
 
-	hostname := buf.String()
-
-	endpoints = sc.generateEndpoints(svc, hostname)
+	hostnameList := strings.Split(strings.Replace(buf.String(), " ", "", -1), ",")
+	for _, hostname := range hostnameList {
+		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname)...)
+	}
 
 	return endpoints, nil
 }
