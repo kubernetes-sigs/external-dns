@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -79,10 +80,10 @@ type AWSProvider struct {
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
-func NewAWSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zoneTypeFilter ZoneTypeFilter, dryRun bool) (*AWSProvider, error) {
+func NewAWSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zoneTypeFilter ZoneTypeFilter, assumeRole string, dryRun bool) (*AWSProvider, error) {
 	config := aws.NewConfig()
 
-	config = config.WithHTTPClient(
+	config.WithHTTPClient(
 		instrumented_http.NewClient(config.HTTPClient, &instrumented_http.Callbacks{
 			PathProcessor: func(path string) string {
 				parts := strings.Split(path, "/")
@@ -97,6 +98,11 @@ func NewAWSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zoneTy
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if assumeRole != "" {
+		log.Infof("Assuming role: %s", assumeRole)
+		session.Config.WithCredentials(stscreds.NewCredentials(session, assumeRole))
 	}
 
 	provider := &AWSProvider{
