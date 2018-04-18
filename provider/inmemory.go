@@ -130,7 +130,7 @@ func (im *InMemoryProvider) Records() ([]*endpoint.Endpoint, error) {
 		}
 
 		for _, record := range records {
-			endpoints = append(endpoints, endpoint.NewEndpoint(record.Name, record.Target, record.Type))
+			endpoints = append(endpoints, endpoint.NewEndpoint(record.Name, record.Type, record.Target))
 		}
 	}
 

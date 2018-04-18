@@ -114,7 +114,7 @@ func (p *DigitalOceanProvider) Records() ([]*endpoint.Endpoint, error) {
 					name = zone.Name
 				}
 
-				endpoints = append(endpoints, endpoint.NewEndpoint(name, r.Data, r.Type))
+				endpoints = append(endpoints, endpoint.NewEndpoint(name, r.Type, r.Data))
 			}
 		}
 	}
