@@ -107,42 +107,42 @@ var (
 	}
 
 	endpointsDisabledRecord = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("example.com", "8.8.8.8", endpoint.RecordTypeA, endpoint.TTL(300)),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
 	}
 
 	endpointsSimpleRecord = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("example.com", "8.8.8.8", endpoint.RecordTypeA, endpoint.TTL(300)),
-		endpoint.NewEndpointWithTTL("example.com", "\"heritage=external-dns,external-dns/owner=tower-pdns\"", endpoint.RecordTypeTXT, endpoint.TTL(300)),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
 	}
 
 	endpointsLongRecord = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("a.very.long.domainname.example.com", "8.8.8.8", endpoint.RecordTypeA, endpoint.TTL(300)),
-		endpoint.NewEndpointWithTTL("a.very.long.domainname.example.com", "\"heritage=external-dns,external-dns/owner=tower-pdns\"", endpoint.RecordTypeTXT, endpoint.TTL(300)),
+		endpoint.NewEndpointWithTTL("a.very.long.domainname.example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
+		endpoint.NewEndpointWithTTL("a.very.long.domainname.example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
 	}
 
 	endpointsNonexistantZone = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("does.not.exist.com", "8.8.8.8", endpoint.RecordTypeA, endpoint.TTL(300)),
-		endpoint.NewEndpointWithTTL("does.not.exist.com", "\"heritage=external-dns,external-dns/owner=tower-pdns\"", endpoint.RecordTypeTXT, endpoint.TTL(300)),
+		endpoint.NewEndpointWithTTL("does.not.exist.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
+		endpoint.NewEndpointWithTTL("does.not.exist.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
 	}
 	endpointsMultipleRecords = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("example.com", "8.8.8.8", endpoint.RecordTypeA, endpoint.TTL(300)),
-		endpoint.NewEndpointWithTTL("example.com", "8.8.4.4", endpoint.RecordTypeA, endpoint.TTL(300)),
-		endpoint.NewEndpointWithTTL("example.com", "4.4.4.4", endpoint.RecordTypeA, endpoint.TTL(300)),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.4.4"),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "4.4.4.4"),
 	}
 
 	endpointsMixedRecords = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("cname.example.com", "example.by.any.other.name.com", endpoint.RecordTypeCNAME, endpoint.TTL(300)),
-		endpoint.NewEndpointWithTTL("example.com", "'would smell as sweet'", endpoint.RecordTypeTXT, endpoint.TTL(300)),
-		endpoint.NewEndpointWithTTL("example.com", "8.8.8.8", endpoint.RecordTypeA, endpoint.TTL(300)),
-		endpoint.NewEndpointWithTTL("example.com", "8.8.4.4", endpoint.RecordTypeA, endpoint.TTL(300)),
-		endpoint.NewEndpointWithTTL("example.com", "4.4.4.4", endpoint.RecordTypeA, endpoint.TTL(300)),
+		endpoint.NewEndpointWithTTL("cname.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com"),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "'would smell as sweet'"),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.4.4"),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "4.4.4.4"),
 	}
 
 	endpointsMultipleZones = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("example.com", "8.8.8.8", endpoint.RecordTypeA, endpoint.TTL(300)),
-		endpoint.NewEndpointWithTTL("example.com", "\"heritage=external-dns,external-dns/owner=tower-pdns\"", endpoint.RecordTypeTXT, endpoint.TTL(300)),
-		endpoint.NewEndpointWithTTL("mock.test", "9.9.9.9", endpoint.RecordTypeA, endpoint.TTL(300)),
-		endpoint.NewEndpointWithTTL("mock.test", "\"heritage=external-dns,external-dns/owner=tower-pdns\"", endpoint.RecordTypeTXT, endpoint.TTL(300)),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.NewEndpointWithTTL("mock.test", endpoint.RecordTypeA, endpoint.TTL(300), "9.9.9.9"),
+		endpoint.NewEndpointWithTTL("mock.test", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
 	}
 
 	ZoneEmpty = pgo.Zone{
