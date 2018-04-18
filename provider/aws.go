@@ -102,7 +102,7 @@ func NewAWSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zoneTy
 
 	if assumeRole != "" {
 		log.Infof("Assuming role: %s", assumeRole)
-		config.WithCredentials(stscreds.NewCredentials(session, assumeRole))
+		session.Config.WithCredentials(stscreds.NewCredentials(session, assumeRole))
 	}
 
 	provider := &AWSProvider{
