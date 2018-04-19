@@ -161,7 +161,7 @@ func (p *GoogleProvider) Zones() (map[string]*dns.ManagedZone, error) {
 
 	f := func(resp *dns.ManagedZonesListResponse) error {
 		for _, zone := range resp.ManagedZones {
-			if p.domainFilter.Match(zone.DnsName) || p.zoneIDFilter.Match(fmt.Sprintf("%v", zone.Id)) {
+			if p.domainFilter.Match(zone.DnsName) && p.zoneIDFilter.Match(fmt.Sprintf("%v", zone.Id)) {
 				zones[zone.Name] = zone
 				log.Debugf("Matched %s (zone: %s)", zone.DnsName, zone.Name)
 			} else {
