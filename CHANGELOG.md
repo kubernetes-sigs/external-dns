@@ -1,3 +1,4 @@
+  - AWS: add support for AWS Network Load Balancers (#531) @linki
   - Add a flag that allows FQDN template and annotations to combine (#513) @helgi
   - Fix: Use PodIP instead of HostIP for headless Services (#498) @nrobert13
   - Support a comma separated list for the FQDN template (#512) @helgi
