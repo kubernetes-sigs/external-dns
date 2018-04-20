@@ -145,6 +145,20 @@ var (
 		endpoint.NewEndpointWithTTL("mock.test", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
 	}
 
+	endpointsMultipleZones2 = []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.NewEndpointWithTTL("abcd.mock.test", endpoint.RecordTypeA, endpoint.TTL(300), "9.9.9.9"),
+		endpoint.NewEndpointWithTTL("abcd.mock.test", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+	}
+
+	endpointsMultipleZonesWithNoExist = []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.NewEndpointWithTTL("abcd.mock.noexist", endpoint.RecordTypeA, endpoint.TTL(300), "9.9.9.9"),
+		endpoint.NewEndpointWithTTL("abcd.mock.noexist", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+	}
+
 	ZoneEmpty = pgo.Zone{
 		// Opaque zone id (string), assigned by the server, should not be interpreted by the application. Guaranteed to be safe for embedding in URLs.
 		Id: "example.com.",
@@ -286,6 +300,44 @@ var (
 			},
 			{
 				Name:       "mock.test.",
+				Type_:      "TXT",
+				Ttl:        300,
+				Changetype: "REPLACE",
+				Records: []pgo.Record{
+					{
+						Content:  "\"heritage=external-dns,external-dns/owner=tower-pdns\"",
+						Disabled: false,
+						SetPtr:   false,
+					},
+				},
+				Comments: []pgo.Comment(nil),
+			},
+		},
+	}
+
+	ZoneEmptyToSimplePatch3 = pgo.Zone{
+		Id:    "mock.test.",
+		Name:  "mock.test.",
+		Type_: "Zone",
+		Url:   "/api/v1/servers/localhost/zones/mock.test.",
+		Kind:  "Native",
+		Rrsets: []pgo.RrSet{
+			{
+				Name:       "abcd.mock.test.",
+				Type_:      "A",
+				Ttl:        300,
+				Changetype: "REPLACE",
+				Records: []pgo.Record{
+					{
+						Content:  "9.9.9.9",
+						Disabled: false,
+						SetPtr:   false,
+					},
+				},
+				Comments: []pgo.Comment(nil),
+			},
+			{
+				Name:       "abcd.mock.test.",
 				Type_:      "TXT",
 				Ttl:        300,
 				Changetype: "REPLACE",
@@ -513,10 +565,20 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimpleDelete}, zlist)
 
-	// Check endpoints from multiple zones
+	// Check endpoints from multiple zones #1
 	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZones, PdnsReplace)
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimplePatch, ZoneEmptyToSimplePatch2}, zlist)
+
+	// Check endpoints from multiple zones #2
+	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZones2, PdnsReplace)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimplePatch, ZoneEmptyToSimplePatch3}, zlist)
+
+	// Check endpoints from multiple zones where some endpoints which don't exist
+	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZonesWithNoExist, PdnsReplace)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
 
 	// Check endpoints from a zone that does not exist
 	zlist, err = p.ConvertEndpointsToZones(endpointsNonexistantZone, PdnsReplace)
