@@ -235,7 +235,7 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 	for _, zone := range zones {
 		zone.Rrsets = []pgo.RrSet{}
 		for i := 0; i < len(endpoints); {
-			ep := endpoints[0]
+			ep := endpoints[i]
 			dnsname := ensureTrailingDot(ep.DNSName)
 			if strings.HasSuffix(dnsname, zone.Name) {
 				// The assumption here is that there will only ever be one target
