@@ -66,7 +66,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.8
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.0
         args:
         - --source=service
         - --domain-filter=example.com       # (optional) limit to only example.com domains.
@@ -140,7 +140,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.8
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.0
         args:
         - --source=service
         - --domain-filter=example.com       # (optional) limit to only example.com domains.

@@ -21,9 +21,9 @@ The [FAQ](docs/faq.md) contains additional information and addresses several que
 
 To see ExternalDNS in action, have a look at this [video](https://www.youtube.com/watch?v=9HQ2XgL9YVI).
 
-## The Latest Release: v0.4
+## The Latest Release: v0.5
 
-ExternalDNS' current release is `v0.4`. This version allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
+ExternalDNS' current release is `v0.5`. This version allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
 * [Google CloudDNS](https://cloud.google.com/dns/docs/)
 * [AWS Route 53](https://aws.amazon.com/route53/)
 * [AzureDNS](https://azure.microsoft.com/en-us/services/dns)
@@ -32,8 +32,10 @@ ExternalDNS' current release is `v0.4`. This version allows you to keep selected
 * [DNSimple](https://dnsimple.com/)
 * [Infoblox](https://www.infoblox.com/products/dns/)
 * [Dyn](https://dyn.com/dns/)
+* [OpenStack Designate](https://docs.openstack.org/designate/latest/)
+* [PowerDNS](https://www.powerdns.com/)
 
-From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.4` with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
+From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
 Note that all flags can be replaced with environment variables; for instance,
 `--dry-run` could be replaced with `EXTERNAL_DNS_DRY_RUN=1`, or
@@ -152,17 +154,18 @@ Here's a rough outline on what is to come (subject to change):
 - [x] Support for multiple zones
 - [x] Ownership System
 
-### v0.4 - _current version_
+### v0.4
 
 - [x] Support for AzureDNS
 - [x] Support for CloudFlare
 - [x] Support for DigitalOcean
 - [x] Multiple DNS names per Service
 
+### v0.5 - _current version_
 
-### v0.5
-
-- [ ] Support for creating DNS records to multiple targets
+- [x] Support for creating DNS records to multiple targets (for Google and AWS)
+- [x] Support for OpenStack Designate
+- [x] Support for PowerDNS
 
 ### v0.6
 
