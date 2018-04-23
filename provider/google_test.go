@@ -593,6 +593,12 @@ func newGoogleProvider(t *testing.T, domainFilter DomainFilter, zoneIDFilter Zon
 		DnsName: "zone-3.ext-dns-test-2.gcp.zalan.do.",
 	})
 
+	// filtered out by domain filter
+	createZone(t, provider, &dns.ManagedZone{
+		Name:    "zone-4-ext-dns-test-3-gcp-zalan-do",
+		DnsName: "zone-4.ext-dns-test-3.gcp.zalan.do.",
+	})
+
 	setupGoogleRecords(t, provider, records)
 
 	provider.dryRun = dryRun
