@@ -1,3 +1,5 @@
+## v0.5.0 - 2018-04-23
+
   - Google: Correctly filter records that don't match all filters (#533) @prydie @linki
   - AWS: add support for AWS Network Load Balancers (#531) @linki
   - Add a flag that allows FQDN template and annotations to combine (#513) @helgi
