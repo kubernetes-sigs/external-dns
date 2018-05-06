@@ -616,6 +616,93 @@ func testIngressEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title:           "ingress rules with hostname annotation",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						hostnameAnnotationKey: "dns-through-hostname.com",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"1.2.3.4"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "dns-through-hostname.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+		},
+		{
+			title:           "ingress rules with hostname annotation having multiple hostnames",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						hostnameAnnotationKey: "dns-through-hostname.com, another-dns-through-hostname.com",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"1.2.3.4"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "dns-through-hostname.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "another-dns-through-hostname.com",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+		},
+		{
+			title:           "ingress rules with hostname and target annotation",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						hostnameAnnotationKey: "dns-through-hostname.com",
+						targetAnnotationKey:   "ingress-target.com",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"ingress-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "dns-through-hostname.com",
+					Targets:    endpoint.Targets{"ingress-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+			},
+		},
+		{
 			title:           "ingress rules with annotation and custom TTL",
 			targetNamespace: "",
 			ingressItems: []fakeIngress{
