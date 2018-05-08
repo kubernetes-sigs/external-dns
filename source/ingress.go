@@ -233,12 +233,9 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 		endpoints = append(endpoints, endpointsForHostname(rule.Host, targets, ttl)...)
 	}
 
-	if ing.Annotations[hostnameAnnotationKey] != "" {
-		hostnames := strings.Split(ing.Annotations[hostnameAnnotationKey], ",")
-		for _, hostname := range hostnames {
-			hostname = strings.TrimSpace(hostname)
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl)...)
-		}
+	hostnameList := getHostnamesFromAnnotations(ing.Annotations)
+	for _, hostname := range hostnameList {
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl)...)
 	}
 
 	return endpoints
