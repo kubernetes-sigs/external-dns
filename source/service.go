@@ -191,13 +191,7 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
-	// Get the desired hostname of the service from the annotation.
-	hostnameAnnotation, exists := svc.Annotations[hostnameAnnotationKey]
-	if !exists {
-		return nil
-	}
-
-	hostnameList := strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
+	hostnameList := getHostnamesFromAnnotations(svc.Annotations)
 	for _, hostname := range hostnameList {
 		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname)...)
 	}

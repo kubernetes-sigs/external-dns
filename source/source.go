@@ -21,6 +21,7 @@ import (
 	"math"
 	"net"
 	"strconv"
+	"strings"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
@@ -62,6 +63,15 @@ func getTTLFromAnnotations(annotations map[string]string) (endpoint.TTL, error) 
 		return ttlNotConfigured, fmt.Errorf("TTL value must be between [%d, %d]", ttlMinimum, ttlMaximum)
 	}
 	return endpoint.TTL(ttlValue), nil
+}
+
+func getHostnamesFromAnnotations(annotations map[string]string) []string {
+	hostnameAnnotation, exists := annotations[hostnameAnnotationKey]
+	if !exists {
+		return nil
+	}
+
+	return strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
 }
 
 // suitableType returns the DNS resource record type suitable for the target.
