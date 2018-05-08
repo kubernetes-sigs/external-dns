@@ -21,6 +21,8 @@ before_install:
 
 install:
 - gometalinter --install
+- sed -i 's/--deadline=50s/--deadline=120s/g'
+  ./vendor/github.com/kubernetes/repo-infra/verify/go-tools/verify-gometalinter.sh
 
 script:
 - vendor/github.com/kubernetes/repo-infra/verify/verify-boilerplate.sh --rootdir=$(pwd)
