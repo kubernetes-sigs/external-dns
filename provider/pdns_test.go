@@ -590,6 +590,19 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToLongPatch}, zlist)
 
+	// Check endpoints of type CNAME always have their target records end with a dot.
+	zlist, err = p.ConvertEndpointsToZones(endpointsMixedRecords, PdnsReplace)
+	assert.Nil(suite.T(), err)
+
+	for _, z := range zlist {
+		for _, rs := range z.Rrsets {
+			if "CNAME" == rs.Type_ {
+				for _, r := range rs.Records {
+					assert.Equal(suite.T(), uint8(0x2e), r.Content[len(r.Content)-1])
+				}
+			}
+		}
+	}
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSmutateRecords() {

@@ -243,6 +243,10 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 				// external-dns v5.0.0-alpha onwards
 				records := []pgo.Record{}
 				for _, t := range ep.Targets {
+					if "CNAME" == ep.RecordType {
+						t = ensureTrailingDot(t)
+					}
+
 					records = append(records, pgo.Record{Content: t})
 				}
 				rrset := pgo.RrSet{
