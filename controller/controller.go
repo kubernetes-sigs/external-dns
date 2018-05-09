@@ -66,14 +66,14 @@ func (c *Controller) RunOnce() error {
 
 // Run runs RunOnce in a loop with a delay until stopChan receives a value.
 func (c *Controller) Run(stopChan <-chan struct{}) {
+	ticker := time.NewTicker(c.Interval)
 	for {
 		err := c.RunOnce()
 		if err != nil {
 			log.Error(err)
 		}
-
 		select {
-		case <-time.After(c.Interval):
+		case <-ticker.C:
 		case <-stopChan:
 			log.Info("Terminating main controller loop")
 			return
