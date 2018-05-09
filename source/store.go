@@ -41,6 +41,7 @@ type Config struct {
 	CombineFQDNAndAnnotation bool
 	Compatibility            string
 	PublishInternal          bool
+	ConnectorServer          string
 }
 
 // ClientGenerator provides clients
@@ -97,6 +98,8 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		return NewIngressSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation)
 	case "fake":
 		return NewFakeSource(cfg.FQDNTemplate)
+	case "connector":
+		return NewConnectorSource(cfg.ConnectorServer)
 	}
 	return nil, ErrSourceNotFound
 }
