@@ -31,6 +31,8 @@ This tutorial describes how to setup ExternalDNS for usage within a Kubernetes c
 }
 ```
 
+When running on AWS, you need to make sure that your nodes (on which External DNS runs) have the IAM instance profile with the above IAM role assigned (either directly or via something like `kube2iam`).
+
 ## Set up a hosted zone
 
 *If you prefer to try-out ExternalDNS in one of the existing hosted-zones you can skip this step*
