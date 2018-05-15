@@ -1022,6 +1022,119 @@ func TestClusterIpServices(t *testing.T) {
 	}
 }
 
+// testServiceSourceEndpoints tests that various services generate the correct endpoints.
+func TestNodePortServices(t *testing.T) {
+	for _, tc := range []struct {
+		title            string
+		targetNamespace  string
+		annotationFilter string
+		svcNamespace     string
+		svcName          string
+		svcType          v1.ServiceType
+		compatibility    string
+		fqdnTemplate     string
+		labels           map[string]string
+		annotations      map[string]string
+		lbs              []string
+		expected         []*endpoint.Endpoint
+		expectError      bool
+	}{
+		{
+			"annotated NodePort services return an endpoint with IP addresses of the cluster's nodes",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeNodePort,
+			"",
+			"",
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+			},
+			[]string{},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			false,
+		},
+		{
+			"non-annotated ClusterIp services with set fqdnTemplate return an endpoint with target IP",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeNodePort,
+			"",
+			"{{.Name}}.bar.example.com",
+			map[string]string{},
+			map[string]string{},
+			[]string{},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.bar.example.com", Targets: endpoint.Targets{"4.5.6.7"}},
+			},
+			false,
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			// Create a Kubernetes testing client
+			kubernetes := fake.NewSimpleClientset()
+
+			// Create a service to test against
+			ingresses := []v1.LoadBalancerIngress{}
+			for _, lb := range tc.lbs {
+				if net.ParseIP(lb) != nil {
+					ingresses = append(ingresses, v1.LoadBalancerIngress{IP: lb})
+				} else {
+					ingresses = append(ingresses, v1.LoadBalancerIngress{Hostname: lb})
+				}
+			}
+
+			service := &v1.Service{
+				Spec: v1.ServiceSpec{
+					Type: tc.svcType,
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   tc.svcNamespace,
+					Name:        tc.svcName,
+					Labels:      tc.labels,
+					Annotations: tc.annotations,
+				},
+				Status: v1.ServiceStatus{
+					LoadBalancer: v1.LoadBalancerStatus{
+						Ingress: ingresses,
+					},
+				},
+			}
+
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
+			require.NoError(t, err)
+
+			// Create our object under test and get the endpoints.
+			client, _ := NewServiceSource(
+				kubernetes,
+				tc.targetNamespace,
+				tc.annotationFilter,
+				tc.fqdnTemplate,
+				false,
+				tc.compatibility,
+				true,
+			)
+			require.NoError(t, err)
+
+			endpoints, err := client.Endpoints()
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			// Validate returned endpoints against desired endpoints.
+			validateEndpoints(t, endpoints, tc.expected)
+		})
+	}
+}
+
 // TestHeadlessServices tests that headless services generate the correct endpoints.
 func TestHeadlessServices(t *testing.T) {
 	for _, tc := range []struct {
