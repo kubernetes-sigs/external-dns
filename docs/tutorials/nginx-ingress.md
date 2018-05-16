@@ -251,7 +251,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.0
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.1
         args:
         - --source=ingress
         - --domain-filter=external-dns-test.gcp.zalan.do

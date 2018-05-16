@@ -1,3 +1,14 @@
+## v0.5.1 - 2018-05-16
+
+  - Refactor implementation of sync loop to use `time.Ticker` (#553) @r0fls
+  - Document how ExternalDNS gets permission to change AWS Route53 entries (#557) @hjacobs
+  - Fix CNAME support for the PowerDNS provider (#547) @kciredor
+  - Add support for hostname annotation in Ingress resource (#545) @rajatjindal
+  - Fix for TTLs being ignored on headless Services (#546) @danbondd
+  - Fix failing tests by giving linters more time to do their work (#548) @linki
+  - Fix misspelled flag for the OpenStack Designate provider (#542) @zentale
+  - Document additional RBAC rules needed to read Pods (#538) @danbondd
+
 ## v0.5.0 - 2018-04-23
 
   - Google: Correctly filter records that don't match all filters (#533) @prydie @linki
