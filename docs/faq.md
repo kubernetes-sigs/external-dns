@@ -160,7 +160,7 @@ $ docker run \
   -e EXTERNAL_DNS_SOURCE=$'service\ningress' \
   -e EXTERNAL_DNS_PROVIDER=google \
   -e EXTERNAL_DNS_DOMAIN_FILTER=$'foo.com\nbar.com' \
-  registry.opensource.zalan.do/teapot/external-dns:v0.5.0
+  registry.opensource.zalan.do/teapot/external-dns:v0.5.1
 time="2017-08-08T14:10:26Z" level=info msg="config: &{Master: KubeConfig: Sources:[service ingress] Namespace: ...
 ```
 
