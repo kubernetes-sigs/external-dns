@@ -28,15 +28,24 @@ ExternalDNS can solve this for you as well.
 
 ### Which DNS providers are supported?
 
-So far, Google CloudDNS and AWS Route 53 with ALIAS records. There's interest in supporting CoreDNS and Azure DNS. We're open to discussing/adding other providers if the community believes it would be valuable.
+Currently, the following providers are supported: 
 
-Initial support for Google CloudDNS is available since the `v0.1` release. Initial support for AWS Route 53 is available in the `v0.2` release (CNAME based) and ALIAS is targeted for the `v0.3` release.
+- Google CloudDNS
+- AWS Route 53
+- AzureDNS
+- CloudFlare
+- DigitalOcean
+- DNSimple
+- Infoblox
+- Dyn
+- OpenStack Designate
+- PowerDNS
 
-There are no plans regarding other providers at the moment.
+As stated in the README, we are currently looking for stable maintainers for those providers, to ensure that bugfixes and new features will be available for all of those.
 
 ### Which Kubernetes objects are supported?
 
-Services exposed via `type=LoadBalancer` and for the hostnames defined in Ingress objects. It also seems useful to expose Services with `type=NodePort` to point to your cluster's nodes directly, but there's no commitment to doing this yet.
+Services exposed via `type=LoadBalancer` and for the hostnames defined in Ingress objects. An initial effort to support type `NodePort` was started as of May 2018 and it is in progress at the time of writing.
 
 ### How do I specify DNS name for my Kubernetes objects?
 
@@ -50,7 +59,7 @@ There are three sources of information for ExternalDNS to decide on DNS name. Ex
 
 ### Can I specify multiple global FQDN templates?
 
-Yes, yes you can. Pass in a comma separated list to `--fqdn-template`. Beaware this will double (triple, etc) the amount of DNS entries based on how many services, ingresses and so on you have and will get you faster towards the API request limit of your DNS provider.
+Yes, you can. Pass in a comma separated list to `--fqdn-template`. Beaware this will double (triple, etc) the amount of DNS entries based on how many services, ingresses and so on you have and will get you faster towards the API request limit of your DNS provider.
 
 ### Which Service and Ingress controllers are supported?
 
@@ -65,9 +74,9 @@ Regarding Ingress, we'll support:
 
 For Ingress objects, ExternalDNS will attempt to discover the target hostname of the relevant Ingress Controller automatically. If you are using an Ingress Controller that is not listed above you may have issues with ExternalDNS not discovering Endpoints and consequently not creating any DNS records. As a workaround, it is possible to force create an Endpoint by manually specifying a target host/IP for the records to be created by setting the annotation `external-dns.alpha.kubernetes.io/target` in the Ingress object.
 
-Another reason you may want to override the ingress hostname or IP address is if you have an external mechanism for handling failover across ingress endpoints.  Possible scenarios for this would include using [keepalived-vip](https://github.com/kubernetes/contrib/tree/master/keepalived-vip) to manage failover faster than DNS TTLs might expire.
+Another reason you may want to override the ingress hostname or IP address is if you have an external mechanism for handling failover across ingress endpoints. Possible scenarios for this would include using [keepalived-vip](https://github.com/kubernetes/contrib/tree/master/keepalived-vip) to manage failover faster than DNS TTLs might expire.
 
-Note that if you set the target to a hostname, then a CNAME record will be created.  In this case, the hostname specified in the Ingress object's annotation must already exist. (i.e.: You have a Service resource for your Ingress Controller with the `external-dns.alpha.kubernetes.io/hostname` annotation set to the same value.)
+Note that if you set the target to a hostname, then a CNAME record will be created. In this case, the hostname specified in the Ingress object's annotation must already exist. (i.e. you have a Service resource for your Ingress Controller with the `external-dns.alpha.kubernetes.io/hostname` annotation set to the same value.)
 
 ### What about those other projects?
 
@@ -91,7 +100,7 @@ For now ExternalDNS uses TXT records to label owned records, and there might be 
 
 ### Does anyone use ExternalDNS in production?
 
-Yes — Zalando replaced [Mate](https://github.com/linki/mate) with ExternalDNS since its v0.3 release, which now runs in production-level clusters. We are planning to document a step-by-step tutorial on how the switch from Mate to ExternalDNS has occurred.
+Yes — Zalando replaced [Mate](https://github.com/linki/mate) with ExternalDNS since its v0.3 release, which now runs in production-level clusters.
 
 ### How can we start using ExternalDNS?
 
@@ -135,11 +144,11 @@ spec:
 
 ### I have a Service/Ingress but it's ignored by ExternalDNS. Why?
 
-TODO (https://github.com/kubernetes-incubator/external-dns/issues/267)
+ExternalDNS can be configured to only use Services or Ingresses as source. In case Services or Ingresses seem to be ignored in your setup, consider checking how the flag `--source` was configured when deployed. For reference, see the issue https://github.com/kubernetes-incubator/external-dns/issues/267.
 
 ### I'm using an ELB with TXT registry but the CNAME record clashes with the TXT record. How to avoid this?
 
-TODO (https://github.com/kubernetes-incubator/external-dns/issues/262)
+CNAMEs cannot co-exist with other records, therefore you can use the `--txt-prefix` flag which makes sure to create a TXT record with a name following the pattern `prefix.<CNAME record>`. For reference, see the issue https://github.com/kubernetes-incubator/external-dns/issues/262.
 
 ### Which permissions do I need when running ExternalDNS on a GCE or GKE node.
 
