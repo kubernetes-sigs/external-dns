@@ -1,6 +1,6 @@
 # Frequently asked questions
 
-### When would ExternalDNS become useful to me?
+### How is ExternalDNS useful to me?
 
 You've probably created many deployments. Typically, you expose your deployment to the Internet by creating a Service with `type=LoadBalancer`. Depending on your environment, this usually assigns a random publicly available endpoint to your service that you can access from anywhere in the world. On Google Container Engine, this is a public IP address:
 
@@ -47,7 +47,7 @@ As stated in the README, we are currently looking for stable maintainers for tho
 
 Services exposed via `type=LoadBalancer` and for the hostnames defined in Ingress objects. An initial effort to support type `NodePort` was started as of May 2018 and it is in progress at the time of writing.
 
-### How do I specify DNS name for my Kubernetes objects?
+### How do I specify a DNS name for my Kubernetes objects?
 
 There are three sources of information for ExternalDNS to decide on DNS name. ExternalDNS will pick one in order as listed below:
 
@@ -78,7 +78,7 @@ Another reason you may want to override the ingress hostname or IP address is if
 
 Note that if you set the target to a hostname, then a CNAME record will be created. In this case, the hostname specified in the Ingress object's annotation must already exist. (i.e. you have a Service resource for your Ingress Controller with the `external-dns.alpha.kubernetes.io/hostname` annotation set to the same value.)
 
-### What about those other projects?
+### What about other projects similar to ExternalDNS?
 
 ExternalDNS is a joint effort to unify different projects accomplishing the same goals, namely:
 
@@ -104,7 +104,7 @@ Yes — Zalando replaced [Mate](https://github.com/linki/mate) with ExternalDNS 
 
 ### How can we start using ExternalDNS?
 
-Check out the following descriptive tutorials on how to run ExternalDNS in [GKE](tutorials/gke.md) and [AWS](tutorials/aws.md).
+Check out the following descriptive tutorials on how to run ExternalDNS in [GKE](tutorials/gke.md) and [AWS](tutorials/aws.md) or any other supported provider.
 
 ### Why is ExternalDNS only adding a single IP address in Route 53 on AWS when using the `nginx-ingress-controller`? How do I get it to use the FQDN of the ELB assigned to my `nginx-ingress-controller` Service instead?
 
