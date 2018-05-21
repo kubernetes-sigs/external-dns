@@ -17,6 +17,7 @@ limitations under the License.
 package source
 
 import (
+	"fmt"
 	"net"
 	"testing"
 
@@ -1022,7 +1023,7 @@ func TestClusterIpServices(t *testing.T) {
 	}
 }
 
-// testServiceSourceEndpoints tests that various services generate the correct endpoints.
+// testNodePortServices tests that various services generate the correct endpoints.
 func TestNodePortServices(t *testing.T) {
 	for _, tc := range []struct {
 		title            string
@@ -1054,7 +1055,7 @@ func TestNodePortServices(t *testing.T) {
 			},
 			[]string{},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}},
 			},
 			false,
 		},
@@ -1071,7 +1072,7 @@ func TestNodePortServices(t *testing.T) {
 			map[string]string{},
 			[]string{},
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.bar.example.com", Targets: endpoint.Targets{"4.5.6.7"}},
+				{DNSName: "foo.bar.example.com", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}},
 			},
 			false,
 		},
@@ -1079,6 +1080,29 @@ func TestNodePortServices(t *testing.T) {
 		t.Run(tc.title, func(t *testing.T) {
 			// Create a Kubernetes testing client
 			kubernetes := fake.NewSimpleClientset()
+
+			// Create some nodes
+			for i := 0; i < 2; i++ {
+				node := &v1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: fmt.Sprintf("node%d", i+1),
+					},
+					Status: v1.NodeStatus{
+						Addresses: []v1.NodeAddress{
+							{
+								Type:    v1.NodeExternalIP,
+								Address: fmt.Sprintf("54.10.11.%d", i+1),
+							}, {
+								Type:    v1.NodeInternalIP,
+								Address: fmt.Sprintf("10.0.1.%d", i+1),
+							},
+						},
+					},
+				}
+				if _, err := kubernetes.Core().Nodes().Create(node); err != nil {
+					t.Fatal(err)
+				}
+			}
 
 			// Create a service to test against
 			ingresses := []v1.LoadBalancerIngress{}
