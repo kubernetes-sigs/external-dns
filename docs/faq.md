@@ -45,7 +45,7 @@ As stated in the README, we are currently looking for stable maintainers for tho
 
 ### Which Kubernetes objects are supported?
 
-Services exposed via `type=LoadBalancer` and for the hostnames defined in Ingress objects. An initial effort to support type `NodePort` was started as of May 2018 and it is in progress at the time of writing.
+Services exposed via `type=LoadBalancer` and for the hostnames defined in Ingress objects as well as headless hostPort services. An initial effort to support type `NodePort` was started as of May 2018 and it is in progress at the time of writing.
 
 ### How do I specify a DNS name for my Kubernetes objects?
 
@@ -100,7 +100,7 @@ For now ExternalDNS uses TXT records to label owned records, and there might be 
 
 ### Does anyone use ExternalDNS in production?
 
-Yes — Zalando replaced [Mate](https://github.com/linki/mate) with ExternalDNS since its v0.3 release, which now runs in production-level clusters.
+Yes, multiple companies are using ExternalDNS in production. Zalando, as an example, has been using it in production since its v0.3 release, mostly using the AWS provider.
 
 ### How can we start using ExternalDNS?
 
