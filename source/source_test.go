@@ -92,3 +92,37 @@ func TestSuitableType(t *testing.T) {
 		}
 	}
 }
+
+func TestGetHostnamesFromAnnotations(t *testing.T) {
+	for _, tc := range []struct {
+		title             string
+		annotations       map[string]string
+		expectedHostnames []string
+	}{
+		{
+			title:             "Hostnames annotation not present",
+			annotations:       map[string]string{"foo": "bar"},
+			expectedHostnames: nil,
+		},
+		{
+			title:             "Split Hostnames by comma",
+			annotations:       map[string]string{hostnameAnnotationKey: "foo.example.com.,bar.example.com."},
+			expectedHostnames: []string{"foo.example.com.", "bar.example.com."},
+		},
+		{
+			title:             "Replace all whitespaces",
+			annotations:       map[string]string{hostnameAnnotationKey: " foo.example.com. ,   bar.example.com.  "},
+			expectedHostnames: []string{"foo.example.com.", "bar.example.com."},
+		},
+		{
+			title:             "Replace newlines",
+			annotations:       map[string]string{hostnameAnnotationKey: "\nfoo.example.com.\r\n,\nbar.example.com."},
+			expectedHostnames: []string{"foo.example.com.", "bar.example.com."},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			hostnames := getHostnamesFromAnnotations(tc.annotations)
+			assert.Equal(t, tc.expectedHostnames, hostnames)
+		})
+	}
+}

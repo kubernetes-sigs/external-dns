@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
-	"regexp"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
