@@ -1053,7 +1053,7 @@ func TestNodePortServices(t *testing.T) {
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
-			[]string{},
+			nil,
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}},
 			},
@@ -1070,7 +1070,7 @@ func TestNodePortServices(t *testing.T) {
 			"{{.Name}}.bar.example.com",
 			map[string]string{},
 			map[string]string{},
-			[]string{},
+			nil,
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.bar.example.com", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}},
 			},
@@ -1105,15 +1105,6 @@ func TestNodePortServices(t *testing.T) {
 			}
 
 			// Create a service to test against
-			ingresses := []v1.LoadBalancerIngress{}
-			for _, lb := range tc.lbs {
-				if net.ParseIP(lb) != nil {
-					ingresses = append(ingresses, v1.LoadBalancerIngress{IP: lb})
-				} else {
-					ingresses = append(ingresses, v1.LoadBalancerIngress{Hostname: lb})
-				}
-			}
-
 			service := &v1.Service{
 				Spec: v1.ServiceSpec{
 					Type: tc.svcType,
@@ -1123,11 +1114,6 @@ func TestNodePortServices(t *testing.T) {
 					Name:        tc.svcName,
 					Labels:      tc.labels,
 					Annotations: tc.annotations,
-				},
-				Status: v1.ServiceStatus{
-					LoadBalancer: v1.LoadBalancerStatus{
-						Ingress: ingresses,
-					},
 				},
 			}
 
