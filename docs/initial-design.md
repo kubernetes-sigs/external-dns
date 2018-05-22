@@ -6,7 +6,7 @@
 
 [Initial discussion](https://docs.google.com/document/d/1ML_q3OppUtQKXan6Q42xIq2jelSoIivuXI8zExbc6ec/edit#heading=h.1pgkuagjhm4p)
 
-This document describes the initial design proposal
+This document describes the initial design proposal.
 
 External DNS is purposed to fill the existing gap of creating DNS records for Kubernetes resources. While there exist alternative solutions, this project is meant to be a standard way of managing DNS records for Kubernetes. The current project is a fusion of the following projects and driven by its maintainers:
 
@@ -41,8 +41,6 @@ DNS records will be automatically created in multiple situations:
 
 ### Annotations
 
-TODO:*This should probably be placed in a separate file*.
-
 Record configuration should occur via resource annotations. Supported annotations:
 
 |   Annotations |   |
@@ -62,8 +60,6 @@ Record configuration should occur via resource annotations. Supported annotation
 ### Compatibility
 
 External DNS should be compatible with annotations used by three above mentioned projects. The idea is that resources created and tagged with annotations for other projects should continue to be valid and now managed by External DNS. 
-
-TODO:*Add complete list here*
 
 **Mate**
 
