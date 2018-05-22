@@ -22,6 +22,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"regexp"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
@@ -70,8 +71,9 @@ func getHostnamesFromAnnotations(annotations map[string]string) []string {
 	if !exists {
 		return nil
 	}
+	re := regexp.MustCompile(`\s`)
 
-	return strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
+	return strings.Split(re.ReplaceAllString(hostnameAnnotation, ""), ",")
 }
 
 // suitableType returns the DNS resource record type suitable for the target.
