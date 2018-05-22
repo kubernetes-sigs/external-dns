@@ -73,6 +73,7 @@ func main() {
 		CombineFQDNAndAnnotation: cfg.CombineFQDNAndAnnotation,
 		Compatibility:            cfg.Compatibility,
 		PublishInternal:          cfg.PublishInternal,
+		ConnectorServer:          cfg.ConnectorSourceServer,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
