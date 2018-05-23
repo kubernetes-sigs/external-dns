@@ -17,6 +17,7 @@ limitations under the License.
 package source
 
 import (
+	"regexp"
 	"strings"
 
 	"k8s.io/client-go/pkg/api/v1"
@@ -81,8 +82,9 @@ func legacyEndpointsFromMoleculeService(svc *v1.Service) []*endpoint.Endpoint {
 	if !exists {
 		return nil
 	}
+	re := regexp.MustCompile(`\s`)
 
-	hostnameList := strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
+	hostnameList := strings.Split(re.ReplaceAllString(hostnameAnnotation, ""), ",")
 
 	for _, hostname := range hostnameList {
 		// Create a corresponding endpoint for each configured external entrypoint.

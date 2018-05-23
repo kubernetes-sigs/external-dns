@@ -19,6 +19,7 @@ package source
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"text/template"
@@ -178,8 +179,9 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 	if err != nil {
 		return nil, fmt.Errorf("failed to apply template on service %s: %v", svc.String(), err)
 	}
+	re := regexp.MustCompile(`\s`)
 
-	hostnameList := strings.Split(strings.Replace(buf.String(), " ", "", -1), ",")
+	hostnameList := strings.Split(re.ReplaceAllString(buf.String(), ""), ",")
 	for _, hostname := range hostnameList {
 		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname)...)
 	}

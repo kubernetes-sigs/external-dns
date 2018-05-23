@@ -19,6 +19,7 @@ package source
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"text/template"
@@ -134,7 +135,8 @@ func getTargetsFromTargetAnnotation(ing *v1beta1.Ingress) endpoint.Targets {
 	targetAnnotation, exists := ing.Annotations[targetAnnotationKey]
 	if exists {
 		// splits the hostname annotation and removes the trailing periods
-		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
+		re := regexp.MustCompile(`\s`)
+		targetsList := strings.Split(re.ReplaceAllString(targetAnnotation, ""), ",")
 		for _, targetHostname := range targetsList {
 			targetHostname = strings.TrimSuffix(targetHostname, ".")
 			targets = append(targets, targetHostname)
@@ -166,7 +168,8 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 
 	var endpoints []*endpoint.Endpoint
 	// splits the FQDN template and removes the trailing periods
-	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
+	re := regexp.MustCompile(`\s`)
+	hostnameList := strings.Split(re.ReplaceAllString(hostnames, ""), ",")
 	for _, hostname := range hostnameList {
 		hostname = strings.TrimSuffix(hostname, ".")
 		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl)...)
