@@ -19,6 +19,7 @@ package source
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -37,14 +38,15 @@ import (
 // Use targetAnnotationKey to explicitly set Endpoint. (useful if the ingress
 // controller does not update, or to override with alternative endpoint)
 type ingressSource struct {
-	client           kubernetes.Interface
-	namespace        string
-	annotationFilter string
-	fqdnTemplate     *template.Template
+	client                kubernetes.Interface
+	namespace             string
+	annotationFilter      string
+	fqdnTemplate          *template.Template
+	combineFQDNAnnotation bool
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string) (Source, error) {
+func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -59,10 +61,11 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	}
 
 	return &ingressSource{
-		client:           kubeClient,
-		namespace:        namespace,
-		annotationFilter: annotationFilter,
-		fqdnTemplate:     tmpl,
+		client:                kubeClient,
+		namespace:             namespace,
+		annotationFilter:      annotationFilter,
+		fqdnTemplate:          tmpl,
+		combineFQDNAnnotation: combineFqdnAnnotation,
 	}, nil
 }
 
@@ -92,10 +95,16 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		ingEndpoints := endpointsFromIngress(&ing)
 
 		// apply template if host is missing on ingress
-		if len(ingEndpoints) == 0 && sc.fqdnTemplate != nil {
-			ingEndpoints, err = sc.endpointsFromTemplate(&ing)
+		if (sc.combineFQDNAnnotation || len(ingEndpoints) == 0) && sc.fqdnTemplate != nil {
+			iEndpoints, err := sc.endpointsFromTemplate(&ing)
 			if err != nil {
 				return nil, err
+			}
+
+			if sc.combineFQDNAnnotation {
+				ingEndpoints = append(ingEndpoints, iEndpoints...)
+			} else {
+				ingEndpoints = iEndpoints
 			}
 		}
 
@@ -109,61 +118,59 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		endpoints = append(endpoints, ingEndpoints...)
 	}
 
+	for _, ep := range endpoints {
+		sort.Sort(ep.Targets)
+	}
+
 	return endpoints, nil
 }
 
 // get endpoints from optional "target" annotation
 // Returns empty endpoints array if none are found.
-func getEndpointsFromTargetAnnotation(ing *v1beta1.Ingress, hostname string) []*endpoint.Endpoint {
-	var endpoints []*endpoint.Endpoint
+func getTargetsFromTargetAnnotation(ing *v1beta1.Ingress) endpoint.Targets {
+	var targets endpoint.Targets
 
 	// Get the desired hostname of the ingress from the annotation.
 	targetAnnotation, exists := ing.Annotations[targetAnnotationKey]
 	if exists {
-		ttl, err := getTTLFromAnnotations(ing.Annotations)
-		if err != nil {
-			log.Warn(err)
-		}
 		// splits the hostname annotation and removes the trailing periods
 		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
 		for _, targetHostname := range targetsList {
 			targetHostname = strings.TrimSuffix(targetHostname, ".")
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, targetHostname, suitableType(targetHostname), ttl))
+			targets = append(targets, targetHostname)
 		}
 	}
-	return endpoints
+	return targets
 }
 
 func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoint.Endpoint, error) {
-	var endpoints []*endpoint.Endpoint
-
+	// Process the whole template string
 	var buf bytes.Buffer
 	err := sc.fqdnTemplate.Execute(&buf, ing)
 	if err != nil {
 		return nil, fmt.Errorf("failed to apply template on ingress %s: %v", ing.String(), err)
 	}
 
-	hostname := buf.String()
-
-	endpoints = getEndpointsFromTargetAnnotation(ing, hostname)
-
-	if len(endpoints) != 0 {
-		return endpoints, nil
-	}
+	hostnames := buf.String()
 
 	ttl, err := getTTLFromAnnotations(ing.Annotations)
 	if err != nil {
 		log.Warn(err)
 	}
-	for _, lb := range ing.Status.LoadBalancer.Ingress {
-		if lb.IP != "" {
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.IP, endpoint.RecordTypeA, ttl))
-		}
-		if lb.Hostname != "" {
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(hostname, lb.Hostname, endpoint.RecordTypeCNAME, ttl))
-		}
+
+	targets := getTargetsFromTargetAnnotation(ing)
+
+	if len(targets) == 0 {
+		targets = targetsFromIngressStatus(ing.Status)
 	}
 
+	var endpoints []*endpoint.Endpoint
+	// splits the FQDN template and removes the trailing periods
+	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
+	for _, hostname := range hostnameList {
+		hostname = strings.TrimSuffix(hostname, ".")
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl)...)
+	}
 	return endpoints, nil
 }
 
@@ -208,32 +215,83 @@ func (sc *ingressSource) setResourceLabel(ingress v1beta1.Ingress, endpoints []*
 func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
+	ttl, err := getTTLFromAnnotations(ing.Annotations)
+	if err != nil {
+		log.Warn(err)
+	}
+
+	targets := getTargetsFromTargetAnnotation(ing)
+
+	if len(targets) == 0 {
+		targets = targetsFromIngressStatus(ing.Status)
+	}
+
 	for _, rule := range ing.Spec.Rules {
 		if rule.Host == "" {
 			continue
 		}
+		endpoints = append(endpoints, endpointsForHostname(rule.Host, targets, ttl)...)
+	}
 
-		annotationEndpoints := getEndpointsFromTargetAnnotation(ing, rule.Host)
-
-		if len(annotationEndpoints) != 0 {
-			endpoints = append(endpoints, annotationEndpoints...)
-			continue
-		}
-
-		ttl, err := getTTLFromAnnotations(ing.Annotations)
-		if err != nil {
-			log.Warn(err)
-		}
-
-		for _, lb := range ing.Status.LoadBalancer.Ingress {
-			if lb.IP != "" {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rule.Host, lb.IP, endpoint.RecordTypeA, ttl))
-			}
-			if lb.Hostname != "" {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rule.Host, lb.Hostname, endpoint.RecordTypeCNAME, ttl))
-			}
-		}
+	hostnameList := getHostnamesFromAnnotations(ing.Annotations)
+	for _, hostname := range hostnameList {
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl)...)
 	}
 
 	return endpoints
+}
+
+func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoint.TTL) []*endpoint.Endpoint {
+	var endpoints []*endpoint.Endpoint
+
+	var aTargets endpoint.Targets
+	var cnameTargets endpoint.Targets
+
+	for _, t := range targets {
+		switch suitableType(t) {
+		case endpoint.RecordTypeA:
+			aTargets = append(aTargets, t)
+		default:
+			cnameTargets = append(cnameTargets, t)
+		}
+	}
+
+	if len(aTargets) > 0 {
+		epA := &endpoint.Endpoint{
+			DNSName:    strings.TrimSuffix(hostname, "."),
+			Targets:    aTargets,
+			RecordTTL:  ttl,
+			RecordType: endpoint.RecordTypeA,
+			Labels:     endpoint.NewLabels(),
+		}
+		endpoints = append(endpoints, epA)
+	}
+
+	if len(cnameTargets) > 0 {
+		epCNAME := &endpoint.Endpoint{
+			DNSName:    strings.TrimSuffix(hostname, "."),
+			Targets:    cnameTargets,
+			RecordTTL:  ttl,
+			RecordType: endpoint.RecordTypeCNAME,
+			Labels:     endpoint.NewLabels(),
+		}
+		endpoints = append(endpoints, epCNAME)
+	}
+
+	return endpoints
+}
+
+func targetsFromIngressStatus(status v1beta1.IngressStatus) endpoint.Targets {
+	var targets endpoint.Targets
+
+	for _, lb := range status.LoadBalancer.Ingress {
+		if lb.IP != "" {
+			targets = append(targets, lb.IP)
+		}
+		if lb.Hostname != "" {
+			targets = append(targets, lb.Hostname)
+		}
+	}
+
+	return targets
 }

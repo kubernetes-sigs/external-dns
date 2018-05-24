@@ -27,31 +27,31 @@ func ExampleSameEndpoints() {
 	eps := []*endpoint.Endpoint{
 		{
 			DNSName: "example.org",
-			Target:  "load-balancer.org",
+			Targets: endpoint.Targets{"load-balancer.org"},
 		},
 		{
 			DNSName:    "example.org",
-			Target:     "load-balancer.org",
+			Targets:    endpoint.Targets{"load-balancer.org"},
 			RecordType: endpoint.RecordTypeTXT,
 		},
 		{
 			DNSName:    "abc.com",
-			Target:     "something",
+			Targets:    endpoint.Targets{"something"},
 			RecordType: endpoint.RecordTypeTXT,
 		},
 		{
 			DNSName:    "abc.com",
-			Target:     "1.2.3.4",
+			Targets:    endpoint.Targets{"1.2.3.4"},
 			RecordType: endpoint.RecordTypeA,
 		},
 		{
 			DNSName:    "bbc.com",
-			Target:     "foo.com",
+			Targets:    endpoint.Targets{"foo.com"},
 			RecordType: endpoint.RecordTypeCNAME,
 		},
 		{
 			DNSName:    "cbc.com",
-			Target:     "foo.com",
+			Targets:    endpoint.Targets{"foo.com"},
 			RecordType: "CNAME",
 			RecordTTL:  endpoint.TTL(60),
 		},

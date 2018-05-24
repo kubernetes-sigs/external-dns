@@ -64,7 +64,7 @@ func (s PerResource) ResolveUpdate(current *endpoint.Endpoint, candidates []*end
 
 // less returns true if endpoint x is less than y
 func (s PerResource) less(x, y *endpoint.Endpoint) bool {
-	return x.Target < y.Target
+	return x.Targets.IsLess(y.Targets)
 }
 
 // TODO: with cross-resource/cross-cluster setup alternative variations of ConflictResolver can be used

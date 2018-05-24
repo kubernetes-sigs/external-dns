@@ -18,8 +18,10 @@ package provider
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
+	"cloud.google.com/go/compute/metadata"
 	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
 
@@ -132,6 +134,14 @@ func NewGoogleProvider(project string, domainFilter DomainFilter, zoneIDFilter Z
 		return nil, err
 	}
 
+	if project == "" {
+		mProject, mErr := metadata.ProjectID()
+		if mErr == nil {
+			log.Infof("Google project auto-detected: %s", mProject)
+			project = mProject
+		}
+	}
+
 	provider := &GoogleProvider{
 		project:      project,
 		domainFilter: domainFilter,
@@ -151,7 +161,7 @@ func (p *GoogleProvider) Zones() (map[string]*dns.ManagedZone, error) {
 
 	f := func(resp *dns.ManagedZonesListResponse) error {
 		for _, zone := range resp.ManagedZones {
-			if p.domainFilter.Match(zone.DnsName) || p.zoneIDFilter.Match(fmt.Sprintf("%v", zone.Id)) {
+			if p.domainFilter.Match(zone.DnsName) && p.zoneIDFilter.Match(fmt.Sprintf("%v", zone.Id)) {
 				zones[zone.Name] = zone
 				log.Debugf("Matched %s (zone: %s)", zone.DnsName, zone.Name)
 			} else {
@@ -191,13 +201,20 @@ func (p *GoogleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 
 	f := func(resp *dns.ResourceRecordSetsListResponse) error {
 		for _, r := range resp.Rrsets {
-
+			if !supportedRecordType(r.Type) {
+				continue
+			}
+			ep := &endpoint.Endpoint{
+				DNSName:    strings.TrimSuffix(r.Name, "."),
+				RecordType: r.Type,
+				Targets:    make(endpoint.Targets, 0, len(r.Rrdatas)),
+			}
 			for _, rr := range r.Rrdatas {
 				// each page is processed sequentially, no need for a mutex here.
-				if supportedRecordType(r.Type) {
-					endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, rr, r.Type))
-				}
+				ep.Targets = append(ep.Targets, strings.TrimSuffix(rr, "."))
 			}
+			sort.Sort(ep.Targets)
+			endpoints = append(endpoints, ep)
 		}
 
 		return nil
@@ -347,9 +364,10 @@ func newRecord(ep *endpoint.Endpoint) *dns.ResourceRecordSet {
 	// TODO(linki): works around appending a trailing dot to TXT records. I think
 	// we should go back to storing DNS names with a trailing dot internally. This
 	// way we can use it has is here and trim it off if it exists when necessary.
-	target := ep.Target
+	targets := make([]string, len(ep.Targets))
+	copy(targets, []string(ep.Targets))
 	if ep.RecordType == endpoint.RecordTypeCNAME {
-		target = ensureTrailingDot(target)
+		targets[0] = ensureTrailingDot(targets[0])
 	}
 
 	// no annotation results in a Ttl of 0, default to 300 for backwards-compatability
@@ -360,7 +378,7 @@ func newRecord(ep *endpoint.Endpoint) *dns.ResourceRecordSet {
 
 	return &dns.ResourceRecordSet{
 		Name:    ensureTrailingDot(ep.DNSName),
-		Rrdatas: []string{target},
+		Rrdatas: targets,
 		Ttl:     ttl,
 		Type:    ep.RecordType,
 	}

@@ -112,9 +112,9 @@ func NewAzureProvider(configFile string, domainFilter DomainFilter, zoneIDFilter
 		return nil, fmt.Errorf("failed to create service principal token: %v", err)
 	}
 
-	zonesClient := dns.NewZonesClient(cfg.SubscriptionID)
+	zonesClient := dns.NewZonesClientWithBaseURI(environment.ResourceManagerEndpoint, cfg.SubscriptionID)
 	zonesClient.Authorizer = autorest.NewBearerAuthorizer(token)
-	recordsClient := dns.NewRecordSetsClient(cfg.SubscriptionID)
+	recordsClient := dns.NewRecordSetsClientWithBaseURI(environment.ResourceManagerEndpoint, cfg.SubscriptionID)
 	recordsClient.Authorizer = autorest.NewBearerAuthorizer(token)
 
 	provider := &AzureProvider{
@@ -158,12 +158,12 @@ func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				ttl = endpoint.TTL(*recordSet.TTL)
 			}
 
-			ep := endpoint.NewEndpointWithTTL(name, target, recordType, endpoint.TTL(ttl))
+			ep := endpoint.NewEndpointWithTTL(name, recordType, endpoint.TTL(ttl), target)
 			log.Debugf(
 				"Found %s record for '%s' with target '%s'.",
 				ep.RecordType,
 				ep.DNSName,
-				ep.Target,
+				ep.Targets,
 			)
 			endpoints = append(endpoints, ep)
 			return true
@@ -323,7 +323,7 @@ func (p *AzureProvider) updateRecords(updated azureChangeMap) {
 					"Would update %s record named '%s' to '%s' for Azure DNS zone '%s'.",
 					endpoint.RecordType,
 					name,
-					endpoint.Target,
+					endpoint.Targets,
 					zone,
 				)
 				continue
@@ -333,7 +333,7 @@ func (p *AzureProvider) updateRecords(updated azureChangeMap) {
 				"Updating %s record named '%s' to '%s' for Azure DNS zone '%s'.",
 				endpoint.RecordType,
 				name,
-				endpoint.Target,
+				endpoint.Targets,
 				zone,
 			)
 
@@ -354,7 +354,7 @@ func (p *AzureProvider) updateRecords(updated azureChangeMap) {
 					"Failed to update %s record named '%s' to '%s' for DNS zone '%s': %v",
 					endpoint.RecordType,
 					name,
-					endpoint.Target,
+					endpoint.Targets,
 					zone,
 					err,
 				)
@@ -388,7 +388,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 				TTL: to.Int64Ptr(ttl),
 				ARecords: &[]dns.ARecord{
 					{
-						Ipv4Address: to.StringPtr(endpoint.Target),
+						Ipv4Address: to.StringPtr(endpoint.Targets[0]),
 					},
 				},
 			},
@@ -398,7 +398,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 			RecordSetProperties: &dns.RecordSetProperties{
 				TTL: to.Int64Ptr(ttl),
 				CnameRecord: &dns.CnameRecord{
-					Cname: to.StringPtr(endpoint.Target),
+					Cname: to.StringPtr(endpoint.Targets[0]),
 				},
 			},
 		}, nil
@@ -409,7 +409,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 				TxtRecords: &[]dns.TxtRecord{
 					{
 						Value: &[]string{
-							endpoint.Target,
+							endpoint.Targets[0],
 						},
 					},
 				},

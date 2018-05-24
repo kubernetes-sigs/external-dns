@@ -28,6 +28,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const dnsimpleRecordTTL = 3600 // Default TTL of 1 hour if not set (DNSimple's default)
+
 type identityService struct {
 	service *dnsimple.IdentityService
 }
@@ -124,20 +126,30 @@ func NewDnsimpleProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, d
 // Returns a list of filtered Zones
 func (p *dnsimpleProvider) Zones() (map[string]dnsimple.Zone, error) {
 	zones := make(map[string]dnsimple.Zone)
-	zonesResponse, err := p.client.ListZones(p.accountID, &dnsimple.ZoneListOptions{})
-	if err != nil {
-		return nil, err
-	}
-	for _, zone := range zonesResponse.Data {
-		if !p.domainFilter.Match(zone.Name) {
-			continue
+	page := 1
+	listOptions := &dnsimple.ZoneListOptions{}
+	for {
+		listOptions.Page = page
+		zonesResponse, err := p.client.ListZones(p.accountID, listOptions)
+		if err != nil {
+			return nil, err
+		}
+		for _, zone := range zonesResponse.Data {
+			if !p.domainFilter.Match(zone.Name) {
+				continue
+			}
+
+			if !p.zoneIDFilter.Match(strconv.Itoa(zone.ID)) {
+				continue
+			}
+
+			zones[strconv.Itoa(zone.ID)] = zone
 		}
 
-		if !p.zoneIDFilter.Match(strconv.Itoa(zone.ID)) {
-			continue
+		page++
+		if page > zonesResponse.Pagination.TotalPages {
+			break
 		}
-
-		zones[strconv.Itoa(zone.ID)] = zone
 	}
 	return zones, nil
 }
@@ -149,18 +161,27 @@ func (p *dnsimpleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 		return nil, err
 	}
 	for _, zone := range zones {
-		records, err := p.client.ListRecords(p.accountID, zone.Name, &dnsimple.ZoneRecordListOptions{})
-		if err != nil {
-			return nil, err
-		}
-		for _, record := range records.Data {
-			switch record.Type {
-			case "A", "CNAME", "TXT":
-				break
-			default:
-				continue
+		page := 1
+		listOptions := &dnsimple.ZoneRecordListOptions{}
+		for {
+			listOptions.Page = page
+			records, err := p.client.ListRecords(p.accountID, zone.Name, listOptions)
+			if err != nil {
+				return nil, err
 			}
-			endpoints = append(endpoints, endpoint.NewEndpoint(record.Name+"."+record.ZoneID, record.Content, record.Type))
+			for _, record := range records.Data {
+				switch record.Type {
+				case "A", "CNAME", "TXT":
+					break
+				default:
+					continue
+				}
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(record.Name+"."+record.ZoneID, record.Type, endpoint.TTL(record.TTL), record.Content))
+			}
+			page++
+			if page > records.Pagination.TotalPages {
+				break
+			}
 		}
 	}
 	return endpoints, nil
@@ -168,12 +189,18 @@ func (p *dnsimpleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 
 // newDnsimpleChange initializes a new change to dns records
 func newDnsimpleChange(action string, e *endpoint.Endpoint) *dnsimpleChange {
+	ttl := dnsimpleRecordTTL
+	if e.RecordTTL.IsConfigured() {
+		ttl = int(e.RecordTTL)
+	}
+
 	change := &dnsimpleChange{
 		Action: action,
 		ResourceRecordSet: dnsimple.ZoneRecord{
 			Name:    e.DNSName,
 			Type:    e.RecordType,
-			Content: e.Target,
+			Content: e.Targets[0],
+			TTL:     ttl,
 		},
 	}
 	return change
@@ -239,13 +266,24 @@ func (p *dnsimpleProvider) submitChanges(changes []*dnsimpleChange) error {
 
 // Returns the record ID for a given record name and zone
 func (p *dnsimpleProvider) GetRecordID(zone string, recordName string) (recordID int, err error) {
-	records, err := p.client.ListRecords(p.accountID, zone, &dnsimple.ZoneRecordListOptions{})
-	if err != nil {
-		return 0, err
-	}
-	for _, record := range records.Data {
-		if record.Name == recordName {
-			return record.ID, nil
+	page := 1
+	listOptions := &dnsimple.ZoneRecordListOptions{Name: recordName}
+	for {
+		listOptions.Page = page
+		records, err := p.client.ListRecords(p.accountID, zone, listOptions)
+		if err != nil {
+			return 0, err
+		}
+
+		for _, record := range records.Data {
+			if record.Name == recordName {
+				return record.ID, nil
+			}
+		}
+
+		page++
+		if page > records.Pagination.TotalPages {
+			break
 		}
 	}
 	return 0, fmt.Errorf("No record id found")

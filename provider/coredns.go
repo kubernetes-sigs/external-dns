@@ -274,8 +274,8 @@ func (p coreDNSProvider) Records() ([]*endpoint.Endpoint, error) {
 		if service.Host != "" {
 			ep := endpoint.NewEndpoint(
 				dnsName,
-				service.Host,
 				guessRecordType(service.Host),
+				service.Host,
 			)
 			ep.Labels["originalText"] = service.Text
 			ep.Labels["prefix"] = prefix
@@ -284,8 +284,8 @@ func (p coreDNSProvider) Records() ([]*endpoint.Endpoint, error) {
 		if service.Text != "" {
 			ep := endpoint.NewEndpoint(
 				dnsName,
-				service.Text,
 				endpoint.RecordTypeTXT,
+				service.Text,
 			)
 			ep.Labels["prefix"] = prefix
 			result = append(result, ep)
@@ -318,7 +318,7 @@ func (p coreDNSProvider) ApplyChanges(changes *plan.Changes) error {
 				prefix = fmt.Sprintf("%08x", rand.Int31())
 			}
 			service := Service{
-				Host:        ep.Target,
+				Host:        ep.Targets[0],
 				Text:        ep.Labels["originalText"],
 				Key:         etcdKeyFor(prefix + "." + dnsName),
 				TargetStrip: strings.Count(prefix, ".") + 1,
@@ -340,7 +340,7 @@ func (p coreDNSProvider) ApplyChanges(changes *plan.Changes) error {
 					TargetStrip: strings.Count(prefix, ".") + 1,
 				})
 			}
-			services[index].Text = ep.Target
+			services[index].Text = ep.Targets[0]
 			index++
 		}
 
