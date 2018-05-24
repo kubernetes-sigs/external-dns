@@ -161,7 +161,7 @@ func (p *CloudFlareProvider) Records() ([]*endpoint.Endpoint, error) {
 
 		for _, r := range records {
 			if supportedRecordType(r.Type) {
-				endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Content, r.Type))
+				endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Type, r.Content))
 			}
 		}
 	}
@@ -290,7 +290,7 @@ func newCloudFlareChange(action string, endpoint *endpoint.Endpoint, proxied boo
 			TTL:     1,
 			Proxied: proxied,
 			Type:    endpoint.RecordType,
-			Content: endpoint.Target,
+			Content: endpoint.Targets[0],
 		},
 	}
 }

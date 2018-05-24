@@ -185,6 +185,12 @@
   revision = "09691a3b6378b740595c1002f40c34dd5f218a22"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/ffledgling/pdns-go"
+  packages = ["."]
+  revision = "524e7daccd99651cdb56426eb15b7d61f9597a5c"
+
+[[projects]]
   name = "github.com/ghodss/yaml"
   packages = ["."]
   revision = "73d445a93680fa1a78ae23a5839bad48f32ba1ee"
@@ -243,6 +249,22 @@
   name = "github.com/google/gofuzz"
   packages = ["."]
   revision = "44d81051d367757e1c7c6a5a86423ece9afcf63c"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/gophercloud/gophercloud"
+  packages = [
+    ".",
+    "openstack",
+    "openstack/dns/v2/recordsets",
+    "openstack/dns/v2/zones",
+    "openstack/identity/v2/tenants",
+    "openstack/identity/v2/tokens",
+    "openstack/identity/v3/tokens",
+    "openstack/utils",
+    "pagination"
+  ]
+  revision = "bfc4756e1a693a850d7d459f4b28b21f35a24b5a"
 
 [[projects]]
   name = "github.com/howeyc/gopass"
@@ -640,6 +662,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4e118ef87cbafb30cee5759beb6d5fea3acbf8906b41148b3bb116cd1e69f5e9"
+  inputs-digest = "371e8260c0580f391a14a867114e0b92e9b5b1b1b9fd2945410b6b8f7d1db498"
   solver-name = "gps-cdcl"
   solver-version = 1

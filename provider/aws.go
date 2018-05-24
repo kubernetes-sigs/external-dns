@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -30,30 +31,47 @@ import (
 )
 
 const (
-	elbHostnameSuffix    = ".elb.amazonaws.com"
 	evaluateTargetHealth = true
 	recordTTL            = 300
 	maxChangeCount       = 4000
 )
 
 var (
-	// see: https://docs.aws.amazon.com/general/latest/gr/rande.html
+	// see: https://docs.aws.amazon.com/general/latest/gr/rande.html#elb_region
 	canonicalHostedZones = map[string]string{
-		"us-east-1" + elbHostnameSuffix:      "Z35SXDOTRQ7X7K",
-		"us-east-2" + elbHostnameSuffix:      "Z3AADJGX6KTTL2",
-		"us-west-1" + elbHostnameSuffix:      "Z368ELLRRE2KJ0",
-		"us-west-2" + elbHostnameSuffix:      "Z1H1FL5HABSF5",
-		"ca-central-1" + elbHostnameSuffix:   "ZQSVJUPU6J1EY",
-		"ap-south-1" + elbHostnameSuffix:     "ZP97RAFLXTNZK",
-		"ap-northeast-2" + elbHostnameSuffix: "ZWKZPGTI48KDX",
-		"ap-southeast-1" + elbHostnameSuffix: "Z1LMS91P8CMLE5",
-		"ap-southeast-2" + elbHostnameSuffix: "Z1GM3OXH4ZPM65",
-		"ap-northeast-1" + elbHostnameSuffix: "Z14GRHDCWA56QT",
-		"eu-central-1" + elbHostnameSuffix:   "Z215JYRZR1TBD5",
-		"eu-west-1" + elbHostnameSuffix:      "Z32O12XQLNTSW2",
-		"eu-west-2" + elbHostnameSuffix:      "ZHURV8PSTC4K8",
-		"eu-west-3" + elbHostnameSuffix:      "Z3Q77PNBQS71R4",
-		"sa-east-1" + elbHostnameSuffix:      "Z2P70J7HTTTPLU",
+		// Application Load Balancers and Classic Load Balancers
+		"us-east-2.elb.amazonaws.com":      "Z3AADJGX6KTTL2",
+		"us-east-1.elb.amazonaws.com":      "Z35SXDOTRQ7X7K",
+		"us-west-1.elb.amazonaws.com":      "Z368ELLRRE2KJ0",
+		"us-west-2.elb.amazonaws.com":      "Z1H1FL5HABSF5",
+		"ca-central-1.elb.amazonaws.com":   "ZQSVJUPU6J1EY",
+		"ap-south-1.elb.amazonaws.com":     "ZP97RAFLXTNZK",
+		"ap-northeast-2.elb.amazonaws.com": "ZWKZPGTI48KDX",
+		"ap-northeast-3.elb.amazonaws.com": "Z5LXEXXYW11ES",
+		"ap-southeast-1.elb.amazonaws.com": "Z1LMS91P8CMLE5",
+		"ap-southeast-2.elb.amazonaws.com": "Z1GM3OXH4ZPM65",
+		"ap-northeast-1.elb.amazonaws.com": "Z14GRHDCWA56QT",
+		"eu-central-1.elb.amazonaws.com":   "Z215JYRZR1TBD5",
+		"eu-west-1.elb.amazonaws.com":      "Z32O12XQLNTSW2",
+		"eu-west-2.elb.amazonaws.com":      "ZHURV8PSTC4K8",
+		"eu-west-3.elb.amazonaws.com":      "Z3Q77PNBQS71R4",
+		"sa-east-1.elb.amazonaws.com":      "Z2P70J7HTTTPLU",
+		// Network Load Balancers
+		"elb.us-east-2.amazonaws.com":      "ZLMOA37VPKANP",
+		"elb.us-east-1.amazonaws.com":      "Z26RNL4JYFTOTI",
+		"elb.us-west-1.amazonaws.com":      "Z24FKFUX50B4VW",
+		"elb.us-west-2.amazonaws.com":      "Z18D5FSROUN65G",
+		"elb.ca-central-1.amazonaws.com":   "Z2EPGBW3API2WT",
+		"elb.ap-south-1.amazonaws.com":     "ZVDDRBQ08TROA",
+		"elb.ap-northeast-2.amazonaws.com": "ZIBE1TIR4HY56",
+		"elb.ap-southeast-1.amazonaws.com": "ZKVM4W9LS7TM",
+		"elb.ap-southeast-2.amazonaws.com": "ZCT6FZBF4DROD",
+		"elb.ap-northeast-1.amazonaws.com": "Z31USIVHYNEOWT",
+		"elb.eu-central-1.amazonaws.com":   "Z3F0SRJ5LGBH90",
+		"elb.eu-west-1.amazonaws.com":      "Z2IFOLAFXWLO4F",
+		"elb.eu-west-2.amazonaws.com":      "ZD4D7Y8KGAS4G",
+		"elb.eu-west-3.amazonaws.com":      "Z1CMS0P5QUZ6D5",
+		"elb.sa-east-1.amazonaws.com":      "ZTK26PT1VY4CU",
 	}
 )
 
@@ -79,10 +97,10 @@ type AWSProvider struct {
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
-func NewAWSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zoneTypeFilter ZoneTypeFilter, dryRun bool) (*AWSProvider, error) {
+func NewAWSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zoneTypeFilter ZoneTypeFilter, assumeRole string, dryRun bool) (*AWSProvider, error) {
 	config := aws.NewConfig()
 
-	config = config.WithHTTPClient(
+	config.WithHTTPClient(
 		instrumented_http.NewClient(config.HTTPClient, &instrumented_http.Callbacks{
 			PathProcessor: func(path string) string {
 				parts := strings.Split(path, "/")
@@ -97,6 +115,11 @@ func NewAWSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zoneTy
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if assumeRole != "" {
+		log.Infof("Assuming role: %s", assumeRole)
+		session.Config.WithCredentials(stscreds.NewCredentials(session, assumeRole))
 	}
 
 	provider := &AWSProvider{
@@ -176,12 +199,17 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				ttl = endpoint.TTL(*r.TTL)
 			}
 
-			for _, rr := range r.ResourceRecords {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(rr.Value), aws.StringValue(r.Type), ttl))
+			if len(r.ResourceRecords) > 0 {
+				targets := make([]string, len(r.ResourceRecords))
+				for idx, rr := range r.ResourceRecords {
+					targets[idx] = aws.StringValue(rr.Value)
+				}
+
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.Type), ttl, targets...))
 			}
 
 			if r.AliasTarget != nil {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.AliasTarget.DNSName), endpoint.RecordTypeCNAME, ttl))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), endpoint.RecordTypeCNAME, ttl, aws.StringValue(r.AliasTarget.DNSName)))
 			}
 		}
 
@@ -378,8 +406,8 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 	if isAWSLoadBalancer(endpoint) {
 		change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
 		change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
-			DNSName:              aws.String(endpoint.Target),
-			HostedZoneId:         aws.String(canonicalHostedZone(endpoint.Target)),
+			DNSName:              aws.String(endpoint.Targets[0]),
+			HostedZoneId:         aws.String(canonicalHostedZone(endpoint.Targets[0])),
 			EvaluateTargetHealth: aws.Bool(evaluateTargetHealth),
 		}
 	} else {
@@ -389,10 +417,11 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 		} else {
 			change.ResourceRecordSet.TTL = aws.Int64(int64(endpoint.RecordTTL))
 		}
-		change.ResourceRecordSet.ResourceRecords = []*route53.ResourceRecord{
-			{
-				Value: aws.String(endpoint.Target),
-			},
+		change.ResourceRecordSet.ResourceRecords = make([]*route53.ResourceRecord, len(endpoint.Targets))
+		for idx, val := range endpoint.Targets {
+			change.ResourceRecordSet.ResourceRecords[idx] = &route53.ResourceRecord{
+				Value: aws.String(val),
+			}
 		}
 	}
 
@@ -429,7 +458,7 @@ func suitableZones(hostname string, zones map[string]*route53.HostedZone) []*rou
 // isAWSLoadBalancer determines if a given hostname belongs to an AWS load balancer.
 func isAWSLoadBalancer(ep *endpoint.Endpoint) bool {
 	if ep.RecordType == endpoint.RecordTypeCNAME {
-		return canonicalHostedZone(ep.Target) != ""
+		return canonicalHostedZone(ep.Targets[0]) != ""
 	}
 
 	return false

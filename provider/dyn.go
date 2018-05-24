@@ -19,6 +19,7 @@ package provider
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -36,6 +37,12 @@ const (
 	// can store 20000 entries globally, that's about 4MB of memory
 	// may be made configurable in the future but 20K records seems like enough for a few zones
 	cacheMaxSize = 20000
+
+	// two consecutive bad logins happen at least this many seconds appart
+	// While it is easy to get the username right, misconfiguring the password
+	// can get account blocked. Exit(1) is not a good solution
+	// as k8s will restart the pod and another login attempt will be made
+	badLoginMinIntervalSeconds = 30 * 60
 
 	// this prefix must be stripped from resource links before feeding them to dynect.Client.Do()
 	restAPIPrefix = "/REST/"
@@ -60,8 +67,12 @@ func (c *cache) Put(link string, ep *endpoint.Endpoint) {
 
 	c.contents[link] = &entry{
 		ep:      ep,
-		expires: int64(time.Now().Unix()) + int64(ep.RecordTTL),
+		expires: unixNow() + int64(ep.RecordTTL),
 	}
+}
+
+func unixNow() int64 {
+	return int64(time.Now().Unix())
 }
 
 func (c *cache) Get(link string) *endpoint.Endpoint {
@@ -70,7 +81,7 @@ func (c *cache) Get(link string) *endpoint.Endpoint {
 		return nil
 	}
 
-	now := int64(time.Now().Unix())
+	now := unixNow()
 
 	if result.expires < now {
 		delete(c.contents, link)
@@ -82,20 +93,22 @@ func (c *cache) Get(link string) *endpoint.Endpoint {
 
 // DynConfig hold connection parameters to dyn.com and interanl state
 type DynConfig struct {
-	DomainFilter DomainFilter
-	ZoneIDFilter ZoneIDFilter
-	DryRun       bool
-	CustomerName string
-	Username     string
-	Password     string
-	AppVersion   string
-	DynVersion   string
+	DomainFilter  DomainFilter
+	ZoneIDFilter  ZoneIDFilter
+	DryRun        bool
+	CustomerName  string
+	Username      string
+	Password      string
+	MinTTLSeconds int
+	AppVersion    string
+	DynVersion    string
 }
 
 // DynProvider is the actual interface impl.
 type dynProviderState struct {
 	DynConfig
-	Cache *cache
+	Cache              *cache
+	LastLoginErrorTime int64
 }
 
 // ZoneChange is missing from dynect: https://help.dyn.com/get-zone-changeset-api/
@@ -166,13 +179,17 @@ func filterAndFixLinks(links []string, filter DomainFilter) []string {
 	return result
 }
 
-func fixMissingTTL(ttl endpoint.TTL) string {
+func fixMissingTTL(ttl endpoint.TTL, minTTLSeconds int) string {
 	i := dynDefaultTTL
 	if ttl.IsConfigured() {
-		i = int(ttl)
+		if int(ttl) < minTTLSeconds {
+			i = minTTLSeconds
+		} else {
+			i = int(ttl)
+		}
 	}
 
-	return fmt.Sprintf("%d", i)
+	return strconv.Itoa(i)
 }
 
 // merge produces a singe list of records that can be used as a replacement.
@@ -197,7 +214,7 @@ func merge(updateOld, updateNew []*endpoint.Endpoint) []*endpoint.Endpoint {
 			continue
 		}
 
-		if matchingNew.Target != old.Target {
+		if !matchingNew.Targets.Same(old.Targets) {
 			// new target: always update, TTL will be overwritten too if necessary
 			result = append(result, matchingNew)
 			continue
@@ -258,7 +275,7 @@ func (d *dynProviderState) recordLinkToEndpoint(client *dynect.Client, recordLin
 		DNSName:    rec.Data.FQDN,
 		RecordTTL:  endpoint.TTL(rec.Data.TTL),
 		RecordType: rec.Data.RecordType,
-		Target:     target,
+		Targets:    endpoint.Targets{target},
 	}
 
 	log.Debugf("Fetched new endpoint for %s: %+v", recordLink, result)
@@ -280,11 +297,11 @@ func endpointToRecord(ep *endpoint.Endpoint) *dynect.DataBlock {
 	result := dynect.DataBlock{}
 
 	if ep.RecordType == endpoint.RecordTypeA {
-		result.Address = ep.Target
+		result.Address = ep.Targets[0]
 	} else if ep.RecordType == endpoint.RecordTypeCNAME {
-		result.CName = ep.Target
+		result.CName = ep.Targets[0]
 	} else if ep.RecordType == endpoint.RecordTypeTXT {
-		result.TxtData = ep.Target
+		result.TxtData = ep.Targets[0]
 	}
 
 	return &result
@@ -320,7 +337,6 @@ func (d *dynProviderState) buildLinkToRecord(ep *endpoint.Endpoint) string {
 	}
 
 	if matchingZone == "" {
-		fmt.Printf("no zone")
 		// no matching zone, ignore
 		return ""
 	}
@@ -337,6 +353,12 @@ func (d *dynProviderState) buildLinkToRecord(ep *endpoint.Endpoint) string {
 // This method also stores the DynAPI version.
 // Don't user the dynect.Client.Login()
 func (d *dynProviderState) login() (*dynect.Client, error) {
+	if d.LastLoginErrorTime != 0 {
+		secondsSinceLastError := unixNow() - d.LastLoginErrorTime
+		if secondsSinceLastError < badLoginMinIntervalSeconds {
+			return nil, fmt.Errorf("will not attempt an API call as the last login failure occurred just %ds ago", secondsSinceLastError)
+		}
+	}
 	client := dynect.NewClient(d.CustomerName)
 
 	var req = dynect.LoginBlock{
@@ -348,9 +370,11 @@ func (d *dynProviderState) login() (*dynect.Client, error) {
 
 	err := client.Do("POST", "Session", req, &resp)
 	if err != nil {
+		d.LastLoginErrorTime = unixNow()
 		return nil, err
 	}
 
+	d.LastLoginErrorTime = 0
 	client.Token = resp.Data.Token
 
 	// this is the only change from the original
@@ -371,7 +395,7 @@ func (d *dynProviderState) buildRecordRequest(ep *endpoint.Endpoint) (string, *d
 	}
 
 	record := dynect.RecordRequest{
-		TTL:   fixMissingTTL(ep.RecordTTL),
+		TTL:   fixMissingTTL(ep.RecordTTL, d.MinTTLSeconds),
 		RData: *endpointToRecord(ep),
 	}
 	return link, &record

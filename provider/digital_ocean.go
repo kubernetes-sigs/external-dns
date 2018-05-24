@@ -19,6 +19,7 @@ package provider
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
@@ -105,7 +106,15 @@ func (p *DigitalOceanProvider) Records() ([]*endpoint.Endpoint, error) {
 
 		for _, r := range records {
 			if supportedRecordType(r.Type) {
-				endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Data, r.Type))
+				name := r.Name + "." + zone.Name
+
+				// root name is identified by @ and should be
+				// translated to zone name for the endpoint entry.
+				if r.Name == "@" {
+					name = zone.Name
+				}
+
+				endpoints = append(endpoints, endpoint.NewEndpoint(name, r.Type, r.Data))
 			}
 		}
 	}
@@ -196,6 +205,15 @@ func (p *DigitalOceanProvider) submitChanges(changes []*DigitalOceanChange) erro
 			if p.DryRun {
 				continue
 			}
+
+			change.ResourceRecordSet.Name = strings.TrimSuffix(change.ResourceRecordSet.Name, "."+zoneName)
+
+			// record at the root should be defined as @ instead of
+			// the full domain name
+			if change.ResourceRecordSet.Name == zoneName {
+				change.ResourceRecordSet.Name = "@"
+			}
+
 			switch change.Action {
 			case DigitalOceanCreate:
 				_, _, err = p.Client.CreateRecord(context.TODO(), zoneName,
@@ -258,7 +276,7 @@ func newDigitalOceanChange(action string, endpoint *endpoint.Endpoint) *DigitalO
 		ResourceRecordSet: godo.DomainRecord{
 			Name: endpoint.DNSName,
 			Type: endpoint.RecordType,
-			Data: endpoint.Target,
+			Data: endpoint.Targets[0],
 		},
 	}
 	return change

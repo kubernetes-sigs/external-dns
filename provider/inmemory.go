@@ -130,7 +130,7 @@ func (im *InMemoryProvider) Records() ([]*endpoint.Endpoint, error) {
 		}
 
 		for _, record := range records {
-			endpoints = append(endpoints, endpoint.NewEndpoint(record.Name, record.Target, record.Type))
+			endpoints = append(endpoints, endpoint.NewEndpoint(record.Name, record.Type, record.Target))
 		}
 	}
 
@@ -203,7 +203,7 @@ func convertToInMemoryRecord(endpoints []*endpoint.Endpoint) []*inMemoryRecord {
 		records = append(records, &inMemoryRecord{
 			Type:   ep.RecordType,
 			Name:   ep.DNSName,
-			Target: ep.Target,
+			Target: ep.Targets[0],
 		})
 	}
 	return records

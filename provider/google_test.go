@@ -207,9 +207,9 @@ func TestGoogleZones(t *testing.T) {
 
 func TestGoogleRecords(t *testing.T) {
 	originalEndpoints := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("list-test.zone-1.ext-dns-test-2.gcp.zalan.do", "1.2.3.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("list-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("list-test-alias.zone-1.ext-dns-test-2.gcp.zalan.do", "foo.elb.amazonaws.com", endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("list-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.NewEndpoint("list-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
+		endpoint.NewEndpoint("list-test-alias.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "foo.elb.amazonaws.com"),
 	}
 
 	provider := newGoogleProvider(t, NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), NewZoneIDFilter([]string{""}), false, originalEndpoints)
@@ -222,12 +222,12 @@ func TestGoogleRecords(t *testing.T) {
 
 func TestGoogleRecordsFilter(t *testing.T) {
 	originalEndpoints := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("delete-test.zone-1.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "bar.elb.amazonaws.com", endpoint.RecordTypeCNAME),
-		endpoint.NewEndpoint("delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "qux.elb.amazonaws.com", endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
+		endpoint.NewEndpoint("delete-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
+		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.4.4"),
+		endpoint.NewEndpoint("delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.4.4"),
+		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "bar.elb.amazonaws.com"),
+		endpoint.NewEndpoint("delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "qux.elb.amazonaws.com"),
 	}
 
 	provider := newGoogleProvider(
@@ -247,12 +247,12 @@ func TestGoogleRecordsFilter(t *testing.T) {
 
 	// these records should be filtered out since they don't match a hosted zone or domain filter.
 	ignoredEndpoints := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("filter-create-test.zone-0.ext-dns-test-2.gcp.zalan.do", "4.2.2.2", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("filter-update-test.zone-0.ext-dns-test-2.gcp.zalan.do", "4.2.2.2", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("filter-delete-test.zone-0.ext-dns-test-2.gcp.zalan.do", "4.2.2.2", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("filter-create-test.zone-3.ext-dns-test-2.gcp.zalan.do", "4.2.2.2", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("filter-update-test.zone-3.ext-dns-test-2.gcp.zalan.do", "4.2.2.2", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("filter-delete-test.zone-3.ext-dns-test-2.gcp.zalan.do", "4.2.2.2", endpoint.RecordTypeA),
+		endpoint.NewEndpoint("filter-create-test.zone-0.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "4.2.2.2"),
+		endpoint.NewEndpoint("filter-update-test.zone-0.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "4.2.2.2"),
+		endpoint.NewEndpoint("filter-delete-test.zone-0.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "4.2.2.2"),
+		endpoint.NewEndpoint("filter-create-test.zone-3.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "4.2.2.2"),
+		endpoint.NewEndpoint("filter-update-test.zone-3.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "4.2.2.2"),
+		endpoint.NewEndpoint("filter-delete-test.zone-3.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "4.2.2.2"),
 	}
 
 	require.NoError(t, provider.CreateRecords(ignoredEndpoints))
@@ -268,9 +268,9 @@ func TestGoogleCreateRecords(t *testing.T) {
 	provider := newGoogleProvider(t, NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), NewZoneIDFilter([]string{""}), false, []*endpoint.Endpoint{})
 
 	records := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("create-test.zone-1.ext-dns-test-2.gcp.zalan.do", "1.2.3.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("create-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("create-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "foo.elb.amazonaws.com", endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("create-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.NewEndpoint("create-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
+		endpoint.NewEndpoint("create-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "foo.elb.amazonaws.com"),
 	}
 
 	require.NoError(t, provider.CreateRecords(records))
@@ -279,28 +279,28 @@ func TestGoogleCreateRecords(t *testing.T) {
 	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		endpoint.NewEndpoint("create-test.zone-1.ext-dns-test-2.gcp.zalan.do", "1.2.3.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("create-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("create-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "foo.elb.amazonaws.com", endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("create-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.NewEndpoint("create-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
+		endpoint.NewEndpoint("create-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "foo.elb.amazonaws.com"),
 	})
 }
 
 func TestGoogleUpdateRecords(t *testing.T) {
 	provider := newGoogleProvider(t, NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), NewZoneIDFilter([]string{""}), false, []*endpoint.Endpoint{
-		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "foo.elb.amazonaws.com", endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
+		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.4.4"),
+		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "foo.elb.amazonaws.com"),
 	})
 
 	currentRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "foo.elb.amazonaws.com", endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
+		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.4.4"),
+		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "foo.elb.amazonaws.com"),
 	}
 	updatedRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", "1.2.3.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", "4.3.2.1", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "bar.elb.amazonaws.com", endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "4.3.2.1"),
+		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "bar.elb.amazonaws.com"),
 	}
 
 	require.NoError(t, provider.UpdateRecords(updatedRecords, currentRecords))
@@ -309,17 +309,17 @@ func TestGoogleUpdateRecords(t *testing.T) {
 	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", "1.2.3.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", "4.3.2.1", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "bar.elb.amazonaws.com", endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "4.3.2.1"),
+		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "bar.elb.amazonaws.com"),
 	})
 }
 
 func TestGoogleDeleteRecords(t *testing.T) {
 	originalEndpoints := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("delete-test.zone-1.ext-dns-test-2.gcp.zalan.do", "1.2.3.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "baz.elb.amazonaws.com", endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("delete-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.NewEndpoint("delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
+		endpoint.NewEndpoint("delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "baz.elb.amazonaws.com"),
 	}
 
 	provider := newGoogleProvider(t, NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), NewZoneIDFilter([]string{""}), false, originalEndpoints)
@@ -346,43 +346,43 @@ func TestGoogleApplyChanges(t *testing.T) {
 		NewZoneIDFilter([]string{""}),
 		false,
 		[]*endpoint.Endpoint{
-			endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
-			endpoint.NewEndpoint("delete-test.zone-1.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
-			endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA),
-			endpoint.NewEndpoint("delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA),
-			endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "bar.elb.amazonaws.com", endpoint.RecordTypeCNAME),
-			endpoint.NewEndpoint("delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "qux.elb.amazonaws.com", endpoint.RecordTypeCNAME),
+			endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
+			endpoint.NewEndpoint("delete-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
+			endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.4.4"),
+			endpoint.NewEndpoint("delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.4.4"),
+			endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "bar.elb.amazonaws.com"),
+			endpoint.NewEndpoint("delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "qux.elb.amazonaws.com"),
 		},
 	)
 
 	createRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("create-test.zone-1.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("create-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("create-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "foo.elb.amazonaws.com", endpoint.RecordTypeCNAME),
-		endpoint.NewEndpoint("filter-create-test.zone-3.ext-dns-test-2.gcp.zalan.do", "4.2.2.2", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("nomatch-create-test.zone-0.ext-dns-test-2.gcp.zalan.do", "4.2.2.1", endpoint.RecordTypeA),
+		endpoint.NewEndpoint("create-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
+		endpoint.NewEndpoint("create-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.4.4"),
+		endpoint.NewEndpoint("create-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "foo.elb.amazonaws.com"),
+		endpoint.NewEndpoint("filter-create-test.zone-3.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "4.2.2.2"),
+		endpoint.NewEndpoint("nomatch-create-test.zone-0.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "4.2.2.1"),
 	}
 
 	currentRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "bar.elb.amazonaws.com", endpoint.RecordTypeCNAME),
-		endpoint.NewEndpoint("filter-update-test.zone-3.ext-dns-test-2.gcp.zalan.do", "4.2.2.2", endpoint.RecordTypeA),
+		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
+		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.4.4"),
+		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "bar.elb.amazonaws.com"),
+		endpoint.NewEndpoint("filter-update-test.zone-3.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "4.2.2.2"),
 	}
 	updatedRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", "1.2.3.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", "4.3.2.1", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "baz.elb.amazonaws.com", endpoint.RecordTypeCNAME),
-		endpoint.NewEndpoint("filter-update-test.zone-3.ext-dns-test-2.gcp.zalan.do", "5.6.7.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("nomatch-update-test.zone-0.ext-dns-test-2.gcp.zalan.do", "8.7.6.5", endpoint.RecordTypeA),
+		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "4.3.2.1"),
+		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "baz.elb.amazonaws.com"),
+		endpoint.NewEndpoint("filter-update-test.zone-3.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "5.6.7.8"),
+		endpoint.NewEndpoint("nomatch-update-test.zone-0.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.7.6.5"),
 	}
 
 	deleteRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("delete-test.zone-1.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "qux.elb.amazonaws.com", endpoint.RecordTypeCNAME),
-		endpoint.NewEndpoint("filter-delete-test.zone-3.ext-dns-test-2.gcp.zalan.do", "4.2.2.2", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("nomatch-delete-test.zone-0.ext-dns-test-2.gcp.zalan.do", "4.2.2.1", endpoint.RecordTypeA),
+		endpoint.NewEndpoint("delete-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
+		endpoint.NewEndpoint("delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.4.4"),
+		endpoint.NewEndpoint("delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "qux.elb.amazonaws.com"),
+		endpoint.NewEndpoint("filter-delete-test.zone-3.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "4.2.2.2"),
+		endpoint.NewEndpoint("nomatch-delete-test.zone-0.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "4.2.2.1"),
 	}
 
 	changes := &plan.Changes{
@@ -398,48 +398,48 @@ func TestGoogleApplyChanges(t *testing.T) {
 	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
-		endpoint.NewEndpoint("create-test.zone-1.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", "1.2.3.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("create-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", "4.3.2.1", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("create-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "foo.elb.amazonaws.com", endpoint.RecordTypeCNAME),
-		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "baz.elb.amazonaws.com", endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("create-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
+		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.NewEndpoint("create-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.4.4"),
+		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "4.3.2.1"),
+		endpoint.NewEndpoint("create-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "foo.elb.amazonaws.com"),
+		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "baz.elb.amazonaws.com"),
 	})
 }
 
 func TestGoogleApplyChangesDryRun(t *testing.T) {
 	originalEndpoints := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("delete-test.zone-1.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "bar.elb.amazonaws.com", endpoint.RecordTypeCNAME),
-		endpoint.NewEndpoint("delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "qux.elb.amazonaws.com", endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
+		endpoint.NewEndpoint("delete-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
+		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.4.4"),
+		endpoint.NewEndpoint("delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.4.4"),
+		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "bar.elb.amazonaws.com"),
+		endpoint.NewEndpoint("delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "qux.elb.amazonaws.com"),
 	}
 
 	provider := newGoogleProvider(t, NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), NewZoneIDFilter([]string{""}), true, originalEndpoints)
 
 	createRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("create-test.zone-1.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("create-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("create-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "foo.elb.amazonaws.com", endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("create-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
+		endpoint.NewEndpoint("create-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.4.4"),
+		endpoint.NewEndpoint("create-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "foo.elb.amazonaws.com"),
 	}
 
 	currentRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "bar.elb.amazonaws.com", endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
+		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.4.4"),
+		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "bar.elb.amazonaws.com"),
 	}
 	updatedRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", "1.2.3.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", "4.3.2.1", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "baz.elb.amazonaws.com", endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.NewEndpoint("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "4.3.2.1"),
+		endpoint.NewEndpoint("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "baz.elb.amazonaws.com"),
 	}
 
 	deleteRecords := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("delete-test.zone-1.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "qux.elb.amazonaws.com", endpoint.RecordTypeCNAME),
+		endpoint.NewEndpoint("delete-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
+		endpoint.NewEndpoint("delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.4.4"),
+		endpoint.NewEndpoint("delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "qux.elb.amazonaws.com"),
 	}
 
 	changes := &plan.Changes{
@@ -466,13 +466,13 @@ func TestNewFilteredRecords(t *testing.T) {
 	provider := newGoogleProvider(t, NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), NewZoneIDFilter([]string{""}), false, []*endpoint.Endpoint{})
 
 	records := provider.newFilteredRecords([]*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA, 1),
-		endpoint.NewEndpointWithTTL("delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", "8.8.4.4", endpoint.RecordTypeA, 120),
-		endpoint.NewEndpointWithTTL("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "bar.elb.amazonaws.com", endpoint.RecordTypeCNAME, 4000),
+		endpoint.NewEndpointWithTTL("update-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, 1, "8.8.4.4"),
+		endpoint.NewEndpointWithTTL("delete-test.zone-2.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, 120, "8.8.4.4"),
+		endpoint.NewEndpointWithTTL("update-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, 4000, "bar.elb.amazonaws.com"),
 		// test fallback to Ttl:300 when Ttl==0 :
-		endpoint.NewEndpointWithTTL("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA, 0),
-		endpoint.NewEndpoint("delete-test.zone-1.ext-dns-test-2.gcp.zalan.do", "8.8.8.8", endpoint.RecordTypeA),
-		endpoint.NewEndpoint("delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", "qux.elb.amazonaws.com", endpoint.RecordTypeCNAME),
+		endpoint.NewEndpointWithTTL("update-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, 0, "8.8.8.8"),
+		endpoint.NewEndpoint("delete-test.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
+		endpoint.NewEndpoint("delete-test-cname.zone-1.ext-dns-test-2.gcp.zalan.do", endpoint.RecordTypeCNAME, "qux.elb.amazonaws.com"),
 	})
 
 	validateChangeRecords(t, records, []*dns.ResourceRecordSet{
@@ -591,6 +591,12 @@ func newGoogleProvider(t *testing.T, domainFilter DomainFilter, zoneIDFilter Zon
 	createZone(t, provider, &dns.ManagedZone{
 		Name:    "zone-3-ext-dns-test-2-gcp-zalan-do",
 		DnsName: "zone-3.ext-dns-test-2.gcp.zalan.do.",
+	})
+
+	// filtered out by domain filter
+	createZone(t, provider, &dns.ManagedZone{
+		Name:    "zone-4-ext-dns-test-3-gcp-zalan-do",
+		DnsName: "zone-4.ext-dns-test-3.gcp.zalan.do.",
 	})
 
 	setupGoogleRecords(t, provider, records)

@@ -41,7 +41,7 @@ func main() {
 	if err := cfg.ParseFlags(os.Args[1:]); err != nil {
 		log.Fatalf("flag parsing error: %v", err)
 	}
-	log.Infof("config: %+v", cfg)
+	log.Infof("config: %s", cfg)
 
 	if err := validation.ValidateConfig(cfg); err != nil {
 		log.Fatalf("config validation failed: %v", err)
@@ -67,11 +67,13 @@ func main() {
 
 	// Create a source.Config from the flags passed by the user.
 	sourceCfg := &source.Config{
-		Namespace:        cfg.Namespace,
-		AnnotationFilter: cfg.AnnotationFilter,
-		FQDNTemplate:     cfg.FQDNTemplate,
-		Compatibility:    cfg.Compatibility,
-		PublishInternal:  cfg.PublishInternal,
+		Namespace:                cfg.Namespace,
+		AnnotationFilter:         cfg.AnnotationFilter,
+		FQDNTemplate:             cfg.FQDNTemplate,
+		CombineFQDNAndAnnotation: cfg.CombineFQDNAndAnnotation,
+		Compatibility:            cfg.Compatibility,
+		PublishInternal:          cfg.PublishInternal,
+		ConnectorServer:          cfg.ConnectorSourceServer,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
@@ -93,7 +95,7 @@ func main() {
 	var p provider.Provider
 	switch cfg.Provider {
 	case "aws":
-		p, err = provider.NewAWSProvider(domainFilter, zoneIDFilter, zoneTypeFilter, cfg.DryRun)
+		p, err = provider.NewAWSProvider(domainFilter, zoneIDFilter, zoneTypeFilter, cfg.AWSAssumeRole, cfg.DryRun)
 	case "azure":
 		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.DryRun)
 	case "cloudflare":
@@ -121,19 +123,24 @@ func main() {
 	case "dyn":
 		p, err = provider.NewDynProvider(
 			provider.DynConfig{
-				DomainFilter: domainFilter,
-				ZoneIDFilter: zoneIDFilter,
-				DryRun:       cfg.DryRun,
-				CustomerName: cfg.DynCustomerName,
-				Username:     cfg.DynUsername,
-				Password:     cfg.DynPassword,
-				AppVersion:   externaldns.Version,
+				DomainFilter:  domainFilter,
+				ZoneIDFilter:  zoneIDFilter,
+				DryRun:        cfg.DryRun,
+				CustomerName:  cfg.DynCustomerName,
+				Username:      cfg.DynUsername,
+				Password:      cfg.DynPassword,
+				MinTTLSeconds: cfg.DynMinTTLSeconds,
+				AppVersion:    externaldns.Version,
 			},
 		)
 	case "coredns", "skydns":
 		p, err = provider.NewCoreDNSProvider(domainFilter, cfg.DryRun)
 	case "inmemory":
 		p, err = provider.NewInMemoryProvider(provider.InMemoryInitZones(cfg.InMemoryZones), provider.InMemoryWithDomain(domainFilter), provider.InMemoryWithLogging()), nil
+	case "designate":
+		p, err = provider.NewDesignateProvider(domainFilter, cfg.DryRun)
+	case "pdns":
+		p, err = provider.NewPDNSProvider(cfg.PDNSServer, cfg.PDNSAPIKey, domainFilter, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
