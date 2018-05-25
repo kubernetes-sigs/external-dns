@@ -45,7 +45,8 @@ Note that all flags can be replaced with environment variables; for instance,
 
 The following tutorials are provided:
 
-* [AWS](docs/tutorials/aws.md)
+* [AWS (Route53)](docs/tutorials/aws.md)
+* [AWS (Service Discovery)](docs/tutorials/aws-sd.md)
 * [Azure](docs/tutorials/azure.md)
 * [Cloudflare](docs/tutorials/cloudflare.md)
 * [DigitalOcean](docs/tutorials/digitalocean.md)
