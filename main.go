@@ -95,6 +95,13 @@ func main() {
 	switch cfg.Provider {
 	case "aws":
 		p, err = provider.NewAWSProvider(domainFilter, zoneIDFilter, zoneTypeFilter, cfg.AWSAssumeRole, cfg.DryRun)
+	case "aws-sd":
+		// Check that only compatible Registry is used with AWS-SD
+		if cfg.Registry != "noop" && cfg.Registry != "aws-sd-registry" {
+			log.Infof("Registry \"%s\" cannot be used with AWS ServiceDiscovery. Switching to \"aws-sd-registry\".", cfg.Registry)
+			cfg.Registry = "aws-sd-registry"
+		}
+		p, err = provider.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.DryRun)
 	case "azure":
 		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.DryRun)
 	case "cloudflare":
@@ -151,6 +158,8 @@ func main() {
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":
 		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTOwnerID)
+	case "aws-sd-registry":
+		r, err = registry.NewAWSSDRegistry(p.(*provider.AWSSDProvider), cfg.TXTOwnerID)
 	default:
 		log.Fatalf("unknown registry: %s", cfg.Registry)
 	}
@@ -179,7 +188,6 @@ func main() {
 
 		os.Exit(0)
 	}
-
 	ctrl.Run(stopChan)
 }
 
