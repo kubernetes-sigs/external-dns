@@ -35,6 +35,8 @@ const (
 	cloudFlareDelete = "DELETE"
 	// cloudFlareUpdate is a ChangeAction enum value
 	cloudFlareUpdate = "UPDATE"
+	// defaultCloudFlareRecordTTL 1 = automatic
+	defaultCloudFlareRecordTTL = 1
 )
 
 var cloudFlareTypeNotSupported = map[string]bool{
@@ -161,7 +163,7 @@ func (p *CloudFlareProvider) Records() ([]*endpoint.Endpoint, error) {
 
 		for _, r := range records {
 			if supportedRecordType(r.Type) {
-				endpoints = append(endpoints, endpoint.NewEndpoint(r.Name, r.Type, r.Content))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(r.Name, r.Type, endpoint.TTL(r.TTL), r.Content))
 			}
 		}
 	}
@@ -203,6 +205,7 @@ func (p *CloudFlareProvider) submitChanges(changes []*cloudFlareChange) error {
 			logFields := log.Fields{
 				"record": change.ResourceRecordSet.Name,
 				"type":   change.ResourceRecordSet.Type,
+				"ttl":    change.ResourceRecordSet.TTL,
 				"action": change.Action,
 				"zone":   zoneID,
 			}
@@ -278,16 +281,20 @@ func newCloudFlareChanges(action string, endpoints []*endpoint.Endpoint, proxied
 }
 
 func newCloudFlareChange(action string, endpoint *endpoint.Endpoint, proxied bool) *cloudFlareChange {
+	ttl := defaultCloudFlareRecordTTL
 	if proxied && (cloudFlareTypeNotSupported[endpoint.RecordType] || strings.Contains(endpoint.DNSName, "*")) {
 		proxied = false
+	}
+	//// min value:120
+	if endpoint.RecordTTL.IsConfigured() && endpoint.RecordTTL >= 120 {
+		ttl = int(endpoint.RecordTTL)
 	}
 
 	return &cloudFlareChange{
 		Action: action,
 		ResourceRecordSet: cloudflare.DNSRecord{
-			Name: endpoint.DNSName,
-			// TTL Value of 1 is 'automatic'
-			TTL:     1,
+			Name:    endpoint.DNSName,
+			TTL:     ttl,
 			Proxied: proxied,
 			Type:    endpoint.RecordType,
 			Content: endpoint.Targets[0],
