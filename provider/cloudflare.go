@@ -285,8 +285,7 @@ func newCloudFlareChange(action string, endpoint *endpoint.Endpoint, proxied boo
 	if proxied && (cloudFlareTypeNotSupported[endpoint.RecordType] || strings.Contains(endpoint.DNSName, "*")) {
 		proxied = false
 	}
-	//// min value:120
-	if endpoint.RecordTTL.IsConfigured() && endpoint.RecordTTL >= 120 {
+	if endpoint.RecordTTL.IsConfigured() {
 		ttl = int(endpoint.RecordTTL)
 	}
 
