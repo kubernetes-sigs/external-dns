@@ -146,6 +146,7 @@ metadata:
   name: nginx
   annotations:
     external-dns.alpha.kubernetes.io/hostname: example.com
+    external-dns.alpha.kubernetes.io/ttl: "120" #optional
 spec:
   selector:
     app: nginx
@@ -158,6 +159,9 @@ spec:
 
 Note the annotation on the service; use the same hostname as the Cloudflare DNS zone created above. The annotation may also be a subdomain
 of the DNS zone (e.g. 'www.example.com').
+
+By setting the TTL annotation on the service, you have to pass a valid TTL, which must be 120 or above.
+This annotation is optional, if you won't set it, it will be 1 (automatic) which is 300.
 
 ExternalDNS uses this annotation to determine what services should be registered with DNS.  Removing the annotation
 will cause ExternalDNS to remove the corresponding DNS records.

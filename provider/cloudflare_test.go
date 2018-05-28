@@ -348,15 +348,10 @@ func TestNewCloudFlareChanges(t *testing.T) {
 			"DefaultRecordTTL",
 			1,
 		},
-		{
-			"InvalidRecordTTL",
-			1,
-		},
 	}
 	endpoints := []*endpoint.Endpoint{
 		{DNSName: "new", Targets: endpoint.Targets{"target"}, RecordTTL: 120},
 		{DNSName: "new2", Targets: endpoint.Targets{"target2"}},
-		{DNSName: "new3", Targets: endpoint.Targets{"target2"}, RecordTTL: 60},
 	}
 	changes := newCloudFlareChanges(cloudFlareCreate, endpoints, true)
 	for i, change := range changes {
