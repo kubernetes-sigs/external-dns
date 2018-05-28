@@ -39,8 +39,8 @@ func (m *mockCloudFlareClient) CreateDNSRecord(zoneID string, rr cloudflare.DNSR
 func (m *mockCloudFlareClient) DNSRecords(zoneID string, rr cloudflare.DNSRecord) ([]cloudflare.DNSRecord, error) {
 	if zoneID == "1234567890" {
 		return []cloudflare.DNSRecord{
-				{ID: "1234567890", Name: "foobar.ext-dns-test.zalando.to.", Type: endpoint.RecordTypeA},
-				{ID: "1231231233", Name: "foo.bar.com"}},
+				{ID: "1234567890", Name: "foobar.ext-dns-test.zalando.to.", Type: endpoint.RecordTypeA, TTL: 120},
+				{ID: "1231231233", Name: "foo.bar.com", TTL: 1}},
 			nil
 	}
 	return nil, nil
@@ -336,8 +336,31 @@ func (m *mockCloudFlareUpdateRecordsFail) ListZones(zoneID ...string) ([]cloudfl
 }
 
 func TestNewCloudFlareChanges(t *testing.T) {
-	endpoints := []*endpoint.Endpoint{{DNSName: "new", Targets: endpoint.Targets{"target"}}}
-	newCloudFlareChanges(cloudFlareCreate, endpoints, true)
+	expect := []struct {
+		Name string
+		TTL  int
+	}{
+		{
+			"CustomRecordTTL",
+			120,
+		},
+		{
+			"DefaultRecordTTL",
+			1,
+		},
+	}
+	endpoints := []*endpoint.Endpoint{
+		{DNSName: "new", Targets: endpoint.Targets{"target"}, RecordTTL: 120},
+		{DNSName: "new2", Targets: endpoint.Targets{"target2"}},
+	}
+	changes := newCloudFlareChanges(cloudFlareCreate, endpoints, true)
+	for i, change := range changes {
+		assert.Equal(
+			t,
+			change.ResourceRecordSet.TTL,
+			expect[i].TTL,
+			expect[i].Name)
+	}
 }
 
 func TestNewCloudFlareChangeNoProxied(t *testing.T) {
