@@ -124,6 +124,7 @@ func TestDnsimpleServices(t *testing.T) {
 	t.Run("Zones", testDnsimpleProviderZones)
 	t.Run("Records", testDnsimpleProviderRecords)
 	t.Run("ApplyChanges", testDnsimpleProviderApplyChanges)
+	t.Run("ApplyChanges/SkipUnknownZone", testDnsimpleProviderApplyChangesSkipsUnknown)
 	t.Run("SuitableZone", testDnsimpleSuitableZone)
 	t.Run("GetRecordID", testDnsimpleGetRecordID)
 }
@@ -162,6 +163,19 @@ func testDnsimpleProviderApplyChanges(t *testing.T) {
 	err := mockProvider.ApplyChanges(changes)
 	if err != nil {
 		t.Errorf("Failed to apply changes: %v", err)
+	}
+}
+
+func testDnsimpleProviderApplyChangesSkipsUnknown(t *testing.T) {
+	changes := &plan.Changes{}
+	changes.Create = []*endpoint.Endpoint{
+		{DNSName: "example.not-included.com", Targets: endpoint.Targets{"dasd"}, RecordType: endpoint.RecordTypeCNAME},
+	}
+
+	mockProvider.accountID = "1"
+	err := mockProvider.ApplyChanges(changes)
+	if err != nil {
+		t.Errorf("Failed to ignore unknown zones: %v", err)
 	}
 }
 
