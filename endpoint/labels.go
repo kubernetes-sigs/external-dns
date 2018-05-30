@@ -34,6 +34,10 @@ const (
 	OwnerLabelKey = "owner"
 	// ResourceLabelKey is the name of the label that identifies k8s resource which wants to acquire the DNS name
 	ResourceLabelKey = "resource"
+
+	// AWSSDDescriptionLabel label responsible for storing raw owner/resource combination information in the Labels
+	// supposed to be inserted by AWS SD Provider, and parsed into OwnerLabelKey and ResourceLabelKey key by AWS SD Registry
+	AWSSDDescriptionLabel = "aws-sd-description"
 )
 
 // Labels store metadata related to the endpoint
