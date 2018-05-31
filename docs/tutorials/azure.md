@@ -103,6 +103,16 @@ If the Kubernetes cluster is not hosted by Azure Container Services and you stil
   "resourceGroup": "MyDnsResourceGroup",
 }
 ```
+If [Azure Managed Service Identity (MSI)](https://docs.microsoft.com/en-us/azure/active-directory/managed-service-identity/overview) is enabled for virtual machines, then there is no need to create separate service principal. The contents of `azure.json` should be similar to this:
+```
+{
+  "tenantId": "AzureAD tenant Id",
+  "subscriptionId": "Id",
+  "resourceGroup": "MyDnsResourceGroup",
+  "useManagedIdentityExtension": true,
+}
+```
+
 If you have all the information necessary: create a file called azure.json containing the json structure above and substitute the values. Otherwise create a service principal as previously shown before creating the Kubernetes secret.
 
 Then add the secret to the Kubernetes cluster before continuing:

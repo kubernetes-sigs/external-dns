@@ -40,13 +40,14 @@ const (
 )
 
 type config struct {
-	Cloud          string `json:"cloud" yaml:"cloud"`
-	TenantID       string `json:"tenantId" yaml:"tenantId"`
-	SubscriptionID string `json:"subscriptionId" yaml:"subscriptionId"`
-	ResourceGroup  string `json:"resourceGroup" yaml:"resourceGroup"`
-	Location       string `json:"location" yaml:"location"`
-	ClientID       string `json:"aadClientId" yaml:"aadClientId"`
-	ClientSecret   string `json:"aadClientSecret" yaml:"aadClientSecret"`
+	Cloud                       string `json:"cloud" yaml:"cloud"`
+	TenantID                    string `json:"tenantId" yaml:"tenantId"`
+	SubscriptionID              string `json:"subscriptionId" yaml:"subscriptionId"`
+	ResourceGroup               string `json:"resourceGroup" yaml:"resourceGroup"`
+	Location                    string `json:"location" yaml:"location"`
+	ClientID                    string `json:"aadClientId" yaml:"aadClientId"`
+	ClientSecret                string `json:"aadClientSecret" yaml:"aadClientSecret"`
+	UseManagedIdentityExtension bool   `json:"useManagedIdentityExtension" yaml:"useManagedIdentityExtension"`
 }
 
 // ZonesClient is an interface of dns.ZoneClient that can be stubbed for testing.
@@ -102,14 +103,30 @@ func NewAzureProvider(configFile string, domainFilter DomainFilter, zoneIDFilter
 		}
 	}
 
-	oauthConfig, err := adal.NewOAuthConfig(environment.ActiveDirectoryEndpoint, cfg.TenantID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve OAuth config: %v", err)
-	}
+	// Try to retrive token with MSI if enabled or with client ID and client secret.
+	var token *adal.ServicePrincipalToken
+	if cfg.UseManagedIdentityExtension {
+		log.Info("Using managed identity extension to retrieve access token for Azure API.")
+		msiEndpoint, err := adal.GetMSIVMEndpoint()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get the managed service identity endpoint: %v", err)
+		}
 
-	token, err := adal.NewServicePrincipalToken(*oauthConfig, cfg.ClientID, cfg.ClientSecret, environment.ResourceManagerEndpoint)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create service principal token: %v", err)
+		token, err = adal.NewServicePrincipalTokenFromMSI(msiEndpoint, environment.ServiceManagementEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
+		}
+	} else {
+		log.Info("Using client_id+client_secret to retrieve access token for Azure API.")
+		oauthConfig, err := adal.NewOAuthConfig(environment.ActiveDirectoryEndpoint, cfg.TenantID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to retrieve OAuth config: %v", err)
+		}
+
+		token, err = adal.NewServicePrincipalToken(*oauthConfig, cfg.ClientID, cfg.ClientSecret, environment.ResourceManagerEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create service principal token: %v", err)
+		}
 	}
 
 	zonesClient := dns.NewZonesClientWithBaseURI(environment.ResourceManagerEndpoint, cfg.SubscriptionID)
