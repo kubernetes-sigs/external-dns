@@ -227,9 +227,11 @@ func (p *dnsimpleProvider) submitChanges(changes []*dnsimpleChange) error {
 	}
 	for _, change := range changes {
 		zone := dnsimpleSuitableZone(change.ResourceRecordSet.Name, zones)
-		if zone.ID == 0 {
-			return fmt.Errorf("No suitable zone name found")
+		if zone == nil {
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", change.ResourceRecordSet.Name)
+			continue
 		}
+
 		log.Infof("Changing records: %s %v in zone: %s", change.Action, change.ResourceRecordSet, zone.Name)
 
 		change.ResourceRecordSet.Name = strings.TrimSuffix(change.ResourceRecordSet.Name, "."+zone.Name)
@@ -290,12 +292,13 @@ func (p *dnsimpleProvider) GetRecordID(zone string, recordName string) (recordID
 }
 
 // dnsimpleSuitableZone returns the most suitable zone for a given hostname and a set of zones.
-func dnsimpleSuitableZone(hostname string, zones map[string]dnsimple.Zone) dnsimple.Zone {
-	var zone dnsimple.Zone
+func dnsimpleSuitableZone(hostname string, zones map[string]dnsimple.Zone) *dnsimple.Zone {
+	var zone *dnsimple.Zone
 	for _, z := range zones {
 		if strings.HasSuffix(hostname, z.Name) {
-			if zone.ID == 0 || len(z.Name) > len(zone.Name) {
-				zone = z
+			if zone == nil || len(z.Name) > len(zone.Name) {
+				newZ := z
+				zone = &newZ
 			}
 		}
 	}

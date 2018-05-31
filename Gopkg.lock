@@ -78,18 +78,23 @@
     "aws/request",
     "aws/session",
     "aws/signer/v4",
+    "internal/sdkio",
+    "internal/sdkrand",
     "internal/shareddefaults",
     "private/protocol",
+    "private/protocol/json/jsonutil",
+    "private/protocol/jsonrpc",
     "private/protocol/query",
     "private/protocol/query/queryutil",
     "private/protocol/rest",
     "private/protocol/restxml",
     "private/protocol/xml/xmlutil",
     "service/route53",
+    "service/servicediscovery",
     "service/sts"
   ]
-  revision = "96358b8282b1a3aa66836d2f2fe66216cc419668"
-  version = "v1.8.44"
+  revision = "9b0098a71f6d4d473a26ec8ad3c2feaac6eb1da6"
+  version = "v1.13.32"
 
 [[projects]]
   branch = "master"
@@ -283,10 +288,9 @@
   revision = "e2811d86bed7bb487eeb0806337b6f9e9d93d5e7"
 
 [[projects]]
-  branch = "master"
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
-  revision = "dd801d4f4ce7ac746e7e7b4489d2fa600b3b096b"
+  revision = "0b12d6b5"
 
 [[projects]]
   name = "github.com/jonboulle/clockwork"
@@ -662,6 +666,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "371e8260c0580f391a14a867114e0b92e9b5b1b1b9fd2945410b6b8f7d1db498"
+  inputs-digest = "f9b25c176e21e86728a7573a3cf7e7e4776c1a51b609d4827c2f8b2cf1588c51"
   solver-name = "gps-cdcl"
   solver-version = 1
