@@ -1055,12 +1055,13 @@ func TestNodePortServices(t *testing.T) {
 			},
 			nil,
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}},
+				{DNSName: "_30192._tcp.foo.example.org", Targets: endpoint.Targets{"0 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
 		},
 		{
-			"non-annotated ClusterIp services with set fqdnTemplate return an endpoint with target IP",
+			"non-annotated NodePort services with set fqdnTemplate return an endpoint with target IP",
 			"",
 			"",
 			"testing",
@@ -1072,7 +1073,8 @@ func TestNodePortServices(t *testing.T) {
 			map[string]string{},
 			nil,
 			[]*endpoint.Endpoint{
-				{DNSName: "foo.bar.example.com", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}},
+				{DNSName: "_30192._tcp.foo.bar.example.com", Targets: endpoint.Targets{"0 30192 foo.bar.example.com"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.bar.example.com", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
 		},
@@ -1108,6 +1110,11 @@ func TestNodePortServices(t *testing.T) {
 			service := &v1.Service{
 				Spec: v1.ServiceSpec{
 					Type: tc.svcType,
+					Ports: []v1.ServicePort{
+						v1.ServicePort{
+							NodePort: 30192,
+						},
+					},
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace:   tc.svcNamespace,
