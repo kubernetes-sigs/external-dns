@@ -1111,7 +1111,7 @@ func TestNodePortServices(t *testing.T) {
 				Spec: v1.ServiceSpec{
 					Type: tc.svcType,
 					Ports: []v1.ServicePort{
-						v1.ServicePort{
+						{
 							NodePort: 30192,
 						},
 					},
