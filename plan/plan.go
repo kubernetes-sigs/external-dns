@@ -17,7 +17,12 @@ limitations under the License.
 package plan
 
 import (
+	"fmt"
+	"regexp"
+	"strings"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	log "github.com/sirupsen/logrus"
 )
 
 // Plan can convert a list of desired and current records to a series of create,
@@ -77,17 +82,27 @@ type planTableRow struct {
 }
 
 func (t planTable) addCurrent(e *endpoint.Endpoint) {
-	if _, ok := t.rows[e.DNSName]; !ok {
-		t.rows[e.DNSName] = &planTableRow{}
+	dnsName, err := stripLowerName(e.DNSName)
+	if err != nil {
+		log.Errorf("Skipping endpoint %v", err)
+		return
 	}
-	t.rows[e.DNSName].current = e
+	if _, ok := t.rows[dnsName]; !ok {
+		t.rows[dnsName] = &planTableRow{}
+	}
+	t.rows[dnsName].current = e
 }
 
 func (t planTable) addCandidate(e *endpoint.Endpoint) {
-	if _, ok := t.rows[e.DNSName]; !ok {
-		t.rows[e.DNSName] = &planTableRow{}
+	dnsName, err := stripLowerName(e.DNSName)
+	if err != nil {
+		log.Errorf("Skipping endpoint %v", err)
+		return
 	}
-	t.rows[e.DNSName].candidates = append(t.rows[e.DNSName].candidates, e)
+	if _, ok := t.rows[dnsName]; !ok {
+		t.rows[dnsName] = &planTableRow{}
+	}
+	t.rows[dnsName].candidates = append(t.rows[dnsName].candidates, e)
 }
 
 // TODO: allows record type change, which might not be supported by all dns providers
@@ -174,4 +189,17 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 		return false
 	}
 	return desired.RecordTTL != current.RecordTTL
+}
+
+func stripLowerName(dnsName string) (string, error) {
+	dnsName = strings.ToLower(dnsName)
+	dnsName = strings.TrimSpace(dnsName)
+	reg, err := regexp.Compile(`^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$`)
+	if err != nil {
+		return "", err
+	}
+	if !reg.MatchString(dnsName) {
+		return "", fmt.Errorf("%s because dns record is invalid", dnsName)
+	}
+	return dnsName, nil
 }

@@ -34,6 +34,8 @@ type PlanTestSuite struct {
 	bar127A                *endpoint.Endpoint
 	bar127AWithTTL         *endpoint.Endpoint
 	bar192A                *endpoint.Endpoint
+	invalidV2Cname         *endpoint.Endpoint
+	invalidWithTTL         *endpoint.Endpoint
 }
 
 func (suite *PlanTestSuite) SetupTest() {
@@ -102,6 +104,17 @@ func (suite *PlanTestSuite) SetupTest() {
 			endpoint.ResourceLabelKey: "ingress/default/bar-192",
 		},
 	}
+	suite.invalidV2Cname = &endpoint.Endpoint{
+		DNSName:    "IamInvalid!",
+		Targets:    endpoint.Targets{"v2"},
+		RecordType: "CNAME",
+	}
+	suite.invalidWithTTL = &endpoint.Endpoint{
+		DNSName:    "5HW598OVOMBY!!!.cluster.juni.io",
+		Targets:    endpoint.Targets{"127.0.0.1"},
+		RecordType: "A",
+		RecordTTL:  300,
+	}
 }
 
 func (suite *PlanTestSuite) TestSyncFirstRound() {
@@ -147,7 +160,7 @@ func (suite *PlanTestSuite) TestSyncSecondRound() {
 }
 
 func (suite *PlanTestSuite) TestSyncSecondRoundMigration() {
-	current := []*endpoint.Endpoint{suite.fooV2CnameNoLabel}
+	current := []*endpoint.Endpoint{suite.fooV2CnameNoLabel, suite.invalidWithTTL}
 	desired := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooV1Cname, suite.bar127A}
 	expectedCreate := []*endpoint.Endpoint{suite.bar127A}
 	expectedUpdateOld := []*endpoint.Endpoint{suite.fooV2CnameNoLabel}
@@ -241,8 +254,8 @@ func (suite *PlanTestSuite) TestIdempotency() {
 }
 
 func (suite *PlanTestSuite) TestDifferentTypes() {
-	current := []*endpoint.Endpoint{suite.fooV1Cname}
-	desired := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooA5}
+	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.invalidV2Cname}
+	desired := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooA5, suite.invalidV2Cname}
 	expectedCreate := []*endpoint.Endpoint{}
 	expectedUpdateOld := []*endpoint.Endpoint{suite.fooV1Cname}
 	expectedUpdateNew := []*endpoint.Endpoint{suite.fooA5}
@@ -327,8 +340,8 @@ func (suite *PlanTestSuite) TestDuplicatedEndpointsForSameResourceReplace() {
 
 //TODO: remove once multiple-target per endpoint is supported
 func (suite *PlanTestSuite) TestDuplicatedEndpointsForSameResourceRetain() {
-	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.bar192A}
-	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV3CnameSameResource}
+	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.bar192A, suite.invalidV2Cname}
+	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV3CnameSameResource, suite.invalidV2Cname}
 	expectedCreate := []*endpoint.Endpoint{}
 	expectedUpdateOld := []*endpoint.Endpoint{}
 	expectedUpdateNew := []*endpoint.Endpoint{}
