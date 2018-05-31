@@ -28,6 +28,10 @@ func TestRecordTypeFilter(t *testing.T) {
 			true,
 		},
 		{
+			"AAAA",
+			true,
+		},
+		{
 			"CNAME",
 			true,
 		},

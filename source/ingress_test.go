@@ -773,6 +773,17 @@ func testIngressEndpoints(t *testing.T) {
 					ips:       []string{},
 					hostnames: []string{},
 				},
+				{
+					name:      "fake4",
+					namespace: namespace,
+					annotations: map[string]string{
+						targetAnnotationKey: "FE80::0202:B3FF:FE1E:8329",
+						ipv6AnnotationKey:   "true",
+					},
+					dnsnames:  []string{},
+					ips:       []string{},
+					hostnames: []string{},
+				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
@@ -789,6 +800,11 @@ func testIngressEndpoints(t *testing.T) {
 					DNSName:    "fake3.ext-dns.test.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "fake4.ext-dns.test.com",
+					Targets:    endpoint.Targets{"FE80::0202:B3FF:FE1E:8329"},
+					RecordType: endpoint.RecordTypeAAAA,
 				},
 			},
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",

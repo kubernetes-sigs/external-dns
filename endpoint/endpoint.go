@@ -25,6 +25,8 @@ import (
 const (
 	// RecordTypeA is a RecordType enum value
 	RecordTypeA = "A"
+	// RecordTypeAAAA is a RecordType enum value
+	RecordTypeAAAA = "AAAA"
 	// RecordTypeCNAME is a RecordType enum value
 	RecordTypeCNAME = "CNAME"
 	// RecordTypeTXT is a RecordType enum value
@@ -117,6 +119,8 @@ type Endpoint struct {
 	RecordTTL TTL
 	// Labels stores labels defined for the Endpoint
 	Labels Labels
+	// IPv6 for the AAAA records
+	IPv6 bool
 }
 
 // NewEndpoint initialization method to be used to create an endpoint
@@ -130,14 +134,19 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 	for idx, target := range targets {
 		cleanTargets[idx] = strings.TrimSuffix(target, ".")
 	}
-
-	return &Endpoint{
+	ep := &Endpoint{
 		DNSName:    strings.TrimSuffix(dnsName, "."),
 		Targets:    cleanTargets,
 		RecordType: recordType,
 		Labels:     NewLabels(),
 		RecordTTL:  ttl,
 	}
+	if recordType == RecordTypeAAAA {
+		ep.IPv6 = true
+	} else {
+		ep.IPv6 = false
+	}
+	return ep
 }
 
 func (e *Endpoint) String() string {

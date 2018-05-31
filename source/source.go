@@ -35,6 +35,8 @@ const (
 	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
 	// The annotation used for defining the desired DNS record TTL
 	ttlAnnotationKey = "external-dns.alpha.kubernetes.io/ttl"
+	// The annotation used for IPv6
+	ipv6AnnotationKey = "external-dns.alpha.kubernetes.io/ipv6"
 	// The value of the controller annotation so that we feel responsible
 	controllerAnnotationValue = "dns-controller"
 )
@@ -74,11 +76,25 @@ func getHostnamesFromAnnotations(annotations map[string]string) []string {
 	return strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
 }
 
+func getIPv6FromAnnotations(annotations map[string]string) bool {
+	ipv6Annotation := annotations[ipv6AnnotationKey]
+	switch ipv6Annotation {
+	case "1", "true", "TRUE", "True":
+		return true
+	default:
+		return false
+	}
+}
+
 // suitableType returns the DNS resource record type suitable for the target.
 // In this case type A for IPs and type CNAME for everything else.
 func suitableType(target string) string {
-	if net.ParseIP(target) != nil {
+	ip := net.ParseIP(target)
+	if ip.To4() != nil {
 		return endpoint.RecordTypeA
+	} else if ip.To16() != nil {
+		return endpoint.RecordTypeAAAA
+	} else {
+		return endpoint.RecordTypeCNAME
 	}
-	return endpoint.RecordTypeCNAME
 }

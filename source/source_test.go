@@ -81,6 +81,8 @@ func TestSuitableType(t *testing.T) {
 		target, recordType, expected string
 	}{
 		{"8.8.8.8", "", "A"},
+		{"FE80::0202:B3FF:FE1E:8329", "", "AAAA"},
+		{"fdf8:f53b:82e4::53", "", "AAAA"},
 		{"foo.example.org", "", "CNAME"},
 		{"bar.eu-central-1.elb.amazonaws.com", "", "CNAME"},
 	} {

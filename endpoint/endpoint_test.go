@@ -33,6 +33,11 @@ func TestNewEndpoint(t *testing.T) {
 	if w.DNSName != "example.org" || w.Targets[0] != "load-balancer.com" || w.RecordType != "" {
 		t.Error("endpoint is not initialized correctly")
 	}
+
+	r := NewEndpoint("example.org.", "AAAA", "load-balancer.com.")
+	if r.DNSName != "example.org" || r.Targets[0] != "load-balancer.com" || r.RecordType != "AAAA" {
+		t.Error("endpoint is not initialized correctly")
+	}
 }
 
 func TestTargetsSame(t *testing.T) {

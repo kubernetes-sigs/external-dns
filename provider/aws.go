@@ -209,7 +209,14 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 			}
 
 			if r.AliasTarget != nil {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), endpoint.RecordTypeCNAME, ttl, aws.StringValue(r.AliasTarget.DNSName)))
+				switch aws.StringValue(r.Type) {
+				case endpoint.RecordTypeAAAA:
+					ep := endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), endpoint.RecordTypeCNAME, ttl, aws.StringValue(r.AliasTarget.DNSName))
+					ep.IPv6 = true
+					endpoints = append(endpoints, ep)
+				default:
+					endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), endpoint.RecordTypeCNAME, ttl, aws.StringValue(r.AliasTarget.DNSName)))
+				}
 			}
 		}
 
@@ -404,7 +411,11 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 	}
 
 	if isAWSLoadBalancer(endpoint) {
-		change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
+		if endpoint.IPv6 {
+			change.ResourceRecordSet.Type = aws.String(route53.RRTypeAaaa)
+		} else {
+			change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
+		}
 		change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
 			DNSName:              aws.String(endpoint.Targets[0]),
 			HostedZoneId:         aws.String(canonicalHostedZone(endpoint.Targets[0])),
@@ -424,7 +435,6 @@ func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
 			}
 		}
 	}
-
 	return change
 }
 

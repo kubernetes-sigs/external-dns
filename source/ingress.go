@@ -245,12 +245,15 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 	var endpoints []*endpoint.Endpoint
 
 	var aTargets endpoint.Targets
+	var aaaaTargets endpoint.Targets
 	var cnameTargets endpoint.Targets
 
 	for _, t := range targets {
 		switch suitableType(t) {
 		case endpoint.RecordTypeA:
 			aTargets = append(aTargets, t)
+		case endpoint.RecordTypeAAAA:
+			aaaaTargets = append(aaaaTargets, t)
 		default:
 			cnameTargets = append(cnameTargets, t)
 		}
@@ -265,6 +268,17 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 			Labels:     endpoint.NewLabels(),
 		}
 		endpoints = append(endpoints, epA)
+	}
+
+	if len(aaaaTargets) > 0 {
+		epAAAA := &endpoint.Endpoint{
+			DNSName:    strings.TrimSuffix(hostname, "."),
+			Targets:    aaaaTargets,
+			RecordTTL:  ttl,
+			RecordType: endpoint.RecordTypeAAAA,
+			Labels:     endpoint.NewLabels(),
+		}
+		endpoints = append(endpoints, epAAAA)
 	}
 
 	if len(cnameTargets) > 0 {

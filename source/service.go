@@ -242,6 +242,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*
 	if err != nil {
 		log.Warn(err)
 	}
+	isIPv6 := getIPv6FromAnnotations(svc.Annotations)
 
 	epA := &endpoint.Endpoint{
 		RecordTTL:  ttl,
@@ -249,6 +250,16 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*
 		Labels:     endpoint.NewLabels(),
 		Targets:    make(endpoint.Targets, 0, defaultTargetsCapacity),
 		DNSName:    hostname,
+		IPv6:       isIPv6,
+	}
+
+	epAAAA := &endpoint.Endpoint{
+		RecordTTL:  ttl,
+		RecordType: endpoint.RecordTypeAAAA,
+		Labels:     endpoint.NewLabels(),
+		Targets:    make(endpoint.Targets, 0, defaultTargetsCapacity),
+		DNSName:    hostname,
+		IPv6:       isIPv6,
 	}
 
 	epCNAME := &endpoint.Endpoint{
@@ -257,6 +268,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*
 		Labels:     endpoint.NewLabels(),
 		Targets:    make(endpoint.Targets, 0, defaultTargetsCapacity),
 		DNSName:    hostname,
+		IPv6:       isIPv6,
 	}
 
 	var endpoints []*endpoint.Endpoint
@@ -279,6 +291,9 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*
 		if suitableType(t) == endpoint.RecordTypeA {
 			epA.Targets = append(epA.Targets, t)
 		}
+		if suitableType(t) == endpoint.RecordTypeAAAA {
+			epAAAA.Targets = append(epAAAA.Targets, t)
+		}
 		if suitableType(t) == endpoint.RecordTypeCNAME {
 			epCNAME.Targets = append(epCNAME.Targets, t)
 		}
@@ -286,6 +301,9 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*
 
 	if len(epA.Targets) > 0 {
 		endpoints = append(endpoints, epA)
+	}
+	if len(epAAAA.Targets) > 0 {
+		endpoints = append(endpoints, epAAAA)
 	}
 	if len(epCNAME.Targets) > 0 {
 		endpoints = append(endpoints, epCNAME)
