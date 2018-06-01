@@ -110,7 +110,7 @@ func (suite *PlanTestSuite) SetupTest() {
 		RecordType: "CNAME",
 	}
 	suite.invalidWithTTL = &endpoint.Endpoint{
-		DNSName:    "5HW598OVOMBY!!!.cluster.juni.io",
+		DNSName:    "www-test?32.cluster.com",
 		Targets:    endpoint.Targets{"127.0.0.1"},
 		RecordType: "A",
 		RecordTTL:  300,

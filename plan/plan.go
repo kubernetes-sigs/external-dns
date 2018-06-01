@@ -82,7 +82,7 @@ type planTableRow struct {
 }
 
 func (t planTable) addCurrent(e *endpoint.Endpoint) {
-	dnsName, err := stripLowerName(e.DNSName)
+	dnsName, err := validateDNSName(e.DNSName)
 	if err != nil {
 		log.Errorf("Skipping endpoint %v", err)
 		return
@@ -94,7 +94,7 @@ func (t planTable) addCurrent(e *endpoint.Endpoint) {
 }
 
 func (t planTable) addCandidate(e *endpoint.Endpoint) {
-	dnsName, err := stripLowerName(e.DNSName)
+	dnsName, err := validateDNSName(e.DNSName)
 	if err != nil {
 		log.Errorf("Skipping endpoint %v", err)
 		return
@@ -191,7 +191,7 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 	return desired.RecordTTL != current.RecordTTL
 }
 
-func stripLowerName(dnsName string) (string, error) {
+func validateDNSName(dnsName string) (string, error) {
 	dnsName = strings.ToLower(dnsName)
 	dnsName = strings.TrimSpace(dnsName)
 	reg, err := regexp.Compile(`^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$`)
@@ -199,7 +199,7 @@ func stripLowerName(dnsName string) (string, error) {
 		return "", err
 	}
 	if !reg.MatchString(dnsName) {
-		return "", fmt.Errorf("%s because dns record is invalid", dnsName)
+		return "", fmt.Errorf("%s because DNS name is invalid", dnsName)
 	}
 	return dnsName, nil
 }
