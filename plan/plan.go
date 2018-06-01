@@ -191,6 +191,10 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 	return desired.RecordTTL != current.RecordTTL
 }
 
+// validateDNSName checks if the DNS name is correct
+// A dns name may contain only the ASCII letters 'a' through 'z' (in a case-insensitive manner),
+// the digits '0' through '9', and the hyphen ('-').
+// No other symbols or white space are allowed.
 func validateDNSName(dnsName string) (string, error) {
 	dnsName = strings.ToLower(dnsName)
 	dnsName = strings.TrimSpace(dnsName)
