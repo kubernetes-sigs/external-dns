@@ -103,30 +103,9 @@ func NewAzureProvider(configFile string, domainFilter DomainFilter, zoneIDFilter
 		}
 	}
 
-	// Try to retrive token with MSI if enabled or with client ID and client secret.
-	var token *adal.ServicePrincipalToken
-	if cfg.UseManagedIdentityExtension {
-		log.Info("Using managed identity extension to retrieve access token for Azure API.")
-		msiEndpoint, err := adal.GetMSIVMEndpoint()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get the managed service identity endpoint: %v", err)
-		}
-
-		token, err = adal.NewServicePrincipalTokenFromMSI(msiEndpoint, environment.ServiceManagementEndpoint)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
-		}
-	} else {
-		log.Info("Using client_id+client_secret to retrieve access token for Azure API.")
-		oauthConfig, err := adal.NewOAuthConfig(environment.ActiveDirectoryEndpoint, cfg.TenantID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to retrieve OAuth config: %v", err)
-		}
-
-		token, err = adal.NewServicePrincipalToken(*oauthConfig, cfg.ClientID, cfg.ClientSecret, environment.ResourceManagerEndpoint)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create service principal token: %v", err)
-		}
+	token, err := getAccessToken(cfg, environment)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get token: %v", err)
 	}
 
 	zonesClient := dns.NewZonesClientWithBaseURI(environment.ResourceManagerEndpoint, cfg.SubscriptionID)
@@ -143,6 +122,41 @@ func NewAzureProvider(configFile string, domainFilter DomainFilter, zoneIDFilter
 		recordsClient: recordsClient,
 	}
 	return provider, nil
+}
+
+// getAccessToken retrieves Azure API access token.
+func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePrincipalToken, error) {
+	// Try to retrive token with MSI.
+	if cfg.UseManagedIdentityExtension {
+		log.Info("Using managed identity extension to retrieve access token for Azure API.")
+		msiEndpoint, err := adal.GetMSIVMEndpoint()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get the managed service identity endpoint: %v", err)
+		}
+
+		token, err := adal.NewServicePrincipalTokenFromMSI(msiEndpoint, environment.ServiceManagementEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
+		}
+		return token, nil
+	}
+
+	// Try to retrieve token with service principal credentials.
+	if len(cfg.ClientID) > 0 && len(cfg.ClientSecret) > 0 {
+		log.Info("Using client_id+client_secret to retrieve access token for Azure API.")
+		oauthConfig, err := adal.NewOAuthConfig(environment.ActiveDirectoryEndpoint, cfg.TenantID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to retrieve OAuth config: %v", err)
+		}
+
+		token, err := adal.NewServicePrincipalToken(*oauthConfig, cfg.ClientID, cfg.ClientSecret, environment.ResourceManagerEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create service principal token: %v", err)
+		}
+		return token, nil
+	}
+
+	return nil, fmt.Errorf("no credentials provided for Azure API")
 }
 
 // Records gets the current records.

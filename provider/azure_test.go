@@ -21,6 +21,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/arm/dns"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -300,5 +301,20 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordsClie
 
 	if err := provider.ApplyChanges(changes); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestAzureGetAccessToken(t *testing.T) {
+	env := azure.PublicCloud
+	cfg := config{
+		ClientID:                    "",
+		ClientSecret:                "",
+		TenantID:                    "",
+		UseManagedIdentityExtension: false,
+	}
+
+	_, err := getAccessToken(cfg, env)
+	if err == nil {
+		t.Fatalf("expected to fail, but got no error")
 	}
 }
