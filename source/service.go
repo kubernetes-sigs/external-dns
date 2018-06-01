@@ -91,18 +91,9 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	}
 
 	// get the ip addresses of all the nodes and cache them for this run
-	nodes, err := sc.client.CoreV1().Nodes().List(metav1.ListOptions{})
+	nodeTargets, err := sc.extractNodeTargets()
 	if err != nil {
 		return nil, err
-	}
-	var nodeTargets endpoint.Targets
-
-	for _, node := range nodes.Items {
-		for _, address := range node.Status.Addresses {
-			if address.Type == v1.NodeExternalIP {
-				nodeTargets = append(nodeTargets, address.Address)
-			}
-		}
 	}
 
 	endpoints := []*endpoint.Endpoint{}
@@ -334,6 +325,35 @@ func extractLoadBalancerTargets(svc *v1.Service) endpoint.Targets {
 	}
 
 	return targets
+}
+
+func (sc *serviceSource) extractNodeTargets() (endpoint.Targets, error) {
+	var (
+		internalIPs endpoint.Targets
+		externalIPs endpoint.Targets
+	)
+
+	nodes, err := sc.client.CoreV1().Nodes().List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, node := range nodes.Items {
+		for _, address := range node.Status.Addresses {
+			switch address.Type {
+			case v1.NodeExternalIP:
+				externalIPs = append(externalIPs, address.Address)
+			case v1.NodeInternalIP:
+				internalIPs = append(internalIPs, address.Address)
+			}
+		}
+	}
+
+	if len(externalIPs) > 0 {
+		return externalIPs, nil
+	}
+
+	return internalIPs, nil
 }
 
 func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, nodeTargets endpoint.Targets, hostname string, ttl endpoint.TTL) []*endpoint.Endpoint {

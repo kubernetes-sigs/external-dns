@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"fmt"
 	"net"
 	"testing"
 
@@ -1039,6 +1038,7 @@ func TestNodePortServices(t *testing.T) {
 		lbs              []string
 		expected         []*endpoint.Endpoint
 		expectError      bool
+		nodes            []*v1.Node
 	}{
 		{
 			"annotated NodePort services return an endpoint with IP addresses of the cluster's nodes",
@@ -1059,6 +1059,27 @@ func TestNodePortServices(t *testing.T) {
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
+			[]*v1.Node{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node1",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node2",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+					},
+				},
+			}},
 		},
 		{
 			"non-annotated NodePort services with set fqdnTemplate return an endpoint with target IP",
@@ -1077,30 +1098,74 @@ func TestNodePortServices(t *testing.T) {
 				{DNSName: "foo.bar.example.com", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
+			[]*v1.Node{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node1",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node2",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+					},
+				},
+			}},
+		},
+		{
+			"annotated NodePort services return an endpoint with IP addresses of the private cluster's nodes",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeNodePort,
+			"",
+			"",
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+			},
+			nil,
+			[]*endpoint.Endpoint{
+				{DNSName: "_30192._tcp.foo.example.org", Targets: endpoint.Targets{"0 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			[]*v1.Node{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node1",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node2",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+					},
+				},
+			}},
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			// Create a Kubernetes testing client
 			kubernetes := fake.NewSimpleClientset()
 
-			// Create some nodes
-			for i := 0; i < 2; i++ {
-				node := &v1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: fmt.Sprintf("node%d", i+1),
-					},
-					Status: v1.NodeStatus{
-						Addresses: []v1.NodeAddress{
-							{
-								Type:    v1.NodeExternalIP,
-								Address: fmt.Sprintf("54.10.11.%d", i+1),
-							}, {
-								Type:    v1.NodeInternalIP,
-								Address: fmt.Sprintf("10.0.1.%d", i+1),
-							},
-						},
-					},
-				}
+			// Create the nodes
+			for _, node := range tc.nodes {
 				if _, err := kubernetes.Core().Nodes().Create(node); err != nil {
 					t.Fatal(err)
 				}
