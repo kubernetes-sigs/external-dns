@@ -131,10 +131,10 @@ func (t planTable) getDeletes() (deleteList []*endpoint.Endpoint) {
 func (p *Plan) Calculate() *Plan {
 	t := newPlanTable()
 
-	for _, current := range p.Current {
+	for _, current := range filterRecordsForPlan(p.Current) {
 		t.addCurrent(current)
 	}
-	for _, desired := range p.Desired {
+	for _, desired := range filterRecordsForPlan(p.Desired) {
 		t.addCandidate(desired)
 	}
 
@@ -174,4 +174,19 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 		return false
 	}
 	return desired.RecordTTL != current.RecordTTL
+}
+
+func filterRecordsForPlan(records []*endpoint.Endpoint) []*endpoint.Endpoint {
+	filtered := []*endpoint.Endpoint{}
+
+	for _, record := range records {
+		switch record.RecordType {
+		case endpoint.RecordTypeA, endpoint.RecordTypeCNAME:
+			filtered = append(filtered, record)
+		default:
+			continue
+		}
+	}
+
+	return filtered
 }
