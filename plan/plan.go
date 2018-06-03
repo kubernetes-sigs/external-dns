@@ -176,10 +176,19 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 	return desired.RecordTTL != current.RecordTTL
 }
 
+// filterRecordsForPlan removes records that are not relevant to the planner.
+// Currently this just removes TXT records to prevent them from being
+// deleted erroneously by the planner (only the TXT registry should do this.)
+//
+// Per RFC 1034, CNAME records conflict with all other records - it is the
+// only record with this property. The behavior of the planner may need to be
+// made more sophisticated to codify this.
 func filterRecordsForPlan(records []*endpoint.Endpoint) []*endpoint.Endpoint {
 	filtered := []*endpoint.Endpoint{}
 
 	for _, record := range records {
+		// Explicitly specify which records we want to use for planning.
+		// TODO: Add AAAA records as well when they are supported.
 		switch record.RecordType {
 		case endpoint.RecordTypeA, endpoint.RecordTypeCNAME:
 			filtered = append(filtered, record)
