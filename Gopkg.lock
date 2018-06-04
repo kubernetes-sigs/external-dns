@@ -24,8 +24,8 @@
     "autorest/date",
     "autorest/to"
   ]
-  revision = "58f6f26e200fa5dfb40c9cd1c83f3e2c860d779d"
-  version = "v8.0.0"
+  revision = "aa2a4534ab680e938d933870f58f23f77e0e208e"
+  version = "v10.9.0"
 
 [[projects]]
   name = "github.com/PuerkitoBio/purell"
@@ -136,8 +136,8 @@
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
   packages = ["."]
-  revision = "d2709f9f1f31ebcda9651b03077758c1f3a0018c"
-  version = "v3.0.0"
+  revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
+  version = "v3.2.0"
 
 [[projects]]
   name = "github.com/digitalocean/godo"
@@ -648,6 +648,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d5deea43eb04e9ef3a6ecb3589b91c149e092505f66905baa01c67379776d231"
+  inputs-digest = "8d8869be9b64013c9670a0ba7f6a6eeaf31941fcfbdfc13f0fa57626e767c517"
   solver-name = "gps-cdcl"
   solver-version = 1
