@@ -195,6 +195,7 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 // A dns name may contain only the ASCII letters 'a' through 'z' (in a case-insensitive manner),
 // the digits '0' through '9', and the hyphen ('-').
 // No other symbols or white space are allowed.
+// RFC https://tools.ietf.org/html/rfc1123#section-2
 func validateDNSName(dnsName string) (string, error) {
 	dnsName = strings.ToLower(dnsName)
 	dnsName = strings.TrimSpace(dnsName)

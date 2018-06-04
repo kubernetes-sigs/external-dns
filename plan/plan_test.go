@@ -17,10 +17,12 @@ limitations under the License.
 package plan
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -368,5 +370,61 @@ func TestPlan(t *testing.T) {
 func validateEntries(t *testing.T, entries, expected []*endpoint.Endpoint) {
 	if !testutils.SameEndpoints(entries, expected) {
 		t.Fatalf("expected %q to match %q", entries, expected)
+	}
+}
+
+func TestValidateDNSName(t *testing.T) {
+
+	records := []struct {
+		dnsName string
+		expect  string
+		err     error
+	}{
+		{
+			"3AAAA.FOO.BAR.COM",
+			"3aaaa.foo.bar.com",
+			nil,
+		},
+		{
+			"   example.foo.com",
+			"example.foo.com",
+			nil,
+		},
+		{
+			"example123.foo.com ",
+			"example123.foo.com",
+			nil,
+		},
+		{
+			"my-exaMple3.FOO.BAR.COM",
+			"my-example3.foo.bar.com",
+			nil,
+		},
+		{
+			"my-example1214.FOO-1235.BAR-foo.COM",
+			"my-example1214.foo-1235.bar-foo.com",
+			nil,
+		},
+		{
+			"my-example-my-example-1214.FOO-1235.BAR-foo.COM",
+			"my-example-my-example-1214.foo-1235.bar-foo.com",
+			nil,
+		},
+		{
+			"my-example-!1214.FOO-1235.BAR-foo.COM",
+			"",
+			fmt.Errorf("my-example-!1214.foo-1235.bar-foo.com because DNS name is invalid"),
+		},
+		{
+			"_exaMple3.FOO.BAR.COM",
+			"",
+			fmt.Errorf("_example3.foo.bar.com because DNS name is invalid"),
+		},
+	}
+	for _, r := range records {
+		gotName, err := validateDNSName(r.dnsName)
+		assert.Equal(t, r.expect, gotName)
+		assert.Equal(t, r.err, err)
+
 	}
 }
