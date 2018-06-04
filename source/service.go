@@ -361,8 +361,8 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, nodeTargets e
 
 	for _, port := range svc.Spec.Ports {
 		if port.NodePort > 0 {
-			// build a target with a priority of 0, pointing the given port on the given host
-			target := fmt.Sprintf("0 %d %s", port.NodePort, hostname)
+			// build a target with a priority of 0, weight of 0, and pointing the given port on the given host
+			target := fmt.Sprintf("0 50 %d %s", port.NodePort, hostname)
 
 			// figure out the portname
 			portName := port.Name
