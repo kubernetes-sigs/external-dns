@@ -26,6 +26,7 @@ To see ExternalDNS in action, have a look at this [video](https://www.youtube.co
 ExternalDNS' current release is `v0.5`. This version allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
 * [Google CloudDNS](https://cloud.google.com/dns/docs/)
 * [AWS Route 53](https://aws.amazon.com/route53/)
+* [AWS Service Discovery](https://docs.aws.amazon.com/Route53/latest/APIReference/overview-service-discovery.html)
 * [AzureDNS](https://azure.microsoft.com/en-us/services/dns)
 * [CloudFlare](https://www.cloudflare.com/de/dns)
 * [DigitalOcean](https://www.digitalocean.com/products/networking)
