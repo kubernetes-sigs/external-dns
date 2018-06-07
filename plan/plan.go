@@ -199,7 +199,7 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 func validateDNSName(dnsName string) (string, error) {
 	dnsName = strings.ToLower(dnsName)
 	dnsName = strings.TrimSpace(dnsName)
-	reg, err := regexp.Compile(`^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$`)
+	reg, err := regexp.Compile(`^(([\*]|[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$`)
 	if err != nil {
 		return "", err
 	}
