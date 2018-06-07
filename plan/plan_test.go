@@ -396,6 +396,41 @@ func TestValidateDNSName(t *testing.T) {
 			nil,
 		},
 		{
+			"*.foo.bar.com ",
+			"*.foo.bar.com",
+			nil,
+		},
+		{
+			"*.foo.com ",
+			"*.foo.com",
+			nil,
+		},
+		{
+			"*.foo",
+			"*.foo",
+			nil,
+		},
+		{
+			"foo",
+			"foo",
+			nil,
+		},
+		{
+			"123foo.bar",
+			"123foo.bar",
+			nil,
+		},
+		{
+			"foo.com",
+			"foo.com",
+			nil,
+		},
+		{
+			"foo123.com",
+			"foo123.com",
+			nil,
+		},
+		{
 			"my-exaMple3.FOO.BAR.COM",
 			"my-example3.foo.bar.com",
 			nil,
