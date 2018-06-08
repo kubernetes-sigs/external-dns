@@ -17,8 +17,6 @@ limitations under the License.
 package plan
 
 import (
-	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -192,19 +190,9 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 }
 
 // validateDNSName checks if the DNS name is correct
-// A dns name may contain only the ASCII letters 'a' through 'z' (in a case-insensitive manner),
-// the digits '0' through '9', and the hyphen ('-').
-// No other symbols or white space are allowed.
-// RFC https://tools.ietf.org/html/rfc1123#section-2
+// for now it only removes space and lower case
 func validateDNSName(dnsName string) (string, error) {
 	dnsName = strings.ToLower(dnsName)
 	dnsName = strings.TrimSpace(dnsName)
-	reg, err := regexp.Compile(`^(([\*]|[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$`)
-	if err != nil {
-		return "", err
-	}
-	if !reg.MatchString(dnsName) {
-		return "", fmt.Errorf("%s because DNS name is invalid", dnsName)
-	}
 	return dnsName, nil
 }
