@@ -270,6 +270,10 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 
 	// separate into per-zone change sets to be passed to the API.
 	changesByZone := changesByZone(zones, changes)
+	if len(changesByZone) == 0 {
+		log.Info("No matching hosted zones")
+		return nil
+	}
 
 	for z, cs := range changesByZone {
 		limCs := limitChangeSet(cs, maxChangeCount)
