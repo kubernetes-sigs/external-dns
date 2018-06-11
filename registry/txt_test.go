@@ -18,6 +18,7 @@ package registry
 
 import (
 	"testing"
+	"time"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
@@ -40,10 +41,10 @@ func TestTXTRegistry(t *testing.T) {
 
 func testTXTRegistryNew(t *testing.T) {
 	p := provider.NewInMemoryProvider()
-	_, err := NewTXTRegistry(p, "txt", "")
+	_, err := NewTXTRegistry(p, "txt", "", time.Hour)
 	require.Error(t, err)
 
-	r, err := NewTXTRegistry(p, "txt", "owner")
+	r, err := NewTXTRegistry(p, "txt", "owner", time.Hour)
 	require.NoError(t, err)
 
 	_, ok := r.mapper.(prefixNameMapper)
@@ -51,7 +52,7 @@ func testTXTRegistryNew(t *testing.T) {
 	assert.Equal(t, "owner", r.ownerID)
 	assert.Equal(t, p, r.provider)
 
-	r, err = NewTXTRegistry(p, "", "owner")
+	r, err = NewTXTRegistry(p, "", "owner", time.Hour)
 	require.NoError(t, err)
 
 	_, ok = r.mapper.(prefixNameMapper)
@@ -130,7 +131,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "txt.", "owner")
+	r, _ := NewTXTRegistry(p, "txt.", "owner", time.Hour)
 	records, _ := r.Records()
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -204,7 +205,7 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "", "owner")
+	r, _ := NewTXTRegistry(p, "", "owner", time.Hour)
 	records, _ := r.Records()
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -231,7 +232,7 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 			newEndpointWithOwner("txt.foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
 	})
-	r, _ := NewTXTRegistry(p, "txt.", "owner")
+	r, _ := NewTXTRegistry(p, "txt.", "owner", time.Hour)
 
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -300,7 +301,7 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 			newEndpointWithOwner("foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
 	})
-	r, _ := NewTXTRegistry(p, "", "owner")
+	r, _ := NewTXTRegistry(p, "", "owner", time.Hour)
 
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -345,6 +346,55 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 	}
 	err := r.ApplyChanges(changes)
 	require.NoError(t, err)
+}
+
+func TestCacheMethods(t *testing.T) {
+	cache := []*endpoint.Endpoint{
+		newEndpointWithOwner("thing.com", "1.2.3.4", "A", "owner"),
+		newEndpointWithOwner("thing1.com", "1.2.3.6", "A", "owner"),
+		newEndpointWithOwner("thing2.com", "1.2.3.4", "CNAME", "owner"),
+		newEndpointWithOwner("thing3.com", "1.2.3.4", "A", "owner"),
+		newEndpointWithOwner("thing4.com", "1.2.3.4", "A", "owner"),
+	}
+	registry := &TXTRegistry{
+		recordsCache:  cache,
+		cacheInterval: time.Hour,
+	}
+
+	// test updating a record.
+	registry.updateCache(newEndpointWithOwner("thing.com", "1.2.3.6", "A", "owner2"))
+	found := false
+	// ensure it was updated
+	for _, e := range registry.recordsCache {
+		if e.DNSName == "thing.com" && e.RecordType == "A" {
+			t.Logf("targets: %#v", e.Targets)
+			if e.Targets.Same([]string{"1.2.3.6"}) {
+				found = true
+				break
+			}
+		}
+	}
+
+	if !found {
+		t.Fatal("could not find updated record in cache")
+	}
+
+	// test deleting a record
+	registry.removeFromCache(newEndpointWithOwner("thing.com", "1.2.3.6", "A", "owner2"))
+	// ensure it was deleted
+	found = false
+	for _, e := range registry.recordsCache {
+		if e.DNSName == "thing.com" && e.RecordType == "A" {
+			if e.Targets.Same([]string{"1.2.3.6"}) {
+				found = true
+				break
+			}
+		}
+	}
+
+	if found {
+		t.Fatal("should not have been able to find record after deleting")
+	}
 }
 
 /**
