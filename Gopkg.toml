@@ -10,7 +10,7 @@ ignored = ["github.com/kubernetes/repo-infra/kazel"]
 
 [[constraint]]
   name = "github.com/Azure/go-autorest"
-  version = "~8.0.0"
+  version = "~10.9.0"
 
 [[constraint]]
   name = "github.com/alecthomas/kingpin"

@@ -1,3 +1,12 @@
+## v0.5.2 - 2018-05-31
+
+  - DNSimple: Make DNSimple tolerant of unknown zones (#574) @jbowes
+  - Cloudflare: Custom record TTL (#572) @njuettner
+  - AWS ServiceDiscovery: Implementation of AWS ServiceDiscovery provider (#483) @vanekjar
+  - Update docs to latest changes (#563) @Raffo
+  - New source - connector (#552) @shashidharatd
+  - Update AWS SDK dependency to v1.13.7 @vanekjar
+
 ## v0.5.1 - 2018-05-16
 
   - Refactor implementation of sync loop to use `time.Ticker` (#553) @r0fls
