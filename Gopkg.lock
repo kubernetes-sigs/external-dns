@@ -109,6 +109,18 @@
   version = "v0.7.4"
 
 [[projects]]
+  name = "github.com/coreos/etcd"
+  packages = [
+    "client",
+    "pkg/pathutil",
+    "pkg/srv",
+    "pkg/types",
+    "version"
+  ]
+  revision = "1b3ac99e8a431b381e633802cc42fe70e663baf5"
+  version = "v3.2.15"
+
+[[projects]]
   name = "github.com/coreos/go-oidc"
   packages = [
     "http",
@@ -118,6 +130,12 @@
     "oidc"
   ]
   revision = "be73733bb8cc830d0205609b95d125215f8e9c70"
+
+[[projects]]
+  name = "github.com/coreos/go-semver"
+  packages = ["semver"]
+  revision = "8ab6407b697782a06568d4b7f1db25550ec2e4c6"
+  version = "v0.2.0"
 
 [[projects]]
   name = "github.com/coreos/pkg"

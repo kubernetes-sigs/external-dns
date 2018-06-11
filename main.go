@@ -140,6 +140,8 @@ func main() {
 				AppVersion:    externaldns.Version,
 			},
 		)
+	case "coredns", "skydns":
+		p, err = provider.NewCoreDNSProvider(domainFilter, cfg.DryRun)
 	case "inmemory":
 		p, err = provider.NewInMemoryProvider(provider.InMemoryInitZones(cfg.InMemoryZones), provider.InMemoryWithDomain(domainFilter), provider.InMemoryWithLogging()), nil
 	case "designate":
