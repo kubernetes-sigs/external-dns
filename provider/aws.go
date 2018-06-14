@@ -435,7 +435,7 @@ func suitableZones(hostname string, zones map[string]*route53.HostedZone) []*rou
 	var publicZone *route53.HostedZone
 
 	for _, z := range zones {
-		if strings.HasSuffix(hostname, aws.StringValue(z.Name)) {
+		if aws.StringValue(z.Name) == hostname || strings.HasSuffix(hostname, "."+aws.StringValue(z.Name)) {
 			if z.Config == nil || !aws.BoolValue(z.Config.PrivateZone) {
 				// Only select the best matching public zone
 				if publicZone == nil || len(aws.StringValue(z.Name)) > len(aws.StringValue(publicZone.Name)) {

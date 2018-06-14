@@ -781,6 +781,12 @@ func TestAWSSuitableZones(t *testing.T) {
 	}{
 		{"foo.bar.example.org.", []*route53.HostedZone{zones["example-org-private"], zones["bar-example-org-private"], zones["bar-example-org"]}},
 		{"foo.example.org.", []*route53.HostedZone{zones["example-org-private"], zones["example-org"]}},
+
+		// bar.example.org is NOT suitable
+		{"foobar.example.org.", []*route53.HostedZone{zones["example-org-private"], zones["example-org"]}},
+
+		// all matching private zones are suitable (i'm not sure why)
+		{"bar.example.org.", []*route53.HostedZone{zones["example-org-private"], zones["bar-example-org-private"], zones["bar-example-org"]}},
 		{"foo.kubernetes.io.", nil},
 	} {
 		suitableZones := suitableZones(tc.hostname, zones)
