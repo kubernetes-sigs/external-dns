@@ -90,6 +90,12 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		return nil, err
 	}
 
+	// get the ip addresses of all the nodes and cache them for this run
+	nodeTargets, err := sc.extractNodeTargets()
+	if err != nil {
+		return nil, err
+	}
+
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, svc := range services.Items {
@@ -101,7 +107,7 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 
-		svcEndpoints := sc.endpoints(&svc)
+		svcEndpoints := sc.endpoints(&svc, nodeTargets)
 
 		// process legacy annotations if no endpoints were returned and compatibility mode is enabled.
 		if len(svcEndpoints) == 0 && sc.compatibility != "" {
@@ -110,7 +116,7 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 		// apply template if none of the above is found
 		if (sc.combineFQDNAnnotation || len(svcEndpoints) == 0) && sc.fqdnTemplate != nil {
-			sEndpoints, err := sc.endpointsFromTemplate(&svc)
+			sEndpoints, err := sc.endpointsFromTemplate(&svc, nodeTargets)
 			if err != nil {
 				return nil, err
 			}
@@ -169,7 +175,8 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 
 	return endpoints
 }
-func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.Endpoint, error) {
+
+func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service, nodeTargets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	// Process the whole template string
@@ -181,19 +188,19 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 
 	hostnameList := strings.Split(strings.Replace(buf.String(), " ", "", -1), ",")
 	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname)...)
+		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, nodeTargets)...)
 	}
 
 	return endpoints, nil
 }
 
 // endpointsFromService extracts the endpoints from a service object
-func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
+func (sc *serviceSource) endpoints(svc *v1.Service, nodeTargets endpoint.Targets) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	hostnameList := getHostnamesFromAnnotations(svc.Annotations)
 	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname)...)
+		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, nodeTargets)...)
 	}
 
 	return endpoints
@@ -236,7 +243,7 @@ func (sc *serviceSource) setResourceLabel(service v1.Service, endpoints []*endpo
 	}
 }
 
-func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*endpoint.Endpoint {
+func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, nodeTargets endpoint.Targets) []*endpoint.Endpoint {
 	hostname = strings.TrimSuffix(hostname, ".")
 	ttl, err := getTTLFromAnnotations(svc.Annotations)
 	if err != nil {
@@ -272,7 +279,10 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string) []*
 		if svc.Spec.ClusterIP == v1.ClusterIPNone {
 			endpoints = append(endpoints, sc.extractHeadlessEndpoints(svc, hostname, ttl)...)
 		}
-
+	case v1.ServiceTypeNodePort:
+		// add the nodeTargets and extract an SRV endpoint
+		targets = append(targets, nodeTargets...)
+		endpoints = append(endpoints, sc.extractNodePortEndpoints(svc, nodeTargets, hostname, ttl)...)
 	}
 
 	for _, t := range targets {
@@ -315,4 +325,69 @@ func extractLoadBalancerTargets(svc *v1.Service) endpoint.Targets {
 	}
 
 	return targets
+}
+
+func (sc *serviceSource) extractNodeTargets() (endpoint.Targets, error) {
+	var (
+		internalIPs endpoint.Targets
+		externalIPs endpoint.Targets
+	)
+
+	nodes, err := sc.client.CoreV1().Nodes().List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, node := range nodes.Items {
+		for _, address := range node.Status.Addresses {
+			switch address.Type {
+			case v1.NodeExternalIP:
+				externalIPs = append(externalIPs, address.Address)
+			case v1.NodeInternalIP:
+				internalIPs = append(internalIPs, address.Address)
+			}
+		}
+	}
+
+	if len(externalIPs) > 0 {
+		return externalIPs, nil
+	}
+
+	return internalIPs, nil
+}
+
+func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, nodeTargets endpoint.Targets, hostname string, ttl endpoint.TTL) []*endpoint.Endpoint {
+	var endpoints []*endpoint.Endpoint
+
+	for _, port := range svc.Spec.Ports {
+		if port.NodePort > 0 {
+			// build a target with a priority of 0, weight of 0, and pointing the given port on the given host
+			target := fmt.Sprintf("0 50 %d %s", port.NodePort, hostname)
+
+			// figure out the portname
+			portName := port.Name
+			if portName == "" {
+				portName = fmt.Sprintf("%d", port.NodePort)
+			}
+
+			// figure out the protocol
+			protocol := strings.ToLower(string(port.Protocol))
+			if protocol == "" {
+				protocol = "tcp"
+			}
+
+			recordName := fmt.Sprintf("_%s._%s.%s", portName, protocol, hostname)
+
+			var ep *endpoint.Endpoint
+			if ttl.IsConfigured() {
+				ep = endpoint.NewEndpointWithTTL(recordName, endpoint.RecordTypeSRV, ttl, target)
+			} else {
+				ep = endpoint.NewEndpoint(recordName, endpoint.RecordTypeSRV, target)
+			}
+
+			endpoints = append(endpoints, ep)
+		}
+	}
+
+	return endpoints
 }
