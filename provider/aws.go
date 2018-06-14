@@ -272,7 +272,6 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 	changesByZone := changesByZone(zones, changes)
 	if len(changesByZone) == 0 {
 		log.Info("No matching hosted zones")
-		return nil
 	}
 
 	for z, cs := range changesByZone {
