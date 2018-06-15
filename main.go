@@ -100,6 +100,7 @@ func main() {
 				DomainFilter:   domainFilter,
 				ZoneIDFilter:   zoneIDFilter,
 				ZoneTypeFilter: zoneTypeFilter,
+				MaxChangeCount: cfg.AWSMaxChangeCount,
 				AssumeRole:     cfg.AWSAssumeRole,
 				DryRun:         cfg.DryRun,
 			},

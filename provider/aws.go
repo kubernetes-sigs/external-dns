@@ -33,7 +33,6 @@ import (
 const (
 	evaluateTargetHealth = true
 	recordTTL            = 300
-	maxChangeCount       = 4000
 )
 
 var (
@@ -86,8 +85,9 @@ type Route53API interface {
 
 // AWSProvider is an implementation of Provider for AWS Route53.
 type AWSProvider struct {
-	client Route53API
-	dryRun bool
+	client         Route53API
+	dryRun         bool
+	maxChangeCount int
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter DomainFilter
 	// filter hosted zones by id
@@ -101,6 +101,7 @@ type AWSConfig struct {
 	DomainFilter   DomainFilter
 	ZoneIDFilter   ZoneIDFilter
 	ZoneTypeFilter ZoneTypeFilter
+	MaxChangeCount int
 	AssumeRole     string
 	DryRun         bool
 }
@@ -136,6 +137,7 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 		domainFilter:   awsConfig.DomainFilter,
 		zoneIDFilter:   awsConfig.ZoneIDFilter,
 		zoneTypeFilter: awsConfig.ZoneTypeFilter,
+		maxChangeCount: awsConfig.MaxChangeCount,
 		dryRun:         awsConfig.DryRun,
 	}
 
@@ -284,7 +286,7 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 	}
 
 	for z, cs := range changesByZone {
-		limCs := limitChangeSet(cs, maxChangeCount)
+		limCs := limitChangeSet(cs, p.maxChangeCount)
 
 		for _, c := range limCs {
 			log.Infof("Desired change: %s %s %s", *c.Action, *c.ResourceRecordSet.Name, *c.ResourceRecordSet.Type)

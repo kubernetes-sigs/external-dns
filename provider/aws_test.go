@@ -32,6 +32,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const defaultMaxChangeCount = 4000
+
 // Compile time check for interface conformance
 var _ Route53API = &Route53APIStub{}
 
@@ -540,7 +542,7 @@ func TestAWSChangesByZones(t *testing.T) {
 func TestAWSsubmitChanges(t *testing.T) {
 	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), NewZoneIDFilter([]string{}), NewZoneTypeFilter(""), false, []*endpoint.Endpoint{})
 	const subnets = 16
-	const hosts = maxChangeCount / subnets
+	const hosts = defaultMaxChangeCount / subnets
 
 	endpoints := make([]*endpoint.Endpoint, 0)
 	for i := 0; i < subnets; i++ {
@@ -566,7 +568,7 @@ func TestAWSsubmitChanges(t *testing.T) {
 func TestAWSLimitChangeSet(t *testing.T) {
 	var cs []*route53.Change
 
-	for i := 1; i <= maxChangeCount; i += 2 {
+	for i := 1; i <= defaultMaxChangeCount; i += 2 {
 		cs = append(cs, &route53.Change{
 			Action: aws.String(route53.ChangeActionCreate),
 			ResourceRecordSet: &route53.ResourceRecordSet{
@@ -583,7 +585,7 @@ func TestAWSLimitChangeSet(t *testing.T) {
 		})
 	}
 
-	limCs := limitChangeSet(cs, maxChangeCount)
+	limCs := limitChangeSet(cs, defaultMaxChangeCount)
 
 	// sorting cs not needed as it should be returned as is
 	validateAWSChangeRecords(t, limCs, cs)
@@ -864,6 +866,7 @@ func newAWSProvider(t *testing.T, domainFilter DomainFilter, zoneIDFilter ZoneID
 
 	provider := &AWSProvider{
 		client:         client,
+		maxChangeCount: defaultMaxChangeCount,
 		domainFilter:   domainFilter,
 		zoneIDFilter:   zoneIDFilter,
 		zoneTypeFilter: zoneTypeFilter,
