@@ -73,6 +73,7 @@ func main() {
 		CombineFQDNAndAnnotation: cfg.CombineFQDNAndAnnotation,
 		Compatibility:            cfg.Compatibility,
 		PublishInternal:          cfg.PublishInternal,
+		PublishHostIP:            cfg.PublishHostIP,
 		ConnectorServer:          cfg.ConnectorSourceServer,
 	}
 

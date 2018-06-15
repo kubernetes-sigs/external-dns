@@ -49,6 +49,7 @@ func (suite *ServiceSuite) SetupTest() {
 		false,
 		"",
 		false,
+		false,
 	)
 	suite.fooWithTargets = &v1.Service{
 		Spec: v1.ServiceSpec{
@@ -131,6 +132,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 				ti.fqdnTemplate,
 				false,
 				"",
+				false,
 				false,
 			)
 
@@ -873,6 +875,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				tc.combineFQDNAndAnnotation,
 				tc.compatibility,
 				false,
+				false,
 			)
 			require.NoError(t, err)
 
@@ -1006,6 +1009,7 @@ func TestClusterIpServices(t *testing.T) {
 				false,
 				tc.compatibility,
 				true,
+				false,
 			)
 			require.NoError(t, err)
 
@@ -1201,6 +1205,7 @@ func TestNodePortServices(t *testing.T) {
 				false,
 				tc.compatibility,
 				true,
+				false,
 			)
 			require.NoError(t, err)
 
@@ -1400,6 +1405,207 @@ func TestHeadlessServices(t *testing.T) {
 				false,
 				tc.compatibility,
 				true,
+				false,
+			)
+			require.NoError(t, err)
+
+			endpoints, err := client.Endpoints()
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			// Validate returned endpoints against desired endpoints.
+			validateEndpoints(t, endpoints, tc.expected)
+		})
+	}
+}
+
+// TestHeadlessServices tests that headless services generate the correct endpoints.
+func TestHeadlessServicesHostIP(t *testing.T) {
+	for _, tc := range []struct {
+		title           string
+		targetNamespace string
+		svcNamespace    string
+		svcName         string
+		svcType         v1.ServiceType
+		compatibility   string
+		fqdnTemplate    string
+		labels          map[string]string
+		annotations     map[string]string
+		clusterIP       string
+		hostIP          string
+		selector        map[string]string
+		lbs             []string
+		podnames        []string
+		hostnames       []string
+		phases          []v1.PodPhase
+		expected        []*endpoint.Endpoint
+		expectError     bool
+	}{
+		{
+			"annotated Headless services return endpoints for each selected Pod",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			map[string]string{"component": "foo"},
+			map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+			},
+			v1.ClusterIPNone,
+			"1.1.1.1",
+			map[string]string{
+				"component": "foo",
+			},
+			[]string{},
+			[]string{"foo-0", "foo-1"},
+			[]string{"foo-0", "foo-1"},
+			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
+				{DNSName: "foo-1.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
+			},
+			false,
+		},
+		{
+			"annotated Headless services return endpoints with TTL for each selected Pod",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			map[string]string{"component": "foo"},
+			map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+				ttlAnnotationKey:      "1",
+			},
+			v1.ClusterIPNone,
+			"1.1.1.1",
+			map[string]string{
+				"component": "foo",
+			},
+			[]string{},
+			[]string{"foo-0", "foo-1"},
+			[]string{"foo-0", "foo-1"},
+			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}, RecordTTL: endpoint.TTL(1)},
+				{DNSName: "foo-1.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}, RecordTTL: endpoint.TTL(1)},
+			},
+			false,
+		},
+		{
+			"annotated Headless services return endpoints for each selected Pod, which are in running state",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			map[string]string{"component": "foo"},
+			map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+			},
+			v1.ClusterIPNone,
+			"1.1.1.1",
+			map[string]string{
+				"component": "foo",
+			},
+			[]string{},
+			[]string{"foo-0", "foo-1"},
+			[]string{"foo-0", "foo-1"},
+			[]v1.PodPhase{v1.PodRunning, v1.PodFailed},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
+			},
+			false,
+		},
+		{
+			"annotated Headless services return endpoints for pods missing hostname",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			map[string]string{"component": "foo"},
+			map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+			},
+			v1.ClusterIPNone,
+			"1.1.1.1",
+			map[string]string{
+				"component": "foo",
+			},
+			[]string{},
+			[]string{"foo-0", "foo-1"},
+			[]string{"", ""},
+			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
+			[]*endpoint.Endpoint{
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
+			},
+			false,
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			// Create a Kubernetes testing client
+			kubernetes := fake.NewSimpleClientset()
+
+			service := &v1.Service{
+				Spec: v1.ServiceSpec{
+					Type:      tc.svcType,
+					ClusterIP: tc.clusterIP,
+					Selector:  tc.selector,
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   tc.svcNamespace,
+					Name:        tc.svcName,
+					Labels:      tc.labels,
+					Annotations: tc.annotations,
+				},
+				Status: v1.ServiceStatus{},
+			}
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
+			require.NoError(t, err)
+
+			for i, podname := range tc.podnames {
+				pod := &v1.Pod{
+					Spec: v1.PodSpec{
+						Containers: []v1.Container{},
+						Hostname:   tc.hostnames[i],
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace:   tc.svcNamespace,
+						Name:        podname,
+						Labels:      tc.labels,
+						Annotations: tc.annotations,
+					},
+					Status: v1.PodStatus{
+						HostIP: tc.hostIP,
+						Phase:  tc.phases[i],
+					},
+				}
+
+				_, err = kubernetes.CoreV1().Pods(tc.svcNamespace).Create(pod)
+				require.NoError(t, err)
+			}
+
+			// Create our object under test and get the endpoints.
+			client, _ := NewServiceSource(
+				kubernetes,
+				tc.targetNamespace,
+				"",
+				tc.fqdnTemplate,
+				false,
+				tc.compatibility,
+				true,
+				true,
 			)
 			require.NoError(t, err)
 
@@ -1440,7 +1646,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
 	require.NoError(b, err)
 
-	client, err := NewServiceSource(kubernetes, v1.NamespaceAll, "", "", false, "", false)
+	client, err := NewServiceSource(kubernetes, v1.NamespaceAll, "", "", false, "", false, false)
 	require.NoError(b, err)
 
 	for i := 0; i < b.N; i++ {

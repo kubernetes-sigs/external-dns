@@ -12,10 +12,7 @@ We will go through a small example of deploying a simple Kafka with use of a hea
 ### Exernal DNS
 
 A simple deploy could look like this:
-<<<<<<< HEAD
-=======
 ### Manifest (for clusters without RBAC enabled)
->>>>>>> upstream/master
 ```yaml
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -28,9 +25,6 @@ spec:
     spec:
       containers:
       - name: external-dns
-<<<<<<< HEAD
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.8
-=======
         image: registry.opensource.zalan.do/teapot/external-dns:v0.5.2
         args:
         - --debug
@@ -91,7 +85,6 @@ spec:
       containers:
       - name: external-dns
         image: registry.opensource.zalan.do/teapot/external-dns:v0.5.2
->>>>>>> upstream/master
         args:
         - --debug
         - --source=service
@@ -109,10 +102,6 @@ spec:
 First lets deploy a Kafka Stateful set, a simple example(a lot of stuff is missing) with a headless service called `kafka-hsvc`
 
 ```yaml
-<<<<<<< HEAD
----
-=======
->>>>>>> upstream/master
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
@@ -153,11 +142,7 @@ spec:
       resources:
         requests:
           storage:  500Gi
-<<<<<<< HEAD
-   ```
-=======
 ```
->>>>>>> upstream/master
 Very important here, is to set the `hostport`(only works if the PodSecurityPolicy allows it)! and in case your app requires an actual hostname inside the container, unlike Kafka, which can advertise on another address, you have to set the hostname yourself.
 
 ### Headless Service
@@ -170,10 +155,6 @@ Now we need to define a headless service to use to expose the Kafka pods. There 
 If you go with #1, you just need to define the headless service, here is an example of the case #2:
 
 ```yaml
-<<<<<<< HEAD
----
-=======
->>>>>>> upstream/master
 apiVersion: v1
 kind: Service
 metadata:
@@ -204,5 +185,4 @@ kafka-0.ksvc.example.org
 kafka-1.ksvc.example.org
 kafka-2.ksvc.example.org
 ```
-
 
