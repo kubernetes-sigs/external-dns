@@ -96,8 +96,17 @@ type AWSProvider struct {
 	zoneTypeFilter ZoneTypeFilter
 }
 
+// AWSConfig contains configuration to create a new AWS provider.
+type AWSConfig struct {
+	DomainFilter   DomainFilter
+	ZoneIDFilter   ZoneIDFilter
+	ZoneTypeFilter ZoneTypeFilter
+	AssumeRole     string
+	DryRun         bool
+}
+
 // NewAWSProvider initializes a new AWS Route53 based Provider.
-func NewAWSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zoneTypeFilter ZoneTypeFilter, assumeRole string, dryRun bool) (*AWSProvider, error) {
+func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 	config := aws.NewConfig()
 
 	config.WithHTTPClient(
@@ -117,17 +126,17 @@ func NewAWSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zoneTy
 		return nil, err
 	}
 
-	if assumeRole != "" {
-		log.Infof("Assuming role: %s", assumeRole)
-		session.Config.WithCredentials(stscreds.NewCredentials(session, assumeRole))
+	if awsConfig.AssumeRole != "" {
+		log.Infof("Assuming role: %s", awsConfig.AssumeRole)
+		session.Config.WithCredentials(stscreds.NewCredentials(session, awsConfig.AssumeRole))
 	}
 
 	provider := &AWSProvider{
 		client:         route53.New(session),
-		domainFilter:   domainFilter,
-		zoneIDFilter:   zoneIDFilter,
-		zoneTypeFilter: zoneTypeFilter,
-		dryRun:         dryRun,
+		domainFilter:   awsConfig.DomainFilter,
+		zoneIDFilter:   awsConfig.ZoneIDFilter,
+		zoneTypeFilter: awsConfig.ZoneTypeFilter,
+		dryRun:         awsConfig.DryRun,
 	}
 
 	return provider, nil
