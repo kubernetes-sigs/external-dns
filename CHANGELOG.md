@@ -1,3 +1,12 @@
+## v0.5.3 - 2018-06-15
+
+  - Print a message if no hosted zones match (aws provider) (#592) @svend
+  - Add support for NodePort services (#559) @grimmy
+  - Update azure.md to fix protocol value (#593) @JasonvanBrackel
+  - Add cache to limit calls to providers (#589) @jessfraz
+  - Add Azure MSI support (#578) @r7vme
+  - CoreDNS/SkyDNS provider (#253) @istalker2
+
 ## v0.5.2 - 2018-05-31
 
   - DNSimple: Make DNSimple tolerant of unknown zones (#574) @jbowes
