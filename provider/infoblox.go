@@ -30,6 +30,7 @@ import (
 // InfobloxConfig clarifies the method signature
 type InfobloxConfig struct {
 	DomainFilter DomainFilter
+	ZoneIDFilter ZoneIDFilter
 	Host         string
 	Port         int
 	Username     string
@@ -43,6 +44,7 @@ type InfobloxConfig struct {
 type InfobloxProvider struct {
 	client       ibclient.IBConnector
 	domainFilter DomainFilter
+	zoneIDFilter ZoneIDFilter
 	dryRun       bool
 }
 
@@ -82,6 +84,7 @@ func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, erro
 	provider := &InfobloxProvider{
 		client:       client,
 		domainFilter: infobloxConfig.DomainFilter,
+		zoneIDFilter: infobloxConfig.ZoneIDFilter,
 		dryRun:       infobloxConfig.DryRun,
 	}
 
@@ -107,7 +110,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 			return nil, err
 		}
 		for _, res := range resA {
-			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, res.Ipv4Addr, endpoint.RecordTypeA))
+			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, endpoint.RecordTypeA, res.Ipv4Addr))
 		}
 
 		// Include Host records since they should be treated synonymously with A records
@@ -123,7 +126,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 		}
 		for _, res := range resH {
 			for _, ip := range res.Ipv4Addrs {
-				endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, ip.Ipv4Addr, endpoint.RecordTypeA))
+				endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, endpoint.RecordTypeA, ip.Ipv4Addr))
 			}
 		}
 
@@ -138,7 +141,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 			return nil, err
 		}
 		for _, res := range resC {
-			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, res.Canonical, endpoint.RecordTypeCNAME))
+			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, endpoint.RecordTypeCNAME, res.Canonical))
 		}
 
 		var resT []ibclient.RecordTXT
@@ -157,7 +160,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 			if _, err := strconv.Unquote(res.Text); err != nil {
 				res.Text = strconv.Quote(res.Text)
 			}
-			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, res.Text, endpoint.RecordTypeTXT))
+			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, endpoint.RecordTypeTXT, res.Text))
 		}
 	}
 	return endpoints, nil
@@ -171,8 +174,8 @@ func (p *InfobloxProvider) ApplyChanges(changes *plan.Changes) error {
 	}
 
 	created, deleted := p.mapChanges(zones, changes)
-	p.createRecords(created)
 	p.deleteRecords(deleted)
+	p.createRecords(created)
 	return nil
 }
 
@@ -186,9 +189,15 @@ func (p *InfobloxProvider) zones() ([]ibclient.ZoneAuth, error) {
 	}
 
 	for _, zone := range res {
-		if p.domainFilter.Match(zone.Fqdn) {
-			result = append(result, zone)
+		if !p.domainFilter.Match(zone.Fqdn) {
+			continue
 		}
+
+		if !p.zoneIDFilter.Match(zone.Ref) {
+			continue
+		}
+
+		result = append(result, zone)
 	}
 
 	return result, nil
@@ -248,7 +257,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (rec
 		obj := ibclient.NewRecordA(
 			ibclient.RecordA{
 				Name:     ep.DNSName,
-				Ipv4Addr: ep.Target,
+				Ipv4Addr: ep.Targets[0],
 			},
 		)
 		if getObject {
@@ -266,7 +275,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (rec
 		obj := ibclient.NewRecordCNAME(
 			ibclient.RecordCNAME{
 				Name:      ep.DNSName,
-				Canonical: ep.Target,
+				Canonical: ep.Targets[0],
 			},
 		)
 		if getObject {
@@ -283,13 +292,13 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (rec
 		var res []ibclient.RecordTXT
 		// The Infoblox API strips enclosing double quotes from TXT records lacking whitespace.
 		// Here we reconcile that fact by making this state match that reality.
-		if target, err2 := strconv.Unquote(ep.Target); err2 == nil && !strings.Contains(ep.Target, " ") {
-			ep.Target = target
+		if target, err2 := strconv.Unquote(ep.Targets[0]); err2 == nil && !strings.Contains(ep.Targets[0], " ") {
+			ep.Targets = endpoint.Targets{target}
 		}
 		obj := ibclient.NewRecordTXT(
 			ibclient.RecordTXT{
 				Name: ep.DNSName,
-				Text: ep.Target,
+				Text: ep.Targets[0],
 			},
 		)
 		if getObject {
@@ -314,7 +323,7 @@ func (p *InfobloxProvider) createRecords(created infobloxChangeMap) {
 					"Would create %s record named '%s' to '%s' for Infoblox DNS zone '%s'.",
 					ep.RecordType,
 					ep.DNSName,
-					ep.Target,
+					ep.Targets,
 					zone,
 				)
 				continue
@@ -324,7 +333,7 @@ func (p *InfobloxProvider) createRecords(created infobloxChangeMap) {
 				"Creating %s record named '%s' to '%s' for Infoblox DNS zone '%s'.",
 				ep.RecordType,
 				ep.DNSName,
-				ep.Target,
+				ep.Targets,
 				zone,
 			)
 
@@ -334,7 +343,7 @@ func (p *InfobloxProvider) createRecords(created infobloxChangeMap) {
 					"Failed to retrieve %s record named '%s' to '%s' for DNS zone '%s': %v",
 					ep.RecordType,
 					ep.DNSName,
-					ep.Target,
+					ep.Targets,
 					zone,
 					err,
 				)
@@ -346,7 +355,7 @@ func (p *InfobloxProvider) createRecords(created infobloxChangeMap) {
 					"Failed to create %s record named '%s' to '%s' for DNS zone '%s': %v",
 					ep.RecordType,
 					ep.DNSName,
-					ep.Target,
+					ep.Targets,
 					zone,
 					err,
 				)
@@ -369,7 +378,7 @@ func (p *InfobloxProvider) deleteRecords(deleted infobloxChangeMap) {
 						"Failed to retrieve %s record named '%s' to '%s' for DNS zone '%s': %v",
 						ep.RecordType,
 						ep.DNSName,
-						ep.Target,
+						ep.Targets,
 						zone,
 						err,
 					)

@@ -18,19 +18,14 @@ package registry
 
 import (
 	"errors"
+	"time"
 
-	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
-)
-
-var (
-	txtLabelRegex  = regexp.MustCompile("^\"heritage=external-dns,external-dns/owner=(.+)\"")
-	txtLabelFormat = "\"heritage=external-dns,external-dns/owner=%s\""
+	log "github.com/sirupsen/logrus"
 )
 
 // TXTRegistry implements registry interface with ownership implemented via associated TXT records
@@ -38,10 +33,15 @@ type TXTRegistry struct {
 	provider provider.Provider
 	ownerID  string //refers to the owner id of the current instance
 	mapper   nameMapper
+
+	// cache the records in memory and update on an interval instead.
+	recordsCache            []*endpoint.Endpoint
+	recordsCacheRefreshTime time.Time
+	cacheInterval           time.Duration
 }
 
 // NewTXTRegistry returns new TXTRegistry object
-func NewTXTRegistry(provider provider.Provider, txtPrefix, ownerID string) (*TXTRegistry, error) {
+func NewTXTRegistry(provider provider.Provider, txtPrefix, ownerID string, cacheInterval time.Duration) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -49,9 +49,10 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, ownerID string) (*TXT
 	mapper := newPrefixNameMapper(txtPrefix)
 
 	return &TXTRegistry{
-		provider: provider,
-		ownerID:  ownerID,
-		mapper:   mapper,
+		provider:      provider,
+		ownerID:       ownerID,
+		mapper:        mapper,
+		cacheInterval: cacheInterval,
 	}, nil
 }
 
@@ -59,36 +60,57 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, ownerID string) (*TXT
 // If TXT records was created previously to indicate ownership its corresponding value
 // will be added to the endpoints Labels map
 func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
+	// If we have the zones cached AND we have refreshed the cache since the
+	// last given interval, then just use the cached results.
+	if im.recordsCache != nil && time.Since(im.recordsCacheRefreshTime) < im.cacheInterval {
+		log.Debug("Using cached records.")
+		return im.recordsCache, nil
+	}
+
 	records, err := im.provider.Records()
 	if err != nil {
 		return nil, err
 	}
 
-	endpoints := make([]*endpoint.Endpoint, 0)
+	endpoints := []*endpoint.Endpoint{}
 
-	ownerMap := map[string]string{}
+	labelMap := map[string]endpoint.Labels{}
 
 	for _, record := range records {
 		if record.RecordType != endpoint.RecordTypeTXT {
 			endpoints = append(endpoints, record)
 			continue
 		}
-		ownerID := im.extractOwnerID(record.Target)
-		if ownerID == "" {
+		// We simply assume that TXT records for the registry will always have only one target.
+		labels, err := endpoint.NewLabelsFromString(record.Targets[0])
+		if err == endpoint.ErrInvalidHeritage {
+			//if no heritage is found or it is invalid
 			//case when value of txt record cannot be identified
 			//record will not be removed as it will have empty owner
 			endpoints = append(endpoints, record)
 			continue
 		}
+		if err != nil {
+			return nil, err
+		}
 		endpointDNSName := im.mapper.toEndpointName(record.DNSName)
-		ownerMap[endpointDNSName] = ownerID
+		labelMap[endpointDNSName] = labels
 	}
 
 	for _, ep := range endpoints {
-		ep.Labels[endpoint.OwnerLabelKey] = ownerMap[ep.DNSName]
+		if labels, ok := labelMap[ep.DNSName]; ok {
+			ep.Labels = labels
+		} else {
+			//this indicates that owner could not be identified, as there is no corresponding TXT record
+			ep.Labels = endpoint.NewLabels()
+		}
 	}
 
-	return endpoints, err
+	// Update the cache.
+	im.recordsCache = endpoints
+	im.recordsCacheRefreshTime = time.Now()
+
+	return endpoints, nil
 }
 
 // ApplyChanges updates dns provider with the changes
@@ -100,16 +122,45 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 		UpdateOld: filterOwnedRecords(im.ownerID, changes.UpdateOld),
 		Delete:    filterOwnedRecords(im.ownerID, changes.Delete),
 	}
-
 	for _, r := range filteredChanges.Create {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), endpoint.RecordTypeTXT)
+		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
 		filteredChanges.Create = append(filteredChanges.Create, txt)
+
+		// Add to the cache.
+		if im.recordsCache != nil {
+			im.recordsCache = append(im.recordsCache, txt)
+		}
 	}
 
 	for _, r := range filteredChanges.Delete {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), im.getTXTLabel(), endpoint.RecordTypeTXT)
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
 
+		// when we delete TXT records for which value has changed (due to new label) this would still work because
+		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
 		filteredChanges.Delete = append(filteredChanges.Delete, txt)
+
+		// Remove from the cache.
+		im.removeFromCache(txt)
+	}
+
+	// make sure TXT records are consistently updated as well
+	for _, r := range filteredChanges.UpdateNew {
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
+		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, txt)
+
+		// Update the cache.
+		im.updateCache(txt)
+	}
+	// make sure TXT records are consistently updated as well
+	for _, r := range filteredChanges.UpdateOld {
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
+		// when we updateOld TXT records for which value has changed (due to new label) this would still work because
+		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
+		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, txt)
+
+		// Update the cache.
+		im.updateCache(txt)
 	}
 
 	return im.provider.ApplyChanges(filteredChanges)
@@ -118,17 +169,6 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 /**
   TXT registry specific private methods
 */
-
-func (im *TXTRegistry) getTXTLabel() string {
-	return fmt.Sprintf(txtLabelFormat, im.ownerID)
-}
-
-func (im *TXTRegistry) extractOwnerID(txtLabel string) string {
-	if matches := txtLabelRegex.FindStringSubmatch(txtLabel); len(matches) == 2 {
-		return matches[1]
-	}
-	return ""
-}
 
 /**
   nameMapper defines interface which maps the dns name defined for the source
@@ -159,4 +199,37 @@ func (pr prefixNameMapper) toEndpointName(txtDNSName string) string {
 
 func (pr prefixNameMapper) toTXTName(endpointDNSName string) string {
 	return pr.prefix + endpointDNSName
+}
+
+func (im *TXTRegistry) removeFromCache(txt *endpoint.Endpoint) {
+	if im.recordsCache == nil || txt == nil {
+		// return early.
+		return
+	}
+
+	for i, e := range im.recordsCache {
+		if e.DNSName == txt.DNSName && e.RecordType == txt.RecordType {
+			// We found a match delete the endpoint from the cache.
+			im.recordsCache = append(im.recordsCache[:i], im.recordsCache[i+1:]...)
+			return
+		}
+	}
+}
+
+func (im *TXTRegistry) updateCache(txt *endpoint.Endpoint) {
+	if im.recordsCache == nil || txt == nil {
+		// return early.
+		return
+	}
+
+	for i, e := range im.recordsCache {
+		if e.DNSName == txt.DNSName && e.RecordType == txt.RecordType {
+			// We found a match update the endpoint in the cache.
+			im.recordsCache[i] = txt
+			return
+		}
+	}
+
+	// We couldn't find a match so let's just add it to the cache.
+	im.recordsCache = append(im.recordsCache, txt)
 }

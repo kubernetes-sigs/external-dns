@@ -28,6 +28,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const dnsimpleRecordTTL = 3600 // Default TTL of 1 hour if not set (DNSimple's default)
+
 type identityService struct {
 	service *dnsimple.IdentityService
 }
@@ -84,6 +86,7 @@ type dnsimpleProvider struct {
 	identity     identityService
 	accountID    string
 	domainFilter DomainFilter
+	zoneIDFilter ZoneIDFilter
 	dryRun       bool
 }
 
@@ -99,7 +102,7 @@ const (
 )
 
 // NewDnsimpleProvider initializes a new Dnsimple based provider
-func NewDnsimpleProvider(domainFilter DomainFilter, dryRun bool) (Provider, error) {
+func NewDnsimpleProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool) (Provider, error) {
 	oauthToken := os.Getenv("DNSIMPLE_OAUTH")
 	if len(oauthToken) == 0 {
 		return nil, fmt.Errorf("No dnsimple oauth token provided")
@@ -109,6 +112,7 @@ func NewDnsimpleProvider(domainFilter DomainFilter, dryRun bool) (Provider, erro
 		client:       dnsimpleZoneService{service: client.Zones},
 		identity:     identityService{service: client.Identity},
 		domainFilter: domainFilter,
+		zoneIDFilter: zoneIDFilter,
 		dryRun:       dryRun,
 	}
 	whoamiResponse, err := provider.identity.service.Whoami()
@@ -119,16 +123,32 @@ func NewDnsimpleProvider(domainFilter DomainFilter, dryRun bool) (Provider, erro
 	return provider, nil
 }
 
-// Returns a list of Zones that end with the provider's domainFilter
+// Returns a list of filtered Zones
 func (p *dnsimpleProvider) Zones() (map[string]dnsimple.Zone, error) {
 	zones := make(map[string]dnsimple.Zone)
-	zonesResponse, err := p.client.ListZones(p.accountID, &dnsimple.ZoneListOptions{})
-	if err != nil {
-		return nil, err
-	}
-	for _, zone := range zonesResponse.Data {
-		if p.domainFilter.Match(zone.Name) {
+	page := 1
+	listOptions := &dnsimple.ZoneListOptions{}
+	for {
+		listOptions.Page = page
+		zonesResponse, err := p.client.ListZones(p.accountID, listOptions)
+		if err != nil {
+			return nil, err
+		}
+		for _, zone := range zonesResponse.Data {
+			if !p.domainFilter.Match(zone.Name) {
+				continue
+			}
+
+			if !p.zoneIDFilter.Match(strconv.Itoa(zone.ID)) {
+				continue
+			}
+
 			zones[strconv.Itoa(zone.ID)] = zone
+		}
+
+		page++
+		if page > zonesResponse.Pagination.TotalPages {
+			break
 		}
 	}
 	return zones, nil
@@ -141,18 +161,27 @@ func (p *dnsimpleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 		return nil, err
 	}
 	for _, zone := range zones {
-		records, err := p.client.ListRecords(p.accountID, zone.Name, &dnsimple.ZoneRecordListOptions{})
-		if err != nil {
-			return nil, err
-		}
-		for _, record := range records.Data {
-			switch record.Type {
-			case "A", "CNAME", "TXT":
-				break
-			default:
-				continue
+		page := 1
+		listOptions := &dnsimple.ZoneRecordListOptions{}
+		for {
+			listOptions.Page = page
+			records, err := p.client.ListRecords(p.accountID, zone.Name, listOptions)
+			if err != nil {
+				return nil, err
 			}
-			endpoints = append(endpoints, endpoint.NewEndpoint(record.Name+"."+record.ZoneID, record.Content, record.Type))
+			for _, record := range records.Data {
+				switch record.Type {
+				case "A", "CNAME", "TXT":
+					break
+				default:
+					continue
+				}
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(record.Name+"."+record.ZoneID, record.Type, endpoint.TTL(record.TTL), record.Content))
+			}
+			page++
+			if page > records.Pagination.TotalPages {
+				break
+			}
 		}
 	}
 	return endpoints, nil
@@ -160,12 +189,18 @@ func (p *dnsimpleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 
 // newDnsimpleChange initializes a new change to dns records
 func newDnsimpleChange(action string, e *endpoint.Endpoint) *dnsimpleChange {
+	ttl := dnsimpleRecordTTL
+	if e.RecordTTL.IsConfigured() {
+		ttl = int(e.RecordTTL)
+	}
+
 	change := &dnsimpleChange{
 		Action: action,
 		ResourceRecordSet: dnsimple.ZoneRecord{
 			Name:    e.DNSName,
 			Type:    e.RecordType,
-			Content: e.Target,
+			Content: e.Targets[0],
+			TTL:     ttl,
 		},
 	}
 	return change
@@ -192,9 +227,11 @@ func (p *dnsimpleProvider) submitChanges(changes []*dnsimpleChange) error {
 	}
 	for _, change := range changes {
 		zone := dnsimpleSuitableZone(change.ResourceRecordSet.Name, zones)
-		if zone.ID == 0 {
-			return fmt.Errorf("No suitable zone name found")
+		if zone == nil {
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", change.ResourceRecordSet.Name)
+			continue
 		}
+
 		log.Infof("Changing records: %s %v in zone: %s", change.Action, change.ResourceRecordSet, zone.Name)
 
 		change.ResourceRecordSet.Name = strings.TrimSuffix(change.ResourceRecordSet.Name, "."+zone.Name)
@@ -231,25 +268,37 @@ func (p *dnsimpleProvider) submitChanges(changes []*dnsimpleChange) error {
 
 // Returns the record ID for a given record name and zone
 func (p *dnsimpleProvider) GetRecordID(zone string, recordName string) (recordID int, err error) {
-	records, err := p.client.ListRecords(p.accountID, zone, &dnsimple.ZoneRecordListOptions{})
-	if err != nil {
-		return 0, err
-	}
-	for _, record := range records.Data {
-		if record.Name == recordName {
-			return record.ID, nil
+	page := 1
+	listOptions := &dnsimple.ZoneRecordListOptions{Name: recordName}
+	for {
+		listOptions.Page = page
+		records, err := p.client.ListRecords(p.accountID, zone, listOptions)
+		if err != nil {
+			return 0, err
+		}
+
+		for _, record := range records.Data {
+			if record.Name == recordName {
+				return record.ID, nil
+			}
+		}
+
+		page++
+		if page > records.Pagination.TotalPages {
+			break
 		}
 	}
 	return 0, fmt.Errorf("No record id found")
 }
 
 // dnsimpleSuitableZone returns the most suitable zone for a given hostname and a set of zones.
-func dnsimpleSuitableZone(hostname string, zones map[string]dnsimple.Zone) dnsimple.Zone {
-	var zone dnsimple.Zone
+func dnsimpleSuitableZone(hostname string, zones map[string]dnsimple.Zone) *dnsimple.Zone {
+	var zone *dnsimple.Zone
 	for _, z := range zones {
 		if strings.HasSuffix(hostname, z.Name) {
-			if zone.ID == 0 || len(z.Name) > len(zone.Name) {
-				zone = z
+			if zone == nil || len(z.Name) > len(zone.Name) {
+				newZ := z
+				zone = &newZ
 			}
 		}
 	}

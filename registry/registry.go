@@ -23,7 +23,7 @@ import (
 )
 
 // Registry is an interface which should enables ownership concept in external-dns
-// Records() returns ALL records registered with DNS provider (TODO: for multi-zone support return all records)
+// Records() returns ALL records registered with DNS provider
 // each entry includes owner information
 // ApplyChanges(changes *plan.Changes) propagates the changes to the DNS Provider API and correspondingly updates ownership depending on type of registry being used
 type Registry interface {

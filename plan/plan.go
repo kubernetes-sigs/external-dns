@@ -18,7 +18,6 @@ package plan
 
 import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
-	log "github.com/sirupsen/logrus"
 )
 
 // Plan can convert a list of desired and current records to a series of create,
@@ -47,55 +46,102 @@ type Changes struct {
 	Delete []*endpoint.Endpoint
 }
 
+// planTable is a supplementary struct for Plan
+// each row correspond to a dnsName -> (current record + all desired records)
+/*
+planTable: (-> = target)
+--------------------------------------------------------
+DNSName | Current record | Desired Records             |
+--------------------------------------------------------
+foo.com | -> 1.1.1.1     | [->1.1.1.1, ->elb.com]      |  = no action
+--------------------------------------------------------
+bar.com |                | [->191.1.1.1, ->190.1.1.1]  |  = create (bar.com -> 190.1.1.1)
+--------------------------------------------------------
+"=", i.e. result of calculation relies on supplied ConflictResolver
+*/
+type planTable struct {
+	rows     map[string]*planTableRow
+	resolver ConflictResolver
+}
+
+func newPlanTable() planTable { //TODO: make resolver configurable
+	return planTable{map[string]*planTableRow{}, PerResource{}}
+}
+
+// planTableRow
+// current corresponds to the record currently occupying dns name on the dns provider
+// candidates corresponds to the list of records which would like to have this dnsName
+type planTableRow struct {
+	current    *endpoint.Endpoint
+	candidates []*endpoint.Endpoint
+}
+
+func (t planTable) addCurrent(e *endpoint.Endpoint) {
+	if _, ok := t.rows[e.DNSName]; !ok {
+		t.rows[e.DNSName] = &planTableRow{}
+	}
+	t.rows[e.DNSName].current = e
+}
+
+func (t planTable) addCandidate(e *endpoint.Endpoint) {
+	if _, ok := t.rows[e.DNSName]; !ok {
+		t.rows[e.DNSName] = &planTableRow{}
+	}
+	t.rows[e.DNSName].candidates = append(t.rows[e.DNSName].candidates, e)
+}
+
+// TODO: allows record type change, which might not be supported by all dns providers
+func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*endpoint.Endpoint) {
+	for _, row := range t.rows {
+		if row.current != nil && len(row.candidates) > 0 { //dns name is taken
+			update := t.resolver.ResolveUpdate(row.current, row.candidates)
+			// compare "update" to "current" to figure out if actual update is required
+			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) {
+				inheritOwner(row.current, update)
+				updateNew = append(updateNew, update)
+				updateOld = append(updateOld, row.current)
+			}
+			continue
+		}
+	}
+	return
+}
+
+func (t planTable) getCreates() (createList []*endpoint.Endpoint) {
+	for _, row := range t.rows {
+		if row.current == nil { //dns name not taken
+			createList = append(createList, t.resolver.ResolveCreate(row.candidates))
+		}
+	}
+	return
+}
+
+func (t planTable) getDeletes() (deleteList []*endpoint.Endpoint) {
+	for _, row := range t.rows {
+		if row.current != nil && len(row.candidates) == 0 {
+			deleteList = append(deleteList, row.current)
+		}
+	}
+	return
+}
+
 // Calculate computes the actions needed to move current state towards desired
 // state. It then passes those changes to the current policy for further
 // processing. It returns a copy of Plan with the changes populated.
 func (p *Plan) Calculate() *Plan {
-	changes := &Changes{}
+	t := newPlanTable()
 
-	// Ensure all desired records exist. For each desired record make sure it's
-	// either created or updated.
-	for _, desired := range p.Desired {
-		// Get the matching current record if it exists.
-		current, exists := recordExists(desired, p.Current)
-
-		// If there's no current record create desired record.
-		if !exists {
-			changes.Create = append(changes.Create, desired)
-			continue
-		}
-
-		targetChanged := targetChanged(desired, current)
-		shouldUpdateTTL := shouldUpdateTTL(desired, current)
-
-		if !targetChanged && !shouldUpdateTTL {
-			log.Debugf("Skipping endpoint %v because nothing has changed", desired)
-			continue
-		}
-
-		changes.UpdateOld = append(changes.UpdateOld, current)
-		desired.MergeLabels(current.Labels) // inherit the labels from the dns provider, including Owner ID
-
-		if targetChanged {
-			desired.RecordType = current.RecordType // inherit the type from the dns provider
-		}
-
-		if !shouldUpdateTTL {
-			desired.RecordTTL = current.RecordTTL
-		}
-
-		changes.UpdateNew = append(changes.UpdateNew, desired)
-	}
-
-	// Ensure all undesired records are removed. Each current record that cannot
-	// be found in the list of desired records is removed.
 	for _, current := range p.Current {
-		if _, exists := recordExists(current, p.Desired); !exists {
-			changes.Delete = append(changes.Delete, current)
-		}
+		t.addCurrent(current)
+	}
+	for _, desired := range p.Desired {
+		t.addCandidate(desired)
 	}
 
-	// Apply policies to list of changes.
+	changes := &Changes{}
+	changes.Create = t.getCreates()
+	changes.Delete = t.getDeletes()
+	changes.UpdateNew, changes.UpdateOld = t.getUpdates()
 	for _, pol := range p.Policies {
 		changes = pol.Apply(changes)
 	}
@@ -109,8 +155,18 @@ func (p *Plan) Calculate() *Plan {
 	return plan
 }
 
+func inheritOwner(from, to *endpoint.Endpoint) {
+	if to.Labels == nil {
+		to.Labels = map[string]string{}
+	}
+	if from.Labels == nil {
+		from.Labels = map[string]string{}
+	}
+	to.Labels[endpoint.OwnerLabelKey] = from.Labels[endpoint.OwnerLabelKey]
+}
+
 func targetChanged(desired, current *endpoint.Endpoint) bool {
-	return desired.Target != current.Target
+	return !desired.Targets.Same(current.Targets)
 }
 
 func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
@@ -118,15 +174,4 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 		return false
 	}
 	return desired.RecordTTL != current.RecordTTL
-}
-
-// recordExists checks whether a record can be found in a list of records.
-func recordExists(needle *endpoint.Endpoint, haystack []*endpoint.Endpoint) (*endpoint.Endpoint, bool) {
-	for _, record := range haystack {
-		if record.DNSName == needle.DNSName {
-			return record, true
-		}
-	}
-
-	return nil, false
 }

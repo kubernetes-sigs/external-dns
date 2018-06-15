@@ -21,10 +21,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/cloudflare/cloudflare-go"
-
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
+
+	cloudflare "github.com/cloudflare/cloudflare-go"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,8 +39,8 @@ func (m *mockCloudFlareClient) CreateDNSRecord(zoneID string, rr cloudflare.DNSR
 func (m *mockCloudFlareClient) DNSRecords(zoneID string, rr cloudflare.DNSRecord) ([]cloudflare.DNSRecord, error) {
 	if zoneID == "1234567890" {
 		return []cloudflare.DNSRecord{
-				{ID: "1234567890", Name: "foobar.ext-dns-test.zalando.to.", Type: endpoint.RecordTypeA},
-				{ID: "1231231233", Name: "foo.bar.com"}},
+				{ID: "1234567890", Name: "foobar.ext-dns-test.zalando.to.", Type: endpoint.RecordTypeA, TTL: 120},
+				{ID: "1231231233", Name: "foo.bar.com", TTL: 1}},
 			nil
 	}
 	return nil, nil
@@ -336,12 +336,35 @@ func (m *mockCloudFlareUpdateRecordsFail) ListZones(zoneID ...string) ([]cloudfl
 }
 
 func TestNewCloudFlareChanges(t *testing.T) {
-	endpoints := []*endpoint.Endpoint{{DNSName: "new", Target: "target"}}
-	newCloudFlareChanges(cloudFlareCreate, endpoints, true)
+	expect := []struct {
+		Name string
+		TTL  int
+	}{
+		{
+			"CustomRecordTTL",
+			120,
+		},
+		{
+			"DefaultRecordTTL",
+			1,
+		},
+	}
+	endpoints := []*endpoint.Endpoint{
+		{DNSName: "new", Targets: endpoint.Targets{"target"}, RecordTTL: 120},
+		{DNSName: "new2", Targets: endpoint.Targets{"target2"}},
+	}
+	changes := newCloudFlareChanges(cloudFlareCreate, endpoints, true)
+	for i, change := range changes {
+		assert.Equal(
+			t,
+			change.ResourceRecordSet.TTL,
+			expect[i].TTL,
+			expect[i].Name)
+	}
 }
 
 func TestNewCloudFlareChangeNoProxied(t *testing.T) {
-	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: "A", Target: "target"}, false)
+	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: "A", Targets: endpoint.Targets{"target"}}, false)
 	assert.False(t, change.ResourceRecordSet.Proxied)
 }
 
@@ -361,7 +384,7 @@ func TestNewCloudFlareChangeProxiable(t *testing.T) {
 	}
 
 	for _, cloudFlareType := range cloudFlareTypes {
-		change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: cloudFlareType.recordType, Target: "target"}, true)
+		change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: cloudFlareType.recordType, Targets: endpoint.Targets{"target"}}, true)
 
 		if cloudFlareType.proxiable {
 			assert.True(t, change.ResourceRecordSet.Proxied)
@@ -370,7 +393,7 @@ func TestNewCloudFlareChangeProxiable(t *testing.T) {
 		}
 	}
 
-	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "*.foo", RecordType: "A", Target: "target"}, true)
+	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "*.foo", RecordType: "A", Targets: endpoint.Targets{"target"}}, true)
 	assert.False(t, change.ResourceRecordSet.Proxied)
 }
 
@@ -378,6 +401,7 @@ func TestCloudFlareZones(t *testing.T) {
 	provider := &CloudFlareProvider{
 		Client:       &mockCloudFlareClient{},
 		domainFilter: NewDomainFilter([]string{"zalando.to."}),
+		zoneIDFilter: NewZoneIDFilter([]string{""}),
 	}
 
 	zones, err := provider.Zones()
@@ -415,13 +439,13 @@ func TestRecords(t *testing.T) {
 func TestNewCloudFlareProvider(t *testing.T) {
 	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
 	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
-	_, err := NewCloudFlareProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), false, true)
+	_, err := NewCloudFlareProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), NewZoneIDFilter([]string{""}), false, true)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
 	_ = os.Unsetenv("CF_API_KEY")
 	_ = os.Unsetenv("CF_API_EMAIL")
-	_, err = NewCloudFlareProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), false, true)
+	_, err = NewCloudFlareProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), NewZoneIDFilter([]string{""}), false, true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
@@ -432,10 +456,10 @@ func TestApplyChanges(t *testing.T) {
 	provider := &CloudFlareProvider{
 		Client: &mockCloudFlareClient{},
 	}
-	changes.Create = []*endpoint.Endpoint{{DNSName: "new.ext-dns-test.zalando.to.", Target: "target"}, {DNSName: "new.ext-dns-test.unrelated.to.", Target: "target"}}
-	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "target"}}
-	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "target-old"}}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Target: "target-new"}}
+	changes.Create = []*endpoint.Endpoint{{DNSName: "new.ext-dns-test.zalando.to.", Targets: endpoint.Targets{"target"}}, {DNSName: "new.ext-dns-test.unrelated.to.", Targets: endpoint.Targets{"target"}}}
+	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Targets: endpoint.Targets{"target"}}}
+	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Targets: endpoint.Targets{"target-old"}}}
+	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Targets: endpoint.Targets{"target-new"}}}
 	err := provider.ApplyChanges(changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)

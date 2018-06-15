@@ -40,13 +40,14 @@ const (
 )
 
 type config struct {
-	Cloud          string `json:"cloud" yaml:"cloud"`
-	TenantID       string `json:"tenantId" yaml:"tenantId"`
-	SubscriptionID string `json:"subscriptionId" yaml:"subscriptionId"`
-	ResourceGroup  string `json:"resourceGroup" yaml:"resourceGroup"`
-	Location       string `json:"location" yaml:"location"`
-	ClientID       string `json:"aadClientId" yaml:"aadClientId"`
-	ClientSecret   string `json:"aadClientSecret" yaml:"aadClientSecret"`
+	Cloud                       string `json:"cloud" yaml:"cloud"`
+	TenantID                    string `json:"tenantId" yaml:"tenantId"`
+	SubscriptionID              string `json:"subscriptionId" yaml:"subscriptionId"`
+	ResourceGroup               string `json:"resourceGroup" yaml:"resourceGroup"`
+	Location                    string `json:"location" yaml:"location"`
+	ClientID                    string `json:"aadClientId" yaml:"aadClientId"`
+	ClientSecret                string `json:"aadClientSecret" yaml:"aadClientSecret"`
+	UseManagedIdentityExtension bool   `json:"useManagedIdentityExtension" yaml:"useManagedIdentityExtension"`
 }
 
 // ZonesClient is an interface of dns.ZoneClient that can be stubbed for testing.
@@ -66,6 +67,7 @@ type RecordsClient interface {
 // AzureProvider implements the DNS provider for Microsoft's Azure cloud platform.
 type AzureProvider struct {
 	domainFilter  DomainFilter
+	zoneIDFilter  ZoneIDFilter
 	dryRun        bool
 	resourceGroup string
 	zonesClient   ZonesClient
@@ -75,7 +77,7 @@ type AzureProvider struct {
 // NewAzureProvider creates a new Azure provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAzureProvider(configFile string, domainFilter DomainFilter, resourceGroup string, dryRun bool) (*AzureProvider, error) {
+func NewAzureProvider(configFile string, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, resourceGroup string, dryRun bool) (*AzureProvider, error) {
 	contents, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
@@ -101,29 +103,60 @@ func NewAzureProvider(configFile string, domainFilter DomainFilter, resourceGrou
 		}
 	}
 
-	oauthConfig, err := adal.NewOAuthConfig(environment.ActiveDirectoryEndpoint, cfg.TenantID)
+	token, err := getAccessToken(cfg, environment)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve OAuth config: %v", err)
+		return nil, fmt.Errorf("failed to get token: %v", err)
 	}
 
-	token, err := adal.NewServicePrincipalToken(*oauthConfig, cfg.ClientID, cfg.ClientSecret, environment.ResourceManagerEndpoint)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create service principal token: %v", err)
-	}
-
-	zonesClient := dns.NewZonesClient(cfg.SubscriptionID)
+	zonesClient := dns.NewZonesClientWithBaseURI(environment.ResourceManagerEndpoint, cfg.SubscriptionID)
 	zonesClient.Authorizer = autorest.NewBearerAuthorizer(token)
-	recordsClient := dns.NewRecordSetsClient(cfg.SubscriptionID)
+	recordsClient := dns.NewRecordSetsClientWithBaseURI(environment.ResourceManagerEndpoint, cfg.SubscriptionID)
 	recordsClient.Authorizer = autorest.NewBearerAuthorizer(token)
 
 	provider := &AzureProvider{
 		domainFilter:  domainFilter,
+		zoneIDFilter:  zoneIDFilter,
 		dryRun:        dryRun,
 		resourceGroup: cfg.ResourceGroup,
 		zonesClient:   zonesClient,
 		recordsClient: recordsClient,
 	}
 	return provider, nil
+}
+
+// getAccessToken retrieves Azure API access token.
+func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePrincipalToken, error) {
+	// Try to retrive token with MSI.
+	if cfg.UseManagedIdentityExtension {
+		log.Info("Using managed identity extension to retrieve access token for Azure API.")
+		msiEndpoint, err := adal.GetMSIVMEndpoint()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get the managed service identity endpoint: %v", err)
+		}
+
+		token, err := adal.NewServicePrincipalTokenFromMSI(msiEndpoint, environment.ServiceManagementEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
+		}
+		return token, nil
+	}
+
+	// Try to retrieve token with service principal credentials.
+	if len(cfg.ClientID) > 0 && len(cfg.ClientSecret) > 0 {
+		log.Info("Using client_id+client_secret to retrieve access token for Azure API.")
+		oauthConfig, err := adal.NewOAuthConfig(environment.ActiveDirectoryEndpoint, cfg.TenantID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to retrieve OAuth config: %v", err)
+		}
+
+		token, err := adal.NewServicePrincipalToken(*oauthConfig, cfg.ClientID, cfg.ClientSecret, environment.ResourceManagerEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create service principal token: %v", err)
+		}
+		return token, nil
+	}
+
+	return nil, fmt.Errorf("no credentials provided for Azure API")
 }
 
 // Records gets the current records.
@@ -151,12 +184,17 @@ func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				log.Errorf("Failed to extract target for '%s' with type '%s'.", name, recordType)
 				return true
 			}
-			ep := endpoint.NewEndpoint(name, target, recordType)
+			var ttl endpoint.TTL
+			if recordSet.TTL != nil {
+				ttl = endpoint.TTL(*recordSet.TTL)
+			}
+
+			ep := endpoint.NewEndpointWithTTL(name, recordType, endpoint.TTL(ttl), target)
 			log.Debugf(
 				"Found %s record for '%s' with target '%s'.",
 				ep.RecordType,
 				ep.DNSName,
-				ep.Target,
+				ep.Targets,
 			)
 			endpoints = append(endpoints, ep)
 			return true
@@ -194,9 +232,19 @@ func (p *AzureProvider) zones() ([]dns.Zone, error) {
 
 	for list.Value != nil && len(*list.Value) > 0 {
 		for _, zone := range *list.Value {
-			if zone.Name != nil && p.domainFilter.Match(*zone.Name) {
-				zones = append(zones, zone)
+			if zone.Name == nil {
+				continue
 			}
+
+			if !p.domainFilter.Match(*zone.Name) {
+				continue
+			}
+
+			if !p.zoneIDFilter.Match(*zone.ID) {
+				continue
+			}
+
+			zones = append(zones, zone)
 		}
 
 		list, err = p.zonesClient.ListByResourceGroupNextResults(list)
@@ -306,7 +354,7 @@ func (p *AzureProvider) updateRecords(updated azureChangeMap) {
 					"Would update %s record named '%s' to '%s' for Azure DNS zone '%s'.",
 					endpoint.RecordType,
 					name,
-					endpoint.Target,
+					endpoint.Targets,
 					zone,
 				)
 				continue
@@ -316,7 +364,7 @@ func (p *AzureProvider) updateRecords(updated azureChangeMap) {
 				"Updating %s record named '%s' to '%s' for Azure DNS zone '%s'.",
 				endpoint.RecordType,
 				name,
-				endpoint.Target,
+				endpoint.Targets,
 				zone,
 			)
 
@@ -337,7 +385,7 @@ func (p *AzureProvider) updateRecords(updated azureChangeMap) {
 					"Failed to update %s record named '%s' to '%s' for DNS zone '%s': %v",
 					endpoint.RecordType,
 					name,
-					endpoint.Target,
+					endpoint.Targets,
 					zone,
 					err,
 				)
@@ -360,14 +408,18 @@ func (p *AzureProvider) recordSetNameForZone(zone string, endpoint *endpoint.End
 }
 
 func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet, error) {
+	var ttl int64 = azureRecordTTL
+	if endpoint.RecordTTL.IsConfigured() {
+		ttl = int64(endpoint.RecordTTL)
+	}
 	switch dns.RecordType(endpoint.RecordType) {
 	case dns.A:
 		return dns.RecordSet{
 			RecordSetProperties: &dns.RecordSetProperties{
-				TTL: to.Int64Ptr(azureRecordTTL),
+				TTL: to.Int64Ptr(ttl),
 				ARecords: &[]dns.ARecord{
 					{
-						Ipv4Address: to.StringPtr(endpoint.Target),
+						Ipv4Address: to.StringPtr(endpoint.Targets[0]),
 					},
 				},
 			},
@@ -375,20 +427,20 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 	case dns.CNAME:
 		return dns.RecordSet{
 			RecordSetProperties: &dns.RecordSetProperties{
-				TTL: to.Int64Ptr(azureRecordTTL),
+				TTL: to.Int64Ptr(ttl),
 				CnameRecord: &dns.CnameRecord{
-					Cname: to.StringPtr(endpoint.Target),
+					Cname: to.StringPtr(endpoint.Targets[0]),
 				},
 			},
 		}, nil
 	case dns.TXT:
 		return dns.RecordSet{
 			RecordSetProperties: &dns.RecordSetProperties{
-				TTL: to.Int64Ptr(azureRecordTTL),
+				TTL: to.Int64Ptr(ttl),
 				TxtRecords: &[]dns.TxtRecord{
 					{
 						Value: &[]string{
-							endpoint.Target,
+							endpoint.Targets[0],
 						},
 					},
 				},

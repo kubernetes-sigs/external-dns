@@ -1,0 +1,69 @@
+# Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
+# for detailed Gopkg.toml documentation.
+
+required = ["github.com/kubernetes/repo-infra/verify/boilerplate/test"]
+ignored = ["github.com/kubernetes/repo-infra/kazel"]
+
+[[constraint]]
+  name = "github.com/Azure/azure-sdk-for-go"
+  version = "~10.0.4-beta"
+
+[[constraint]]
+  name = "github.com/Azure/go-autorest"
+  version = "~10.9.0"
+
+[[constraint]]
+  name = "github.com/alecthomas/kingpin"
+  version = "~2.2.4"
+
+[[constraint]]
+  name = "github.com/aws/aws-sdk-go"
+  version = "~1.13.7"
+
+[[constraint]]
+  name = "github.com/cloudflare/cloudflare-go"
+  version = "0.7.3"
+
+[[constraint]]
+  name = "github.com/coreos/etcd"
+  version = "~3.2.15"
+
+[[constraint]]
+  name = "github.com/digitalocean/godo"
+  version = "~1.1.0"
+
+[[constraint]]
+  name = "github.com/dnsimple/dnsimple-go"
+  version = "0.14.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/infobloxopen/infoblox-go-client"
+
+[[constraint]]
+  name = "github.com/linki/instrumented_http"
+  version = "0.2.0"
+
+[[constraint]]
+  name = "github.com/prometheus/client_golang"
+  version = "0.8.0"
+
+[[constraint]]
+  name = "github.com/sirupsen/logrus"
+  version = "~1.0.3"
+
+[[constraint]]
+  name = "github.com/stretchr/testify"
+  version = "~1.1.4"
+
+[[constraint]]
+  name = "k8s.io/client-go"
+  version = "~3.0.0-beta.0"
+
+[[override]]
+  name = "github.com/kubernetes/repo-infra"
+  revision = "2d2eb5e12b4663fc4d764b5db9daab39334d3f37"
+
+[[constraint]]
+  name = "github.com/nesv/go-dynect"
+  version = "0.6.0"

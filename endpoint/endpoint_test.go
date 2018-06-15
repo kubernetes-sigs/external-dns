@@ -18,31 +18,60 @@ package endpoint
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNewEndpoint(t *testing.T) {
-	e := NewEndpoint("example.org", "foo.com", "CNAME")
-	if e.DNSName != "example.org" || e.Target != "foo.com" || e.RecordType != "CNAME" {
+	e := NewEndpoint("example.org", "CNAME", "foo.com")
+	if e.DNSName != "example.org" || e.Targets[0] != "foo.com" || e.RecordType != "CNAME" {
 		t.Error("endpoint is not initialized correctly")
 	}
 	if e.Labels == nil {
 		t.Error("Labels is not initialized")
 	}
 
-	w := NewEndpoint("example.org.", "load-balancer.com.", "")
-	if w.DNSName != "example.org" || w.Target != "load-balancer.com" || w.RecordType != "" {
+	w := NewEndpoint("example.org.", "", "load-balancer.com.")
+	if w.DNSName != "example.org" || w.Targets[0] != "load-balancer.com" || w.RecordType != "" {
 		t.Error("endpoint is not initialized correctly")
 	}
 }
 
-func TestMergeLabels(t *testing.T) {
-	e := NewEndpoint("abc.com", "1.2.3.4", "A")
-	e.Labels = map[string]string{
-		"foo": "bar",
-		"baz": "qux",
+func TestTargetsSame(t *testing.T) {
+	tests := []Targets{
+		{""},
+		{"1.2.3.4"},
+		{"8.8.8.8", "8.8.4.4"},
 	}
-	e.MergeLabels(map[string]string{"baz": "baz", "new": "fox"})
-	assert.Equal(t, map[string]string{"foo": "bar", "baz": "qux", "new": "fox"}, e.Labels)
+
+	for _, d := range tests {
+		if d.Same(d) != true {
+			t.Errorf("%#v should equal %#v", d, d)
+		}
+	}
+}
+
+func TestSameFailures(t *testing.T) {
+	tests := []struct {
+		a Targets
+		b Targets
+	}{
+		{
+			[]string{"1.2.3.4"},
+			[]string{"4.3.2.1"},
+		}, {
+			[]string{"1.2.3.4"},
+			[]string{"1.2.3.4", "4.3.2.1"},
+		}, {
+			[]string{"1.2.3.4", "4.3.2.1"},
+			[]string{"1.2.3.4"},
+		}, {
+			[]string{"1.2.3.4", "4.3.2.1"},
+			[]string{"8.8.8.8", "8.8.4.4"},
+		},
+	}
+
+	for _, d := range tests {
+		if d.a.Same(d.b) == true {
+			t.Errorf("%#v should not equal %#v", d.a, d.b)
+		}
+	}
 }

@@ -66,13 +66,13 @@ func (sc *fakeSource) Endpoints() ([]*endpoint.Endpoint, error) {
 }
 
 func (sc *fakeSource) generateEndpoint() (*endpoint.Endpoint, error) {
-	endpoint := endpoint.NewEndpoint(
+	ep := endpoint.NewEndpoint(
 		generateDNSName(4, sc.dnsName),
-		generateIPAddress(),
 		endpoint.RecordTypeA,
+		generateIPAddress(),
 	)
 
-	return endpoint, nil
+	return ep, nil
 }
 
 func generateIPAddress() string {

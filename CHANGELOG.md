@@ -1,11 +1,57 @@
+## v0.5.2 - 2018-05-31
+
+  - DNSimple: Make DNSimple tolerant of unknown zones (#574) @jbowes
+  - Cloudflare: Custom record TTL (#572) @njuettner
+  - AWS ServiceDiscovery: Implementation of AWS ServiceDiscovery provider (#483) @vanekjar
+  - Update docs to latest changes (#563) @Raffo
+  - New source - connector (#552) @shashidharatd
+  - Update AWS SDK dependency to v1.13.7 @vanekjar
+
+## v0.5.1 - 2018-05-16
+
+  - Refactor implementation of sync loop to use `time.Ticker` (#553) @r0fls
+  - Document how ExternalDNS gets permission to change AWS Route53 entries (#557) @hjacobs
+  - Fix CNAME support for the PowerDNS provider (#547) @kciredor
+  - Add support for hostname annotation in Ingress resource (#545) @rajatjindal
+  - Fix for TTLs being ignored on headless Services (#546) @danbondd
+  - Fix failing tests by giving linters more time to do their work (#548) @linki
+  - Fix misspelled flag for the OpenStack Designate provider (#542) @zentale
+  - Document additional RBAC rules needed to read Pods (#538) @danbondd
+
+## v0.5.0 - 2018-04-23
+
+  - Google: Correctly filter records that don't match all filters (#533) @prydie @linki
+  - AWS: add support for AWS Network Load Balancers (#531) @linki
+  - Add a flag that allows FQDN template and annotations to combine (#513) @helgi
+  - Fix: Use PodIP instead of HostIP for headless Services (#498) @nrobert13
+  - Support a comma separated list for the FQDN template (#512) @helgi
+  - Google Provider: Add auto-detection of Google Project when running on GCP (#492) @drzero42
+  - Add custom TTL support for DNSimple (#477) @jbowes
+  - Fix docker build and delete vendor files which were not deleted (#473) @njuettner
+  - DigitalOcean: DigitalOcean creates entries with host in them twice (#459) @njuettner
+  - Bugfix: Retrive all DNSimple response pages (#468) @jbowes
+  - external-dns does now provide support for multiple targets for A records. This is currently only supported by the Google Cloud DNS provider (#418) @dereulenspiegel
+  - Graceful handling of misconfigure password for dyn provider (#470) @jvassev
+  - Don't log sensitive data on start (#463) @jvassev
+  - Google: Improve logging to help trace misconfigurations (#388) @stealthybox
+  - AWS: In addition to the one best public hosted zone, records will be added to all matching private hosted zones (#356) @coreypobrien
+  - Every record managed by External DNS is now mapped to a kubernetes resource (service/ingress) @ideahitme
+    - New field is stored in TXT DNS record which reflects which kubernetes resource has acquired the DNS name
+    - Target of DNS record is changed only if corresponding kubernetes resource target changes
+    - If kubernetes resource is deleted, then another resource may acquire DNS name
+    - "Flapping" target issue is resolved by providing a consistent and defined mechanism for choosing a target
+  - New `--zone-id-filter` parameter allows filtering by zone id (#422) @vboginskey
+  - TTL annotation check for azure records (#436) @stromming
+  - Switch from glide to dep (#435) @bkochendorfer
+
 ## v0.4.8 - 2017-11-22
 
   - Allow filtering by source annotation via `--annotation-filter` (#354) @khrisrichardson
-  - Add support for Headless hostPort services (#324)
+  - Add support for Headless hostPort services (#324) @Arttii
   - AWS: Added change batch limiting to a maximum of 4000 Route53 updates in one API call.  Changes exceeding the limit will be dropped but all related changes by hostname are preserved within the limit. (#368) @bitvector2
   - Google: Support configuring TTL by annotation: `external-dns.alpha.kubernetes.io/ttl`. (#389) @stealthybox
-  - Infoblox: add option `--no-infoblox-ssl-verify` (#378)
-  - Inmemory: add support to specify zones for inmemory provider via command line (#366)
+  - Infoblox: add option `--no-infoblox-ssl-verify` (#378) @khrisrichardson
+  - Inmemory: add support to specify zones for inmemory provider via command line (#366) @ffledgling
 
 ## v0.4.7 - 2017-10-18
 

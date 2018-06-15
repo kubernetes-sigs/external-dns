@@ -31,6 +31,8 @@ This tutorial describes how to setup ExternalDNS for usage within a Kubernetes c
 }
 ```
 
+When running on AWS, you need to make sure that your nodes (on which External DNS runs) have the IAM instance profile with the above IAM role assigned (either directly or via something like [kube2iam](https://github.com/jtblin/kube2iam)).
+
 ## Set up a hosted zone
 
 *If you prefer to try-out ExternalDNS in one of the existing hosted-zones you can skip this step*
@@ -63,8 +65,9 @@ In this case it's the ones shown above but your's will differ.
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
-Then apply the following manifest file to deploy ExternalDNS.
+Then apply one of the following manifests file to deploy ExternalDNS.
 
+### Manifest (for clusters without RBAC enabled)
 ```yaml
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -80,20 +83,120 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.2
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.2
         args:
         - --source=service
         - --source=ingress
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+        - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
         - --txt-owner-id=my-identifier
 ```
 
-## Verify ExternalDNS works
+### Manifest (for clusters with RBAC enabled)
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: external-dns
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: external-dns
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get","watch","list"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["extensions"] 
+  resources: ["ingresses"] 
+  verbs: ["get","watch","list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: external-dns-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: external-dns
+subjects:
+- kind: ServiceAccount
+  name: external-dns
+  namespace: default
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: external-dns
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: external-dns
+    spec:
+      serviceAccountName: external-dns
+      containers:
+      - name: external-dns
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.2
+        args:
+        - --source=service
+        - --source=ingress
+        - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
+        - --provider=aws
+        - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+        - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
+        - --registry=txt
+        - --txt-owner-id=my-identifier
+```
+
+
+
+## Arguments
+
+This list is not the full list, but a few arguments that where chosen.
+
+### aws-zone-type
+
+`aws-zone-type` allows filtering for private and public zones
+
+
+## Verify ExternalDNS works (Ingress example)
+
+Create an ingress resource manifest file.
+
+> For ingress objects ExternalDNS will create a DNS record based on the host specified for the ingress object.
+
+```yaml
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: foo
+  annotations:
+    kubernetes.io/ingress.class: "nginx" # use the one that corresponds to your ingress controller.
+spec:
+  rules:
+  - host: foo.bar.com
+    http:
+      paths:
+      - backend:
+          serviceName: foo
+          servicePort: 80
+```
+
+## Verify ExternalDNS works (Service example)
 
 Create the following sample application to test that ExternalDNS works.
+
+> For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the corresponding value.
 
 ```yaml
 apiVersion: v1
@@ -106,6 +209,7 @@ spec:
   type: LoadBalancer
   ports:
   - port: 80
+    name: http
     targetPort: 80
   selector:
     app: nginx
@@ -127,6 +231,7 @@ spec:
         name: nginx
         ports:
         - containerPort: 80
+          name: http
 ```
 
 After roughly two minutes check that a corresponding DNS record for your service was created.

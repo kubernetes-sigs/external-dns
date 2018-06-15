@@ -60,7 +60,7 @@ func TestFakeEndpointsResolveToIPAddresses(t *testing.T) {
 	endpoints := generateTestEndpoints()
 
 	for _, e := range endpoints {
-		ip := net.ParseIP(e.Target)
+		ip := net.ParseIP(e.Targets[0])
 
 		if ip == nil {
 			t.Error(e)

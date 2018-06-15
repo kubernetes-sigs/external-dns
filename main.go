@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -42,7 +41,7 @@ func main() {
 	if err := cfg.ParseFlags(os.Args[1:]); err != nil {
 		log.Fatalf("flag parsing error: %v", err)
 	}
-	log.Infof("config: %+v", cfg)
+	log.Infof("config: %s", cfg)
 
 	if err := validation.ValidateConfig(cfg); err != nil {
 		log.Fatalf("config validation failed: %v", err)
@@ -68,11 +67,13 @@ func main() {
 
 	// Create a source.Config from the flags passed by the user.
 	sourceCfg := &source.Config{
-		Namespace:        cfg.Namespace,
-		AnnotationFilter: cfg.AnnotationFilter,
-		FQDNTemplate:     cfg.FQDNTemplate,
-		Compatibility:    cfg.Compatibility,
-		PublishInternal:  cfg.PublishInternal,
+		Namespace:                cfg.Namespace,
+		AnnotationFilter:         cfg.AnnotationFilter,
+		FQDNTemplate:             cfg.FQDNTemplate,
+		CombineFQDNAndAnnotation: cfg.CombineFQDNAndAnnotation,
+		Compatibility:            cfg.Compatibility,
+		PublishInternal:          cfg.PublishInternal,
+		ConnectorServer:          cfg.ConnectorSourceServer,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
@@ -88,26 +89,35 @@ func main() {
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
 
 	domainFilter := provider.NewDomainFilter(cfg.DomainFilter)
+	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 
 	var p provider.Provider
 	switch cfg.Provider {
 	case "aws":
-		p, err = provider.NewAWSProvider(domainFilter, zoneTypeFilter, cfg.DryRun)
+		p, err = provider.NewAWSProvider(domainFilter, zoneIDFilter, zoneTypeFilter, cfg.AWSAssumeRole, cfg.DryRun)
+	case "aws-sd":
+		// Check that only compatible Registry is used with AWS-SD
+		if cfg.Registry != "noop" && cfg.Registry != "aws-sd" {
+			log.Infof("Registry \"%s\" cannot be used with AWS ServiceDiscovery. Switching to \"aws-sd\".", cfg.Registry)
+			cfg.Registry = "aws-sd"
+		}
+		p, err = provider.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.DryRun)
 	case "azure":
-		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, cfg.AzureResourceGroup, cfg.DryRun)
+		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.DryRun)
 	case "cloudflare":
-		p, err = provider.NewCloudFlareProvider(domainFilter, cfg.CloudflareProxied, cfg.DryRun)
+		p, err = provider.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareProxied, cfg.DryRun)
 	case "google":
-		p, err = provider.NewGoogleProvider(cfg.GoogleProject, domainFilter, cfg.DryRun)
+		p, err = provider.NewGoogleProvider(cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.DryRun)
 	case "digitalocean":
 		p, err = provider.NewDigitalOceanProvider(domainFilter, cfg.DryRun)
 	case "dnsimple":
-		p, err = provider.NewDnsimpleProvider(domainFilter, cfg.DryRun)
+		p, err = provider.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "infoblox":
 		p, err = provider.NewInfobloxProvider(
 			provider.InfobloxConfig{
 				DomainFilter: domainFilter,
+				ZoneIDFilter: zoneIDFilter,
 				Host:         cfg.InfobloxGridHost,
 				Port:         cfg.InfobloxWapiPort,
 				Username:     cfg.InfobloxWapiUsername,
@@ -117,8 +127,27 @@ func main() {
 				DryRun:       cfg.DryRun,
 			},
 		)
+	case "dyn":
+		p, err = provider.NewDynProvider(
+			provider.DynConfig{
+				DomainFilter:  domainFilter,
+				ZoneIDFilter:  zoneIDFilter,
+				DryRun:        cfg.DryRun,
+				CustomerName:  cfg.DynCustomerName,
+				Username:      cfg.DynUsername,
+				Password:      cfg.DynPassword,
+				MinTTLSeconds: cfg.DynMinTTLSeconds,
+				AppVersion:    externaldns.Version,
+			},
+		)
+	case "coredns", "skydns":
+		p, err = provider.NewCoreDNSProvider(domainFilter, cfg.DryRun)
 	case "inmemory":
 		p, err = provider.NewInMemoryProvider(provider.InMemoryInitZones(cfg.InMemoryZones), provider.InMemoryWithDomain(domainFilter), provider.InMemoryWithLogging()), nil
+	case "designate":
+		p, err = provider.NewDesignateProvider(domainFilter, cfg.DryRun)
+	case "pdns":
+		p, err = provider.NewPDNSProvider(cfg.PDNSServer, cfg.PDNSAPIKey, domainFilter, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
@@ -131,7 +160,9 @@ func main() {
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":
-		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTOwnerID)
+		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTOwnerID, cfg.TXTCacheInterval)
+	case "aws-sd":
+		r, err = registry.NewAWSSDRegistry(p.(*provider.AWSSDProvider), cfg.TXTOwnerID)
 	default:
 		log.Fatalf("unknown registry: %s", cfg.Registry)
 	}
@@ -160,12 +191,7 @@ func main() {
 
 		os.Exit(0)
 	}
-
 	ctrl.Run(stopChan)
-	for {
-		log.Info("Pod waiting to be deleted")
-		time.Sleep(time.Second * 30)
-	}
 }
 
 func handleSigterm(stopChan chan struct{}) {

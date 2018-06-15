@@ -20,8 +20,10 @@ The environment variable `DO_TOKEN` will be needed to run ExternalDNS with Digit
 
 ## Deploy ExternalDNS
 
-Create a deployment file called `externaldns.yaml` with the following contents:
+Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
+Then apply one of the following manifests file to deploy ExternalDNS.
 
+### Manifest (for clusters without RBAC enabled)
 ```yaml
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -37,7 +39,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.4.2
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.2
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -47,11 +49,66 @@ spec:
           value: "YOUR_DIGITALOCEAN_API_KEY"
 ```
 
-Create the deployment for ExternalDNS:
-
-```console
-$ kubectl create -f externaldns.yaml
+### Manifest (for clusters with RBAC enabled)
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: external-dns
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: external-dns
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get","watch","list"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["extensions"] 
+  resources: ["ingresses"] 
+  verbs: ["get","watch","list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: external-dns-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: external-dns
+subjects:
+- kind: ServiceAccount
+  name: external-dns
+  namespace: default
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: external-dns
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: external-dns
+    spec:
+      serviceAccountName: external-dns
+      containers:
+      - name: external-dns
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.2
+        args:
+        - --source=service # ingress is also possible
+        - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
+        - --provider=digitalocean
+        env:
+        - name: DO_TOKEN
+          value: "YOUR_DIGITALOCEAN_API_KEY"
 ```
+
 
 ## Deploying an Nginx Service
 

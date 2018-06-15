@@ -27,6 +27,9 @@ cover:
 cover-html: cover
 	go tool cover -html cover.out
 
+dep:
+	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+	dep ensure -vendor-only
 
 # The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: verify test
@@ -46,7 +49,7 @@ SOURCES        = $(shell find . -name '*.go')
 IMAGE         ?= registry.opensource.zalan.do/teapot/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty)
 BUILD_FLAGS   ?= -v
-LDFLAGS       ?= -X github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns.version=$(VERSION) -w -s
+LDFLAGS       ?= -X github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s
 
 build: build/$(BINARY)
 
