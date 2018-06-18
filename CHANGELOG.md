@@ -1,3 +1,5 @@
+  - AWS: Add a flag to override the default max change count (#596) @peterbale
+  
 ## v0.5.3 - 2018-06-15
 
   - Print a message if no hosted zones match (aws provider) (#592) @svend

@@ -33,7 +33,6 @@ import (
 const (
 	evaluateTargetHealth = true
 	recordTTL            = 300
-	maxChangeCount       = 4000
 )
 
 var (
@@ -86,8 +85,9 @@ type Route53API interface {
 
 // AWSProvider is an implementation of Provider for AWS Route53.
 type AWSProvider struct {
-	client Route53API
-	dryRun bool
+	client         Route53API
+	dryRun         bool
+	maxChangeCount int
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter DomainFilter
 	// filter hosted zones by id
@@ -96,8 +96,18 @@ type AWSProvider struct {
 	zoneTypeFilter ZoneTypeFilter
 }
 
+// AWSConfig contains configuration to create a new AWS provider.
+type AWSConfig struct {
+	DomainFilter   DomainFilter
+	ZoneIDFilter   ZoneIDFilter
+	ZoneTypeFilter ZoneTypeFilter
+	MaxChangeCount int
+	AssumeRole     string
+	DryRun         bool
+}
+
 // NewAWSProvider initializes a new AWS Route53 based Provider.
-func NewAWSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zoneTypeFilter ZoneTypeFilter, assumeRole string, dryRun bool) (*AWSProvider, error) {
+func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 	config := aws.NewConfig()
 
 	config.WithHTTPClient(
@@ -117,17 +127,18 @@ func NewAWSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zoneTy
 		return nil, err
 	}
 
-	if assumeRole != "" {
-		log.Infof("Assuming role: %s", assumeRole)
-		session.Config.WithCredentials(stscreds.NewCredentials(session, assumeRole))
+	if awsConfig.AssumeRole != "" {
+		log.Infof("Assuming role: %s", awsConfig.AssumeRole)
+		session.Config.WithCredentials(stscreds.NewCredentials(session, awsConfig.AssumeRole))
 	}
 
 	provider := &AWSProvider{
 		client:         route53.New(session),
-		domainFilter:   domainFilter,
-		zoneIDFilter:   zoneIDFilter,
-		zoneTypeFilter: zoneTypeFilter,
-		dryRun:         dryRun,
+		domainFilter:   awsConfig.DomainFilter,
+		zoneIDFilter:   awsConfig.ZoneIDFilter,
+		zoneTypeFilter: awsConfig.ZoneTypeFilter,
+		maxChangeCount: awsConfig.MaxChangeCount,
+		dryRun:         awsConfig.DryRun,
 	}
 
 	return provider, nil
@@ -275,7 +286,7 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 	}
 
 	for z, cs := range changesByZone {
-		limCs := limitChangeSet(cs, maxChangeCount)
+		limCs := limitChangeSet(cs, p.maxChangeCount)
 
 		for _, c := range limCs {
 			log.Infof("Desired change: %s %s %s", *c.Action, *c.ResourceRecordSet.Name, *c.ResourceRecordSet.Type)
