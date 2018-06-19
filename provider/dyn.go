@@ -91,7 +91,7 @@ func (c *cache) Get(link string) *endpoint.Endpoint {
 	return result.ep
 }
 
-// DynConfig hold connection parameters to dyn.com and interanl state
+// DynConfig hold connection parameters to dyn.com and internal state
 type DynConfig struct {
 	DomainFilter  DomainFilter
 	ZoneIDFilter  ZoneIDFilter
