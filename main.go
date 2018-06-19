@@ -159,13 +159,13 @@ func main() {
 		p, err = provider.NewPDNSProvider(
 			provider.PDNSConfig{
 				DomainFilter: domainFilter,
-				DryRun: cfg.DryRun,
-				Server: cfg.PDNSServer,
-				APIKey: cfg.PDNSAPIKey,
+				DryRun:       cfg.DryRun,
+				Server:       cfg.PDNSServer,
+				APIKey:       cfg.PDNSAPIKey,
 				TLSConfig: provider.TLSConfig{
-					TLSEnabled: cfg.PDNSTLSEnabled,
-					CAFilePath: cfg.TLSCA,
-					ClientCertFilePath: cfg.TLSClientCert,
+					TLSEnabled:            cfg.PDNSTLSEnabled,
+					CAFilePath:            cfg.TLSCA,
+					ClientCertFilePath:    cfg.TLSClientCert,
 					ClientCertKeyFilePath: cfg.TLSClientCertKey,
 				},
 			},

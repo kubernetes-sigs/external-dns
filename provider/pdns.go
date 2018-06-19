@@ -29,13 +29,13 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"crypto/tls"
+	"crypto/x509"
 	pgo "github.com/ffledgling/pdns-go"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
-	"net"
-	"crypto/tls"
-	"crypto/x509"
 	"io/ioutil"
+	"net"
 )
 
 type pdnsChangeType string
@@ -89,7 +89,7 @@ func (tlsConfig *TLSConfig) setHTTPClient(pdnsClientConfig *pgo.Configuration) e
 		if tlsConfig.ClientCertKeyFilePath != "" {
 			return errors.New("client certificate key file path was specified, but TLS was not enabled")
 		}
-		return nil;
+		return nil
 	}
 
 	log.Debug("Configuring TLS for PDNS Provider.")

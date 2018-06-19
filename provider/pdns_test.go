@@ -478,23 +478,23 @@ type NewPDNSProviderTestSuite struct {
 func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 
 	_, err := NewPDNSProvider(PDNSConfig{
-		Server: "http://localhost:8081",
+		Server:       "http://localhost:8081",
 		DomainFilter: NewDomainFilter([]string{""}),
 	})
 	assert.Error(suite.T(), err, "--pdns-api-key should be specified")
 
 	_, err = NewPDNSProvider(PDNSConfig{
-		Server: "http://localhost:8081",
-		APIKey: "foo",
+		Server:       "http://localhost:8081",
+		APIKey:       "foo",
 		DomainFilter: NewDomainFilter([]string{"example.com", "example.org"}),
 	})
 	assert.Error(suite.T(), err, "--domainfilter should raise an error")
 
 	_, err = NewPDNSProvider(PDNSConfig{
-		Server: "http://localhost:8081",
-		APIKey: "foo",
+		Server:       "http://localhost:8081",
+		APIKey:       "foo",
 		DomainFilter: NewDomainFilter([]string{""}),
-		DryRun: true,
+		DryRun:       true,
 	})
 	assert.Error(suite.T(), err, "--dry-run should raise an error")
 
@@ -542,7 +542,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 		APIKey:       "foo",
 		DomainFilter: NewDomainFilter([]string{""}),
 		TLSConfig: TLSConfig{
-			TLSEnabled: false,
+			TLSEnabled:         false,
 			ClientCertFilePath: "/path/to/cert.pem",
 		},
 	})
@@ -553,7 +553,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 		APIKey:       "foo",
 		DomainFilter: NewDomainFilter([]string{""}),
 		TLSConfig: TLSConfig{
-			TLSEnabled: false,
+			TLSEnabled:            false,
 			ClientCertKeyFilePath: "/path/to/cert-key.pem",
 		},
 	})
@@ -585,8 +585,8 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 		APIKey:       "foo",
 		DomainFilter: NewDomainFilter([]string{""}),
 		TLSConfig: TLSConfig{
-			TLSEnabled: true,
-			CAFilePath: "../internal/testresources/ca.pem",
+			TLSEnabled:         true,
+			CAFilePath:         "../internal/testresources/ca.pem",
 			ClientCertFilePath: "../internal/testresources/client-cert.pem",
 		},
 	})
@@ -597,8 +597,8 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 		APIKey:       "foo",
 		DomainFilter: NewDomainFilter([]string{""}),
 		TLSConfig: TLSConfig{
-			TLSEnabled: true,
-			CAFilePath: "../internal/testresources/ca.pem",
+			TLSEnabled:            true,
+			CAFilePath:            "../internal/testresources/ca.pem",
 			ClientCertKeyFilePath: "../internal/testresources/client-cert-key.pem",
 		},
 	})
@@ -609,9 +609,9 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 		APIKey:       "foo",
 		DomainFilter: NewDomainFilter([]string{""}),
 		TLSConfig: TLSConfig{
-			TLSEnabled: true,
-			CAFilePath: "../internal/testresources/ca.pem",
-			ClientCertFilePath: "../internal/testresources/client-cert.pem",
+			TLSEnabled:            true,
+			CAFilePath:            "../internal/testresources/ca.pem",
+			ClientCertFilePath:    "../internal/testresources/client-cert.pem",
 			ClientCertKeyFilePath: "../internal/testresources/client-cert-key.pem",
 		},
 	})
