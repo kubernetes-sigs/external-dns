@@ -61,6 +61,7 @@ const (
 	retryAfterTime = 250 * time.Millisecond
 )
 
+// Fields necessary to create a new PDNSProvider
 type PDNSConfig struct {
 	DomainFilter DomainFilter
 	DryRun       bool
@@ -69,6 +70,7 @@ type PDNSConfig struct {
 	TLSConfig    TLSConfig
 }
 
+// Fields necessary to create a new PDNSProvider related to TLS
 type TLSConfig struct {
 	TLSEnabled            bool
 	CAFilePath            string
@@ -76,7 +78,7 @@ type TLSConfig struct {
 	ClientCertKeyFilePath string
 }
 
-func (tlsConfig *TLSConfig) setHttpClient(pdnsClientConfig *pgo.Configuration) error {
+func (tlsConfig *TLSConfig) setHTTPClient(pdnsClientConfig *pgo.Configuration) error {
 	if !tlsConfig.TLSEnabled {
 		if tlsConfig.CAFilePath != "" {
 			return errors.New("certificate authority file path was specified, but TLS was not enabled")
@@ -280,7 +282,7 @@ func NewPDNSProvider(config PDNSConfig) (*PDNSProvider, error) {
 	pdnsClientConfig := pgo.NewConfiguration()
 	pdnsClientConfig.Host = config.Server
 	pdnsClientConfig.BasePath = config.Server + apiBase
-	if err := config.TLSConfig.setHttpClient(pdnsClientConfig); err != nil {
+	if err := config.TLSConfig.setHTTPClient(pdnsClientConfig); err != nil {
 		return nil, err
 	}
 
