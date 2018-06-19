@@ -61,7 +61,7 @@ const (
 	retryAfterTime = 250 * time.Millisecond
 )
 
-// Fields necessary to create a new PDNSProvider
+// PDNSConfig is comprised of the fields necessary to create a new PDNSProvider
 type PDNSConfig struct {
 	DomainFilter DomainFilter
 	DryRun       bool
@@ -70,7 +70,7 @@ type PDNSConfig struct {
 	TLSConfig    TLSConfig
 }
 
-// Fields necessary to create a new PDNSProvider related to TLS
+// TLSConfig is comprised of the TLS-related fields necessary to create a new PDNSProvider
 type TLSConfig struct {
 	TLSEnabled            bool
 	CAFilePath            string
