@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
-	log "github.com/sirupsen/logrus"
 )
 
 // Plan can convert a list of desired and current records to a series of create,
@@ -80,11 +79,7 @@ type planTableRow struct {
 }
 
 func (t planTable) addCurrent(e *endpoint.Endpoint) {
-	dnsName, err := validateDNSName(e.DNSName)
-	if err != nil {
-		log.Errorf("Skipping endpoint %v", err)
-		return
-	}
+	dnsName := validateDNSName(e.DNSName)
 	if _, ok := t.rows[dnsName]; !ok {
 		t.rows[dnsName] = &planTableRow{}
 	}
@@ -92,11 +87,7 @@ func (t planTable) addCurrent(e *endpoint.Endpoint) {
 }
 
 func (t planTable) addCandidate(e *endpoint.Endpoint) {
-	dnsName, err := validateDNSName(e.DNSName)
-	if err != nil {
-		log.Errorf("Skipping endpoint %v", err)
-		return
-	}
+	dnsName := validateDNSName(e.DNSName)
 	if _, ok := t.rows[dnsName]; !ok {
 		t.rows[dnsName] = &planTableRow{}
 	}
@@ -191,8 +182,8 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 
 // validateDNSName checks if the DNS name is correct
 // for now it only removes space and lower case
-func validateDNSName(dnsName string) (string, error) {
+func validateDNSName(dnsName string) string {
 	dnsName = strings.ToLower(dnsName)
 	dnsName = strings.TrimSpace(dnsName)
-	return dnsName, nil
+	return dnsName
 }
