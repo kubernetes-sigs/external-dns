@@ -781,14 +781,15 @@ func TestAWSSuitableZones(t *testing.T) {
 		hostname string
 		expected []*route53.HostedZone
 	}{
-		{"foo.bar.example.org.", []*route53.HostedZone{zones["example-org-private"], zones["bar-example-org-private"], zones["bar-example-org"]}},
-		{"foo.example.org.", []*route53.HostedZone{zones["example-org-private"], zones["example-org"]}},
-
 		// bar.example.org is NOT suitable
 		{"foobar.example.org.", []*route53.HostedZone{zones["example-org-private"], zones["example-org"]}},
 
-		// all matching private zones are suitable (i'm not sure why)
+		// all matching private zones are suitable
+		// https://github.com/kubernetes-incubator/external-dns/pull/356
 		{"bar.example.org.", []*route53.HostedZone{zones["example-org-private"], zones["bar-example-org-private"], zones["bar-example-org"]}},
+
+		{"foo.bar.example.org.", []*route53.HostedZone{zones["example-org-private"], zones["bar-example-org-private"], zones["bar-example-org"]}},
+		{"foo.example.org.", []*route53.HostedZone{zones["example-org-private"], zones["example-org"]}},
 		{"foo.kubernetes.io.", nil},
 	} {
 		suitableZones := suitableZones(tc.hostname, zones)
