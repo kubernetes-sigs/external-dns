@@ -79,7 +79,7 @@ type planTableRow struct {
 }
 
 func (t planTable) addCurrent(e *endpoint.Endpoint) {
-	dnsName := validateDNSName(e.DNSName)
+	dnsName := sanitizeDNSName(e.DNSName)
 	if _, ok := t.rows[dnsName]; !ok {
 		t.rows[dnsName] = &planTableRow{}
 	}
@@ -87,7 +87,7 @@ func (t planTable) addCurrent(e *endpoint.Endpoint) {
 }
 
 func (t planTable) addCandidate(e *endpoint.Endpoint) {
-	dnsName := validateDNSName(e.DNSName)
+	dnsName := sanitizeDNSName(e.DNSName)
 	if _, ok := t.rows[dnsName]; !ok {
 		t.rows[dnsName] = &planTableRow{}
 	}
@@ -180,10 +180,8 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 	return desired.RecordTTL != current.RecordTTL
 }
 
-// validateDNSName checks if the DNS name is correct
+// sanitizeDNSName checks if the DNS name is correct
 // for now it only removes space and lower case
-func validateDNSName(dnsName string) string {
-	dnsName = strings.ToLower(dnsName)
-	dnsName = strings.TrimSpace(dnsName)
-	return dnsName
+func sanitizeDNSName(dnsName string) string {
+	return strings.TrimSpace(strings.ToLower(dnsName))
 }

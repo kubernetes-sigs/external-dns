@@ -359,66 +359,54 @@ func validateEntries(t *testing.T, entries, expected []*endpoint.Endpoint) {
 	}
 }
 
-func TestValidateDNSName(t *testing.T) {
+func TestSanitizeDNSName(t *testing.T) {
 	records := []struct {
 		dnsName string
 		expect  string
-		err     error
 	}{
 		{
 			"3AAAA.FOO.BAR.COM    ",
 			"3aaaa.foo.bar.com",
-			nil,
 		},
 		{
 			"   example.foo.com",
 			"example.foo.com",
-			nil,
 		},
 		{
 			"example123.foo.com ",
 			"example123.foo.com",
-			nil,
 		},
 		{
 			"foo",
 			"foo",
-			nil,
 		},
 		{
 			"123foo.bar",
 			"123foo.bar",
-			nil,
 		},
 		{
 			"foo.com",
 			"foo.com",
-			nil,
 		},
 		{
 			"foo123.COM",
 			"foo123.com",
-			nil,
 		},
 		{
 			"my-exaMple3.FOO.BAR.COM",
 			"my-example3.foo.bar.com",
-			nil,
 		},
 		{
 			"   my-example1214.FOO-1235.BAR-foo.COM   ",
 			"my-example1214.foo-1235.bar-foo.com",
-			nil,
 		},
 		{
 			"my-example-my-example-1214.FOO-1235.BAR-foo.COM",
 			"my-example-my-example-1214.foo-1235.bar-foo.com",
-			nil,
 		},
 	}
 	for _, r := range records {
-		gotName, err := validateDNSName(r.dnsName)
+		gotName := sanitizeDNSName(r.dnsName)
 		assert.Equal(t, r.expect, gotName)
-		assert.Equal(t, r.err, err)
 	}
 }
