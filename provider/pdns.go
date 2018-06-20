@@ -36,6 +36,7 @@ import (
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"io/ioutil"
 	"net"
+	"github.com/kubernetes-incubator/external-dns/pkg/tlsutils"
 )
 
 type pdnsChangeType string
@@ -96,19 +97,10 @@ func (tlsConfig *TLSConfig) setHTTPClient(pdnsClientConfig *pgo.Configuration) e
 	if tlsConfig.CAFilePath == "" {
 		return errors.New("certificate authority file path must be specified if TLS is enabled")
 	}
-	if tlsConfig.ClientCertFilePath == "" && tlsConfig.ClientCertKeyFilePath != "" ||
-		tlsConfig.ClientCertFilePath != "" && tlsConfig.ClientCertKeyFilePath == "" {
-		return errors.New("client certificate and client certificate key should be specified together if at all")
-	}
 
-	certificateAuthority, err := loadCertificateAuthority(tlsConfig.CAFilePath)
+	tlsClientConfig, err := tlsutils.NewTLSConfig(tlsConfig.ClientCertFilePath, tlsConfig.ClientCertKeyFilePath, tlsConfig.CAFilePath, "", false, tls.VersionTLS12)
 	if err != nil {
-		return err
-	}
-
-	certificate, err := loadCertificate(tlsConfig.ClientCertFilePath, tlsConfig.ClientCertKeyFilePath)
-	if err != nil {
-		return err
+		return err;
 	}
 
 	// Timeouts taken from net.http.DefaultTransport
@@ -123,44 +115,13 @@ func (tlsConfig *TLSConfig) setHTTPClient(pdnsClientConfig *pgo.Configuration) e
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
-		TLSClientConfig: &tls.Config{
-			MinVersion:   tls.VersionTLS12,
-			Certificates: certificate,
-			RootCAs:      certificateAuthority,
-		},
+		TLSClientConfig:       tlsClientConfig,
 	}
 	pdnsClientConfig.HTTPClient = &http.Client{
 		Transport: transporter,
 	}
 
 	return nil
-}
-
-func loadCertificateAuthority(certificateAuthorityFilePath string) (*x509.CertPool, error) {
-	pool := x509.NewCertPool()
-
-	pem, err := ioutil.ReadFile(certificateAuthorityFilePath)
-	if err != nil {
-		return nil, err
-	}
-
-	ok := pool.AppendCertsFromPEM(pem)
-	if !ok {
-		return nil, errors.New("error appending certificate to pool")
-	}
-
-	return pool, nil
-}
-
-func loadCertificate(certificateFilePath string, certificateKeyFilePath string) ([]tls.Certificate, error) {
-	if certificateFilePath == "" || certificateKeyFilePath == "" {
-		return []tls.Certificate{}, nil
-	}
-	certificate, err := tls.LoadX509KeyPair(certificateFilePath, certificateKeyFilePath)
-	if err != nil {
-		return nil, err
-	}
-	return []tls.Certificate{certificate}, nil
 }
 
 // Function for debug printing
