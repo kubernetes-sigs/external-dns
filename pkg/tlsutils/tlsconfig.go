@@ -43,6 +43,7 @@ func CreateTLSConfig(prefix string) (*tls.Config, error) {
 	return tlsConfig, nil
 }
 
+// NewTLSConfig creates a tls.Config instance from directly-passed parameters, loading the ca, cert, and key from disk
 func NewTLSConfig(certPath, keyPath, caPath, serverName string, insecure bool, minVersion uint16) (*tls.Config, error) {
 	if certPath != "" && keyPath == "" || certPath == "" && keyPath != "" {
 		return nil, errors.New("either both cert and key or none must be provided")
