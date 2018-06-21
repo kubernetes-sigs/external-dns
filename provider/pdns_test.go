@@ -531,9 +531,9 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 		APIKey:       "foo",
 		DomainFilter: NewDomainFilter([]string{""}),
 		TLSConfig: TLSConfig{
-			TLSEnabled: false,
-			CAFilePath: "/path/to/ca.crt",
-			ClientCertFilePath: "/path/to/cert.pem",
+			TLSEnabled:            false,
+			CAFilePath:            "/path/to/ca.crt",
+			ClientCertFilePath:    "/path/to/cert.pem",
 			ClientCertKeyFilePath: "/path/to/cert-key.pem",
 		},
 	})
