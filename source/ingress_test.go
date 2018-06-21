@@ -620,10 +620,10 @@ func testIngressEndpoints(t *testing.T) {
 			targetNamespace: "",
 			ingressItems: []fakeIngress{
 				{
-					name:      "fake1",
-					namespace: namespace,
+					name:        "fake1",
+					namespace:   namespace,
 					tlsdnsnames: [][]string{{"example.org"}},
-					ips:      []string{"1.2.3.4"},
+					ips:         []string{"1.2.3.4"},
 				},
 			},
 			expected: []*endpoint.Endpoint{
@@ -639,10 +639,10 @@ func testIngressEndpoints(t *testing.T) {
 			targetNamespace: "",
 			ingressItems: []fakeIngress{
 				{
-					name:      "fake1",
-					namespace: namespace,
+					name:        "fake1",
+					namespace:   namespace,
 					tlsdnsnames: [][]string{{"example.org", "example2.org"}},
-					ips:      []string{"1.2.3.4"},
+					ips:         []string{"1.2.3.4"},
 				},
 			},
 			expected: []*endpoint.Endpoint{
@@ -663,10 +663,10 @@ func testIngressEndpoints(t *testing.T) {
 			targetNamespace: "",
 			ingressItems: []fakeIngress{
 				{
-					name:      "fake1",
-					namespace: namespace,
-					tlsdnsnames: [][]string{{"example.org", "example2.org"},{"example3.org", "example4.org"}},
-					ips:      []string{"1.2.3.4"},
+					name:        "fake1",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"example.org", "example2.org"}, {"example3.org", "example4.org"}},
+					ips:         []string{"1.2.3.4"},
 				},
 			},
 			expected: []*endpoint.Endpoint{
