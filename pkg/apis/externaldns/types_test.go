@@ -58,7 +58,7 @@ var (
 		Registry:              "txt",
 		TXTOwnerID:            "default",
 		TXTPrefix:             "",
-		TXTCacheInterval:      time.Hour,
+		TXTCacheInterval:      0,
 		Interval:              time.Minute,
 		Once:                  false,
 		DryRun:                false,
