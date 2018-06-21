@@ -30,13 +30,11 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"crypto/tls"
-	"crypto/x509"
 	pgo "github.com/ffledgling/pdns-go"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
-	"io/ioutil"
-	"net"
 	"github.com/kubernetes-incubator/external-dns/pkg/tlsutils"
+	"github.com/kubernetes-incubator/external-dns/plan"
+	"net"
 )
 
 type pdnsChangeType string
@@ -81,15 +79,7 @@ type TLSConfig struct {
 
 func (tlsConfig *TLSConfig) setHTTPClient(pdnsClientConfig *pgo.Configuration) error {
 	if !tlsConfig.TLSEnabled {
-		if tlsConfig.CAFilePath != "" {
-			return errors.New("certificate authority file path was specified, but TLS was not enabled")
-		}
-		if tlsConfig.ClientCertFilePath != "" {
-			return errors.New("client certificate file path was specified, but TLS was not enabled")
-		}
-		if tlsConfig.ClientCertKeyFilePath != "" {
-			return errors.New("client certificate key file path was specified, but TLS was not enabled")
-		}
+		log.Debug("Skipping TLS for PDNS Provider.")
 		return nil
 	}
 
@@ -100,7 +90,7 @@ func (tlsConfig *TLSConfig) setHTTPClient(pdnsClientConfig *pgo.Configuration) e
 
 	tlsClientConfig, err := tlsutils.NewTLSConfig(tlsConfig.ClientCertFilePath, tlsConfig.ClientCertKeyFilePath, tlsConfig.CAFilePath, "", false, tls.VersionTLS12)
 	if err != nil {
-		return err;
+		return err
 	}
 
 	// Timeouts taken from net.http.DefaultTransport
