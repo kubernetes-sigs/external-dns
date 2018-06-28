@@ -9,10 +9,11 @@ build_steps:
     apt-get install -y docker-ce
 - desc: Build and push docker image
   cmd: |
-    image=registry-write.opensource.zalan.do/teapot/external-dns:$(git describe --always --dirty --tags)
-    docker build --squash --tag $image .
-    IS_PR_BUILD=${CDP_PULL_REQUEST_NUMBER+"true"}
-    if [[ ${CDP_TARGET_BRANCH} == "master" && ${IS_PR_BUILD} != "true" ]]
-    then
-      docker push $image
+    if [[ $CDP_TARGET_BRANCH == master && ! $CDP_PULL_REQUEST_NUMBER ]]; then
+      RELEASE_VERSION=$(git describe --tags --always --dirty)
+      IMAGE=registry-write.opensource.zalan.do/teapot/external-dns:${RELEASE_VERSION}
+    else
+      IMAGE=registry-write.opensource.zalan.do/teapot/external-dns-test:${CDP_BUILD_VERSION}
     fi
+    docker build --squash --tag "$IMAGE" .
+    docker push "$IMAGE"

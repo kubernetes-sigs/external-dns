@@ -123,7 +123,7 @@ var defaultConfig = &Config{
 	Registry:                 "txt",
 	TXTOwnerID:               "default",
 	TXTPrefix:                "",
-	TXTCacheInterval:         time.Hour,
+	TXTCacheInterval:         0,
 	Interval:                 time.Minute,
 	Once:                     false,
 	DryRun:                   false,
@@ -223,7 +223,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("txt-prefix", "When using the TXT registry, a custom string that's prefixed to each ownership DNS record (optional)").Default(defaultConfig.TXTPrefix).StringVar(&cfg.TXTPrefix)
 
 	// Flags related to the main control loop
-	app.Flag("txt-cache-interval", "The interval between cache synchronizations in duration format (default: 1h)").Default(defaultConfig.TXTCacheInterval.String()).DurationVar(&cfg.TXTCacheInterval)
+	app.Flag("txt-cache-interval", "The interval between cache synchronizations in duration format (default: disabled)").Default(defaultConfig.TXTCacheInterval.String()).DurationVar(&cfg.TXTCacheInterval)
 	app.Flag("interval", "The interval between two consecutive synchronizations in duration format (default: 1m)").Default(defaultConfig.Interval.String()).DurationVar(&cfg.Interval)
 	app.Flag("once", "When enabled, exits the synchronization loop after the first iteration (default: disabled)").BoolVar(&cfg.Once)
 	app.Flag("dry-run", "When enabled, prints DNS record changes rather than actually performing them (default: disabled)").BoolVar(&cfg.DryRun)
