@@ -77,7 +77,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.3
+        image: registry.opensource.zalan.do/teapot/external-dns:latest
         args:
         - --source=service
         - --source=ingress

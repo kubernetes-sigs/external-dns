@@ -1,4 +1,13 @@
-  - AWS: Add a flag to override the default max change count (#596) @peterbale
+## v0.5.4 - 2018-06-28
+
+  - Only store endpoints with their labels in the cache (#612) @njuettner
+  - Read hostnames from spec.tls.hosts on Ingress object (#611) @ysoldak
+  - Reorder provider/aws suitable-zones tests (#608) @elordahl
+  - Adds TLS flags for pdns provider (#607) @jhoch-palantir
+  - Update RBAC for external-dns to list nodes (#600) @njuettner
+  - Add aws max change count flag (#596) @peterbale
+  - AWS provider: Properly check suitable domains (#594) @elordahl
+  - Annotation with upper-case hostnames block further updates (#579) @njuettner
   
 ## v0.5.3 - 2018-06-15
 
