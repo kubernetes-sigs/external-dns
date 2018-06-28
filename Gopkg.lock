@@ -285,7 +285,7 @@
   branch = "master"
   name = "github.com/infobloxopen/infoblox-go-client"
   packages = ["."]
-  revision = "e2811d86bed7bb487eeb0806337b6f9e9d93d5e7"
+  revision = "61dc5f9b0a655ebf43026f0d8a837ad1e28e4b96"
 
 [[projects]]
   name = "github.com/jmespath/go-jmespath"
@@ -428,7 +428,8 @@
     "http2",
     "http2/hpack",
     "idna",
-    "lex/httplex"
+    "lex/httplex",
+    "publicsuffix"
   ]
   revision = "e90d6d0afc4c315a0d87a568ae68577cc15149a0"
 
@@ -666,6 +667,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8d8869be9b64013c9670a0ba7f6a6eeaf31941fcfbdfc13f0fa57626e767c517"
+  inputs-digest = "84dd4d46f1682b174b47c24afd13104daa26c16da187d07513cb9a58bb3f4820"
   solver-name = "gps-cdcl"
   solver-version = 1

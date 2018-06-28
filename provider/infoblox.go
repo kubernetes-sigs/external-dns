@@ -114,9 +114,9 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 		}
 
 		// Include Host records since they should be treated synonymously with A records
-		var resH []ibclient.RecordHost
-		objH := ibclient.NewRecordHost(
-			ibclient.RecordHost{
+		var resH []ibclient.HostRecord
+		objH := ibclient.NewHostRecord(
+			ibclient.HostRecord{
 				Zone: zone.Fqdn,
 			},
 		)
