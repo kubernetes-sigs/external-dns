@@ -21,7 +21,7 @@ before_install:
 
 install:
 - gometalinter --install
-- sed -i 's/--deadline=50s/--deadline=120s/g'
+- sed -i 's/--deadline=50s/--deadline=180s/'
   ./vendor/github.com/kubernetes/repo-infra/verify/go-tools/verify-gometalinter.sh
 
 script:

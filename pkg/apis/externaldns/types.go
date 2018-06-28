@@ -69,6 +69,10 @@ type Config struct {
 	InMemoryZones            []string
 	PDNSServer               string
 	PDNSAPIKey               string
+	PDNSTLSEnabled           bool
+	TLSCA                    string
+	TLSClientCert            string
+	TLSClientCertKey         string
 	Policy                   string
 	Registry                 string
 	TXTOwnerID               string
@@ -111,6 +115,10 @@ var defaultConfig = &Config{
 	InMemoryZones:            []string{},
 	PDNSServer:               "http://localhost:8081",
 	PDNSAPIKey:               "",
+	PDNSTLSEnabled:           false,
+	TLSCA:                    "",
+	TLSClientCert:            "",
+	TLSClientCertKey:         "",
 	Policy:                   "sync",
 	Registry:                 "txt",
 	TXTOwnerID:               "default",
@@ -137,6 +145,9 @@ func (cfg *Config) String() string {
 	}
 	if temp.InfobloxWapiPassword != "" {
 		temp.InfobloxWapiPassword = passwordMask
+	}
+	if temp.PDNSAPIKey != "" {
+		temp.PDNSAPIKey = ""
 	}
 
 	return fmt.Sprintf("%+v", temp)
@@ -195,7 +206,13 @@ func (cfg *Config) ParseFlags(args []string) error {
 
 	app.Flag("inmemory-zone", "Provide a list of pre-configured zones for the inmemory provider; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.InMemoryZones)
 	app.Flag("pdns-server", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)").Default(defaultConfig.PDNSServer).StringVar(&cfg.PDNSServer)
-	app.Flag("pdns-api-key", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)").Default(defaultConfig.PDNSAPIKey).StringVar(&cfg.PDNSAPIKey)
+	app.Flag("pdns-api-key", "When using the PowerDNS/PDNS provider, specify the API key to use to authorize requests (required when --provider=pdns)").Default(defaultConfig.PDNSAPIKey).StringVar(&cfg.PDNSAPIKey)
+	app.Flag("pdns-tls-enabled", "When using the PowerDNS/PDNS provider, specify whether to use TLS (default: false, requires --tls-ca, optionally specify --tls-client-cert and --tls-client-cert-key)").Default(strconv.FormatBool(defaultConfig.PDNSTLSEnabled)).BoolVar(&cfg.PDNSTLSEnabled)
+
+	// Flags related to TLS communication
+	app.Flag("tls-ca", "When using TLS communication, the path to the certificate authority to verify server communications (optionally specify --tls-client-cert for two-way TLS)").Default(defaultConfig.TLSCA).StringVar(&cfg.TLSCA)
+	app.Flag("tls-client-cert", "When using TLS communication, the path to the certificate to present as a client (not required for TLS)").Default(defaultConfig.TLSClientCert).StringVar(&cfg.TLSClientCert)
+	app.Flag("tls-client-cert-key", "When using TLS communication, the path to the certificate key to use with the client certificate (not required for TLS)").Default(defaultConfig.TLSClientCertKey).StringVar(&cfg.TLSClientCertKey)
 
 	// Flags related to policies
 	app.Flag("policy", "Modify how DNS records are sychronized between sources and providers (default: sync, options: sync, upsert-only)").Default(defaultConfig.Policy).EnumVar(&cfg.Policy, "sync", "upsert-only")

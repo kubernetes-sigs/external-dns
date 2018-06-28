@@ -26,6 +26,8 @@ import (
 	"strings"
 )
 
+const defaultMinVersion = 0
+
 // CreateTLSConfig creates tls.Config instance from TLS parameters passed in environment variables with the given prefix
 func CreateTLSConfig(prefix string) (*tls.Config, error) {
 	caFile := os.Getenv(fmt.Sprintf("%s_CA_FILE", prefix))
@@ -34,14 +36,15 @@ func CreateTLSConfig(prefix string) (*tls.Config, error) {
 	serverName := os.Getenv(fmt.Sprintf("%s_TLS_SERVER_NAME", prefix))
 	isInsecureStr := strings.ToLower(os.Getenv(fmt.Sprintf("%s_TLS_INSECURE", prefix)))
 	isInsecure := isInsecureStr == "true" || isInsecureStr == "yes" || isInsecureStr == "1"
-	tlsConfig, err := newTLSConfig(certFile, keyFile, caFile, serverName, isInsecure)
+	tlsConfig, err := NewTLSConfig(certFile, keyFile, caFile, serverName, isInsecure, defaultMinVersion)
 	if err != nil {
 		return nil, err
 	}
 	return tlsConfig, nil
 }
 
-func newTLSConfig(certPath, keyPath, caPath, serverName string, insecure bool) (*tls.Config, error) {
+// NewTLSConfig creates a tls.Config instance from directly-passed parameters, loading the ca, cert, and key from disk
+func NewTLSConfig(certPath, keyPath, caPath, serverName string, insecure bool, minVersion uint16) (*tls.Config, error) {
 	if certPath != "" && keyPath == "" || certPath == "" && keyPath != "" {
 		return nil, errors.New("either both cert and key or none must be provided")
 	}
@@ -59,6 +62,7 @@ func newTLSConfig(certPath, keyPath, caPath, serverName string, insecure bool) (
 	}
 
 	return &tls.Config{
+		MinVersion:         minVersion,
 		Certificates:       certificates,
 		RootCAs:            roots,
 		InsecureSkipVerify: insecure,

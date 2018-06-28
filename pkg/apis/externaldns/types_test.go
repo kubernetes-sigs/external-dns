@@ -94,6 +94,10 @@ var (
 		InMemoryZones:         []string{"example.org", "company.com"},
 		PDNSServer:            "http://ns.example.com:8081",
 		PDNSAPIKey:            "some-secret-key",
+		PDNSTLSEnabled:        true,
+		TLSCA:                 "/path/to/ca.crt",
+		TLSClientCert:         "/path/to/cert.pem",
+		TLSClientCertKey:      "/path/to/key.pem",
 		Policy:                "upsert-only",
 		Registry:              "noop",
 		TXTOwnerID:            "owner-1",
@@ -150,6 +154,10 @@ func TestParseFlags(t *testing.T) {
 				"--inmemory-zone=company.com",
 				"--pdns-server=http://ns.example.com:8081",
 				"--pdns-api-key=some-secret-key",
+				"--pdns-tls-enabled",
+				"--tls-ca=/path/to/ca.crt",
+				"--tls-client-cert=/path/to/cert.pem",
+				"--tls-client-cert-key=/path/to/key.pem",
 				"--no-infoblox-ssl-verify",
 				"--domain-filter=example.org",
 				"--domain-filter=company.com",
@@ -199,6 +207,10 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_DOMAIN_FILTER":           "example.org\ncompany.com",
 				"EXTERNAL_DNS_PDNS_SERVER":             "http://ns.example.com:8081",
 				"EXTERNAL_DNS_PDNS_API_KEY":            "some-secret-key",
+				"EXTERNAL_DNS_PDNS_TLS_ENABLED":        "1",
+				"EXTERNAL_DNS_TLS_CA":                  "/path/to/ca.crt",
+				"EXTERNAL_DNS_TLS_CLIENT_CERT":         "/path/to/cert.pem",
+				"EXTERNAL_DNS_TLS_CLIENT_CERT_KEY":     "/path/to/key.pem",
 				"EXTERNAL_DNS_ZONE_ID_FILTER":          "/hostedzone/ZTST1\n/hostedzone/ZTST2",
 				"EXTERNAL_DNS_AWS_ZONE_TYPE":           "private",
 				"EXTERNAL_DNS_AWS_ASSUME_ROLE":         "some-other-role",
@@ -253,10 +265,12 @@ func TestPasswordsNotLogged(t *testing.T) {
 	cfg := Config{
 		DynPassword:          "dyn-pass",
 		InfobloxWapiPassword: "infoblox-pass",
+		PDNSAPIKey:           "pdns-api-key",
 	}
 
 	s := cfg.String()
 
 	assert.False(t, strings.Contains(s, "dyn-pass"))
 	assert.False(t, strings.Contains(s, "infoblox-pass"))
+	assert.False(t, strings.Contains(s, "pdns-api-key"))
 }
