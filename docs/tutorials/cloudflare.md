@@ -182,7 +182,7 @@ the Cloudflare DNS records.
 
 ## Verifying Cloudflare DNS records
 
-Check your [Cloudflare dasbhboard](https://www.cloudflare.com/a/dns/example.com) to view the records for your Cloudflare DNS zone.
+Check your [Cloudflare dashboard](https://www.cloudflare.com/a/dns/example.com) to view the records for your Cloudflare DNS zone.
 
 Substitute the zone for the one created above if a different domain was used.
 
