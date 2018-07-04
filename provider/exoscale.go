@@ -129,7 +129,7 @@ func (ep *ExoscaleProvider) Records() ([]*endpoint.Endpoint, error) {
 		}
 		for _, r := range record {
 			switch r.RecordType {
-			case "A", "CNAME", "TXT":
+			case "A", "AAAA", "CNAME", "TXT":
 				break
 			default:
 				continue
@@ -143,15 +143,15 @@ func (ep *ExoscaleProvider) Records() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
-// ExoWithDomain modifies the domain on which dns zones are filtered
-func ExoWithDomain(domainFilter DomainFilter) ExoscaleOption {
+// ExoscaleWithDomain modifies the domain on which dns zones are filtered
+func ExoscaleWithDomain(domainFilter DomainFilter) ExoscaleOption {
 	return func(p *ExoscaleProvider) {
 		p.domain = domainFilter
 	}
 }
 
-// ExoWithLogging injects logging when ApplyChanges is called
-func ExoWithLogging() ExoscaleOption {
+// ExoscaleWithLogging injects logging when ApplyChanges is called
+func ExoscaleWithLogging() ExoscaleOption {
 	return func(p *ExoscaleProvider) {
 		p.OnApplyChanges = func(changes *plan.Changes) {
 			for _, v := range changes.Create {
