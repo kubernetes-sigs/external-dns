@@ -79,9 +79,9 @@ type Config struct {
 	MetricsAddress           string
 	LogLevel                 string
 	TXTCacheInterval         time.Duration
-	ExoEndpoint              string
-	ExoAPIKey                string
-	ExoAPISecret             string
+	ExoscaleEndpoint         string
+	ExoscaleAPIKey           string
+	ExoscaleAPISecret        string
 }
 
 var defaultConfig = &Config{
@@ -197,9 +197,9 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("pdns-server", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)").Default(defaultConfig.PDNSServer).StringVar(&cfg.PDNSServer)
 	app.Flag("pdns-api-key", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)").Default(defaultConfig.PDNSAPIKey).StringVar(&cfg.PDNSAPIKey)
 
-	app.Flag("exo-endpoint", "Provide the endpoint for the Exoscale provider").Default("").StringVar(&cfg.ExoEndpoint)
-	app.Flag("exo-apikey", "Provide your API Key for the Exoscale provider").Default("").StringVar(&cfg.ExoAPIKey)
-	app.Flag("exo-apisecret", "Provide your API Secret for the Exoscale provider").Default("").StringVar(&cfg.ExoAPISecret)
+	app.Flag("exoscale-endpoint", "Provide the endpoint for the Exoscale provider").Default("https://api.exoscale.ch/dns").StringVar(&cfg.ExoscaleEndpoint)
+	app.Flag("exoscale-apikey", "Provide your API Key for the Exoscale provider").Default("").StringVar(&cfg.ExoscaleAPIKey)
+	app.Flag("exoscale-apisecret", "Provide your API Secret for the Exoscale provider").Default("").StringVar(&cfg.ExoscaleAPISecret)
 
 	// Flags related to policies
 	app.Flag("policy", "Modify how DNS records are sychronized between sources and providers (default: sync, options: sync, upsert-only)").Default(defaultConfig.Policy).EnumVar(&cfg.Policy, "sync", "upsert-only")

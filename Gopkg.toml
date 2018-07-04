@@ -67,3 +67,7 @@ ignored = ["github.com/kubernetes/repo-infra/kazel"]
 [[constraint]]
   name = "github.com/nesv/go-dynect"
   version = "0.6.0"
+
+[[constraint]]
+  name = "github.com/exoscale/egoscale"
+  version = "~0.9.31"
