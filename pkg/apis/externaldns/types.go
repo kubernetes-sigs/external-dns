@@ -79,6 +79,9 @@ type Config struct {
 	MetricsAddress           string
 	LogLevel                 string
 	TXTCacheInterval         time.Duration
+	ExoEndpoint              string
+	ExoAPIKey                string
+	ExoAPISecret             string
 }
 
 var defaultConfig = &Config{
@@ -170,7 +173,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("connector-source-server", "The server to connect for connector source, valid only when using connector source").Default(defaultConfig.ConnectorSourceServer).StringVar(&cfg.ConnectorSourceServer)
 
 	// Flags related to providers
-	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, google, azure, cloudflare, digitalocean, dnsimple, infoblox, dyn, designate, coredns, skydns, inmemory, pdns)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "cloudflare", "digitalocean", "dnsimple", "infoblox", "dyn", "designate", "coredns", "skydns", "inmemory", "pdns")
+	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, google, azure, cloudflare, digitalocean, dnsimple, infoblox, dyn, designate, coredns, skydns, inmemory, pdns)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "cloudflare", "digitalocean", "dnsimple", "infoblox", "dyn", "designate", "coredns", "skydns", "exoscale", "inmemory", "pdns")
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("zone-id-filter", "Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.ZoneIDFilter)
 	app.Flag("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
@@ -193,6 +196,10 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("inmemory-zone", "Provide a list of pre-configured zones for the inmemory provider; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.InMemoryZones)
 	app.Flag("pdns-server", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)").Default(defaultConfig.PDNSServer).StringVar(&cfg.PDNSServer)
 	app.Flag("pdns-api-key", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)").Default(defaultConfig.PDNSAPIKey).StringVar(&cfg.PDNSAPIKey)
+
+	app.Flag("exo-endpoint", "Provide the endpoint for the Exoscale provider").Default("").StringVar(&cfg.ExoEndpoint)
+	app.Flag("exo-apikey", "Provide your API Key for the Exoscale provider").Default("").StringVar(&cfg.ExoAPIKey)
+	app.Flag("exo-apisecret", "Provide your API Secret for the Exoscale provider").Default("").StringVar(&cfg.ExoAPISecret)
 
 	// Flags related to policies
 	app.Flag("policy", "Modify how DNS records are sychronized between sources and providers (default: sync, options: sync, upsert-only)").Default(defaultConfig.Policy).EnumVar(&cfg.Policy, "sync", "upsert-only")
