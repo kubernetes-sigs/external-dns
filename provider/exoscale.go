@@ -23,24 +23,26 @@ type ExoscaleProvider struct {
 	client         EgoscaleClientI
 	filter         *zoneFilter
 	OnApplyChanges func(changes *plan.Changes)
+	dryRun         bool
 }
 
 // ExoscaleOption for Provider options
 type ExoscaleOption func(*ExoscaleProvider)
 
 // NewExoscaleProvider returns ExoscaleProvider DNS provider interface implementation
-func NewExoscaleProvider(endpoint, apiKey, apiSecret string, opts ...ExoscaleOption) *ExoscaleProvider {
+func NewExoscaleProvider(endpoint, apiKey, apiSecret string, dryRun bool, opts ...ExoscaleOption) *ExoscaleProvider {
 	client := egoscale.NewClient(endpoint, apiKey, apiSecret)
-	return NewExoscaleProviderWithClient(endpoint, apiKey, apiSecret, client, opts...)
+	return NewExoscaleProviderWithClient(endpoint, apiKey, apiSecret, client, dryRun, opts...)
 }
 
 // NewExoscaleProviderWithClient returns ExoscaleProvider DNS provider interface implementation (Client provided)
-func NewExoscaleProviderWithClient(endpoint, apiKey, apiSecret string, client EgoscaleClientI, opts ...ExoscaleOption) *ExoscaleProvider {
+func NewExoscaleProviderWithClient(endpoint, apiKey, apiSecret string, client EgoscaleClientI, dryRun bool, opts ...ExoscaleOption) *ExoscaleProvider {
 	ep := &ExoscaleProvider{
 		filter:         &zoneFilter{},
 		OnApplyChanges: func(changes *plan.Changes) {},
 		domain:         NewDomainFilter([]string{""}),
 		client:         client,
+		dryRun:         dryRun,
 	}
 	for _, opt := range opts {
 		opt(ep)
@@ -64,6 +66,13 @@ func (ep *ExoscaleProvider) getZones() (map[int64]string, error) {
 // ApplyChanges simply modifies DNS via exoscale API
 func (ep *ExoscaleProvider) ApplyChanges(changes *plan.Changes) error {
 	ep.OnApplyChanges(changes)
+
+	if ep.dryRun {
+		log.Infof("Will NOT delete these records: %+v", changes.Delete)
+		log.Infof("Will NOT create these records: %+v", changes.Create)
+		log.Infof("Will NOT update these records: %+v", merge(changes.UpdateOld, changes.UpdateNew))
+		return nil
+	}
 
 	zones, err := ep.getZones()
 	if err != nil {
