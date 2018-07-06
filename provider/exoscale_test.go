@@ -92,7 +92,7 @@ func contains(arr []*endpoint.Endpoint, name string) bool {
 }
 
 func TestExoscaleGetRecords(t *testing.T) {
-	provider := NewExoscaleProviderWithClient("", "", "", NewExoscaleClientStub())
+	provider := NewExoscaleProviderWithClient("", "", "", NewExoscaleClientStub(), false)
 
 	if recs, err := provider.Records(); err == nil {
 		assert.Equal(t, 3, len(recs))
@@ -107,7 +107,7 @@ func TestExoscaleGetRecords(t *testing.T) {
 }
 
 func TestExoscaleApplyChanges(t *testing.T) {
-	provider := NewExoscaleProviderWithClient("", "", "", NewExoscaleClientStub())
+	provider := NewExoscaleProviderWithClient("", "", "", NewExoscaleClientStub(), false)
 
 	plan := &plan.Changes{
 		Create: []*endpoint.Endpoint{
