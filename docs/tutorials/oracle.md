@@ -58,6 +58,9 @@ rules:
 - apiGroups: ["extensions"]
   resources: ["ingresses"]
   verbs: ["get","watch","list"]
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
@@ -93,7 +96,6 @@ spec:
         - --source=ingress
         - --provider=oci
         - --policy=upsert-only # prevent ExternalDNSfrom deleting any records, omit to enable full synchronization
-        - --registry=txt
         - --txt-owner-id=my-identifier
         volumeMounts:
           - name: config

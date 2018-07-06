@@ -122,6 +122,80 @@ func validateOCIZones(t *testing.T, actual, expected map[string]*dns.ZoneSummary
 	}
 }
 
+func TestNewOCIProvider(t *testing.T) {
+	testCases := map[string]struct {
+		config OCIConfig
+		err    error
+	}{
+		"valid": {
+			config: OCIConfig{
+				Auth: OCIAuthConfig{
+					TenancyID:   "ocid1.tenancy.oc1..aaaaaaaaxf3fuazosc6xng7l75rj6uist5jb6ken64t3qltimxnkymddqbma",
+					UserID:      "ocid1.user.oc1..aaaaaaaahx2vpvm4of5nqq3t274ike7ygyk2aexvokk3gyv4eyumzqajcrvq",
+					Region:      "us-ashburn-1",
+					Fingerprint: "48:ba:d4:21:63:53:db:10:65:20:d4:09:ce:01:f5:97",
+					PrivateKey: `-----BEGIN RSA PRIVATE KEY-----
+MIIEowIBAAKCAQEAv2JspZyO14kqcO/X4iz3ZdcyAf1GQJqYsBb6wyrlU0PB9Fee
+H23/HLtMSqeqo+2KQHmdV1OHFQ/S6tx7zcBaby/+2b+z3/gJO4PGxohe2812AJ/J
+W8Fp/4EnwbaRqDhoLN7ms0/e566zE3z40kCSW0NAIzv/F+0nNaka1xrypBqzvaNm
+N49dAGvqWRpzFFUb8CbvKmgE6c/H4a2zVNW3G7/K6Og4HQGeEP3NKSVvi0BiQlvd
+tVJTg7084kKcrngsS2N3qI3pzsr5wgpzPPefuPHWRKokZ20kpu8tXdFt+mAC2NHh
+eWbtY3jsR6JFaXCyZLMXInwDvRgdP0T5+uh8WwIDAQABAoIBAG0rr94omDLKw7L4
+naUfEWC+iIAqAdEIXuDTuudpqLb+h7zh3gj/re6tyK8tRWGNNrfgp6gQtZWGGUJv
+0w9jEjMqpa2AdRLlYh7Y5KKLV9D6Or3QaAQ3KEffXNZbVmsnAgXWgLL4dKakOPJ8
+71LAEryMeCGhL7puRVeOxwi9Dnwc4pcloimdggw/uwVHMK9eY5ylyt5ziiiWfhAo
+cnNJNPHRSTqSiCoEhk/8BLZT5gxf1YX0hVSEdQh2WNyxmPmVSC9uuzKOqcEBfHf5
+hmLnsUET1REM9IxCLqC9ebW263lIO/KdGiCu+YgIdwIi3wrLhaKXAZQmp4oMvWlE
+n5eYlcECgYEA5AhctPWCQBCJhcD39pSWgnSq1O9bt8yQi2P2stqlxKV9ZBepCK49
+OT42OYPUgWn7/y//6/LLzsPY58VTDHF3xZN1qu+fU0IM22D3Jqc19pnfVEb6TXSc
+0jJIiaYCWTdqRQ4p2DuDcI+EzRB+V1Z7tFWxshZWXwNvtMXNoYPOYaUCgYEA1ttn
+R3pCuGYJ5XbBwPzD5J+hvdZ6TQf8oTDraUBPxjtFOr7ea42T6KeYRFvnK2AQDnKL
+Mw3I55lNO4I2W9gahUFG28dhxEuxeyvXGqXEJvPCUYePstab/BkUrm7/jkS3CLcJ
+dlRXjqOfGwi5+NPUZMoOkZ54ZR4ZpdhIAeEpBf8CgYEAyMyMRlVCowNs9jkcoSfq
++Wme3O8BhvI9/mDCZnCfNHC94Bvtn1U/WF7uBOuPf35Ch05PQAiHa8WOBVn/bZ+l
+ZngZT7K+S+SHyc6zFHh9zm9k96Og2f/r8DSTJ5Ll0oY3sCNuuZh+f+oBeUoi1umy
++PPVDAsbd4NhJIBiOO4GGHkCgYA1p4i9Es0Cm4ixItzzwqtwtmR/scXM4se1wS+o
+kwTY7gg1yWBl328mVGPz/jdWX6Di2rvkPfcDzwa4a6YDfY3x5QE69Sl3CagCqEoJ
+P4giahEGpyG9eVZuuBywCswKzSIgLQVR5XIQDtA2whEfEFcj7EmDF93c8o1ZGw+w
+WHgUJQKBgEXr0HgxGG+v8bsXdrJ87Avx/nuA2rrFfECDPa4zuPkEK+cSFibdAq/H
+u6OIV+z59AD2s84gxR+KLzEDfQAqBt7cVA5ZH6hrO+bkCtK9ycLL+koOuB+1EV+Y
+hKRtDhmSdWBo3tJK12RrAe4t7CUe8gMgTvU7ExlcA3xQkseFPx9K
+-----END RSA PRIVATE KEY-----
+`,
+				},
+			},
+		},
+		"invalid": {
+			config: OCIConfig{
+				Auth: OCIAuthConfig{
+					TenancyID:   "ocid1.tenancy.oc1..aaaaaaaaxf3fuazosc6xng7l75rj6uist5jb6ken64t3qltimxnkymddqbma",
+					UserID:      "ocid1.user.oc1..aaaaaaaahx2vpvm4of5nqq3t274ike7ygyk2aexvokk3gyv4eyumzqajcrvq",
+					Region:      "us-ashburn-1",
+					Fingerprint: "48:ba:d4:21:63:53:db:10:65:20:d4:09:ce:01:f5:97",
+					PrivateKey: `-----BEGIN RSA PRIVATE KEY-----
+`,
+				},
+			},
+			err: errors.New("initialising OCI DNS API client: can not create client, bad configuration: PEM data was not found in buffer"),
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			_, err := NewOCIProvider(
+				tc.config,
+				NewDomainFilter([]string{"com"}),
+				NewZoneIDFilter([]string{""}),
+				false,
+			)
+			if err == nil {
+				require.NoError(t, err)
+			} else {
+				require.Equal(t, tc.err.Error(), err.Error())
+			}
+		})
+	}
+}
+
 func TestOCIZones(t *testing.T) {
 	testCases := []struct {
 		name         string
