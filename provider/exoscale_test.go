@@ -36,8 +36,14 @@ type deleteRecordExoscale struct {
 	recordID int64
 }
 
+type updateRecordExoscale struct {
+	name            string
+	updateDNSRecord egoscale.UpdateDNSRecord
+}
+
 var createExoscale []createRecordExoscale
 var deleteExoscale []deleteRecordExoscale
+var updateExoscale []updateRecordExoscale
 
 type ExoscaleClientStub struct {
 }
@@ -69,6 +75,10 @@ func (ep *ExoscaleClientStub) GetRecords(name string) ([]egoscale.DNSRecord, err
 	}
 
 	return rec, nil
+}
+func (ep *ExoscaleClientStub) UpdateRecord(name string, rec egoscale.UpdateDNSRecord) (*egoscale.DNSRecord, error) {
+	updateExoscale = append(updateExoscale, updateRecordExoscale{name: name, updateDNSRecord: rec})
+	return nil, nil
 }
 func (ep *ExoscaleClientStub) CreateRecord(name string, rec egoscale.DNSRecord) (*egoscale.DNSRecord, error) {
 	createExoscale = append(createExoscale, createRecordExoscale{name: name, rec: rec})
@@ -171,4 +181,8 @@ func TestExoscaleApplyChanges(t *testing.T) {
 	assert.Equal(t, 1, len(deleteExoscale))
 	assert.Equal(t, "foo.com", deleteExoscale[0].name)
 	assert.Equal(t, int64(1), deleteExoscale[0].recordID)
+
+	assert.Equal(t, 1, len(updateExoscale))
+	assert.Equal(t, "foo.com", updateExoscale[0].name)
+	assert.Equal(t, int64(1), updateExoscale[0].updateDNSRecord.ID)
 }
