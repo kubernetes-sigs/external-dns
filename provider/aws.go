@@ -31,8 +31,7 @@ import (
 )
 
 const (
-	evaluateTargetHealth = true
-	recordTTL            = 300
+	recordTTL = 300
 )
 
 var (
@@ -85,9 +84,10 @@ type Route53API interface {
 
 // AWSProvider is an implementation of Provider for AWS Route53.
 type AWSProvider struct {
-	client         Route53API
-	dryRun         bool
-	maxChangeCount int
+	client               Route53API
+	dryRun               bool
+	maxChangeCount       int
+	evaluateTargetHealth bool
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter DomainFilter
 	// filter hosted zones by id
@@ -98,12 +98,13 @@ type AWSProvider struct {
 
 // AWSConfig contains configuration to create a new AWS provider.
 type AWSConfig struct {
-	DomainFilter   DomainFilter
-	ZoneIDFilter   ZoneIDFilter
-	ZoneTypeFilter ZoneTypeFilter
-	MaxChangeCount int
-	AssumeRole     string
-	DryRun         bool
+	DomainFilter         DomainFilter
+	ZoneIDFilter         ZoneIDFilter
+	ZoneTypeFilter       ZoneTypeFilter
+	MaxChangeCount       int
+	EvaluateTargetHealth bool
+	AssumeRole           string
+	DryRun               bool
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
@@ -133,12 +134,13 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 	}
 
 	provider := &AWSProvider{
-		client:         route53.New(session),
-		domainFilter:   awsConfig.DomainFilter,
-		zoneIDFilter:   awsConfig.ZoneIDFilter,
-		zoneTypeFilter: awsConfig.ZoneTypeFilter,
-		maxChangeCount: awsConfig.MaxChangeCount,
-		dryRun:         awsConfig.DryRun,
+		client:               route53.New(session),
+		domainFilter:         awsConfig.DomainFilter,
+		zoneIDFilter:         awsConfig.ZoneIDFilter,
+		zoneTypeFilter:       awsConfig.ZoneTypeFilter,
+		maxChangeCount:       awsConfig.MaxChangeCount,
+		evaluateTargetHealth: awsConfig.EvaluateTargetHealth,
+		dryRun:               awsConfig.DryRun,
 	}
 
 	return provider, nil
@@ -242,26 +244,26 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 
 // CreateRecords creates a given set of DNS records in the given hosted zone.
 func (p *AWSProvider) CreateRecords(endpoints []*endpoint.Endpoint) error {
-	return p.submitChanges(newChanges(route53.ChangeActionCreate, endpoints))
+	return p.submitChanges(p.newChanges(route53.ChangeActionCreate, endpoints))
 }
 
 // UpdateRecords updates a given set of old records to a new set of records in a given hosted zone.
 func (p *AWSProvider) UpdateRecords(endpoints, _ []*endpoint.Endpoint) error {
-	return p.submitChanges(newChanges(route53.ChangeActionUpsert, endpoints))
+	return p.submitChanges(p.newChanges(route53.ChangeActionUpsert, endpoints))
 }
 
 // DeleteRecords deletes a given set of DNS records in a given zone.
 func (p *AWSProvider) DeleteRecords(endpoints []*endpoint.Endpoint) error {
-	return p.submitChanges(newChanges(route53.ChangeActionDelete, endpoints))
+	return p.submitChanges(p.newChanges(route53.ChangeActionDelete, endpoints))
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *AWSProvider) ApplyChanges(changes *plan.Changes) error {
 	combinedChanges := make([]*route53.Change, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 
-	combinedChanges = append(combinedChanges, newChanges(route53.ChangeActionCreate, changes.Create)...)
-	combinedChanges = append(combinedChanges, newChanges(route53.ChangeActionUpsert, changes.UpdateNew)...)
-	combinedChanges = append(combinedChanges, newChanges(route53.ChangeActionDelete, changes.Delete)...)
+	combinedChanges = append(combinedChanges, p.newChanges(route53.ChangeActionCreate, changes.Create)...)
+	combinedChanges = append(combinedChanges, p.newChanges(route53.ChangeActionUpsert, changes.UpdateNew)...)
+	combinedChanges = append(combinedChanges, p.newChanges(route53.ChangeActionDelete, changes.Delete)...)
 
 	return p.submitChanges(combinedChanges)
 }
@@ -309,6 +311,53 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 	}
 
 	return nil
+}
+
+// newChanges returns a collection of Changes based on the given records and action.
+func (p *AWSProvider) newChanges(action string, endpoints []*endpoint.Endpoint) []*route53.Change {
+	changes := make([]*route53.Change, 0, len(endpoints))
+
+	for _, endpoint := range endpoints {
+		changes = append(changes, p.newChange(action, endpoint))
+	}
+
+	return changes
+}
+
+// newChange returns a Change of the given record by the given action, e.g.
+// action=ChangeActionCreate returns a change for creation of the record and
+// action=ChangeActionDelete returns a change for deletion of the record.
+func (p *AWSProvider) newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
+	change := &route53.Change{
+		Action: aws.String(action),
+		ResourceRecordSet: &route53.ResourceRecordSet{
+			Name: aws.String(endpoint.DNSName),
+		},
+	}
+
+	if isAWSLoadBalancer(endpoint) {
+		change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
+		change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
+			DNSName:              aws.String(endpoint.Targets[0]),
+			HostedZoneId:         aws.String(canonicalHostedZone(endpoint.Targets[0])),
+			EvaluateTargetHealth: aws.Bool(p.evaluateTargetHealth),
+		}
+	} else {
+		change.ResourceRecordSet.Type = aws.String(endpoint.RecordType)
+		if !endpoint.RecordTTL.IsConfigured() {
+			change.ResourceRecordSet.TTL = aws.Int64(recordTTL)
+		} else {
+			change.ResourceRecordSet.TTL = aws.Int64(int64(endpoint.RecordTTL))
+		}
+		change.ResourceRecordSet.ResourceRecords = make([]*route53.ResourceRecord, len(endpoint.Targets))
+		for idx, val := range endpoint.Targets {
+			change.ResourceRecordSet.ResourceRecords[idx] = &route53.ResourceRecord{
+				Value: aws.String(val),
+			}
+		}
+	}
+
+	return change
 }
 
 func limitChangeSet(cs []*route53.Change, limit int) []*route53.Change {
@@ -393,53 +442,6 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Ch
 	}
 
 	return changes
-}
-
-// newChanges returns a collection of Changes based on the given records and action.
-func newChanges(action string, endpoints []*endpoint.Endpoint) []*route53.Change {
-	changes := make([]*route53.Change, 0, len(endpoints))
-
-	for _, endpoint := range endpoints {
-		changes = append(changes, newChange(action, endpoint))
-	}
-
-	return changes
-}
-
-// newChange returns a Change of the given record by the given action, e.g.
-// action=ChangeActionCreate returns a change for creation of the record and
-// action=ChangeActionDelete returns a change for deletion of the record.
-func newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
-	change := &route53.Change{
-		Action: aws.String(action),
-		ResourceRecordSet: &route53.ResourceRecordSet{
-			Name: aws.String(endpoint.DNSName),
-		},
-	}
-
-	if isAWSLoadBalancer(endpoint) {
-		change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
-		change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
-			DNSName:              aws.String(endpoint.Targets[0]),
-			HostedZoneId:         aws.String(canonicalHostedZone(endpoint.Targets[0])),
-			EvaluateTargetHealth: aws.Bool(evaluateTargetHealth),
-		}
-	} else {
-		change.ResourceRecordSet.Type = aws.String(endpoint.RecordType)
-		if !endpoint.RecordTTL.IsConfigured() {
-			change.ResourceRecordSet.TTL = aws.Int64(recordTTL)
-		} else {
-			change.ResourceRecordSet.TTL = aws.Int64(int64(endpoint.RecordTTL))
-		}
-		change.ResourceRecordSet.ResourceRecords = make([]*route53.ResourceRecord, len(endpoint.Targets))
-		for idx, val := range endpoint.Targets {
-			change.ResourceRecordSet.ResourceRecords[idx] = &route53.ResourceRecord{
-				Value: aws.String(val),
-			}
-		}
-	}
-
-	return change
 }
 
 // suitableZones returns all suitable private zones and the most suitable public zone
