@@ -15,6 +15,7 @@ type EgoscaleClientI interface {
 	GetDomains() ([]egoscale.DNSDomain, error)
 	CreateRecord(string, egoscale.DNSRecord) (*egoscale.DNSRecord, error)
 	DeleteRecord(string, int64) error
+	UpdateRecord(string, egoscale.UpdateDNSRecord) (*egoscale.DNSRecord, error)
 }
 
 // ExoscaleProvider initialized as dns provider with no records
@@ -96,9 +97,35 @@ func (ep *ExoscaleProvider) ApplyChanges(changes *plan.Changes) error {
 		}
 	}
 	for _, epoint := range changes.UpdateNew {
-		log.Debugf("UPDATE-NEW (ignored) for epoint: %+v", epoint)
+		if ep.domain.Match(epoint.DNSName) {
+			if zoneID, name := ep.filter.EndpointZoneID(epoint, zones); zoneID != 0 {
+				records, err := ep.client.GetRecords(zones[zoneID])
+				if err != nil {
+					return err
+				}
+				for _, r := range records {
+					if r.Name == name {
+						rec := egoscale.UpdateDNSRecord{
+							ID:         r.ID,
+							DomainID:   r.DomainID,
+							Name:       name,
+							RecordType: epoint.RecordType,
+							TTL:        int(epoint.RecordTTL),
+							Content:    epoint.Targets[0],
+							Prio:       r.Prio,
+						}
+						if _, err := ep.client.UpdateRecord(zones[zoneID], rec); err != nil {
+							return err
+						}
+						break
+					}
+				}
+			}
+		}
 	}
 	for _, epoint := range changes.UpdateOld {
+		// Since Exoscale "Patches", we ignore UpdateOld
+		// We leave this logging here for information
 		log.Debugf("UPDATE-OLD (ignored) for epoint: %+v", epoint)
 	}
 	for _, epoint := range changes.Delete {
