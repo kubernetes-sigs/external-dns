@@ -102,18 +102,20 @@ func (ep *ExoscaleProvider) ApplyChanges(changes *plan.Changes) error {
 		log.Debugf("UPDATE-OLD (ignored) for epoint: %+v", epoint)
 	}
 	for _, epoint := range changes.Delete {
-		if zoneID, name := ep.filter.EndpointZoneID(epoint, zones); zoneID != 0 {
-			records, err := ep.client.GetRecords(zones[zoneID])
-			if err != nil {
-				return err
-			}
+		if ep.domain.Match(epoint.DNSName) {
+			if zoneID, name := ep.filter.EndpointZoneID(epoint, zones); zoneID != 0 {
+				records, err := ep.client.GetRecords(zones[zoneID])
+				if err != nil {
+					return err
+				}
 
-			for _, r := range records {
-				if r.Name == name {
-					if err := ep.client.DeleteRecord(zones[zoneID], r.ID); err != nil {
-						return err
+				for _, r := range records {
+					if r.Name == name {
+						if err := ep.client.DeleteRecord(zones[zoneID], r.ID); err != nil {
+							return err
+						}
+						break
 					}
-					break
 				}
 			}
 		}
