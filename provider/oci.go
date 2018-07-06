@@ -67,21 +67,25 @@ type ociDNSClient interface {
 	PatchZoneRecords(ctx context.Context, request dns.PatchZoneRecordsRequest) (response dns.PatchZoneRecordsResponse, err error)
 }
 
-// NewOCIProvider initialises a new OCI DNS based Provider.
-func NewOCIProvider(configFile string, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool) (*OCIProvider, error) {
-	contents, err := ioutil.ReadFile(configFile)
+// LoadOCIConfig reads and parses the OCI ExternalDNS config file at the given
+// path.
+func LoadOCIConfig(path string) (*OCIConfig, error) {
+	contents, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read OCI config file %q", configFile)
+		return nil, errors.Wrapf(err, "reading OCI config file %q", path)
 	}
-	cfg := OCIConfig{}
-	err = yaml.Unmarshal(contents, &cfg)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read OCI config file %q", configFile)
-	}
-	// TODO(apryde): validate config.
 
+	cfg := OCIConfig{}
+	if err := yaml.Unmarshal(contents, &cfg); err != nil {
+		return nil, errors.Wrapf(err, "parsing OCI config file %q", path)
+	}
+	return &cfg, nil
+}
+
+// NewOCIProvider initialises a new OCI DNS based Provider.
+func NewOCIProvider(cfg OCIConfig, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool) (*OCIProvider, error) {
 	var client ociDNSClient
-	client, err = dns.NewDnsClientWithConfigurationProvider(common.NewRawConfigurationProvider(
+	client, err := dns.NewDnsClientWithConfigurationProvider(common.NewRawConfigurationProvider(
 		cfg.Auth.TenancyID,
 		cfg.Auth.UserID,
 		cfg.Auth.Region,
@@ -247,7 +251,6 @@ func (p *OCIProvider) ApplyChanges(changes *plan.Changes) error {
 
 // newRecordOperation returns a RecordOperation based on a given endpoint.
 func newRecordOperation(ep *endpoint.Endpoint, opType dns.RecordOperationOperationEnum) dns.RecordOperation {
-	// NOTE(apryde): works around appending a trailing dot to TXT records.
 	targets := make([]string, len(ep.Targets))
 	copy(targets, []string(ep.Targets))
 	if ep.RecordType == endpoint.RecordTypeCNAME {
