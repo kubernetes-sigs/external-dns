@@ -58,6 +58,7 @@ The following tutorials are provided:
 * Google Container Engine
 	* [Using Google's Default Ingress Controller](docs/tutorials/gke.md)
 	* [Using the Nginx Ingress Controller](docs/tutorials/nginx-ingress.md)
+* [Exoscale](docs/tutorials/exoscale.md)
 
 ## Running Locally
 
