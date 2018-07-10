@@ -1,3 +1,5 @@
+  - Add aws evaluate target health flag (#628) @peterbale
+
 ## v0.5.4 - 2018-06-28
 
   - Only store endpoints with their labels in the cache (#612) @njuettner

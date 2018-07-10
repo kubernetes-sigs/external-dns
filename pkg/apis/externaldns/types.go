@@ -53,6 +53,7 @@ type Config struct {
 	AWSZoneType              string
 	AWSAssumeRole            string
 	AWSMaxChangeCount        int
+	AWSEvaluateTargetHealth  bool
 	AzureConfigFile          string
 	AzureResourceGroup       string
 	CloudflareProxied        bool
@@ -103,6 +104,7 @@ var defaultConfig = &Config{
 	AWSZoneType:              "",
 	AWSAssumeRole:            "",
 	AWSMaxChangeCount:        4000,
+	AWSEvaluateTargetHealth:  true,
 	AzureConfigFile:          "/etc/kubernetes/azure.json",
 	AzureResourceGroup:       "",
 	CloudflareProxied:        false,
@@ -190,6 +192,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AWSZoneType).EnumVar(&cfg.AWSZoneType, "", "public", "private")
 	app.Flag("aws-assume-role", "When using the AWS provider, assume this IAM role. Useful for hosted zones in another AWS account. Specify the full ARN, e.g. `arn:aws:iam::123455567:role/external-dns` (optional)").Default(defaultConfig.AWSAssumeRole).StringVar(&cfg.AWSAssumeRole)
 	app.Flag("aws-max-change-count", "When using the AWS provider, set the maximum number of changes that will be applied.").Default(strconv.Itoa(defaultConfig.AWSMaxChangeCount)).IntVar(&cfg.AWSMaxChangeCount)
+	app.Flag("aws-evaluate-target-health", "When using the AWS provider, set whether to evaluate the health of a DNS target (default: enabled, disable with --no-aws-evaluate-target-health)").Default(strconv.FormatBool(defaultConfig.AWSEvaluateTargetHealth)).BoolVar(&cfg.AWSEvaluateTargetHealth)
 	app.Flag("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure").Default(defaultConfig.AzureConfigFile).StringVar(&cfg.AzureConfigFile)
 	app.Flag("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (optional)").Default(defaultConfig.AzureResourceGroup).StringVar(&cfg.AzureResourceGroup)
 	app.Flag("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.CloudflareProxied)
