@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-Exoscale provider support was added via [this PR](https://github.com/kubernetes-incubator/external-dns/pull/625), thus you need to use external-dns with this PR merged.
+Exoscale provider support was added via [this PR](https://github.com/kubernetes-incubator/external-dns/pull/625), thus you need to use external-dns v0.5.5.
 
 The Exoscale provider expects that your Exoscale zones, you wish to add records to, already exists
 and are configured correctly. It does not add, remove or configure new zones in anyway.
@@ -38,7 +38,7 @@ spec:
       # serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.5
         args:
         - --source=ingress # or service or both
         - --provider=exoscale
