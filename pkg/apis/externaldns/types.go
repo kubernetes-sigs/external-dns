@@ -52,6 +52,8 @@ type Config struct {
 	ZoneIDFilter             []string
 	AWSZoneType              string
 	AWSAssumeRole            string
+	AWSMaxChangeCount        int
+	AWSEvaluateTargetHealth  bool
 	AzureConfigFile          string
 	AzureResourceGroup       string
 	CloudflareProxied        bool
@@ -68,6 +70,10 @@ type Config struct {
 	InMemoryZones            []string
 	PDNSServer               string
 	PDNSAPIKey               string
+	PDNSTLSEnabled           bool
+	TLSCA                    string
+	TLSClientCert            string
+	TLSClientCertKey         string
 	Policy                   string
 	Registry                 string
 	TXTOwnerID               string
@@ -100,6 +106,8 @@ var defaultConfig = &Config{
 	DomainFilter:             []string{},
 	AWSZoneType:              "",
 	AWSAssumeRole:            "",
+	AWSMaxChangeCount:        4000,
+	AWSEvaluateTargetHealth:  true,
 	AzureConfigFile:          "/etc/kubernetes/azure.json",
 	AzureResourceGroup:       "",
 	CloudflareProxied:        false,
@@ -112,11 +120,15 @@ var defaultConfig = &Config{
 	InMemoryZones:            []string{},
 	PDNSServer:               "http://localhost:8081",
 	PDNSAPIKey:               "",
+	PDNSTLSEnabled:           false,
+	TLSCA:                    "",
+	TLSClientCert:            "",
+	TLSClientCertKey:         "",
 	Policy:                   "sync",
 	Registry:                 "txt",
 	TXTOwnerID:               "default",
 	TXTPrefix:                "",
-	TXTCacheInterval:         time.Hour,
+	TXTCacheInterval:         0,
 	Interval:                 time.Minute,
 	Once:                     false,
 	DryRun:                   false,
@@ -138,6 +150,9 @@ func (cfg *Config) String() string {
 	}
 	if temp.InfobloxWapiPassword != "" {
 		temp.InfobloxWapiPassword = passwordMask
+	}
+	if temp.PDNSAPIKey != "" {
+		temp.PDNSAPIKey = ""
 	}
 
 	return fmt.Sprintf("%+v", temp)
@@ -179,6 +194,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
 	app.Flag("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AWSZoneType).EnumVar(&cfg.AWSZoneType, "", "public", "private")
 	app.Flag("aws-assume-role", "When using the AWS provider, assume this IAM role. Useful for hosted zones in another AWS account. Specify the full ARN, e.g. `arn:aws:iam::123455567:role/external-dns` (optional)").Default(defaultConfig.AWSAssumeRole).StringVar(&cfg.AWSAssumeRole)
+	app.Flag("aws-max-change-count", "When using the AWS provider, set the maximum number of changes that will be applied.").Default(strconv.Itoa(defaultConfig.AWSMaxChangeCount)).IntVar(&cfg.AWSMaxChangeCount)
+	app.Flag("aws-evaluate-target-health", "When using the AWS provider, set whether to evaluate the health of a DNS target (default: enabled, disable with --no-aws-evaluate-target-health)").Default(strconv.FormatBool(defaultConfig.AWSEvaluateTargetHealth)).BoolVar(&cfg.AWSEvaluateTargetHealth)
 	app.Flag("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure").Default(defaultConfig.AzureConfigFile).StringVar(&cfg.AzureConfigFile)
 	app.Flag("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (optional)").Default(defaultConfig.AzureResourceGroup).StringVar(&cfg.AzureResourceGroup)
 	app.Flag("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.CloudflareProxied)
@@ -195,7 +212,13 @@ func (cfg *Config) ParseFlags(args []string) error {
 
 	app.Flag("inmemory-zone", "Provide a list of pre-configured zones for the inmemory provider; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.InMemoryZones)
 	app.Flag("pdns-server", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)").Default(defaultConfig.PDNSServer).StringVar(&cfg.PDNSServer)
-	app.Flag("pdns-api-key", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)").Default(defaultConfig.PDNSAPIKey).StringVar(&cfg.PDNSAPIKey)
+	app.Flag("pdns-api-key", "When using the PowerDNS/PDNS provider, specify the API key to use to authorize requests (required when --provider=pdns)").Default(defaultConfig.PDNSAPIKey).StringVar(&cfg.PDNSAPIKey)
+	app.Flag("pdns-tls-enabled", "When using the PowerDNS/PDNS provider, specify whether to use TLS (default: false, requires --tls-ca, optionally specify --tls-client-cert and --tls-client-cert-key)").Default(strconv.FormatBool(defaultConfig.PDNSTLSEnabled)).BoolVar(&cfg.PDNSTLSEnabled)
+
+	// Flags related to TLS communication
+	app.Flag("tls-ca", "When using TLS communication, the path to the certificate authority to verify server communications (optionally specify --tls-client-cert for two-way TLS)").Default(defaultConfig.TLSCA).StringVar(&cfg.TLSCA)
+	app.Flag("tls-client-cert", "When using TLS communication, the path to the certificate to present as a client (not required for TLS)").Default(defaultConfig.TLSClientCert).StringVar(&cfg.TLSClientCert)
+	app.Flag("tls-client-cert-key", "When using TLS communication, the path to the certificate key to use with the client certificate (not required for TLS)").Default(defaultConfig.TLSClientCertKey).StringVar(&cfg.TLSClientCertKey)
 
 	app.Flag("exoscale-endpoint", "Provide the endpoint for the Exoscale provider").Default("https://api.exoscale.ch/dns").StringVar(&cfg.ExoscaleEndpoint)
 	app.Flag("exoscale-apikey", "Provide your API Key for the Exoscale provider").Default("").StringVar(&cfg.ExoscaleAPIKey)
@@ -210,7 +233,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("txt-prefix", "When using the TXT registry, a custom string that's prefixed to each ownership DNS record (optional)").Default(defaultConfig.TXTPrefix).StringVar(&cfg.TXTPrefix)
 
 	// Flags related to the main control loop
-	app.Flag("txt-cache-interval", "The interval between cache synchronizations in duration format (default: 1h)").Default(defaultConfig.TXTCacheInterval.String()).DurationVar(&cfg.TXTCacheInterval)
+	app.Flag("txt-cache-interval", "The interval between cache synchronizations in duration format (default: disabled)").Default(defaultConfig.TXTCacheInterval.String()).DurationVar(&cfg.TXTCacheInterval)
 	app.Flag("interval", "The interval between two consecutive synchronizations in duration format (default: 1m)").Default(defaultConfig.Interval.String()).DurationVar(&cfg.Interval)
 	app.Flag("once", "When enabled, exits the synchronization loop after the first iteration (default: disabled)").BoolVar(&cfg.Once)
 	app.Flag("dry-run", "When enabled, prints DNS record changes rather than actually performing them (default: disabled)").BoolVar(&cfg.DryRun)

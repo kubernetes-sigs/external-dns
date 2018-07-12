@@ -17,6 +17,7 @@ limitations under the License.
 package registry
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -361,39 +362,51 @@ func TestCacheMethods(t *testing.T) {
 		cacheInterval: time.Hour,
 	}
 
-	// test updating a record.
-	registry.updateCache(newEndpointWithOwner("thing.com", "1.2.3.6", "A", "owner2"))
-	found := false
-	// ensure it was updated
-	for _, e := range registry.recordsCache {
-		if e.DNSName == "thing.com" && e.RecordType == "A" {
-			t.Logf("targets: %#v", e.Targets)
-			if e.Targets.Same([]string{"1.2.3.6"}) {
-				found = true
-				break
-			}
-		}
+	expectedCacheAfterAdd := []*endpoint.Endpoint{
+		newEndpointWithOwner("thing.com", "1.2.3.4", "A", "owner"),
+		newEndpointWithOwner("thing1.com", "1.2.3.6", "A", "owner"),
+		newEndpointWithOwner("thing2.com", "1.2.3.4", "CNAME", "owner"),
+		newEndpointWithOwner("thing3.com", "1.2.3.4", "A", "owner"),
+		newEndpointWithOwner("thing4.com", "1.2.3.4", "A", "owner"),
+		newEndpointWithOwner("thing5.com", "1.2.3.5", "A", "owner"),
 	}
 
-	if !found {
-		t.Fatal("could not find updated record in cache")
+	expectedCacheAfterUpdate := []*endpoint.Endpoint{
+		newEndpointWithOwner("thing1.com", "1.2.3.6", "A", "owner"),
+		newEndpointWithOwner("thing2.com", "1.2.3.4", "CNAME", "owner"),
+		newEndpointWithOwner("thing3.com", "1.2.3.4", "A", "owner"),
+		newEndpointWithOwner("thing4.com", "1.2.3.4", "A", "owner"),
+		newEndpointWithOwner("thing5.com", "1.2.3.5", "A", "owner"),
+		newEndpointWithOwner("thing.com", "1.2.3.6", "A", "owner2"),
+	}
+
+	expectedCacheAfterDelete := []*endpoint.Endpoint{
+		newEndpointWithOwner("thing1.com", "1.2.3.6", "A", "owner"),
+		newEndpointWithOwner("thing2.com", "1.2.3.4", "CNAME", "owner"),
+		newEndpointWithOwner("thing3.com", "1.2.3.4", "A", "owner"),
+		newEndpointWithOwner("thing4.com", "1.2.3.4", "A", "owner"),
+		newEndpointWithOwner("thing5.com", "1.2.3.5", "A", "owner"),
+	}
+	// test add cache
+	registry.addToCache(newEndpointWithOwner("thing5.com", "1.2.3.5", "A", "owner"))
+
+	if !reflect.DeepEqual(expectedCacheAfterAdd, registry.recordsCache) {
+		t.Fatalf("expected endpoints should match endpoints from cache: expected %v, but got %v", expectedCacheAfterAdd, registry.recordsCache)
+	}
+
+	// test update cache
+	registry.removeFromCache(newEndpointWithOwner("thing.com", "1.2.3.4", "A", "owner"))
+	registry.addToCache(newEndpointWithOwner("thing.com", "1.2.3.6", "A", "owner2"))
+	// ensure it was updated
+	if !reflect.DeepEqual(expectedCacheAfterUpdate, registry.recordsCache) {
+		t.Fatalf("expected endpoints should match endpoints from cache: expected %v, but got %v", expectedCacheAfterUpdate, registry.recordsCache)
 	}
 
 	// test deleting a record
 	registry.removeFromCache(newEndpointWithOwner("thing.com", "1.2.3.6", "A", "owner2"))
 	// ensure it was deleted
-	found = false
-	for _, e := range registry.recordsCache {
-		if e.DNSName == "thing.com" && e.RecordType == "A" {
-			if e.Targets.Same([]string{"1.2.3.6"}) {
-				found = true
-				break
-			}
-		}
-	}
-
-	if found {
-		t.Fatal("should not have been able to find record after deleting")
+	if !reflect.DeepEqual(expectedCacheAfterDelete, registry.recordsCache) {
+		t.Fatalf("expected endpoints should match endpoints from cache: expected %v, but got %v", expectedCacheAfterDelete, registry.recordsCache)
 	}
 }
 
