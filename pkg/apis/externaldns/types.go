@@ -137,6 +137,9 @@ var defaultConfig = &Config{
 	LogFormat:                "text",
 	MetricsAddress:           ":7979",
 	LogLevel:                 logrus.InfoLevel.String(),
+	ExoscaleEndpoint:         "https://api.exoscale.ch/dns",
+	ExoscaleAPIKey:           "",
+	ExoscaleAPISecret:        "",
 }
 
 // NewConfig returns new Config object
@@ -223,9 +226,9 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("tls-client-cert", "When using TLS communication, the path to the certificate to present as a client (not required for TLS)").Default(defaultConfig.TLSClientCert).StringVar(&cfg.TLSClientCert)
 	app.Flag("tls-client-cert-key", "When using TLS communication, the path to the certificate key to use with the client certificate (not required for TLS)").Default(defaultConfig.TLSClientCertKey).StringVar(&cfg.TLSClientCertKey)
 
-	app.Flag("exoscale-endpoint", "Provide the endpoint for the Exoscale provider").Default("https://api.exoscale.ch/dns").StringVar(&cfg.ExoscaleEndpoint)
-	app.Flag("exoscale-apikey", "Provide your API Key for the Exoscale provider").Default("").StringVar(&cfg.ExoscaleAPIKey)
-	app.Flag("exoscale-apisecret", "Provide your API Secret for the Exoscale provider").Default("").StringVar(&cfg.ExoscaleAPISecret)
+	app.Flag("exoscale-endpoint", "Provide the endpoint for the Exoscale provider").Default(defaultConfig.ExoscaleEndpoint).StringVar(&cfg.ExoscaleEndpoint)
+	app.Flag("exoscale-apikey", "Provide your API Key for the Exoscale provider").Default(defaultConfig.ExoscaleAPIKey).StringVar(&cfg.ExoscaleAPIKey)
+	app.Flag("exoscale-apisecret", "Provide your API Secret for the Exoscale provider").Default(defaultConfig.ExoscaleAPISecret).StringVar(&cfg.ExoscaleAPISecret)
 
 	// Flags related to policies
 	app.Flag("policy", "Modify how DNS records are sychronized between sources and providers (default: sync, options: sync, upsert-only)").Default(defaultConfig.Policy).EnumVar(&cfg.Policy, "sync", "upsert-only")
