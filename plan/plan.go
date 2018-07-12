@@ -17,6 +17,8 @@ limitations under the License.
 package plan
 
 import (
+	"strings"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
@@ -77,17 +79,19 @@ type planTableRow struct {
 }
 
 func (t planTable) addCurrent(e *endpoint.Endpoint) {
-	if _, ok := t.rows[e.DNSName]; !ok {
-		t.rows[e.DNSName] = &planTableRow{}
+	dnsName := sanitizeDNSName(e.DNSName)
+	if _, ok := t.rows[dnsName]; !ok {
+		t.rows[dnsName] = &planTableRow{}
 	}
-	t.rows[e.DNSName].current = e
+	t.rows[dnsName].current = e
 }
 
 func (t planTable) addCandidate(e *endpoint.Endpoint) {
-	if _, ok := t.rows[e.DNSName]; !ok {
-		t.rows[e.DNSName] = &planTableRow{}
+	dnsName := sanitizeDNSName(e.DNSName)
+	if _, ok := t.rows[dnsName]; !ok {
+		t.rows[dnsName] = &planTableRow{}
 	}
-	t.rows[e.DNSName].candidates = append(t.rows[e.DNSName].candidates, e)
+	t.rows[dnsName].candidates = append(t.rows[dnsName].candidates, e)
 }
 
 // TODO: allows record type change, which might not be supported by all dns providers
@@ -174,4 +178,10 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 		return false
 	}
 	return desired.RecordTTL != current.RecordTTL
+}
+
+// sanitizeDNSName checks if the DNS name is correct
+// for now it only removes space and lower case
+func sanitizeDNSName(dnsName string) string {
+	return strings.TrimSpace(strings.ToLower(dnsName))
 }

@@ -95,7 +95,16 @@ func main() {
 	var p provider.Provider
 	switch cfg.Provider {
 	case "aws":
-		p, err = provider.NewAWSProvider(domainFilter, zoneIDFilter, zoneTypeFilter, cfg.AWSAssumeRole, cfg.DryRun)
+		p, err = provider.NewAWSProvider(
+			provider.AWSConfig{
+				DomainFilter:   domainFilter,
+				ZoneIDFilter:   zoneIDFilter,
+				ZoneTypeFilter: zoneTypeFilter,
+				MaxChangeCount: cfg.AWSMaxChangeCount,
+				AssumeRole:     cfg.AWSAssumeRole,
+				DryRun:         cfg.DryRun,
+			},
+		)
 	case "aws-sd":
 		// Check that only compatible Registry is used with AWS-SD
 		if cfg.Registry != "noop" && cfg.Registry != "aws-sd" {
@@ -149,7 +158,20 @@ func main() {
 	case "designate":
 		p, err = provider.NewDesignateProvider(domainFilter, cfg.DryRun)
 	case "pdns":
-		p, err = provider.NewPDNSProvider(cfg.PDNSServer, cfg.PDNSAPIKey, domainFilter, cfg.DryRun)
+		p, err = provider.NewPDNSProvider(
+			provider.PDNSConfig{
+				DomainFilter: domainFilter,
+				DryRun:       cfg.DryRun,
+				Server:       cfg.PDNSServer,
+				APIKey:       cfg.PDNSAPIKey,
+				TLSConfig: provider.TLSConfig{
+					TLSEnabled:            cfg.PDNSTLSEnabled,
+					CAFilePath:            cfg.TLSCA,
+					ClientCertFilePath:    cfg.TLSClientCert,
+					ClientCertKeyFilePath: cfg.TLSClientCertKey,
+				},
+			},
+		)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}

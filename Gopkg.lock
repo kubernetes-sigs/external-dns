@@ -291,7 +291,7 @@
   branch = "master"
   name = "github.com/infobloxopen/infoblox-go-client"
   packages = ["."]
-  revision = "e2811d86bed7bb487eeb0806337b6f9e9d93d5e7"
+  revision = "61dc5f9b0a655ebf43026f0d8a837ad1e28e4b96"
 
 [[projects]]
   branch = "master"
@@ -317,7 +317,7 @@
 [[projects]]
   name = "github.com/kubernetes/repo-infra"
   packages = ["verify/boilerplate/test"]
-  revision = "2d2eb5e12b4663fc4d764b5db9daab39334d3f37"
+  revision = "c2f9667a4c29e70a39b0e89db2d4f0cab907dbee"
 
 [[projects]]
   name = "github.com/linki/instrumented_http"
@@ -440,7 +440,8 @@
     "http2",
     "http2/hpack",
     "idna",
-    "lex/httplex"
+    "lex/httplex",
+    "publicsuffix"
   ]
   revision = "e90d6d0afc4c315a0d87a568ae68577cc15149a0"
 
