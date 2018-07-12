@@ -170,6 +170,12 @@ func main() {
 				},
 			},
 		)
+	case "oci":
+		var config *provider.OCIConfig
+		config, err = provider.LoadOCIConfig(cfg.OCIConfigFile)
+		if err == nil {
+			p, err = provider.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.DryRun)
+		}
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
