@@ -181,15 +181,12 @@ func (ep *ExoscaleProvider) Records() ([]*endpoint.Endpoint, error) {
 		if err != nil {
 			return nil, err
 		}
-	loop:
 		for _, r := range record {
 			switch r.RecordType {
-			case egoscale.A.String():
-			case egoscale.CNAME.String():
-			case egoscale.TXT.String():
+			case "A", "CNAME", "TXT":
 				break
 			default:
-				break loop
+				continue
 			}
 			ep := endpoint.NewEndpointWithTTL(r.Name+"."+d.Name, r.RecordType, endpoint.TTL(r.TTL), r.Content)
 			endpoints = append(endpoints, ep)
