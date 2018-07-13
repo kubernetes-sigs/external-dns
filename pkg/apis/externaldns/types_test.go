@@ -68,6 +68,9 @@ var (
 		MetricsAddress:          ":7979",
 		LogLevel:                logrus.InfoLevel.String(),
 		ConnectorSourceServer:   "localhost:8080",
+		ExoscaleEndpoint:        "https://api.exoscale.ch/dns",
+		ExoscaleAPIKey:          "",
+		ExoscaleAPISecret:       "",
 	}
 
 	overriddenConfig = &Config{
@@ -114,6 +117,9 @@ var (
 		MetricsAddress:          "127.0.0.1:9099",
 		LogLevel:                logrus.DebugLevel.String(),
 		ConnectorSourceServer:   "localhost:8081",
+		ExoscaleEndpoint:        "https://api.foo.ch/dns",
+		ExoscaleAPIKey:          "1",
+		ExoscaleAPISecret:       "2",
 	}
 )
 
@@ -184,6 +190,9 @@ func TestParseFlags(t *testing.T) {
 				"--metrics-address=127.0.0.1:9099",
 				"--log-level=debug",
 				"--connector-source-server=localhost:8081",
+				"--exoscale-endpoint=https://api.foo.ch/dns",
+				"--exoscale-apikey=1",
+				"--exoscale-apisecret=2",
 			},
 			envVars:  map[string]string{},
 			expected: overriddenConfig,
@@ -235,6 +244,9 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_METRICS_ADDRESS":            "127.0.0.1:9099",
 				"EXTERNAL_DNS_LOG_LEVEL":                  "debug",
 				"EXTERNAL_DNS_CONNECTOR_SOURCE_SERVER":    "localhost:8081",
+				"EXTERNAL_DNS_EXOSCALE_ENDPOINT":          "https://api.foo.ch/dns",
+				"EXTERNAL_DNS_EXOSCALE_APIKEY":            "1",
+				"EXTERNAL_DNS_EXOSCALE_APISECRET":         "2",
 			},
 			expected: overriddenConfig,
 		},

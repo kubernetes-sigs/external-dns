@@ -191,6 +191,12 @@
   revision = "09691a3b6378b740595c1002f40c34dd5f218a22"
 
 [[projects]]
+  name = "github.com/exoscale/egoscale"
+  packages = ["."]
+  revision = "631ee6ea16ccb48a0c98054fdbf0f6e94d8f4a8c"
+  version = "v0.9.31"
+
+[[projects]]
   branch = "master"
   name = "github.com/ffledgling/pdns-go"
   packages = ["."]
@@ -287,6 +293,12 @@
   name = "github.com/infobloxopen/infoblox-go-client"
   packages = ["."]
   revision = "61dc5f9b0a655ebf43026f0d8a837ad1e28e4b96"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/jinzhu/copier"
+  packages = ["."]
+  revision = "7e38e58719c33e0d44d585c4ab477a30f8cb82dd"
 
 [[projects]]
   name = "github.com/jmespath/go-jmespath"
@@ -679,6 +691,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "66dc2d3612a3cea92d6533aef837db593aa9b49b2eeffe724d7211ceba87294b"
+  inputs-digest = "d704eb6432ef9b41338900e647421a195366f87134918f9feb023fc377064f57"
   solver-name = "gps-cdcl"
   solver-version = 1
