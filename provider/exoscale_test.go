@@ -59,6 +59,7 @@ func (ep *ExoscaleClientStub) DeleteRecord(name string, recordID int64) error {
 }
 func (ep *ExoscaleClientStub) GetRecords(name string) ([]egoscale.DNSRecord, error) {
 	init := []egoscale.DNSRecord{
+		{ID: 0, Name: "v4.barfoo.com", RecordType: "ALIAS"},
 		{ID: 1, Name: "v1.foo.com", RecordType: "TXT"},
 		{ID: 2, Name: "v2.bar.com", RecordType: "A"},
 		{ID: 3, Name: "v3.bar.com", RecordType: "ALIAS"},
