@@ -214,6 +214,12 @@ func (p *DigitalOceanProvider) submitChanges(changes []*DigitalOceanChange) erro
 				change.ResourceRecordSet.Name = "@"
 			}
 
+			// for some reason the DO API requires the '.' at the end of "data" in case of CNAME request
+			// Example: {"type":"CNAME","name":"hello","data":"www.example.com."}
+			if change.ResourceRecordSet.Type == endpoint.RecordTypeCNAME {
+				change.ResourceRecordSet.Data += "."
+			}
+
 			switch change.Action {
 			case DigitalOceanCreate:
 				_, _, err = p.Client.CreateRecord(context.TODO(), zoneName,
