@@ -178,6 +178,8 @@ func main() {
 		if err == nil {
 			p, err = provider.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.DryRun)
 		}
+	case "rfc2136":
+		p, err = provider.NewRfc2136Provider(domainFilter, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
