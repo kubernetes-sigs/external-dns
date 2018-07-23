@@ -24,8 +24,8 @@
     "autorest/date",
     "autorest/to"
   ]
-  revision = "58f6f26e200fa5dfb40c9cd1c83f3e2c860d779d"
-  version = "v8.0.0"
+  revision = "aa2a4534ab680e938d933870f58f23f77e0e208e"
+  version = "v10.9.0"
 
 [[projects]]
   name = "github.com/PuerkitoBio/purell"
@@ -109,6 +109,18 @@
   version = "v0.7.4"
 
 [[projects]]
+  name = "github.com/coreos/etcd"
+  packages = [
+    "client",
+    "pkg/pathutil",
+    "pkg/srv",
+    "pkg/types",
+    "version"
+  ]
+  revision = "1b3ac99e8a431b381e633802cc42fe70e663baf5"
+  version = "v3.2.15"
+
+[[projects]]
   name = "github.com/coreos/go-oidc"
   packages = [
     "http",
@@ -118,6 +130,12 @@
     "oidc"
   ]
   revision = "be73733bb8cc830d0205609b95d125215f8e9c70"
+
+[[projects]]
+  name = "github.com/coreos/go-semver"
+  packages = ["semver"]
+  revision = "8ab6407b697782a06568d4b7f1db25550ec2e4c6"
+  version = "v0.2.0"
 
 [[projects]]
   name = "github.com/coreos/pkg"
@@ -131,13 +149,14 @@
 [[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
-  revision = "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
+  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
+  version = "v1.1.0"
 
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
   packages = ["."]
-  revision = "d2709f9f1f31ebcda9651b03077758c1f3a0018c"
-  version = "v3.0.0"
+  revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
+  version = "v3.2.0"
 
 [[projects]]
   name = "github.com/digitalocean/godo"
@@ -170,6 +189,12 @@
     "swagger"
   ]
   revision = "09691a3b6378b740595c1002f40c34dd5f218a22"
+
+[[projects]]
+  name = "github.com/exoscale/egoscale"
+  packages = ["."]
+  revision = "631ee6ea16ccb48a0c98054fdbf0f6e94d8f4a8c"
+  version = "v0.9.31"
 
 [[projects]]
   branch = "master"
@@ -267,7 +292,13 @@
   branch = "master"
   name = "github.com/infobloxopen/infoblox-go-client"
   packages = ["."]
-  revision = "e2811d86bed7bb487eeb0806337b6f9e9d93d5e7"
+  revision = "61dc5f9b0a655ebf43026f0d8a837ad1e28e4b96"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/jinzhu/copier"
+  packages = ["."]
+  revision = "7e38e58719c33e0d44d585c4ab477a30f8cb82dd"
 
 [[projects]]
   name = "github.com/jmespath/go-jmespath"
@@ -287,7 +318,7 @@
 [[projects]]
   name = "github.com/kubernetes/repo-infra"
   packages = ["verify/boilerplate/test"]
-  revision = "2d2eb5e12b4663fc4d764b5db9daab39334d3f37"
+  revision = "c2f9667a4c29e70a39b0e89db2d4f0cab907dbee"
 
 [[projects]]
   name = "github.com/linki/instrumented_http"
@@ -317,6 +348,15 @@
   version = "v0.6.0"
 
 [[projects]]
+  name = "github.com/oracle/oci-go-sdk"
+  packages = [
+    "common",
+    "dns"
+  ]
+  revision = "a2ded717dc4bb4916c0416ec79f81718b576dbc4"
+  version = "v1.8.0"
+
+[[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
   revision = "f15c970de5b76fac0b59abb32d62c17cc7bed265"
@@ -324,7 +364,8 @@
 [[projects]]
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
-  revision = "d8ed2627bdf02c080bf22230dbb337003b7aba2d"
+  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
+  version = "v1.0.0"
 
 [[projects]]
   name = "github.com/prometheus/client_golang"
@@ -373,7 +414,8 @@
 [[projects]]
   name = "github.com/stretchr/objx"
   packages = ["."]
-  revision = "cbeaeb16a013161a98496fad62933b1d21786672"
+  revision = "facf9a85c22f48d2f52f2380e4efce1768749a89"
+  version = "v0.1"
 
 [[projects]]
   name = "github.com/stretchr/testify"
@@ -383,8 +425,8 @@
     "require",
     "suite"
   ]
-  revision = "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
-  version = "v1.1.4"
+  revision = "12b6f73e6084dad08a7c6e575284b177ecafbc71"
+  version = "v1.2.1"
 
 [[projects]]
   branch = "master"
@@ -410,7 +452,8 @@
     "http2",
     "http2/hpack",
     "idna",
-    "lex/httplex"
+    "lex/httplex",
+    "publicsuffix"
   ]
   revision = "e90d6d0afc4c315a0d87a568ae68577cc15149a0"
 
@@ -648,6 +691,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d5deea43eb04e9ef3a6ecb3589b91c149e092505f66905baa01c67379776d231"
+  inputs-digest = "d704eb6432ef9b41338900e647421a195366f87134918f9feb023fc377064f57"
   solver-name = "gps-cdcl"
   solver-version = 1

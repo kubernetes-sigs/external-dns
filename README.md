@@ -26,6 +26,7 @@ To see ExternalDNS in action, have a look at this [video](https://www.youtube.co
 ExternalDNS' current release is `v0.5`. This version allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
 * [Google CloudDNS](https://cloud.google.com/dns/docs/)
 * [AWS Route 53](https://aws.amazon.com/route53/)
+* [AWS Service Discovery](https://docs.aws.amazon.com/Route53/latest/APIReference/overview-service-discovery.html)
 * [AzureDNS](https://azure.microsoft.com/en-us/services/dns)
 * [CloudFlare](https://www.cloudflare.com/de/dns)
 * [DigitalOcean](https://www.digitalocean.com/products/networking)
@@ -34,6 +35,9 @@ ExternalDNS' current release is `v0.5`. This version allows you to keep selected
 * [Dyn](https://dyn.com/dns/)
 * [OpenStack Designate](https://docs.openstack.org/designate/latest/)
 * [PowerDNS](https://www.powerdns.com/)
+* [CoreDNS](https://coredns.io/)
+* [Exoscale](https://www.exoscale.com/dns/)
+* [Oracle Cloud Infrastructure DNS](https://docs.cloud.oracle.com/iaas/Content/DNS/Concepts/dnszonemanagement.htm)
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` (or greater) with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -55,6 +59,8 @@ The following tutorials are provided:
 * Google Container Engine
 	* [Using Google's Default Ingress Controller](docs/tutorials/gke.md)
 	* [Using the Nginx Ingress Controller](docs/tutorials/nginx-ingress.md)
+* [Exoscale](docs/tutorials/exoscale.md)
+* [Oracle Cloud Infrastructure (OCI) DNS](docs/tutorials/oracle.md)
 
 ## Running Locally
 

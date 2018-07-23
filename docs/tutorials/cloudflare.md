@@ -42,7 +42,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.1
+        image: registry.opensource.zalan.do/teapot/external-dns:latest
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -77,6 +77,9 @@ rules:
 - apiGroups: ["extensions"] 
   resources: ["ingresses"] 
   verbs: ["get","watch","list"]
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
@@ -106,7 +109,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.1
+        image: registry.opensource.zalan.do/teapot/external-dns:latest
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -179,7 +182,7 @@ the Cloudflare DNS records.
 
 ## Verifying Cloudflare DNS records
 
-Check your [Cloudflare dasbhboard](https://www.cloudflare.com/a/dns/example.com) to view the records for your Cloudflare DNS zone.
+Check your [Cloudflare dashboard](https://www.cloudflare.com/a/dns/example.com) to view the records for your Cloudflare DNS zone.
 
 Substitute the zone for the one created above if a different domain was used.
 

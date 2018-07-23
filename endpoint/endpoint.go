@@ -29,6 +29,8 @@ const (
 	RecordTypeCNAME = "CNAME"
 	// RecordTypeTXT is a RecordType enum value
 	RecordTypeTXT = "TXT"
+	// RecordTypeSRV is a RecordType enum value
+	RecordTypeSRV = "SRV"
 )
 
 // TTL is a structure defining the TTL of a DNS record

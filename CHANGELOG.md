@@ -1,3 +1,34 @@
+  - Add aws evaluate target health flag (#628) @peterbale
+
+## v0.5.4 - 2018-06-28
+
+  - Only store endpoints with their labels in the cache (#612) @njuettner
+  - Read hostnames from spec.tls.hosts on Ingress object (#611) @ysoldak
+  - Reorder provider/aws suitable-zones tests (#608) @elordahl
+  - Adds TLS flags for pdns provider (#607) @jhoch-palantir
+  - Update RBAC for external-dns to list nodes (#600) @njuettner
+  - Add aws max change count flag (#596) @peterbale
+  - AWS provider: Properly check suitable domains (#594) @elordahl
+  - Annotation with upper-case hostnames block further updates (#579) @njuettner
+  
+## v0.5.3 - 2018-06-15
+
+  - Print a message if no hosted zones match (aws provider) (#592) @svend
+  - Add support for NodePort services (#559) @grimmy
+  - Update azure.md to fix protocol value (#593) @JasonvanBrackel
+  - Add cache to limit calls to providers (#589) @jessfraz
+  - Add Azure MSI support (#578) @r7vme
+  - CoreDNS/SkyDNS provider (#253) @istalker2
+
+## v0.5.2 - 2018-05-31
+
+  - DNSimple: Make DNSimple tolerant of unknown zones (#574) @jbowes
+  - Cloudflare: Custom record TTL (#572) @njuettner
+  - AWS ServiceDiscovery: Implementation of AWS ServiceDiscovery provider (#483) @vanekjar
+  - Update docs to latest changes (#563) @Raffo
+  - New source - connector (#552) @shashidharatd
+  - Update AWS SDK dependency to v1.13.7 @vanekjar
+
 ## v0.5.1 - 2018-05-16
 
   - Refactor implementation of sync loop to use `time.Ticker` (#553) @r0fls

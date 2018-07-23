@@ -17,7 +17,9 @@ limitations under the License.
 package registry
 
 import (
+	"reflect"
 	"testing"
+	"time"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
@@ -40,10 +42,10 @@ func TestTXTRegistry(t *testing.T) {
 
 func testTXTRegistryNew(t *testing.T) {
 	p := provider.NewInMemoryProvider()
-	_, err := NewTXTRegistry(p, "txt", "")
+	_, err := NewTXTRegistry(p, "txt", "", time.Hour)
 	require.Error(t, err)
 
-	r, err := NewTXTRegistry(p, "txt", "owner")
+	r, err := NewTXTRegistry(p, "txt", "owner", time.Hour)
 	require.NoError(t, err)
 
 	_, ok := r.mapper.(prefixNameMapper)
@@ -51,7 +53,7 @@ func testTXTRegistryNew(t *testing.T) {
 	assert.Equal(t, "owner", r.ownerID)
 	assert.Equal(t, p, r.provider)
 
-	r, err = NewTXTRegistry(p, "", "owner")
+	r, err = NewTXTRegistry(p, "", "owner", time.Hour)
 	require.NoError(t, err)
 
 	_, ok = r.mapper.(prefixNameMapper)
@@ -130,7 +132,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "txt.", "owner")
+	r, _ := NewTXTRegistry(p, "txt.", "owner", time.Hour)
 	records, _ := r.Records()
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -204,7 +206,7 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 		},
 	}
 
-	r, _ := NewTXTRegistry(p, "", "owner")
+	r, _ := NewTXTRegistry(p, "", "owner", time.Hour)
 	records, _ := r.Records()
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
@@ -231,7 +233,7 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 			newEndpointWithOwner("txt.foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
 	})
-	r, _ := NewTXTRegistry(p, "txt.", "owner")
+	r, _ := NewTXTRegistry(p, "txt.", "owner", time.Hour)
 
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -300,7 +302,7 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 			newEndpointWithOwner("foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
 	})
-	r, _ := NewTXTRegistry(p, "", "owner")
+	r, _ := NewTXTRegistry(p, "", "owner", time.Hour)
 
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -345,6 +347,67 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 	}
 	err := r.ApplyChanges(changes)
 	require.NoError(t, err)
+}
+
+func TestCacheMethods(t *testing.T) {
+	cache := []*endpoint.Endpoint{
+		newEndpointWithOwner("thing.com", "1.2.3.4", "A", "owner"),
+		newEndpointWithOwner("thing1.com", "1.2.3.6", "A", "owner"),
+		newEndpointWithOwner("thing2.com", "1.2.3.4", "CNAME", "owner"),
+		newEndpointWithOwner("thing3.com", "1.2.3.4", "A", "owner"),
+		newEndpointWithOwner("thing4.com", "1.2.3.4", "A", "owner"),
+	}
+	registry := &TXTRegistry{
+		recordsCache:  cache,
+		cacheInterval: time.Hour,
+	}
+
+	expectedCacheAfterAdd := []*endpoint.Endpoint{
+		newEndpointWithOwner("thing.com", "1.2.3.4", "A", "owner"),
+		newEndpointWithOwner("thing1.com", "1.2.3.6", "A", "owner"),
+		newEndpointWithOwner("thing2.com", "1.2.3.4", "CNAME", "owner"),
+		newEndpointWithOwner("thing3.com", "1.2.3.4", "A", "owner"),
+		newEndpointWithOwner("thing4.com", "1.2.3.4", "A", "owner"),
+		newEndpointWithOwner("thing5.com", "1.2.3.5", "A", "owner"),
+	}
+
+	expectedCacheAfterUpdate := []*endpoint.Endpoint{
+		newEndpointWithOwner("thing1.com", "1.2.3.6", "A", "owner"),
+		newEndpointWithOwner("thing2.com", "1.2.3.4", "CNAME", "owner"),
+		newEndpointWithOwner("thing3.com", "1.2.3.4", "A", "owner"),
+		newEndpointWithOwner("thing4.com", "1.2.3.4", "A", "owner"),
+		newEndpointWithOwner("thing5.com", "1.2.3.5", "A", "owner"),
+		newEndpointWithOwner("thing.com", "1.2.3.6", "A", "owner2"),
+	}
+
+	expectedCacheAfterDelete := []*endpoint.Endpoint{
+		newEndpointWithOwner("thing1.com", "1.2.3.6", "A", "owner"),
+		newEndpointWithOwner("thing2.com", "1.2.3.4", "CNAME", "owner"),
+		newEndpointWithOwner("thing3.com", "1.2.3.4", "A", "owner"),
+		newEndpointWithOwner("thing4.com", "1.2.3.4", "A", "owner"),
+		newEndpointWithOwner("thing5.com", "1.2.3.5", "A", "owner"),
+	}
+	// test add cache
+	registry.addToCache(newEndpointWithOwner("thing5.com", "1.2.3.5", "A", "owner"))
+
+	if !reflect.DeepEqual(expectedCacheAfterAdd, registry.recordsCache) {
+		t.Fatalf("expected endpoints should match endpoints from cache: expected %v, but got %v", expectedCacheAfterAdd, registry.recordsCache)
+	}
+
+	// test update cache
+	registry.removeFromCache(newEndpointWithOwner("thing.com", "1.2.3.4", "A", "owner"))
+	registry.addToCache(newEndpointWithOwner("thing.com", "1.2.3.6", "A", "owner2"))
+	// ensure it was updated
+	if !reflect.DeepEqual(expectedCacheAfterUpdate, registry.recordsCache) {
+		t.Fatalf("expected endpoints should match endpoints from cache: expected %v, but got %v", expectedCacheAfterUpdate, registry.recordsCache)
+	}
+
+	// test deleting a record
+	registry.removeFromCache(newEndpointWithOwner("thing.com", "1.2.3.6", "A", "owner2"))
+	// ensure it was deleted
+	if !reflect.DeepEqual(expectedCacheAfterDelete, registry.recordsCache) {
+		t.Fatalf("expected endpoints should match endpoints from cache: expected %v, but got %v", expectedCacheAfterDelete, registry.recordsCache)
+	}
 }
 
 /**

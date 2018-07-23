@@ -95,7 +95,16 @@ func main() {
 	var p provider.Provider
 	switch cfg.Provider {
 	case "aws":
-		p, err = provider.NewAWSProvider(domainFilter, zoneIDFilter, zoneTypeFilter, cfg.AWSAssumeRole, cfg.DryRun)
+		p, err = provider.NewAWSProvider(
+			provider.AWSConfig{
+				DomainFilter:   domainFilter,
+				ZoneIDFilter:   zoneIDFilter,
+				ZoneTypeFilter: zoneTypeFilter,
+				MaxChangeCount: cfg.AWSMaxChangeCount,
+				AssumeRole:     cfg.AWSAssumeRole,
+				DryRun:         cfg.DryRun,
+			},
+		)
 	case "aws-sd":
 		// Check that only compatible Registry is used with AWS-SD
 		if cfg.Registry != "noop" && cfg.Registry != "aws-sd" {
@@ -140,12 +149,35 @@ func main() {
 				AppVersion:    externaldns.Version,
 			},
 		)
+	case "coredns", "skydns":
+		p, err = provider.NewCoreDNSProvider(domainFilter, cfg.DryRun)
+	case "exoscale":
+		p, err = provider.NewExoscaleProvider(cfg.ExoscaleEndpoint, cfg.ExoscaleAPIKey, cfg.ExoscaleAPISecret, cfg.DryRun, provider.ExoscaleWithDomain(domainFilter), provider.ExoscaleWithLogging()), nil
 	case "inmemory":
 		p, err = provider.NewInMemoryProvider(provider.InMemoryInitZones(cfg.InMemoryZones), provider.InMemoryWithDomain(domainFilter), provider.InMemoryWithLogging()), nil
 	case "designate":
 		p, err = provider.NewDesignateProvider(domainFilter, cfg.DryRun)
 	case "pdns":
-		p, err = provider.NewPDNSProvider(cfg.PDNSServer, cfg.PDNSAPIKey, domainFilter, cfg.DryRun)
+		p, err = provider.NewPDNSProvider(
+			provider.PDNSConfig{
+				DomainFilter: domainFilter,
+				DryRun:       cfg.DryRun,
+				Server:       cfg.PDNSServer,
+				APIKey:       cfg.PDNSAPIKey,
+				TLSConfig: provider.TLSConfig{
+					TLSEnabled:            cfg.PDNSTLSEnabled,
+					CAFilePath:            cfg.TLSCA,
+					ClientCertFilePath:    cfg.TLSClientCert,
+					ClientCertKeyFilePath: cfg.TLSClientCertKey,
+				},
+			},
+		)
+	case "oci":
+		var config *provider.OCIConfig
+		config, err = provider.LoadOCIConfig(cfg.OCIConfigFile)
+		if err == nil {
+			p, err = provider.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.DryRun)
+		}
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
@@ -158,7 +190,7 @@ func main() {
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":
-		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTOwnerID)
+		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTOwnerID, cfg.TXTCacheInterval)
 	case "aws-sd":
 		r, err = registry.NewAWSSDRegistry(p.(*provider.AWSSDProvider), cfg.TXTOwnerID)
 	default:

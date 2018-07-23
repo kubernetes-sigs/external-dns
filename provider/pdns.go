@@ -29,9 +29,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"crypto/tls"
 	pgo "github.com/ffledgling/pdns-go"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/pkg/tlsutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
+	"net"
 )
 
 type pdnsChangeType string
@@ -56,6 +59,60 @@ const (
 	// time in milliseconds
 	retryAfterTime = 250 * time.Millisecond
 )
+
+// PDNSConfig is comprised of the fields necessary to create a new PDNSProvider
+type PDNSConfig struct {
+	DomainFilter DomainFilter
+	DryRun       bool
+	Server       string
+	APIKey       string
+	TLSConfig    TLSConfig
+}
+
+// TLSConfig is comprised of the TLS-related fields necessary to create a new PDNSProvider
+type TLSConfig struct {
+	TLSEnabled            bool
+	CAFilePath            string
+	ClientCertFilePath    string
+	ClientCertKeyFilePath string
+}
+
+func (tlsConfig *TLSConfig) setHTTPClient(pdnsClientConfig *pgo.Configuration) error {
+	if !tlsConfig.TLSEnabled {
+		log.Debug("Skipping TLS for PDNS Provider.")
+		return nil
+	}
+
+	log.Debug("Configuring TLS for PDNS Provider.")
+	if tlsConfig.CAFilePath == "" {
+		return errors.New("certificate authority file path must be specified if TLS is enabled")
+	}
+
+	tlsClientConfig, err := tlsutils.NewTLSConfig(tlsConfig.ClientCertFilePath, tlsConfig.ClientCertKeyFilePath, tlsConfig.CAFilePath, "", false, tls.VersionTLS12)
+	if err != nil {
+		return err
+	}
+
+	// Timeouts taken from net.http.DefaultTransport
+	transporter := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		TLSClientConfig:       tlsClientConfig,
+	}
+	pdnsClientConfig.HTTPClient = &http.Client{
+		Transport: transporter,
+	}
+
+	return nil
+}
 
 // Function for debug printing
 func stringifyHTTPResponseBody(r *http.Response) (body string) {
@@ -151,37 +208,40 @@ type PDNSProvider struct {
 }
 
 // NewPDNSProvider initializes a new PowerDNS based Provider.
-func NewPDNSProvider(server string, apikey string, domainFilter DomainFilter, dryRun bool) (*PDNSProvider, error) {
+func NewPDNSProvider(config PDNSConfig) (*PDNSProvider, error) {
 
 	// Do some input validation
 
-	if apikey == "" {
+	if config.APIKey == "" {
 		return nil, errors.New("Missing API Key for PDNS. Specify using --pdns-api-key=")
 	}
 
 	// The default for when no --domain-filter is passed is [""], instead of [], so we check accordingly.
-	if len(domainFilter.filters) != 1 && domainFilter.filters[0] != "" {
+	if len(config.DomainFilter.filters) != 1 && config.DomainFilter.filters[0] != "" {
 		return nil, errors.New("PDNS Provider does not support domain filter")
 	}
 	// We do not support dry running, exit safely instead of surprising the user
 	// TODO: Add Dry Run support
-	if dryRun {
+	if config.DryRun {
 		return nil, errors.New("PDNS Provider does not currently support dry-run")
 	}
 
-	if server == "localhost" {
+	if config.Server == "localhost" {
 		log.Warnf("PDNS Server is set to localhost, this may not be what you want. Specify using --pdns-server=")
 	}
 
-	cfg := pgo.NewConfiguration()
-	cfg.Host = server
-	cfg.BasePath = server + apiBase
+	pdnsClientConfig := pgo.NewConfiguration()
+	pdnsClientConfig.Host = config.Server
+	pdnsClientConfig.BasePath = config.Server + apiBase
+	if err := config.TLSConfig.setHTTPClient(pdnsClientConfig); err != nil {
+		return nil, err
+	}
 
 	provider := &PDNSProvider{
 		client: &PDNSAPIClient{
-			dryRun:  dryRun,
-			authCtx: context.WithValue(context.TODO(), pgo.ContextAPIKey, pgo.APIKey{Key: apikey}),
-			client:  pgo.NewAPIClient(cfg),
+			dryRun:  config.DryRun,
+			authCtx: context.WithValue(context.TODO(), pgo.ContextAPIKey, pgo.APIKey{Key: config.APIKey}),
+			client:  pgo.NewAPIClient(pdnsClientConfig),
 		},
 	}
 
