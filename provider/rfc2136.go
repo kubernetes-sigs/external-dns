@@ -18,7 +18,6 @@ package provider
 
 import (
 	"net"
-	"os"
 	"fmt"
 	"strconv"
 	"time"
@@ -44,64 +43,26 @@ type rfc2136Provider struct {
 }
 
 // NewRfc2136Provider is a factory function for OpenStack rfc2136 providers
-func NewRfc2136Provider(domainFilter DomainFilter, dryRun bool) (Provider, error) {
-	var host, port, keyName, secret, zoneName string
-	var insecure bool
-	var err error
-
-	if host = os.Getenv("RFC2136_HOST"); len(host) == 0 {
-		return nil,fmt.Errorf("RFC2136_HOST is not set")
-	}
-
-	if port = os.Getenv("RFC2136_PORT"); len(port) == 0 {
-		return nil,fmt.Errorf("RFC2136_PORT is not set")
-	}
-
-	if insecureStr := os.Getenv("RFC2136_INSECURE"); len(insecureStr) == 0 {
-		insecure = false
-	} else {
-		if insecure, err = strconv.ParseBool(insecureStr); err != nil {
-			return nil,fmt.Errorf("RFC2136_INSECURE must be a boolean value")
-		}
-	}
-
-	if !insecure {
-		if keyName = os.Getenv("RFC2136_TSIG_KEYNAME"); len(keyName) == 0 {
-			return nil,fmt.Errorf("RFC2136_TSIG_KEYNAME is not set")
-		}
-
-		if secret = os.Getenv("RFC2136_TSIG_SECRET"); len(secret) == 0 {
-			return nil,fmt.Errorf("RFC2136_TSIG_SECRET is not set")
-		}
-	}
-
-	if zoneName = os.Getenv("RFC2136_ZONE"); len(zoneName) == 0 {
-		return nil,fmt.Errorf("RFC2136_ZONE is not set")
-	}
-
+func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, domainFilter DomainFilter, dryRun bool) (Provider, error) {
 	r := &rfc2136Provider{
+		nameserver:   net.JoinHostPort(host, strconv.Itoa(port)),
+		zoneName:     dns.Fqdn(zoneName),
+		insecure:     insecure,
 		domainFilter: domainFilter,
 		dryRun:       dryRun,
 	}
 
-	r.nameserver = net.JoinHostPort(host, port)
-	r.zoneName = dns.Fqdn(zoneName)
 	if !insecure {
 		r.tsigKeyName = dns.Fqdn(keyName)
 		r.tsigSecret = secret
 	}
 
-	r.insecure = insecure
-
 	log.Infof("Configured RFC2136 with zone '%s' and nameserver '%s'", r.zoneName, r.nameserver)
-
 	return r, nil
 }
 
 // Records returns the list of records.
 func (r rfc2136Provider) Records() ([]*endpoint.Endpoint, error) {
-	log.Debugf("Records")
-
 	rrs, err := r.List()
 	if err != nil {
 		return nil, err
