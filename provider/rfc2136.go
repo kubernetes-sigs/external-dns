@@ -112,8 +112,7 @@ OuterLoop:
 			rrTTL,
 			rrValues...,
 		)
-		ep.Labels["originalText"] = "originalText"
-		ep.Labels["prefix"] = "prefix"
+
 		eps = append(eps, ep)
 	}
 
