@@ -103,6 +103,16 @@ If the Kubernetes cluster is not hosted by Azure Container Services and you stil
   "resourceGroup": "MyDnsResourceGroup",
 }
 ```
+If [Azure Managed Service Identity (MSI)](https://docs.microsoft.com/en-us/azure/active-directory/managed-service-identity/overview) is enabled for virtual machines, then there is no need to create separate service principal. The contents of `azure.json` should be similar to this:
+```
+{
+  "tenantId": "AzureAD tenant Id",
+  "subscriptionId": "Id",
+  "resourceGroup": "MyDnsResourceGroup",
+  "useManagedIdentityExtension": true,
+}
+```
+
 If you have all the information necessary: create a file called azure.json containing the json structure above and substitute the values. Otherwise create a service principal as previously shown before creating the Kubernetes secret.
 
 Then add the secret to the Kubernetes cluster before continuing:
@@ -143,7 +153,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.1
+        image: registry.opensource.zalan.do/teapot/external-dns:latest
         args:
         - --source=service
         - --source=ingress
@@ -181,6 +191,9 @@ rules:
 - apiGroups: ["extensions"] 
   resources: ["ingresses"] 
   verbs: ["get","watch","list"]
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
@@ -210,7 +223,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.1
+        image: registry.opensource.zalan.do/teapot/external-dns:latest
         args:
         - --source=service
         - --source=ingress
@@ -261,7 +274,7 @@ metadata:
 spec:
   ports:
   - port: 80
-    protocol: tcp
+    protocol: TCP
     targetPort: 80
   selector:
     app: nginx

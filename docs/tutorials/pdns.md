@@ -40,7 +40,7 @@ spec:
       # serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.1
+        image: registry.opensource.zalan.do/teapot/external-dns:latest
         args:
         - --source=service # or ingress or both
         - --provider=pdns
@@ -74,6 +74,9 @@ rules:
 - apiGroups: [""]
   resources: ["pods"]
   verbs: ["get","watch","list"]
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding

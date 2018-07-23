@@ -616,6 +616,83 @@ func testIngressEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title:           "ingress rules with single tls having single hostname",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:        "fake1",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"example.org"}},
+					ips:         []string{"1.2.3.4"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+		},
+		{
+			title:           "ingress rules with single tls having multiple hostnames",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:        "fake1",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"example.org", "example2.org"}},
+					ips:         []string{"1.2.3.4"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "example2.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+		},
+		{
+			title:           "ingress rules with multiple tls having multiple hostnames",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:        "fake1",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"example.org", "example2.org"}, {"example3.org", "example4.org"}},
+					ips:         []string{"1.2.3.4"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "example2.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "example3.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+				{
+					DNSName:    "example4.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+		},
+		{
 			title:           "ingress rules with hostname annotation",
 			targetNamespace: "",
 			ingressItems: []fakeIngress{
@@ -828,6 +905,7 @@ func testIngressEndpoints(t *testing.T) {
 // ingress specific helper functions
 type fakeIngress struct {
 	dnsnames    []string
+	tlsdnsnames [][]string
 	ips         []string
 	hostnames   []string
 	namespace   string
@@ -854,6 +932,11 @@ func (ing fakeIngress) Ingress() *v1beta1.Ingress {
 	for _, dnsname := range ing.dnsnames {
 		ingress.Spec.Rules = append(ingress.Spec.Rules, v1beta1.IngressRule{
 			Host: dnsname,
+		})
+	}
+	for _, hosts := range ing.tlsdnsnames {
+		ingress.Spec.TLS = append(ingress.Spec.TLS, v1beta1.IngressTLS{
+			Hosts: hosts,
 		})
 	}
 	for _, ip := range ing.ips {

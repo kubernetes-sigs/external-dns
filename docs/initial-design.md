@@ -37,7 +37,9 @@ New cloud providers should be easily pluggable. Initially only AWS/Google platfo
 
 DNS records will be automatically created in multiple situations:
 1. Setting `spec.rules.host` on an ingress object.
-2. Adding the annotation `external-dns.alpha.kubernetes.io/hostname` on a `type=LoadBalancer` service object.
+2. Setting `spec.tls.hosts` on an ingress object.
+3. Adding the annotation `external-dns.alpha.kubernetes.io/hostname` on an ingress object.
+4. Adding the annotation `external-dns.alpha.kubernetes.io/hostname` on a `type=LoadBalancer` service object.
 
 ### Annotations
 

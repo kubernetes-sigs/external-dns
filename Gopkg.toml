@@ -10,7 +10,7 @@ ignored = ["github.com/kubernetes/repo-infra/kazel"]
 
 [[constraint]]
   name = "github.com/Azure/go-autorest"
-  version = "~8.0.0"
+  version = "~10.9.0"
 
 [[constraint]]
   name = "github.com/alecthomas/kingpin"
@@ -23,6 +23,10 @@ ignored = ["github.com/kubernetes/repo-infra/kazel"]
 [[constraint]]
   name = "github.com/cloudflare/cloudflare-go"
   version = "0.7.3"
+
+[[constraint]]
+  name = "github.com/coreos/etcd"
+  version = "~3.2.15"
 
 [[constraint]]
   name = "github.com/digitalocean/godo"
@@ -50,7 +54,7 @@ ignored = ["github.com/kubernetes/repo-infra/kazel"]
 
 [[constraint]]
   name = "github.com/stretchr/testify"
-  version = "~1.1.4"
+  version = "~1.2.1"
 
 [[constraint]]
   name = "k8s.io/client-go"
@@ -58,8 +62,16 @@ ignored = ["github.com/kubernetes/repo-infra/kazel"]
 
 [[override]]
   name = "github.com/kubernetes/repo-infra"
-  revision = "2d2eb5e12b4663fc4d764b5db9daab39334d3f37"
+  revision = "c2f9667a4c29e70a39b0e89db2d4f0cab907dbee"
 
 [[constraint]]
   name = "github.com/nesv/go-dynect"
   version = "0.6.0"
+
+[[constraint]]
+  name = "github.com/exoscale/egoscale"
+  version = "~0.9.31"
+
+[[constraint]]
+  name = "github.com/oracle/oci-go-sdk"
+  version = "1.8.0"
