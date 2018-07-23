@@ -17,8 +17,8 @@ limitations under the License.
 package provider
 
 import (
-	"net"
 	"fmt"
+	"net"
 	"strconv"
 	"time"
 
@@ -185,7 +185,7 @@ func (r rfc2136Provider) ApplyChanges(changes *plan.Changes) error {
 
 		r.RemoveRecord(ep)
 	}
-	
+
 	return nil
 }
 
