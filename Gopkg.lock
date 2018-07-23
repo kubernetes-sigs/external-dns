@@ -342,6 +342,12 @@
   revision = "c12348ce28de40eed0136aa2b644d0ee0650e56c"
 
 [[projects]]
+  name = "github.com/miekg/dns"
+  packages = ["."]
+  revision = "5a2b9fab83ff0f8bfc99684bd5f43a37abe560f1"
+  version = "v1.0.8"
+
+[[projects]]
   name = "github.com/nesv/go-dynect"
   packages = ["dynect"]
   revision = "cdd946344b54bdf7dbeac406c2f1fe93150f08ea"
@@ -455,7 +461,7 @@
     "lex/httplex",
     "publicsuffix"
   ]
-  revision = "e90d6d0afc4c315a0d87a568ae68577cc15149a0"
+  revision = "a680a1efc54dd51c040b3b5ce4939ea3cf2ea0d1"
 
 [[projects]]
   name = "golang.org/x/oauth2"
@@ -492,7 +498,7 @@
     "unicode/rangetable",
     "width"
   ]
-  revision = "2910a502d2bf9e43193af9d68ca516529614eed3"
+  revision = "0605a8320aceb4207a5fb3521281e17ec2075476"
 
 [[projects]]
   name = "google.golang.org/api"
