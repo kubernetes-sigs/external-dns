@@ -71,6 +71,12 @@ var (
 		ExoscaleEndpoint:        "https://api.exoscale.ch/dns",
 		ExoscaleAPIKey:          "",
 		ExoscaleAPISecret:       "",
+		RFC2136Host:              "",
+		RFC2136Port:              53,
+		RFC2136Zone:              "",
+		RFC2136Insecure:          false,
+		RFC2136TSIGKeyName:       "",
+		RFC2136TSIGSecret:        "",
 	}
 
 	overriddenConfig = &Config{
@@ -120,6 +126,12 @@ var (
 		ExoscaleEndpoint:        "https://api.foo.ch/dns",
 		ExoscaleAPIKey:          "1",
 		ExoscaleAPISecret:       "2",
+		RFC2136Host:             "localhost",
+		RFC2136Port:             123,
+		RFC2136Zone:             "myzone",
+		RFC2136Insecure:         true,
+		RFC2136TSIGKeyName:      "myTsigKeyName",
+		RFC2136TSIGSecret:       "myTsigSecret",
 	}
 )
 
@@ -193,6 +205,12 @@ func TestParseFlags(t *testing.T) {
 				"--exoscale-endpoint=https://api.foo.ch/dns",
 				"--exoscale-apikey=1",
 				"--exoscale-apisecret=2",
+				"--rfc2136-host=localhost",
+				"--rfc2136-port=123",
+				"--rfc2136-zone=myzone",
+				"--rfc2136-insecure",
+				"--rfc2136-tsig-keyname=myTsigKeyName",
+				"--rfc2136-tsig-secret=myTsigSecret",
 			},
 			envVars:  map[string]string{},
 			expected: overriddenConfig,
@@ -247,6 +265,12 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_EXOSCALE_ENDPOINT":          "https://api.foo.ch/dns",
 				"EXTERNAL_DNS_EXOSCALE_APIKEY":            "1",
 				"EXTERNAL_DNS_EXOSCALE_APISECRET":         "2",
+				"EXTERNAL_DNS_RFC2136_HOST":               "localhost",
+				"EXTERNAL_DNS_RFC2136_PORT":               "123",
+				"EXTERNAL_DNS_RFC2136_ZONE":               "myzone",
+				"EXTERNAL_DNS_RFC2136_INSCURE":            "1",
+				"EXTERNAL_DNS_RFC2136_TSIG_KEYNAME":       "myTsigKeyName",
+				"EXTERNAL_DNS_RFC2136_TSIG_SECRET":        "myTsigSecret",
 			},
 			expected: overriddenConfig,
 		},
