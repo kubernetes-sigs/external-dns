@@ -71,12 +71,12 @@ var (
 		ExoscaleEndpoint:        "https://api.exoscale.ch/dns",
 		ExoscaleAPIKey:          "",
 		ExoscaleAPISecret:       "",
-		RFC2136Host:              "",
-		RFC2136Port:              53,
-		RFC2136Zone:              "",
-		RFC2136Insecure:          false,
-		RFC2136TSIGKeyName:       "",
-		RFC2136TSIGSecret:        "",
+		RFC2136Host:             "",
+		RFC2136Port:             53,
+		RFC2136Zone:             "",
+		RFC2136Insecure:         false,
+		RFC2136TSIGKeyName:      "",
+		RFC2136TSIGSecret:       "",
 	}
 
 	overriddenConfig = &Config{
@@ -268,7 +268,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_RFC2136_HOST":               "localhost",
 				"EXTERNAL_DNS_RFC2136_PORT":               "123",
 				"EXTERNAL_DNS_RFC2136_ZONE":               "myzone",
-				"EXTERNAL_DNS_RFC2136_INSCURE":            "1",
+				"EXTERNAL_DNS_RFC2136_INSECURE":           "1",
 				"EXTERNAL_DNS_RFC2136_TSIG_KEYNAME":       "myTsigKeyName",
 				"EXTERNAL_DNS_RFC2136_TSIG_SECRET":        "myTsigSecret",
 			},
