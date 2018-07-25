@@ -156,6 +156,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		return endpoints
 	}
 
+	targetsByHeadlessDomain := make(map[string][]string)
 	for _, v := range pods.Items {
 		headlessDomain := hostname
 		if v.Spec.Hostname != "" {
@@ -166,11 +167,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 			log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, v.Status.HostIP)
 			// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
 			if v.Status.Phase == v1.PodRunning {
-				if ttl.IsConfigured() {
-					endpoints = append(endpoints, endpoint.NewEndpointWithTTL(headlessDomain, endpoint.RecordTypeA, ttl, v.Status.HostIP))
-				} else {
-					endpoints = append(endpoints, endpoint.NewEndpoint(headlessDomain, endpoint.RecordTypeA, v.Status.HostIP))
-				}
+				targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], v.Status.HostIP)
 			} else {
 				log.Debugf("Pod %s is not in running phase", v.Spec.Hostname)
 			}
@@ -178,16 +175,26 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 			log.Debugf("Generating matching endpoint %s with PodIP %s", headlessDomain, v.Status.PodIP)
 			// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
 			if v.Status.Phase == v1.PodRunning {
-				if ttl.IsConfigured() {
-					endpoints = append(endpoints, endpoint.NewEndpointWithTTL(headlessDomain, endpoint.RecordTypeA, ttl, v.Status.PodIP))
-				} else {
-					endpoints = append(endpoints, endpoint.NewEndpoint(headlessDomain, endpoint.RecordTypeA, v.Status.PodIP))
-				}
+				targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], v.Status.PodIP)
 			} else {
 				log.Debugf("Pod %s is not in running phase", v.Spec.Hostname)
 			}
 		}
 
+	}
+
+	headlessDomains := []string{}
+	for headlessDomain := range targetsByHeadlessDomain {
+		headlessDomains = append(headlessDomains, headlessDomain)
+	}
+	sort.Strings(headlessDomains)
+	for _, headlessDomain := range headlessDomains {
+		targets := targetsByHeadlessDomain[headlessDomain]
+		if ttl.IsConfigured() {
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(headlessDomain, endpoint.RecordTypeA, ttl, targets...))
+		} else {
+			endpoints = append(endpoints, endpoint.NewEndpoint(headlessDomain, endpoint.RecordTypeA, targets...))
+		}
 	}
 
 	return endpoints
