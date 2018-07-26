@@ -189,4 +189,3 @@ kafka-1.ksvc.example.org
 kafka-2.ksvc.example.org
 ```
 
-
