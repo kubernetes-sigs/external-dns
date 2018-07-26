@@ -45,6 +45,7 @@ type Config struct {
 	CombineFQDNAndAnnotation bool
 	Compatibility            string
 	PublishInternal          bool
+	PublishHostIP            bool
 	ConnectorSourceServer    string
 	Provider                 string
 	GoogleProject            string
@@ -101,6 +102,7 @@ var defaultConfig = &Config{
 	CombineFQDNAndAnnotation: false,
 	Compatibility:            "",
 	PublishInternal:          false,
+	PublishHostIP:            false,
 	ConnectorSourceServer:    "localhost:8080",
 	Provider:                 "",
 	GoogleProject:            "",
@@ -190,6 +192,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting").BoolVar(&cfg.CombineFQDNAndAnnotation)
 	app.Flag("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule)").Default(defaultConfig.Compatibility).EnumVar(&cfg.Compatibility, "", "mate", "molecule")
 	app.Flag("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)").BoolVar(&cfg.PublishInternal)
+	app.Flag("publish-host-ip", "Allow external-dns to publish host-ip for headless services (optional)").BoolVar(&cfg.PublishHostIP)
 	app.Flag("connector-source-server", "The server to connect for connector source, valid only when using connector source").Default(defaultConfig.ConnectorSourceServer).StringVar(&cfg.ConnectorSourceServer)
 
 	// Flags related to providers
