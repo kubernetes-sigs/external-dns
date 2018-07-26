@@ -132,7 +132,7 @@ func getTargetsFromTargetAnnotation(ing *v1beta1.Ingress) endpoint.Targets {
 
 	// Get the desired hostname of the ingress from the annotation.
 	targetAnnotation, exists := ing.Annotations[targetAnnotationKey]
-	if exists {
+	if exists && targetAnnotation != "" {
 		// splits the hostname annotation and removes the trailing periods
 		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
 		for _, targetHostname := range targetsList {
