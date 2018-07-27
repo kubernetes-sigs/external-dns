@@ -75,3 +75,7 @@ ignored = ["github.com/kubernetes/repo-infra/kazel"]
 [[constraint]]
   name = "github.com/oracle/oci-go-sdk"
   version = "1.8.0"
+
+[[constraint]]
+  name = "github.com/miekg/dns"
+  version = "1.0.8"
