@@ -75,6 +75,10 @@ func main() {
 		PublishInternal:          cfg.PublishInternal,
 		PublishHostIP:            cfg.PublishHostIP,
 		ConnectorServer:          cfg.ConnectorSourceServer,
+		CRDSourceAPIVersion:      cfg.CRDSourceAPIVersion,
+		CRDSourceKind:            cfg.CRDSourceKind,
+		KubeConfig:               cfg.KubeConfig,
+		KubeMaster:               cfg.Master,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
