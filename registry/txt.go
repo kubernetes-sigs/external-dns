@@ -125,6 +125,9 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 		Delete:    filterOwnedRecords(im.ownerID, changes.Delete),
 	}
 	for _, r := range filteredChanges.Create {
+		if r.Labels == nil {
+			r.Labels = make(map[string]string)
+		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
 		filteredChanges.Create = append(filteredChanges.Create, txt)
