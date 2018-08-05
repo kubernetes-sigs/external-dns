@@ -108,6 +108,14 @@
   revision = "4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9"
 
 [[projects]]
+  digest = "1:e62a9159a86473538057a322c49b65824cc32da865ace6cfc5ef1cacf3245226"
+  name = "github.com/chiefy/linodego"
+  packages = ["."]
+  pruneopts = ""
+  revision = "e7bd44d89fc5db41b43b8bce7278550a589d7ab6"
+  version = "v0.2.0"
+
+[[projects]]
   digest = "1:85fd00554a6ed5b33687684b76635d532c74141508b5bce2843d85e8a3c9dc91"
   name = "github.com/cloudflare/cloudflare-go"
   packages = ["."]
@@ -202,6 +210,14 @@
   pruneopts = ""
   revision = "32e4c1e6bc4e7d0d8451aa6b75200d19e37a536a"
   version = "v1.32.0"
+
+[[projects]]
+  digest = "1:8e67153fc0a9fb0d6c9707e36cf80e217a012364307b222eb4ba6828f7e881e6"
+  name = "github.com/go-resty/resty"
+  packages = ["."]
+  pruneopts = ""
+  revision = "97a15579492cd5f35632499f315d7a8df94160a1"
+  version = "v1.8.0"
 
 [[projects]]
   digest = "1:6e73003ecd35f4487a5e88270d3ca0a81bc80dc88053ac7e4dcfec5fba30d918"
@@ -822,6 +838,7 @@
     "github.com/aws/aws-sdk-go/aws/session",
     "github.com/aws/aws-sdk-go/service/route53",
     "github.com/aws/aws-sdk-go/service/servicediscovery",
+    "github.com/chiefy/linodego",
     "github.com/cloudflare/cloudflare-go",
     "github.com/coreos/etcd/client",
     "github.com/digitalocean/godo",
