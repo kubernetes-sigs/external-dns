@@ -121,6 +121,8 @@ func main() {
 		p, err = provider.NewGoogleProvider(cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.DryRun)
 	case "digitalocean":
 		p, err = provider.NewDigitalOceanProvider(domainFilter, cfg.DryRun)
+	case "linode":
+		p, err = provider.NewLinodeProvider(domainFilter, cfg.DryRun)
 	case "dnsimple":
 		p, err = provider.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "infoblox":
