@@ -25,10 +25,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
