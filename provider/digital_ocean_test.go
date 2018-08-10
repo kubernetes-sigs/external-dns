@@ -431,12 +431,13 @@ func TestDigitalOceanApplyChanges(t *testing.T) {
 	}
 	changes.Create = []*endpoint.Endpoint{
 		{DNSName: "new.ext-dns-test.bar.com", Targets: endpoint.Targets{"target"}},
+		{DNSName: "new.ext-dns-test-with-ttl.bar.com", Targets: endpoint.Targets{"target"}, RecordTTL: 100},
 		{DNSName: "new.ext-dns-test.unexpected.com", Targets: endpoint.Targets{"target"}},
 		{DNSName: "bar.com", Targets: endpoint.Targets{"target"}},
 	}
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.bar.com", Targets: endpoint.Targets{"target"}}}
 	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.bar.de", Targets: endpoint.Targets{"target-old"}}}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.foo.com", Targets: endpoint.Targets{"target-new"}, RecordType: "CNAME"}}
+	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.foo.com", Targets: endpoint.Targets{"target-new"}, RecordType: "CNAME", RecordTTL: 100}}
 	err := provider.ApplyChanges(changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)

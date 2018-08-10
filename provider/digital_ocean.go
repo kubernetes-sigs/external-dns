@@ -38,6 +38,9 @@ const (
 	DigitalOceanDelete = "DELETE"
 	// DigitalOceanUpdate is a ChangeAction enum value
 	DigitalOceanUpdate = "UPDATE"
+
+	// digitalOceanRecordTTL is the default TTL value
+	digitalOceanRecordTTL = 300
 )
 
 // DigitalOceanProvider is an implementation of Provider for Digital Ocean's DNS.
@@ -196,6 +199,7 @@ func (p *DigitalOceanProvider) submitChanges(changes []*DigitalOceanChange) erro
 			logFields := log.Fields{
 				"record": change.ResourceRecordSet.Name,
 				"type":   change.ResourceRecordSet.Type,
+				"ttl":    change.ResourceRecordSet.TTL,
 				"action": change.Action,
 				"zone":   zoneName,
 			}
@@ -227,6 +231,7 @@ func (p *DigitalOceanProvider) submitChanges(changes []*DigitalOceanChange) erro
 						Data: change.ResourceRecordSet.Data,
 						Name: change.ResourceRecordSet.Name,
 						Type: change.ResourceRecordSet.Type,
+						TTL:  change.ResourceRecordSet.TTL,
 					})
 				if err != nil {
 					return err
@@ -244,6 +249,7 @@ func (p *DigitalOceanProvider) submitChanges(changes []*DigitalOceanChange) erro
 						Data: change.ResourceRecordSet.Data,
 						Name: change.ResourceRecordSet.Name,
 						Type: change.ResourceRecordSet.Type,
+						TTL:  change.ResourceRecordSet.TTL,
 					})
 				if err != nil {
 					return err
@@ -277,12 +283,19 @@ func newDigitalOceanChanges(action string, endpoints []*endpoint.Endpoint) []*Di
 }
 
 func newDigitalOceanChange(action string, endpoint *endpoint.Endpoint) *DigitalOceanChange {
+	// no annotation results in a TTL of 0, default to 300 for consistency with other providers
+	var ttl = digitalOceanRecordTTL
+	if endpoint.RecordTTL.IsConfigured() {
+		ttl = int(endpoint.RecordTTL)
+	}
+
 	change := &DigitalOceanChange{
 		Action: action,
 		ResourceRecordSet: godo.DomainRecord{
 			Name: endpoint.DNSName,
 			Type: endpoint.RecordType,
 			Data: endpoint.Targets[0],
+			TTL:  ttl,
 		},
 	}
 	return change
