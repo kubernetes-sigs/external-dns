@@ -38,6 +38,9 @@ const (
 	// may be made configurable in the future but 20K records seems like enough for a few zones
 	cacheMaxSize = 20000
 
+	// when rate limit is hit retry up to 5 times after sleep 1m between retries
+	dynMaxRetriesOnErrRateLimited = 5
+
 	// two consecutive bad logins happen at least this many seconds appart
 	// While it is easy to get the username right, misconfiguring the password
 	// can get account blocked. Exit(1) is not a good solution
@@ -62,6 +65,7 @@ type entry struct {
 func (c *cache) Put(link string, ep *endpoint.Endpoint) {
 	// flush the whole cache on overflow
 	if len(c.contents) >= cacheMaxSize {
+		log.Debugf("Flushing cache")
 		c.contents = make(map[string]*entry)
 	}
 
@@ -136,8 +140,8 @@ type ZonePublishRequest struct {
 	Notes   string `json:"notes"`
 }
 
-// ZonePublisResponse holds the status after publish
-type ZonePublisResponse struct {
+// ZonePublishResponse holds the status after publish
+type ZonePublishResponse struct {
 	dynect.ResponseBlock
 	Data map[string]interface{} `json:"data"`
 }
@@ -158,11 +162,10 @@ func filterAndFixLinks(links []string, filter DomainFilter) []string {
 	var result []string
 	for _, link := range links {
 
-		link = strings.TrimPrefix(link, restAPIPrefix)
+		// link looks like /REST/CNAMERecord/acme.com/exchange.acme.com/349386875
 
-		// covert resource link to just the FQDN so we can filter on it
-		domain := link[0:strings.LastIndexByte(link, '/')]
-		domain = domain[strings.LastIndexByte(domain, '/')+1:]
+		// strip /REST/
+		link = strings.TrimPrefix(link, restAPIPrefix)
 
 		// simply ignore all record types we don't care about
 		if !strings.HasPrefix(link, endpoint.RecordTypeA) &&
@@ -171,6 +174,10 @@ func filterAndFixLinks(links []string, filter DomainFilter) []string {
 			continue
 		}
 
+		// strip ID suffix
+		domain := link[0:strings.LastIndexByte(link, '/')]
+		// strip zone prefix
+		domain = domain[strings.LastIndexByte(domain, '/')+1:]
 		if filter.Match(domain) {
 			result = append(result, link)
 		}
@@ -251,6 +258,23 @@ func extractTarget(recType string, data *dynect.DataBlock) string {
 	return result
 }
 
+func apiRetryLoop(f func() error) error {
+	var err error
+	for i := 0; i < dynMaxRetriesOnErrRateLimited; i++ {
+		err = f()
+		if err == nil || err != dynect.ErrRateLimited {
+			// success or not retryable error
+			return err
+		}
+
+		// https://help.dyn.com/managed-dns-api-rate-limit/
+		log.Debugf("Rate limit has been hit, sleeping for 1m (%d/%d)", i, dynMaxRetriesOnErrRateLimited)
+		time.Sleep(1 * time.Minute)
+	}
+
+	return err
+}
+
 // recordLinkToEndpoint makes an Endpoint given a resource link optinally making a remote call if a cached entry is expired
 func (d *dynProviderState) recordLinkToEndpoint(client *dynect.Client, recordLink string) (*endpoint.Endpoint, error) {
 	result := d.Cache.Get(recordLink)
@@ -260,7 +284,11 @@ func (d *dynProviderState) recordLinkToEndpoint(client *dynect.Client, recordLin
 	}
 
 	rec := dynect.RecordResponse{}
-	err := client.Do("GET", recordLink, nil, &rec)
+
+	err := apiRetryLoop(func() error {
+		return client.Do("GET", recordLink, nil, &rec)
+	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -409,7 +437,11 @@ func (d *dynProviderState) deleteRecord(client *dynect.Client, ep *endpoint.Endp
 	}
 
 	response := dynect.RecordResponse{}
-	err := client.Do("DELETE", link, nil, &response)
+
+	err := apiRetryLoop(func() error {
+		return client.Do("DELETE", link, nil, &response)
+	})
+
 	log.Debugf("Deleting record %s: %+v,", link, errorOrValue(err, &response))
 	return err
 }
@@ -422,7 +454,10 @@ func (d *dynProviderState) replaceRecord(client *dynect.Client, ep *endpoint.End
 	}
 
 	response := dynect.RecordResponse{}
-	err := client.Do("PUT", link, record, &response)
+	err := apiRetryLoop(func() error {
+		return client.Do("PUT", link, record, &response)
+	})
+
 	log.Debugf("Replacing record %s: %+v,", link, errorOrValue(err, &response))
 	return err
 }
@@ -435,7 +470,10 @@ func (d *dynProviderState) createRecord(client *dynect.Client, ep *endpoint.Endp
 	}
 
 	response := dynect.RecordResponse{}
-	err := client.Do("POST", link, record, &response)
+	err := apiRetryLoop(func() error {
+		return client.Do("POST", link, record, &response)
+	})
+
 	log.Debugf("Creating record %s: %+v,", link, errorOrValue(err, &response))
 	return err
 }
@@ -468,8 +506,12 @@ func (d *dynProviderState) commit(client *dynect.Client) error {
 			Notes:   notes,
 		}
 
-		response := ZonePublisResponse{}
-		err = client.Do("PUT", fmt.Sprintf("Zone/%s/", zone), &zonePublish, &response)
+		response := ZonePublishResponse{}
+
+		// always retry the commit: don't waste the good work so far
+		err = apiRetryLoop(func() error {
+			return client.Do("PUT", fmt.Sprintf("Zone/%s/", zone), &zonePublish, &response)
+		})
 		log.Infof("Commiting changes for zone %s: %+v", zone, errorOrValue(err, &response))
 	}
 
