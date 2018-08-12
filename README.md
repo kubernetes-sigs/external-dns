@@ -28,7 +28,7 @@ ExternalDNS' current release is `v0.5`. This version allows you to keep selected
 * [AWS Route 53](https://aws.amazon.com/route53/)
 * [AWS Service Discovery](https://docs.aws.amazon.com/Route53/latest/APIReference/overview-service-discovery.html)
 * [AzureDNS](https://azure.microsoft.com/en-us/services/dns)
-* [CloudFlare](https://www.cloudflare.com/de/dns)
+* [CloudFlare](https://www.cloudflare.com/dns)
 * [DigitalOcean](https://www.digitalocean.com/products/networking)
 * [DNSimple](https://dnsimple.com/)
 * [Infoblox](https://www.infoblox.com/products/dns/)
