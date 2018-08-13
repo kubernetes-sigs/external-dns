@@ -108,11 +108,47 @@ type DynConfig struct {
 	DynVersion    string
 }
 
+// ZoneSnapshot stores a single recordset for a zone for a single serial
+type ZoneSnapshot struct {
+	serials   map[string]int
+	endpoints map[string][]*endpoint.Endpoint
+}
+
+// GetRecordsForSerial retrieves from memory the last known recordset for the (zone, serial) tuple
+func (snap *ZoneSnapshot) GetRecordsForSerial(zone string, serial int) []*endpoint.Endpoint {
+	lastSerial, ok := snap.serials[zone]
+	if !ok {
+		// no mapping
+		return nil
+	}
+
+	if lastSerial != serial {
+		// outdated mapping
+		return nil
+	}
+
+	endpoints, ok := snap.endpoints[zone]
+	if !ok {
+		// probably a bug
+		return nil
+	}
+
+	return endpoints
+}
+
+// StoreRecordsForSerial associates a result set with a (zone, serial)
+func (snap *ZoneSnapshot) StoreRecordsForSerial(zone string, serial int, records []*endpoint.Endpoint) {
+	snap.serials[zone] = serial
+	snap.endpoints[zone] = records
+}
+
 // DynProvider is the actual interface impl.
 type dynProviderState struct {
 	DynConfig
 	Cache              *cache
 	LastLoginErrorTime int64
+
+	ZoneSnapshot *ZoneSnapshot
 }
 
 // ZoneChange is missing from dynect: https://help.dyn.com/get-zone-changeset-api/
@@ -152,6 +188,10 @@ func NewDynProvider(config DynConfig) (Provider, error) {
 		DynConfig: config,
 		Cache: &cache{
 			contents: make(map[string]*entry),
+		},
+		ZoneSnapshot: &ZoneSnapshot{
+			endpoints: map[string][]*endpoint.Endpoint{},
+			serials:   map[string]int{},
 		},
 	}, nil
 }
@@ -333,6 +373,18 @@ func endpointToRecord(ep *endpoint.Endpoint) *dynect.DataBlock {
 	}
 
 	return &result
+}
+
+func (d *dynProviderState) fetchZoneSerial(client *dynect.Client, zone string) (int, error) {
+	var resp dynect.ZoneResponse
+
+	err := client.Do("GET", fmt.Sprintf("Zone/%s", zone), nil, &resp)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return resp.Data.Serial, nil
 }
 
 // fetchAllRecordLinksInZone list all records in a zone with a single call. Records not matched by the
@@ -540,14 +592,31 @@ func (d *dynProviderState) Records() ([]*endpoint.Endpoint, error) {
 	var result []*endpoint.Endpoint
 
 	zones := d.zones(client)
-	log.Infof("Zones found: %+v", zones)
+	log.Infof("Configured zones: %+v", zones)
 	for _, zone := range zones {
+		serial, err := d.fetchZoneSerial(client, zone)
+		if err != nil {
+			if strings.Index(err.Error(), "404 Not Found") >= 0 {
+				log.Infof("Ignore zone %s as it does not exists", zone)
+				continue
+			}
+
+			return nil, err
+		}
+
+		relevantRecords := d.ZoneSnapshot.GetRecordsForSerial(zone, serial)
+		if relevantRecords != nil {
+			log.Infof("Using %d cached records for zone %s@%d", len(relevantRecords), zone, serial)
+			result = append(result, relevantRecords...)
+			continue
+		}
+
 		recordLinks, err := d.fetchAllRecordLinksInZone(client, zone)
 		if err != nil {
 			return nil, err
 		}
 
-		log.Infof("Relevant records found in zone %s: %+v", zone, recordLinks)
+		log.Infof("Found %d relevant records found in zone %s: %+v", len(recordLinks), zone, recordLinks)
 		for _, link := range recordLinks {
 			ep, err := d.recordLinkToEndpoint(client, link)
 			if err != nil {
@@ -555,9 +624,13 @@ func (d *dynProviderState) Records() ([]*endpoint.Endpoint, error) {
 			}
 
 			if ep != nil {
-				result = append(result, ep)
+				relevantRecords = append(relevantRecords, ep)
 			}
 		}
+
+		d.ZoneSnapshot.StoreRecordsForSerial(zone, serial, relevantRecords)
+		log.Infof("Stored %d records for %s@%d", len(relevantRecords), zone, serial)
+		result = append(result, relevantRecords...)
 	}
 
 	return result, nil
