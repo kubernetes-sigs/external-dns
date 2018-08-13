@@ -85,7 +85,12 @@ func (c *Controller) RunOnce() error {
 
 	plan = plan.Calculate()
 
-	return c.Registry.ApplyChanges(plan.Changes)
+	err = c.Registry.ApplyChanges(plan.Changes)
+	if err != nil {
+		registryErrors.WithLabelValues("write").Inc()
+		return err
+	}
+	return nil
 }
 
 // Run runs RunOnce in a loop with a delay until stopChan receives a value.
