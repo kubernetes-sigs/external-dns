@@ -28,11 +28,12 @@ import (
 )
 
 var (
-	registryErrors = prometheus.NewCounter(
+	registryErrors = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "registry_errors_total",
 			Help: "Number of Registry errors.",
 		},
+		[]string{"action"},
 	)
 	sourceErrors = prometheus.NewCounter(
 		prometheus.CounterOpts{
@@ -66,7 +67,7 @@ type Controller struct {
 func (c *Controller) RunOnce() error {
 	records, err := c.Registry.Records()
 	if err != nil {
-		registryErrors.Inc()
+		registryErrors.WithLabelValues("read").Inc()
 		return err
 	}
 
