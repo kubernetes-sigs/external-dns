@@ -58,7 +58,7 @@ ignored = ["github.com/kubernetes/repo-infra/kazel"]
 
 [[constraint]]
   name = "k8s.io/client-go"
-  version = "~3.0.0-beta.0"
+  version = "~8.0.0"
 
 [[override]]
   name = "github.com/kubernetes/repo-infra"
@@ -75,3 +75,7 @@ ignored = ["github.com/kubernetes/repo-infra/kazel"]
 [[constraint]]
   name = "github.com/oracle/oci-go-sdk"
   version = "1.8.0"
+
+[[constraint]]
+  name = "github.com/chiefy/linodego"
+  version = "0.2.0"

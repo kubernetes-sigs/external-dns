@@ -822,6 +822,7 @@
     "github.com/aws/aws-sdk-go/aws/session",
     "github.com/aws/aws-sdk-go/service/route53",
     "github.com/aws/aws-sdk-go/service/servicediscovery",
+    "github.com/chiefy/linodego",
     "github.com/cloudflare/cloudflare-go",
     "github.com/coreos/etcd/client",
     "github.com/digitalocean/godo",
