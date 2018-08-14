@@ -26,6 +26,7 @@ Providers
 - [x] DigitalOcean
 - [x] Google
 - [ ] InMemory
+- [x] Linode
 
 PRs welcome!
 
@@ -48,3 +49,6 @@ This value is a constant in the provider code.
 
 For the moment, it is impossible to use a TTL value of 0 with the AWS, DigitalOcean, or Google Providers.
 This behavior may change in the future.
+
+### Linode Provider
+The Linode Provider default TTL is used when the TTL is 0. The default is 24 hours 
