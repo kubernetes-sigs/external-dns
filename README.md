@@ -61,6 +61,7 @@ The following tutorials are provided:
 	* [Using the Nginx Ingress Controller](docs/tutorials/nginx-ingress.md)
 * [Exoscale](docs/tutorials/exoscale.md)
 * [Oracle Cloud Infrastructure (OCI) DNS](docs/tutorials/oracle.md)
+* [Linode](docs/tutorials/linode.md)
 
 ## Running Locally
 
