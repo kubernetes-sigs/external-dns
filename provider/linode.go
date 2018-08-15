@@ -23,7 +23,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/chiefy/linodego"
+	"github.com/linode/linodego"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 
@@ -76,7 +76,7 @@ type LinodeChangeDelete struct {
 }
 
 // NewLinodeProvider initializes a new Linode DNS based Provider.
-func NewLinodeProvider(domainFilter DomainFilter, dryRun bool) (*LinodeProvider, error) {
+func NewLinodeProvider(domainFilter DomainFilter, dryRun bool, appVersion string) (*LinodeProvider, error) {
 	token, ok := os.LookupEnv("LINODE_TOKEN")
 	if !ok {
 		return nil, fmt.Errorf("no token found")
@@ -91,6 +91,7 @@ func NewLinodeProvider(domainFilter DomainFilter, dryRun bool) (*LinodeProvider,
 	}
 
 	linodeClient := linodego.NewClient(oauth2Client)
+	linodeClient.SetUserAgent(fmt.Sprintf("ExternalDNS/%s linodego/%s", appVersion, linodego.Version))
 
 	provider := &LinodeProvider{
 		Client:       &linodeClient,
