@@ -38,6 +38,7 @@ var (
 type Config struct {
 	Master                   string
 	KubeConfig               string
+	RequestTimeout           time.Duration
 	Sources                  []string
 	Namespace                string
 	AnnotationFilter         string
@@ -95,6 +96,7 @@ type Config struct {
 var defaultConfig = &Config{
 	Master:                   "",
 	KubeConfig:               "",
+	RequestTimeout:           time.Second * 30,
 	Sources:                  nil,
 	Namespace:                "",
 	AnnotationFilter:         "",
@@ -183,6 +185,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	// Flags related to Kubernetes
 	app.Flag("master", "The Kubernetes API server to connect to (default: auto-detect)").Default(defaultConfig.Master).StringVar(&cfg.Master)
 	app.Flag("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)").Default(defaultConfig.KubeConfig).StringVar(&cfg.KubeConfig)
+	app.Flag("request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout").Default(defaultConfig.RequestTimeout.String()).DurationVar(&cfg.RequestTimeout)
 
 	// Flags related to processing sources
 	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, fake, connector)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "fake", "connector")

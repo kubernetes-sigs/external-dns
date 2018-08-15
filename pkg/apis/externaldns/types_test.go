@@ -31,6 +31,7 @@ var (
 	minimalConfig = &Config{
 		Master:                  "",
 		KubeConfig:              "",
+		RequestTimeout:          time.Second * 30,
 		Sources:                 []string{"service"},
 		Namespace:               "",
 		FQDNTemplate:            "",
@@ -76,6 +77,7 @@ var (
 	overriddenConfig = &Config{
 		Master:                  "http://127.0.0.1:8080",
 		KubeConfig:              "/some/path",
+		RequestTimeout:          time.Second * 77,
 		Sources:                 []string{"service", "ingress", "connector"},
 		Namespace:               "namespace",
 		FQDNTemplate:            "{{.Name}}.service.example.com",
@@ -144,6 +146,7 @@ func TestParseFlags(t *testing.T) {
 			args: []string{
 				"--master=http://127.0.0.1:8080",
 				"--kubeconfig=/some/path",
+				"--request-timeout=77s",
 				"--source=service",
 				"--source=ingress",
 				"--source=connector",
@@ -203,6 +206,7 @@ func TestParseFlags(t *testing.T) {
 			envVars: map[string]string{
 				"EXTERNAL_DNS_MASTER":                     "http://127.0.0.1:8080",
 				"EXTERNAL_DNS_KUBECONFIG":                 "/some/path",
+				"EXTERNAL_DNS_REQUEST_TIMEOUT":            "77s",
 				"EXTERNAL_DNS_SOURCE":                     "service\ningress\nconnector",
 				"EXTERNAL_DNS_NAMESPACE":                  "namespace",
 				"EXTERNAL_DNS_FQDN_TEMPLATE":              "{{.Name}}.service.example.com",
