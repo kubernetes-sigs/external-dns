@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"sync"
 
@@ -53,9 +54,10 @@ type ClientGenerator interface {
 // SingletonClientGenerator stores provider clients and guarantees that only one instance of client
 // will be generated
 type SingletonClientGenerator struct {
-	KubeConfig string
-	KubeMaster string
-	client     kubernetes.Interface
+	KubeConfig     string
+	KubeMaster     string
+	RequestTimeout time.Duration
+	client         kubernetes.Interface
 	sync.Once
 }
 
@@ -63,7 +65,7 @@ type SingletonClientGenerator struct {
 func (p *SingletonClientGenerator) KubeClient() (kubernetes.Interface, error) {
 	var err error
 	p.Once.Do(func() {
-		p.client, err = NewKubeClient(p.KubeConfig, p.KubeMaster)
+		p.client, err = NewKubeClient(p.KubeConfig, p.KubeMaster, p.RequestTimeout)
 	})
 	return p.client, err
 }
@@ -108,7 +110,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 // NewKubeClient returns a new Kubernetes client object. It takes a Config and
 // uses KubeMaster and KubeConfig attributes to connect to the cluster. If
 // KubeConfig isn't provided it defaults to using the recommended default.
-func NewKubeClient(kubeConfig, kubeMaster string) (*kubernetes.Clientset, error) {
+func NewKubeClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) (*kubernetes.Clientset, error) {
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
 			kubeConfig = clientcmd.RecommendedHomeFile
@@ -128,6 +130,8 @@ func NewKubeClient(kubeConfig, kubeMaster string) (*kubernetes.Clientset, error)
 			},
 		})
 	}
+
+	config.Timeout = requestTimeout
 
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
