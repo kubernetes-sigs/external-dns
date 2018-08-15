@@ -23,6 +23,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	sd "github.com/aws/aws-sdk-go/service/servicediscovery"
@@ -69,7 +70,7 @@ type AWSSDProvider struct {
 }
 
 // NewAWSSDProvider initializes a new AWS Route53 Auto Naming based Provider.
-func NewAWSSDProvider(domainFilter DomainFilter, namespaceType string, dryRun bool) (*AWSSDProvider, error) {
+func NewAWSSDProvider(domainFilter DomainFilter, namespaceType string, assumeRole string, dryRun bool) (*AWSSDProvider, error) {
 	config := aws.NewConfig()
 
 	config = config.WithHTTPClient(
@@ -88,6 +89,12 @@ func NewAWSSDProvider(domainFilter DomainFilter, namespaceType string, dryRun bo
 	if err != nil {
 		return nil, err
 	}
+
+	if assumeRole != "" {
+		log.Infof("Assuming role: %s", assumeRole)
+		sess.Config.WithCredentials(stscreds.NewCredentials(sess, assumeRole))
+	}
+
 	sess.Handlers.Build.PushBack(request.MakeAddToUserAgentHandler("ExternalDNS", externaldns.Version))
 
 	provider := &AWSSDProvider{
