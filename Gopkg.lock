@@ -108,14 +108,6 @@
   revision = "4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9"
 
 [[projects]]
-  digest = "1:e62a9159a86473538057a322c49b65824cc32da865ace6cfc5ef1cacf3245226"
-  name = "github.com/chiefy/linodego"
-  packages = ["."]
-  pruneopts = ""
-  revision = "e7bd44d89fc5db41b43b8bce7278550a589d7ab6"
-  version = "v0.2.0"
-
-[[projects]]
   digest = "1:85fd00554a6ed5b33687684b76635d532c74141508b5bce2843d85e8a3c9dc91"
   name = "github.com/cloudflare/cloudflare-go"
   packages = ["."]
@@ -366,6 +358,14 @@
   pruneopts = ""
   revision = "508103cfb3b315fa9752b5bcd4fb2d97bbc26d89"
   version = "v0.2.0"
+
+[[projects]]
+  digest = "1:1c41354ef11c9dbae2fe1ceee8369fcb2634977ba07e701e19ea53e8742c5420"
+  name = "github.com/linode/linodego"
+  packages = ["."]
+  pruneopts = ""
+  revision = "7edbc87f0140b7561dbc20458877a56bdded5eb8"
+  version = "v0.3.0"
 
 [[projects]]
   branch = "master"
@@ -838,7 +838,6 @@
     "github.com/aws/aws-sdk-go/aws/session",
     "github.com/aws/aws-sdk-go/service/route53",
     "github.com/aws/aws-sdk-go/service/servicediscovery",
-    "github.com/chiefy/linodego",
     "github.com/cloudflare/cloudflare-go",
     "github.com/coreos/etcd/client",
     "github.com/digitalocean/godo",
@@ -854,6 +853,7 @@
     "github.com/infobloxopen/infoblox-go-client",
     "github.com/kubernetes/repo-infra/verify/boilerplate/test",
     "github.com/linki/instrumented_http",
+    "github.com/linode/linodego",
     "github.com/nesv/go-dynect/dynect",
     "github.com/oracle/oci-go-sdk/common",
     "github.com/oracle/oci-go-sdk/dns",

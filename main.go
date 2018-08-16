@@ -123,7 +123,7 @@ func main() {
 	case "digitalocean":
 		p, err = provider.NewDigitalOceanProvider(domainFilter, cfg.DryRun)
 	case "linode":
-		p, err = provider.NewLinodeProvider(domainFilter, cfg.DryRun)
+		p, err = provider.NewLinodeProvider(domainFilter, cfg.DryRun, externaldns.Version)
 	case "dnsimple":
 		p, err = provider.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "infoblox":
