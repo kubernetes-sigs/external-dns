@@ -21,9 +21,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/chiefy/linodego"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/linode/linodego"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -137,11 +137,11 @@ func TestLinodeConvertRecordType(t *testing.T) {
 
 func TestNewLinodeProvider(t *testing.T) {
 	_ = os.Setenv("LINODE_TOKEN", "xxxxxxxxxxxxxxxxx")
-	_, err := NewLinodeProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
+	_, err := NewLinodeProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true, "1.0")
 	require.NoError(t, err)
 
 	_ = os.Unsetenv("LINODE_TOKEN")
-	_, err = NewLinodeProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
+	_, err = NewLinodeProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true, "1.0")
 	require.Error(t, err)
 }
 

@@ -79,8 +79,9 @@ func main() {
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
 	sources, err := source.ByNames(&source.SingletonClientGenerator{
-		KubeConfig: cfg.KubeConfig,
-		KubeMaster: cfg.Master,
+		KubeConfig:     cfg.KubeConfig,
+		KubeMaster:     cfg.Master,
+		RequestTimeout: cfg.RequestTimeout,
 	}, cfg.Sources, sourceCfg)
 	if err != nil {
 		log.Fatal(err)
@@ -122,7 +123,7 @@ func main() {
 	case "digitalocean":
 		p, err = provider.NewDigitalOceanProvider(domainFilter, cfg.DryRun)
 	case "linode":
-		p, err = provider.NewLinodeProvider(domainFilter, cfg.DryRun)
+		p, err = provider.NewLinodeProvider(domainFilter, cfg.DryRun, externaldns.Version)
 	case "dnsimple":
 		p, err = provider.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "infoblox":
