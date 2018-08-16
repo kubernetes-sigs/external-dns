@@ -143,10 +143,10 @@ func NewGoogleProvider(project string, domainFilter DomainFilter, zoneIDFilter Z
 	}
 
 	provider := &GoogleProvider{
-		project:                  project,
-		domainFilter:             domainFilter,
-		zoneIDFilter:             zoneIDFilter,
-		dryRun:                   dryRun,
+		project:      project,
+		domainFilter: domainFilter,
+		zoneIDFilter: zoneIDFilter,
+		dryRun:       dryRun,
 		resourceRecordSetsClient: resourceRecordSetsService{dnsClient.ResourceRecordSets},
 		managedZonesClient:       managedZonesService{dnsClient.ManagedZones},
 		changesClient:            changesService{dnsClient.Changes},

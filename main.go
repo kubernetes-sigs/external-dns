@@ -79,8 +79,9 @@ func main() {
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
 	sources, err := source.ByNames(&source.SingletonClientGenerator{
-		KubeConfig: cfg.KubeConfig,
-		KubeMaster: cfg.Master,
+		KubeConfig:     cfg.KubeConfig,
+		KubeMaster:     cfg.Master,
+		RequestTimeout: cfg.RequestTimeout,
 	}, cfg.Sources, sourceCfg)
 	if err != nil {
 		log.Fatal(err)

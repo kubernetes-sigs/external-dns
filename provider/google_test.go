@@ -569,10 +569,10 @@ func validateChangeRecord(t *testing.T, record *dns.ResourceRecordSet, expected 
 
 func newGoogleProvider(t *testing.T, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, records []*endpoint.Endpoint) *GoogleProvider {
 	provider := &GoogleProvider{
-		project:                  "zalando-external-dns-test",
-		domainFilter:             domainFilter,
-		zoneIDFilter:             zoneIDFilter,
-		dryRun:                   false,
+		project:      "zalando-external-dns-test",
+		domainFilter: domainFilter,
+		zoneIDFilter: zoneIDFilter,
+		dryRun:       false,
 		resourceRecordSetsClient: &mockResourceRecordSetsClient{},
 		managedZonesClient:       &mockManagedZonesClient{},
 		changesClient:            &mockChangesClient{},
