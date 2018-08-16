@@ -299,3 +299,48 @@ func TestDyn_cachePutExpired(t *testing.T) {
 
 	assert.Nil(t, c.Get("no-such-records"))
 }
+
+func TestDyn_Snapshot(t *testing.T) {
+	snap := ZoneSnapshot{
+		serials:   map[string]int{},
+		endpoints: map[string][]*endpoint.Endpoint{},
+	}
+
+	recs := []*endpoint.Endpoint{
+		{
+			DNSName:    "name",
+			Targets:    endpoint.Targets{"target"},
+			RecordTTL:  endpoint.TTL(10000),
+			RecordType: "A",
+		},
+	}
+
+	snap.StoreRecordsForSerial("test", 12, recs)
+
+	cached := snap.GetRecordsForSerial("test", 12)
+	assert.Equal(t, recs, cached)
+
+	cached = snap.GetRecordsForSerial("test", 999)
+	assert.Nil(t, cached)
+
+	cached = snap.GetRecordsForSerial("sfas", 12)
+	assert.Nil(t, cached)
+
+	recs2 := []*endpoint.Endpoint{
+		{
+			DNSName:    "name",
+			Targets:    endpoint.Targets{"target2"},
+			RecordTTL:  endpoint.TTL(100),
+			RecordType: "CNAME",
+		},
+	}
+
+	// update zone with different records and newer serial
+	snap.StoreRecordsForSerial("test", 13, recs2)
+
+	cached = snap.GetRecordsForSerial("test", 13)
+	assert.Equal(t, recs2, cached)
+
+	cached = snap.GetRecordsForSerial("test", 12)
+	assert.Nil(t, cached)
+}
