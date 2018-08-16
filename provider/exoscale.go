@@ -139,11 +139,13 @@ func (ep *ExoscaleProvider) ApplyChanges(changes *plan.Changes) error {
 			}
 		}
 	}
+
 	for _, epoint := range changes.UpdateOld {
 		// Since Exoscale "Patches", we ignore UpdateOld
 		// We leave this logging here for information
 		log.Debugf("UPDATE-OLD (ignored) for epoint: %+v", epoint)
 	}
+
 	for _, epoint := range changes.Delete {
 		if ep.domain.Match(epoint.DNSName) {
 			if zoneID, name := ep.filter.EndpointZoneID(epoint, zones); zoneID != 0 {
@@ -171,19 +173,19 @@ func (ep *ExoscaleProvider) ApplyChanges(changes *plan.Changes) error {
 func (ep *ExoscaleProvider) Records() ([]*endpoint.Endpoint, error) {
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	dom, err := ep.client.GetDomains()
+	domains, err := ep.client.GetDomains()
 	if err != nil {
 		return nil, err
 	}
 
-	for _, d := range dom {
+	for _, d := range domains {
 		record, err := ep.client.GetRecords(d.Name)
 		if err != nil {
 			return nil, err
 		}
 		for _, r := range record {
 			switch r.RecordType {
-			case "A", "CNAME", "TXT":
+			case egoscale.A.String(), egoscale.CNAME.String(), egoscale.TXT.String():
 				break
 			default:
 				continue
@@ -240,7 +242,7 @@ func (f *zoneFilter) Zones(zones map[int64]string) map[int64]string {
 }
 
 // EndpointZoneID determines zoneID for endpoint from map[zoneID]zoneName by taking longest suffix zoneName match in endpoint DNSName
-// returns 0 if no match found
+// returns 0 if no matches are found
 func (f *zoneFilter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[int64]string) (zoneID int64, name string) {
 	var matchZoneID int64
 	var matchZoneName string
