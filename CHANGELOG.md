@@ -1,4 +1,23 @@
-  - Add aws evaluate target health flag (#628) @peterbale
+## v0.5.5 - 2018-08-17
+
+  - Configure req timeout calling k8s APIs (#681) @jvassev
+  - Adding assume role to aws_sd provider (#676) @lb-saildrone
+  - Dyn: cache records per zone using zone's serial number (#675) @jvassev
+  - Linode provider (#674) @cliedeman
+  - Cloudflare Link Language Specificity (#673) @christopherhein
+  - Retry calls to dyn on ErrRateLimited (#671) @jvassev
+  - Add support to configure TTLs on DigitalOcean (#667) @andrewsomething
+  - Log level warning option (#664) @george-angel
+  - Fix usage of k8s.io/client-go package (#655) @shashidharatd
+  - Fix for empty target annotation (#647) @rdrgmnzs
+  - Fix log message for #592 when no updates in hosted zones (#634) @audip
+  - Add aws-evaluate-target-health flag (#628) @peterbale
+  - Exoscale provider (#625) @FaKod @greut
+  - Oracle Cloud Infrastructure DNS provider (#626) @prydie
+  - Update DO CNAME type API request to prevent error 422 (#624) @nenadilic84
+  - Fix typo in cloudflare.md (#623) @derekperkins
+  - Infoblox-go-client was only setting timeout for http.Transport.ResponseHeaderTimeout instead of for http.Client (#615) @khrisrichardson
+  - Adding a flag to optionally publish hostIP instead of podIP for headless services (#597) @Arttii
 
 ## v0.5.4 - 2018-06-28
 
