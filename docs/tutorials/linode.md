@@ -2,7 +2,7 @@
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using Linode DNS Manager.
 
-Make sure to use **>=0.6.0** version of ExternalDNS for this tutorial.
+Make sure to use **>=0.5.5** version of ExternalDNS for this tutorial.
 
 ## Managing DNS with Linode
 
