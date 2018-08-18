@@ -27,4 +27,8 @@ MAINTAINER Team Teapot @ Zalando SE <team-teapot@zalando.de>
 
 COPY --from=builder /go/src/github.com/kubernetes-incubator/external-dns/build/external-dns /bin/external-dns
 
+RUN adduser -h / -s /bin/false -D -H external-dns
+
+USER external-dns
+
 ENTRYPOINT ["/bin/external-dns"]
