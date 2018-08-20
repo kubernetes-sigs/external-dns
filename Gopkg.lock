@@ -858,6 +858,7 @@
     "github.com/oracle/oci-go-sdk/common",
     "github.com/oracle/oci-go-sdk/dns",
     "github.com/pkg/errors",
+    "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",
     "github.com/sirupsen/logrus",
     "github.com/stretchr/testify/assert",
