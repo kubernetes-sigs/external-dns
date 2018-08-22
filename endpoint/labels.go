@@ -52,8 +52,8 @@ func NewLabels() Labels {
 // NewLabelsFromString constructs endpoints labels from a provided format string
 // if heritage set to another value is found then error is returned
 // no heritage automatically assumes is not owned by external-dns and returns invalidHeritage error
-func NewLabelsFromString(labelText string) (Labels, error) {
-	endpointLabels := map[string]string{}
+func NewLabelsFromString(existingLabels map[string]string, labelText string) (Labels, error) {
+	endpointLabels := existingLabels
 	labelText = strings.Trim(labelText, "\"") // drop quotes
 	tokens := strings.Split(labelText, ",")
 	foundExternalDNSHeritage := false

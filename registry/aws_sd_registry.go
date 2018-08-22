@@ -50,7 +50,7 @@ func (sdr *AWSSDRegistry) Records() ([]*endpoint.Endpoint, error) {
 	}
 
 	for _, record := range records {
-		labels, err := endpoint.NewLabelsFromString(record.Labels[endpoint.AWSSDDescriptionLabel])
+		labels, err := endpoint.NewLabelsFromString(endpoint.NewLabels(), record.Labels[endpoint.AWSSDDescriptionLabel])
 		if err != nil {
 			// if we fail to parse the output then simply assume the endpoint is not managed by any instance of External DNS
 			record.Labels = endpoint.NewLabels()
