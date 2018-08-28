@@ -21,6 +21,7 @@ All sources live in package `source`.
 
 * `ServiceSource`: collects all Services that have an external IP and returns them as Endpoint objects. The desired DNS name corresponds to an annotation set on the Service or is compiled from the Service attributes via the FQDN Go template string.
 * `IngressSource`: collects all Ingresses that have an external IP and returns them as Endpoint objects. The desired DNS name corresponds to the host rules defined in the Ingress object.
+* `GatewaySource`: collects all Istio Gateways and returns them as Endpoint objects. The desired DNS name corresponds to the hosts listed within the servers spec of each Gateway object.
 * `FakeSource`: returns a random list of Endpoints for the purpose of testing providers without having access to a Kubernetes cluster.
 * `ConnectorSource`: returns a list of Endpoint objects which are served by a tcp server configured through `connector-source-server` flag.
 * `CRDSource`: returns a list of Endpoint objects sourced from the spec of CRD objects. For more details refer to [CRD source](../crd-source.md) documentation.
