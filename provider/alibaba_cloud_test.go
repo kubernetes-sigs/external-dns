@@ -373,11 +373,11 @@ func TestAlibabaCloudProvider_splitDNSName(t *testing.T) {
 func TestAlibabaCloudProvider_TXTEndpoint(t *testing.T) {
 
 	p := newTestAlibabaCloudProvider(false)
-	const recordValue = "heritage=external-dns;external-dns/owner=default"
+	const recordValue = "heritage=external-dns,external-dns/owner=default"
 	const endpointTarget = "\"heritage=external-dns,external-dns/owner=default\""
 
-	if p.normalizedTXTRecordValue(endpointTarget) != recordValue {
-		t.Errorf("Failed to normalizedTXTRecordValue: %s", p.normalizedTXTRecordValue(endpointTarget))
+	if p.escapeTXTRecordValue(endpointTarget) != endpointTarget {
+		t.Errorf("Failed to escapeTXTRecordValue: %s", p.escapeTXTRecordValue(endpointTarget))
 	}
 	if p.unescapeTXTRecordValue(recordValue) != endpointTarget {
 		t.Errorf("Failed to unescapeTXTRecordValue: %s", p.unescapeTXTRecordValue(recordValue))
