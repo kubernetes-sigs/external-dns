@@ -29,6 +29,11 @@ This tutorial describes how to setup ExternalDNS for usage within a Kubernetes c
       "Effect": "Allow"
     },
     {
+      "Action": "alidns:DescribeDomains",
+      "Resource": "*",
+      "Effect": "Allow"
+    },
+    {
       "Action": "pvtz:AddZoneRecord",
       "Resource": "*",
       "Effect": "Allow"
