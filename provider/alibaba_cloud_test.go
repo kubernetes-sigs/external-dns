@@ -120,11 +120,19 @@ type MockAlibabaCloudPrivateZoneAPI struct {
 }
 
 func NewMockAlibabaCloudPrivateZoneAPI() *MockAlibabaCloudPrivateZoneAPI {
-	api := MockAlibabaCloudPrivateZoneAPI{}
-	api.zone = pvtz.Zone{
+	vpc := pvtz.Vpc{
+		RegionId: "cn-beijing",
+		VpcId:    "vpc-xxxxxx",
+	}
+
+	api := MockAlibabaCloudPrivateZoneAPI{zone: pvtz.Zone{
 		ZoneId:   "test-zone",
 		ZoneName: "container-service.top",
-	}
+		Vpcs: pvtz.Vpcs{
+			Vpc: []pvtz.Vpc{vpc},
+		},
+	}}
+
 	api.records = []pvtz.Record{
 		{
 			RecordId: 1,
@@ -166,6 +174,7 @@ func (m *MockAlibabaCloudPrivateZoneAPI) DeleteZoneRecord(request *pvtz.DeleteZo
 			result = append(result, record)
 		}
 	}
+	m.records = result
 	response = pvtz.CreateDeleteZoneRecordResponse()
 	return response, nil
 }
@@ -198,6 +207,7 @@ func (m *MockAlibabaCloudPrivateZoneAPI) DescribeZoneInfo(request *pvtz.Describe
 	response = pvtz.CreateDescribeZoneInfoResponse()
 	response.ZoneId = m.zone.ZoneId
 	response.ZoneName = m.zone.ZoneName
+	response.BindVpcs = pvtz.BindVpcs{Vpc: m.zone.Vpcs.Vpc}
 	return response, nil
 }
 
@@ -227,8 +237,23 @@ func newTestAlibabaCloudProvider(private bool) *AlibabaCloudProvider {
 		vpcID:        cfg.VPCID,
 		dryRun:       false,
 		dnsClient:    NewMockAlibabaCloudDNSAPI(),
-		pvtzClient:   &MockAlibabaCloudPrivateZoneAPI{},
-		privateZone:  false,
+		pvtzClient:   NewMockAlibabaCloudPrivateZoneAPI(),
+		privateZone:  private,
+	}
+}
+
+func TestAlibabaCloudPrivateProvider_Records(t *testing.T) {
+	p := newTestAlibabaCloudProvider(true)
+	endpoints, err := p.Records()
+	if err != nil {
+		t.Errorf("Failed to get records: %v", err)
+	} else {
+		if len(endpoints) != 2 {
+			t.Errorf("Incorrect number of records: %d", len(endpoints))
+		}
+		for _, endpoint := range endpoints {
+			t.Logf("Endpoint for %++v", *endpoint)
+		}
 	}
 }
 
@@ -384,6 +409,21 @@ func TestAlibabaCloudProvider_splitDNSName(t *testing.T) {
 func TestAlibabaCloudProvider_TXTEndpoint(t *testing.T) {
 
 	p := newTestAlibabaCloudProvider(false)
+	const recordValue = "heritage=external-dns,external-dns/owner=default"
+	const endpointTarget = "\"heritage=external-dns,external-dns/owner=default\""
+
+	if p.escapeTXTRecordValue(endpointTarget) != endpointTarget {
+		t.Errorf("Failed to escapeTXTRecordValue: %s", p.escapeTXTRecordValue(endpointTarget))
+	}
+	if p.unescapeTXTRecordValue(recordValue) != endpointTarget {
+		t.Errorf("Failed to unescapeTXTRecordValue: %s", p.unescapeTXTRecordValue(recordValue))
+	}
+}
+
+//TestAlibabaCloudProvider_TXTEndpoint_PrivateZone
+func TestAlibabaCloudProvider_TXTEndpoint_PrivateZone(t *testing.T) {
+
+	p := newTestAlibabaCloudProvider(true)
 	const recordValue = "heritage=external-dns,external-dns/owner=default"
 	const endpointTarget = "\"heritage=external-dns,external-dns/owner=default\""
 
