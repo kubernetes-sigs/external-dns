@@ -1,6 +1,6 @@
 # Setting up ExternalDNS for Services on Alibaba Cloud
 
-This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster on Alibaba Cloud. Make sure to use **>=0.4** version of ExternalDNS for this tutorial
+This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster on Alibaba Cloud. Make sure to use **>=0.5.6** version of ExternalDNS for this tutorial
 
 ## RAM Permissions
 
