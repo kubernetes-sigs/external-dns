@@ -49,6 +49,7 @@ Note that all flags can be replaced with environment variables; for instance,
 
 The following tutorials are provided:
 
+* [Alibaba Cloud](docs/tutorials/alibabacloud.md)
 * [AWS (Route53)](docs/tutorials/aws.md)
 * [AWS (Service Discovery)](docs/tutorials/aws-sd.md)
 * [Azure](docs/tutorials/azure.md)
