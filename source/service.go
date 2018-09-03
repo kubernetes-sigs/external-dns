@@ -52,10 +52,11 @@ type serviceSource struct {
 	combineFQDNAnnotation bool
 	publishInternal       bool
 	publishHostIP         bool
+	serviceTypeFilter     map[string]struct{}
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, serviceTypeFilter []string) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -69,6 +70,13 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		}
 	}
 
+	// Transform the slice into a map so it will
+	// be way much easier and fast to filter later
+	serviceTypes := make(map[string]struct{})
+	for _, serviceType := range serviceTypeFilter {
+		serviceTypes[serviceType] = struct{}{}
+	}
+
 	return &serviceSource{
 		client:                kubeClient,
 		namespace:             namespace,
@@ -78,6 +86,7 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		combineFQDNAnnotation: combineFqdnAnnotation,
 		publishInternal:       publishInternal,
 		publishHostIP:         publishHostIP,
+		serviceTypeFilter:     serviceTypes,
 	}, nil
 }
 
@@ -90,6 +99,11 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	services.Items, err = sc.filterByAnnotations(services.Items)
 	if err != nil {
 		return nil, err
+	}
+
+	// filter on service types if at least one has been provided
+	if len(sc.serviceTypeFilter) > 0 {
+		services.Items = sc.filterByServiceType(services.Items)
 	}
 
 	// get the ip addresses of all the nodes and cache them for this run
@@ -252,6 +266,19 @@ func (sc *serviceSource) filterByAnnotations(services []v1.Service) ([]v1.Servic
 	}
 
 	return filteredList, nil
+}
+
+// filterByServiceType filters services according their types
+func (sc *serviceSource) filterByServiceType(services []v1.Service) []v1.Service {
+	filteredList := []v1.Service{}
+	for _, service := range services {
+		// Check if the service is of the given type or not
+		if _, ok := sc.serviceTypeFilter[string(service.Spec.Type)]; ok {
+			filteredList = append(filteredList, service)
+		}
+	}
+
+	return filteredList
 }
 
 func (sc *serviceSource) setResourceLabel(service v1.Service, endpoints []*endpoint.Endpoint) {

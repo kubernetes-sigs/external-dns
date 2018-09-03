@@ -79,6 +79,7 @@ func main() {
 		CRDSourceKind:            cfg.CRDSourceKind,
 		KubeConfig:               cfg.KubeConfig,
 		KubeMaster:               cfg.Master,
+		ServiceTypeFilter:        cfg.ServiceTypeFilter,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
@@ -100,6 +101,8 @@ func main() {
 
 	var p provider.Provider
 	switch cfg.Provider {
+	case "alibabacloud":
+		p, err = provider.NewAlibabaCloudProvider(cfg.AlibabaCloudConfigFile, domainFilter, zoneIDFilter, cfg.AlibabaCloudZoneType, cfg.DryRun)
 	case "aws":
 		p, err = provider.NewAWSProvider(
 			provider.AWSConfig{
