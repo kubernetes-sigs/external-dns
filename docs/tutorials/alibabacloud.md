@@ -120,6 +120,14 @@ spec:
         - --alibaba-cloud-zone=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
         - --txt-owner-id=my-identifier
+        volumeMounts:
+        - mountPath: /usr/share/zoneinfo
+          name: hostpath
+      volumes:
+      - name: hostpath
+        hostPath:
+          path: /usr/share/zoneinfo
+          type: Directory
 ```
 
 ### Manifest (for clusters with RBAC enabled)
@@ -186,6 +194,14 @@ spec:
         - --alibaba-cloud-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
         - --txt-owner-id=my-identifier
+        volumeMounts:
+        - mountPath: /usr/share/zoneinfo
+          name: hostpath
+      volumes:
+      - name: hostpath
+        hostPath:
+          path: /usr/share/zoneinfo
+          type: Directory
 ```
 
 
