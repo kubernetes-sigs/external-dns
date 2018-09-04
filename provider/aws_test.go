@@ -30,10 +30,12 @@ import (
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"time"
 )
 
 const (
-	defaultMaxChangeCount       = 4000
+	defaultBatchChangeSize      = 4000
+	defaultBatchChangeInterval  = time.Second
 	defaultEvaluateTargetHealth = true
 )
 
@@ -545,7 +547,7 @@ func TestAWSChangesByZones(t *testing.T) {
 func TestAWSsubmitChanges(t *testing.T) {
 	provider := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), NewZoneIDFilter([]string{}), NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, []*endpoint.Endpoint{})
 	const subnets = 16
-	const hosts = defaultMaxChangeCount / subnets
+	const hosts = defaultBatchChangeSize / subnets
 
 	endpoints := make([]*endpoint.Endpoint, 0)
 	for i := 0; i < subnets; i++ {
@@ -568,10 +570,10 @@ func TestAWSsubmitChanges(t *testing.T) {
 	validateEndpoints(t, records, endpoints)
 }
 
-func TestAWSLimitChangeSet(t *testing.T) {
+func TestAWSBatchChangeSet(t *testing.T) {
 	var cs []*route53.Change
 
-	for i := 1; i <= defaultMaxChangeCount; i += 2 {
+	for i := 1; i <= defaultBatchChangeSize; i += 2 {
 		cs = append(cs, &route53.Change{
 			Action: aws.String(route53.ChangeActionCreate),
 			ResourceRecordSet: &route53.ResourceRecordSet{
@@ -588,17 +590,20 @@ func TestAWSLimitChangeSet(t *testing.T) {
 		})
 	}
 
-	limCs := limitChangeSet(cs, defaultMaxChangeCount)
+	batchCs := batchChangeSet(cs, defaultBatchChangeSize)
+
+	require.Equal(t, 1, len(batchCs))
 
 	// sorting cs not needed as it should be returned as is
-	validateAWSChangeRecords(t, limCs, cs)
+	validateAWSChangeRecords(t, batchCs[0], cs)
 }
 
-func TestAWSLimitChangeSetExceeding(t *testing.T) {
+func TestAWSBatchChangeSetExceeding(t *testing.T) {
 	var cs []*route53.Change
-	const testCount = 100
+	const testCount = 50
 	const testLimit = 11
-	const expectedCount = 10
+	const expectedBatchCount = 5
+	const expectedChangesCount = 10
 
 	for i := 1; i <= testCount; i += 2 {
 		cs = append(cs, &route53.Change{
@@ -617,10 +622,14 @@ func TestAWSLimitChangeSetExceeding(t *testing.T) {
 		})
 	}
 
-	limCs := limitChangeSet(cs, testLimit)
+	batchCs := batchChangeSet(cs, testLimit)
 
-	// sorting cs needed to match limCs
-	validateAWSChangeRecords(t, limCs, sortChangesByActionNameType(cs)[0:expectedCount])
+	require.Equal(t, expectedBatchCount, len(batchCs))
+
+	// sorting cs needed to match batchCs
+	for i, batch := range batchCs {
+		validateAWSChangeRecords(t, batch, sortChangesByActionNameType(cs)[i*expectedChangesCount:expectedChangesCount*(i+1)])
+	}
 }
 
 func validateEndpoints(t *testing.T, endpoints []*endpoint.Endpoint, expected []*endpoint.Endpoint) {
@@ -881,7 +890,8 @@ func newAWSProvider(t *testing.T, domainFilter DomainFilter, zoneIDFilter ZoneID
 
 	provider := &AWSProvider{
 		client:               client,
-		maxChangeCount:       defaultMaxChangeCount,
+		batchChangeSize:      defaultBatchChangeSize,
+		batchChangeInterval:  defaultBatchChangeInterval,
 		evaluateTargetHealth: evaluateTargetHealth,
 		domainFilter:         domainFilter,
 		zoneIDFilter:         zoneIDFilter,
