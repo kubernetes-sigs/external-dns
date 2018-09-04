@@ -38,20 +38,21 @@ import (
 // The gateway implementation uses the spec.servers.hosts values for the hostnames.
 // Use targetAnnotationKey to explicitly set Endpoint.
 type gatewaySource struct {
-	kubeClient            kubernetes.Interface
-	istioClient           istiomodel.ConfigStore
-	istioNamespace        string
-	namespace             string
-	annotationFilter      string
-	fqdnTemplate          *template.Template
-	combineFQDNAnnotation bool
+	kubeClient              kubernetes.Interface
+	istioClient             istiomodel.ConfigStore
+	istioNamespace          string
+	istioIngressGatewayName string
+	namespace               string
+	annotationFilter        string
+	fqdnTemplate            *template.Template
+	combineFQDNAnnotation   bool
 }
 
 // NewGatewaySource creates a new gatewaySource with the given config.
 func NewGatewaySource(
 	kubeClient kubernetes.Interface,
 	istioClient istiomodel.ConfigStore,
-	istioNamespace string,
+	istioIngressGateway string,
 	namespace string,
 	annotationFilter string,
 	fqdnTemplate string,
@@ -61,6 +62,11 @@ func NewGatewaySource(
 		tmpl *template.Template
 		err  error
 	)
+	istioNamespace, istioIngressGatewayName, err := parseIngressGateway(istioIngressGateway)
+	if err != nil {
+		return nil, err
+	}
+
 	if fqdnTemplate != "" {
 		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
 			"trimPrefix": strings.TrimPrefix,
@@ -71,13 +77,14 @@ func NewGatewaySource(
 	}
 
 	return &gatewaySource{
-		kubeClient:            kubeClient,
-		istioClient:           istioClient,
-		istioNamespace:        istioNamespace,
-		namespace:             namespace,
-		annotationFilter:      annotationFilter,
-		fqdnTemplate:          tmpl,
-		combineFQDNAnnotation: combineFqdnAnnotation,
+		kubeClient:              kubeClient,
+		istioClient:             istioClient,
+		istioNamespace:          istioNamespace,
+		istioIngressGatewayName: istioIngressGatewayName,
+		namespace:               namespace,
+		annotationFilter:        annotationFilter,
+		fqdnTemplate:            tmpl,
+		combineFQDNAnnotation:   combineFqdnAnnotation,
 	}, nil
 }
 
@@ -213,7 +220,7 @@ func (sc *gatewaySource) setResourceLabel(config istiomodel.Config, endpoints []
 }
 
 func (sc *gatewaySource) targetsFromIstioIngressStatus() (targets endpoint.Targets, err error) {
-	if svc, e := sc.kubeClient.CoreV1().Services(sc.istioNamespace).Get("istio-ingressgateway", metav1.GetOptions{}); e != nil {
+	if svc, e := sc.kubeClient.CoreV1().Services(sc.istioNamespace).Get(sc.istioIngressGatewayName, metav1.GetOptions{}); e != nil {
 		err = e
 	} else {
 		for _, lb := range svc.Status.LoadBalancer.Ingress {
@@ -264,4 +271,15 @@ func (sc *gatewaySource) endpointsFromGatewayConfig(config istiomodel.Config) ([
 	}
 
 	return endpoints, nil
+}
+
+func parseIngressGateway(ingressGateway string) (namespace, name string, err error) {
+	parts := strings.Split(ingressGateway, "/")
+	if len(parts) != 2 {
+		err = fmt.Errorf("invalid ingress gateway service (namespace/name) found '%v'", ingressGateway)
+	} else {
+		namespace, name = parts[0], parts[1]
+	}
+
+	return
 }

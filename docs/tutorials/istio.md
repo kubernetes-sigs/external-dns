@@ -28,7 +28,7 @@ spec:
         - --source=service
         - --source=ingress
         - --source=gateway
-        - --istio-namespace=custom-istio-namespace # omit to use the default (istio-system)
+        - --istio-ingress-gateway=custom-istio-namespace/custom-istio-ingressgateway # omit to use the default (istio-system/istio-ingressgateway)
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
@@ -98,7 +98,7 @@ spec:
         - --source=service
         - --source=ingress
         - --source=gateway
-        - --istio-namespace=custom-istio-namespace # omit to use the default (istio-system)
+        - --istio-ingress-gateway=custom-istio-namespace/custom-istio-ingressgateway # omit to use the default (istio-system/istio-ingressgateway)
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization

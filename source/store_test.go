@@ -61,7 +61,7 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 	mockClientGenerator.On("KubeClient").Return(fake.NewSimpleClientset(), nil)
 	mockClientGenerator.On("IstioClient").Return(NewFakeConfigStore(), nil)
 
-	sources, err := ByNames(mockClientGenerator, []string{"service", "ingress", "gateway", "fake"}, &Config{})
+	sources, err := ByNames(mockClientGenerator, []string{"service", "ingress", "gateway", "fake"}, minimalConfig)
 	suite.NoError(err, "should not generate errors")
 	suite.Len(sources, 4, "should generate all four sources")
 }
@@ -70,7 +70,7 @@ func (suite *ByNamesTestSuite) TestOnlyFake() {
 	mockClientGenerator := new(MockClientGenerator)
 	mockClientGenerator.On("KubeClient").Return(fake.NewSimpleClientset(), nil)
 
-	sources, err := ByNames(mockClientGenerator, []string{"fake"}, &Config{})
+	sources, err := ByNames(mockClientGenerator, []string{"fake"}, minimalConfig)
 	suite.NoError(err, "should not generate errors")
 	suite.Len(sources, 1, "should generate fake source")
 	suite.Nil(mockClientGenerator.kubeClient, "client should not be created")
@@ -80,7 +80,7 @@ func (suite *ByNamesTestSuite) TestSourceNotFound() {
 	mockClientGenerator := new(MockClientGenerator)
 	mockClientGenerator.On("KubeClient").Return(fake.NewSimpleClientset(), nil)
 
-	sources, err := ByNames(mockClientGenerator, []string{"foo"}, &Config{})
+	sources, err := ByNames(mockClientGenerator, []string{"foo"}, minimalConfig)
 	suite.Equal(err, ErrSourceNotFound, "should return source not found")
 	suite.Len(sources, 0, "should not returns any source")
 }
@@ -89,13 +89,13 @@ func (suite *ByNamesTestSuite) TestKubeClientFails() {
 	mockClientGenerator := new(MockClientGenerator)
 	mockClientGenerator.On("KubeClient").Return(nil, errors.New("foo"))
 
-	_, err := ByNames(mockClientGenerator, []string{"service"}, &Config{})
+	_, err := ByNames(mockClientGenerator, []string{"service"}, minimalConfig)
 	suite.Error(err, "should return an error if kubernetes client cannot be created")
 
-	_, err = ByNames(mockClientGenerator, []string{"ingress"}, &Config{})
+	_, err = ByNames(mockClientGenerator, []string{"ingress"}, minimalConfig)
 	suite.Error(err, "should return an error if kubernetes client cannot be created")
 
-	_, err = ByNames(mockClientGenerator, []string{"gateway"}, &Config{})
+	_, err = ByNames(mockClientGenerator, []string{"gateway"}, minimalConfig)
 	suite.Error(err, "should return an error if kubernetes client cannot be created")
 }
 
@@ -104,10 +104,14 @@ func (suite *ByNamesTestSuite) TestIstioClientFails() {
 	mockClientGenerator.On("KubeClient").Return(fake.NewSimpleClientset(), nil)
 	mockClientGenerator.On("IstioClient").Return(nil, errors.New("foo"))
 
-	_, err := ByNames(mockClientGenerator, []string{"gateway"}, &Config{})
+	_, err := ByNames(mockClientGenerator, []string{"gateway"}, minimalConfig)
 	suite.Error(err, "should return an error if istio client cannot be created")
 }
 
 func TestByNames(t *testing.T) {
 	suite.Run(t, new(ByNamesTestSuite))
+}
+
+var minimalConfig = &Config{
+	IstioIngressGateway: "istio-system/istio-ingressgateway",
 }
