@@ -119,7 +119,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 			return nil, err
 		}
 		return NewIngressSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation)
-	case "gateway":
+	case "istio-gateway":
 		kubernetesClient, err := p.KubeClient()
 		if err != nil {
 			return nil, err
@@ -128,7 +128,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewGatewaySource(kubernetesClient, istioClient, cfg.IstioIngressGateway, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation)
+		return NewIstioGatewaySource(kubernetesClient, istioClient, cfg.IstioIngressGateway, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation)
 	case "fake":
 		return NewFakeSource(cfg.FQDNTemplate)
 	case "connector":

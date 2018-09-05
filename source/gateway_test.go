@@ -60,7 +60,7 @@ func (suite *GatewaySuite) SetupTest() {
 	_, err = fakeKubernetesClient.CoreV1().Services(suite.ingress.Namespace).Create(suite.ingress)
 	suite.NoError(err, "should succeed")
 
-	suite.source, err = NewGatewaySource(
+	suite.source, err = NewIstioGatewaySource(
 		fakeKubernetesClient,
 		fakeIstioClient,
 		"istio-system/istio-ingressgateway",
@@ -93,7 +93,7 @@ func TestGateway(t *testing.T) {
 	t.Run("Endpoints", testGatewayEndpoints)
 }
 
-func TestNewGatewaySource(t *testing.T) {
+func TestNewIstioGatewaySource(t *testing.T) {
 	for _, ti := range []struct {
 		title                    string
 		annotationFilter         string
@@ -133,7 +133,7 @@ func TestNewGatewaySource(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			_, err := NewGatewaySource(
+			_, err := NewIstioGatewaySource(
 				fake.NewSimpleClientset(),
 				NewFakeConfigStore(),
 				"istio-system/istio-ingressgateway",
@@ -931,7 +931,7 @@ func testGatewayEndpoints(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			gatewaySource, err := NewGatewaySource(
+			gatewaySource, err := NewIstioGatewaySource(
 				fakeKubernetesClient,
 				fakeIstioClient,
 				ingressGatewayService.Namespace+"/"+ingressGatewayService.Name,
@@ -964,7 +964,7 @@ func newTestGatewaySource(ingress *v1.Service) (*gatewaySource, error) {
 		return nil, err
 	}
 
-	src, err := NewGatewaySource(
+	src, err := NewIstioGatewaySource(
 		fakeKubernetesClient,
 		fakeIstioClient,
 		"istio-system/istio-ingressgateway",

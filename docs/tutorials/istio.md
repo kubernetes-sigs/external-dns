@@ -2,10 +2,7 @@
 This tutorial describes how to configure ExternalDNS to use the Istio Gateway source.
 It is meant to supplement the other provider-specific setup tutorials.
 
-### Requirements
-* Istio >=1.0.0
-* The Istio ingress gateway Service is deployed with the name `istio-ingressgateway`
-  within the Istio namespace (`istio-system` by default).
+**Note:** Using the Istio Gateway source requires Istio >=1.0.0.
 
 ### Manifest (for clusters without RBAC enabled)
 ```yaml
@@ -27,7 +24,7 @@ spec:
         args:
         - --source=service
         - --source=ingress
-        - --source=gateway
+        - --source=istio-gateway
         - --istio-ingress-gateway=custom-istio-namespace/custom-istio-ingressgateway # omit to use the default (istio-system/istio-ingressgateway)
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
@@ -97,7 +94,7 @@ spec:
         args:
         - --source=service
         - --source=ingress
-        - --source=gateway
+        - --source=istio-gateway
         - --istio-ingress-gateway=custom-istio-namespace/custom-istio-ingressgateway # omit to use the default (istio-system/istio-ingressgateway)
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws

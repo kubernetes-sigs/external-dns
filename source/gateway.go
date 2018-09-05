@@ -48,8 +48,8 @@ type gatewaySource struct {
 	combineFQDNAnnotation   bool
 }
 
-// NewGatewaySource creates a new gatewaySource with the given config.
-func NewGatewaySource(
+// NewIstioGatewaySource creates a new gatewaySource with the given config.
+func NewIstioGatewaySource(
 	kubeClient kubernetes.Interface,
 	istioClient istiomodel.ConfigStore,
 	istioIngressGateway string,
