@@ -73,6 +73,8 @@ var (
 		ExoscaleEndpoint:        "https://api.exoscale.ch/dns",
 		ExoscaleAPIKey:          "",
 		ExoscaleAPISecret:       "",
+		CRDSourceAPIVersion:     "externaldns.k8s.io/v1alpha",
+		CRDSourceKind:           "DNSEndpoint",
 	}
 
 	overriddenConfig = &Config{
@@ -124,6 +126,8 @@ var (
 		ExoscaleEndpoint:        "https://api.foo.ch/dns",
 		ExoscaleAPIKey:          "1",
 		ExoscaleAPISecret:       "2",
+		CRDSourceAPIVersion:     "test.k8s.io/v1alpha1",
+		CRDSourceKind:           "Endpoint",
 	}
 )
 
@@ -198,6 +202,8 @@ func TestParseFlags(t *testing.T) {
 				"--exoscale-endpoint=https://api.foo.ch/dns",
 				"--exoscale-apikey=1",
 				"--exoscale-apisecret=2",
+				"--crd-source-apiversion=test.k8s.io/v1alpha1",
+				"--crd-source-kind=Endpoint",
 			},
 			envVars:  map[string]string{},
 			expected: overriddenConfig,
@@ -253,6 +259,8 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_EXOSCALE_ENDPOINT":          "https://api.foo.ch/dns",
 				"EXTERNAL_DNS_EXOSCALE_APIKEY":            "1",
 				"EXTERNAL_DNS_EXOSCALE_APISECRET":         "2",
+				"EXTERNAL_DNS_CRD_SOURCE_APIVERSION":      "test.k8s.io/v1alpha1",
+				"EXTERNAL_DNS_CRD_SOURCE_KIND":            "Endpoint",
 			},
 			expected: overriddenConfig,
 		},
