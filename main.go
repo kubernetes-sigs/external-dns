@@ -80,6 +80,7 @@ func main() {
 		KubeConfig:               cfg.KubeConfig,
 		KubeMaster:               cfg.Master,
 		ServiceTypeFilter:        cfg.ServiceTypeFilter,
+		IstioIngressGateway:      cfg.IstioIngressGateway,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
