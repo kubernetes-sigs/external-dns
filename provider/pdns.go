@@ -231,7 +231,6 @@ func NewPDNSProvider(config PDNSConfig) (*PDNSProvider, error) {
 	}
 
 	pdnsClientConfig := pgo.NewConfiguration()
-	pdnsClientConfig.Host = config.Server
 	pdnsClientConfig.BasePath = config.Server + apiBase
 	if err := config.TLSConfig.setHTTPClient(pdnsClientConfig); err != nil {
 		return nil, err
