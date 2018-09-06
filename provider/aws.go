@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -291,6 +292,7 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 		log.Info("All records are already up to date, there are no changes for the matching hosted zones")
 	}
 
+	var failedZones []string
 	for z, cs := range changesByZone {
 		var failedUpdate bool
 
@@ -312,6 +314,8 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 				if _, err := p.client.ChangeResourceRecordSets(params); err != nil {
 					log.Error(err) //TODO(ideahitme): consider changing the interface in cases when this error might be a concern for other components
 					failedUpdate = true
+				} else {
+					log.Infof("%d record(s) in zone %s were successfully updated", len(b), aws.StringValue(zones[z].Name))
 				}
 
 				if i != len(batchCs)-1 {
@@ -320,9 +324,13 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 			}
 		}
 
-		if !failedUpdate && !p.dryRun {
-			log.Infof("Record(s) in zone %s were successfully updated", aws.StringValue(zones[z].Name))
+		if failedUpdate {
+			failedZones = append(failedZones, z)
 		}
+	}
+
+	if len(failedZones) > 0 {
+		return fmt.Errorf("Failed to submit all changes for the following zones: %v", failedZones)
 	}
 
 	return nil
