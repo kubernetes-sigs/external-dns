@@ -83,3 +83,7 @@ ignored = ["github.com/kubernetes/repo-infra/kazel"]
 [[constraint]]
   name = "github.com/aliyun/alibaba-cloud-sdk-go"
   version = "1.27.7"
+
+[[constraint]]
+  name = "github.com/miekg/dns"
+  version = "1.0.8"
