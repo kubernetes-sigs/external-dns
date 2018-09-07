@@ -125,24 +125,6 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
-// get endpoints from optional "target" annotation
-// Returns empty endpoints array if none are found.
-func getTargetsFromTargetAnnotation(ing *v1beta1.Ingress) endpoint.Targets {
-	var targets endpoint.Targets
-
-	// Get the desired hostname of the ingress from the annotation.
-	targetAnnotation, exists := ing.Annotations[targetAnnotationKey]
-	if exists && targetAnnotation != "" {
-		// splits the hostname annotation and removes the trailing periods
-		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
-		for _, targetHostname := range targetsList {
-			targetHostname = strings.TrimSuffix(targetHostname, ".")
-			targets = append(targets, targetHostname)
-		}
-	}
-	return targets
-}
-
 func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoint.Endpoint, error) {
 	// Process the whole template string
 	var buf bytes.Buffer
@@ -158,7 +140,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 		log.Warn(err)
 	}
 
-	targets := getTargetsFromTargetAnnotation(ing)
+	targets := getTargetsFromTargetAnnotation(ing.Annotations)
 
 	if len(targets) == 0 {
 		targets = targetsFromIngressStatus(ing.Status)
@@ -220,7 +202,7 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 		log.Warn(err)
 	}
 
-	targets := getTargetsFromTargetAnnotation(ing)
+	targets := getTargetsFromTargetAnnotation(ing.Annotations)
 
 	if len(targets) == 0 {
 		targets = targetsFromIngressStatus(ing.Status)
@@ -245,46 +227,6 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 	hostnameList := getHostnamesFromAnnotations(ing.Annotations)
 	for _, hostname := range hostnameList {
 		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl)...)
-	}
-
-	return endpoints
-}
-
-func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoint.TTL) []*endpoint.Endpoint {
-	var endpoints []*endpoint.Endpoint
-
-	var aTargets endpoint.Targets
-	var cnameTargets endpoint.Targets
-
-	for _, t := range targets {
-		switch suitableType(t) {
-		case endpoint.RecordTypeA:
-			aTargets = append(aTargets, t)
-		default:
-			cnameTargets = append(cnameTargets, t)
-		}
-	}
-
-	if len(aTargets) > 0 {
-		epA := &endpoint.Endpoint{
-			DNSName:    strings.TrimSuffix(hostname, "."),
-			Targets:    aTargets,
-			RecordTTL:  ttl,
-			RecordType: endpoint.RecordTypeA,
-			Labels:     endpoint.NewLabels(),
-		}
-		endpoints = append(endpoints, epA)
-	}
-
-	if len(cnameTargets) > 0 {
-		epCNAME := &endpoint.Endpoint{
-			DNSName:    strings.TrimSuffix(hostname, "."),
-			Targets:    cnameTargets,
-			RecordTTL:  ttl,
-			RecordType: endpoint.RecordTypeCNAME,
-			Labels:     endpoint.NewLabels(),
-		}
-		endpoints = append(endpoints, epCNAME)
 	}
 
 	return endpoints
