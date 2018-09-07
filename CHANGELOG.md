@@ -1,3 +1,11 @@
+## v0.5.6 - 2018-09-07
+  
+  - Alibaba Cloud (#696) @xianlubird  
+  - Add Source implementation for Istio Gateway (#694) @jonasrmichel
+  - CRD source based on getting endpoints from CRD (#657) @shashidharatd
+  - Add filter by service type feature (#653) @Devatoria
+  - Add generic metrics for Source & Registry Errors (#652) @wleese
+
 ## v0.5.5 - 2018-08-17
 
   - Configure req timeout calling k8s APIs (#681) @jvassev
