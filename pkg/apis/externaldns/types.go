@@ -164,7 +164,7 @@ var defaultConfig = &Config{
 	CRDSourceKind:            "DNSEndpoint",
 	ServiceTypeFilter:        []string{},
 	RFC2136Host:              "",
-	RFC2136Port:              53,
+	RFC2136Port:              0,
 	RFC2136Zone:              "",
 	RFC2136Insecure:          false,
 	RFC2136TSIGKeyName:       "",
