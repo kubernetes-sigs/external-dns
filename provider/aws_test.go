@@ -53,31 +53,10 @@ type Route53APIStub struct {
 	m          dynamicMock
 }
 
-type dynamicMock struct {
-	mock.Mock
-	t mock.TestingT
-}
-
-func (m *dynamicMock) isMocked(method string, arguments ...interface{}) bool {
-	for _, call := range m.ExpectedCalls {
-		if call.Method == method && call.Repeatability > -1 {
-			_, diffCount := call.Arguments.Diff(arguments)
-			if diffCount == 0 {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func (m *dynamicMock) ChangeResourceRecordSets(input *route53.ChangeResourceRecordSetsInput) (*route53.ChangeResourceRecordSetsOutput, error) {
-	args := m.Called(input)
-	if args.Get(0) != nil {
-		return args.Get(0).(*route53.ChangeResourceRecordSetsOutput), args.Error(1)
-	}
-	return nil, args.Error(1)
-}
-
+// MockMethod starts a description of an expectation of the specified method
+// being called.
+//
+//     Route53APIStub.MockMethod("MyMethod", arg1, arg2)
 func (r *Route53APIStub) MockMethod(method string, args ...interface{}) *mock.Call {
 	return r.m.On(method, args...)
 }
@@ -116,7 +95,6 @@ func wildcardEscape(s string) string {
 	return s
 }
 
-// stub.MockMethod("ChangeResourceRecordSets", args,[output, error])
 func (r *Route53APIStub) ChangeResourceRecordSets(input *route53.ChangeResourceRecordSetsInput) (*route53.ChangeResourceRecordSetsOutput, error) {
 	if r.m.isMocked("ChangeResourceRecordSets", input) {
 		return r.m.ChangeResourceRecordSets(input)
@@ -194,6 +172,30 @@ func (r *Route53APIStub) CreateHostedZone(input *route53.CreateHostedZoneInput) 
 		Config: input.HostedZoneConfig,
 	}
 	return &route53.CreateHostedZoneOutput{HostedZone: r.zones[id]}, nil
+}
+
+type dynamicMock struct {
+	mock.Mock
+}
+
+func (m *dynamicMock) ChangeResourceRecordSets(input *route53.ChangeResourceRecordSetsInput) (*route53.ChangeResourceRecordSetsOutput, error) {
+	args := m.Called(input)
+	if args.Get(0) != nil {
+		return args.Get(0).(*route53.ChangeResourceRecordSetsOutput), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *dynamicMock) isMocked(method string, arguments ...interface{}) bool {
+	for _, call := range m.ExpectedCalls {
+		if call.Method == method && call.Repeatability > -1 {
+			_, diffCount := call.Arguments.Diff(arguments)
+			if diffCount == 0 {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func TestAWSZones(t *testing.T) {
