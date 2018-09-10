@@ -208,6 +208,7 @@ func (p *GoogleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				DNSName:    strings.TrimSuffix(r.Name, "."),
 				RecordType: r.Type,
 				Targets:    make(endpoint.Targets, 0, len(r.Rrdatas)),
+				RecordTTL:  endpoint.TTL(r.Ttl),
 			}
 			for _, rr := range r.Rrdatas {
 				// each page is processed sequentially, no need for a mutex here.
