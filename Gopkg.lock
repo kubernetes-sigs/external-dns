@@ -267,11 +267,13 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:ed314700d20eeaaa904b47e6fd3d4866f7bd14887a4904a9f69ec1e47385416f"
+  branch = "master"
+  digest = "1:b12aff239810a9fa71e901a712a52f9da4c6e536852e943be693dec1d4519dfd"
   name = "github.com/golang/glog"
   packages = ["."]
   pruneopts = ""
-  revision = "44145f04b68cf362d9c4df2182967c2275eaefed"
+  revision = "3fa5b9870d1d29f6d7907b29f1ae8c6eeb403829"
+  source = "github.com/kubermatic/glog-logrus"
 
 [[projects]]
   digest = "1:3dd078fda7500c341bc26cfbc6c6a34614f295a2457149fc1045cab767cbcf18"
@@ -1032,6 +1034,7 @@
     "plugin/pkg/client/auth/oidc",
     "plugin/pkg/client/auth/openstack",
     "rest",
+    "rest/fake",
     "rest/watch",
     "testing",
     "third_party/forked/golang/template",
@@ -1127,9 +1130,14 @@
     "k8s.io/api/extensions/v1beta1",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/labels",
+    "k8s.io/apimachinery/pkg/runtime",
+    "k8s.io/apimachinery/pkg/runtime/schema",
+    "k8s.io/apimachinery/pkg/runtime/serializer",
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/kubernetes/fake",
     "k8s.io/client-go/plugin/pkg/client/auth",
+    "k8s.io/client-go/rest",
+    "k8s.io/client-go/rest/fake",
     "k8s.io/client-go/tools/clientcmd",
   ]
   solver-name = "gps-cdcl"
