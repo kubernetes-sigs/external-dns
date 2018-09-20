@@ -26,6 +26,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
@@ -379,6 +380,11 @@ func (sc *serviceSource) extractNodeTargets() (endpoint.Targets, error) {
 
 	nodes, err := sc.client.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
+		if errors.IsForbidden(err) {
+			// Return an empty list because it makes sense to continue and try other sources.
+			log.Debugf("Unable to list nodes (Forbidden), returning empty list of targets (NodePort services will be skipped)")
+			return endpoint.Targets{}, nil
+		}
 		return nil, err
 	}
 
