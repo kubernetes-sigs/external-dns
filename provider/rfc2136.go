@@ -43,6 +43,7 @@ type rfc2136Provider struct {
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter DomainFilter
 	dryRun       bool
+	actions      Rfc1236Actions
 }
 
 var (
@@ -55,8 +56,13 @@ var (
 	}
 )
 
+type Rfc1236Actions interface {
+	SendMessage(msg *dns.Msg) error
+	IncomeTransfer(m *dns.Msg, a string) (env chan *dns.Envelope, err error)
+}
+
 // NewRfc2136Provider is a factory function for OpenStack rfc2136 providers
-func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter DomainFilter, dryRun bool) (Provider, error) {
+func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter DomainFilter, dryRun bool, actions Rfc1236Actions) (Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok {
 		return nil, errors.Errorf("%s is not supported TSIG algorithm", secretAlg)
@@ -69,6 +75,11 @@ func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, k
 		domainFilter: domainFilter,
 		dryRun:       dryRun,
 		axfr:         axfr,
+	}
+	if actions != nil {
+		r.actions = actions
+	} else {
+		r.actions = r
 	}
 
 	if !insecure {
@@ -139,6 +150,15 @@ OuterLoop:
 	return eps, nil
 }
 
+func (r rfc2136Provider) IncomeTransfer(m *dns.Msg, a string) (env chan *dns.Envelope, err error) {
+	t := new(dns.Transfer)
+	if !r.insecure {
+		t.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
+	}
+
+	return t.In(m, r.nameserver)
+}
+
 func (r rfc2136Provider) List() ([]dns.RR, error) {
 	if !r.axfr {
 		log.Info("axfr is disabled")
@@ -147,18 +167,13 @@ func (r rfc2136Provider) List() ([]dns.RR, error) {
 
 	log.Debugf("Fetching records for '%s'", r.zoneName)
 
-	t := new(dns.Transfer)
-	if !r.insecure {
-		t.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
-	}
-
 	m := new(dns.Msg)
 	m.SetAxfr(r.zoneName)
 	if !r.insecure {
 		m.SetTsig(r.tsigKeyName, r.tsigSecretAlg, 300, time.Now().Unix())
 	}
 
-	env, err := t.In(m, r.nameserver)
+	env, err := r.actions.IncomeTransfer(m, r.nameserver)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch records via AXFR: %v", err)
 	}
@@ -241,7 +256,7 @@ func (r rfc2136Provider) AddRecord(ep *endpoint.Endpoint) error {
 	m.SetUpdate(r.zoneName)
 	m.Insert(rrs)
 
-	err = r.SendMessage(m)
+	err = r.actions.SendMessage(m)
 	if err != nil {
 		return fmt.Errorf("RFC2136 query failed: %v", err)
 	}
@@ -267,7 +282,7 @@ func (r rfc2136Provider) RemoveRecord(ep *endpoint.Endpoint) error {
 	m.SetUpdate(r.zoneName)
 	m.RemoveRRset(rrs)
 
-	err = r.SendMessage(m)
+	err = r.actions.SendMessage(m)
 	if err != nil {
 		return fmt.Errorf("RFC2136 query failed: %v", err)
 	}
