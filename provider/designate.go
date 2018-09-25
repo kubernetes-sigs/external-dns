@@ -123,16 +123,7 @@ func createDesignateServiceClient() (*gophercloud.ServiceClient, error) {
 		return nil, err
 	}
 	log.Infof("Using OpenStack Keystone at %s", opts.IdentityEndpoint)
-	authProvider, err := openstack.AuthenticatedClient(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	eo := gophercloud.EndpointOpts{
-		Region: os.Getenv("OS_REGION_NAME"),
-	}
-
-	client, err := openstack.NewDNSV2(authProvider, eo)
+	authProvider, err := openstack.NewClient(opts.IdentityEndpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +145,20 @@ func createDesignateServiceClient() (*gophercloud.ServiceClient, error) {
 		ExpectContinueTimeout: 1 * time.Second,
 		TLSClientConfig:       tlsConfig,
 	}
-	client.ProviderClient.HTTPClient.Transport = transport
+	authProvider.HTTPClient.Transport = transport
+
+	if err = openstack.Authenticate(authProvider, opts); err != nil {
+		return nil, err
+	}
+
+	eo := gophercloud.EndpointOpts{
+		Region: os.Getenv("OS_REGION_NAME"),
+	}
+
+	client, err := openstack.NewDNSV2(authProvider, eo)
+	if err != nil {
+		return nil, err
+	}
 	log.Infof("Found OpenStack Designate service at %s", client.Endpoint)
 	return client, nil
 }
