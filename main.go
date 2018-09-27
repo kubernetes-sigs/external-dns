@@ -107,13 +107,14 @@ func main() {
 	case "aws":
 		p, err = provider.NewAWSProvider(
 			provider.AWSConfig{
-				DomainFilter:        domainFilter,
-				ZoneIDFilter:        zoneIDFilter,
-				ZoneTypeFilter:      zoneTypeFilter,
-				BatchChangeSize:     cfg.AWSBatchChangeSize,
-				BatchChangeInterval: cfg.AWSBatchChangeInterval,
-				AssumeRole:          cfg.AWSAssumeRole,
-				DryRun:              cfg.DryRun,
+				DomainFilter:         domainFilter,
+				ZoneIDFilter:         zoneIDFilter,
+				ZoneTypeFilter:       zoneTypeFilter,
+				BatchChangeSize:      cfg.AWSBatchChangeSize,
+				BatchChangeInterval:  cfg.AWSBatchChangeInterval,
+				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
+				AssumeRole:           cfg.AWSAssumeRole,
+				DryRun:               cfg.DryRun,
 			},
 		)
 	case "aws-sd":
