@@ -45,4 +45,4 @@ cover.out
 external-dns
 
 # vendor dir
-vendor/
+#vendor/

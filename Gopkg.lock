@@ -1128,6 +1128,7 @@
     "istio.io/istio/pilot/pkg/model",
     "k8s.io/api/core/v1",
     "k8s.io/api/extensions/v1beta1",
+    "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/labels",
     "k8s.io/apimachinery/pkg/runtime",
