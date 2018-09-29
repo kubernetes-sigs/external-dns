@@ -1,0 +1,225 @@
+---
+version: 1
+interactions:
+- request:
+    body: '{"region":"us-west","type":"g6-nanode-1","label":"linodego-test-instance","root_pass":"R34lBAdP455"}'
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/linode/instances
+    method: POST
+  response:
+    body: '{"alerts": {"network_in": 10, "io": 10000, "transfer_quota": 80, "cpu":
+      90, "network_out": 10}, "ipv6": "1234::5678/64", "created":
+      "2018-01-02T03:04:05", "id": 9006360, "watchdog_enabled": true, "image": null,
+      "label": "linodego-test-instance", "status": "provisioning", "region": "us-west",
+      "specs": {"vcpus": 1, "disk": 25600, "memory": 1024, "transfer": 1000}, "backups":
+      {"enabled": false, "schedule": {"day": null, "window": null}}, "updated": "2018-01-02T03:04:05",
+      "type": "g6-nanode-1", "hypervisor": "kvm", "group": "", "ipv4": ["010.020.030.040"]}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - "true"
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Status
+      Cache-Control:
+      - private, max-age=60, s-maxage=60
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "576"
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json
+      Date:
+      - Thu, 19 Jul 2018 18:42:16 GMT
+      Retry-After:
+      - "117"
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - linodes:read_write
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - DENY
+      X-Oauth-Scopes:
+      - '*'
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "398"
+      X-Ratelimit-Reset:
+      - "1532025854"
+      X-Spec-Version:
+      - 4.0.3
+      X-Xss-Protection:
+      - 1; mode=block
+    status: 200 OK
+    code: 200
+    duration: ""
+- request:
+    body: '{"label":"test-instance-volume","devices":{},"memory_limit":0,"init_rd":0}'
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/linode/instances/9006360/configs
+    method: POST
+  response:
+    body: '{"id": 10269896, "root_device": "/dev/sda", "label": "test-instance-volume",
+      "comments": "", "memory_limit": 0, "created": "2018-01-02T03:04:05", "kernel":
+      "linode/latest-64bit", "initrd": null, "helpers": {"modules_dep": true, "network":
+      true, "updatedb_disabled": true, "distro": true, "devtmpfs_automount": true},
+      "run_level": "default", "updated": "2018-01-02T03:04:05", "devices": {"sdd":
+      null, "sda": null, "sdf": null, "sdh": null, "sdg": null, "sdb": null, "sdc":
+      null, "sde": null}, "virt_mode": "paravirt"}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - "true"
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Status
+      Cache-Control:
+      - private, max-age=60, s-maxage=60
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "516"
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json
+      Date:
+      - Thu, 19 Jul 2018 18:42:16 GMT
+      Retry-After:
+      - "119"
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - linodes:read_write
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - DENY
+      X-Oauth-Scopes:
+      - '*'
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "399"
+      X-Ratelimit-Reset:
+      - "1532025856"
+      X-Spec-Version:
+      - 4.0.3
+      X-Xss-Protection:
+      - 1; mode=block
+    status: 200 OK
+    code: 200
+    duration: ""
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/linode/instances/9006360
+    method: DELETE
+  response:
+    body: '{}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - "true"
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Status
+      Cache-Control:
+      - private, max-age=60, s-maxage=60
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "2"
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json
+      Date:
+      - Thu, 19 Jul 2018 18:42:22 GMT
+      Retry-After:
+      - "111"
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - linodes:read_write
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - DENY
+      X-Oauth-Scopes:
+      - '*'
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "395"
+      X-Ratelimit-Reset:
+      - "1532025854"
+      X-Spec-Version:
+      - 4.0.3
+      X-Xss-Protection:
+      - 1; mode=block
+    status: 200 OK
+    code: 200
+    duration: ""

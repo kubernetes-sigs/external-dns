@@ -1,0 +1,128 @@
+---
+version: 1
+interactions:
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/images
+    method: GET
+  response:
+    body: '{"results": 19, "data": [{"created": "2018-01-02T03:04:05", "id": "linode/arch",
+      "description": null, "deprecated": false, "vendor": "Arch", "label": "Arch Linux",
+      "created_by": "linode", "is_public": true, "type": "manual", "size": 1800},
+      {"created": "2018-01-02T03:04:05", "id": "linode/centos7", "description": null,
+      "deprecated": false, "vendor": "CentOS", "label": "CentOS 7", "created_by":
+      "linode", "is_public": true, "type": "manual", "size": 2000}, {"created": "2018-01-02T03:04:05",
+      "id": "linode/containerlinux", "description": null, "deprecated": false, "vendor":
+      "CoreOS", "label": "CoreOS Container Linux", "created_by": "linode", "is_public":
+      true, "type": "manual", "size": 5000}, {"created": "2018-01-02T03:04:05", "id":
+      "linode/debian9", "description": null, "deprecated": false, "vendor": "Debian",
+      "label": "Debian 9", "created_by": "linode", "is_public": true, "type": "manual",
+      "size": 1250}, {"created": "2018-01-02T03:04:05", "id": "linode/fedora27", "description":
+      null, "deprecated": false, "vendor": "Fedora", "label": "Fedora 27", "created_by":
+      "linode", "is_public": true, "type": "manual", "size": 1900}, {"created": "2018-01-02T03:04:05",
+      "id": "linode/fedora28", "description": null, "deprecated": false, "vendor":
+      "Fedora", "label": "Fedora 28", "created_by": "linode", "is_public": true, "type":
+      "manual", "size": 2000}, {"created": "2018-01-02T03:04:05", "id": "linode/gentoo",
+      "description": null, "deprecated": false, "vendor": "Gentoo", "label": "Gentoo",
+      "created_by": "linode", "is_public": true, "type": "manual", "size": 5500},
+      {"created": "2018-01-02T03:04:05", "id": "linode/opensuse15.0", "description":
+      null, "deprecated": false, "vendor": "openSUSE", "label": "openSUSE Leap 15.0",
+      "created_by": "linode", "is_public": true, "type": "manual", "size": 1500},
+      {"created": "2018-01-02T03:04:05", "id": "linode/opensuse42.3", "description":
+      null, "deprecated": false, "vendor": "openSUSE", "label": "openSUSE Leap 42.3",
+      "created_by": "linode", "is_public": true, "type": "manual", "size": 1900},
+      {"created": "2018-01-02T03:04:05", "id": "linode/slackware14.2", "description":
+      null, "deprecated": false, "vendor": "Slackware", "label": "Slackware 14.2",
+      "created_by": "linode", "is_public": true, "type": "manual", "size": 6000},
+      {"created": "2018-01-02T03:04:05", "id": "linode/ubuntu16.04lts", "description":
+      null, "deprecated": false, "vendor": "Ubuntu", "label": "Ubuntu 16.04 LTS",
+      "created_by": "linode", "is_public": true, "type": "manual", "size": 2500},
+      {"created": "2018-01-02T03:04:05", "id": "linode/ubuntu18.04", "description":
+      null, "deprecated": false, "vendor": "Ubuntu", "label": "Ubuntu 18.04 LTS",
+      "created_by": "linode", "is_public": true, "type": "manual", "size": 2500},
+      {"created": "2018-01-02T03:04:05", "id": "linode/centos6.8", "description":
+      null, "deprecated": true, "vendor": "CentOS", "label": "CentOS 6.8", "created_by":
+      "linode", "is_public": true, "type": "manual", "size": 1024}, {"created": "2018-01-02T03:04:05",
+      "id": "linode/debian8", "description": "", "deprecated": true, "vendor": "Debian",
+      "label": "Debian 8", "created_by": "linode", "is_public": true, "type": "manual",
+      "size": 1024}, {"created": "2018-01-02T03:04:05", "id": "linode/fedora26", "description":
+      null, "deprecated": true, "vendor": "Fedora", "label": "Fedora 26", "created_by":
+      "linode", "is_public": true, "type": "manual", "size": 1500}, {"created": "2018-01-02T03:04:05",
+      "id": "linode/slackware13.37", "description": null, "deprecated": true, "vendor":
+      "Slackware", "label": "Slackware 13.37", "created_by": "linode", "is_public":
+      true, "type": "manual", "size": 600}, {"created": "2018-01-02T03:04:05", "id":
+      "linode/slackware14.1", "description": null, "deprecated": true, "vendor": "Slackware",
+      "label": "Slackware 14.1", "created_by": "linode", "is_public": true, "type":
+      "manual", "size": 1000}, {"created": "2018-01-02T03:04:05", "id": "linode/ubuntu14.04lts",
+      "description": null, "deprecated": true, "vendor": "Ubuntu", "label": "Ubuntu
+      14.04 LTS", "created_by": "linode", "is_public": true, "type": "manual", "size":
+      1500}, {"created": "2018-01-02T03:04:05", "id": "linode/ubuntu17.10", "description":
+      null, "deprecated": true, "vendor": "Ubuntu", "label": "Ubuntu 17.10", "created_by":
+      "linode", "is_public": true, "type": "manual", "size": 2500}], "pages": 1, "page":
+      1}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - "true"
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Status
+      Cache-Control:
+      - private, max-age=0, s-maxage=0, no-cache, no-store
+      - private, max-age=60, s-maxage=60
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "4336"
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Jul 2018 01:38:48 GMT
+      Retry-After:
+      - "28"
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization, X-Filter
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - '*'
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - DENY
+      X-Oauth-Scopes:
+      - '*'
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "394"
+      X-Ratelimit-Reset:
+      - "1530581957"
+      X-Spec-Version:
+      - 4.0.2
+      X-Xss-Protection:
+      - 1; mode=block
+    status: 200 OK
+    code: 200
+    duration: ""

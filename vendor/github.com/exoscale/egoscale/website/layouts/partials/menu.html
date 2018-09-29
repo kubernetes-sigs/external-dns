@@ -1,0 +1,6 @@
+{{ $currentPage := . }}
+{{ range .Site.Menus.main }}
+  {{ if gt .Weight 0 }}
+    <a class="navbar-item{{if or ($currentPage.IsMenuCurrent "main" .) ($currentPage.HasMenuCurrent "main" .) }} active{{end}}" href="{{ .URL }}" title="{{ .Title }}">{{ .Name }}</a>
+  {{ end }}
+{{ end }}

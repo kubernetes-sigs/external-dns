@@ -1,0 +1,78 @@
+---
+version: 1
+interactions:
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/linode/types/g6-standard-1
+    method: GET
+  response:
+    body: '{"disk": 51200, "price": {"hourly": 0.015, "monthly": 10.0}, "vcpus": 1,
+      "memory": 2048, "id": "g6-standard-1", "transfer": 2000, "addons": {"backups":
+      {"price": {"hourly": 0.004, "monthly": 2.5}}}, "class": "standard", "label":
+      "Linode 2GB", "network_out": 2000}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - "true"
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Status
+      Cache-Control:
+      - private, max-age=900
+      - private, max-age=60, s-maxage=60
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "263"
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Jul 2018 01:38:52 GMT
+      Retry-After:
+      - "25"
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization, X-Filter
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - '*'
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - DENY
+      X-Oauth-Scopes:
+      - unknown
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "391"
+      X-Ratelimit-Reset:
+      - "1530581958"
+      X-Spec-Version:
+      - 4.0.2
+      X-Xss-Protection:
+      - 1; mode=block
+    status: 200 OK
+    code: 200
+    duration: ""

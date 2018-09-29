@@ -1,0 +1,79 @@
+---
+version: 1
+rwmutex: {}
+interactions:
+- request:
+    body: '{"user_name":"dynect-user","password":"p@55w0rd","customer_name":"go-dynect"}'
+    form: {}
+    headers:
+      Auth-Token:
+      - ""
+      Content-Type:
+      - application/json
+    url: https://api.dynect.net/REST/Session
+    method: POST
+  response:
+    body: '{"status": "success", "data": {"token": "l5QZksz8FRhr+DekJ0SHgoeziztmUOyFYVtVhjS/yOLQSqS/fr72nuCtQhtQtUoJLperzxQ6wid9CIg6i5SOlzBBv2iVeYUAr4ilU1jueUcuS/AYNoRU6O6IBegImDB+nP1+Ao7MekShnUZfUr2e3spRYIUg3eUg60hBa61nT70=",
+      "version": "3.7.9"}, "job_id": 4342199438, "msgs": [{"INFO": "login: Login successful",
+      "SOURCE": "BLL", "ERR_CD": null, "LVL": "INFO"}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 20 Dec 2017 11:38:50 GMT
+      Server:
+      - nginx/1.4.6 (Ubuntu)
+    status: 200 OK
+    code: 200
+- request:
+    body: ""
+    form: {}
+    headers:
+      Auth-Token:
+      - l5QZksz8FRhr+DekJ0SHgoeziztmUOyFYVtVhjS/yOLQSqS/fr72nuCtQhtQtUoJLperzxQ6wid9CIg6i5SOlzBBv2iVeYUAr4ilU1jueUcuS/AYNoRU6O6IBegImDB+nP1+Ao7MekShnUZfUr2e3spRYIUg3eUg60hBa61nT70=
+      Content-Type:
+      - application/json
+    url: https://api.dynect.net/REST/AllRecord/go-dynect.test/unknown.go-dynect.test
+    method: GET
+  response:
+    body: '{"status": "failure", "data": {}, "job_id": 4342199445, "msgs": [{"INFO":
+      "node: Node is not in the zone", "SOURCE": "BLL", "ERR_CD": "NOT_FOUND", "LVL":
+      "ERROR"}, {"INFO": "get_tree: Node name not found within the zone", "SOURCE":
+      "BLL", "ERR_CD": null, "LVL": "INFO"}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 20 Dec 2017 11:38:50 GMT
+      Server:
+      - nginx/1.4.6 (Ubuntu)
+    status: 404 Not Found
+    code: 404
+- request:
+    body: ""
+    form: {}
+    headers:
+      Auth-Token:
+      - l5QZksz8FRhr+DekJ0SHgoeziztmUOyFYVtVhjS/yOLQSqS/fr72nuCtQhtQtUoJLperzxQ6wid9CIg6i5SOlzBBv2iVeYUAr4ilU1jueUcuS/AYNoRU6O6IBegImDB+nP1+Ao7MekShnUZfUr2e3spRYIUg3eUg60hBa61nT70=
+      Content-Type:
+      - application/json
+    url: https://api.dynect.net/REST/Session
+    method: DELETE
+  response:
+    body: '{"status": "success", "data": {}, "job_id": 4342199451, "msgs": [{"INFO":
+      "logout: Logout successful", "SOURCE": "BLL", "ERR_CD": null, "LVL": "INFO"}]}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 20 Dec 2017 11:38:50 GMT
+      Server:
+      - nginx/1.4.6 (Ubuntu)
+    status: 200 OK
+    code: 200

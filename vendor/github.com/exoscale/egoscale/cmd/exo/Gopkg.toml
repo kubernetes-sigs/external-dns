@@ -1,0 +1,25 @@
+ignored = ["github.com/exoscale/egoscale"]
+
+[[constraint]]
+  name = "github.com/go-ini/ini"
+  version = "1.38.1"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/olekukonko/tablewriter"
+
+[[constraint]]
+  name = "github.com/spf13/cobra"
+  version = "0.0.3"
+
+[[constraint]]
+  name = "github.com/spf13/viper"
+  version = "1.1.0"
+
+[[constraint]]
+  name = "github.com/vbauerster/mpb"
+  version = "3.3.1"
+
+[prune]
+  go-tests = true
+  unused-packages = true

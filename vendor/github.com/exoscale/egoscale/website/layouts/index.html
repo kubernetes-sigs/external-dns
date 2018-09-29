@@ -1,0 +1,68 @@
+{{ define "main" }}
+<section class="hero is-light is-bold">
+    <div class="hero-body">
+        <div class="container">
+            <h1 class="title">{{ .Title }}</h1>
+            <h2 class="subtitle">{{ .Description }}</h2>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+<div class="container">
+<div class="columns">
+    <div class="column">
+        <div class="card">
+            <div class="card-content">
+                <h2 class="title">egoscale</h2>
+                <p>
+                    the Go library powering the <a
+                        href="https://docs.docker.com/machine/drivers/exoscale/">docker
+                    machine driver</a>, the <a
+                    href="http://github.com/xenolf/lego/">Let's Encrypt client
+                    in Go (lego)</a>,
+                    the <a
+                        href="https://github.com/exoscale/terraform-provider-exoscale">Terraform
+                    provider for Exoscale</a> and many others.
+                </p>
+            </div>
+            <footer class="card-footer">
+                <p class="card-footer-item">
+                    <a href="https://github.com/exoscale/egoscale">source code</a>
+                </p>
+                <p class="card-footer-item">
+                    <a href="https://godoc.org/github.com/exoscale/egoscale">godoc</a>
+                </p>
+            </footer>
+        </div>
+    </div>
+    <div class="column">
+        <div class="card">
+            <div class="card-content">
+                <h2 class="title">exo</h2>
+                <p>
+                    the Command-Line Interface (CLI) for Exoscale, manage instances,
+                    firewalls, DNS records and much more.
+                </p>
+            </div>
+            <footer class="card-footer">
+                <p class="card-footer-item">
+                    <a href="https://community.exoscale.com/documentation/">installation</a>
+                </p>
+                <p class="card-footer-item">
+                    <a href="cli">help</a>
+                </p>
+            </footer>
+        </div>
+    </div>
+</div>
+</div>
+</section>
+
+<div class="container">
+    <div class="content">
+        {{.Content}}
+    </div>
+</div>
+
+{{ end }}
