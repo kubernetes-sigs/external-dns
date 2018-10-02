@@ -190,7 +190,7 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 // wildcardUnescape converts \\052.abc back to *.abc
 // Route53 stores wildcards escaped: http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html?shortFooter=true#domain-name-format-asterisk
 func wildcardUnescape(s string) string {
-	if strings.HasPrefix(s, "\\052") {
+	if strings.Contains(s, "\\052") {
 		s = strings.Replace(s, "\\052", "*", 1)
 	}
 	return s
