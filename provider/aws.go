@@ -34,6 +34,9 @@ import (
 
 const (
 	recordTTL = 300
+	// provider specific key that designates whether an AWS ALIAS record has the EvaluateTargetHealth
+	// field set to true.
+	providerSpecificEvaluateTargetHealth = "aws/evaluate-target-health"
 )
 
 var (
@@ -227,7 +230,10 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 			}
 
 			if r.AliasTarget != nil {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), endpoint.RecordTypeCNAME, ttl, aws.StringValue(r.AliasTarget.DNSName)))
+				ep := endpoint.
+					NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), endpoint.RecordTypeCNAME, ttl, aws.StringValue(r.AliasTarget.DNSName)).
+					WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", aws.BoolValue(r.AliasTarget.EvaluateTargetHealth)))
+				endpoints = append(endpoints, ep)
 			}
 		}
 
@@ -359,11 +365,16 @@ func (p *AWSProvider) newChange(action string, endpoint *endpoint.Endpoint) *rou
 	}
 
 	if isAWSLoadBalancer(endpoint) {
+		evalTargetHealth := p.evaluateTargetHealth
+		if _, ok := endpoint.ProviderSpecific[providerSpecificEvaluateTargetHealth]; ok {
+			evalTargetHealth = endpoint.ProviderSpecific[providerSpecificEvaluateTargetHealth] == "true"
+		}
+
 		change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
 		change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
 			DNSName:              aws.String(endpoint.Targets[0]),
 			HostedZoneId:         aws.String(canonicalHostedZone(endpoint.Targets[0])),
-			EvaluateTargetHealth: aws.Bool(p.evaluateTargetHealth),
+			EvaluateTargetHealth: aws.Bool(evalTargetHealth),
 		}
 	} else {
 		change.ResourceRecordSet.Type = aws.String(endpoint.RecordType)
