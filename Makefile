@@ -44,7 +44,8 @@ verify: test
 # The build targets allow to build the binary and docker image
 .PHONY: build build.docker
 
-BINARY        ?= external-dns
+GOARCH        ?= amd64
+BINARY        ?= external-dns-$(GOARCH)
 SOURCES        = $(shell find . -name '*.go')
 IMAGE         ?= registry.opensource.zalan.do/teapot/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty)
