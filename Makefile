@@ -61,7 +61,7 @@ build.push: build.docker
 	docker push "$(IMAGE):$(VERSION)"
 
 build.docker:
-	docker build --rm --tag "$(IMAGE):$(VERSION)" .
+	docker build --build-arg GOARCH=$(GOARCH) --rm --tag "$(IMAGE):$(VERSION)" .
 
 clean:
 	@rm -rf build
