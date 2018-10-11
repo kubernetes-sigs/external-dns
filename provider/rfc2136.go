@@ -291,12 +291,10 @@ func (r rfc2136Provider) RemoveRecord(ep *endpoint.Endpoint) error {
 }
 
 func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
-	if !r.dryRun {
-		log.Debugf("SendMessage")
-	} else {
+	if r.dryRun {
 		log.Debugf("SendMessage.skipped")
-		return nil
 	}
+	log.Debugf("SendMessage")
 
 	c := new(dns.Client)
 	c.SingleInflight = true
