@@ -151,8 +151,21 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 	}
 }
 
+// WithProviderSpecific attaches a key/value pair to the Endpoint and returns the Endpoint.
+// This can be used to pass additional data through the stages of ExternalDNS's Endpoint processing.
+// The assumption is that most of the time this will be provider specific metadata that doesn't
+// warrant its own field on the Endpoint object itself. It differs from Labels in the fact that it's
+// not persisted in the Registry but only kept in memory during a single record synchronization.
+func (e *Endpoint) WithProviderSpecific(key, value string) *Endpoint {
+	if e.ProviderSpecific == nil {
+		e.ProviderSpecific = ProviderSpecific{}
+	}
+	e.ProviderSpecific[key] = value
+	return e
+}
+
 func (e *Endpoint) String() string {
-	return fmt.Sprintf("%s %d IN %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.Targets)
+	return fmt.Sprintf("%s %d IN %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.Targets, e.ProviderSpecific)
 }
 
 // DNSEndpointSpec defines the desired state of DNSEndpoint
