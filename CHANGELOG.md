@@ -1,7 +1,7 @@
 ## v0.5.8 - 2018-10-11
 
-  - New Provider: Linode (#730) @cliedeman
   - New Provider: RFC2136 (#702) @antlad
+  - Add Linode to list of supported providers (#730) @cliedeman
   - Correctly populate target health check on existing records (#724) @linki
   - Don't erase Endpoint labels (#713) @sebastien-prudhomme
 
