@@ -114,4 +114,8 @@ ignored = ["github.com/kubernetes/repo-infra/kazel"]
 
 [[override]]
   name = "golang.org/x/net"
-  revision = "bb807669a61aca6092d8137da1fab2150bb96ad7"
+  revision = "161cd47e91fd58ac17490ef4d742dc98bb4cf60e"
+
+[[constraint]]
+  name = "github.com/miekg/dns"
+  version = "1.0.8"
