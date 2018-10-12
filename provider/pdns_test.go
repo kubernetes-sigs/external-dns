@@ -158,6 +158,18 @@ var (
 		endpoint.NewEndpointWithTTL("abcd.mock.noexist", endpoint.RecordTypeA, endpoint.TTL(300), "9.9.9.9"),
 		endpoint.NewEndpointWithTTL("abcd.mock.noexist", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
 	}
+	endpointsMultipleZonesWithLongRecordNotInDomainFilter = []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.NewEndpointWithTTL("a.very.long.domainname.example.com", endpoint.RecordTypeA, endpoint.TTL(300), "9.9.9.9"),
+		endpoint.NewEndpointWithTTL("a.very.long.domainname.example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+	}
+	endpointsMultipleZonesWithSimilarRecordNotInDomainFilter = []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.NewEndpointWithTTL("test.simexample.com", endpoint.RecordTypeA, endpoint.TTL(300), "9.9.9.9"),
+		endpoint.NewEndpointWithTTL("test.simexample.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+	}
 
 	ZoneEmpty = pgo.Zone{
 		// Opaque zone id (string), assigned by the server, should not be interpreted by the application. Guaranteed to be safe for embedding in URLs.
@@ -171,6 +183,15 @@ var (
 		// Zone kind, one of “Native”, “Master”, “Slave”
 		Kind: "Native",
 		// RRSets in this zone
+		Rrsets: []pgo.RrSet{},
+	}
+
+	ZoneEmptySimilar = pgo.Zone{
+		Id:     "simexample.com.",
+		Name:   "simexample.com.",
+		Type_:  "Zone",
+		Url:    "/api/v1/servers/localhost/zones/simexample.com.",
+		Kind:   "Native",
 		Rrsets: []pgo.RrSet{},
 	}
 
@@ -208,6 +229,72 @@ var (
 		Url:   "/api/v1/servers/localhost/zones/example.com.",
 		Kind:  "Native",
 		Rrsets: []pgo.RrSet{
+			{
+				Name:       "example.com.",
+				Type_:      "A",
+				Ttl:        300,
+				Changetype: "REPLACE",
+				Records: []pgo.Record{
+					{
+						Content:  "8.8.8.8",
+						Disabled: false,
+						SetPtr:   false,
+					},
+				},
+				Comments: []pgo.Comment(nil),
+			},
+			{
+				Name:       "example.com.",
+				Type_:      "TXT",
+				Ttl:        300,
+				Changetype: "REPLACE",
+				Records: []pgo.Record{
+					{
+						Content:  "\"heritage=external-dns,external-dns/owner=tower-pdns\"",
+						Disabled: false,
+						SetPtr:   false,
+					},
+				},
+				Comments: []pgo.Comment(nil),
+			},
+		},
+	}
+
+	ZoneEmptyToSimplePatchLongRecordIgnoredInDomainFilter = pgo.Zone{
+		Id:    "example.com.",
+		Name:  "example.com.",
+		Type_: "Zone",
+		Url:   "/api/v1/servers/localhost/zones/example.com.",
+		Kind:  "Native",
+		Rrsets: []pgo.RrSet{
+			{
+				Name:       "a.very.long.domainname.example.com.",
+				Type_:      "A",
+				Ttl:        300,
+				Changetype: "REPLACE",
+				Records: []pgo.Record{
+					{
+						Content:  "9.9.9.9",
+						Disabled: false,
+						SetPtr:   false,
+					},
+				},
+				Comments: []pgo.Comment(nil),
+			},
+			{
+				Name:       "a.very.long.domainname.example.com.",
+				Type_:      "TXT",
+				Ttl:        300,
+				Changetype: "REPLACE",
+				Records: []pgo.Record{
+					{
+						Content:  "\"heritage=external-dns,external-dns/owner=tower-pdns\"",
+						Disabled: false,
+						SetPtr:   false,
+					},
+				},
+				Comments: []pgo.Comment(nil),
+			},
 			{
 				Name:       "example.com.",
 				Type_:      "A",
@@ -398,6 +485,9 @@ type PDNSAPIClientStub struct {
 func (c *PDNSAPIClientStub) ListZones() ([]pgo.Zone, *http.Response, error) {
 	return []pgo.Zone{ZoneMixed}, nil, nil
 }
+func (c *PDNSAPIClientStub) PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.Zone) {
+	return zones, nil
+}
 func (c *PDNSAPIClientStub) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
 	return ZoneMixed, nil, nil
 }
@@ -415,6 +505,9 @@ type PDNSAPIClientStubEmptyZones struct {
 func (c *PDNSAPIClientStubEmptyZones) ListZones() ([]pgo.Zone, *http.Response, error) {
 	return []pgo.Zone{ZoneEmpty, ZoneEmptyLong, ZoneEmpty2}, nil, nil
 }
+func (c *PDNSAPIClientStubEmptyZones) PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.Zone) {
+	return zones, nil
+}
 func (c *PDNSAPIClientStubEmptyZones) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
 
 	if strings.Contains(zoneID, "example.com") {
@@ -422,7 +515,7 @@ func (c *PDNSAPIClientStubEmptyZones) ListZone(zoneID string) (pgo.Zone, *http.R
 	} else if strings.Contains(zoneID, "mock.test") {
 		return ZoneEmpty2, nil, nil
 	} else if strings.Contains(zoneID, "long.domainname.example.com") {
-		return ZoneEmpty2, nil, nil
+		return ZoneEmptyLong, nil, nil
 	}
 	return pgo.Zone{}, nil, nil
 
@@ -470,6 +563,37 @@ func (c *PDNSAPIClientStubListZonesFailure) ListZones() ([]pgo.Zone, *http.Respo
 }
 
 /******************************************************************************/
+// API that returns zone partitions given DomainFilter(s)
+type PDNSAPIClientStubPartitionZones struct {
+	// Anonymous struct for composition
+	PDNSAPIClientStubEmptyZones
+}
+
+func (c *PDNSAPIClientStubPartitionZones) ListZones() ([]pgo.Zone, *http.Response, error) {
+	return []pgo.Zone{ZoneEmpty, ZoneEmptyLong, ZoneEmpty2, ZoneEmptySimilar}, nil, nil
+}
+
+func (c *PDNSAPIClientStubPartitionZones) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
+
+	if strings.Contains(zoneID, "example.com") {
+		return ZoneEmpty, nil, nil
+	} else if strings.Contains(zoneID, "mock.test") {
+		return ZoneEmpty2, nil, nil
+	} else if strings.Contains(zoneID, "long.domainname.example.com") {
+		return ZoneEmptyLong, nil, nil
+	} else if strings.Contains(zoneID, "simexample.com") {
+		return ZoneEmptySimilar, nil, nil
+	}
+	return pgo.Zone{}, nil, nil
+}
+
+// Just overwrite the ListZones method to introduce a failure
+func (c *PDNSAPIClientStubPartitionZones) PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.Zone) {
+	return []pgo.Zone{ZoneEmpty}, []pgo.Zone{ZoneEmptyLong, ZoneEmpty2}
+
+}
+
+/******************************************************************************/
 
 type NewPDNSProviderTestSuite struct {
 	suite.Suite
@@ -488,7 +612,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 		APIKey:       "foo",
 		DomainFilter: NewDomainFilter([]string{"example.com", "example.org"}),
 	})
-	assert.Error(suite.T(), err, "--domainfilter should raise an error")
+	assert.Nil(suite.T(), err, "--domain-filter should raise no error")
 
 	_, err = NewPDNSProvider(PDNSConfig{
 		Server:       "http://localhost:8081",
@@ -711,6 +835,51 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
 	}
 }
 
+func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZonesPartitionZones() {
+	// Test DomainFilters
+	p := &PDNSProvider{
+		client: &PDNSAPIClientStubPartitionZones{},
+	}
+
+	// Check inserting endpoints from a single zone which is specified in DomainFilter
+	zlist, err := p.ConvertEndpointsToZones(endpointsSimpleRecord, PdnsReplace)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
+
+	// Check deleting endpoints from a single zone which is specified in DomainFilter
+	zlist, err = p.ConvertEndpointsToZones(endpointsSimpleRecord, PdnsDelete)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimpleDelete}, zlist)
+
+	// Check endpoints from multiple zones # which one is specified in DomainFilter and one is not
+	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZones, PdnsReplace)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
+
+	// Check endpoints from multiple zones where some endpoints which don't exist and one that does
+	// and is part of DomainFilter
+	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZonesWithNoExist, PdnsReplace)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
+
+	// Check endpoints from a zone that does not exist
+	zlist, err = p.ConvertEndpointsToZones(endpointsNonexistantZone, PdnsReplace)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), []pgo.Zone{}, zlist)
+
+	// Check endpoints that match multiple zones (one longer than other), is assigned to the right zone when the longer
+	// zone is not part of the DomainFilter
+	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZonesWithLongRecordNotInDomainFilter, PdnsReplace)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimplePatchLongRecordIgnoredInDomainFilter}, zlist)
+
+	// Check endpoints that match multiple zones (one longer than other and one is very similar)
+	// is assigned to the right zone when the similar zone is not part of the DomainFilter
+	zlist, err = p.ConvertEndpointsToZones(endpointsMultipleZonesWithSimilarRecordNotInDomainFilter, PdnsReplace)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToSimplePatch}, zlist)
+}
+
 func (suite *NewPDNSProviderTestSuite) TestPDNSmutateRecords() {
 	// Function definition: mutateRecords(endpoints []*endpoint.Endpoint, changetype pdnsChangeType) error
 
@@ -742,6 +911,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSmutateRecords() {
 	assert.NotNil(suite.T(), err)
 
 }
+
 func TestNewPDNSProviderTestSuite(t *testing.T) {
 	suite.Run(t, new(NewPDNSProviderTestSuite))
 }

@@ -15,8 +15,7 @@ anyway.
 
 The PDNS provider currently does not support:
 
-1. Dry running a configuration is not supported.
-2. The `--domain-filter` flag is not supported.
+* Dry running a configuration is not supported
 
 ## Deployment
 
@@ -47,9 +46,17 @@ spec:
         - --pdns-server={{ pdns-api-url }}
         - --pdns-api-key={{ pdns-http-api-key }}
         - --txt-owner-id={{ owner-id-for-this-external-dns }}
+        - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the zones matching provided domain; omit to process all available zones in PowerDNS
         - --log-level=debug
         - --interval=30s
 ```
+
+#### Domain Filter (--domain-filter)
+When the domain-filter argument is specified, external-dns will automatically create DNS records based on host names specified in ingress objects and services with the external-dns annotation that match the domain-filter argument in the external-dns deployment manifest.
+
+eg. ```--domain-filter=example.org``` will allow for zone `example.org` and any zones in PowerDNS that ends in `.example.org`, including `an.example.org`, ie. the subdomains of example.org.
+
+eg. ```--domain-filter=.example.org``` will allow *only* zones that end in `.example.org`, ie. the subdomains of example.org but not the `example.org` zone itself.
 
 ## RBAC
 
