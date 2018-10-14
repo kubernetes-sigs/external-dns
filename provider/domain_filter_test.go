@@ -99,6 +99,36 @@ var domainFilterTests = []domainFilterTest{
 		[]string{"foo.bar.sub.example.org"},
 		true,
 	},
+	{
+		[]string{"example.org"},
+		[]string{"anexample.org", "test.anexample.org"},
+		false,
+	},
+	{
+		[]string{".example.org"},
+		[]string{"anexample.org", "test.anexample.org"},
+		false,
+	},
+	{
+		[]string{".example.org"},
+		[]string{"example.org"},
+		false,
+	},
+	{
+		[]string{".example.org"},
+		[]string{"test.example.org"},
+		true,
+	},
+	{
+		[]string{"anexample.org"},
+		[]string{"example.org", "test.example.org"},
+		false,
+	},
+	{
+		[]string{".org"},
+		[]string{"example.org", "test.example.org", "foo.test.example.org"},
+		true,
+	},
 }
 
 func TestDomainFilterMatch(t *testing.T) {
