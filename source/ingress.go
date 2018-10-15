@@ -38,15 +38,16 @@ import (
 // Use targetAnnotationKey to explicitly set Endpoint. (useful if the ingress
 // controller does not update, or to override with alternative endpoint)
 type ingressSource struct {
-	client                kubernetes.Interface
-	namespace             string
-	annotationFilter      string
-	fqdnTemplate          *template.Template
-	combineFQDNAnnotation bool
+	client                   kubernetes.Interface
+	namespace                string
+	annotationFilter         string
+	fqdnTemplate             *template.Template
+	combineFQDNAnnotation    bool
+	ignoreHostnameAnnotation bool
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool) (Source, error) {
+func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -61,11 +62,12 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	}
 
 	return &ingressSource{
-		client:                kubeClient,
-		namespace:             namespace,
-		annotationFilter:      annotationFilter,
-		fqdnTemplate:          tmpl,
-		combineFQDNAnnotation: combineFqdnAnnotation,
+		client:                   kubeClient,
+		namespace:                namespace,
+		annotationFilter:         annotationFilter,
+		fqdnTemplate:             tmpl,
+		combineFQDNAnnotation:    combineFqdnAnnotation,
+		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
 	}, nil
 }
 
@@ -92,7 +94,7 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 
-		ingEndpoints := endpointsFromIngress(&ing)
+		ingEndpoints := endpointsFromIngress(&ing, sc.ignoreHostnameAnnotation)
 
 		// apply template if host is missing on ingress
 		if (sc.combineFQDNAnnotation || len(ingEndpoints) == 0) && sc.fqdnTemplate != nil {
@@ -194,7 +196,7 @@ func (sc *ingressSource) setResourceLabel(ingress v1beta1.Ingress, endpoints []*
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object
-func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
+func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	ttl, err := getTTLFromAnnotations(ing.Annotations)
@@ -224,11 +226,13 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 		}
 	}
 
-	hostnameList := getHostnamesFromAnnotations(ing.Annotations)
-	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl)...)
+	// Skip endpoints if we do not want entries from annotations
+	if !ignoreHostnameAnnotation {
+		hostnameList := getHostnamesFromAnnotations(ing.Annotations)
+		for _, hostname := range hostnameList {
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl)...)
+		}
 	}
-
 	return endpoints
 }
 
