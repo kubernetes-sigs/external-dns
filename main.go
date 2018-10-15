@@ -71,6 +71,7 @@ func main() {
 		AnnotationFilter:         cfg.AnnotationFilter,
 		FQDNTemplate:             cfg.FQDNTemplate,
 		CombineFQDNAndAnnotation: cfg.CombineFQDNAndAnnotation,
+		IgnoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
 		Compatibility:            cfg.Compatibility,
 		CreateServiceRecord:      cfg.CreateServiceRecord,
 		PublishInternal:          cfg.PublishInternal,

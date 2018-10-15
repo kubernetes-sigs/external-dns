@@ -116,3 +116,11 @@ func TestValidateGoodDynConfig(t *testing.T) {
 		assert.Nil(t, err, "Configuration should be valid, got this error instead", err)
 	}
 }
+
+func TestValidateBadIgnoreHostnameAnnotationsConfig(t *testing.T) {
+	cfg := externaldns.NewConfig()
+	cfg.IgnoreHostnameAnnotation = true
+	cfg.FQDNTemplate = ""
+
+	assert.Error(t, ValidateConfig(cfg))
+}

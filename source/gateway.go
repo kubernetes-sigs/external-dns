@@ -38,14 +38,15 @@ import (
 // The gateway implementation uses the spec.servers.hosts values for the hostnames.
 // Use targetAnnotationKey to explicitly set Endpoint.
 type gatewaySource struct {
-	kubeClient              kubernetes.Interface
-	istioClient             istiomodel.ConfigStore
-	istioNamespace          string
-	istioIngressGatewayName string
-	namespace               string
-	annotationFilter        string
-	fqdnTemplate            *template.Template
-	combineFQDNAnnotation   bool
+	kubeClient               kubernetes.Interface
+	istioClient              istiomodel.ConfigStore
+	istioNamespace           string
+	istioIngressGatewayName  string
+	namespace                string
+	annotationFilter         string
+	fqdnTemplate             *template.Template
+	combineFQDNAnnotation    bool
+	ignoreHostnameAnnotation bool
 }
 
 // NewIstioGatewaySource creates a new gatewaySource with the given config.
@@ -57,6 +58,7 @@ func NewIstioGatewaySource(
 	annotationFilter string,
 	fqdnTemplate string,
 	combineFqdnAnnotation bool,
+	ignoreHostnameAnnotation bool,
 ) (Source, error) {
 	var (
 		tmpl *template.Template
@@ -77,14 +79,15 @@ func NewIstioGatewaySource(
 	}
 
 	return &gatewaySource{
-		kubeClient:              kubeClient,
-		istioClient:             istioClient,
-		istioNamespace:          istioNamespace,
-		istioIngressGatewayName: istioIngressGatewayName,
-		namespace:               namespace,
-		annotationFilter:        annotationFilter,
-		fqdnTemplate:            tmpl,
-		combineFQDNAnnotation:   combineFqdnAnnotation,
+		kubeClient:               kubeClient,
+		istioClient:              istioClient,
+		istioNamespace:           istioNamespace,
+		istioIngressGatewayName:  istioIngressGatewayName,
+		namespace:                namespace,
+		annotationFilter:         annotationFilter,
+		fqdnTemplate:             tmpl,
+		combineFQDNAnnotation:    combineFqdnAnnotation,
+		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
 	}, nil
 }
 
@@ -265,9 +268,12 @@ func (sc *gatewaySource) endpointsFromGatewayConfig(config istiomodel.Config) ([
 		}
 	}
 
-	hostnameList := getHostnamesFromAnnotations(config.Annotations)
-	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl)...)
+	// Skip endpoints if we do not want entries from annotations
+	if !sc.ignoreHostnameAnnotation {
+		hostnameList := getHostnamesFromAnnotations(config.Annotations)
+		for _, hostname := range hostnameList {
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl)...)
+		}
 	}
 
 	return endpoints, nil

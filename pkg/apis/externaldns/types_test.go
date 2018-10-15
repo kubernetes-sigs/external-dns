@@ -88,6 +88,7 @@ var (
 		Sources:                 []string{"service", "ingress", "connector"},
 		Namespace:               "namespace",
 		FQDNTemplate:            "{{.Name}}.service.example.com",
+        IgnoreHostnameAnnotation: true,
 		Compatibility:           "mate",
 		Provider:                "google",
 		GoogleProject:           "project",
@@ -133,7 +134,7 @@ var (
 		ExoscaleAPISecret:       "2",
 		CRDSourceAPIVersion:     "test.k8s.io/v1alpha1",
 		CRDSourceKind:           "Endpoint",
-		CreateServiceRecord:     true,
+        CreateServiceRecord:     true,
 	}
 )
 
@@ -165,6 +166,7 @@ func TestParseFlags(t *testing.T) {
 				"--source=connector",
 				"--namespace=namespace",
 				"--fqdn-template={{.Name}}.service.example.com",
+				"--ignore-hostname-annotation",
 				"--compatibility=mate",
 				"--provider=google",
 				"--google-project=project",
@@ -227,6 +229,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_SOURCE":                     "service\ningress\nconnector",
 				"EXTERNAL_DNS_NAMESPACE":                  "namespace",
 				"EXTERNAL_DNS_FQDN_TEMPLATE":              "{{.Name}}.service.example.com",
+				"EXTERNAL_DNS_IGNORE_HOSTNAME_ANNOTATION": "1",
 				"EXTERNAL_DNS_COMPATIBILITY":              "mate",
 				"EXTERNAL_DNS_PROVIDER":                   "google",
 				"EXTERNAL_DNS_GOOGLE_PROJECT":             "project",
