@@ -45,6 +45,7 @@ type Config struct {
 	AnnotationFilter         string
 	FQDNTemplate             string
 	CombineFQDNAndAnnotation bool
+	IgnoreHostnameAnnotation bool
 	Compatibility            string
 	PublishInternal          bool
 	PublishHostIP            bool
@@ -118,6 +119,7 @@ var defaultConfig = &Config{
 	AnnotationFilter:         "",
 	FQDNTemplate:             "",
 	CombineFQDNAndAnnotation: false,
+	IgnoreHostnameAnnotation: false,
 	Compatibility:            "",
 	PublishInternal:          false,
 	PublishHostIP:            false,
@@ -225,6 +227,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("annotation-filter", "Filter sources managed by external-dns via annotation using label selector semantics (default: all sources)").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
 	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
 	app.Flag("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting").BoolVar(&cfg.CombineFQDNAndAnnotation)
+	app.Flag("ignore-hostname-annotation", "Ignore hostname annotation when generating DNS names, valid only when using fqdn-template is set (optional, default: false)").BoolVar(&cfg.IgnoreHostnameAnnotation)
 	app.Flag("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule)").Default(defaultConfig.Compatibility).EnumVar(&cfg.Compatibility, "", "mate", "molecule")
 	app.Flag("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)").BoolVar(&cfg.PublishInternal)
 	app.Flag("publish-host-ip", "Allow external-dns to publish host-ip for headless services (optional)").BoolVar(&cfg.PublishHostIP)
