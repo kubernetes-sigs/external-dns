@@ -17,7 +17,12 @@ limitations under the License.
 package provider
 
 import (
+	"encoding/pem"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"reflect"
 	"sort"
 	"sync/atomic"
@@ -130,6 +135,59 @@ func newFakeDesignateClient() *fakeDesignateClient {
 			zone       *zones.Zone
 			recordSets map[string]*recordsets.RecordSet
 		}),
+	}
+}
+
+func TestNewDesignateProvider(t *testing.T) {
+	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusAccepted)
+		w.Write([]byte(`{
+		  "token": {
+		    "catalog": [
+		      {
+		        "id": "9615c2dfac3b4b19935226d4c9d4afce",
+		        "name": "designate",
+		        "type": "dns",
+		        "endpoints": [
+		          {
+		            "id": "3d3cc3a273b54d0490ac43d6572e4c48",
+		            "region": "RegionOne",
+		            "region_id": "RegionOne",
+		            "interface": "public",
+		            "url": "https://example.com:9001"
+		          }
+		        ]
+		      }
+		    ]
+		  }
+		}`))
+	}))
+	defer ts.Close()
+
+	block := &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: ts.Certificate().Raw,
+	}
+	tmpfile, err := ioutil.TempFile("", "os-test.crt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmpfile.Name())
+	if err := pem.Encode(tmpfile, block); err != nil {
+		t.Fatal(err)
+	}
+	if err := tmpfile.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	os.Setenv("OS_AUTH_URL", ts.URL+"/v3")
+	os.Setenv("OS_USERNAME", "username")
+	os.Setenv("OS_PASSWORD", "password")
+	os.Setenv("OS_USER_DOMAIN_NAME", "Default")
+	os.Setenv("OPENSTACK_CA_FILE", tmpfile.Name())
+
+	if _, err := NewDesignateProvider(DomainFilter{}, true); err != nil {
+		t.Fatalf("Failed to initialize Designate provider: %s", err)
 	}
 }
 
