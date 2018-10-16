@@ -382,7 +382,6 @@ func (p *AWSProvider) newChange(action string, endpoint *endpoint.Endpoint) *rou
 			EvaluateTargetHealth: aws.Bool(evalTargetHealth),
 		}
 	} else if hostedZone := isAWSAlias(endpoint, rec); hostedZone != "" {
-		//FIXME should break if err != nil
 		zones, err := p.Zones()
 		if err != nil {
 			log.Errorf("getting zones failed: %v", err)
