@@ -835,11 +835,11 @@ func TestAWSisAWSAlias(t *testing.T) {
 			ProviderSpecific: map[string]string{"alias": tc.alias},
 		}
 		addrs := []*endpoint.Endpoint{
-			&endpoint.Endpoint{
+			{
 				DNSName: "foo.example.org",
 				Targets: endpoint.Targets{"foobar.example.org"},
 			},
-			&endpoint.Endpoint{
+			{
 				DNSName: "bar.example.org",
 				Targets: endpoint.Targets{"bar.eu-central-1.elb.amazonaws.com"},
 			},
