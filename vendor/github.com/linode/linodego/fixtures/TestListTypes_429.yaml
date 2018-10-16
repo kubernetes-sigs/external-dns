@@ -1,0 +1,31 @@
+---
+version: 1
+interactions:
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/linode/types
+    method: GET
+  response:
+    body: ''
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "0"
+      Date:
+      - Tue, 03 Jul 2018 01:38:52 GMT
+      Server:
+      - nginx
+    status: 429 429
+    code: 429
+    duration: ""

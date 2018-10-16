@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>{{ block "title" . }}
+  {{ .Site.Title }}
+{{ end }}</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.min.css">
+
+
+<nav class="navbar is-dark" role="navigation" aria-label="main navigation">
+    <div class="container">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="{{ .Site.BaseURL }}">Egoscale library</a>
+        </div>
+        <div class="navbar-start navbar-menu is-active">
+            {{ partial "menu" . }}
+        </div>
+        <div class="navbar-end is-right navbar-menu">
+            <div style="margin-top:.7rem">
+                <a class="button is-primary" href="https://github.com/exoscale/egoscale/releases">
+                    <span class="icon"><i class="fas fa-download"></i></span>
+                    <span>Download</span>
+                </a>
+                <iframe src="https://ghbtns.com/github-btn.html?user=exoscale&repo=egoscale&type=star&count=true&size=large" frameborder="0" scrolling="0" width="160px" height="30px"></iframe>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<main>
+    {{ block "main" . }}
+    {{ end }}
+</main>
+
+{{ block "footer" . }}{{ end }}
+
+{{ partial "footer" . }}
+
+<script defer src="https://use.fontawesome.com/releases/v5.0.7/js/all.js"></script>

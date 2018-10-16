@@ -1,0 +1,19 @@
+{{ define "title" }}
+  {{ .Title }} &ndash; {{ .Site.Title }}
+{{ end }}
+{{ define "main" }}
+<section class="hero is-light is-bold">
+<div class="hero-body">
+<div class="container">
+  <h1 class="title is-1 is-spaced">{{ .Title }}</h1>
+  <p class="subtitle">{{ .Description | markdownify }}</p>
+</div>
+</div>
+</section>
+
+<div class="container">
+  <div class="content">
+    {{ .Content }}
+  </div>
+</div>
+{{ end }}

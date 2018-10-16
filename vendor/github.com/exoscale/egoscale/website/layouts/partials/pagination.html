@@ -1,0 +1,44 @@
+{{ $pag := $.Paginator }}
+{{ if gt $pag.TotalPages 1 }}
+<nav class="pagination" role="navigation" aria-label="pagination">
+<ul class="pagination-list">
+    {{ with $pag.First }}
+    <li>
+        <a class="pagination-link" href="{{ .URL }}" aria-label="First"><span aria-hidden="true">&laquo;&laquo;</span></a>
+    </li>
+    {{ end }}
+    <li
+    {{ if not $pag.HasPrev }}class="disabled"{{ end }}>
+    <a class="pagination-link" href="{{ if $pag.HasPrev }}{{ $pag.Prev.URL }}{{ end }}" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a>
+    </li>
+    {{ $.Scratch.Set "__paginator.ellipsed" false }}
+    {{ range $pag.Pagers }}
+    {{ $right := sub .TotalPages .PageNumber }}
+    {{ $showNumber := or (le .PageNumber 3) (eq $right 0) }}
+    {{ $showNumber := or $showNumber (and (gt .PageNumber (sub $pag.PageNumber 2)) (lt .PageNumber (add $pag.PageNumber 2)))  }}
+    {{ if $showNumber }}
+        {{ $.Scratch.Set "__paginator.ellipsed" false }}
+        {{ $.Scratch.Set "__paginator.shouldEllipse" false }}
+    {{ else }}
+        {{ $.Scratch.Set "__paginator.shouldEllipse" (not ($.Scratch.Get "__paginator.ellipsed") ) }}
+        {{ $.Scratch.Set "__paginator.ellipsed" true }}
+    {{ end }}
+    {{ if $showNumber }}
+    <li class="pagination-link
+    {{ if eq . $pag }}active{{ end }}"><a href="{{ .URL }}">{{ .PageNumber }}</a></li>
+    {{ else if ($.Scratch.Get "__paginator.shouldEllipse") }}
+    <li class="pagination-ellipsis disabled"><span aria-hidden="true">&hellip;</span></li>
+    {{ end }}
+    {{ end }}
+    <li
+    {{ if not $pag.HasNext }}class="disabled"{{ end }}>
+    <a class="pagination-link" href="{{ if $pag.HasNext }}{{ $pag.Next.URL }}{{ end }}" aria-label="Next"><span aria-hidden="true">&raquo;</span></a>
+    </li>
+    {{ with $pag.Last }}
+    <li>
+        <a class="pagination-link" href="{{ .URL }}" aria-label="Last"><span aria-hidden="true">&raquo;&raquo;</span></a>
+    </li>
+    {{ end }}
+</ul>
+</nav>
+{{ end }}

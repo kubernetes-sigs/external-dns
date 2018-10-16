@@ -1,0 +1,67 @@
+language: go
+
+dist: trusty
+sudo: required
+
+go:
+- 1.7
+- 1.8
+- 1.9
+- "1.10"
+- tip
+
+env:
+  - DEP_VERSION=0.5.0 HUGO_VERSION=0.46 GORELEASER_VERSION=0.82.2 NFPM_VERSION=0.9.3
+
+cache: apt
+
+addons:
+  apt:
+    update: true
+    packages:
+    - rpm
+
+install: |
+  curl -L -s https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-amd64 -o $GOPATH/bin/dep
+  chmod +x $GOPATH/bin/dep
+  wget https://github.com/goreleaser/goreleaser/releases/download/v${GORELEASER_VERSION}/goreleaser_amd64.deb
+  sudo dpkg -i goreleaser_amd64.deb
+  wget https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_amd64.deb
+  sudo dpkg -i nfpm_amd64.deb
+  npm i codeclimate-test-reporter
+
+script: |
+  dep ensure -v -vendor-only
+  go test -race -coverprofile=coverage.out -covermode=atomic .
+  npx codeclimate-test-reporter < coverage.out
+
+jobs:
+  include:
+  - stage: goreleaser
+    go: "1.10"
+    if: type = push
+    script: |
+      dep ensure -v -vendor-only
+      cd cmd/cs
+      dep ensure -v -vendor-only
+      cd ../exo
+      dep ensure -v -vendor-only
+      cd ../..
+      go run cmd/exo/completion/main.go
+      goreleaser --snapshot --skip-sign
+  - stage: gh-pages
+    go: "1.10"
+    if: branch = master AND type = push
+    script: |
+      cd website
+      sh prepare.sh
+      wget https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_Linux-64bit.deb
+      sudo dpkg -i hugo_${HUGO_VERSION}_Linux-64bit.deb
+      hugo
+      cd public
+      git init
+      git config user.name "TravisCI"
+      git config user.email "travis@travis-ci.org"
+      git add .
+      git commit -m "Deployed to github pages"
+      git push -f -q "https://${GITHUB_TOKEN}@github.com/${TRAVIS_REPO_SLUG}" master:gh-pages

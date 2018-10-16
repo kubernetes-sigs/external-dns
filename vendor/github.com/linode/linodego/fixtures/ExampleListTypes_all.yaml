@@ -1,0 +1,125 @@
+---
+version: 1
+interactions:
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/linode/types
+    method: GET
+  response:
+    body: '{"results": 15, "data": [{"id": "g6-nanode-1", "memory": 1024, "transfer":
+      1000, "class": "nanode", "price": {"hourly": 0.0075, "monthly": 5.0}, "vcpus":
+      1, "label": "Nanode 1GB", "network_out": 1000, "addons": {"backups": {"price":
+      {"hourly": 0.003, "monthly": 2.0}}}, "disk": 25600}, {"id": "g6-standard-1",
+      "memory": 2048, "transfer": 2000, "class": "standard", "price": {"hourly": 0.015,
+      "monthly": 10.0}, "vcpus": 1, "label": "Linode 2GB", "network_out": 2000, "addons":
+      {"backups": {"price": {"hourly": 0.004, "monthly": 2.5}}}, "disk": 51200}, {"id":
+      "g6-standard-2", "memory": 4096, "transfer": 4000, "class": "standard", "price":
+      {"hourly": 0.03, "monthly": 20.0}, "vcpus": 2, "label": "Linode 4GB", "network_out":
+      4000, "addons": {"backups": {"price": {"hourly": 0.008, "monthly": 5.0}}}, "disk":
+      81920}, {"id": "g6-standard-4", "memory": 8192, "transfer": 5000, "class": "standard",
+      "price": {"hourly": 0.06, "monthly": 40.0}, "vcpus": 4, "label": "Linode 8GB",
+      "network_out": 5000, "addons": {"backups": {"price": {"hourly": 0.015, "monthly":
+      10.0}}}, "disk": 163840}, {"id": "g6-standard-6", "memory": 16384, "transfer":
+      8000, "class": "standard", "price": {"hourly": 0.12, "monthly": 80.0}, "vcpus":
+      6, "label": "Linode 16GB", "network_out": 6000, "addons": {"backups": {"price":
+      {"hourly": 0.03, "monthly": 20.0}}}, "disk": 327680}, {"id": "g6-standard-8",
+      "memory": 32768, "transfer": 16000, "class": "standard", "price": {"hourly":
+      0.24, "monthly": 160.0}, "vcpus": 8, "label": "Linode 32GB", "network_out":
+      7000, "addons": {"backups": {"price": {"hourly": 0.06, "monthly": 40.0}}}, "disk":
+      655360}, {"id": "g6-standard-16", "memory": 65536, "transfer": 20000, "class":
+      "standard", "price": {"hourly": 0.48, "monthly": 320.0}, "vcpus": 16, "label":
+      "Linode 64GB", "network_out": 9000, "addons": {"backups": {"price": {"hourly":
+      0.12, "monthly": 80.0}}}, "disk": 1310720}, {"id": "g6-standard-20", "memory":
+      98304, "transfer": 20000, "class": "standard", "price": {"hourly": 0.72, "monthly":
+      480.0}, "vcpus": 20, "label": "Linode 96GB", "network_out": 10000, "addons":
+      {"backups": {"price": {"hourly": 0.18, "monthly": 120.0}}}, "disk": 1966080},
+      {"id": "g6-standard-24", "memory": 131072, "transfer": 20000, "class": "standard",
+      "price": {"hourly": 0.96, "monthly": 640.0}, "vcpus": 24, "label": "Linode 128GB",
+      "network_out": 11000, "addons": {"backups": {"price": {"hourly": 0.24, "monthly":
+      160.0}}}, "disk": 2621440}, {"id": "g6-standard-32", "memory": 196608, "transfer":
+      20000, "class": "standard", "price": {"hourly": 1.44, "monthly": 960.0}, "vcpus":
+      32, "label": "Linode 192GB", "network_out": 12000, "addons": {"backups": {"price":
+      {"hourly": 0.36, "monthly": 240.0}}}, "disk": 3932160}, {"id": "g6-highmem-1",
+      "memory": 24576, "transfer": 5000, "class": "highmem", "price": {"hourly": 0.09,
+      "monthly": 60.0}, "vcpus": 1, "label": "Linode 24GB", "network_out": 5000, "addons":
+      {"backups": {"price": {"hourly": 0.0075, "monthly": 5.0}}}, "disk": 20480},
+      {"id": "g6-highmem-2", "memory": 49152, "transfer": 6000, "class": "highmem",
+      "price": {"hourly": 0.18, "monthly": 120.0}, "vcpus": 2, "label": "Linode 48GB",
+      "network_out": 6000, "addons": {"backups": {"price": {"hourly": 0.015, "monthly":
+      10.0}}}, "disk": 40960}, {"id": "g6-highmem-4", "memory": 92160, "transfer":
+      7000, "class": "highmem", "price": {"hourly": 0.36, "monthly": 240.0}, "vcpus":
+      4, "label": "Linode 90GB", "network_out": 7000, "addons": {"backups": {"price":
+      {"hourly": 0.03, "monthly": 20.0}}}, "disk": 92160}, {"id": "g6-highmem-8",
+      "memory": 153600, "transfer": 8000, "class": "highmem", "price": {"hourly":
+      0.72, "monthly": 480.0}, "vcpus": 8, "label": "Linode 150GB", "network_out":
+      8000, "addons": {"backups": {"price": {"hourly": 0.06, "monthly": 40.0}}}, "disk":
+      204800}, {"id": "g6-highmem-16", "memory": 307200, "transfer": 9000, "class":
+      "highmem", "price": {"hourly": 1.44, "monthly": 960.0}, "vcpus": 16, "label":
+      "Linode 300GB", "network_out": 9000, "addons": {"backups": {"price": {"hourly":
+      0.12, "monthly": 80.0}}}, "disk": 348160}], "pages": 1, "page": 1}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - "true"
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Status
+      Cache-Control:
+      - private, max-age=900
+      - private, max-age=60, s-maxage=60
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "4072"
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Jul 2018 01:39:01 GMT
+      Retry-After:
+      - "16"
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization, X-Filter
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - '*'
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - DENY
+      X-Oauth-Scopes:
+      - unknown
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "393"
+      X-Ratelimit-Reset:
+      - "1530581958"
+      X-Spec-Version:
+      - 4.0.2
+      X-Xss-Protection:
+      - 1; mode=block
+    status: 200 OK
+    code: 200
+    duration: ""

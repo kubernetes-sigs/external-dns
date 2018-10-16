@@ -1,0 +1,6 @@
+language: "go"
+go:
+  - "1.10"
+script: "touch .env && make test ARGS='-coverprofile=coverage.txt -covermode=atomic'"
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

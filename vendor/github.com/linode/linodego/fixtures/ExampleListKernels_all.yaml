@@ -1,0 +1,659 @@
+---
+version: 1
+interactions:
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/linode/kernels
+    method: GET
+  response:
+    body: '{"pages": 3, "page": 1, "data": [{"xen": true, "label": "Latest 2.6 (010.020.030.040-linode34)",
+      "architecture": "i386", "kvm": false, "id": "linode/latest-2.6-32bit", "version":
+      "2.6.39", "pvops": true}, {"xen": false, "label": "Latest 2.6 Stable (010.020.030.040-linode44)",
+      "architecture": "i386", "kvm": false, "id": "linode/latest-2.6", "version":
+      "2.6.24", "pvops": false}, {"xen": true, "label": "Latest 32 bit (4.15.13-x86-linode125)",
+      "architecture": "i386", "kvm": true, "id": "linode/latest-32bit", "version":
+      "4.15.13", "pvops": true}, {"xen": true, "label": "Latest Legacy (010.020.030.040-linode22)",
+      "architecture": "i386", "kvm": false, "id": "linode/010.020.030.040-linode22", "version":
+      "2.6.18", "pvops": false}, {"xen": true, "label": "4.17.2-x86-linode128", "architecture":
+      "i386", "kvm": true, "id": "linode/4.17.2-x86-linode128", "version": "4.17.2",
+      "pvops": true}, {"xen": true, "label": "4.16.11-x86-linode127", "architecture":
+      "i386", "kvm": true, "id": "linode/4.16.11-x86-linode127", "version": "4.16.11",
+      "pvops": true}, {"xen": true, "label": "4.15.18-x86-linode126", "architecture":
+      "i386", "kvm": true, "id": "linode/4.15.18-x86-linode126", "version": "4.15.18",
+      "pvops": true}, {"xen": true, "label": "4.15.13-x86-linode125", "architecture":
+      "i386", "kvm": true, "id": "linode/4.15.13-x86-linode125", "version": "4.15.13",
+      "pvops": true}, {"xen": true, "label": "4.15.12-x86-linode124", "architecture":
+      "i386", "kvm": true, "id": "linode/4.15.12-x86-linode124", "version": "4.15.12",
+      "pvops": true}, {"xen": true, "label": "4.15.10-x86-linode123", "architecture":
+      "i386", "kvm": true, "id": "linode/4.15.10-x86-linode123", "version": "4.15.10",
+      "pvops": true}, {"xen": true, "label": "4.15.8-x86-linode122", "architecture":
+      "i386", "kvm": true, "id": "linode/4.15.8-x86-linode122", "version": "4.15.8",
+      "pvops": true}, {"xen": true, "label": "4.15.7-x86-linode121", "architecture":
+      "i386", "kvm": true, "id": "linode/4.15.7-x86-linode121", "version": "4.15.7",
+      "pvops": true}, {"xen": true, "label": "4.14.19-x86-linode119", "architecture":
+      "i386", "kvm": true, "id": "linode/4.14.19-x86-linode119", "version": "4.14.19",
+      "pvops": true}, {"xen": true, "label": "4.14.17-x86-linode118", "architecture":
+      "i386", "kvm": true, "id": "linode/4.14.17-x86-linode118", "version": "4.14.17",
+      "pvops": true}, {"xen": true, "label": "4.9.80-x86-linode117", "architecture":
+      "i386", "kvm": true, "id": "linode/4.9.80-x86-linode117", "version": "4.9.80",
+      "pvops": true}, {"xen": true, "label": "4.4.115-x86-linode116", "architecture":
+      "i386", "kvm": true, "id": "linode/4.4.115-x86-linode116", "version": "4.4.115",
+      "pvops": true}, {"xen": true, "label": "4.4.113-x86-linode115", "architecture":
+      "i386", "kvm": true, "id": "linode/4.4.113-x86-linode115", "version": "4.4.113",
+      "pvops": true}, {"xen": true, "label": "4.9.78-x86-linode114", "architecture":
+      "i386", "kvm": true, "id": "linode/4.9.78-x86-linode114", "version": "4.9.78",
+      "pvops": true}, {"xen": true, "label": "4.14.14-x86-linode113", "architecture":
+      "i386", "kvm": true, "id": "linode/4.14.14-x86-linode113", "version": "4.14.14",
+      "pvops": true}, {"xen": true, "label": "4.14.14-x86-linode112", "architecture":
+      "i386", "kvm": true, "id": "linode/4.14.14-x86-linode112", "version": "4.14.14",
+      "pvops": true}, {"xen": true, "label": "4.9.64-x86-linode107", "architecture":
+      "i386", "kvm": true, "id": "linode/4.9.64-x86-linode107", "version": "4.9.64",
+      "pvops": true}, {"xen": true, "label": "4.9.68-x86-linode108", "architecture":
+      "i386", "kvm": true, "id": "linode/4.9.68-x86-linode108", "version": "4.9.68",
+      "pvops": true}, {"xen": true, "label": "4.14.12-x86-linode111", "architecture":
+      "i386", "kvm": true, "id": "linode/4.14.12-x86-linode111", "version": "4.14.12",
+      "pvops": true}, {"xen": true, "label": "4.14.11-x86-linode110", "architecture":
+      "i386", "kvm": true, "id": "linode/4.14.11-x86-linode110", "version": "4.14.11",
+      "pvops": true}, {"xen": true, "label": "4.9.56-x86-linode106", "architecture":
+      "i386", "kvm": true, "id": "linode/4.9.56-x86-linode106", "version": "4.9.56",
+      "pvops": true}, {"xen": true, "label": "4.9.50-x86-linode105", "architecture":
+      "i386", "kvm": true, "id": "linode/4.9.50-x86-linode105", "version": "4.9.50",
+      "pvops": true}, {"xen": true, "label": "4.9.36-x86-linode104", "architecture":
+      "i386", "kvm": true, "id": "linode/4.9.36-x86-linode104", "version": "4.9.36",
+      "pvops": true}, {"xen": true, "label": "4.9.33-x86-linode102", "architecture":
+      "i386", "kvm": true, "id": "linode/4.9.33-x86-linode102", "version": "4.9.33",
+      "pvops": true}, {"xen": true, "label": "4.9.15-x86-linode100", "architecture":
+      "i386", "kvm": true, "id": "linode/4.9.15-x86-linode100", "version": "4.9.15",
+      "pvops": true}, {"xen": true, "label": "4.9.7-x86-linode99", "architecture":
+      "i386", "kvm": true, "id": "linode/4.9.7-x86-linode99", "version": "4.9.7",
+      "pvops": true}, {"xen": true, "label": "4.9.0-x86-linode98", "architecture":
+      "i386", "kvm": true, "id": "linode/4.9.0-x86-linode98", "version": "4.9.0",
+      "pvops": true}, {"xen": true, "label": "4.8.6-x86-linode97", "architecture":
+      "i386", "kvm": true, "id": "linode/4.8.6-x86-linode97", "version": "4.8.6",
+      "pvops": true}, {"xen": true, "label": "4.8.4-x86-linode96", "architecture":
+      "i386", "kvm": true, "id": "linode/4.8.4-x86-linode96", "version": "4.8.4",
+      "pvops": true}, {"xen": true, "label": "4.8.3-x86-linode95", "architecture":
+      "i386", "kvm": true, "id": "linode/4.8.3-x86-linode95", "version": "4.8.3",
+      "pvops": true}, {"xen": true, "label": "4.8.1-x86-linode94", "architecture":
+      "i386", "kvm": true, "id": "linode/4.8.1-x86-linode94", "version": "4.8.1",
+      "pvops": true}, {"xen": true, "label": "4.7.3-x86-linode92", "architecture":
+      "i386", "kvm": true, "id": "linode/4.7.3-x86-linode92", "version": "4.7.3",
+      "pvops": true}, {"xen": true, "label": "4.7.0-x86-linode90", "architecture":
+      "i386", "kvm": true, "id": "linode/4.7.0-x86-linode90", "version": "4.7.0",
+      "pvops": true}, {"xen": true, "label": "4.6.5-x86-linode89", "architecture":
+      "i386", "kvm": true, "id": "linode/4.6.5-x86-linode89", "version": "4.6.5",
+      "pvops": true}, {"xen": true, "label": "4.5.5-x86-linode88", "architecture":
+      "i386", "kvm": true, "id": "linode/4.5.5-x86-linode88", "version": "4.5.5",
+      "pvops": true}, {"xen": true, "label": "4.5.3-x86-linode86", "architecture":
+      "i386", "kvm": true, "id": "linode/4.5.3-x86-linode86", "version": "4.5.3",
+      "pvops": true}, {"xen": true, "label": "4.5.0-x86-linode84", "architecture":
+      "i386", "kvm": true, "id": "linode/4.5.0-x86-linode84", "version": "4.5.0",
+      "pvops": true}, {"xen": true, "label": "4.4.4-x86-linode83", "architecture":
+      "i386", "kvm": true, "id": "linode/4.4.4-x86-linode83", "version": "4.4.4",
+      "pvops": true}, {"xen": true, "label": "4.4.0-x86-linode82", "architecture":
+      "i386", "kvm": true, "id": "linode/4.4.0-x86-linode82", "version": "4.4.0",
+      "pvops": true}, {"xen": true, "label": "4.1.5-x86-linode80", "architecture":
+      "i386", "kvm": true, "id": "linode/4.1.5-x86-linode80", "version": "4.1.5",
+      "pvops": true}, {"xen": true, "label": "4.1.5-x86-linode79", "architecture":
+      "i386", "kvm": true, "id": "linode/4.1.5-x86-linode79", "version": "4.1.5",
+      "pvops": true}, {"xen": true, "label": "4.1.0-x86-linode78", "architecture":
+      "i386", "kvm": true, "id": "linode/4.1.0-x86-linode78", "version": "4.1.0",
+      "pvops": true}, {"xen": true, "label": "4.0.5-x86-linode77", "architecture":
+      "i386", "kvm": true, "id": "linode/4.0.5-x86-linode77", "version": "4.0.5",
+      "pvops": true}, {"xen": true, "label": "4.0.5-x86-linode76", "architecture":
+      "i386", "kvm": false, "id": "linode/4.0.5-x86-linode76", "version": "4.0.5",
+      "pvops": true}, {"xen": true, "label": "4.0.4-x86-linode75", "architecture":
+      "i386", "kvm": false, "id": "linode/4.0.4-x86-linode75", "version": "4.0.4",
+      "pvops": true}, {"xen": true, "label": "4.0.2-x86-linode74", "architecture":
+      "i386", "kvm": false, "id": "linode/4.0.2-x86-linode74", "version": "4.0.2",
+      "pvops": true}, {"xen": true, "label": "4.0.1-x86-linode73", "architecture":
+      "i386", "kvm": false, "id": "linode/4.0-x86-linode73", "version": "4.0.1", "pvops":
+      true}, {"xen": true, "label": "4.0-x86-linode72", "architecture": "i386", "kvm":
+      false, "id": "linode/4.0-x86-linode72", "version": "4.0", "pvops": true}, {"xen":
+      true, "label": "3.19.1-x86-linode71", "architecture": "i386", "kvm": false,
+      "id": "linode/3.19.1-x86-linode71", "version": "3.19.1", "pvops": true}, {"xen":
+      true, "label": "3.18.5-x86-linode70", "architecture": "x86_64", "kvm": false,
+      "id": "linode/3.18.5-x86-linode70", "version": "3.18.5", "pvops": true}, {"xen":
+      true, "label": "3.18.3-x86-linode69", "architecture": "x86_64", "kvm": false,
+      "id": "linode/3.18.3-x86-linode69", "version": "3.18.3", "pvops": true}, {"xen":
+      true, "label": "3.18.1-x86-linode68", "architecture": "i386", "kvm": false,
+      "id": "linode/3.18.1-x86-linode68", "version": "3.18.1", "pvops": true}, {"xen":
+      true, "label": "3.16.7-x86-linode67", "architecture": "i386", "kvm": false,
+      "id": "linode/3.16.7-x86-linode67", "version": "3.16.7", "pvops": true}, {"xen":
+      true, "label": "3.16.5-x86-linode65", "architecture": "i386", "kvm": false,
+      "id": "linode/3.16.5-x86-linode65", "version": "3.16.5", "pvops": true}, {"xen":
+      true, "label": "3.15.4-x86-linode64", "architecture": "i386", "kvm": false,
+      "id": "linode/3.15.4-x86-linode64", "version": "3.15.4", "pvops": true}, {"xen":
+      true, "label": "3.15.3-x86-linode63", "architecture": "i386", "kvm": false,
+      "id": "linode/3.15.3-x86-linode63", "version": "3.15.3", "pvops": true}, {"xen":
+      true, "label": "3.15.2-x86-linode62", "architecture": "i386", "kvm": false,
+      "id": "linode/3.15.2-x86-linode62", "version": "3.15.2", "pvops": true}, {"xen":
+      true, "label": "3.14.5-x86-linode61", "architecture": "i386", "kvm": false,
+      "id": "linode/3.14.5-x86-linode61", "version": "3.14.5", "pvops": true}, {"xen":
+      true, "label": "3.14.5-x86-linode60", "architecture": "i386", "kvm": false,
+      "id": "linode/3.14.5-x86-linode60", "version": "3.14.5", "pvops": true}, {"xen":
+      true, "label": "3.14.4-x86-linode59", "architecture": "i386", "kvm": false,
+      "id": "linode/3.14.4-x86-linode59", "version": "3.14.4", "pvops": true}, {"xen":
+      true, "label": "3.14.1-x86-linode58", "architecture": "i386", "kvm": false,
+      "id": "linode/3.14.1-x86-linode58", "version": "3.14.1", "pvops": true}, {"xen":
+      true, "label": "3.13.7-x86-linode57", "architecture": "i386", "kvm": false,
+      "id": "linode/3.13.7-x86-linode57", "version": "3.13.7", "pvops": true}, {"xen":
+      true, "label": "3.12.9-x86-linode56", "architecture": "i386", "kvm": false,
+      "id": "linode/3.12.9-x86-linode56", "version": "3.12.9", "pvops": true}, {"xen":
+      true, "label": "3.11.6-x86-linode54", "architecture": "i386", "kvm": false,
+      "id": "linode/3.11.6-x86-linode54", "version": "3.11.6", "pvops": true}, {"xen":
+      true, "label": "3.12.6-x86-linode55", "architecture": "i386", "kvm": false,
+      "id": "linode/3.12.6-x86-linode55", "version": "3.12.6", "pvops": true}, {"xen":
+      true, "label": "3.10.3-x86-linode53", "architecture": "i386", "kvm": false,
+      "id": "linode/3.10.3-x86-linode53", "version": "3.10.3", "pvops": true}, {"xen":
+      true, "label": "3.9.3-x86-linode52", "architecture": "i386", "kvm": false, "id":
+      "linode/3.9.3-x86-linode52", "version": "3.9.3", "pvops": true}, {"xen": true,
+      "label": "3.9.2-x86-linode51", "architecture": "i386", "kvm": false, "id": "linode/3.9.2-x86-linode51",
+      "version": "3.9.2", "pvops": true}, {"xen": true, "label": "3.8.4-linode50",
+      "architecture": "i386", "kvm": false, "id": "linode/3.8.4-linode50", "version":
+      "3.8.4", "pvops": true}, {"xen": true, "label": "3.7.10-linode49", "architecture":
+      "i386", "kvm": false, "id": "linode/3.7.10-linode49", "version": "3.7.10", "pvops":
+      true}, {"xen": true, "label": "3.7.5-linode48", "architecture": "i386", "kvm":
+      false, "id": "linode/3.7.5-linode48", "version": "3.7.5", "pvops": true}, {"xen":
+      true, "label": "3.6.5-linode47", "architecture": "i386", "kvm": false, "id":
+      "linode/3.6.5-linode47", "version": "3.6.5", "pvops": true}, {"xen": true, "label":
+      "3.5.3-linode46", "architecture": "i386", "kvm": false, "id": "linode/3.5.3-linode46",
+      "version": "3.5.3", "pvops": true}, {"xen": true, "label": "3.5.2-linode45",
+      "architecture": "i386", "kvm": false, "id": "linode/3.5.2-linode45", "version":
+      "3.5.2", "pvops": true}, {"xen": true, "label": "3.4.2-linode44", "architecture":
+      "i386", "kvm": false, "id": "linode/3.4.2-linode44", "version": "3.4.2", "pvops":
+      true}, {"xen": true, "label": "3.0.18-linode43", "architecture": "i386", "kvm":
+      false, "id": "linode/3.0.18-linode43", "version": "3.0.18", "pvops": true},
+      {"xen": true, "label": "3.1.10-linode42", "architecture": "i386", "kvm": false,
+      "id": "linode/3.1.10-linode42", "version": "3.1.10", "pvops": true}, {"xen":
+      true, "label": "3.0.17-linode41", "architecture": "i386", "kvm": false, "id":
+      "linode/3.0.17-linode41", "version": "3.0.17", "pvops": true}, {"xen": true,
+      "label": "3.2.1-linode40", "architecture": "i386", "kvm": false, "id": "linode/3.2.1-linode40",
+      "version": "3.2.0", "pvops": true}, {"xen": true, "label": "3.1.0-linode39",
+      "architecture": "i386", "kvm": false, "id": "linode/3.1.0-linode39", "version":
+      "3.1.0", "pvops": true}, {"xen": true, "label": "3.0.4-linode38", "architecture":
+      "i386", "kvm": false, "id": "linode/3.0.4-linode38", "version": "3.0.4", "pvops":
+      true}, {"xen": true, "label": "3.0.4-linode37", "architecture": "i386", "kvm":
+      false, "id": "linode/3.0.4-linode37", "version": "3.0.4", "pvops": true}, {"xen":
+      true, "label": "3.0.4-linode36", "architecture": "i386", "kvm": false, "id":
+      "linode/3.0.4-linode36", "version": "3.0.4", "pvops": true}, {"xen": true, "label":
+      "3.0.0-linode35", "architecture": "i386", "kvm": false, "id": "linode/3.0-linode35",
+      "version": "3.0.0", "pvops": true}, {"xen": true, "label": "010.020.030.040-linode34",
+      "architecture": "i386", "kvm": false, "id": "linode/010.020.030.040-linode34", "version":
+      "2.6.39", "pvops": true}, {"xen": true, "label": "2.6.39-linode33", "architecture":
+      "i386", "kvm": false, "id": "linode/2.6.39-linode33", "version": "2.6.39", "pvops":
+      true}, {"xen": true, "label": "010.020.030.040-linode32", "architecture": "i386", "kvm":
+      false, "id": "linode/010.020.030.040-linode32", "version": "2.6.38", "pvops": true},
+      {"xen": true, "label": "2.6.38-linode31", "architecture": "i386", "kvm": false,
+      "id": "linode/2.6.38-linode31", "version": "2.6.38", "pvops": true}, {"xen":
+      true, "label": "2.6.37-linode30", "architecture": "i386", "kvm": false, "id":
+      "linode/2.6.37-linode30", "version": "2.6.37", "pvops": true}, {"xen": true,
+      "label": "010.020.030.040-linode29", "architecture": "i386", "kvm": false, "id": "linode/010.020.030.040-linode29",
+      "version": "2.6.35", "pvops": true}, {"xen": true, "label": "010.020.030.040-linode28",
+      "architecture": "i386", "kvm": false, "id": "linode/010.020.030.040-linode28", "version":
+      "2.6.32", "pvops": true}, {"xen": true, "label": "2.6.34-linode27", "architecture":
+      "i386", "kvm": false, "id": "linode/2.6.34-linode27", "version": "2.6.34", "pvops":
+      true}, {"xen": true, "label": "010.020.030.040-linode25", "architecture": "i386",
+      "kvm": false, "id": "linode/010.020.030.040-linode25", "version": "2.6.33", "pvops":
+      true}, {"xen": true, "label": "2.6.33-linode24", "architecture": "i386", "kvm":
+      false, "id": "linode/2.6.33-linode24", "version": "2.6.33", "pvops": true},
+      {"xen": true, "label": "2.6.32-linode23", "architecture": "i386", "kvm": false,
+      "id": "linode/2.6.32-linode23", "version": "2.6.32", "pvops": true}, {"xen":
+      true, "label": "010.020.030.040-linode22", "architecture": "i386", "kvm": false, "id":
+      "linode/010.020.030.040-linode22", "version": "2.6.18", "pvops": false}], "results":
+      224}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - "true"
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Status
+      Cache-Control:
+      - private, max-age=900
+      - private, max-age=60, s-maxage=60
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "15527"
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Jul 2018 01:39:01 GMT
+      Retry-After:
+      - "16"
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization, X-Filter
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - '*'
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - DENY
+      X-Oauth-Scopes:
+      - unknown
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "390"
+      X-Ratelimit-Reset:
+      - "1530581958"
+      X-Spec-Version:
+      - 4.0.2
+      X-Xss-Protection:
+      - 1; mode=block
+    status: 200 OK
+    code: 200
+    duration: ""
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/linode/kernels?page=2
+    method: GET
+  response:
+    body: '{"data": [{"architecture": "i386", "pvops": true, "id": "linode/010.020.030.040-linode21",
+      "xen": true, "version": "2.6.31", "label": "010.020.030.040-linode21", "kvm": false},
+      {"architecture": "i386", "pvops": false, "id": "linode/010.020.030.040-linode44",
+      "xen": false, "version": "2.6.23", "label": "010.020.030.040-linode44", "kvm": false},
+      {"architecture": "i386", "pvops": true, "id": "linode/010.020.030.040-linode20", "xen":
+      true, "version": "2.6.30", "label": "010.020.030.040-linode20", "kvm": false}, {"architecture":
+      "i386", "pvops": false, "id": "linode/010.020.030.040-linode19", "xen": true, "version":
+      "2.6.18", "label": "010.020.030.040-linode19", "kvm": false}, {"architecture": "i386",
+      "pvops": true, "id": "linode/2.6.29-linode18", "xen": true, "version": "2.6.29",
+      "label": "2.6.29-linode18", "kvm": false}, {"architecture": "i386", "pvops":
+      true, "id": "linode/010.020.030.040-linode17", "xen": true, "version": "2.6.28", "label":
+      "010.020.030.040-linode17", "kvm": false}, {"architecture": "i386", "pvops": false,
+      "id": "linode/010.020.030.040-linode16", "xen": true, "version": "2.6.18", "label":
+      "010.020.030.040-linode16", "kvm": false}, {"architecture": "i386", "pvops": true,
+      "id": "linode/2.6.28-linode15", "xen": true, "version": "2.6.28", "label": "2.6.28-linode15",
+      "kvm": false}, {"architecture": "i386", "pvops": true, "id": "linode/010.020.030.040-linode14",
+      "xen": true, "version": "2.6.27", "label": "010.020.030.040-linode14", "kvm": false},
+      {"architecture": "i386", "pvops": true, "id": "linode/2.6.26-linode13", "xen":
+      true, "version": "2.6.26", "label": "2.6.26-linode13", "kvm": false}, {"architecture":
+      "i386", "pvops": true, "id": "linode/010.020.030.040-linode12", "xen": true, "version":
+      "2.6.25", "label": "010.020.030.040-linode12", "kvm": false}, {"architecture": "i386",
+      "pvops": false, "id": "linode/010.020.030.040-linode10", "xen": true, "version": "2.6.18",
+      "label": "010.020.030.040-linode10", "kvm": false}, {"architecture": "i386", "pvops":
+      true, "id": "linode/2.6.25-linode9", "xen": true, "version": "2.6.25", "label":
+      "2.6.25-linode9", "kvm": false}, {"architecture": "i386", "pvops": true, "id":
+      "linode/010.020.030.040-linode8", "xen": true, "version": "2.6.24", "label": "010.020.030.040-linode8",
+      "kvm": false}, {"architecture": "i386", "pvops": false, "id": "linode/010.020.030.040-domU-linode7",
+      "xen": true, "version": "2.6.18", "label": "010.020.030.040-domU-linode7", "kvm": false},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/latest-2.6-64bit", "xen":
+      true, "version": "2.6.39", "label": "Latest 2.6 (010.020.030.040-x86_64-linode19)",
+      "kvm": false}, {"architecture": "x86_64", "pvops": true, "id": "linode/latest-64bit",
+      "xen": true, "version": "4.15.13", "label": "Latest 64 bit (4.15.13-x86_64-linode106)",
+      "kvm": true}, {"architecture": "x86_64", "pvops": false, "id": "linode/010.020.030.040-x86_64-linode10",
+      "xen": true, "version": "2.6.18", "label": "Latest Legacy (010.020.030.040-x86_64-linode10)",
+      "kvm": false}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.17.2-x86_64-linode109",
+      "xen": true, "version": "4.17.2", "label": "4.17.2-x86_64-linode109", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.16.11-x86_64-linode108",
+      "xen": true, "version": "4.16.11", "label": "4.16.11-x86_64-linode108", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.15.18-x86_64-linode107",
+      "xen": true, "version": "4.15.18", "label": "4.15.18-x86_64-linode107", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.15.13-x86_64-linode106",
+      "xen": true, "version": "4.15.13", "label": "4.15.13-x86_64-linode106", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.15.12-x86_64-linode105",
+      "xen": true, "version": "4.15.12", "label": "4.15.12-x86_64-linode105", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.15.10-x86_64-linode104",
+      "xen": true, "version": "4.15.10", "label": "4.15.10-x86_64-linode104", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.15.8-x86_64-linode103",
+      "xen": true, "version": "4.15.8", "label": "4.15.8-x86_64-linode103", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.15.7-x86_64-linode102",
+      "xen": true, "version": "4.15.7", "label": "4.15.7-x86_64-linode102", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.14.19-x86_64-linode100",
+      "xen": true, "version": "4.14.19", "label": "4.14.19-x86_64-linode100", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.14.17-x86_64-linode99",
+      "xen": true, "version": "4.14.17", "label": "4.14.17-x86_64-linode99", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.9.80-x86_64-linode98",
+      "xen": true, "version": "4.9.80", "label": "4.9.80-x86_64-linode98", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.4.115-x86_64-linode97",
+      "xen": true, "version": "4.4.115", "label": "4.4.115-x86_64-linode97", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.4.113-x86_64-linode96",
+      "xen": true, "version": "4.4.113", "label": "4.4.113-x86_64-linode96", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.9.78-x86_64-linode95",
+      "xen": true, "version": "4.9.78", "label": "4.9.78-x86_64-linode95", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.14.14-x86_64-linode94",
+      "xen": true, "version": "4.14.14", "label": "4.14.14-x86_64-linode94", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.14.14-x86_64-linode93",
+      "xen": true, "version": "4.14.14", "label": "4.14.14-x86_64-linode93", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.9.64-x86_64-linode88",
+      "xen": true, "version": "4.9.64", "label": "4.9.64-x86_64-linode88", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.9.68-x86_64-linode89",
+      "xen": true, "version": "4.9.68", "label": "4.9.68-x86_64-linode89", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.14.12-x86_64-linode92",
+      "xen": true, "version": "4.14.12", "label": "4.14.12-x86_64-linode92", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.14.11-x86_64-linode91",
+      "xen": true, "version": "4.14.11", "label": "4.14.11-x86_64-linode91", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.9.56-x86_64-linode87",
+      "xen": true, "version": "4.9.56", "label": "4.9.56-x86_64-linode87", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.9.50-x86_64-linode86",
+      "xen": true, "version": "4.9.50", "label": "4.9.50-x86_64-linode86", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.9.36-x86_64-linode85",
+      "xen": true, "version": "4.9.36", "label": "4.9.36-x86_64-linode85", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.9.33-x86_64-linode83",
+      "xen": true, "version": "4.9.33", "label": "4.9.33-x86_64-linode83", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.9.15-x86_64-linode81",
+      "xen": true, "version": "4.9.15", "label": "4.9.15-x86_64-linode81", "kvm":
+      true}, {"architecture": "x86_64", "pvops": true, "id": "linode/4.9.7-x86_64-linode80",
+      "xen": true, "version": "4.9.7", "label": "4.9.7-x86_64-linode80", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.9.0-x86_64-linode79",
+      "xen": true, "version": "4.9.0", "label": "4.9.0-x86_64-linode79", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.8.6-x86_64-linode78",
+      "xen": true, "version": "4.8.6", "label": "4.8.6-x86_64-linode78", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.8.4-x86_64-linode77",
+      "xen": true, "version": "4.8.4", "label": "4.8.4-x86_64-linode77", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.8.3-x86_64-linode76",
+      "xen": true, "version": "4.8.3", "label": "4.8.3-x86_64-linode76", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.8.1-x86_64-linode75",
+      "xen": true, "version": "4.8.1", "label": "4.8.1-x86_64-linode75", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.7.3-x86_64-linode73",
+      "xen": true, "version": "4.7.3", "label": "4.7.3-x86_64-linode73", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.7.0-x86_64-linode72",
+      "xen": true, "version": "4.7.0", "label": "4.7.0-x86_64-linode72", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.6.5-x86_64-linode71",
+      "xen": true, "version": "4.6.5", "label": "4.6.5-x86_64-linode71", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.6.3-x86_64-linode70",
+      "xen": true, "version": "4.6.3", "label": "4.6.3-x86_64-linode70", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.5.5-x86_64-linode69",
+      "xen": true, "version": "4.5.5", "label": "4.5.5-x86_64-linode69", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.5.3-x86_64-linode67",
+      "xen": true, "version": "4.5.3", "label": "4.5.3-x86_64-linode67", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.5.0-x86_64-linode65",
+      "xen": true, "version": "4.5.0", "label": "4.5.0-x86_64-linode65", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.4.4-x86_64-linode64",
+      "xen": true, "version": "4.4.4", "label": "4.4.4-x86_64-linode64", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.4.0-x86_64-linode63",
+      "xen": true, "version": "4.4.0", "label": "4.4.0-x86_64-linode63", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.1.5-x86_64-linode61",
+      "xen": true, "version": "4.1.5", "label": "4.1.5-x86_64-linode61", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.1.5-x86_64-linode60",
+      "xen": true, "version": "4.1.5", "label": "4.1.5-x86_64-linode60 ", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.1.0-x86_64-linode59",
+      "xen": true, "version": "4.1.0", "label": "4.1.0-x86_64-linode59 ", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.0.5-x86_64-linode58",
+      "xen": true, "version": "4.0.5", "label": "4.0.5-x86_64-linode58", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.0.4-x86_64-linode57",
+      "xen": true, "version": "4.0.4", "label": "4.0.4-x86_64-linode57", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.0.2-x86_64-linode56",
+      "xen": true, "version": "4.0.2", "label": "4.0.2-x86_64-linode56", "kvm": true},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.0.1-x86_64-linode55",
+      "xen": true, "version": "4.0.1", "label": "4.0.1-x86_64-linode55", "kvm": false},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/4.0-x86_64-linode54",
+      "xen": true, "version": "4.0", "label": "4.0-x86_64-linode54", "kvm": false},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/3.19.1-x86_64-linode53",
+      "xen": true, "version": "3.19.1", "label": "3.19.1-x86_64-linode53", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/3.18.5-x86_64-linode52",
+      "xen": true, "version": "3.18.5", "label": "3.18.5-x86_64-linode52", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/3.18.3-x86_64-linode51",
+      "xen": true, "version": "3.18.3", "label": "3.18.3-x86_64-linode51", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/3.18.1-x86_64-linode50",
+      "xen": true, "version": "3.18.1", "label": "3.18.1-x86_64-linode50", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/3.16.7-x86_64-linode49",
+      "xen": true, "version": "3.16.7", "label": "3.16.7-x86_64-linode49", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/3.16.5-x86_64-linode46",
+      "xen": true, "version": "3.16.5", "label": "3.16.5-x86_64-linode46", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/3.15.4-x86_64-linode45",
+      "xen": true, "version": "3.15.4", "label": "3.15.4-x86_64-linode45", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/3.15.3-x86_64-linode44",
+      "xen": true, "version": "3.15.3", "label": "3.15.3-x86_64-linode44", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/3.15.2-x86_64-linode43",
+      "xen": true, "version": "3.15.2", "label": "3.15.2-x86_64-linode43", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/3.14.5-x86_64-linode42",
+      "xen": true, "version": "3.14.5", "label": "3.14.5-x86_64-linode42", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/3.14.5-x86_64-linode41",
+      "xen": true, "version": "3.14.5", "label": "3.14.5-x86_64-linode41", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/3.14.4-x86_64-linode40",
+      "xen": true, "version": "3.14.4", "label": "3.14.4-x86_64-linode40", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/3.14.1-x86_64-linode39",
+      "xen": true, "version": "3.14.1", "label": "3.14.1-x86_64-linode39", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/3.13.7-x86_64-linode38",
+      "xen": true, "version": "3.13.7", "label": "3.13.7-x86_64-linode38", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/3.12.9-x86_64-linode37",
+      "xen": true, "version": "3.12.9", "label": "3.12.9-x86_64-linode37", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/3.12.6-x86_64-linode36",
+      "xen": true, "version": "3.12.6", "label": "3.12.6-x86_64-linode36", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/3.11.6-x86_64-linode35",
+      "xen": true, "version": "3.11.6", "label": "3.11.6-x86_64-linode35", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/3.10.3-x86_64-linode34",
+      "xen": true, "version": "3.10.3", "label": "3.10.3-x86_64-linode34", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/3.9.3-x86_64-linode33",
+      "xen": true, "version": "3.9.3", "label": "3.9.3-x86_64-linode33", "kvm": false},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/3.9.2-x86_64-linode32",
+      "xen": true, "version": "3.9.2", "label": "3.9.2-x86_64-linode32", "kvm": false},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/3.8.4-x86_64-linode31",
+      "xen": true, "version": "3.8.4", "label": "3.8.4-x86_64-linode31", "kvm": false},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/3.7.10-x86_64-linode30",
+      "xen": true, "version": "3.7.10", "label": "3.7.10-x86_64-linode30", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/3.7.5-x86_64-linode29",
+      "xen": true, "version": "3.7.5", "label": "3.7.5-x86_64-linode29", "kvm": false},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/3.6.5-x86_64-linode28",
+      "xen": true, "version": "3.6.5", "label": "3.6.5-x86_64-linode28", "kvm": false},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/3.5.3-x86_64-linode27",
+      "xen": true, "version": "3.5.3", "label": "3.5.3-x86_64-linode27", "kvm": false},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/3.4.2-x86_64-linode25",
+      "xen": true, "version": "3.2.4", "label": "3.4.2-x86_64-linode25", "kvm": false},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/3.0.18-x86_64-linode24",
+      "xen": true, "version": "3.0.18", "label": "3.0.18-x86_64-linode24 ", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/3.2.1-x86_64-linode23",
+      "xen": true, "version": "3.2.0", "label": "3.2.1-x86_64-linode23", "kvm": false},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/3.1.0-x86_64-linode22",
+      "xen": true, "version": "3.1.0", "label": "3.1.0-x86_64-linode22", "kvm": false},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/3.0.4-x86_64-linode21",
+      "xen": true, "version": "3.0.4", "label": "3.0.4-x86_64-linode21", "kvm": false},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/3.0.0-x86_64-linode20",
+      "xen": true, "version": "3.0.0", "label": "3.0.0-x86_64-linode20", "kvm": false},
+      {"architecture": "x86_64", "pvops": true, "id": "linode/010.020.030.040-x86_64-linode19",
+      "xen": true, "version": "2.6.39", "label": "010.020.030.040-x86_64-linode19", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/2.6.39-x86_64-linode18",
+      "xen": true, "version": "2.6.39", "label": "2.6.39-x86_64-linode18", "kvm":
+      false}, {"architecture": "x86_64", "pvops": true, "id": "linode/2.6.38-x86_64-linode17",
+      "xen": true, "version": "2.6.38", "label": "2.6.38-x86_64-linode17", "kvm":
+      false}], "page": 2, "pages": 3, "results": 224}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - "true"
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Status
+      Cache-Control:
+      - private, max-age=900
+      - private, max-age=60, s-maxage=60
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "16315"
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Jul 2018 01:39:01 GMT
+      Retry-After:
+      - "15"
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization, X-Filter
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - '*'
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - DENY
+      X-Oauth-Scopes:
+      - unknown
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "388"
+      X-Ratelimit-Reset:
+      - "1530581957"
+      X-Spec-Version:
+      - 4.0.2
+      X-Xss-Protection:
+      - 1; mode=block
+    status: 200 OK
+    code: 200
+    duration: ""
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/linode/kernels?page=3
+    method: GET
+  response:
+    body: '{"pages": 3, "page": 3, "data": [{"xen": true, "label": "010.020.030.040-x86_64-linode16",
+      "architecture": "x86_64", "kvm": false, "id": "linode/010.020.030.040-x86_64-linode16",
+      "version": "2.6.35", "pvops": true}, {"xen": true, "label": "010.020.030.040-x86_64-linode15",
+      "architecture": "x86_64", "kvm": false, "id": "linode/010.020.030.040-x86_64-linode15",
+      "version": "2.6.32", "pvops": true}, {"xen": true, "label": "2.6.34-x86_64-linode13",
+      "architecture": "x86_64", "kvm": false, "id": "linode/2.6.34-x86_64-linode13",
+      "version": "2.6.34", "pvops": true}, {"xen": true, "label": "2.6.34-x86_64-linode14",
+      "architecture": "x86_64", "kvm": false, "id": "linode/2.6.34-x86_64-linode14",
+      "version": "2.6.34", "pvops": true}, {"xen": true, "label": "010.020.030.040-x86_64-linode12",
+      "architecture": "x86_64", "kvm": false, "id": "linode/010.020.030.040-x86_64-linode12",
+      "version": "2.6.32", "pvops": true}, {"xen": true, "label": "2.6.32-x86_64-linode11",
+      "architecture": "x86_64", "kvm": false, "id": "linode/2.6.32-x86_64-linode11",
+      "version": "2.6.32", "pvops": true}, {"xen": true, "label": "010.020.030.040-x86_64-linode10",
+      "architecture": "x86_64", "kvm": false, "id": "linode/010.020.030.040-x86_64-linode10",
+      "version": "2.6.18", "pvops": false}, {"xen": true, "label": "010.020.030.040-x86_64-linode9",
+      "architecture": "x86_64", "kvm": false, "id": "linode/010.020.030.040-x86_64-linode9",
+      "version": "2.6.31", "pvops": true}, {"xen": true, "label": "010.020.030.040-x86_64-linode8",
+      "architecture": "x86_64", "kvm": false, "id": "linode/010.020.030.040-x86_64-linode8",
+      "version": "2.6.30", "pvops": true}, {"xen": true, "label": "010.020.030.040-x86_64-linode7",
+      "architecture": "x86_64", "kvm": false, "id": "linode/010.020.030.040-x86_64-linode7",
+      "version": "2.6.18", "pvops": false}, {"xen": true, "label": "2.6.29-x86_64-linode6",
+      "architecture": "x86_64", "kvm": false, "id": "linode/2.6.29-x86_64-linode6",
+      "version": "2.6.29", "pvops": true}, {"xen": true, "label": "010.020.030.040-x86_64-linode5",
+      "architecture": "x86_64", "kvm": false, "id": "linode/010.020.030.040-x86_64-linode5",
+      "version": "2.6.28", "pvops": true}, {"xen": true, "label": "2.6.28-x86_64-linode4",
+      "architecture": "x86_64", "kvm": false, "id": "linode/2.6.28-x86_64-linode4",
+      "version": "2.6.28", "pvops": true}, {"xen": true, "label": "010.020.030.040-x86_64-linode3",
+      "architecture": "x86_64", "kvm": false, "id": "linode/010.020.030.040-x86_64-linode3",
+      "version": "2.6.27", "pvops": true}, {"xen": true, "label": "010.020.030.040-x86_64-linode2",
+      "architecture": "x86_64", "kvm": false, "id": "linode/010.020.030.040-x86_64-linode2",
+      "version": "2.6.16", "pvops": false}, {"xen": true, "label": "010.020.030.040-x86_64-linode1",
+      "architecture": "x86_64", "kvm": false, "id": "linode/010.020.030.040-x86_64-linode1",
+      "version": "2.6.18", "pvops": false}, {"xen": true, "label": "3.5.2-x86_64-linode26",
+      "architecture": "x86_64", "kvm": false, "id": "linode/3.5.2-x86_64-linode26",
+      "version": "3.5.2", "pvops": true}, {"xen": false, "label": "GRUB 2", "architecture":
+      "x86_64", "kvm": true, "id": "linode/grub2", "version": "2.0.0", "pvops": false},
+      {"xen": false, "label": "Direct Disk", "architecture": "x86_64", "kvm": true,
+      "id": "linode/direct-disk", "version": "", "pvops": false}, {"xen": false, "label":
+      "GRUB (Legacy)", "architecture": "x86_64", "kvm": true, "id": "linode/grub-legacy",
+      "version": "2.0.0", "pvops": false}, {"xen": true, "label": "pv-grub-x86_32",
+      "architecture": "i386", "kvm": false, "id": "linode/pv-grub_x86_32", "version":
+      "2.6.26", "pvops": false}, {"xen": true, "label": "pv-grub-x86_64", "architecture":
+      "x86_64", "kvm": false, "id": "linode/pv-grub_x86_64", "version": "2.6.26",
+      "pvops": false}, {"xen": true, "label": "Recovery - Finnix (kernel)", "architecture":
+      "x86_64", "kvm": true, "id": "linode/finnix", "version": "4.1.2", "pvops": false},
+      {"xen": false, "label": "Recovery - Finnix (kernel)", "architecture": "i386",
+      "kvm": false, "id": "linode/finnix-legacy", "version": "2.6.14", "pvops": false}],
+      "results": 224}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - "true"
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Status
+      Cache-Control:
+      - private, max-age=900
+      - private, max-age=60, s-maxage=60
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "3912"
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Jul 2018 01:39:01 GMT
+      Retry-After:
+      - "16"
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization, X-Filter
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - '*'
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - DENY
+      X-Oauth-Scopes:
+      - unknown
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "389"
+      X-Ratelimit-Reset:
+      - "1530581958"
+      X-Spec-Version:
+      - 4.0.2
+      X-Xss-Protection:
+      - 1; mode=block
+    status: 200 OK
+    code: 200
+    duration: ""

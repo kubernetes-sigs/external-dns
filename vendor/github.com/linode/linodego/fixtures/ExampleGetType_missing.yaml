@@ -1,0 +1,59 @@
+---
+version: 1
+interactions:
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/linode/types/missing-type
+    method: GET
+  response:
+    body: '{"errors": [{"reason": "Not found"}]}'
+    headers:
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Cache-Control:
+      - private, max-age=900
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "37"
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Jul 2018 01:39:01 GMT
+      Retry-After:
+      - "16"
+      Server:
+      - nginx
+      Vary:
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - '*'
+      X-Frame-Options:
+      - DENY
+      X-Oauth-Scopes:
+      - unknown
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "389"
+      X-Ratelimit-Reset:
+      - "1530581958"
+      X-Spec-Version:
+      - 4.0.2
+    status: 404 NOT FOUND
+    code: 404
+    duration: ""

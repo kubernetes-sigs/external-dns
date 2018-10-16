@@ -1,0 +1,61 @@
+---
+version: 1
+interactions:
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+      X-Filter:
+      - '{"foo":"bar"}'
+    url: https://api.linode.com/v4/images
+    method: GET
+  response:
+    body: '{"errors": [{"reason": "Cannot filter on foo", "field": "X-Filter"}]}'
+    headers:
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Cache-Control:
+      - private, max-age=0, s-maxage=0, no-cache, no-store
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "69"
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Jul 2018 01:39:03 GMT
+      Retry-After:
+      - "15"
+      Server:
+      - nginx
+      Vary:
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - '*'
+      X-Frame-Options:
+      - DENY
+      X-Oauth-Scopes:
+      - '*'
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "391"
+      X-Ratelimit-Reset:
+      - "1530581959"
+      X-Spec-Version:
+      - 4.0.2
+    status: 400 BAD REQUEST
+    code: 400
+    duration: ""

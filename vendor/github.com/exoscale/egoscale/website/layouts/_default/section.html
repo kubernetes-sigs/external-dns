@@ -1,0 +1,23 @@
+{{ define "main" }}
+<section class="section">
+<div class="container">
+    <div class="content">
+      {{ .Content }}
+    </div>
+</div>
+</section>
+
+<section class="section">
+<div class="container">
+    <h3 class="title">Commands</h3>
+    <ul>
+          {{ $paginator := .Paginate (where .Data.Pages "Type" "command") 20 }}
+          {{ range $paginator.Pages }}
+                <li>{{ partial "summary.html" . }}</li>
+          {{ end }}
+    </ul>
+
+    {{ partial "pagination.html" . }}
+</div>
+</section>
+{{ end }}

@@ -1,0 +1,18 @@
+ignored = ["github.com/exoscale/egoscale"]
+
+[[constraint]]
+  name = "github.com/urfave/cli"
+  version = "1.20.0"
+
+[[constraint]]
+  name = "github.com/alecthomas/chroma"
+  version = "0.4.0"
+
+[[constraint]]
+  name = "github.com/go-ini/ini"
+  version = "1.38.1"
+
+[prune]
+  non-go = true
+  go-tests = true
+  unused-packages = true

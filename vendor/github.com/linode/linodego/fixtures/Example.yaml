@@ -1,0 +1,1004 @@
+---
+version: 1
+interactions:
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/linode/instances/1231
+    method: GET
+  response:
+    body: '{"errors": [{"reason": "Not found"}]}'
+    headers:
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Cache-Control:
+      - private, max-age=0, s-maxage=0, no-cache, no-store
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "37"
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Jul 2018 01:38:53 GMT
+      Retry-After:
+      - "23"
+      Server:
+      - nginx
+      Vary:
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - linodes:read_only
+      X-Frame-Options:
+      - DENY
+      X-Oauth-Scopes:
+      - '*'
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "391"
+      X-Ratelimit-Reset:
+      - "1530581957"
+      X-Spec-Version:
+      - 4.0.2
+    status: 404 NOT FOUND
+    code: 404
+    duration: ""
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/linode/instances
+    method: GET
+  response:
+    body: '{"data": [{"region": "us-east", "alerts": {"network_in": 10, "network_out":
+      10, "io": 10000, "cpu": 90, "transfer_quota": 80}, "specs": {"disk": 51200,
+      "transfer": 2000, "vcpus": 1, "memory": 2048}, "image": "linode/ubuntu18.04",
+      "created": "2018-01-02T03:04:05", "ipv6": "1234::5678/64",
+      "hypervisor": "kvm", "ipv4": ["010.020.030.040", "192.168.030.040"], "updated":
+      "2018-01-02T03:04:05", "watchdog_enabled": true, "group": "", "id": 76859403,
+      "status": "running", "backups": {"schedule": {"day": "Monday", "window": "W16"},
+      "enabled": true}, "label": "test-linode", "type": "g6-standard-1"}], "page":
+      1, "pages": 1, "results": 1}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - "true"
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Status
+      Cache-Control:
+      - private, max-age=0, s-maxage=0, no-cache, no-store
+      - private, max-age=60, s-maxage=60
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "648"
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Jul 2018 01:38:54 GMT
+      Retry-After:
+      - "22"
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization, X-Filter
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - linodes:read_only
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - DENY
+      X-Oauth-Scopes:
+      - '*'
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "394"
+      X-Ratelimit-Reset:
+      - "1530581957"
+      X-Spec-Version:
+      - 4.0.2
+      X-Xss-Protection:
+      - 1; mode=block
+    status: 200 OK
+    code: 200
+    duration: ""
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/linode/instances/76859403
+    method: GET
+  response:
+    body: '{"image": "linode/ubuntu18.04", "group": "", "updated": "2018-01-02T03:04:05",
+      "backups": {"schedule": {"day": "Monday", "window": "W16"}, "enabled": true},
+      "alerts": {"io": 10000, "cpu": 90, "network_out": 10, "network_in": 10, "transfer_quota":
+      80}, "id": 76859403, "ipv4": ["010.020.030.040", "192.168.030.040"], "label": "test-linode",
+      "region": "us-east", "created": "2018-01-02T03:04:05", "specs": {"memory": 2048,
+      "disk": 51200, "transfer": 2000, "vcpus": 1}, "ipv6": "1234::5678/64",
+      "watchdog_enabled": true, "status": "running", "type": "g6-standard-1", "hypervisor":
+      "kvm"}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - "true"
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Status
+      Cache-Control:
+      - private, max-age=0, s-maxage=0, no-cache, no-store
+      - private, max-age=60, s-maxage=60
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "599"
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Jul 2018 01:38:54 GMT
+      Retry-After:
+      - "23"
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization, X-Filter
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - linodes:read_only
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - DENY
+      X-Oauth-Scopes:
+      - '*'
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "395"
+      X-Ratelimit-Reset:
+      - "1530581958"
+      X-Spec-Version:
+      - 4.0.2
+      X-Xss-Protection:
+      - 1; mode=block
+    status: 200 OK
+    code: 200
+    duration: ""
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/linode/instances/76859403/configs
+    method: GET
+  response:
+    body: '{"results": 1, "data": [{"memory_limit": 0, "kernel": "linode/grub2", "label":
+      "My Ubuntu 18.04 LTS Disk Profile", "virt_mode": "paravirt", "comments": "",
+      "root_device": "/dev/sda", "updated": "2018-01-02T03:04:05", "created": "2018-01-02T03:04:05",
+      "id": 9958462, "initrd": null, "helpers": {"distro": true, "devtmpfs_automount":
+      true, "modules_dep": true, "updatedb_disabled": true, "network": true}, "run_level":
+      "default", "devices": {"sdh": null, "sdf": null, "sdc": {"disk_id": null, "volume_id":
+      6574839201}, "sda": {"disk_id": 18974977, "volume_id": null}, "sde": null, "sdd":
+      null, "sdg": null, "sdb": {"disk_id": 18974978, "volume_id": null}}}], "pages":
+      1, "page": 1}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - "true"
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Status
+      Cache-Control:
+      - private, max-age=0, s-maxage=0, no-cache, no-store
+      - private, max-age=60, s-maxage=60
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "673"
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Jul 2018 01:38:54 GMT
+      Retry-After:
+      - "22"
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization, X-Filter
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - linodes:read_only
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - DENY
+      X-Oauth-Scopes:
+      - '*'
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "390"
+      X-Ratelimit-Reset:
+      - "1530581957"
+      X-Spec-Version:
+      - 4.0.2
+      X-Xss-Protection:
+      - 1; mode=block
+    status: 200 OK
+    code: 200
+    duration: ""
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/linode/instances/76859403/configs/9958462
+    method: GET
+  response:
+    body: '{"initrd": null, "kernel": "linode/grub2", "devices": {"sdh": null, "sdf":
+      null, "sda": {"disk_id": 18974977, "volume_id": null}, "sdb": {"disk_id": 18974978,
+      "volume_id": null}, "sde": null, "sdd": null, "sdg": null, "sdc": {"disk_id":
+      null, "volume_id": 6574839201}}, "comments": "", "created": "2018-01-02T03:04:05",
+      "root_device": "/dev/sda", "memory_limit": 0, "run_level": "default", "updated":
+      "2018-01-02T03:04:05", "virt_mode": "paravirt", "id": 9958462, "helpers": {"modules_dep":
+      true, "updatedb_disabled": true, "devtmpfs_automount": true, "network": true,
+      "distro": true}, "label": "My Ubuntu 18.04 LTS Disk Profile"}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - "true"
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Status
+      Cache-Control:
+      - private, max-age=0, s-maxage=0, no-cache, no-store
+      - private, max-age=60, s-maxage=60
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "624"
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Jul 2018 01:38:55 GMT
+      Retry-After:
+      - "21"
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization, X-Filter
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - linodes:read_only
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - DENY
+      X-Oauth-Scopes:
+      - '*'
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "393"
+      X-Ratelimit-Reset:
+      - "1530581957"
+      X-Spec-Version:
+      - 4.0.2
+      X-Xss-Protection:
+      - 1; mode=block
+    status: 200 OK
+    code: 200
+    duration: ""
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/linode/instances/76859403/disks
+    method: GET
+  response:
+    body: '{"pages": 1, "page": 1, "data": [{"updated": "2018-01-02T03:04:05", "label":
+      "Ubuntu 18.04 LTS Disk", "created": "2018-01-02T03:04:05", "filesystem": "ext4",
+      "status": "ready", "size": 50688, "id": 18974977}, {"updated": "2018-01-02T03:04:05",
+      "label": "512 MB Swap Image", "created": "2018-01-02T03:04:05", "filesystem":
+      "swap", "status": "ready", "size": 512, "id": 18974978}], "results": 2}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - "true"
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Status
+      Cache-Control:
+      - private, max-age=0, s-maxage=0, no-cache, no-store
+      - private, max-age=60, s-maxage=60
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "393"
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Jul 2018 01:38:55 GMT
+      Retry-After:
+      - "22"
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization, X-Filter
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - linodes:read_only
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - DENY
+      X-Oauth-Scopes:
+      - '*'
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "394"
+      X-Ratelimit-Reset:
+      - "1530581958"
+      X-Spec-Version:
+      - 4.0.2
+      X-Xss-Protection:
+      - 1; mode=block
+    status: 200 OK
+    code: 200
+    duration: ""
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/linode/instances/76859403/disks/18974977
+    method: GET
+  response:
+    body: '{"created": "2018-01-02T03:04:05", "id": 18974977, "filesystem": "ext4",
+      "status": "ready", "label": "Ubuntu 18.04 LTS Disk", "updated": "2018-01-02T03:04:05",
+      "size": 50688}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - "true"
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Status
+      Cache-Control:
+      - private, max-age=0, s-maxage=0, no-cache, no-store
+      - private, max-age=60, s-maxage=60
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "174"
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Jul 2018 01:38:55 GMT
+      Retry-After:
+      - "21"
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization, X-Filter
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - linodes:read_only
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - DENY
+      X-Oauth-Scopes:
+      - '*'
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "389"
+      X-Ratelimit-Reset:
+      - "1530581957"
+      X-Spec-Version:
+      - 4.0.2
+      X-Xss-Protection:
+      - 1; mode=block
+    status: 200 OK
+    code: 200
+    duration: ""
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/linode/instances/76859403/backups
+    method: GET
+  response:
+    body: '{"snapshot": {"in_progress": null, "current": {"configs": ["My Ubuntu 18.04
+      LTS Disk Profile"], "status": "successful", "finished": "2018-01-02T03:04:05",
+      "updated": "2018-01-02T03:04:05", "type": "snapshot", "region": "us-east", "id":
+      96509901, "disks": [{"filesystem": "ext4", "label": "Ubuntu 18.04 LTS Disk",
+      "size": 2320}, {"filesystem": "swap", "label": "512 MB Swap Image", "size":
+      0}], "created": "2018-01-02T03:04:05", "label": "test-snapshot"}}, "automatic":
+      []}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - "true"
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Status
+      Cache-Control:
+      - private, max-age=0, s-maxage=0, no-cache, no-store
+      - private, max-age=60, s-maxage=60
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "472"
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Jul 2018 01:38:56 GMT
+      Retry-After:
+      - "20"
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization, X-Filter
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - linodes:read_only
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - DENY
+      X-Oauth-Scopes:
+      - '*'
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "392"
+      X-Ratelimit-Reset:
+      - "1530581957"
+      X-Spec-Version:
+      - 4.0.2
+      X-Xss-Protection:
+      - 1; mode=block
+    status: 200 OK
+    code: 200
+    duration: ""
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/linode/instances/76859403/backups/96509901
+    method: GET
+  response:
+    body: '{"label": "test-snapshot", "region": "us-east", "status": "successful",
+      "updated": "2018-01-02T03:04:05", "finished": "2018-01-02T03:04:05", "id": 96509901,
+      "type": "snapshot", "configs": ["My Ubuntu 18.04 LTS Disk Profile"], "disks":
+      [{"label": "Ubuntu 18.04 LTS Disk", "size": 2320, "filesystem": "ext4"}, {"label":
+      "512 MB Swap Image", "size": 0, "filesystem": "swap"}], "created": "2018-01-02T03:04:05"}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - "true"
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Status
+      Cache-Control:
+      - private, max-age=0, s-maxage=0, no-cache, no-store
+      - private, max-age=60, s-maxage=60
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "407"
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Jul 2018 01:38:56 GMT
+      Retry-After:
+      - "21"
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization, X-Filter
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - linodes:read_only
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - DENY
+      X-Oauth-Scopes:
+      - '*'
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "393"
+      X-Ratelimit-Reset:
+      - "1530581958"
+      X-Spec-Version:
+      - 4.0.2
+      X-Xss-Protection:
+      - 1; mode=block
+    status: 200 OK
+    code: 200
+    duration: ""
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/linode/instances/76859403/volumes
+    method: GET
+  response:
+    body: '{"results": 1, "data": [{"created": "2018-01-02T03:04:05", "id": 6574839201,
+      "linode_id": 76859403, "label": "test-volume", "filesystem_path": "/dev/disk/by-id/scsi-0Linode_Volume_test-volume",
+      "region": "us-east", "status": "active", "size": 10, "updated": "2018-01-02T03:04:05"}],
+      "pages": 1, "page": 1}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - "true"
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Status
+      Cache-Control:
+      - private, max-age=0, s-maxage=0, no-cache, no-store
+      - private, max-age=60, s-maxage=60
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "298"
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Jul 2018 01:38:57 GMT
+      Retry-After:
+      - "19"
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization, X-Filter
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - linodes:read_only
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - DENY
+      X-Oauth-Scopes:
+      - '*'
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "388"
+      X-Ratelimit-Reset:
+      - "1530581957"
+      X-Spec-Version:
+      - 4.0.2
+      X-Xss-Protection:
+      - 1; mode=block
+    status: 200 OK
+    code: 200
+    duration: ""
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+    url: https://api.linode.com/v4/volumes/6574839201
+    method: GET
+  response:
+    body: '{"filesystem_path": "/dev/disk/by-id/scsi-0Linode_Volume_test-volume",
+      "updated": "2018-01-02T03:04:05", "region": "us-east", "id": 6574839201, "status":
+      "active", "label": "test-volume", "size": 10, "created": "2018-01-02T03:04:05",
+      "linode_id": 76859403}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - "true"
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Status
+      Cache-Control:
+      - private, max-age=0, s-maxage=0, no-cache, no-store
+      - private, max-age=60, s-maxage=60
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "249"
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Jul 2018 01:38:57 GMT
+      Retry-After:
+      - "20"
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization, X-Filter
+      - Authorization, X-Filter
+      X-Accepted-Oauth-Scopes:
+      - volumes:read_only
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - DENY
+      X-Oauth-Scopes:
+      - '*'
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "390"
+      X-Ratelimit-Reset:
+      - "1530581958"
+      X-Spec-Version:
+      - 4.0.2
+      X-Xss-Protection:
+      - 1; mode=block
+    status: 200 OK
+    code: 200
+    duration: ""
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json
+      Authorization:
+      - Bearer awesometokenawesometokenawesometoken
+      Content-Type:
+      - application/json
+      User-Agent:
+      - linodego 0.0.1 https://github.com/linode/linodego
+      X-Filter:
+      - '{"mine":true}'
+    url: https://api.linode.com/v4/linode/stackscripts
+    method: GET
+  response:
+    body: '{"pages": 1, "page": 1, "data": [{"script": "#!/bin/bash\n# <UDF name=\"gh_username\"
+      Label=\"GitHub Username\" example=\"GitHub User account to create with sudo
+      access\" />\nsource <ssinclude StackScriptID=1>\nsource <ssinclude StackScriptID=10079>\n\nexport
+      MYSQL_PW=$(mktemp tmp.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX)\ncat > ~/.screenrc
+      <<EOF\nshell \"/bin/bash\"\nstartup_message off\n\nscreen -t htop\nselect $((++i))\nstuff
+      \"htop ^M\"\n\nscreen -t iotop\nselect $((++i))\nstuff \"iotop ^M\"\n\nscreen
+      -t iostat\nselect $((++i))\nstuff \"iostat 1 ^M\"\n\nscreen -t disk\nselect
+      $((++i))\nstuff \"while sleep 10; do sysbench --test=oltp --oltp-table-size=1000000
+      --mysql-db=test --mysql-user=root --mysql-password=$MYSQL_PW --max-time=60 --oltp-read-only=on
+      --max-requests=0 --num-threads=24 prepare; sysbench --test=oltp --oltp-table-size=1000000
+      --mysql-db=test --mysql-user=root --mysql-password=$MYSQL_PW --max-time=60 --oltp-read-only=on
+      --max-requests=0 --num-threads=24 run; sysbench --test=oltp --oltp-table-size=1000000
+      --mysql-db=test --mysql-user=root --mysql-password=$MYSQL_PW --max-time=60 --oltp-read-only=on
+      --max-requests=0 --num-threads=24 stop; done^M\"\n\nscreen -t cpu\nselect $((++i))\nstuff
+      \"while sleep 10; do sysbench --test=cpu --cpu-max-prime=200000 run; done^M\"\n\nscreen
+      -t disk\nselect $((++i))\nstuff \"while sleep 10; do sysbench --test=fileio
+      --file-total-size=10G prepare; sysbench --test=fileio --file-total-size=10G
+      --file-test-mode=rndrw --init-rng=on --max-time=300 --max-requests=0 run; sysbench
+      --test=fileio --file-total-size=10G cleanup; done^M\"\n\nscreen -t mem\nselect
+      $((++i))\nstuff \"while sleep 10; do sysbench --test=memory --num-threads=48
+      --max-requests=20000 run; done^M\"\n\nscreen -t mutex\nselect $((++i))\nstuff
+      \"while sleep 10; do sysbench --test=mutex --num-threads=1000 run; done^M\"\n\nscreen
+      -t threads\nselect $((++i))\nstuff \"while sleep 10; do sysbench --test=threads
+      --num-threads=1000 --thread-locks=1 --max-time=60s run; done^M\"\n\nselect 0\naltscreen
+      on\nterm screen-256color\nbind '','' prev\nbind ''.'' next\nEOF\n\ndebconf-set-selections
+      <<< \"mysql-server mysql-server/root_password password $MYSQL_PW\"\ndebconf-set-selections
+      <<< \"mysql-server mysql-server/root_password_again password $MYSQL_PW\"\n\nexport
+      DEBIAN_FRONTEND=noninteractive\necho ''Acquir1234::5678orceIPv4 \"true\";'' | sudo
+      tee /etc/apt/apt.conf.d/99force-ipv4\napt-get update\napt-get install --reinstall
+      -y sysbench mysql-server kbd htop sysstat iotop\nmysql --password=\"$MYSQL_PW\"
+      -e ''create schema if not exists test;''\necho \"You''ll want to look in glish
+      now\"\nopenvt -s screen -- -q", "images": ["linode/debian8", "linode/debian9",
+      "linode/ubuntu16.04lts", "linode/ubuntu17.04", "linode/debian7", "linode/ubuntu14.04lts"],
+      "updated": "2018-01-02T03:04:05", "is_public": true, "username": "displague",
+      "id": 37497, "deployments_total": 95, "label": "Benchmark and Thrash Test",
+      "created": "2018-01-02T03:04:05", "description": "Have you ever wanted to burn
+      your Linode into the ground?  This Stackscript asks for your GitHub username
+      (to configure SSH auth) and then configures your Debian based Linode for self-destruct.\r\n\r\nWatch
+      the screen session in glish, that''s where the magic happens.\r\n\r\nThis StackScript
+      is guaranteed to trigger a system error or get Linode Support on your tail for
+      a Terms of Service violation.\r\n\r\nUse at your own risk.\r\n\r\nSee Also:
+      \r\n\r\n* https://www.linode.com/stackscripts/view/10079-displague-Rootless+and+GitHub+User+has+sudo",
+      "deployments_active": 30, "user_gravatar_id": "95d1fee076159e7a2dc5f55d63f7c236",
+      "user_defined_fields": [{"label": "GitHub Username", "example": "GitHub User
+      account to create with sudo access", "name": "gh_username"}], "rev_note": "grab
+      the GH username"}, {"script": "#!/bin/bash\n# <UDF name=\"gh_username\" Label=\"GitHub
+      Username\" example=\"GitHub User account to create with sudo access (use spaces
+      or commas for multiple accounts)\" />\nsource <ssinclude StackScriptID=1>\n\nfunction
+      btr_user_add_sudo {\n  USERNAME=\"$1\"\n  USERPASS=\"$2\"\n  if [ ! -n \"$USERNAME\"
+      ] || [ ! -n \"$USERPASS\" ]; then\n    echo \"No new username and/or password
+      entered\"\n    return 1;\n  fi\n\n  if [ -f /etc/debian_version ]; then\n    adduser
+      \"$USERNAME\" --disabled-password --gecos \"\"\n    echo \"$USERNAME:$USERPASS\"
+      | chpasswd\n    apt-get install -y sudo\n    usermod -aG sudo \"$USERNAME\"\n  elif
+      [ -f /etc/redhat-release ]; then\n    adduser \"$USERNAME\" -p \"$USERPASS\"\n    yum
+      install -y sudo\n    usermod -aG wheel \"$USERNAME\"\n  fi\n}\n\n# Fetch GitHub
+      SSH Keys\nfunction user_github_keys {\n    # Adds the users public key to authorized_keys
+      for the specified user. Make sure you wrap your input variables in double quotes,
+      or the key may not load properly.\n    #\n    #\n    # $1 - Required - username\n    USERNAME=\"${1}\"\n    GITHUBKEYS=\"https://github.com/${1}.keys\"\n\n    if
+      [ ! -n \"$USERNAME\" ]; then\n        echo \"Must provide a username\"\n        return
+      1;\n    fi\n\n    HDIR=\"$(grep \"$USERNAME\" /etc/passwd | cut -f6 -d:)\"\n    mkdir
+      -p $HDIR/.ssh\n    wget -q -O- \"${GITHUBKEYS}\" >> \"$HDIR/.ssh/authorized_keys\"\n    chown
+      -R \"$USERNAME\":\"$USERNAME\" \"$HDIR/.ssh\"\n    chmod 600 \"$HDIR/.ssh/authorized_keys\"\n}\n\necho
+      -e \"\\n\\nPasswords have been disabled. Use SSH:\\n\" >> /etc/issue\n\nexport
+      ALL_GH_USERNAMES=\"${GH_USERNAME//,/ }\"\n\nfor GH_USERNAME in ${ALL_GH_USERNAMES};
+      do\necho \"#################\"\necho \"########\"\necho \"########  G I T H
+      U B :\"\necho \"  ======                $GH_USERNAME\"\necho \"  ======\"\necho
+      \"\"\necho \"Creating user...\"\nbtr_user_add_sudo \"$GH_USERNAME\" \"$(randomString)\"\npasswd
+      -d \"$GH_USERNAME\"\n\necho \"Giving user passwordless sudo/su...\"\nsed -i
+      ''s/#\\?\\s*\\(auth\\s\\+sufficient\\s\\+pam_wheel.so\\s\\+trust\\)/\\1/'' /etc/pam.d/su\n#sed
+      -i \"s/^root:.*/\\0,$GH_USERNAME/\" /etc/group\n#sed -i \"s/^wheel:.*/\\0,$GH_USERNAME/\"
+      /etc/group\n\nif [ -d /etc/sudoers.d ]; then\n  SUDOERS=\"/etc/sudoers.d/$GH_USERNAME\"\nelse\n  SUDOERS=/etc/sudoers\nfi\n\necho
+      \"$GH_USERNAME ALL=NOPASSWD: ALL\" >> \"$SUDOERS\"\nchmod 0440 \"$SUDOERS\"\n\necho
+      \"Adding GitHub SSH Keys...\"\nuser_github_keys \"$GH_USERNAME\"\n\necho -e
+      \"    ssh://$GH_USERNAME@$(dnsdomainname -f)\" >> /etc/issue\n\ndone\n\necho
+      \"Disabling Root SSH...\"\nssh_disable_root\n\necho \"Disabling Root Password...\"\npasswd
+      -d root\n\necho \"Disabling Root Shell...\"\nchsh -s $(which nologin) root\n\necho
+      \"Disabling NullOK Pam/Unix Auth for SecureTTYs...\"\ngrep -l nullok_secure
+      /etc/pam.d/* | while read pamf; do sed -i s/nullok_secure// $pamf; done\n\necho
+      \"Done.\"\necho \"\"\necho \"  ======\"\necho \"########\"\necho \"########\"",
+      "images": ["linode/centos7", "linode/debian8", "linode/debian9", "linode/ubuntu16.04lts",
+      "linode/ubuntu17.04", "linode/centos6.8", "linode/debian7", "linode/fedora24",
+      "linode/slackware13.37", "linode/slackware14.1", "linode/ubuntu14.04lts"], "updated":
+      "2018-01-02T03:04:05", "is_public": true, "username": "displague", "id": 10079,
+      "deployments_total": 248, "label": "Rootless and GitHub User has sudo", "created":
+      "2018-01-02T03:04:05", "description": "Sick of passwords?  Have a GitHub account
+      configured with your favorite ssh keys?\r\n\r\nYou''ve come to the right place.  This
+      StackScript removes the barrier to entry.  The root password has been disabled,
+      so you can''t ssh in as root.  But wait, root is not out of reach!\r\n\r\nWith
+      one simple text entry of your GitHub username, all of your GitHub configured
+      ssh keys will be authorized for login with your existing GitHub username.  Root
+      password? Who needs it.  While you will be prompted for one, this miracle script
+      will promptly remove the root password on first boot.\r\n\r\nYour GitHub username
+      is all you need to sudo or su.  No more secrets!", "deployments_active": 195,
+      "user_gravatar_id": "95d1fee076159e7a2dc5f55d63f7c236", "user_defined_fields":
+      [{"label": "GitHub Username", "example": "GitHub User account to create with
+      sudo access (use spaces or commas for multiple accounts)", "name": "gh_username"}],
+      "rev_note": "support csv for GH_USERNAME"}], "results": 2}'
+    headers:
+      Access-Control-Allow-Credentials:
+      - "true"
+      Access-Control-Allow-Headers:
+      - Authorization, Origin, X-Requested-With, Content-Type, Accept, X-Filter
+      Access-Control-Allow-Methods:
+      - HEAD, GET, OPTIONS, POST, PUT, DELETE
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Status
+      Cache-Control:
+      - private, max-age=0, s-maxage=0, no-cache, no-store
+      - private, max-age=60, s-maxage=60
+      Connection:
+      - keep-alive
+      Content-Length:
+      - "8193"
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 03 Jul 2018 01:38:57 GMT
+      Retry-After:
+      - "21"
+      Server:
+      - nginx
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization, X-Filter
+      - Authorization, X-Filter
+      Warning:
+      - 299 linode-api The "mine" filter is deprecated and will be removed in a future
+        version.  Please filter by "username" instead.
+      X-Accepted-Oauth-Scopes:
+      - stackscripts:read_only
+      X-Content-Type-Options:
+      - nosniff
+      - nosniff
+      X-Frame-Options:
+      - DENY
+      - DENY
+      X-Oauth-Scopes:
+      - '*'
+      X-Ratelimit-Limit:
+      - "400"
+      X-Ratelimit-Remaining:
+      - "394"
+      X-Ratelimit-Reset:
+      - "1530581959"
+      X-Spec-Version:
+      - 4.0.2
+      X-Xss-Protection:
+      - 1; mode=block
+    status: 200 OK
+    code: 200
+    duration: ""
