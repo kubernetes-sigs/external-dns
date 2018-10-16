@@ -818,6 +818,52 @@ func testIngressEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title:           "ingress rules with alias and target annotation",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						targetAnnotationKey: "ingress-target.com",
+						aliasAnnotationKey:  "true",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"ingress-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+			},
+		},
+		{
+			title:           "ingress rules with alias set false and target annotation",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						targetAnnotationKey: "ingress-target.com",
+						aliasAnnotationKey:  "false",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"ingress-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+			},
+		},
+		{
 			title:           "template for ingress with annotation",
 			targetNamespace: "",
 			ingressItems: []fakeIngress{
