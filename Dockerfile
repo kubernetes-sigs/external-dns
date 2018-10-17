@@ -23,8 +23,10 @@ RUN make build
 
 # final image
 FROM registry.opensource.zalan.do/stups/alpine:latest
-MAINTAINER Team Teapot @ Zalando SE <team-teapot@zalando.de>
+LABEL maintainer="Team Teapot @ Zalando SE <team-teapot@zalando.de>"
 
 COPY --from=builder /go/src/github.com/kubernetes-incubator/external-dns/build/external-dns /bin/external-dns
+
+USER nobody
 
 ENTRYPOINT ["/bin/external-dns"]

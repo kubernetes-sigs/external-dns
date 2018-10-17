@@ -17,8 +17,10 @@ limitations under the License.
 package provider
 
 import (
+	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
@@ -32,6 +34,9 @@ import (
 
 const (
 	recordTTL = 300
+	// provider specific key that designates whether an AWS ALIAS record has the EvaluateTargetHealth
+	// field set to true.
+	providerSpecificEvaluateTargetHealth = "aws/evaluate-target-health"
 )
 
 var (
@@ -86,7 +91,8 @@ type Route53API interface {
 type AWSProvider struct {
 	client               Route53API
 	dryRun               bool
-	maxChangeCount       int
+	batchChangeSize      int
+	batchChangeInterval  time.Duration
 	evaluateTargetHealth bool
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter DomainFilter
@@ -101,7 +107,8 @@ type AWSConfig struct {
 	DomainFilter         DomainFilter
 	ZoneIDFilter         ZoneIDFilter
 	ZoneTypeFilter       ZoneTypeFilter
-	MaxChangeCount       int
+	BatchChangeSize      int
+	BatchChangeInterval  time.Duration
 	EvaluateTargetHealth bool
 	AssumeRole           string
 	DryRun               bool
@@ -138,7 +145,8 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 		domainFilter:         awsConfig.DomainFilter,
 		zoneIDFilter:         awsConfig.ZoneIDFilter,
 		zoneTypeFilter:       awsConfig.ZoneTypeFilter,
-		maxChangeCount:       awsConfig.MaxChangeCount,
+		batchChangeSize:      awsConfig.BatchChangeSize,
+		batchChangeInterval:  awsConfig.BatchChangeInterval,
 		evaluateTargetHealth: awsConfig.EvaluateTargetHealth,
 		dryRun:               awsConfig.DryRun,
 	}
@@ -222,7 +230,10 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 			}
 
 			if r.AliasTarget != nil {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), endpoint.RecordTypeCNAME, ttl, aws.StringValue(r.AliasTarget.DNSName)))
+				ep := endpoint.
+					NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), endpoint.RecordTypeCNAME, ttl, aws.StringValue(r.AliasTarget.DNSName)).
+					WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", aws.BoolValue(r.AliasTarget.EvaluateTargetHealth)))
+				endpoints = append(endpoints, ep)
 			}
 		}
 
@@ -287,27 +298,45 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 		log.Info("All records are already up to date, there are no changes for the matching hosted zones")
 	}
 
+	var failedZones []string
 	for z, cs := range changesByZone {
-		limCs := limitChangeSet(cs, p.maxChangeCount)
+		var failedUpdate bool
 
-		for _, c := range limCs {
-			log.Infof("Desired change: %s %s %s", *c.Action, *c.ResourceRecordSet.Name, *c.ResourceRecordSet.Type)
-		}
+		batchCs := batchChangeSet(cs, p.batchChangeSize)
 
-		if !p.dryRun {
-			params := &route53.ChangeResourceRecordSetsInput{
-				HostedZoneId: aws.String(z),
-				ChangeBatch: &route53.ChangeBatch{
-					Changes: limCs,
-				},
+		for i, b := range batchCs {
+			for _, c := range b {
+				log.Infof("Desired change: %s %s %s", *c.Action, *c.ResourceRecordSet.Name, *c.ResourceRecordSet.Type)
 			}
 
-			if _, err := p.client.ChangeResourceRecordSets(params); err != nil {
-				log.Error(err) //TODO(ideahitme): consider changing the interface in cases when this error might be a concern for other components
-				continue
+			if !p.dryRun {
+				params := &route53.ChangeResourceRecordSetsInput{
+					HostedZoneId: aws.String(z),
+					ChangeBatch: &route53.ChangeBatch{
+						Changes: b,
+					},
+				}
+
+				if _, err := p.client.ChangeResourceRecordSets(params); err != nil {
+					log.Error(err) //TODO(ideahitme): consider changing the interface in cases when this error might be a concern for other components
+					failedUpdate = true
+				} else {
+					log.Infof("%d record(s) in zone %s were successfully updated", len(b), aws.StringValue(zones[z].Name))
+				}
+
+				if i != len(batchCs)-1 {
+					time.Sleep(p.batchChangeInterval)
+				}
 			}
-			log.Infof("Record in zone %s were successfully updated", aws.StringValue(zones[z].Name))
 		}
+
+		if failedUpdate {
+			failedZones = append(failedZones, z)
+		}
+	}
+
+	if len(failedZones) > 0 {
+		return fmt.Errorf("Failed to submit all changes for the following zones: %v", failedZones)
 	}
 
 	return nil
@@ -336,11 +365,16 @@ func (p *AWSProvider) newChange(action string, endpoint *endpoint.Endpoint) *rou
 	}
 
 	if isAWSLoadBalancer(endpoint) {
+		evalTargetHealth := p.evaluateTargetHealth
+		if _, ok := endpoint.ProviderSpecific[providerSpecificEvaluateTargetHealth]; ok {
+			evalTargetHealth = endpoint.ProviderSpecific[providerSpecificEvaluateTargetHealth] == "true"
+		}
+
 		change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
 		change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
 			DNSName:              aws.String(endpoint.Targets[0]),
 			HostedZoneId:         aws.String(canonicalHostedZone(endpoint.Targets[0])),
-			EvaluateTargetHealth: aws.Bool(p.evaluateTargetHealth),
+			EvaluateTargetHealth: aws.Bool(evalTargetHealth),
 		}
 	} else {
 		change.ResourceRecordSet.Type = aws.String(endpoint.RecordType)
@@ -360,12 +394,12 @@ func (p *AWSProvider) newChange(action string, endpoint *endpoint.Endpoint) *rou
 	return change
 }
 
-func limitChangeSet(cs []*route53.Change, limit int) []*route53.Change {
-	if len(cs) <= limit {
-		return cs
+func batchChangeSet(cs []*route53.Change, batchSize int) [][]*route53.Change {
+	if len(cs) <= batchSize {
+		return [][]*route53.Change{cs}
 	}
 
-	log.Warningf("Initial change batch count is %d", len(cs))
+	batchChanges := make([][]*route53.Change, 0)
 
 	changesByName := make(map[string][]*route53.Change, 0)
 	for _, v := range cs {
@@ -378,18 +412,33 @@ func limitChangeSet(cs []*route53.Change, limit int) []*route53.Change {
 	}
 	sort.Strings(names)
 
-	limCs := make([]*route53.Change, 0)
-	for i := 0; i < len(names); i++ {
-		changes := changesByName[names[i]]
-		if (limit - len(limCs)) >= len(changes) {
-			limCs = append(limCs, changes...)
+	for _, name := range names {
+		totalChangesByName := len(changesByName[name])
+
+		if totalChangesByName > batchSize {
+			log.Warnf("Total changes for %s exceeds max batch size of %d, total changes: %d", name,
+				batchSize, totalChangesByName)
+			continue
+		}
+
+		var existingBatch bool
+		for i, b := range batchChanges {
+			if len(b)+totalChangesByName <= batchSize {
+				batchChanges[i] = append(batchChanges[i], changesByName[name]...)
+				existingBatch = true
+				break
+			}
+		}
+		if !existingBatch {
+			batchChanges = append(batchChanges, changesByName[name])
 		}
 	}
-	limCs = sortChangesByActionNameType(limCs)
 
-	log.Warningf("Limited change batch count to %d", len(limCs))
+	for i, batch := range batchChanges {
+		batchChanges[i] = sortChangesByActionNameType(batch)
+	}
 
-	return limCs
+	return batchChanges
 }
 
 func sortChangesByActionNameType(cs []*route53.Change) []*route53.Change {

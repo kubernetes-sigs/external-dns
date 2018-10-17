@@ -42,7 +42,7 @@ ignored = ["github.com/kubernetes/repo-infra/kazel"]
 
 [[constraint]]
   name = "github.com/prometheus/client_golang"
-  version = "0.8.0"
+  version = "0.9.0-pre1"
 
 [[constraint]]
   name = "github.com/sirupsen/logrus"
@@ -51,10 +51,6 @@ ignored = ["github.com/kubernetes/repo-infra/kazel"]
 [[constraint]]
   name = "github.com/stretchr/testify"
   version = "~1.2.1"
-
-[[constraint]]
-  name = "k8s.io/client-go"
-  version = "~8.0.0"
 
 [[override]]
   name = "github.com/kubernetes/repo-infra"
@@ -79,3 +75,43 @@ ignored = ["github.com/kubernetes/repo-infra/kazel"]
 [[constraint]]
   name = "github.com/aliyun/alibaba-cloud-sdk-go"
   version = "1.27.7"
+
+[[constraint]]
+  name = "istio.io/istio"
+  version = "1.0.0"
+
+[[override]]
+  name = "github.com/golang/glog"
+  source = "github.com/kubermatic/glog-logrus"
+
+[[override]]
+  name = "github.com/golang/protobuf"
+  version = "1.1.0"
+
+[[constraint]]
+  name = "k8s.io/client-go"
+  version = "8.0.0"
+
+[[override]]
+  name = "k8s.io/apimachinery"
+  version = "kubernetes-1.11.0"
+
+[[override]]
+  name = "k8s.io/api"
+  version = "kubernetes-1.11.0"
+
+[[override]]
+  name = "golang.org/x/sys"
+  revision = "13d03a9a82fba647c21a0ef8fba44a795d0f0835"
+
+[[override]]
+  name = "github.com/spf13/pflag"
+  version = "1.0.2"
+
+[[override]]
+  name = "golang.org/x/net"
+  revision = "161cd47e91fd58ac17490ef4d742dc98bb4cf60e"
+
+[[constraint]]
+  name = "github.com/miekg/dns"
+  version = "1.0.8"

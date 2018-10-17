@@ -1,3 +1,27 @@
+## v0.5.8 - 2018-10-11
+
+  - New Provider: RFC2136 (#702) @antlad
+  - Add Linode to list of supported providers (#730) @cliedeman
+  - Correctly populate target health check on existing records (#724) @linki
+  - Don't erase Endpoint labels (#713) @sebastien-prudhomme
+
+## v0.5.7 - 2018-09-27
+
+  - Pass all relevant CLI flags to AWS provider (#719) @linki
+  - Replace glog with a noop logger (#714) @linki
+  - Fix handling of custom TTL values with Google DNS. (#704) @kevinmdavis
+  - Continue even if node listing fails (#701) @pascalgn
+  - Fix Host field in HTTP request when using pdns provider (#700) @peterbale
+  - Allow AWS batching to fully sync on each run (#699) @bartelsielski
+
+## v0.5.6 - 2018-09-07
+  
+  - Alibaba Cloud (#696) @xianlubird  
+  - Add Source implementation for Istio Gateway (#694) @jonasrmichel
+  - CRD source based on getting endpoints from CRD (#657) @shashidharatd
+  - Add filter by service type feature (#653) @Devatoria
+  - Add generic metrics for Source & Registry Errors (#652) @wleese
+
 ## v0.5.5 - 2018-08-17
 
   - Configure req timeout calling k8s APIs (#681) @jvassev
