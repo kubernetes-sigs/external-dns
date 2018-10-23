@@ -3,7 +3,7 @@
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster on Azure.
 
-Make sure to use **>=0.4.2** version of ExternalDNS for this tutorial.
+Make sure to use **>=0.5.7** version of ExternalDNS for this tutorial.
 
 This tutorial uses [Azure CLI 2.0](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) for all
 Azure commands and assumes that the Kubernetes cluster was created via Azure Container Services and `kubectl` commands
@@ -38,21 +38,56 @@ Please consult your registrar's documentation on how to do that.
 The Azure DNS provider expects, by default, that the configuration file is at `/etc/kubernetes/azure.json`.  This can be overridden with
 the `--azure-config-file` option when starting ExternalDNS.
 
-### Azure Container Services
-When your Kubernetes cluster is created by ACS, a file named `/etc/kubernetes/azure.json` is created to store
-the Azure credentials for API access.  Kubernetes uses this file for the Azure cloud provider.
+### Use provisioned VM configuration file
+When running within Azure (ACS or AKS), the agent and master VMs are already provisioned with the configuration file at `/etc/kubernetes/azure.json`.
 
-For ExternalDNS to access the Azure API, it also needs access to this file.  However, we will be deploying ExternalDNS inside of
-the Kubernetes cluster so we will need to use a Kubernetes secret.
+If you want to use the file directly, make sure that the service principal that is given there has access to contribute to the resource group containing the Azure DNS zone(s).
+
+To use the file, replace the directive
+
+```yaml
+      volumes:
+      - name: azure-config-file
+        secret:
+          secretName: azure-config-file
+```
+
+with
+
+```yaml
+      volumes:
+      - name: azure-config-file
+        hostPath:
+          path: /etc/kubernetes/azure.json
+          type: File
+```
+
+in the manifests below.
+
+### Use custom configuration file
+If you want to customize the configuration, for example because you want to use a different service principal, you have to manually create a secret.
+This is also required if the Kubernetes cluster is not hosted in Azure Container Services (ACS or AKS) and you still want to use Azure DNS.
+
+The secret should contain an object named azure.json with content similar to this:
+
+```json
+{
+  "tenantId": "01234abc-de56-ff78-abc1-234567890def",
+  "subscriptionId": "01234abc-de56-ff78-abc1-234567890def",
+  "aadClientId": "01234abc-de56-ff78-abc1-234567890def",
+  "aadClientSecret": "uKiuXeiwui4jo9quae9o",
+  "resourceGroup": "MyDnsResourceGroup",
+}
+```
+
+You can find the `tenantId` by running `az account show` or by selecting Azure Active Directory in the Azure Portal and checking the _Directory ID_ under Properties.
+You can find the `subscriptionId` by running `az account show --query "id"` or by selecting Subscriptions in the Azure Portal.
 
 To create the secret:
 
 ```
-$ kubectl create secret generic azure-config-file --from-file=/etc/kubernetes/azure.json
+$ kubectl create secret generic azure-config-file --from-file=/local/path/to/azure.json
 ```
-
-### Azure Kubernetes Services (aka AKS)
-When your cluster is created, unlike ACS there are no Azure credentials stored and you must create an azure.json object manually like with other hosting providers. In order to create the azure.json you must first create an Azure AD service principal in the Azure AD tenant linked to your Azure subscription that is hosting your DNS zone.
 
 #### Create service principal
 A Service Principal with a minimum access level of contribute to the resource group containing the Azure DNS zone(s) is necessary for ExternalDNS to be able to edit DNS records. This is an Azure CLI example on how to query the Azure API for the information required for the Resource Group and DNS zone you would have already created in previous steps.
@@ -89,27 +124,20 @@ A Service Principal with a minimum access level of contribute to the resource gr
   "password": "password",  <-- aadClientSecret value
   "tenant": "AzureAD Tenant Id"  <-- tenantId value
 }
-...
+```
 
-```
-### Other hosting providers
-If the Kubernetes cluster is not hosted by Azure Container Services and you still want to use Azure DNS, you need to create the secret manually. The secret should contain an object named azure.json with content similar to this:
-```
+#### Azure Managed Service Identity (MSI)
+
+If [Azure Managed Service Identity (MSI)](https://docs.microsoft.com/en-us/azure/active-directory/managed-service-identity/overview) is enabled for virtual machines, then there is no need to create separate service principal.
+
+The contents of `azure.json` should be similar to this:
+
+```json
 {
-  "tenantId": "AzureAD tenant Id",
-  "subscriptionId": "Id",
-  "aadClientId": "Service Principal AppId",
-  "aadClientSecret": "Service Principal Password",
+  "tenantId": "01234abc-de56-ff78-abc1-234567890def",
+  "subscriptionId": "01234abc-de56-ff78-abc1-234567890def",
   "resourceGroup": "MyDnsResourceGroup",
-}
-```
-If [Azure Managed Service Identity (MSI)](https://docs.microsoft.com/en-us/azure/active-directory/managed-service-identity/overview) is enabled for virtual machines, then there is no need to create separate service principal. The contents of `azure.json` should be similar to this:
-```
-{
-  "tenantId": "AzureAD tenant Id",
-  "subscriptionId": "Id",
-  "resourceGroup": "MyDnsResourceGroup",
-  "useManagedIdentityExtension": true,
+  "useManagedIdentityExtension": true
 }
 ```
 
@@ -170,7 +198,7 @@ spec:
           secretName: azure-config-file
 ```
 
-### Manifest (for clusters with RBAC enabled)
+### Manifest (for clusters with RBAC enabled, cluster access)
 ```yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -207,6 +235,76 @@ subjects:
 - kind: ServiceAccount
   name: external-dns
   namespace: default
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: external-dns
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: external-dns
+    spec:
+      serviceAccountName: external-dns
+      containers:
+      - name: external-dns
+        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        args:
+        - --source=service
+        - --source=ingress
+        - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
+        - --provider=azure
+        - --azure-resource-group=externaldns # (optional) use the DNS zones from the tutorial's resource group
+        volumeMounts:
+        - name: azure-config-file
+          mountPath: /etc/kubernetes
+          readOnly: true
+      volumes:
+      - name: azure-config-file
+        secret:
+          secretName: azure-config-file
+```
+
+### Manifest (for clusters with RBAC enabled, namespace access)
+This configuration is the same as above, except it only requires privileges for the current namespace, not for the whole cluster.
+However, access to [nodes](https://kubernetes.io/docs/concepts/architecture/nodes/) requires cluster access, so when using this manifest,
+services with type `NodePort` will be skipped!
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: external-dns
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: external-dns
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get","watch","list"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["extensions"]
+  resources: ["ingresses"]
+  verbs: ["get","watch","list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: external-dns
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: external-dns
+subjects:
+- kind: ServiceAccount
+  name: external-dns
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
