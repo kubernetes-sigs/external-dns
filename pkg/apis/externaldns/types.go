@@ -39,7 +39,7 @@ type Config struct {
 	Master                   string
 	KubeConfig               string
 	RequestTimeout           time.Duration
-	IstioIngressGateway      string
+	IstioIngressGateways     []string
 	Sources                  []string
 	Namespace                string
 	AnnotationFilter         string
@@ -112,7 +112,7 @@ var defaultConfig = &Config{
 	Master:                   "",
 	KubeConfig:               "",
 	RequestTimeout:           time.Second * 30,
-	IstioIngressGateway:      "istio-system/istio-ingressgateway",
+	IstioIngressGateways:     []string{},
 	Sources:                  nil,
 	Namespace:                "",
 	AnnotationFilter:         "",
@@ -217,7 +217,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout").Default(defaultConfig.RequestTimeout.String()).DurationVar(&cfg.RequestTimeout)
 
 	// Flags related to Istio
-	app.Flag("istio-ingress-gateway", "The fully-qualified name of the Istio ingress gateway service (default: istio-system/istio-ingressgateway)").Default(defaultConfig.IstioIngressGateway).StringVar(&cfg.IstioIngressGateway)
+	app.Flag("istio-ingress-gateway", "The fully-qualified name of the Istio ingress gateway service (default: all gateways)").Default("").StringsVar(&cfg.IstioIngressGateways)
 
 	// Flags related to processing sources
 	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, fake, connector, istio-gateway, crd").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "istio-gateway", "fake", "connector", "crd")

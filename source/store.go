@@ -51,7 +51,7 @@ type Config struct {
 	KubeConfig               string
 	KubeMaster               string
 	ServiceTypeFilter        []string
-	IstioIngressGateway      string
+	IstioIngressGateways     []string
 }
 
 // ClientGenerator provides clients
@@ -128,7 +128,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewIstioGatewaySource(kubernetesClient, istioClient, cfg.IstioIngressGateway, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation)
+		return NewIstioGatewaySource(kubernetesClient, istioClient, cfg.IstioIngressGateways, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation)
 	case "fake":
 		return NewFakeSource(cfg.FQDNTemplate)
 	case "connector":

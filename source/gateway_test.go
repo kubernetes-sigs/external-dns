@@ -63,7 +63,7 @@ func (suite *GatewaySuite) SetupTest() {
 	suite.source, err = NewIstioGatewaySource(
 		fakeKubernetesClient,
 		fakeIstioClient,
-		"istio-system/istio-ingressgateway",
+		[]string{"istio-system/istio-ingressgateway"},
 		"default",
 		"",
 		"{{.Name}}",
@@ -136,7 +136,7 @@ func TestNewIstioGatewaySource(t *testing.T) {
 			_, err := NewIstioGatewaySource(
 				fake.NewSimpleClientset(),
 				NewFakeConfigStore(),
-				"istio-system/istio-ingressgateway",
+				[]string{"istio-system/istio-ingressgateway"},
 				"",
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -934,7 +934,7 @@ func testGatewayEndpoints(t *testing.T) {
 			gatewaySource, err := NewIstioGatewaySource(
 				fakeKubernetesClient,
 				fakeIstioClient,
-				ingressGatewayService.Namespace+"/"+ingressGatewayService.Name,
+				[]string{ingressGatewayService.Namespace + "/" + ingressGatewayService.Name},
 				ti.targetNamespace,
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -967,7 +967,7 @@ func newTestGatewaySource(ingress *v1.Service) (*gatewaySource, error) {
 	src, err := NewIstioGatewaySource(
 		fakeKubernetesClient,
 		fakeIstioClient,
-		"istio-system/istio-ingressgateway",
+		[]string{"istio-system/istio-ingressgateway"},
 		"default",
 		"",
 		"{{.Name}}",

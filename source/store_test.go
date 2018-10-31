@@ -113,5 +113,5 @@ func TestByNames(t *testing.T) {
 }
 
 var minimalConfig = &Config{
-	IstioIngressGateway: "istio-system/istio-ingressgateway",
+	IstioIngressGateways: []string{"istio-system/istio-ingressgateway"},
 }
