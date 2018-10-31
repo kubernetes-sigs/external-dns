@@ -220,19 +220,20 @@ func (sc *gatewaySource) setResourceLabel(config istiomodel.Config, endpoints []
 }
 
 func (sc *gatewaySource) targetsFromIstioIngressStatus() (targets endpoint.Targets, err error) {
-	if svc, e := sc.kubeClient.CoreV1().Services(sc.istioNamespace).Get(sc.istioIngressGatewayName, metav1.GetOptions{}); e != nil {
+	if svcs, e := sc.kubeClient.CoreV1().Services("").List(metav1.ListOptions{}); e != nil {
 		err = e
 	} else {
-		for _, lb := range svc.Status.LoadBalancer.Ingress {
-			if lb.IP != "" {
-				targets = append(targets, lb.IP)
-			}
-			if lb.Hostname != "" {
-				targets = append(targets, lb.Hostname)
+		for _, svc := range svcs.Items {
+			for _, lb := range svc.Status.LoadBalancer.Ingress {
+				if lb.IP != "" {
+					targets = append(targets, lb.IP)
+				}
+				if lb.Hostname != "" {
+					targets = append(targets, lb.Hostname)
+				}
 			}
 		}
 	}
-
 	return
 }
 
