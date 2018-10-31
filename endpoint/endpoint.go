@@ -168,6 +168,15 @@ func (e *Endpoint) String() string {
 	return fmt.Sprintf("%s %d IN %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.Targets, e.ProviderSpecific)
 }
 
+// HasNonUniqueRecords tells us whether the endpoint type can have multiple records.
+func (e *Endpoint) HasNonUniqueRecords() bool {
+	switch e.RecordType {
+	case RecordTypeSRV:
+		return true
+	}
+	return false
+}
+
 // DNSEndpointSpec defines the desired state of DNSEndpoint
 type DNSEndpointSpec struct {
 	Endpoints []*Endpoint `json:"endpoints,omitempty"`

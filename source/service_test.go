@@ -913,6 +913,30 @@ func testServiceSourceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{},
 			false,
 		},
+		{
+			"create srv records for hostnames",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeLoadBalancer,
+			"",
+			"",
+			false,
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey: "foo.bar.example.org.",
+				serviceAnnotationKey:  "_http._tcp.bar.example.org 0 50 443",
+			},
+			"",
+			[]string{"1.2.3.4"},
+			[]string{string(v1.ServiceTypeLoadBalancer)},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.bar.example.org", Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(0)},
+				{DNSName: "_http._tcp.bar.example.org", Targets: endpoint.Targets{"0 50 443 foo.bar.example.org"}, RecordType: endpoint.RecordTypeSRV},
+			},
+			false,
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			// Create a Kubernetes testing client

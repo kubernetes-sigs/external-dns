@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -26,6 +27,7 @@ import (
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/kubernetes-incubator/external-dns/srv"
 )
 
 const (
@@ -46,6 +48,73 @@ var cloudFlareTypeNotSupported = map[string]bool{
 	"SPF": true,
 	"TXT": true,
 	"SRV": true,
+}
+
+// cloudFlareSRVData is attached to a DNSRecord to create an SRV record.
+type cloudFlareSRVData struct {
+	// Service is the service name e.g. _http
+	Service string `json:"service"`
+	// Proto is the protocol type e.g. _tcp
+	Proto string `json:"proto"`
+	// Name is the DNS domain name
+	Name string `json:"name"`
+	// Priority is the priority to select the record
+	Priority int `json:"priority"`
+	// Weight is the weighting of the endpoint
+	Weight int `json:"weight"`
+	// Port is the port to dial e.g. 443
+	Port int `json:"port"`
+	// Target is the target A or CNAME record
+	Target string `json:"target"`
+}
+
+// Equal compares two SRV data records and returns true if the target portion
+// of the records match
+func (d *cloudFlareSRVData) Equal(o *cloudFlareSRVData) bool {
+	return d.Priority == o.Priority && d.Weight == o.Weight && d.Port == o.Port && d.Target == o.Target
+}
+
+// unmarshalCloudFlareSRVData takes raw input from the API and decodes it into
+// the internal datatype.
+func unmarshalCloudFlareSRVData(data interface{}) *cloudFlareSRVData {
+	tmp, err := json.Marshal(data)
+	if err != nil {
+		return nil
+	}
+
+	d := &cloudFlareSRVData{}
+	if err := json.Unmarshal(tmp, d); err != nil {
+		return nil
+	}
+
+	return d
+}
+
+// newCloudFlareSRVEndpoint takes raw API SRV data and returns an endpoint
+// used for planning.
+func newCloudFlareSRVEndpoint(rr cloudflare.DNSRecord) *endpoint.Endpoint {
+	d := unmarshalCloudFlareSRVData(rr.Data)
+
+	in := srv.Record{
+		Name: srv.ParseName(rr.Name),
+		Target: srv.Target{
+			Port:     d.Port,
+			Priority: d.Priority,
+			Target:   d.Target,
+			Weight:   d.Weight,
+		},
+	}
+
+	return endpoint.NewEndpointWithTTL(in.Name.Format(), endpoint.RecordTypeSRV, endpoint.TTL(rr.TTL), in.Target.Format())
+}
+
+func newEndpoint(rr cloudflare.DNSRecord) *endpoint.Endpoint {
+	switch rr.Type {
+	case endpoint.RecordTypeSRV:
+		return newCloudFlareSRVEndpoint(rr)
+	}
+
+	return endpoint.NewEndpointWithTTL(rr.Name, rr.Type, endpoint.TTL(rr.TTL), rr.Content)
 }
 
 // cloudFlareDNS is the subset of the CloudFlare API that we actually use.  Add methods as required. Signatures must match exactly.
@@ -163,7 +232,7 @@ func (p *CloudFlareProvider) Records() ([]*endpoint.Endpoint, error) {
 
 		for _, r := range records {
 			if supportedRecordType(r.Type) {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(r.Name, r.Type, endpoint.TTL(r.TTL), r.Content))
+				endpoints = append(endpoints, newEndpoint(r))
 			}
 		}
 	}
@@ -215,6 +284,7 @@ func (p *CloudFlareProvider) submitChanges(changes []*cloudFlareChange) error {
 			if p.DryRun {
 				continue
 			}
+
 			recordID := p.getRecordID(records, change.ResourceRecordSet)
 			switch change.Action {
 			case cloudFlareCreate:
@@ -263,6 +333,39 @@ func (p *CloudFlareProvider) changesByZone(zones []cloudflare.Zone, changeSet []
 func (p *CloudFlareProvider) getRecordID(records []cloudflare.DNSRecord, record cloudflare.DNSRecord) string {
 	for _, zoneRecord := range records {
 		if zoneRecord.Name == record.Name && zoneRecord.Type == record.Type {
+			// SRV records need to check the full record for a match, including the target data
+			if record.Type == endpoint.RecordTypeSRV {
+				// The zone record is fresh from the API so decode the SRV data.
+				zoneData := unmarshalCloudFlareSRVData(zoneRecord.Data)
+
+				// The record will have been decoded by newCloudFlareChange
+				recordData, ok := record.Data.(*cloudFlareSRVData)
+				if !ok {
+					continue
+				}
+				if zoneData.Equal(recordData) {
+					return zoneRecord.ID
+				}
+				continue
+			}
+			// TXT records may have a target associated with them, which helps to disambiguate
+			// when we have multiple records with the same name e.g. SRV and MX
+			if record.Type == endpoint.RecordTypeTXT {
+				recordLabels, err := endpoint.NewLabelsFromString(record.Content)
+				if err != nil {
+					continue
+				}
+				if ok, recordTarget := recordLabels.HasNonUniqueRecords(); ok {
+					zoneLabels, err := endpoint.NewLabelsFromString(zoneRecord.Content)
+					if err != nil {
+						continue
+					}
+					if recordTarget == zoneLabels[endpoint.TargetLabel] {
+						return zoneRecord.ID
+					}
+					continue
+				}
+			}
 			return zoneRecord.ID
 		}
 	}
@@ -280,23 +383,48 @@ func newCloudFlareChanges(action string, endpoints []*endpoint.Endpoint, proxied
 	return changes
 }
 
-func newCloudFlareChange(action string, endpoint *endpoint.Endpoint, proxied bool) *cloudFlareChange {
+func newCloudFlareChange(action string, ep *endpoint.Endpoint, proxied bool) *cloudFlareChange {
 	ttl := defaultCloudFlareRecordTTL
-	if proxied && (cloudFlareTypeNotSupported[endpoint.RecordType] || strings.Contains(endpoint.DNSName, "*")) {
+	if proxied && (cloudFlareTypeNotSupported[ep.RecordType] || strings.Contains(ep.DNSName, "*")) {
 		proxied = false
 	}
-	if endpoint.RecordTTL.IsConfigured() {
-		ttl = int(endpoint.RecordTTL)
+	if ep.RecordTTL.IsConfigured() {
+		ttl = int(ep.RecordTTL)
+	}
+
+	switch ep.RecordType {
+	case endpoint.RecordTypeSRV:
+		// To maintain multiple SRV records for the same name we encode all
+		// the target information in the name so they appear unique.
+		in := srv.ParseRecord(ep.DNSName, ep.Targets[0])
+
+		return &cloudFlareChange{
+			Action: action,
+			ResourceRecordSet: cloudflare.DNSRecord{
+				Name: ep.DNSName,
+				TTL:  ttl,
+				Type: ep.RecordType,
+				Data: &cloudFlareSRVData{
+					Name:     in.Name.Name,
+					Service:  in.Name.Service,
+					Proto:    in.Name.Proto,
+					Priority: in.Target.Priority,
+					Weight:   in.Target.Weight,
+					Port:     in.Target.Port,
+					Target:   in.Target.Target,
+				},
+			},
+		}
 	}
 
 	return &cloudFlareChange{
 		Action: action,
 		ResourceRecordSet: cloudflare.DNSRecord{
-			Name:    endpoint.DNSName,
+			Name:    ep.DNSName,
 			TTL:     ttl,
 			Proxied: proxied,
-			Type:    endpoint.RecordType,
-			Content: endpoint.Targets[0],
+			Type:    ep.RecordType,
+			Content: ep.Targets[0],
 		},
 	}
 }

@@ -56,6 +56,29 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, ownerID string, cache
 	}, nil
 }
 
+type labelEntry struct {
+	name   string
+	labels endpoint.Labels
+}
+
+type labelList []labelEntry
+
+func (l labelList) find(e *endpoint.Endpoint) endpoint.Labels {
+	for _, entry := range l {
+		if e.DNSName != entry.name {
+			continue
+		}
+		if !e.HasNonUniqueRecords() {
+			return entry.labels
+		}
+		target, ok := entry.labels[endpoint.TargetLabel]
+		if ok && target == e.Targets[0] {
+			return entry.labels
+		}
+	}
+	return nil
+}
+
 // Records returns the current records from the registry excluding TXT Records
 // If TXT records was created previously to indicate ownership its corresponding value
 // will be added to the endpoints Labels map
@@ -74,7 +97,7 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 
 	endpoints := []*endpoint.Endpoint{}
 
-	labelMap := map[string]endpoint.Labels{}
+	ll := labelList{}
 
 	for _, record := range records {
 		if record.RecordType != endpoint.RecordTypeTXT {
@@ -94,12 +117,12 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 			return nil, err
 		}
 		endpointDNSName := im.mapper.toEndpointName(record.DNSName)
-		labelMap[endpointDNSName] = labels
+		ll = append(ll, labelEntry{name: endpointDNSName, labels: labels})
 	}
 
 	for _, ep := range endpoints {
 		ep.Labels = endpoint.NewLabels()
-		if labels, ok := labelMap[ep.DNSName]; ok {
+		if labels := ll.find(ep); labels != nil {
 			for k, v := range labels {
 				ep.Labels[k] = v
 			}
@@ -113,6 +136,16 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 	}
 
 	return endpoints, nil
+}
+
+// createEndpoint creates a TXT record endpoint for a resource
+func (im *TXTRegistry) createEndpoint(e *endpoint.Endpoint) *endpoint.Endpoint {
+	// Non uniqueu DNS names e.g. SRV records, need extra context to be added to the TXT
+	// in order to match based on target as the name make be specified multiple times.
+	if e.HasNonUniqueRecords() {
+		e.Labels[endpoint.TargetLabel] = e.Targets[0]
+	}
+	return endpoint.NewEndpoint(im.mapper.toTXTName(e.DNSName), endpoint.RecordTypeTXT, e.Labels.Serialize(true))
 }
 
 // ApplyChanges updates dns provider with the changes
@@ -129,7 +162,7 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 			r.Labels = make(map[string]string)
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
+		txt := im.createEndpoint(r)
 		filteredChanges.Create = append(filteredChanges.Create, txt)
 
 		if im.cacheInterval > 0 {
@@ -138,7 +171,7 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 	}
 
 	for _, r := range filteredChanges.Delete {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
+		txt := im.createEndpoint(r)
 
 		// when we delete TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
@@ -151,7 +184,7 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateOld {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
+		txt := im.createEndpoint(r)
 		// when we updateOld TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
 		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, txt)
@@ -163,7 +196,7 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateNew {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
+		txt := im.createEndpoint(r)
 		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, txt)
 		// add new version of record to cache
 		if im.cacheInterval > 0 {

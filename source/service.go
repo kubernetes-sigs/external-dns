@@ -32,6 +32,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/srv"
 )
 
 const (
@@ -220,7 +221,7 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service, nodeTargets endp
 
 	hostnameList := strings.Split(strings.Replace(buf.String(), " ", "", -1), ",")
 	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, nodeTargets)...)
+		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, nil, nodeTargets)...)
 	}
 
 	return endpoints, nil
@@ -231,8 +232,9 @@ func (sc *serviceSource) endpoints(svc *v1.Service, nodeTargets endpoint.Targets
 	var endpoints []*endpoint.Endpoint
 
 	hostnameList := getHostnamesFromAnnotations(svc.Annotations)
+	servicenames := getServicesFromAnnotations(svc.Annotations)
 	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, nodeTargets)...)
+		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, servicenames, nodeTargets)...)
 	}
 
 	return endpoints
@@ -288,7 +290,7 @@ func (sc *serviceSource) setResourceLabel(service v1.Service, endpoints []*endpo
 	}
 }
 
-func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, nodeTargets endpoint.Targets) []*endpoint.Endpoint {
+func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, servicenames []string, nodeTargets endpoint.Targets) []*endpoint.Endpoint {
 	hostname = strings.TrimSuffix(hostname, ".")
 	ttl, err := getTTLFromAnnotations(svc.Annotations)
 	if err != nil {
@@ -345,6 +347,26 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, nod
 	if len(epCNAME.Targets) > 0 {
 		endpoints = append(endpoints, epCNAME)
 	}
+
+	// When generating the endpoint for an SRV record we use the
+	// full record as the endpoint name.  This ensures that when the
+	// planner aggregates and selects a single target for things like
+	// A and CNAME records we maintain a 1:1 mapping.  Providers and
+	// registries need to be aware of this and take appropriate action.
+	for _, servicename := range servicenames {
+		r := srv.ParseAnnotation(servicename)
+		r.Target.Target = hostname
+
+		ep := &endpoint.Endpoint{
+			DNSName:    r.Name.Format(),
+			RecordTTL:  ttl,
+			RecordType: endpoint.RecordTypeSRV,
+			Labels:     endpoint.NewLabels(),
+			Targets:    endpoint.Targets{r.Target.Format()},
+		}
+		endpoints = append(endpoints, ep)
+	}
+
 	return endpoints
 }
 

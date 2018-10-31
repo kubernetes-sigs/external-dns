@@ -129,23 +129,144 @@ func (t planTable) getDeletes() (deleteList []*endpoint.Endpoint) {
 	return
 }
 
+// nonUniquePlanTable holds DNS records that are not unique, e.g. SRV and TXT records
+// may have multiple entries for the same name.  This maintains a 1:1 mapping between
+// current and candidate endpoints based on both the DNS name and target.
+type nonUniquePlanTable struct {
+	rows []*nonUniquePlanTableRow
+}
+
+func newNonUniquePlanTable() *nonUniquePlanTable {
+	return &nonUniquePlanTable{}
+}
+
+type nonUniquePlanTableRow struct {
+	name      string
+	target    string
+	current   *endpoint.Endpoint
+	candidate *endpoint.Endpoint
+}
+
+func (t *nonUniquePlanTable) find(name, target string) *nonUniquePlanTableRow {
+	for _, row := range t.rows {
+		if row.name == name && row.target == target {
+			return row
+		}
+	}
+	return nil
+}
+
+func (t *nonUniquePlanTable) addCurrent(e *endpoint.Endpoint) {
+	dnsName := sanitizeDNSName(e.DNSName)
+	targetName := sanitizeDNSName(e.Targets[0])
+	row := t.find(dnsName, targetName)
+	if row == nil {
+		row = &nonUniquePlanTableRow{
+			name:   dnsName,
+			target: targetName,
+		}
+		t.rows = append(t.rows, row)
+	}
+	row.current = e
+}
+
+func (t *nonUniquePlanTable) addCandidate(e *endpoint.Endpoint) {
+	dnsName := sanitizeDNSName(e.DNSName)
+	targetName := sanitizeDNSName(e.Targets[0])
+	row := t.find(dnsName, targetName)
+	if row == nil {
+		row = &nonUniquePlanTableRow{
+			name:   dnsName,
+			target: targetName,
+		}
+		t.rows = append(t.rows, row)
+	}
+	row.candidate = e
+}
+
+func (t *nonUniquePlanTable) getCreates() (createList []*endpoint.Endpoint) {
+	for _, row := range t.rows {
+		if row.current == nil {
+			createList = append(createList, row.candidate)
+		}
+	}
+	return
+}
+
+func (t *nonUniquePlanTable) getDeletes() (deleteList []*endpoint.Endpoint) {
+	for _, row := range t.rows {
+		if row.candidate == nil {
+			deleteList = append(deleteList, row.current)
+		}
+	}
+	return
+}
+
+// planner is the top level planning abstraction that transparently handles
+// records that can have multiple records, and those that can't that also
+// require an algorithm to select the appropriate target.
+type planner struct {
+	planTable          planTable
+	nonUniquePlanTable *nonUniquePlanTable
+}
+
+func newPlanner() planner {
+	return planner{
+		planTable:          newPlanTable(),
+		nonUniquePlanTable: newNonUniquePlanTable(),
+	}
+}
+
+func (p planner) addCurrent(e *endpoint.Endpoint) {
+	if e.HasNonUniqueRecords() {
+		p.nonUniquePlanTable.addCurrent(e)
+		return
+	}
+	p.planTable.addCurrent(e)
+}
+
+func (p planner) addCandidate(e *endpoint.Endpoint) {
+	if e.HasNonUniqueRecords() {
+		p.nonUniquePlanTable.addCandidate(e)
+		return
+	}
+	p.planTable.addCandidate(e)
+}
+
+func (p planner) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*endpoint.Endpoint) {
+	updateNew, updateOld = p.planTable.getUpdates()
+	return
+}
+
+func (p planner) getCreates() (createList []*endpoint.Endpoint) {
+	createList = p.planTable.getCreates()
+	createList = append(createList, p.nonUniquePlanTable.getCreates()...)
+	return
+}
+
+func (p planner) getDeletes() (deleteList []*endpoint.Endpoint) {
+	deleteList = p.planTable.getDeletes()
+	deleteList = append(deleteList, p.nonUniquePlanTable.getDeletes()...)
+	return
+}
+
 // Calculate computes the actions needed to move current state towards desired
 // state. It then passes those changes to the current policy for further
 // processing. It returns a copy of Plan with the changes populated.
 func (p *Plan) Calculate() *Plan {
-	t := newPlanTable()
+	planner := newPlanner()
 
 	for _, current := range p.Current {
-		t.addCurrent(current)
+		planner.addCurrent(current)
 	}
 	for _, desired := range p.Desired {
-		t.addCandidate(desired)
+		planner.addCandidate(desired)
 	}
 
 	changes := &Changes{}
-	changes.Create = t.getCreates()
-	changes.Delete = t.getDeletes()
-	changes.UpdateNew, changes.UpdateOld = t.getUpdates()
+	changes.Create = planner.getCreates()
+	changes.Delete = planner.getDeletes()
+	changes.UpdateNew, changes.UpdateOld = planner.getUpdates()
 	for _, pol := range p.Policies {
 		changes = pol.Apply(changes)
 	}

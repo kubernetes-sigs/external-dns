@@ -35,6 +35,8 @@ const (
 	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
 	// The annotation used for defining the desired DNS record TTL
 	ttlAnnotationKey = "external-dns.alpha.kubernetes.io/ttl"
+	// The annotation used for defining the SRV record to add the hostname to
+	serviceAnnotationKey = "external-dns.alpha.kubernetes.io/service"
 	// The value of the controller annotation so that we feel responsible
 	controllerAnnotationValue = "dns-controller"
 )
@@ -72,6 +74,17 @@ func getHostnamesFromAnnotations(annotations map[string]string) []string {
 	}
 
 	return strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
+}
+
+// getServicesFromAnnotations extracts services from resource annotations.  The format is
+// expected to be "_service._proto.domain priority weight port[, ...]"
+func getServicesFromAnnotations(annotations map[string]string) []string {
+	serviceAnnotation, exists := annotations[serviceAnnotationKey]
+	if !exists {
+		return nil
+	}
+
+	return strings.Split(serviceAnnotation, ",")
 }
 
 // getTargetsFromTargetAnnotation gets endpoints from optional "target" annotation.

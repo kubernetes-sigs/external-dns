@@ -35,6 +35,9 @@ type PlanTestSuite struct {
 	bar127A                *endpoint.Endpoint
 	bar127AWithTTL         *endpoint.Endpoint
 	bar192A                *endpoint.Endpoint
+	fooV1Srv               *endpoint.Endpoint
+	fooV2Srv               *endpoint.Endpoint
+	fooV3Srv               *endpoint.Endpoint
 }
 
 func (suite *PlanTestSuite) SetupTest() {
@@ -102,6 +105,21 @@ func (suite *PlanTestSuite) SetupTest() {
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/bar-192",
 		},
+	}
+	suite.fooV1Srv = &endpoint.Endpoint{
+		DNSName:    "_service._proto.foo",
+		Targets:    endpoint.Targets{"0 0 80 bar1.foo"},
+		RecordType: "SRV",
+	}
+	suite.fooV2Srv = &endpoint.Endpoint{
+		DNSName:    "_service._proto.foo",
+		Targets:    endpoint.Targets{"0 0 80 bar2.foo"},
+		RecordType: "SRV",
+	}
+	suite.fooV3Srv = &endpoint.Endpoint{
+		DNSName:    "_service._proto.foo",
+		Targets:    endpoint.Targets{"0 0 80 bar3.foo"},
+		RecordType: "SRV",
 	}
 }
 
@@ -348,6 +366,48 @@ func (suite *PlanTestSuite) TestDuplicatedEndpointsForSameResourceRetain() {
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
+func (suite *PlanTestSuite) TestSRVCreate() {
+	current := []*endpoint.Endpoint{}
+	desired := []*endpoint.Endpoint{suite.fooV1Srv, suite.fooV2Srv}
+	expectedCreate := []*endpoint.Endpoint{suite.fooV1Srv, suite.fooV2Srv}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
+func (suite *PlanTestSuite) TestSRVUpdate() {
+	current := []*endpoint.Endpoint{suite.fooV1Srv, suite.fooV2Srv}
+	desired := []*endpoint.Endpoint{suite.fooV1Srv, suite.fooV3Srv}
+	expectedCreate := []*endpoint.Endpoint{suite.fooV3Srv}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{suite.fooV2Srv}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
 func TestPlan(t *testing.T) {
 	suite.Run(t, new(PlanTestSuite))
 }
@@ -403,6 +463,14 @@ func TestSanitizeDNSName(t *testing.T) {
 		{
 			"my-example-my-example-1214.FOO-1235.BAR-foo.COM",
 			"my-example-my-example-1214.foo-1235.bar-foo.com",
+		},
+		{
+			"_service._proto.foo.com",
+			"_service._proto.foo.com",
+		},
+		{
+			"    0 0 80 WWW.FOO.COM   ",
+			"0 0 80 www.foo.com",
 		},
 	}
 	for _, r := range records {

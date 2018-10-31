@@ -38,6 +38,9 @@ const (
 	// AWSSDDescriptionLabel label responsible for storing raw owner/resource combination information in the Labels
 	// supposed to be inserted by AWS SD Provider, and parsed into OwnerLabelKey and ResourceLabelKey key by AWS SD Registry
 	AWSSDDescriptionLabel = "aws-sd-description"
+
+	// TargetLabel is used to disabiguate registry entries for resources that may have multiple records e.g. SRV and MX
+	TargetLabel = "target"
 )
 
 // Labels store metadata related to the endpoint
@@ -100,4 +103,14 @@ func (l Labels) Serialize(withQuotes bool) string {
 		return fmt.Sprintf("\"%s\"", strings.Join(tokens, ","))
 	}
 	return strings.Join(tokens, ",")
+}
+
+// HasNonUniqueRecords tells us whether the DNS name is not necessarily unique.  This means
+// that the DNS name and the target data together in order to uniquely identify a record
+// that shares the same name e.g. SRV, MX, etc.  Returns the target if true.
+func (l Labels) HasNonUniqueRecords() (bool, string) {
+	if target, ok := l[TargetLabel]; ok {
+		return true, target
+	}
+	return false, ""
 }

@@ -372,19 +372,21 @@ func TestNewCloudFlareChangeProxiable(t *testing.T) {
 	var cloudFlareTypes = []struct {
 		recordType string
 		proxiable  bool
+		name       string
+		target     string
 	}{
-		{"A", true},
-		{"CNAME", true},
-		{"LOC", false},
-		{"MX", false},
-		{"NS", false},
-		{"SPF", false},
-		{"TXT", false},
-		{"SRV", false},
+		{"A", true, "new", "target"},
+		{"CNAME", true, "new", "target"},
+		{"LOC", false, "new", "target"},
+		{"MX", false, "new", "target"},
+		{"NS", false, "new", "target"},
+		{"SPF", false, "new", "target"},
+		{"TXT", false, "new", "target"},
+		{"SRV", false, "_service._proto.zone", "0 0 443 target"},
 	}
 
 	for _, cloudFlareType := range cloudFlareTypes {
-		change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: cloudFlareType.recordType, Targets: endpoint.Targets{"target"}}, true)
+		change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: cloudFlareType.name, RecordType: cloudFlareType.recordType, Targets: endpoint.Targets{"target"}}, true)
 
 		if cloudFlareType.proxiable {
 			assert.True(t, change.ResourceRecordSet.Proxied)
@@ -477,6 +479,12 @@ func TestApplyChanges(t *testing.T) {
 	}
 }
 
+func contentForTXT(target string) string {
+	l := endpoint.NewLabels()
+	l[endpoint.TargetLabel] = target
+	return l.Serialize(true)
+}
+
 func TestCloudFlareGetRecordID(t *testing.T) {
 	p := &CloudFlareProvider{}
 	records := []cloudflare.DNSRecord{
@@ -490,6 +498,18 @@ func TestCloudFlareGetRecordID(t *testing.T) {
 			Type: endpoint.RecordTypeA,
 			ID:   "2",
 		},
+		{
+			Name:    "_service._proto.example.com",
+			Type:    endpoint.RecordTypeTXT,
+			Content: contentForTXT("0 0 443 foo.example.com"),
+			ID:      "3",
+		},
+		{
+			Name:    "_service._proto.example.com",
+			Type:    endpoint.RecordTypeTXT,
+			Content: contentForTXT("0 0 443 bar.example.com"),
+			ID:      "4",
+		},
 	}
 
 	assert.Equal(t, "", p.getRecordID(records, cloudflare.DNSRecord{
@@ -499,6 +519,21 @@ func TestCloudFlareGetRecordID(t *testing.T) {
 	assert.Equal(t, "2", p.getRecordID(records, cloudflare.DNSRecord{
 		Name: "bar.de",
 		Type: endpoint.RecordTypeA,
+	}))
+	assert.Equal(t, "4", p.getRecordID(records, cloudflare.DNSRecord{
+		Name:    "_service._proto.example.com",
+		Type:    endpoint.RecordTypeTXT,
+		Content: contentForTXT("0 0 443 bar.example.com"),
+	}))
+	assert.Equal(t, "3", p.getRecordID(records, cloudflare.DNSRecord{
+		Name:    "_service._proto.example.com",
+		Type:    endpoint.RecordTypeTXT,
+		Content: contentForTXT("0 0 443 foo.example.com"),
+	}))
+	assert.Equal(t, "", p.getRecordID(records, cloudflare.DNSRecord{
+		Name:    "_service._proto.example.com",
+		Type:    endpoint.RecordTypeTXT,
+		Content: contentForTXT("0 0 443 baz.example.com"),
 	}))
 }
 
