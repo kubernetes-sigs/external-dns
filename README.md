@@ -47,6 +47,10 @@ Note that all flags can be replaced with environment variables; for instance,
 `--dry-run` could be replaced with `EXTERNAL_DNS_DRY_RUN=1`, or
 `--registry txt` could be replaced with `EXTERNAL_DNS_REGISTRY=txt`.
 
+## There are two ways of running ExternalDNS:
+* Deploying to a Cluster
+* Running Locally
+
 ## Deploying to a Cluster
 
 The following tutorials are provided:
