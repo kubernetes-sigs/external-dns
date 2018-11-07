@@ -69,6 +69,7 @@ Regarding Ingress, we'll support:
 * Google's Ingress Controller on GKE that integrates with their Layer 7 load balancers (GLBC)
 * nginx-ingress-controller v0.9.x with a fronting Service
 * Zalando's [AWS Ingress controller](https://github.com/zalando-incubator/kube-ingress-aws-controller), based on AWS ALBs and [Skipper](https://github.com/zalando/skipper)
+* [Traefik](https://github.com/containous/traefik) 1.7 and above, when [`kubernetes.ingressEndpoint`](https://docs.traefik.io/v1.7/configuration/backends/kubernetes/#ingressendpoint) is configured (`kubernetes.ingressEndpoint.useDefaultPublishedService` in the [Helm chart](https://github.com/helm/charts/tree/master/stable/traefik#configuration))
 
 ### Are other Ingress Controllers supported?
 
