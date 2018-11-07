@@ -76,7 +76,7 @@ The secret should contain an object named azure.json with content similar to thi
   "subscriptionId": "01234abc-de56-ff78-abc1-234567890def",
   "aadClientId": "01234abc-de56-ff78-abc1-234567890def",
   "aadClientSecret": "uKiuXeiwui4jo9quae9o",
-  "resourceGroup": "MyDnsResourceGroup",
+  "resourceGroup": "MyDnsResourceGroup"
 }
 ```
 
