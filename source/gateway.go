@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -218,38 +219,46 @@ func (sc *gatewaySource) setResourceLabel(config istiomodel.Config, endpoints []
 
 func (sc *gatewaySource) targetsFromIstioIngressStatus() (targets endpoint.Targets, err error) {
 	if len(sc.istioIngressGateways) == 0 || (len(sc.istioIngressGateways) == 1 && sc.istioIngressGateways[0] == "") {
-		if svcs, e := sc.kubeClient.CoreV1().Services("").List(metav1.ListOptions{}); e != nil {
+		targets, err = appendAllGateways(sc.kubeClient)
+	} else {
+		targets, err = appendTargetsFromGateways(sc.kubeClient, sc.istioIngressGateways)
+	}
+	return
+}
+
+func appendAllGateways(kubeClient kubernetes.Interface) (targets endpoint.Targets, err error) {
+	if svcs, e := kubeClient.CoreV1().Services("").List(metav1.ListOptions{}); e != nil {
+		err = e
+	} else {
+		for _, svc := range svcs.Items {
+			targets = appendTargets(svc.Status.LoadBalancer.Ingress)
+		}
+	}
+	return
+}
+
+func appendTargetsFromGateways(kubeClient kubernetes.Interface, gateways []string) (targets endpoint.Targets, err error) {
+	for _, ingressGateway := range gateways {
+		if istioNamespace, istioIngressGatewayName, e := parseIngressGateway(ingressGateway); e != nil {
 			err = e
 		} else {
-			for _, svc := range svcs.Items {
-				for _, lb := range svc.Status.LoadBalancer.Ingress {
-					if lb.IP != "" {
-						targets = append(targets, lb.IP)
-					}
-					if lb.Hostname != "" {
-						targets = append(targets, lb.Hostname)
-					}
-				}
-			}
-		}
-	} else {
-		for _, ingressGateway := range sc.istioIngressGateways {
-			if istioNamespace, istioIngressGatewayName, e := parseIngressGateway(ingressGateway); e != nil {
+			if svc, e := kubeClient.CoreV1().Services(istioNamespace).Get(istioIngressGatewayName, metav1.GetOptions{}); e != nil {
 				err = e
 			} else {
-				if svc, e := sc.kubeClient.CoreV1().Services(istioNamespace).Get(istioIngressGatewayName, metav1.GetOptions{}); e != nil {
-					err = e
-				} else {
-					for _, lb := range svc.Status.LoadBalancer.Ingress {
-						if lb.IP != "" {
-							targets = append(targets, lb.IP)
-						}
-						if lb.Hostname != "" {
-							targets = append(targets, lb.Hostname)
-						}
-					}
-				}
+				targets = appendTargets(svc.Status.LoadBalancer.Ingress)
 			}
+		}
+	}
+	return
+}
+
+func appendTargets(lbs []v1.LoadBalancerIngress) (targets endpoint.Targets) {
+	for _, lb := range lbs {
+		if lb.IP != "" {
+			targets = append(targets, lb.IP)
+		}
+		if lb.Hostname != "" {
+			targets = append(targets, lb.Hostname)
 		}
 	}
 	return
