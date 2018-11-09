@@ -366,7 +366,7 @@ func (p *AWSProvider) newChange(action string, endpoint *endpoint.Endpoint) *rou
 
 	rec, err := p.Records()
 	if err != nil {
-		log.Errorf("getting records failed: %v", err)
+		log.Infof("getting records failed: %v", err)
 	}
 
 	if isAWSLoadBalancer(endpoint) {
