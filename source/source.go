@@ -35,7 +35,7 @@ const (
 	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
 	// The annotation used for defining the desired DNS record TTL
 	ttlAnnotationKey = "external-dns.alpha.kubernetes.io/ttl"
-	//// The annotation used for switching to the alias record types e. g. AWS Alias records instead of a normal CNAME
+	// The annotation used for switching to the alias record types e. g. AWS Alias records instead of a normal CNAME
 	aliasAnnotationKey = "external-dns.alpha.kubernetes.io/alias"
 	// The value of the controller annotation so that we feel responsible
 	controllerAnnotationValue = "dns-controller"
