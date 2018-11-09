@@ -171,6 +171,13 @@ This list is not the full list, but a few arguments that where chosen.
 
 `aws-zone-type` allows filtering for private and public zones
 
+## Annotations
+
+Annotations which are specific to AWS.
+
+### alias
+
+`external-dns.alpha.kubernetes.io/alias` if set to `true` on an ingress, it will create an ALIAS record when the target is an ALIAS as well.
 
 ## Verify ExternalDNS works (Ingress example)
 
