@@ -321,7 +321,7 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 						return nil, errors.New("Value of record TTL overflows, limited to int32")
 					}
 					if ep.RecordTTL == 0 {
-						// No TTL was sepecified for the record, we use the default
+						// No TTL was specified for the record, we use the default
 						rrset.Ttl = int32(defaultTTL)
 					} else {
 						rrset.Ttl = int32(ep.RecordTTL)

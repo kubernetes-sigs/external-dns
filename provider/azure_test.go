@@ -48,7 +48,7 @@ func createMockZone(zone string, id string) dns.Zone {
 }
 
 func (client *mockZonesClient) ListByResourceGroup(resourceGroupName string, top *int32) (dns.ZoneListResult, error) {
-	// Don't bother filtering by resouce group or implementing paging since that's the responsibility
+	// Don't bother filtering by resource group or implementing paging since that's the responsibility
 	// of the Azure DNS service
 	return *client.mockZoneListResult, nil
 }
