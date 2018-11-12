@@ -684,18 +684,24 @@ func (p *AlibabaCloudProvider) splitDNSName(endpoint *endpoint.Endpoint) (rr str
 	}
 
 	if !found {
-		idx := strings.Index(name, ".")
-		if idx >= 0 {
-			rr = name[0:idx]
-			domain = name[idx+1:]
-		} else {
+		parts := strings.Split(name, ".")
+		if len(parts) < 2 {
 			rr = name
 			domain = ""
+		} else {
+			domain = parts[len(parts)-2] + "." + parts[len(parts)-1]
+			rrIndex := strings.Index(name, domain)
+			if rrIndex < 1 {
+				rrIndex = 1
+			}
+			rr = name[0 : rrIndex-1]
 		}
 	}
+
 	if rr == "" {
 		rr = nullHostAlibabaCloud
 	}
+
 	return rr, domain
 }
 
