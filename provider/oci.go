@@ -290,7 +290,7 @@ func operationsByZone(zones map[string]*dns.ZoneSummary, ops []dns.RecordOperati
 		}
 	}
 
-	// Remove zones that don't have have any changes.
+	// Remove zones that don't have any changes.
 	for zone, ops := range changes {
 		if len(ops) == 0 {
 			delete(changes, zone)
