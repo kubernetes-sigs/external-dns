@@ -821,6 +821,35 @@ func TestAWSisLoadBalancer(t *testing.T) {
 	}
 }
 
+func TestAWSisAWSAlias(t *testing.T) {
+	for _, tc := range []struct {
+		target     string
+		recordType string
+		alias      string
+		expected   string
+	}{
+		{"bar.example.org", endpoint.RecordTypeCNAME, "true", "Z215JYRZR1TBD5"},
+		{"foo.example.org", endpoint.RecordTypeCNAME, "true", ""},
+	} {
+		ep := &endpoint.Endpoint{
+			Targets:          endpoint.Targets{tc.target},
+			RecordType:       tc.recordType,
+			ProviderSpecific: map[string]string{"alias": tc.alias},
+		}
+		addrs := []*endpoint.Endpoint{
+			{
+				DNSName: "foo.example.org",
+				Targets: endpoint.Targets{"foobar.example.org"},
+			},
+			{
+				DNSName: "bar.example.org",
+				Targets: endpoint.Targets{"bar.eu-central-1.elb.amazonaws.com"},
+			},
+		}
+		assert.Equal(t, tc.expected, isAWSAlias(ep, addrs))
+	}
+}
+
 func TestAWSCanonicalHostedZone(t *testing.T) {
 	for _, tc := range []struct {
 		hostname string
