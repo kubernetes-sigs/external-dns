@@ -29,6 +29,7 @@ type PlanTestSuite struct {
 	suite.Suite
 	fooV1Cname             *endpoint.Endpoint
 	fooV2Cname             *endpoint.Endpoint
+	fooV2TXT               *endpoint.Endpoint
 	fooV2CnameNoLabel      *endpoint.Endpoint
 	fooV3CnameSameResource *endpoint.Endpoint
 	fooA5                  *endpoint.Endpoint
@@ -64,6 +65,10 @@ func (suite *PlanTestSuite) SetupTest() {
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/foo-v2",
 		},
+	}
+	suite.fooV2TXT = &endpoint.Endpoint{
+		DNSName:    "foo",
+		RecordType: "TXT",
 	}
 	suite.fooV2CnameNoLabel = &endpoint.Endpoint{
 		DNSName:    "foo",
@@ -247,6 +252,27 @@ func (suite *PlanTestSuite) TestDifferentTypes() {
 	expectedCreate := []*endpoint.Endpoint{}
 	expectedUpdateOld := []*endpoint.Endpoint{suite.fooV1Cname}
 	expectedUpdateNew := []*endpoint.Endpoint{suite.fooA5}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
+func (suite *PlanTestSuite) TestIgnoreTXT() {
+	current := []*endpoint.Endpoint{suite.fooV2TXT}
+	desired := []*endpoint.Endpoint{suite.fooV2Cname}
+	expectedCreate := []*endpoint.Endpoint{suite.fooV2Cname}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
