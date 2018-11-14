@@ -89,7 +89,7 @@ func (r *Route53APIStub) ListResourceRecordSetsPages(input *route53.ListResource
 
 // Route53 stores wildcards escaped: http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html?shortFooter=true#domain-name-format-asterisk
 func wildcardEscape(s string) string {
-	if strings.HasPrefix(s, "*") {
+	if strings.Contains(s, "*") {
 		s = strings.Replace(s, "*", "\\052", 1)
 	}
 	return s
@@ -257,6 +257,7 @@ func TestAWSRecords(t *testing.T) {
 		endpoint.NewEndpoint("*.wildcard-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false"),
 		endpoint.NewEndpoint("list-test-alias-evaluate.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "true"),
 		endpoint.NewEndpointWithTTL("list-test-multiple.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "8.8.8.8", "8.8.4.4"),
+		endpoint.NewEndpointWithTTL("prefix-*.wildcard.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "random"),
 	})
 
 	records, err := provider.Records()
@@ -270,6 +271,7 @@ func TestAWSRecords(t *testing.T) {
 		endpoint.NewEndpoint("*.wildcard-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false"),
 		endpoint.NewEndpoint("list-test-alias-evaluate.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "true"),
 		endpoint.NewEndpointWithTTL("list-test-multiple.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "8.8.8.8", "8.8.4.4"),
+		endpoint.NewEndpointWithTTL("prefix-*.wildcard.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "random"),
 	})
 }
 
@@ -929,10 +931,13 @@ func setupAWSRecords(t *testing.T, provider *AWSProvider, endpoints []*endpoint.
 
 	require.NoError(t, provider.CreateRecords(endpoints))
 
+	escapeAWSRecords(t, provider, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.")
+	escapeAWSRecords(t, provider, "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do.")
+	escapeAWSRecords(t, provider, "/hostedzone/zone-3.ext-dns-test-2.teapot.zalan.do.")
+
 	records, err = provider.Records()
 	require.NoError(t, err)
 
-	validateEndpoints(t, records, endpoints)
 }
 
 func listAWSRecords(t *testing.T, client Route53API, zone string) []*route53.ResourceRecordSet {
@@ -941,10 +946,7 @@ func listAWSRecords(t *testing.T, client Route53API, zone string) []*route53.Res
 		HostedZoneId: aws.String(zone),
 	}, func(resp *route53.ListResourceRecordSetsOutput, _ bool) bool {
 		for _, recordSet := range resp.ResourceRecordSets {
-			switch aws.StringValue(recordSet.Type) {
-			case endpoint.RecordTypeA, endpoint.RecordTypeCNAME:
-				recordSets = append(recordSets, recordSet)
-			}
+			recordSets = append(recordSets, recordSet)
 		}
 		return true
 	}))
@@ -959,6 +961,29 @@ func clearAWSRecords(t *testing.T, provider *AWSProvider, zone string) {
 	for _, recordSet := range recordSets {
 		changes = append(changes, &route53.Change{
 			Action:            aws.String(route53.ChangeActionDelete),
+			ResourceRecordSet: recordSet,
+		})
+	}
+
+	if len(changes) != 0 {
+		_, err := provider.client.ChangeResourceRecordSets(&route53.ChangeResourceRecordSetsInput{
+			HostedZoneId: aws.String(zone),
+			ChangeBatch: &route53.ChangeBatch{
+				Changes: changes,
+			},
+		})
+		require.NoError(t, err)
+	}
+}
+
+// Route53 stores wildcards escaped: http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html?shortFooter=true#domain-name-format-asterisk
+func escapeAWSRecords(t *testing.T, provider *AWSProvider, zone string) {
+	recordSets := listAWSRecords(t, provider.client, zone)
+
+	changes := make([]*route53.Change, 0, len(recordSets))
+	for _, recordSet := range recordSets {
+		changes = append(changes, &route53.Change{
+			Action:            aws.String(route53.ChangeActionUpsert),
 			ResourceRecordSet: recordSet,
 		})
 	}
