@@ -90,12 +90,14 @@ func TestRunOnce(t *testing.T) {
 	source := new(testutils.MockSource)
 	source.On("Endpoints").Return([]*endpoint.Endpoint{
 		{
-			DNSName: "create-record",
-			Targets: endpoint.Targets{"1.2.3.4"},
+			DNSName:    "create-record",
+			RecordType: endpoint.RecordTypeA,
+			Targets:    endpoint.Targets{"1.2.3.4"},
 		},
 		{
-			DNSName: "update-record",
-			Targets: endpoint.Targets{"8.8.4.4"},
+			DNSName:    "update-record",
+			RecordType: endpoint.RecordTypeA,
+			Targets:    endpoint.Targets{"8.8.4.4"},
 		},
 	}, nil)
 
@@ -103,26 +105,28 @@ func TestRunOnce(t *testing.T) {
 	provider := newMockProvider(
 		[]*endpoint.Endpoint{
 			{
-				DNSName: "update-record",
-				Targets: endpoint.Targets{"8.8.8.8"},
+				DNSName:    "update-record",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"8.8.8.8"},
 			},
 			{
-				DNSName: "delete-record",
-				Targets: endpoint.Targets{"4.3.2.1"},
+				DNSName:    "delete-record",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"4.3.2.1"},
 			},
 		},
 		&plan.Changes{
 			Create: []*endpoint.Endpoint{
-				{DNSName: "create-record", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "create-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
 			},
 			UpdateNew: []*endpoint.Endpoint{
-				{DNSName: "update-record", Targets: endpoint.Targets{"8.8.4.4"}},
+				{DNSName: "update-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"8.8.4.4"}},
 			},
 			UpdateOld: []*endpoint.Endpoint{
-				{DNSName: "update-record", Targets: endpoint.Targets{"8.8.8.8"}},
+				{DNSName: "update-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"8.8.8.8"}},
 			},
 			Delete: []*endpoint.Endpoint{
-				{DNSName: "delete-record", Targets: endpoint.Targets{"4.3.2.1"}},
+				{DNSName: "delete-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"4.3.2.1"}},
 			},
 		},
 	)
