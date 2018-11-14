@@ -172,12 +172,14 @@ func (sc *gatewaySource) endpointsFromTemplate(config *istiomodel.Config) ([]*en
 		}
 	}
 
+	providerSpecific := getProviderSpecificAnnotations(config.Annotations)
+
 	var endpoints []*endpoint.Endpoint
 	// splits the FQDN template and removes the trailing periods
 	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
 	for _, hostname := range hostnameList {
 		hostname = strings.TrimSuffix(hostname, ".")
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl)...)
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific)...)
 	}
 	return endpoints, nil
 }
@@ -256,18 +258,20 @@ func (sc *gatewaySource) endpointsFromGatewayConfig(config istiomodel.Config) ([
 
 	gateway := config.Spec.(*istionetworking.Gateway)
 
+	providerSpecific := getProviderSpecificAnnotations(config.Annotations)
+
 	for _, server := range gateway.Servers {
 		for _, host := range server.Hosts {
 			if host == "" {
 				continue
 			}
-			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl)...)
+			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific)...)
 		}
 	}
 
 	hostnameList := getHostnamesFromAnnotations(config.Annotations)
 	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl)...)
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific)...)
 	}
 
 	return endpoints, nil
