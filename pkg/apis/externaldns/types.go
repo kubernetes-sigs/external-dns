@@ -162,7 +162,7 @@ var defaultConfig = &Config{
 	ExoscaleEndpoint:         "https://api.exoscale.ch/dns",
 	ExoscaleAPIKey:           "",
 	ExoscaleAPISecret:        "",
-	CRDSourceAPIVersion:      "externaldns.k8s.io/v1alpha",
+	CRDSourceAPIVersion:      "externaldns.k8s.io/v1alpha1",
 	CRDSourceKind:            "DNSEndpoint",
 	ServiceTypeFilter:        []string{},
 	RFC2136Host:              "",
