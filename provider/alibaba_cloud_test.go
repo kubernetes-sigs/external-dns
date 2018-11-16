@@ -404,6 +404,16 @@ func TestAlibabaCloudProvider_splitDNSName(t *testing.T) {
 	if rr != "@" || domain != "container-service.top" {
 		t.Errorf("Failed to splitDNSName for %s: rr=%s, domain=%s", endpoint.DNSName, rr, domain)
 	}
+	endpoint.DNSName = "a.b.container-service.top"
+	rr, domain = p.splitDNSName(endpoint)
+	if rr != "a.b" || domain != "container-service.top" {
+		t.Errorf("Failed to splitDNSName for %s: rr=%s, domain=%s", endpoint.DNSName, rr, domain)
+	}
+	endpoint.DNSName = "a.b.c.container-service.top"
+	rr, domain = p.splitDNSName(endpoint)
+	if rr != "a.b.c" || domain != "container-service.top" {
+		t.Errorf("Failed to splitDNSName for %s: rr=%s, domain=%s", endpoint.DNSName, rr, domain)
+	}
 }
 
 func TestAlibabaCloudProvider_TXTEndpoint(t *testing.T) {

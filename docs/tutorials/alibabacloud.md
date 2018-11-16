@@ -286,7 +286,7 @@ spec:
 After roughly two minutes check that a corresponding DNS record for your service was created.
 
 ```console
-$ aliyun aliyun alidns DescribeDomainRecords --DomainName=external-dns-test.com
+$ aliyun alidns DescribeDomainRecords --DomainName=external-dns-test.com
 {
   "PageNumber": 1,
   "TotalCount": 1,
