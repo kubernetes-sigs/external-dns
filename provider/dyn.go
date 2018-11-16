@@ -564,7 +564,7 @@ func (d *dynProviderState) commit(client *dynect.Client) error {
 		err = apiRetryLoop(func() error {
 			return client.Do("PUT", fmt.Sprintf("Zone/%s/", zone), &zonePublish, &response)
 		})
-		log.Infof("Commiting changes for zone %s: %+v", zone, errorOrValue(err, &response))
+		log.Infof("Committing changes for zone %s: %+v", zone, errorOrValue(err, &response))
 	}
 
 	switch len(errs) {
@@ -597,7 +597,7 @@ func (d *dynProviderState) Records() ([]*endpoint.Endpoint, error) {
 		serial, err := d.fetchZoneSerial(client, zone)
 		if err != nil {
 			if strings.Index(err.Error(), "404 Not Found") >= 0 {
-				log.Infof("Ignore zone %s as it does not exists", zone)
+				log.Infof("Ignore zone %s as it does not exist", zone)
 				continue
 			}
 

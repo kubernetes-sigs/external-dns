@@ -35,6 +35,8 @@ const (
 	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
 	// The annotation used for defining the desired DNS record TTL
 	ttlAnnotationKey = "external-dns.alpha.kubernetes.io/ttl"
+	// The annotation used for switching to the alias record types e. g. AWS Alias records instead of a normal CNAME
+	aliasAnnotationKey = "external-dns.alpha.kubernetes.io/alias"
 	// The value of the controller annotation so that we feel responsible
 	controllerAnnotationValue = "dns-controller"
 )
@@ -74,6 +76,18 @@ func getHostnamesFromAnnotations(annotations map[string]string) []string {
 	return strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
 }
 
+func getAliasFromAnnotations(annotations map[string]string) bool {
+	aliasAnnotation, exists := annotations[aliasAnnotationKey]
+	return exists && aliasAnnotation == "true"
+}
+
+func getProviderSpecificAnnotations(annotations map[string]string) endpoint.ProviderSpecific {
+	if getAliasFromAnnotations(annotations) {
+		return map[string]string{"alias": "true"}
+	}
+	return map[string]string{}
+}
+
 // getTargetsFromTargetAnnotation gets endpoints from optional "target" annotation.
 // Returns empty endpoints array if none are found.
 func getTargetsFromTargetAnnotation(annotations map[string]string) endpoint.Targets {
@@ -102,7 +116,7 @@ func suitableType(target string) string {
 }
 
 // endpointsForHostname returns the endpoint objects for each host-target combination.
-func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoint.TTL) []*endpoint.Endpoint {
+func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoint.TTL, providerSpecific endpoint.ProviderSpecific) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	var aTargets endpoint.Targets
@@ -119,22 +133,24 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 
 	if len(aTargets) > 0 {
 		epA := &endpoint.Endpoint{
-			DNSName:    strings.TrimSuffix(hostname, "."),
-			Targets:    aTargets,
-			RecordTTL:  ttl,
-			RecordType: endpoint.RecordTypeA,
-			Labels:     endpoint.NewLabels(),
+			DNSName:          strings.TrimSuffix(hostname, "."),
+			Targets:          aTargets,
+			RecordTTL:        ttl,
+			RecordType:       endpoint.RecordTypeA,
+			Labels:           endpoint.NewLabels(),
+			ProviderSpecific: providerSpecific,
 		}
 		endpoints = append(endpoints, epA)
 	}
 
 	if len(cnameTargets) > 0 {
 		epCNAME := &endpoint.Endpoint{
-			DNSName:    strings.TrimSuffix(hostname, "."),
-			Targets:    cnameTargets,
-			RecordTTL:  ttl,
-			RecordType: endpoint.RecordTypeCNAME,
-			Labels:     endpoint.NewLabels(),
+			DNSName:          strings.TrimSuffix(hostname, "."),
+			Targets:          cnameTargets,
+			RecordTTL:        ttl,
+			RecordType:       endpoint.RecordTypeCNAME,
+			Labels:           endpoint.NewLabels(),
+			ProviderSpecific: providerSpecific,
 		}
 		endpoints = append(endpoints, epCNAME)
 	}
