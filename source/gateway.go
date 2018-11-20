@@ -110,7 +110,7 @@ func (sc *gatewaySource) Endpoints() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 
-		gwEndpoints, err := sc.endpointsFromGatewayConfig(config)
+		gwEndpoints, err := sc.endpointsFromGatewayConfigs([]istiomodel.Config{config})
 		if err != nil {
 			return nil, err
 		}
@@ -223,7 +223,7 @@ func (sc *gatewaySource) targetsFromIstioIngressStatus() (targets endpoint.Targe
 	} else {
 		targets, err = appendTargetsFromGateways(sc.kubeClient, sc.istioIngressGateways)
 	}
-	return
+	return targets, err
 }
 
 func appendAllGateways(kubeClient kubernetes.Interface) (targets endpoint.Targets, err error) {
@@ -234,7 +234,7 @@ func appendAllGateways(kubeClient kubernetes.Interface) (targets endpoint.Target
 			targets = appendTargets(svc.Status.LoadBalancer.Ingress)
 		}
 	}
-	return
+	return targets, err
 }
 
 func appendTargetsFromGateways(kubeClient kubernetes.Interface, gateways []string) (targets endpoint.Targets, err error) {
@@ -249,7 +249,7 @@ func appendTargetsFromGateways(kubeClient kubernetes.Interface, gateways []strin
 			}
 		}
 	}
-	return
+	return targets, err
 }
 
 func appendTargets(lbs []v1.LoadBalancerIngress) (targets endpoint.Targets) {
@@ -261,41 +261,43 @@ func appendTargets(lbs []v1.LoadBalancerIngress) (targets endpoint.Targets) {
 			targets = append(targets, lb.Hostname)
 		}
 	}
-	return
+	return targets
 }
 
-// endpointsFromGatewayConfig extracts the endpoints from an Istio Gateway Config object
-func (sc *gatewaySource) endpointsFromGatewayConfig(config istiomodel.Config) ([]*endpoint.Endpoint, error) {
+// endpointsFromGatewayConfigs extracts the endpoints from an Istio Gateway Config object
+func (sc *gatewaySource) endpointsFromGatewayConfigs(configs []istiomodel.Config) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	ttl, err := getTTLFromAnnotations(config.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
-
-	targets := getTargetsFromTargetAnnotation(config.Annotations)
-
-	if len(targets) == 0 {
-		targets, err = sc.targetsFromIstioIngressStatus()
+	for _, config := range configs {
+		ttl, err := getTTLFromAnnotations(config.Annotations)
 		if err != nil {
-			return nil, err
+			log.Warn(err)
 		}
-	}
 
-	gateway := config.Spec.(*istionetworking.Gateway)
+		targets := getTargetsFromTargetAnnotation(config.Annotations)
 
-	for _, server := range gateway.Servers {
-		for _, host := range server.Hosts {
-			if host == "" {
-				continue
+		if len(targets) == 0 {
+			targets, err = sc.targetsFromIstioIngressStatus()
+			if err != nil {
+				return nil, err
 			}
-			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl)...)
 		}
-	}
 
-	hostnameList := getHostnamesFromAnnotations(config.Annotations)
-	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl)...)
+		gateway := config.Spec.(*istionetworking.Gateway)
+
+		for _, server := range gateway.Servers {
+			for _, host := range server.Hosts {
+				if host == "" {
+					continue
+				}
+				endpoints = append(endpoints, endpointsForHostname(host, targets, ttl)...)
+			}
+		}
+
+		hostnameList := getHostnamesFromAnnotations(config.Annotations)
+		for _, hostname := range hostnameList {
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl)...)
+		}
 	}
 
 	return endpoints, nil
@@ -309,5 +311,5 @@ func parseIngressGateway(ingressGateway string) (namespace, name string, err err
 		namespace, name = parts[0], parts[1]
 	}
 
-	return
+	return namespace, name, err
 }

@@ -43,9 +43,9 @@ var gatewayType = istiomodel.Gateway.Type
 
 type GatewaySuite struct {
 	suite.Suite
-	source  Source
-	ingress *v1.Service
-	config  istiomodel.Config
+	source    Source
+	ingresses []*v1.Service
+	config    istiomodel.Config
 }
 
 func (suite *GatewaySuite) SetupTest() {
@@ -53,17 +53,29 @@ func (suite *GatewaySuite) SetupTest() {
 	fakeIstioClient := NewFakeConfigStore()
 	var err error
 
-	suite.ingress = (fakeIngressGateway{
-		ips:       []string{"8.8.8.8"},
-		hostnames: []string{"v1"},
-	}).Service()
-	_, err = fakeKubernetesClient.CoreV1().Services(suite.ingress.Namespace).Create(suite.ingress)
-	suite.NoError(err, "should succeed")
+	suite.ingresses = []*v1.Service{
+		(fakeIngressGateway{
+			ips:       []string{"8.8.8.8"},
+			hostnames: []string{"v1"},
+			namespace: "istio-system",
+			name:      "istio-ingressgateway",
+		}).Service(),
+		(fakeIngressGateway{
+			ips:       []string{"1.1.1.1"},
+			hostnames: []string{"v1"},
+			namespace: "istio-system",
+			name:      "istio-ingressgateway2",
+		}).Service()}
+
+	for _, ingress := range suite.ingresses {
+		_, err = fakeKubernetesClient.CoreV1().Services(ingress.Namespace).Create(ingress)
+		suite.NoError(err, "should succeed")
+	}
 
 	suite.source, err = NewIstioGatewaySource(
 		fakeKubernetesClient,
 		fakeIstioClient,
-		[]string{"istio-system/istio-ingressgateway"},
+		[]string{"istio-system/istio-ingressgateway", "istio-system/istio-ingressgateway2"},
 		"default",
 		"",
 		"{{.Name}}",
@@ -72,9 +84,10 @@ func (suite *GatewaySuite) SetupTest() {
 	suite.NoError(err, "should initialize gateway source")
 
 	suite.config = (fakeGatewayConfig{
-		name:      "foo-gateway-with-targets",
-		namespace: "default",
-		dnsnames:  [][]string{{"foo"}},
+		name:               "foo-gateway-with-targets",
+		namespace:          "default",
+		dnsnames:           [][]string{{"foo"}},
+		ingressGatewayName: "istio-system/istio-ingressgateway",
 	}).Config()
 	_, err = fakeIstioClient.Create(suite.config)
 	suite.NoError(err, "should succeed")
@@ -89,7 +102,8 @@ func (suite *GatewaySuite) TestResourceLabelIsSet() {
 
 func TestGateway(t *testing.T) {
 	suite.Run(t, new(GatewaySuite))
-	t.Run("endpointsFromGatewayConfig", testEndpointsFromGatewayConfig)
+	t.Run("endpointsFromGatewayConfigs", testEndpointsFromGatewayConfigs)
+	t.Run("endpointsFromConfigWithMultipleIngresses", testEndpointsFromGatewayConfigWithMultipleIngresses)
 	t.Run("Endpoints", testGatewayEndpoints)
 }
 
@@ -151,7 +165,7 @@ func TestNewIstioGatewaySource(t *testing.T) {
 	}
 }
 
-func testEndpointsFromGatewayConfig(t *testing.T) {
+func testEndpointsFromGatewayConfigs(t *testing.T) {
 	for _, ti := range []struct {
 		title    string
 		ingress  fakeIngressGateway
@@ -250,15 +264,84 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			if source, err := newTestGatewaySource(ti.ingress.Service()); err != nil {
+			if source, err := newTestGatewaySource(getIngresses([]fakeIngressGateway{ti.ingress})); err != nil {
 				require.NoError(t, err)
-			} else if endpoints, err := source.endpointsFromGatewayConfig(ti.config.Config()); err != nil {
+			} else if endpoints, err := source.endpointsFromGatewayConfigs(getConfigs([]fakeGatewayConfig{ti.config})); err != nil {
 				require.NoError(t, err)
 			} else {
 				validateEndpoints(t, endpoints, ti.expected)
 			}
 		})
 	}
+}
+
+func testEndpointsFromGatewayConfigWithMultipleIngresses(t *testing.T) {
+	for _, ti := range []struct {
+		title     string
+		ingresses []fakeIngressGateway
+		configs   []fakeGatewayConfig
+		expected  []*endpoint.Endpoint
+	}{
+		{
+			title: "one rule.host one lb.hostname",
+			ingresses: []fakeIngressGateway{{
+				namespace: "istio-system",
+				name:      "istio-ingressgateway",
+				hostnames: []string{"lb.com"}, // Kubernetes omits the trailing dot
+			}, {
+				namespace: "istio-system",
+				name:      "istio-ingressgateway2",
+				hostnames: []string{"lb2.com"}, // Kubernetes omits the trailing dot
+			}},
+			configs: []fakeGatewayConfig{{
+				dnsnames: [][]string{
+					{"foo.bar"}, // Kubernetes requires removal of trailing dot
+				},
+				ingressGatewayName: "istio-system/istio-ingressgateway",
+			}, {
+				dnsnames: [][]string{
+					{"foo.bar2"}, // Kubernetes requires removal of trailing dot
+				},
+				ingressGatewayName: "istio-system/istio-ingressgateway2",
+			}},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "foo.bar",
+					Targets: endpoint.Targets{"lb.com"},
+				},
+				{
+					DNSName: "foo.bar2",
+					Targets: endpoint.Targets{"lb2.com"},
+				},
+			},
+		},
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			if source, err := newTestGatewaySource(getIngresses(ti.ingresses)); err != nil {
+				require.NoError(t, err)
+			} else if endpoints, err := source.endpointsFromGatewayConfigs(getConfigs(ti.configs)); err != nil {
+				require.NoError(t, err)
+			} else {
+				validateEndpoints(t, endpoints, ti.expected)
+			}
+		})
+	}
+}
+
+func getConfigs(configs []fakeGatewayConfig) []istiomodel.Config {
+	var confs []istiomodel.Config
+	for _, c := range configs {
+		confs = append(confs, c.Config())
+	}
+	return confs
+}
+
+func getIngresses(ingressGateways []fakeIngressGateway) []*v1.Service {
+	var svcs []*v1.Service
+	for _, ig := range ingressGateways {
+		svcs = append(svcs, ig.Service())
+	}
+	return svcs
 }
 
 func testGatewayEndpoints(t *testing.T) {
@@ -955,19 +1038,23 @@ func testGatewayEndpoints(t *testing.T) {
 }
 
 // gateway specific helper functions
-func newTestGatewaySource(ingress *v1.Service) (*gatewaySource, error) {
+func newTestGatewaySource(gateways []*v1.Service) (*gatewaySource, error) {
 	fakeKubernetesClient := fake.NewSimpleClientset()
 	fakeIstioClient := NewFakeConfigStore()
 
-	_, err := fakeKubernetesClient.CoreV1().Services(ingress.Namespace).Create(ingress)
-	if err != nil {
-		return nil, err
+	var gatewayNames []string
+	for _, gtw := range gateways {
+		_, err := fakeKubernetesClient.CoreV1().Services(gtw.Namespace).Create(gtw)
+		gatewayNames = append(gatewayNames, gtw.Namespace+"/"+gtw.Name)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	src, err := NewIstioGatewaySource(
 		fakeKubernetesClient,
 		fakeIstioClient,
-		[]string{"istio-system/istio-ingressgateway"},
+		gatewayNames,
 		"default",
 		"",
 		"{{.Name}}",
@@ -988,13 +1075,15 @@ func newTestGatewaySource(ingress *v1.Service) (*gatewaySource, error) {
 type fakeIngressGateway struct {
 	ips       []string
 	hostnames []string
+	namespace string
+	name      string
 }
 
 func (ig fakeIngressGateway) Service() *v1.Service {
 	svc := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "istio-system",
-			Name:      "istio-ingressgateway",
+			Namespace: ig.namespace,
+			Name:      ig.name,
 		},
 		Status: v1.ServiceStatus{
 			LoadBalancer: v1.LoadBalancerStatus{
@@ -1018,10 +1107,11 @@ func (ig fakeIngressGateway) Service() *v1.Service {
 }
 
 type fakeGatewayConfig struct {
-	namespace   string
-	name        string
-	annotations map[string]string
-	dnsnames    [][]string
+	namespace          string
+	name               string
+	annotations        map[string]string
+	dnsnames           [][]string
+	ingressGatewayName string
 }
 
 func (c fakeGatewayConfig) Config() istiomodel.Config {
