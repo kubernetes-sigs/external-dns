@@ -303,8 +303,8 @@ func (sc *gatewaySource) endpointsFromGatewayConfigs(configs []istiomodel.Config
 			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific)...)
 		}
 
-		return endpoints, nil
 	}
+	return endpoints, nil
 }
 
 func parseIngressGateway(ingressGateway string) (namespace, name string, err error) {
