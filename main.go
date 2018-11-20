@@ -37,10 +37,10 @@ import (
 	"github.com/kubernetes-incubator/external-dns/source"
 )
 
-type LogOutputSplitter struct{}
+type logOutputSplitter struct{}
 
 // Splits log output, error and fatal to stderr and the rest to stdout
-func (splitter *LogOutputSplitter) Write(p []byte) (n int, err error) {
+func (splitter *logOutputSplitter) Write(p []byte) (n int, err error) {
 	if bytes.Contains(p, []byte("level=debug")) || bytes.Contains(p, []byte("level=info")) ||
 		bytes.Contains(p, []byte("level=trace")) || bytes.Contains(p, []byte("level=warn")) {
 		return os.Stdout.Write(p)
@@ -64,7 +64,7 @@ func main() {
 	}
 
 	if cfg.LogSplitting {
-		log.SetOutput(&LogOutputSplitter{})
+		log.SetOutput(&logOutputSplitter{})
 		log.Info("Configured splitting of logs, error & fatal to stderr and the rest to stdout")
 	}
 
