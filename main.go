@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"bytes"
 	"net/http"
 	"os"
 	"os/signal"
@@ -36,6 +37,17 @@ import (
 	"github.com/kubernetes-incubator/external-dns/source"
 )
 
+type LogOutputSplitter struct{}
+
+// Splits log output, error and fatal to stderr and the rest to stdout
+func (splitter *LogOutputSplitter) Write(p []byte) (n int, err error) {
+	if bytes.Contains(p, []byte("level=debug")) || bytes.Contains(p, []byte("level=info")) ||
+		bytes.Contains(p, []byte("level=trace")) || bytes.Contains(p, []byte("level=warn")) {
+		return os.Stdout.Write(p)
+	}
+	return os.Stderr.Write(p)
+}
+
 func main() {
 	cfg := externaldns.NewConfig()
 	if err := cfg.ParseFlags(os.Args[1:]); err != nil {
@@ -50,6 +62,12 @@ func main() {
 	if cfg.LogFormat == "json" {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
+
+	if cfg.LogSplitting {
+		log.SetOutput(&LogOutputSplitter{})
+		log.Info("Configured splitting of logs, error & fatal to stderr and the rest to stdout")
+	}
+
 	if cfg.DryRun {
 		log.Info("running in dry-run mode. No changes to DNS records will be made.")
 	}

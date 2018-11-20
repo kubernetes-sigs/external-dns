@@ -106,6 +106,7 @@ type Config struct {
 	RFC2136TSIGSecret        string
 	RFC2136TSIGSecretAlg     string
 	RFC2136TAXFR             bool
+	LogSplitting			 bool
 }
 
 var defaultConfig = &Config{
@@ -173,6 +174,7 @@ var defaultConfig = &Config{
 	RFC2136TSIGSecret:        "",
 	RFC2136TSIGSecretAlg:     "",
 	RFC2136TAXFR:             true,
+	LogSplitting:             false,
 }
 
 // NewConfig returns new Config object
@@ -302,6 +304,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("log-format", "The format in which log messages are printed (default: text, options: text, json)").Default(defaultConfig.LogFormat).EnumVar(&cfg.LogFormat, "text", "json")
 	app.Flag("metrics-address", "Specify where to serve the metrics and health check endpoint (default: :7979)").Default(defaultConfig.MetricsAddress).StringVar(&cfg.MetricsAddress)
 	app.Flag("log-level", "Set the level of logging. (default: info, options: panic, debug, info, warning, error, fatal").Default(defaultConfig.LogLevel).EnumVar(&cfg.LogLevel, allLogLevelsAsStrings()...)
+	app.Flag("log-splitting", "Splits log output, below 'error' to stdout and above & including 'error' to stderr (default: false)").BoolVar(&cfg.LogSplitting)
 
 	_, err := app.Parse(args)
 	if err != nil {
