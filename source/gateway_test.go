@@ -102,7 +102,7 @@ func (suite *GatewaySuite) TestResourceLabelIsSet() {
 
 func TestGateway(t *testing.T) {
 	suite.Run(t, new(GatewaySuite))
-	t.Run("endpointsFromGatewayConfigs", testEndpointsFromGatewayConfigs)
+	t.Run("endpointsFromGatewayConfig", testEndpointsFromGatewayConfig)
 	t.Run("endpointsFromConfigWithMultipleIngresses", testEndpointsFromGatewayConfigWithMultipleIngresses)
 	t.Run("Endpoints", testGatewayEndpoints)
 }
@@ -165,7 +165,7 @@ func TestNewIstioGatewaySource(t *testing.T) {
 	}
 }
 
-func testEndpointsFromGatewayConfigs(t *testing.T) {
+func testEndpointsFromGatewayConfig(t *testing.T) {
 	for _, ti := range []struct {
 		title    string
 		ingress  fakeIngressGateway
@@ -266,7 +266,7 @@ func testEndpointsFromGatewayConfigs(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			if source, err := newTestGatewaySource(getIngresses([]fakeIngressGateway{ti.ingress})); err != nil {
 				require.NoError(t, err)
-			} else if endpoints, err := source.endpointsFromGatewayConfigs(getConfigs([]fakeGatewayConfig{ti.config})); err != nil {
+			} else if endpoints, err := source.endpointsFromGatewayConfig(ti.config.Config()); err != nil {
 				require.NoError(t, err)
 			} else {
 				validateEndpoints(t, endpoints, ti.expected)
@@ -317,13 +317,17 @@ func testEndpointsFromGatewayConfigWithMultipleIngresses(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			if source, err := newTestGatewaySource(getIngresses(ti.ingresses)); err != nil {
-				require.NoError(t, err)
-			} else if endpoints, err := source.endpointsFromGatewayConfigs(getConfigs(ti.configs)); err != nil {
-				require.NoError(t, err)
-			} else {
-				validateEndpoints(t, endpoints, ti.expected)
+			var endpoints []*endpoint.Endpoint
+			for _, config := range ti.configs {
+				if source, err := newTestGatewaySource(getIngresses(ti.ingresses)); err != nil {
+					require.NoError(t, err)
+				} else if newEndpoints, err := source.endpointsFromGatewayConfig(config.Config()); err != nil {
+					require.NoError(t, err)
+				} else {
+					endpoints = append(endpoints, newEndpoints...)
+				}
 			}
+			validateEndpoints(t, endpoints, ti.expected)
 		})
 	}
 }

@@ -110,7 +110,7 @@ func (sc *gatewaySource) Endpoints() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 
-		gwEndpoints, err := sc.endpointsFromGatewayConfigs([]istiomodel.Config{config})
+		gwEndpoints, err := sc.endpointsFromGatewayConfig(config)
 		if err != nil {
 			return nil, err
 		}
@@ -267,43 +267,41 @@ func appendTargets(lbs []v1.LoadBalancerIngress) (targets endpoint.Targets) {
 }
 
 // endpointsFromGatewayConfigs extracts the endpoints from an Istio Gateway Config object
-func (sc *gatewaySource) endpointsFromGatewayConfigs(configs []istiomodel.Config) ([]*endpoint.Endpoint, error) {
+func (sc *gatewaySource) endpointsFromGatewayConfig(config istiomodel.Config) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	for _, config := range configs {
-		ttl, err := getTTLFromAnnotations(config.Annotations)
-		if err != nil {
-			log.Warn(err)
-		}
-
-		targets := getTargetsFromTargetAnnotation(config.Annotations)
-
-		if len(targets) == 0 {
-			targets, err = sc.targetsFromIstioIngressStatus()
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		gateway := config.Spec.(*istionetworking.Gateway)
-
-		providerSpecific := getProviderSpecificAnnotations(config.Annotations)
-
-		for _, server := range gateway.Servers {
-			for _, host := range server.Hosts {
-				if host == "" {
-					continue
-				}
-				endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific)...)
-			}
-		}
-
-		hostnameList := getHostnamesFromAnnotations(config.Annotations)
-		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific)...)
-		}
-
+	ttl, err := getTTLFromAnnotations(config.Annotations)
+	if err != nil {
+		log.Warn(err)
 	}
+
+	targets := getTargetsFromTargetAnnotation(config.Annotations)
+
+	if len(targets) == 0 {
+		targets, err = sc.targetsFromIstioIngressStatus()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	gateway := config.Spec.(*istionetworking.Gateway)
+
+	providerSpecific := getProviderSpecificAnnotations(config.Annotations)
+
+	for _, server := range gateway.Servers {
+		for _, host := range server.Hosts {
+			if host == "" {
+				continue
+			}
+			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific)...)
+		}
+	}
+
+	hostnameList := getHostnamesFromAnnotations(config.Annotations)
+	for _, hostname := range hostnameList {
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific)...)
+	}
+
 	return endpoints, nil
 }
 
