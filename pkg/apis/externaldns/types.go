@@ -106,7 +106,7 @@ type Config struct {
 	RFC2136TSIGSecret        string
 	RFC2136TSIGSecretAlg     string
 	RFC2136TAXFR             bool
-	LogSplitting			 bool
+	LogSplitting             bool
 }
 
 var defaultConfig = &Config{
