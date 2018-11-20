@@ -132,15 +132,17 @@ func stringifyHTTPResponseBody(r *http.Response) (body string) {
 // well as mock APIClients used in testing
 type PDNSAPIProvider interface {
 	ListZones() ([]pgo.Zone, *http.Response, error)
+	PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.Zone)
 	ListZone(zoneID string) (pgo.Zone, *http.Response, error)
 	PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Response, error)
 }
 
 // PDNSAPIClient : Struct that encapsulates all the PowerDNS specific implementation details
 type PDNSAPIClient struct {
-	dryRun  bool
-	authCtx context.Context
-	client  *pgo.APIClient
+	dryRun       bool
+	authCtx      context.Context
+	client       *pgo.APIClient
+	domainFilter DomainFilter
 }
 
 // ListZones : Method returns all enabled zones from PowerDNS
@@ -153,7 +155,6 @@ func (c *PDNSAPIClient) ListZones() (zones []pgo.Zone, resp *http.Response, err 
 			log.Debugf("Retrying ListZones() ... %d", i)
 			time.Sleep(retryAfterTime * (1 << uint(i)))
 			continue
-
 		}
 		return zones, resp, err
 	}
@@ -161,6 +162,22 @@ func (c *PDNSAPIClient) ListZones() (zones []pgo.Zone, resp *http.Response, err 
 	log.Errorf("Unable to fetch zones. %v", err)
 	return zones, resp, err
 
+}
+
+// PartitionZones : Method returns a slice of zones that adhere to the domain filter and a slice of ones that does not adhere to the filter
+func (c *PDNSAPIClient) PartitionZones(zones []pgo.Zone) (filteredZones []pgo.Zone, residualZones []pgo.Zone) {
+	if c.domainFilter.IsConfigured() {
+		for _, zone := range zones {
+			if c.domainFilter.Match(zone.Name) {
+				filteredZones = append(filteredZones, zone)
+			} else {
+				residualZones = append(residualZones, zone)
+			}
+		}
+	} else {
+		residualZones = zones
+	}
+	return filteredZones, residualZones
 }
 
 // ListZone : Method returns the details of a specific zone from PowerDNS
@@ -216,10 +233,6 @@ func NewPDNSProvider(config PDNSConfig) (*PDNSProvider, error) {
 		return nil, errors.New("Missing API Key for PDNS. Specify using --pdns-api-key=")
 	}
 
-	// The default for when no --domain-filter is passed is [""], instead of [], so we check accordingly.
-	if len(config.DomainFilter.filters) != 1 && config.DomainFilter.filters[0] != "" {
-		return nil, errors.New("PDNS Provider does not support domain filter")
-	}
 	// We do not support dry running, exit safely instead of surprising the user
 	// TODO: Add Dry Run support
 	if config.DryRun {
@@ -238,9 +251,10 @@ func NewPDNSProvider(config PDNSConfig) (*PDNSProvider, error) {
 
 	provider := &PDNSProvider{
 		client: &PDNSAPIClient{
-			dryRun:  config.DryRun,
-			authCtx: context.WithValue(context.TODO(), pgo.ContextAPIKey, pgo.APIKey{Key: config.APIKey}),
-			client:  pgo.NewAPIClient(pdnsClientConfig),
+			dryRun:       config.DryRun,
+			authCtx:      context.WithValue(context.TODO(), pgo.ContextAPIKey, pgo.APIKey{Key: config.APIKey}),
+			client:       pgo.NewAPIClient(pdnsClientConfig),
+			domainFilter: config.DomainFilter,
 		},
 	}
 
@@ -281,22 +295,23 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 	if err != nil {
 		return nil, err
 	}
+	filteredZones, residualZones := p.client.PartitionZones(zones)
 
 	// Sort the zone by length of the name in descending order, we use this
 	// property later to ensure we add a record to the longest matching zone
 
-	sort.SliceStable(zones, func(i, j int) bool { return len(zones[i].Name) > len(zones[j].Name) })
+	sort.SliceStable(filteredZones, func(i, j int) bool { return len(filteredZones[i].Name) > len(filteredZones[j].Name) })
 
-	// NOTE: Complexity of this loop is O(Zones*Endpoints).
+	// NOTE: Complexity of this loop is O(FilteredZones*Endpoints).
 	// A possibly faster implementation would be a search of the reversed
 	// DNSName in a trie of Zone names, which should be O(Endpoints), but at this point it's not
 	// necessary.
-	for _, zone := range zones {
+	for _, zone := range filteredZones {
 		zone.Rrsets = []pgo.RrSet{}
 		for i := 0; i < len(endpoints); {
 			ep := endpoints[i]
 			dnsname := ensureTrailingDot(ep.DNSName)
-			if strings.HasSuffix(dnsname, zone.Name) {
+			if dnsname == zone.Name || strings.HasSuffix(dnsname, "."+zone.Name) {
 				// The assumption here is that there will only ever be one target
 				// per (ep.DNSName, ep.RecordType) tuple, which holds true for
 				// external-dns v5.0.0-alpha onwards
@@ -321,7 +336,7 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 						return nil, errors.New("Value of record TTL overflows, limited to int32")
 					}
 					if ep.RecordTTL == 0 {
-						// No TTL was sepecified for the record, we use the default
+						// No TTL was specified for the record, we use the default
 						rrset.Ttl = int32(defaultTTL)
 					} else {
 						rrset.Ttl = int32(ep.RecordTTL)
@@ -345,7 +360,23 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 
 	}
 
-	// If we still have some endpoints left, it means we couldn't find a matching zone for them
+	// residualZones is unsorted by name length like its counterpart
+	// since we only care to remove endpoints that do not match domain filter
+	for _, zone := range residualZones {
+		for i := 0; i < len(endpoints); {
+			ep := endpoints[i]
+			dnsname := ensureTrailingDot(ep.DNSName)
+			if dnsname == zone.Name || strings.HasSuffix(dnsname, "."+zone.Name) {
+				// "pop" endpoint if it's matched to a residual zone... essentially a no-op
+				log.Debugf("Ignoring Endpoint because it was matched to a zone that was not specified within Domain Filter(s): %s", dnsname)
+				endpoints = append(endpoints[0:i], endpoints[i+1:]...)
+			} else {
+				i++
+			}
+		}
+	}
+
+	// If we still have some endpoints left, it means we couldn't find a matching zone (filtered or residual) for them
 	// We warn instead of hard fail here because we don't want a misconfig to cause everything to go down
 	if len(endpoints) > 0 {
 		log.Warnf("No matching zones were found for the following endpoints: %+v", endpoints)
@@ -387,8 +418,9 @@ func (p *PDNSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 	if err != nil {
 		return nil, err
 	}
+	filteredZones, _ := p.client.PartitionZones(zones)
 
-	for _, zone := range zones {
+	for _, zone := range filteredZones {
 		z, _, err := p.client.ListZone(zone.Id)
 		if err != nil {
 			log.Warnf("Unable to fetch Records")

@@ -235,8 +235,6 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 	}
 	validateServices(client.services, expectedServices1, t, 1)
 
-	updatedEp := endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "6.6.6.6")
-	updatedEp.Labels["originalText"] = "string1"
 	changes2 := &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("domain3.local", endpoint.RecordTypeA, "7.7.7.7"),
@@ -244,6 +242,12 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 		UpdateNew: []*endpoint.Endpoint{
 			endpoint.NewEndpoint("domain1.local", "A", "6.6.6.6"),
 		},
+	}
+	records, _ := coredns.Records()
+	for _, ep := range records {
+		if ep.DNSName == "domain1.local" {
+			changes2.UpdateOld = append(changes2.UpdateOld, ep)
+		}
 	}
 	applyServiceChanges(coredns, changes2)
 
