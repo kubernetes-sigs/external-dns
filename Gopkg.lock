@@ -431,11 +431,12 @@
   version = "1.1.4"
 
 [[projects]]
-  digest = "1:1c88ec29544b281964ed7a9a365b2802a523cd06c50cdee87eb3eec89cd864f4"
+  branch = "master"
+  digest = "1:fd50e2c52f29bb81f9a172f0d5aee1438b201ca0502ff3a20ebbe9629e274875"
   name = "github.com/kubernetes/repo-infra"
   packages = ["verify/boilerplate/test"]
   pruneopts = ""
-  revision = "c2f9667a4c29e70a39b0e89db2d4f0cab907dbee"
+  revision = "1bcb110c8726cee477939f507f4760a95e155347"
 
 [[projects]]
   digest = "1:7c23a751ce2f84663fa411acb87eae0da2d09c39a8e99b08bd8f65fae75d8928"
