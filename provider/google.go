@@ -18,7 +18,6 @@ package provider
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
 	"cloud.google.com/go/compute/metadata"
