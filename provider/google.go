@@ -204,14 +204,7 @@ func (p *GoogleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 			if !supportedRecordType(r.Type) {
 				continue
 			}
-			targets := make(endpoint.Targets, 0, len(r.Rrdatas))
-
-			for _, rr := range r.Rrdatas {
-				// each page is processed sequentially, no need for a mutex here.
-				targets = append(targets, rr)
-			}
-			sort.Sort(targets)
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(r.Name, r.Type, endpoint.TTL(r.Ttl), targets...))
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(r.Name, r.Type, endpoint.TTL(r.Ttl), r.Rrdatas...))
 		}
 
 		return nil
