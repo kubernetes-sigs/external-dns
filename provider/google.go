@@ -205,14 +205,13 @@ func (p *GoogleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				continue
 			}
 			targets := make(endpoint.Targets, 0, len(r.Rrdatas))
-			ep := endpoint.NewEndpointWithTTL(strings.TrimSuffix(r.Name, "."), r.Type, endpoint.TTL(r.Ttl), targets...)
 
 			for _, rr := range r.Rrdatas {
 				// each page is processed sequentially, no need for a mutex here.
-				ep.Targets = append(ep.Targets, strings.TrimSuffix(rr, "."))
+				targets = append(targets, rr)
 			}
-			sort.Sort(ep.Targets)
-			endpoints = append(endpoints, ep)
+			sort.Sort(targets)
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(r.Name, r.Type, endpoint.TTL(r.Ttl), targets...))
 		}
 
 		return nil
