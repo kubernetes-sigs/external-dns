@@ -1,3 +1,28 @@
+## v0.5.9 - 2018-11-22
+
+  - Core: Update delivery.yaml to new format (#782) @linki
+  - Core: Adjust gometalinter timeout by setting env var (#778) @njuettner
+  - Provider **Google**: Panic assignment to entry in nil map (#776) @njuettner
+  - Docs: Fix typos (#769) @mooncak
+  - Docs: Remove duplicated words (#768) @mooncak
+  - Provider **Alibaba**: Alibaba Cloud Provider Fix Multiple Subdomains Bug (#767) @xianlubird
+  - Core: Add Traefik to the supported list of ingress controllers (#764) @coderanger
+  - Provider **Dyn**: Fix some typos in returned messages in dyn.go (#760) @AdamDang
+  - Docs: Update Azure documentation (#756) @pascalgn
+  - Provider **Oracle**: Oracle doc fix (add "key:" to secret) (#750) @CaptTofu
+  - Core: Docker MAINTAINER is deprecated - using LABEL instead (#747) @helgi
+  - Core: Feature add alias annotation (#742) @vaegt
+  - Provider **RFC2136**: Fix rfc2136 - setup fails issue and small docs (#741) @antlad
+  - Core: Fix nil map access of endpoint labels (#739) @shashidharatd
+  - Provider **PowerDNS**: PowerDNS Add DomainFilter support (#737) @ottoyiu
+  - Core: Fix domain-filter matching logic to not match similar domain names (#736) @ottoyiu
+  - Core: Matching entire string for wildcard in txt records with prefixes (#727) @etopeter
+  - Provider **Designate**: Fix TLS issue with OpenStack auth (#717) @FestivalBobcats
+  - Provider **AWS**: Add helper script to update route53 txt owner entries (#697) @efranford
+  - Provider **CoreDNS**: Migrate to use etcd client v3 for CoreDNS provider (#686) @shashidharatd
+  - Core: Create a non-root user to run the container process (#684) @coderanger
+  - Core: Do not replace TXT records with A/CNAME records in planner (#581) @jchv
+
 ## v0.5.8 - 2018-10-11
 
   - New Provider: RFC2136 (#702) @antlad
