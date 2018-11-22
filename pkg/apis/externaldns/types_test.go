@@ -75,7 +75,7 @@ var (
 		ExoscaleEndpoint:        "https://api.exoscale.ch/dns",
 		ExoscaleAPIKey:          "",
 		ExoscaleAPISecret:       "",
-		CRDSourceAPIVersion:     "externaldns.k8s.io/v1alpha",
+		CRDSourceAPIVersion:     "externaldns.k8s.io/v1alpha1",
 		CRDSourceKind:           "DNSEndpoint",
 	}
 
