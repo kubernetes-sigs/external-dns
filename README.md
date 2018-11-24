@@ -178,6 +178,7 @@ Here's a rough outline on what is to come (subject to change):
 - [x] Support for creating DNS records to multiple targets (for Google and AWS)
 - [x] Support for OpenStack Designate
 - [x] Support for PowerDNS
+- [x] Support for Linode
 
 ### v0.6
 
