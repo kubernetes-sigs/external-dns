@@ -162,7 +162,7 @@ var defaultConfig = &Config{
 	ExoscaleEndpoint:         "https://api.exoscale.ch/dns",
 	ExoscaleAPIKey:           "",
 	ExoscaleAPISecret:        "",
-	CRDSourceAPIVersion:      "externaldns.k8s.io/v1alpha",
+	CRDSourceAPIVersion:      "externaldns.k8s.io/v1alpha1",
 	CRDSourceKind:            "DNSEndpoint",
 	ServiceTypeFilter:        []string{},
 	RFC2136Host:              "",
@@ -285,7 +285,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("rfc2136-tsig-axfr", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)").BoolVar(&cfg.RFC2136TAXFR)
 
 	// Flags related to policies
-	app.Flag("policy", "Modify how DNS records are sychronized between sources and providers (default: sync, options: sync, upsert-only)").Default(defaultConfig.Policy).EnumVar(&cfg.Policy, "sync", "upsert-only")
+	app.Flag("policy", "Modify how DNS records are synchronized between sources and providers (default: sync, options: sync, upsert-only)").Default(defaultConfig.Policy).EnumVar(&cfg.Policy, "sync", "upsert-only")
 
 	// Flags related to the registry
 	app.Flag("registry", "The registry implementation to use to keep track of DNS record ownership (default: txt, options: txt, noop, aws-sd)").Default(defaultConfig.Registry).EnumVar(&cfg.Registry, "txt", "noop", "aws-sd")

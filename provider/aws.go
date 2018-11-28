@@ -193,7 +193,7 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 // wildcardUnescape converts \\052.abc back to *.abc
 // Route53 stores wildcards escaped: http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html?shortFooter=true#domain-name-format-asterisk
 func wildcardUnescape(s string) string {
-	if strings.HasPrefix(s, "\\052") {
+	if strings.Contains(s, "\\052") {
 		s = strings.Replace(s, "\\052", "*", 1)
 	}
 	return s
@@ -364,6 +364,11 @@ func (p *AWSProvider) newChange(action string, endpoint *endpoint.Endpoint) *rou
 		},
 	}
 
+	rec, err := p.Records()
+	if err != nil {
+		log.Infof("getting records failed: %v", err)
+	}
+
 	if isAWSLoadBalancer(endpoint) {
 		evalTargetHealth := p.evaluateTargetHealth
 		if _, ok := endpoint.ProviderSpecific[providerSpecificEvaluateTargetHealth]; ok {
@@ -375,6 +380,19 @@ func (p *AWSProvider) newChange(action string, endpoint *endpoint.Endpoint) *rou
 			DNSName:              aws.String(endpoint.Targets[0]),
 			HostedZoneId:         aws.String(canonicalHostedZone(endpoint.Targets[0])),
 			EvaluateTargetHealth: aws.Bool(evalTargetHealth),
+		}
+	} else if hostedZone := isAWSAlias(endpoint, rec); hostedZone != "" {
+		zones, err := p.Zones()
+		if err != nil {
+			log.Errorf("getting zones failed: %v", err)
+		}
+		for _, zone := range zones {
+			change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
+			change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
+				DNSName:              aws.String(endpoint.Targets[0]),
+				HostedZoneId:         aws.String(cleanZoneID(*zone.Id)),
+				EvaluateTargetHealth: aws.Bool(p.evaluateTargetHealth),
+			}
 		}
 	} else {
 		change.ResourceRecordSet.Type = aws.String(endpoint.RecordType)
@@ -529,6 +547,21 @@ func isAWSLoadBalancer(ep *endpoint.Endpoint) bool {
 	return false
 }
 
+// isAWSAlias determines if a given hostname belongs to an AWS Alias record by doing an reverse lookup.
+func isAWSAlias(ep *endpoint.Endpoint, addrs []*endpoint.Endpoint) string {
+	if val, exists := ep.ProviderSpecific["alias"]; ep.RecordType == endpoint.RecordTypeCNAME && exists && val == "true" {
+		for _, addr := range addrs {
+			if addr.DNSName == ep.Targets[0] {
+				if hostedZone := canonicalHostedZone(addr.Targets[0]); hostedZone != "" {
+					return hostedZone
+				}
+
+			}
+		}
+	}
+	return ""
+}
+
 // canonicalHostedZone returns the matching canonical zone for a given hostname.
 func canonicalHostedZone(hostname string) string {
 	for suffix, zone := range canonicalHostedZones {
@@ -538,4 +571,12 @@ func canonicalHostedZone(hostname string) string {
 	}
 
 	return ""
+}
+
+// cleanZoneID removes the "/hostedzone/" prefix
+func cleanZoneID(ID string) string {
+	if strings.HasPrefix(ID, "/hostedzone/") {
+		ID = strings.TrimPrefix(ID, "/hostedzone/")
+	}
+	return ID
 }

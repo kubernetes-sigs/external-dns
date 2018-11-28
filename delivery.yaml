@@ -1,19 +1,15 @@
-build_steps:
-- desc: Install docker
-  cmd: |
-    apt-get update
-    apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-    add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-    apt-get update
-    apt-get install -y docker-ce
-- desc: Build and push docker image
-  cmd: |
-    if [[ $CDP_TARGET_BRANCH == master && ! $CDP_PULL_REQUEST_NUMBER ]]; then
-      RELEASE_VERSION=$(git describe --tags --always --dirty)
-      IMAGE=registry-write.opensource.zalan.do/teapot/external-dns:${RELEASE_VERSION}
-    else
-      IMAGE=registry-write.opensource.zalan.do/teapot/external-dns-test:${CDP_BUILD_VERSION}
-    fi
-    docker build --squash --tag "$IMAGE" .
-    docker push "$IMAGE"
+version: "2017-09-20"
+pipeline:
+- id: build
+  type: script
+  commands:
+  - desc: Build and push Docker image
+    cmd: |
+      if [[ $CDP_TARGET_BRANCH == master && ! $CDP_PULL_REQUEST_NUMBER ]]; then
+        RELEASE_VERSION=$(git describe --tags --always --dirty)
+        IMAGE=registry-write.opensource.zalan.do/teapot/external-dns:${RELEASE_VERSION}
+      else
+        IMAGE=registry-write.opensource.zalan.do/teapot/external-dns-test:${CDP_BUILD_VERSION}
+      fi
+      docker build --squash --tag "$IMAGE" .
+      docker push "$IMAGE"

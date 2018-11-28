@@ -55,6 +55,7 @@ The following tutorials are provided:
 * [AWS (Route53)](docs/tutorials/aws.md)
 * [AWS (Service Discovery)](docs/tutorials/aws-sd.md)
 * [Azure](docs/tutorials/azure.md)
+* [CoreDNS](docs/tutorials/coredns.md)
 * [Cloudflare](docs/tutorials/cloudflare.md)
 * [DigitalOcean](docs/tutorials/digitalocean.md)
 * [Infoblox](docs/tutorials/infoblox.md)
@@ -178,6 +179,7 @@ Here's a rough outline on what is to come (subject to change):
 - [x] Support for creating DNS records to multiple targets (for Google and AWS)
 - [x] Support for OpenStack Designate
 - [x] Support for PowerDNS
+- [x] Support for Linode
 
 ### v0.6
 

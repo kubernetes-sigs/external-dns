@@ -25,10 +25,6 @@ ignored = ["github.com/kubernetes/repo-infra/kazel"]
   version = "0.7.3"
 
 [[constraint]]
-  name = "github.com/coreos/etcd"
-  version = "~3.2.15"
-
-[[constraint]]
   name = "github.com/digitalocean/godo"
   version = "~1.1.0"
 
@@ -58,7 +54,7 @@ ignored = ["github.com/kubernetes/repo-infra/kazel"]
 
 [[override]]
   name = "github.com/kubernetes/repo-infra"
-  revision = "c2f9667a4c29e70a39b0e89db2d4f0cab907dbee"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/nesv/go-dynect"

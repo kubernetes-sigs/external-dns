@@ -69,7 +69,7 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, kube
 	}
 	apiResourceList, err := client.Discovery().ServerResourcesForGroupVersion(groupVersion.String())
 	if err != nil {
-		return nil, nil, fmt.Errorf("error listing resources in GroupVersion %q", groupVersion.String())
+		return nil, nil, fmt.Errorf("error listing resources in GroupVersion %q: %s", groupVersion.String(), err)
 	}
 
 	var crdAPIResource *metav1.APIResource

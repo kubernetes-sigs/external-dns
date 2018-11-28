@@ -18,7 +18,6 @@ package provider
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
 	"cloud.google.com/go/compute/metadata"
@@ -204,18 +203,7 @@ func (p *GoogleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 			if !supportedRecordType(r.Type) {
 				continue
 			}
-			ep := &endpoint.Endpoint{
-				DNSName:    strings.TrimSuffix(r.Name, "."),
-				RecordType: r.Type,
-				Targets:    make(endpoint.Targets, 0, len(r.Rrdatas)),
-				RecordTTL:  endpoint.TTL(r.Ttl),
-			}
-			for _, rr := range r.Rrdatas {
-				// each page is processed sequentially, no need for a mutex here.
-				ep.Targets = append(ep.Targets, strings.TrimSuffix(rr, "."))
-			}
-			sort.Sort(ep.Targets)
-			endpoints = append(endpoints, ep)
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(r.Name, r.Type, endpoint.TTL(r.Ttl), r.Rrdatas...))
 		}
 
 		return nil
