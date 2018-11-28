@@ -26,7 +26,6 @@ import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
 )
 
 // InfobloxConfig clarifies the method signature
@@ -101,7 +100,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 	}
 
 	for _, zone := range zones {
-		log.Debugf("fetch records from zone '%s'", zone.Fqdn)
+		logrus.Debugf("fetch records from zone '%s'", zone.Fqdn)
 		var resA []ibclient.RecordA
 		objA := ibclient.NewRecordA(
 			ibclient.RecordA{
@@ -166,7 +165,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, endpoint.RecordTypeTXT, res.Text))
 		}
 	}
-	log.Debugf("fetched %d records from infoblox", len(endpoints))
+	logrus.Debugf("fetched %d records from infoblox", len(endpoints))
 	return endpoints, nil
 }
 
