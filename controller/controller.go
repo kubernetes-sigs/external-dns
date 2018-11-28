@@ -28,23 +28,27 @@ import (
 )
 
 var (
-	registryErrors = prometheus.NewCounter(
+	registryErrorsTotal = prometheus.NewCounter(
 		prometheus.CounterOpts{
-			Name: "registry_errors_total",
-			Help: "Number of Registry errors.",
+			Namespace: "external_dns",
+			Subsystem: "registry",
+			Name:      "errors_total",
+			Help:      "Number of Registry errors.",
 		},
 	)
-	sourceErrors = prometheus.NewCounter(
+	sourceErrorsTotal = prometheus.NewCounter(
 		prometheus.CounterOpts{
-			Name: "source_errors_total",
-			Help: "Number of Source errors.",
+			Namespace: "external_dns",
+			Subsystem: "source",
+			Name:      "errors_total",
+			Help:      "Number of Source errors.",
 		},
 	)
 )
 
 func init() {
-	prometheus.MustRegister(registryErrors)
-	prometheus.MustRegister(sourceErrors)
+	prometheus.MustRegister(registryErrorsTotal)
+	prometheus.MustRegister(sourceErrorsTotal)
 }
 
 // Controller is responsible for orchestrating the different components.
@@ -66,13 +70,13 @@ type Controller struct {
 func (c *Controller) RunOnce() error {
 	records, err := c.Registry.Records()
 	if err != nil {
-		registryErrors.Inc()
+		registryErrorsTotal.Inc()
 		return err
 	}
 
 	endpoints, err := c.Source.Endpoints()
 	if err != nil {
-		sourceErrors.Inc()
+		sourceErrorsTotal.Inc()
 		return err
 	}
 
@@ -86,7 +90,7 @@ func (c *Controller) RunOnce() error {
 
 	err = c.Registry.ApplyChanges(plan.Changes)
 	if err != nil {
-		registryErrors.Inc()
+		registryErrorsTotal.Inc()
 		return err
 	}
 	return nil
