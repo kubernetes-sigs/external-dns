@@ -55,6 +55,7 @@ The following tutorials are provided:
 * [AWS (Route53)](docs/tutorials/aws.md)
 * [AWS (Service Discovery)](docs/tutorials/aws-sd.md)
 * [Azure](docs/tutorials/azure.md)
+* [CoreDNS](docs/tutorials/coredns.md)
 * [Cloudflare](docs/tutorials/cloudflare.md)
 * [DigitalOcean](docs/tutorials/digitalocean.md)
 * [Infoblox](docs/tutorials/infoblox.md)
