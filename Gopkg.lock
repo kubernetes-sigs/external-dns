@@ -586,6 +586,14 @@
   revision = "a6e9df898b1336106c743392c48ee0b71f5c4efa"
 
 [[projects]]
+  branch = "master"
+  digest = "1:bb2ccb2d56cbafdec58af0f473f45304e19876f09fa671960ca87802b656a9c0"
+  name = "github.com/sanyu/dynectsoap"
+  packages = ["dynectsoap"]
+  pruneopts = ""
+  revision = "b83de5edc4e022f22903eeb3b428d2f39fb740e5"
+
+[[projects]]
   digest = "1:7f569d906bdd20d906b606415b7d794f798f91a62fcfb6a4daa6d50690fb7a3f"
   name = "github.com/satori/go.uuid"
   packages = ["."]
@@ -1149,6 +1157,7 @@
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",
+    "github.com/sanyu/dynectsoap/dynectsoap",
     "github.com/sirupsen/logrus",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/mock",
