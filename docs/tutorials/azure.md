@@ -48,7 +48,7 @@ The preferred way to inject the configuration file is by using a Kubernetes secr
   "subscriptionId": "01234abc-de56-ff78-abc1-234567890def",
   "resourceGroup": "MyDnsResourceGroup",
   "aadClientId": "01234abc-de56-ff78-abc1-234567890def",
-  "aadClientSecret": "uKiuXeiwui4jo9quae9o",
+  "aadClientSecret": "uKiuXeiwui4jo9quae9o"
 }
 ```
 
