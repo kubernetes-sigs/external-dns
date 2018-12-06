@@ -153,7 +153,7 @@ func (c etcdClient) DeleteService(key string) error {
 	ctx, cancel := context.WithTimeout(c.ctx, etcdTimeout)
 	defer cancel()
 
-	_, err := c.client.Delete(ctx, key)
+	_, err := c.client.Delete(ctx, key, etcdcv3.WithPrefix())
 	return err
 }
 
