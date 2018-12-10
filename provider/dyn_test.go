@@ -168,22 +168,6 @@ func TestDynMerge_NoUpdateIfTTLUnchanged(t *testing.T) {
 	assert.Equal(t, 0, len(merged))
 }
 
-func TestDyn_extractTarget(t *testing.T) {
-	tests := []struct {
-		recordType string
-		block      *dynect.DataBlock
-		target     string
-	}{
-		{"A", &dynect.DataBlock{Address: "address"}, "address"},
-		{"CNAME", &dynect.DataBlock{CName: "name."}, "name"}, // note trailing dot is trimmed for CNAMEs
-		{"TXT", &dynect.DataBlock{TxtData: "text."}, "text."},
-	}
-
-	for _, tc := range tests {
-		assert.Equal(t, tc.target, extractTarget(tc.recordType, tc.block))
-	}
-}
-
 func TestDyn_endpointToRecord(t *testing.T) {
 	tests := []struct {
 		ep        *endpoint.Endpoint
