@@ -231,27 +231,6 @@ func merge(updateOld, updateNew []*endpoint.Endpoint) []*endpoint.Endpoint {
 	return result
 }
 
-// extractTarget populates the correct field given a record type.
-// See dynect.DataBlock comments for details. Empty response means nothing
-// was populated - basically an error
-func extractTarget(recType string, data *dynect.DataBlock) string {
-	result := ""
-	if recType == endpoint.RecordTypeA {
-		result = data.Address
-	}
-
-	if recType == endpoint.RecordTypeCNAME {
-		result = data.CName
-		result = strings.TrimSuffix(result, ".")
-	}
-
-	if recType == endpoint.RecordTypeTXT {
-		result = data.TxtData
-	}
-
-	return result
-}
-
 func apiRetryLoop(f func() error) error {
 	var err error
 	for i := 0; i < dynMaxRetriesOnErrRateLimited; i++ {
