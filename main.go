@@ -99,6 +99,7 @@ func main() {
 	domainFilter := provider.NewDomainFilter(cfg.DomainFilter)
 	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
+	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
 
 	var p provider.Provider
 	switch cfg.Provider {
@@ -110,6 +111,7 @@ func main() {
 				DomainFilter:         domainFilter,
 				ZoneIDFilter:         zoneIDFilter,
 				ZoneTypeFilter:       zoneTypeFilter,
+				ZoneTagFilter:        zoneTagFilter,
 				BatchChangeSize:      cfg.AWSBatchChangeSize,
 				BatchChangeInterval:  cfg.AWSBatchChangeInterval,
 				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
