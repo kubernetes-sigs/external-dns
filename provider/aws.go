@@ -85,6 +85,7 @@ type Route53API interface {
 	ChangeResourceRecordSets(*route53.ChangeResourceRecordSetsInput) (*route53.ChangeResourceRecordSetsOutput, error)
 	CreateHostedZone(*route53.CreateHostedZoneInput) (*route53.CreateHostedZoneOutput, error)
 	ListHostedZonesPages(input *route53.ListHostedZonesInput, fn func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool)) error
+	ListTagsForResource(input *route53.ListTagsForResourceInput) (*route53.ListTagsForResourceOutput, error)
 }
 
 // AWSProvider is an implementation of Provider for AWS Route53.
@@ -100,6 +101,8 @@ type AWSProvider struct {
 	zoneIDFilter ZoneIDFilter
 	// filter hosted zones by type (e.g. private or public)
 	zoneTypeFilter ZoneTypeFilter
+	// filter hosted zones by tags
+	zoneTagFilter ZoneTagFilter
 }
 
 // AWSConfig contains configuration to create a new AWS provider.
@@ -107,6 +110,7 @@ type AWSConfig struct {
 	DomainFilter         DomainFilter
 	ZoneIDFilter         ZoneIDFilter
 	ZoneTypeFilter       ZoneTypeFilter
+	ZoneTagFilter        ZoneTagFilter
 	BatchChangeSize      int
 	BatchChangeInterval  time.Duration
 	EvaluateTargetHealth bool
@@ -145,6 +149,7 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 		domainFilter:         awsConfig.DomainFilter,
 		zoneIDFilter:         awsConfig.ZoneIDFilter,
 		zoneTypeFilter:       awsConfig.ZoneTypeFilter,
+		zoneTagFilter:        awsConfig.ZoneTagFilter,
 		batchChangeSize:      awsConfig.BatchChangeSize,
 		batchChangeInterval:  awsConfig.BatchChangeInterval,
 		evaluateTargetHealth: awsConfig.EvaluateTargetHealth,
@@ -158,6 +163,7 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 	zones := make(map[string]*route53.HostedZone)
 
+	var tagErr error
 	f := func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool) {
 		for _, zone := range resp.HostedZones {
 			if !p.zoneIDFilter.Match(aws.StringValue(zone.Id)) {
@@ -172,6 +178,18 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 				continue
 			}
 
+			// Only fetch tags if a tag filter was specified
+			if !p.zoneTagFilter.IsEmpty() {
+				tags, err := p.tagsForZone(*zone.Id)
+				if err != nil {
+					tagErr = err
+					return false
+				}
+				if !p.zoneTagFilter.Match(tags) {
+					continue
+				}
+			}
+
 			zones[aws.StringValue(zone.Id)] = zone
 		}
 
@@ -181,6 +199,9 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 	err := p.client.ListHostedZonesPages(&route53.ListHostedZonesInput{}, f)
 	if err != nil {
 		return nil, err
+	}
+	if tagErr != nil {
+		return nil, tagErr
 	}
 
 	for _, zone := range zones {
@@ -410,6 +431,21 @@ func (p *AWSProvider) newChange(action string, endpoint *endpoint.Endpoint) *rou
 	}
 
 	return change
+}
+
+func (p *AWSProvider) tagsForZone(zoneID string) (map[string]string, error) {
+	response, err := p.client.ListTagsForResource(&route53.ListTagsForResourceInput{
+		ResourceType: aws.String("hostedzone"),
+		ResourceId:   aws.String(zoneID),
+	})
+	if err != nil {
+		return nil, err
+	}
+	tagMap := map[string]string{}
+	for _, tag := range response.ResourceTagSet.Tags {
+		tagMap[*tag.Key] = *tag.Value
+	}
+	return tagMap, nil
 }
 
 func batchChangeSet(cs []*route53.Change, batchSize int) [][]*route53.Change {
