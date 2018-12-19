@@ -193,6 +193,6 @@ This should show the external IP address of the service as the A record for your
 Now that we have verified that ExternalDNS will automatically manage Cloudflare DNS records, we can delete the tutorial's example:
 
 ```
-$ kubectl delete service -f nginx.yaml
-$ kubectl delete service -f externaldns.yaml
+$ kubectl delete -f nginx.yaml
+$ kubectl delete -f externaldns.yaml
 ```
