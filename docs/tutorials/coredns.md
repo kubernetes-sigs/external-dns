@@ -228,8 +228,8 @@ nginx     nginx.example.org   10.0.2.15   80        2m
 
 $ kubectl run -it --rm --restart=Never --image=infoblox/dnstools:latest dnstools
 If you don't see a command prompt, try pressing enter.
-dnstools# dig @10.102.213.122 nginx.example.org +short
-dnstools# dig @10.102.213.122 nginx.example.org +short
+dnstools# dig @10.100.4.143 nginx.example.org +short
+dnstools# dig @10.100.4.143 nginx.example.org +short
 10.0.2.15
 dnstools#  
 ```
