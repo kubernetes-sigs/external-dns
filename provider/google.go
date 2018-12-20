@@ -32,6 +32,7 @@ import (
 	googleapi "google.golang.org/api/googleapi"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/event"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
@@ -292,9 +293,18 @@ func (p *GoogleProvider) submitChange(change *dns.Change) error {
 		log.Infof("Change zone: %v", z)
 		for _, del := range c.Deletions {
 			log.Infof("Del records: %s %s %s %d", del.Name, del.Type, del.Rrdatas, del.Ttl)
+			err = event.Emit(fmt.Sprintf("Del records: %s %s %s %d", del.Name, del.Type, del.Rrdatas, del.Ttl))
+			if err != nil {
+				log.Fatal(err)
+			}
+
 		}
 		for _, add := range c.Additions {
 			log.Infof("Add records: %s %s %s %d", add.Name, add.Type, add.Rrdatas, add.Ttl)
+			err = event.Emit(fmt.Sprintf("Add records: %s %s %s %d", add.Name, add.Type, add.Rrdatas, add.Ttl))
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 

@@ -28,6 +28,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"github.com/kubernetes-incubator/external-dns/controller"
+	"github.com/kubernetes-incubator/external-dns/event"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
 	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns/validation"
 	"github.com/kubernetes-incubator/external-dns/plan"
@@ -83,12 +84,22 @@ func main() {
 		IstioIngressGateway:      cfg.IstioIngressGateway,
 	}
 
-	// Lookup all the selected sources by names and pass them the desired configuration.
-	sources, err := source.ByNames(&source.SingletonClientGenerator{
+	client := &source.SingletonClientGenerator{
 		KubeConfig:     cfg.KubeConfig,
 		KubeMaster:     cfg.Master,
 		RequestTimeout: cfg.RequestTimeout,
-	}, cfg.Sources, sourceCfg)
+	}
+
+	kubeClient, err := client.KubeClient()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create the kubeClient to send events, used by the specific provider
+	event.InitializeClient(kubeClient)
+
+	// Lookup all the selected sources by names and pass them the desired configuration.
+	sources, err := source.ByNames(client, cfg.Sources, sourceCfg)
 	if err != nil {
 		log.Fatal(err)
 	}
