@@ -30,11 +30,12 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"crypto/tls"
+	"net"
+
 	pgo "github.com/ffledgling/pdns-go"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/pkg/tlsutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
-	"net"
 )
 
 type pdnsChangeType string
@@ -175,7 +176,7 @@ func (c *PDNSAPIClient) PartitionZones(zones []pgo.Zone) (filteredZones []pgo.Zo
 			}
 		}
 	} else {
-		residualZones = zones
+		filteredZones = zones
 	}
 	return filteredZones, residualZones
 }
