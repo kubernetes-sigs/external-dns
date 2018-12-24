@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"errors"
 	//"fmt"
 	"net/http"
@@ -475,6 +476,44 @@ var (
 			},
 		},
 	}
+
+	DomainFilterListSingle = DomainFilter{
+		filters: []string{
+			"example.com",
+		},
+	}
+
+	DomainFilterListMultiple = DomainFilter{
+		filters: []string{
+			"example.com",
+			"mock.com",
+		},
+	}
+
+	DomainFilterListEmpty = DomainFilter{
+		filters: []string{},
+	}
+
+	DomainFilterEmptyClient = &PDNSAPIClient{
+		dryRun:       false,
+		authCtx:      context.WithValue(context.TODO(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
+		client:       pgo.NewAPIClient(pgo.NewConfiguration()),
+		domainFilter: DomainFilterListEmpty,
+	}
+
+	DomainFilterSingleClient = &PDNSAPIClient{
+		dryRun:       false,
+		authCtx:      context.WithValue(context.TODO(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
+		client:       pgo.NewAPIClient(pgo.NewConfiguration()),
+		domainFilter: DomainFilterListSingle,
+	}
+
+	DomainFilterMultipleClient = &PDNSAPIClient{
+		dryRun:       false,
+		authCtx:      context.WithValue(context.TODO(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
+		client:       pgo.NewAPIClient(pgo.NewConfiguration()),
+		domainFilter: DomainFilterListMultiple,
+	}
 )
 
 /******************************************************************************/
@@ -910,6 +949,51 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSmutateRecords() {
 	err = p.mutateRecords(endpointsSimpleRecord, pdnsChangeType("REPLACE"))
 	assert.NotNil(suite.T(), err)
 
+}
+
+func (suite *NewPDNSProviderTestSuite) TestPDNSClientPartitionZones() {
+	zoneList := []pgo.Zone{
+		ZoneEmpty,
+		ZoneEmpty2,
+	}
+
+	partitionResultFilteredEmptyFilter := []pgo.Zone{
+		ZoneEmpty,
+		ZoneEmpty2,
+	}
+
+	partitionResultResidualEmptyFilter := ([]pgo.Zone)(nil)
+
+	partitionResultFilteredSingleFilter := []pgo.Zone{
+		ZoneEmpty,
+	}
+
+	partitionResultResidualSingleFilter := []pgo.Zone{
+		ZoneEmpty2,
+	}
+
+	partitionResultFilteredMultipleFilter := []pgo.Zone{
+		ZoneEmpty,
+	}
+
+	partitionResultResidualMultipleFilter := []pgo.Zone{
+		ZoneEmpty2,
+	}
+
+	// Check filtered, residual zones when no domain filter specified
+	filteredZones, residualZones := DomainFilterEmptyClient.PartitionZones(zoneList)
+	assert.Equal(suite.T(), partitionResultFilteredEmptyFilter, filteredZones)
+	assert.Equal(suite.T(), partitionResultResidualEmptyFilter, residualZones)
+
+	// Check filtered, residual zones when a single domain filter specified
+	filteredZones, residualZones = DomainFilterSingleClient.PartitionZones(zoneList)
+	assert.Equal(suite.T(), partitionResultFilteredSingleFilter, filteredZones)
+	assert.Equal(suite.T(), partitionResultResidualSingleFilter, residualZones)
+
+	// Check filtered, residual zones when a multiple domain filter specified
+	filteredZones, residualZones = DomainFilterMultipleClient.PartitionZones(zoneList)
+	assert.Equal(suite.T(), partitionResultFilteredMultipleFilter, filteredZones)
+	assert.Equal(suite.T(), partitionResultResidualMultipleFilter, residualZones)
 }
 
 func TestNewPDNSProviderTestSuite(t *testing.T) {
