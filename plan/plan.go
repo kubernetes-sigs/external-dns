@@ -17,6 +17,7 @@ limitations under the License.
 package plan
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -76,6 +77,10 @@ func newPlanTable() planTable { //TODO: make resolver configurable
 type planTableRow struct {
 	current    *endpoint.Endpoint
 	candidates []*endpoint.Endpoint
+}
+
+func (t planTableRow) String() string {
+	return fmt.Sprintf("planTableRow{current=%v, candidates=%v}", t.current, t.candidates)
 }
 
 func (t planTable) addCurrent(e *endpoint.Endpoint) {
