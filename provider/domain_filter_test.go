@@ -226,3 +226,35 @@ func TestDomainFilterMatchWithEmptyFilter(t *testing.T) {
 		}
 	}
 }
+
+func TestPrepareFiltersStripsWhitespaceAndDotSuffix(t *testing.T) {
+	for _, tt := range []struct {
+		input  []string
+		output []string
+	}{
+		{
+			[]string{" ", "   ", ""},
+			[]string{"", "", ""},
+		},
+		{
+			[]string{"  foo   ", "  bar. ", "baz."},
+			[]string{"foo", "bar", "baz"},
+		},
+		{
+			[]string{"foo.bar", "  foo.bar.  ", " foo.bar.baz ", " foo.bar.baz.  "},
+			[]string{"foo.bar", "foo.bar", "foo.bar.baz", "foo.bar.baz"},
+		},
+	} {
+		t.Run("test string", func(t *testing.T) {
+			assert.Equal(t, tt.output, prepareFilters(tt.input))
+		})
+	}
+}
+
+func TestMatchFilterReturnsProperEmptyVal(t *testing.T) {
+	emptyFilters := []string{}
+
+	df := NewDomainFilterWithExclusions(emptyFilters, emptyFilters)
+	assert.Equal(t, true, df.matchFilter(emptyFilters, "somedomain.com", true))
+	assert.Equal(t, false, df.matchFilter(emptyFilters, "somedomain.com", false))
+}
