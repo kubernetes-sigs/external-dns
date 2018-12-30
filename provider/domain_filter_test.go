@@ -258,3 +258,47 @@ func TestMatchFilterReturnsProperEmptyVal(t *testing.T) {
 	assert.Equal(t, true, df.matchFilter(emptyFilters, "somedomain.com", true))
 	assert.Equal(t, false, df.matchFilter(emptyFilters, "somedomain.com", false))
 }
+
+func TestDomainFilterIsConfigured(t *testing.T) {
+	for _, tt := range []struct {
+		filters  []string
+		exclude  []string
+		expected bool
+	}{
+		{
+			[]string{""},
+			[]string{""},
+			false,
+		},
+		{
+			[]string{"    "},
+			[]string{"    "},
+			false,
+		},
+		{
+			[]string{"", ""},
+			[]string{""},
+			true,
+		},
+		{
+			[]string{" . "},
+			[]string{" . "},
+			false,
+		},
+		{
+			[]string{" notempty.com "},
+			[]string{"  "},
+			true,
+		},
+		{
+			[]string{" notempty.com "},
+			[]string{"  thisdoesntmatter.com "},
+			true,
+		},
+	} {
+		t.Run("test IsConfigured", func(t *testing.T) {
+			df := NewDomainFilterWithExclusions(tt.filters, tt.exclude)
+			assert.Equal(t, tt.expected, df.IsConfigured())
+		})
+	}
+}
