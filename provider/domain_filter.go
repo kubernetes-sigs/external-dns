@@ -23,29 +23,42 @@ import (
 // DomainFilter holds a lists of valid domain names
 type DomainFilter struct {
 	filters []string
+	exclude []string
+}
+
+// prepareFilters provides consistent trimming for filters/exclude params
+func prepareFilters(filters []string) []string {
+	fs := make([]string, len(filters))
+	for i, domain := range filters {
+		fs[i] = strings.TrimSuffix(strings.TrimSpace(domain), ".")
+	}
+	return fs
+}
+
+// NewDomainFilterWithExclusions returns a new DomainFilter, given a list of matches and exclusions
+func NewDomainFilterWithExclusions(domainFilters []string, excludeDomains []string) DomainFilter {
+	return DomainFilter{prepareFilters(domainFilters), prepareFilters(excludeDomains)}
 }
 
 // NewDomainFilter returns a new DomainFilter given a comma separated list of domains
 func NewDomainFilter(domainFilters []string) DomainFilter {
-	filters := make([]string, len(domainFilters))
-
-	// user can define filter domains either with trailing dot or without, we remove all trailing periods from
-	// the internal representation
-	for i, domain := range domainFilters {
-		filters[i] = strings.TrimSuffix(strings.TrimSpace(domain), ".")
-	}
-
-	return DomainFilter{filters}
+	return DomainFilter{prepareFilters(domainFilters), []string{}}
 }
 
 // Match checks whether a domain can be found in the DomainFilter.
 func (df DomainFilter) Match(domain string) bool {
-	// return always true, if not filter is specified
-	if len(df.filters) == 0 {
-		return true
+	return df.matchFilter(df.filters, domain, true) && !df.matchFilter(df.exclude, domain, false)
+}
+
+// matchFilter determines if any `filters` match `domain`.
+// If no `filters` are provided, behavior depends on `emptyval`
+// (empty `df.filters` matches everything, while empty `df.exclude` excludes nothing)
+func (df DomainFilter) matchFilter(filters []string, domain string, emptyval bool) bool {
+	if len(filters) == 0 {
+		return emptyval
 	}
 
-	for _, filter := range df.filters {
+	for _, filter := range filters {
 		strippedDomain := strings.TrimSuffix(domain, ".")
 
 		if filter == "" {
@@ -60,7 +73,6 @@ func (df DomainFilter) Match(domain string) bool {
 			return true
 		}
 	}
-
 	return false
 }
 
