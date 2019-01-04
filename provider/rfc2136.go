@@ -43,7 +43,7 @@ type rfc2136Provider struct {
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter DomainFilter
 	dryRun       bool
-	actions      rfc1236Actions
+	actions      rfc2136Actions
 }
 
 var (
@@ -56,13 +56,13 @@ var (
 	}
 )
 
-type rfc1236Actions interface {
+type rfc2136Actions interface {
 	SendMessage(msg *dns.Msg) error
 	IncomeTransfer(m *dns.Msg, a string) (env chan *dns.Envelope, err error)
 }
 
 // NewRfc2136Provider is a factory function for OpenStack rfc2136 providers
-func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter DomainFilter, dryRun bool, actions rfc1236Actions) (Provider, error) {
+func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter DomainFilter, dryRun bool, actions rfc2136Actions) (Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok {
 		return nil, errors.Errorf("%s is not supported TSIG algorithm", secretAlg)

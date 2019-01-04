@@ -93,7 +93,7 @@ func createRfc2136StubProvider(stub *rfc2136Stub) (Provider, error) {
 	return NewRfc2136Provider("", 0, "", false, "key", "secret", "hmac-sha512", true, DomainFilter{}, false, stub)
 }
 
-func TestRfc1236GetRecords(t *testing.T) {
+func TestRfc2136GetRecords(t *testing.T) {
 	stub := newStub()
 	err := stub.setOutput([]string{
 		"v4.barfoo.com 3600 TXT test1",
