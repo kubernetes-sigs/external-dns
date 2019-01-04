@@ -240,25 +240,26 @@ func (r rfc2136Provider) UpdateRecord(ep *endpoint.Endpoint) error {
 
 func (r rfc2136Provider) AddRecord(ep *endpoint.Endpoint) error {
 	log.Debugf("AddRecord.ep=%s", ep)
+	for _, target := range ep.Targets {
+		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ep.RecordTTL, ep.RecordType, target)
+		log.Debugf("Adding RR: %s", newRR)
 
-	newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ep.RecordTTL, ep.RecordType, ep.Targets)
-	log.Debugf("Adding RR: %s", newRR)
+		rr, err := dns.NewRR(newRR)
+		if err != nil {
+			return fmt.Errorf("failed to build RR: %v", err)
+		}
 
-	rr, err := dns.NewRR(newRR)
-	if err != nil {
-		return fmt.Errorf("failed to build RR: %v", err)
-	}
+		rrs := make([]dns.RR, 1)
+		rrs[0] = rr
 
-	rrs := make([]dns.RR, 1)
-	rrs[0] = rr
+		m := new(dns.Msg)
+		m.SetUpdate(r.zoneName)
+		m.Insert(rrs)
 
-	m := new(dns.Msg)
-	m.SetUpdate(r.zoneName)
-	m.Insert(rrs)
-
-	err = r.actions.SendMessage(m)
-	if err != nil {
-		return fmt.Errorf("RFC2136 query failed: %v", err)
+		err = r.actions.SendMessage(m)
+		if err != nil {
+			return fmt.Errorf("RFC2136 query failed: %v", err)
+		}
 	}
 
 	return nil
