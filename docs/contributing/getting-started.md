@@ -14,7 +14,7 @@ This list of endpoints is passed to the [Plan](../../plan) which determines the 
 
 Once the difference has been figured out the list of intended changes is passed to a `Registry` which live in the [registry](../../registry) package. The registry is a wrapper and access point to DNS provider. Registry implements the ownership concept by marking owned records and filtering out records not owned by ExternalDNS before passing them to DNS provider.
 
-The [provider](../../provider) is the adapter to the DNS provider, e.g. Google CloudDNS. It implements two methods: `ApplyChanges` to apply a set of changes filtered by `Registry` and `Records` to retrieve the current list of records from the DNS provider.
+The [provider](../../provider) is the adapter to the DNS provider, e.g. Google Cloud DNS. It implements two methods: `ApplyChanges` to apply a set of changes filtered by `Registry` and `Records` to retrieve the current list of records from the DNS provider.
 
 The orchestration between the different components is controlled by the [controller](../../controller).
 
