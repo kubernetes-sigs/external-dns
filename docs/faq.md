@@ -30,7 +30,7 @@ ExternalDNS can solve this for you as well.
 
 Currently, the following providers are supported: 
 
-- Google CloudDNS
+- Google Cloud DNS
 - AWS Route 53
 - AzureDNS
 - CloudFlare
