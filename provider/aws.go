@@ -58,6 +58,7 @@ var (
 		"eu-west-1.elb.amazonaws.com":      "Z32O12XQLNTSW2",
 		"eu-west-2.elb.amazonaws.com":      "ZHURV8PSTC4K8",
 		"eu-west-3.elb.amazonaws.com":      "Z3Q77PNBQS71R4",
+		"eu-north-1.elb.amazonaws.com":     "Z23TAZ6LKFMNIO",
 		"sa-east-1.elb.amazonaws.com":      "Z2P70J7HTTTPLU",
 		// Network Load Balancers
 		"elb.us-east-2.amazonaws.com":      "ZLMOA37VPKANP",
@@ -74,6 +75,7 @@ var (
 		"elb.eu-west-1.amazonaws.com":      "Z2IFOLAFXWLO4F",
 		"elb.eu-west-2.amazonaws.com":      "ZD4D7Y8KGAS4G",
 		"elb.eu-west-3.amazonaws.com":      "Z1CMS0P5QUZ6D5",
+		"elb.eu-north-1.amazonaws.com":     "Z1UDT6IFJ4EJM",
 		"elb.sa-east-1.amazonaws.com":      "ZTK26PT1VY4CU",
 	}
 )
