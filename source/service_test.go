@@ -50,6 +50,7 @@ func (suite *ServiceSuite) SetupTest() {
 		"",
 		false,
 		false,
+		false,
 		[]string{},
 	)
 	suite.fooWithTargets = &v1.Service{
@@ -139,6 +140,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 				ti.fqdnTemplate,
 				false,
 				"",
+				false,
 				false,
 				false,
 				ti.serviceTypesFilter,
@@ -959,6 +961,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				tc.compatibility,
 				false,
 				false,
+				false,
 				tc.serviceTypesFilter,
 			)
 			require.NoError(t, err)
@@ -1093,6 +1096,7 @@ func TestClusterIpServices(t *testing.T) {
 				false,
 				tc.compatibility,
 				true,
+				false,
 				false,
 				[]string{},
 			)
@@ -1290,6 +1294,7 @@ func TestNodePortServices(t *testing.T) {
 				false,
 				tc.compatibility,
 				true,
+				false,
 				false,
 				[]string{},
 			)
@@ -1492,6 +1497,7 @@ func TestHeadlessServices(t *testing.T) {
 				tc.compatibility,
 				true,
 				false,
+				false,
 				[]string{},
 			)
 			require.NoError(t, err)
@@ -1693,6 +1699,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				tc.compatibility,
 				true,
 				true,
+				false,
 				[]string{},
 			)
 			require.NoError(t, err)
@@ -1734,7 +1741,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
 	require.NoError(b, err)
 
-	client, err := NewServiceSource(kubernetes, v1.NamespaceAll, "", "", false, "", false, false, []string{})
+	client, err := NewServiceSource(kubernetes, v1.NamespaceAll, "", "", false, "", false, false, false, []string{})
 	require.NoError(b, err)
 
 	for i := 0; i < b.N; i++ {

@@ -48,17 +48,17 @@ type serviceSource struct {
 	namespace        string
 	annotationFilter string
 	// process Services with legacy annotations
-	compatibility           string
-	fqdnTemplate            *template.Template
-	combineFQDNAnnotation   bool
-	publishInternal         bool
-	publishHostIP           bool
-	publishUnreadyEndpoints bool
-	serviceTypeFilter       map[string]struct{}
+	compatibility         string
+	fqdnTemplate          *template.Template
+	combineFQDNAnnotation bool
+	publishInternal       bool
+	publishHostIP         bool
+	publishUnreadyPods    bool
+	serviceTypeFilter     map[string]struct{}
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, publishUnreadyEndpoints bool, serviceTypeFilter []string) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, publishUnreadyPods bool, serviceTypeFilter []string) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -80,16 +80,16 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	}
 
 	return &serviceSource{
-		client:                  kubeClient,
-		namespace:               namespace,
-		annotationFilter:        annotationFilter,
-		compatibility:           compatibility,
-		fqdnTemplate:            tmpl,
-		combineFQDNAnnotation:   combineFqdnAnnotation,
-		publishInternal:         publishInternal,
-		publishHostIP:           publishHostIP,
-		publishUnreadyEndpoints: publishUnreadyEndpoints,
-		serviceTypeFilter:       serviceTypes,
+		client:                kubeClient,
+		namespace:             namespace,
+		annotationFilter:      annotationFilter,
+		compatibility:         compatibility,
+		fqdnTemplate:          tmpl,
+		combineFQDNAnnotation: combineFqdnAnnotation,
+		publishInternal:       publishInternal,
+		publishHostIP:         publishHostIP,
+		publishUnreadyPods:    publishUnreadyPods,
+		serviceTypeFilter:     serviceTypes,
 	}, nil
 }
 
@@ -182,7 +182,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		if sc.publishHostIP == true {
 			log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, v.Status.HostIP)
 			// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
-			if v.Status.Phase == v1.PodRunning || sc.publishUnreadyEndpoints {
+			if v.Status.Phase == v1.PodRunning || sc.publishUnreadyPods {
 				if ttl.IsConfigured() {
 					endpoints = append(endpoints, endpoint.NewEndpointWithTTL(headlessDomain, endpoint.RecordTypeA, ttl, v.Status.HostIP))
 				} else {
@@ -194,7 +194,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		} else {
 			log.Debugf("Generating matching endpoint %s with PodIP %s", headlessDomain, v.Status.PodIP)
 			// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
-			if v.Status.Phase == v1.PodRunning || sc.publishUnreadyEndpoints {
+			if v.Status.Phase == v1.PodRunning || sc.publishUnreadyPods {
 				if ttl.IsConfigured() {
 					endpoints = append(endpoints, endpoint.NewEndpointWithTTL(headlessDomain, endpoint.RecordTypeA, ttl, v.Status.PodIP))
 				} else {
