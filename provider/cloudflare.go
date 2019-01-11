@@ -165,7 +165,7 @@ func (p *CloudFlareProvider) Records() ([]*endpoint.Endpoint, error) {
 
 		for _, r := range records {
 			if supportedRecordType(r.Type) {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(r.Name, r.Type, endpoint.TTL(r.TTL), r.Content))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(r.Name, r.Type, endpoint.TTL(r.TTL), r.Content).WithProviderSpecific(source.CloudflareProxiedKey, strconv.FormatBool(r.Proxied)))
 			}
 		}
 	}

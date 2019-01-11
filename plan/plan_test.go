@@ -27,15 +27,17 @@ import (
 
 type PlanTestSuite struct {
 	suite.Suite
-	fooV1Cname             *endpoint.Endpoint
-	fooV2Cname             *endpoint.Endpoint
-	fooV2TXT               *endpoint.Endpoint
-	fooV2CnameNoLabel      *endpoint.Endpoint
-	fooV3CnameSameResource *endpoint.Endpoint
-	fooA5                  *endpoint.Endpoint
-	bar127A                *endpoint.Endpoint
-	bar127AWithTTL         *endpoint.Endpoint
-	bar192A                *endpoint.Endpoint
+	fooV1Cname                       *endpoint.Endpoint
+	fooV2Cname                       *endpoint.Endpoint
+	fooV2TXT                         *endpoint.Endpoint
+	fooV2CnameNoLabel                *endpoint.Endpoint
+	fooV3CnameSameResource           *endpoint.Endpoint
+	fooA5                            *endpoint.Endpoint
+	bar127A                          *endpoint.Endpoint
+	bar127AWithTTL                   *endpoint.Endpoint
+	bar127AWithProviderSpecificTrue  *endpoint.Endpoint
+	bar127AWithProviderSpecificFalse *endpoint.Endpoint
+	bar192A                          *endpoint.Endpoint
 }
 
 func (suite *PlanTestSuite) SetupTest() {
@@ -100,6 +102,34 @@ func (suite *PlanTestSuite) SetupTest() {
 			endpoint.ResourceLabelKey: "ingress/default/bar-127",
 		},
 	}
+	suite.bar127AWithProviderSpecificTrue = &endpoint.Endpoint{
+		DNSName:    "bar",
+		Targets:    endpoint.Targets{"127.0.0.1"},
+		RecordType: "A",
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "ingress/default/bar-127",
+		},
+		ProviderSpecific: endpoint.ProviderSpecific{
+			endpoint.ProviderSpecificProperty{
+				Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+				Value: "true",
+			},
+		},
+	}
+	suite.bar127AWithProviderSpecificFalse = &endpoint.Endpoint{
+		DNSName:    "bar",
+		Targets:    endpoint.Targets{"127.0.0.1"},
+		RecordType: "A",
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "ingress/default/bar-127",
+		},
+		ProviderSpecific: endpoint.ProviderSpecific{
+			endpoint.ProviderSpecificProperty{
+				Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+				Value: "false",
+			},
+		},
+	}
 	suite.bar192A = &endpoint.Endpoint{
 		DNSName:    "bar",
 		Targets:    endpoint.Targets{"192.168.0.1"},
@@ -108,6 +138,7 @@ func (suite *PlanTestSuite) SetupTest() {
 			endpoint.ResourceLabelKey: "ingress/default/bar-192",
 		},
 	}
+
 }
 
 func (suite *PlanTestSuite) TestSyncFirstRound() {
@@ -179,6 +210,27 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithTTLChange() {
 	expectedCreate := []*endpoint.Endpoint{}
 	expectedUpdateOld := []*endpoint.Endpoint{suite.bar127A}
 	expectedUpdateNew := []*endpoint.Endpoint{suite.bar127AWithTTL}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
+func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificChange() {
+	current := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificTrue}
+	desired := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificFalse}
+	expectedCreate := []*endpoint.Endpoint{}
+	expectedUpdateOld := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificTrue}
+	expectedUpdateNew := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificFalse}
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
@@ -354,6 +406,7 @@ func (suite *PlanTestSuite) TestDuplicatedEndpointsForSameResourceReplace() {
 
 //TODO: remove once multiple-target per endpoint is supported
 func (suite *PlanTestSuite) TestDuplicatedEndpointsForSameResourceRetain() {
+
 	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.bar192A}
 	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV3CnameSameResource}
 	expectedCreate := []*endpoint.Endpoint{}
