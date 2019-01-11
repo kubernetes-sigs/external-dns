@@ -130,7 +130,7 @@ var defaultConfig = &Config{
 	AWSZoneType:              "",
 	AWSZoneTagFilter:         []string{},
 	AWSAssumeRole:            "",
-	AWSBatchChangeSize:       4000,
+	AWSBatchChangeSize:       1000,
 	AWSBatchChangeInterval:   time.Second,
 	AWSEvaluateTargetHealth:  true,
 	AzureConfigFile:          "/etc/kubernetes/azure.json",
