@@ -19,6 +19,7 @@ package plan
 import (
 	"strings"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
@@ -100,7 +101,7 @@ func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*en
 		if row.current != nil && len(row.candidates) > 0 { //dns name is taken
 			update := t.resolver.ResolveUpdate(row.current, row.candidates)
 			// compare "update" to "current" to figure out if actual update is required
-			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) {
+			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || shouldUpdateProviderSpecific(update, row.current) {
 				inheritOwner(row.current, update)
 				updateNew = append(updateNew, update)
 				updateOld = append(updateOld, row.current)
@@ -178,6 +179,10 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 		return false
 	}
 	return desired.RecordTTL != current.RecordTTL
+}
+
+func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
+	return !cmp.Equal(desired.ProviderSpecific, current.ProviderSpecific)
 }
 
 // filterRecordsForPlan removes records that are not relevant to the planner.
