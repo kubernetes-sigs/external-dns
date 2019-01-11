@@ -25,6 +25,8 @@ import (
 // test helper functions
 
 func validateEndpoints(t *testing.T, endpoints, expected []*endpoint.Endpoint) {
+	t.Helper()
+
 	if len(endpoints) != len(expected) {
 		t.Fatalf("expected %d endpoints, got %d", len(expected), len(endpoints))
 	}

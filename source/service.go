@@ -49,6 +49,7 @@ type serviceSource struct {
 	annotationFilter string
 	// process Services with legacy annotations
 	compatibility         string
+	createServiceRecord   bool
 	fqdnTemplate          *template.Template
 	combineFQDNAnnotation bool
 	publishInternal       bool
@@ -57,7 +58,7 @@ type serviceSource struct {
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, serviceTypeFilter []string) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation, createServiceRecord bool, compatibility string, publishInternal bool, publishHostIP bool, serviceTypeFilter []string) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -83,6 +84,7 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		namespace:             namespace,
 		annotationFilter:      annotationFilter,
 		compatibility:         compatibility,
+		createServiceRecord:   createServiceRecord,
 		fqdnTemplate:          tmpl,
 		combineFQDNAnnotation: combineFqdnAnnotation,
 		publishInternal:       publishInternal,
@@ -171,41 +173,55 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		return endpoints
 	}
 
+	targetsByHeadlessDomain := make(map[string][]string)
 	for _, v := range pods.Items {
 		headlessDomain := hostname
-		if v.Spec.Hostname != "" {
-			headlessDomain = v.Spec.Hostname + "." + headlessDomain
-		}
-
-		if sc.publishHostIP == true {
-			log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, v.Status.HostIP)
-			// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
-			if v.Status.Phase == v1.PodRunning {
-				if ttl.IsConfigured() {
-					endpoints = append(endpoints, endpoint.NewEndpointWithTTL(headlessDomain, endpoint.RecordTypeA, ttl, v.Status.HostIP))
-				} else {
-					endpoints = append(endpoints, endpoint.NewEndpoint(headlessDomain, endpoint.RecordTypeA, v.Status.HostIP))
-				}
-			} else {
-				log.Debugf("Pod %s is not in running phase", v.Spec.Hostname)
+		if ip := sc.extractIPFromHeadlessEndpointPod(headlessDomain, v); ip != "" {
+			if sc.createServiceRecord {
+				targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], ip)
 			}
+
+			if v.Spec.Hostname != "" {
+				headlessDomain = v.Spec.Hostname + "." + headlessDomain
+				targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], ip)
+			}
+		}
+	}
+
+	var headlessDomains []string
+	for headlessDomain := range targetsByHeadlessDomain {
+		headlessDomains = append(headlessDomains, headlessDomain)
+	}
+	sort.Strings(headlessDomains)
+	for _, headlessDomain := range headlessDomains {
+		targets := targetsByHeadlessDomain[headlessDomain]
+		if ttl.IsConfigured() {
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(headlessDomain, endpoint.RecordTypeA, ttl, targets...))
 		} else {
-			log.Debugf("Generating matching endpoint %s with PodIP %s", headlessDomain, v.Status.PodIP)
-			// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
-			if v.Status.Phase == v1.PodRunning {
-				if ttl.IsConfigured() {
-					endpoints = append(endpoints, endpoint.NewEndpointWithTTL(headlessDomain, endpoint.RecordTypeA, ttl, v.Status.PodIP))
-				} else {
-					endpoints = append(endpoints, endpoint.NewEndpoint(headlessDomain, endpoint.RecordTypeA, v.Status.PodIP))
-				}
-			} else {
-				log.Debugf("Pod %s is not in running phase", v.Spec.Hostname)
-			}
+			endpoints = append(endpoints, endpoint.NewEndpoint(headlessDomain, endpoint.RecordTypeA, targets...))
 		}
-
 	}
 
 	return endpoints
+}
+
+func (sc *serviceSource) extractIPFromHeadlessEndpointPod(headlessDomain string, pod v1.Pod) string {
+	if sc.publishHostIP == true {
+		log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, pod.Status.HostIP)
+		// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
+		if pod.Status.Phase == v1.PodRunning {
+			return pod.Status.HostIP
+		}
+		log.Debugf("Pod %s is not in running phase", pod.Spec.Hostname)
+	} else {
+		log.Debugf("Generating matching endpoint %s with PodIP %s", headlessDomain, pod.Status.PodIP)
+		// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
+		if pod.Status.Phase == v1.PodRunning {
+			return pod.Status.PodIP
+		}
+		log.Debugf("Pod %s is not in running phase", pod.Spec.Hostname)
+	}
+	return ""
 }
 
 func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service, nodeTargets endpoint.Targets) ([]*endpoint.Endpoint, error) {

@@ -35,6 +35,8 @@ func (suite *ConnectorSuite) SetupTest() {
 }
 
 func startServerToServeTargets(t *testing.T, server string, endpoints []*endpoint.Endpoint) {
+	t.Helper()
+
 	ln, err := net.Listen("tcp", server)
 	if err != nil {
 		t.Fatal(err)

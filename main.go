@@ -72,6 +72,7 @@ func main() {
 		FQDNTemplate:             cfg.FQDNTemplate,
 		CombineFQDNAndAnnotation: cfg.CombineFQDNAndAnnotation,
 		Compatibility:            cfg.Compatibility,
+		CreateServiceRecord:      cfg.CreateServiceRecord,
 		PublishInternal:          cfg.PublishInternal,
 		PublishHostIP:            cfg.PublishHostIP,
 		ConnectorServer:          cfg.ConnectorSourceServer,

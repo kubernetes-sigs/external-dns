@@ -63,6 +63,7 @@ type Config struct {
 	AzureConfigFile          string
 	AzureResourceGroup       string
 	CloudflareProxied        bool
+	CreateServiceRecord      bool
 	InfobloxGridHost         string
 	InfobloxWapiPort         int
 	InfobloxWapiUsername     string
@@ -134,6 +135,7 @@ var defaultConfig = &Config{
 	AzureConfigFile:          "/etc/kubernetes/azure.json",
 	AzureResourceGroup:       "",
 	CloudflareProxied:        false,
+	CreateServiceRecord:      true,
 	InfobloxGridHost:         "",
 	InfobloxWapiPort:         443,
 	InfobloxWapiUsername:     "admin",
@@ -232,6 +234,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source").Default(defaultConfig.CRDSourceAPIVersion).StringVar(&cfg.CRDSourceAPIVersion)
 	app.Flag("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion").Default(defaultConfig.CRDSourceKind).StringVar(&cfg.CRDSourceKind)
 	app.Flag("service-type-filter", "The service types to take care about (default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)").StringsVar(&cfg.ServiceTypeFilter)
+	app.Flag("create-service-record", "Always create a service-level record containing the A records for all pods, even if the hostname is set on the pod resource.").BoolVar(&cfg.CreateServiceRecord)
 
 	// Flags related to providers
 	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, google, azure, cloudflare, digitalocean, dnsimple, infoblox, dyn, designate, coredns, skydns, inmemory, pdns, oci, exoscale, linode)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "alibabacloud", "cloudflare", "digitalocean", "dnsimple", "infoblox", "dyn", "designate", "coredns", "skydns", "inmemory", "pdns", "oci", "exoscale", "linode")
