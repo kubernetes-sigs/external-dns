@@ -47,14 +47,14 @@ $ aws route53 create-hosted-zone --name "external-dns-test.my-org.com." --caller
 Make a note of the ID of the hosted zone you just created.
 
 ```console
-$ aws route53 list-hosted-zones-by-name --dns-name "external-dns-test.my-org.com." | jq -r '.HostedZones[0].Id'
+$ aws route53 list-hosted-zones-by-name --output json --dns-name "external-dns-test.my-org.com." | jq -r '.HostedZones[0].Id'
 /hostedzone/ZEWFWZ4R16P7IB
 ```
 
 Make a note of the nameservers that were assigned to your new zone.
 
 ```console
-$ aws route53 list-resource-record-sets --hosted-zone-id "/hostedzone/ZEWFWZ4R16P7IB" \
+$ aws route53 list-resource-record-sets --output json --hosted-zone-id "/hostedzone/ZEWFWZ4R16P7IB" \
     --query "ResourceRecordSets[?Type == 'NS']" | jq -r '.[0].ResourceRecords[].Value'
 ns-5514.awsdns-53.org.
 ...
@@ -247,7 +247,7 @@ spec:
 After roughly two minutes check that a corresponding DNS record for your service was created.
 
 ```console
-$ aws route53 list-resource-record-sets --hosted-zone-id "/hostedzone/ZEWFWZ4R16P7IB" \
+$ aws route53 list-resource-record-sets --output json --hosted-zone-id "/hostedzone/ZEWFWZ4R16P7IB" \
     --query "ResourceRecordSets[?Name == 'nginx.external-dns-test.my-org.com.']|[?Type == 'A']"
 [
     {
