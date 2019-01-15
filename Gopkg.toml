@@ -115,3 +115,7 @@ ignored = ["github.com/kubernetes/repo-infra/kazel"]
 [[constraint]]
   name = "github.com/miekg/dns"
   version = "1.0.8"
+
+[[constraint]]
+  name = "github.com/sanyu/dynectsoap"
+  branch = "master"
