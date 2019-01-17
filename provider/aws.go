@@ -117,12 +117,13 @@ type AWSConfig struct {
 	BatchChangeInterval  time.Duration
 	EvaluateTargetHealth bool
 	AssumeRole           string
+	APIRetries           int
 	DryRun               bool
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
 func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
-	config := aws.NewConfig()
+	config := aws.NewConfig().WithMaxRetries(awsConfig.APIRetries)
 
 	config.WithHTTPClient(
 		instrumented_http.NewClient(config.HTTPClient, &instrumented_http.Callbacks{
