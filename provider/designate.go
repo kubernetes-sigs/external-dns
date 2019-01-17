@@ -321,9 +321,10 @@ func (p designateProvider) Records() ([]*endpoint.Endpoint, error) {
 				}
 				for _, record := range recordSet.Records {
 					ep := endpoint.NewEndpoint(recordSet.Name, recordSet.Type, record)
-					ep.Labels[designateRecordSetID] = recordSet.ID
-					ep.Labels[designateZoneID] = recordSet.ZoneID
-					ep.Labels[designateOriginalRecords] = strings.Join(recordSet.Records, "\000")
+					ep.ProviderSpecific = make(map[string]string)
+					ep.ProviderSpecific[designateRecordSetID] = recordSet.ID
+					ep.ProviderSpecific[designateZoneID] = recordSet.ZoneID
+					ep.ProviderSpecific[designateOriginalRecords] = strings.Join(recordSet.Records, "\000")
 					result = append(result, ep)
 				}
 				return nil
@@ -358,12 +359,12 @@ func addEndpoint(ep *endpoint.Endpoint, recordSets map[string]*recordSet, delete
 		}
 	}
 	if rs.zoneID == "" {
-		rs.zoneID = ep.Labels[designateZoneID]
+		rs.zoneID = ep.ProviderSpecific[designateZoneID]
 	}
 	if rs.recordSetID == "" {
-		rs.recordSetID = ep.Labels[designateRecordSetID]
+		rs.recordSetID = ep.ProviderSpecific[designateRecordSetID]
 	}
-	for _, rec := range strings.Split(ep.Labels[designateOriginalRecords], "\000") {
+	for _, rec := range strings.Split(ep.ProviderSpecific[designateOriginalRecords], "\000") {
 		if _, ok := rs.names[rec]; !ok && rec != "" {
 			rs.names[rec] = true
 		}
