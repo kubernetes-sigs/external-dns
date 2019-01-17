@@ -46,6 +46,7 @@ type gatewaySource struct {
 	annotationFilter        string
 	fqdnTemplate            *template.Template
 	combineFQDNAnnotation   bool
+	enforceTemplate         bool
 }
 
 // NewIstioGatewaySource creates a new gatewaySource with the given config.
@@ -57,6 +58,7 @@ func NewIstioGatewaySource(
 	annotationFilter string,
 	fqdnTemplate string,
 	combineFqdnAnnotation bool,
+	enforceTemplate bool,
 ) (Source, error) {
 	var (
 		tmpl *template.Template
@@ -85,6 +87,7 @@ func NewIstioGatewaySource(
 		annotationFilter:        annotationFilter,
 		fqdnTemplate:            tmpl,
 		combineFQDNAnnotation:   combineFqdnAnnotation,
+		enforceTemplate:         enforceTemplate,
 	}, nil
 }
 
@@ -112,9 +115,10 @@ func (sc *gatewaySource) Endpoints() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 
-		gwEndpoints, err := sc.endpointsFromGatewayConfig(config)
-		if err != nil {
-			return nil, err
+		gwEndpoints := []*endpoint.Endpoint{}
+
+		if sc.enforceTemplate == false {
+			gwEndpoints, err = sc.endpointsFromGatewayConfig(config)
 		}
 
 		// apply template if host is missing on gateway

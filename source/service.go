@@ -51,13 +51,14 @@ type serviceSource struct {
 	compatibility         string
 	fqdnTemplate          *template.Template
 	combineFQDNAnnotation bool
+	enforceTemplate       bool
 	publishInternal       bool
 	publishHostIP         bool
 	serviceTypeFilter     map[string]struct{}
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, serviceTypeFilter []string) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, enforceTemplate bool, compatibility string, publishInternal bool, publishHostIP bool, serviceTypeFilter []string) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -85,6 +86,7 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		compatibility:         compatibility,
 		fqdnTemplate:          tmpl,
 		combineFQDNAnnotation: combineFqdnAnnotation,
+		enforceTemplate:       enforceTemplate,
 		publishInternal:       publishInternal,
 		publishHostIP:         publishHostIP,
 		serviceTypeFilter:     serviceTypes,
@@ -124,7 +126,11 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 
-		svcEndpoints := sc.endpoints(&svc, nodeTargets)
+		svcEndpoints := []*endpoint.Endpoint{}
+
+		if sc.enforceTemplate == false {
+			svcEndpoints = sc.endpoints(&svc, nodeTargets)
+		}
 
 		// process legacy annotations if no endpoints were returned and compatibility mode is enabled.
 		if len(svcEndpoints) == 0 && sc.compatibility != "" {

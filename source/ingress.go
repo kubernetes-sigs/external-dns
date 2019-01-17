@@ -43,10 +43,11 @@ type ingressSource struct {
 	annotationFilter      string
 	fqdnTemplate          *template.Template
 	combineFQDNAnnotation bool
+	enforceTemplate       bool
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool) (Source, error) {
+func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, enforceTemplate bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -66,6 +67,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		annotationFilter:      annotationFilter,
 		fqdnTemplate:          tmpl,
 		combineFQDNAnnotation: combineFqdnAnnotation,
+		enforceTemplate:       enforceTemplate,
 	}, nil
 }
 
@@ -92,7 +94,11 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 
-		ingEndpoints := endpointsFromIngress(&ing)
+		ingEndpoints := []*endpoint.Endpoint{}
+
+		if sc.enforceTemplate == false {
+			ingEndpoints = endpointsFromIngress(&ing)
+		}
 
 		// apply template if host is missing on ingress
 		if (sc.combineFQDNAnnotation || len(ingEndpoints) == 0) && sc.fqdnTemplate != nil {

@@ -70,6 +70,7 @@ func main() {
 		Namespace:                cfg.Namespace,
 		AnnotationFilter:         cfg.AnnotationFilter,
 		FQDNTemplate:             cfg.FQDNTemplate,
+		EnforceTemplate:          cfg.EnforceTemplate,
 		CombineFQDNAndAnnotation: cfg.CombineFQDNAndAnnotation,
 		Compatibility:            cfg.Compatibility,
 		PublishInternal:          cfg.PublishInternal,
