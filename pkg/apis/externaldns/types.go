@@ -61,6 +61,7 @@ type Config struct {
 	AWSBatchChangeSize       int
 	AWSBatchChangeInterval   time.Duration
 	AWSEvaluateTargetHealth  bool
+	AWSAPIRetries            int
 	AzureConfigFile          string
 	AzureResourceGroup       string
 	CloudflareProxied        bool
@@ -133,6 +134,7 @@ var defaultConfig = &Config{
 	AWSBatchChangeSize:       1000,
 	AWSBatchChangeInterval:   time.Second,
 	AWSEvaluateTargetHealth:  true,
+	AWSAPIRetries:            3,
 	AzureConfigFile:          "/etc/kubernetes/azure.json",
 	AzureResourceGroup:       "",
 	CloudflareProxied:        false,
@@ -248,6 +250,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("aws-batch-change-size", "When using the AWS provider, set the maximum number of changes that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.AWSBatchChangeSize)).IntVar(&cfg.AWSBatchChangeSize)
 	app.Flag("aws-batch-change-interval", "When using the AWS provider, set the interval between batch changes.").Default(defaultConfig.AWSBatchChangeInterval.String()).DurationVar(&cfg.AWSBatchChangeInterval)
 	app.Flag("aws-evaluate-target-health", "When using the AWS provider, set whether to evaluate the health of a DNS target (default: enabled, disable with --no-aws-evaluate-target-health)").Default(strconv.FormatBool(defaultConfig.AWSEvaluateTargetHealth)).BoolVar(&cfg.AWSEvaluateTargetHealth)
+	app.Flag("aws-api-retries", "When using the AWS provider, set the maximum number of retries for API calls before giving up.").Default(strconv.Itoa(defaultConfig.AWSAPIRetries)).IntVar(&cfg.AWSAPIRetries)
 	app.Flag("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure").Default(defaultConfig.AzureConfigFile).StringVar(&cfg.AzureConfigFile)
 	app.Flag("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (optional)").Default(defaultConfig.AzureResourceGroup).StringVar(&cfg.AzureResourceGroup)
 	app.Flag("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.CloudflareProxied)
