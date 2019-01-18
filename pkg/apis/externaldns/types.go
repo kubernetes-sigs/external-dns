@@ -57,10 +57,12 @@ type Config struct {
 	AlibabaCloudConfigFile   string
 	AlibabaCloudZoneType     string
 	AWSZoneType              string
+	AWSZoneTagFilter         []string
 	AWSAssumeRole            string
 	AWSBatchChangeSize       int
 	AWSBatchChangeInterval   time.Duration
 	AWSEvaluateTargetHealth  bool
+	AWSAPIRetries            int
 	AzureConfigFile          string
 	AzureResourceGroup       string
 	CloudflareProxied        bool
@@ -129,10 +131,12 @@ var defaultConfig = &Config{
 	DomainFilter:             []string{},
 	AlibabaCloudConfigFile:   "/etc/kubernetes/alibaba-cloud.json",
 	AWSZoneType:              "",
+	AWSZoneTagFilter:         []string{},
 	AWSAssumeRole:            "",
-	AWSBatchChangeSize:       4000,
+	AWSBatchChangeSize:       1000,
 	AWSBatchChangeInterval:   time.Second,
 	AWSEvaluateTargetHealth:  true,
+	AWSAPIRetries:            3,
 	AzureConfigFile:          "/etc/kubernetes/azure.json",
 	AzureResourceGroup:       "",
 	CloudflareProxied:        false,
@@ -164,7 +168,7 @@ var defaultConfig = &Config{
 	ExoscaleEndpoint:         "https://api.exoscale.ch/dns",
 	ExoscaleAPIKey:           "",
 	ExoscaleAPISecret:        "",
-	CRDSourceAPIVersion:      "externaldns.k8s.io/v1alpha",
+	CRDSourceAPIVersion:      "externaldns.k8s.io/v1alpha1",
 	CRDSourceKind:            "DNSEndpoint",
 	ServiceTypeFilter:        []string{},
 	RFC2136Host:              "",
@@ -244,10 +248,12 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("alibaba-cloud-config-file", "When using the Alibaba Cloud provider, specify the Alibaba Cloud configuration file (required when --provider=alibabacloud").Default(defaultConfig.AlibabaCloudConfigFile).StringVar(&cfg.AlibabaCloudConfigFile)
 	app.Flag("alibaba-cloud-zone-type", "When using the Alibaba Cloud provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AlibabaCloudZoneType).EnumVar(&cfg.AlibabaCloudZoneType, "", "public", "private")
 	app.Flag("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AWSZoneType).EnumVar(&cfg.AWSZoneType, "", "public", "private")
+	app.Flag("aws-zone-tags", "When using the AWS provider, filter for zones with these tags").Default("").StringsVar(&cfg.AWSZoneTagFilter)
 	app.Flag("aws-assume-role", "When using the AWS provider, assume this IAM role. Useful for hosted zones in another AWS account. Specify the full ARN, e.g. `arn:aws:iam::123455567:role/external-dns` (optional)").Default(defaultConfig.AWSAssumeRole).StringVar(&cfg.AWSAssumeRole)
 	app.Flag("aws-batch-change-size", "When using the AWS provider, set the maximum number of changes that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.AWSBatchChangeSize)).IntVar(&cfg.AWSBatchChangeSize)
 	app.Flag("aws-batch-change-interval", "When using the AWS provider, set the interval between batch changes.").Default(defaultConfig.AWSBatchChangeInterval.String()).DurationVar(&cfg.AWSBatchChangeInterval)
 	app.Flag("aws-evaluate-target-health", "When using the AWS provider, set whether to evaluate the health of a DNS target (default: enabled, disable with --no-aws-evaluate-target-health)").Default(strconv.FormatBool(defaultConfig.AWSEvaluateTargetHealth)).BoolVar(&cfg.AWSEvaluateTargetHealth)
+	app.Flag("aws-api-retries", "When using the AWS provider, set the maximum number of retries for API calls before giving up.").Default(strconv.Itoa(defaultConfig.AWSAPIRetries)).IntVar(&cfg.AWSAPIRetries)
 	app.Flag("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure").Default(defaultConfig.AzureConfigFile).StringVar(&cfg.AzureConfigFile)
 	app.Flag("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (optional)").Default(defaultConfig.AzureResourceGroup).StringVar(&cfg.AzureResourceGroup)
 	app.Flag("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.CloudflareProxied)

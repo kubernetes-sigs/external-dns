@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/nesv/go-dynect/dynect"
 	"github.com/stretchr/testify/assert"
@@ -169,22 +168,6 @@ func TestDynMerge_NoUpdateIfTTLUnchanged(t *testing.T) {
 	assert.Equal(t, 0, len(merged))
 }
 
-func TestDyn_extractTarget(t *testing.T) {
-	tests := []struct {
-		recordType string
-		block      *dynect.DataBlock
-		target     string
-	}{
-		{"A", &dynect.DataBlock{Address: "address"}, "address"},
-		{"CNAME", &dynect.DataBlock{CName: "name."}, "name"}, // note trailing dot is trimmed for CNAMEs
-		{"TXT", &dynect.DataBlock{TxtData: "text."}, "text."},
-	}
-
-	for _, tc := range tests {
-		assert.Equal(t, tc.target, extractTarget(tc.recordType, tc.block))
-	}
-}
-
 func TestDyn_endpointToRecord(t *testing.T) {
 	tests := []struct {
 		ep        *endpoint.Endpoint
@@ -262,42 +245,6 @@ func TestDyn_fixMissingTTL(t *testing.T) {
 
 	// apply min TTL
 	assert.Equal(t, "1992", fixMissingTTL(endpoint.TTL(111), 1992))
-}
-
-func TestDyn_cachePut(t *testing.T) {
-	c := cache{
-		contents: make(map[string]*entry),
-	}
-
-	c.Put("link", &endpoint.Endpoint{
-		DNSName:    "name",
-		Targets:    endpoint.Targets{"target"},
-		RecordTTL:  endpoint.TTL(10000),
-		RecordType: "A",
-	})
-
-	found := c.Get("link")
-	assert.NotNil(t, found)
-}
-
-func TestDyn_cachePutExpired(t *testing.T) {
-	c := cache{
-		contents: make(map[string]*entry),
-	}
-
-	c.Put("link", &endpoint.Endpoint{
-		DNSName:    "name",
-		Targets:    endpoint.Targets{"target"},
-		RecordTTL:  endpoint.TTL(0),
-		RecordType: "A",
-	})
-
-	time.Sleep(2 * time.Second)
-
-	found := c.Get("link")
-	assert.Nil(t, found)
-
-	assert.Nil(t, c.Get("no-such-records"))
 }
 
 func TestDyn_Snapshot(t *testing.T) {

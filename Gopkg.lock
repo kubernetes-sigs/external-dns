@@ -431,11 +431,12 @@
   version = "1.1.4"
 
 [[projects]]
-  digest = "1:1c88ec29544b281964ed7a9a365b2802a523cd06c50cdee87eb3eec89cd864f4"
+  branch = "master"
+  digest = "1:fd50e2c52f29bb81f9a172f0d5aee1438b201ca0502ff3a20ebbe9629e274875"
   name = "github.com/kubernetes/repo-infra"
   packages = ["verify/boilerplate/test"]
   pruneopts = ""
-  revision = "c2f9667a4c29e70a39b0e89db2d4f0cab907dbee"
+  revision = "1bcb110c8726cee477939f507f4760a95e155347"
 
 [[projects]]
   digest = "1:7c23a751ce2f84663fa411acb87eae0da2d09c39a8e99b08bd8f65fae75d8928"
@@ -583,6 +584,14 @@
   ]
   pruneopts = ""
   revision = "a6e9df898b1336106c743392c48ee0b71f5c4efa"
+
+[[projects]]
+  branch = "master"
+  digest = "1:bb2ccb2d56cbafdec58af0f473f45304e19876f09fa671960ca87802b656a9c0"
+  name = "github.com/sanyu/dynectsoap"
+  packages = ["dynectsoap"]
+  pruneopts = ""
+  revision = "b83de5edc4e022f22903eeb3b428d2f39fb740e5"
 
 [[projects]]
   digest = "1:7f569d906bdd20d906b606415b7d794f798f91a62fcfb6a4daa6d50690fb7a3f"
@@ -1148,6 +1157,7 @@
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",
+    "github.com/sanyu/dynectsoap/dynectsoap",
     "github.com/sirupsen/logrus",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/mock",
