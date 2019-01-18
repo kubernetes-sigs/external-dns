@@ -40,11 +40,29 @@ var (
 			Help: "Number of Source errors.",
 		},
 	)
+	sourceEndpointsTotal = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "source",
+			Name:      "endpoints_total",
+			Help:      "Number of Endpoints in all sources",
+		},
+	)
+	registryEndpointsTotal = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "registry",
+			Name:      "endpoints_total",
+			Help:      "Number of Endpoints in the registry",
+		},
+	)
 )
 
 func init() {
 	prometheus.MustRegister(registryErrors)
 	prometheus.MustRegister(sourceErrors)
+	prometheus.MustRegister(sourceEndpointsTotal)
+	prometheus.MustRegister(registryEndpointsTotal)
 }
 
 // Controller is responsible for orchestrating the different components.
@@ -69,12 +87,14 @@ func (c *Controller) RunOnce() error {
 		registryErrors.Inc()
 		return err
 	}
+	registryEndpointsTotal.Set(float64(len(records)))
 
 	endpoints, err := c.Source.Endpoints()
 	if err != nil {
 		sourceErrors.Inc()
 		return err
 	}
+	sourceEndpointsTotal.Set(float64(len(endpoints)))
 
 	plan := &plan.Plan{
 		Policies: []plan.Policy{c.Policy},

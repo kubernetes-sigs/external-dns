@@ -26,6 +26,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/nesv/go-dynect/dynect"
+	"github.com/sanyu/dynectsoap/dynectsoap"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
@@ -34,9 +35,6 @@ import (
 const (
 	// 10 minutes default timeout if not configured using flags
 	dynDefaultTTL = 600
-	// can store 20000 entries globally, that's about 4MB of memory
-	// may be made configurable in the future but 20K records seems like enough for a few zones
-	cacheMaxSize = 20000
 
 	// when rate limit is hit retry up to 5 times after sleep 1m between retries
 	dynMaxRetriesOnErrRateLimited = 5
@@ -51,48 +49,8 @@ const (
 	restAPIPrefix = "/REST/"
 )
 
-// A simple non-thread-safe cache with TTL. The TTL of the records is used here to
-// This cache is used to save on requests to DynAPI
-type cache struct {
-	contents map[string]*entry
-}
-
-type entry struct {
-	expires int64
-	ep      *endpoint.Endpoint
-}
-
-func (c *cache) Put(link string, ep *endpoint.Endpoint) {
-	// flush the whole cache on overflow
-	if len(c.contents) >= cacheMaxSize {
-		log.Debugf("Flushing cache")
-		c.contents = make(map[string]*entry)
-	}
-
-	c.contents[link] = &entry{
-		ep:      ep,
-		expires: unixNow() + int64(ep.RecordTTL),
-	}
-}
-
 func unixNow() int64 {
 	return int64(time.Now().Unix())
-}
-
-func (c *cache) Get(link string) *endpoint.Endpoint {
-	result, ok := c.contents[link]
-	if !ok {
-		return nil
-	}
-
-	now := unixNow()
-
-	if result.expires < now {
-		delete(c.contents, link)
-		return nil
-	}
-
-	return result.ep
 }
 
 // DynConfig hold connection parameters to dyn.com and internal state
@@ -145,7 +103,6 @@ func (snap *ZoneSnapshot) StoreRecordsForSerial(zone string, serial int, records
 // DynProvider is the actual interface impl.
 type dynProviderState struct {
 	DynConfig
-	Cache              *cache
 	LastLoginErrorTime int64
 
 	ZoneSnapshot *ZoneSnapshot
@@ -186,9 +143,6 @@ type ZonePublishResponse struct {
 func NewDynProvider(config DynConfig) (Provider, error) {
 	return &dynProviderState{
 		DynConfig: config,
-		Cache: &cache{
-			contents: make(map[string]*entry),
-		},
 		ZoneSnapshot: &ZoneSnapshot{
 			endpoints: map[string][]*endpoint.Endpoint{},
 			serials:   map[string]int{},
@@ -277,27 +231,6 @@ func merge(updateOld, updateNew []*endpoint.Endpoint) []*endpoint.Endpoint {
 	return result
 }
 
-// extractTarget populates the correct field given a record type.
-// See dynect.DataBlock comments for details. Empty response means nothing
-// was populated - basically an error
-func extractTarget(recType string, data *dynect.DataBlock) string {
-	result := ""
-	if recType == endpoint.RecordTypeA {
-		result = data.Address
-	}
-
-	if recType == endpoint.RecordTypeCNAME {
-		result = data.CName
-		result = strings.TrimSuffix(result, ".")
-	}
-
-	if recType == endpoint.RecordTypeTXT {
-		result = data.TxtData
-	}
-
-	return result
-}
-
 func apiRetryLoop(f func() error) error {
 	var err error
 	for i := 0; i < dynMaxRetriesOnErrRateLimited; i++ {
@@ -315,40 +248,48 @@ func apiRetryLoop(f func() error) error {
 	return err
 }
 
-// recordLinkToEndpoint makes an Endpoint given a resource link optinally making a remote call if a cached entry is expired
-func (d *dynProviderState) recordLinkToEndpoint(client *dynect.Client, recordLink string) (*endpoint.Endpoint, error) {
-	result := d.Cache.Get(recordLink)
-	if result != nil {
-		log.Infof("Using cached endpoint for %s: %+v", recordLink, result)
-		return result, nil
+func (d *dynProviderState) allRecordsToEndpoints(records *dynectsoap.GetAllRecordsResponseType) []*endpoint.Endpoint {
+	result := []*endpoint.Endpoint{}
+	//Convert each record to an endpoint
+
+	//Process A Records
+	for _, rec := range records.Data.A_records {
+		ep := &endpoint.Endpoint{
+			DNSName:    rec.Fqdn,
+			RecordTTL:  endpoint.TTL(rec.Ttl),
+			RecordType: rec.Record_type,
+			Targets:    endpoint.Targets{rec.Rdata.Address},
+		}
+		log.Debugf("A record: %v", *ep)
+		result = append(result, ep)
 	}
 
-	rec := dynect.RecordResponse{}
-
-	err := apiRetryLoop(func() error {
-		return client.Do("GET", recordLink, nil, &rec)
-	})
-
-	if err != nil {
-		return nil, err
+	//Process CNAME Records
+	for _, rec := range records.Data.Cname_records {
+		ep := &endpoint.Endpoint{
+			DNSName:    rec.Fqdn,
+			RecordTTL:  endpoint.TTL(rec.Ttl),
+			RecordType: rec.Record_type,
+			Targets:    endpoint.Targets{strings.TrimSuffix(rec.Rdata.Cname, ".")},
+		}
+		log.Debugf("CNAME record: %v", *ep)
+		result = append(result, ep)
 	}
 
-	// ignore all records but the types supported by external-
-	target := extractTarget(rec.Data.RecordType, &rec.Data.RData)
-	if target == "" {
-		return nil, nil
+	//Process TXT Records
+	for _, rec := range records.Data.Txt_records {
+		ep := &endpoint.Endpoint{
+			DNSName:    rec.Fqdn,
+			RecordTTL:  endpoint.TTL(rec.Ttl),
+			RecordType: rec.Record_type,
+			Targets:    endpoint.Targets{rec.Rdata.Txtdata},
+		}
+		log.Debugf("TXT record: %v", *ep)
+		result = append(result, ep)
 	}
 
-	result = &endpoint.Endpoint{
-		DNSName:    rec.Data.FQDN,
-		RecordTTL:  endpoint.TTL(rec.Data.TTL),
-		RecordType: rec.Data.RecordType,
-		Targets:    endpoint.Targets{target},
-	}
+	return result
 
-	log.Debugf("Fetched new endpoint for %s: %+v", recordLink, result)
-	d.Cache.Put(recordLink, result)
-	return result, nil
 }
 
 func errorOrValue(err error, value interface{}) interface{} {
@@ -385,6 +326,72 @@ func (d *dynProviderState) fetchZoneSerial(client *dynect.Client, zone string) (
 	}
 
 	return resp.Data.Serial, nil
+}
+
+//Use SOAP to fetch all records with a single call
+func (d *dynProviderState) fetchAllRecordsInZone(zone string) (*dynectsoap.GetAllRecordsResponseType, error) {
+	var err error
+	client := dynectsoap.NewClient("https://api2.dynect.net/SOAP/")
+	service := dynectsoap.NewDynect(client)
+
+	sessionRequest := dynectsoap.SessionLoginRequestType{
+		Customer_name:  d.CustomerName,
+		User_name:      d.Username,
+		Password:       d.Password,
+		Fault_incompat: 0,
+	}
+	resp := dynectsoap.SessionLoginResponseType{}
+	err = apiRetryLoop(func() error {
+		return service.Do(&sessionRequest, &resp)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	token := resp.Data.Token
+
+	logoutRequest := dynectsoap.SessionLogoutRequestType{
+		Token:          token,
+		Fault_incompat: 0,
+	}
+	logoutResponse := dynectsoap.SessionLogoutResponseType{}
+	defer service.Do(&logoutRequest, &logoutResponse)
+
+	req := dynectsoap.GetAllRecordsRequestType{
+		Token:          token,
+		Zone:           zone,
+		Fault_incompat: 0,
+	}
+	records := dynectsoap.GetAllRecordsResponseType{}
+	err = apiRetryLoop(func() error {
+		return service.Do(&req, &records)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	log.Debugf("Got all Records, status is %s", records.Status)
+
+	if strings.ToLower(records.Status) == "incomplete" {
+		jobRequest := dynectsoap.GetJobRequestType{
+			Token:          token,
+			Job_id:         records.Job_id,
+			Fault_incompat: 0,
+		}
+
+		jobResults := dynectsoap.GetJobResponseType{}
+		err = apiRetryLoop(func() error {
+			return service.GetJobRetry(&jobRequest, &jobResults)
+		})
+		if err != nil {
+			return nil, err
+		}
+		return jobResults.Data.(*dynectsoap.GetAllRecordsResponseType), nil
+	}
+
+	return &records, nil
+
 }
 
 // fetchAllRecordLinksInZone list all records in a zone with a single call. Records not matched by the
@@ -611,22 +618,14 @@ func (d *dynProviderState) Records() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 
-		recordLinks, err := d.fetchAllRecordLinksInZone(client, zone)
+		//Fetch All Records
+		records, err := d.fetchAllRecordsInZone(zone)
 		if err != nil {
 			return nil, err
 		}
+		relevantRecords = d.allRecordsToEndpoints(records)
 
-		log.Infof("Found %d relevant records found in zone %s: %+v", len(recordLinks), zone, recordLinks)
-		for _, link := range recordLinks {
-			ep, err := d.recordLinkToEndpoint(client, link)
-			if err != nil {
-				return nil, err
-			}
-
-			if ep != nil {
-				relevantRecords = append(relevantRecords, ep)
-			}
-		}
+		log.Debugf("Relevant records %+v", relevantRecords)
 
 		d.ZoneSnapshot.StoreRecordsForSerial(zone, serial, relevantRecords)
 		log.Infof("Stored %d records for %s@%d", len(relevantRecords), zone, serial)
