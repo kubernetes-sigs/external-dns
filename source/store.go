@@ -43,7 +43,7 @@ type Config struct {
 	FQDNTemplate             string
 	CombineFQDNAndAnnotation bool
 	Compatibility            string
-	CreateServiceSource      bool
+	CreateServiceRecord      bool
 	PublishInternal          bool
 	PublishHostIP            bool
 	ConnectorServer          string
@@ -113,7 +113,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewServiceSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.CreateServiceSource, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.ServiceTypeFilter)
+		return NewServiceSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.CreateServiceRecord, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.ServiceTypeFilter)
 	case "ingress":
 		client, err := p.KubeClient()
 		if err != nil {
