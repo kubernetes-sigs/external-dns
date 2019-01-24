@@ -120,6 +120,6 @@ ignored = ["github.com/kubernetes/repo-infra/kazel"]
   name = "github.com/google/go-cmp"
   version = "0.2.0"
 
-[constraint]]
+[[constraint]]
   name = "github.com/sanyu/dynectsoap"
   branch = "master"
