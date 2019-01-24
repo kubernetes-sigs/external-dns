@@ -43,7 +43,7 @@ type rfc2136Provider struct {
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter DomainFilter
 	dryRun       bool
-	actions      rfc1236Actions
+	actions      rfc2136Actions
 }
 
 var (
@@ -56,13 +56,13 @@ var (
 	}
 )
 
-type rfc1236Actions interface {
+type rfc2136Actions interface {
 	SendMessage(msg *dns.Msg) error
 	IncomeTransfer(m *dns.Msg, a string) (env chan *dns.Envelope, err error)
 }
 
 // NewRfc2136Provider is a factory function for OpenStack rfc2136 providers
-func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter DomainFilter, dryRun bool, actions rfc1236Actions) (Provider, error) {
+func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter DomainFilter, dryRun bool, actions rfc2136Actions) (Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok {
 		return nil, errors.Errorf("%s is not supported TSIG algorithm", secretAlg)
@@ -240,25 +240,26 @@ func (r rfc2136Provider) UpdateRecord(ep *endpoint.Endpoint) error {
 
 func (r rfc2136Provider) AddRecord(ep *endpoint.Endpoint) error {
 	log.Debugf("AddRecord.ep=%s", ep)
+	for _, target := range ep.Targets {
+		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ep.RecordTTL, ep.RecordType, target)
+		log.Debugf("Adding RR: %s", newRR)
 
-	newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ep.RecordTTL, ep.RecordType, ep.Targets)
-	log.Debugf("Adding RR: %s", newRR)
+		rr, err := dns.NewRR(newRR)
+		if err != nil {
+			return fmt.Errorf("failed to build RR: %v", err)
+		}
 
-	rr, err := dns.NewRR(newRR)
-	if err != nil {
-		return fmt.Errorf("failed to build RR: %v", err)
-	}
+		rrs := make([]dns.RR, 1)
+		rrs[0] = rr
 
-	rrs := make([]dns.RR, 1)
-	rrs[0] = rr
+		m := new(dns.Msg)
+		m.SetUpdate(r.zoneName)
+		m.Insert(rrs)
 
-	m := new(dns.Msg)
-	m.SetUpdate(r.zoneName)
-	m.Insert(rrs)
-
-	err = r.actions.SendMessage(m)
-	if err != nil {
-		return fmt.Errorf("RFC2136 query failed: %v", err)
+		err = r.actions.SendMessage(m)
+		if err != nil {
+			return fmt.Errorf("RFC2136 query failed: %v", err)
+		}
 	}
 
 	return nil
@@ -293,6 +294,7 @@ func (r rfc2136Provider) RemoveRecord(ep *endpoint.Endpoint) error {
 func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 	if r.dryRun {
 		log.Debugf("SendMessage.skipped")
+		return nil
 	}
 	log.Debugf("SendMessage")
 

@@ -17,6 +17,7 @@ limitations under the License.
 package plan
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
@@ -79,8 +80,12 @@ type planTableRow struct {
 	candidates []*endpoint.Endpoint
 }
 
+func (t planTableRow) String() string {
+	return fmt.Sprintf("planTableRow{current=%v, candidates=%v}", t.current, t.candidates)
+}
+
 func (t planTable) addCurrent(e *endpoint.Endpoint) {
-	dnsName := sanitizeDNSName(e.DNSName)
+	dnsName := normalizeDNSName(e.DNSName)
 	if _, ok := t.rows[dnsName]; !ok {
 		t.rows[dnsName] = &planTableRow{}
 	}
@@ -88,7 +93,7 @@ func (t planTable) addCurrent(e *endpoint.Endpoint) {
 }
 
 func (t planTable) addCandidate(e *endpoint.Endpoint) {
-	dnsName := sanitizeDNSName(e.DNSName)
+	dnsName := normalizeDNSName(e.DNSName)
 	if _, ok := t.rows[dnsName]; !ok {
 		t.rows[dnsName] = &planTableRow{}
 	}
@@ -209,8 +214,12 @@ func filterRecordsForPlan(records []*endpoint.Endpoint) []*endpoint.Endpoint {
 	return filtered
 }
 
-// sanitizeDNSName checks if the DNS name is correct
-// for now it only removes space and lower case
-func sanitizeDNSName(dnsName string) string {
-	return strings.TrimSpace(strings.ToLower(dnsName))
+// normalizeDNSName converts a DNS name to a canonical form, so that we can use string equality
+// it: removes space, converts to lower case, ensures there is a trailing dot
+func normalizeDNSName(dnsName string) string {
+	s := strings.TrimSpace(strings.ToLower(dnsName))
+	if !strings.HasSuffix(s, ".") {
+		s += "."
+	}
+	return s
 }

@@ -360,9 +360,12 @@
   version = "1.1.4"
 
 [[projects]]
+  branch = "master"
+  digest = "1:fd50e2c52f29bb81f9a172f0d5aee1438b201ca0502ff3a20ebbe9629e274875"
   name = "github.com/kubernetes/repo-infra"
   packages = ["verify/boilerplate/test"]
-  revision = "c2f9667a4c29e70a39b0e89db2d4f0cab907dbee"
+  pruneopts = ""
+  revision = "1bcb110c8726cee477939f507f4760a95e155347"
 
 [[projects]]
   name = "github.com/linki/instrumented_http"
@@ -476,6 +479,13 @@
     "xfs"
   ]
   revision = "a6e9df898b1336106c743392c48ee0b71f5c4efa"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/sanyu/dynectsoap"
+  packages = ["dynectsoap"]
+  pruneopts = ""
+  revision = "b83de5edc4e022f22903eeb3b428d2f39fb740e5"
 
 [[projects]]
   name = "github.com/satori/go.uuid"
@@ -942,6 +952,76 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e4a3503a3672ad47f8e8f73bc26322fd1a01e2887675a444a87fee626f42da42"
+  input-imports = [
+    "cloud.google.com/go/compute/metadata",
+    "github.com/Azure/azure-sdk-for-go/arm/dns",
+    "github.com/Azure/go-autorest/autorest",
+    "github.com/Azure/go-autorest/autorest/adal",
+    "github.com/Azure/go-autorest/autorest/azure",
+    "github.com/Azure/go-autorest/autorest/to",
+    "github.com/alecthomas/kingpin",
+    "github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests",
+    "github.com/aliyun/alibaba-cloud-sdk-go/services/alidns",
+    "github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz",
+    "github.com/aws/aws-sdk-go/aws",
+    "github.com/aws/aws-sdk-go/aws/credentials/stscreds",
+    "github.com/aws/aws-sdk-go/aws/request",
+    "github.com/aws/aws-sdk-go/aws/session",
+    "github.com/aws/aws-sdk-go/service/route53",
+    "github.com/aws/aws-sdk-go/service/servicediscovery",
+    "github.com/cloudflare/cloudflare-go",
+    "github.com/coreos/etcd/clientv3",
+    "github.com/denverdino/aliyungo/metadata",
+    "github.com/digitalocean/godo",
+    "github.com/digitalocean/godo/context",
+    "github.com/dnsimple/dnsimple-go/dnsimple",
+    "github.com/exoscale/egoscale",
+    "github.com/ffledgling/pdns-go",
+    "github.com/gophercloud/gophercloud",
+    "github.com/gophercloud/gophercloud/openstack",
+    "github.com/gophercloud/gophercloud/openstack/dns/v2/recordsets",
+    "github.com/gophercloud/gophercloud/openstack/dns/v2/zones",
+    "github.com/gophercloud/gophercloud/pagination",
+    "github.com/infobloxopen/infoblox-go-client",
+    "github.com/kubernetes/repo-infra/verify/boilerplate/test",
+    "github.com/linki/instrumented_http",
+    "github.com/linode/linodego",
+    "github.com/miekg/dns",
+    "github.com/nesv/go-dynect/dynect",
+    "github.com/oracle/oci-go-sdk/common",
+    "github.com/oracle/oci-go-sdk/dns",
+    "github.com/pkg/errors",
+    "github.com/prometheus/client_golang/prometheus",
+    "github.com/prometheus/client_golang/prometheus/promhttp",
+    "github.com/sanyu/dynectsoap/dynectsoap",
+    "github.com/sirupsen/logrus",
+    "github.com/stretchr/testify/assert",
+    "github.com/stretchr/testify/mock",
+    "github.com/stretchr/testify/require",
+    "github.com/stretchr/testify/suite",
+    "golang.org/x/net/context",
+    "golang.org/x/oauth2",
+    "golang.org/x/oauth2/google",
+    "google.golang.org/api/dns/v1",
+    "google.golang.org/api/googleapi",
+    "gopkg.in/yaml.v2",
+    "istio.io/api/networking/v1alpha3",
+    "istio.io/istio/pilot/pkg/config/kube/crd",
+    "istio.io/istio/pilot/pkg/model",
+    "k8s.io/api/core/v1",
+    "k8s.io/api/extensions/v1beta1",
+    "k8s.io/apimachinery/pkg/api/errors",
+    "k8s.io/apimachinery/pkg/apis/meta/v1",
+    "k8s.io/apimachinery/pkg/labels",
+    "k8s.io/apimachinery/pkg/runtime",
+    "k8s.io/apimachinery/pkg/runtime/schema",
+    "k8s.io/apimachinery/pkg/runtime/serializer",
+    "k8s.io/client-go/kubernetes",
+    "k8s.io/client-go/kubernetes/fake",
+    "k8s.io/client-go/plugin/pkg/client/auth",
+    "k8s.io/client-go/rest",
+    "k8s.io/client-go/rest/fake",
+    "k8s.io/client-go/tools/clientcmd",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -69,7 +69,7 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, kube
 	}
 	apiResourceList, err := client.Discovery().ServerResourcesForGroupVersion(groupVersion.String())
 	if err != nil {
-		return nil, nil, fmt.Errorf("error listing resources in GroupVersion %q", groupVersion.String())
+		return nil, nil, fmt.Errorf("error listing resources in GroupVersion %q: %s", groupVersion.String(), err)
 	}
 
 	var crdAPIResource *metav1.APIResource
@@ -118,6 +118,11 @@ func (cs *crdSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 	for _, dnsEndpoint := range result.Items {
 		endpoints = append(endpoints, dnsEndpoint.Spec.Endpoints...)
+
+		if dnsEndpoint.Status.ObservedGeneration == dnsEndpoint.Generation {
+			continue
+		}
+
 		dnsEndpoint.Status.ObservedGeneration = dnsEndpoint.Generation
 		// Update the ObservedGeneration
 		_, err = cs.UpdateStatus(&dnsEndpoint)
