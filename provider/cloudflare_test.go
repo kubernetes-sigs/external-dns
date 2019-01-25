@@ -71,6 +71,7 @@ func (m *mockCloudFlareClient) ListZonesContext(ctx context.Context, opts ...clo
 			{ID: "1234567890", Name: "ext-dns-test.zalando.to."},
 			{ID: "1234567891", Name: "foo.com."}},
 		ResultInfo: cloudflare.ResultInfo{
+			Page:       1,
 			TotalPages: 1,
 		},
 	}, nil
