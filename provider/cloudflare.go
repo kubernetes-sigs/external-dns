@@ -128,6 +128,7 @@ func NewCloudFlareProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter,
 		DryRun:       dryRun,
 		PaginationOptions: cloudflare.PaginationOptions{
 			PerPage: zonesPerPage,
+			Page:    1,
 		},
 	}
 	return provider, nil
@@ -141,7 +142,15 @@ func (p *CloudFlareProvider) Zones() ([]cloudflare.Zone, error) {
 	if err != nil {
 		return nil, err
 	}
-	for pages := 0; pages < zonesResponse.ResultInfo.TotalPages; pages++ {
+	for page := zonesResponse.ResultInfo.Page; page <= zonesResponse.ResultInfo.TotalPages; page++ {
+		p.PaginationOptions = cloudflare.PaginationOptions{
+			PerPage: p.PaginationOptions.PerPage,
+			Page:    page,
+		}
+		zonesResponse, err := p.Client.ListZonesContext(ctx, cloudflare.WithPagination(p.PaginationOptions))
+		if err != nil {
+			return nil, err
+		}
 		for _, zone := range zonesResponse.Result {
 			if !p.domainFilter.Match(zone.Name) {
 				continue
