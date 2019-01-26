@@ -236,6 +236,9 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				endpoints = append(endpoints, ep)
 			}
 		}
+		// Route53 is limite to five requests per second per AWS account
+		// Make sure than we do not do more than 4 per second here
+		time.Sleep(250 * time.Millisecond)
 
 		return true
 	}
