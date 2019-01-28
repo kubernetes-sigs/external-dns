@@ -1,3 +1,36 @@
+## v0.5.10 - 2019-01-28
+
+  - Docs: Improve documentation regarding Alias (#868) @alexnederlof
+  - Adds a new flag `--aws-api-retries` which allows overriding the number of retries (#858) @viafoura
+  - Docs: Make awscli commands use JSON output (#849) @ifosch
+  - Docs: Add missing apiVersion to Ingress resource (#847) @shlao
+  - Fix for AWS private DNS zone (#844) @xianlubird
+  - Add support for AWS ELBs in eu-north-1 (#843) @argoyle
+  - Create a SECURITY_CONTACTS file (#842) @njuettner
+  - Use correct product name for Google Cloud DNS (#841) @seils
+  - Change default AWSBatchChangeSize to 1000 (#839) @medzin
+  - Fix dry-run mode in rfc2136 provider (#838) @lachlancooper
+  - Fix typos in rfc2136 provider (#837) @lachlancooper
+  - rfc2136 provider: one IP Target per RRSET (#836) @ivanfilippov
+  - Normalize DNS names during planning (#833) @justinsb
+  - Implement Stringer for planTableRow (#832) @justinsb
+  - Docs: Better security granularity concerning external dns service principal for Azure (#829) @DenisBiondic
+  - Docs: Update links in Cloudflare docs (#824) @PascalKu
+  - Docs: Add metrics info to FAQ (#822) @zachyam
+  - Docs: Update nameserver IPs in coredns.md (#820) @mozhuli
+  - Docs: Fix commands to cleanup Cloudflare (#818) @acrogenesis
+  - Avoid unnecessary updating for CRD resource (#810) @xunpan
+  - Fix issues with CoreDNS provider and more than 1 targets (#807) @xunpan
+  - AWS: Add zone tag filter (#804) @csrwng
+  - Docs: Update CoreDNS tutorial with RBAC manifest (#803) @Lujeni
+  - Use SOAP API to improve DYN's provider's performance (#799) @sanyu
+  - Expose managed resources and records as metrics (#793) @linki
+  - Docs: Updating Azure tutorial (#788) @pelithne
+  - Improve errors in Records() of Infoblox provider (#785) @dsbrng25b
+  - Change default apiVersion of CRD Source (#774) @dsbrng25b
+  - Allow setting Cloudflare proxying on a per-Ingress basis (#650) @eswets
+  - Support A record for multiple IPs for headless services (#645) @toshipp
+
 ## v0.5.9 - 2018-11-22
 
   - Core: Update delivery.yaml to new format (#782) @linki
