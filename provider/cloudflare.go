@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -55,6 +56,7 @@ type cloudFlareDNS interface {
 	UserDetails() (cloudflare.User, error)
 	ZoneIDByName(zoneName string) (string, error)
 	ListZones(zoneID ...string) ([]cloudflare.Zone, error)
+	ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error)
 	DNSRecords(zoneID string, rr cloudflare.DNSRecord) ([]cloudflare.DNSRecord, error)
 	CreateDNSRecord(zoneID string, rr cloudflare.DNSRecord) (*cloudflare.DNSRecordResponse, error)
 	DeleteDNSRecord(zoneID, recordID string) error
@@ -91,14 +93,19 @@ func (z zoneService) DeleteDNSRecord(zoneID, recordID string) error {
 	return z.service.DeleteDNSRecord(zoneID, recordID)
 }
 
+func (z zoneService) ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error) {
+	return z.service.ListZonesContext(ctx, opts...)
+}
+
 // CloudFlareProvider is an implementation of Provider for CloudFlare DNS.
 type CloudFlareProvider struct {
 	Client cloudFlareDNS
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter     DomainFilter
-	zoneIDFilter     ZoneIDFilter
-	proxiedByDefault bool
-	DryRun           bool
+	domainFilter      DomainFilter
+	zoneIDFilter      ZoneIDFilter
+	proxiedByDefault  bool
+	DryRun            bool
+	PaginationOptions cloudflare.PaginationOptions
 }
 
 // cloudFlareChange differentiates between ChangActions
@@ -108,7 +115,7 @@ type cloudFlareChange struct {
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, proxiedByDefault bool, dryRun bool) (*CloudFlareProvider, error) {
+func NewCloudFlareProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zonesPerPage int, proxiedByDefault bool, dryRun bool) (*CloudFlareProvider, error) {
 	// initialize via API email and API key and returns new API object
 	config, err := cloudflare.New(os.Getenv("CF_API_KEY"), os.Getenv("CF_API_EMAIL"))
 	if err != nil {
@@ -121,6 +128,10 @@ func NewCloudFlareProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter,
 		zoneIDFilter:     zoneIDFilter,
 		proxiedByDefault: proxiedByDefault,
 		DryRun:           dryRun,
+		PaginationOptions: cloudflare.PaginationOptions{
+			PerPage: zonesPerPage,
+			Page:    1,
+		},
 	}
 	return provider, nil
 }
@@ -128,24 +139,30 @@ func NewCloudFlareProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter,
 // Zones returns the list of hosted zones.
 func (p *CloudFlareProvider) Zones() ([]cloudflare.Zone, error) {
 	result := []cloudflare.Zone{}
+	ctx := context.TODO()
+	p.PaginationOptions.Page = 1
 
-	zones, err := p.Client.ListZones()
-	if err != nil {
-		return nil, err
-	}
-
-	for _, zone := range zones {
-		if !p.domainFilter.Match(zone.Name) {
-			continue
+	for {
+		zonesResponse, err := p.Client.ListZonesContext(ctx, cloudflare.WithPagination(p.PaginationOptions))
+		if err != nil {
+			return nil, err
 		}
 
-		if !p.zoneIDFilter.Match(zone.ID) {
-			continue
+		for _, zone := range zonesResponse.Result {
+			if !p.domainFilter.Match(zone.Name) {
+				continue
+			}
+
+			if !p.zoneIDFilter.Match(zone.ID) {
+				continue
+			}
+			result = append(result, zone)
 		}
-
-		result = append(result, zone)
+		if p.PaginationOptions.Page == zonesResponse.ResultInfo.TotalPages {
+			break
+		}
+		p.PaginationOptions.Page++
 	}
-
 	return result, nil
 }
 
