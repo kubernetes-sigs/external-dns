@@ -244,10 +244,10 @@ an instance of a ingress controller. Let's assume you have two ingress controlle
 then you can start two ExternalDNS providers one with `--annotation-filter=kubernetes.io/ingress.class=nginx-internal`
 and one with `--annotation-filter=kubernetes.io/ingress.class=nginx-external`.
 
-### Can external-dns manage(add/remove) records in a hosted zone which is setup in different aws account.
+### Can external-dns manage(add/remove) records in a hosted zone which is setup in different AWS account?
 
-yes, give it the correct cross-account/assume-role permissions and use the `--aws-assume-role` flag https://github.com/kubernetes-incubator/external-dns/pull/524#issue-181256561
+Yes, give it the correct cross-account/assume-role permissions and use the `--aws-assume-role` flag https://github.com/kubernetes-incubator/external-dns/pull/524#issue-181256561
 
-### how do I provide multiple values to the annotation `external-dns.alpha.kubernetes.io/hostname`
+### How do I provide multiple values to the annotation `external-dns.alpha.kubernetes.io/hostname`?
 
-separate them by `,`
+Separate them by `,`.
