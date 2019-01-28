@@ -395,8 +395,8 @@ func (p *AWSProvider) newChange(action string, endpoint *endpoint.Endpoint) *rou
 
 	if isAWSLoadBalancer(endpoint) {
 		evalTargetHealth := p.evaluateTargetHealth
-		if _, ok := endpoint.ProviderSpecific[providerSpecificEvaluateTargetHealth]; ok {
-			evalTargetHealth = endpoint.ProviderSpecific[providerSpecificEvaluateTargetHealth] == "true"
+		if prop, ok := endpoint.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); ok {
+			evalTargetHealth = prop.Value == "true"
 		}
 
 		change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
@@ -588,7 +588,7 @@ func isAWSLoadBalancer(ep *endpoint.Endpoint) bool {
 
 // isAWSAlias determines if a given hostname belongs to an AWS Alias record by doing an reverse lookup.
 func isAWSAlias(ep *endpoint.Endpoint, addrs []*endpoint.Endpoint) string {
-	if val, exists := ep.ProviderSpecific["alias"]; ep.RecordType == endpoint.RecordTypeCNAME && exists && val == "true" {
+	if prop, exists := ep.GetProviderSpecificProperty("alias"); ep.RecordType == endpoint.RecordTypeCNAME && exists && prop.Value == "true" {
 		for _, addr := range addrs {
 			if addr.DNSName == ep.Targets[0] {
 				if hostedZone := canonicalHostedZone(addr.Targets[0]); hostedZone != "" {

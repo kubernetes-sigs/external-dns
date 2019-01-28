@@ -56,9 +56,11 @@ func ExampleSameEndpoints() {
 			RecordTTL:  endpoint.TTL(60),
 		},
 		{
-			DNSName:          "example.org",
-			Targets:          endpoint.Targets{"load-balancer.org"},
-			ProviderSpecific: endpoint.ProviderSpecific{"foo": "bar"},
+			DNSName: "example.org",
+			Targets: endpoint.Targets{"load-balancer.org"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				endpoint.ProviderSpecificProperty{Name: "foo", Value: "bar"},
+			},
 		},
 	}
 	sort.Sort(byAllFields(eps))
@@ -66,11 +68,11 @@ func ExampleSameEndpoints() {
 		fmt.Println(ep)
 	}
 	// Output:
-	// abc.com 0 IN A 1.2.3.4 map[]
-	// abc.com 0 IN TXT something map[]
-	// bbc.com 0 IN CNAME foo.com map[]
-	// cbc.com 60 IN CNAME foo.com map[]
-	// example.org 0 IN  load-balancer.org map[]
-	// example.org 0 IN  load-balancer.org map[foo:bar]
-	// example.org 0 IN TXT load-balancer.org map[]
+	// abc.com 0 IN A 1.2.3.4 []
+	// abc.com 0 IN TXT something []
+	// bbc.com 0 IN CNAME foo.com []
+	// cbc.com 60 IN CNAME foo.com []
+	// example.org 0 IN  load-balancer.org []
+	// example.org 0 IN  load-balancer.org [{foo bar}]
+	// example.org 0 IN TXT load-balancer.org []
 }
