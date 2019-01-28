@@ -484,6 +484,14 @@
   version = "v1.0.8"
 
 [[projects]]
+  digest = "1:bcc46a0fbd9e933087bef394871256b5c60269575bb661935874729c65bbbf60"
+  name = "github.com/mitchellh/mapstructure"
+  packages = ["."]
+  pruneopts = ""
+  revision = "3536a929edddb9a5b34bd6861dc4a9647cb459fe"
+  version = "v1.1.2"
+
+[[projects]]
   digest = "1:0c0ff2a89c1bb0d01887e1dac043ad7efbf3ec77482ef058ac423d13497e16fd"
   name = "github.com/modern-go/concurrent"
   packages = ["."]
@@ -514,6 +522,14 @@
   pruneopts = ""
   revision = "cdd946344b54bdf7dbeac406c2f1fe93150f08ea"
   version = "v0.6.0"
+
+[[projects]]
+  digest = "1:d0b493d855fe23836a334940271745a43587f20b2fab4bb7c4ff0add1adcbcd4"
+  name = "github.com/nic-at/rc0go"
+  packages = ["."]
+  pruneopts = ""
+  revision = "d5560d32f90d7722d154a4e0d3b797d5e0ae0b68"
+  version = "v1.1.0"
 
 [[projects]]
   digest = "1:70df8e71a953626770223d4982801fa73e7e99cbfcca068b95127f72af9b9edd"
@@ -873,6 +889,14 @@
   version = "v0.9.0"
 
 [[projects]]
+  digest = "1:ecbf853ae69b7b38a5039077c10892c9798bd5345c73902026622a65a94ea501"
+  name = "gopkg.in/resty.v1"
+  packages = ["."]
+  pruneopts = ""
+  revision = "03c09fa32a21b7b27b8dbb3877826c1ab3d2daa2"
+  version = "v1.11.0"
+
+[[projects]]
   digest = "1:f0620375dd1f6251d9973b5f2596228cc8042e887cd7f827e4220bc1ce8c30e2"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
@@ -1165,6 +1189,7 @@
     "github.com/linode/linodego",
     "github.com/miekg/dns",
     "github.com/nesv/go-dynect/dynect",
+    "github.com/nic-at/rc0go",
     "github.com/oracle/oci-go-sdk/common",
     "github.com/oracle/oci-go-sdk/dns",
     "github.com/pkg/errors",
