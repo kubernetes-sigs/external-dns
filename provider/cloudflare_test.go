@@ -368,6 +368,36 @@ func TestNewCloudFlareChangeNoProxied(t *testing.T) {
 	assert.False(t, change.ResourceRecordSet.Proxied)
 }
 
+func TestNewCloudFlareProxiedAnnotationTrue(t *testing.T) {
+	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: "A", Targets: endpoint.Targets{"target"}, ProviderSpecific: endpoint.ProviderSpecific{
+		endpoint.ProviderSpecificProperty{
+			Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+			Value: "true",
+		},
+	}}, false)
+	assert.True(t, change.ResourceRecordSet.Proxied)
+}
+
+func TestNewCloudFlareProxiedAnnotationFalse(t *testing.T) {
+	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: "A", Targets: endpoint.Targets{"target"}, ProviderSpecific: endpoint.ProviderSpecific{
+		endpoint.ProviderSpecificProperty{
+			Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+			Value: "false",
+		},
+	}}, true)
+	assert.False(t, change.ResourceRecordSet.Proxied)
+}
+
+func TestNewCloudFlareProxiedAnnotationIllegalValue(t *testing.T) {
+	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: "A", Targets: endpoint.Targets{"target"}, ProviderSpecific: endpoint.ProviderSpecific{
+		endpoint.ProviderSpecificProperty{
+			Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+			Value: "asdaslkjndaslkdjals",
+		},
+	}}, false)
+	assert.False(t, change.ResourceRecordSet.Proxied)
+}
+
 func TestNewCloudFlareChangeProxiable(t *testing.T) {
 	var cloudFlareTypes = []struct {
 		recordType string

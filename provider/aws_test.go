@@ -799,7 +799,10 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 				Targets:    endpoint.Targets{"foo.eu-central-1.elb.amazonaws.com"},
 				RecordType: endpoint.RecordTypeCNAME,
 				ProviderSpecific: endpoint.ProviderSpecific{
-					providerSpecificEvaluateTargetHealth: key,
+					endpoint.ProviderSpecificProperty{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: key,
+					},
 				},
 			},
 		}
@@ -850,9 +853,14 @@ func TestAWSisAWSAlias(t *testing.T) {
 		{"foo.example.org", endpoint.RecordTypeCNAME, "true", ""},
 	} {
 		ep := &endpoint.Endpoint{
-			Targets:          endpoint.Targets{tc.target},
-			RecordType:       tc.recordType,
-			ProviderSpecific: map[string]string{"alias": tc.alias},
+			Targets:    endpoint.Targets{tc.target},
+			RecordType: tc.recordType,
+			ProviderSpecific: endpoint.ProviderSpecific{
+				endpoint.ProviderSpecificProperty{
+					Name:  "alias",
+					Value: tc.alias,
+				},
+			},
 		}
 		addrs := []*endpoint.Endpoint{
 			{
