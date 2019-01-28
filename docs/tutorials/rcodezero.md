@@ -1,25 +1,37 @@
 # Setting up ExternalDNS for Services on RcodeZero
 
-This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using RcodeZero Anycast DNS.
+This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using [RcodeZero Anycast DNS](https://www.rcodezero.at). Make sure to use **>=0.5.0** version of ExternalDNS for this tutorial.
 
-Make sure to use **>=0.5.0** version of ExternalDNS for this tutorial.
+The following steps are required to use RcodeZero with ExternalDNS:
+
+1. Sign up for an RcodeZero account (or use an existing account).
+2. Add your zone to the RcodeZero DNS
+3. Enable the RcodeZero API, and generate an API key.
+4. Deploy ExternalDNS to use the RcodeZero provider.
+5. Verify the setup bey deploying a test services (optional)
 
 ## Creating a RcodeZero DNS zone
 
-After logging into RcodeZero Dashboard add a master domain under [RcodeZero Add Zone](https://my.rcodezero.at/domain/create). Use it throughout this guide (substitute example.com).
+Before records can be added to your domain name automatically, you need to add your domain name to the set of zones managed by RcodeZero. In order to add the zone, perform the following steps:
 
-## Creating RcodeZero Credentials
+1. Log in to the RcodeZero Dashboard, and move to the [Add Zone](https://my.rcodezero.at/domain/create) page.
+2. Select "MASTER" as domain type, and add your domain name there. Use this domain name instead of "example.com" throughout the rest of this tutorial. 
+
+Note that "SECONDARY" domains cannot be managed by ExternalDNS, because this would not allow modification of records in the zone.
+
+## Enable the API, and create Credentials
 
 > The RcodeZero Anycast-Network is provisioned via web interface or REST-API.
 
-RcodeZero API can be enabled and a key generated on [RcodeZero API](https://my.rcodezero.at/enableapi)
-
-The environment var `RC0_API_KEY` will be needed to run ExternalDNS with RcodeZero.
+Enable the RcodeZero API to generate an API key on [RcodeZero API](https://my.rcodezero.at/enableapi). The API key will be added to the environment variable 'RC0_API_KEY' via one of the Manifest templates (as described below).
 
 ## Deploy ExternalDNS
 
-Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
-Then apply one of the following manifests file to deploy ExternalDNS.
+Connect your `kubectl` client to the cluster you want to test ExternalDNS with. Choose a Manifest from below, depending on whether or not you have RBAC enabled. Before applying it, modify the Manifest as follows:
+
+- Replace "example.com" with the domain name you added to RcodeZero.
+- Replace YOUR_RCODEZERO_API_KEY with the API key created above.
+- Replace YOUR_ENCRYPTION_KEY_STRING with a string to encrypt the TXT records
 
 ### Manifest (for clusters without RBAC enabled)
 
@@ -120,6 +132,8 @@ spec:
 
 ## Deploying an Nginx Service
 
+After you have deployed ExternalDNS with RcodeZero, you can deploy a simple service based on Nginx to test the setup. This is optional, though highly recommended before using ExternalDNS in production.
+
 Create a service file called 'nginx.yaml' with the following contents:
 
 ```yaml
@@ -156,37 +170,29 @@ spec:
       targetPort: 80
 ```
 
-Note the annotation on the service; use the same hostname as the RcodeZero DNS zone created above. The annotation may also be a subdomain
+Change the file as follows:
+
+- Replace the annotation of the service; use the same hostname as the RcodeZero DNS zone created above. The annotation may also be a subdomain
 of the DNS zone (e.g. 'www.example.com').
+- Set the TTL annotation of the service. A valid TTL of 120 or above must be given. This annotation is optional, and defaults to "300" if no value is given.
 
-By setting the TTL annotation on the service, you have to pass a valid TTL, which must be 120 or above.
-This annotation is optional, if you won't set it, it will be 1 (automatic) which is 300.
+These annotations will be used to determine what services should be registered with DNS. Removing these annotations will cause ExternalDNS to remove the corresponding DNS records.
 
-ExternalDNS uses this annotation to determine what services should be registered with DNS.  Removing the annotation
-will cause ExternalDNS to remove the corresponding DNS records.
-
-Create the deployment and service:
+Create the Deployment and Service:
 
 ```
 $ kubectl create -f nginx.yaml
 ```
 
-Depending where you run your service it can take a little while for your cloud provider to create an external IP for the service.
-
-Once the service has an external IP assigned, ExternalDNS will notice the new service IP address and synchronize
-the RcodeZero DNS records.
+Depending on your cloud provider, it might take a while to create an external IP for the service. Once an external IP address is assigned to the service, ExternalDNS will notice the new address and synchronize the RcodeZero DNS records accordingly.
 
 ## Verifying RcodeZero DNS records
 
-Check your [RcodeZero Configured Zones](https://my.rcodezero.at/domain) and select the ExternalDNS managed domain.
-
-Substitute the zone for the one created above if a different domain was used.
-
-This should show the external IP address of the service as the A record for your domain.
+Check your [RcodeZero Configured Zones](https://my.rcodezero.at/domain) and select the respective zone name. The zone should now contain the external IP address of the service as an A record.
 
 ## Cleanup
 
-Now that we have verified that ExternalDNS will automatically manage RcodeZero DNS records, we can delete the tutorial's example:
+Once you have verified that ExternalDNS successfully manages RcodeZero DNS records for external services, you can delete the tutorial example as follows:
 
 ```
 $ kubectl delete -f nginx.yaml
