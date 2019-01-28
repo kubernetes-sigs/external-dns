@@ -61,13 +61,18 @@ The `resourceGroup` is the Resource Group created in a previous step.
 The `aadClientID` and `aaClientSecret` are assoiated with the Service Principal, that you need to create next.
 
 ### Creating service principal
-A Service Principal with a minimum access level of contribute to the resource group containing the Azure DNS zone(s) is necessary for ExternalDNS to be able to edit DNS records. This is an Azure CLI example on how to query the Azure API for the information required for the Resource Group and DNS zone you would have already created in previous steps.
+A Service Principal with a minimum access level of `contributor` to the DNS zone(s) and `reader` to the resource group containing the Azure DNS zone(s) is necessary for ExternalDNS to be able to edit DNS records. However, other more permissive access levels will work too (e.g. `contributor` to the resource group or the whole subscription). 
 
+This is an Azure CLI example on how to query the Azure API for the information required for the Resource Group and DNS zone you would have already created in previous steps.
+
+``` bash
+> az login
 ```
->az login
-...
-# find the relevant subscription and set the az context. id = subscriptionId value in the azure.json.
->az account list
+
+Find the relevant subscription and make sure it is selected (the same subscriptionId should be set into azure.json)
+
+``` bash
+> az account list
 {
     "cloudName": "AzureCloud",
     "id": "<subscriptionId GUID>",
@@ -79,22 +84,48 @@ A Service Principal with a minimum access level of contribute to the resource gr
       "name": "name",
       "type": "user"
 }
->az account set -s id
-...
->az group show --name externaldns
-{
-  "id": "/subscriptions/id/resourceGroups/externaldns",
-  ...
-}
 
-# use the id from the previous step in the scopes argument
->az ad sp create-for-rbac --role="Contributor" --scopes="/subscriptions/id/resourceGroups/externaldns" -n ExternalDnsServicePrincipal
+# select the subscription
+> az account set -s <subscriptionId GUID>
+...
+```
+Create the service principal
+
+``` bash
+> az ad sp create-for-rbac -n ExternalDnsServicePrincipal
 {
   "appId": "appId GUID",  <-- aadClientId value
   ...
   "password": "password",  <-- aadClientSecret value
   "tenant": "AzureAD Tenant Id"  <-- tenantId value
 }
+```
+
+Assign the rights for the service principal
+
+```
+# find out the resource ids of the resource group where the dns zone is deployed, and the dns zone itself
+> az group show --name externaldns
+{
+  "id": "/subscriptions/id/resourceGroups/externaldns",
+  ...
+}
+
+> az network dns zone show --name example.com -g externaldns
+{
+  "id": "/subscriptions/.../resourceGroups/externaldns/providers/Microsoft.Network/dnszones/example.com",
+  ...
+}
+```
+```
+# assign the rights to the created service principal, using the resource ids from previous step
+
+# 1. as a reader to the resource group
+> az role assignment create --role "Reader" --assignee <appId GUID> --scope <resource group resource id>  
+
+# 2. as a contributor to DNS Zone itself
+> az role assignment create --role "Contributor" --assignee <appId GUID> --scope <dns zone resource id>  
+
 ```
 
 Now you can create a file named 'azure.json' with values gathered above and with the structure of the example above. Use this file to create a Kubernetes secret:
