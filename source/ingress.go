@@ -232,7 +232,6 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 	for _, hostname := range hostnameList {
 		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific)...)
 	}
-
 	return endpoints
 }
 

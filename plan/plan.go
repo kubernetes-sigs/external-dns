@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
@@ -84,7 +85,7 @@ func (t planTableRow) String() string {
 }
 
 func (t planTable) addCurrent(e *endpoint.Endpoint) {
-	dnsName := sanitizeDNSName(e.DNSName)
+	dnsName := normalizeDNSName(e.DNSName)
 	if _, ok := t.rows[dnsName]; !ok {
 		t.rows[dnsName] = &planTableRow{}
 	}
@@ -92,7 +93,7 @@ func (t planTable) addCurrent(e *endpoint.Endpoint) {
 }
 
 func (t planTable) addCandidate(e *endpoint.Endpoint) {
-	dnsName := sanitizeDNSName(e.DNSName)
+	dnsName := normalizeDNSName(e.DNSName)
 	if _, ok := t.rows[dnsName]; !ok {
 		t.rows[dnsName] = &planTableRow{}
 	}
@@ -105,7 +106,7 @@ func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*en
 		if row.current != nil && len(row.candidates) > 0 { //dns name is taken
 			update := t.resolver.ResolveUpdate(row.current, row.candidates)
 			// compare "update" to "current" to figure out if actual update is required
-			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) {
+			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || shouldUpdateProviderSpecific(update, row.current) {
 				inheritOwner(row.current, update)
 				updateNew = append(updateNew, update)
 				updateOld = append(updateOld, row.current)
@@ -185,6 +186,10 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 	return desired.RecordTTL != current.RecordTTL
 }
 
+func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
+	return !cmp.Equal(desired.ProviderSpecific, current.ProviderSpecific)
+}
+
 // filterRecordsForPlan removes records that are not relevant to the planner.
 // Currently this just removes TXT records to prevent them from being
 // deleted erroneously by the planner (only the TXT registry should do this.)
@@ -209,8 +214,12 @@ func filterRecordsForPlan(records []*endpoint.Endpoint) []*endpoint.Endpoint {
 	return filtered
 }
 
-// sanitizeDNSName checks if the DNS name is correct
-// for now it only removes space and lower case
-func sanitizeDNSName(dnsName string) string {
-	return strings.TrimSpace(strings.ToLower(dnsName))
+// normalizeDNSName converts a DNS name to a canonical form, so that we can use string equality
+// it: removes space, converts to lower case, ensures there is a trailing dot
+func normalizeDNSName(dnsName string) string {
+	s := strings.TrimSpace(strings.ToLower(dnsName))
+	if !strings.HasSuffix(s, ".") {
+		s += "."
+	}
+	return s
 }
