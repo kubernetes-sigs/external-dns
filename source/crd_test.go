@@ -18,6 +18,7 @@ package source
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -54,20 +55,21 @@ func objBody(codec runtime.Codec, obj runtime.Object) io.ReadCloser {
 	return ioutil.NopCloser(bytes.NewReader([]byte(runtime.EncodeOrDie(codec, obj))))
 }
 
-func startCRDServerToServeTargets(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace, name string) rest.Interface {
+func startCRDServerToServeTargets(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace, name string, t *testing.T) rest.Interface {
 	groupVersion, _ := schema.ParseGroupVersion(apiVersion)
 	scheme := runtime.NewScheme()
 	addKnownTypes(scheme, groupVersion)
 
 	dnsEndpointList := endpoint.DNSEndpointList{}
-	dnsEndpoint := endpoint.DNSEndpoint{
+	dnsEndpoint := &endpoint.DNSEndpoint{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: apiVersion,
 			Kind:       kind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
+			Name:       name,
+			Namespace:  namespace,
+			Generation: 1,
 		},
 		Spec: endpoint.DNSEndpointSpec{
 			Endpoints: endpoints,
@@ -88,10 +90,18 @@ func startCRDServerToServeTargets(endpoints []*endpoint.Endpoint, apiVersion, ki
 			case p == "/apis/"+apiVersion+"/"+strings.ToLower(kind)+"s" && m == http.MethodGet:
 				fallthrough
 			case p == "/apis/"+apiVersion+"/namespaces/"+namespace+"/"+strings.ToLower(kind)+"s" && m == http.MethodGet:
-				dnsEndpointList.Items = append(dnsEndpointList.Items, dnsEndpoint)
+				dnsEndpointList.Items = dnsEndpointList.Items[:0]
+				dnsEndpointList.Items = append(dnsEndpointList.Items, *dnsEndpoint)
 				return &http.Response{StatusCode: http.StatusOK, Header: defaultHeader(), Body: objBody(codec, &dnsEndpointList)}, nil
 			case strings.HasPrefix(p, "/apis/"+apiVersion+"/namespaces/") && strings.HasSuffix(p, strings.ToLower(kind)+"s") && m == http.MethodGet:
 				return &http.Response{StatusCode: http.StatusOK, Header: defaultHeader(), Body: objBody(codec, &dnsEndpointList)}, nil
+			case p == "/apis/"+apiVersion+"/namespaces/"+namespace+"/"+strings.ToLower(kind)+"s/"+name+"/status" && m == http.MethodPut:
+				decoder := json.NewDecoder(req.Body)
+
+				var body endpoint.DNSEndpoint
+				decoder.Decode(&body)
+				dnsEndpoint.Status.ObservedGeneration = body.Status.ObservedGeneration
+				return &http.Response{StatusCode: http.StatusOK, Header: defaultHeader(), Body: objBody(codec, dnsEndpoint)}, nil
 			default:
 				return nil, fmt.Errorf("unexpected request: %#v\n%#v", req.URL, req)
 			}
@@ -200,6 +210,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 			apiVersion:           "test.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "DNSEndpoint",
+			namespace:            "foo",
+			registeredNamespace:  "foo",
 			endpoints: []*endpoint.Endpoint{
 				{DNSName: "abc.example.org",
 					Targets:    endpoint.Targets{"1.2.3.4"},
@@ -216,6 +228,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 			apiVersion:           "test.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
 			kind:                 "DNSEndpoint",
+			namespace:            "foo",
+			registeredNamespace:  "foo",
 			endpoints: []*endpoint.Endpoint{
 				{DNSName: "abc.example.org",
 					Targets:    endpoint.Targets{"1.2.3.4"},
@@ -233,7 +247,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			restClient := startCRDServerToServeTargets(ti.endpoints, ti.registeredAPIVersion, ti.registeredKind, ti.registeredNamespace, "")
+			restClient := startCRDServerToServeTargets(ti.endpoints, ti.registeredAPIVersion, ti.registeredKind, ti.registeredNamespace, "test", t)
 			groupVersion, err := schema.ParseGroupVersion(ti.apiVersion)
 			require.NoError(t, err)
 
@@ -253,8 +267,28 @@ func testCRDSourceEndpoints(t *testing.T) {
 				return
 			}
 
+			if err == nil {
+				validateCRDResource(t, cs, ti.expectError)
+			}
+
 			// Validate received endpoints against expected endpoints.
 			validateEndpoints(t, receivedEndpoints, ti.endpoints)
 		})
+	}
+}
+
+func validateCRDResource(t *testing.T, src Source, expectError bool) {
+	cs := src.(*crdSource)
+	result, err := cs.List(&metav1.ListOptions{})
+	if expectError {
+		require.Errorf(t, err, "Received err %v", err)
+	} else {
+		require.NoErrorf(t, err, "Received err %v", err)
+	}
+
+	for _, dnsEndpoint := range result.Items {
+		if dnsEndpoint.Status.ObservedGeneration != dnsEndpoint.Generation {
+			require.Errorf(t, err, "Unexpected CRD resource result: ObservedGenerations <%v> is not equal to Generation<%v>", dnsEndpoint.Status.ObservedGeneration, dnsEndpoint.Generation)
+		}
 	}
 }
