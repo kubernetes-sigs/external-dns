@@ -33,14 +33,14 @@ type RcodeZeroProvider struct {
 
 	DomainFilter DomainFilter
 	DryRun       bool
-	TXTEncrypt	 bool
-	Key  		 []byte
+	TXTEncrypt   bool
+	Key          []byte
 }
 
 // NewRcodeZeroProvider creates a new RcodeZero Anycast DNS provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewRcodeZeroProvider(domainFilter DomainFilter, dryRun bool, txtEnc bool) (*RcodeZeroProvider, error){
+func NewRcodeZeroProvider(domainFilter DomainFilter, dryRun bool, txtEnc bool) (*RcodeZeroProvider, error) {
 
 	client, err := rc0.NewClient(os.Getenv("RC0_API_KEY"))
 
@@ -71,7 +71,7 @@ func NewRcodeZeroProvider(domainFilter DomainFilter, dryRun bool, txtEnc bool) (
 	return provider, nil
 }
 
-// Returns filtered zones if filter is set
+// Zones returns filtered zones if filter is set
 func (p *RcodeZeroProvider) Zones() ([]*rc0.Zone, error) {
 
 	var result []*rc0.Zone
@@ -90,7 +90,7 @@ func (p *RcodeZeroProvider) Zones() ([]*rc0.Zone, error) {
 	return result, nil
 }
 
-// Returns resource records
+// Records returns resource records
 //
 // Decrypts TXT records if TXT-Encrypt flag is set and key is provided
 func (p *RcodeZeroProvider) Records() ([]*endpoint.Endpoint, error) {
@@ -144,7 +144,7 @@ func (p *RcodeZeroProvider) ApplyChanges(changes *plan.Changes) error {
 
 	combinedChanges := make([]*rc0.RRSetChange, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 
-	combinedChanges = append(combinedChanges, p.NewRcodezeroChanges(rc0.ChangeTypeADD, 	changes.Create)...)
+	combinedChanges = append(combinedChanges, p.NewRcodezeroChanges(rc0.ChangeTypeADD, changes.Create)...)
 	combinedChanges = append(combinedChanges, p.NewRcodezeroChanges(rc0.ChangeTypeUPDATE, changes.UpdateNew)...)
 	combinedChanges = append(combinedChanges, p.NewRcodezeroChanges(rc0.ChangeTypeDELETE, changes.Delete)...)
 
@@ -245,11 +245,11 @@ func (p *RcodeZeroProvider) submitChanges(changes []*rc0.RRSetChange) error {
 		for _, change := range changes {
 
 			logFields := log.Fields{
-				"record"  : change.Name,
-				"content" : change.Records[0].Content,
-				"type"    : change.Type,
-				"action"  : change.ChangeType,
-				"zone"    : zoneName,
+				"record":  change.Name,
+				"content": change.Records[0].Content,
+				"type":    change.Type,
+				"action":  change.ChangeType,
+				"zone":    zoneName,
 			}
 
 			log.WithFields(logFields).Info("Changing record.")
@@ -303,7 +303,7 @@ func (p *RcodeZeroProvider) submitChanges(changes []*rc0.RRSetChange) error {
 	return nil
 }
 
-// Returns a RcodeZero specific array with rrset change objects.
+// NewRcodezeroChanges returns a RcodeZero specific array with rrset change objects.
 func (p *RcodeZeroProvider) NewRcodezeroChanges(action string, endpoints []*endpoint.Endpoint) []*rc0.RRSetChange {
 
 	changes := make([]*rc0.RRSetChange, 0, len(endpoints))
@@ -315,16 +315,16 @@ func (p *RcodeZeroProvider) NewRcodezeroChanges(action string, endpoints []*endp
 	return changes
 }
 
-// Returns a RcodeZero specific rrset change object.
+// NewRcodezeroChange returns a RcodeZero specific rrset change object.
 func (p *RcodeZeroProvider) NewRcodezeroChange(action string, endpoint *endpoint.Endpoint) *rc0.RRSetChange {
 
 	change := &rc0.RRSetChange{
-		Type: 		endpoint.RecordType,
+		Type:       endpoint.RecordType,
 		ChangeType: action,
-		Name:		endpoint.DNSName,
-		Records: 	[]*rc0.Record{{
+		Name:       endpoint.DNSName,
+		Records: []*rc0.Record{{
 			Disabled: false,
-			Content: endpoint.Targets[0],
+			Content:  endpoint.Targets[0],
 		}},
 	}
 
