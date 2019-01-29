@@ -96,9 +96,6 @@ func (c *Controller) RunOnce() error {
 		registryErrors.Inc()
 		return err
 	}
-	log.Infof("Creations: %v", plan.Changes.Create)
-	log.Infof("UpdateNew: %v", plan.Changes.UpdateNew)
-	log.Infof("Deletions: %v", plan.Changes.Delete)
 	log.Infof("Apply plan (%v Create, %v Update, %v Delete) in %v",
 		len(plan.Changes.Create),
 		len(plan.Changes.UpdateNew),
