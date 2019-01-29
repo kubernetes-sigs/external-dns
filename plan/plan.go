@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
@@ -187,7 +186,21 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 }
 
 func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
-	return !cmp.Equal(desired.ProviderSpecific, current.ProviderSpecific)
+	for _, c := range current.ProviderSpecific {
+		// don't consider target health when detecting changes
+		// see: https://github.com/kubernetes-incubator/external-dns/issues/869#issuecomment-458576954
+		if c.Name == "aws/evaluate-target-health" {
+			continue
+		}
+
+		for _, d := range desired.ProviderSpecific {
+			if d.Name == c.Name && d.Value != c.Value {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // filterRecordsForPlan removes records that are not relevant to the planner.
