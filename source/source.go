@@ -102,6 +102,10 @@ func getProviderSpecificAnnotations(annotations map[string]string) endpoint.Prov
 			Value: "true",
 		})
 	}
+	providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+		Name:  "aws/evaluate-target-health",
+		Value: "true",
+	})
 	return providerSpecificAnnotations
 }
 
