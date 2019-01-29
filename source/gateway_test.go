@@ -68,6 +68,7 @@ func (suite *GatewaySuite) SetupTest() {
 		"",
 		"{{.Name}}",
 		false,
+		true,
 	)
 	suite.NoError(err, "should initialize gateway source")
 
@@ -141,6 +142,7 @@ func TestNewIstioGatewaySource(t *testing.T) {
 				ti.annotationFilter,
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
+				true,
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -939,6 +941,7 @@ func testGatewayEndpoints(t *testing.T) {
 				ti.annotationFilter,
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
+				true,
 			)
 			require.NoError(t, err)
 
@@ -972,6 +975,7 @@ func newTestGatewaySource(ingress *v1.Service) (*gatewaySource, error) {
 		"",
 		"{{.Name}}",
 		false,
+		true,
 	)
 	if err != nil {
 		return nil, err

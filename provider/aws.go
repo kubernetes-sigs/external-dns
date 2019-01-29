@@ -92,11 +92,10 @@ type Route53API interface {
 
 // AWSProvider is an implementation of Provider for AWS Route53.
 type AWSProvider struct {
-	client               Route53API
-	dryRun               bool
-	batchChangeSize      int
-	batchChangeInterval  time.Duration
-	evaluateTargetHealth bool
+	client              Route53API
+	dryRun              bool
+	batchChangeSize     int
+	batchChangeInterval time.Duration
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter DomainFilter
 	// filter hosted zones by id
@@ -148,15 +147,14 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 	}
 
 	provider := &AWSProvider{
-		client:               route53.New(session),
-		domainFilter:         awsConfig.DomainFilter,
-		zoneIDFilter:         awsConfig.ZoneIDFilter,
-		zoneTypeFilter:       awsConfig.ZoneTypeFilter,
-		zoneTagFilter:        awsConfig.ZoneTagFilter,
-		batchChangeSize:      awsConfig.BatchChangeSize,
-		batchChangeInterval:  awsConfig.BatchChangeInterval,
-		evaluateTargetHealth: awsConfig.EvaluateTargetHealth,
-		dryRun:               awsConfig.DryRun,
+		client:              route53.New(session),
+		domainFilter:        awsConfig.DomainFilter,
+		zoneIDFilter:        awsConfig.ZoneIDFilter,
+		zoneTypeFilter:      awsConfig.ZoneTypeFilter,
+		zoneTagFilter:       awsConfig.ZoneTagFilter,
+		batchChangeSize:     awsConfig.BatchChangeSize,
+		batchChangeInterval: awsConfig.BatchChangeInterval,
+		dryRun:              awsConfig.DryRun,
 	}
 
 	return provider, nil
@@ -393,12 +391,10 @@ func (p *AWSProvider) newChange(action string, endpoint *endpoint.Endpoint) *rou
 		log.Infof("getting records failed: %v", err)
 	}
 
-	if isAWSLoadBalancer(endpoint) {
-		evalTargetHealth := p.evaluateTargetHealth
-		if prop, ok := endpoint.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); ok {
-			evalTargetHealth = prop.Value == "true"
-		}
+	evalTargetHealthProperty, _ := endpoint.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
+	evalTargetHealth := evalTargetHealthProperty.Value == "true"
 
+	if isAWSLoadBalancer(endpoint) {
 		change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
 		change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
 			DNSName:              aws.String(endpoint.Targets[0]),
@@ -415,7 +411,7 @@ func (p *AWSProvider) newChange(action string, endpoint *endpoint.Endpoint) *rou
 			change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
 				DNSName:              aws.String(endpoint.Targets[0]),
 				HostedZoneId:         aws.String(cleanZoneID(*zone.Id)),
-				EvaluateTargetHealth: aws.Bool(p.evaluateTargetHealth),
+				EvaluateTargetHealth: aws.Bool(evalTargetHealth),
 			}
 		}
 	} else {

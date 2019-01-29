@@ -54,10 +54,11 @@ type serviceSource struct {
 	publishInternal       bool
 	publishHostIP         bool
 	serviceTypeFilter     map[string]struct{}
+	evaluateTargetHealth  bool
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, serviceTypeFilter []string) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, serviceTypeFilter []string, evaluateTargetHealth bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -88,6 +89,7 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		publishInternal:       publishInternal,
 		publishHostIP:         publishHostIP,
 		serviceTypeFilter:     serviceTypes,
+		evaluateTargetHealth:  evaluateTargetHealth,
 	}, nil
 }
 
@@ -225,7 +227,7 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service, nodeTargets endp
 		return nil, fmt.Errorf("failed to apply template on service %s: %v", svc.String(), err)
 	}
 
-	providerSpecific := getProviderSpecificAnnotations(svc.Annotations)
+	providerSpecific := getProviderSpecificAnnotations(svc.Annotations, sc.evaluateTargetHealth)
 	hostnameList := strings.Split(strings.Replace(buf.String(), " ", "", -1), ",")
 	for _, hostname := range hostnameList {
 		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, nodeTargets, providerSpecific)...)
@@ -238,7 +240,7 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service, nodeTargets endp
 func (sc *serviceSource) endpoints(svc *v1.Service, nodeTargets endpoint.Targets) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
-	providerSpecific := getProviderSpecificAnnotations(svc.Annotations)
+	providerSpecific := getProviderSpecificAnnotations(svc.Annotations, sc.evaluateTargetHealth)
 	hostnameList := getHostnamesFromAnnotations(svc.Annotations)
 	for _, hostname := range hostnameList {
 		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, nodeTargets, providerSpecific)...)

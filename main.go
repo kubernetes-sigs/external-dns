@@ -81,6 +81,7 @@ func main() {
 		KubeMaster:               cfg.Master,
 		ServiceTypeFilter:        cfg.ServiceTypeFilter,
 		IstioIngressGateway:      cfg.IstioIngressGateway,
+		EvaluateTargetHealth:     cfg.AWSEvaluateTargetHealth,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
@@ -108,16 +109,15 @@ func main() {
 	case "aws":
 		p, err = provider.NewAWSProvider(
 			provider.AWSConfig{
-				DomainFilter:         domainFilter,
-				ZoneIDFilter:         zoneIDFilter,
-				ZoneTypeFilter:       zoneTypeFilter,
-				ZoneTagFilter:        zoneTagFilter,
-				BatchChangeSize:      cfg.AWSBatchChangeSize,
-				BatchChangeInterval:  cfg.AWSBatchChangeInterval,
-				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
-				AssumeRole:           cfg.AWSAssumeRole,
-				APIRetries:           cfg.AWSAPIRetries,
-				DryRun:               cfg.DryRun,
+				DomainFilter:        domainFilter,
+				ZoneIDFilter:        zoneIDFilter,
+				ZoneTypeFilter:      zoneTypeFilter,
+				ZoneTagFilter:       zoneTagFilter,
+				BatchChangeSize:     cfg.AWSBatchChangeSize,
+				BatchChangeInterval: cfg.AWSBatchChangeInterval,
+				AssumeRole:          cfg.AWSAssumeRole,
+				APIRetries:          cfg.AWSAPIRetries,
+				DryRun:              cfg.DryRun,
 			},
 		)
 	case "aws-sd":

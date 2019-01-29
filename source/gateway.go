@@ -46,6 +46,7 @@ type gatewaySource struct {
 	annotationFilter        string
 	fqdnTemplate            *template.Template
 	combineFQDNAnnotation   bool
+	evaluateTargetHealth    bool
 }
 
 // NewIstioGatewaySource creates a new gatewaySource with the given config.
@@ -57,6 +58,7 @@ func NewIstioGatewaySource(
 	annotationFilter string,
 	fqdnTemplate string,
 	combineFqdnAnnotation bool,
+	evaluateTargetHealth bool,
 ) (Source, error) {
 	var (
 		tmpl *template.Template
@@ -85,6 +87,7 @@ func NewIstioGatewaySource(
 		annotationFilter:        annotationFilter,
 		fqdnTemplate:            tmpl,
 		combineFQDNAnnotation:   combineFqdnAnnotation,
+		evaluateTargetHealth:    evaluateTargetHealth,
 	}, nil
 }
 
@@ -172,7 +175,7 @@ func (sc *gatewaySource) endpointsFromTemplate(config *istiomodel.Config) ([]*en
 		}
 	}
 
-	providerSpecific := getProviderSpecificAnnotations(config.Annotations)
+	providerSpecific := getProviderSpecificAnnotations(config.Annotations, sc.evaluateTargetHealth)
 
 	var endpoints []*endpoint.Endpoint
 	// splits the FQDN template and removes the trailing periods
@@ -258,7 +261,7 @@ func (sc *gatewaySource) endpointsFromGatewayConfig(config istiomodel.Config) ([
 
 	gateway := config.Spec.(*istionetworking.Gateway)
 
-	providerSpecific := getProviderSpecificAnnotations(config.Annotations)
+	providerSpecific := getProviderSpecificAnnotations(config.Annotations, sc.evaluateTargetHealth)
 
 	for _, server := range gateway.Servers {
 		for _, host := range server.Hosts {

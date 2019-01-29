@@ -1061,15 +1061,14 @@ func newAWSProviderWithTagFilter(t *testing.T, domainFilter DomainFilter, zoneID
 	client := NewRoute53APIStub()
 
 	provider := &AWSProvider{
-		client:               client,
-		batchChangeSize:      defaultBatchChangeSize,
-		batchChangeInterval:  defaultBatchChangeInterval,
-		evaluateTargetHealth: evaluateTargetHealth,
-		domainFilter:         domainFilter,
-		zoneIDFilter:         zoneIDFilter,
-		zoneTypeFilter:       zoneTypeFilter,
-		zoneTagFilter:        zoneTagFilter,
-		dryRun:               false,
+		client:              client,
+		batchChangeSize:     defaultBatchChangeSize,
+		batchChangeInterval: defaultBatchChangeInterval,
+		domainFilter:        domainFilter,
+		zoneIDFilter:        zoneIDFilter,
+		zoneTypeFilter:      zoneTypeFilter,
+		zoneTagFilter:       zoneTagFilter,
+		dryRun:              false,
 	}
 
 	createAWSZone(t, provider, &route53.HostedZone{

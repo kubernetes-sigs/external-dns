@@ -86,7 +86,7 @@ func getAliasFromAnnotations(annotations map[string]string) bool {
 	return exists && aliasAnnotation == "true"
 }
 
-func getProviderSpecificAnnotations(annotations map[string]string) endpoint.ProviderSpecific {
+func getProviderSpecificAnnotations(annotations map[string]string, defaultEvaluateTargetHealth bool) endpoint.ProviderSpecific {
 	providerSpecificAnnotations := endpoint.ProviderSpecific{}
 
 	v, exists := annotations[CloudflareProxiedKey]
@@ -102,10 +102,18 @@ func getProviderSpecificAnnotations(annotations map[string]string) endpoint.Prov
 			Value: "true",
 		})
 	}
-	providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-		Name:  "aws/evaluate-target-health",
-		Value: "true",
-	})
+	v, exists = annotations["aws/evaluate-target-health"]
+	if exists {
+		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+			Name:  "aws/evaluate-target-health",
+			Value: v,
+		})
+	} else {
+		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+			Name:  "aws/evaluate-target-health",
+			Value: fmt.Sprintf("%t", defaultEvaluateTargetHealth),
+		})
+	}
 	return providerSpecificAnnotations
 }
 

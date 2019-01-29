@@ -43,10 +43,11 @@ type ingressSource struct {
 	annotationFilter      string
 	fqdnTemplate          *template.Template
 	combineFQDNAnnotation bool
+	evaluateTargetHealth  bool
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool) (Source, error) {
+func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, evaluateTargetHealth bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -66,6 +67,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		annotationFilter:      annotationFilter,
 		fqdnTemplate:          tmpl,
 		combineFQDNAnnotation: combineFqdnAnnotation,
+		evaluateTargetHealth:  evaluateTargetHealth,
 	}, nil
 }
 
@@ -92,7 +94,7 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 
-		ingEndpoints := endpointsFromIngress(&ing)
+		ingEndpoints := endpointsFromIngress(&ing, sc.evaluateTargetHealth)
 
 		// apply template if host is missing on ingress
 		if (sc.combineFQDNAnnotation || len(ingEndpoints) == 0) && sc.fqdnTemplate != nil {
@@ -146,7 +148,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 		targets = targetsFromIngressStatus(ing.Status)
 	}
 
-	providerSpecific := getProviderSpecificAnnotations(ing.Annotations)
+	providerSpecific := getProviderSpecificAnnotations(ing.Annotations, sc.evaluateTargetHealth)
 
 	var endpoints []*endpoint.Endpoint
 	// splits the FQDN template and removes the trailing periods
@@ -196,7 +198,7 @@ func (sc *ingressSource) setResourceLabel(ingress v1beta1.Ingress, endpoints []*
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object
-func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
+func endpointsFromIngress(ing *v1beta1.Ingress, defaultEvaluateTargetHealth bool) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	ttl, err := getTTLFromAnnotations(ing.Annotations)
@@ -210,7 +212,7 @@ func endpointsFromIngress(ing *v1beta1.Ingress) []*endpoint.Endpoint {
 		targets = targetsFromIngressStatus(ing.Status)
 	}
 
-	providerSpecific := getProviderSpecificAnnotations(ing.Annotations)
+	providerSpecific := getProviderSpecificAnnotations(ing.Annotations, defaultEvaluateTargetHealth)
 
 	for _, rule := range ing.Spec.Rules {
 		if rule.Host == "" {
