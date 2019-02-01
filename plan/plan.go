@@ -186,6 +186,9 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 }
 
 func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
+	if current.ProviderSpecific == nil && len(desired.ProviderSpecific) == 0 {
+		return false
+	}
 	for _, c := range current.ProviderSpecific {
 		// don't consider target health when detecting changes
 		// see: https://github.com/kubernetes-incubator/external-dns/issues/869#issuecomment-458576954
