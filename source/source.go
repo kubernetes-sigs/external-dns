@@ -35,6 +35,8 @@ const (
 	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
 	// The annotation used for defining the desired DNS record TTL
 	ttlAnnotationKey = "external-dns.alpha.kubernetes.io/ttl"
+	// The annotation used for selecting ready pods only for headless services
+	readyPodsOnlyAnnotationKey = "external-dns.alpha.kubernetes.io/ready-pods-only"
 	// The annotation used for switching to the alias record types e. g. AWS Alias records instead of a normal CNAME
 	aliasAnnotationKey = "external-dns.alpha.kubernetes.io/alias"
 	// The value of the controller annotation so that we feel responsible
@@ -79,6 +81,11 @@ func getHostnamesFromAnnotations(annotations map[string]string) []string {
 		return nil
 	}
 	return strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
+}
+
+func getReadyPodsOnlyFromAnnotations(annotations map[string]string) bool {
+	_, exists := annotations[readyPodsOnlyAnnotationKey]
+	return exists
 }
 
 func getAliasFromAnnotations(annotations map[string]string) bool {

@@ -175,6 +175,19 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 
 	targetsByHeadlessDomain := make(map[string][]string)
 	for _, v := range pods.Items {
+		if getReadyPodsOnlyFromAnnotations(svc.Annotations) {
+			podReady := false
+			for _, condition := range v.Status.Conditions {
+				if condition.Type == v1.PodReady && condition.Status == v1.ConditionTrue {
+					podReady = true
+					break
+				}
+			}
+			if !podReady {
+				continue
+			}
+		}
+
 		headlessDomain := hostname
 		if v.Spec.Hostname != "" {
 			headlessDomain = v.Spec.Hostname + "." + headlessDomain

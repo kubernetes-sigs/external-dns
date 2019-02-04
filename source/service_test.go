@@ -1520,6 +1520,7 @@ func TestHeadlessServices(t *testing.T) {
 		podnames                 []string
 		hostnames                []string
 		phases                   []v1.PodPhase
+		conditions               [][]v1.PodCondition
 		expected                 []*endpoint.Endpoint
 		expectError              bool
 	}{
@@ -1545,6 +1546,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]string{"foo-0", "foo-1"},
 			[]string{"foo-0", "foo-1"},
 			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
+			[][]v1.PodCondition{{{Type: v1.PodReady, Status: v1.ConditionTrue}}, {{Type: v1.PodReady, Status: v1.ConditionTrue}}},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
 				{DNSName: "foo-1.service.example.org", Targets: endpoint.Targets{"1.1.1.2"}},
@@ -1599,6 +1601,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]string{"foo-0", "foo-1"},
 			[]string{"foo-0", "foo-1"},
 			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
+			[][]v1.PodCondition{{{Type: v1.PodReady, Status: v1.ConditionTrue}}, {{Type: v1.PodReady, Status: v1.ConditionTrue}}},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}, RecordTTL: endpoint.TTL(1)},
 				{DNSName: "foo-1.service.example.org", Targets: endpoint.Targets{"1.1.1.2"}, RecordTTL: endpoint.TTL(1)},
@@ -1627,6 +1630,35 @@ func TestHeadlessServices(t *testing.T) {
 			[]string{"foo-0", "foo-1"},
 			[]string{"foo-0", "foo-1"},
 			[]v1.PodPhase{v1.PodRunning, v1.PodFailed},
+			[][]v1.PodCondition{{{Type: v1.PodReady, Status: v1.ConditionTrue}}, {{Type: v1.PodReady, Status: v1.ConditionTrue}}},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
+			},
+			false,
+		},
+		{
+			"annotated Headless services return endpoints only for selected Pod, which are ready",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			map[string]string{"component": "foo"},
+			map[string]string{
+				hostnameAnnotationKey:      "service.example.org",
+				readyPodsOnlyAnnotationKey: "",
+			},
+			v1.ClusterIPNone,
+			[]string{"1.1.1.1", "1.1.1.2"},
+			map[string]string{
+				"component": "foo",
+			},
+			[]string{},
+			[]string{"foo-0", "foo-1"},
+			[]string{"foo-0", "foo-1"},
+			[]v1.PodPhase{v1.PodRunning, v1.PodFailed},
+			[][]v1.PodCondition{{{Type: v1.PodReady, Status: v1.ConditionTrue}}, {{Type: v1.PodReady, Status: v1.ConditionFalse}}},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
 			},
@@ -1654,6 +1686,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]string{"foo-0", "foo-1"},
 			[]string{"", ""},
 			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
+			[][]v1.PodCondition{{{Type: v1.PodReady, Status: v1.ConditionTrue}}, {{Type: v1.PodReady, Status: v1.ConditionTrue}}},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1", "1.1.1.2"}},
 			},
@@ -1694,8 +1727,9 @@ func TestHeadlessServices(t *testing.T) {
 						Annotations: tc.annotations,
 					},
 					Status: v1.PodStatus{
-						PodIP: tc.podIPs[i],
-						Phase: tc.phases[i],
+						PodIP:      tc.podIPs[i],
+						Phase:      tc.phases[i],
+						Conditions: tc.conditions[i],
 					},
 				}
 

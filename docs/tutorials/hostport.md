@@ -12,7 +12,7 @@ We will go through a small example of deploying a simple Kafka with use of a hea
 ### Exernal DNS
 
 A simple deploy could look like this:
-### Manifest (for clusters without RBAC enabled)
+#### Manifest (for clusters without RBAC enabled)
 ```yaml
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -37,7 +37,7 @@ spec:
         - --txt-owner-id=dev.example.org
 ```
 
-### Manifest (for clusters with RBAC enabled)
+#### Manifest (for clusters with RBAC enabled)
 ```yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -100,7 +100,9 @@ spec:
 ```
 
 
-### Kafka Stateful Set
+#### Example: Kafka
+
+##### Stateful Set
 
 First lets deploy a Kafka Stateful set, a simple example(a lot of stuff is missing) with a headless service called `kafka-hsvc`
 
@@ -148,7 +150,7 @@ spec:
 ```
 Very important here, is to set the `hostport`(only works if the PodSecurityPolicy allows it)! and in case your app requires an actual hostname inside the container, unlike Kafka, which can advertise on another address, you have to set the hostname yourself.
 
-### Headless Service
+##### Headless Service
 
 Now we need to define a headless service to use to expose the Kafka pods. There are generally two approaches to use expose the nodeport of a Headless service:
 
@@ -189,3 +191,57 @@ kafka-1.ksvc.example.org
 kafka-2.ksvc.example.org
 ```
 
+#### Another example: nginx
+
+##### Deployment
+
+This example creates an nginx `Deployment` with 3 replicas. We want to implement a poor man's load balancing by using external-dns.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.7.9
+        ports:
+        - name: web
+          port: 80
+```
+
+##### Headless service
+
+The service has corresponding annotations for short TTL of 5 seconds and for only selecting "Ready" pods as endpoints for the DNS records that will be created. This is especially important when your pods have a rather large `terminationGracePeriodSec` setting and are unavailable / are supposed to drain when they become unready.
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: nginx.example.org
+    external-dns.alpha.kubernetes.io/ttl: 5
+    external-dns.alpha.kubernetes.io/ready-pods-only: ''
+spec:
+  ports:
+  - port: 80
+    name: web
+  clusterIP: None
+  selector:
+    app: nginx
+```
+
+This will create only one DNS record named `nginx.example.org`, returning the IPs of all matching, ready pods. As soon as external-dns notices that a pod in the service has become unready, it is removed from the list of endpoints for this DNS record.
