@@ -73,6 +73,7 @@ type Config struct {
 	InfobloxWapiPassword     string
 	InfobloxWapiVersion      string
 	InfobloxSSLVerify        bool
+	InfobloxView             string
 	DynCustomerName          string
 	DynUsername              string
 	DynPassword              string
@@ -148,6 +149,7 @@ var defaultConfig = &Config{
 	InfobloxWapiPassword:     "",
 	InfobloxWapiVersion:      "2.3.1",
 	InfobloxSSLVerify:        true,
+	InfobloxView:             "",
 	OCIConfigFile:            "/etc/kubernetes/oci.yaml",
 	InMemoryZones:            []string{},
 	PDNSServer:               "http://localhost:8081",
@@ -266,6 +268,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("infoblox-wapi-password", "When using the Infoblox provider, specify the WAPI password (required when --provider=infoblox)").Default(defaultConfig.InfobloxWapiPassword).StringVar(&cfg.InfobloxWapiPassword)
 	app.Flag("infoblox-wapi-version", "When using the Infoblox provider, specify the WAPI version (default: 2.3.1)").Default(defaultConfig.InfobloxWapiVersion).StringVar(&cfg.InfobloxWapiVersion)
 	app.Flag("infoblox-ssl-verify", "When using the Infoblox provider, specify whether to verify the SSL certificate (default: true, disable with --no-infoblox-ssl-verify)").Default(strconv.FormatBool(defaultConfig.InfobloxSSLVerify)).BoolVar(&cfg.InfobloxSSLVerify)
+	app.Flag("infoblox-view", "DNS view (default: default)").Default(defaultConfig.InfobloxView).StringVar(&cfg.InfobloxView)
 	app.Flag("dyn-customer-name", "When using the Dyn provider, specify the Customer Name").Default("").StringVar(&cfg.DynCustomerName)
 	app.Flag("dyn-username", "When using the Dyn provider, specify the Username").Default("").StringVar(&cfg.DynUsername)
 	app.Flag("dyn-password", "When using the Dyn provider, specify the pasword").Default("").StringVar(&cfg.DynPassword)
