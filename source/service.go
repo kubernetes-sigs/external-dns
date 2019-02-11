@@ -108,6 +108,12 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	}
 
 	// get the ip addresses of all the nodes and cache them for this run
+	// TODO
+	// TODO
+	// TODO
+	// TODO
+	// TODO
+	// TODO
 	nodeTargets, err := sc.extractNodeTargets()
 	if err != nil {
 		return nil, err
