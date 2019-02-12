@@ -50,6 +50,22 @@ func TestValidateFlags(t *testing.T) {
 	cfg = newValidConfig(t)
 	cfg.Provider = ""
 	assert.Error(t, ValidateConfig(cfg))
+
+	cfg = newValidConfig(t)
+	cfg.ServicePublishIPsType = ""
+	assert.NoError(t, ValidateConfig(cfg))
+
+	cfg = newValidConfig(t)
+	cfg.ServicePublishIPsType = "hello"
+	assert.Error(t, ValidateConfig(cfg))
+
+	cfg = newValidConfig(t)
+	cfg.ServicePublishIPsType = "private"
+	assert.NoError(t, ValidateConfig(cfg))
+
+	cfg = newValidConfig(t)
+	cfg.ServicePublishIPsType = "public"
+	assert.NoError(t, ValidateConfig(cfg))
 }
 
 func newValidConfig(t *testing.T) *externaldns.Config {

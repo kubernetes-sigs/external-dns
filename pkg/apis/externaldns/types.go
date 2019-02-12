@@ -106,6 +106,7 @@ type Config struct {
 	RFC2136TSIGSecret        string
 	RFC2136TSIGSecretAlg     string
 	RFC2136TAXFR             bool
+	ServicePublishIPsType    string
 }
 
 var defaultConfig = &Config{
@@ -173,6 +174,7 @@ var defaultConfig = &Config{
 	RFC2136TSIGSecret:        "",
 	RFC2136TSIGSecretAlg:     "",
 	RFC2136TAXFR:             true,
+	ServicePublishIPsType:    "",
 }
 
 // NewConfig returns new Config object
@@ -232,6 +234,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source").Default(defaultConfig.CRDSourceAPIVersion).StringVar(&cfg.CRDSourceAPIVersion)
 	app.Flag("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion").Default(defaultConfig.CRDSourceKind).StringVar(&cfg.CRDSourceKind)
 	app.Flag("service-type-filter", "The service types to take care about (default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)").StringsVar(&cfg.ServiceTypeFilter)
+	app.Flag("service-publish-ips-type", "The type of IPs that can be exposed when using a service source (default: all, expected: private or public)").StringVar(&cfg.ServicePublishIPsType)
 
 	// Flags related to providers
 	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, google, azure, cloudflare, digitalocean, dnsimple, infoblox, dyn, designate, coredns, skydns, inmemory, pdns, oci, exoscale, linode, rfc2136)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "alibabacloud", "cloudflare", "digitalocean", "dnsimple", "infoblox", "dyn", "designate", "coredns", "skydns", "inmemory", "pdns", "oci", "exoscale", "linode", "rfc2136")

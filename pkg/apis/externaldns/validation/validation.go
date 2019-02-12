@@ -65,5 +65,15 @@ func ValidateConfig(cfg *externaldns.Config) error {
 			return errors.New("TTL specified for Dyn is negative")
 		}
 	}
+
+	if cfg.ServicePublishIPsType != "" {
+		switch cfg.ServicePublishIPsType {
+		case "public", "private":
+			// OK
+		default:
+			return errors.New("invalid service publish IPs type specified")
+		}
+	}
+
 	return nil
 }

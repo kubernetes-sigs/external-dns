@@ -81,6 +81,7 @@ func main() {
 		KubeMaster:               cfg.Master,
 		ServiceTypeFilter:        cfg.ServiceTypeFilter,
 		IstioIngressGateway:      cfg.IstioIngressGateway,
+		ServicePublishIPsType:    cfg.ServicePublishIPsType,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
