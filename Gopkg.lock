@@ -294,19 +294,6 @@
   revision = "e89373fe6b4a7413d7acd6da1725b83ef713e6e4"
 
 [[projects]]
-  digest = "1:f9f45f75f332e03fc7e9fe9188ea4e1ce4d14779ef34fa1b023da67518e36327"
-  name = "github.com/google/go-cmp"
-  packages = [
-    "cmp",
-    "cmp/internal/diff",
-    "cmp/internal/function",
-    "cmp/internal/value",
-  ]
-  pruneopts = ""
-  revision = "3af367b6b30c263d47e8895973edcca9a49cf029"
-  version = "v0.2.0"
-
-[[projects]]
   branch = "master"
   digest = "1:9abc49f39e3e23e262594bb4fb70abf74c0c99e94f99153f43b143805e850719"
   name = "github.com/google/go-querystring"
@@ -442,25 +429,6 @@
   pruneopts = ""
   revision = "ab8a2e0c74be9d3be70b3184d9acc634935ded82"
   version = "1.1.4"
-
-[[projects]]
-  digest = "1:51bb93472f3765098a4375e1256a75f7c2740da47fb68ae702bdfe1c21339c76"
-  name = "github.com/kubernetes-incubator/external-dns"
-  packages = [
-    "controller",
-    "endpoint",
-    "internal/testutils",
-    "pkg/apis/externaldns",
-    "pkg/apis/externaldns/validation",
-    "pkg/tlsutils",
-    "plan",
-    "provider",
-    "registry",
-    "source",
-  ]
-  pruneopts = ""
-  revision = "b677f1f6a7cfc4cda139509015568152f98e8cfb"
-  version = "v0.5.10"
 
 [[projects]]
   branch = "master"
@@ -616,14 +584,6 @@
   ]
   pruneopts = ""
   revision = "a6e9df898b1336106c743392c48ee0b71f5c4efa"
-
-[[projects]]
-  branch = "master"
-  digest = "1:bb2ccb2d56cbafdec58af0f473f45304e19876f09fa671960ca87802b656a9c0"
-  name = "github.com/sanyu/dynectsoap"
-  packages = ["dynectsoap"]
-  pruneopts = ""
-  revision = "b83de5edc4e022f22903eeb3b428d2f39fb740e5"
 
 [[projects]]
   digest = "1:7f569d906bdd20d906b606415b7d794f798f91a62fcfb6a4daa6d50690fb7a3f"
@@ -1179,16 +1139,6 @@
     "github.com/gophercloud/gophercloud/openstack/dns/v2/zones",
     "github.com/gophercloud/gophercloud/pagination",
     "github.com/infobloxopen/infoblox-go-client",
-    "github.com/kubernetes-incubator/external-dns/controller",
-    "github.com/kubernetes-incubator/external-dns/endpoint",
-    "github.com/kubernetes-incubator/external-dns/internal/testutils",
-    "github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns",
-    "github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns/validation",
-    "github.com/kubernetes-incubator/external-dns/pkg/tlsutils",
-    "github.com/kubernetes-incubator/external-dns/plan",
-    "github.com/kubernetes-incubator/external-dns/provider",
-    "github.com/kubernetes-incubator/external-dns/registry",
-    "github.com/kubernetes-incubator/external-dns/source",
     "github.com/kubernetes/repo-infra/verify/boilerplate/test",
     "github.com/linki/instrumented_http",
     "github.com/linode/linodego",

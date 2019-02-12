@@ -46,3 +46,4 @@ external-dns
 
 # vendor dir
 vendor/
+.vendor-new/
