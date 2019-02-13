@@ -269,7 +269,7 @@ func (r rfc2136Provider) RemoveRecord(ep *endpoint.Endpoint) error {
 	log.Debugf("RemoveRecord.ep=%s", ep)
 
 	newRR := fmt.Sprintf("%s 0 %s 0.0.0.0", ep.DNSName, ep.RecordType)
-	log.Debugf("Adding RR: %s", newRR)
+	log.Debugf("Removing RR: %s", newRR)
 
 	rr, err := dns.NewRR(newRR)
 	if err != nil {
