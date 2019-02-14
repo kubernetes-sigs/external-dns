@@ -368,10 +368,15 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 
 // newChanges returns a collection of Changes based on the given records and action.
 func (p *AWSProvider) newChanges(action string, endpoints []*endpoint.Endpoint) []*route53.Change {
+	records, err := p.Records()
+	if err != nil {
+		log.Errorf("getting records failed: %v", err)
+	}
+
 	changes := make([]*route53.Change, 0, len(endpoints))
 
 	for _, endpoint := range endpoints {
-		changes = append(changes, p.newChange(action, endpoint))
+		changes = append(changes, p.newChange(action, endpoint, records))
 	}
 
 	return changes
@@ -380,7 +385,7 @@ func (p *AWSProvider) newChanges(action string, endpoints []*endpoint.Endpoint) 
 // newChange returns a Change of the given record by the given action, e.g.
 // action=ChangeActionCreate returns a change for creation of the record and
 // action=ChangeActionDelete returns a change for deletion of the record.
-func (p *AWSProvider) newChange(action string, endpoint *endpoint.Endpoint) *route53.Change {
+func (p *AWSProvider) newChange(action string, endpoint *endpoint.Endpoint, recordsCache []*endpoint.Endpoint) *route53.Change {
 	change := &route53.Change{
 		Action: aws.String(action),
 		ResourceRecordSet: &route53.ResourceRecordSet{
@@ -388,15 +393,10 @@ func (p *AWSProvider) newChange(action string, endpoint *endpoint.Endpoint) *rou
 		},
 	}
 
-	rec, err := p.Records()
-	if err != nil {
-		log.Infof("getting records failed: %v", err)
-	}
-
 	if isAWSLoadBalancer(endpoint) {
 		evalTargetHealth := p.evaluateTargetHealth
-		if _, ok := endpoint.ProviderSpecific[providerSpecificEvaluateTargetHealth]; ok {
-			evalTargetHealth = endpoint.ProviderSpecific[providerSpecificEvaluateTargetHealth] == "true"
+		if prop, ok := endpoint.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); ok {
+			evalTargetHealth = prop.Value == "true"
 		}
 
 		change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
@@ -405,7 +405,7 @@ func (p *AWSProvider) newChange(action string, endpoint *endpoint.Endpoint) *rou
 			HostedZoneId:         aws.String(canonicalHostedZone(endpoint.Targets[0])),
 			EvaluateTargetHealth: aws.Bool(evalTargetHealth),
 		}
-	} else if hostedZone := isAWSAlias(endpoint, rec); hostedZone != "" {
+	} else if hostedZone := isAWSAlias(endpoint, recordsCache); hostedZone != "" {
 		zones, err := p.Zones()
 		if err != nil {
 			log.Errorf("getting zones failed: %v", err)
@@ -588,7 +588,7 @@ func isAWSLoadBalancer(ep *endpoint.Endpoint) bool {
 
 // isAWSAlias determines if a given hostname belongs to an AWS Alias record by doing an reverse lookup.
 func isAWSAlias(ep *endpoint.Endpoint, addrs []*endpoint.Endpoint) string {
-	if val, exists := ep.ProviderSpecific["alias"]; ep.RecordType == endpoint.RecordTypeCNAME && exists && val == "true" {
+	if prop, exists := ep.GetProviderSpecificProperty("alias"); ep.RecordType == endpoint.RecordTypeCNAME && exists && prop.Value == "true" {
 		for _, addr := range addrs {
 			if addr.DNSName == ep.Targets[0] {
 				if hostedZone := canonicalHostedZone(addr.Targets[0]); hostedZone != "" {

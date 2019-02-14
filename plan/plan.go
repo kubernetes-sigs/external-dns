@@ -105,7 +105,7 @@ func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*en
 		if row.current != nil && len(row.candidates) > 0 { //dns name is taken
 			update := t.resolver.ResolveUpdate(row.current, row.candidates)
 			// compare "update" to "current" to figure out if actual update is required
-			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) {
+			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || shouldUpdateProviderSpecific(update, row.current) {
 				inheritOwner(row.current, update)
 				updateNew = append(updateNew, update)
 				updateOld = append(updateOld, row.current)
@@ -183,6 +183,27 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 		return false
 	}
 	return desired.RecordTTL != current.RecordTTL
+}
+
+func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
+	if current.ProviderSpecific == nil && len(desired.ProviderSpecific) == 0 {
+		return false
+	}
+	for _, c := range current.ProviderSpecific {
+		// don't consider target health when detecting changes
+		// see: https://github.com/kubernetes-incubator/external-dns/issues/869#issuecomment-458576954
+		if c.Name == "aws/evaluate-target-health" {
+			continue
+		}
+
+		for _, d := range desired.ProviderSpecific {
+			if d.Name == c.Name && d.Value != c.Value {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // filterRecordsForPlan removes records that are not relevant to the planner.
