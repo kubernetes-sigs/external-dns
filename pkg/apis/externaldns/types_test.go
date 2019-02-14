@@ -78,8 +78,6 @@ var (
 		ExoscaleEndpoint:        "https://api.exoscale.ch/dns",
 		ExoscaleAPIKey:          "",
 		ExoscaleAPISecret:       "",
-		CRDSourceAPIVersion:     "externaldns.k8s.io/v1alpha1",
-		CRDSourceKind:           "DNSEndpoint",
 	}
 
 	overriddenConfig = &Config{
@@ -136,8 +134,6 @@ var (
 		ExoscaleEndpoint:        "https://api.foo.ch/dns",
 		ExoscaleAPIKey:          "1",
 		ExoscaleAPISecret:       "2",
-		CRDSourceAPIVersion:     "test.k8s.io/v1alpha1",
-		CRDSourceKind:           "Endpoint",
 	}
 )
 

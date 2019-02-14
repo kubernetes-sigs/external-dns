@@ -98,8 +98,6 @@ type Config struct {
 	ExoscaleEndpoint         string
 	ExoscaleAPIKey           string
 	ExoscaleAPISecret        string
-	CRDSourceAPIVersion      string
-	CRDSourceKind            string
 	ServiceTypeFilter        []string
 	RFC2136Host              string
 	RFC2136Port              int
@@ -168,8 +166,6 @@ var defaultConfig = &Config{
 	ExoscaleEndpoint:         "https://api.exoscale.ch/dns",
 	ExoscaleAPIKey:           "",
 	ExoscaleAPISecret:        "",
-	CRDSourceAPIVersion:      "externaldns.k8s.io/v1alpha1",
-	CRDSourceKind:            "DNSEndpoint",
 	ServiceTypeFilter:        []string{},
 	RFC2136Host:              "",
 	RFC2136Port:              0,
@@ -235,8 +231,6 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)").BoolVar(&cfg.PublishInternal)
 	app.Flag("publish-host-ip", "Allow external-dns to publish host-ip for headless services (optional)").BoolVar(&cfg.PublishHostIP)
 	app.Flag("connector-source-server", "The server to connect for connector source, valid only when using connector source").Default(defaultConfig.ConnectorSourceServer).StringVar(&cfg.ConnectorSourceServer)
-	app.Flag("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source").Default(defaultConfig.CRDSourceAPIVersion).StringVar(&cfg.CRDSourceAPIVersion)
-	app.Flag("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion").Default(defaultConfig.CRDSourceKind).StringVar(&cfg.CRDSourceKind)
 	app.Flag("service-type-filter", "The service types to take care about (default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)").StringsVar(&cfg.ServiceTypeFilter)
 
 	// Flags related to providers

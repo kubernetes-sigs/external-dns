@@ -46,8 +46,6 @@ type Config struct {
 	PublishInternal          bool
 	PublishHostIP            bool
 	ConnectorServer          string
-	CRDSourceAPIVersion      string
-	CRDSourceKind            string
 	KubeConfig               string
 	KubeMaster               string
 	ServiceTypeFilter        []string
@@ -134,15 +132,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 	case "connector":
 		return NewConnectorSource(cfg.ConnectorServer)
 	case "crd":
-		client, err := p.KubeClient()
-		if err != nil {
-			return nil, err
-		}
-		crdClient, scheme, err := NewCRDClientForAPIVersionKind(client, cfg.KubeConfig, cfg.KubeMaster, cfg.CRDSourceAPIVersion, cfg.CRDSourceKind)
-		if err != nil {
-			return nil, err
-		}
-		return NewCRDSource(crdClient, cfg.Namespace, cfg.CRDSourceKind, scheme)
+		return NewCRDSource(cfg.KubeConfig, cfg.KubeMaster)
 	}
 	return nil, ErrSourceNotFound
 }

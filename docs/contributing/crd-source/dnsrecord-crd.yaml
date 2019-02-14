@@ -1,0 +1,50 @@
+apiVersion: "apiextensions.k8s.io/v1beta1"
+kind: "CustomResourceDefinition"
+metadata:
+  name: dnsrecords.externaldns.k8s.io
+spec:
+  group: externaldns.k8s.io
+  version: v1alpha1
+  names:
+    kind: DNSRecord
+    plural: dnsrecords
+    singular: dnsrecord
+  scope: Namespaced
+  validation:
+    openAPIV3Schema:
+      required: ["spec"]
+      properties:
+        spec:
+          required: ["records"]
+          properties:
+            records:
+              type: array
+              minItems: 1
+              items:
+                required: ["name","targets"]
+                properties:
+                  name:
+                    type: string
+                  ttl:
+                    type: integer
+                  type:
+                    type: string
+                  targets:
+                    type: array
+                    minItems: 1
+                    items:
+                      type: string
+                    type: array
+                  providerSpecific:
+                    type: array 
+                    items:
+                      properties:
+                        name: 
+                          type: string
+                        value:
+                          type: string
+                      type: object
+                    type: array
+                type: object
+              type: array
+          type: object

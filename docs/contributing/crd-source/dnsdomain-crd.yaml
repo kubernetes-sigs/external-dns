@@ -1,0 +1,30 @@
+apiVersion: "apiextensions.k8s.io/v1beta1"
+kind: "CustomResourceDefinition"
+metadata:
+  name: dnszones.externaldns.k8s.io
+spec:
+  group: externaldns.k8s.io
+  version: v1alpha1
+  names:
+    kind: DNSZone
+    plural: dnszones
+    singular: dnszone
+  scope: Namespaced
+  validation:
+    openAPIV3Schema:
+      required: ["spec"]
+      properties:
+        spec:
+          required: ["name"]
+          properties:
+            name:
+              type: string
+            providerSpecific:
+              items:
+                properties:
+                  name: 
+                    type: string
+                  value:
+                    type: string
+                type: object
+              type: array

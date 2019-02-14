@@ -1,0 +1,16 @@
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSRecord
+metadata:
+  name: examplednsrecord
+  namespace: external-dns
+spec:
+  records:
+  - name: foo1.bar.com
+    ttl: 300
+    type: A
+    targets:
+    - 192.168.99.216
+  - name: foo2.bar.com
+    type: A
+    targets:
+    - 192.168.99.217
