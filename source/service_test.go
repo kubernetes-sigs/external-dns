@@ -1565,7 +1565,7 @@ func TestHeadlessServices(t *testing.T) {
 				hostnameAnnotationKey: "service.example.org",
 			},
 			v1.ClusterIPNone,
-			"1.1.1.1",
+			[]string{"1.1.1.1", "1.1.1.2"},
 			map[string]string{
 				"component": "foo",
 			},
@@ -1796,7 +1796,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				hostnameAnnotationKey: "service.example.org",
 			},
 			v1.ClusterIPNone,
-			"1.1.1.1",
+			[]string{"1.1.1.1", "1.1.1.2"},
 			map[string]string{
 				"component": "foo",
 			},
