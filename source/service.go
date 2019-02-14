@@ -25,7 +25,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -173,6 +173,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		return endpoints
 	}
 
+	targetsByHeadlessDomain := make(map[string][]string)
 	for _, v := range pods.Items {
 		headlessDomain := hostname
 		if v.Spec.Hostname != "" {
@@ -183,11 +184,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 			log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, v.Status.HostIP)
 			// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
 			if v.Status.Phase == v1.PodRunning {
-				if ttl.IsConfigured() {
-					endpoints = append(endpoints, endpoint.NewEndpointWithTTL(headlessDomain, endpoint.RecordTypeA, ttl, v.Status.HostIP))
-				} else {
-					endpoints = append(endpoints, endpoint.NewEndpoint(headlessDomain, endpoint.RecordTypeA, v.Status.HostIP))
-				}
+				targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], v.Status.HostIP)
 			} else {
 				log.Debugf("Pod %s is not in running phase", v.Spec.Hostname)
 			}
@@ -195,16 +192,26 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 			log.Debugf("Generating matching endpoint %s with PodIP %s", headlessDomain, v.Status.PodIP)
 			// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
 			if v.Status.Phase == v1.PodRunning {
-				if ttl.IsConfigured() {
-					endpoints = append(endpoints, endpoint.NewEndpointWithTTL(headlessDomain, endpoint.RecordTypeA, ttl, v.Status.PodIP))
-				} else {
-					endpoints = append(endpoints, endpoint.NewEndpoint(headlessDomain, endpoint.RecordTypeA, v.Status.PodIP))
-				}
+				targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], v.Status.PodIP)
 			} else {
 				log.Debugf("Pod %s is not in running phase", v.Spec.Hostname)
 			}
 		}
 
+	}
+
+	headlessDomains := []string{}
+	for headlessDomain := range targetsByHeadlessDomain {
+		headlessDomains = append(headlessDomains, headlessDomain)
+	}
+	sort.Strings(headlessDomains)
+	for _, headlessDomain := range headlessDomains {
+		targets := targetsByHeadlessDomain[headlessDomain]
+		if ttl.IsConfigured() {
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(headlessDomain, endpoint.RecordTypeA, ttl, targets...))
+		} else {
+			endpoints = append(endpoints, endpoint.NewEndpoint(headlessDomain, endpoint.RecordTypeA, targets...))
+		}
 	}
 
 	return endpoints
@@ -220,9 +227,10 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service, nodeTargets endp
 		return nil, fmt.Errorf("failed to apply template on service %s: %v", svc.String(), err)
 	}
 
+	providerSpecific := getProviderSpecificAnnotations(svc.Annotations)
 	hostnameList := strings.Split(strings.Replace(buf.String(), " ", "", -1), ",")
 	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, nodeTargets)...)
+		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, nodeTargets, providerSpecific)...)
 	}
 
 	return endpoints, nil
@@ -231,15 +239,14 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service, nodeTargets endp
 // endpointsFromService extracts the endpoints from a service object
 func (sc *serviceSource) endpoints(svc *v1.Service, nodeTargets endpoint.Targets) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
-
 	// Skip endpoints if we do not want entries from annotations
 	if !sc.ignoreHostnameAnnotation {
+		providerSpecific := getProviderSpecificAnnotations(svc.Annotations)
 		hostnameList := getHostnamesFromAnnotations(svc.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, nodeTargets)...)
+			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, nodeTargets, providerSpecific)...)
 		}
 	}
-
 	return endpoints
 }
 
@@ -293,7 +300,7 @@ func (sc *serviceSource) setResourceLabel(service v1.Service, endpoints []*endpo
 	}
 }
 
-func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, nodeTargets endpoint.Targets) []*endpoint.Endpoint {
+func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, nodeTargets endpoint.Targets, providerSpecific endpoint.ProviderSpecific) []*endpoint.Endpoint {
 	hostname = strings.TrimSuffix(hostname, ".")
 	ttl, err := getTTLFromAnnotations(svc.Annotations)
 	if err != nil {
@@ -301,19 +308,21 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, nod
 	}
 
 	epA := &endpoint.Endpoint{
-		RecordTTL:  ttl,
-		RecordType: endpoint.RecordTypeA,
-		Labels:     endpoint.NewLabels(),
-		Targets:    make(endpoint.Targets, 0, defaultTargetsCapacity),
-		DNSName:    hostname,
+		RecordTTL:        ttl,
+		RecordType:       endpoint.RecordTypeA,
+		Labels:           endpoint.NewLabels(),
+		Targets:          make(endpoint.Targets, 0, defaultTargetsCapacity),
+		DNSName:          hostname,
+		ProviderSpecific: providerSpecific,
 	}
 
 	epCNAME := &endpoint.Endpoint{
-		RecordTTL:  ttl,
-		RecordType: endpoint.RecordTypeCNAME,
-		Labels:     endpoint.NewLabels(),
-		Targets:    make(endpoint.Targets, 0, defaultTargetsCapacity),
-		DNSName:    hostname,
+		RecordTTL:        ttl,
+		RecordType:       endpoint.RecordTypeCNAME,
+		Labels:           endpoint.NewLabels(),
+		Targets:          make(endpoint.Targets, 0, defaultTargetsCapacity),
+		DNSName:          hostname,
+		ProviderSpecific: providerSpecific,
 	}
 
 	var endpoints []*endpoint.Endpoint

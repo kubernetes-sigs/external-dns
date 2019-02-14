@@ -14,7 +14,11 @@ Here is typical example of [CRD API type](https://github.com/kubernetes-incubato
 ```go
 type TTL int64
 type Targets []string
-type ProviderSpecific map[string]string
+type ProviderSpecificProperty struct {
+	Name  string
+	Value string
+}
+type ProviderSpecific []ProviderSpecificProperty
 
 type Endpoint struct {
 	// The hostname of the DNS record

@@ -21,8 +21,8 @@ ignored = ["github.com/kubernetes/repo-infra/kazel"]
   version = "~1.13.7"
 
 [[constraint]]
+  branch = "master"
   name = "github.com/cloudflare/cloudflare-go"
-  version = "0.7.3"
 
 [[constraint]]
   name = "github.com/digitalocean/godo"
