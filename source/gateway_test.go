@@ -68,6 +68,7 @@ func (suite *GatewaySuite) SetupTest() {
 		"",
 		"{{.Name}}",
 		false,
+		false,
 	)
 	suite.NoError(err, "should initialize gateway source")
 
@@ -141,6 +142,7 @@ func TestNewIstioGatewaySource(t *testing.T) {
 				ti.annotationFilter,
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
+				false,
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -273,6 +275,7 @@ func testGatewayEndpoints(t *testing.T) {
 		expectError              bool
 		fqdnTemplate             string
 		combineFQDNAndAnnotation bool
+		ignoreHostnameAnnotation bool
 	}{
 		{
 			title:           "no gateway",
@@ -913,6 +916,51 @@ func testGatewayEndpoints(t *testing.T) {
 			expected:     []*endpoint.Endpoint{},
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
 		},
+		{
+			title:                    "ignore hostname annotations",
+			ignoreHostnameAnnotation: true,
+			targetNamespace:          "",
+			ingressGateway: fakeIngressGateway{
+				ips:       []string{"8.8.8.8"},
+				hostnames: []string{"lb.com"},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						hostnameAnnotationKey: "ignore.me",
+					},
+					dnsnames: [][]string{{"example.org"}},
+				},
+				{
+					name:      "fake2",
+					namespace: namespace,
+					annotations: map[string]string{
+						hostnameAnnotationKey: "ignore.me.too",
+					},
+					dnsnames: [][]string{{"new.org"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "example.org",
+					Targets: endpoint.Targets{"8.8.8.8"},
+				},
+				{
+					DNSName: "example.org",
+					Targets: endpoint.Targets{"lb.com"},
+				},
+				{
+					DNSName: "new.org",
+					Targets: endpoint.Targets{"8.8.8.8"},
+				},
+				{
+					DNSName: "new.org",
+					Targets: endpoint.Targets{"lb.com"},
+				},
+			},
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			configs := make([]istiomodel.Config, 0)
@@ -939,6 +987,7 @@ func testGatewayEndpoints(t *testing.T) {
 				ti.annotationFilter,
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
+				ti.ignoreHostnameAnnotation,
 			)
 			require.NoError(t, err)
 
@@ -971,6 +1020,7 @@ func newTestGatewaySource(ingress *v1.Service) (*gatewaySource, error) {
 		"default",
 		"",
 		"{{.Name}}",
+		false,
 		false,
 	)
 	if err != nil {

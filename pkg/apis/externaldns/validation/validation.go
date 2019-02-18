@@ -65,5 +65,9 @@ func ValidateConfig(cfg *externaldns.Config) error {
 			return errors.New("TTL specified for Dyn is negative")
 		}
 	}
+
+	if cfg.IgnoreHostnameAnnotation && cfg.FQDNTemplate == "" {
+		return errors.New("FQDN Template must be set if ignoring annotations")
+	}
 	return nil
 }
