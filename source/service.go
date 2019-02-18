@@ -25,7 +25,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -48,16 +48,17 @@ type serviceSource struct {
 	namespace        string
 	annotationFilter string
 	// process Services with legacy annotations
-	compatibility         string
-	fqdnTemplate          *template.Template
-	combineFQDNAnnotation bool
-	publishInternal       bool
-	publishHostIP         bool
-	serviceTypeFilter     map[string]struct{}
+	compatibility            string
+	fqdnTemplate             *template.Template
+	combineFQDNAnnotation    bool
+	ignoreHostnameAnnotation bool
+	publishInternal          bool
+	publishHostIP            bool
+	serviceTypeFilter        map[string]struct{}
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, serviceTypeFilter []string) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -79,15 +80,16 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	}
 
 	return &serviceSource{
-		client:                kubeClient,
-		namespace:             namespace,
-		annotationFilter:      annotationFilter,
-		compatibility:         compatibility,
-		fqdnTemplate:          tmpl,
-		combineFQDNAnnotation: combineFqdnAnnotation,
-		publishInternal:       publishInternal,
-		publishHostIP:         publishHostIP,
-		serviceTypeFilter:     serviceTypes,
+		client:                   kubeClient,
+		namespace:                namespace,
+		annotationFilter:         annotationFilter,
+		compatibility:            compatibility,
+		fqdnTemplate:             tmpl,
+		combineFQDNAnnotation:    combineFqdnAnnotation,
+		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
+		publishInternal:          publishInternal,
+		publishHostIP:            publishHostIP,
+		serviceTypeFilter:        serviceTypes,
 	}, nil
 }
 
@@ -237,13 +239,14 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service, nodeTargets endp
 // endpointsFromService extracts the endpoints from a service object
 func (sc *serviceSource) endpoints(svc *v1.Service, nodeTargets endpoint.Targets) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
-
-	providerSpecific := getProviderSpecificAnnotations(svc.Annotations)
-	hostnameList := getHostnamesFromAnnotations(svc.Annotations)
-	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, nodeTargets, providerSpecific)...)
+	// Skip endpoints if we do not want entries from annotations
+	if !sc.ignoreHostnameAnnotation {
+		providerSpecific := getProviderSpecificAnnotations(svc.Annotations)
+		hostnameList := getHostnamesFromAnnotations(svc.Annotations)
+		for _, hostname := range hostnameList {
+			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, nodeTargets, providerSpecific)...)
+		}
 	}
-
 	return endpoints
 }
 
