@@ -180,7 +180,7 @@ These annotations will be used to determine what services should be registered w
 
 Create the Deployment and Service:
 
-```
+```bash
 $ kubectl create -f nginx.yaml
 ```
 
@@ -194,7 +194,7 @@ Check your [RcodeZero Configured Zones](https://my.rcodezero.at/domain) and sele
 
 Once you have verified that ExternalDNS successfully manages RcodeZero DNS records for external services, you can delete the tutorial example as follows:
 
-```
+```bash
 $ kubectl delete -f nginx.yaml
 $ kubectl delete -f externaldns.yaml
 ```
