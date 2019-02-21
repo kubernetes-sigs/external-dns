@@ -17,9 +17,10 @@ limitations under the License.
 package source
 
 import (
-	"testing"
-
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"sort"
+	"strings"
+	"testing"
 )
 
 // test helper functions
@@ -28,6 +29,13 @@ func validateEndpoints(t *testing.T, endpoints, expected []*endpoint.Endpoint) {
 	if len(endpoints) != len(expected) {
 		t.Fatalf("expected %d endpoints, got %d", len(expected), len(endpoints))
 	}
+	// Make sure endpoints are sorted - validateEndpoint() depends on it.
+	sort.SliceStable(endpoints, func(i, j int) bool {
+		return strings.Compare(endpoints[i].DNSName, endpoints[j].DNSName) < 0
+	})
+	sort.SliceStable(expected, func(i, j int) bool {
+		return strings.Compare(expected[i].DNSName, expected[j].DNSName) < 0
+	})
 
 	for i := range endpoints {
 		validateEndpoint(t, endpoints[i], expected[i])
