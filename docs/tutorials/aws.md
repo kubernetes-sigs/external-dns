@@ -44,7 +44,7 @@ $ aws route53 create-hosted-zone --name "external-dns-test.my-org.com." --caller
 ```
 
 
-Make a note of the ID of the hosted zone you just created.
+Make a note of the ID of the hosted zone you just created, which will serve as the value for my-hostedzone-identifier.
 
 ```console
 $ aws route53 list-hosted-zones-by-name --output json --dns-name "external-dns-test.my-org.com." | jq -r '.HostedZones[0].Id'
@@ -92,7 +92,7 @@ spec:
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
         - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
-        - --txt-owner-id=my-identifier
+        - --txt-owner-id=my-hostedzone-identifier
 ```
 
 ### Manifest (for clusters with RBAC enabled)
@@ -158,7 +158,7 @@ spec:
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
         - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
-        - --txt-owner-id=my-identifier
+        - --txt-owner-id=my-hostedzone-identifier
 ```
 
 
@@ -264,7 +264,7 @@ $ aws route53 list-resource-record-sets --output json --hosted-zone-id "/hostedz
       "TTL": 300,
       "ResourceRecords": [
           {
-              "Value": "\"heritage=external-dns,external-dns/owner=my-identifier\""
+              "Value": "\"heritage=external-dns,external-dns/owner=my-hostedzone-identifier\""
           }
       ],
       "Type": "TXT"
