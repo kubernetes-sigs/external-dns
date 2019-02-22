@@ -208,6 +208,8 @@ Create the following sample application to test that ExternalDNS works.
 
 > For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the corresponding value.
 
+> If you want to give multiple names to service, you can set it to external-dns.alpha.kubernetes.io/hostname with a comma separator.
+
 ```yaml
 apiVersion: v1
 kind: Service
