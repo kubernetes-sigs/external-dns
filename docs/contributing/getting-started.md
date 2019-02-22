@@ -2,7 +2,7 @@
 
 ### Building
 
-You can build ExternalDNS for your platform with `make build`, you may have to install the necessary dependencies with `sudo make dep`. The binary will land at `build/external-dns`.
+You can build ExternalDNS for your platform with `make build`, you may have to install the necessary dependencies with `make dep`. The binary will land at `build/external-dns`.
 
 ### Design
 
