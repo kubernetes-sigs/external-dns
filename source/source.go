@@ -40,7 +40,7 @@ const (
 	// The value of the controller annotation so that we feel responsible
 	controllerAnnotationValue = "dns-controller"
 	// The annotation used to configure which nodes should be returned for nodeport services
-	nodeAnnotationFilterKey = "external-dns.alpha.kubernetes.io/node-annotation-filter"
+	nodeLabelFilterKey = "external-dns.alpha.kubernetes.io/node-label-filter"
 )
 
 const (

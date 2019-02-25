@@ -127,8 +127,8 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		nodes := allNodes
 
 		// if needed, filter the nodes by annotation filter
-		if nodeAnnotationFilter, ok := svc.Annotations[nodeAnnotationFilterKey]; ok {
-			nodes, err = sc.filterNodesByAnnotations(nodeAnnotationFilter, nodes)
+		if nodeLabelsFilter, ok := svc.Annotations[nodeLabelFilterKey]; ok {
+			nodes, err = sc.filterNodesByLabels(nodeLabelsFilter, nodes)
 		}
 
 		// get the ip addresses of all the nodes and cache them for this run
@@ -282,9 +282,9 @@ func (sc *serviceSource) filterByAnnotations(services []v1.Service) ([]v1.Servic
 	return filteredList, nil
 }
 
-// filterNodesByAnnotations filters a list of nodes by a given annotation selector.
-func (sc *serviceSource) filterNodesByAnnotations(nodeAnnotationFilter string, nodes []v1.Node) ([]v1.Node, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(nodeAnnotationFilter)
+// filterNodesByLabels filters a list of nodes by a given annotation selector.
+func (sc *serviceSource) filterNodesByLabels(nodeLabelsFilter string, nodes []v1.Node) ([]v1.Node, error) {
+	labelSelector, err := metav1.ParseToLabelSelector(nodeLabelsFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -302,10 +302,10 @@ func (sc *serviceSource) filterNodesByAnnotations(nodeAnnotationFilter string, n
 
 	for _, node := range nodes {
 		// convert the service's annotations to an equivalent label selector
-		annotations := labels.Set(node.Annotations)
+		nodeLabels := labels.Set(node.Labels)
 
-		// include service if its annotations match the selector
-		if selector.Matches(annotations) {
+		// include node if its annotations match the selector
+		if selector.Matches(nodeLabels) {
 			filteredList = append(filteredList, node)
 		}
 	}
