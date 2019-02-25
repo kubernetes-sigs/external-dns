@@ -64,3 +64,6 @@ func (cs *connectorSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 	return endpoints, nil
 }
+
+func (cs *connectorSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+}

@@ -108,6 +108,7 @@ type Config struct {
 	Interval                          time.Duration
 	Once                              bool
 	DryRun                            bool
+	UpdateEvents                      bool
 	LogFormat                         string
 	MetricsAddress                    string
 	LogLevel                          string
@@ -201,6 +202,7 @@ var defaultConfig = &Config{
 	Interval:                    time.Minute,
 	Once:                        false,
 	DryRun:                      false,
+	UpdateEvents:                false,
 	LogFormat:                   "text",
 	MetricsAddress:              ":7979",
 	LogLevel:                    logrus.InfoLevel.String(),
@@ -382,6 +384,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("interval", "The interval between two consecutive synchronizations in duration format (default: 1m)").Default(defaultConfig.Interval.String()).DurationVar(&cfg.Interval)
 	app.Flag("once", "When enabled, exits the synchronization loop after the first iteration (default: disabled)").BoolVar(&cfg.Once)
 	app.Flag("dry-run", "When enabled, prints DNS record changes rather than actually performing them (default: disabled)").BoolVar(&cfg.DryRun)
+	app.Flag("events", "When enabled, in addition to running every interval, the reconciliation loop will get triggered when supported sources change (default: disabled)").BoolVar(&cfg.UpdateEvents)
 
 	// Miscellaneous flags
 	app.Flag("log-format", "The format in which log messages are printed (default: text, options: text, json)").Default(defaultConfig.LogFormat).EnumVar(&cfg.LogFormat, "text", "json")
