@@ -332,3 +332,6 @@ func parseContourLoadBalancerService(service string) (namespace, name string, er
 
 	return
 }
+
+func (sc *ingressRouteSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+}

@@ -167,6 +167,9 @@ func (ns *nodeSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpointsSlice, nil
 }
 
+func (ns *nodeSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+}
+
 // nodeAddress returns node's externalIP and if that's not found, node's internalIP
 // basically what k8s.io/kubernetes/pkg/util/node.GetPreferredNodeAddress does
 func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
