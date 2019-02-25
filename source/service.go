@@ -107,8 +107,7 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		services.Items = sc.filterByServiceType(services.Items)
 	}
 
-	// get the ip addresses of all the nodes and cache them for this run
-	nodeTargets, err := sc.extractNodeTargets()
+	allNodes, err := sc.listNodes()
 	if err != nil {
 		return nil, err
 	}
@@ -122,6 +121,20 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			log.Debugf("Skipping service %s/%s because controller value does not match, found: %s, required: %s",
 				svc.Namespace, svc.Name, controller, controllerAnnotationValue)
 			continue
+		}
+
+		// loop copy
+		nodes := allNodes
+
+		// if needed, filter the nodes by annotation filter
+		if nodeAnnotationFilter, ok := svc.Annotations[nodeAnnotationFilterKey]; ok {
+			nodes, err = sc.filterNodesByAnnotations(nodeAnnotationFilter, nodes)
+		}
+
+		// get the ip addresses of all the nodes and cache them for this run
+		nodeTargets, err := sc.extractNodeTargets(nodes)
+		if err != nil {
+			return nil, err
 		}
 
 		svcEndpoints := sc.endpoints(&svc, nodeTargets)
@@ -269,6 +282,37 @@ func (sc *serviceSource) filterByAnnotations(services []v1.Service) ([]v1.Servic
 	return filteredList, nil
 }
 
+// filterNodesByAnnotations filters a list of nodes by a given annotation selector.
+func (sc *serviceSource) filterNodesByAnnotations(nodeAnnotationFilter string, nodes []v1.Node) ([]v1.Node, error) {
+	labelSelector, err := metav1.ParseToLabelSelector(nodeAnnotationFilter)
+	if err != nil {
+		return nil, err
+	}
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		return nil, err
+	}
+
+	// empty filter returns original list
+	if selector.Empty() {
+		return nodes, nil
+	}
+
+	filteredList := []v1.Node{}
+
+	for _, node := range nodes {
+		// convert the service's annotations to an equivalent label selector
+		annotations := labels.Set(node.Annotations)
+
+		// include service if its annotations match the selector
+		if selector.Matches(annotations) {
+			filteredList = append(filteredList, node)
+		}
+	}
+
+	return filteredList, nil
+}
+
 // filterByServiceType filters services according their types
 func (sc *serviceSource) filterByServiceType(services []v1.Service) []v1.Service {
 	filteredList := []v1.Service{}
@@ -372,23 +416,27 @@ func extractLoadBalancerTargets(svc *v1.Service) endpoint.Targets {
 	return targets
 }
 
-func (sc *serviceSource) extractNodeTargets() (endpoint.Targets, error) {
+func (sc *serviceSource) listNodes() ([]v1.Node, error) {
+	nodes, err := sc.client.CoreV1().Nodes().List(metav1.ListOptions{})
+	if err != nil {
+		if errors.IsForbidden(err) {
+			// Return an empty list because it makes sense to continue and try other sources.
+			log.Debugf("Unable to list nodes (Forbidden), returning empty list of nodes (NodePort services will be skipped)")
+			return []v1.Node{}, nil
+		}
+		return nil, err
+	}
+
+	return nodes.Items, nil
+}
+
+func (sc *serviceSource) extractNodeTargets(nodes []v1.Node) (endpoint.Targets, error) {
 	var (
 		internalIPs endpoint.Targets
 		externalIPs endpoint.Targets
 	)
 
-	nodes, err := sc.client.CoreV1().Nodes().List(metav1.ListOptions{})
-	if err != nil {
-		if errors.IsForbidden(err) {
-			// Return an empty list because it makes sense to continue and try other sources.
-			log.Debugf("Unable to list nodes (Forbidden), returning empty list of targets (NodePort services will be skipped)")
-			return endpoint.Targets{}, nil
-		}
-		return nil, err
-	}
-
-	for _, node := range nodes.Items {
+	for _, node := range nodes {
 		for _, address := range node.Status.Addresses {
 			switch address.Type {
 			case v1.NodeExternalIP:
