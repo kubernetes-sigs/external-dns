@@ -1249,7 +1249,7 @@ func TestNodePortServices(t *testing.T) {
 			}},
 		},
 		{
-			"annotated NodePort services return an endpoint with IP addresses of the private cluster's nodes that match node annotations filter",
+			"annotated NodePort services return an endpoint with IP addresses of the private cluster's nodes that match node label filter",
 			"",
 			"",
 			"testing",
@@ -1259,8 +1259,8 @@ func TestNodePortServices(t *testing.T) {
 			"",
 			map[string]string{},
 			map[string]string{
-				hostnameAnnotationKey:   "foo.example.org.",
-				nodeLabelFilterKey: "workload=testing",
+				hostnameAnnotationKey: "foo.example.org.",
+				nodeLabelFilterKey:    "workload=testing",
 			},
 			nil,
 			[]*endpoint.Endpoint{

@@ -126,7 +126,7 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		// loop copy
 		nodes := allNodes
 
-		// if needed, filter the nodes by annotation filter
+		// if needed, filter the nodes by label filter
 		if nodeLabelsFilter, ok := svc.Annotations[nodeLabelFilterKey]; ok {
 			nodes, err = sc.filterNodesByLabels(nodeLabelsFilter, nodes)
 		}
@@ -282,7 +282,7 @@ func (sc *serviceSource) filterByAnnotations(services []v1.Service) ([]v1.Servic
 	return filteredList, nil
 }
 
-// filterNodesByLabels filters a list of nodes by a given annotation selector.
+// filterNodesByLabels filters a list of nodes by a given label selector.
 func (sc *serviceSource) filterNodesByLabels(nodeLabelsFilter string, nodes []v1.Node) ([]v1.Node, error) {
 	labelSelector, err := metav1.ParseToLabelSelector(nodeLabelsFilter)
 	if err != nil {
