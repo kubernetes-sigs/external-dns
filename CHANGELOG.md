@@ -1,3 +1,9 @@
+## v0.5.11 - 2019-02-11
+
+  - Fix constant updating issue introduced with v0.5.10 (#886) @jhohertz
+  - Ignore evaluate target health for calculating changes for AWS (#880) @linki
+  - Pagination for cloudflare zones (#873) @njuettner
+
 ## v0.5.10 - 2019-01-28
 
   - Docs: Improve documentation regarding Alias (#868) @alexnederlof
