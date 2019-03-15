@@ -174,8 +174,9 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 	}
 
 	targetsByHeadlessDomain := make(map[string][]string)
+	considerReadyPodsOnly := getReadyPodsOnlyFromAnnotations(svc.Annotations)
 	for _, v := range pods.Items {
-		if getReadyPodsOnlyFromAnnotations(svc.Annotations) {
+		if considerReadyPodsOnly {
 			podReady := false
 			for _, condition := range v.Status.Conditions {
 				if condition.Type == v1.PodReady && condition.Status == v1.ConditionTrue {
