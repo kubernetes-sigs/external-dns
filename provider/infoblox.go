@@ -39,6 +39,7 @@ type InfobloxConfig struct {
 	Version      string
 	SSLVerify    bool
 	DryRun       bool
+	View         string
 }
 
 // InfobloxProvider implements the DNS provider for Infoblox.
@@ -46,6 +47,7 @@ type InfobloxProvider struct {
 	client       ibclient.IBConnector
 	domainFilter DomainFilter
 	zoneIDFilter ZoneIDFilter
+	view         string
 	dryRun       bool
 }
 
@@ -87,6 +89,7 @@ func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, erro
 		domainFilter: infobloxConfig.DomainFilter,
 		zoneIDFilter: infobloxConfig.ZoneIDFilter,
 		dryRun:       infobloxConfig.DryRun,
+		view:         infobloxConfig.View,
 	}
 
 	return provider, nil
@@ -105,6 +108,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 		objA := ibclient.NewRecordA(
 			ibclient.RecordA{
 				Zone: zone.Fqdn,
+				View: p.view,
 			},
 		)
 		err = p.client.GetObject(objA, "", &resA)
@@ -120,6 +124,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 		objH := ibclient.NewHostRecord(
 			ibclient.HostRecord{
 				Zone: zone.Fqdn,
+				View: p.view,
 			},
 		)
 		err = p.client.GetObject(objH, "", &resH)
@@ -136,6 +141,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 		objC := ibclient.NewRecordCNAME(
 			ibclient.RecordCNAME{
 				Zone: zone.Fqdn,
+				View: p.view,
 			},
 		)
 		err = p.client.GetObject(objC, "", &resC)
@@ -150,6 +156,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 		objT := ibclient.NewRecordTXT(
 			ibclient.RecordTXT{
 				Zone: zone.Fqdn,
+				View: p.view,
 			},
 		)
 		err = p.client.GetObject(objT, "", &resT)
@@ -261,6 +268,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (rec
 			ibclient.RecordA{
 				Name:     ep.DNSName,
 				Ipv4Addr: ep.Targets[0],
+				View:     p.view,
 			},
 		)
 		if getObject {
@@ -279,6 +287,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (rec
 			ibclient.RecordCNAME{
 				Name:      ep.DNSName,
 				Canonical: ep.Targets[0],
+				View:      p.view,
 			},
 		)
 		if getObject {
@@ -302,6 +311,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (rec
 			ibclient.RecordTXT{
 				Name: ep.DNSName,
 				Text: ep.Targets[0],
+				View: p.view,
 			},
 		)
 		if getObject {

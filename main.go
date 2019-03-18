@@ -153,6 +153,7 @@ func main() {
 				Password:     cfg.InfobloxWapiPassword,
 				Version:      cfg.InfobloxWapiVersion,
 				SSLVerify:    cfg.InfobloxSSLVerify,
+				View:         cfg.InfobloxView,
 				DryRun:       cfg.DryRun,
 			},
 		)
