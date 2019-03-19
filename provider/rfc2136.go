@@ -161,7 +161,7 @@ func (r rfc2136Provider) IncomeTransfer(m *dns.Msg, a string) (env chan *dns.Env
 
 func (r rfc2136Provider) List() ([]dns.RR, error) {
 	if !r.axfr {
-		log.Info("axfr is disabled")
+		log.Debug("axfr is disabled")
 		return make([]dns.RR, 0), nil
 	}
 
