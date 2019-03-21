@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -38,6 +39,7 @@ type InfobloxConfig struct {
 	Version      string
 	SSLVerify    bool
 	DryRun       bool
+	View         string
 }
 
 // InfobloxProvider implements the DNS provider for Infoblox.
@@ -45,6 +47,7 @@ type InfobloxProvider struct {
 	client       ibclient.IBConnector
 	domainFilter DomainFilter
 	zoneIDFilter ZoneIDFilter
+	view         string
 	dryRun       bool
 }
 
@@ -86,6 +89,7 @@ func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, erro
 		domainFilter: infobloxConfig.DomainFilter,
 		zoneIDFilter: infobloxConfig.ZoneIDFilter,
 		dryRun:       infobloxConfig.DryRun,
+		view:         infobloxConfig.View,
 	}
 
 	return provider, nil
@@ -95,19 +99,21 @@ func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, erro
 func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error) {
 	zones, err := p.zones()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not fetch zones: %s", err)
 	}
 
 	for _, zone := range zones {
+		logrus.Debugf("fetch records from zone '%s'", zone.Fqdn)
 		var resA []ibclient.RecordA
 		objA := ibclient.NewRecordA(
 			ibclient.RecordA{
 				Zone: zone.Fqdn,
+				View: p.view,
 			},
 		)
 		err = p.client.GetObject(objA, "", &resA)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("could not fetch A records from zone '%s': %s", zone.Fqdn, err)
 		}
 		for _, res := range resA {
 			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, endpoint.RecordTypeA, res.Ipv4Addr))
@@ -118,11 +124,12 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 		objH := ibclient.NewHostRecord(
 			ibclient.HostRecord{
 				Zone: zone.Fqdn,
+				View: p.view,
 			},
 		)
 		err = p.client.GetObject(objH, "", &resH)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("could not fetch host records from zone '%s': %s", zone.Fqdn, err)
 		}
 		for _, res := range resH {
 			for _, ip := range res.Ipv4Addrs {
@@ -134,11 +141,12 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 		objC := ibclient.NewRecordCNAME(
 			ibclient.RecordCNAME{
 				Zone: zone.Fqdn,
+				View: p.view,
 			},
 		)
 		err = p.client.GetObject(objC, "", &resC)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("could not fetch CNAME records from zone '%s': %s", zone.Fqdn, err)
 		}
 		for _, res := range resC {
 			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, endpoint.RecordTypeCNAME, res.Canonical))
@@ -148,11 +156,12 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 		objT := ibclient.NewRecordTXT(
 			ibclient.RecordTXT{
 				Zone: zone.Fqdn,
+				View: p.view,
 			},
 		)
 		err = p.client.GetObject(objT, "", &resT)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("could not fetch TXT records from zone '%s': %s", zone.Fqdn, err)
 		}
 		for _, res := range resT {
 			// The Infoblox API strips enclosing double quotes from TXT records lacking whitespace.
@@ -163,6 +172,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, endpoint.RecordTypeTXT, res.Text))
 		}
 	}
+	logrus.Debugf("fetched %d records from infoblox", len(endpoints))
 	return endpoints, nil
 }
 
@@ -258,6 +268,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (rec
 			ibclient.RecordA{
 				Name:     ep.DNSName,
 				Ipv4Addr: ep.Targets[0],
+				View:     p.view,
 			},
 		)
 		if getObject {
@@ -276,6 +287,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (rec
 			ibclient.RecordCNAME{
 				Name:      ep.DNSName,
 				Canonical: ep.Targets[0],
+				View:      p.view,
 			},
 		)
 		if getObject {
@@ -299,6 +311,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (rec
 			ibclient.RecordTXT{
 				Name: ep.DNSName,
 				Text: ep.Targets[0],
+				View: p.view,
 			},
 		)
 		if getObject {

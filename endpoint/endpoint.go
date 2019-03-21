@@ -109,8 +109,14 @@ func (t Targets) IsLess(o Targets) bool {
 	return false
 }
 
+// ProviderSpecificProperty holds the name and value of a configuration which is specific to individual DNS providers
+type ProviderSpecificProperty struct {
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
 // ProviderSpecific holds configuration which is specific to individual DNS providers
-type ProviderSpecific map[string]string
+type ProviderSpecific []ProviderSpecificProperty
 
 // Endpoint is a high-level way of a connection between a service and an IP
 type Endpoint struct {
@@ -160,8 +166,19 @@ func (e *Endpoint) WithProviderSpecific(key, value string) *Endpoint {
 	if e.ProviderSpecific == nil {
 		e.ProviderSpecific = ProviderSpecific{}
 	}
-	e.ProviderSpecific[key] = value
+
+	e.ProviderSpecific = append(e.ProviderSpecific, ProviderSpecificProperty{Name: key, Value: value})
 	return e
+}
+
+// GetProviderSpecificProperty returns a ProviderSpecificProperty if the property exists.
+func (e *Endpoint) GetProviderSpecificProperty(key string) (ProviderSpecificProperty, bool) {
+	for _, providerSpecific := range e.ProviderSpecific {
+		if providerSpecific.Name == key {
+			return providerSpecific, true
+		}
+	}
+	return ProviderSpecificProperty{}, false
 }
 
 func (e *Endpoint) String() string {

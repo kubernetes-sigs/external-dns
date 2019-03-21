@@ -67,20 +67,21 @@ func main() {
 
 	// Create a source.Config from the flags passed by the user.
 	sourceCfg := &source.Config{
-		Namespace:                cfg.Namespace,
-		AnnotationFilter:         cfg.AnnotationFilter,
-		FQDNTemplate:             cfg.FQDNTemplate,
-		CombineFQDNAndAnnotation: cfg.CombineFQDNAndAnnotation,
-		Compatibility:            cfg.Compatibility,
-		PublishInternal:          cfg.PublishInternal,
-		PublishHostIP:            cfg.PublishHostIP,
-		ConnectorServer:          cfg.ConnectorSourceServer,
-		CRDSourceAPIVersion:      cfg.CRDSourceAPIVersion,
-		CRDSourceKind:            cfg.CRDSourceKind,
-		KubeConfig:               cfg.KubeConfig,
-		KubeMaster:               cfg.Master,
-		ServiceTypeFilter:        cfg.ServiceTypeFilter,
-		IstioIngressGateway:      cfg.IstioIngressGateway,
+		Namespace:                   cfg.Namespace,
+		AnnotationFilter:            cfg.AnnotationFilter,
+		FQDNTemplate:                cfg.FQDNTemplate,
+		CombineFQDNAndAnnotation:    cfg.CombineFQDNAndAnnotation,
+		IgnoreHostnameAnnotation:    cfg.IgnoreHostnameAnnotation,
+		Compatibility:               cfg.Compatibility,
+		PublishInternal:             cfg.PublishInternal,
+		PublishHostIP:               cfg.PublishHostIP,
+		ConnectorServer:             cfg.ConnectorSourceServer,
+		CRDSourceAPIVersion:         cfg.CRDSourceAPIVersion,
+		CRDSourceKind:               cfg.CRDSourceKind,
+		KubeConfig:                  cfg.KubeConfig,
+		KubeMaster:                  cfg.Master,
+		ServiceTypeFilter:           cfg.ServiceTypeFilter,
+		IstioIngressGatewayServices: cfg.IstioIngressGatewayServices,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
@@ -99,6 +100,7 @@ func main() {
 	domainFilter := provider.NewDomainFilter(cfg.DomainFilter)
 	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
+	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
 
 	var p provider.Provider
 	switch cfg.Provider {
@@ -110,10 +112,12 @@ func main() {
 				DomainFilter:         domainFilter,
 				ZoneIDFilter:         zoneIDFilter,
 				ZoneTypeFilter:       zoneTypeFilter,
+				ZoneTagFilter:        zoneTagFilter,
 				BatchChangeSize:      cfg.AWSBatchChangeSize,
 				BatchChangeInterval:  cfg.AWSBatchChangeInterval,
 				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
 				AssumeRole:           cfg.AWSAssumeRole,
+				APIRetries:           cfg.AWSAPIRetries,
 				DryRun:               cfg.DryRun,
 			},
 		)
@@ -127,7 +131,9 @@ func main() {
 	case "azure":
 		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.DryRun)
 	case "cloudflare":
-		p, err = provider.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareProxied, cfg.DryRun)
+		p, err = provider.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareZonesPerPage, cfg.CloudflareProxied, cfg.DryRun)
+	case "rcodezero":
+		p, err = provider.NewRcodeZeroProvider(domainFilter, cfg.DryRun, cfg.RcodezeroTXTEncrypt)
 	case "google":
 		p, err = provider.NewGoogleProvider(cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.DryRun)
 	case "digitalocean":
@@ -147,6 +153,7 @@ func main() {
 				Password:     cfg.InfobloxWapiPassword,
 				Version:      cfg.InfobloxWapiVersion,
 				SSLVerify:    cfg.InfobloxSSLVerify,
+				View:         cfg.InfobloxView,
 				DryRun:       cfg.DryRun,
 			},
 		)

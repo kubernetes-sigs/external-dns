@@ -43,6 +43,12 @@ const (
 	nodeLabelFilterKey = "external-dns.alpha.kubernetes.io/node-label-filter"
 )
 
+// Provider-specific annotations
+const (
+	// The annotation used for determining if traffic will go through Cloudflare
+	CloudflareProxiedKey = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
+)
+
 const (
 	ttlMinimum = 1
 	ttlMaximum = math.MaxUint32
@@ -74,7 +80,6 @@ func getHostnamesFromAnnotations(annotations map[string]string) []string {
 	if !exists {
 		return nil
 	}
-
 	return strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
 }
 
@@ -84,10 +89,22 @@ func getAliasFromAnnotations(annotations map[string]string) bool {
 }
 
 func getProviderSpecificAnnotations(annotations map[string]string) endpoint.ProviderSpecific {
-	if getAliasFromAnnotations(annotations) {
-		return map[string]string{"alias": "true"}
+	providerSpecificAnnotations := endpoint.ProviderSpecific{}
+
+	v, exists := annotations[CloudflareProxiedKey]
+	if exists {
+		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+			Name:  CloudflareProxiedKey,
+			Value: v,
+		})
 	}
-	return map[string]string{}
+	if getAliasFromAnnotations(annotations) {
+		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+			Name:  "alias",
+			Value: "true",
+		})
+	}
+	return providerSpecificAnnotations
 }
 
 // getTargetsFromTargetAnnotation gets endpoints from optional "target" annotation.

@@ -17,15 +17,14 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
 
+	cloudflare "github.com/cloudflare/cloudflare-go"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
-
-	cloudflare "github.com/cloudflare/cloudflare-go"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -66,6 +65,18 @@ func (m *mockCloudFlareClient) ListZones(zoneID ...string) ([]cloudflare.Zone, e
 	return []cloudflare.Zone{{ID: "1234567890", Name: "ext-dns-test.zalando.to."}, {ID: "1234567891", Name: "foo.com."}}, nil
 }
 
+func (m *mockCloudFlareClient) ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error) {
+	return cloudflare.ZonesResponse{
+		Result: []cloudflare.Zone{
+			{ID: "1234567890", Name: "ext-dns-test.zalando.to."},
+			{ID: "1234567891", Name: "foo.com."}},
+		ResultInfo: cloudflare.ResultInfo{
+			Page:       1,
+			TotalPages: 1,
+		},
+	}, nil
+}
+
 type mockCloudFlareUserDetailsFail struct{}
 
 func (m *mockCloudFlareUserDetailsFail) CreateDNSRecord(zoneID string, rr cloudflare.DNSRecord) (*cloudflare.DNSRecordResponse, error) {
@@ -94,6 +105,10 @@ func (m *mockCloudFlareUserDetailsFail) ZoneIDByName(zoneName string) (string, e
 
 func (m *mockCloudFlareUserDetailsFail) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
 	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
+}
+
+func (m *mockCloudFlareUserDetailsFail) ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error) {
+	return cloudflare.ZonesResponse{}, nil
 }
 
 type mockCloudFlareCreateZoneFail struct{}
@@ -153,6 +168,17 @@ func (m *mockCloudFlareDNSRecordsFail) ZoneIDByName(zoneName string) (string, er
 
 func (m *mockCloudFlareDNSRecordsFail) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
 	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
+}
+
+func (m *mockCloudFlareDNSRecordsFail) ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error) {
+	return cloudflare.ZonesResponse{
+		Result: []cloudflare.Zone{
+			{ID: "1234567890", Name: "ext-dns-test.zalando.to."},
+			{ID: "1234567891", Name: "foo.com."}},
+		ResultInfo: cloudflare.ResultInfo{
+			TotalPages: 1,
+		},
+	}, nil
 }
 
 type mockCloudFlareZoneIDByNameFail struct{}
@@ -245,6 +271,10 @@ func (m *mockCloudFlareListZonesFail) ListZones(zoneID ...string) ([]cloudflare.
 	return []cloudflare.Zone{{}}, fmt.Errorf("no zones available")
 }
 
+func (m *mockCloudFlareListZonesFail) ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error) {
+	return cloudflare.ZonesResponse{}, fmt.Errorf("no zones available")
+}
+
 type mockCloudFlareCreateRecordsFail struct{}
 
 func (m *mockCloudFlareCreateRecordsFail) CreateDNSRecord(zoneID string, rr cloudflare.DNSRecord) (*cloudflare.DNSRecordResponse, error) {
@@ -273,6 +303,10 @@ func (m *mockCloudFlareCreateRecordsFail) ZoneIDByName(zoneName string) (string,
 
 func (m *mockCloudFlareCreateRecordsFail) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
 	return []cloudflare.Zone{{}}, fmt.Errorf("no zones available")
+}
+
+func (m *mockCloudFlareCreateRecordsFail) ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error) {
+	return cloudflare.ZonesResponse{}, nil
 }
 
 type mockCloudFlareDeleteRecordsFail struct{}
@@ -305,6 +339,10 @@ func (m *mockCloudFlareDeleteRecordsFail) ListZones(zoneID ...string) ([]cloudfl
 	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
 }
 
+func (m *mockCloudFlareDeleteRecordsFail) ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error) {
+	return cloudflare.ZonesResponse{}, nil
+}
+
 type mockCloudFlareUpdateRecordsFail struct{}
 
 func (m *mockCloudFlareUpdateRecordsFail) CreateDNSRecord(zoneID string, rr cloudflare.DNSRecord) (*cloudflare.DNSRecordResponse, error) {
@@ -333,6 +371,10 @@ func (m *mockCloudFlareUpdateRecordsFail) ZoneIDByName(zoneName string) (string,
 
 func (m *mockCloudFlareUpdateRecordsFail) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
 	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
+}
+
+func (m *mockCloudFlareUpdateRecordsFail) ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error) {
+	return cloudflare.ZonesResponse{}, nil
 }
 
 func TestNewCloudFlareChanges(t *testing.T) {
@@ -365,6 +407,36 @@ func TestNewCloudFlareChanges(t *testing.T) {
 
 func TestNewCloudFlareChangeNoProxied(t *testing.T) {
 	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: "A", Targets: endpoint.Targets{"target"}}, false)
+	assert.False(t, change.ResourceRecordSet.Proxied)
+}
+
+func TestNewCloudFlareProxiedAnnotationTrue(t *testing.T) {
+	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: "A", Targets: endpoint.Targets{"target"}, ProviderSpecific: endpoint.ProviderSpecific{
+		endpoint.ProviderSpecificProperty{
+			Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+			Value: "true",
+		},
+	}}, false)
+	assert.True(t, change.ResourceRecordSet.Proxied)
+}
+
+func TestNewCloudFlareProxiedAnnotationFalse(t *testing.T) {
+	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: "A", Targets: endpoint.Targets{"target"}, ProviderSpecific: endpoint.ProviderSpecific{
+		endpoint.ProviderSpecificProperty{
+			Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+			Value: "false",
+		},
+	}}, true)
+	assert.False(t, change.ResourceRecordSet.Proxied)
+}
+
+func TestNewCloudFlareProxiedAnnotationIllegalValue(t *testing.T) {
+	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: "A", Targets: endpoint.Targets{"target"}, ProviderSpecific: endpoint.ProviderSpecific{
+		endpoint.ProviderSpecificProperty{
+			Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+			Value: "asdaslkjndaslkdjals",
+		},
+	}}, false)
 	assert.False(t, change.ResourceRecordSet.Proxied)
 }
 
@@ -439,13 +511,23 @@ func TestRecords(t *testing.T) {
 func TestNewCloudFlareProvider(t *testing.T) {
 	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
 	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
-	_, err := NewCloudFlareProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), NewZoneIDFilter([]string{""}), false, true)
+	_, err := NewCloudFlareProvider(
+		NewDomainFilter([]string{"ext-dns-test.zalando.to."}),
+		NewZoneIDFilter([]string{""}),
+		1,
+		false,
+		true)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
 	_ = os.Unsetenv("CF_API_KEY")
 	_ = os.Unsetenv("CF_API_EMAIL")
-	_, err = NewCloudFlareProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), NewZoneIDFilter([]string{""}), false, true)
+	_, err = NewCloudFlareProvider(
+		NewDomainFilter([]string{"ext-dns-test.zalando.to."}),
+		NewZoneIDFilter([]string{""}),
+		50,
+		false,
+		true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
