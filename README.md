@@ -40,7 +40,7 @@ ExternalDNS' current release is `v0.5`. This version allows you to keep selected
 * [Exoscale](https://www.exoscale.com/dns/)
 * [Oracle Cloud Infrastructure DNS](https://docs.cloud.oracle.com/iaas/Content/DNS/Concepts/dnszonemanagement.htm)
 * [Linode DNS](https://www.linode.com/docs/networking/dns/)
-* [RFC2136](https://tools.ietf.org/html/rfc2136)  
+* [RFC2136](https://tools.ietf.org/html/rfc2136)
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` (or greater) with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -48,11 +48,46 @@ Note that all flags can be replaced with environment variables; for instance,
 `--dry-run` could be replaced with `EXTERNAL_DNS_DRY_RUN=1`, or
 `--registry txt` could be replaced with `EXTERNAL_DNS_REGISTRY=txt`.
 
-## There are two ways of running ExternalDNS:
+## Status of providers
+
+ExternalDNS supports multiple DNS providers which have been implemented by the [ExternalDNS contributors](https://github.com/kubernetes-incubator/external-dns/graphs/contributors). Maintaining all of those in a central repository is a challenge and we have limited resources to test changes. This means that it is very hard to test all providers for possible regressions and, as written in the [Contributing](## Contributing) section, we encourage contributors to step in as maintainers for the individual providers and help by testing the integrations.
+We define the following stability levels for providers:
+
+- **Stable**: Used for smoke tests before a release, used in production and maintainers are active.
+- **Beta**: Community supported, well tested, but maintainers have no access to resources to execute integration tests on the real platform and/or are not using it in production.
+- **Alpha**: Community provided with no support from the maintainers apart from reviewing PRs.
+
+The following table clarifies the current status of the providers according to the aforementioned stability levels:
+
+| Provider | Status |
+| -------- | ------ |
+| Google Cloud DNS | Stable |
+| AWS Route 53 | Stable |
+| AWS Service Discovery | Beta |
+| AzureDNS | Beta |
+| CloudFlare | Beta
+| RcodeZero | Alpha |
+| DigitalOcean | Alpha |
+| DNSimple | Alpha |
+| Infoblox | Alpha |
+| Dyn | Alpha |
+| OpenStack Designate | Alpha |
+| PowerDNS | Alpha |
+| CoreDNS | Alpha |
+| Exoscale | Alpha |
+| Oracle Cloud Infrastructure DNS | Alpha |
+| Linode DNS | Alpha |
+| RFC2136 | Alpha |
+
+
+## Running ExternalDNS:
+
+The are two ways of running ExternalDNS:
+
 * Deploying to a Cluster
 * Running Locally
 
-## Deploying to a Cluster
+### Deploying to a Cluster
 
 The following tutorials are provided:
 
@@ -74,16 +109,16 @@ The following tutorials are provided:
 * [Linode](docs/tutorials/linode.md)
 * [RFC2136](docs/tutorials/rfc2136.md)
 
-## Running Locally
+### Running Locally
 
-### Technical Requirements
+#### Technical Requirements
 
 Make sure you have the following prerequisites:
 * A local Go 1.7+ development environment.
 * Access to a Google/AWS account with the DNS API enabled.
 * Access to a Kubernetes cluster that supports exposing Services, e.g. GKE.
 
-### Setup Steps
+#### Setup Steps
 
 First, get ExternalDNS:
 
