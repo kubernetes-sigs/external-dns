@@ -28,7 +28,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	v1 "k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -53,17 +53,17 @@ type serviceSource struct {
 	namespace        string
 	annotationFilter string
 	// process Services with legacy annotations
-	compatibility         string
-	fqdnTemplate          *template.Template
-	combineFQDNAnnotation bool
+	compatibility            string
+	fqdnTemplate             *template.Template
+	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
-	publishInternal       bool
-	publishHostIP         bool
+	publishInternal          bool
+	publishHostIP            bool
 	serviceInformer          coreinformers.ServiceInformer
 	podInformer              coreinformers.PodInformer
 	nodeInformer             coreinformers.NodeInformer
-	serviceTypeFilter     map[string]struct{}
-	servicePublishIPsType string
+	serviceTypeFilter        map[string]struct{}
+	servicePublishIPsType    string
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
@@ -130,20 +130,20 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	}
 
 	return &serviceSource{
-		client:                kubeClient,
-		namespace:             namespace,
-		annotationFilter:      annotationFilter,
-		compatibility:         compatibility,
-		fqdnTemplate:          tmpl,
-		combineFQDNAnnotation: combineFqdnAnnotation,
+		client:                   kubeClient,
+		namespace:                namespace,
+		annotationFilter:         annotationFilter,
+		compatibility:            compatibility,
+		fqdnTemplate:             tmpl,
+		combineFQDNAnnotation:    combineFqdnAnnotation,
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
-		publishInternal:       publishInternal,
-		publishHostIP:         publishHostIP,
+		publishInternal:          publishInternal,
+		publishHostIP:            publishHostIP,
 		serviceInformer:          serviceInformer,
 		podInformer:              podInformer,
 		nodeInformer:             nodeInformer,
-		serviceTypeFilter:     serviceTypes,
-		servicePublishIPsType: servicePublishIPsType,
+		serviceTypeFilter:        serviceTypes,
+		servicePublishIPsType:    servicePublishIPsType,
 	}, nil
 }
 

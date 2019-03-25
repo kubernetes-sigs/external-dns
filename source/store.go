@@ -38,21 +38,21 @@ var ErrSourceNotFound = errors.New("source not found")
 
 // Config holds shared configuration options for all Sources.
 type Config struct {
-	Namespace                string
-	AnnotationFilter         string
-	FQDNTemplate             string
-	CombineFQDNAndAnnotation bool
+	Namespace                   string
+	AnnotationFilter            string
+	FQDNTemplate                string
+	CombineFQDNAndAnnotation    bool
 	IgnoreHostnameAnnotation    bool
-	Compatibility            string
-	PublishInternal          bool
-	PublishHostIP            bool
-	ServicePublishIPsType    string
-	ConnectorServer          string
-	CRDSourceAPIVersion      string
-	CRDSourceKind            string
-	KubeConfig               string
-	KubeMaster               string
-	ServiceTypeFilter        []string
+	Compatibility               string
+	PublishInternal             bool
+	PublishHostIP               bool
+	ServicePublishIPsType       string
+	ConnectorServer             string
+	CRDSourceAPIVersion         string
+	CRDSourceKind               string
+	KubeConfig                  string
+	KubeMaster                  string
+	ServiceTypeFilter           []string
 	IstioIngressGatewayServices []string
 }
 
