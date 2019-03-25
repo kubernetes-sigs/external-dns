@@ -1224,13 +1224,12 @@ func (f *fakeConfigStore) ConfigDescriptor() istiomodel.ConfigDescriptor {
 	return f.descriptor
 }
 
-func (f *fakeConfigStore) Get(typ, name, namespace string) (config *istiomodel.Config, exists bool) {
+func (f *fakeConfigStore) Get(typ, name, namespace string) (config *istiomodel.Config) {
 	f.RLock()
 	defer f.RUnlock()
 
 	if cfg, _ := f.get(typ, name, namespace); cfg != nil {
 		config = cfg
-		exists = true
 	}
 
 	return
