@@ -128,12 +128,12 @@
   revision = "4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9"
 
 [[projects]]
-  digest = "1:85fd00554a6ed5b33687684b76635d532c74141508b5bce2843d85e8a3c9dc91"
+  branch = "master"
+  digest = "1:3e90c0d9954bf53a2061c4a0f193e6569c9ab2118c8f3a250871498f6b4645e5"
   name = "github.com/cloudflare/cloudflare-go"
   packages = ["."]
   pruneopts = ""
-  revision = "4c6994ac3877fbb627766edadc67f4e816e8c890"
-  version = "v0.7.4"
+  revision = "0c85496d873009e53e64d391ade643e7ac02e0d4"
 
 [[projects]]
   digest = "1:eaeede87b418b97f9dee473f8940fd9b65ca5cdac0503350c7c8f8965ea3cf4d"
@@ -292,6 +292,19 @@
   packages = ["."]
   pruneopts = ""
   revision = "e89373fe6b4a7413d7acd6da1725b83ef713e6e4"
+
+[[projects]]
+  digest = "1:f9f45f75f332e03fc7e9fe9188ea4e1ce4d14779ef34fa1b023da67518e36327"
+  name = "github.com/google/go-cmp"
+  packages = [
+    "cmp",
+    "cmp/internal/diff",
+    "cmp/internal/function",
+    "cmp/internal/value",
+  ]
+  pruneopts = ""
+  revision = "3af367b6b30c263d47e8895973edcca9a49cf029"
+  version = "v0.2.0"
 
 [[projects]]
   branch = "master"
@@ -471,6 +484,14 @@
   version = "v1.0.8"
 
 [[projects]]
+  digest = "1:bcc46a0fbd9e933087bef394871256b5c60269575bb661935874729c65bbbf60"
+  name = "github.com/mitchellh/mapstructure"
+  packages = ["."]
+  pruneopts = ""
+  revision = "3536a929edddb9a5b34bd6861dc4a9647cb459fe"
+  version = "v1.1.2"
+
+[[projects]]
   digest = "1:0c0ff2a89c1bb0d01887e1dac043ad7efbf3ec77482ef058ac423d13497e16fd"
   name = "github.com/modern-go/concurrent"
   packages = ["."]
@@ -501,6 +522,14 @@
   pruneopts = ""
   revision = "cdd946344b54bdf7dbeac406c2f1fe93150f08ea"
   version = "v0.6.0"
+
+[[projects]]
+  digest = "1:d0b493d855fe23836a334940271745a43587f20b2fab4bb7c4ff0add1adcbcd4"
+  name = "github.com/nic-at/rc0go"
+  packages = ["."]
+  pruneopts = ""
+  revision = "d5560d32f90d7722d154a4e0d3b797d5e0ae0b68"
+  version = "v1.1.0"
 
 [[projects]]
   digest = "1:70df8e71a953626770223d4982801fa73e7e99cbfcca068b95127f72af9b9edd"
@@ -584,6 +613,14 @@
   ]
   pruneopts = ""
   revision = "a6e9df898b1336106c743392c48ee0b71f5c4efa"
+
+[[projects]]
+  branch = "master"
+  digest = "1:bb2ccb2d56cbafdec58af0f473f45304e19876f09fa671960ca87802b656a9c0"
+  name = "github.com/sanyu/dynectsoap"
+  packages = ["dynectsoap"]
+  pruneopts = ""
+  revision = "b83de5edc4e022f22903eeb3b428d2f39fb740e5"
 
 [[projects]]
   digest = "1:7f569d906bdd20d906b606415b7d794f798f91a62fcfb6a4daa6d50690fb7a3f"
@@ -850,6 +887,14 @@
   pruneopts = ""
   revision = "3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4"
   version = "v0.9.0"
+
+[[projects]]
+  digest = "1:ecbf853ae69b7b38a5039077c10892c9798bd5345c73902026622a65a94ea501"
+  name = "gopkg.in/resty.v1"
+  packages = ["."]
+  pruneopts = ""
+  revision = "03c09fa32a21b7b27b8dbb3877826c1ab3d2daa2"
+  version = "v1.11.0"
 
 [[projects]]
   digest = "1:f0620375dd1f6251d9973b5f2596228cc8042e887cd7f827e4220bc1ce8c30e2"
@@ -1144,11 +1189,13 @@
     "github.com/linode/linodego",
     "github.com/miekg/dns",
     "github.com/nesv/go-dynect/dynect",
+    "github.com/nic-at/rc0go",
     "github.com/oracle/oci-go-sdk/common",
     "github.com/oracle/oci-go-sdk/dns",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",
+    "github.com/sanyu/dynectsoap/dynectsoap",
     "github.com/sirupsen/logrus",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/mock",

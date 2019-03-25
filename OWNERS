@@ -2,12 +2,7 @@
 #  https://github.com/kubernetes/kubernetes/blob/master/docs/devel/owners.md
 
 approvers:
-  - justinsb
   - hjacobs
   - raffo
   - linki
-  - ideahitme
-  - chrislovecnm
-  - kris-nova
-  - iterion
   - njuettner

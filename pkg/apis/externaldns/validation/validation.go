@@ -66,6 +66,10 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		}
 	}
 
+	if cfg.IgnoreHostnameAnnotation && cfg.FQDNTemplate == "" {
+		return errors.New("FQDN Template must be set if ignoring annotations")
+	}
+
 	if cfg.ServicePublishIPsType != "" {
 		switch cfg.ServicePublishIPsType {
 		case "public", "private":

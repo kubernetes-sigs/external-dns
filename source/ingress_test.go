@@ -18,10 +18,12 @@ package source
 
 import (
 	"testing"
+	"time"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -49,6 +51,7 @@ func (suite *IngressSuite) SetupTest() {
 		"",
 		"",
 		"{{.Name}}",
+		false,
 		false,
 	)
 	suite.NoError(err, "should initialize ingress source")
@@ -123,6 +126,7 @@ func TestNewIngressSource(t *testing.T) {
 				ti.annotationFilter,
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
+				false,
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -210,7 +214,7 @@ func testEndpointsFromIngress(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, false), ti.expected)
 		})
 	}
 }
@@ -226,6 +230,7 @@ func testIngressEndpoints(t *testing.T) {
 		expectError              bool
 		fqdnTemplate             string
 		combineFQDNAndAnnotation bool
+		ignoreHostnameAnnotation bool
 	}{
 		{
 			title:           "no ingress",
@@ -934,6 +939,38 @@ func testIngressEndpoints(t *testing.T) {
 			expected:     []*endpoint.Endpoint{},
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
 		},
+		{
+			title:                    "ignore hostname annotation",
+			targetNamespace:          "",
+			ignoreHostnameAnnotation: true,
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					dnsnames:  []string{"example.org"},
+					ips:       []string{"8.8.8.8"},
+				},
+				{
+					name:      "fake2",
+					namespace: namespace,
+					annotations: map[string]string{
+						hostnameAnnotationKey: "dns-through-hostname.com",
+					},
+					dnsnames:  []string{"new.org"},
+					hostnames: []string{"lb.com"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "example.org",
+					Targets: endpoint.Targets{"8.8.8.8"},
+				},
+				{
+					DNSName: "new.org",
+					Targets: endpoint.Targets{"lb.com"},
+				},
+			},
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			ingresses := make([]*v1beta1.Ingress, 0)
@@ -948,13 +985,26 @@ func testIngressEndpoints(t *testing.T) {
 				ti.annotationFilter,
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
+				ti.ignoreHostnameAnnotation,
 			)
 			for _, ingress := range ingresses {
 				_, err := fakeClient.Extensions().Ingresses(ingress.Namespace).Create(ingress)
 				require.NoError(t, err)
 			}
 
-			res, err := ingressSource.Endpoints()
+			var res []*endpoint.Endpoint
+			var err error
+
+			// wait up to a few seconds for new resources to appear in informer cache.
+			err = wait.Poll(time.Second, 3*time.Second, func() (bool, error) {
+				res, err = ingressSource.Endpoints()
+				if err != nil {
+					// stop waiting if we get an error
+					return true, err
+				}
+				return len(res) >= len(ti.expected), nil
+			})
+
 			if ti.expectError {
 				assert.Error(t, err)
 			} else {
