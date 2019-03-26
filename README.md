@@ -221,6 +221,7 @@ Here's a rough outline on what is to come (subject to change):
 - [x] Support for OpenStack Designate
 - [x] Support for PowerDNS
 - [x] Support for Linode
+- [x] Support for RcodeZero
 
 ### v0.6
 
