@@ -64,7 +64,7 @@ type rfc2136Actions interface {
 // NewRfc2136Provider is a factory function for OpenStack rfc2136 providers
 func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter DomainFilter, dryRun bool, actions rfc2136Actions) (Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
-	if !ok {
+	if !ok && !insecure {
 		return nil, errors.Errorf("%s is not supported TSIG algorithm", secretAlg)
 	}
 
