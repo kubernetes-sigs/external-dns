@@ -26,6 +26,39 @@ const (
 	ns1DefaultTTL = 10
 )
 
+// NS1DomainClient interface to ease testing
+type NS1DomainClient interface {
+	CreateRecord(r *dns.Record) (*http.Response, error)
+	DeleteRecord(zone string, domain string, t string) (*http.Response, error)
+	UpdateRecord(r *dns.Record) (*http.Response, error)
+	GetZone(zone string) (*dns.Zone, *http.Response, error)
+	ListZones() ([]*dns.Zone, *http.Response, error)
+}
+
+type NS1DomainService struct {
+	service *api.Client
+}
+
+func (n NS1DomainService) CreateRecord(r *dns.Record) (*http.Response, error) {
+	return n.service.Records.Create(r)
+}
+
+func (n NS1DomainService) DeleteRecord(zone string, domain string, t string) (*http.Response, error) {
+	return n.service.Records.Delete(zone, domain, t)
+}
+
+func (n NS1DomainService) UpdateRecord(r *dns.Record) (*http.Response, error) {
+	return n.service.Records.Update(r)
+}
+
+func (n NS1DomainService) GetZone(zone string) (*dns.Zone, *http.Response, error) {
+	return n.service.Zones.Get(zone)
+}
+
+func (n NS1DomainService) ListZones() ([]*dns.Zone, *http.Response, error) {
+	return n.service.Zones.List()
+}
+
 // NS1Config passes cli args to the NS1Provider
 type NS1Config struct {
 	DomainFilter DomainFilter
@@ -35,7 +68,7 @@ type NS1Config struct {
 
 // NS1Provider is the NS1 provider
 type NS1Provider struct {
-	client       *api.Client
+	client       NS1DomainClient
 	domainFilter DomainFilter
 	zoneIDFilter ZoneIDFilter
 	dryRun       bool
@@ -55,7 +88,8 @@ func newNS1ProviderWithHTTPClient(config NS1Config, client *http.Client) (*NS1Pr
 	apiClient := api.NewClient(client, api.SetAPIKey(token))
 
 	provider := &NS1Provider{
-		client:       apiClient,
+		//client:       apiClient,
+		client:       NS1DomainService{apiClient},
 		domainFilter: config.DomainFilter,
 		zoneIDFilter: config.ZoneIDFilter,
 	}
@@ -74,7 +108,7 @@ func (p *NS1Provider) Records() ([]*endpoint.Endpoint, error) {
 	for _, zone := range zones {
 
 		// TODO handle Header Codes
-		zoneData, _, err := p.client.Zones.Get(zone.String())
+		zoneData, _, err := p.client.GetZone(zone.String())
 		if err != nil {
 			return nil, err
 		}
@@ -144,17 +178,17 @@ func (p *NS1Provider) ns1SubmitChanges(changes []*ns1Change) error {
 
 			switch change.Action {
 			case ns1Create:
-				_, err := p.client.Records.Create(record)
+				_, err := p.client.CreateRecord(record)
 				if err != nil {
 					return err
 				}
 			case ns1Delete:
-				_, err := p.client.Records.Delete(zoneName, record.Domain, record.Type)
+				_, err := p.client.DeleteRecord(zoneName, record.Domain, record.Type)
 				if err != nil {
 					return err
 				}
 			case ns1Update:
-				_, err := p.client.Records.Update(record)
+				_, err := p.client.UpdateRecord(record)
 				if err != nil {
 					return err
 				}
@@ -167,7 +201,7 @@ func (p *NS1Provider) ns1SubmitChanges(changes []*ns1Change) error {
 // Zones returns the list of hosted zones.
 func (p *NS1Provider) zonesFiltered() ([]*dns.Zone, error) {
 	// TODO handle Header Codes
-	zones, _, err := p.client.Zones.List()
+	zones, _, err := p.client.ListZones()
 	if err != nil {
 		return nil, err
 	}
