@@ -85,9 +85,8 @@ func (p *NS1Provider) Records() ([]*endpoint.Endpoint, error) {
 
 		for _, record := range zoneData.Records {
 			if supportedRecordType(record.Type) {
-				name := fmt.Sprintf("%s.%s", record.Domain, zoneData.Zone)
 				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(
-					name,
+					record.Domain,
 					record.Type,
 					endpoint.TTL(record.TTL),
 					record.ShortAns...,
