@@ -62,10 +62,6 @@ func newNS1ProviderWithHTTPClient(config NS1Config, client *http.Client) (*NS1Pr
 	return provider, nil
 }
 
-func (p *NS1Provider) matchEither(id string) bool {
-	return p.domainFilter.Match(id) || p.zoneIDFilter.Match(id)
-}
-
 // Records returns the endpoints this provider knows about
 func (p *NS1Provider) Records() ([]*endpoint.Endpoint, error) {
 	zones, err := p.zonesFiltered()
@@ -99,6 +95,7 @@ func (p *NS1Provider) Records() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
+// ns1BuildRecord returns a dns.Record for a change set
 func ns1BuildRecord(zoneName string, change *ns1Change) *dns.Record {
 	record := dns.NewRecord(zoneName, change.Endpoint.DNSName, change.Endpoint.RecordType)
 	for _, v := range change.Endpoint.Targets {
@@ -114,6 +111,7 @@ func ns1BuildRecord(zoneName string, change *ns1Change) *dns.Record {
 	return record
 }
 
+// ns1SubmitChanges takes an array of changes and sends them to NS1
 func (p *NS1Provider) ns1SubmitChanges(changes []*ns1Change) error {
 	// return early if there is nothing to change
 	if len(changes) == 0 {
@@ -177,16 +175,18 @@ func (p *NS1Provider) zonesFiltered() ([]*dns.Zone, error) {
 	toReturn := []*dns.Zone{}
 
 	for _, z := range zones {
-		if !p.matchEither(z.Zone) && !p.matchEither(z.ID) {
-			continue
+		if p.domainFilter.Match(z.Zone) && p.zoneIDFilter.Match(z.ID) {
+			toReturn = append(toReturn, z)
+			log.Debugf("Matched %s", z.Zone)
+		} else {
+			log.Debugf("Filtered %s", z.Zone)
 		}
-		toReturn = append(toReturn, z)
 	}
 
 	return toReturn, nil
 }
 
-// ns1Change differentiates between ChangActions
+// ns1Change differentiates between ChangeActions
 type ns1Change struct {
 	Action   string
 	Endpoint *endpoint.Endpoint
