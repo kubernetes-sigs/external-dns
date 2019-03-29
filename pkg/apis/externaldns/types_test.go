@@ -409,6 +409,7 @@ func TestPasswordsNotLogged(t *testing.T) {
 		DynPassword:          "dyn-pass",
 		InfobloxWapiPassword: "infoblox-pass",
 		PDNSAPIKey:           "pdns-api-key",
+		RFC2136TSIGSecret:    "tsig-secret",
 	}
 
 	s := cfg.String()
@@ -416,4 +417,5 @@ func TestPasswordsNotLogged(t *testing.T) {
 	assert.False(t, strings.Contains(s, "dyn-pass"))
 	assert.False(t, strings.Contains(s, "infoblox-pass"))
 	assert.False(t, strings.Contains(s, "pdns-api-key"))
+	assert.False(t, strings.Contains(s, "tsig-secret"))
 }
