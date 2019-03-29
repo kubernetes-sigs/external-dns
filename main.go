@@ -154,6 +154,7 @@ func main() {
 				Version:      cfg.InfobloxWapiVersion,
 				SSLVerify:    cfg.InfobloxSSLVerify,
 				View:         cfg.InfobloxView,
+				MaxResults:   cfg.InfobloxMaxResults,
 				DryRun:       cfg.DryRun,
 			},
 		)
