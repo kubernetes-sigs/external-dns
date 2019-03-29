@@ -18,6 +18,7 @@ package externaldns
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -71,18 +72,18 @@ type Config struct {
 	InfobloxGridHost            string
 	InfobloxWapiPort            int
 	InfobloxWapiUsername        string
-	InfobloxWapiPassword        string
+	InfobloxWapiPassword        string `secure:"yes"`
 	InfobloxWapiVersion         string
 	InfobloxSSLVerify           bool
 	InfobloxView                string
 	DynCustomerName             string
 	DynUsername                 string
-	DynPassword                 string
+	DynPassword                 string `secure:"yes"`
 	DynMinTTLSeconds            int
 	OCIConfigFile               string
 	InMemoryZones               []string
 	PDNSServer                  string
-	PDNSAPIKey                  string
+	PDNSAPIKey                  string `secure:"yes"`
 	PDNSTLSEnabled              bool
 	TLSCA                       string
 	TLSClientCert               string
@@ -99,8 +100,8 @@ type Config struct {
 	LogLevel                    string
 	TXTCacheInterval            time.Duration
 	ExoscaleEndpoint            string
-	ExoscaleAPIKey              string
-	ExoscaleAPISecret           string
+	ExoscaleAPIKey              string `secure:"yes"`
+	ExoscaleAPISecret           string `secure:"yes"`
 	CRDSourceAPIVersion         string
 	CRDSourceKind               string
 	ServiceTypeFilter           []string
@@ -109,7 +110,7 @@ type Config struct {
 	RFC2136Zone                 string
 	RFC2136Insecure             bool
 	RFC2136TSIGKeyName          string
-	RFC2136TSIGSecret           string
+	RFC2136TSIGSecret           string `secure:"yes"`
 	RFC2136TSIGSecretAlg        string
 	RFC2136TAXFR                bool
 }
@@ -195,14 +196,19 @@ func NewConfig() *Config {
 func (cfg *Config) String() string {
 	// prevent logging of sensitive information
 	temp := *cfg
-	if temp.DynPassword != "" {
-		temp.DynPassword = passwordMask
-	}
-	if temp.InfobloxWapiPassword != "" {
-		temp.InfobloxWapiPassword = passwordMask
-	}
-	if temp.PDNSAPIKey != "" {
-		temp.PDNSAPIKey = ""
+
+	t := reflect.TypeOf(temp)
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		if val, ok := f.Tag.Lookup("secure"); ok && val == "yes" {
+			if f.Type.Kind() != reflect.String {
+				continue
+			}
+			v := reflect.ValueOf(&temp).Elem().Field(i)
+			if v.String() != "" {
+				v.SetString(passwordMask)
+			}
+		}
 	}
 
 	return fmt.Sprintf("%+v", temp)
