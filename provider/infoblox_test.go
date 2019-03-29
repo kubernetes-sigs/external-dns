@@ -495,3 +495,22 @@ func TestInfobloxZones(t *testing.T) {
 	assert.Equal(t, provider.findZone(zones, "lvl2-2.lvl1-1.example.com").Fqdn, "lvl1-1.example.com")
 	assert.Equal(t, provider.findZone(zones, "lvl2-2.lvl1-2.example.com").Fqdn, "example.com")
 }
+
+func TestCustomQueryRequestBuilder(t *testing.T) {
+	hostConfig := ibclient.HostConfig{
+		Host:     "localhost",
+		Port:     "8080",
+		Username: "user",
+		Password: "abcd",
+		Version:  "2.3.1",
+	}
+
+	requestBuilder := NewCustomQueryRequestBuilder(map[string]string{"myKey": "myValue"})
+	requestBuilder.Init(hostConfig)
+
+	obj := ibclient.NewRecordCNAME(ibclient.RecordCNAME{Zone: "foo.bar.com"})
+
+	req, _ := requestBuilder.BuildRequest(ibclient.GET, obj, "", ibclient.QueryParams{})
+
+	assert.True(t, req.URL.Query().Get("myKey") == "myValue")
+}
