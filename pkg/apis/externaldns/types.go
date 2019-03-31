@@ -105,6 +105,9 @@ type Config struct {
 	CRDSourceAPIVersion         string
 	CRDSourceKind               string
 	ServiceTypeFilter           []string
+	CFAPIEndpoint               string
+	CFUsername                  string
+	CFPassword                  string
 	RFC2136Host                 string
 	RFC2136Port                 int
 	RFC2136Zone                 string
@@ -182,6 +185,9 @@ var defaultConfig = &Config{
 	CRDSourceAPIVersion:         "externaldns.k8s.io/v1alpha1",
 	CRDSourceKind:               "DNSEndpoint",
 	ServiceTypeFilter:           []string{},
+	CFAPIEndpoint:               "",
+	CFUsername:                  "",
+	CFPassword:                  ""
 	RFC2136Host:                 "",
 	RFC2136Port:                 0,
 	RFC2136Zone:                 "",
@@ -245,8 +251,13 @@ func (cfg *Config) ParseFlags(args []string) error {
 	// Flags related to Istio
 	app.Flag("istio-ingress-gateway", "The fully-qualified name of the Istio ingress gateway service. Flag can be specified multiple times (default: istio-system/istio-ingressgateway)").Default("istio-system/istio-ingressgateway").StringsVar(&cfg.IstioIngressGatewayServices)
 
+	// Flags related to cloud foundry
+	app.Flag("cf-api-endpoint", "The fully-qualified domain name of the cloud foundry instance you are targeting").Default(defaultConfig.CFAPIEndpoint).StringVar(&cfg.CFAPIEndpoint)
+	app.Flag("cf-username", "The username to log into the cloud foundry API").Default(defaultConfig.CFUsername).StringVar(&cfg.CFUsername)
+	app.Flag("cf-password", "The password to log into the cloud foundry API").Default(defaultConfig.CFPassword).StringVar(&cfg.CFPassword)
+
 	// Flags related to processing sources
-	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, fake, connector, istio-gateway, crd").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "istio-gateway", "fake", "connector", "crd")
+	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, fake, connector, istio-gateway, crd").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "istio-gateway", "route", "fake", "connector", "crd")
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
 	app.Flag("annotation-filter", "Filter sources managed by external-dns via annotation using label selector semantics (default: all sources)").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
 	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
