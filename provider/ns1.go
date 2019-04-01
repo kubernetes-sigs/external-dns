@@ -26,7 +26,7 @@ const (
 	ns1DefaultTTL = 10
 )
 
-// NS1DomainClient interface to ease testing
+// NS1DomainClient is a subset of the NS1 API the the provider uses, to ease testing
 type NS1DomainClient interface {
 	CreateRecord(r *dns.Record) (*http.Response, error)
 	DeleteRecord(zone string, domain string, t string) (*http.Response, error)
@@ -35,26 +35,32 @@ type NS1DomainClient interface {
 	ListZones() ([]*dns.Zone, *http.Response, error)
 }
 
+// NS1DomainService wraps the API and fulfills the NS1DomainClient interface
 type NS1DomainService struct {
 	service *api.Client
 }
 
+// CreateRecord wraps the Create method of the API's Record service
 func (n NS1DomainService) CreateRecord(r *dns.Record) (*http.Response, error) {
 	return n.service.Records.Create(r)
 }
 
+// DeleteRecord wraps the Delete method of the API's Record service
 func (n NS1DomainService) DeleteRecord(zone string, domain string, t string) (*http.Response, error) {
 	return n.service.Records.Delete(zone, domain, t)
 }
 
+// UpdateRecord wraps the Update method of the API's Record service
 func (n NS1DomainService) UpdateRecord(r *dns.Record) (*http.Response, error) {
 	return n.service.Records.Update(r)
 }
 
+// GetZone wraps the Get method of the API's Zones service
 func (n NS1DomainService) GetZone(zone string) (*dns.Zone, *http.Response, error) {
 	return n.service.Zones.Get(zone)
 }
 
+// ListZones wraps the List method of the API's Zones service
 func (n NS1DomainService) ListZones() ([]*dns.Zone, *http.Response, error) {
 	return n.service.Zones.List()
 }
