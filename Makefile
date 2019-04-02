@@ -27,19 +27,18 @@ cover:
 cover-html: cover
 	go tool cover -html cover.out
 
-dep:
-	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-	dep ensure -vendor-only
+.PHONY: lint
+
+# Run all the linters
+lint:
+	golangci-lint run ./...
+
 
 # The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: verify test
 
 test:
 	go test -v -race $(shell go list ./... | grep -v /vendor/)
-
-verify: test
-	vendor/github.com/kubernetes/repo-infra/verify/verify-boilerplate.sh --rootdir=${CURDIR}
-	vendor/github.com/kubernetes/repo-infra/verify/verify-go-src.sh -v --rootdir ${CURDIR}
 
 # The build targets allow to build the binary and docker image
 .PHONY: build build.docker

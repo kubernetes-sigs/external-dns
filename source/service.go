@@ -19,12 +19,13 @@ package source
 import (
 	"bytes"
 	"fmt"
-	kubeinformers "k8s.io/client-go/informers"
-	coreinformers "k8s.io/client-go/informers/core/v1"
-	"k8s.io/client-go/tools/cache"
 	"sort"
 	"strings"
 	"text/template"
+
+	kubeinformers "k8s.io/client-go/informers"
+	coreinformers "k8s.io/client-go/informers/core/v1"
+	"k8s.io/client-go/tools/cache"
 
 	log "github.com/sirupsen/logrus"
 
@@ -35,8 +36,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"time"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
 const (

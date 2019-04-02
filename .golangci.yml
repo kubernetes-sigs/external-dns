@@ -1,0 +1,19 @@
+run:
+  concurrency: 4
+
+  modules-download-mode: readonly
+
+linters-settings:
+  golint:
+      min-confidence: 0.9
+
+  gocyclo:
+      min-complexity: 15
+
+linters:
+  disable-all: true
+  enable:
+    - govet
+    - ineffassign
+    - golint
+    - goimports

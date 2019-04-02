@@ -19,6 +19,7 @@ package provider
 import (
 	"context"
 	"errors"
+
 	//"fmt"
 	"net/http"
 	"strings"
@@ -805,13 +806,13 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRecords() {
 	p = &PDNSProvider{
 		client: &PDNSAPIClientStubListZoneFailure{},
 	}
-	eps, err = p.Records()
+	_, err = p.Records()
 	assert.NotNil(suite.T(), err)
 
 	p = &PDNSProvider{
 		client: &PDNSAPIClientStubListZonesFailure{},
 	}
-	eps, err = p.Records()
+	_, err = p.Records()
 	assert.NotNil(suite.T(), err)
 
 }
