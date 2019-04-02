@@ -187,7 +187,7 @@ var defaultConfig = &Config{
 	ServiceTypeFilter:           []string{},
 	CFAPIEndpoint:               "",
 	CFUsername:                  "",
-	CFPassword:                  ""
+	CFPassword:                  "",
 	RFC2136Host:                 "",
 	RFC2136Port:                 0,
 	RFC2136Zone:                 "",
