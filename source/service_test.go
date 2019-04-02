@@ -17,10 +17,11 @@ limitations under the License.
 package source
 
 import (
-	"k8s.io/apimachinery/pkg/util/wait"
 	"net"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -18,12 +18,13 @@ package provider
 
 import (
 	"fmt"
+	"os"
+	"testing"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	rc0 "github.com/nic-at/rc0go"
 	"github.com/stretchr/testify/require"
-	"os"
-	"testing"
 )
 
 const (
@@ -229,7 +230,7 @@ func TestRcodeZeroProvider_Zones(t *testing.T) {
 
 	mockZoneManagementService.TestErrorReturned = true
 
-	zones, err = provider.Zones()
+	_, err = provider.Zones()
 	if err == nil {
 		t.Errorf("expected to fail, %s", err)
 	}

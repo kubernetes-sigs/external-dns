@@ -131,7 +131,7 @@ func TestLinodeConvertRecordType(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, linodego.RecordTypeSRV, record)
 
-	record, err = convertRecordType("INVALID")
+	_, err = convertRecordType("INVALID")
 	require.Error(t, err)
 }
 
