@@ -330,24 +330,22 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, nod
 	var endpoints []*endpoint.Endpoint
 	var targets endpoint.Targets
 
-	switch svc.Spec.Type {
-	case v1.ServiceTypeLoadBalancer:
+	if len(svc.Status.LoadBalancer.Ingress) > 0 {
 		targets = append(targets, extractLoadBalancerTargets(svc)...)
-	case v1.ServiceTypeClusterIP:
-		if sc.publishInternal {
-			targets = append(targets, extractServiceIps(svc)...)
-		}
-		if svc.Spec.ClusterIP == v1.ClusterIPNone {
-			if len(svc.Status.LoadBalancer.Ingress) > 0 {
-				targets = append(targets, extractLoadBalancerTargets(svc)...)
-			} else {
+	} else {
+		switch svc.Spec.Type {
+		case v1.ServiceTypeClusterIP:
+			if sc.publishInternal {
+				targets = append(targets, extractServiceIps(svc)...)
+			}
+			if svc.Spec.ClusterIP == v1.ClusterIPNone {
 				endpoints = append(endpoints, sc.extractHeadlessEndpoints(svc, hostname, ttl)...)
 			}
+		case v1.ServiceTypeNodePort:
+			// add the nodeTargets and extract an SRV endpoint
+			targets = append(targets, nodeTargets...)
+			endpoints = append(endpoints, sc.extractNodePortEndpoints(svc, nodeTargets, hostname, ttl)...)
 		}
-	case v1.ServiceTypeNodePort:
-		// add the nodeTargets and extract an SRV endpoint
-		targets = append(targets, nodeTargets...)
-		endpoints = append(endpoints, sc.extractNodePortEndpoints(svc, nodeTargets, hostname, ttl)...)
 	}
 
 	for _, t := range targets {
