@@ -77,6 +77,7 @@ var (
 		ExoscaleAPISecret:       "",
 		CRDSourceAPIVersion:     "externaldns.k8s.io/v1alpha",
 		CRDSourceKind:           "DNSEndpoint",
+		CreateServiceRecord:     true,
 	}
 
 	overriddenConfig = &Config{
@@ -132,6 +133,7 @@ var (
 		ExoscaleAPISecret:       "2",
 		CRDSourceAPIVersion:     "test.k8s.io/v1alpha1",
 		CRDSourceKind:           "Endpoint",
+		CreateServiceRecord:     true,
 	}
 )
 
