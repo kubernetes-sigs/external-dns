@@ -82,9 +82,6 @@ func main() {
 		KubeMaster:                  cfg.Master,
 		ServiceTypeFilter:           cfg.ServiceTypeFilter,
 		IstioIngressGatewayServices: cfg.IstioIngressGatewayServices,
-		CFAPIEndpoint:               cfg.CFAPIEndpoint,
-		CFUsername:                  cfg.CFUsername,
-		CFPassword:                  cfg.CFPassword,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
