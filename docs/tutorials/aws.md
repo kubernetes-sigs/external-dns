@@ -65,7 +65,7 @@ In this case it's the ones shown above but your's will differ.
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
-Then apply one of the following manifests file to deploy ExternalDNS.
+Then apply one of the following manifests file to deploy ExternalDNS. You can check if your cluster has RBAC by `kubectl api-versions | grep rbac.authorization.k8s.io`.
 
 ### Manifest (for clusters without RBAC enabled)
 ```yaml
