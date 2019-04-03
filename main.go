@@ -204,9 +204,9 @@ func main() {
 	case "ns1":
 		p, err = provider.NewNS1Provider(
 			provider.NS1Config{
-				DomainFilter:  domainFilter,
-				ZoneIDFilter:  zoneIDFilter,
-				DryRun:        cfg.DryRun,
+				DomainFilter: domainFilter,
+				ZoneIDFilter: zoneIDFilter,
+				DryRun:       cfg.DryRun,
 			},
 		)
 	default:
