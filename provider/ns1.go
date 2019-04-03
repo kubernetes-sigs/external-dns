@@ -94,7 +94,6 @@ func newNS1ProviderWithHTTPClient(config NS1Config, client *http.Client) (*NS1Pr
 	apiClient := api.NewClient(client, api.SetAPIKey(token))
 
 	provider := &NS1Provider{
-		//client:       apiClient,
 		client:       NS1DomainService{apiClient},
 		domainFilter: config.DomainFilter,
 		zoneIDFilter: config.ZoneIDFilter,
