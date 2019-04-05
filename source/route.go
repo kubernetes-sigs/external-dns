@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import (
 
 type routeSource struct {
 	client *cfclient.Client
+	config Config
 }
 
 // NewRouteSource creates a new routeSource with the given config
@@ -38,7 +39,7 @@ func NewRouteSource(cfClient *cfclient.Client) (Source, error) {
 func (rs *routeSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
-	u, err := url.Parse(rs.client.Config.ApiAddress)
+	u, err := url.Parse(rs.config.CFAPIEndpoint)
 	if err != nil {
 		panic(err)
 	}
