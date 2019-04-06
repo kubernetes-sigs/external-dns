@@ -230,6 +230,11 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 		return nil, err
 	}
 
+	return p.records(zones)
+}
+
+func (p *AWSProvider) records(zones map[string]*route53.HostedZone) ([]*endpoint.Endpoint, error) {
+	endpoints := make([]*endpoint.Endpoint, 0)
 	f := func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool) {
 		for _, r := range resp.ResourceRecordSets {
 			// TODO(linki, ownership): Remove once ownership system is in place.
@@ -279,41 +284,59 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 
 // CreateRecords creates a given set of DNS records in the given hosted zone.
 func (p *AWSProvider) CreateRecords(endpoints []*endpoint.Endpoint) error {
-	return p.submitChanges(p.newChanges(route53.ChangeActionCreate, endpoints))
+	return p.doRecords(route53.ChangeActionCreate, endpoints)
 }
 
 // UpdateRecords updates a given set of old records to a new set of records in a given hosted zone.
 func (p *AWSProvider) UpdateRecords(endpoints, _ []*endpoint.Endpoint) error {
-	return p.submitChanges(p.newChanges(route53.ChangeActionUpsert, endpoints))
+	return p.doRecords(route53.ChangeActionUpsert, endpoints)
 }
 
 // DeleteRecords deletes a given set of DNS records in a given zone.
 func (p *AWSProvider) DeleteRecords(endpoints []*endpoint.Endpoint) error {
-	return p.submitChanges(p.newChanges(route53.ChangeActionDelete, endpoints))
+	return p.doRecords(route53.ChangeActionDelete, endpoints)
+}
+
+func (p *AWSProvider) doRecords(action string, endpoints []*endpoint.Endpoint) error {
+	zones, err := p.Zones()
+	if err != nil {
+		return err
+	}
+
+	records, err := p.records(zones)
+	if err != nil {
+		log.Errorf("getting records failed: %v", err)
+	}
+	return p.submitChanges(p.newChanges(action, endpoints, records, zones), zones)
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *AWSProvider) ApplyChanges(changes *plan.Changes) error {
+	zones, err := p.Zones()
+	if err != nil {
+		return err
+	}
+
+	records, err := p.records(zones)
+	if err != nil {
+		log.Errorf("getting records failed: %v", err)
+	}
+
 	combinedChanges := make([]*route53.Change, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 
-	combinedChanges = append(combinedChanges, p.newChanges(route53.ChangeActionCreate, changes.Create)...)
-	combinedChanges = append(combinedChanges, p.newChanges(route53.ChangeActionUpsert, changes.UpdateNew)...)
-	combinedChanges = append(combinedChanges, p.newChanges(route53.ChangeActionDelete, changes.Delete)...)
+	combinedChanges = append(combinedChanges, p.newChanges(route53.ChangeActionCreate, changes.Create, records, zones)...)
+	combinedChanges = append(combinedChanges, p.newChanges(route53.ChangeActionUpsert, changes.UpdateNew, records, zones)...)
+	combinedChanges = append(combinedChanges, p.newChanges(route53.ChangeActionDelete, changes.Delete, records, zones)...)
 
-	return p.submitChanges(combinedChanges)
+	return p.submitChanges(combinedChanges, zones)
 }
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
-func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
+func (p *AWSProvider) submitChanges(changes []*route53.Change, zones map[string]*route53.HostedZone) error {
 	// return early if there is nothing to change
 	if len(changes) == 0 {
 		log.Info("All records are already up to date")
 		return nil
-	}
-
-	zones, err := p.Zones()
-	if err != nil {
-		return err
 	}
 
 	// separate into per-zone change sets to be passed to the API.
@@ -367,16 +390,11 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change) error {
 }
 
 // newChanges returns a collection of Changes based on the given records and action.
-func (p *AWSProvider) newChanges(action string, endpoints []*endpoint.Endpoint) []*route53.Change {
-	records, err := p.Records()
-	if err != nil {
-		log.Errorf("getting records failed: %v", err)
-	}
-
+func (p *AWSProvider) newChanges(action string, endpoints []*endpoint.Endpoint, recordsCache []*endpoint.Endpoint, zones map[string]*route53.HostedZone) []*route53.Change {
 	changes := make([]*route53.Change, 0, len(endpoints))
 
 	for _, endpoint := range endpoints {
-		changes = append(changes, p.newChange(action, endpoint, records))
+		changes = append(changes, p.newChange(action, endpoint, recordsCache, zones))
 	}
 
 	return changes
@@ -385,7 +403,7 @@ func (p *AWSProvider) newChanges(action string, endpoints []*endpoint.Endpoint) 
 // newChange returns a Change of the given record by the given action, e.g.
 // action=ChangeActionCreate returns a change for creation of the record and
 // action=ChangeActionDelete returns a change for deletion of the record.
-func (p *AWSProvider) newChange(action string, endpoint *endpoint.Endpoint, recordsCache []*endpoint.Endpoint) *route53.Change {
+func (p *AWSProvider) newChange(action string, endpoint *endpoint.Endpoint, recordsCache []*endpoint.Endpoint, zones map[string]*route53.HostedZone) *route53.Change {
 	change := &route53.Change{
 		Action: aws.String(action),
 		ResourceRecordSet: &route53.ResourceRecordSet{
@@ -406,10 +424,6 @@ func (p *AWSProvider) newChange(action string, endpoint *endpoint.Endpoint, reco
 			EvaluateTargetHealth: aws.Bool(evalTargetHealth),
 		}
 	} else if hostedZone := isAWSAlias(endpoint, recordsCache); hostedZone != "" {
-		zones, err := p.Zones()
-		if err != nil {
-			log.Errorf("getting zones failed: %v", err)
-		}
 		for _, zone := range zones {
 			change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
 			change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
