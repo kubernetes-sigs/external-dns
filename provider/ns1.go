@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os"
@@ -85,6 +86,8 @@ func (n NS1DomainService) ListZones() ([]*dns.Zone, *http.Response, error) {
 type NS1Config struct {
 	DomainFilter DomainFilter
 	ZoneIDFilter ZoneIDFilter
+	NS1Endpoint  string
+	NS1IgnoreSSL bool
 	DryRun       bool
 }
 
@@ -106,8 +109,28 @@ func newNS1ProviderWithHTTPClient(config NS1Config, client *http.Client) (*NS1Pr
 	if !ok {
 		return nil, fmt.Errorf("NS1_APIKEY environment variable is not set")
 	}
+	clientArgs := []func(*api.Client){api.SetAPIKey(token)}
+	if config.NS1Endpoint != "" {
+		log.Infof("ns1-endpoint flag is set, targeting endpoint at %s", config.NS1Endpoint)
+		clientArgs = append(clientArgs, api.SetEndpoint(config.NS1Endpoint))
+	}
 
-	apiClient := api.NewClient(client, api.SetAPIKey(token))
+	if config.NS1IgnoreSSL == true {
+		log.Info("ns1-ignoressl flag is True, skipping SSL verification")
+		defaultTransport := http.DefaultTransport.(*http.Transport)
+		tr := &http.Transport{
+			Proxy:                 defaultTransport.Proxy,
+			DialContext:           defaultTransport.DialContext,
+			MaxIdleConns:          defaultTransport.MaxIdleConns,
+			IdleConnTimeout:       defaultTransport.IdleConnTimeout,
+			ExpectContinueTimeout: defaultTransport.ExpectContinueTimeout,
+			TLSHandshakeTimeout:   defaultTransport.TLSHandshakeTimeout,
+			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+		}
+		client.Transport = tr
+	}
+
+	apiClient := api.NewClient(client, clientArgs...)
 
 	provider := &NS1Provider{
 		client:       NS1DomainService{apiClient},
