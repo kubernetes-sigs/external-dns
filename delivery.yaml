@@ -1,15 +1,23 @@
 version: "2017-09-20"
 pipeline:
 - id: build
+  overlay: ci/golang
+  cache:
+    paths:
+    - /go/pkg/mod       # pkg cache for Go modules
+    - ~/.cache/go-build # Go build cache
   type: script
   commands:
-  - desc: Build and push Docker image
+  - desc: build
+    cmd: |
+      make build.docker
+  - desc: push
     cmd: |
       if [[ $CDP_TARGET_BRANCH == master && ! $CDP_PULL_REQUEST_NUMBER ]]; then
-        RELEASE_VERSION=$(git describe --tags --always --dirty)
-        IMAGE=registry-write.opensource.zalan.do/teapot/external-dns:${RELEASE_VERSION}
+        IMAGE=registry-write.opensource.zalan.do/teapot/external-dns
+        VERSION=$(git describe --tags --always --dirty)
       else
-        IMAGE=registry-write.opensource.zalan.do/teapot/external-dns-test:${CDP_BUILD_VERSION}
+        IMAGE=registry-write.opensource.zalan.do/teapot/external-dns-test
+        VERSION=$CDP_BUILD_VERSION
       fi
-      docker build --squash --tag "$IMAGE" .
-      docker push "$IMAGE"
+      IMAGE=$IMAGE VERSION=$VERSION make build.push
