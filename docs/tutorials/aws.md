@@ -216,7 +216,7 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com.
+    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
 spec:
   type: LoadBalancer
   ports:
@@ -312,7 +312,7 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com.
+    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
     external-dns.alpha.kubernetes.io/ttl: 60
 spec:
     ...
