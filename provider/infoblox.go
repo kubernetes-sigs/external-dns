@@ -58,30 +58,30 @@ type infobloxRecordSet struct {
 	res interface{}
 }
 
-// CustomQueryRequestBuilder implements a HttpRequestBuilder which supports to
-// pass query paramters with each request
-type CustomQueryRequestBuilder struct {
-	queryParams map[string]string
+// MaxResultsRequestBuilder implements a HttpRequestBuilder which sets the
+// _max_results query parameter on all get requests
+type MaxResultsRequestBuilder struct {
+	maxResults int
 	ibclient.WapiRequestBuilder
 }
 
-// NewCustomQueryRequestBuilder returns a CustomQueryRequestBuilder which adds
-// queryParams to all requests
-func NewCustomQueryRequestBuilder(queryParams map[string]string) *CustomQueryRequestBuilder {
-	return &CustomQueryRequestBuilder{
-		queryParams: queryParams,
+// NewMaxResultsRequestBuilder returns a MaxResultsRequestBuilder which adds
+// _max_results query parameter to all GET requests
+func NewMaxResultsRequestBuilder(maxResults int) *MaxResultsRequestBuilder {
+	return &MaxResultsRequestBuilder{
+		maxResults: maxResults,
 	}
 }
 
 // BuildRequest prepares the api request. it uses BuildRequest of
-// WapiRequestBuilder and then add all queryParams
-func (cqb *CustomQueryRequestBuilder) BuildRequest(t ibclient.RequestType, obj ibclient.IBObject, ref string, queryParams ibclient.QueryParams) (req *http.Request, err error) {
-	req, err = cqb.WapiRequestBuilder.BuildRequest(t, obj, ref, queryParams)
-	query := req.URL.Query()
-	for key, value := range cqb.queryParams {
-		query.Set(key, value)
+// WapiRequestBuilder and then add the _max_requests parameter
+func (mrb *MaxResultsRequestBuilder) BuildRequest(t ibclient.RequestType, obj ibclient.IBObject, ref string, queryParams ibclient.QueryParams) (req *http.Request, err error) {
+	req, err = mrb.WapiRequestBuilder.BuildRequest(t, obj, ref, queryParams)
+	if req.Method == "GET" {
+		query := req.URL.Query()
+		query.Set("_max_results", strconv.Itoa(mrb.maxResults))
+		req.URL.RawQuery = query.Encode()
 	}
-	req.URL.RawQuery = query.Encode()
 	return
 }
 
@@ -106,11 +106,8 @@ func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, erro
 
 	var requestBuilder ibclient.HttpRequestBuilder
 	if infobloxConfig.MaxResults != 0 {
-		// use our own HttpRequestBuilder which allows to set additional query parameters
-		query := map[string]string{
-			"_max_results": strconv.Itoa(infobloxConfig.MaxResults),
-		}
-		requestBuilder = NewCustomQueryRequestBuilder(query)
+		// use our own HttpRequestBuilder which sets _max_results paramter on GET requests
+		requestBuilder = NewMaxResultsRequestBuilder(infobloxConfig.MaxResults)
 	} else {
 		// use the default HttpRequestBuilder of the infoblox client
 		requestBuilder = &ibclient.WapiRequestBuilder{}

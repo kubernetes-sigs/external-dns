@@ -496,7 +496,7 @@ func TestInfobloxZones(t *testing.T) {
 	assert.Equal(t, provider.findZone(zones, "lvl2-2.lvl1-2.example.com").Fqdn, "example.com")
 }
 
-func TestCustomQueryRequestBuilder(t *testing.T) {
+func TestMaxResultsRequestBuilder(t *testing.T) {
 	hostConfig := ibclient.HostConfig{
 		Host:     "localhost",
 		Port:     "8080",
@@ -505,12 +505,16 @@ func TestCustomQueryRequestBuilder(t *testing.T) {
 		Version:  "2.3.1",
 	}
 
-	requestBuilder := NewCustomQueryRequestBuilder(map[string]string{"myKey": "myValue"})
+	requestBuilder := NewMaxResultsRequestBuilder(54321)
 	requestBuilder.Init(hostConfig)
 
 	obj := ibclient.NewRecordCNAME(ibclient.RecordCNAME{Zone: "foo.bar.com"})
 
 	req, _ := requestBuilder.BuildRequest(ibclient.GET, obj, "", ibclient.QueryParams{})
 
-	assert.True(t, req.URL.Query().Get("myKey") == "myValue")
+	assert.True(t, req.URL.Query().Get("_max_results") == "54321")
+
+	req, _ = requestBuilder.BuildRequest(ibclient.CREATE, obj, "", ibclient.QueryParams{})
+
+	assert.True(t, req.URL.Query().Get("_max_results") == "")
 }
