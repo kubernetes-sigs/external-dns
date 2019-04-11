@@ -89,6 +89,43 @@ func (r *Route53APIStub) ListResourceRecordSetsPages(input *route53.ListResource
 	return nil
 }
 
+type Route53APICounter struct {
+	wrapped Route53API
+	calls   map[string]int
+}
+
+func NewRoute53APICounter(w Route53API) *Route53APICounter {
+	return &Route53APICounter{
+		wrapped: w,
+		calls:   map[string]int{},
+	}
+}
+
+func (c *Route53APICounter) ListResourceRecordSetsPages(input *route53.ListResourceRecordSetsInput, fn func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool)) error {
+	c.calls["ListResourceRecordSetsPages"]++
+	return c.wrapped.ListResourceRecordSetsPages(input, fn)
+}
+
+func (c *Route53APICounter) ChangeResourceRecordSets(input *route53.ChangeResourceRecordSetsInput) (*route53.ChangeResourceRecordSetsOutput, error) {
+	c.calls["ChangeResourceRecordSets"]++
+	return c.wrapped.ChangeResourceRecordSets(input)
+}
+
+func (c *Route53APICounter) CreateHostedZone(input *route53.CreateHostedZoneInput) (*route53.CreateHostedZoneOutput, error) {
+	c.calls["CreateHostedZone"]++
+	return c.wrapped.CreateHostedZone(input)
+}
+
+func (c *Route53APICounter) ListHostedZonesPages(input *route53.ListHostedZonesInput, fn func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool)) error {
+	c.calls["ListHostedZonesPages"]++
+	return c.wrapped.ListHostedZonesPages(input, fn)
+}
+
+func (c *Route53APICounter) ListTagsForResource(input *route53.ListTagsForResourceInput) (*route53.ListTagsForResourceOutput, error) {
+	c.calls["ListTagsForResource"]++
+	return c.wrapped.ListTagsForResource(input)
+}
+
 // Route53 stores wildcards escaped: http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html?shortFooter=true#domain-name-format-asterisk
 func wildcardEscape(s string) string {
 	if strings.Contains(s, "*") {
@@ -426,7 +463,12 @@ func TestAWSApplyChanges(t *testing.T) {
 		Delete:    deleteRecords,
 	}
 
+	counter := NewRoute53APICounter(provider.client)
+	provider.client = counter
 	require.NoError(t, provider.ApplyChanges(changes))
+
+	assert.Equal(t, 1, counter.calls["ListHostedZonesPages"])
+	assert.Equal(t, 3, counter.calls["ListResourceRecordSetsPages"])
 
 	records, err := provider.Records()
 	require.NoError(t, err)
@@ -619,10 +661,12 @@ func TestAWSsubmitChanges(t *testing.T) {
 		}
 	}
 
+	zones, _ := provider.Zones()
+	records, _ := provider.Records()
 	cs := make([]*route53.Change, 0, len(endpoints))
-	cs = append(cs, provider.newChanges(route53.ChangeActionCreate, endpoints)...)
+	cs = append(cs, provider.newChanges(route53.ChangeActionCreate, endpoints, records, zones)...)
 
-	require.NoError(t, provider.submitChanges(cs))
+	require.NoError(t, provider.submitChanges(cs, zones))
 
 	records, err := provider.Records()
 	require.NoError(t, err)
@@ -634,10 +678,15 @@ func TestAWSsubmitChangesError(t *testing.T) {
 	provider, clientStub := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), NewZoneIDFilter([]string{}), NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, []*endpoint.Endpoint{})
 	clientStub.MockMethod("ChangeResourceRecordSets", mock.Anything).Return(nil, fmt.Errorf("Mock route53 failure"))
 
-	ep := endpoint.NewEndpointWithTTL("fail.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
-	cs := provider.newChanges(route53.ChangeActionCreate, []*endpoint.Endpoint{ep})
+	zones, err := provider.Zones()
+	require.NoError(t, err)
+	records, err := provider.Records()
+	require.NoError(t, err)
 
-	require.Error(t, provider.submitChanges(cs))
+	ep := endpoint.NewEndpointWithTTL("fail.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
+	cs := provider.newChanges(route53.ChangeActionCreate, []*endpoint.Endpoint{ep}, records, zones)
+
+	require.Error(t, provider.submitChanges(cs, zones))
 }
 
 func TestAWSBatchChangeSet(t *testing.T) {
