@@ -263,6 +263,10 @@ func (p *AWSProvider) records(zones map[string]*route53.HostedZone) ([]*endpoint
 			}
 
 			if r.AliasTarget != nil {
+				// Alias records don't have TTLs so provide the default to match the TXT generation
+				if ttl == 0 {
+					ttl = recordTTL
+				}
 				ep := endpoint.
 					NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), endpoint.RecordTypeCNAME, ttl, aws.StringValue(r.AliasTarget.DNSName)).
 					WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", aws.BoolValue(r.AliasTarget.EvaluateTargetHealth)))
