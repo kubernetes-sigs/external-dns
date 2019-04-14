@@ -1,4 +1,4 @@
-dist: trusty
+dist: xenial
 
 os:
 - linux
@@ -6,27 +6,23 @@ os:
 language: go
 
 go:
-- 1.x
+- "1.12.x"
 - tip
 
 matrix:
   allow_failures:
   - go: tip
 
+env:
+- GO111MODULE=on GOLANGCI_RELEASE="v1.16.0"
+
 before_install:
-- make dep
 - go get github.com/mattn/goveralls
 - go get github.com/lawrencewoodman/roveralls
-- go get github.com/alecthomas/gometalinter
-
-install:
-- gometalinter --install
-
-env:
-  - GOMETALINTER_DEADLINE="600s"
+- curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin ${GOLANGCI_RELEASE}
 
 script:
-- vendor/github.com/kubernetes/repo-infra/verify/verify-boilerplate.sh --rootdir=$(pwd)
-- vendor/github.com/kubernetes/repo-infra/verify/verify-go-src.sh -v --rootdir $(pwd)
+- make test
+- make lint
 - travis_wait 20 roveralls
 - goveralls -coverprofile=roveralls.coverprofile -service=travis-ci

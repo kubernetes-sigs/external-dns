@@ -31,7 +31,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -1008,9 +1008,8 @@ func testGatewayEndpoints(t *testing.T) {
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
 		},
 		{
-			title:                    "ignore hostname annotations",
-			ignoreHostnameAnnotation: true,
-			targetNamespace:          "",
+			title:           "ignore hostname annotations",
+			targetNamespace: "",
 			lbServices: []fakeIngressGatewayService{
 				{
 					ips:       []string{"8.8.8.8"},
@@ -1053,6 +1052,7 @@ func testGatewayEndpoints(t *testing.T) {
 					Targets: endpoint.Targets{"lb.com"},
 				},
 			},
+			ignoreHostnameAnnotation: true,
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {

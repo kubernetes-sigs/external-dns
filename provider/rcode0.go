@@ -18,13 +18,14 @@ package provider
 
 import (
 	"fmt"
+	"net/url"
+	"os"
+	"strings"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	rc0 "github.com/nic-at/rc0go"
 	log "github.com/sirupsen/logrus"
-	"net/url"
-	"os"
-	"strings"
 )
 
 // RcodeZeroProvider implements the DNS provider for RcodeZero Anycast DNS.
@@ -50,7 +51,7 @@ func NewRcodeZeroProvider(domainFilter DomainFilter, dryRun bool, txtEnc bool) (
 
 	value := os.Getenv("RC0_BASE_URL")
 	if len(value) != 0 {
-		client.BaseURL, _ = url.Parse(os.Getenv("RC0_BASE_URL"))
+		client.BaseURL, err = url.Parse(os.Getenv("RC0_BASE_URL"))
 	}
 
 	if err != nil {

@@ -136,7 +136,7 @@ func testDnsimpleProviderZones(t *testing.T) {
 	validateDnsimpleZones(t, result, dnsimpleListZonesResponse.Data)
 
 	mockProvider.accountID = "2"
-	result, err = mockProvider.Zones()
+	_, err = mockProvider.Zones()
 	assert.NotNil(t, err)
 }
 
@@ -147,7 +147,7 @@ func testDnsimpleProviderRecords(t *testing.T) {
 	assert.Equal(t, len(dnsimpleListRecordsResponse.Data), len(result))
 
 	mockProvider.accountID = "2"
-	result, err = mockProvider.Records()
+	_, err = mockProvider.Records()
 	assert.NotNil(t, err)
 }
 func testDnsimpleProviderApplyChanges(t *testing.T) {

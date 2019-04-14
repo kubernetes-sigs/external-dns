@@ -1043,7 +1043,7 @@ func setupAWSRecords(t *testing.T, provider *AWSProvider, endpoints []*endpoint.
 	escapeAWSRecords(t, provider, "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do.")
 	escapeAWSRecords(t, provider, "/hostedzone/zone-3.ext-dns-test-2.teapot.zalan.do.")
 
-	records, err = provider.Records()
+	_, err = provider.Records()
 	require.NoError(t, err)
 
 }
