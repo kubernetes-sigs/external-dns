@@ -117,7 +117,7 @@ spec:
         - --domain-filter=external-dns-test.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=alibabacloud
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
-        - --alibaba-cloud-zone=public # only look at public hosted zones (valid values are public, private or no value for both)
+        - --alibaba-cloud-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
         - --txt-owner-id=my-identifier
         volumeMounts:
@@ -210,9 +210,9 @@ spec:
 
 This list is not the full list, but a few arguments that where chosen.
 
-### alibabacloud-zone-type
+### alibaba-cloud-zone-type
 
-`alibabacloud-zone-type` allows filtering for private and public zones
+`alibaba-cloud-zone-type` allows filtering for private and public zones
 
 * If value is `public`, it will sync with records in Alibaba Cloud DNS Service
 * If value is `private`, it will sync with records in Alibaba Cloud Private Zone Service
