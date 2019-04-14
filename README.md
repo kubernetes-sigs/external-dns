@@ -122,11 +122,19 @@ Make sure you have the following prerequisites:
 
 First, get ExternalDNS:
 
-**To install all dependencies, make sure to install [dep](https://github.com/golang/dep) first.**
-
 ```console
 $ git clone https://github.com/kubernetes-incubator/external-dns.git && cd external-dns
-$ dep ensure -vendor-only
+```
+
+**This project uses [Go modules](https://github.com/golang/go/wiki/Modules) as
+introduced in Go 1.11 therefore you need Go >=1.11 installed in order to build.**
+If using Go 1.11 you also need to [activate Module
+support](https://github.com/golang/go/wiki/Modules#installing-and-activating-module-support).
+
+Assuming Go has been setup with module support it can be built simply by running:
+
+```console
+$ export GO111MODULE=on # needed if the project is checked out in your $GOPATH.
 $ make
 ```
 

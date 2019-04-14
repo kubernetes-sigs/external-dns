@@ -110,7 +110,9 @@ func (c fakeDesignateClient) UpdateRecordSet(zoneID, recordSetID string, opts re
 	if rs == nil {
 		return fmt.Errorf("unknown record-set %s", recordSetID)
 	}
-	rs.Description = opts.Description
+	if opts.Description != nil {
+		rs.Description = *opts.Description
+	}
 	rs.TTL = opts.TTL
 	rs.Records = opts.Records
 	return nil
