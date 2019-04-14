@@ -380,3 +380,5 @@ Give ExternalDNS some time to clean up the DNS records for you. Then delete the 
 ```console
 $ aliyun alidns DeleteDomain --DomainName external-dns-test.com
 ```
+
+For more info about Alibaba Cloud external dns, please refer this docs [link](https://yq.aliyun.com/articles/633412)
