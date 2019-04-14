@@ -194,6 +194,7 @@ spec:
         - --alibaba-cloud-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
         - --txt-owner-id=my-identifier
+        - --alibaba-cloud-config-file= # enable sts token 
         volumeMounts:
         - mountPath: /usr/share/zoneinfo
           name: hostpath
