@@ -15,8 +15,7 @@ Create a GKE cluster without using the default ingress controller.
 ```console
 $ gcloud container clusters create "external-dns" \
     --num-nodes 1 \
-    --scopes "https://www.googleapis.com/auth/ndev.clouddns.readwrite" \
-    --disable-addons=HttpLoadBalancing
+    --scopes "https://www.googleapis.com/auth/ndev.clouddns.readwrite"
 ```
 
 Create a DNS zone which will contain the managed DNS records.
