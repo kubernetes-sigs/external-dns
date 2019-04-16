@@ -1562,7 +1562,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
 				{DNSName: "foo-1.service.example.org", Targets: endpoint.Targets{"1.1.1.2"}},
-				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1","1.1.1.2"}},
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1", "1.1.1.2"}},
 			},
 			false,
 		},
@@ -1617,7 +1617,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}, RecordTTL: endpoint.TTL(1)},
 				{DNSName: "foo-1.service.example.org", Targets: endpoint.Targets{"1.1.1.2"}, RecordTTL: endpoint.TTL(1)},
-				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1","1.1.1.2"}, RecordTTL: endpoint.TTL(1)},
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1", "1.1.1.2"}, RecordTTL: endpoint.TTL(1)},
 			},
 			false,
 		},
@@ -1796,7 +1796,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
 				{DNSName: "foo-1.service.example.org", Targets: endpoint.Targets{"1.1.1.2"}},
-				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1","1.1.1.2"}},
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1", "1.1.1.2"}},
 			},
 			false,
 		},
@@ -1851,7 +1851,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}, RecordTTL: endpoint.TTL(1)},
 				{DNSName: "foo-1.service.example.org", Targets: endpoint.Targets{"1.1.1.2"}, RecordTTL: endpoint.TTL(1)},
-				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1","1.1.1.2"}, RecordTTL: endpoint.TTL(1)},
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1", "1.1.1.2"}, RecordTTL: endpoint.TTL(1)},
 			},
 			false,
 		},
