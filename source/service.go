@@ -238,26 +238,28 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 
 	targetsByHeadlessDomain := make(map[string][]string)
 	for _, v := range pods {
-		headlessDomain := hostname
-		if v.Spec.Hostname != "" {
-			headlessDomain = v.Spec.Hostname + "." + headlessDomain
-		}
+		headlessDomains := []string{hostname}
 
-		if sc.publishHostIP == true {
-			log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, v.Status.HostIP)
-			// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
-			if v.Status.Phase == v1.PodRunning {
-				targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], v.Status.HostIP)
+		if v.Spec.Hostname != "" {
+			headlessDomains = append(headlessDomains, v.Spec.Hostname+"."+hostname)
+		}
+		for _, headlessDomain := range headlessDomains {
+			if sc.publishHostIP == true {
+				log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, v.Status.HostIP)
+				// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
+				if v.Status.Phase == v1.PodRunning {
+					targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], v.Status.HostIP)
+				} else {
+					log.Debugf("Pod %s is not in running phase", v.Spec.Hostname)
+				}
 			} else {
-				log.Debugf("Pod %s is not in running phase", v.Spec.Hostname)
-			}
-		} else {
-			log.Debugf("Generating matching endpoint %s with PodIP %s", headlessDomain, v.Status.PodIP)
-			// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
-			if v.Status.Phase == v1.PodRunning {
-				targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], v.Status.PodIP)
-			} else {
-				log.Debugf("Pod %s is not in running phase", v.Spec.Hostname)
+				log.Debugf("Generating matching endpoint %s with PodIP %s", headlessDomain, v.Status.PodIP)
+				// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
+				if v.Status.Phase == v1.PodRunning {
+					targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], v.Status.PodIP)
+				} else {
+					log.Debugf("Pod %s is not in running phase", v.Spec.Hostname)
+				}
 			}
 		}
 
