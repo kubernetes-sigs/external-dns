@@ -399,7 +399,7 @@ func TestNewCloudFlareChanges(t *testing.T) {
 	for i, change := range changes {
 		assert.Equal(
 			t,
-			change.ResourceRecordSet.TTL,
+			change.ResourceRecordSet[0].TTL,
 			expect[i].TTL,
 			expect[i].Name)
 	}
@@ -407,7 +407,7 @@ func TestNewCloudFlareChanges(t *testing.T) {
 
 func TestNewCloudFlareChangeNoProxied(t *testing.T) {
 	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: "A", Targets: endpoint.Targets{"target"}}, false)
-	assert.False(t, change.ResourceRecordSet.Proxied)
+	assert.False(t, change.ResourceRecordSet[0].Proxied)
 }
 
 func TestNewCloudFlareProxiedAnnotationTrue(t *testing.T) {
@@ -417,7 +417,7 @@ func TestNewCloudFlareProxiedAnnotationTrue(t *testing.T) {
 			Value: "true",
 		},
 	}}, false)
-	assert.True(t, change.ResourceRecordSet.Proxied)
+	assert.True(t, change.ResourceRecordSet[0].Proxied)
 }
 
 func TestNewCloudFlareProxiedAnnotationFalse(t *testing.T) {
@@ -427,7 +427,7 @@ func TestNewCloudFlareProxiedAnnotationFalse(t *testing.T) {
 			Value: "false",
 		},
 	}}, true)
-	assert.False(t, change.ResourceRecordSet.Proxied)
+	assert.False(t, change.ResourceRecordSet[0].Proxied)
 }
 
 func TestNewCloudFlareProxiedAnnotationIllegalValue(t *testing.T) {
@@ -437,7 +437,7 @@ func TestNewCloudFlareProxiedAnnotationIllegalValue(t *testing.T) {
 			Value: "asdaslkjndaslkdjals",
 		},
 	}}, false)
-	assert.False(t, change.ResourceRecordSet.Proxied)
+	assert.False(t, change.ResourceRecordSet[0].Proxied)
 }
 
 func TestNewCloudFlareChangeProxiable(t *testing.T) {
@@ -459,14 +459,14 @@ func TestNewCloudFlareChangeProxiable(t *testing.T) {
 		change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: cloudFlareType.recordType, Targets: endpoint.Targets{"target"}}, true)
 
 		if cloudFlareType.proxiable {
-			assert.True(t, change.ResourceRecordSet.Proxied)
+			assert.True(t, change.ResourceRecordSet[0].Proxied)
 		} else {
-			assert.False(t, change.ResourceRecordSet.Proxied)
+			assert.False(t, change.ResourceRecordSet[0].Proxied)
 		}
 	}
 
 	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "*.foo", RecordType: "A", Targets: endpoint.Targets{"target"}}, true)
-	assert.False(t, change.ResourceRecordSet.Proxied)
+	assert.False(t, change.ResourceRecordSet[0].Proxied)
 }
 
 func TestCloudFlareZones(t *testing.T) {
@@ -574,14 +574,18 @@ func TestCloudFlareGetRecordID(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, "", p.getRecordID(records, cloudflare.DNSRecord{
+	assert.Len(t, p.getRecordIDs(records, cloudflare.DNSRecord{
 		Name: "foo.com",
 		Type: endpoint.RecordTypeA,
-	}))
-	assert.Equal(t, "2", p.getRecordID(records, cloudflare.DNSRecord{
+	}), 0)
+	assert.Len(t, p.getRecordIDs(records, cloudflare.DNSRecord{
 		Name: "bar.de",
 		Type: endpoint.RecordTypeA,
-	}))
+	}), 1)
+	assert.Equal(t, "2", p.getRecordIDs(records, cloudflare.DNSRecord{
+		Name: "bar.de",
+		Type: endpoint.RecordTypeA,
+	})[0])
 }
 
 func validateCloudFlareZones(t *testing.T, zones []cloudflare.Zone, expected []cloudflare.Zone) {
