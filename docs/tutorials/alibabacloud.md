@@ -194,6 +194,7 @@ spec:
         - --alibaba-cloud-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
         - --txt-owner-id=my-identifier
+        - --alibaba-cloud-config-file= # enable sts token 
         volumeMounts:
         - mountPath: /usr/share/zoneinfo
           name: hostpath
@@ -379,3 +380,5 @@ Give ExternalDNS some time to clean up the DNS records for you. Then delete the 
 ```console
 $ aliyun alidns DeleteDomain --DomainName external-dns-test.com
 ```
+
+For more info about Alibaba Cloud external dns, please refer this [docs](https://yq.aliyun.com/articles/633412)
