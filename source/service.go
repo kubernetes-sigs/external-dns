@@ -19,19 +19,24 @@ package source
 import (
 	"bytes"
 	"fmt"
+	kubeinformers "k8s.io/client-go/informers"
+	coreinformers "k8s.io/client-go/informers/core/v1"
+	"k8s.io/client-go/tools/cache"
 	"sort"
 	"strings"
 	"text/template"
 
 	log "github.com/sirupsen/logrus"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"time"
 )
 
 const (
@@ -48,18 +53,21 @@ type serviceSource struct {
 	namespace        string
 	annotationFilter string
 	// process Services with legacy annotations
-	compatibility         string
-    createServiceRecord   bool
-	fqdnTemplate          *template.Template
-	combineFQDNAnnotation bool
-    ignoreHostnameAnnotation bool
-	publishInternal       bool
-	publishHostIP         bool
-	serviceTypeFilter     map[string]struct{}
+	compatibility            string
+	createServiceRecord   bool
+	fqdnTemplate             *template.Template
+	combineFQDNAnnotation    bool
+	ignoreHostnameAnnotation bool
+	publishInternal          bool
+	publishHostIP            bool
+	serviceInformer          coreinformers.ServiceInformer
+	podInformer              coreinformers.PodInformer
+	nodeInformer             coreinformers.NodeInformer
+	serviceTypeFilter        map[string]struct{}
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation, createServiceRecord bool, compatibility string, publishInternal bool, publishHostIP bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation , createServiceRecord bool, compatibility string, publishInternal bool, publishHostIP bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -71,6 +79,47 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
+	// Set resync period to 0, to prevent processing when nothing has changed
+	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
+	serviceInformer := informerFactory.Core().V1().Services()
+	podInformer := informerFactory.Core().V1().Pods()
+	nodeInformer := informerFactory.Core().V1().Nodes()
+
+	// Add default resource event handlers to properly initialize informer.
+	serviceInformer.Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				log.Debug("service added")
+			},
+		},
+	)
+	podInformer.Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				log.Debug("pod added")
+			},
+		},
+	)
+	nodeInformer.Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				log.Debug("node added")
+			},
+		},
+	)
+
+	// TODO informer is not explicitly stopped since controller is not passing in its channel.
+	informerFactory.Start(wait.NeverStop)
+
+	// wait for the local cache to be populated.
+	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
+		return serviceInformer.Informer().HasSynced() == true, nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to sync cache: %v", err)
 	}
 
 	// Transform the slice into a map so it will
@@ -91,24 +140,27 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
 		publishInternal:          publishInternal,
 		publishHostIP:            publishHostIP,
+		serviceInformer:          serviceInformer,
+		podInformer:              podInformer,
+		nodeInformer:             nodeInformer,
 		serviceTypeFilter:        serviceTypes,
 	}, nil
 }
 
 // Endpoints returns endpoint objects for each service that should be processed.
 func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
-	services, err := sc.client.CoreV1().Services(sc.namespace).List(metav1.ListOptions{})
+	services, err := sc.serviceInformer.Lister().Services(sc.namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
 	}
-	services.Items, err = sc.filterByAnnotations(services.Items)
+	services, err = sc.filterByAnnotations(services)
 	if err != nil {
 		return nil, err
 	}
 
 	// filter on service types if at least one has been provided
 	if len(sc.serviceTypeFilter) > 0 {
-		services.Items = sc.filterByServiceType(services.Items)
+		services = sc.filterByServiceType(services)
 	}
 
 	// get the ip addresses of all the nodes and cache them for this run
@@ -119,7 +171,7 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 	endpoints := []*endpoint.Endpoint{}
 
-	for _, svc := range services.Items {
+	for _, svc := range services {
 		// Check controller annotation to see if we are responsible.
 		controller, ok := svc.Annotations[controllerAnnotationKey]
 		if ok && controller != controllerAnnotationValue {
@@ -128,16 +180,16 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 
-		svcEndpoints := sc.endpoints(&svc, nodeTargets)
+		svcEndpoints := sc.endpoints(svc, nodeTargets)
 
 		// process legacy annotations if no endpoints were returned and compatibility mode is enabled.
 		if len(svcEndpoints) == 0 && sc.compatibility != "" {
-			svcEndpoints = legacyEndpointsFromService(&svc, sc.compatibility)
+			svcEndpoints = legacyEndpointsFromService(svc, sc.compatibility)
 		}
 
 		// apply template if none of the above is found
 		if (sc.combineFQDNAnnotation || len(svcEndpoints) == 0) && sc.fqdnTemplate != nil {
-			sEndpoints, err := sc.endpointsFromTemplate(&svc, nodeTargets)
+			sEndpoints, err := sc.endpointsFromTemplate(svc, nodeTargets)
 			if err != nil {
 				return nil, err
 			}
@@ -169,14 +221,23 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname string, ttl endpoint.TTL) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
-	pods, err := sc.client.CoreV1().Pods(svc.Namespace).List(metav1.ListOptions{LabelSelector: labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String()})
+	labelSelector, err := metav1.ParseToLabelSelector(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
+	if err != nil {
+		return nil
+	}
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		return nil
+	}
+
+	pods, err := sc.podInformer.Lister().Pods(svc.Namespace).List(selector)
 	if err != nil {
 		log.Errorf("List Pods of service[%s] error:%v", svc.GetName(), err)
 		return endpoints
 	}
 
 	targetsByHeadlessDomain := make(map[string][]string)
-	for _, v := range pods.Items {
+	for _, v := range pods {
 		headlessDomain := hostname
 		if ip := sc.extractIPFromHeadlessEndpointPod(headlessDomain, v); ip != "" {
 			if sc.createServiceRecord {
@@ -207,17 +268,17 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 	return endpoints
 }
 
-func (sc *serviceSource) extractIPFromHeadlessEndpointPod(headlessDomain string, pod v1.Pod) string {
+func (sc *serviceSource) extractIPFromHeadlessEndpointPod(headlessDomain string, pod *v1.Pod) string {
 	if sc.publishHostIP == true {
 		log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, pod.Status.HostIP)
-		// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
+		// To reduce traffic on the DNS API only add record for running Pods. Good Idea?
 		if pod.Status.Phase == v1.PodRunning {
 			return pod.Status.HostIP
 		}
 		log.Debugf("Pod %s is not in running phase", pod.Spec.Hostname)
 	} else {
 		log.Debugf("Generating matching endpoint %s with PodIP %s", headlessDomain, pod.Status.PodIP)
-		// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
+		// To reduce traffic on the DNS API only add record for running Pods. Good Idea?
 		if pod.Status.Phase == v1.PodRunning {
 			return pod.Status.PodIP
 		}
@@ -247,7 +308,6 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service, nodeTargets endp
 // endpointsFromService extracts the endpoints from a service object
 func (sc *serviceSource) endpoints(svc *v1.Service, nodeTargets endpoint.Targets) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
-
 	// Skip endpoints if we do not want entries from annotations
 	if !sc.ignoreHostnameAnnotation {
 		hostnameList := getHostnamesFromAnnotations(svc.Annotations)
@@ -255,12 +315,11 @@ func (sc *serviceSource) endpoints(svc *v1.Service, nodeTargets endpoint.Targets
 			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, nodeTargets)...)
 		}
 	}
-
 	return endpoints
 }
 
 // filterByAnnotations filters a list of services by a given annotation selector.
-func (sc *serviceSource) filterByAnnotations(services []v1.Service) ([]v1.Service, error) {
+func (sc *serviceSource) filterByAnnotations(services []*v1.Service) ([]*v1.Service, error) {
 	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
 	if err != nil {
 		return nil, err
@@ -275,7 +334,7 @@ func (sc *serviceSource) filterByAnnotations(services []v1.Service) ([]v1.Servic
 		return services, nil
 	}
 
-	filteredList := []v1.Service{}
+	filteredList := []*v1.Service{}
 
 	for _, service := range services {
 		// convert the service's annotations to an equivalent label selector
@@ -291,8 +350,8 @@ func (sc *serviceSource) filterByAnnotations(services []v1.Service) ([]v1.Servic
 }
 
 // filterByServiceType filters services according their types
-func (sc *serviceSource) filterByServiceType(services []v1.Service) []v1.Service {
-	filteredList := []v1.Service{}
+func (sc *serviceSource) filterByServiceType(services []*v1.Service) []*v1.Service {
+	filteredList := []*v1.Service{}
 	for _, service := range services {
 		// Check if the service is of the given type or not
 		if _, ok := sc.serviceTypeFilter[string(service.Spec.Type)]; ok {
@@ -303,7 +362,7 @@ func (sc *serviceSource) filterByServiceType(services []v1.Service) []v1.Service
 	return filteredList
 }
 
-func (sc *serviceSource) setResourceLabel(service v1.Service, endpoints []*endpoint.Endpoint) {
+func (sc *serviceSource) setResourceLabel(service *v1.Service, endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
 		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("service/%s/%s", service.Namespace, service.Name)
 	}
@@ -317,19 +376,19 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, nod
 	}
 
 	epA := &endpoint.Endpoint{
-		RecordTTL:  ttl,
-		RecordType: endpoint.RecordTypeA,
-		Labels:     endpoint.NewLabels(),
-		Targets:    make(endpoint.Targets, 0, defaultTargetsCapacity),
-		DNSName:    hostname,
+		RecordTTL:        ttl,
+		RecordType:       endpoint.RecordTypeA,
+		Labels:           endpoint.NewLabels(),
+		Targets:          make(endpoint.Targets, 0, defaultTargetsCapacity),
+		DNSName:          hostname,
 	}
 
 	epCNAME := &endpoint.Endpoint{
-		RecordTTL:  ttl,
-		RecordType: endpoint.RecordTypeCNAME,
-		Labels:     endpoint.NewLabels(),
-		Targets:    make(endpoint.Targets, 0, defaultTargetsCapacity),
-		DNSName:    hostname,
+		RecordTTL:        ttl,
+		RecordType:       endpoint.RecordTypeCNAME,
+		Labels:           endpoint.NewLabels(),
+		Targets:          make(endpoint.Targets, 0, defaultTargetsCapacity),
+		DNSName:          hostname,
 	}
 
 	var endpoints []*endpoint.Endpoint
@@ -401,7 +460,7 @@ func (sc *serviceSource) extractNodeTargets() (endpoint.Targets, error) {
 		externalIPs endpoint.Targets
 	)
 
-	nodes, err := sc.client.CoreV1().Nodes().List(metav1.ListOptions{})
+	nodes, err := sc.nodeInformer.Lister().List(labels.Everything())
 	if err != nil {
 		if errors.IsForbidden(err) {
 			// Return an empty list because it makes sense to continue and try other sources.
@@ -411,7 +470,7 @@ func (sc *serviceSource) extractNodeTargets() (endpoint.Targets, error) {
 		return nil, err
 	}
 
-	for _, node := range nodes.Items {
+	for _, node := range nodes {
 		for _, address := range node.Status.Addresses {
 			switch address.Type {
 			case v1.NodeExternalIP:

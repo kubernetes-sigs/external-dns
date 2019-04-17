@@ -17,8 +17,10 @@ limitations under the License.
 package source
 
 import (
+	"k8s.io/apimachinery/pkg/util/wait"
 	"net"
 	"testing"
+	"time"
 
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1090,7 +1092,18 @@ func testServiceSourceEndpoints(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			endpoints, err := client.Endpoints()
+			var res []*endpoint.Endpoint
+
+			// wait up to a few seconds for new resources to appear in informer cache.
+			err = wait.Poll(time.Second, 3*time.Second, func() (bool, error) {
+				res, err = client.Endpoints()
+				if err != nil {
+					// stop waiting if we get an error
+					return true, err
+				}
+				return len(res) >= len(tc.expected), nil
+			})
+
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -1098,7 +1111,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			validateEndpoints(t, res, tc.expected)
 		})
 	}
 }
@@ -1571,7 +1584,7 @@ func TestHeadlessServices(t *testing.T) {
 				hostnameAnnotationKey: "service.example.org",
 			},
 			v1.ClusterIPNone,
-			"1.1.1.1",
+			[]string{"1.1.1.1"},
 			map[string]string{
 				"component": "foo",
 			},
@@ -1806,7 +1819,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				hostnameAnnotationKey: "service.example.org",
 			},
 			v1.ClusterIPNone,
-			[]string{"1.1.1.1"},
+			[]string{"1.1.1.1", "1.1.1.2"},
 			map[string]string{
 				"component": "foo",
 			},
