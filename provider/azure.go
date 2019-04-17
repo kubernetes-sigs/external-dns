@@ -179,9 +179,9 @@ func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				return true
 			}
 			name := formatAzureDNSName(*recordSet.Name, *zone.Name)
-			target := extractAzureTarget(&recordSet)
-			if target == "" {
-				log.Errorf("Failed to extract target for '%s' with type '%s'.", name, recordType)
+			targets := extractAzureTargets(&recordSet)
+			if len(targets) == 0 {
+				log.Errorf("Failed to extract targets for '%s' with type '%s'.", name, recordType)
 				return true
 			}
 			var ttl endpoint.TTL
@@ -189,7 +189,7 @@ func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				ttl = endpoint.TTL(*recordSet.TTL)
 			}
 
-			ep := endpoint.NewEndpointWithTTL(name, recordType, endpoint.TTL(ttl), target)
+			ep := endpoint.NewEndpointWithTTL(name, recordType, endpoint.TTL(ttl), targets...)
 			log.Debugf(
 				"Found %s record for '%s' with target '%s'.",
 				ep.RecordType,
@@ -414,14 +414,16 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 	}
 	switch dns.RecordType(endpoint.RecordType) {
 	case dns.A:
+		aRecords := make([]dns.ARecord, len(endpoint.Targets))
+		for i, target := range endpoint.Targets {
+			aRecords[i] = dns.ARecord{
+				Ipv4Address: to.StringPtr(target),
+			}
+		}
 		return dns.RecordSet{
 			RecordSetProperties: &dns.RecordSetProperties{
-				TTL: to.Int64Ptr(ttl),
-				ARecords: &[]dns.ARecord{
-					{
-						Ipv4Address: to.StringPtr(endpoint.Targets[0]),
-					},
-				},
+				TTL:      to.Int64Ptr(ttl),
+				ARecords: &aRecords,
 			},
 		}, nil
 	case dns.CNAME:
@@ -459,22 +461,26 @@ func formatAzureDNSName(recordName, zoneName string) string {
 }
 
 // Helper function (shared with text code)
-func extractAzureTarget(recordSet *dns.RecordSet) string {
+func extractAzureTargets(recordSet *dns.RecordSet) []string {
 	properties := recordSet.RecordSetProperties
 	if properties == nil {
-		return ""
+		return []string{}
 	}
 
 	// Check for A records
 	aRecords := properties.ARecords
 	if aRecords != nil && len(*aRecords) > 0 && (*aRecords)[0].Ipv4Address != nil {
-		return *(*aRecords)[0].Ipv4Address
+		targets := make([]string, len(*aRecords))
+		for i, aRecord := range *aRecords {
+			targets[i] = *aRecord.Ipv4Address
+		}
+		return targets
 	}
 
 	// Check for CNAME records
 	cnameRecord := properties.CnameRecord
 	if cnameRecord != nil && cnameRecord.Cname != nil {
-		return *cnameRecord.Cname
+		return []string{*cnameRecord.Cname}
 	}
 
 	// Check for TXT records
@@ -482,8 +488,8 @@ func extractAzureTarget(recordSet *dns.RecordSet) string {
 	if txtRecords != nil && len(*txtRecords) > 0 && (*txtRecords)[0].Value != nil {
 		values := (*txtRecords)[0].Value
 		if values != nil && len(*values) > 0 {
-			return (*values)[0]
+			return []string{(*values)[0]}
 		}
 	}
-	return ""
+	return []string{}
 }
