@@ -241,7 +241,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		headlessDomains := []string{hostname}
 
 		if v.Spec.Hostname != "" {
-			headlessDomains = append(headlessDomains, v.Spec.Hostname+"."+hostname)
+			headlessDomains = append(headlessDomains, fmt.Sprintf("%s.%s", v.Spec.Hostname, hostname))
 		}
 		for _, headlessDomain := range headlessDomains {
 			if sc.publishHostIP == true {
