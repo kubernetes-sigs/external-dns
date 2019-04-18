@@ -1,5 +1,23 @@
+## v0.5.13 - 2019-04-18
+
+  - Azure: Support multiple A targets (#987) @michaelfig
+  - Core: Fixing what seems an obvious omission of /github.com/ dir in Dockerfile (#985) @llamahunter
+  - Docs: GKE tutorial remove disable-addon argument (#978) @ggordan
+  - Docs: Alibaba Cloud config file missing by enable sts token (#977) @xianlubird
+  - Docs: Alibaba Cloud fix wrong arg in manifest (#976) @iamzhout
+  - AWS: Set a default TTL for Alias records (#975) @fraenkel
+  - Cloudflare: Add support for multiple target addresses (#970) @nta
+  - AWS: Adding China ELB endpoints and hosted zone id's (#968) @jfillo
+  - AWS: Streamline ApplyChanges (#966) @fraenkel
+  - Core: Switch to go modules (#960) @njuettner
+  - Docs: AWS how to check if your cluster has a RBAC (#959) @confiq
+  - Docs: AWS remove superfluous trailing period from hostname (#952) @hobti01
+  - Core: Add generic logic to remove secrets from logs (#951) @dsbrng25b
+  - RFC2136: Remove unnecessary parameter (#948) @ChristianMoesl
+  - Infoblox: Reduce verbosity of logs (#945) @dsbrng25b
+
 ## v0.5.12 - 2019-03-26
-  
+
   - Bumping istio to 1.1.0 (#942) @venezia
   - Docs: Added stability matrix and minor improvements to README (#938) @Raffo
   - Docs: Added a reference to a blogpost which uses ExternalDNS in a CI/CD setup (#928) @vanhumbeecka
