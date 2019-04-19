@@ -1,0 +1,3 @@
+FROM scratch
+COPY ./build/external-dns /bin/external-dns
+ENTRYPOINT ["/bin/external-dns"]
