@@ -1,3 +1,14 @@
+FROM golang:1.12.4 as builder
+WORKDIR /external-dns
+COPY . .
+RUN make build
+
+FROM alpine:latest as pkgs
+RUN apk --update add ca-certificates
+
 FROM scratch
-COPY ./build/external-dns /bin/external-dns
-ENTRYPOINT ["/bin/external-dns"]
+COPY --from=pkgs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=pkgs /etc/passwd /etc/passwd
+COPY --from=builder /external-dns/build/external-dns /external-dns
+USER nobody
+ENTRYPOINT ["./external-dns"]
