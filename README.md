@@ -41,6 +41,7 @@ ExternalDNS' current release is `v0.5`. This version allows you to keep selected
 * [Oracle Cloud Infrastructure DNS](https://docs.cloud.oracle.com/iaas/Content/DNS/Concepts/dnszonemanagement.htm)
 * [Linode DNS](https://www.linode.com/docs/networking/dns/)
 * [RFC2136](https://tools.ietf.org/html/rfc2136)
+* [NS1](https://ns1.com/)
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` (or greater) with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -78,6 +79,7 @@ The following table clarifies the current status of the providers according to t
 | Oracle Cloud Infrastructure DNS | Alpha |
 | Linode DNS | Alpha |
 | RFC2136 | Alpha |
+| NS1 | Alpha |
 
 
 ## Running ExternalDNS:
@@ -230,6 +232,7 @@ Here's a rough outline on what is to come (subject to change):
 - [x] Support for PowerDNS
 - [x] Support for Linode
 - [x] Support for RcodeZero
+- [x] Support for NS1
 
 ### v0.6
 
