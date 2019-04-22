@@ -301,10 +301,10 @@ func (suite *PlanTestSuite) TestIdempotency() {
 func (suite *PlanTestSuite) TestDifferentTypes() {
 	current := []*endpoint.Endpoint{suite.fooV1Cname}
 	desired := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooA5}
-	expectedCreate := []*endpoint.Endpoint{}
-	expectedUpdateOld := []*endpoint.Endpoint{suite.fooV1Cname}
-	expectedUpdateNew := []*endpoint.Endpoint{suite.fooA5}
-	expectedDelete := []*endpoint.Endpoint{}
+	expectedCreate := desired
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := current
 
 	p := &Plan{
 		Policies: []Policy{&SyncPolicy{}},

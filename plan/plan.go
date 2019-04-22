@@ -75,12 +75,12 @@ func newPlanTable() planTable { //TODO: make resolver configurable
 // current corresponds to the record currently occupying dns name on the dns provider
 // candidates corresponds to the list of records which would like to have this dnsName
 type planTableRow struct {
-	current    *endpoint.Endpoint
+	currents   []*endpoint.Endpoint
 	candidates []*endpoint.Endpoint
 }
 
 func (t planTableRow) String() string {
-	return fmt.Sprintf("planTableRow{current=%v, candidates=%v}", t.current, t.candidates)
+	return fmt.Sprintf("planTableRow{currents=%v, candidates=%v}", t.currents, t.candidates)
 }
 
 func (t planTable) addCurrent(e *endpoint.Endpoint) {
@@ -88,7 +88,7 @@ func (t planTable) addCurrent(e *endpoint.Endpoint) {
 	if _, ok := t.rows[dnsName]; !ok {
 		t.rows[dnsName] = &planTableRow{}
 	}
-	t.rows[dnsName].current = e
+	t.rows[dnsName].currents = append(t.rows[dnsName].currents, e)
 }
 
 func (t planTable) addCandidate(e *endpoint.Endpoint) {
@@ -102,13 +102,19 @@ func (t planTable) addCandidate(e *endpoint.Endpoint) {
 // TODO: allows record type change, which might not be supported by all dns providers
 func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*endpoint.Endpoint) {
 	for _, row := range t.rows {
-		if row.current != nil && len(row.candidates) > 0 { //dns name is taken
-			update := t.resolver.ResolveUpdate(row.current, row.candidates)
-			// compare "update" to "current" to figure out if actual update is required
-			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || shouldUpdateProviderSpecific(update, row.current) {
-				inheritOwner(row.current, update)
-				updateNew = append(updateNew, update)
-				updateOld = append(updateOld, row.current)
+		if len(row.currents) > 0 && len(row.candidates) > 0 { //dns name is taken
+			for _, candidate := range row.candidates {
+				current := findEndpointForTargets(candidate.Targets, row.currents)
+				if current == nil {
+					continue
+				}
+				update := t.resolver.ResolveUpdate(current, []*endpoint.Endpoint{candidate})
+				// compare "update" to "current" to figure out if actual update is required
+				if shouldUpdateTTL(update, current) || shouldUpdateProviderSpecific(update, current) {
+					inheritOwner(current, update)
+					updateNew = append(updateNew, update)
+					updateOld = append(updateOld, current)
+				}
 			}
 			continue
 		}
@@ -118,8 +124,10 @@ func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*en
 
 func (t planTable) getCreates() (createList []*endpoint.Endpoint) {
 	for _, row := range t.rows {
-		if row.current == nil { //dns name not taken
-			createList = append(createList, t.resolver.ResolveCreate(row.candidates))
+		for _, candidate := range row.candidates {
+			if findEndpointForTargets(candidate.Targets, row.currents) == nil {
+				createList = append(createList, t.resolver.ResolveCreate([]*endpoint.Endpoint{candidate}))
+			}
 		}
 	}
 	return
@@ -127,8 +135,10 @@ func (t planTable) getCreates() (createList []*endpoint.Endpoint) {
 
 func (t planTable) getDeletes() (deleteList []*endpoint.Endpoint) {
 	for _, row := range t.rows {
-		if row.current != nil && len(row.candidates) == 0 {
-			deleteList = append(deleteList, row.current)
+		for _, current := range row.currents {
+			if findEndpointForTargets(current.Targets, row.candidates) == nil {
+				deleteList = append(deleteList, current)
+			}
 		}
 	}
 	return
@@ -172,10 +182,6 @@ func inheritOwner(from, to *endpoint.Endpoint) {
 		from.Labels = map[string]string{}
 	}
 	to.Labels[endpoint.OwnerLabelKey] = from.Labels[endpoint.OwnerLabelKey]
-}
-
-func targetChanged(desired, current *endpoint.Endpoint) bool {
-	return !desired.Targets.Same(current.Targets)
 }
 
 func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
@@ -238,4 +244,15 @@ func normalizeDNSName(dnsName string) string {
 		s += "."
 	}
 	return s
+}
+
+// findEndpointForTargets finds and returns the endpoint from the list of endpoints that matches the given
+// Targets, or nil if not found
+func findEndpointForTargets(targets endpoint.Targets, endpoints []*endpoint.Endpoint) *endpoint.Endpoint {
+	for _, endpoint := range endpoints {
+		if targets.Same(endpoint.Targets) {
+			return endpoint
+		}
+	}
+	return nil
 }
