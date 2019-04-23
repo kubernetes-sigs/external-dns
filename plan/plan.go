@@ -158,8 +158,8 @@ func (t planTable) getDeletes() (deleteList []*endpoint.Endpoint) {
 func (p *Plan) Calculate() *Plan {
 	t := newPlanTable()
 
-	for _, currents := range filterRecordsForPlan(p.Current) {
-		t.addCurrent(currents)
+	for _, current := range filterRecordsForPlan(p.Current) {
+		t.addCurrent(current)
 	}
 	for _, desired := range filterRecordsForPlan(p.Desired) {
 		t.addCandidate(desired)

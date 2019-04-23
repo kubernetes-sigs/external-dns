@@ -296,69 +296,6 @@ func (suite *PlanTestSuite) TestDifferentTypes() {
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
-func (suite *PlanTestSuite) TestMultipleRecords() {
-	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.bar127A, suite.bar192A}
-	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.fooV3CnameSameResource, suite.bar127AWithTTL, suite.bar192A}
-	expectedCreate := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.fooV3CnameSameResource} // change in the number of "foo" records triggers deletion/recreation
-	expectedUpdateOld := []*endpoint.Endpoint{suite.bar127A}
-	expectedUpdateNew := []*endpoint.Endpoint{suite.bar127AWithTTL}
-	expectedDelete := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname}
-
-	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  current,
-		Desired:  desired,
-	}
-
-	changes := p.Calculate().Changes
-	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
-	validateEntries(suite.T(), changes.Delete, expectedDelete)
-}
-
-func (suite *PlanTestSuite) TestNoChanges1() {
-	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname}
-	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname}
-	expectedCreate := []*endpoint.Endpoint{}
-	expectedUpdateOld := []*endpoint.Endpoint{}
-	expectedUpdateNew := []*endpoint.Endpoint{}
-	expectedDelete := []*endpoint.Endpoint{}
-
-	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  current,
-		Desired:  desired,
-	}
-
-	changes := p.Calculate().Changes
-	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
-	validateEntries(suite.T(), changes.Delete, expectedDelete)
-}
-
-func (suite *PlanTestSuite) TestNoChanges2() {
-	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname}
-	desired := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooV1Cname} // different ordering of records shouldn't trigger changes
-	expectedCreate := []*endpoint.Endpoint{}
-	expectedUpdateOld := []*endpoint.Endpoint{}
-	expectedUpdateNew := []*endpoint.Endpoint{}
-	expectedDelete := []*endpoint.Endpoint{}
-
-	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  current,
-		Desired:  desired,
-	}
-
-	changes := p.Calculate().Changes
-	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
-	validateEntries(suite.T(), changes.Delete, expectedDelete)
-}
-
 func (suite *PlanTestSuite) TestIgnoreTXT() {
 	current := []*endpoint.Endpoint{suite.fooV2TXT}
 	desired := []*endpoint.Endpoint{suite.fooV2Cname}
@@ -487,4 +424,67 @@ func TestNormalizeDNSName(t *testing.T) {
 		gotName := normalizeDNSName(r.dnsName)
 		assert.Equal(t, r.expect, gotName)
 	}
+}
+
+func (suite *PlanTestSuite) TestMultipleRecords() {
+	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.bar127A, suite.bar192A}
+	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.fooV3CnameSameResource, suite.bar127AWithTTL, suite.bar192A}
+	expectedCreate := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.fooV3CnameSameResource} // change in the number of "foo" records triggers deletion/recreation
+	expectedUpdateOld := []*endpoint.Endpoint{suite.bar127A}
+	expectedUpdateNew := []*endpoint.Endpoint{suite.bar127AWithTTL}
+	expectedDelete := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
+func (suite *PlanTestSuite) TestNoChanges1() {
+	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname}
+	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname}
+	expectedCreate := []*endpoint.Endpoint{}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
+func (suite *PlanTestSuite) TestNoChanges2() {
+	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname}
+	desired := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooV1Cname} // different ordering of records shouldn't trigger changes
+	expectedCreate := []*endpoint.Endpoint{}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
