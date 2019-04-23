@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"sort"
 )
 
 // Plan can convert a list of desired and current records to a series of create,
@@ -50,15 +51,15 @@ type Changes struct {
 }
 
 // planTable is a supplementary struct for Plan
-// each row correspond to a dnsName -> (current record + all desired records)
+// each row correspond to a dnsName -> (current records + all desired records)
 /*
 planTable: (-> = target)
 --------------------------------------------------------
-DNSName | Current record | Desired Records             |
+DNSName | Current records | Desired Records             |
 --------------------------------------------------------
-foo.com | -> 1.1.1.1     | [->1.1.1.1, ->elb.com]      |  = no action
+foo.com | [->1.1.1.1]     | [->1.1.1.1]                 |  = no action
 --------------------------------------------------------
-bar.com |                | [->191.1.1.1, ->190.1.1.1]  |  = create (bar.com -> 190.1.1.1)
+bar.com |                 | [->191.1.1.1, ->190.1.1.1]  |  = create (bar.com -> 190.1.1.1, bar.com -> 191.1.1.1)
 --------------------------------------------------------
 "=", i.e. result of calculation relies on supplied ConflictResolver
 */
@@ -75,12 +76,12 @@ func newPlanTable() planTable { //TODO: make resolver configurable
 // current corresponds to the record currently occupying dns name on the dns provider
 // candidates corresponds to the list of records which would like to have this dnsName
 type planTableRow struct {
-	current    *endpoint.Endpoint
+	currents   []*endpoint.Endpoint
 	candidates []*endpoint.Endpoint
 }
 
 func (t planTableRow) String() string {
-	return fmt.Sprintf("planTableRow{current=%v, candidates=%v}", t.current, t.candidates)
+	return fmt.Sprintf("planTableRow{currents=%v, candidates=%v}", t.currents, t.candidates)
 }
 
 func (t planTable) addCurrent(e *endpoint.Endpoint) {
@@ -88,7 +89,7 @@ func (t planTable) addCurrent(e *endpoint.Endpoint) {
 	if _, ok := t.rows[dnsName]; !ok {
 		t.rows[dnsName] = &planTableRow{}
 	}
-	t.rows[dnsName].current = e
+	t.rows[dnsName].currents = append(t.rows[dnsName].currents, e)
 }
 
 func (t planTable) addCandidate(e *endpoint.Endpoint) {
@@ -102,24 +103,36 @@ func (t planTable) addCandidate(e *endpoint.Endpoint) {
 // TODO: allows record type change, which might not be supported by all dns providers
 func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*endpoint.Endpoint) {
 	for _, row := range t.rows {
-		if row.current != nil && len(row.candidates) > 0 { //dns name is taken
-			update := t.resolver.ResolveUpdate(row.current, row.candidates)
-			// compare "update" to "current" to figure out if actual update is required
-			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || shouldUpdateProviderSpecific(update, row.current) {
-				inheritOwner(row.current, update)
-				updateNew = append(updateNew, update)
-				updateOld = append(updateOld, row.current)
-			}
+		// If candidate and current list sizes are different, these will be treated as deletions/creations
+		if len(row.candidates) != len(row.currents) {
 			continue
 		}
+
+		// Update each current entry to its corresponding candidate entry
+		for i, candidate := range row.candidates {
+			current := row.currents[i]
+			update := t.resolver.ResolveUpdate(current, []*endpoint.Endpoint{candidate})
+			// compare "update" to "current" to figure out if actual update is required
+			if shouldUpdateTTL(update, current) || targetChanged(update, current) || shouldUpdateProviderSpecific(update, current) {
+				inheritOwner(current, update)
+				updateNew = append(updateNew, update)
+				updateOld = append(updateOld, current)
+			}
+		}
+		continue
 	}
 	return
 }
 
 func (t planTable) getCreates() (createList []*endpoint.Endpoint) {
 	for _, row := range t.rows {
-		if row.current == nil { //dns name not taken
-			createList = append(createList, t.resolver.ResolveCreate(row.candidates))
+		// If candidate and current list sizes are equal, these will be treated as updates
+		if len(row.candidates) == len(row.currents) {
+			continue
+		}
+		// Otherwise, we'll delete the currents and create the candidates
+		for _, cand := range row.candidates {
+			createList = append(createList, t.resolver.ResolveCreate([]*endpoint.Endpoint{cand}))
 		}
 	}
 	return
@@ -127,8 +140,13 @@ func (t planTable) getCreates() (createList []*endpoint.Endpoint) {
 
 func (t planTable) getDeletes() (deleteList []*endpoint.Endpoint) {
 	for _, row := range t.rows {
-		if row.current != nil && len(row.candidates) == 0 {
-			deleteList = append(deleteList, row.current)
+		// If candidate and current list sizes are equal, these will be treated as updates
+		if len(row.candidates) == len(row.currents) {
+			continue
+		}
+		// Otherwise, we'll delete the currents and create the candidates
+		for _, curr := range row.currents {
+			deleteList = append(deleteList, t.resolver.ResolveCreate([]*endpoint.Endpoint{curr}))
 		}
 	}
 	return
@@ -145,6 +163,17 @@ func (p *Plan) Calculate() *Plan {
 	}
 	for _, desired := range filterRecordsForPlan(p.Desired) {
 		t.addCandidate(desired)
+	}
+
+	// Sort current and candidate list for each plan row, for consistency of results
+	perResource := PerResource{}
+	for _, row := range t.rows {
+		sort.SliceStable(row.currents, func(i, j int) bool {
+			return perResource.less(row.currents[i], row.currents[j])
+		})
+		sort.SliceStable(row.candidates, func(i, j int) bool {
+			return perResource.less(row.candidates[i], row.candidates[j])
+		})
 	}
 
 	changes := &Changes{}
