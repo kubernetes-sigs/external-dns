@@ -18,10 +18,10 @@ package plan
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"sort"
 )
 
 // Plan can convert a list of desired and current records to a series of create,

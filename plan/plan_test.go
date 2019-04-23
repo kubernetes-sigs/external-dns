@@ -17,11 +17,12 @@ limitations under the License.
 package plan
 
 import (
+	"testing"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"testing"
 )
 
 type PlanTestSuite struct {
