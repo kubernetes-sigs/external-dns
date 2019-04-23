@@ -1,3 +1,7 @@
+## v0.5.14 - 2019-04-23
+
+  - Core: Supress Kubernetes logs (#991) @njuettner
+
 ## v0.5.13 - 2019-04-18
 
   - Azure: Support multiple A targets (#987) @michaelfig
