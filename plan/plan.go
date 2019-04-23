@@ -102,32 +102,32 @@ func (t planTable) addCandidate(e *endpoint.Endpoint) {
 // TODO: allows record type change, which might not be supported by all dns providers
 func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*endpoint.Endpoint) {
 	for _, row := range t.rows {
-		if len(row.currents) > 0 && len(row.candidates) > 0 { //dns name is taken
-			for _, candidate := range row.candidates {
-				current := findEndpointForTargets(candidate.Targets, row.currents)
-				if current == nil {
-					continue
-				}
-				update := t.resolver.ResolveUpdate(current, []*endpoint.Endpoint{candidate})
-				// compare "update" to "current" to figure out if actual update is required
-				if shouldUpdateTTL(update, current) || shouldUpdateProviderSpecific(update, current) {
-					inheritOwner(current, update)
-					updateNew = append(updateNew, update)
-					updateOld = append(updateOld, current)
-				}
-			}
+		if len(row.candidates) != len(row.currents) {
 			continue
 		}
+
+		for i, candidate := range row.candidates {
+			current := row.currents[i]
+			update := t.resolver.ResolveUpdate(current, []*endpoint.Endpoint{candidate})
+			// compare "update" to "current" to figure out if actual update is required
+			if shouldUpdateTTL(update, current) || targetChanged(update, current) || shouldUpdateProviderSpecific(update, current) {
+				inheritOwner(current, update)
+				updateNew = append(updateNew, update)
+				updateOld = append(updateOld, current)
+			}
+		}
+		continue
 	}
 	return
 }
 
 func (t planTable) getCreates() (createList []*endpoint.Endpoint) {
 	for _, row := range t.rows {
-		for _, candidate := range row.candidates {
-			if findEndpointForTargets(candidate.Targets, row.currents) == nil {
-				createList = append(createList, t.resolver.ResolveCreate([]*endpoint.Endpoint{candidate}))
-			}
+		if len(row.candidates) == len(row.currents) {
+			continue
+		}
+		for _, cand := range row.candidates {
+			createList = append(createList, t.resolver.ResolveCreate([]*endpoint.Endpoint{cand}))
 		}
 	}
 	return
@@ -135,10 +135,11 @@ func (t planTable) getCreates() (createList []*endpoint.Endpoint) {
 
 func (t planTable) getDeletes() (deleteList []*endpoint.Endpoint) {
 	for _, row := range t.rows {
-		for _, current := range row.currents {
-			if findEndpointForTargets(current.Targets, row.candidates) == nil {
-				deleteList = append(deleteList, current)
-			}
+		if len(row.candidates) == len(row.currents) {
+			continue
+		}
+		for _, curr := range row.currents {
+			deleteList = append(deleteList, t.resolver.ResolveCreate([]*endpoint.Endpoint{curr}))
 		}
 	}
 	return
@@ -172,6 +173,10 @@ func (p *Plan) Calculate() *Plan {
 	}
 
 	return plan
+}
+
+func targetChanged(desired, current *endpoint.Endpoint) bool {
+	return !desired.Targets.Same(current.Targets)
 }
 
 func inheritOwner(from, to *endpoint.Endpoint) {
@@ -244,15 +249,4 @@ func normalizeDNSName(dnsName string) string {
 		s += "."
 	}
 	return s
-}
-
-// findEndpointForTargets finds and returns the endpoint from the list of endpoints that matches the given
-// Targets, or nil if not found
-func findEndpointForTargets(targets endpoint.Targets, endpoints []*endpoint.Endpoint) *endpoint.Endpoint {
-	for _, endpoint := range endpoints {
-		if targets.Same(endpoint.Targets) {
-			return endpoint
-		}
-	}
-	return nil
 }

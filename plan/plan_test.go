@@ -19,6 +19,7 @@ package plan
 import (
 	"testing"
 
+	"fmt"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 	"github.com/stretchr/testify/assert"
@@ -141,41 +142,19 @@ func (suite *PlanTestSuite) SetupTest() {
 
 }
 
-func (suite *PlanTestSuite) TestSyncFirstRound() {
-	current := []*endpoint.Endpoint{}
-	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.bar127A}
-	expectedCreate := []*endpoint.Endpoint{suite.fooV1Cname, suite.bar127A} //v1 is chosen because of resolver taking "min"
-	expectedUpdateOld := []*endpoint.Endpoint{}
-	expectedUpdateNew := []*endpoint.Endpoint{}
-	expectedDelete := []*endpoint.Endpoint{}
-
-	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  current,
-		Desired:  desired,
-	}
-
-	changes := p.Calculate().Changes
-	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
-	validateEntries(suite.T(), changes.Delete, expectedDelete)
-}
-
 func (suite *PlanTestSuite) TestSyncSecondRound() {
 	current := []*endpoint.Endpoint{suite.fooV1Cname}
 	desired := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooV1Cname, suite.bar127A}
-	expectedCreate := []*endpoint.Endpoint{suite.bar127A}
+	expectedCreate := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooV1Cname, suite.bar127A}
 	expectedUpdateOld := []*endpoint.Endpoint{}
 	expectedUpdateNew := []*endpoint.Endpoint{}
-	expectedDelete := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{suite.fooV1Cname}
 
 	p := &Plan{
 		Policies: []Policy{&SyncPolicy{}},
 		Current:  current,
 		Desired:  desired,
 	}
-
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
 	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
@@ -186,10 +165,10 @@ func (suite *PlanTestSuite) TestSyncSecondRound() {
 func (suite *PlanTestSuite) TestSyncSecondRoundMigration() {
 	current := []*endpoint.Endpoint{suite.fooV2CnameNoLabel}
 	desired := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooV1Cname, suite.bar127A}
-	expectedCreate := []*endpoint.Endpoint{suite.bar127A}
-	expectedUpdateOld := []*endpoint.Endpoint{suite.fooV2CnameNoLabel}
-	expectedUpdateNew := []*endpoint.Endpoint{suite.fooV1Cname}
-	expectedDelete := []*endpoint.Endpoint{}
+	expectedCreate := desired
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := current
 
 	p := &Plan{
 		Policies: []Policy{&SyncPolicy{}},
@@ -371,51 +350,6 @@ func (suite *PlanTestSuite) TestRemoveEndpointWithUpsert() {
 
 	p := &Plan{
 		Policies: []Policy{&UpsertOnlyPolicy{}},
-		Current:  current,
-		Desired:  desired,
-	}
-
-	changes := p.Calculate().Changes
-	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
-	validateEntries(suite.T(), changes.Delete, expectedDelete)
-}
-
-//TODO: remove once multiple-target per endpoint is supported
-func (suite *PlanTestSuite) TestDuplicatedEndpointsForSameResourceReplace() {
-	current := []*endpoint.Endpoint{suite.fooV3CnameSameResource, suite.bar192A}
-	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV3CnameSameResource}
-	expectedCreate := []*endpoint.Endpoint{}
-	expectedUpdateOld := []*endpoint.Endpoint{suite.fooV3CnameSameResource}
-	expectedUpdateNew := []*endpoint.Endpoint{suite.fooV1Cname}
-	expectedDelete := []*endpoint.Endpoint{suite.bar192A}
-
-	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  current,
-		Desired:  desired,
-	}
-
-	changes := p.Calculate().Changes
-	validateEntries(suite.T(), changes.Create, expectedCreate)
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
-	validateEntries(suite.T(), changes.Delete, expectedDelete)
-}
-
-//TODO: remove once multiple-target per endpoint is supported
-func (suite *PlanTestSuite) TestDuplicatedEndpointsForSameResourceRetain() {
-
-	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.bar192A}
-	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV3CnameSameResource}
-	expectedCreate := []*endpoint.Endpoint{}
-	expectedUpdateOld := []*endpoint.Endpoint{}
-	expectedUpdateNew := []*endpoint.Endpoint{}
-	expectedDelete := []*endpoint.Endpoint{suite.bar192A}
-
-	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
 		Current:  current,
 		Desired:  desired,
 	}
