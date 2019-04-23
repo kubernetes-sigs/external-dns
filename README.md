@@ -110,6 +110,7 @@ The following tutorials are provided:
 * [Oracle Cloud Infrastructure (OCI) DNS](docs/tutorials/oracle.md)
 * [Linode](docs/tutorials/linode.md)
 * [RFC2136](docs/tutorials/rfc2136.md)
+* [NS1](docs/tutorials/ns1.md)
 
 ### Running Locally
 
