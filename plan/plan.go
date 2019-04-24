@@ -103,17 +103,17 @@ func (t planTable) addCandidate(e *endpoint.Endpoint) {
 // TODO: allows record type change, which might not be supported by all dns providers
 func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*endpoint.Endpoint) {
 	for _, row := range t.rows {
-		// If candidate and current list sizes are different, these will be treated as deletions/creations
-		if len(row.candidates) != len(row.currents) {
+		// Don't perform updates in this row if we're already deleting/recreating all row elements
+		if row.shouldRecreate(t.resolver) {
 			continue
 		}
 
-		// Update each current entry to its corresponding candidate entry
-		for i, candidate := range row.candidates {
-			current := row.currents[i]
-			update := t.resolver.ResolveUpdate(current, []*endpoint.Endpoint{candidate})
+		// At this point, we're only supporting updates when there is a single current/candidate record
+		if len(row.candidates) > 0 && len(row.candidates) > 0 { //dns name is taken
+			current := row.currents[0]
+			update := t.resolver.ResolveUpdate(current, row.candidates)
 			// compare "update" to "current" to figure out if actual update is required
-			if shouldUpdateTTL(update, current) || targetChanged(update, current) || shouldUpdateProviderSpecific(update, current) {
+			if recordChanged(update, current) {
 				inheritOwner(current, update)
 				updateNew = append(updateNew, update)
 				updateOld = append(updateOld, current)
@@ -126,13 +126,10 @@ func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*en
 
 func (t planTable) getCreates() (createList []*endpoint.Endpoint) {
 	for _, row := range t.rows {
-		// If candidate and current list sizes are equal, these will be treated as updates
-		if len(row.candidates) == len(row.currents) {
-			continue
-		}
-		// Otherwise, we'll delete the currents and create the candidates
 		for _, cand := range row.candidates {
-			createList = append(createList, t.resolver.ResolveCreate([]*endpoint.Endpoint{cand}))
+			if row.shouldRecreate(t.resolver) { // certain conditions will force deletion/recreation of all row elements
+				createList = append(createList, t.resolver.ResolveCreate([]*endpoint.Endpoint{cand}))
+			}
 		}
 	}
 	return
@@ -140,13 +137,10 @@ func (t planTable) getCreates() (createList []*endpoint.Endpoint) {
 
 func (t planTable) getDeletes() (deleteList []*endpoint.Endpoint) {
 	for _, row := range t.rows {
-		// If candidate and current list sizes are equal, these will be treated as updates
-		if len(row.candidates) == len(row.currents) {
-			continue
-		}
-		// Otherwise, we'll delete the currents and create the candidates
 		for _, curr := range row.currents {
-			deleteList = append(deleteList, t.resolver.ResolveCreate([]*endpoint.Endpoint{curr}))
+			if row.shouldRecreate(t.resolver) { // certain conditions will force deletion/recreation of all row elements
+				deleteList = append(deleteList, t.resolver.ResolveCreate([]*endpoint.Endpoint{curr}))
+			}
 		}
 	}
 	return
@@ -214,6 +208,10 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 	return desired.RecordTTL != current.RecordTTL
 }
 
+func recordChanged(desired, current *endpoint.Endpoint) bool {
+	return shouldUpdateTTL(desired, current) || targetChanged(desired, current) || shouldUpdateProviderSpecific(desired, current)
+}
+
 func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
 	if current.ProviderSpecific == nil && len(desired.ProviderSpecific) == 0 {
 		return false
@@ -267,4 +265,21 @@ func normalizeDNSName(dnsName string) string {
 		s += "."
 	}
 	return s
+}
+
+// shouldRecreate determines whether all elements of the given row should be deleted and recreated.
+// Currently, this returns true if:
+// - The number of elements in the row changes
+// - Any record changes in a multi-record row
+func (t planTableRow) shouldRecreate(resolver ConflictResolver) bool {
+	if len(t.candidates) != len(t.currents) {
+		return true
+	}
+	for i, cand := range t.candidates {
+		update := resolver.ResolveUpdate(t.currents[i], []*endpoint.Endpoint{cand})
+		if len(t.candidates) > 1 && recordChanged(update, t.currents[i]) {
+			return true
+		}
+	}
+	return false
 }

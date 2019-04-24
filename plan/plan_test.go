@@ -427,12 +427,33 @@ func TestNormalizeDNSName(t *testing.T) {
 	}
 }
 
-func (suite *PlanTestSuite) TestMultipleRecords() {
+func (suite *PlanTestSuite) TestMultipleRecords1() {
 	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.bar127A, suite.bar192A}
-	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.fooV3CnameSameResource, suite.bar127AWithTTL, suite.bar192A}
-	expectedCreate := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.fooV3CnameSameResource} // change in the number of "foo" records triggers deletion/recreation
+	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.fooV3CnameSameResource, suite.bar127A, suite.bar192A}
+	expectedCreate := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.fooV3CnameSameResource} // change in the number of records for a host triggers deletion/recreation of all
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
+func (suite *PlanTestSuite) TestMultipleRecords2() {
+	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.bar127A}
+	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooA5, suite.bar192A}
+	expectedCreate := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooA5} // change to any of the "foo" records (containing multiple) triggers deletion/recreation of all
 	expectedUpdateOld := []*endpoint.Endpoint{suite.bar127A}
-	expectedUpdateNew := []*endpoint.Endpoint{suite.bar127AWithTTL}
+	expectedUpdateNew := []*endpoint.Endpoint{suite.bar192A}
 	expectedDelete := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname}
 
 	p := &Plan{
