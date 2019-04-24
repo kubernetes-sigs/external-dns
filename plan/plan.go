@@ -111,7 +111,8 @@ func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*en
 		// At this point, we're only supporting updates when there is a single current/candidate record
 		if len(row.candidates) > 0 && len(row.candidates) > 0 { //dns name is taken
 			current := row.currents[0]
-			update := t.resolver.ResolveUpdate(current, row.candidates)
+			candidates := []*endpoint.Endpoint{row.candidates[0]}
+			update := t.resolver.ResolveUpdate(current, candidates)
 			// compare "update" to "current" to figure out if actual update is required
 			if recordChanged(update, current) {
 				inheritOwner(current, update)
