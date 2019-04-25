@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net/http"
@@ -271,7 +272,7 @@ type ns1Change struct {
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *NS1Provider) ApplyChanges(changes *plan.Changes) error {
+func (p *NS1Provider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	combinedChanges := make([]*ns1Change, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 
 	combinedChanges = append(combinedChanges, newNS1Changes(ns1Create, changes.Create)...)

@@ -201,7 +201,7 @@ func (p *OCIProvider) Records() ([]*endpoint.Endpoint, error) {
 }
 
 // ApplyChanges applies a given set of changes to a given zone.
-func (p *OCIProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *OCIProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	log.Debugf("Processing chages: %+v", changes)
 
 	ops := []dns.RecordOperation{}
@@ -217,7 +217,6 @@ func (p *OCIProvider) ApplyChanges(changes *plan.Changes) error {
 		return nil
 	}
 
-	ctx := context.Background()
 	zones, err := p.zones(ctx)
 	if err != nil {
 		return errors.Wrap(err, "fetching zones")

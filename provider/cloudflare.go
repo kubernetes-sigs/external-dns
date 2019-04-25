@@ -192,7 +192,7 @@ func (p *CloudFlareProvider) Records() ([]*endpoint.Endpoint, error) {
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *CloudFlareProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	proxiedByDefault := p.proxiedByDefault
 
 	combinedChanges := make([]*cloudFlareChange, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))

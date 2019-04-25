@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"strconv"
@@ -195,7 +196,7 @@ func (r rfc2136Provider) List() ([]dns.RR, error) {
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (r rfc2136Provider) ApplyChanges(changes *plan.Changes) error {
+func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	log.Debugf("ApplyChanges")
 
 	for _, ep := range changes.Create {

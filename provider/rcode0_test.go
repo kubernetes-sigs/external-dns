@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -102,7 +103,7 @@ func TestRcodeZeroProvider_ApplyChanges(t *testing.T) {
 
 	changes := mockChanges()
 
-	err := provider.ApplyChanges(changes)
+	err := provider.ApplyChanges(context.Background(), changes)
 
 	if err != nil {
 		t.Errorf("should not fail, %s", err)

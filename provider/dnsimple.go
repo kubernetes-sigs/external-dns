@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -332,7 +333,7 @@ func (p *dnsimpleProvider) UpdateRecords(endpoints []*endpoint.Endpoint) error {
 }
 
 // ApplyChanges applies a given set of changes
-func (p *dnsimpleProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *dnsimpleProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	combinedChanges := make([]*dnsimpleChange, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 
 	combinedChanges = append(combinedChanges, newDnsimpleChanges(dnsimpleCreate, changes.Create)...)

@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -177,7 +178,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 }
 
 // ApplyChanges applies the given changes.
-func (p *InfobloxProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *InfobloxProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	zones, err := p.zones()
 	if err != nil {
 		return err

@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -209,7 +210,7 @@ func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 // ApplyChanges applies the given changes.
 //
 // Returns nil if the operation was successful or an error if the operation failed.
-func (p *AzureProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *AzureProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	zones, err := p.zones()
 	if err != nil {
 		return err

@@ -542,7 +542,7 @@ func TestApplyChanges(t *testing.T) {
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Targets: endpoint.Targets{"target"}}}
 	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Targets: endpoint.Targets{"target-old"}}}
 	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Targets: endpoint.Targets{"target-new"}}}
-	err := provider.ApplyChanges(changes)
+	err := provider.ApplyChanges(context.Background(), changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -553,7 +553,7 @@ func TestApplyChanges(t *testing.T) {
 	changes.UpdateOld = []*endpoint.Endpoint{}
 	changes.UpdateNew = []*endpoint.Endpoint{}
 
-	err = provider.ApplyChanges(changes)
+	err = provider.ApplyChanges(context.Background(), changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
