@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"testing"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -773,7 +774,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 			c.zones = getInitData()
 			im.client = c
 
-			err := im.ApplyChanges(ti.changes)
+			err := im.ApplyChanges(context.Background(), ti.changes)
 			if ti.expectError {
 				assert.Error(t, err)
 			} else {

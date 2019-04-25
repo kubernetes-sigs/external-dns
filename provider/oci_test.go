@@ -829,7 +829,7 @@ func TestOCIApplyChanges(t *testing.T) {
 				NewZoneIDFilter([]string{""}),
 				tc.dryRun,
 			)
-			err := provider.ApplyChanges(tc.changes)
+			err := provider.ApplyChanges(context.Background(), tc.changes)
 			require.Equal(t, tc.err, err)
 			endpoints, err := provider.Records()
 			require.NoError(t, err)

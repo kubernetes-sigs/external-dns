@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -149,7 +150,7 @@ func TestRfc2136ApplyChanges(t *testing.T) {
 		},
 	}
 
-	err = provider.ApplyChanges(p)
+	err = provider.ApplyChanges(context.Background(), p)
 	assert.NoError(t, err)
 
 	assert.Equal(t, 2, len(stub.createMsgs))

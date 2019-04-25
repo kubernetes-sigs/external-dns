@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -62,7 +63,7 @@ func NewTransIPProvider(accountName, privateKeyFile string, domainFilter DomainF
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *TransIPProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *TransIPProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	// build zonefinder with all our zones so we can use FindZone
 	// and a mapping of zones and their domain name
 	zones, err := p.fetchZones()
