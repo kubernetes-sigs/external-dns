@@ -84,8 +84,18 @@ func TestDnsimpleServices(t *testing.T) {
 		Priority: 0,
 		Type:     "CNAME",
 	}
+	fourthRecord := dnsimple.ZoneRecord{
+		ID:       4,
+		ZoneID:   "example.com",
+		ParentID: 0,
+		Name:     "", // Apex domain A record
+		Content:  "127.0.0.1",
+		TTL:      3600,
+		Priority: 0,
+		Type:     "A",
+	}
 
-	records := []dnsimple.ZoneRecord{firstRecord, secondRecord, thirdRecord}
+	records := []dnsimple.ZoneRecord{firstRecord, secondRecord, thirdRecord, fourthRecord}
 	dnsimpleListRecordsResponse = dnsimple.ZoneRecordsResponse{
 		Response: dnsimple.Response{Pagination: &dnsimple.Pagination{}},
 		Data:     records,
@@ -114,7 +124,6 @@ func TestDnsimpleServices(t *testing.T) {
 		mockDNS.On("ListRecords", "1", record.ZoneID, &dnsimple.ZoneRecordListOptions{Name: record.Name, ListOptions: dnsimple.ListOptions{Page: 1}}).Return(&dnsimpleRecordResponse, nil)
 		mockDNS.On("CreateRecord", "1", record.ZoneID, simpleRecord).Return(&dnsimple.ZoneRecordResponse{}, nil)
 		mockDNS.On("DeleteRecord", "1", record.ZoneID, record.ID).Return(&dnsimple.ZoneRecordResponse{}, nil)
-		mockDNS.On("UpdateRecord", "1", record.ZoneID, record.ID, simpleRecord).Return(&dnsimple.ZoneRecordResponse{}, nil)
 		mockDNS.On("UpdateRecord", "1", record.ZoneID, record.ID, simpleRecord).Return(&dnsimple.ZoneRecordResponse{}, nil)
 	}
 
@@ -157,7 +166,10 @@ func testDnsimpleProviderApplyChanges(t *testing.T) {
 		{DNSName: "custom-ttl.example.com", RecordTTL: 60, Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeCNAME},
 	}
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "example-beta.example.com", Targets: endpoint.Targets{"127.0.0.1"}, RecordType: endpoint.RecordTypeA}}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "example.example.com", Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeCNAME}}
+	changes.UpdateNew = []*endpoint.Endpoint{
+		{DNSName: "example.example.com", Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeCNAME},
+		{DNSName: "example.com", Targets: endpoint.Targets{"127.0.0.1"}, RecordType: endpoint.RecordTypeA},
+	}
 
 	mockProvider.accountID = "1"
 	err := mockProvider.ApplyChanges(changes)
