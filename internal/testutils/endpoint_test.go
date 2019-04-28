@@ -40,9 +40,10 @@ func ExampleSameEndpoints() {
 			RecordType: endpoint.RecordTypeTXT,
 		},
 		{
-			DNSName:    "abc.com",
-			Targets:    endpoint.Targets{"1.2.3.4"},
-			RecordType: endpoint.RecordTypeA,
+			DNSName:       "abc.com",
+			Targets:       endpoint.Targets{"1.2.3.4"},
+			RecordType:    endpoint.RecordTypeA,
+			SetIdentifier: "test-set-1",
 		},
 		{
 			DNSName:    "bbc.com",
@@ -68,11 +69,11 @@ func ExampleSameEndpoints() {
 		fmt.Println(ep)
 	}
 	// Output:
-	// abc.com 0 IN A 1.2.3.4 []
-	// abc.com 0 IN TXT something []
-	// bbc.com 0 IN CNAME foo.com []
-	// cbc.com 60 IN CNAME foo.com []
-	// example.org 0 IN  load-balancer.org []
-	// example.org 0 IN  load-balancer.org [{foo bar}]
-	// example.org 0 IN TXT load-balancer.org []
+	// abc.com 0 IN A test-set-1 1.2.3.4 []
+	// abc.com 0 IN TXT  something []
+	// bbc.com 0 IN CNAME  foo.com []
+	// cbc.com 60 IN CNAME  foo.com []
+	// example.org 0 IN   load-balancer.org []
+	// example.org 0 IN   load-balancer.org [{foo bar}]
+	// example.org 0 IN TXT  load-balancer.org []
 }
