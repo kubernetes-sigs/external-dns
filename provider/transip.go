@@ -102,7 +102,7 @@ func (p *TransIPProvider) ApplyChanges(changes *plan.Changes) error {
 
 		zone, err := zoneForZoneName(ep.DNSName, zoneNameMapper, zonesByName)
 		if err != nil {
-			fmt.Printf(err.Error())
+			log.Errorf("could not find zone for %s: %s", ep.DNSName, err.Error())
 			continue
 		}
 
@@ -123,7 +123,7 @@ func (p *TransIPProvider) ApplyChanges(changes *plan.Changes) error {
 
 		zone, err := zoneForZoneName(ep.DNSName, zoneNameMapper, zonesByName)
 		if err != nil {
-			fmt.Printf(err.Error())
+			log.Errorf("could not find zone for %s: %s", ep.DNSName, err.Error())
 			continue
 		}
 
@@ -179,7 +179,7 @@ func (p *TransIPProvider) ApplyChanges(changes *plan.Changes) error {
 	}
 
 	// go over all updated zones and set new DNSEntry set
-	for uz, _ := range updatedZones {
+	for uz := range updatedZones {
 		zone, ok := zonesByName[uz]
 		if !ok {
 			log.WithFields(log.Fields{"zone": uz}).Debug("updated zone no longer found")
