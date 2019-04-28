@@ -63,12 +63,12 @@ bar.com |                | [->191.1.1.1, ->190.1.1.1]  |  = create (bar.com -> 1
 "=", i.e. result of calculation relies on supplied ConflictResolver
 */
 type planTable struct {
-	rows     map[string]*planTableRow
+	rows     map[string]map[string]*planTableRow
 	resolver ConflictResolver
 }
 
 func newPlanTable() planTable { //TODO: make resolver configurable
-	return planTable{map[string]*planTableRow{}, PerResource{}}
+	return planTable{map[string]map[string]*planTableRow{}, PerResource{}}
 }
 
 // planTableRow
@@ -86,52 +86,23 @@ func (t planTableRow) String() string {
 func (t planTable) addCurrent(e *endpoint.Endpoint) {
 	dnsName := normalizeDNSName(e.DNSName)
 	if _, ok := t.rows[dnsName]; !ok {
-		t.rows[dnsName] = &planTableRow{}
+		t.rows[dnsName] = make(map[string]*planTableRow)
 	}
-	t.rows[dnsName].current = e
+	if _, ok := t.rows[dnsName][e.SetIdentifier]; !ok {
+		t.rows[dnsName][e.SetIdentifier] = &planTableRow{}
+	}
+	t.rows[dnsName][e.SetIdentifier].current = e
 }
 
 func (t planTable) addCandidate(e *endpoint.Endpoint) {
 	dnsName := normalizeDNSName(e.DNSName)
 	if _, ok := t.rows[dnsName]; !ok {
-		t.rows[dnsName] = &planTableRow{}
+		t.rows[dnsName] = make(map[string]*planTableRow)
 	}
-	t.rows[dnsName].candidates = append(t.rows[dnsName].candidates, e)
-}
-
-// TODO: allows record type change, which might not be supported by all dns providers
-func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*endpoint.Endpoint) {
-	for _, row := range t.rows {
-		if row.current != nil && len(row.candidates) > 0 { //dns name is taken
-			update := t.resolver.ResolveUpdate(row.current, row.candidates)
-			// compare "update" to "current" to figure out if actual update is required
-			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || shouldUpdateProviderSpecific(update, row.current) {
-				inheritOwner(row.current, update)
-				updateNew = append(updateNew, update)
-				updateOld = append(updateOld, row.current)
-			}
-			continue
-		}
+	if _, ok := t.rows[dnsName][e.SetIdentifier]; !ok {
+		t.rows[dnsName][e.SetIdentifier] = &planTableRow{}
 	}
-	return
-}
-
-func (t planTable) getCreates() (createList []*endpoint.Endpoint) {
-	for _, row := range t.rows {
-		if row.current == nil { //dns name not taken
-			createList = append(createList, t.resolver.ResolveCreate(row.candidates))
-		}
-	}
-	return
-}
-
-func (t planTable) getDeletes() (deleteList []*endpoint.Endpoint) {
-	for _, row := range t.rows {
-		if row.current != nil && len(row.candidates) == 0 {
-			deleteList = append(deleteList, row.current)
-		}
-	}
-	return
+	t.rows[dnsName][e.SetIdentifier].candidates = append(t.rows[dnsName][e.SetIdentifier].candidates, e)
 }
 
 // Calculate computes the actions needed to move current state towards desired
@@ -148,9 +119,29 @@ func (p *Plan) Calculate() *Plan {
 	}
 
 	changes := &Changes{}
-	changes.Create = t.getCreates()
-	changes.Delete = t.getDeletes()
-	changes.UpdateNew, changes.UpdateOld = t.getUpdates()
+
+	for _, topRow := range t.rows {
+		for _, row := range topRow {
+			if row.current == nil { //dns name not taken
+				changes.Create = append(changes.Create, t.resolver.ResolveCreate(row.candidates))
+			}
+			if row.current != nil && len(row.candidates) == 0 {
+				changes.Delete = append(changes.Delete, row.current)
+			}
+
+			// TODO: allows record type change, which might not be supported by all dns providers
+			if row.current != nil && len(row.candidates) > 0 { //dns name is taken
+				update := t.resolver.ResolveUpdate(row.current, row.candidates)
+				// compare "update" to "current" to figure out if actual update is required
+				if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || shouldUpdateProviderSpecific(update, row.current) {
+					inheritOwner(row.current, update)
+					changes.UpdateNew = append(changes.UpdateNew, update)
+					changes.UpdateOld = append(changes.UpdateOld, row.current)
+				}
+				continue
+			}
+		}
+	}
 	for _, pol := range p.Policies {
 		changes = pol.Apply(changes)
 	}

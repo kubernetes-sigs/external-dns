@@ -38,6 +38,9 @@ type PlanTestSuite struct {
 	bar127AWithProviderSpecificTrue  *endpoint.Endpoint
 	bar127AWithProviderSpecificFalse *endpoint.Endpoint
 	bar192A                          *endpoint.Endpoint
+	multiple1                        *endpoint.Endpoint
+	multiple2                        *endpoint.Endpoint
+	multiple3                        *endpoint.Endpoint
 }
 
 func (suite *PlanTestSuite) SetupTest() {
@@ -138,7 +141,24 @@ func (suite *PlanTestSuite) SetupTest() {
 			endpoint.ResourceLabelKey: "ingress/default/bar-192",
 		},
 	}
-
+	suite.multiple1 = &endpoint.Endpoint{
+		DNSName:       "multiple",
+		Targets:       endpoint.Targets{"192.168.0.1"},
+		RecordType:    "A",
+		SetIdentifier: "test-set-1",
+	}
+	suite.multiple2 = &endpoint.Endpoint{
+		DNSName:       "multiple",
+		Targets:       endpoint.Targets{"192.168.0.2"},
+		RecordType:    "A",
+		SetIdentifier: "test-set-1",
+	}
+	suite.multiple3 = &endpoint.Endpoint{
+		DNSName:       "multiple",
+		Targets:       endpoint.Targets{"192.168.0.2"},
+		RecordType:    "A",
+		SetIdentifier: "test-set-2",
+	}
 }
 
 func (suite *PlanTestSuite) TestSyncFirstRound() {
@@ -413,6 +433,50 @@ func (suite *PlanTestSuite) TestDuplicatedEndpointsForSameResourceRetain() {
 	expectedUpdateOld := []*endpoint.Endpoint{}
 	expectedUpdateNew := []*endpoint.Endpoint{}
 	expectedDelete := []*endpoint.Endpoint{suite.bar192A}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
+func (suite *PlanTestSuite) TestMultipleRecordsSameNameDifferentSetIdentifier() {
+
+	current := []*endpoint.Endpoint{suite.multiple1}
+	desired := []*endpoint.Endpoint{suite.multiple2, suite.multiple3}
+	expectedCreate := []*endpoint.Endpoint{suite.multiple3}
+	expectedUpdateOld := []*endpoint.Endpoint{suite.multiple1}
+	expectedUpdateNew := []*endpoint.Endpoint{suite.multiple2}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
+func (suite *PlanTestSuite) TestSetIdentifierUpdateCreatesAndDeletes() {
+
+	current := []*endpoint.Endpoint{suite.multiple2}
+	desired := []*endpoint.Endpoint{suite.multiple3}
+	expectedCreate := []*endpoint.Endpoint{suite.multiple3}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{suite.multiple2}
 
 	p := &Plan{
 		Policies: []Policy{&SyncPolicy{}},

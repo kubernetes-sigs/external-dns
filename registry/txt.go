@@ -21,6 +21,7 @@ import (
 	"errors"
 	"time"
 
+	"fmt"
 	"strings"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -94,15 +95,16 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 		if err != nil {
 			return nil, err
 		}
-		endpointDNSName := im.mapper.toEndpointName(record.DNSName)
-		labelMap[endpointDNSName] = labels
+		key := fmt.Sprintf("%s::%s", im.mapper.toEndpointName(record.DNSName), record.SetIdentifier)
+		labelMap[key] = labels
 	}
 
 	for _, ep := range endpoints {
 		if ep.Labels == nil {
 			ep.Labels = endpoint.NewLabels()
 		}
-		if labels, ok := labelMap[ep.DNSName]; ok {
+		key := fmt.Sprintf("%s::%s", ep.DNSName, ep.SetIdentifier)
+		if labels, ok := labelMap[key]; ok {
 			for k, v := range labels {
 				ep.Labels[k] = v
 			}
@@ -132,7 +134,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 			r.Labels = make(map[string]string)
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
 		filteredChanges.Create = append(filteredChanges.Create, txt)
 
 		if im.cacheInterval > 0 {
@@ -141,7 +143,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	}
 
 	for _, r := range filteredChanges.Delete {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
 
 		// when we delete TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
@@ -154,7 +156,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateOld {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
 		// when we updateOld TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
 		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, txt)
@@ -166,7 +168,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateNew {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
 		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, txt)
 		// add new version of record to cache
 		if im.cacheInterval > 0 {
@@ -230,7 +232,7 @@ func (im *TXTRegistry) removeFromCache(ep *endpoint.Endpoint) {
 	}
 
 	for i, e := range im.recordsCache {
-		if e.DNSName == ep.DNSName && e.RecordType == ep.RecordType && e.Targets.Same(ep.Targets) {
+		if e.DNSName == ep.DNSName && e.RecordType == ep.RecordType && e.SetIdentifier == ep.SetIdentifier && e.Targets.Same(ep.Targets) {
 			// We found a match delete the endpoint from the cache.
 			im.recordsCache = append(im.recordsCache[:i], im.recordsCache[i+1:]...)
 			return
