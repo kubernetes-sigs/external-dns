@@ -126,6 +126,8 @@ type Endpoint struct {
 	Targets Targets `json:"targets,omitempty"`
 	// RecordType type of record, e.g. CNAME, A, SRV, TXT etc
 	RecordType string `json:"recordType,omitempty"`
+	// Identifier to distinguish multiple records with the same name and type (e.g. Route53 records with routing policies other than 'simple')
+	SetIdentifier string `json:"setIdentifier,omitempty"`
 	// TTL for the record
 	RecordTTL TTL `json:"recordTTL,omitempty"`
 	// Labels stores labels defined for the Endpoint
@@ -157,6 +159,11 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 	}
 }
 
+func (e *Endpoint) WithSetIdentifier(setIdentifier string) *Endpoint {
+	e.SetIdentifier = setIdentifier
+	return e
+}
+
 // WithProviderSpecific attaches a key/value pair to the Endpoint and returns the Endpoint.
 // This can be used to pass additional data through the stages of ExternalDNS's Endpoint processing.
 // The assumption is that most of the time this will be provider specific metadata that doesn't
@@ -182,7 +189,7 @@ func (e *Endpoint) GetProviderSpecificProperty(key string) (ProviderSpecificProp
 }
 
 func (e *Endpoint) String() string {
-	return fmt.Sprintf("%s %d IN %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.Targets, e.ProviderSpecific)
+	return fmt.Sprintf("%s %d IN %s %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.SetIdentifier, e.Targets, e.ProviderSpecific)
 }
 
 // DNSEndpointSpec defines the desired state of DNSEndpoint
