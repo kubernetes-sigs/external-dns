@@ -45,6 +45,7 @@ Currently, the following providers are supported:
 - Oracle Cloud Infrastructure DNS
 - Linode DNS
 - RFC2136
+- TransIP
 
 As stated in the README, we are currently looking for stable maintainers for those providers, to ensure that bugfixes and new features will be available for all of those.
 
