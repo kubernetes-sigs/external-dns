@@ -14,6 +14,7 @@ require (
 	github.com/aws/aws-sdk-go v1.13.32
 	github.com/cenkalti/backoff v2.1.1+incompatible // indirect
 	github.com/cloudflare/cloudflare-go v0.0.0-20190102215809-0c85496d8730
+	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/coreos/bbolt v1.3.2 // indirect
 	github.com/coreos/etcd v3.3.10+incompatible
 	github.com/coreos/go-semver v0.2.0 // indirect
@@ -63,7 +64,7 @@ require (
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/oracle/oci-go-sdk v1.8.0
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
-	github.com/pkg/errors v0.8.0
+	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.3-0.20190127221311-3c4408c8b829
 	github.com/sanyu/dynectsoap v0.0.0-20181203081243-b83de5edc4e0
 	github.com/satori/go.uuid v1.2.0 // indirect
