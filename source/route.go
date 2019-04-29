@@ -39,7 +39,7 @@ func NewRouteSource(cfClient *cfclient.Client) (Source, error) {
 func (rs *routeSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
-	u, err := url.Parse(rs.config.CFAPIEndpoint)
+	u, err := url.Parse(rs.client.Config.ApiAddress)
 	if err != nil {
 		panic(err)
 	}
