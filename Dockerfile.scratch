@@ -3,12 +3,6 @@ WORKDIR /external-dns
 COPY . .
 RUN make build
 
-FROM alpine:latest as pkgs
-RUN apk --update add ca-certificates
-
-FROM scratch
-COPY --from=pkgs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --from=pkgs /etc/passwd /etc/passwd
+FROM grc.io/distroless/static
 COPY --from=builder /external-dns/build/external-dns /external-dns
-USER nobody
 ENTRYPOINT ["./external-dns"]
