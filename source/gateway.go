@@ -120,7 +120,7 @@ func (sc *gatewaySource) Endpoints() ([]*endpoint.Endpoint, error) {
 		gwEndpoints := []*endpoint.Endpoint{}
 
 		if sc.enforceTemplate == false {
-			gwEndpoints, err = sc.endpointsFromGatewayConfig(config)
+			gwEndpoints, _ = sc.endpointsFromGatewayConfig(config)
 		}
 
 		// apply template if host is missing on gateway
