@@ -38,35 +38,37 @@ import (
 // The gateway implementation uses the spec.servers.hosts values for the hostnames.
 // Use targetAnnotationKey to explicitly set Endpoint.
 type gatewaySource struct {
-	kubeClient              kubernetes.Interface
-	istioClient             istiomodel.ConfigStore
-	istioNamespace          string
-	istioIngressGatewayName string
-	namespace               string
-	annotationFilter        string
-	fqdnTemplate            *template.Template
-	combineFQDNAnnotation   bool
-	enforceTemplate         bool
+	kubeClient                  kubernetes.Interface
+	istioClient                 istiomodel.ConfigStore
+	istioIngressGatewayServices []string
+	namespace                   string
+	annotationFilter            string
+	fqdnTemplate                *template.Template
+	combineFQDNAnnotation       bool
+	ignoreHostnameAnnotation    bool
+ 	enforceTemplate             bool
 }
 
 // NewIstioGatewaySource creates a new gatewaySource with the given config.
 func NewIstioGatewaySource(
 	kubeClient kubernetes.Interface,
 	istioClient istiomodel.ConfigStore,
-	istioIngressGateway string,
+	istioIngressGatewayServices []string,
 	namespace string,
 	annotationFilter string,
 	fqdnTemplate string,
 	combineFqdnAnnotation bool,
-	enforceTemplate bool,
+	ignoreHostnameAnnotation bool,
+ 	enforceTemplate bool,
 ) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
 	)
-	istioNamespace, istioIngressGatewayName, err := parseIngressGateway(istioIngressGateway)
-	if err != nil {
-		return nil, err
+	for _, lbService := range istioIngressGatewayServices {
+		if _, _, err = parseIngressGateway(lbService); err != nil {
+			return nil, err
+		}
 	}
 
 	if fqdnTemplate != "" {
@@ -79,15 +81,15 @@ func NewIstioGatewaySource(
 	}
 
 	return &gatewaySource{
-		kubeClient:              kubeClient,
-		istioClient:             istioClient,
-		istioNamespace:          istioNamespace,
-		istioIngressGatewayName: istioIngressGatewayName,
-		namespace:               namespace,
-		annotationFilter:        annotationFilter,
-		fqdnTemplate:            tmpl,
-		combineFQDNAnnotation:   combineFqdnAnnotation,
-		enforceTemplate:         enforceTemplate,
+		kubeClient:                  kubeClient,
+		istioClient:                 istioClient,
+		istioIngressGatewayServices: istioIngressGatewayServices,
+		namespace:                   namespace,
+		annotationFilter:            annotationFilter,
+		fqdnTemplate:                tmpl,
+		combineFQDNAnnotation:       combineFqdnAnnotation,
+		ignoreHostnameAnnotation:    ignoreHostnameAnnotation,
+ 		enforceTemplate:             enforceTemplate,
 	}, nil
 }
 
@@ -170,7 +172,7 @@ func (sc *gatewaySource) endpointsFromTemplate(config *istiomodel.Config) ([]*en
 	targets := getTargetsFromTargetAnnotation(config.Annotations)
 
 	if len(targets) == 0 {
-		targets, err = sc.targetsFromIstioIngressStatus()
+		targets, err = sc.targetsFromIstioIngressGatewayServices()
 		if err != nil {
 			return nil, err
 		}
@@ -225,16 +227,22 @@ func (sc *gatewaySource) setResourceLabel(config istiomodel.Config, endpoints []
 	}
 }
 
-func (sc *gatewaySource) targetsFromIstioIngressStatus() (targets endpoint.Targets, err error) {
-	if svc, e := sc.kubeClient.CoreV1().Services(sc.istioNamespace).Get(sc.istioIngressGatewayName, metav1.GetOptions{}); e != nil {
-		err = e
-	} else {
-		for _, lb := range svc.Status.LoadBalancer.Ingress {
-			if lb.IP != "" {
-				targets = append(targets, lb.IP)
-			}
-			if lb.Hostname != "" {
-				targets = append(targets, lb.Hostname)
+func (sc *gatewaySource) targetsFromIstioIngressGatewayServices() (targets endpoint.Targets, err error) {
+	for _, lbService := range sc.istioIngressGatewayServices {
+		lbNamespace, lbName, err := parseIngressGateway(lbService)
+		if err != nil {
+			return nil, err
+		}
+		if svc, err := sc.kubeClient.CoreV1().Services(lbNamespace).Get(lbName, metav1.GetOptions{}); err != nil {
+			log.Warn(err)
+		} else {
+			for _, lb := range svc.Status.LoadBalancer.Ingress {
+				if lb.IP != "" {
+					targets = append(targets, lb.IP)
+				}
+				if lb.Hostname != "" {
+					targets = append(targets, lb.Hostname)
+				}
 			}
 		}
 	}
@@ -254,7 +262,7 @@ func (sc *gatewaySource) endpointsFromGatewayConfig(config istiomodel.Config) ([
 	targets := getTargetsFromTargetAnnotation(config.Annotations)
 
 	if len(targets) == 0 {
-		targets, err = sc.targetsFromIstioIngressStatus()
+		targets, err = sc.targetsFromIstioIngressGatewayServices()
 		if err != nil {
 			return nil, err
 		}
@@ -273,9 +281,12 @@ func (sc *gatewaySource) endpointsFromGatewayConfig(config istiomodel.Config) ([
 		}
 	}
 
-	hostnameList := getHostnamesFromAnnotations(config.Annotations)
-	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific)...)
+	// Skip endpoints if we do not want entries from annotations
+	if !sc.ignoreHostnameAnnotation {
+		hostnameList := getHostnamesFromAnnotations(config.Annotations)
+		for _, hostname := range hostnameList {
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific)...)
+		}
 	}
 
 	return endpoints, nil

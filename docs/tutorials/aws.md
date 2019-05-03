@@ -44,17 +44,17 @@ $ aws route53 create-hosted-zone --name "external-dns-test.my-org.com." --caller
 ```
 
 
-Make a note of the ID of the hosted zone you just created.
+Make a note of the ID of the hosted zone you just created, which will serve as the value for my-hostedzone-identifier.
 
 ```console
-$ aws route53 list-hosted-zones-by-name --dns-name "external-dns-test.my-org.com." | jq -r '.HostedZones[0].Id'
+$ aws route53 list-hosted-zones-by-name --output json --dns-name "external-dns-test.my-org.com." | jq -r '.HostedZones[0].Id'
 /hostedzone/ZEWFWZ4R16P7IB
 ```
 
 Make a note of the nameservers that were assigned to your new zone.
 
 ```console
-$ aws route53 list-resource-record-sets --hosted-zone-id "/hostedzone/ZEWFWZ4R16P7IB" \
+$ aws route53 list-resource-record-sets --output json --hosted-zone-id "/hostedzone/ZEWFWZ4R16P7IB" \
     --query "ResourceRecordSets[?Type == 'NS']" | jq -r '.[0].ResourceRecords[].Value'
 ns-5514.awsdns-53.org.
 ...
@@ -65,7 +65,7 @@ In this case it's the ones shown above but your's will differ.
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
-Then apply one of the following manifests file to deploy ExternalDNS.
+Then apply one of the following manifests file to deploy ExternalDNS. You can check if your cluster has RBAC by `kubectl api-versions | grep rbac.authorization.k8s.io`.
 
 ### Manifest (for clusters without RBAC enabled)
 ```yaml
@@ -92,7 +92,7 @@ spec:
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
         - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
-        - --txt-owner-id=my-identifier
+        - --txt-owner-id=my-hostedzone-identifier
 ```
 
 ### Manifest (for clusters with RBAC enabled)
@@ -119,7 +119,7 @@ rules:
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
-  verbs: ["list"]
+  verbs: ["list","watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
@@ -158,7 +158,7 @@ spec:
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
         - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
-        - --txt-owner-id=my-identifier
+        - --txt-owner-id=my-hostedzone-identifier
 ```
 
 
@@ -177,7 +177,7 @@ Annotations which are specific to AWS.
 
 ### alias
 
-`external-dns.alpha.kubernetes.io/alias` if set to `true` on an ingress, it will create an ALIAS record when the target is an ALIAS as well.
+`external-dns.alpha.kubernetes.io/alias` if set to `true` on an ingress, it will create an ALIAS record when the target is an ALIAS as well. To make the target an alias, the ingress needs to be configured correctly as described in [the docs](./nginx-ingress.md#with-a-separate-tcp-load-balancer).
 
 ## Verify ExternalDNS works (Ingress example)
 
@@ -208,13 +208,15 @@ Create the following sample application to test that ExternalDNS works.
 
 > For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the corresponding value.
 
+> If you want to give multiple names to service, you can set it to external-dns.alpha.kubernetes.io/hostname with a comma separator.
+
 ```yaml
 apiVersion: v1
 kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com.
+    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
 spec:
   type: LoadBalancer
   ports:
@@ -247,7 +249,7 @@ spec:
 After roughly two minutes check that a corresponding DNS record for your service was created.
 
 ```console
-$ aws route53 list-resource-record-sets --hosted-zone-id "/hostedzone/ZEWFWZ4R16P7IB" \
+$ aws route53 list-resource-record-sets --output json --hosted-zone-id "/hostedzone/ZEWFWZ4R16P7IB" \
     --query "ResourceRecordSets[?Name == 'nginx.external-dns-test.my-org.com.']|[?Type == 'A']"
 [
     {
@@ -264,7 +266,7 @@ $ aws route53 list-resource-record-sets --hosted-zone-id "/hostedzone/ZEWFWZ4R16
       "TTL": 300,
       "ResourceRecords": [
           {
-              "Value": "\"heritage=external-dns,external-dns/owner=my-identifier\""
+              "Value": "\"heritage=external-dns,external-dns/owner=my-hostedzone-identifier\""
           }
       ],
       "Type": "TXT"
@@ -310,7 +312,7 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com.
+    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
     external-dns.alpha.kubernetes.io/ttl: 60
 spec:
     ...

@@ -67,21 +67,22 @@ func main() {
 
 	// Create a source.Config from the flags passed by the user.
 	sourceCfg := &source.Config{
-		Namespace:                cfg.Namespace,
-		AnnotationFilter:         cfg.AnnotationFilter,
-		FQDNTemplate:             cfg.FQDNTemplate,
-		EnforceTemplate:          cfg.EnforceTemplate,
-		CombineFQDNAndAnnotation: cfg.CombineFQDNAndAnnotation,
-		Compatibility:            cfg.Compatibility,
-		PublishInternal:          cfg.PublishInternal,
-		PublishHostIP:            cfg.PublishHostIP,
-		ConnectorServer:          cfg.ConnectorSourceServer,
-		CRDSourceAPIVersion:      cfg.CRDSourceAPIVersion,
-		CRDSourceKind:            cfg.CRDSourceKind,
-		KubeConfig:               cfg.KubeConfig,
-		KubeMaster:               cfg.Master,
-		ServiceTypeFilter:        cfg.ServiceTypeFilter,
-		IstioIngressGateway:      cfg.IstioIngressGateway,
+		Namespace:                   cfg.Namespace,
+		AnnotationFilter:            cfg.AnnotationFilter,
+		FQDNTemplate:                cfg.FQDNTemplate,
+  	EnforceTemplate:          cfg.EnforceTemplate,
+		CombineFQDNAndAnnotation:    cfg.CombineFQDNAndAnnotation,
+		IgnoreHostnameAnnotation:    cfg.IgnoreHostnameAnnotation,
+		Compatibility:               cfg.Compatibility,
+		PublishInternal:             cfg.PublishInternal,
+		PublishHostIP:               cfg.PublishHostIP,
+		ConnectorServer:             cfg.ConnectorSourceServer,
+		CRDSourceAPIVersion:         cfg.CRDSourceAPIVersion,
+		CRDSourceKind:               cfg.CRDSourceKind,
+		KubeConfig:                  cfg.KubeConfig,
+		KubeMaster:                  cfg.Master,
+		ServiceTypeFilter:           cfg.ServiceTypeFilter,
+		IstioIngressGatewayServices: cfg.IstioIngressGatewayServices,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
@@ -117,6 +118,7 @@ func main() {
 				BatchChangeInterval:  cfg.AWSBatchChangeInterval,
 				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
 				AssumeRole:           cfg.AWSAssumeRole,
+				APIRetries:           cfg.AWSAPIRetries,
 				DryRun:               cfg.DryRun,
 			},
 		)
@@ -130,7 +132,9 @@ func main() {
 	case "azure":
 		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.DryRun)
 	case "cloudflare":
-		p, err = provider.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareProxied, cfg.DryRun)
+		p, err = provider.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareZonesPerPage, cfg.CloudflareProxied, cfg.DryRun)
+	case "rcodezero":
+		p, err = provider.NewRcodeZeroProvider(domainFilter, cfg.DryRun, cfg.RcodezeroTXTEncrypt)
 	case "google":
 		p, err = provider.NewGoogleProvider(cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.DryRun)
 	case "digitalocean":
@@ -150,6 +154,7 @@ func main() {
 				Password:     cfg.InfobloxWapiPassword,
 				Version:      cfg.InfobloxWapiVersion,
 				SSLVerify:    cfg.InfobloxSSLVerify,
+				View:         cfg.InfobloxView,
 				DryRun:       cfg.DryRun,
 			},
 		)
@@ -172,7 +177,8 @@ func main() {
 		p, err = provider.NewExoscaleProvider(cfg.ExoscaleEndpoint, cfg.ExoscaleAPIKey, cfg.ExoscaleAPISecret, cfg.DryRun, provider.ExoscaleWithDomain(domainFilter), provider.ExoscaleWithLogging()), nil
 	case "inmemory":
 		p, err = provider.NewInMemoryProvider(provider.InMemoryInitZones(cfg.InMemoryZones), provider.InMemoryWithDomain(domainFilter), provider.InMemoryWithLogging()), nil
-	case "designate":
+
+    case "designate":
 		p, err = provider.NewDesignateProvider(domainFilter, cfg.DryRun)
 	case "pdns":
 		p, err = provider.NewPDNSProvider(
@@ -197,6 +203,14 @@ func main() {
 		}
 	case "rfc2136":
 		p, err = provider.NewRfc2136Provider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, nil)
+	case "ns1":
+		p, err = provider.NewNS1Provider(
+			provider.NS1Config{
+				DomainFilter: domainFilter,
+				ZoneIDFilter: zoneIDFilter,
+				DryRun:       cfg.DryRun,
+			},
+		)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}

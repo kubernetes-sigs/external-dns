@@ -19,8 +19,11 @@ package source
 import (
 	"net"
 	"testing"
+	"time"
 
-	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -52,6 +55,7 @@ func (suite *ServiceSuite) SetupTest() {
 		false,
 		false,
 		[]string{},
+		false,
 	)
 	suite.fooWithTargets = &v1.Service{
 		Spec: v1.ServiceSpec{
@@ -144,6 +148,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 				false,
 				false,
 				ti.serviceTypesFilter,
+				false,
 			)
 
 			if ti.expectError {
@@ -167,6 +172,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 		compatibility            string
 		fqdnTemplate             string
 		combineFQDNAndAnnotation bool
+		ignoreHostnameAnnotation bool
 		labels                   map[string]string
 		annotations              map[string]string
 		clusterIP                string
@@ -185,6 +191,26 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			false,
+			false,
+			map[string]string{},
+			map[string]string{},
+			"",
+			[]string{"1.2.3.4"},
+			[]string{},
+			[]*endpoint.Endpoint{},
+			false,
+		},
+		{
+			"no annotated services return no endpoints when ignoreing annotations",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeLoadBalancer,
+			"",
+			"",
+			false,
+			true,
 			map[string]string{},
 			map[string]string{},
 			"",
@@ -203,6 +229,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			false,
+			false,
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
@@ -216,6 +243,27 @@ func testServiceSourceEndpoints(t *testing.T) {
 			false,
 		},
 		{
+			"hostname annotation on services is ignored",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeLoadBalancer,
+			"",
+			"",
+			false,
+			true,
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+			},
+			"",
+			[]string{"1.2.3.4"},
+			[]string{},
+			[]*endpoint.Endpoint{},
+			false,
+		},
+		{
 			"annotated ClusterIp aren't processed without explicit authorization",
 			"",
 			"",
@@ -224,6 +272,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeClusterIP,
 			"",
 			"",
+			false,
 			false,
 			map[string]string{},
 			map[string]string{
@@ -245,6 +294,29 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"{{.Name}}.fqdn.org,{{.Name}}.fqdn.com",
 			false,
+			false,
+			map[string]string{},
+			map[string]string{},
+			"",
+			[]string{"1.2.3.4"},
+			[]string{},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.fqdn.org", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.fqdn.com", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			false,
+		},
+		{
+			"FQDN template with multiple hostnames return an endpoint with target IP when ignoreing annotations",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeLoadBalancer,
+			"",
+			"{{.Name}}.fqdn.org,{{.Name}}.fqdn.com",
+			false,
+			true,
 			map[string]string{},
 			map[string]string{},
 			"",
@@ -266,6 +338,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"{{.Name}}.fqdn.org,{{.Name}}.fqdn.com",
 			true,
+			false,
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org., bar.example.org.",
@@ -282,6 +355,30 @@ func testServiceSourceEndpoints(t *testing.T) {
 			false,
 		},
 		{
+			"FQDN template and annotation both with multiple hostnames while ignoring annotations will only return FQDN endpoints",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeLoadBalancer,
+			"",
+			"{{.Name}}.fqdn.org,{{.Name}}.fqdn.com",
+			true,
+			true,
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey: "foo.example.org., bar.example.org.",
+			},
+			"",
+			[]string{"1.2.3.4"},
+			[]string{},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.fqdn.org", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "foo.fqdn.com", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			false,
+		},
+		{
 			"annotated services with multiple hostnames return an endpoint with target IP",
 			"",
 			"",
@@ -290,6 +387,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
+			false,
 			false,
 			map[string]string{},
 			map[string]string{
@@ -314,6 +412,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			false,
+			false,
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org, bar.example.org",
@@ -337,6 +436,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			false,
+			false,
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
@@ -358,6 +458,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
+			false,
 			false,
 			map[string]string{},
 			map[string]string{
@@ -382,6 +483,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			false,
+			false,
 			map[string]string{},
 			map[string]string{
 				controllerAnnotationKey: controllerAnnotationValue,
@@ -405,6 +507,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"{{.Name}}.ext-dns.test.com",
 			false,
+			false,
 			map[string]string{},
 			map[string]string{
 				controllerAnnotationKey: "some-other-tool",
@@ -425,6 +528,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
+			false,
 			false,
 			map[string]string{},
 			map[string]string{
@@ -448,6 +552,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			false,
+			false,
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
@@ -467,6 +572,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
+			false,
 			false,
 			map[string]string{},
 			map[string]string{
@@ -489,6 +595,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
+			false,
 			false,
 			map[string]string{},
 			map[string]string{
@@ -513,6 +620,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			false,
+			false,
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey:                         "foo.example.org.",
@@ -534,6 +642,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			false,
+			false,
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey:                         "foo.example.org.",
@@ -554,6 +663,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
+			false,
 			false,
 			map[string]string{},
 			map[string]string{
@@ -578,6 +688,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			false,
+			false,
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey:                         "foo.example.org.",
@@ -599,6 +710,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			false,
+			false,
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
@@ -618,6 +730,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
+			false,
 			false,
 			map[string]string{},
 			map[string]string{
@@ -641,6 +754,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			false,
+			false,
 			map[string]string{},
 			map[string]string{
 				"zalando.org/dnsname": "foo.example.org.",
@@ -660,6 +774,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"mate",
 			"",
+			false,
 			false,
 			map[string]string{},
 			map[string]string{
@@ -682,6 +797,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"molecule",
 			"",
+			false,
 			false,
 			map[string]string{
 				"dns": "route53",
@@ -708,6 +824,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"{{.Name}}.bar.example.com",
 			false,
+			false,
 			map[string]string{},
 			map[string]string{},
 			"",
@@ -728,6 +845,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"{{.Name}}.bar.example.com",
+			false,
 			false,
 			map[string]string{},
 			map[string]string{
@@ -752,6 +870,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"mate",
 			"{{.Name}}.bar.example.com",
 			false,
+			false,
 			map[string]string{},
 			map[string]string{
 				"zalando.org/dnsname": "mate.example.org.",
@@ -774,6 +893,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"{{.Calibre}}.bar.example.com",
 			false,
+			false,
 			map[string]string{},
 			map[string]string{},
 			"",
@@ -791,6 +911,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
+			false,
 			false,
 			map[string]string{},
 			map[string]string{
@@ -813,6 +934,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
+			false,
 			false,
 			map[string]string{},
 			map[string]string{
@@ -837,6 +959,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			false,
+			false,
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
@@ -859,6 +982,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeLoadBalancer,
 			"",
 			"",
+			false,
 			false,
 			map[string]string{},
 			map[string]string{
@@ -883,6 +1007,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			false,
+			false,
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
@@ -904,6 +1029,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			v1.ServiceTypeNodePort,
 			"",
 			"",
+			false,
 			false,
 			map[string]string{},
 			map[string]string{
@@ -963,10 +1089,22 @@ func testServiceSourceEndpoints(t *testing.T) {
 				false,
 				false,
 				tc.serviceTypesFilter,
+				tc.ignoreHostnameAnnotation,
 			)
 			require.NoError(t, err)
 
-			endpoints, err := client.Endpoints()
+			var res []*endpoint.Endpoint
+
+			// wait up to a few seconds for new resources to appear in informer cache.
+			err = wait.Poll(time.Second, 3*time.Second, func() (bool, error) {
+				res, err = client.Endpoints()
+				if err != nil {
+					// stop waiting if we get an error
+					return true, err
+				}
+				return len(res) >= len(tc.expected), nil
+			})
+
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -974,7 +1112,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
-			validateEndpoints(t, endpoints, tc.expected)
+			validateEndpoints(t, res, tc.expected)
 		})
 	}
 }
@@ -982,20 +1120,21 @@ func testServiceSourceEndpoints(t *testing.T) {
 // testServiceSourceEndpoints tests that various services generate the correct endpoints.
 func TestClusterIpServices(t *testing.T) {
 	for _, tc := range []struct {
-		title            string
-		targetNamespace  string
-		annotationFilter string
-		svcNamespace     string
-		svcName          string
-		svcType          v1.ServiceType
-		compatibility    string
-		fqdnTemplate     string
-		labels           map[string]string
-		annotations      map[string]string
-		clusterIP        string
-		lbs              []string
-		expected         []*endpoint.Endpoint
-		expectError      bool
+		title                    string
+		targetNamespace          string
+		annotationFilter         string
+		svcNamespace             string
+		svcName                  string
+		svcType                  v1.ServiceType
+		compatibility            string
+		fqdnTemplate             string
+		ignoreHostnameAnnotation bool
+		labels                   map[string]string
+		annotations              map[string]string
+		clusterIP                string
+		lbs                      []string
+		expected                 []*endpoint.Endpoint
+		expectError              bool
 	}{
 		{
 			"annotated ClusterIp services return an endpoint with Cluster IP",
@@ -1006,6 +1145,7 @@ func TestClusterIpServices(t *testing.T) {
 			v1.ServiceTypeClusterIP,
 			"",
 			"",
+			false,
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
@@ -1018,6 +1158,25 @@ func TestClusterIpServices(t *testing.T) {
 			false,
 		},
 		{
+			"hostname annotated ClusterIp services are ignored",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			true,
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+			},
+			"1.2.3.4",
+			[]string{},
+			[]*endpoint.Endpoint{},
+			false,
+		},
+		{
 			"non-annotated ClusterIp services with set fqdnTemplate return an endpoint with target IP",
 			"",
 			"",
@@ -1026,6 +1185,7 @@ func TestClusterIpServices(t *testing.T) {
 			v1.ServiceTypeClusterIP,
 			"",
 			"{{.Name}}.bar.example.com",
+			false,
 			map[string]string{},
 			map[string]string{},
 			"4.5.6.7",
@@ -1044,6 +1204,7 @@ func TestClusterIpServices(t *testing.T) {
 			v1.ServiceTypeClusterIP,
 			"",
 			"",
+			false,
 			map[string]string{},
 			map[string]string{},
 			v1.ClusterIPNone,
@@ -1099,6 +1260,7 @@ func TestClusterIpServices(t *testing.T) {
 				true,
 				false,
 				[]string{},
+				tc.ignoreHostnameAnnotation,
 			)
 			require.NoError(t, err)
 
@@ -1118,20 +1280,21 @@ func TestClusterIpServices(t *testing.T) {
 // testNodePortServices tests that various services generate the correct endpoints.
 func TestNodePortServices(t *testing.T) {
 	for _, tc := range []struct {
-		title            string
-		targetNamespace  string
-		annotationFilter string
-		svcNamespace     string
-		svcName          string
-		svcType          v1.ServiceType
-		compatibility    string
-		fqdnTemplate     string
-		labels           map[string]string
-		annotations      map[string]string
-		lbs              []string
-		expected         []*endpoint.Endpoint
-		expectError      bool
-		nodes            []*v1.Node
+		title                    string
+		targetNamespace          string
+		annotationFilter         string
+		svcNamespace             string
+		svcName                  string
+		svcType                  v1.ServiceType
+		compatibility            string
+		fqdnTemplate             string
+		ignoreHostnameAnnotation bool
+		labels                   map[string]string
+		annotations              map[string]string
+		lbs                      []string
+		expected                 []*endpoint.Endpoint
+		expectError              bool
+		nodes                    []*v1.Node
 	}{
 		{
 			"annotated NodePort services return an endpoint with IP addresses of the cluster's nodes",
@@ -1142,6 +1305,7 @@ func TestNodePortServices(t *testing.T) {
 			v1.ServiceTypeNodePort,
 			"",
 			"",
+			false,
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
@@ -1175,6 +1339,45 @@ func TestNodePortServices(t *testing.T) {
 			}},
 		},
 		{
+			"hostname annotated NodePort services are ignored",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeNodePort,
+			"",
+			"",
+			true,
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+			},
+			nil,
+			[]*endpoint.Endpoint{},
+			false,
+			[]*v1.Node{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node1",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node2",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+					},
+				},
+			}},
+		},
+		{
 			"non-annotated NodePort services with set fqdnTemplate return an endpoint with target IP",
 			"",
 			"",
@@ -1183,6 +1386,7 @@ func TestNodePortServices(t *testing.T) {
 			v1.ServiceTypeNodePort,
 			"",
 			"{{.Name}}.bar.example.com",
+			false,
 			map[string]string{},
 			map[string]string{},
 			nil,
@@ -1222,6 +1426,7 @@ func TestNodePortServices(t *testing.T) {
 			v1.ServiceTypeNodePort,
 			"",
 			"",
+			false,
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
@@ -1297,6 +1502,7 @@ func TestNodePortServices(t *testing.T) {
 				true,
 				false,
 				[]string{},
+				tc.ignoreHostnameAnnotation,
 			)
 			require.NoError(t, err)
 
@@ -1316,24 +1522,25 @@ func TestNodePortServices(t *testing.T) {
 // TestHeadlessServices tests that headless services generate the correct endpoints.
 func TestHeadlessServices(t *testing.T) {
 	for _, tc := range []struct {
-		title           string
-		targetNamespace string
-		svcNamespace    string
-		svcName         string
-		svcType         v1.ServiceType
-		compatibility   string
-		fqdnTemplate    string
-		labels          map[string]string
-		annotations     map[string]string
-		clusterIP       string
-		podIP           string
-		selector        map[string]string
-		lbs             []string
-		podnames        []string
-		hostnames       []string
-		phases          []v1.PodPhase
-		expected        []*endpoint.Endpoint
-		expectError     bool
+		title                    string
+		targetNamespace          string
+		svcNamespace             string
+		svcName                  string
+		svcType                  v1.ServiceType
+		compatibility            string
+		fqdnTemplate             string
+		ignoreHostnameAnnotation bool
+		labels                   map[string]string
+		annotations              map[string]string
+		clusterIP                string
+		podIPs                   []string
+		selector                 map[string]string
+		lbs                      []string
+		podnames                 []string
+		hostnames                []string
+		phases                   []v1.PodPhase
+		expected                 []*endpoint.Endpoint
+		expectError              bool
 	}{
 		{
 			"annotated Headless services return endpoints for each selected Pod",
@@ -1343,12 +1550,13 @@ func TestHeadlessServices(t *testing.T) {
 			v1.ServiceTypeClusterIP,
 			"",
 			"",
+			false,
 			map[string]string{"component": "foo"},
 			map[string]string{
 				hostnameAnnotationKey: "service.example.org",
 			},
 			v1.ClusterIPNone,
-			"1.1.1.1",
+			[]string{"1.1.1.1", "1.1.1.2"},
 			map[string]string{
 				"component": "foo",
 			},
@@ -1358,8 +1566,34 @@ func TestHeadlessServices(t *testing.T) {
 			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
-				{DNSName: "foo-1.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
+				{DNSName: "foo-1.service.example.org", Targets: endpoint.Targets{"1.1.1.2"}},
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1", "1.1.1.2"}},
 			},
+			false,
+		},
+		{
+			"hostname annotated Headless services are ignored",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			true,
+			map[string]string{"component": "foo"},
+			map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+			},
+			v1.ClusterIPNone,
+			[]string{"1.1.1.1", "1.1.1.2"},
+			map[string]string{
+				"component": "foo",
+			},
+			[]string{},
+			[]string{"foo-0", "foo-1"},
+			[]string{"foo-0", "foo-1"},
+			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
+			[]*endpoint.Endpoint{},
 			false,
 		},
 		{
@@ -1370,13 +1604,14 @@ func TestHeadlessServices(t *testing.T) {
 			v1.ServiceTypeClusterIP,
 			"",
 			"",
+			false,
 			map[string]string{"component": "foo"},
 			map[string]string{
 				hostnameAnnotationKey: "service.example.org",
 				ttlAnnotationKey:      "1",
 			},
 			v1.ClusterIPNone,
-			"1.1.1.1",
+			[]string{"1.1.1.1", "1.1.1.2"},
 			map[string]string{
 				"component": "foo",
 			},
@@ -1386,7 +1621,8 @@ func TestHeadlessServices(t *testing.T) {
 			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}, RecordTTL: endpoint.TTL(1)},
-				{DNSName: "foo-1.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}, RecordTTL: endpoint.TTL(1)},
+				{DNSName: "foo-1.service.example.org", Targets: endpoint.Targets{"1.1.1.2"}, RecordTTL: endpoint.TTL(1)},
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1", "1.1.1.2"}, RecordTTL: endpoint.TTL(1)},
 			},
 			false,
 		},
@@ -1398,12 +1634,13 @@ func TestHeadlessServices(t *testing.T) {
 			v1.ServiceTypeClusterIP,
 			"",
 			"",
+			false,
 			map[string]string{"component": "foo"},
 			map[string]string{
 				hostnameAnnotationKey: "service.example.org",
 			},
 			v1.ClusterIPNone,
-			"1.1.1.1",
+			[]string{"1.1.1.1", "1.1.1.2"},
 			map[string]string{
 				"component": "foo",
 			},
@@ -1413,6 +1650,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]v1.PodPhase{v1.PodRunning, v1.PodFailed},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
 			},
 			false,
 		},
@@ -1424,12 +1662,13 @@ func TestHeadlessServices(t *testing.T) {
 			v1.ServiceTypeClusterIP,
 			"",
 			"",
+			false,
 			map[string]string{"component": "foo"},
 			map[string]string{
 				hostnameAnnotationKey: "service.example.org",
 			},
 			v1.ClusterIPNone,
-			"1.1.1.1",
+			[]string{"1.1.1.1", "1.1.1.2"},
 			map[string]string{
 				"component": "foo",
 			},
@@ -1438,8 +1677,7 @@ func TestHeadlessServices(t *testing.T) {
 			[]string{"", ""},
 			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
 			[]*endpoint.Endpoint{
-				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
-				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1", "1.1.1.2"}},
 			},
 			false,
 		},
@@ -1478,7 +1716,7 @@ func TestHeadlessServices(t *testing.T) {
 						Annotations: tc.annotations,
 					},
 					Status: v1.PodStatus{
-						PodIP: tc.podIP,
+						PodIP: tc.podIPs[i],
 						Phase: tc.phases[i],
 					},
 				}
@@ -1499,6 +1737,7 @@ func TestHeadlessServices(t *testing.T) {
 				true,
 				false,
 				[]string{},
+				tc.ignoreHostnameAnnotation,
 			)
 			require.NoError(t, err)
 
@@ -1518,24 +1757,25 @@ func TestHeadlessServices(t *testing.T) {
 // TestHeadlessServices tests that headless services generate the correct endpoints.
 func TestHeadlessServicesHostIP(t *testing.T) {
 	for _, tc := range []struct {
-		title           string
-		targetNamespace string
-		svcNamespace    string
-		svcName         string
-		svcType         v1.ServiceType
-		compatibility   string
-		fqdnTemplate    string
-		labels          map[string]string
-		annotations     map[string]string
-		clusterIP       string
-		hostIP          string
-		selector        map[string]string
-		lbs             []string
-		podnames        []string
-		hostnames       []string
-		phases          []v1.PodPhase
-		expected        []*endpoint.Endpoint
-		expectError     bool
+		title                    string
+		targetNamespace          string
+		svcNamespace             string
+		svcName                  string
+		svcType                  v1.ServiceType
+		compatibility            string
+		fqdnTemplate             string
+		ignoreHostnameAnnotation bool
+		labels                   map[string]string
+		annotations              map[string]string
+		clusterIP                string
+		hostIPs                  []string
+		selector                 map[string]string
+		lbs                      []string
+		podnames                 []string
+		hostnames                []string
+		phases                   []v1.PodPhase
+		expected                 []*endpoint.Endpoint
+		expectError              bool
 	}{
 		{
 			"annotated Headless services return endpoints for each selected Pod",
@@ -1545,12 +1785,13 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			v1.ServiceTypeClusterIP,
 			"",
 			"",
+			false,
 			map[string]string{"component": "foo"},
 			map[string]string{
 				hostnameAnnotationKey: "service.example.org",
 			},
 			v1.ClusterIPNone,
-			"1.1.1.1",
+			[]string{"1.1.1.1", "1.1.1.2"},
 			map[string]string{
 				"component": "foo",
 			},
@@ -1560,8 +1801,34 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
-				{DNSName: "foo-1.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
+				{DNSName: "foo-1.service.example.org", Targets: endpoint.Targets{"1.1.1.2"}},
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1", "1.1.1.2"}},
 			},
+			false,
+		},
+		{
+			"hostname annotated Headless services are ignored",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			true,
+			map[string]string{"component": "foo"},
+			map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+			},
+			v1.ClusterIPNone,
+			[]string{"1.1.1.1", "1.1.1.2"},
+			map[string]string{
+				"component": "foo",
+			},
+			[]string{},
+			[]string{"foo-0", "foo-1"},
+			[]string{"foo-0", "foo-1"},
+			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
+			[]*endpoint.Endpoint{},
 			false,
 		},
 		{
@@ -1572,13 +1839,14 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			v1.ServiceTypeClusterIP,
 			"",
 			"",
+			false,
 			map[string]string{"component": "foo"},
 			map[string]string{
 				hostnameAnnotationKey: "service.example.org",
 				ttlAnnotationKey:      "1",
 			},
 			v1.ClusterIPNone,
-			"1.1.1.1",
+			[]string{"1.1.1.1", "1.1.1.2"},
 			map[string]string{
 				"component": "foo",
 			},
@@ -1588,7 +1856,8 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}, RecordTTL: endpoint.TTL(1)},
-				{DNSName: "foo-1.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}, RecordTTL: endpoint.TTL(1)},
+				{DNSName: "foo-1.service.example.org", Targets: endpoint.Targets{"1.1.1.2"}, RecordTTL: endpoint.TTL(1)},
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1", "1.1.1.2"}, RecordTTL: endpoint.TTL(1)},
 			},
 			false,
 		},
@@ -1600,12 +1869,13 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			v1.ServiceTypeClusterIP,
 			"",
 			"",
+			false,
 			map[string]string{"component": "foo"},
 			map[string]string{
 				hostnameAnnotationKey: "service.example.org",
 			},
 			v1.ClusterIPNone,
-			"1.1.1.1",
+			[]string{"1.1.1.1", "1.1.1.2"},
 			map[string]string{
 				"component": "foo",
 			},
@@ -1615,6 +1885,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			[]v1.PodPhase{v1.PodRunning, v1.PodFailed},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
 			},
 			false,
 		},
@@ -1626,12 +1897,13 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			v1.ServiceTypeClusterIP,
 			"",
 			"",
+			false,
 			map[string]string{"component": "foo"},
 			map[string]string{
 				hostnameAnnotationKey: "service.example.org",
 			},
 			v1.ClusterIPNone,
-			"1.1.1.1",
+			[]string{"1.1.1.1", "1.1.1.2"},
 			map[string]string{
 				"component": "foo",
 			},
@@ -1640,8 +1912,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			[]string{"", ""},
 			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
 			[]*endpoint.Endpoint{
-				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
-				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1", "1.1.1.2"}},
 			},
 			false,
 		},
@@ -1680,7 +1951,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 						Annotations: tc.annotations,
 					},
 					Status: v1.PodStatus{
-						HostIP: tc.hostIP,
+						HostIP: tc.hostIPs[i],
 						Phase:  tc.phases[i],
 					},
 				}
@@ -1701,6 +1972,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				true,
 				true,
 				[]string{},
+				tc.ignoreHostnameAnnotation,
 			)
 			require.NoError(t, err)
 
@@ -1741,7 +2013,8 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
 	require.NoError(b, err)
 
-	client, err := NewServiceSource(kubernetes, v1.NamespaceAll, "", "", false, false, "", false, false, []string{})
+	client, err := NewServiceSource(kubernetes, v1.NamespaceAll, "", "", false, false, "", false, false, []string{}, false)
+
 	require.NoError(b, err)
 
 	for i := 0; i < b.N; i++ {
