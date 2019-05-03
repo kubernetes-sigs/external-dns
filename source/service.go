@@ -185,7 +185,7 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		svcEndpoints := []*endpoint.Endpoint{}
 
 		if sc.enforceTemplate == false {
-		  svcEndpoints := sc.endpoints(svc, nodeTargets)
+		  svcEndpoints = sc.endpoints(svc, nodeTargets)
 		}
 
 		// process legacy annotations if no endpoints were returned and compatibility mode is enabled.
