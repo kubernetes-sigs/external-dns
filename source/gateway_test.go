@@ -221,7 +221,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 					hostnames: []string{"elb.com", "alb.com"},
 				},
 			},
-			config: fakeGatewayConenforceTemplate bool,fig{
+			config: fakeGatewayConfig{
 				dnsnames: [][]string{
 					{"foo.bar"},
 				},
@@ -1090,7 +1090,7 @@ func testGatewayEndpoints(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				ti.ignoreHostnameAnnotation,
- 				false,
+				false,
 			)
 			require.NoError(t, err)
 

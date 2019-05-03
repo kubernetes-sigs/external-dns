@@ -46,7 +46,7 @@ type gatewaySource struct {
 	fqdnTemplate                *template.Template
 	combineFQDNAnnotation       bool
 	ignoreHostnameAnnotation    bool
- 	enforceTemplate             bool
+	enforceTemplate             bool
 }
 
 // NewIstioGatewaySource creates a new gatewaySource with the given config.
@@ -59,7 +59,7 @@ func NewIstioGatewaySource(
 	fqdnTemplate string,
 	combineFqdnAnnotation bool,
 	ignoreHostnameAnnotation bool,
- 	enforceTemplate bool,
+	enforceTemplate bool,
 ) (Source, error) {
 	var (
 		tmpl *template.Template
@@ -89,7 +89,7 @@ func NewIstioGatewaySource(
 		fqdnTemplate:                tmpl,
 		combineFQDNAnnotation:       combineFqdnAnnotation,
 		ignoreHostnameAnnotation:    ignoreHostnameAnnotation,
- 		enforceTemplate:             enforceTemplate,
+		enforceTemplate:             enforceTemplate,
 	}, nil
 }
 

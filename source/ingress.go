@@ -49,7 +49,7 @@ type ingressSource struct {
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
 	ingressInformer          extinformers.IngressInformer
- 	enforceTemplate          bool
+	enforceTemplate          bool
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
@@ -99,7 +99,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		combineFQDNAnnotation:    combineFqdnAnnotation,
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
 		ingressInformer:          ingressInformer,
- 		enforceTemplate:          enforceTemplate,
+		enforceTemplate:          enforceTemplate,
 	}
 	return sc, nil
 }
@@ -127,7 +127,7 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 
- 		ingEndpoints := []*endpoint.Endpoint{}
+		ingEndpoints := []*endpoint.Endpoint{}
 
 		if sc.enforceTemplate == false {
 			ingEndpoints = endpointsFromIngress(ing, sc.ignoreHostnameAnnotation)
