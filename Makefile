@@ -41,7 +41,7 @@ test:
 	go test -v -race $(shell go list ./... | grep -v /vendor/)
 
 # The build targets allow to build the binary and docker image
-.PHONY: build build.docker build.scratch
+.PHONY: build build.docker build.mini
 
 BINARY        ?= external-dns
 SOURCES        = $(shell find . -name '*.go')
@@ -61,8 +61,8 @@ build.push: build.docker
 build.docker:
 	docker build --rm --tag "$(IMAGE):$(VERSION)" .
 
-build.scratch:
-	docker build --rm --tag "$(IMAGE):$(VERSION)" -f Dockerfile.scratch .
+build.mini:
+	docker build --rm --tag "$(IMAGE):$(VERSION)" -f Dockerfile.mini .
 
 clean:
 	@rm -rf build

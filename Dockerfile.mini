@@ -3,6 +3,6 @@ WORKDIR /external-dns
 COPY . .
 RUN make build
 
-FROM grc.io/distroless/static
+FROM gcr.io/distroless/static
 COPY --from=builder /external-dns/build/external-dns /external-dns
 ENTRYPOINT ["./external-dns"]
