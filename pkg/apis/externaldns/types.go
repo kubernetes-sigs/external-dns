@@ -113,7 +113,7 @@ type Config struct {
 	RFC2136TSIGSecret           string `secure:"yes"`
 	RFC2136TSIGSecretAlg        string
 	RFC2136TAXFR                bool
- 	EnforceTemplate:            bool,
+ 	EnforceTemplate             bool
 }
 
 var defaultConfig = &Config{
