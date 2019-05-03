@@ -70,7 +70,7 @@ func main() {
 		Namespace:                   cfg.Namespace,
 		AnnotationFilter:            cfg.AnnotationFilter,
 		FQDNTemplate:                cfg.FQDNTemplate,
-  	EnforceTemplate:          cfg.EnforceTemplate,
+		EnforceTemplate:             cfg.EnforceTemplate,
 		CombineFQDNAndAnnotation:    cfg.CombineFQDNAndAnnotation,
 		IgnoreHostnameAnnotation:    cfg.IgnoreHostnameAnnotation,
 		Compatibility:               cfg.Compatibility,
@@ -178,7 +178,7 @@ func main() {
 	case "inmemory":
 		p, err = provider.NewInMemoryProvider(provider.InMemoryInitZones(cfg.InMemoryZones), provider.InMemoryWithDomain(domainFilter), provider.InMemoryWithLogging()), nil
 
-    case "designate":
+	case "designate":
 		p, err = provider.NewDesignateProvider(domainFilter, cfg.DryRun)
 	case "pdns":
 		p, err = provider.NewPDNSProvider(
