@@ -53,6 +53,7 @@ func (suite *IngressSuite) SetupTest() {
 		"{{.Name}}",
 		false,
 		false,
+		false,
 	)
 	suite.NoError(err, "should initialize ingress source")
 
@@ -126,6 +127,7 @@ func TestNewIngressSource(t *testing.T) {
 				ti.annotationFilter,
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
+				false,
 				false,
 			)
 			if ti.expectError {
