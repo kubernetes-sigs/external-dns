@@ -57,6 +57,7 @@ type Config struct {
 	CFAPIEndpoint               string
 	CFUsername                  string
 	CFPassword                  string
+	DefaultIngressTarget        string
 }
 
 // ClientGenerator provides clients
@@ -150,7 +151,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewIngressSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+		return NewIngressSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.DefaultIngressTarget)
 	case "istio-gateway":
 		kubernetesClient, err := p.KubeClient()
 		if err != nil {

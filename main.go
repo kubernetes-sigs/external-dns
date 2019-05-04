@@ -85,6 +85,7 @@ func main() {
 		CFAPIEndpoint:               cfg.CFAPIEndpoint,
 		CFUsername:                  cfg.CFUsername,
 		CFPassword:                  cfg.CFPassword,
+		DefaultIngressTarget:        cfg.DefaultIngressTarget,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.

@@ -92,3 +92,56 @@ func TestSuitableType(t *testing.T) {
 		}
 	}
 }
+
+func TestGetTargetsFromAnnotations(t *testing.T) {
+	for _, tc := range []struct {
+		title         string
+		annotations   map[string]string
+		defaultTarget string
+		expected      []string
+	}{
+		{
+			title:       "Target annotation not present and no default target.",
+			annotations: map[string]string{"foo": "bar"},
+		},
+		{
+			title:         "Target annotation not present and with default target.",
+			annotations:   map[string]string{"foo": "bar"},
+			defaultTarget: "google.com.",
+			expected:      []string{"google.com"},
+		},
+		{
+			title:         "Target annotation present and with default target.",
+			annotations:   map[string]string{targetAnnotationKey: "google.com."},
+			defaultTarget: "1.2.3.4",
+			expected:      []string{"google.com"},
+		},
+		{
+			title:       "Target annotation present and without default target.",
+			annotations: map[string]string{targetAnnotationKey: "google.com."},
+			expected:    []string{"google.com"},
+		},
+		{
+			title:         "Target annotation present and with multiple default targets.",
+			annotations:   map[string]string{targetAnnotationKey: "1.1.1.1"},
+			defaultTarget: "1.2.3.4,4.3.2.1",
+			expected:      []string{"1.1.1.1"},
+		},
+		{
+			title:         "Multiple target annotation present with default target.",
+			annotations:   map[string]string{targetAnnotationKey: "1.2.3.4,4.3.2.1"},
+			defaultTarget: "1.1.1.1",
+			expected:      []string{"1.2.3.4", "4.3.2.1"},
+		},
+		{
+			title:       "Multiple target annotation present without default target.",
+			annotations: map[string]string{targetAnnotationKey: "1.2.3.4,4.3.2.1"},
+			expected:    []string{"1.2.3.4", "4.3.2.1"},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			targets := getTargetsFromTargetAnnotation(tc.annotations, tc.defaultTarget)
+			assert.Equal(t, endpoint.Targets(tc.expected), targets)
+		})
+	}
+}

@@ -105,21 +105,31 @@ func getProviderSpecificAnnotations(annotations map[string]string) endpoint.Prov
 	return providerSpecificAnnotations
 }
 
+// appendTargets splits the target annotation and removes the trailing periods and
+// appends each target to the targets array.
+func appendTargets(target string, targets *endpoint.Targets) {
+	targetsList := strings.Split(strings.Replace(target, " ", "", -1), ",")
+	for _, targetHostname := range targetsList {
+		targetHostname = strings.TrimSuffix(targetHostname, ".")
+		*targets = append(*targets, targetHostname)
+	}
+}
+
 // getTargetsFromTargetAnnotation gets endpoints from optional "target" annotation.
 // Returns empty endpoints array if none are found.
-func getTargetsFromTargetAnnotation(annotations map[string]string) endpoint.Targets {
+func getTargetsFromTargetAnnotation(annotations map[string]string, defaultTarget string) endpoint.Targets {
 	var targets endpoint.Targets
 
 	// Get the desired hostname of the ingress from the annotation.
 	targetAnnotation, exists := annotations[targetAnnotationKey]
 	if exists && targetAnnotation != "" {
-		// splits the hostname annotation and removes the trailing periods
-		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
-		for _, targetHostname := range targetsList {
-			targetHostname = strings.TrimSuffix(targetHostname, ".")
-			targets = append(targets, targetHostname)
-		}
+		appendTargets(targetAnnotation, &targets)
 	}
+
+	if len(targets) == 0 && defaultTarget != "" {
+		appendTargets(defaultTarget, &targets)
+	}
+
 	return targets
 }
 

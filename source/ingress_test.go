@@ -53,6 +53,7 @@ func (suite *IngressSuite) SetupTest() {
 		"{{.Name}}",
 		false,
 		false,
+		"",
 	)
 	suite.NoError(err, "should initialize ingress source")
 
@@ -87,6 +88,7 @@ func TestNewIngressSource(t *testing.T) {
 		fqdnTemplate             string
 		combineFQDNAndAnnotation bool
 		expectError              bool
+		defaultTarget            string
 	}{
 		{
 			title:        "invalid template",
@@ -127,6 +129,7 @@ func TestNewIngressSource(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				false,
+				ti.defaultTarget,
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -139,9 +142,10 @@ func TestNewIngressSource(t *testing.T) {
 
 func testEndpointsFromIngress(t *testing.T) {
 	for _, ti := range []struct {
-		title    string
-		ingress  fakeIngress
-		expected []*endpoint.Endpoint
+		title         string
+		ingress       fakeIngress
+		expected      []*endpoint.Endpoint
+		defaultTarget string
 	}{
 		{
 			title: "one rule.host one lb.hostname",
@@ -214,7 +218,7 @@ func testEndpointsFromIngress(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, false), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, false, ti.defaultTarget), ti.expected)
 		})
 	}
 }
@@ -231,6 +235,7 @@ func testIngressEndpoints(t *testing.T) {
 		fqdnTemplate             string
 		combineFQDNAndAnnotation bool
 		ignoreHostnameAnnotation bool
+		defaultTarget            string
 	}{
 		{
 			title:           "no ingress",
@@ -971,6 +976,47 @@ func testIngressEndpoints(t *testing.T) {
 				},
 			},
 		},
+		{
+			title:           "with default target",
+			targetNamespace: "",
+			defaultTarget:   "1.1.1.1",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					dnsnames:  []string{"example.org"},
+					ips:       []string{"8.8.8.8"},
+				},
+				{
+					name:      "fake2",
+					namespace: namespace,
+					annotations: map[string]string{
+						targetAnnotationKey: "lb.com",
+					},
+					dnsnames: []string{"new.org"},
+				},
+				{
+					name:        "fake3",
+					namespace:   namespace,
+					annotations: map[string]string{},
+					dnsnames:    []string{"other.org"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "example.org",
+					Targets: endpoint.Targets{"1.1.1.1"},
+				},
+				{
+					DNSName: "new.org",
+					Targets: endpoint.Targets{"lb.com"},
+				},
+				{
+					DNSName: "other.org",
+					Targets: endpoint.Targets{"1.1.1.1"},
+				},
+			},
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			ingresses := make([]*v1beta1.Ingress, 0)
@@ -986,6 +1032,7 @@ func testIngressEndpoints(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				ti.ignoreHostnameAnnotation,
+				ti.defaultTarget,
 			)
 			for _, ingress := range ingresses {
 				_, err := fakeClient.Extensions().Ingresses(ingress.Namespace).Create(ingress)

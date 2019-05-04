@@ -165,7 +165,7 @@ func (sc *gatewaySource) endpointsFromTemplate(config *istiomodel.Config) ([]*en
 		log.Warn(err)
 	}
 
-	targets := getTargetsFromTargetAnnotation(config.Annotations)
+	targets := getTargetsFromTargetAnnotation(config.Annotations, "")
 
 	if len(targets) == 0 {
 		targets, err = sc.targetsFromIstioIngressGatewayServices()
@@ -255,7 +255,7 @@ func (sc *gatewaySource) endpointsFromGatewayConfig(config istiomodel.Config) ([
 		log.Warn(err)
 	}
 
-	targets := getTargetsFromTargetAnnotation(config.Annotations)
+	targets := getTargetsFromTargetAnnotation(config.Annotations, "")
 
 	if len(targets) == 0 {
 		targets, err = sc.targetsFromIstioIngressGatewayServices()
