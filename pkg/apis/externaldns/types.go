@@ -18,6 +18,7 @@ package externaldns
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -71,18 +72,18 @@ type Config struct {
 	InfobloxGridHost            string
 	InfobloxWapiPort            int
 	InfobloxWapiUsername        string
-	InfobloxWapiPassword        string
+	InfobloxWapiPassword        string `secure:"yes"`
 	InfobloxWapiVersion         string
 	InfobloxSSLVerify           bool
 	InfobloxView                string
 	DynCustomerName             string
 	DynUsername                 string
-	DynPassword                 string
+	DynPassword                 string `secure:"yes"`
 	DynMinTTLSeconds            int
 	OCIConfigFile               string
 	InMemoryZones               []string
 	PDNSServer                  string
-	PDNSAPIKey                  string
+	PDNSAPIKey                  string `secure:"yes"`
 	PDNSTLSEnabled              bool
 	TLSCA                       string
 	TLSClientCert               string
@@ -99,8 +100,8 @@ type Config struct {
 	LogLevel                    string
 	TXTCacheInterval            time.Duration
 	ExoscaleEndpoint            string
-	ExoscaleAPIKey              string
-	ExoscaleAPISecret           string
+	ExoscaleAPIKey              string `secure:"yes"`
+	ExoscaleAPISecret           string `secure:"yes"`
 	CRDSourceAPIVersion         string
 	CRDSourceKind               string
 	ServiceTypeFilter           []string
@@ -109,9 +110,11 @@ type Config struct {
 	RFC2136Zone                 string
 	RFC2136Insecure             bool
 	RFC2136TSIGKeyName          string
-	RFC2136TSIGSecret           string
+	RFC2136TSIGSecret           string `secure:"yes"`
 	RFC2136TSIGSecretAlg        string
 	RFC2136TAXFR                bool
+	NS1Endpoint                 string
+	NS1IgnoreSSL                bool
 }
 
 var defaultConfig = &Config{
@@ -185,6 +188,8 @@ var defaultConfig = &Config{
 	RFC2136TSIGSecret:           "",
 	RFC2136TSIGSecretAlg:        "",
 	RFC2136TAXFR:                true,
+	NS1Endpoint:                 "",
+	NS1IgnoreSSL:                false,
 }
 
 // NewConfig returns new Config object
@@ -195,14 +200,19 @@ func NewConfig() *Config {
 func (cfg *Config) String() string {
 	// prevent logging of sensitive information
 	temp := *cfg
-	if temp.DynPassword != "" {
-		temp.DynPassword = passwordMask
-	}
-	if temp.InfobloxWapiPassword != "" {
-		temp.InfobloxWapiPassword = passwordMask
-	}
-	if temp.PDNSAPIKey != "" {
-		temp.PDNSAPIKey = ""
+
+	t := reflect.TypeOf(temp)
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		if val, ok := f.Tag.Lookup("secure"); ok && val == "yes" {
+			if f.Type.Kind() != reflect.String {
+				continue
+			}
+			v := reflect.ValueOf(&temp).Elem().Field(i)
+			if v.String() != "" {
+				v.SetString(passwordMask)
+			}
+		}
 	}
 
 	return fmt.Sprintf("%+v", temp)
@@ -247,7 +257,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("service-type-filter", "The service types to take care about (default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)").StringsVar(&cfg.ServiceTypeFilter)
 
 	// Flags related to providers
-	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, google, azure, cloudflare, rcodezero, digitalocean, dnsimple, infoblox, dyn, designate, coredns, skydns, inmemory, pdns, oci, exoscale, linode, rfc2136)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "infoblox", "dyn", "designate", "coredns", "skydns", "inmemory", "pdns", "oci", "exoscale", "linode", "rfc2136")
+	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, google, azure, cloudflare, rcodezero, digitalocean, dnsimple, infoblox, dyn, designate, coredns, skydns, inmemory, pdns, oci, exoscale, linode, rfc2136, ns1)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "infoblox", "dyn", "designate", "coredns", "skydns", "inmemory", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1")
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("zone-id-filter", "Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.ZoneIDFilter)
 	app.Flag("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
@@ -282,6 +292,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("pdns-server", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)").Default(defaultConfig.PDNSServer).StringVar(&cfg.PDNSServer)
 	app.Flag("pdns-api-key", "When using the PowerDNS/PDNS provider, specify the API key to use to authorize requests (required when --provider=pdns)").Default(defaultConfig.PDNSAPIKey).StringVar(&cfg.PDNSAPIKey)
 	app.Flag("pdns-tls-enabled", "When using the PowerDNS/PDNS provider, specify whether to use TLS (default: false, requires --tls-ca, optionally specify --tls-client-cert and --tls-client-cert-key)").Default(strconv.FormatBool(defaultConfig.PDNSTLSEnabled)).BoolVar(&cfg.PDNSTLSEnabled)
+	app.Flag("ns1-endpoint", "When using the NS1 provider, specify the URL of the API endpoint to target (default: https://api.nsone.net/v1/)").Default(defaultConfig.NS1Endpoint).StringVar(&cfg.NS1Endpoint)
+	app.Flag("ns1-ignoressl", "When using the NS1 provider, specify whether to verify the SSL certificate (default: false)").Default(strconv.FormatBool(defaultConfig.NS1IgnoreSSL)).BoolVar(&cfg.NS1IgnoreSSL)
 
 	// Flags related to TLS communication
 	app.Flag("tls-ca", "When using TLS communication, the path to the certificate authority to verify server communications (optionally specify --tls-client-cert for two-way TLS)").Default(defaultConfig.TLSCA).StringVar(&cfg.TLSCA)

@@ -19,12 +19,13 @@ package source
 import (
 	"bytes"
 	"fmt"
-	kubeinformers "k8s.io/client-go/informers"
-	coreinformers "k8s.io/client-go/informers/core/v1"
-	"k8s.io/client-go/tools/cache"
 	"sort"
 	"strings"
 	"text/template"
+
+	kubeinformers "k8s.io/client-go/informers"
+	coreinformers "k8s.io/client-go/informers/core/v1"
+	"k8s.io/client-go/tools/cache"
 
 	log "github.com/sirupsen/logrus"
 
@@ -35,8 +36,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"time"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
 const (
@@ -249,26 +251,28 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 
 	targetsByHeadlessDomain := make(map[string][]string)
 	for _, v := range pods {
-		headlessDomain := hostname
-		if v.Spec.Hostname != "" {
-			headlessDomain = v.Spec.Hostname + "." + headlessDomain
-		}
+		headlessDomains := []string{hostname}
 
-		if sc.publishHostIP == true {
-			log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, v.Status.HostIP)
-			// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
-			if v.Status.Phase == v1.PodRunning {
-				targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], v.Status.HostIP)
+		if v.Spec.Hostname != "" {
+			headlessDomains = append(headlessDomains, fmt.Sprintf("%s.%s", v.Spec.Hostname, hostname))
+		}
+		for _, headlessDomain := range headlessDomains {
+			if sc.publishHostIP == true {
+				log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, v.Status.HostIP)
+				// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
+				if v.Status.Phase == v1.PodRunning {
+					targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], v.Status.HostIP)
+				} else {
+					log.Debugf("Pod %s is not in running phase", v.Spec.Hostname)
+				}
 			} else {
-				log.Debugf("Pod %s is not in running phase", v.Spec.Hostname)
-			}
-		} else {
-			log.Debugf("Generating matching endpoint %s with PodIP %s", headlessDomain, v.Status.PodIP)
-			// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
-			if v.Status.Phase == v1.PodRunning {
-				targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], v.Status.PodIP)
-			} else {
-				log.Debugf("Pod %s is not in running phase", v.Spec.Hostname)
+				log.Debugf("Generating matching endpoint %s with PodIP %s", headlessDomain, v.Status.PodIP)
+				// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
+				if v.Status.Phase == v1.PodRunning {
+					targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], v.Status.PodIP)
+				} else {
+					log.Debugf("Pod %s is not in running phase", v.Spec.Hostname)
+				}
 			}
 		}
 

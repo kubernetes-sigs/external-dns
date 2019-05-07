@@ -1,3 +1,44 @@
+## v0.5.14 - 2019-04-23
+
+  - Core: Supress Kubernetes logs (#991) @njuettner
+
+## v0.5.13 - 2019-04-18
+
+  - Azure: Support multiple A targets (#987) @michaelfig
+  - Core: Fixing what seems an obvious omission of /github.com/ dir in Dockerfile (#985) @llamahunter
+  - Docs: GKE tutorial remove disable-addon argument (#978) @ggordan
+  - Docs: Alibaba Cloud config file missing by enable sts token (#977) @xianlubird
+  - Docs: Alibaba Cloud fix wrong arg in manifest (#976) @iamzhout
+  - AWS: Set a default TTL for Alias records (#975) @fraenkel
+  - Cloudflare: Add support for multiple target addresses (#970) @nta
+  - AWS: Adding China ELB endpoints and hosted zone id's (#968) @jfillo
+  - AWS: Streamline ApplyChanges (#966) @fraenkel
+  - Core: Switch to go modules (#960) @njuettner
+  - Docs: AWS how to check if your cluster has a RBAC (#959) @confiq
+  - Docs: AWS remove superfluous trailing period from hostname (#952) @hobti01
+  - Core: Add generic logic to remove secrets from logs (#951) @dsbrng25b
+  - RFC2136: Remove unnecessary parameter (#948) @ChristianMoesl
+  - Infoblox: Reduce verbosity of logs (#945) @dsbrng25b
+
+## v0.5.12 - 2019-03-26
+
+  - Bumping istio to 1.1.0 (#942) @venezia
+  - Docs: Added stability matrix and minor improvements to README (#938) @Raffo
+  - Docs: Added a reference to a blogpost which uses ExternalDNS in a CI/CD setup (#928) @vanhumbeecka
+  - Use k8s informer cache instead of making active API GET requests (#917) @jlamillan
+  - Docs: Tiny clarification about two available deployment methods (#935) @przemolb
+  - Add support for multiple Istio IngressGateway LoadBalancer Services (#907) @LorbusChris
+  - Set log level to debug when axfr is disabled (#932) @arief-hidayat
+  - Infoblox provider support for DNS view (#895) @dsbrng25b
+  - Add RcodeZero Anycast DNS provider (#874) @dklesev
+  - Docs: Dropping owners (#929) @njuettner
+  - Docs: Added description for multiple dns name (#911) @st1t
+  - Docs: Clarify that hosted zone identifier is to be used (#915) @dirkgomez
+  - Docs: Make dep step which may be needed to run make build (#913) @dirkgomez
+  - PowerDNS: Fixed Domain Filter Bug (#827) @anandsinghkunwar
+  - Allow hostname annotations to be ignored (#745) @anandkumarpatel
+  - RFC2136: Fixed typo in debug output (#899) @hpandeycodeit
+
 ## v0.5.11 - 2019-02-11
 
   - Fix constant updating issue introduced with v0.5.10 (#886) @jhohertz
