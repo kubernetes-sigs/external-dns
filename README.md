@@ -42,6 +42,8 @@ ExternalDNS' current release is `v0.5`. This version allows you to keep selected
 * [Linode DNS](https://www.linode.com/docs/networking/dns/)
 * [RFC2136](https://tools.ietf.org/html/rfc2136)
 * [NS1](https://ns1.com/)
+* [TransIP](https://www.transip.eu/domain-name/)
+
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` (or greater) with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -80,6 +82,7 @@ The following table clarifies the current status of the providers according to t
 | Linode DNS | Alpha |
 | RFC2136 | Alpha |
 | NS1 | Alpha |
+| TransIP | Alpha |
 
 
 ## Running ExternalDNS:
@@ -111,6 +114,7 @@ The following tutorials are provided:
 * [Linode](docs/tutorials/linode.md)
 * [RFC2136](docs/tutorials/rfc2136.md)
 * [NS1](docs/tutorials/ns1.md)
+* [TransIP](docs/tutorials/transip.md)
 
 ### Running Locally
 
@@ -234,6 +238,7 @@ Here's a rough outline on what is to come (subject to change):
 - [x] Support for Linode
 - [x] Support for RcodeZero
 - [x] Support for NS1
+- [x] Support for TransIP
 
 ### v0.6
 

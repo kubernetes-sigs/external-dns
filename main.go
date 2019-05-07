@@ -211,6 +211,8 @@ func main() {
 				DryRun:       cfg.DryRun,
 			},
 		)
+	case "transip":
+		p, err = provider.NewTransIPProvider(cfg.TransIPAccountName, cfg.TransIPPrivateKeyFile, domainFilter, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
