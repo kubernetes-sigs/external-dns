@@ -206,6 +206,8 @@ func main() {
 			provider.NS1Config{
 				DomainFilter: domainFilter,
 				ZoneIDFilter: zoneIDFilter,
+				NS1Endpoint:  cfg.NS1Endpoint,
+				NS1IgnoreSSL: cfg.NS1IgnoreSSL,
 				DryRun:       cfg.DryRun,
 			},
 		)
