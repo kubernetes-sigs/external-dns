@@ -82,6 +82,8 @@ var (
 		CRDSourceAPIVersion:         "externaldns.k8s.io/v1alpha1",
 		CRDSourceKind:               "DNSEndpoint",
 		RcodezeroTXTEncrypt:         false,
+		TransIPAccountName:          "",
+		TransIPPrivateKeyFile:       "",
 	}
 
 	overriddenConfig = &Config{
@@ -143,6 +145,8 @@ var (
 		CRDSourceAPIVersion:         "test.k8s.io/v1alpha1",
 		CRDSourceKind:               "Endpoint",
 		RcodezeroTXTEncrypt:         true,
+		TransIPAccountName:          "transip",
+		TransIPPrivateKeyFile:       "/path/to/transip.key",
 	}
 
 	// minimal config with istio gateway source and multiple ingressgateway load balancer services
@@ -284,6 +288,8 @@ func TestParseFlags(t *testing.T) {
 				"--crd-source-apiversion=test.k8s.io/v1alpha1",
 				"--crd-source-kind=Endpoint",
 				"--rcodezero-txt-encrypt",
+				"--transip-account=transip",
+				"--transip-keyfile=/path/to/transip.key",
 			},
 			envVars:  map[string]string{},
 			expected: overriddenConfig,
@@ -349,6 +355,8 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_CRD_SOURCE_APIVERSION":      "test.k8s.io/v1alpha1",
 				"EXTERNAL_DNS_CRD_SOURCE_KIND":            "Endpoint",
 				"EXTERNAL_DNS_RCODEZERO_TXT_ENCRYPT":      "1",
+				"EXTERNAL_DNS_TRANSIP_ACCOUNT":            "transip",
+				"EXTERNAL_DNS_TRANSIP_KEYFILE":            "/path/to/transip.key",
 			},
 			expected: overriddenConfig,
 		},
