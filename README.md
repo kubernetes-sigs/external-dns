@@ -238,6 +238,7 @@ Here's a rough outline on what is to come (subject to change):
 - [x] Support for Linode
 - [x] Support for RcodeZero
 - [x] Support for NS1
+- [x] Support for TransIP
 
 ### v0.6
 
