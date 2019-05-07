@@ -2,7 +2,7 @@
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using TransIP.
 
-Make sure to use **>=0.5.5** version of ExternalDNS for this tutorial, have at least 1 domain registered at TransIP and enabled the API.
+Make sure to use **>=0.5.14** version of ExternalDNS for this tutorial, have at least 1 domain registered at TransIP and enabled the API.
 
 ## Enable TransIP API and prepare your API key
 
@@ -10,7 +10,6 @@ To use the TransIP API you need an account at TransIP and enable API usage as de
 
 ```console
 $ kubectl create secret generic transip-api-key --from-file=transip-api-key=/path/to/private.key
-secret/transip-api-key created
 ```
 
 ## Deploy ExternalDNS
@@ -75,7 +74,7 @@ rules:
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
-  verbs: ["list"]
+  verbs: ["watch", "list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
