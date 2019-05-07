@@ -143,6 +143,8 @@ var (
 		CRDSourceAPIVersion:         "test.k8s.io/v1alpha1",
 		CRDSourceKind:               "Endpoint",
 		RcodezeroTXTEncrypt:         true,
+		NS1Endpoint:                 "https://api.example.com/v1",
+		NS1IgnoreSSL:                true,
 	}
 
 	// minimal config with istio gateway source and multiple ingressgateway load balancer services
@@ -284,6 +286,8 @@ func TestParseFlags(t *testing.T) {
 				"--crd-source-apiversion=test.k8s.io/v1alpha1",
 				"--crd-source-kind=Endpoint",
 				"--rcodezero-txt-encrypt",
+				"--ns1-endpoint=https://api.example.com/v1",
+				"--ns1-ignoressl",
 			},
 			envVars:  map[string]string{},
 			expected: overriddenConfig,
@@ -349,6 +353,8 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_CRD_SOURCE_APIVERSION":      "test.k8s.io/v1alpha1",
 				"EXTERNAL_DNS_CRD_SOURCE_KIND":            "Endpoint",
 				"EXTERNAL_DNS_RCODEZERO_TXT_ENCRYPT":      "1",
+				"EXTERNAL_DNS_NS1_ENDPOINT":               "https://api.example.com/v1",
+				"EXTERNAL_DNS_NS1_IGNORESSL":              "1",
 			},
 			expected: overriddenConfig,
 		},
