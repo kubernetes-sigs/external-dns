@@ -80,27 +80,11 @@ func (p *TransIPProvider) ApplyChanges(changes *plan.Changes) error {
 		zonesByName[zone.Name] = zone
 	}
 
-	zoneForZoneName := func(name string, m zoneIDName, z map[string]transip.Domain) (zone transip.Domain, err error) {
-		_, zoneName := m.FindZone(name)
-		if zoneName == "" {
-			err = fmt.Errorf("could not find zoneName for %s", name)
-			return
-		}
-
-		var ok bool
-		zone, ok = zonesByName[zoneName]
-		if !ok {
-			err = fmt.Errorf("could not find zone for %s", zoneName)
-		}
-
-		return
-	}
-
 	// first see if we need to delete anything
 	for _, ep := range changes.Delete {
 		log.WithFields(log.Fields{"record": ep.DNSName, "type": ep.RecordType}).Info("endpoint has to go")
 
-		zone, err := zoneForZoneName(ep.DNSName, zoneNameMapper, zonesByName)
+		zone, err := p.zoneForZoneName(ep.DNSName, zoneNameMapper, zonesByName)
 		if err != nil {
 			log.Errorf("could not find zone for %s: %s", ep.DNSName, err.Error())
 			continue
@@ -121,7 +105,7 @@ func (p *TransIPProvider) ApplyChanges(changes *plan.Changes) error {
 	for _, ep := range changes.Create {
 		log.WithFields(log.Fields{"record": ep.DNSName, "type": ep.RecordType}).Info("endpoint is missing")
 
-		zone, err := zoneForZoneName(ep.DNSName, zoneNameMapper, zonesByName)
+		zone, err := p.zoneForZoneName(ep.DNSName, zoneNameMapper, zonesByName)
 		if err != nil {
 			log.Errorf("could not find zone for %s: %s", ep.DNSName, err.Error())
 			continue
@@ -142,7 +126,7 @@ func (p *TransIPProvider) ApplyChanges(changes *plan.Changes) error {
 	for _, ep := range changes.UpdateNew {
 		log.WithFields(log.Fields{"record": ep.DNSName, "type": ep.RecordType}).Debug("needs updating")
 
-		zone, err := zoneForZoneName(ep.DNSName, zoneNameMapper, zonesByName)
+		zone, err := p.zoneForZoneName(ep.DNSName, zoneNameMapper, zonesByName)
 		if err != nil {
 			log.WithFields(log.Fields{"record": ep.DNSName}).Warn(err.Error())
 			continue
@@ -370,4 +354,20 @@ func (p *TransIPProvider) addEndpointToEntries(ep *endpoint.Endpoint, zone trans
 	}
 
 	return entries
+}
+
+// zoneForZoneName returns the zone mapped to given name or error if zone could
+// not be found
+func (p *TransIPProvider) zoneForZoneName(name string, m zoneIDName, z map[string]transip.Domain) (transip.Domain, error) {
+	_, zoneName := m.FindZone(name)
+	if zoneName == "" {
+		return transip.Domain{}, fmt.Errorf("could not find zoneName for %s", name)
+	}
+
+	zone, ok := z[zoneName]
+	if !ok {
+		return zone, fmt.Errorf("could not find zone for %s", zoneName)
+	}
+
+	return zone, nil
 }
