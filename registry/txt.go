@@ -18,7 +18,6 @@ package registry
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"strings"
@@ -95,7 +94,7 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 			return nil, err
 		}
 		endpointDNSName := im.mapper.toEndpointName(record.DNSName)
-		log.Debug(fmt.Sprintf("Parsed endpoint dns name is %s", endpointDNSName))
+		log.Debugf("Parsed endpoint dns name is %s", endpointDNSName)
 		labelMap[endpointDNSName] = labels
 	}
 
@@ -201,8 +200,8 @@ func newPrefixNameMapper(prefix string) prefixNameMapper {
 }
 
 func (pr prefixNameMapper) toEndpointName(txtDNSName string) string {
-	log.Debug(fmt.Sprintf("TXT record is %s", txtDNSName))
-	log.Debug(fmt.Sprintf("Prefix is %s", pr.prefix))
+	log.Debugf("TXT record is %s", txtDNSName)
+	log.Debugf("Prefix is %s", pr.prefix)
 	prefixLower := strings.ToLower(pr.prefix)
 	if strings.HasPrefix(txtDNSName, prefixLower) {
 		log.Debug("Will trim prefix")
