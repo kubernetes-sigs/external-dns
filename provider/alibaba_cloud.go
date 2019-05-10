@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -291,7 +292,7 @@ func (p *AlibabaCloudProvider) Records() (endpoints []*endpoint.Endpoint, err er
 // ApplyChanges applies the given changes.
 //
 // Returns nil if the operation was successful or an error if the operation failed.
-func (p *AlibabaCloudProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *AlibabaCloudProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	if changes == nil || len(changes.Create)+len(changes.Delete)+len(changes.UpdateNew) == 0 {
 		// No op
 		return nil

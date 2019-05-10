@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -221,14 +222,14 @@ func TestNS1ApplyChanges(t *testing.T) {
 	}
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "test.foo.com", Targets: endpoint.Targets{"target"}}}
 	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test.foo.com", Targets: endpoint.Targets{"target-new"}}}
-	err := provider.ApplyChanges(changes)
+	err := provider.ApplyChanges(context.Background(), changes)
 	require.NoError(t, err)
 
 	// empty changes
 	changes.Create = []*endpoint.Endpoint{}
 	changes.Delete = []*endpoint.Endpoint{}
 	changes.UpdateNew = []*endpoint.Endpoint{}
-	err = provider.ApplyChanges(changes)
+	err = provider.ApplyChanges(context.Background(), changes)
 	require.NoError(t, err)
 }
 
