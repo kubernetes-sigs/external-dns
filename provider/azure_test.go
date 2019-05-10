@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/arm/dns"
@@ -344,7 +345,7 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordsClie
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges(changes); err != nil {
+	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
 		t.Fatal(err)
 	}
 }

@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -172,7 +173,7 @@ func testDnsimpleProviderApplyChanges(t *testing.T) {
 	}
 
 	mockProvider.accountID = "1"
-	err := mockProvider.ApplyChanges(changes)
+	err := mockProvider.ApplyChanges(context.Background(), changes)
 	if err != nil {
 		t.Errorf("Failed to apply changes: %v", err)
 	}
@@ -185,7 +186,7 @@ func testDnsimpleProviderApplyChangesSkipsUnknown(t *testing.T) {
 	}
 
 	mockProvider.accountID = "1"
-	err := mockProvider.ApplyChanges(changes)
+	err := mockProvider.ApplyChanges(context.Background(), changes)
 	if err != nil {
 		t.Errorf("Failed to ignore unknown zones: %v", err)
 	}

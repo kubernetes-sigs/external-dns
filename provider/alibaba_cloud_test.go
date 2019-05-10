@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"testing"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
@@ -301,7 +302,7 @@ func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 			},
 		},
 	}
-	p.ApplyChanges(&changes)
+	p.ApplyChanges(context.Background(), &changes)
 	endpoints, err := p.Records()
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
@@ -358,7 +359,7 @@ func TestAlibabaCloudProvider_ApplyChanges_PrivateZone(t *testing.T) {
 			},
 		},
 	}
-	p.ApplyChanges(&changes)
+	p.ApplyChanges(context.Background(), &changes)
 	endpoints, err := p.Records()
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
