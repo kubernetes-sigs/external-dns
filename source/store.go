@@ -114,7 +114,10 @@ func NewCFClient(cfAPIEndpoint string, cfUsername string, cfPassword string) (*c
 		Username:   cfUsername,
 		Password:   cfPassword,
 	}
-	client, _ := cfclient.NewClient(c)
+	client, err := cfclient.NewClient(c)
+	if err != nil {
+		return nil, err
+	}
 
 	return client, nil
 }
@@ -158,12 +161,12 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 			return nil, err
 		}
 		return NewIstioGatewaySource(kubernetesClient, istioClient, cfg.IstioIngressGatewayServices, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
-	case "route":
+	case "cloudfoundry":
 		cfClient, err := p.CloudFoundryClient(cfg.CFAPIEndpoint, cfg.CFUsername, cfg.CFPassword)
 		if err != nil {
 			return nil, err
 		}
-		return NewRouteSource(cfClient)
+		return NewCloudFoundrySource(cfClient)
 	case "fake":
 		return NewFakeSource(cfg.FQDNTemplate)
 	case "connector":
