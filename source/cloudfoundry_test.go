@@ -32,7 +32,7 @@ func TestRouteSource(t *testing.T) {
 	t.Run("Interface", testRouteSourceImplementsSource)
 }
 
-// testRouteSourceImplementsSource tests that routeSource is a valid Source.
+// testRouteSourceImplementsSource tests that cloudfoundrySource is a valid Source.
 func testRouteSourceImplementsSource(t *testing.T) {
-	require.Implements(t, (*Source)(nil), new(routeSource))
+	require.Implements(t, (*Source)(nil), new(cloudfoundrySource))
 }
