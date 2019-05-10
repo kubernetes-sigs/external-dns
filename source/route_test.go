@@ -27,10 +27,6 @@ type RouteSuite struct {
 	suite.Suite
 }
 
-func (suite *RouteSuite) SetupTest() {
-
-}
-
 func TestRouteSource(t *testing.T) {
 	suite.Run(t, new(RouteSuite))
 	t.Run("Interface", testRouteSourceImplementsSource)

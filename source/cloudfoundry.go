@@ -23,20 +23,20 @@ import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
-type routeSource struct {
+type cloudfoundrySource struct {
 	client *cfclient.Client
 	config Config
 }
 
-// NewRouteSource creates a new routeSource with the given config
-func NewRouteSource(cfClient *cfclient.Client) (Source, error) {
-	return &routeSource{
+// NewCloudFoundrySource creates a new cloudfoundrySource with the given config
+func NewCloudFoundrySource(cfClient *cfclient.Client) (Source, error) {
+	return &cloudfoundrySource{
 		client: cfClient,
 	}, nil
 }
 
 // Endpoints returns endpoint objects
-func (rs *routeSource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (rs *cloudfoundrySource) Endpoints() ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	u, err := url.Parse(rs.client.Config.ApiAddress)
