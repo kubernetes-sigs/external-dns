@@ -31,7 +31,6 @@ require (
 	github.com/go-resty/resty v1.8.0 // indirect
 	github.com/gogo/googleapis v1.1.0 // indirect
 	github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef // indirect
-	github.com/golang/mock v1.2.0 // indirect
 	github.com/google/btree v0.0.0-20180124185431-e89373fe6b4a // indirect
 	github.com/google/go-querystring v0.0.0-20170111101155-53e6ce116135 // indirect
 	github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf // indirect
@@ -77,6 +76,7 @@ require (
 	github.com/stretchr/testify v1.2.2
 	github.com/tent/http-link-go v0.0.0-20130702225549-ac974c61c2f9 // indirect
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8 // indirect
+	github.com/transip/gotransip v5.8.2+incompatible
 	github.com/ugorji/go/codec v0.0.0-20190320090025-2dc34c0b8780 // indirect
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	github.com/yl2chen/cidranger v0.0.0-20180214081945-928b519e5268 // indirect

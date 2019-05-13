@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -637,7 +638,7 @@ func (d *dynProviderState) Records() ([]*endpoint.Endpoint, error) {
 
 // this method does C + 2*Z requests: C=total number of changes, Z = number of
 // affected zones (1 login + 1 commit)
-func (d *dynProviderState) ApplyChanges(changes *plan.Changes) error {
+func (d *dynProviderState) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	log.Debugf("Processing chages: %+v", changes)
 
 	if d.DryRun {

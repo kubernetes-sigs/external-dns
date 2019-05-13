@@ -27,6 +27,7 @@ Providers
 - [x] Google
 - [ ] InMemory
 - [x] Linode
+- [x] TransIP
 
 PRs welcome!
 
@@ -51,4 +52,7 @@ For the moment, it is impossible to use a TTL value of 0 with the AWS, DigitalOc
 This behavior may change in the future.
 
 ### Linode Provider
-The Linode Provider default TTL is used when the TTL is 0. The default is 24 hours 
+The Linode Provider default TTL is used when the TTL is 0. The default is 24 hours
+
+### TransIP Provider
+The TransIP Provider minimal TTL is used when the TTL is 0. The minimal TTL is 60s.

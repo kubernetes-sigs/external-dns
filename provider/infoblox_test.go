@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"regexp"
@@ -469,7 +470,7 @@ func testInfobloxApplyChangesInternal(t *testing.T, dryRun bool, client ibclient
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges(changes); err != nil {
+	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
 		t.Fatal(err)
 	}
 }

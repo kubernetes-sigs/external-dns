@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"net"
 	"strings"
 
@@ -27,8 +28,19 @@ import (
 // Provider defines the interface DNS providers should implement.
 type Provider interface {
 	Records() ([]*endpoint.Endpoint, error)
-	ApplyChanges(changes *plan.Changes) error
+	ApplyChanges(ctx context.Context, changes *plan.Changes) error
 }
+
+type contextKey struct {
+	name string
+}
+
+func (k *contextKey) String() string { return "provider context value " + k.name }
+
+// RecordsContextKey is a context key. It can be used during ApplyChanges
+// to access previously cached records. The associated value will be of
+// type []*endpoint.Endpoint.
+var RecordsContextKey = &contextKey{"records"}
 
 // ensureTrailingDot ensures that the hostname receives a trailing dot if it hasn't already.
 func ensureTrailingDot(hostname string) string {

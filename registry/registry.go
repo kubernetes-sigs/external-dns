@@ -17,6 +17,8 @@ limitations under the License.
 package registry
 
 import (
+	"context"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	log "github.com/sirupsen/logrus"
@@ -28,7 +30,7 @@ import (
 // ApplyChanges(changes *plan.Changes) propagates the changes to the DNS Provider API and correspondingly updates ownership depending on type of registry being used
 type Registry interface {
 	Records() ([]*endpoint.Endpoint, error)
-	ApplyChanges(changes *plan.Changes) error
+	ApplyChanges(ctx context.Context, changes *plan.Changes) error
 }
 
 //TODO(ideahitme): consider moving this to Plan
