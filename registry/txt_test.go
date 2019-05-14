@@ -17,6 +17,7 @@ limitations under the License.
 package registry
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -68,7 +69,7 @@ func testTXTRegistryRecords(t *testing.T) {
 func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	p.ApplyChanges(&plan.Changes{
+	p.ApplyChanges(context.Background(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", endpoint.RecordTypeCNAME, ""),
@@ -141,7 +142,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	p.ApplyChanges(&plan.Changes{
+	p.ApplyChanges(context.Background(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", endpoint.RecordTypeCNAME, ""),
@@ -220,7 +221,12 @@ func testTXTRegistryApplyChanges(t *testing.T) {
 func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	p.ApplyChanges(&plan.Changes{
+	ctxEndpoints := []*endpoint.Endpoint{}
+	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
+	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
+		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
+	}
+	p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", endpoint.RecordTypeCNAME, ""),
@@ -267,7 +273,7 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 			newEndpointWithOwner("txt.tar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
 	}
-	p.OnApplyChanges = func(got *plan.Changes) {
+	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
 			"Create":    expected.Create,
 			"UpdateNew": expected.UpdateNew,
@@ -281,15 +287,21 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+		assert.Equal(t, nil, ctx.Value(provider.RecordsContextKey))
 	}
-	err := r.ApplyChanges(changes)
+	err := r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
 }
 
 func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	p.ApplyChanges(&plan.Changes{
+	ctxEndpoints := []*endpoint.Endpoint{}
+	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
+	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
+		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
+	}
+	p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", endpoint.RecordTypeCNAME, ""),
@@ -330,7 +342,7 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 		UpdateNew: []*endpoint.Endpoint{},
 		UpdateOld: []*endpoint.Endpoint{},
 	}
-	p.OnApplyChanges = func(got *plan.Changes) {
+	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
 			"Create":    expected.Create,
 			"UpdateNew": expected.UpdateNew,
@@ -344,8 +356,9 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+		assert.Equal(t, nil, ctx.Value(provider.RecordsContextKey))
 	}
-	err := r.ApplyChanges(changes)
+	err := r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
 }
 

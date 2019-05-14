@@ -86,8 +86,10 @@ helm install --name my-coredns --values values.yaml stable/coredns
 ## Installing ExternalDNS
 ### Install external ExternalDNS
 ETCD_URLS is configured to etcd client service address.
-```
-$ cat external-dns.yaml
+
+#### Manifest (for clusters without RBAC enabled)
+
+```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -97,7 +99,7 @@ spec:
   strategy:
     type: Recreate
   selector:
-    matchLabels:                                                                                                                                                                                                                            
+    matchLabels:
       app: external-dns
   template:
     metadata:
@@ -114,7 +116,76 @@ spec:
         env:
         - name: ETCD_URLS
           value: http://10.105.68.165:2379
-$ kubectl apply -f external-dns.yaml
+```
+
+#### Manifest (for clusters with RBAC enabled)
+
+```yaml
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: external-dns
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get","watch","list"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["extensions"]
+  resources: ["ingresses"]
+  verbs: ["get","watch","list"]
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: external-dns-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: external-dns
+subjects:
+- kind: ServiceAccount
+  name: external-dns
+  namespace: kube-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: external-dns
+  namespace: kube-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: external-dns
+  namespace: kube-system
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: external-dns
+  template:
+    metadata:
+      labels:
+        app: external-dns
+    spec:
+      serviceAccountName: external-dns
+      containers:
+      - name: external-dns
+        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        args:
+        - --source=ingress
+        - --provider=coredns
+        - --log-level=debug # debug only
+        env:
+        - name: ETCD_URLS
+          value: http://10.105.68.165:2379
 ```
 
 ## Enable the ingress controller
@@ -126,6 +197,7 @@ minikube addons enable ingress
 ## Testing ingress example
 ```
 $ cat ingress.yaml      
+apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: nginx
@@ -157,8 +229,7 @@ nginx     nginx.example.org   10.0.2.15   80        2m
 
 $ kubectl run -it --rm --restart=Never --image=infoblox/dnstools:latest dnstools
 If you don't see a command prompt, try pressing enter.
-dnstools# dig @10.102.213.122 nginx.example.org +short
-dnstools# dig @10.102.213.122 nginx.example.org +short
+dnstools# dig @10.100.4.143 nginx.example.org +short
 10.0.2.15
 dnstools#  
 ```

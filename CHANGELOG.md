@@ -1,3 +1,83 @@
+## v0.5.14 - 2019-04-23
+
+  - Core: Supress Kubernetes logs (#991) @njuettner
+
+## v0.5.13 - 2019-04-18
+
+  - Azure: Support multiple A targets (#987) @michaelfig
+  - Core: Fixing what seems an obvious omission of /github.com/ dir in Dockerfile (#985) @llamahunter
+  - Docs: GKE tutorial remove disable-addon argument (#978) @ggordan
+  - Docs: Alibaba Cloud config file missing by enable sts token (#977) @xianlubird
+  - Docs: Alibaba Cloud fix wrong arg in manifest (#976) @iamzhout
+  - AWS: Set a default TTL for Alias records (#975) @fraenkel
+  - Cloudflare: Add support for multiple target addresses (#970) @nta
+  - AWS: Adding China ELB endpoints and hosted zone id's (#968) @jfillo
+  - AWS: Streamline ApplyChanges (#966) @fraenkel
+  - Core: Switch to go modules (#960) @njuettner
+  - Docs: AWS how to check if your cluster has a RBAC (#959) @confiq
+  - Docs: AWS remove superfluous trailing period from hostname (#952) @hobti01
+  - Core: Add generic logic to remove secrets from logs (#951) @dsbrng25b
+  - RFC2136: Remove unnecessary parameter (#948) @ChristianMoesl
+  - Infoblox: Reduce verbosity of logs (#945) @dsbrng25b
+
+## v0.5.12 - 2019-03-26
+
+  - Bumping istio to 1.1.0 (#942) @venezia
+  - Docs: Added stability matrix and minor improvements to README (#938) @Raffo
+  - Docs: Added a reference to a blogpost which uses ExternalDNS in a CI/CD setup (#928) @vanhumbeecka
+  - Use k8s informer cache instead of making active API GET requests (#917) @jlamillan
+  - Docs: Tiny clarification about two available deployment methods (#935) @przemolb
+  - Add support for multiple Istio IngressGateway LoadBalancer Services (#907) @LorbusChris
+  - Set log level to debug when axfr is disabled (#932) @arief-hidayat
+  - Infoblox provider support for DNS view (#895) @dsbrng25b
+  - Add RcodeZero Anycast DNS provider (#874) @dklesev
+  - Docs: Dropping owners (#929) @njuettner
+  - Docs: Added description for multiple dns name (#911) @st1t
+  - Docs: Clarify that hosted zone identifier is to be used (#915) @dirkgomez
+  - Docs: Make dep step which may be needed to run make build (#913) @dirkgomez
+  - PowerDNS: Fixed Domain Filter Bug (#827) @anandsinghkunwar
+  - Allow hostname annotations to be ignored (#745) @anandkumarpatel
+  - RFC2136: Fixed typo in debug output (#899) @hpandeycodeit
+
+## v0.5.11 - 2019-02-11
+
+  - Fix constant updating issue introduced with v0.5.10 (#886) @jhohertz
+  - Ignore evaluate target health for calculating changes for AWS (#880) @linki
+  - Pagination for cloudflare zones (#873) @njuettner
+
+## v0.5.10 - 2019-01-28
+
+  - Docs: Improve documentation regarding Alias (#868) @alexnederlof
+  - Adds a new flag `--aws-api-retries` which allows overriding the number of retries (#858) @viafoura
+  - Docs: Make awscli commands use JSON output (#849) @ifosch
+  - Docs: Add missing apiVersion to Ingress resource (#847) @shlao
+  - Fix for AWS private DNS zone (#844) @xianlubird
+  - Add support for AWS ELBs in eu-north-1 (#843) @argoyle
+  - Create a SECURITY_CONTACTS file (#842) @njuettner
+  - Use correct product name for Google Cloud DNS (#841) @seils
+  - Change default AWSBatchChangeSize to 1000 (#839) @medzin
+  - Fix dry-run mode in rfc2136 provider (#838) @lachlancooper
+  - Fix typos in rfc2136 provider (#837) @lachlancooper
+  - rfc2136 provider: one IP Target per RRSET (#836) @ivanfilippov
+  - Normalize DNS names during planning (#833) @justinsb
+  - Implement Stringer for planTableRow (#832) @justinsb
+  - Docs: Better security granularity concerning external dns service principal for Azure (#829) @DenisBiondic
+  - Docs: Update links in Cloudflare docs (#824) @PascalKu
+  - Docs: Add metrics info to FAQ (#822) @zachyam
+  - Docs: Update nameserver IPs in coredns.md (#820) @mozhuli
+  - Docs: Fix commands to cleanup Cloudflare (#818) @acrogenesis
+  - Avoid unnecessary updating for CRD resource (#810) @xunpan
+  - Fix issues with CoreDNS provider and more than 1 targets (#807) @xunpan
+  - AWS: Add zone tag filter (#804) @csrwng
+  - Docs: Update CoreDNS tutorial with RBAC manifest (#803) @Lujeni
+  - Use SOAP API to improve DYN's provider's performance (#799) @sanyu
+  - Expose managed resources and records as metrics (#793) @linki
+  - Docs: Updating Azure tutorial (#788) @pelithne
+  - Improve errors in Records() of Infoblox provider (#785) @dsbrng25b
+  - Change default apiVersion of CRD Source (#774) @dsbrng25b
+  - Allow setting Cloudflare proxying on a per-Ingress basis (#650) @eswets
+  - Support A record for multiple IPs for headless services (#645) @toshipp
+
 ## v0.5.9 - 2018-11-22
 
   - Core: Update delivery.yaml to new format (#782) @linki

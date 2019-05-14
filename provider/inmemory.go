@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"errors"
 	"strings"
 
@@ -45,7 +46,7 @@ type InMemoryProvider struct {
 	domain         DomainFilter
 	client         *inMemoryClient
 	filter         *filter
-	OnApplyChanges func(changes *plan.Changes)
+	OnApplyChanges func(ctx context.Context, changes *plan.Changes)
 	OnRecords      func()
 }
 
@@ -55,7 +56,7 @@ type InMemoryOption func(*InMemoryProvider)
 // InMemoryWithLogging injects logging when ApplyChanges is called
 func InMemoryWithLogging() InMemoryOption {
 	return func(p *InMemoryProvider) {
-		p.OnApplyChanges = func(changes *plan.Changes) {
+		p.OnApplyChanges = func(ctx context.Context, changes *plan.Changes) {
 			for _, v := range changes.Create {
 				log.Infof("CREATE: %v", v)
 			}
@@ -94,7 +95,7 @@ func InMemoryInitZones(zones []string) InMemoryOption {
 func NewInMemoryProvider(opts ...InMemoryOption) *InMemoryProvider {
 	im := &InMemoryProvider{
 		filter:         &filter{},
-		OnApplyChanges: func(changes *plan.Changes) {},
+		OnApplyChanges: func(ctx context.Context, changes *plan.Changes) {},
 		OnRecords:      func() {},
 		domain:         NewDomainFilter([]string{""}),
 		client:         newInMemoryClient(),
@@ -142,8 +143,8 @@ func (im *InMemoryProvider) Records() ([]*endpoint.Endpoint, error) {
 // create record - record should not exist
 // update/delete record - record should exist
 // create/update/delete lists should not have overlapping records
-func (im *InMemoryProvider) ApplyChanges(changes *plan.Changes) error {
-	defer im.OnApplyChanges(changes)
+func (im *InMemoryProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	defer im.OnApplyChanges(ctx, changes)
 
 	perZoneChanges := map[string]*plan.Changes{}
 
@@ -188,7 +189,7 @@ func (im *InMemoryProvider) ApplyChanges(changes *plan.Changes) error {
 			UpdateOld: convertToInMemoryRecord(perZoneChanges[zoneID].UpdateOld),
 			Delete:    convertToInMemoryRecord(perZoneChanges[zoneID].Delete),
 		}
-		err := im.client.ApplyChanges(zoneID, change)
+		err := im.client.ApplyChanges(ctx, zoneID, change)
 		if err != nil {
 			return err
 		}
@@ -293,7 +294,7 @@ func (c *inMemoryClient) CreateZone(zone string) error {
 	return nil
 }
 
-func (c *inMemoryClient) ApplyChanges(zoneID string, changes *inMemoryChange) error {
+func (c *inMemoryClient) ApplyChanges(ctx context.Context, zoneID string, changes *inMemoryChange) error {
 	if err := c.validateChangeBatch(zoneID, changes); err != nil {
 		return err
 	}

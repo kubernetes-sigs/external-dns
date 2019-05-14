@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	goctx "context"
 	"fmt"
 	"strings"
 
@@ -143,9 +144,9 @@ func NewGoogleProvider(project string, domainFilter DomainFilter, zoneIDFilter Z
 
 	provider := &GoogleProvider{
 		project:                  project,
+		dryRun:                   dryRun,
 		domainFilter:             domainFilter,
 		zoneIDFilter:             zoneIDFilter,
-		dryRun:                   dryRun,
 		resourceRecordSetsClient: resourceRecordSetsService{dnsClient.ResourceRecordSets},
 		managedZonesClient:       managedZonesService{dnsClient.ManagedZones},
 		changesClient:            changesService{dnsClient.Changes},
@@ -247,7 +248,7 @@ func (p *GoogleProvider) DeleteRecords(endpoints []*endpoint.Endpoint) error {
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *GoogleProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *GoogleProvider) ApplyChanges(ctx goctx.Context, changes *plan.Changes) error {
 	change := &dns.Change{}
 
 	change.Additions = append(change.Additions, p.newFilteredRecords(changes.Create)...)

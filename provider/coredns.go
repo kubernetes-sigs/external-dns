@@ -153,7 +153,7 @@ func (c etcdClient) DeleteService(key string) error {
 	ctx, cancel := context.WithTimeout(c.ctx, etcdTimeout)
 	defer cancel()
 
-	_, err := c.client.Delete(ctx, key)
+	_, err := c.client.Delete(ctx, key, etcdcv3.WithPrefix())
 	return err
 }
 
@@ -298,7 +298,7 @@ func (p coreDNSProvider) Records() ([]*endpoint.Endpoint, error) {
 }
 
 // ApplyChanges stores changes back to etcd converting them to CoreDNS format and aggregating A/CNAME and TXT records
-func (p coreDNSProvider) ApplyChanges(changes *plan.Changes) error {
+func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	grouped := map[string][]*endpoint.Endpoint{}
 	for _, ep := range changes.Create {
 		grouped[ep.DNSName] = append(grouped[ep.DNSName], ep)
@@ -317,22 +317,26 @@ func (p coreDNSProvider) ApplyChanges(changes *plan.Changes) error {
 			if ep.RecordType == endpoint.RecordTypeTXT {
 				continue
 			}
-			prefix := ep.Labels[randomPrefixLabel]
-			if prefix == "" {
-				prefix = fmt.Sprintf("%08x", rand.Int31())
+
+			for _, target := range ep.Targets {
+				prefix := ep.Labels[randomPrefixLabel]
+				if prefix == "" {
+					prefix = fmt.Sprintf("%08x", rand.Int31())
+				}
+
+				service := Service{
+					Host:        target,
+					Text:        ep.Labels["originalText"],
+					Key:         etcdKeyFor(prefix + "." + dnsName),
+					TargetStrip: strings.Count(prefix, ".") + 1,
+					TTL:         uint32(ep.RecordTTL),
+				}
+				services = append(services, service)
 			}
-			service := Service{
-				Host:        ep.Targets[0],
-				Text:        ep.Labels["originalText"],
-				Key:         etcdKeyFor(prefix + "." + dnsName),
-				TargetStrip: strings.Count(prefix, ".") + 1,
-				TTL:         uint32(ep.RecordTTL),
-			}
-			services = append(services, service)
 		}
 		index := 0
 		for _, ep := range group {
-			if ep.RecordType != "TXT" {
+			if ep.RecordType != endpoint.RecordTypeTXT {
 				continue
 			}
 			if index >= len(services) {

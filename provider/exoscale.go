@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"strings"
 
 	"github.com/exoscale/egoscale"
@@ -81,7 +82,7 @@ func (ep *ExoscaleProvider) getZones() (map[int64]string, error) {
 }
 
 // ApplyChanges simply modifies DNS via exoscale API
-func (ep *ExoscaleProvider) ApplyChanges(changes *plan.Changes) error {
+func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	ep.OnApplyChanges(changes)
 
 	if ep.dryRun {

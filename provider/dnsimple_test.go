@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -84,8 +85,18 @@ func TestDnsimpleServices(t *testing.T) {
 		Priority: 0,
 		Type:     "CNAME",
 	}
+	fourthRecord := dnsimple.ZoneRecord{
+		ID:       4,
+		ZoneID:   "example.com",
+		ParentID: 0,
+		Name:     "", // Apex domain A record
+		Content:  "127.0.0.1",
+		TTL:      3600,
+		Priority: 0,
+		Type:     "A",
+	}
 
-	records := []dnsimple.ZoneRecord{firstRecord, secondRecord, thirdRecord}
+	records := []dnsimple.ZoneRecord{firstRecord, secondRecord, thirdRecord, fourthRecord}
 	dnsimpleListRecordsResponse = dnsimple.ZoneRecordsResponse{
 		Response: dnsimple.Response{Pagination: &dnsimple.Pagination{}},
 		Data:     records,
@@ -115,7 +126,6 @@ func TestDnsimpleServices(t *testing.T) {
 		mockDNS.On("CreateRecord", "1", record.ZoneID, simpleRecord).Return(&dnsimple.ZoneRecordResponse{}, nil)
 		mockDNS.On("DeleteRecord", "1", record.ZoneID, record.ID).Return(&dnsimple.ZoneRecordResponse{}, nil)
 		mockDNS.On("UpdateRecord", "1", record.ZoneID, record.ID, simpleRecord).Return(&dnsimple.ZoneRecordResponse{}, nil)
-		mockDNS.On("UpdateRecord", "1", record.ZoneID, record.ID, simpleRecord).Return(&dnsimple.ZoneRecordResponse{}, nil)
 	}
 
 	mockProvider = dnsimpleProvider{client: mockDNS}
@@ -136,7 +146,7 @@ func testDnsimpleProviderZones(t *testing.T) {
 	validateDnsimpleZones(t, result, dnsimpleListZonesResponse.Data)
 
 	mockProvider.accountID = "2"
-	result, err = mockProvider.Zones()
+	_, err = mockProvider.Zones()
 	assert.NotNil(t, err)
 }
 
@@ -147,7 +157,7 @@ func testDnsimpleProviderRecords(t *testing.T) {
 	assert.Equal(t, len(dnsimpleListRecordsResponse.Data), len(result))
 
 	mockProvider.accountID = "2"
-	result, err = mockProvider.Records()
+	_, err = mockProvider.Records()
 	assert.NotNil(t, err)
 }
 func testDnsimpleProviderApplyChanges(t *testing.T) {
@@ -157,10 +167,13 @@ func testDnsimpleProviderApplyChanges(t *testing.T) {
 		{DNSName: "custom-ttl.example.com", RecordTTL: 60, Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeCNAME},
 	}
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "example-beta.example.com", Targets: endpoint.Targets{"127.0.0.1"}, RecordType: endpoint.RecordTypeA}}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "example.example.com", Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeCNAME}}
+	changes.UpdateNew = []*endpoint.Endpoint{
+		{DNSName: "example.example.com", Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeCNAME},
+		{DNSName: "example.com", Targets: endpoint.Targets{"127.0.0.1"}, RecordType: endpoint.RecordTypeA},
+	}
 
 	mockProvider.accountID = "1"
-	err := mockProvider.ApplyChanges(changes)
+	err := mockProvider.ApplyChanges(context.Background(), changes)
 	if err != nil {
 		t.Errorf("Failed to apply changes: %v", err)
 	}
@@ -173,7 +186,7 @@ func testDnsimpleProviderApplyChangesSkipsUnknown(t *testing.T) {
 	}
 
 	mockProvider.accountID = "1"
-	err := mockProvider.ApplyChanges(changes)
+	err := mockProvider.ApplyChanges(context.Background(), changes)
 	if err != nil {
 		t.Errorf("Failed to ignore unknown zones: %v", err)
 	}

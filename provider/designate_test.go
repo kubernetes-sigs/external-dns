@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
@@ -110,7 +111,9 @@ func (c fakeDesignateClient) UpdateRecordSet(zoneID, recordSetID string, opts re
 	if rs == nil {
 		return fmt.Errorf("unknown record-set %s", recordSetID)
 	}
-	rs.Description = opts.Description
+	if opts.Description != nil {
+		rs.Description = *opts.Description
+	}
 	rs.TTL = opts.TTL
 	rs.Records = opts.Records
 	return nil
@@ -405,7 +408,7 @@ func testDesignateCreateRecords(t *testing.T, client *fakeDesignateClient) []*re
 	expectedCopy := make([]*recordsets.RecordSet, len(expected))
 	copy(expectedCopy, expected)
 
-	err := client.ToProvider().ApplyChanges(&plan.Changes{Create: endpoints})
+	err := client.ToProvider().ApplyChanges(context.Background(), &plan.Changes{Create: endpoints})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -493,7 +496,7 @@ func testDesignateUpdateRecords(t *testing.T, client *fakeDesignateClient) []*re
 	expected[2].Records = []string{"10.3.3.1"}
 	expected[3].Records = []string{"10.2.1.1", "10.3.3.2"}
 
-	err := client.ToProvider().ApplyChanges(&plan.Changes{UpdateOld: updatesOld, UpdateNew: updatesNew})
+	err := client.ToProvider().ApplyChanges(context.Background(), &plan.Changes{UpdateOld: updatesOld, UpdateNew: updatesNew})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -551,7 +554,7 @@ func testDesignateDeleteRecords(t *testing.T, client *fakeDesignateClient) {
 	expected[3].Records = []string{"10.3.3.2"}
 	expected = expected[1:]
 
-	err := client.ToProvider().ApplyChanges(&plan.Changes{Delete: deletes})
+	err := client.ToProvider().ApplyChanges(context.Background(), &plan.Changes{Delete: deletes})
 	if err != nil {
 		t.Fatal(err)
 	}

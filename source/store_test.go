@@ -24,14 +24,16 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
+	cfclient "github.com/cloudfoundry-community/go-cfclient"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
 type MockClientGenerator struct {
 	mock.Mock
-	kubeClient  kubernetes.Interface
-	istioClient istiomodel.ConfigStore
+	kubeClient         kubernetes.Interface
+	istioClient        istiomodel.ConfigStore
+	cloudFoundryClient *cfclient.Client
 }
 
 func (m *MockClientGenerator) KubeClient() (kubernetes.Interface, error) {
@@ -48,6 +50,15 @@ func (m *MockClientGenerator) IstioClient() (istiomodel.ConfigStore, error) {
 	if args.Error(1) == nil {
 		m.istioClient = args.Get(0).(istiomodel.ConfigStore)
 		return m.istioClient, nil
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockClientGenerator) CloudFoundryClient(cfAPIEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error) {
+	args := m.Called()
+	if args.Error(1) == nil {
+		m.cloudFoundryClient = args.Get(0).(*cfclient.Client)
+		return m.cloudFoundryClient, nil
 	}
 	return nil, args.Error(1)
 }
@@ -113,5 +124,5 @@ func TestByNames(t *testing.T) {
 }
 
 var minimalConfig = &Config{
-	IstioIngressGateway: "istio-system/istio-ingressgateway",
+	IstioIngressGatewayServices: []string{"istio-system/istio-ingressgateway"},
 }

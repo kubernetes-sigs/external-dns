@@ -118,6 +118,11 @@ func (cs *crdSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 	for _, dnsEndpoint := range result.Items {
 		endpoints = append(endpoints, dnsEndpoint.Spec.Endpoints...)
+
+		if dnsEndpoint.Status.ObservedGeneration == dnsEndpoint.Generation {
+			continue
+		}
+
 		dnsEndpoint.Status.ObservedGeneration = dnsEndpoint.Generation
 		// Update the ObservedGeneration
 		_, err = cs.UpdateStatus(&dnsEndpoint)
