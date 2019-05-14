@@ -33,7 +33,14 @@ spec:
                   labels:
                     type: object
                   providerSpecific:
-                    type: object
+                    items:
+                      properties:
+                        name: 
+                          type: string
+                        value:
+                          type: string
+                      type: object
+                    type: array
                   recordTTL:
                     format: int64
                     type: integer

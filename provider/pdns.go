@@ -30,11 +30,12 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"crypto/tls"
+	"net"
+
 	pgo "github.com/ffledgling/pdns-go"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/pkg/tlsutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
-	"net"
 )
 
 type pdnsChangeType string
@@ -175,7 +176,7 @@ func (c *PDNSAPIClient) PartitionZones(zones []pgo.Zone) (filteredZones []pgo.Zo
 			}
 		}
 	} else {
-		residualZones = zones
+		filteredZones = zones
 	}
 	return filteredZones, residualZones
 }
@@ -442,7 +443,7 @@ func (p *PDNSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 
 // ApplyChanges takes a list of changes (endpoints) and updates the PDNS server
 // by sending the correct HTTP PATCH requests to a matching zone
-func (p *PDNSProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 
 	startTime := time.Now()
 

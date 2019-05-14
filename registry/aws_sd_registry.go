@@ -17,6 +17,7 @@ limitations under the License.
 package registry
 
 import (
+	"context"
 	"errors"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -64,7 +65,7 @@ func (sdr *AWSSDRegistry) Records() ([]*endpoint.Endpoint, error) {
 
 // ApplyChanges filters out records not owned the External-DNS, additionally it adds the required label
 // inserted in the AWS SD instance as a CreateID field
-func (sdr *AWSSDRegistry) ApplyChanges(changes *plan.Changes) error {
+func (sdr *AWSSDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
 		UpdateNew: filterOwnedRecords(sdr.ownerID, changes.UpdateNew),
@@ -77,7 +78,7 @@ func (sdr *AWSSDRegistry) ApplyChanges(changes *plan.Changes) error {
 	sdr.updateLabels(filteredChanges.UpdateOld)
 	sdr.updateLabels(filteredChanges.Delete)
 
-	return sdr.provider.ApplyChanges(filteredChanges)
+	return sdr.provider.ApplyChanges(ctx, filteredChanges)
 }
 
 func (sdr *AWSSDRegistry) updateLabels(endpoints []*endpoint.Endpoint) {

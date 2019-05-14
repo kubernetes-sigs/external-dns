@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -227,7 +228,7 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("domain2.local", endpoint.RecordTypeCNAME, "site.local"),
 		},
 	}
-	coredns.ApplyChanges(changes1)
+	coredns.ApplyChanges(context.Background(), changes1)
 
 	expectedServices1 := map[string]*Service{
 		"/skydns/local/domain1": {Host: "5.5.5.5", Text: "string1"},
@@ -285,7 +286,7 @@ func applyServiceChanges(provider coreDNSProvider, changes *plan.Changes) {
 			}
 		}
 	}
-	provider.ApplyChanges(changes)
+	provider.ApplyChanges(context.Background(), changes)
 }
 
 func validateServices(services, expectedServices map[string]*Service, t *testing.T, step int) {

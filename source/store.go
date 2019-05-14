@@ -25,6 +25,7 @@ import (
 
 	"sync"
 
+	cfclient "github.com/cloudfoundry-community/go-cfclient"
 	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
 	istiocrd "istio.io/istio/pilot/pkg/config/kube/crd"
@@ -38,26 +39,31 @@ var ErrSourceNotFound = errors.New("source not found")
 
 // Config holds shared configuration options for all Sources.
 type Config struct {
-	Namespace                string
-	AnnotationFilter         string
-	FQDNTemplate             string
-	CombineFQDNAndAnnotation bool
-	Compatibility            string
-	PublishInternal          bool
-	PublishHostIP            bool
-	ConnectorServer          string
-	CRDSourceAPIVersion      string
-	CRDSourceKind            string
-	KubeConfig               string
-	KubeMaster               string
-	ServiceTypeFilter        []string
-	IstioIngressGateway      string
+	Namespace                   string
+	AnnotationFilter            string
+	FQDNTemplate                string
+	CombineFQDNAndAnnotation    bool
+	IgnoreHostnameAnnotation    bool
+	Compatibility               string
+	PublishInternal             bool
+	PublishHostIP               bool
+	ConnectorServer             string
+	CRDSourceAPIVersion         string
+	CRDSourceKind               string
+	KubeConfig                  string
+	KubeMaster                  string
+	ServiceTypeFilter           []string
+	IstioIngressGatewayServices []string
+	CFAPIEndpoint               string
+	CFUsername                  string
+	CFPassword                  string
 }
 
 // ClientGenerator provides clients
 type ClientGenerator interface {
 	KubeClient() (kubernetes.Interface, error)
 	IstioClient() (istiomodel.ConfigStore, error)
+	CloudFoundryClient(cfAPPEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error)
 }
 
 // SingletonClientGenerator stores provider clients and guarantees that only one instance of client
@@ -68,8 +74,10 @@ type SingletonClientGenerator struct {
 	RequestTimeout time.Duration
 	kubeClient     kubernetes.Interface
 	istioClient    istiomodel.ConfigStore
+	cfClient       *cfclient.Client
 	kubeOnce       sync.Once
 	istioOnce      sync.Once
+	cfOnce         sync.Once
 }
 
 // KubeClient generates a kube client if it was not created before
@@ -88,6 +96,30 @@ func (p *SingletonClientGenerator) IstioClient() (istiomodel.ConfigStore, error)
 		p.istioClient, err = NewIstioClient(p.KubeConfig)
 	})
 	return p.istioClient, err
+}
+
+// CloudFoundryClient generates a cf client if it was not created before
+func (p *SingletonClientGenerator) CloudFoundryClient(cfAPIEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error) {
+	var err error
+	p.cfOnce.Do(func() {
+		p.cfClient, err = NewCFClient(cfAPIEndpoint, cfUsername, cfPassword)
+	})
+	return p.cfClient, err
+}
+
+// NewCFClient return a new CF client object.
+func NewCFClient(cfAPIEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error) {
+	c := &cfclient.Config{
+		ApiAddress: "https://" + cfAPIEndpoint,
+		Username:   cfUsername,
+		Password:   cfPassword,
+	}
+	client, err := cfclient.NewClient(c)
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }
 
 // ByNames returns multiple Sources given multiple names.
@@ -112,13 +144,13 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewServiceSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.ServiceTypeFilter)
+		return NewServiceSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation)
 	case "ingress":
 		client, err := p.KubeClient()
 		if err != nil {
 			return nil, err
 		}
-		return NewIngressSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation)
+		return NewIngressSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
 	case "istio-gateway":
 		kubernetesClient, err := p.KubeClient()
 		if err != nil {
@@ -128,7 +160,13 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewIstioGatewaySource(kubernetesClient, istioClient, cfg.IstioIngressGateway, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation)
+		return NewIstioGatewaySource(kubernetesClient, istioClient, cfg.IstioIngressGatewayServices, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+	case "cloudfoundry":
+		cfClient, err := p.CloudFoundryClient(cfg.CFAPIEndpoint, cfg.CFUsername, cfg.CFPassword)
+		if err != nil {
+			return nil, err
+		}
+		return NewCloudFoundrySource(cfClient)
 	case "fake":
 		return NewFakeSource(cfg.FQDNTemplate)
 	case "connector":

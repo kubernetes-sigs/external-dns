@@ -17,7 +17,9 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -42,7 +44,7 @@ func (p *mockProvider) Records() ([]*endpoint.Endpoint, error) {
 }
 
 // ApplyChanges validates that the passed in changes satisfy the assumtions.
-func (p *mockProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *mockProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	if len(changes.Create) != len(p.ExpectChanges.Create) {
 		return errors.New("number of created records is wrong")
 	}
@@ -71,6 +73,9 @@ func (p *mockProvider) ApplyChanges(changes *plan.Changes) error {
 		}
 	}
 
+	if !reflect.DeepEqual(ctx.Value(provider.RecordsContextKey), p.RecordsStore) {
+		return errors.New("context is wrong")
+	}
 	return nil
 }
 

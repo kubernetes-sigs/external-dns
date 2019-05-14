@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	goctx "context"
 	"fmt"
 	"os"
 	"strings"
@@ -261,7 +262,7 @@ func (p *DigitalOceanProvider) submitChanges(changes []*DigitalOceanChange) erro
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *DigitalOceanProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *DigitalOceanProvider) ApplyChanges(ctx goctx.Context, changes *plan.Changes) error {
 	combinedChanges := make([]*DigitalOceanChange, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 
 	combinedChanges = append(combinedChanges, newDigitalOceanChanges(DigitalOceanCreate, changes.Create)...)

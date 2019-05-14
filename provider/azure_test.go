@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/arm/dns"
@@ -57,47 +58,52 @@ func (client *mockZonesClient) ListByResourceGroupNextResults(lastResults dns.Zo
 	return dns.ZoneListResult{}, nil
 }
 
-func aRecordSetPropertiesGetter(value string, ttl int64) *dns.RecordSetProperties {
+func aRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
+	aRecords := make([]dns.ARecord, len(values))
+	for i, value := range values {
+		aRecords[i] = dns.ARecord{
+			Ipv4Address: to.StringPtr(value),
+		}
+	}
 	return &dns.RecordSetProperties{
-		TTL: to.Int64Ptr(ttl),
-		ARecords: &[]dns.ARecord{
-			{
-				Ipv4Address: to.StringPtr(value),
-			},
-		},
+		TTL:      to.Int64Ptr(ttl),
+		ARecords: &aRecords,
 	}
 }
 
-func cNameRecordSetPropertiesGetter(value string, ttl int64) *dns.RecordSetProperties {
+func cNameRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
 	return &dns.RecordSetProperties{
 		TTL: to.Int64Ptr(ttl),
 		CnameRecord: &dns.CnameRecord{
-			Cname: to.StringPtr(value),
+			Cname: to.StringPtr(values[0]),
 		},
 	}
 }
 
-func txtRecordSetPropertiesGetter(value string, ttl int64) *dns.RecordSetProperties {
+func txtRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
 	return &dns.RecordSetProperties{
 		TTL: to.Int64Ptr(ttl),
 		TxtRecords: &[]dns.TxtRecord{
 			{
-				Value: &[]string{value},
+				Value: &[]string{values[0]},
 			},
 		},
 	}
 }
 
-func othersRecordSetPropertiesGetter(value string, ttl int64) *dns.RecordSetProperties {
+func othersRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
 	return &dns.RecordSetProperties{
 		TTL: to.Int64Ptr(ttl),
 	}
 }
-func createMockRecordSet(name, recordType, value string) dns.RecordSet {
-	return createMockRecordSetWithTTL(name, recordType, value, 0)
+func createMockRecordSet(name, recordType string, values ...string) dns.RecordSet {
+	return createMockRecordSetMultiWithTTL(name, recordType, 0, values...)
 }
 func createMockRecordSetWithTTL(name, recordType, value string, ttl int64) dns.RecordSet {
-	var getterFunc func(value string, ttl int64) *dns.RecordSetProperties
+	return createMockRecordSetMultiWithTTL(name, recordType, ttl, value)
+}
+func createMockRecordSetMultiWithTTL(name, recordType string, ttl int64, values ...string) dns.RecordSet {
+	var getterFunc func(values []string, ttl int64) *dns.RecordSetProperties
 
 	switch recordType {
 	case endpoint.RecordTypeA:
@@ -112,7 +118,7 @@ func createMockRecordSetWithTTL(name, recordType, value string, ttl int64) dns.R
 	return dns.RecordSet{
 		Name:                to.StringPtr(name),
 		Type:                to.StringPtr("Microsoft.Network/dnszones/" + recordType),
-		RecordSetProperties: getterFunc(value, ttl),
+		RecordSetProperties: getterFunc(values, ttl),
 	}
 
 }
@@ -148,7 +154,7 @@ func (client *mockRecordsClient) CreateOrUpdate(resourceGroupName string, zoneNa
 			formatAzureDNSName(relativeRecordSetName, zoneName),
 			string(recordType),
 			ttl,
-			extractAzureTarget(&parameters),
+			extractAzureTargets(&parameters)...,
 		),
 	)
 	return parameters, nil
@@ -209,6 +215,46 @@ func TestAzureRecord(t *testing.T) {
 
 }
 
+func TestAzureMultiRecord(t *testing.T) {
+	zonesClient := mockZonesClient{
+		mockZoneListResult: &dns.ZoneListResult{
+			Value: &[]dns.Zone{
+				createMockZone("example.com", "/dnszones/example.com"),
+			},
+		},
+	}
+
+	recordsClient := mockRecordsClient{
+		mockRecordSet: &[]dns.RecordSet{
+			createMockRecordSet("@", "NS", "ns1-03.azure-dns.com."),
+			createMockRecordSet("@", "SOA", "Email: azuredns-hostmaster.microsoft.com"),
+			createMockRecordSet("@", endpoint.RecordTypeA, "123.123.123.122", "234.234.234.233"),
+			createMockRecordSet("@", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
+			createMockRecordSetMultiWithTTL("nginx", endpoint.RecordTypeA, 3600, "123.123.123.123", "234.234.234.234"),
+			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
+			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
+		},
+	}
+
+	provider := newAzureProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s", &zonesClient, &recordsClient)
+
+	actual, err := provider.Records()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "123.123.123.122", "234.234.234.233"),
+		endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
+		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123", "234.234.234.234"),
+		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeTXT, recordTTL, "heritage=external-dns,external-dns/owner=default"),
+		endpoint.NewEndpointWithTTL("hack.example.com", endpoint.RecordTypeCNAME, 10, "hack.azurewebsites.net"),
+	}
+
+	validateAzureEndpoints(t, actual, expected)
+
+}
+
 func TestAzureApplyChanges(t *testing.T) {
 	recordsClient := mockRecordsClient{}
 
@@ -224,7 +270,7 @@ func TestAzureApplyChanges(t *testing.T) {
 	validateAzureEndpoints(t, recordsClient.updatedEndpoints, []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
-		endpoint.NewEndpointWithTTL("foo.example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
+		endpoint.NewEndpointWithTTL("foo.example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4", "1.2.3.5"),
 		endpoint.NewEndpointWithTTL("foo.example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
 		endpoint.NewEndpointWithTTL("bar.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "other.com"),
 		endpoint.NewEndpointWithTTL("bar.example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
@@ -265,7 +311,7 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordsClie
 	createRecords := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
 		endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "tag"),
-		endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.5", "1.2.3.4"),
 		endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeTXT, "tag"),
 		endpoint.NewEndpoint("bar.example.com", endpoint.RecordTypeCNAME, "other.com"),
 		endpoint.NewEndpoint("bar.example.com", endpoint.RecordTypeTXT, "tag"),
@@ -299,7 +345,7 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordsClie
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges(changes); err != nil {
+	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
 		t.Fatal(err)
 	}
 }

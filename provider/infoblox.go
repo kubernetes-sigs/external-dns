@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -39,6 +40,7 @@ type InfobloxConfig struct {
 	Version      string
 	SSLVerify    bool
 	DryRun       bool
+	View         string
 }
 
 // InfobloxProvider implements the DNS provider for Infoblox.
@@ -46,6 +48,7 @@ type InfobloxProvider struct {
 	client       ibclient.IBConnector
 	domainFilter DomainFilter
 	zoneIDFilter ZoneIDFilter
+	view         string
 	dryRun       bool
 }
 
@@ -87,6 +90,7 @@ func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, erro
 		domainFilter: infobloxConfig.DomainFilter,
 		zoneIDFilter: infobloxConfig.ZoneIDFilter,
 		dryRun:       infobloxConfig.DryRun,
+		view:         infobloxConfig.View,
 	}
 
 	return provider, nil
@@ -105,6 +109,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 		objA := ibclient.NewRecordA(
 			ibclient.RecordA{
 				Zone: zone.Fqdn,
+				View: p.view,
 			},
 		)
 		err = p.client.GetObject(objA, "", &resA)
@@ -120,6 +125,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 		objH := ibclient.NewHostRecord(
 			ibclient.HostRecord{
 				Zone: zone.Fqdn,
+				View: p.view,
 			},
 		)
 		err = p.client.GetObject(objH, "", &resH)
@@ -136,6 +142,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 		objC := ibclient.NewRecordCNAME(
 			ibclient.RecordCNAME{
 				Zone: zone.Fqdn,
+				View: p.view,
 			},
 		)
 		err = p.client.GetObject(objC, "", &resC)
@@ -150,6 +157,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 		objT := ibclient.NewRecordTXT(
 			ibclient.RecordTXT{
 				Zone: zone.Fqdn,
+				View: p.view,
 			},
 		)
 		err = p.client.GetObject(objT, "", &resT)
@@ -170,7 +178,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 }
 
 // ApplyChanges applies the given changes.
-func (p *InfobloxProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *InfobloxProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	zones, err := p.zones()
 	if err != nil {
 		return err
@@ -215,7 +223,7 @@ func (p *InfobloxProvider) mapChanges(zones []ibclient.ZoneAuth, changes *plan.C
 	mapChange := func(changeMap infobloxChangeMap, change *endpoint.Endpoint) {
 		zone := p.findZone(zones, change.DNSName)
 		if zone == nil {
-			logrus.Infof("Ignoring changes to '%s' because a suitable Infoblox DNS zone was not found.", change.DNSName)
+			logrus.Debugf("Ignoring changes to '%s' because a suitable Infoblox DNS zone was not found.", change.DNSName)
 			return
 		}
 		// Ensure the record type is suitable
@@ -261,6 +269,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (rec
 			ibclient.RecordA{
 				Name:     ep.DNSName,
 				Ipv4Addr: ep.Targets[0],
+				View:     p.view,
 			},
 		)
 		if getObject {
@@ -279,6 +288,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (rec
 			ibclient.RecordCNAME{
 				Name:      ep.DNSName,
 				Canonical: ep.Targets[0],
+				View:      p.view,
 			},
 		)
 		if getObject {
@@ -302,6 +312,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (rec
 			ibclient.RecordTXT{
 				Name: ep.DNSName,
 				Text: ep.Targets[0],
+				View: p.view,
 			},
 		)
 		if getObject {

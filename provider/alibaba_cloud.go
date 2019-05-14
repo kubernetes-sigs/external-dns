@@ -17,24 +17,21 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
-
-	log "github.com/sirupsen/logrus"
-
-	"gopkg.in/yaml.v2"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
-
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
-	"github.com/denverdino/aliyungo/metadata"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
+	"github.com/denverdino/aliyungo/metadata"
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/plan"
+	log "github.com/sirupsen/logrus"
+	yaml "gopkg.in/yaml.v2"
 )
 
 const (
@@ -42,6 +39,7 @@ const (
 	defaultAlibabaCloudPrivateZoneRecordTTL = 60
 	defaultAlibabaCloudPageSize             = 50
 	nullHostAlibabaCloud                    = "@"
+	pVTZDoamin                              = "pvtz.aliyuncs.com"
 )
 
 // AlibabaCloudDNSAPI is a minimal implementation of DNS API that we actually use, used primarily for unit testing.
@@ -152,6 +150,10 @@ func NewAlibabaCloudProvider(configFile string, domainFilter DomainFilter, zoneI
 			cfg.AccessKeySecret,
 			cfg.StsToken,
 		)
+	}
+
+	if err != nil {
+		return nil, err
 	}
 
 	provider := &AlibabaCloudProvider{
@@ -290,7 +292,7 @@ func (p *AlibabaCloudProvider) Records() (endpoints []*endpoint.Endpoint, err er
 // ApplyChanges applies the given changes.
 //
 // Returns nil if the operation was successful or an error if the operation failed.
-func (p *AlibabaCloudProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *AlibabaCloudProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	if changes == nil || len(changes.Create)+len(changes.Delete)+len(changes.UpdateNew) == 0 {
 		// No op
 		return nil
@@ -708,6 +710,7 @@ func (p *AlibabaCloudProvider) splitDNSName(endpoint *endpoint.Endpoint) (rr str
 func (p *AlibabaCloudProvider) matchVPC(zoneID string) bool {
 	request := pvtz.CreateDescribeZoneInfoRequest()
 	request.ZoneId = zoneID
+	request.Domain = pVTZDoamin
 	response, err := p.getPvtzClient().DescribeZoneInfo(request)
 	if err != nil {
 		log.Errorf("Failed to describe zone info %s in Alibaba Cloud DNS: %v", zoneID, err)
@@ -730,7 +733,7 @@ func (p *AlibabaCloudProvider) privateZones() ([]pvtz.Zone, error) {
 	request := pvtz.CreateDescribeZonesRequest()
 	request.PageSize = requests.NewInteger(defaultAlibabaCloudPageSize)
 	request.PageNumber = "1"
-
+	request.Domain = pVTZDoamin
 	for {
 		response, err := p.getPvtzClient().DescribeZones(request)
 		if err != nil {
@@ -738,7 +741,7 @@ func (p *AlibabaCloudProvider) privateZones() ([]pvtz.Zone, error) {
 			return nil, err
 		}
 		for _, zone := range response.Zones.Zone {
-			log.Debugf("Zone: %++v", zone)
+			log.Infof("PrivateZones zone: %++v", zone)
 
 			if !p.zoneIDFilter.Match(zone.ZoneId) {
 				continue
@@ -784,6 +787,7 @@ func (p *AlibabaCloudProvider) getPrivateZones() (map[string]*alibabaPrivateZone
 		request.ZoneId = zone.ZoneId
 		request.PageSize = requests.NewInteger(defaultAlibabaCloudPageSize)
 		request.PageNumber = "1"
+		request.Domain = pVTZDoamin
 		var records []pvtz.Record
 
 		for {
@@ -884,6 +888,7 @@ func (p *AlibabaCloudProvider) createPrivateZoneRecord(zones map[string]*alibaba
 	request.ZoneId = zone.ZoneId
 	request.Type = endpoint.RecordType
 	request.Rr = rr
+	request.Domain = pVTZDoamin
 
 	ttl := int(endpoint.RecordTTL)
 	if ttl != 0 {
@@ -927,6 +932,7 @@ func (p *AlibabaCloudProvider) deletePrivateZoneRecord(recordID int) error {
 
 	request := pvtz.CreateDeleteZoneRecordRequest()
 	request.RecordId = requests.NewInteger(recordID)
+	request.Domain = pVTZDoamin
 
 	response, err := p.getPvtzClient().DeleteZoneRecord(request)
 	if err == nil {
@@ -998,6 +1004,7 @@ func (p *AlibabaCloudProvider) updatePrivateZoneRecord(record pvtz.Record, endpo
 	request.Rr = record.Rr
 	request.Type = record.Type
 	request.Value = record.Value
+	request.Domain = pVTZDoamin
 	ttl := int(endpoint.RecordTTL)
 	if ttl != 0 {
 		request.Ttl = requests.NewInteger(ttl)

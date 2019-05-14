@@ -17,12 +17,14 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/kubernetes-incubator/external-dns/provider"
 	"github.com/kubernetes-incubator/external-dns/registry"
 	"github.com/kubernetes-incubator/external-dns/source"
 )
@@ -44,11 +46,29 @@ var (
 			Help:      "Number of Source errors.",
 		},
 	)
+	sourceEndpointsTotal = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "source",
+			Name:      "endpoints_total",
+			Help:      "Number of Endpoints in all sources",
+		},
+	)
+	registryEndpointsTotal = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "registry",
+			Name:      "endpoints_total",
+			Help:      "Number of Endpoints in the registry",
+		},
+	)
 )
 
 func init() {
 	prometheus.MustRegister(registryErrorsTotal)
 	prometheus.MustRegister(sourceErrorsTotal)
+	prometheus.MustRegister(sourceEndpointsTotal)
+	prometheus.MustRegister(registryEndpointsTotal)
 }
 
 // Controller is responsible for orchestrating the different components.
@@ -73,12 +93,16 @@ func (c *Controller) RunOnce() error {
 		registryErrorsTotal.Inc()
 		return err
 	}
+	registryEndpointsTotal.Set(float64(len(records)))
+
+	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, records)
 
 	endpoints, err := c.Source.Endpoints()
 	if err != nil {
 		sourceErrorsTotal.Inc()
 		return err
 	}
+	sourceEndpointsTotal.Set(float64(len(endpoints)))
 
 	plan := &plan.Plan{
 		Policies: []plan.Policy{c.Policy},
@@ -88,7 +112,7 @@ func (c *Controller) RunOnce() error {
 
 	plan = plan.Calculate()
 
-	err = c.Registry.ApplyChanges(plan.Changes)
+	err = c.Registry.ApplyChanges(ctx, plan.Changes)
 	if err != nil {
 		registryErrorsTotal.Inc()
 		return err
