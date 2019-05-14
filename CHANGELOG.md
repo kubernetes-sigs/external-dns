@@ -1,6 +1,16 @@
-## v0.5.14 - 2019-04-23
+## v0.5.14 - 2019-05-14
 
+  - Docs: Update aws.md (#1009) @pawelprazak 
+  - New provider TransIP (#1007) @skoef
+  - Docs: Add docker image faq (#1006) @Raffo 
+  - DNSimple: Support apex records (#1004) @jbowes
+  - NS1: Add --ns1-endpoint and --ns1-ignoressl flags (#1002) @mburtless
+  - AWS: Cache the endpoints on the controller loop (#1001) @fraenkel 
   - Core: Supress Kubernetes logs (#991) @njuettner
+  - Core: distroless/static image (#989) @jharshman
+  - Core: Headless service missing DNS entry (#984) @yverbin 
+  - New provider NS1 (#963) @mburtless 
+  - Core: Add Cloud Foundry routes as a source (#955) @dgrizzanti 
 
 ## v0.5.13 - 2019-04-18
 
