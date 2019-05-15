@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # builder image
-FROM golang as builder
+FROM golang:1.12.4 as builder
 
 WORKDIR /github.com/kubernetes-incubator/external-dns
 COPY . .
