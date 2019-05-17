@@ -252,6 +252,20 @@ Yes, give it the correct cross-account/assume-role permissions and use the `--aw
 
 Separate them by `,`.
 
+### How do I expose only IPs of certain nodes?
+
+Using the annotation (on ingresses/services) `external-dns.alpha.kubernetes.io/node-label-filter` you can expose 
+IPs of only nodes having the desired labels.
+
+```
+external-dns.alpha.kubernetes.io/node-label-filter: workload=testing
+```
+
+One possible use case is when you want to expose NodePort services bound to pods running only in a restricted nodes
+group and you have Cluster Autoscaler enabled. Without filtering the nodes with this annotation, connections will
+pass through other nodes, which may get deleted by the autoscaler. With the annotation, you can choose to expose 
+only nodes which are not going to be deleted by the autoscaler, therefore you can prevent connections to such services
+from being abruptly terminated by dying nodes.
 
 ### Are there official Docker images provided?
 
