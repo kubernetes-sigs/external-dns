@@ -279,7 +279,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("infoblox-wapi-version", "When using the Infoblox provider, specify the WAPI version (default: 2.3.1)").Default(defaultConfig.InfobloxWapiVersion).StringVar(&cfg.InfobloxWapiVersion)
 	app.Flag("infoblox-ssl-verify", "When using the Infoblox provider, specify whether to verify the SSL certificate (default: true, disable with --no-infoblox-ssl-verify)").Default(strconv.FormatBool(defaultConfig.InfobloxSSLVerify)).BoolVar(&cfg.InfobloxSSLVerify)
 	app.Flag("infoblox-view", "DNS view (default: \"\")").Default(defaultConfig.InfobloxView).StringVar(&cfg.InfobloxView)
-	app.Flag("infoblox-max-results", "Add _max_results as query parameter to the url on all api requests. the default is 0 which means _max_results is not set and the default of the server is used.").Default(strconv.Itoa(defaultConfig.InfobloxMaxResults)).IntVar(&cfg.InfobloxMaxResults)
+	app.Flag("infoblox-max-results", "Add _max_results as query parameter to the URL on all API requests. The default is 0 which means _max_results is not set and the default of the server is used.").Default(strconv.Itoa(defaultConfig.InfobloxMaxResults)).IntVar(&cfg.InfobloxMaxResults)
 	app.Flag("dyn-customer-name", "When using the Dyn provider, specify the Customer Name").Default("").StringVar(&cfg.DynCustomerName)
 	app.Flag("dyn-username", "When using the Dyn provider, specify the Username").Default("").StringVar(&cfg.DynUsername)
 	app.Flag("dyn-password", "When using the Dyn provider, specify the pasword").Default("").StringVar(&cfg.DynPassword)
