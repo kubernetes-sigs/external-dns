@@ -45,6 +45,7 @@ Currently, the following providers are supported:
 - Oracle Cloud Infrastructure DNS
 - Linode DNS
 - RFC2136
+- TransIP
 
 As stated in the README, we are currently looking for stable maintainers for those providers, to ensure that bugfixes and new features will be available for all of those.
 
@@ -251,3 +252,18 @@ Yes, give it the correct cross-account/assume-role permissions and use the `--aw
 ### How do I provide multiple values to the annotation `external-dns.alpha.kubernetes.io/hostname`?
 
 Separate them by `,`.
+
+
+### Are there official Docker images provided?
+
+When we tag a new release, we push a Docker image on Zalando's public Docker registry with the following name: 
+
+```
+registry.opensource.zalan.do/teapot/external-dns
+```
+
+As tags, you can use your version of choice or use `latest` that always resolves to the latest tag.
+
+If you wish to build your own image, you can use the provided [Dockerfile](../Dockerfile) as a starting point.
+
+We are currently working with the Kubernetes community to provide official images for the project similarly to what is done with the other official Kubernetes projects, but we don't have an ETA on when those images will be available.

@@ -23,6 +23,8 @@ import (
 	"strings"
 	"text/template"
 
+	"time"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/extensions/v1beta1"
@@ -33,7 +35,6 @@ import (
 	extinformers "k8s.io/client-go/informers/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"time"
 )
 
 // ingressSource is an implementation of Source for Kubernetes ingress objects.

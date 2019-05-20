@@ -17,11 +17,13 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"strings"
 
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/request"
@@ -192,7 +194,7 @@ func (p *AWSSDProvider) instancesToEndpoint(ns *sd.NamespaceSummary, srv *sd.Ser
 }
 
 // ApplyChanges applies Kubernetes changes in endpoints to AWS API
-func (p *AWSSDProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *AWSSDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	// return early if there is nothing to change
 	if len(changes.Create) == 0 && len(changes.Delete) == 0 && len(changes.UpdateNew) == 0 {
 		log.Info("All records are already up to date")

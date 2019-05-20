@@ -65,7 +65,7 @@ In this case it's the ones shown above but your's will differ.
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
-Then apply one of the following manifests file to deploy ExternalDNS.
+Then apply one of the following manifests file to deploy ExternalDNS. You can check if your cluster has RBAC by `kubectl api-versions | grep rbac.authorization.k8s.io`.
 
 ### Manifest (for clusters without RBAC enabled)
 ```yaml
@@ -119,7 +119,7 @@ rules:
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
-  verbs: ["list"]
+  verbs: ["list","watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
@@ -216,7 +216,7 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com.
+    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
 spec:
   type: LoadBalancer
   ports:
@@ -312,7 +312,7 @@ kind: Service
 metadata:
   name: nginx
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com.
+    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
     external-dns.alpha.kubernetes.io/ttl: 60
 spec:
     ...

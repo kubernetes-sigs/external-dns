@@ -17,14 +17,16 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
+	"net/url"
+	"os"
+	"strings"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	rc0 "github.com/nic-at/rc0go"
 	log "github.com/sirupsen/logrus"
-	"net/url"
-	"os"
-	"strings"
 )
 
 // RcodeZeroProvider implements the DNS provider for RcodeZero Anycast DNS.
@@ -50,7 +52,7 @@ func NewRcodeZeroProvider(domainFilter DomainFilter, dryRun bool, txtEnc bool) (
 
 	value := os.Getenv("RC0_BASE_URL")
 	if len(value) != 0 {
-		client.BaseURL, _ = url.Parse(os.Getenv("RC0_BASE_URL"))
+		client.BaseURL, err = url.Parse(os.Getenv("RC0_BASE_URL"))
 	}
 
 	if err != nil {
@@ -140,7 +142,7 @@ func (p *RcodeZeroProvider) Records() ([]*endpoint.Endpoint, error) {
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *RcodeZeroProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *RcodeZeroProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 
 	combinedChanges := make([]*rc0.RRSetChange, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 

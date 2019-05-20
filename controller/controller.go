@@ -17,12 +17,14 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/kubernetes-incubator/external-dns/provider"
 	"github.com/kubernetes-incubator/external-dns/registry"
 	"github.com/kubernetes-incubator/external-dns/source"
 )
@@ -89,6 +91,8 @@ func (c *Controller) RunOnce() error {
 	}
 	registryEndpointsTotal.Set(float64(len(records)))
 
+	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, records)
+
 	endpoints, err := c.Source.Endpoints()
 	if err != nil {
 		sourceErrors.Inc()
@@ -104,7 +108,7 @@ func (c *Controller) RunOnce() error {
 
 	plan = plan.Calculate()
 
-	err = c.Registry.ApplyChanges(plan.Changes)
+	err = c.Registry.ApplyChanges(ctx, plan.Changes)
 	if err != nil {
 		registryErrors.Inc()
 		return err

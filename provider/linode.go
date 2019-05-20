@@ -263,7 +263,7 @@ func getPriority() *int {
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *LinodeProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	recordsByZoneID := make(map[string][]*linodego.DomainRecord)
 
 	zones, err := p.fetchZones()

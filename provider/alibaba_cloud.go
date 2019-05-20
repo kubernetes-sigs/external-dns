@@ -17,24 +17,21 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
-
-	log "github.com/sirupsen/logrus"
-
-	"gopkg.in/yaml.v2"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
-
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
-	"github.com/denverdino/aliyungo/metadata"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
+	"github.com/denverdino/aliyungo/metadata"
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-incubator/external-dns/plan"
+	log "github.com/sirupsen/logrus"
+	yaml "gopkg.in/yaml.v2"
 )
 
 const (
@@ -153,6 +150,10 @@ func NewAlibabaCloudProvider(configFile string, domainFilter DomainFilter, zoneI
 			cfg.AccessKeySecret,
 			cfg.StsToken,
 		)
+	}
+
+	if err != nil {
+		return nil, err
 	}
 
 	provider := &AlibabaCloudProvider{
@@ -291,7 +292,7 @@ func (p *AlibabaCloudProvider) Records() (endpoints []*endpoint.Endpoint, err er
 // ApplyChanges applies the given changes.
 //
 // Returns nil if the operation was successful or an error if the operation failed.
-func (p *AlibabaCloudProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *AlibabaCloudProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	if changes == nil || len(changes.Create)+len(changes.Delete)+len(changes.UpdateNew) == 0 {
 		// No op
 		return nil

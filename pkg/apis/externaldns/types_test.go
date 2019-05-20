@@ -60,6 +60,7 @@ var (
 		InfobloxWapiVersion:         "2.3.1",
 		InfobloxView:                "",
 		InfobloxSSLVerify:           true,
+		InfobloxMaxResults:          0,
 		OCIConfigFile:               "/etc/kubernetes/oci.yaml",
 		InMemoryZones:               []string{""},
 		PDNSServer:                  "http://localhost:8081",
@@ -82,6 +83,8 @@ var (
 		CRDSourceAPIVersion:         "externaldns.k8s.io/v1alpha1",
 		CRDSourceKind:               "DNSEndpoint",
 		RcodezeroTXTEncrypt:         false,
+		TransIPAccountName:          "",
+		TransIPPrivateKeyFile:       "",
 	}
 
 	overriddenConfig = &Config{
@@ -117,6 +120,7 @@ var (
 		InfobloxWapiVersion:         "2.6.1",
 		InfobloxView:                "internal",
 		InfobloxSSLVerify:           false,
+		InfobloxMaxResults:          2000,
 		OCIConfigFile:               "oci.yaml",
 		InMemoryZones:               []string{"example.org", "company.com"},
 		PDNSServer:                  "http://ns.example.com:8081",
@@ -143,6 +147,10 @@ var (
 		CRDSourceAPIVersion:         "test.k8s.io/v1alpha1",
 		CRDSourceKind:               "Endpoint",
 		RcodezeroTXTEncrypt:         true,
+		NS1Endpoint:                 "https://api.example.com/v1",
+		NS1IgnoreSSL:                true,
+		TransIPAccountName:          "transip",
+		TransIPPrivateKeyFile:       "/path/to/transip.key",
 	}
 
 	// minimal config with istio gateway source and multiple ingressgateway load balancer services
@@ -245,6 +253,7 @@ func TestParseFlags(t *testing.T) {
 				"--infoblox-wapi-password=infoblox",
 				"--infoblox-wapi-version=2.6.1",
 				"--infoblox-view=internal",
+				"--infoblox-max-results=2000",
 				"--inmemory-zone=example.org",
 				"--inmemory-zone=company.com",
 				"--pdns-server=http://ns.example.com:8081",
@@ -284,6 +293,10 @@ func TestParseFlags(t *testing.T) {
 				"--crd-source-apiversion=test.k8s.io/v1alpha1",
 				"--crd-source-kind=Endpoint",
 				"--rcodezero-txt-encrypt",
+				"--ns1-endpoint=https://api.example.com/v1",
+				"--ns1-ignoressl",
+				"--transip-account=transip",
+				"--transip-keyfile=/path/to/transip.key",
 			},
 			envVars:  map[string]string{},
 			expected: overriddenConfig,
@@ -314,6 +327,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_INFOBLOX_WAPI_VERSION":      "2.6.1",
 				"EXTERNAL_DNS_INFOBLOX_VIEW":              "internal",
 				"EXTERNAL_DNS_INFOBLOX_SSL_VERIFY":        "0",
+				"EXTERNAL_DNS_INFOBLOX_MAX_RESULTS":       "2000",
 				"EXTERNAL_DNS_OCI_CONFIG_FILE":            "oci.yaml",
 				"EXTERNAL_DNS_INMEMORY_ZONE":              "example.org\ncompany.com",
 				"EXTERNAL_DNS_DOMAIN_FILTER":              "example.org\ncompany.com",
@@ -349,6 +363,10 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_CRD_SOURCE_APIVERSION":      "test.k8s.io/v1alpha1",
 				"EXTERNAL_DNS_CRD_SOURCE_KIND":            "Endpoint",
 				"EXTERNAL_DNS_RCODEZERO_TXT_ENCRYPT":      "1",
+				"EXTERNAL_DNS_NS1_ENDPOINT":               "https://api.example.com/v1",
+				"EXTERNAL_DNS_NS1_IGNORESSL":              "1",
+				"EXTERNAL_DNS_TRANSIP_ACCOUNT":            "transip",
+				"EXTERNAL_DNS_TRANSIP_KEYFILE":            "/path/to/transip.key",
 			},
 			expected: overriddenConfig,
 		},
@@ -409,6 +427,7 @@ func TestPasswordsNotLogged(t *testing.T) {
 		DynPassword:          "dyn-pass",
 		InfobloxWapiPassword: "infoblox-pass",
 		PDNSAPIKey:           "pdns-api-key",
+		RFC2136TSIGSecret:    "tsig-secret",
 	}
 
 	s := cfg.String()
@@ -416,4 +435,5 @@ func TestPasswordsNotLogged(t *testing.T) {
 	assert.False(t, strings.Contains(s, "dyn-pass"))
 	assert.False(t, strings.Contains(s, "infoblox-pass"))
 	assert.False(t, strings.Contains(s, "pdns-api-key"))
+	assert.False(t, strings.Contains(s, "tsig-secret"))
 }

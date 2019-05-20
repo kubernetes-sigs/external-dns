@@ -17,10 +17,11 @@ limitations under the License.
 package source
 
 import (
-	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
 )
 
 // test helper functions

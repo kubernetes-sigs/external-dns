@@ -18,6 +18,7 @@ package externaldns
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -71,18 +72,19 @@ type Config struct {
 	InfobloxGridHost            string
 	InfobloxWapiPort            int
 	InfobloxWapiUsername        string
-	InfobloxWapiPassword        string
+	InfobloxWapiPassword        string `secure:"yes"`
 	InfobloxWapiVersion         string
 	InfobloxSSLVerify           bool
 	InfobloxView                string
+	InfobloxMaxResults          int
 	DynCustomerName             string
 	DynUsername                 string
-	DynPassword                 string
+	DynPassword                 string `secure:"yes"`
 	DynMinTTLSeconds            int
 	OCIConfigFile               string
 	InMemoryZones               []string
 	PDNSServer                  string
-	PDNSAPIKey                  string
+	PDNSAPIKey                  string `secure:"yes"`
 	PDNSTLSEnabled              bool
 	TLSCA                       string
 	TLSClientCert               string
@@ -99,20 +101,27 @@ type Config struct {
 	LogLevel                    string
 	TXTCacheInterval            time.Duration
 	ExoscaleEndpoint            string
-	ExoscaleAPIKey              string
-	ExoscaleAPISecret           string
+	ExoscaleAPIKey              string `secure:"yes"`
+	ExoscaleAPISecret           string `secure:"yes"`
 	CRDSourceAPIVersion         string
 	CRDSourceKind               string
 	ServiceTypeFilter           []string
+	CFAPIEndpoint               string
+	CFUsername                  string
+	CFPassword                  string
 	RFC2136Host                 string
 	RFC2136Port                 int
 	RFC2136Zone                 string
 	RFC2136Insecure             bool
 	RFC2136TSIGKeyName          string
-	RFC2136TSIGSecret           string
+	RFC2136TSIGSecret           string `secure:"yes"`
 	RFC2136TSIGSecretAlg        string
 	RFC2136TAXFR                bool
 	ServicePublishIPsType       string
+	NS1Endpoint                 string
+	NS1IgnoreSSL                bool
+	TransIPAccountName          string
+	TransIPPrivateKeyFile       string
 }
 
 var defaultConfig = &Config{
@@ -153,6 +162,7 @@ var defaultConfig = &Config{
 	InfobloxWapiVersion:         "2.3.1",
 	InfobloxSSLVerify:           true,
 	InfobloxView:                "",
+	InfobloxMaxResults:          0,
 	OCIConfigFile:               "/etc/kubernetes/oci.yaml",
 	InMemoryZones:               []string{},
 	PDNSServer:                  "http://localhost:8081",
@@ -178,6 +188,9 @@ var defaultConfig = &Config{
 	CRDSourceAPIVersion:         "externaldns.k8s.io/v1alpha1",
 	CRDSourceKind:               "DNSEndpoint",
 	ServiceTypeFilter:           []string{},
+	CFAPIEndpoint:               "",
+	CFUsername:                  "",
+	CFPassword:                  "",
 	RFC2136Host:                 "",
 	RFC2136Port:                 0,
 	RFC2136Zone:                 "",
@@ -186,6 +199,10 @@ var defaultConfig = &Config{
 	RFC2136TSIGSecret:           "",
 	RFC2136TSIGSecretAlg:        "",
 	RFC2136TAXFR:                true,
+	NS1Endpoint:                 "",
+	NS1IgnoreSSL:                false,
+	TransIPAccountName:          "",
+	TransIPPrivateKeyFile:       "",
 }
 
 // NewConfig returns new Config object
@@ -196,14 +213,19 @@ func NewConfig() *Config {
 func (cfg *Config) String() string {
 	// prevent logging of sensitive information
 	temp := *cfg
-	if temp.DynPassword != "" {
-		temp.DynPassword = passwordMask
-	}
-	if temp.InfobloxWapiPassword != "" {
-		temp.InfobloxWapiPassword = passwordMask
-	}
-	if temp.PDNSAPIKey != "" {
-		temp.PDNSAPIKey = ""
+
+	t := reflect.TypeOf(temp)
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		if val, ok := f.Tag.Lookup("secure"); ok && val == "yes" {
+			if f.Type.Kind() != reflect.String {
+				continue
+			}
+			v := reflect.ValueOf(&temp).Elem().Field(i)
+			if v.String() != "" {
+				v.SetString(passwordMask)
+			}
+		}
 	}
 
 	return fmt.Sprintf("%+v", temp)
@@ -232,8 +254,13 @@ func (cfg *Config) ParseFlags(args []string) error {
 	// Flags related to Istio
 	app.Flag("istio-ingress-gateway", "The fully-qualified name of the Istio ingress gateway service. Flag can be specified multiple times (default: istio-system/istio-ingressgateway)").Default("istio-system/istio-ingressgateway").StringsVar(&cfg.IstioIngressGatewayServices)
 
+	// Flags related to cloud foundry
+	app.Flag("cf-api-endpoint", "The fully-qualified domain name of the cloud foundry instance you are targeting").Default(defaultConfig.CFAPIEndpoint).StringVar(&cfg.CFAPIEndpoint)
+	app.Flag("cf-username", "The username to log into the cloud foundry API").Default(defaultConfig.CFUsername).StringVar(&cfg.CFUsername)
+	app.Flag("cf-password", "The password to log into the cloud foundry API").Default(defaultConfig.CFPassword).StringVar(&cfg.CFPassword)
+
 	// Flags related to processing sources
-	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, fake, connector, istio-gateway, crd").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "istio-gateway", "fake", "connector", "crd")
+	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, fake, connector, istio-gateway, cloudfoundry, crd, empty").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "istio-gateway", "cloudfoundry", "fake", "connector", "crd", "empty")
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
 	app.Flag("annotation-filter", "Filter sources managed by external-dns via annotation using label selector semantics (default: all sources)").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
 	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
@@ -249,7 +276,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("service-publish-ips-type", "The type of IPs that can be exposed when using a service source (default: all, expected: private or public)").StringVar(&cfg.ServicePublishIPsType)
 
 	// Flags related to providers
-	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, google, azure, cloudflare, rcodezero, digitalocean, dnsimple, infoblox, dyn, designate, coredns, skydns, inmemory, pdns, oci, exoscale, linode, rfc2136)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "infoblox", "dyn", "designate", "coredns", "skydns", "inmemory", "pdns", "oci", "exoscale", "linode", "rfc2136")
+	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, google, azure, cloudflare, rcodezero, digitalocean, dnsimple, infoblox, dyn, designate, coredns, skydns, inmemory, pdns, oci, exoscale, linode, rfc2136, ns1, transip)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "infoblox", "dyn", "designate", "coredns", "skydns", "inmemory", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip")
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("zone-id-filter", "Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.ZoneIDFilter)
 	app.Flag("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
@@ -273,6 +300,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("infoblox-wapi-version", "When using the Infoblox provider, specify the WAPI version (default: 2.3.1)").Default(defaultConfig.InfobloxWapiVersion).StringVar(&cfg.InfobloxWapiVersion)
 	app.Flag("infoblox-ssl-verify", "When using the Infoblox provider, specify whether to verify the SSL certificate (default: true, disable with --no-infoblox-ssl-verify)").Default(strconv.FormatBool(defaultConfig.InfobloxSSLVerify)).BoolVar(&cfg.InfobloxSSLVerify)
 	app.Flag("infoblox-view", "DNS view (default: \"\")").Default(defaultConfig.InfobloxView).StringVar(&cfg.InfobloxView)
+	app.Flag("infoblox-max-results", "Add _max_results as query parameter to the URL on all API requests. The default is 0 which means _max_results is not set and the default of the server is used.").Default(strconv.Itoa(defaultConfig.InfobloxMaxResults)).IntVar(&cfg.InfobloxMaxResults)
 	app.Flag("dyn-customer-name", "When using the Dyn provider, specify the Customer Name").Default("").StringVar(&cfg.DynCustomerName)
 	app.Flag("dyn-username", "When using the Dyn provider, specify the Username").Default("").StringVar(&cfg.DynUsername)
 	app.Flag("dyn-password", "When using the Dyn provider, specify the pasword").Default("").StringVar(&cfg.DynPassword)
@@ -284,6 +312,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("pdns-server", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)").Default(defaultConfig.PDNSServer).StringVar(&cfg.PDNSServer)
 	app.Flag("pdns-api-key", "When using the PowerDNS/PDNS provider, specify the API key to use to authorize requests (required when --provider=pdns)").Default(defaultConfig.PDNSAPIKey).StringVar(&cfg.PDNSAPIKey)
 	app.Flag("pdns-tls-enabled", "When using the PowerDNS/PDNS provider, specify whether to use TLS (default: false, requires --tls-ca, optionally specify --tls-client-cert and --tls-client-cert-key)").Default(strconv.FormatBool(defaultConfig.PDNSTLSEnabled)).BoolVar(&cfg.PDNSTLSEnabled)
+	app.Flag("ns1-endpoint", "When using the NS1 provider, specify the URL of the API endpoint to target (default: https://api.nsone.net/v1/)").Default(defaultConfig.NS1Endpoint).StringVar(&cfg.NS1Endpoint)
+	app.Flag("ns1-ignoressl", "When using the NS1 provider, specify whether to verify the SSL certificate (default: false)").Default(strconv.FormatBool(defaultConfig.NS1IgnoreSSL)).BoolVar(&cfg.NS1IgnoreSSL)
 
 	// Flags related to TLS communication
 	app.Flag("tls-ca", "When using TLS communication, the path to the certificate authority to verify server communications (optionally specify --tls-client-cert for two-way TLS)").Default(defaultConfig.TLSCA).StringVar(&cfg.TLSCA)
@@ -303,6 +333,10 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("rfc2136-tsig-secret", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)").Default(defaultConfig.RFC2136TSIGSecret).StringVar(&cfg.RFC2136TSIGSecret)
 	app.Flag("rfc2136-tsig-secret-alg", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)").Default(defaultConfig.RFC2136TSIGSecretAlg).StringVar(&cfg.RFC2136TSIGSecretAlg)
 	app.Flag("rfc2136-tsig-axfr", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)").BoolVar(&cfg.RFC2136TAXFR)
+
+	// Flags related to TransIP provider
+	app.Flag("transip-account", "When using the TransIP provider, specify the account name (required when --provider=transip)").Default(defaultConfig.TransIPAccountName).StringVar(&cfg.TransIPAccountName)
+	app.Flag("transip-keyfile", "When using the TransIP provider, specify the path to the private key file (required when --provider=transip)").Default(defaultConfig.TransIPPrivateKeyFile).StringVar(&cfg.TransIPPrivateKeyFile)
 
 	// Flags related to policies
 	app.Flag("policy", "Modify how DNS records are synchronized between sources and providers (default: sync, options: sync, upsert-only)").Default(defaultConfig.Policy).EnumVar(&cfg.Policy, "sync", "upsert-only")

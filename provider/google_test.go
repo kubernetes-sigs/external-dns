@@ -387,7 +387,7 @@ func TestGoogleApplyChanges(t *testing.T) {
 		Delete:    deleteRecords,
 	}
 
-	require.NoError(t, provider.ApplyChanges(changes))
+	require.NoError(t, provider.ApplyChanges(context.Background(), changes))
 
 	records, err := provider.Records()
 	require.NoError(t, err)
@@ -444,7 +444,7 @@ func TestGoogleApplyChangesDryRun(t *testing.T) {
 		Delete:    deleteRecords,
 	}
 
-	require.NoError(t, provider.ApplyChanges(changes))
+	require.NoError(t, provider.ApplyChanges(context.Background(), changes))
 
 	records, err := provider.Records()
 	require.NoError(t, err)
@@ -454,7 +454,7 @@ func TestGoogleApplyChangesDryRun(t *testing.T) {
 
 func TestGoogleApplyChangesEmpty(t *testing.T) {
 	provider := newGoogleProvider(t, NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), NewZoneIDFilter([]string{""}), false, []*endpoint.Endpoint{})
-	assert.NoError(t, provider.ApplyChanges(&plan.Changes{}))
+	assert.NoError(t, provider.ApplyChanges(context.Background(), &plan.Changes{}))
 }
 
 func TestNewFilteredRecords(t *testing.T) {
@@ -565,9 +565,9 @@ func validateChangeRecord(t *testing.T, record *dns.ResourceRecordSet, expected 
 func newGoogleProvider(t *testing.T, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, records []*endpoint.Endpoint) *GoogleProvider {
 	provider := &GoogleProvider{
 		project:                  "zalando-external-dns-test",
+		dryRun:                   false,
 		domainFilter:             domainFilter,
 		zoneIDFilter:             zoneIDFilter,
-		dryRun:                   false,
 		resourceRecordSetsClient: &mockResourceRecordSetsClient{},
 		managedZonesClient:       &mockManagedZonesClient{},
 		changesClient:            &mockChangesClient{},

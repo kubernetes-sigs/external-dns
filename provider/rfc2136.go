@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"strconv"
@@ -64,7 +65,7 @@ type rfc2136Actions interface {
 // NewRfc2136Provider is a factory function for OpenStack rfc2136 providers
 func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter DomainFilter, dryRun bool, actions rfc2136Actions) (Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
-	if !ok {
+	if !ok && !insecure {
 		return nil, errors.Errorf("%s is not supported TSIG algorithm", secretAlg)
 	}
 
@@ -195,7 +196,7 @@ func (r rfc2136Provider) List() ([]dns.RR, error) {
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (r rfc2136Provider) ApplyChanges(changes *plan.Changes) error {
+func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	log.Debugf("ApplyChanges")
 
 	for _, ep := range changes.Create {
