@@ -595,3 +595,225 @@ func validateCloudFlareZones(t *testing.T, zones []cloudflare.Zone, expected []c
 		assert.Equal(t, expected[i].Name, zone.Name)
 	}
 }
+
+func TestGroupByNameAndType(t *testing.T) {
+	testCases := []struct {
+		Name              string
+		Records           []cloudflare.DNSRecord
+		ExpectedEndpoints []*endpoint.Endpoint
+	}{
+		{
+			Name:              "empty",
+			Records:           []cloudflare.DNSRecord{},
+			ExpectedEndpoints: []*endpoint.Endpoint{},
+		},
+		{
+			Name: "single record - single target",
+			Records: []cloudflare.DNSRecord{
+				{
+					Name:    "foo.com",
+					Type:    endpoint.RecordTypeA,
+					Content: "10.10.10.1",
+					TTL:     defaultCloudFlareRecordTTL,
+				},
+			},
+			ExpectedEndpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.com",
+					Targets:    endpoint.Targets{"10.10.10.1"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Value: "false",
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "single record - multiple targets",
+			Records: []cloudflare.DNSRecord{
+				{
+					Name:    "foo.com",
+					Type:    endpoint.RecordTypeA,
+					Content: "10.10.10.1",
+					TTL:     defaultCloudFlareRecordTTL,
+				},
+				{
+					Name:    "foo.com",
+					Type:    endpoint.RecordTypeA,
+					Content: "10.10.10.2",
+					TTL:     defaultCloudFlareRecordTTL,
+				},
+			},
+			ExpectedEndpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.com",
+					Targets:    endpoint.Targets{"10.10.10.1", "10.10.10.2"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Value: "false",
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "multiple record - multiple targets",
+			Records: []cloudflare.DNSRecord{
+				{
+					Name:    "foo.com",
+					Type:    endpoint.RecordTypeA,
+					Content: "10.10.10.1",
+					TTL:     defaultCloudFlareRecordTTL,
+				},
+				{
+					Name:    "foo.com",
+					Type:    endpoint.RecordTypeA,
+					Content: "10.10.10.2",
+					TTL:     defaultCloudFlareRecordTTL,
+				},
+				{
+					Name:    "bar.de",
+					Type:    endpoint.RecordTypeA,
+					Content: "10.10.10.1",
+					TTL:     defaultCloudFlareRecordTTL,
+				},
+				{
+					Name:    "bar.de",
+					Type:    endpoint.RecordTypeA,
+					Content: "10.10.10.2",
+					TTL:     defaultCloudFlareRecordTTL,
+				},
+			},
+			ExpectedEndpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.com",
+					Targets:    endpoint.Targets{"10.10.10.1", "10.10.10.2"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Value: "false",
+						},
+					},
+				},
+				{
+					DNSName:    "bar.de",
+					Targets:    endpoint.Targets{"10.10.10.1", "10.10.10.2"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Value: "false",
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "multiple record - mixed single/multiple targets",
+			Records: []cloudflare.DNSRecord{
+				{
+					Name:    "foo.com",
+					Type:    endpoint.RecordTypeA,
+					Content: "10.10.10.1",
+					TTL:     defaultCloudFlareRecordTTL,
+				},
+				{
+					Name:    "foo.com",
+					Type:    endpoint.RecordTypeA,
+					Content: "10.10.10.2",
+					TTL:     defaultCloudFlareRecordTTL,
+				},
+				{
+					Name:    "bar.de",
+					Type:    endpoint.RecordTypeA,
+					Content: "10.10.10.1",
+					TTL:     defaultCloudFlareRecordTTL,
+				},
+			},
+			ExpectedEndpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.com",
+					Targets:    endpoint.Targets{"10.10.10.1", "10.10.10.2"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Value: "false",
+						},
+					},
+				},
+				{
+					DNSName:    "bar.de",
+					Targets:    endpoint.Targets{"10.10.10.1"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Value: "false",
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "unsupported record type",
+			Records: []cloudflare.DNSRecord{
+				{
+					Name:    "foo.com",
+					Type:    endpoint.RecordTypeA,
+					Content: "10.10.10.1",
+					TTL:     defaultCloudFlareRecordTTL,
+				},
+				{
+					Name:    "foo.com",
+					Type:    endpoint.RecordTypeA,
+					Content: "10.10.10.2",
+					TTL:     defaultCloudFlareRecordTTL,
+				},
+				{
+					Name:    "bar.de",
+					Type:    "NOT SUPPORTED",
+					Content: "10.10.10.1",
+					TTL:     defaultCloudFlareRecordTTL,
+				},
+			},
+			ExpectedEndpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.com",
+					Targets:    endpoint.Targets{"10.10.10.1", "10.10.10.2"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					Labels:     endpoint.Labels{},
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Value: "false",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		assert.Equal(t, groupByNameAndType(tc.Records), tc.ExpectedEndpoints)
+	}
+}

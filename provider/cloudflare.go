@@ -181,11 +181,10 @@ func (p *CloudFlareProvider) Records() ([]*endpoint.Endpoint, error) {
 			return nil, err
 		}
 
-		for _, r := range records {
-			if supportedRecordType(r.Type) {
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(r.Name, r.Type, endpoint.TTL(r.TTL), r.Content).WithProviderSpecific(source.CloudflareProxiedKey, strconv.FormatBool(r.Proxied)))
-			}
-		}
+		// As CloudFlare does not support "sets" of targets, but instead returns
+		// a single entry for each name/type/target, we have to group by name
+		// and record to allow the planner to calculate the correct plan. See #992.
+		endpoints = append(endpoints, groupByNameAndType(records)...)
 	}
 
 	return endpoints, nil
@@ -353,4 +352,41 @@ func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 		proxied = false
 	}
 	return proxied
+}
+
+func groupByNameAndType(records []cloudflare.DNSRecord) []*endpoint.Endpoint {
+	endpoints := []*endpoint.Endpoint{}
+
+	// group supported records by name and type
+	groups := map[string][]cloudflare.DNSRecord{}
+
+	for _, r := range records {
+		if !supportedRecordType(r.Type) {
+			continue
+		}
+
+		groupBy := r.Name + r.Type
+		if _, ok := groups[groupBy]; !ok {
+			groups[groupBy] = []cloudflare.DNSRecord{}
+		}
+
+		groups[groupBy] = append(groups[groupBy], r)
+	}
+
+	// create single endpoint with all the targets for each name/type
+	for _, records := range groups {
+		targets := make([]string, len(records))
+		for i, record := range records {
+			targets[i] = record.Content
+		}
+		endpoints = append(endpoints,
+			endpoint.NewEndpointWithTTL(
+				records[0].Name,
+				records[0].Type,
+				endpoint.TTL(records[0].TTL),
+				targets...).
+				WithProviderSpecific(source.CloudflareProxiedKey, strconv.FormatBool(records[0].Proxied)))
+	}
+
+	return endpoints
 }
