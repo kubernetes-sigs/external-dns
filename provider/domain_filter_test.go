@@ -192,6 +192,24 @@ var domainFilterTests = []domainFilterTest{
 		[]string{"foo.internal.api.example.org"},
 		false,
 	},
+	{
+		[]string{"eXaMPle.ORG", "API.example.ORG"},
+		[]string{"Foo-Bar.Example.Org"},
+		[]string{"FoOoo.Api.Example.Org"},
+		true,
+	},
+	{
+		[]string{"eXaMPle.ORG", "API.example.ORG"},
+		[]string{"api.example.org"},
+		[]string{"foobar.Example.Org"},
+		true,
+	},
+	{
+		[]string{"eXaMPle.ORG", "API.example.ORG"},
+		[]string{"api.example.org"},
+		[]string{"foobar.API.Example.Org"},
+		false,
+	},
 }
 
 func TestDomainFilterMatch(t *testing.T) {

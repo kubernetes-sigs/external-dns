@@ -30,7 +30,7 @@ type DomainFilter struct {
 func prepareFilters(filters []string) []string {
 	fs := make([]string, len(filters))
 	for i, domain := range filters {
-		fs[i] = strings.TrimSuffix(strings.TrimSpace(domain), ".")
+		fs[i] = strings.ToLower(strings.TrimSuffix(strings.TrimSpace(domain), "."))
 	}
 	return fs
 }
@@ -59,7 +59,7 @@ func (df DomainFilter) matchFilter(filters []string, domain string, emptyval boo
 	}
 
 	for _, filter := range filters {
-		strippedDomain := strings.TrimSuffix(domain, ".")
+		strippedDomain := strings.ToLower(strings.TrimSuffix(domain, "."))
 
 		if filter == "" {
 			return true
