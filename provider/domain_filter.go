@@ -47,13 +47,13 @@ func NewDomainFilter(domainFilters []string) DomainFilter {
 
 // Match checks whether a domain can be found in the DomainFilter.
 func (df DomainFilter) Match(domain string) bool {
-	return df.matchFilter(df.filters, domain, true) && !df.matchFilter(df.exclude, domain, false)
+	return matchFilter(df.filters, domain, true) && !matchFilter(df.exclude, domain, false)
 }
 
 // matchFilter determines if any `filters` match `domain`.
 // If no `filters` are provided, behavior depends on `emptyval`
 // (empty `df.filters` matches everything, while empty `df.exclude` excludes nothing)
-func (df DomainFilter) matchFilter(filters []string, domain string, emptyval bool) bool {
+func matchFilter(filters []string, domain string, emptyval bool) bool {
 	if len(filters) == 0 {
 		return emptyval
 	}
