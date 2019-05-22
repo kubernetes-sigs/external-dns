@@ -271,10 +271,8 @@ func TestPrepareFiltersStripsWhitespaceAndDotSuffix(t *testing.T) {
 
 func TestMatchFilterReturnsProperEmptyVal(t *testing.T) {
 	emptyFilters := []string{}
-
-	df := NewDomainFilterWithExclusions(emptyFilters, emptyFilters)
-	assert.Equal(t, true, df.matchFilter(emptyFilters, "somedomain.com", true))
-	assert.Equal(t, false, df.matchFilter(emptyFilters, "somedomain.com", false))
+	assert.Equal(t, true, matchFilter(emptyFilters, "somedomain.com", true))
+	assert.Equal(t, false, matchFilter(emptyFilters, "somedomain.com", false))
 }
 
 func TestDomainFilterIsConfigured(t *testing.T) {
