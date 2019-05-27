@@ -24,7 +24,6 @@ import (
 	"text/template"
 
 	log "github.com/sirupsen/logrus"
-
 	istionetworking "istio.io/api/networking/v1alpha3"
 	istiomodel "istio.io/istio/pilot/pkg/model"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,13 +33,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// gatewaySource is an implementation of Source for Istio Gateway objects.
-// The gateway implementation uses the spec.servers.hosts values for the hostnames.
+// virtualServiceSource is an implementation of Source for Istio VirtualService objects.
+// The virtualService implementation uses the spec.hosts values for the hostnames.
 // Use targetAnnotationKey to explicitly set Endpoint.
-type gatewaySource struct {
+type virtualServiceSource struct {
 	kubeClient                  kubernetes.Interface
 	istioClient                 istiomodel.ConfigStore
-	istioIngressGatewayServices []string
+	IstioIngressGatewayServices []string
 	namespace                   string
 	annotationFilter            string
 	fqdnTemplate                *template.Template
@@ -48,11 +47,11 @@ type gatewaySource struct {
 	ignoreHostnameAnnotation    bool
 }
 
-// NewIstioGatewaySource creates a new gatewaySource with the given config.
-func NewIstioGatewaySource(
+// NewIstioVirtualServiceSource creates a new virtualServiceSource with the given config.
+func NewIstioVirtualServiceSource(
 	kubeClient kubernetes.Interface,
 	istioClient istiomodel.ConfigStore,
-	istioIngressGatewayServices []string,
+	IstioIngressGatewayServices []string,
 	namespace string,
 	annotationFilter string,
 	fqdnTemplate string,
@@ -63,7 +62,7 @@ func NewIstioGatewaySource(
 		tmpl *template.Template
 		err  error
 	)
-	for _, lbService := range istioIngressGatewayServices {
+	for _, lbService := range IstioIngressGatewayServices {
 		if _, _, err = parseIngressGateway(lbService); err != nil {
 			return nil, err
 		}
@@ -78,10 +77,10 @@ func NewIstioGatewaySource(
 		}
 	}
 
-	return &gatewaySource{
+	return &virtualServiceSource{
 		kubeClient:                  kubeClient,
 		istioClient:                 istioClient,
-		istioIngressGatewayServices: istioIngressGatewayServices,
+		IstioIngressGatewayServices: IstioIngressGatewayServices,
 		namespace:                   namespace,
 		annotationFilter:            annotationFilter,
 		fqdnTemplate:                tmpl,
@@ -91,9 +90,9 @@ func NewIstioGatewaySource(
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
-// Retrieves all gateway resources in the source's namespace(s).
-func (sc *gatewaySource) Endpoints() ([]*endpoint.Endpoint, error) {
-	configs, err := sc.istioClient.List(istiomodel.Gateway.Type, sc.namespace)
+// Retrieves all virtualService resources in the source's namespace(s).
+func (sc *virtualServiceSource) Endpoints() ([]*endpoint.Endpoint, error) {
+	configs, err := sc.istioClient.List(istiomodel.VirtualService.Type, sc.namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -109,38 +108,38 @@ func (sc *gatewaySource) Endpoints() ([]*endpoint.Endpoint, error) {
 		// Check controller annotation to see if we are responsible.
 		controller, ok := config.Annotations[controllerAnnotationKey]
 		if ok && controller != controllerAnnotationValue {
-			log.Debugf("Skipping gateway %s/%s because controller value does not match, found: %s, required: %s",
+			log.Debugf("Skipping virtualService %s/%s because controller value does not match, found: %s, required: %s",
 				config.Namespace, config.Name, controller, controllerAnnotationValue)
 			continue
 		}
 
-		gwEndpoints, err := sc.endpointsFromGatewayConfig(config)
+		vsEndpoints, err := sc.endpointsFromVirtualServiceConfig(config)
 		if err != nil {
 			return nil, err
 		}
 
-		// apply template if host is missing on gateway
-		if (sc.combineFQDNAnnotation || len(gwEndpoints) == 0) && sc.fqdnTemplate != nil {
+		// apply template if host is missing on virtualService
+		if (sc.combineFQDNAnnotation || len(vsEndpoints) == 0) && sc.fqdnTemplate != nil {
 			iEndpoints, err := sc.endpointsFromTemplate(&config)
 			if err != nil {
 				return nil, err
 			}
 
 			if sc.combineFQDNAnnotation {
-				gwEndpoints = append(gwEndpoints, iEndpoints...)
+				vsEndpoints = append(vsEndpoints, iEndpoints...)
 			} else {
-				gwEndpoints = iEndpoints
+				vsEndpoints = iEndpoints
 			}
 		}
 
-		if len(gwEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from gateway %s/%s", config.Namespace, config.Name)
+		if len(vsEndpoints) == 0 {
+			log.Debugf("No endpoints could be generated from virtualService %s/%s", config.Namespace, config.Name)
 			continue
 		}
 
-		log.Debugf("Endpoints generated from gateway: %s/%s: %v", config.Namespace, config.Name, gwEndpoints)
-		sc.setResourceLabel(config, gwEndpoints)
-		endpoints = append(endpoints, gwEndpoints...)
+		log.Debugf("Endpoints generated from virtualService: %s/%s: %v", config.Namespace, config.Name, vsEndpoints)
+		sc.setResourceLabel(config, vsEndpoints)
+		endpoints = append(endpoints, vsEndpoints...)
 	}
 
 	for _, ep := range endpoints {
@@ -150,7 +149,7 @@ func (sc *gatewaySource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
-func (sc *gatewaySource) endpointsFromTemplate(config *istiomodel.Config) ([]*endpoint.Endpoint, error) {
+func (sc *virtualServiceSource) endpointsFromTemplate(config *istiomodel.Config) ([]*endpoint.Endpoint, error) {
 	// Process the whole template string
 	var buf bytes.Buffer
 	err := sc.fqdnTemplate.Execute(&buf, config)
@@ -187,7 +186,7 @@ func (sc *gatewaySource) endpointsFromTemplate(config *istiomodel.Config) ([]*en
 }
 
 // filterByAnnotations filters a list of configs by a given annotation selector.
-func (sc *gatewaySource) filterByAnnotations(configs []istiomodel.Config) ([]istiomodel.Config, error) {
+func (sc *virtualServiceSource) filterByAnnotations(configs []istiomodel.Config) ([]istiomodel.Config, error) {
 	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
 	if err != nil {
 		return nil, err
@@ -217,14 +216,14 @@ func (sc *gatewaySource) filterByAnnotations(configs []istiomodel.Config) ([]ist
 	return filteredList, nil
 }
 
-func (sc *gatewaySource) setResourceLabel(config istiomodel.Config, endpoints []*endpoint.Endpoint) {
+func (sc *virtualServiceSource) setResourceLabel(config istiomodel.Config, endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
-		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("gateway/%s/%s", config.Namespace, config.Name)
+		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("virtualService/%s/%s", config.Namespace, config.Name)
 	}
 }
 
-func (sc *gatewaySource) targetsFromIstioIngressGatewayServices() (targets endpoint.Targets, err error) {
-	for _, lbService := range sc.istioIngressGatewayServices {
+func (sc *virtualServiceSource) targetsFromIstioIngressGatewayServices() (targets endpoint.Targets, err error) {
+	for _, lbService := range sc.IstioIngressGatewayServices {
 		lbNamespace, lbName, err := parseIngressGateway(lbService)
 		if err != nil {
 			return nil, err
@@ -246,8 +245,8 @@ func (sc *gatewaySource) targetsFromIstioIngressGatewayServices() (targets endpo
 	return
 }
 
-// endpointsFromGatewayConfig extracts the endpoints from an Istio Gateway Config object
-func (sc *gatewaySource) endpointsFromGatewayConfig(config istiomodel.Config) ([]*endpoint.Endpoint, error) {
+// endpointsFromVirtualServiceConfig extracts the endpoints from an Istio VirtualService Config object
+func (sc *virtualServiceSource) endpointsFromVirtualServiceConfig(config istiomodel.Config) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	ttl, err := getTTLFromAnnotations(config.Annotations)
@@ -264,17 +263,15 @@ func (sc *gatewaySource) endpointsFromGatewayConfig(config istiomodel.Config) ([
 		}
 	}
 
-	gateway := config.Spec.(*istionetworking.Gateway)
+	virtualService := config.Spec.(*istionetworking.VirtualService)
 
 	providerSpecific := getProviderSpecificAnnotations(config.Annotations)
 
-	for _, server := range gateway.Servers {
-		for _, host := range server.Hosts {
-			if host == "" {
-				continue
-			}
-			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific)...)
+	for _, host := range virtualService.Hosts {
+		if host == "" {
+			continue
 		}
+		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific)...)
 	}
 
 	// Skip endpoints if we do not want entries from annotations

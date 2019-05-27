@@ -161,6 +161,17 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 			return nil, err
 		}
 		return NewIstioGatewaySource(kubernetesClient, istioClient, cfg.IstioIngressGatewayServices, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+
+	case "istio-virtual-service":
+		kubernetesClient, err := p.KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		istioClient, err := p.IstioClient()
+		if err != nil {
+			return nil, err
+		}
+		return NewIstioVirtualServiceSource(kubernetesClient, istioClient, cfg.IstioIngressGatewayServices, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
 	case "cloudfoundry":
 		cfClient, err := p.CloudFoundryClient(cfg.CFAPIEndpoint, cfg.CFUsername, cfg.CFPassword)
 		if err != nil {
@@ -240,6 +251,28 @@ func NewIstioClient(kubeConfig string) (*istiocrd.Client, error) {
 		kubeConfig,
 		"",
 		istiomodel.ConfigDescriptor{istiomodel.Gateway},
+		"",
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Info("Created Istio client")
+
+	return client, nil
+}
+
+func NewIstioVirtualServiceClient(kubeConfig string) (*istiocrd.Client, error) {
+	if kubeConfig == "" {
+		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
+			kubeConfig = clientcmd.RecommendedHomeFile
+		}
+	}
+
+	client, err := istiocrd.NewClient(
+		kubeConfig,
+		"",
+		istiomodel.ConfigDescriptor{istiomodel.VirtualService},
 		"",
 	)
 	if err != nil {

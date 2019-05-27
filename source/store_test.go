@@ -72,9 +72,9 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 	mockClientGenerator.On("KubeClient").Return(fake.NewSimpleClientset(), nil)
 	mockClientGenerator.On("IstioClient").Return(NewFakeConfigStore(), nil)
 
-	sources, err := ByNames(mockClientGenerator, []string{"service", "ingress", "istio-gateway", "fake"}, minimalConfig)
+	sources, err := ByNames(mockClientGenerator, []string{"service", "ingress", "istio-gateway", "istio-virtual-service", "fake"}, minimalConfig)
 	suite.NoError(err, "should not generate errors")
-	suite.Len(sources, 4, "should generate all four sources")
+	suite.Len(sources, 5, "should generate all five sources")
 }
 
 func (suite *ByNamesTestSuite) TestOnlyFake() {
@@ -108,6 +108,9 @@ func (suite *ByNamesTestSuite) TestKubeClientFails() {
 
 	_, err = ByNames(mockClientGenerator, []string{"istio-gateway"}, minimalConfig)
 	suite.Error(err, "should return an error if kubernetes client cannot be created")
+
+	_, err = ByNames(mockClientGenerator, []string{"istio-virtual-service"}, minimalConfig)
+	suite.Error(err, "should return an error if kubernetes client cannot be created")
 }
 
 func (suite *ByNamesTestSuite) TestIstioClientFails() {
@@ -116,6 +119,9 @@ func (suite *ByNamesTestSuite) TestIstioClientFails() {
 	mockClientGenerator.On("IstioClient").Return(nil, errors.New("foo"))
 
 	_, err := ByNames(mockClientGenerator, []string{"istio-gateway"}, minimalConfig)
+	suite.Error(err, "should return an error if istio client cannot be created")
+
+	_, err = ByNames(mockClientGenerator, []string{"istio-virtual-service"}, minimalConfig)
 	suite.Error(err, "should return an error if istio client cannot be created")
 }
 

@@ -24,7 +24,8 @@ spec:
         args:
         - --source=service
         - --source=ingress
-        - --source=istio-gateway
+        - --source=istio-gateway # Create records for hosts specified in a networking.istio.io.Gateway
+        - --source=istio-virtual-service # Create records for hosts specified in a networking.istio.io.VirtualService
         - --istio-ingress-gateway=custom-istio-namespace/custom-istio-ingressgateway # load balancer service to be used; can be specified multiple times. Omit to use the default (istio-system/istio-ingressgateway)
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
@@ -94,7 +95,8 @@ spec:
         args:
         - --source=service
         - --source=ingress
-        - --source=istio-gateway
+        - --source=istio-gateway # Create records for hosts specified in a networking.istio.io.Gateway
+        - --source=istio-virtual-service # Create records for hosts specified in a networking.istio.io.VirtualService
         - --istio-ingress-gateway=custom-istio-namespace/custom-istio-ingressgateway # load balancer service to be used; can be specified multiple times. Omit to use the default (istio-system/istio-ingressgateway)
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
@@ -136,7 +138,7 @@ spec:
       name: http
       protocol: HTTP
     hosts:
-    - "httpbin.example.com"
+    - "httpbin.example.com" # Can be set to "*" if the istio-virtual-service source is enabled
 EOF
 ```
 
