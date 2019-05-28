@@ -22,10 +22,10 @@ import (
 	istionetworking "istio.io/api/networking/v1alpha3"
 	istiomodel "istio.io/istio/pilot/pkg/model"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-
 	"strconv"
 	"sync"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
