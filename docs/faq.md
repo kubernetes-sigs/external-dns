@@ -50,7 +50,7 @@ As stated in the README, we are currently looking for stable maintainers for tho
 
 ### Which Kubernetes objects are supported?
 
-Services exposed via `type=LoadBalancer` and for the hostnames defined in Ingress objects as well as headless hostPort services. An initial effort to support type `NodePort` was started as of May 2018 and it is in progress at the time of writing.
+Services exposed via `type=LoadBalancer`, `type=ExternalName` and for the hostnames defined in Ingress objects as well as headless hostPort services. An initial effort to support type `NodePort` was started as of May 2018 and it is in progress at the time of writing.
 
 ### How do I specify a DNS name for my Kubernetes objects?
 
@@ -160,13 +160,13 @@ CNAMEs cannot co-exist with other records, therefore you can use the `--txt-pref
 
 You need to add either https://www.googleapis.com/auth/ndev.clouddns.readwrite or https://www.googleapis.com/auth/cloud-platform on your instance group's scope.
 
-### What metrics can I get from ExternalDNS and what do they mean?  
+### What metrics can I get from ExternalDNS and what do they mean?
 
 ExternalDNS exposes 2 types of metrics: Sources and Registry errors.
 
 `Source`s are mostly Kubernetes API objects. Examples of `source` errors may be connection errors to the Kubernetes API server itself or missing RBAC permissions. It can also stem from incompatible configuration in the objects itself like invalid characters, processing a broken fqdnTemplate, etc.
 
-`Registry` errors are mostly Provider errors, unless there's some coding flaw in the registry package. Provider errors often arise due to accessing their APIs due to network or missing cloud-provider permissions when reading records. When applying a changeset, errors will arise if the changeset applied is incompatible with the current state.  
+`Registry` errors are mostly Provider errors, unless there's some coding flaw in the registry package. Provider errors often arise due to accessing their APIs due to network or missing cloud-provider permissions when reading records. When applying a changeset, errors will arise if the changeset applied is incompatible with the current state.
 
 In case of an increased error count, you could correlate them with the `http_request_duration_seconds{handler="instrumented_http"}` metric which should show increased numbers for status codes 4xx (permissions, configuration, invalid changeset) or 5xx (apiserver down).
 
