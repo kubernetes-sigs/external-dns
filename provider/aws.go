@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -319,15 +320,19 @@ func (p *AWSProvider) doRecords(action string, endpoints []*endpoint.Endpoint) e
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *AWSProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	zones, err := p.Zones()
 	if err != nil {
 		return err
 	}
 
-	records, err := p.records(zones)
-	if err != nil {
-		log.Errorf("getting records failed: %v", err)
+	records, ok := ctx.Value(RecordsContextKey).([]*endpoint.Endpoint)
+	if !ok {
+		var err error
+		records, err = p.records(zones)
+		if err != nil {
+			log.Errorf("getting records failed: %v", err)
+		}
 	}
 
 	combinedChanges := make([]*route53.Change, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))

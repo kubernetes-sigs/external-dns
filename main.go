@@ -82,6 +82,9 @@ func main() {
 		KubeMaster:                  cfg.Master,
 		ServiceTypeFilter:           cfg.ServiceTypeFilter,
 		IstioIngressGatewayServices: cfg.IstioIngressGatewayServices,
+		CFAPIEndpoint:               cfg.CFAPIEndpoint,
+		CFUsername:                  cfg.CFUsername,
+		CFPassword:                  cfg.CFPassword,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
@@ -97,7 +100,7 @@ func main() {
 	// Combine multiple sources into a single, deduplicated source.
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
 
-	domainFilter := provider.NewDomainFilter(cfg.DomainFilter)
+	domainFilter := provider.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
 	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
@@ -154,6 +157,7 @@ func main() {
 				Version:      cfg.InfobloxWapiVersion,
 				SSLVerify:    cfg.InfobloxSSLVerify,
 				View:         cfg.InfobloxView,
+				MaxResults:   cfg.InfobloxMaxResults,
 				DryRun:       cfg.DryRun,
 			},
 		)
@@ -201,6 +205,18 @@ func main() {
 		}
 	case "rfc2136":
 		p, err = provider.NewRfc2136Provider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, nil)
+	case "ns1":
+		p, err = provider.NewNS1Provider(
+			provider.NS1Config{
+				DomainFilter: domainFilter,
+				ZoneIDFilter: zoneIDFilter,
+				NS1Endpoint:  cfg.NS1Endpoint,
+				NS1IgnoreSSL: cfg.NS1IgnoreSSL,
+				DryRun:       cfg.DryRun,
+			},
+		)
+	case "transip":
+		p, err = provider.NewTransIPProvider(cfg.TransIPAccountName, cfg.TransIPPrivateKeyFile, domainFilter, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}

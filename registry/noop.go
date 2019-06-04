@@ -17,6 +17,8 @@ limitations under the License.
 package registry
 
 import (
+	"context"
+
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
@@ -40,6 +42,6 @@ func (im *NoopRegistry) Records() ([]*endpoint.Endpoint, error) {
 }
 
 // ApplyChanges propagates changes to the dns provider
-func (im *NoopRegistry) ApplyChanges(changes *plan.Changes) error {
-	return im.provider.ApplyChanges(changes)
+func (im *NoopRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	return im.provider.ApplyChanges(ctx, changes)
 }

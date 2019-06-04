@@ -298,7 +298,7 @@ func (p coreDNSProvider) Records() ([]*endpoint.Endpoint, error) {
 }
 
 // ApplyChanges stores changes back to etcd converting them to CoreDNS format and aggregating A/CNAME and TXT records
-func (p coreDNSProvider) ApplyChanges(changes *plan.Changes) error {
+func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	grouped := map[string][]*endpoint.Endpoint{}
 	for _, ep := range changes.Create {
 		grouped[ep.DNSName] = append(grouped[ep.DNSName], ep)

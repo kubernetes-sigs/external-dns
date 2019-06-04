@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -379,7 +380,7 @@ func addEndpoint(ep *endpoint.Endpoint, recordSets map[string]*recordSet, delete
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p designateProvider) ApplyChanges(changes *plan.Changes) error {
+func (p designateProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	managedZones, err := p.getZones()
 	if err != nil {
 		return err

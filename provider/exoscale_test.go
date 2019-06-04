@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -173,7 +174,7 @@ func TestExoscaleApplyChanges(t *testing.T) {
 	createExoscale = make([]createRecordExoscale, 0)
 	deleteExoscale = make([]deleteRecordExoscale, 0)
 
-	provider.ApplyChanges(plan)
+	provider.ApplyChanges(context.Background(), plan)
 
 	assert.Equal(t, 1, len(createExoscale))
 	assert.Equal(t, "foo.com", createExoscale[0].name)

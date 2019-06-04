@@ -17,6 +17,7 @@ limitations under the License.
 package registry
 
 import (
+	"context"
 	"testing"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -53,7 +54,7 @@ func testNoopRecords(t *testing.T) {
 			RecordType: endpoint.RecordTypeCNAME,
 		},
 	}
-	p.ApplyChanges(&plan.Changes{
+	p.ApplyChanges(context.Background(), &plan.Changes{
 		Create: providerRecords,
 	})
 
@@ -88,13 +89,14 @@ func testNoopApplyChanges(t *testing.T) {
 		},
 	}
 
-	p.ApplyChanges(&plan.Changes{
+	ctx := context.Background()
+	p.ApplyChanges(ctx, &plan.Changes{
 		Create: providerRecords,
 	})
 
 	// wrong changes
 	r, _ := NewNoopRegistry(p)
-	err := r.ApplyChanges(&plan.Changes{
+	err := r.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{
 				DNSName:    "example.org",
@@ -106,7 +108,7 @@ func testNoopApplyChanges(t *testing.T) {
 	assert.EqualError(t, err, provider.ErrRecordAlreadyExists.Error())
 
 	//correct changes
-	require.NoError(t, r.ApplyChanges(&plan.Changes{
+	require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{
 				DNSName:    "new-record.org",

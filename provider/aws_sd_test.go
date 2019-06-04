@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"errors"
 	"math/rand"
 	"reflect"
@@ -316,7 +317,7 @@ func TestAWSSDProvider_ApplyChanges(t *testing.T) {
 	provider := newTestAWSSDProvider(api, NewDomainFilter([]string{}), "")
 
 	// apply creates
-	provider.ApplyChanges(&plan.Changes{
+	provider.ApplyChanges(context.Background(), &plan.Changes{
 		Create: expectedEndpoints,
 	})
 
@@ -332,7 +333,7 @@ func TestAWSSDProvider_ApplyChanges(t *testing.T) {
 	assert.True(t, testutils.SameEndpoints(expectedEndpoints, endpoints), "expected and actual endpoints don't match, expected=%v, actual=%v", expectedEndpoints, endpoints)
 
 	// apply deletes
-	provider.ApplyChanges(&plan.Changes{
+	provider.ApplyChanges(context.Background(), &plan.Changes{
 		Delete: expectedEndpoints,
 	})
 

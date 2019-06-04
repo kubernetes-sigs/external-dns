@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -176,7 +177,13 @@ func (p *dnsimpleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				default:
 					continue
 				}
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(record.Name+"."+record.ZoneID, record.Type, endpoint.TTL(record.TTL), record.Content))
+				// Apex records have an empty string for their name.
+				// Consider this when creating the endpoint dnsName
+				dnsName := fmt.Sprintf("%s.%s", record.Name, record.ZoneID)
+				if record.Name == "" {
+					dnsName = record.ZoneID
+				}
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(dnsName, record.Type, endpoint.TTL(record.TTL), record.Content))
 			}
 			page++
 			if page > records.Pagination.TotalPages {
@@ -234,7 +241,12 @@ func (p *dnsimpleProvider) submitChanges(changes []*dnsimpleChange) error {
 
 		log.Infof("Changing records: %s %v in zone: %s", change.Action, change.ResourceRecordSet, zone.Name)
 
-		change.ResourceRecordSet.Name = strings.TrimSuffix(change.ResourceRecordSet.Name, "."+zone.Name)
+		if change.ResourceRecordSet.Name == zone.Name {
+			change.ResourceRecordSet.Name = "" // Apex records have an empty name
+		} else {
+			change.ResourceRecordSet.Name = strings.TrimSuffix(change.ResourceRecordSet.Name, fmt.Sprintf(".%s", zone.Name))
+		}
+
 		if !p.dryRun {
 			switch change.Action {
 			case dnsimpleCreate:
@@ -321,7 +333,7 @@ func (p *dnsimpleProvider) UpdateRecords(endpoints []*endpoint.Endpoint) error {
 }
 
 // ApplyChanges applies a given set of changes
-func (p *dnsimpleProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *dnsimpleProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	combinedChanges := make([]*dnsimpleChange, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 
 	combinedChanges = append(combinedChanges, newDnsimpleChanges(dnsimpleCreate, changes.Create)...)
