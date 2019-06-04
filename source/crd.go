@@ -118,12 +118,12 @@ func (cs *crdSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 	for _, dnsEndpoint := range result.Items {
 		// Make sure that all endpoints have targets for A or CNAME type
-		for _, endPoint := range dnsEndpoint.Spec.Endpoints {
-			if (endPoint.RecordType == "CNAME" || endPoint.RecordType == "A") && len(endPoint.Targets) < 1 {
-				log.Warnf("Endpoint %s with DNSName %s has an empty list of targets", dnsEndpoint.ObjectMeta.Name, endPoint.DNSName)
+		for _, endpoint := range dnsEndpoint.Spec.Endpoints {
+			if (endpoint.RecordType == "CNAME" || endpoint.RecordType == "A") && len(endpoint.Targets) < 1 {
+				log.Warnf("Endpoint %s with DNSName %s has an empty list of targets", dnsEndpoint.ObjectMeta.Name, endpoint.DNSName)
 				continue
 			}
-			endpoints = append(endpoints, endPoint)
+			endpoints = append(endpoints, endpoint)
 		}
 
 		if dnsEndpoint.Status.ObservedGeneration == dnsEndpoint.Generation {
