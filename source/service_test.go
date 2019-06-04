@@ -1282,6 +1282,7 @@ func TestNodePortServices(t *testing.T) {
 		svcNamespace             string
 		svcName                  string
 		svcType                  v1.ServiceType
+		svcTrafficPolicy         v1.ServiceExternalTrafficPolicyType
 		compatibility            string
 		fqdnTemplate             string
 		ignoreHostnameAnnotation bool
@@ -1291,6 +1292,9 @@ func TestNodePortServices(t *testing.T) {
 		expected                 []*endpoint.Endpoint
 		expectError              bool
 		nodes                    []*v1.Node
+		podnames                 []string
+		nodeIndex                []int
+		phases                   []v1.PodPhase
 	}{
 		{
 			"annotated NodePort services return an endpoint with IP addresses of the cluster's nodes",
@@ -1299,6 +1303,7 @@ func TestNodePortServices(t *testing.T) {
 			"testing",
 			"foo",
 			v1.ServiceTypeNodePort,
+			v1.ServiceExternalTrafficPolicyTypeCluster,
 			"",
 			"",
 			false,
@@ -1333,6 +1338,9 @@ func TestNodePortServices(t *testing.T) {
 					},
 				},
 			}},
+			[]string{},
+			[]int{},
+			[]v1.PodPhase{},
 		},
 		{
 			"hostname annotated NodePort services are ignored",
@@ -1341,6 +1349,7 @@ func TestNodePortServices(t *testing.T) {
 			"testing",
 			"foo",
 			v1.ServiceTypeNodePort,
+			v1.ServiceExternalTrafficPolicyTypeCluster,
 			"",
 			"",
 			true,
@@ -1372,6 +1381,9 @@ func TestNodePortServices(t *testing.T) {
 					},
 				},
 			}},
+			[]string{},
+			[]int{},
+			[]v1.PodPhase{},
 		},
 		{
 			"non-annotated NodePort services with set fqdnTemplate return an endpoint with target IP",
@@ -1380,6 +1392,7 @@ func TestNodePortServices(t *testing.T) {
 			"testing",
 			"foo",
 			v1.ServiceTypeNodePort,
+			v1.ServiceExternalTrafficPolicyTypeCluster,
 			"",
 			"{{.Name}}.bar.example.com",
 			false,
@@ -1412,6 +1425,9 @@ func TestNodePortServices(t *testing.T) {
 					},
 				},
 			}},
+			[]string{},
+			[]int{},
+			[]v1.PodPhase{},
 		},
 		{
 			"annotated NodePort services return an endpoint with IP addresses of the private cluster's nodes",
@@ -1420,6 +1436,7 @@ func TestNodePortServices(t *testing.T) {
 			"testing",
 			"foo",
 			v1.ServiceTypeNodePort,
+			v1.ServiceExternalTrafficPolicyTypeCluster,
 			"",
 			"",
 			false,
@@ -1452,6 +1469,55 @@ func TestNodePortServices(t *testing.T) {
 					},
 				},
 			}},
+			[]string{},
+			[]int{},
+			[]v1.PodPhase{},
+		},
+		{
+			"annotated NodePort services with ExternalTrafficPolicy=Local return an endpoint with IP addresses of the cluster's nodes where pods is running only",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeNodePort,
+			v1.ServiceExternalTrafficPolicyTypeLocal,
+			"",
+			"",
+			false,
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+			},
+			nil,
+			[]*endpoint.Endpoint{
+				{DNSName: "_30192._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			[]*v1.Node{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node1",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node2",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+					},
+				},
+			}},
+			[]string{"master-0"},
+			[]int{1},
+			[]v1.PodPhase{v1.PodRunning},
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
@@ -1465,10 +1531,34 @@ func TestNodePortServices(t *testing.T) {
 				}
 			}
 
+			// Create  pods
+			for i, podname := range tc.podnames {
+				pod := &v1.Pod{
+					Spec: v1.PodSpec{
+						Containers: []v1.Container{},
+						Hostname:   podname,
+						NodeName:   tc.nodes[tc.nodeIndex[i]].Name,
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace:   tc.svcNamespace,
+						Name:        podname,
+						Labels:      tc.labels,
+						Annotations: tc.annotations,
+					},
+					Status: v1.PodStatus{
+						Phase: tc.phases[i],
+					},
+				}
+
+				_, err := kubernetes.CoreV1().Pods(tc.svcNamespace).Create(pod)
+				require.NoError(t, err)
+			}
+
 			// Create a service to test against
 			service := &v1.Service{
 				Spec: v1.ServiceSpec{
-					Type: tc.svcType,
+					Type:                  tc.svcType,
+					ExternalTrafficPolicy: tc.svcTrafficPolicy,
 					Ports: []v1.ServicePort{
 						{
 							NodePort: 30192,
