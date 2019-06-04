@@ -404,7 +404,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 			return endpoints
 		}
 		endpoints = append(endpoints, sc.extractNodePortEndpoints(svc, targets, hostname, ttl)...)
-  case v1.ServiceTypeExternalName:
+	case v1.ServiceTypeExternalName:
 		targets = append(targets, extractServiceExternalName(svc)...)
 	}
 
