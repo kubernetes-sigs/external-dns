@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"regexp"
@@ -469,7 +470,7 @@ func testInfobloxApplyChangesInternal(t *testing.T, dryRun bool, client ibclient
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges(changes); err != nil {
+	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -494,4 +495,27 @@ func TestInfobloxZones(t *testing.T) {
 	assert.Equal(t, provider.findZone(zones, "lvl2-1.lvl1-1.example.com").Fqdn, "lvl2-1.lvl1-1.example.com")
 	assert.Equal(t, provider.findZone(zones, "lvl2-2.lvl1-1.example.com").Fqdn, "lvl1-1.example.com")
 	assert.Equal(t, provider.findZone(zones, "lvl2-2.lvl1-2.example.com").Fqdn, "example.com")
+}
+
+func TestMaxResultsRequestBuilder(t *testing.T) {
+	hostConfig := ibclient.HostConfig{
+		Host:     "localhost",
+		Port:     "8080",
+		Username: "user",
+		Password: "abcd",
+		Version:  "2.3.1",
+	}
+
+	requestBuilder := NewMaxResultsRequestBuilder(54321)
+	requestBuilder.Init(hostConfig)
+
+	obj := ibclient.NewRecordCNAME(ibclient.RecordCNAME{Zone: "foo.bar.com"})
+
+	req, _ := requestBuilder.BuildRequest(ibclient.GET, obj, "", ibclient.QueryParams{})
+
+	assert.True(t, req.URL.Query().Get("_max_results") == "54321")
+
+	req, _ = requestBuilder.BuildRequest(ibclient.CREATE, obj, "", ibclient.QueryParams{})
+
+	assert.True(t, req.URL.Query().Get("_max_results") == "")
 }

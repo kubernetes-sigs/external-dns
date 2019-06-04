@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -141,7 +142,7 @@ func (p *RcodeZeroProvider) Records() ([]*endpoint.Endpoint, error) {
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *RcodeZeroProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *RcodeZeroProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 
 	combinedChanges := make([]*rc0.RRSetChange, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 

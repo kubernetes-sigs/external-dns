@@ -17,7 +17,9 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -40,6 +42,7 @@ type InfobloxConfig struct {
 	SSLVerify    bool
 	DryRun       bool
 	View         string
+	MaxResults   int
 }
 
 // InfobloxProvider implements the DNS provider for Infoblox.
@@ -54,6 +57,33 @@ type InfobloxProvider struct {
 type infobloxRecordSet struct {
 	obj ibclient.IBObject
 	res interface{}
+}
+
+// MaxResultsRequestBuilder implements a HttpRequestBuilder which sets the
+// _max_results query parameter on all get requests
+type MaxResultsRequestBuilder struct {
+	maxResults int
+	ibclient.WapiRequestBuilder
+}
+
+// NewMaxResultsRequestBuilder returns a MaxResultsRequestBuilder which adds
+// _max_results query parameter to all GET requests
+func NewMaxResultsRequestBuilder(maxResults int) *MaxResultsRequestBuilder {
+	return &MaxResultsRequestBuilder{
+		maxResults: maxResults,
+	}
+}
+
+// BuildRequest prepares the api request. it uses BuildRequest of
+// WapiRequestBuilder and then add the _max_requests parameter
+func (mrb *MaxResultsRequestBuilder) BuildRequest(t ibclient.RequestType, obj ibclient.IBObject, ref string, queryParams ibclient.QueryParams) (req *http.Request, err error) {
+	req, err = mrb.WapiRequestBuilder.BuildRequest(t, obj, ref, queryParams)
+	if req.Method == "GET" {
+		query := req.URL.Query()
+		query.Set("_max_results", strconv.Itoa(mrb.maxResults))
+		req.URL.RawQuery = query.Encode()
+	}
+	return
 }
 
 // NewInfobloxProvider creates a new Infoblox provider.
@@ -75,7 +105,15 @@ func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, erro
 		httpPoolConnections,
 	)
 
-	requestBuilder := &ibclient.WapiRequestBuilder{}
+	var requestBuilder ibclient.HttpRequestBuilder
+	if infobloxConfig.MaxResults != 0 {
+		// use our own HttpRequestBuilder which sets _max_results paramter on GET requests
+		requestBuilder = NewMaxResultsRequestBuilder(infobloxConfig.MaxResults)
+	} else {
+		// use the default HttpRequestBuilder of the infoblox client
+		requestBuilder = &ibclient.WapiRequestBuilder{}
+	}
+
 	requestor := &ibclient.WapiHttpRequestor{}
 
 	client, err := ibclient.NewConnector(hostConfig, transportConfig, requestBuilder, requestor)
@@ -177,7 +215,7 @@ func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error)
 }
 
 // ApplyChanges applies the given changes.
-func (p *InfobloxProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *InfobloxProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	zones, err := p.zones()
 	if err != nil {
 		return err

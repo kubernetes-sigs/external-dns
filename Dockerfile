@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # builder image
-FROM golang as builder
+FROM golang:1.12.5 as builder
 
 WORKDIR /github.com/kubernetes-incubator/external-dns
 COPY . .
@@ -22,9 +22,10 @@ RUN make test
 RUN make build
 
 # final image
-FROM registry.opensource.zalan.do/stups/alpine:latest
+FROM alpine:3.9
 LABEL maintainer="Team Teapot @ Zalando SE <team-teapot@zalando.de>"
 
+RUN apk add ca-certificates && update-ca-certificates
 COPY --from=builder /github.com/kubernetes-incubator/external-dns/build/external-dns /bin/external-dns
 
 USER nobody
