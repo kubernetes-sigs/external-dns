@@ -28,9 +28,12 @@ type DomainFilter struct {
 
 // prepareFilters provides consistent trimming for filters/exclude params
 func prepareFilters(filters []string) []string {
-	fs := make([]string, len(filters))
-	for i, domain := range filters {
-		fs[i] = strings.ToLower(strings.TrimSuffix(strings.TrimSpace(domain), "."))
+	fs := []string{}
+	for _, domain := range filters {
+		v := strings.ToLower(strings.TrimSuffix(strings.TrimSpace(domain), "."))
+		if v != "" {
+			fs = append(fs, v)
+		}
 	}
 	return fs
 }

@@ -252,7 +252,7 @@ func TestPrepareFiltersStripsWhitespaceAndDotSuffix(t *testing.T) {
 	}{
 		{
 			[]string{" ", "   ", ""},
-			[]string{"", "", ""},
+			[]string{},
 		},
 		{
 			[]string{"  foo   ", "  bar. ", "baz."},
@@ -294,7 +294,7 @@ func TestDomainFilterIsConfigured(t *testing.T) {
 		{
 			[]string{"", ""},
 			[]string{""},
-			true,
+			false,
 		},
 		{
 			[]string{" . "},
