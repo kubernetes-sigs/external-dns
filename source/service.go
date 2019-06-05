@@ -185,6 +185,9 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		// if needed, filter the nodes by label filter
 		if nodeLabelsFilter, ok := svc.Annotations[nodeLabelFilterKey]; ok {
 			nodes, err = sc.filterNodesByLabels(nodeLabelsFilter, nodes)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		// get the ip addresses of all the nodes and cache them for this run
