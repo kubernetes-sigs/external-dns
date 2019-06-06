@@ -62,7 +62,7 @@ func matchFilter(filters []string, domain string, emptyval bool) bool {
 		strippedDomain := strings.ToLower(strings.TrimSuffix(domain, "."))
 
 		if filter == "" {
-			return true
+			return emptyval
 		} else if strings.HasPrefix(filter, ".") && strings.HasSuffix(strippedDomain, filter) {
 			return true
 		} else if strings.Count(strippedDomain, ".") == strings.Count(filter, ".") {
