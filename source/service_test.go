@@ -2072,6 +2072,110 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 	}
 }
 
+// TestExternalServices tests that external services generate the correct endpoints.
+func TestExternalServices(t *testing.T) {
+	for _, tc := range []struct {
+		title                    string
+		targetNamespace          string
+		svcNamespace             string
+		svcName                  string
+		svcType                  v1.ServiceType
+		compatibility            string
+		fqdnTemplate             string
+		ignoreHostnameAnnotation bool
+		labels                   map[string]string
+		annotations              map[string]string
+		externalName             string
+		expected                 []*endpoint.Endpoint
+		expectError              bool
+	}{
+		{
+			"external services return an A endpoint for the external name that is an IP address",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeExternalName,
+			"",
+			"",
+			false,
+			map[string]string{"component": "foo"},
+			map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+			},
+			"111.111.111.111",
+			[]*endpoint.Endpoint{
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"111.111.111.111"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+		},
+		{
+			"external services return a CNAME endpoint for the external name that is a domain",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeExternalName,
+			"",
+			"",
+			false,
+			map[string]string{"component": "foo"},
+			map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+			},
+			"remote.example.com",
+			[]*endpoint.Endpoint{
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"remote.example.com"}, RecordType: endpoint.RecordTypeCNAME},
+			},
+			false,
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			// Create a Kubernetes testing client
+			kubernetes := fake.NewSimpleClientset()
+
+			service := &v1.Service{
+				Spec: v1.ServiceSpec{
+					Type:         tc.svcType,
+					ExternalName: tc.externalName,
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   tc.svcNamespace,
+					Name:        tc.svcName,
+					Labels:      tc.labels,
+					Annotations: tc.annotations,
+				},
+				Status: v1.ServiceStatus{},
+			}
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
+			require.NoError(t, err)
+
+			// Create our object under test and get the endpoints.
+			client, _ := NewServiceSource(
+				kubernetes,
+				tc.targetNamespace,
+				"",
+				tc.fqdnTemplate,
+				false,
+				tc.compatibility,
+				true,
+				false,
+				[]string{},
+				tc.ignoreHostnameAnnotation,
+			)
+			require.NoError(t, err)
+
+			endpoints, err := client.Endpoints()
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			// Validate returned endpoints against desired endpoints.
+			validateEndpoints(t, endpoints, tc.expected)
+		})
+	}
+}
+
 func BenchmarkServiceEndpoints(b *testing.B) {
 	kubernetes := fake.NewSimpleClientset()
 
