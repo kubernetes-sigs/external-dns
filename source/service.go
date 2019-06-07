@@ -404,6 +404,8 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 			return endpoints
 		}
 		endpoints = append(endpoints, sc.extractNodePortEndpoints(svc, targets, hostname, ttl)...)
+	case v1.ServiceTypeExternalName:
+		targets = append(targets, extractServiceExternalName(svc)...)
 	}
 
 	for _, t := range targets {
@@ -430,6 +432,10 @@ func extractServiceIps(svc *v1.Service) endpoint.Targets {
 		return endpoint.Targets{}
 	}
 	return endpoint.Targets{svc.Spec.ClusterIP}
+}
+
+func extractServiceExternalName(svc *v1.Service) endpoint.Targets {
+	return endpoint.Targets{svc.Spec.ExternalName}
 }
 
 func extractLoadBalancerTargets(svc *v1.Service) endpoint.Targets {
