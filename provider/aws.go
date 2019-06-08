@@ -606,7 +606,7 @@ func suitableZones(hostname string, zones map[string]*route53.HostedZone) []*rou
 
 // isAWSLoadBalancer determines if a given hostname belongs to an AWS load balancer.
 func isAWSLoadBalancer(ep *endpoint.Endpoint) bool {
-	if ep.RecordType == endpoint.RecordTypeCNAME {
+	if ep.RecordType == endpoint.RecordTypeCNAME && len(ep.Targets) > 0 {
 		return canonicalHostedZone(ep.Targets[0]) != ""
 	}
 
@@ -617,7 +617,7 @@ func isAWSLoadBalancer(ep *endpoint.Endpoint) bool {
 func isAWSAlias(ep *endpoint.Endpoint, addrs []*endpoint.Endpoint) string {
 	if prop, exists := ep.GetProviderSpecificProperty("alias"); ep.RecordType == endpoint.RecordTypeCNAME && exists && prop.Value == "true" {
 		for _, addr := range addrs {
-			if addr.DNSName == ep.Targets[0] {
+			if len(ep.Targets) > 0 && addr.DNSName == ep.Targets[0] {
 				if hostedZone := canonicalHostedZone(addr.Targets[0]); hostedZone != "" {
 					return hostedZone
 				}
