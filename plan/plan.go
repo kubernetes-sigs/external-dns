@@ -187,10 +187,33 @@ func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
 			continue
 		}
 
+		found := false
 		for _, d := range desired.ProviderSpecific {
-			if d.Name == c.Name && d.Value != c.Value {
-				return true
+			if d.Name == c.Name {
+				if d.Value != c.Value {
+					// provider-specific attribute updated
+					return true
+				}
+				found = true
+				break
 			}
+		}
+		if !found {
+			// provider-specific attribute deleted
+			return true
+		}
+	}
+	for _, d := range desired.ProviderSpecific {
+		found := false
+		for _, c := range current.ProviderSpecific {
+			if d.Name == c.Name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			// provider-specific attribute added
+			return true
 		}
 	}
 

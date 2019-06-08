@@ -43,7 +43,7 @@ func (ms *dedupSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	}
 
 	for _, ep := range endpoints {
-		identifier := ep.DNSName + " / " + ep.Targets.String()
+		identifier := ep.DNSName + " / " + ep.SetIdentifier + " / " + ep.Targets.String()
 
 		if _, ok := collected[identifier]; ok {
 			log.Debugf("Removing duplicate endpoint %s", ep)
