@@ -320,6 +320,23 @@ spec:
 
 This will set the DNS record's TTL to 60 seconds.
 
+## Routing policies
+
+Route53 offers [different routing policies](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html). The routing policy for a record can be controlled with the following annotations:
+
+* `external-dns.alpha.kubernetes.io/set-identifier`: this **needs** to be set to use any of the following routing policies
+
+For any given DNS name, only **one** of the following routing policies can be used:
+
+* Weighted records: `external-dns.alpha.kubernetes.io/aws-weight`
+* Latency-based routing: `external-dns.alpha.kubernetes.io/aws-region`
+* Failover:`external-dns.alpha.kubernetes.io/aws-failover`
+* Geolocation-based routing:
+  * `external-dns.alpha.kubernetes.io/aws-geolocation-continent-code`
+  * `external-dns.alpha.kubernetes.io/aws-geolocation-country-code`
+  * `external-dns.alpha.kubernetes.io/aws-geolocation-subdivision-code`
+* Multi-value answer:`external-dns.alpha.kubernetes.io/aws-multi-value-answer`
+
 ## Clean up
 
 Make sure to delete all Service objects before terminating the cluster so all load balancers get cleaned up correctly.
