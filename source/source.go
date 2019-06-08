@@ -45,6 +45,8 @@ const (
 const (
 	// The annotation used for determining if traffic will go through Cloudflare
 	CloudflareProxiedKey = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
+
+	SetIdentifierKey = "external-dns.alpha.kubernetes.io/set-identifier"
 )
 
 const (
@@ -86,7 +88,7 @@ func getAliasFromAnnotations(annotations map[string]string) bool {
 	return exists && aliasAnnotation == "true"
 }
 
-func getProviderSpecificAnnotations(annotations map[string]string) endpoint.ProviderSpecific {
+func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.ProviderSpecific, string) {
 	providerSpecificAnnotations := endpoint.ProviderSpecific{}
 
 	v, exists := annotations[CloudflareProxiedKey]
@@ -102,7 +104,19 @@ func getProviderSpecificAnnotations(annotations map[string]string) endpoint.Prov
 			Value: "true",
 		})
 	}
-	return providerSpecificAnnotations
+	setIdentifier := ""
+	for k, v := range annotations {
+		if k == SetIdentifierKey {
+			setIdentifier = v
+		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/aws-") {
+			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/aws-")
+			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+				Name:  fmt.Sprintf("aws/%s", attr),
+				Value: v,
+			})
+		}
+	}
+	return providerSpecificAnnotations, setIdentifier
 }
 
 // getTargetsFromTargetAnnotation gets endpoints from optional "target" annotation.
@@ -133,7 +147,7 @@ func suitableType(target string) string {
 }
 
 // endpointsForHostname returns the endpoint objects for each host-target combination.
-func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoint.TTL, providerSpecific endpoint.ProviderSpecific) []*endpoint.Endpoint {
+func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoint.TTL, providerSpecific endpoint.ProviderSpecific, setIdentifier string) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	var aTargets endpoint.Targets
@@ -156,6 +170,7 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 			RecordType:       endpoint.RecordTypeA,
 			Labels:           endpoint.NewLabels(),
 			ProviderSpecific: providerSpecific,
+			SetIdentifier:    setIdentifier,
 		}
 		endpoints = append(endpoints, epA)
 	}
@@ -168,6 +183,7 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 			RecordType:       endpoint.RecordTypeCNAME,
 			Labels:           endpoint.NewLabels(),
 			ProviderSpecific: providerSpecific,
+			SetIdentifier:    setIdentifier,
 		}
 		endpoints = append(endpoints, epCNAME)
 	}
