@@ -39,11 +39,9 @@ const (
 	// provider specific key that designates whether an AWS ALIAS record has the EvaluateTargetHealth
 	// field set to true.
 	providerSpecificEvaluateTargetHealth       = "aws/evaluate-target-health"
-	providerSpecificSetIdentifier              = "aws/set-identifier"
 	providerSpecificWeight                     = "aws/weight"
 	providerSpecificRegion                     = "aws/region"
 	providerSpecificFailover                   = "aws/failover"
-	providerSpecificGeolocation                = "aws/geolocation"
 	providerSpecificGeolocationContinentCode   = "aws/geolocation-continent-code"
 	providerSpecificGeolocationCountryCode     = "aws/geolocation-country-code"
 	providerSpecificGeolocationSubdivisionCode = "aws/geolocation-subdivision-code"
