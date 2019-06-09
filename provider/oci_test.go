@@ -112,7 +112,7 @@ func newOCIProvider(client ociDNSClient, domainFilter DomainFilter, zoneIDFilter
 	}
 }
 
-func validateOCIZones(t *testing.T, actual, expected map[string]*dns.ZoneSummary) {
+func validateOCIZones(t *testing.T, actual, expected map[string]dns.ZoneSummary) {
 	require.Len(t, actual, len(expected))
 
 	for k, a := range actual {
@@ -201,13 +201,13 @@ func TestOCIZones(t *testing.T) {
 		name         string
 		domainFilter DomainFilter
 		zoneIDFilter ZoneIDFilter
-		expected     map[string]*dns.ZoneSummary
+		expected     map[string]dns.ZoneSummary
 	}{
 		{
 			name:         "DomainFilter_com",
 			domainFilter: NewDomainFilter([]string{"com"}),
 			zoneIDFilter: NewZoneIDFilter([]string{""}),
-			expected: map[string]*dns.ZoneSummary{
+			expected: map[string]dns.ZoneSummary{
 				"foo.com": {
 					Id:   common.String("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
 					Name: common.String("foo.com"),
@@ -221,7 +221,7 @@ func TestOCIZones(t *testing.T) {
 			name:         "DomainFilter_foo.com",
 			domainFilter: NewDomainFilter([]string{"foo.com"}),
 			zoneIDFilter: NewZoneIDFilter([]string{""}),
-			expected: map[string]*dns.ZoneSummary{
+			expected: map[string]dns.ZoneSummary{
 				"foo.com": {
 					Id:   common.String("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
 					Name: common.String("foo.com"),
@@ -231,7 +231,7 @@ func TestOCIZones(t *testing.T) {
 			name:         "ZoneIDFilter_ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959",
 			domainFilter: NewDomainFilter([]string{""}),
 			zoneIDFilter: NewZoneIDFilter([]string{"ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"}),
-			expected: map[string]*dns.ZoneSummary{
+			expected: map[string]dns.ZoneSummary{
 				"foo.com": {
 					Id:   common.String("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
 					Name: common.String("foo.com"),
@@ -360,13 +360,13 @@ func TestNewRecordOperation(t *testing.T) {
 func TestOperationsByZone(t *testing.T) {
 	testCases := []struct {
 		name     string
-		zones    map[string]*dns.ZoneSummary
+		zones    map[string]dns.ZoneSummary
 		ops      []dns.RecordOperation
 		expected map[string][]dns.RecordOperation
 	}{
 		{
 			name: "basic",
-			zones: map[string]*dns.ZoneSummary{
+			zones: map[string]dns.ZoneSummary{
 				"foo": {
 					Id:   common.String("foo"),
 					Name: common.String("foo.com"),
@@ -414,7 +414,7 @@ func TestOperationsByZone(t *testing.T) {
 			},
 		}, {
 			name: "does_not_include_zones_with_no_changes",
-			zones: map[string]*dns.ZoneSummary{
+			zones: map[string]dns.ZoneSummary{
 				"foo": {
 					Id:   common.String("foo"),
 					Name: common.String("foo.com"),
