@@ -41,6 +41,7 @@ type Config struct {
 	KubeConfig                  string
 	RequestTimeout              time.Duration
 	IstioIngressGatewayServices []string
+	ContourLoadBalancerService  string
 	Sources                     []string
 	Namespace                   string
 	AnnotationFilter            string
@@ -129,6 +130,7 @@ var defaultConfig = &Config{
 	KubeConfig:                  "",
 	RequestTimeout:              time.Second * 30,
 	IstioIngressGatewayServices: []string{"istio-system/istio-ingressgateway"},
+	ContourLoadBalancerService:  "heptio-contour/contour",
 	Sources:                     nil,
 	Namespace:                   "",
 	AnnotationFilter:            "",
@@ -260,8 +262,11 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("cf-username", "The username to log into the cloud foundry API").Default(defaultConfig.CFUsername).StringVar(&cfg.CFUsername)
 	app.Flag("cf-password", "The password to log into the cloud foundry API").Default(defaultConfig.CFPassword).StringVar(&cfg.CFPassword)
 
+	// Flags related to Contour
+	app.Flag("contour-load-balancer", "The fully-qualified name of the Contour load balancer service. (default: heptio-contour/contour)").Default("heptio-contour/contour").StringVar(&cfg.ContourLoadBalancerService)
+
 	// Flags related to processing sources
-	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, fake, connector, istio-gateway, cloudfoundry, crd, empty").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "istio-gateway", "cloudfoundry", "fake", "connector", "crd", "empty")
+	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, fake, connector, istio-gateway, cloudfoundry, contour-ingressroute, crd, empty").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "istio-gateway", "cloudfoundry", "contour-ingressroute", "fake", "connector", "crd", "empty")
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
 	app.Flag("annotation-filter", "Filter sources managed by external-dns via annotation using label selector semantics (default: all sources)").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
 	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
