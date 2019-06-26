@@ -36,7 +36,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"time"
 )
 
 const (
@@ -114,12 +113,11 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	// TODO informer is not explicitly stopped since controller is not passing in its channel.
 	informerFactory.Start(wait.NeverStop)
 
-	// wait for the local cache to be populated.
-	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
-		return serviceInformer.Informer().HasSynced() == true, nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	// Wait for all informers to be synced.
+	for informer, isSynced := range informerFactory.WaitForCacheSync(wait.NeverStop) {
+		if !isSynced {
+			return nil,fmt.Errorf("error syncing informer %s",informer)
+		}
 	}
 
 	// Transform the slice into a map so it will
