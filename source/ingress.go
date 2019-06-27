@@ -240,7 +240,9 @@ func (sc *ingressSource) setDualstackLabel(ingress *v1beta1.Ingress, endpoints [
 	val, ok := ingress.Annotations[ALBDualstackAnnotationKey]
 	if ok && val == ALBDualstackAnnotationValue {
 		log.Debugf("Adding dualstack label to ingress %s/%s.", ingress.Namespace, ingress.Name)
-		for _, ep := range endpoints { ep.Labels[endpoint.DualstackLabelKey] = "true" }
+		for _, ep := range endpoints {
+			ep.Labels[endpoint.DualstackLabelKey] = "true"
+		}
 	}
 }
 
