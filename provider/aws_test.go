@@ -860,6 +860,7 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 	} {
 		provider, _ := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), NewZoneIDFilter([]string{}), NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, []*endpoint.Endpoint{})
 
+		// Test dualstack and ipv4 load balancer targets
 		records := []*endpoint.Endpoint{
 			{
 				DNSName:    "create-test.zone-1.ext-dns-test-2.teapot.zalan.do",
@@ -871,6 +872,18 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 						Value: key,
 					},
 				},
+			},
+			{
+				DNSName:    "create-test-dualstack.zone-1.ext-dns-test-2.teapot.zalan.do",
+				Targets:    endpoint.Targets{"bar.eu-central-1.elb.amazonaws.com"},
+				RecordType: endpoint.RecordTypeCNAME,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					endpoint.ProviderSpecificProperty{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: key,
+					},
+				},
+				Labels: map[string]string{endpoint.DualstackLabelKey: "true"},
 			},
 		}
 
@@ -886,7 +899,25 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 					HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
 				},
 				Name: aws.String("create-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
-				Type: aws.String(endpoint.RecordTypeA),
+				Type: aws.String(route53.RRTypeA),
+			},
+			{
+				AliasTarget: &route53.AliasTarget{
+					DNSName:              aws.String("bar.eu-central-1.elb.amazonaws.com."),
+					EvaluateTargetHealth: aws.Bool(evaluateTargetHealth),
+					HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
+				},
+				Name: aws.String("create-test-dualstack.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type: aws.String(route53.RRTypeA),
+			},
+			{
+				AliasTarget: &route53.AliasTarget{
+					DNSName:              aws.String("bar.eu-central-1.elb.amazonaws.com."),
+					EvaluateTargetHealth: aws.Bool(evaluateTargetHealth),
+					HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
+				},
+				Name: aws.String("create-test-dualstack.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type: aws.String(route53.RRTypeAaaa),
 			},
 		})
 	}
