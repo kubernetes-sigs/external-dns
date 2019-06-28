@@ -1243,5 +1243,6 @@ func addZoneTags(tagMap map[string][]*route53.Tag, zoneID string, tags map[strin
 }
 
 func validateRecords(t *testing.T, records []*route53.ResourceRecordSet, expected []*route53.ResourceRecordSet) {
-	assert.Equal(t, expected, records)
+  // If the two record sets have save elements, but different ordering, the test should still pass.
+	assert.ElementsMatch(t, expected, records)
 }
