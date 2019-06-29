@@ -57,11 +57,11 @@ func (suite *IngressSuite) SetupTest() {
 	suite.NoError(err, "should initialize ingress source")
 
 	suite.fooWithTargets = (fakeIngress{
-		name:      "foo-with-targets",
-		namespace: "default",
-		dnsnames:  []string{"foo"},
-		ips:       []string{"8.8.8.8"},
-		hostnames: []string{"v1"},
+		name:        "foo-with-targets",
+		namespace:   "default",
+		dnsnames:    []string{"foo"},
+		ips:         []string{"8.8.8.8"},
+		hostnames:   []string{"v1"},
 		annotations: map[string]string{ALBDualstackAnnotationKey: ALBDualstackAnnotationValue},
 	}).Ingress()
 	_, err = fakeClient.Extensions().Ingresses(suite.fooWithTargets.Namespace).Create(suite.fooWithTargets)
