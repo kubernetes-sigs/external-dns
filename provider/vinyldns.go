@@ -46,9 +46,10 @@ type vinyldnsZoneInterface interface {
 }
 
 type vinyldnsProvider struct {
-	client     vinyldnsZoneInterface
-	zoneFilter ZoneIDFilter
-	dryRun     bool
+	client       vinyldnsZoneInterface
+	zoneFilter   ZoneIDFilter
+	domainFilter DomainFilter
+	dryRun       bool
 }
 
 type vinyldnsChange struct {
@@ -57,7 +58,7 @@ type vinyldnsChange struct {
 }
 
 // NewVinylDNSProvider provides support for VinylDNS records
-func NewVinylDNSProvider(zoneFilter ZoneIDFilter, dryRun bool) (Provider, error) {
+func NewVinylDNSProvider(domainFilter DomainFilter, zoneFilter ZoneIDFilter, dryRun bool) (Provider, error) {
 	_, ok := os.LookupEnv("VINYLDNS_ACCESS_KEY")
 	if !ok {
 		return nil, fmt.Errorf("no vinyldns access key found")
@@ -66,9 +67,10 @@ func NewVinylDNSProvider(zoneFilter ZoneIDFilter, dryRun bool) (Provider, error)
 	client := vinyldns.NewClientFromEnv()
 
 	return &vinyldnsProvider{
-		client:     client,
-		dryRun:     dryRun,
-		zoneFilter: zoneFilter,
+		client:       client,
+		dryRun:       dryRun,
+		zoneFilter:   zoneFilter,
+		domainFilter: domainFilter,
 	}, nil
 }
 
@@ -83,7 +85,11 @@ func (p *vinyldnsProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 			continue
 		}
 
-		log.Infof(fmt.Sprintf("Zone: [%s]", zone.Name))
+		if !p.domainFilter.Match(zone.Name) {
+			continue
+		}
+
+		log.Infof(fmt.Sprintf("Zone: [%s:%s]", zone.ID, zone.Name))
 		records, err := p.client.RecordSets(zone.ID)
 		if err != nil {
 			return nil, err
