@@ -129,10 +129,8 @@ func vinyldnsSuitableZone(hostname string, zones []vinyldns.Zone) *vinyldns.Zone
 		log.Debugf("hostname: %s and zoneName: %s", hostname, z.Name)
 		// Adding a . as vinyl appends it to each zone record
 		if strings.HasSuffix(hostname+".", z.Name) {
-			if zone == nil || len(z.Name) > len(zone.Name) {
-				newZ := z
-				zone = &newZ
-			}
+			zone = &z
+			break
 		}
 	}
 	return zone

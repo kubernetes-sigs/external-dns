@@ -1,5 +1,9 @@
 # Setting up ExternalDNS for VinylDNS
 
+This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using VinylDNS.
+
+The environment vars `VINYLDNS_ACCESS_KEY`, `VINYLDNS_SECRET_KEY`, and `VINYLDNS_HOST` will be needed to run ExternalDNS with VinylDNS.
+
 ## Create a sample deployment and service for external-dns to use
 
 Run an application and expose it via a Kubernetes Service:
@@ -31,6 +35,111 @@ Once it's available
 NAME         CLUSTER-IP   EXTERNAL-IP   PORT(S)        AGE
 kubernetes   10.0.0.1     <none>        443/TCP        1h
 nginx        10.0.0.115   34.x.x.x      80:30543/TCP   2m
+```
+
+## Deploy ExternalDNS to Kubernetes
+
+Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
+Then apply one of the following manifests file to deploy ExternalDNS.
+
+### Manifest (for clusters without RBAC enabled)
+
+```yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: external-dns
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: external-dns
+    spec:
+      containers:
+      - name: external-dns
+        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        args:
+        - --provider=vinyldns
+        - --source=service
+        - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
+        env:
+        - name: VINYLDNS_HOST
+          value: "YOUR_VINYLDNS_HOST"
+        - name: VINYLDNS_ACCESS_KEY
+          value: "YOUR_VINYLDNS_ACCESS_KEY"
+        - name: VINYLDNS_SECRET_KEY
+          value: "YOUR_VINYLDNS_SECRET_KEY"
+```
+
+### Manifest (for clusters with RBAC enabled)
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: external-dns
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: external-dns
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get","watch","list"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["extensions"]
+  resources: ["ingresses"]
+  verbs: ["get","watch","list"]
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: external-dns-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: external-dns
+subjects:
+- kind: ServiceAccount
+  name: external-dns
+  namespace: default
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: external-dns
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: external-dns
+    spec:
+      serviceAccountName: external-dns
+      containers:
+      - name: external-dns
+        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        args:
+        - --provider=vinyldns
+        - --source=service
+        - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
+        env:
+        env:
+        - name: VINYLDNS_HOST
+          value: "YOUR_VINYLDNS_HOST"
+        - name: VINYLDNS_ACCESS_KEY
+          value: "YOUR_VINYLDNS_ACCESS_KEY"
+        - name: VINYLDNS_SECRET_KEY
+          value: "YOUR_VINYLDNS_SECRET_KEYY
 ```
 
 ## Running a locally built version pointed to the above nginx service
@@ -65,4 +174,4 @@ INFO[0001] Zone: [nginx.example.org.]
 # output skipped
 ```
 
-Having `--dry-run=true` and `--log-level=debug` is a great way to see _exactly_ what DynamicDNS is doing or is about to do.
+Having `--dry-run=true` and `--log-level=debug` is a great way to see _exactly_ what VinylDNS is doing or is about to do.
