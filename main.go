@@ -120,7 +120,6 @@ func main() {
 				BatchChangeInterval:  cfg.AWSBatchChangeInterval,
 				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
 				AssumeRole:           cfg.AWSAssumeRole,
-				APIRetries:           cfg.AWSAPIRetries,
 				DryRun:               cfg.DryRun,
 			},
 		)
@@ -133,6 +132,8 @@ func main() {
 		p, err = provider.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.AWSAssumeRole, cfg.DryRun)
 	case "azure":
 		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.DryRun)
+	case "vinyldns":
+		p, err = provider.NewVinylDNSProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "cloudflare":
 		p, err = provider.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareZonesPerPage, cfg.CloudflareProxied, cfg.DryRun)
 	case "rcodezero":
