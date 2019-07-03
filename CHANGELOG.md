@@ -1,3 +1,20 @@
+## v0.5.15 - 2019-07-03
+
+  - RFC2136: Fix when merging multiple targets (#1082) @hachh
+  - New provider VinylDNS (#1080) @dgrizzanti 
+  - Core: Fix for DomainFilter exclusions (#1059) @cmattoon
+  - Core: Update aws-go-sdk to be compatible with kube-aws-iam-controller (#1054) @mikkeloscar
+  - RFC2136: Log RR adds/deletes as Info (#1041) @gclawes
+  - Docs: Cloudflare set ttl annotation for proxied entries to 1 (#1039) @MiniJerome
+  - Core: Install ca-certificates (#1038) @dryewo
+  - Cloudflare: Fix provider to return a single endpoint for each name/type (#1034) @shasderias
+  - Core: Sanitize dockerfiles for external-dns (#1033) @tariq1890
+  - Core: Add empty source (#1032) @anandkumarpatel
+  - Google: Zones should be filter by their ID and Name (#1031) @simonswine
+  - Core: Fix panic on empty targets for custom resources (#1029) @arturo-c
+  - Core: Support externalTrafficPolicy annotation with "local" mode for NodePort service (#1023) @yverbin
+  - Core: Add support for ExternalName services (#1018) @mironov
+
 ## v0.5.14 - 2019-05-14
 
   - Docs: Update aws.md (#1009) @pawelprazak 
