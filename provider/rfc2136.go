@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/miekg/dns"
@@ -132,7 +133,7 @@ OuterLoop:
 		}
 
 		for idx, existingEndpoint := range eps {
-			if existingEndpoint.DNSName == rrFqdn && existingEndpoint.RecordType == rrType {
+			if existingEndpoint.DNSName == strings.TrimSuffix(rrFqdn, ".") && existingEndpoint.RecordType == rrType {
 				eps[idx].Targets = append(eps[idx].Targets, rrValues...)
 				continue OuterLoop
 			}
