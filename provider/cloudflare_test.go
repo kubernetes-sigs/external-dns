@@ -814,6 +814,6 @@ func TestGroupByNameAndType(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		assert.Equal(t, groupByNameAndType(tc.Records), tc.ExpectedEndpoints)
+		assert.ElementsMatch(t, groupByNameAndType(tc.Records), tc.ExpectedEndpoints)
 	}
 }
