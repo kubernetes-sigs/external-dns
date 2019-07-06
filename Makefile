@@ -62,7 +62,7 @@ build.docker:
 	docker build --rm --tag "$(IMAGE):$(VERSION)" .
 
 build.mini:
-	docker build --rm --tag "$(IMAGE):$(VERSION)" -f Dockerfile.mini .
+	docker build --rm --tag "$(IMAGE):$(VERSION)-mini" -f Dockerfile.mini .
 
 clean:
 	@rm -rf build
