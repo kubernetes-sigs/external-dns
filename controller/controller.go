@@ -62,6 +62,20 @@ var (
 			Help:      "Number of Endpoints in the registry",
 		},
 	)
+	deprecatedRegistryErrors = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Subsystem: "registry",
+			Name:      "errors_total",
+			Help:      "Number of Registry errors.",
+		},
+	)
+	deprecatedSourceErrors = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Subsystem: "source",
+			Name:      "errors_total",
+			Help:      "Number of Source errors.",
+		},
+	)
 )
 
 func init() {
@@ -69,6 +83,8 @@ func init() {
 	prometheus.MustRegister(sourceErrorsTotal)
 	prometheus.MustRegister(sourceEndpointsTotal)
 	prometheus.MustRegister(registryEndpointsTotal)
+	prometheus.MustRegister(deprecatedRegistryErrors)
+	prometheus.MustRegister(deprecatedSourceErrors)
 }
 
 // Controller is responsible for orchestrating the different components.
@@ -91,6 +107,7 @@ func (c *Controller) RunOnce() error {
 	records, err := c.Registry.Records()
 	if err != nil {
 		registryErrorsTotal.Inc()
+		deprecatedRegistryErrors.Inc()
 		return err
 	}
 	registryEndpointsTotal.Set(float64(len(records)))
@@ -100,6 +117,7 @@ func (c *Controller) RunOnce() error {
 	endpoints, err := c.Source.Endpoints()
 	if err != nil {
 		sourceErrorsTotal.Inc()
+		deprecatedSourceErrors.Inc()
 		return err
 	}
 	sourceEndpointsTotal.Set(float64(len(endpoints)))
@@ -115,6 +133,7 @@ func (c *Controller) RunOnce() error {
 	err = c.Registry.ApplyChanges(ctx, plan.Changes)
 	if err != nil {
 		registryErrorsTotal.Inc()
+		deprecatedRegistryErrors.Inc()
 		return err
 	}
 	return nil
