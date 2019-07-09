@@ -407,60 +407,74 @@ func (p *AWSProvider) newChanges(action string, endpoints []*endpoint.Endpoint, 
 	changes := make([]*route53.Change, 0, len(endpoints))
 
 	for _, endpoint := range endpoints {
-		changes = append(changes, p.newChange(action, endpoint, recordsCache, zones))
+		change, dualstack := p.newChange(action, endpoint, recordsCache, zones)
+		changes = append(changes, change)
+		if dualstack {
+			// make a copy of change, modify RRS type to AAAA, then add new change
+			rrs := *change.ResourceRecordSet
+			change2 := &route53.Change{Action: change.Action, ResourceRecordSet: &rrs}
+			change2.ResourceRecordSet.Type = aws.String(route53.RRTypeAaaa)
+			changes = append(changes, change2)
+		}
 	}
 
 	return changes
 }
 
-// newChange returns a Change of the given record by the given action, e.g.
+// newChange returns a route53 Change and a boolean indicating if there should also be a change to a AAAA record
+// returned Change is based on the given record by the given action, e.g.
 // action=ChangeActionCreate returns a change for creation of the record and
 // action=ChangeActionDelete returns a change for deletion of the record.
-func (p *AWSProvider) newChange(action string, endpoint *endpoint.Endpoint, recordsCache []*endpoint.Endpoint, zones map[string]*route53.HostedZone) *route53.Change {
+func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint, recordsCache []*endpoint.Endpoint, zones map[string]*route53.HostedZone) (*route53.Change, bool) {
 	change := &route53.Change{
 		Action: aws.String(action),
 		ResourceRecordSet: &route53.ResourceRecordSet{
-			Name: aws.String(endpoint.DNSName),
+			Name: aws.String(ep.DNSName),
 		},
 	}
+	dualstack := false
 
-	if isAWSLoadBalancer(endpoint) {
+	if isAWSLoadBalancer(ep) {
 		evalTargetHealth := p.evaluateTargetHealth
-		if prop, ok := endpoint.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); ok {
+		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); ok {
 			evalTargetHealth = prop.Value == "true"
+		}
+		// If the endpoint has a Dualstack label, append a change for AAAA record as well.
+		if val, ok := ep.Labels[endpoint.DualstackLabelKey]; ok {
+			dualstack = val == "true"
 		}
 
 		change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
 		change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
-			DNSName:              aws.String(endpoint.Targets[0]),
-			HostedZoneId:         aws.String(canonicalHostedZone(endpoint.Targets[0])),
+			DNSName:              aws.String(ep.Targets[0]),
+			HostedZoneId:         aws.String(canonicalHostedZone(ep.Targets[0])),
 			EvaluateTargetHealth: aws.Bool(evalTargetHealth),
 		}
-	} else if hostedZone := isAWSAlias(endpoint, recordsCache); hostedZone != "" {
+	} else if hostedZone := isAWSAlias(ep, recordsCache); hostedZone != "" {
 		for _, zone := range zones {
 			change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
 			change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
-				DNSName:              aws.String(endpoint.Targets[0]),
+				DNSName:              aws.String(ep.Targets[0]),
 				HostedZoneId:         aws.String(cleanZoneID(*zone.Id)),
 				EvaluateTargetHealth: aws.Bool(p.evaluateTargetHealth),
 			}
 		}
 	} else {
-		change.ResourceRecordSet.Type = aws.String(endpoint.RecordType)
-		if !endpoint.RecordTTL.IsConfigured() {
+		change.ResourceRecordSet.Type = aws.String(ep.RecordType)
+		if !ep.RecordTTL.IsConfigured() {
 			change.ResourceRecordSet.TTL = aws.Int64(recordTTL)
 		} else {
-			change.ResourceRecordSet.TTL = aws.Int64(int64(endpoint.RecordTTL))
+			change.ResourceRecordSet.TTL = aws.Int64(int64(ep.RecordTTL))
 		}
-		change.ResourceRecordSet.ResourceRecords = make([]*route53.ResourceRecord, len(endpoint.Targets))
-		for idx, val := range endpoint.Targets {
+		change.ResourceRecordSet.ResourceRecords = make([]*route53.ResourceRecord, len(ep.Targets))
+		for idx, val := range ep.Targets {
 			change.ResourceRecordSet.ResourceRecords[idx] = &route53.ResourceRecord{
 				Value: aws.String(val),
 			}
 		}
 	}
 
-	return change
+	return change, dualstack
 }
 
 func (p *AWSProvider) tagsForZone(zoneID string) (map[string]string, error) {
@@ -606,7 +620,7 @@ func suitableZones(hostname string, zones map[string]*route53.HostedZone) []*rou
 
 // isAWSLoadBalancer determines if a given hostname belongs to an AWS load balancer.
 func isAWSLoadBalancer(ep *endpoint.Endpoint) bool {
-	if ep.RecordType == endpoint.RecordTypeCNAME {
+	if ep.RecordType == endpoint.RecordTypeCNAME && len(ep.Targets) > 0 {
 		return canonicalHostedZone(ep.Targets[0]) != ""
 	}
 
@@ -617,7 +631,7 @@ func isAWSLoadBalancer(ep *endpoint.Endpoint) bool {
 func isAWSAlias(ep *endpoint.Endpoint, addrs []*endpoint.Endpoint) string {
 	if prop, exists := ep.GetProviderSpecificProperty("alias"); ep.RecordType == endpoint.RecordTypeCNAME && exists && prop.Value == "true" {
 		for _, addr := range addrs {
-			if addr.DNSName == ep.Targets[0] {
+			if len(ep.Targets) > 0 && addr.DNSName == ep.Targets[0] {
 				if hostedZone := canonicalHostedZone(addr.Targets[0]); hostedZone != "" {
 					return hostedZone
 				}

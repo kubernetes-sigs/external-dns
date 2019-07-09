@@ -106,8 +106,8 @@ func NewOCIProvider(cfg OCIConfig, domainFilter DomainFilter, zoneIDFilter ZoneI
 	}, nil
 }
 
-func (p *OCIProvider) zones(ctx context.Context) (map[string]*dns.ZoneSummary, error) {
-	zones := make(map[string]*dns.ZoneSummary)
+func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, error) {
+	zones := make(map[string]dns.ZoneSummary)
 
 	log.Debugf("Matching zones against domain filters: %v", p.domainFilter.filters)
 	var page *string
@@ -123,7 +123,7 @@ func (p *OCIProvider) zones(ctx context.Context) (map[string]*dns.ZoneSummary, e
 
 		for _, zone := range resp.Items {
 			if p.domainFilter.Match(*zone.Name) && p.zoneIDFilter.Match(*zone.Id) {
-				zones[*zone.Name] = &zone
+				zones[*zone.Name] = zone
 				log.Debugf("Matched %q (%q)", *zone.Name, *zone.Id)
 			} else {
 				log.Debugf("Filtered %q (%q)", *zone.Name, *zone.Id)
@@ -272,7 +272,7 @@ func newRecordOperation(ep *endpoint.Endpoint, opType dns.RecordOperationOperati
 }
 
 // operationsByZone segments a slice of RecordOperations by their zone.
-func operationsByZone(zones map[string]*dns.ZoneSummary, ops []dns.RecordOperation) map[string][]dns.RecordOperation {
+func operationsByZone(zones map[string]dns.ZoneSummary, ops []dns.RecordOperation) map[string][]dns.RecordOperation {
 	changes := make(map[string][]dns.RecordOperation)
 
 	zoneNameIDMapper := zoneIDName{}

@@ -37,6 +37,13 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+const (
+	// The annotation used for determining if an ALB ingress is dualstack
+	ALBDualstackAnnotationKey = "alb.ingress.kubernetes.io/ip-address-type"
+	// The value of the ALB dualstack annotation that indicates it is dualstack
+	ALBDualstackAnnotationValue = "dualstack"
+)
+
 // ingressSource is an implementation of Source for Kubernetes ingress objects.
 // Ingress implementation will use the spec.rules.host value for the hostname
 // Use targetAnnotationKey to explicitly set Endpoint. (useful if the ingress
@@ -154,6 +161,7 @@ func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 		log.Debugf("Endpoints generated from ingress: %s/%s: %v", ing.Namespace, ing.Name, ingEndpoints)
 		sc.setResourceLabel(ing, ingEndpoints)
+		sc.setDualstackLabel(ing, ingEndpoints)
 		endpoints = append(endpoints, ingEndpoints...)
 	}
 
@@ -231,6 +239,16 @@ func (sc *ingressSource) filterByAnnotations(ingresses []*v1beta1.Ingress) ([]*v
 func (sc *ingressSource) setResourceLabel(ingress *v1beta1.Ingress, endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
 		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("ingress/%s/%s", ingress.Namespace, ingress.Name)
+	}
+}
+
+func (sc *ingressSource) setDualstackLabel(ingress *v1beta1.Ingress, endpoints []*endpoint.Endpoint) {
+	val, ok := ingress.Annotations[ALBDualstackAnnotationKey]
+	if ok && val == ALBDualstackAnnotationValue {
+		log.Debugf("Adding dualstack label to ingress %s/%s.", ingress.Namespace, ingress.Name)
+		for _, ep := range endpoints {
+			ep.Labels[endpoint.DualstackLabelKey] = "true"
+		}
 	}
 }
 

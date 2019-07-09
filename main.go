@@ -101,7 +101,7 @@ func main() {
 	// Combine multiple sources into a single, deduplicated source.
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
 
-	domainFilter := provider.NewDomainFilter(cfg.DomainFilter)
+	domainFilter := provider.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
 	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
@@ -121,7 +121,6 @@ func main() {
 				BatchChangeInterval:  cfg.AWSBatchChangeInterval,
 				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
 				AssumeRole:           cfg.AWSAssumeRole,
-				APIRetries:           cfg.AWSAPIRetries,
 				DryRun:               cfg.DryRun,
 			},
 		)
@@ -134,6 +133,8 @@ func main() {
 		p, err = provider.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.AWSAssumeRole, cfg.DryRun)
 	case "azure":
 		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.DryRun)
+	case "vinyldns":
+		p, err = provider.NewVinylDNSProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "cloudflare":
 		p, err = provider.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareZonesPerPage, cfg.CloudflareProxied, cfg.DryRun)
 	case "rcodezero":
@@ -158,6 +159,7 @@ func main() {
 				Version:      cfg.InfobloxWapiVersion,
 				SSLVerify:    cfg.InfobloxSSLVerify,
 				View:         cfg.InfobloxView,
+				MaxResults:   cfg.InfobloxMaxResults,
 				DryRun:       cfg.DryRun,
 			},
 		)
