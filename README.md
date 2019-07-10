@@ -53,7 +53,14 @@ Note that all flags can be replaced with environment variables; for instance,
 
 ## Status of providers
 
-ExternalDNS supports multiple DNS providers which have been implemented by the [ExternalDNS contributors](https://github.com/kubernetes-incubator/external-dns/graphs/contributors). Maintaining all of those in a central repository is a challenge and we have limited resources to test changes. This means that it is very hard to test all providers for possible regressions and, as written in the [Contributing](## Contributing) section, we encourage contributors to step in as maintainers for the individual providers and help by testing the integrations.
+ExternalDNS supports multiple DNS providers which have been implemented by the [ExternalDNS contributors](https://github.com/kubernetes-incubator/external-dns/graphs/contributors). Maintaining all of those in a central repository is a challenge and we have limited resources to test changes. This means that it is very hard to test all providers for possible regressions and, as written in the [Contributing](#Contributing) section, we encourage contributors to step in as maintainers for the individual providers and help by testing the integrations.
+
+End-to-end testing of ExternalDNS is currently
+[performed](https://github.com/zalando-incubator/kubernetes-on-aws/blob/dev/test/e2e/external_dns.go)
+in the separate
+[kubernetes-on-aws](https://github.com/zalando-incubator/kubernetes-on-aws)
+repository.
+
 We define the following stability levels for providers:
 
 - **Stable**: Used for smoke tests before a release, used in production and maintainers are active.
