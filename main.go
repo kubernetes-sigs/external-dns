@@ -176,7 +176,7 @@ func main() {
 			},
 		)
 	case "coredns", "skydns":
-		p, err = provider.NewCoreDNSProvider(domainFilter, cfg.DryRun)
+		p, err = provider.NewCoreDNSProvider(domainFilter, cfg.CoreDNSPrefix, cfg.DryRun)
 	case "exoscale":
 		p, err = provider.NewExoscaleProvider(cfg.ExoscaleEndpoint, cfg.ExoscaleAPIKey, cfg.ExoscaleAPISecret, cfg.DryRun, provider.ExoscaleWithDomain(domainFilter), provider.ExoscaleWithLogging()), nil
 	case "inmemory":
