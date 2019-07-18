@@ -110,7 +110,6 @@ func NewCRDSource(crdClient rest.Interface, namespace, kind string, scheme *runt
 // Endpoints returns endpoint objects.
 func (cs *crdSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
-	crdEndpoints := []*endpoint.Endpoint{}
 
 	result, err := cs.List(&metav1.ListOptions{})
 	if err != nil {
@@ -119,7 +118,7 @@ func (cs *crdSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 	for _, dnsEndpoint := range result.Items {
 		// Make sure that all endpoints have targets for A or CNAME type
-		crdEndpoints = []*endpoint.Endpoint{}
+		crdEndpoints := []*endpoint.Endpoint{}
 		for _, ep := range dnsEndpoint.Spec.Endpoints {
 			if (ep.RecordType == "CNAME" || ep.RecordType == "A") && len(ep.Targets) < 1 {
 				log.Warnf("Endpoint %s with DNSName %s has an empty list of targets", dnsEndpoint.ObjectMeta.Name, ep.DNSName)
