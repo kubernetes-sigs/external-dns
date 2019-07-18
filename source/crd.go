@@ -126,27 +126,27 @@ func (cs *crdSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			}
 
 			illegalTarget := false
-			for _, target := range ep.Targets{
-				if strings.HasSuffix(target, "."){
+			for _, target := range ep.Targets {
+				if strings.HasSuffix(target, ".") {
 					illegalTarget = true
 					break
 				}
 			}
-			if illegalTarget{
+			if illegalTarget {
 				log.Warnf("Endpoint %s with DNSName %s has Target illegal target. The subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com')", dnsEndpoint.ObjectMeta.Name, ep.DNSName)
 				continue
 			}
-			
-			if ep.Labels == nil{
+
+			if ep.Labels == nil {
 				ep.Labels = endpoint.NewLabels()
 			}
-			
+
 			crdEndpoints = append(crdEndpoints, ep)
 		}
 
 		cs.setResourceLabel(&dnsEndpoint, crdEndpoints)
 		endpoints = append(endpoints, crdEndpoints...)
-		
+
 		if dnsEndpoint.Status.ObservedGeneration == dnsEndpoint.Generation {
 			continue
 		}
