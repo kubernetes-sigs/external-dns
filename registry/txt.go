@@ -19,13 +19,13 @@ package registry
 import (
 	"context"
 	"errors"
-	"time"
-
 	"strings"
+	"time"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/kubernetes-incubator/external-dns/provider"
+
 	log "github.com/sirupsen/logrus"
 )
 

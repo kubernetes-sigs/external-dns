@@ -23,6 +23,7 @@ import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

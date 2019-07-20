@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+
 	log "github.com/sirupsen/logrus"
 )
 

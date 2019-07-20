@@ -22,22 +22,19 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"time"
 
-	kubeinformers "k8s.io/client-go/informers"
-	coreinformers "k8s.io/client-go/informers/core/v1"
-	"k8s.io/client-go/tools/cache"
+	"github.com/kubernetes-incubator/external-dns/endpoint"
 
 	log "github.com/sirupsen/logrus"
-
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	kubeinformers "k8s.io/client-go/informers"
+	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
-
-	"time"
-
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"k8s.io/client-go/tools/cache"
 )
 
 const (

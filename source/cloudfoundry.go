@@ -19,8 +19,9 @@ package source
 import (
 	"net/url"
 
-	cfclient "github.com/cloudfoundry-community/go-cfclient"
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+
+	cfclient "github.com/cloudfoundry-community/go-cfclient"
 )
 
 type cloudfoundrySource struct {

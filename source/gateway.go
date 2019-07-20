@@ -23,14 +23,13 @@ import (
 	"strings"
 	"text/template"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/kubernetes-incubator/external-dns/endpoint"
 
+	log "github.com/sirupsen/logrus"
 	istionetworking "istio.io/api/networking/v1alpha3"
 	istiomodel "istio.io/istio/pilot/pkg/model"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-
-	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"k8s.io/client-go/kubernetes"
 )
 

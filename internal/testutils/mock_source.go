@@ -17,9 +17,9 @@ limitations under the License.
 package testutils
 
 import (
-	"github.com/stretchr/testify/mock"
-
 	"github.com/kubernetes-incubator/external-dns/endpoint"
+
+	"github.com/stretchr/testify/mock"
 )
 
 // MockSource returns mock endpoints.

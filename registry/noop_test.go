@@ -23,7 +23,7 @@ import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/internal/testutils"
 	"github.com/kubernetes-incubator/external-dns/plan"
-	"github.com/kubernetes-incubator/external-dns/provider"
+	"github.com/kubernetes-incubator/external-dns/provider/inmemory"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,14 +38,14 @@ func TestNoopRegistry(t *testing.T) {
 }
 
 func testNoopInit(t *testing.T) {
-	p := provider.NewInMemoryProvider()
+	p := inmemory.NewInMemoryProvider()
 	r, err := NewNoopRegistry(p)
 	require.NoError(t, err)
 	assert.Equal(t, p, r.provider)
 }
 
 func testNoopRecords(t *testing.T) {
-	p := provider.NewInMemoryProvider()
+	p := inmemory.NewInMemoryProvider()
 	p.CreateZone("org")
 	providerRecords := []*endpoint.Endpoint{
 		{
@@ -67,7 +67,7 @@ func testNoopRecords(t *testing.T) {
 
 func testNoopApplyChanges(t *testing.T) {
 	// do some prep
-	p := provider.NewInMemoryProvider()
+	p := inmemory.NewInMemoryProvider()
 	p.CreateZone("org")
 	providerRecords := []*endpoint.Endpoint{
 		{
@@ -105,7 +105,7 @@ func testNoopApplyChanges(t *testing.T) {
 			},
 		},
 	})
-	assert.EqualError(t, err, provider.ErrRecordAlreadyExists.Error())
+	assert.EqualError(t, err, inmemory.ErrRecordAlreadyExists.Error())
 
 	//correct changes
 	require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{

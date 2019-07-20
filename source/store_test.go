@@ -20,13 +20,12 @@ import (
 	"errors"
 	"testing"
 
-	istiomodel "istio.io/istio/pilot/pkg/model"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/fake"
-
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+	istiomodel "istio.io/istio/pilot/pkg/model"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 type MockClientGenerator struct {
