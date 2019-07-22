@@ -345,6 +345,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_PDNS_SERVER":                "http://ns.example.com:8081",
 				"EXTERNAL_DNS_PDNS_API_KEY":               "some-secret-key",
 				"EXTERNAL_DNS_PDNS_TLS_ENABLED":           "1",
+				"EXTERNAL_DNS_RDNS_ROOT_DOMAIN":           "lb.rancher.cloud",
 				"EXTERNAL_DNS_TLS_CA":                     "/path/to/ca.crt",
 				"EXTERNAL_DNS_TLS_CLIENT_CERT":            "/path/to/cert.pem",
 				"EXTERNAL_DNS_TLS_CLIENT_CERT_KEY":        "/path/to/key.pem",
