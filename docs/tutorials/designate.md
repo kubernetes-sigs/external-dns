@@ -28,7 +28,7 @@ way to get yourself an OpenStack installation to play with is to use [DevStack](
 
 ## Creating DNS zones
 
-All domain names that are ExternalDNS is going to create must belong to one of DNS zones created in advance. Here is an example of how to create `external-dns-test.my-org.com` DNS zone:
+All domain names that ExternalDNS is going to create must belong to one of the DNS zones created in advance. Here is an example of how to create the `external-dns-test.my-org.com` DNS zone:
 ```console
 $ openstack zone create --email dnsmaster@external-dns-test.my-org.com external-dns-test.my-org.com.
 ```
