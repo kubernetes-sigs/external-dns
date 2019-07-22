@@ -91,6 +91,7 @@ The following table clarifies the current status of the providers according to t
 | NS1 | Alpha |
 | TransIP | Alpha |
 | VinylDNS | Alpha |
+| RancherDNS | Alpha |
 
 ## Running ExternalDNS:
 
@@ -122,6 +123,7 @@ The following tutorials are provided:
 * [RFC2136](docs/tutorials/rfc2136.md)
 * [NS1](docs/tutorials/ns1.md)
 * [TransIP](docs/tutorials/transip.md)
+* [RancherDNS](docs/tutorials/rdns.md)
 
 ### Running Locally
 
