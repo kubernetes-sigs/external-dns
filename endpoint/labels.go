@@ -17,6 +17,7 @@ limitations under the License.
 package endpoint
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"sort"
@@ -52,10 +53,15 @@ func NewLabels() Labels {
 	return map[string]string{}
 }
 
+func NewLabelsFromString(labelText string) (Labels, error) {
+	labelText = strings.Trim(labelText, "\"") // drop quotes
+	return NewLabelsFromStringPlain(Decode(labelText))
+}
+
 // NewLabelsFromString constructs endpoints labels from a provided format string
 // if heritage set to another value is found then error is returned
 // no heritage automatically assumes is not owned by external-dns and returns invalidHeritage error
-func NewLabelsFromString(labelText string) (Labels, error) {
+func NewLabelsFromStringPlain(labelText string) (Labels, error) {
 	endpointLabels := map[string]string{}
 	labelText = strings.Trim(labelText, "\"") // drop quotes
 	tokens := strings.Split(labelText, ",")
@@ -85,6 +91,23 @@ func NewLabelsFromString(labelText string) (Labels, error) {
 	return endpointLabels, nil
 }
 
+var encode = true
+
+func Decode(s string) string {
+	result, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return s
+	}
+	return string(result)
+}
+
+func Encode(s string) string {
+	if !encode {
+		return s
+	}
+	return base64.StdEncoding.EncodeToString([]byte(s))
+}
+
 // Serialize transforms endpoints labels into a external-dns recognizable format string
 // withQuotes adds additional quotes
 func (l Labels) Serialize(withQuotes bool) string {
@@ -100,7 +123,8 @@ func (l Labels) Serialize(withQuotes bool) string {
 		tokens = append(tokens, fmt.Sprintf("%s/%s=%s", heritage, key, l[key]))
 	}
 	if withQuotes {
-		return fmt.Sprintf("\"%s\"", strings.Join(tokens, ","))
+		return fmt.Sprintf("\"%s\"", Encode(strings.Join(tokens, ",")))
 	}
-	return strings.Join(tokens, ",")
+
+	return Encode(strings.Join(tokens, ","))
 }

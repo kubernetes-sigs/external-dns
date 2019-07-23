@@ -366,7 +366,7 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change, zones map[string]
 
 		for i, b := range batchCs {
 			for _, c := range b {
-				log.Infof("Desired change: %s %s %s", *c.Action, *c.ResourceRecordSet.Name, *c.ResourceRecordSet.Type)
+				log.Infof("Desired change: %s %s %s %v", *c.Action, *c.ResourceRecordSet.Name, *c.ResourceRecordSet.Type, c.ResourceRecordSet.ResourceRecords)
 			}
 
 			if !p.dryRun {
