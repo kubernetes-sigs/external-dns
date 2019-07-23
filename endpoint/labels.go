@@ -123,7 +123,7 @@ func init() {
 }
 
 // will be a feature toggle flag
-var encode = true
+var encrypt = true
 
 func Decrypt(s string) string {
 	// if it's not hex it might be non-encrypted labels, return TXT value
@@ -144,7 +144,7 @@ func Decrypt(s string) string {
 
 func Encrypt(s string) string {
 	// whether to write back encryoted labels
-	if !encode {
+	if !encrypt {
 		return s
 	}
 
