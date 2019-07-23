@@ -41,9 +41,8 @@ func (suite *LabelsSuite) SetupTest() {
 		"owner":    "foo-owner",
 		"resource": "foo-resource",
 	}
-	foo := "heritage=external-dns,external-dns/owner=foo-owner,external-dns/resource=foo-resource"
-	suite.fooAsText = Encode(foo)
-	suite.fooAsTextWithQuotes = fmt.Sprintf(`"%s"`, Encode(foo))
+	suite.fooAsText = Encode("heritage=external-dns,external-dns/owner=foo-owner,external-dns/resource=foo-resource")
+	suite.fooAsTextWithQuotes = fmt.Sprintf(`"%s"`, suite.fooAsText)
 
 	suite.barTextAsMap = map[string]string{
 		"owner":    "bar-owner",

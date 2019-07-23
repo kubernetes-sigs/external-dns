@@ -17,11 +17,14 @@ limitations under the License.
 package endpoint
 
 import (
-	"encoding/base64"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/gtank/cryptopasta"
 )
 
 var (
@@ -53,6 +56,7 @@ func NewLabels() Labels {
 	return map[string]string{}
 }
 
+// todo: quotes handling
 func NewLabelsFromString(labelText string) (Labels, error) {
 	labelText = strings.Trim(labelText, "\"") // drop quotes
 	return NewLabelsFromStringPlain(Decode(labelText))
@@ -91,21 +95,67 @@ func NewLabelsFromStringPlain(labelText string) (Labels, error) {
 	return endpointLabels, nil
 }
 
+var (
+	// the internal encryption key will be generated from a user provided password
+	encryptionKey [32]byte
+)
+
+// a reder that always reads foo, overrider for a random nonce reader in testing
+// todo: remove prom production code path.
+type EndlessReader struct{}
+
+func (re *EndlessReader) Read(p []byte) (n int, err error) {
+	copy(p, "foo")
+	return 3, nil
+}
+
+func init() {
+	// DO NOT DO THIS. EVER
+	rand.Reader = &EndlessReader{}
+
+	// should come from a secret
+	// DO NOT USE THIS. EVER
+	password := "do-not-use-me-for-anything"
+
+	// to get a 32-byte secret key, we just hash our password
+	secretKey := cryptopasta.Hash("external-dns-endpoint-labels", []byte(password))
+	copy(encryptionKey[:], secretKey)
+}
+
+// will be a feature toggle flag
 var encode = true
 
 func Decode(s string) string {
-	result, err := base64.StdEncoding.DecodeString(s)
+	// if it's not hex it might be non-encrypted labels, return TXT value
+	ciphertext, err := hex.DecodeString(s)
 	if err != nil {
 		return s
 	}
-	return string(result)
+
+	// if it's not decryptable we have the wrong key, return TXT value
+	plaintext, err := cryptopasta.Decrypt(ciphertext, &encryptionKey)
+	if err != nil {
+		// encryption failed
+		return s
+	}
+
+	return string(plaintext)
 }
 
 func Encode(s string) string {
+	// whether to write back encryoted labels
 	if !encode {
 		return s
 	}
-	return base64.StdEncoding.EncodeToString([]byte(s))
+
+	ciphertext, err := cryptopasta.Encrypt([]byte(s), &encryptionKey)
+	if err != nil {
+		// todo: handle error
+		panic(err)
+	}
+
+	// encode binary to TXT friendly hex
+	return hex.EncodeToString(ciphertext)
 }
 
 // Serialize transforms endpoints labels into a external-dns recognizable format string

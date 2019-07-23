@@ -18,6 +18,7 @@ package registry
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"reflect"
 	"testing"
@@ -31,6 +32,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func init() {
+	// DO NOT DO THIS. EVER
+	rand.Reader = &endpoint.EndlessReader{}
+}
 
 const (
 	testZone = "test-zone.example.org"
