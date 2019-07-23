@@ -41,7 +41,7 @@ func (suite *LabelsSuite) SetupTest() {
 		"owner":    "foo-owner",
 		"resource": "foo-resource",
 	}
-	suite.fooAsText = Encode("heritage=external-dns,external-dns/owner=foo-owner,external-dns/resource=foo-resource")
+	suite.fooAsText = Encrypt("heritage=external-dns,external-dns/owner=foo-owner,external-dns/resource=foo-resource")
 	suite.fooAsTextWithQuotes = fmt.Sprintf(`"%s"`, suite.fooAsText)
 
 	suite.barTextAsMap = map[string]string{
@@ -49,7 +49,7 @@ func (suite *LabelsSuite) SetupTest() {
 		"resource": "bar-resource",
 		"new-key":  "bar-new-key",
 	}
-	suite.barText = Encode("heritage=external-dns,,external-dns/owner=bar-owner,external-dns/resource=bar-resource,external-dns/new-key=bar-new-key,random=stuff,no-equal-sign,,") //also has some random gibberish
+	suite.barText = Encrypt("heritage=external-dns,,external-dns/owner=bar-owner,external-dns/resource=bar-resource,external-dns/new-key=bar-new-key,random=stuff,no-equal-sign,,") //also has some random gibberish
 
 	suite.noHeritageText = "external-dns/owner=random-owner"
 	suite.wrongHeritageText = "heritage=mate,external-dns/owner=random-owner"

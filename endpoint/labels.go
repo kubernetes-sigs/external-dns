@@ -59,7 +59,7 @@ func NewLabels() Labels {
 // todo: quotes handling
 func NewLabelsFromString(labelText string) (Labels, error) {
 	labelText = strings.Trim(labelText, "\"") // drop quotes
-	return NewLabelsFromStringPlain(Decode(labelText))
+	return NewLabelsFromStringPlain(Decrypt(labelText))
 }
 
 // NewLabelsFromString constructs endpoints labels from a provided format string
@@ -125,7 +125,7 @@ func init() {
 // will be a feature toggle flag
 var encode = true
 
-func Decode(s string) string {
+func Decrypt(s string) string {
 	// if it's not hex it might be non-encrypted labels, return TXT value
 	ciphertext, err := hex.DecodeString(s)
 	if err != nil {
@@ -142,7 +142,7 @@ func Decode(s string) string {
 	return string(plaintext)
 }
 
-func Encode(s string) string {
+func Encrypt(s string) string {
 	// whether to write back encryoted labels
 	if !encode {
 		return s
@@ -173,8 +173,8 @@ func (l Labels) Serialize(withQuotes bool) string {
 		tokens = append(tokens, fmt.Sprintf("%s/%s=%s", heritage, key, l[key]))
 	}
 	if withQuotes {
-		return fmt.Sprintf("\"%s\"", Encode(strings.Join(tokens, ",")))
+		return fmt.Sprintf("\"%s\"", Encrypt(strings.Join(tokens, ",")))
 	}
 
-	return Encode(strings.Join(tokens, ","))
+	return Encrypt(strings.Join(tokens, ","))
 }
