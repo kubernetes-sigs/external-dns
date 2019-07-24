@@ -182,7 +182,7 @@ func (e *Endpoint) GetProviderSpecificProperty(key string) (ProviderSpecificProp
 }
 
 func (e *Endpoint) String() string {
-	return fmt.Sprintf("%s %d IN %s %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.Targets, e.ProviderSpecific, e.Labels)
+	return fmt.Sprintf("%s %d IN %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.Targets, e.ProviderSpecific)
 }
 
 // DNSEndpointSpec defines the desired state of DNSEndpoint
