@@ -120,6 +120,7 @@ func main() {
 				BatchChangeInterval:  cfg.AWSBatchChangeInterval,
 				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
 				AssumeRole:           cfg.AWSAssumeRole,
+				PreferCNAME:          cfg.AWSPreferCNAME,
 				DryRun:               cfg.DryRun,
 			},
 		)
