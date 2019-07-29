@@ -14,7 +14,7 @@ matrix:
   - go: tip
 
 env:
-- GO111MODULE=on GOLANGCI_RELEASE="v1.16.0"
+- GO111MODULE=on GOLANGCI_RELEASE="v1.17.1"
 
 before_install:
 - go get github.com/mattn/goveralls
