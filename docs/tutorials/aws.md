@@ -93,6 +93,7 @@ spec:
         - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
         - --txt-owner-id=my-hostedzone-identifier
+        - --zone-id-filter=  # optional; only see hosted zone with matching id (format: hostedzone/ZA3EXAMPLEHYO)
 ```
 
 ### Manifest (for clusters with RBAC enabled)
@@ -159,6 +160,7 @@ spec:
         - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
         - --txt-owner-id=my-hostedzone-identifier
+        - --zone-id-filter=  # optional; only see hosted zone with matching id (format: hostedzone/ZA3EXAMPLEHYO)
 ```
 
 
