@@ -925,18 +925,21 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 
 func TestAWSisLoadBalancer(t *testing.T) {
 	for _, tc := range []struct {
-		target     string
-		recordType string
-		expected   bool
+		target      string
+		recordType  string
+		preferCNAME bool
+		expected    bool
 	}{
-		{"bar.eu-central-1.elb.amazonaws.com", endpoint.RecordTypeCNAME, true},
-		{"foo.example.org", endpoint.RecordTypeCNAME, false},
+		{"bar.eu-central-1.elb.amazonaws.com", endpoint.RecordTypeCNAME, false, true},
+		{"bar.eu-central-1.elb.amazonaws.com", endpoint.RecordTypeCNAME, true, false},
+		{"foo.example.org", endpoint.RecordTypeCNAME, false, false},
+		{"foo.example.org", endpoint.RecordTypeCNAME, true, false},
 	} {
 		ep := &endpoint.Endpoint{
 			Targets:    endpoint.Targets{tc.target},
 			RecordType: tc.recordType,
 		}
-		assert.Equal(t, tc.expected, isAWSLoadBalancer(ep))
+		assert.Equal(t, tc.expected, useAlias(ep, tc.preferCNAME))
 	}
 }
 
