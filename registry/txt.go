@@ -196,17 +196,12 @@ type prefixNameMapper struct {
 var _ nameMapper = prefixNameMapper{}
 
 func newPrefixNameMapper(prefix string) prefixNameMapper {
-	return prefixNameMapper{prefix: prefix}
+	return prefixNameMapper{prefix: strings.ToLower(prefix)}
 }
 
 func (pr prefixNameMapper) toEndpointName(txtDNSName string) string {
-	log.Debugf("TXT record is %s", txtDNSName)
-	log.Debugf("Prefix is %s", pr.prefix)
-	prefixLower := strings.ToLower(pr.prefix)
-	if strings.HasPrefix(txtDNSName, prefixLower) {
-		log.Debug("Will trim prefix")
-		log.Debug(strings.TrimPrefix(txtDNSName, prefixLower))
-		return strings.TrimPrefix(txtDNSName, prefixLower)
+	if strings.HasPrefix(txtDNSName, pr.prefix) {
+		return strings.TrimPrefix(txtDNSName, pr.prefix)
 	}
 	return ""
 }
