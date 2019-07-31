@@ -25,6 +25,8 @@ import (
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
 
+const defaultCoreDNSPrefix = "/skydns/"
+
 type fakeETCDClient struct {
 	services map[string]*Service
 }
@@ -60,7 +62,10 @@ func TestAServiceTranslation(t *testing.T) {
 			"/skydns/com/example": {Host: expectedTarget},
 		},
 	}
-	provider := coreDNSProvider{client: client}
+	provider := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
 	endpoints, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
@@ -89,7 +94,10 @@ func TestCNAMEServiceTranslation(t *testing.T) {
 			"/skydns/com/example": {Host: expectedTarget},
 		},
 	}
-	provider := coreDNSProvider{client: client}
+	provider := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
 	endpoints, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
@@ -118,7 +126,10 @@ func TestTXTServiceTranslation(t *testing.T) {
 			"/skydns/com/example": {Text: expectedTarget},
 		},
 	}
-	provider := coreDNSProvider{client: client}
+	provider := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
 	endpoints, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
@@ -149,7 +160,10 @@ func TestAWithTXTServiceTranslation(t *testing.T) {
 			"/skydns/com/example": {Host: "1.2.3.4", Text: "string"},
 		},
 	}
-	provider := coreDNSProvider{client: client}
+	provider := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
 	endpoints, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
@@ -188,7 +202,10 @@ func TestCNAMEWithTXTServiceTranslation(t *testing.T) {
 			"/skydns/com/example": {Host: "example.net", Text: "string"},
 		},
 	}
-	provider := coreDNSProvider{client: client}
+	provider := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
 	endpoints, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
@@ -219,7 +236,10 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 	client := fakeETCDClient{
 		map[string]*Service{},
 	}
-	coredns := coreDNSProvider{client: client}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
 
 	changes1 := &plan.Changes{
 		Create: []*endpoint.Endpoint{
