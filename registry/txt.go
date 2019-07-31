@@ -199,8 +199,9 @@ func newPrefixNameMapper(prefix string) prefixNameMapper {
 }
 
 func (pr prefixNameMapper) toEndpointName(txtDNSName string) string {
-	if strings.HasPrefix(txtDNSName, pr.prefix) {
-		return strings.TrimPrefix(txtDNSName, pr.prefix)
+	lowerDNSName := strings.ToLower(txtDNSName)
+	if strings.HasPrefix(lowerDNSName, pr.prefix) {
+		return strings.TrimPrefix(lowerDNSName, pr.prefix)
 	}
 	return ""
 }
