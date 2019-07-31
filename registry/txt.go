@@ -94,7 +94,6 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 			return nil, err
 		}
 		endpointDNSName := im.mapper.toEndpointName(record.DNSName)
-		log.Debugf("Parsed endpoint dns name is %s", endpointDNSName)
 		labelMap[endpointDNSName] = labels
 	}
 
