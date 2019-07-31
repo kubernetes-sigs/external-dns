@@ -157,6 +157,19 @@ ExternalDNS can be configured to only use Services or Ingresses as source. In ca
 
 CNAMEs cannot co-exist with other records, therefore you can use the `--txt-prefix` flag which makes sure to create a TXT record with a name following the pattern `prefix.<CNAME record>`. For reference, see the issue https://github.com/kubernetes-incubator/external-dns/issues/262.
 
+### Can I force ExternalDNS to create CNAME records for ELB/ALB?
+
+The default logic is: when a target looks like an ELB/ALB, ExternalDNS will create ALIAS records for it.
+Under certain circumstances you want to force ExternalDNS to create CNAME records instead. If you want to do that, start ExternalDNS with the `--aws-prefer-cname` flag.
+
+Why should I want to force ExternalDNS to create CNAME records for ELB/ALB? Some motivations of users were:
+
+> "Our hosted zones records are synchronized with our enterprise DNS. The record type ALIAS is an AWS proprietary record type and AWS allows you to set a DNS record directly on AWS resources. Since this is not a DNS RfC standard and therefore can not be transferred and created in our enterprise DNS. So we need to force CNAME creation instead."
+
+or
+
+> "In case of ALIAS if we do nslookup with domain name, it will return only IPs of ELB. So it is always difficult for us to locate ELB in AWS console to which domain is pointing. If we configure it with CNAME it will return exact ELB CNAME, which is more helpful.!"
+
 ### Which permissions do I need when running ExternalDNS on a GCE or GKE node.
 
 You need to add either https://www.googleapis.com/auth/ndev.clouddns.readwrite or https://www.googleapis.com/auth/cloud-platform on your instance group's scope.
