@@ -136,6 +136,12 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	records, _ := r.Records()
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+
+	// Ensure prefix is case-insensitive
+	r, _ = NewTXTRegistry(p, "TxT.", "owner", time.Hour)
+	records, _ = r.Records()
+
+	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 }
 
 func testTXTRegistryRecordsNoPrefix(t *testing.T) {
