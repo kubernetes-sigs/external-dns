@@ -289,7 +289,11 @@ func (p *InfobloxProvider) findZone(zones []ibclient.ZoneAuth, name string) *ibc
 	// Go through every zone looking for the longest name (i.e. most specific) as a matching suffix
 	for idx := range zones {
 		zone := &zones[idx]
-		if strings.HasSuffix(name, zone.Fqdn) {
+		if strings.HasSuffix(name, "."+zone.Fqdn) {
+			if result == nil || len(zone.Fqdn) > len(result.Fqdn) {
+				result = zone
+			}
+		} else if strings.EqualFold(name, zone.Fqdn) {
 			if result == nil || len(zone.Fqdn) > len(result.Fqdn) {
 				result = zone
 			}
