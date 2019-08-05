@@ -53,7 +53,7 @@ type serviceSource struct {
 	annotationFilter string
 	// process Services with legacy annotations
 	compatibility            string
-	createServiceRecord   bool
+	createServiceRecord      bool
 	fqdnTemplate             *template.Template
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
@@ -66,7 +66,7 @@ type serviceSource struct {
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation , createServiceRecord bool, compatibility string, publishInternal bool, publishHostIP bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation, createServiceRecord bool, compatibility string, publishInternal bool, publishHostIP bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -116,7 +116,7 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	// Wait for all informers to be synced.
 	for informer, isSynced := range informerFactory.WaitForCacheSync(wait.NeverStop) {
 		if !isSynced {
-			return nil,fmt.Errorf("error syncing informer %s",informer)
+			return nil, fmt.Errorf("error syncing informer %s", informer)
 		}
 	}
 
@@ -132,7 +132,7 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		namespace:                namespace,
 		annotationFilter:         annotationFilter,
 		compatibility:            compatibility,
-		createServiceRecord:   createServiceRecord,
+		createServiceRecord:      createServiceRecord,
 		fqdnTemplate:             tmpl,
 		combineFQDNAnnotation:    combineFqdnAnnotation,
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
@@ -374,28 +374,30 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, nod
 	}
 
 	epA := &endpoint.Endpoint{
-		RecordTTL:        ttl,
-		RecordType:       endpoint.RecordTypeA,
-		Labels:           endpoint.NewLabels(),
-		Targets:          make(endpoint.Targets, 0, defaultTargetsCapacity),
-		DNSName:          hostname,
+		RecordTTL:  ttl,
+		RecordType: endpoint.RecordTypeA,
+		Labels:     endpoint.NewLabels(),
+		Targets:    make(endpoint.Targets, 0, defaultTargetsCapacity),
+		DNSName:    hostname,
 	}
 
 	epCNAME := &endpoint.Endpoint{
-		RecordTTL:        ttl,
-		RecordType:       endpoint.RecordTypeCNAME,
-		Labels:           endpoint.NewLabels(),
-		Targets:          make(endpoint.Targets, 0, defaultTargetsCapacity),
-		DNSName:          hostname,
+		RecordTTL:  ttl,
+		RecordType: endpoint.RecordTypeCNAME,
+		Labels:     endpoint.NewLabels(),
+		Targets:    make(endpoint.Targets, 0, defaultTargetsCapacity),
+		DNSName:    hostname,
 	}
 
 	var endpoints []*endpoint.Endpoint
 	var targets endpoint.Targets
 
-	if len(svc.Status.LoadBalancer.Ingress) > 0 {
-		targets = append(targets, extractLoadBalancerTargets(svc)...)
-	} else {
+	targets = getTargetsFromTargetAnnotation(svc.Annotations)
+
+	if len(targets) == 0 {
 		switch svc.Spec.Type {
+		case v1.ServiceTypeLoadBalancer:
+			targets = append(targets, extractLoadBalancerTargets(svc)...)
 		case v1.ServiceTypeClusterIP:
 			if sc.publishInternal {
 				targets = append(targets, extractServiceIps(svc)...)
