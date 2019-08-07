@@ -131,7 +131,9 @@ func (im *InMemoryProvider) Records() ([]*endpoint.Endpoint, error) {
 		}
 
 		for _, record := range records {
-			endpoints = append(endpoints, endpoint.NewEndpoint(record.Name, record.Type, record.Target))
+			ep := endpoint.NewEndpoint(record.Name, record.Type, record.Target)
+			ep.Labels = record.Labels
+			endpoints = append(endpoints, ep)
 		}
 	}
 
@@ -205,6 +207,7 @@ func convertToInMemoryRecord(endpoints []*endpoint.Endpoint) []*inMemoryRecord {
 			Type:   ep.RecordType,
 			Name:   ep.DNSName,
 			Target: ep.Targets[0],
+			Labels: ep.Labels,
 		})
 	}
 	return records
@@ -246,6 +249,7 @@ type inMemoryRecord struct {
 	Type   string
 	Name   string
 	Target string
+	Labels endpoint.Labels
 }
 
 type zone map[string][]*inMemoryRecord
