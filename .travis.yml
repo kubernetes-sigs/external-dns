@@ -14,7 +14,7 @@ matrix:
   - go: tip
 
 env:
-- GO111MODULE=on GOLANGCI_RELEASE="v1.17.1"
+- GOLANGCI_RELEASE="v1.17.1"
 
 before_install:
 - go get github.com/mattn/goveralls
@@ -22,6 +22,7 @@ before_install:
 - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin ${GOLANGCI_RELEASE}
 
 script:
+- make validate-modules
 - make test
 - make lint
 - travis_wait 20 roveralls

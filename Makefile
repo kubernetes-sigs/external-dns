@@ -33,6 +33,15 @@ cover-html: cover
 lint:
 	golangci-lint run ./...
 
+# Check that go module dependencies are in sync
+validate-modules:
+	@echo "- Verifying that the dependencies have expected content..."
+	GO111MODULE=on go mod verify
+	@echo "- Checking for any unused/missing packages in go.mod..."
+	GO111MODULE=on go mod tidy
+	@echo "- Checking for unused packages in vendor..."
+	GO111MODULE=on go mod vendor
+	@git diff --exit-code -- go.sum go.mod vendor/
 
 # The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: verify test
