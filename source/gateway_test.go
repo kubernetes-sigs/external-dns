@@ -193,6 +193,25 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			},
 		},
 		{
+			title: "one namespaced rule.host one lb.hostname",
+			lbServices: []fakeIngressGatewayService{
+				{
+					hostnames: []string{"lb.com"}, // Kubernetes omits the trailing dot
+				},
+			},
+			config: fakeGatewayConfig{
+				dnsnames: [][]string{
+					{"my-namespace/foo.bar"}, // Kubernetes requires removal of trailing dot
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "foo.bar",
+					Targets: endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
 			title: "one rule.host one lb.IP",
 			lbServices: []fakeIngressGatewayService{
 				{
