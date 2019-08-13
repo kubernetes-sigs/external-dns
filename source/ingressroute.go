@@ -304,9 +304,10 @@ func (sc *ingressRouteSource) endpointsFromIngressRoute(ingressRoute *contourapi
 
 	providerSpecific := getProviderSpecificAnnotations(ingressRoute.Annotations)
 
-	host := ingressRoute.Spec.VirtualHost.Fqdn
-	if host != "" {
-		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific)...)
+	if virtualHost := ingressRoute.Spec.VirtualHost; virtualHost != nil {
+		if fqdn := virtualHost.Fqdn; fqdn != "" {
+			endpoints = append(endpoints, endpointsForHostname(fqdn, targets, ttl, providerSpecific)...)
+		}
 	}
 
 	// Skip endpoints if we do not want entries from annotations
