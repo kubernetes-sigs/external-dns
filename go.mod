@@ -93,4 +93,6 @@ require (
 	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
 )
 
+replace k8s.io/code-generator v0.0.0-20190409092313-b1289fc74931 => k8s.io/code-generator v0.0.0-20181128191024-b1289fc74931
+
 replace github.com/golang/glog => github.com/kubermatic/glog-logrus v0.0.0-20180829085450-3fa5b9870d1d
