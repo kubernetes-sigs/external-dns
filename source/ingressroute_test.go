@@ -234,6 +234,16 @@ func testEndpointsFromIngressRoute(t *testing.T) {
 			ingressRoute: fakeIngressRoute{},
 			expected:     []*endpoint.Endpoint{},
 		},
+		{
+			title: "delegate ingressroute",
+			loadBalancer: fakeLoadBalancerService{
+				hostnames: []string{"lb.com"},
+			},
+			ingressRoute: fakeIngressRoute{
+				delegate: true,
+			},
+			expected: []*endpoint.Endpoint{},
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			if source, err := newTestIngressRouteSource(ti.loadBalancer); err != nil {
@@ -1062,8 +1072,9 @@ type fakeIngressRoute struct {
 	name        string
 	annotations map[string]string
 
-	host    string
-	invalid bool
+	host     string
+	invalid  bool
+	delegate bool
 }
 
 func (ir fakeIngressRoute) IngressRoute() *contour.IngressRoute {
@@ -1074,17 +1085,24 @@ func (ir fakeIngressRoute) IngressRoute() *contour.IngressRoute {
 		status = "valid"
 	}
 
+	var spec contour.IngressRouteSpec
+	if ir.delegate {
+		spec = contour.IngressRouteSpec{}
+	} else {
+		spec = contour.IngressRouteSpec{
+			VirtualHost: &contour.VirtualHost{
+				Fqdn: ir.host,
+			},
+		}
+	}
+
 	ingressRoute := &contour.IngressRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:   ir.namespace,
 			Name:        ir.name,
 			Annotations: ir.annotations,
 		},
-		Spec: contour.IngressRouteSpec{
-			VirtualHost: &contour.VirtualHost{
-				Fqdn: ir.host,
-			},
-		},
+		Spec: spec,
 		Status: contour.Status{
 			CurrentStatus: status,
 		},
