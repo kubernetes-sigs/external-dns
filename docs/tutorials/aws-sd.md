@@ -13,7 +13,7 @@ Learn more about the API in the [Amazon Route 53 API Reference](https://docs.aws
 
 ## IAM Permissions
 
-To use the service discovery API, a user executing the ExternalDNS must have the permissions in the `AmazonRoute53AutoNamingFullAccess` managed policy.
+To use the service discovery API, a user must have permissions to create the DNS namespace. Additionally you need to make sure that your nodes (on which External DNS runs) have an IAM instance profile with the `AmazonRoute53AutoNamingFullAccess` managed policy attached, this provides the permissions below.
 
 ```
 {
@@ -62,6 +62,8 @@ $ aws servicediscovery list-namespaces
 Connect your `kubectl` client to the cluster that you want to test ExternalDNS with.
 Then apply the following manifest file to deploy ExternalDNS.
 
+### Manifest (for clusters without RBAC enabled)
+
 ```yaml
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -87,6 +89,69 @@ spec:
         - --txt-owner-id=my-identifier
 ```
 
+### Manifest (for clusters with RBAC enabled)
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: external-dns
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: external-dns
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get","watch","list"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["extensions"] 
+  resources: ["ingresses"] 
+  verbs: ["get","watch","list"]
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["list","watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: external-dns-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: external-dns
+subjects:
+- kind: ServiceAccount
+  name: external-dns
+  namespace: default
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: external-dns
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: external-dns
+    spec:
+      serviceAccountName: external-dns
+      containers:
+      - name: external-dns
+        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        args:
+        - --source=service
+        - --source=ingress
+        - --domain-filter=external-dns-test.my-org.com # Makes ExternalDNS see only the namespaces that match the specified domain. Omit the filter if you want to process all available namespaces.
+        - --provider=aws-sd
+        - --aws-zone-type=public # Only look at public namespaces. Valid values are public, private, or no value for both)
+        - --txt-owner-id=my-identifier
+```
 
 ## Verify that ExternalDNS works (Service example)
 
