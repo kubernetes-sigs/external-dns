@@ -13,10 +13,10 @@
 # limitations under the License.
 
 # builder image
-FROM golang:1.12.8 as builder
+FROM golang:1.12.9 as builder
 
 WORKDIR /github.com/kubernetes-incubator/external-dns
-RUN apt-get update && apt-get install -y bzr
+
 COPY . .
 RUN go mod vendor && \
     make test && \
