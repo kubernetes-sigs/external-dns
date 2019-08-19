@@ -120,7 +120,7 @@ func (cs *crdSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		// Make sure that all endpoints have targets for A or CNAME type
 		crdEndpoints := []*endpoint.Endpoint{}
 		for _, ep := range dnsEndpoint.Spec.Endpoints {
-			if (ep.RecordType == "CNAME" || ep.RecordType == "A") && len(ep.Targets) < 1 {
+			if (ep.RecordType == "CNAME" || ep.RecordType == "A"|| ep.RecordType == "AAAA") && len(ep.Targets) < 1 {
 				log.Warnf("Endpoint %s with DNSName %s has an empty list of targets", dnsEndpoint.ObjectMeta.Name, ep.DNSName)
 				continue
 			}
@@ -133,7 +133,7 @@ func (cs *crdSource) Endpoints() ([]*endpoint.Endpoint, error) {
 				}
 			}
 			if illegalTarget {
-				log.Warnf("Endpoint %s with DNSName %s has Target illegal target. The subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com')", dnsEndpoint.ObjectMeta.Name, ep.DNSName)
+				log.Warnf("Endpoint %s with DNSName %s has an illegal target. The subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com')", dnsEndpoint.ObjectMeta.Name, ep.DNSName)
 				continue
 			}
 
