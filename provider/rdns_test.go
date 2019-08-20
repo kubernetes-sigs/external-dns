@@ -25,6 +25,7 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
@@ -96,6 +97,7 @@ func (c fakeEtcdv3Client) Delete(key string) error {
 func TestARecordTranslation(t *testing.T) {
 	expectedTarget1 := "1.2.3.4"
 	expectedTarget2 := "2.3.4.5"
+	expectedTargets := []string{expectedTarget1, expectedTarget2}
 	expectedDNSName := "p1xaf1.lb.rancher.cloud"
 	expectedRecordType := endpoint.RecordTypeA
 
@@ -118,17 +120,15 @@ func TestARecordTranslation(t *testing.T) {
 	if len(endpoints) != 1 {
 		t.Fatalf("got unexpected number of endpoints: %d", len(endpoints))
 	}
-	if endpoints[0].DNSName != expectedDNSName {
-		t.Errorf("got unexpected DNS name: %s != %s", endpoints[0].DNSName, expectedDNSName)
+
+	ep := endpoints[0]
+	if ep.DNSName != expectedDNSName {
+		t.Errorf("got unexpected DNS name: %s != %s", ep.DNSName, expectedDNSName)
 	}
-	if endpoints[0].Targets[0] != expectedTarget1 {
-		t.Errorf("got unexpected DNS target: %s != %s", endpoints[0].Targets[0], expectedTarget1)
-	}
-	if endpoints[0].Targets[1] != expectedTarget2 {
-		t.Errorf("got unexpected DNS target: %s != %s", endpoints[0].Targets[1], expectedTarget2)
-	}
-	if endpoints[0].RecordType != expectedRecordType {
-		t.Errorf("got unexpected DNS record type: %s != %s", endpoints[0].RecordType, expectedRecordType)
+	assert.Contains(t, expectedTargets, ep.Targets[0])
+	assert.Contains(t, expectedTargets, ep.Targets[1])
+	if ep.RecordType != expectedRecordType {
+		t.Errorf("got unexpected DNS record type: %s != %s", ep.RecordType, expectedRecordType)
 	}
 }
 
