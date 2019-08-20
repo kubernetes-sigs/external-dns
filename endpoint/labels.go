@@ -17,7 +17,6 @@ limitations under the License.
 package endpoint
 
 import (
-	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -111,7 +110,7 @@ func (re *EndlessReader) Read(p []byte) (n int, err error) {
 
 func init() {
 	// DO NOT DO THIS. EVER
-	rand.Reader = &EndlessReader{}
+	// rand.Reader = &EndlessReader{}
 
 	// should come from a secret
 	// DO NOT USE THIS. EVER
