@@ -19,6 +19,9 @@ package source
 import (
 	"testing"
 
+	"k8s.io/apimachinery/pkg/runtime"
+	k8stesting "k8s.io/client-go/testing"
+
 	istionetworking "istio.io/api/networking/v1alpha3"
 	istiomodel "istio.io/istio/pilot/pkg/model"
 
@@ -76,7 +79,6 @@ func (suite *GatewaySuite) SetupTest() {
 	suite.source, err = NewIstioGatewaySource(
 		fakeKubernetesClient,
 		fakeIstioClient,
-		[]string{"istio-system/istio-ingressgateway"},
 		"default",
 		"",
 		"{{.Name}}",
@@ -150,7 +152,6 @@ func TestNewIstioGatewaySource(t *testing.T) {
 			_, err := NewIstioGatewaySource(
 				fake.NewSimpleClientset(),
 				NewFakeConfigStore(),
-				[]string{"istio-system/istio-ingressgateway"},
 				"",
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -1081,16 +1082,19 @@ func testGatewayEndpoints(t *testing.T) {
 			}
 
 			fakeKubernetesClient := fake.NewSimpleClientset()
+			var serviceItems []v1.Service
 
-			var fakeLoadBalancerList []string
 			for _, lb := range ti.lbServices {
-				lbService := lb.Service()
-				_, err := fakeKubernetesClient.CoreV1().Services(lbService.Namespace).Create(lbService)
-				if err != nil {
-					require.NoError(t, err)
-				}
-				fakeLoadBalancerList = append(fakeLoadBalancerList, lbService.Namespace+"/"+lbService.Name)
+				serviceItems = append(serviceItems, *lb.Service())
 			}
+
+			fakeKubernetesClient.Fake.PrependReactor("list", "services", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+				serviceList := &v1.ServiceList{
+					Items: serviceItems,
+				}
+
+				return true, serviceList, nil
+			})
 
 			fakeIstioClient := NewFakeConfigStore()
 			for _, config := range configs {
@@ -1101,7 +1105,6 @@ func testGatewayEndpoints(t *testing.T) {
 			gatewaySource, err := NewIstioGatewaySource(
 				fakeKubernetesClient,
 				fakeIstioClient,
-				fakeLoadBalancerList,
 				ti.targetNamespace,
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -1126,21 +1129,23 @@ func testGatewayEndpoints(t *testing.T) {
 func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService) (*gatewaySource, error) {
 	fakeKubernetesClient := fake.NewSimpleClientset()
 	fakeIstioClient := NewFakeConfigStore()
+	var serviceItems []v1.Service
 
-	var lbList []string
 	for _, lb := range loadBalancerList {
-		lbService := lb.Service()
-		_, err := fakeKubernetesClient.CoreV1().Services(lbService.Namespace).Create(lbService)
-		if err != nil {
-			return nil, err
-		}
-		lbList = append(lbList, lbService.Namespace+"/"+lbService.Name)
+		serviceItems = append(serviceItems, *lb.Service())
 	}
+
+	fakeKubernetesClient.Fake.PrependReactor("list", "services", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		serviceList := &v1.ServiceList{
+			Items: serviceItems,
+		}
+
+		return true, serviceList, nil
+	})
 
 	src, err := NewIstioGatewaySource(
 		fakeKubernetesClient,
 		fakeIstioClient,
-		lbList,
 		"default",
 		"",
 		"{{.Name}}",
@@ -1198,6 +1203,7 @@ type fakeGatewayConfig struct {
 	name        string
 	annotations map[string]string
 	dnsnames    [][]string
+	selector    map[string]string
 }
 
 func (c fakeGatewayConfig) Config() istiomodel.Config {
@@ -1210,6 +1216,8 @@ func (c fakeGatewayConfig) Config() istiomodel.Config {
 			Hosts: dnsnames,
 		})
 	}
+
+	gw.Selector = c.selector
 
 	config := istiomodel.Config{
 		ConfigMeta: istiomodel.ConfigMeta{
