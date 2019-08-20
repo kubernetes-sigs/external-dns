@@ -49,7 +49,7 @@ const (
 
 const (
 	ttlMinimum = 1
-	ttlMaximum = math.MaxUint32
+	ttlMaximum = math.MaxInt32
 )
 
 // Source defines the interface Endpoint sources should implement.

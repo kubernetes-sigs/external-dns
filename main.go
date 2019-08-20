@@ -85,6 +85,7 @@ func main() {
 		CFAPIEndpoint:               cfg.CFAPIEndpoint,
 		CFUsername:                  cfg.CFUsername,
 		CFPassword:                  cfg.CFPassword,
+		ContourLoadBalancerService:  cfg.ContourLoadBalancerService,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
@@ -120,6 +121,7 @@ func main() {
 				BatchChangeInterval:  cfg.AWSBatchChangeInterval,
 				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
 				AssumeRole:           cfg.AWSAssumeRole,
+				PreferCNAME:          cfg.AWSPreferCNAME,
 				DryRun:               cfg.DryRun,
 			},
 		)
@@ -176,7 +178,7 @@ func main() {
 			},
 		)
 	case "coredns", "skydns":
-		p, err = provider.NewCoreDNSProvider(domainFilter, cfg.DryRun)
+		p, err = provider.NewCoreDNSProvider(domainFilter, cfg.CoreDNSPrefix, cfg.DryRun)
 	case "rdns":
 		p, err = provider.NewRDNSProvider(
 			provider.RDNSConfig{

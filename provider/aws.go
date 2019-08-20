@@ -110,6 +110,7 @@ type AWSProvider struct {
 	zoneTypeFilter ZoneTypeFilter
 	// filter hosted zones by tags
 	zoneTagFilter ZoneTagFilter
+	preferCNAME   bool
 }
 
 // AWSConfig contains configuration to create a new AWS provider.
@@ -123,6 +124,7 @@ type AWSConfig struct {
 	EvaluateTargetHealth bool
 	AssumeRole           string
 	APIRetries           int
+	PreferCNAME          bool
 	DryRun               bool
 }
 
@@ -161,6 +163,7 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 		batchChangeSize:      awsConfig.BatchChangeSize,
 		batchChangeInterval:  awsConfig.BatchChangeInterval,
 		evaluateTargetHealth: awsConfig.EvaluateTargetHealth,
+		preferCNAME:          awsConfig.PreferCNAME,
 		dryRun:               awsConfig.DryRun,
 	}
 
@@ -366,7 +369,7 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change, zones map[string]
 
 		for i, b := range batchCs {
 			for _, c := range b {
-				log.Infof("Desired change: %s %s %s %v", *c.Action, *c.ResourceRecordSet.Name, *c.ResourceRecordSet.Type, c.ResourceRecordSet.ResourceRecords)
+				log.Infof("Desired change: %s %s %s [Id: %s] %v", *c.Action, *c.ResourceRecordSet.Name, *c.ResourceRecordSet.Type, z, c.ResourceRecordSet.ResourceRecords)
 			}
 
 			if !p.dryRun {
@@ -378,10 +381,12 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change, zones map[string]
 				}
 
 				if _, err := p.client.ChangeResourceRecordSets(params); err != nil {
+					log.Errorf("Failure in zone %s [Id: %s]", aws.StringValue(zones[z].Name), z)
 					log.Error(err) //TODO(ideahitme): consider changing the interface in cases when this error might be a concern for other components
 					failedUpdate = true
 				} else {
-					log.Infof("%d record(s) in zone %s were successfully updated", len(b), aws.StringValue(zones[z].Name))
+					// z is the R53 Hosted Zone ID already as aws.StringValue
+					log.Infof("%d record(s) in zone %s [Id: %s] were successfully updated", len(b), aws.StringValue(zones[z].Name), z)
 				}
 
 				if i != len(batchCs)-1 {
@@ -434,7 +439,7 @@ func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint, recordsCac
 	}
 	dualstack := false
 
-	if isAWSLoadBalancer(ep) {
+	if useAlias(ep, p.preferCNAME) {
 		evalTargetHealth := p.evaluateTargetHealth
 		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); ok {
 			evalTargetHealth = prop.Value == "true"
@@ -618,8 +623,12 @@ func suitableZones(hostname string, zones map[string]*route53.HostedZone) []*rou
 	return matchingZones
 }
 
-// isAWSLoadBalancer determines if a given hostname belongs to an AWS load balancer.
-func isAWSLoadBalancer(ep *endpoint.Endpoint) bool {
+// useAlias determines if AWS ALIAS should be used.
+func useAlias(ep *endpoint.Endpoint, preferCNAME bool) bool {
+	if preferCNAME {
+		return false
+	}
+
 	if ep.RecordType == endpoint.RecordTypeCNAME && len(ep.Targets) > 0 {
 		return canonicalHostedZone(ep.Targets[0]) != ""
 	}

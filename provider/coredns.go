@@ -45,8 +45,6 @@ const (
 	priority    = 10 // default priority when nothing is set
 	etcdTimeout = 5 * time.Second
 
-	coreDNSPrefix = "/skydns/"
-
 	randomPrefixLabel = "prefix"
 )
 
@@ -58,9 +56,10 @@ type coreDNSClient interface {
 }
 
 type coreDNSProvider struct {
-	dryRun       bool
-	domainFilter DomainFilter
-	client       coreDNSClient
+	dryRun        bool
+	coreDNSPrefix string
+	domainFilter  DomainFilter
+	client        coreDNSClient
 }
 
 // Service represents CoreDNS etcd record
@@ -245,15 +244,17 @@ func newETCDClient() (coreDNSClient, error) {
 }
 
 // NewCoreDNSProvider is a CoreDNS provider constructor
-func NewCoreDNSProvider(domainFilter DomainFilter, dryRun bool) (Provider, error) {
+func NewCoreDNSProvider(domainFilter DomainFilter, prefix string, dryRun bool) (Provider, error) {
 	client, err := newETCDClient()
 	if err != nil {
 		return nil, err
 	}
+
 	return coreDNSProvider{
-		client:       client,
-		dryRun:       dryRun,
-		domainFilter: domainFilter,
+		client:        client,
+		dryRun:        dryRun,
+		coreDNSPrefix: prefix,
+		domainFilter:  domainFilter,
 	}, nil
 }
 
@@ -261,12 +262,12 @@ func NewCoreDNSProvider(domainFilter DomainFilter, dryRun bool) (Provider, error
 // it may be mapped to one or two records of type A, CNAME, TXT, A+TXT, CNAME+TXT
 func (p coreDNSProvider) Records() ([]*endpoint.Endpoint, error) {
 	var result []*endpoint.Endpoint
-	services, err := p.client.GetServices(coreDNSPrefix)
+	services, err := p.client.GetServices(p.coreDNSPrefix)
 	if err != nil {
 		return nil, err
 	}
 	for _, service := range services {
-		domains := strings.Split(strings.TrimPrefix(service.Key, coreDNSPrefix), "/")
+		domains := strings.Split(strings.TrimPrefix(service.Key, p.coreDNSPrefix), "/")
 		reverse(domains)
 		dnsName := strings.Join(domains[service.TargetStrip:], ".")
 		if !p.domainFilter.Match(dnsName) {
@@ -327,7 +328,7 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				service := Service{
 					Host:        target,
 					Text:        ep.Labels["originalText"],
-					Key:         etcdKeyFor(prefix + "." + dnsName),
+					Key:         p.etcdKeyFor(prefix + "." + dnsName),
 					TargetStrip: strings.Count(prefix, ".") + 1,
 					TTL:         uint32(ep.RecordTTL),
 				}
@@ -345,7 +346,7 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 					prefix = fmt.Sprintf("%08x", rand.Int31())
 				}
 				services = append(services, Service{
-					Key:         etcdKeyFor(prefix + "." + dnsName),
+					Key:         p.etcdKeyFor(prefix + "." + dnsName),
 					TargetStrip: strings.Count(prefix, ".") + 1,
 					TTL:         uint32(ep.RecordTTL),
 				})
@@ -374,7 +375,7 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		if ep.Labels[randomPrefixLabel] != "" {
 			dnsName = ep.Labels[randomPrefixLabel] + "." + dnsName
 		}
-		key := etcdKeyFor(dnsName)
+		key := p.etcdKeyFor(dnsName)
 		log.Infof("Delete key %s", key)
 		if !p.dryRun {
 			err := p.client.DeleteService(key)
@@ -387,17 +388,17 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	return nil
 }
 
+func (p coreDNSProvider) etcdKeyFor(dnsName string) string {
+	domains := strings.Split(dnsName, ".")
+	reverse(domains)
+	return p.coreDNSPrefix + strings.Join(domains, "/")
+}
+
 func guessRecordType(target string) string {
 	if net.ParseIP(target) != nil {
 		return endpoint.RecordTypeA
 	}
 	return endpoint.RecordTypeCNAME
-}
-
-func etcdKeyFor(dnsName string) string {
-	domains := strings.Split(dnsName, ".")
-	reverse(domains)
-	return coreDNSPrefix + strings.Join(domains, "/")
 }
 
 func reverse(slice []string) {
