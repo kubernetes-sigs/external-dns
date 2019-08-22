@@ -54,6 +54,6 @@ type CreateOnlyPolicy struct{}
 // Apply applies the create-only policy which strips out updates and deletions.
 func (p *CreateOnlyPolicy) Apply(changes *Changes) *Changes {
 	return &Changes{
-		Create:	changes.Create,
+		Create: changes.Create,
 	}
 }
