@@ -1,3 +1,5 @@
+  - AWS: re-introduce accidentally removed `--aws-api-retries` flag (#1158) @coreypobrien
+
 ## v0.5.16 - 2019-08-16
 
   - Fix flaky unit test in provider package (#1151) @tariq1890
