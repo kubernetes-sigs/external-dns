@@ -1,3 +1,5 @@
+  - Add `create-only` policy, which prevents records from being updated or deleted @danieldabate
+
 ## v0.5.16 - 2019-08-16
 
   - Fix flaky unit test in provider package (#1151) @tariq1890
