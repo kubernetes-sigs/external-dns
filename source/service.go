@@ -51,23 +51,25 @@ type serviceSource struct {
 	client           kubernetes.Interface
 	namespace        string
 	annotationFilter string
+
 	// process Services with legacy annotations
-	compatibility            string
-	fqdnTemplate             *template.Template
-	combineFQDNAnnotation    bool
-	ignoreHostnameAnnotation bool
-	publishInternal          bool
-	publishHostIP            bool
-	serviceInformer          coreinformers.ServiceInformer
-	endpointsInformer        coreinformers.EndpointsInformer
-	podInformer              coreinformers.PodInformer
-	nodeInformer             coreinformers.NodeInformer
-	serviceTypeFilter        map[string]struct{}
-	runner                   *async.BoundedFrequencyRunner
+	compatibility                  string
+	fqdnTemplate                   *template.Template
+	combineFQDNAnnotation          bool
+	ignoreHostnameAnnotation       bool
+	publishInternal                bool
+	publishHostIP                  bool
+	alwaysPublishNotReadyAddresses bool
+	serviceInformer                coreinformers.ServiceInformer
+	endpointsInformer              coreinformers.EndpointsInformer
+	podInformer                    coreinformers.PodInformer
+	nodeInformer                   coreinformers.NodeInformer
+	serviceTypeFilter              map[string]struct{}
+	runner                         *async.BoundedFrequencyRunner
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -135,20 +137,21 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	}
 
 	return &serviceSource{
-		client:                   kubeClient,
-		namespace:                namespace,
-		annotationFilter:         annotationFilter,
-		compatibility:            compatibility,
-		fqdnTemplate:             tmpl,
-		combineFQDNAnnotation:    combineFqdnAnnotation,
-		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
-		publishInternal:          publishInternal,
-		publishHostIP:            publishHostIP,
-		serviceInformer:          serviceInformer,
-		endpointsInformer:        endpointsInformer,
-		podInformer:              podInformer,
-		nodeInformer:             nodeInformer,
-		serviceTypeFilter:        serviceTypes,
+		client:                         kubeClient,
+		namespace:                      namespace,
+		annotationFilter:               annotationFilter,
+		compatibility:                  compatibility,
+		fqdnTemplate:                   tmpl,
+		combineFQDNAnnotation:          combineFqdnAnnotation,
+		ignoreHostnameAnnotation:       ignoreHostnameAnnotation,
+		publishInternal:                publishInternal,
+		publishHostIP:                  publishHostIP,
+		alwaysPublishNotReadyAddresses: alwaysPublishNotReadyAddresses,
+		serviceInformer:                serviceInformer,
+		endpointsInformer:              endpointsInformer,
+		podInformer:                    podInformer,
+		nodeInformer:                   nodeInformer,
+		serviceTypeFilter:              serviceTypes,
 	}, nil
 }
 
@@ -217,6 +220,7 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
+// extractHeadlessEndpoints extracts endpoints from a headless service using the "Endpoints" Kubernetes API resource
 func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname string, ttl endpoint.TTL) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
@@ -244,7 +248,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 	targetsByHeadlessDomain := make(map[string][]string)
 	for _, subset := range endpointsObject.Subsets {
 		addresses := subset.Addresses
-		if svc.Spec.PublishNotReadyAddresses {
+		if svc.Spec.PublishNotReadyAddresses || sc.alwaysPublishNotReadyAddresses {
 			addresses = append(addresses, subset.NotReadyAddresses...)
 		}
 
