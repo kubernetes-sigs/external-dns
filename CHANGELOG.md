@@ -1,4 +1,4 @@
-  - Add `create-only` policy, which prevents records from being updated or deleted @danieldabate
+  - Add `create-only` policy, which prevents records from being updated or deleted (#1155) @danieldabate
 
 ## v0.5.16 - 2019-08-16
 
