@@ -40,25 +40,26 @@ var ErrSourceNotFound = errors.New("source not found")
 
 // Config holds shared configuration options for all Sources.
 type Config struct {
-	Namespace                   string
-	AnnotationFilter            string
-	FQDNTemplate                string
-	CombineFQDNAndAnnotation    bool
-	IgnoreHostnameAnnotation    bool
-	Compatibility               string
-	PublishInternal             bool
-	PublishHostIP               bool
-	ConnectorServer             string
-	CRDSourceAPIVersion         string
-	CRDSourceKind               string
-	KubeConfig                  string
-	KubeMaster                  string
-	ServiceTypeFilter           []string
-	IstioIngressGatewayServices []string
-	CFAPIEndpoint               string
-	CFUsername                  string
-	CFPassword                  string
-	ContourLoadBalancerService  string
+	Namespace                      string
+	AnnotationFilter               string
+	FQDNTemplate                   string
+	CombineFQDNAndAnnotation       bool
+	IgnoreHostnameAnnotation       bool
+	Compatibility                  string
+	PublishInternal                bool
+	PublishHostIP                  bool
+	AlwaysPublishNotReadyAddresses bool
+	ConnectorServer                string
+	CRDSourceAPIVersion            string
+	CRDSourceKind                  string
+	KubeConfig                     string
+	KubeMaster                     string
+	ServiceTypeFilter              []string
+	IstioIngressGatewayServices    []string
+	CFAPIEndpoint                  string
+	CFUsername                     string
+	CFPassword                     string
+	ContourLoadBalancerService     string
 }
 
 // ClientGenerator provides clients
@@ -164,7 +165,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewServiceSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation)
+		return NewServiceSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.AlwaysPublishNotReadyAddresses, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation)
 	case "ingress":
 		client, err := p.KubeClient()
 		if err != nil {
