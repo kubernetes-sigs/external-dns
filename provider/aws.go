@@ -290,19 +290,16 @@ func (p *AWSProvider) records(zones map[string]*route53.HostedZone) ([]*endpoint
 			for _, ep := range newEndpoints {
 				if r.SetIdentifier != nil {
 					ep.SetIdentifier = aws.StringValue(r.SetIdentifier)
-					if r.Weight != nil {
+					switch {
+					case r.Weight != nil:
 						ep.WithProviderSpecific(providerSpecificWeight, fmt.Sprintf("%d", aws.Int64Value(r.Weight)))
-					}
-					if r.Region != nil {
+					case r.Region != nil:
 						ep.WithProviderSpecific(providerSpecificRegion, aws.StringValue(r.Region))
-					}
-					if r.Failover != nil {
+					case r.Failover != nil:
 						ep.WithProviderSpecific(providerSpecificFailover, aws.StringValue(r.Failover))
-					}
-					if r.MultiValueAnswer != nil && aws.BoolValue(r.MultiValueAnswer) {
+					case r.MultiValueAnswer != nil && aws.BoolValue(r.MultiValueAnswer):
 						ep.WithProviderSpecific(providerSpecificMultiValueAnswer, "")
-					}
-					if r.GeoLocation != nil {
+					case r.GeoLocation != nil:
 						if r.GeoLocation.ContinentCode != nil {
 							ep.WithProviderSpecific(providerSpecificGeolocationContinentCode, aws.StringValue(r.GeoLocation.ContinentCode))
 						} else {
@@ -313,6 +310,8 @@ func (p *AWSProvider) records(zones map[string]*route53.HostedZone) ([]*endpoint
 								ep.WithProviderSpecific(providerSpecificGeolocationSubdivisionCode, aws.StringValue(r.GeoLocation.SubdivisionCode))
 							}
 						}
+					default:
+						// one of the above needs to be set, otherwise SetIdentifier doesn't make sense
 					}
 				}
 				endpoints = append(endpoints, ep)
