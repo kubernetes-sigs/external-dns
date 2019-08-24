@@ -42,23 +42,29 @@ func newStub() *rfc2136Stub {
 	}
 }
 
-const (
-	searchPattern = "AUTHORITY SECTION:"
-)
-
 func (r *rfc2136Stub) SendMessage(msg *dns.Msg) error {
+	const searchPattern = "AUTHORITY SECTION:"
 
-	a := msg.String()
+	data := msg.String()
+	log.Info(data)
 
-	p0 := strings.Index(a, searchPattern)
-	a = strings.Trim(a[p0+len(searchPattern):], "\n")
-	a = strings.Replace(a, "\t", " ", -1)
-	log.Info(a)
+	authoritySectionOffset := strings.Index(data, searchPattern)
+	lines := strings.Split(strings.TrimSpace(data[authoritySectionOffset+len(searchPattern):]), "\n")
 
-	if strings.Contains(a, " CLASS255 ") {
-		r.updateMsgs = append(r.updateMsgs, msg)
-	} else if strings.Contains(a, " IN ") {
-		r.createMsgs = append(r.createMsgs, msg)
+	for _, line := range lines {
+		// break at first empty line
+		if len(strings.TrimSpace(line)) == 0 {
+			break
+		}
+
+		line = strings.Replace(line, "\t", " ", -1)
+		log.Info(line)
+
+		if strings.Contains(line, " NONE ") {
+			r.updateMsgs = append(r.updateMsgs, msg)
+		} else if strings.Contains(line, " IN ") {
+			r.createMsgs = append(r.createMsgs, msg)
+		}
 	}
 
 	return nil
@@ -92,6 +98,32 @@ func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, a string) (env chan *dns.Envelo
 
 func createRfc2136StubProvider(stub *rfc2136Stub) (Provider, error) {
 	return NewRfc2136Provider("", 0, "", false, "key", "secret", "hmac-sha512", true, DomainFilter{}, false, stub)
+}
+
+// TestRfc2136GetRecordsMultipleTargets simulates a single record with multiple targets.
+func TestRfc2136GetRecordsMultipleTargets(t *testing.T) {
+	stub := newStub()
+	err := stub.setOutput([]string{
+		"foo.com 3600 IN A 1.1.1.1",
+		"foo.com 3600 IN A 2.2.2.2",
+	})
+	assert.NoError(t, err)
+
+	provider, err := createRfc2136StubProvider(stub)
+	assert.NoError(t, err)
+
+	recs, err := provider.Records()
+	assert.NoError(t, err)
+
+	assert.Equal(t, 1, len(recs), "expected single record")
+	assert.Equal(t, recs[0].DNSName, "foo.com")
+	assert.Equal(t, 2, len(recs[0].Targets), "expected two targets")
+	assert.True(t, recs[0].Targets[0] == "1.1.1.1" || recs[0].Targets[1] == "1.1.1.1") // ignore order
+	assert.True(t, recs[0].Targets[0] == "2.2.2.2" || recs[0].Targets[1] == "2.2.2.2") // ignore order
+	assert.Equal(t, recs[0].RecordType, "A")
+	assert.Equal(t, recs[0].RecordTTL, endpoint.TTL(3600))
+	assert.Equal(t, 0, len(recs[0].Labels), "expected no labels")
+	assert.Equal(t, 0, len(recs[0].ProviderSpecific), "expected no provider specific config")
 }
 
 func TestRfc2136GetRecords(t *testing.T) {
@@ -140,12 +172,12 @@ func TestRfc2136ApplyChanges(t *testing.T) {
 			{
 				DNSName:    "v2.foo.com",
 				RecordType: "A",
-				Targets:    []string{""},
+				Targets:    []string{"1.2.3.4"},
 			},
 			{
 				DNSName:    "v2.foobar.com",
 				RecordType: "TXT",
-				Targets:    []string{""},
+				Targets:    []string{"boom2"},
 			},
 		},
 	}
