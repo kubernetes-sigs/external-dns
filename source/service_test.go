@@ -1521,25 +1521,25 @@ func TestNodePortServices(t *testing.T) {
 // TestHeadlessServices tests that headless services generate the correct endpoints.
 func TestHeadlessServices(t *testing.T) {
 	for _, tc := range []struct {
-		title           string
-		targetNamespace string
-		svcNamespace    string
-		svcName         string
-		svcType         v1.ServiceType
-		compatibility   string
-		fqdnTemplate    string
-        ignoreHostnameAnnotation bool
-		labels          map[string]string
-		annotations     map[string]string
-		clusterIP       string
-        podIPs          []string
-		selector        map[string]string
-		lbs             []string
-		podnames        []string
-		hostnames       []string
-		phases          []v1.PodPhase
-		expected        []*endpoint.Endpoint
-		expectError     bool
+		title                    string
+		targetNamespace          string
+		svcNamespace             string
+		svcName                  string
+		svcType                  v1.ServiceType
+		compatibility            string
+		fqdnTemplate             string
+		ignoreHostnameAnnotation bool
+		labels                   map[string]string
+		annotations              map[string]string
+		clusterIP                string
+		podIPs                   []string
+		selector                 map[string]string
+		lbs                      []string
+		podnames                 []string
+		hostnames                []string
+		phases                   []v1.PodPhase
+		expected                 []*endpoint.Endpoint
+		expectError              bool
 	}{
 		{
 			"annotated Headless services return endpoints for each selected Pod",
@@ -1756,25 +1756,25 @@ func TestHeadlessServices(t *testing.T) {
 // TestHeadlessServices tests that headless services generate the correct endpoints.
 func TestHeadlessServicesHostIP(t *testing.T) {
 	for _, tc := range []struct {
-		title           string
-		targetNamespace string
-		svcNamespace    string
-		svcName         string
-		svcType         v1.ServiceType
-		compatibility   string
-		fqdnTemplate    string
-        ignoreHostnameAnnotation bool
-		labels          map[string]string
-		annotations     map[string]string
-		clusterIP       string
-		hostIPs         []string
-		selector        map[string]string
-		lbs             []string
-		podnames        []string
-		hostnames       []string
-		phases          []v1.PodPhase
-		expected        []*endpoint.Endpoint
-		expectError     bool
+		title                    string
+		targetNamespace          string
+		svcNamespace             string
+		svcName                  string
+		svcType                  v1.ServiceType
+		compatibility            string
+		fqdnTemplate             string
+		ignoreHostnameAnnotation bool
+		labels                   map[string]string
+		annotations              map[string]string
+		clusterIP                string
+		hostIPs                  []string
+		selector                 map[string]string
+		lbs                      []string
+		podnames                 []string
+		hostnames                []string
+		phases                   []v1.PodPhase
+		expected                 []*endpoint.Endpoint
+		expectError              bool
 	}{
 		{
 			"annotated Headless services return endpoints for each selected Pod",
@@ -2012,7 +2012,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
 	require.NoError(b, err)
 
-	client, err := NewServiceSource(kubernetes, v1.NamespaceAll, "", "", false,true, "", false, false, []string{},false)
+	client, err := NewServiceSource(kubernetes, v1.NamespaceAll, "", "", false, true, "", false, false, []string{}, false)
 	require.NoError(b, err)
 
 	for i := 0; i < b.N; i++ {

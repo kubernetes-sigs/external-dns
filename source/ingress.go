@@ -83,7 +83,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	// Wait for all informers to be synced.
 	for informer, isSynced := range informerFactory.WaitForCacheSync(wait.NeverStop) {
 		if !isSynced {
-			return nil,fmt.Errorf("error syncing informer %s",informer)
+			return nil, fmt.Errorf("error syncing informer %s", informer)
 		}
 	}
 

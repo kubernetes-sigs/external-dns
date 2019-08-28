@@ -64,7 +64,7 @@ type Controller struct {
 
 // RunOnce runs a single iteration of a reconciliation loop.
 func (c *Controller) RunOnce() error {
-	start:=time.Now()
+	start := time.Now()
 	records, err := c.Registry.Records()
 	if err != nil {
 		registryErrors.Inc()
@@ -72,7 +72,7 @@ func (c *Controller) RunOnce() error {
 	}
 	log.Infof("Retrieved %v records from registry in %v", len(records), time.Since(start))
 
-	start=time.Now()
+	start = time.Now()
 	endpoints, err := c.Source.Endpoints()
 	if err != nil {
 		sourceErrors.Inc()
@@ -86,11 +86,11 @@ func (c *Controller) RunOnce() error {
 		Desired:  endpoints,
 	}
 
-	start=time.Now()
+	start = time.Now()
 	plan = plan.Calculate()
 	log.Infof("Calculated plan in  %v", time.Since(start))
 
-	start=time.Now()
+	start = time.Now()
 	err = c.Registry.ApplyChanges(plan.Changes)
 	if err != nil {
 		registryErrors.Inc()

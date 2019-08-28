@@ -114,7 +114,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewServiceSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.CreateServiceRecord, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.ServiceTypeFilter,cfg.IgnoreHostnameAnnotation)
+		return NewServiceSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.CreateServiceRecord, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation)
 	case "ingress":
 		client, err := p.KubeClient()
 		if err != nil {
