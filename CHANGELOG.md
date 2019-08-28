@@ -1,4 +1,5 @@
   - Add `create-only` policy, which prevents records from being updated or deleted (#1155) @danieldabate
+  - AWS: re-introduce accidentally removed `--aws-api-retries` flag (#1158) @coreypobrien
 
 ## v0.5.16 - 2019-08-16
 
