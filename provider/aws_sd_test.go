@@ -722,7 +722,7 @@ func TestAWSSDProvider_RegisterInstance(t *testing.T) {
 		},
 	}
 
-	// ALIAS instance
+	// AWS ELB instance (ALIAS)
 	provider.RegisterInstance(services["private"]["alias-srv"], &endpoint.Endpoint{
 		RecordType: endpoint.RecordTypeCNAME,
 		DNSName:    "service1.private.com.",
@@ -739,6 +739,20 @@ func TestAWSSDProvider_RegisterInstance(t *testing.T) {
 		Id: aws.String("load-balancer.us-west-2.elb.amazonaws.com"),
 		Attributes: map[string]*string{
 			sdInstanceAttrAlias: aws.String("load-balancer.us-west-2.elb.amazonaws.com"),
+		},
+	}
+
+	// AWS NLB instance (ALIAS)
+	provider.RegisterInstance(services["private"]["alias-srv"], &endpoint.Endpoint{
+		RecordType: endpoint.RecordTypeCNAME,
+		DNSName:    "service1.private.com.",
+		RecordTTL:  300,
+		Targets:    endpoint.Targets{"load-balancer.elb.us-west-2.amazonaws.com"},
+	})
+	expectedInstances["load-balancer.elb.us-west-2.amazonaws.com"] = &sd.Instance{
+		Id: aws.String("load-balancer.elb.us-west-2.amazonaws.com"),
+		Attributes: map[string]*string{
+			sdInstanceAttrAlias: aws.String("load-balancer.elb.us-west-2.amazonaws.com"),
 		},
 	}
 
