@@ -22,13 +22,13 @@ require (
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/denverdino/aliyungo v0.0.0-20180815121905-69560d9530f5
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
-	github.com/digitalocean/godo v1.1.1
+	github.com/digitalocean/godo v1.19.0
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
 	github.com/dnsimple/dnsimple-go v0.14.0
 	github.com/exoscale/egoscale v0.11.0
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
 	github.com/go-resty/resty v1.8.0 // indirect
-	github.com/google/go-querystring v0.0.0-20170111101155-53e6ce116135 // indirect
+	github.com/gobs/pretty v0.0.0-20180724170744-09732c25a95b // indirect
 	github.com/gophercloud/gophercloud v0.0.0-20190126172459-c818fa66e4c8
 	github.com/gorilla/websocket v0.0.0-20170926233335-4201258b820c // indirect
 	github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc // indirect
@@ -43,7 +43,6 @@ require (
 	github.com/json-iterator/go v1.1.6 // indirect
 	github.com/linki/instrumented_http v0.2.0
 	github.com/linode/linodego v0.3.0
-	github.com/lyft/protoc-gen-validate v0.0.14 // indirect
 	github.com/mattn/go-isatty v0.0.7 // indirect
 	github.com/miekg/dns v1.0.8
 	github.com/mitchellh/mapstructure v1.1.2 // indirect
@@ -62,10 +61,10 @@ require (
 	github.com/sirupsen/logrus v1.4.1
 	github.com/smartystreets/go-aws-auth v0.0.0-20180515143844-0c1422d1fdb9 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a // indirect
+	github.com/smartystreets/gunit v1.0.2 // indirect
 	github.com/soheilhy/cmux v0.1.3 // indirect
 	github.com/spf13/cobra v0.0.3 // indirect
-	github.com/stretchr/testify v1.2.2
-	github.com/tent/http-link-go v0.0.0-20130702225549-ac974c61c2f9 // indirect
+	github.com/stretchr/testify v1.3.0
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8 // indirect
 	github.com/transip/gotransip v5.8.2+incompatible
 	github.com/ugorji/go/codec v0.0.0-20190320090025-2dc34c0b8780 // indirect
@@ -86,11 +85,12 @@ require (
 	istio.io/api v0.0.0-20190321180614-db16d82d3672
 	istio.io/istio v0.0.0-20190322063008-2b1331886076
 	k8s.io/api v0.0.0-20190503184017-f1b257a4ce96
-	k8s.io/apiextensions-apiserver v0.0.0-20190503184539-c338b28ceaa1
+	k8s.io/apiextensions-apiserver v0.0.0-20190503184539-c338b28ceaa1 // indirect
 	k8s.io/apimachinery v0.0.0-20190223001710-c182ff3b9841
 	k8s.io/client-go v8.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20190401085232-94e1e7b7574c // indirect
-	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
 )
+
+replace k8s.io/code-generator v0.0.0-20190409092313-b1289fc74931 => k8s.io/code-generator v0.0.0-20181128191024-b1289fc74931
 
 replace github.com/golang/glog => github.com/kubermatic/glog-logrus v0.0.0-20180829085450-3fa5b9870d1d

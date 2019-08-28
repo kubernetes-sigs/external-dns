@@ -369,7 +369,7 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change, zones map[string]
 
 		for i, b := range batchCs {
 			for _, c := range b {
-				log.Infof("Desired change: %s %s %s", *c.Action, *c.ResourceRecordSet.Name, *c.ResourceRecordSet.Type)
+				log.Infof("Desired change: %s %s %s [Id: %s]", *c.Action, *c.ResourceRecordSet.Name, *c.ResourceRecordSet.Type, z)
 			}
 
 			if !p.dryRun {
@@ -381,10 +381,12 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change, zones map[string]
 				}
 
 				if _, err := p.client.ChangeResourceRecordSets(params); err != nil {
+					log.Errorf("Failure in zone %s [Id: %s]", aws.StringValue(zones[z].Name), z)
 					log.Error(err) //TODO(ideahitme): consider changing the interface in cases when this error might be a concern for other components
 					failedUpdate = true
 				} else {
-					log.Infof("%d record(s) in zone %s were successfully updated", len(b), aws.StringValue(zones[z].Name))
+					// z is the R53 Hosted Zone ID already as aws.StringValue
+					log.Infof("%d record(s) in zone %s [Id: %s] were successfully updated", len(b), aws.StringValue(zones[z].Name), z)
 				}
 
 				if i != len(batchCs)-1 {
