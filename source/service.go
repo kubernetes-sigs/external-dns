@@ -19,12 +19,13 @@ package source
 import (
 	"bytes"
 	"fmt"
-	kubeinformers "k8s.io/client-go/informers"
-	coreinformers "k8s.io/client-go/informers/core/v1"
-	"k8s.io/client-go/tools/cache"
 	"sort"
 	"strings"
 	"text/template"
+
+	kubeinformers "k8s.io/client-go/informers"
+	coreinformers "k8s.io/client-go/informers/core/v1"
+	"k8s.io/client-go/tools/cache"
 
 	log "github.com/sirupsen/logrus"
 
@@ -392,24 +393,25 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, nod
 	var endpoints []*endpoint.Endpoint
 	var targets endpoint.Targets
 
-	targets = getTargetsFromTargetAnnotation(svc.Annotations)
-
-	if len(targets) == 0 {
-		switch svc.Spec.Type {
-		case v1.ServiceTypeLoadBalancer:
-			targets = append(targets, extractLoadBalancerTargets(svc)...)
-		case v1.ServiceTypeClusterIP:
-			if sc.publishInternal {
-				targets = append(targets, extractServiceIps(svc)...)
-			}
-			if svc.Spec.ClusterIP == v1.ClusterIPNone {
+	switch svc.Spec.Type {
+	case v1.ServiceTypeLoadBalancer:
+		targets = append(targets, extractLoadBalancerTargets(svc)...)
+	case v1.ServiceTypeClusterIP:
+		if sc.publishInternal {
+			targets = append(targets, extractServiceIps(svc)...)
+		}
+		if svc.Spec.ClusterIP == v1.ClusterIPNone {
+			if targetAnnotationTargets := getTargetsFromTargetAnnotation(svc.Annotations); len(targetAnnotationTargets) > 0 {
+				log.Debugf("extracted headless service %s/%s targets from target annotation: %+v", svc.Namespace, svc.Name, targetAnnotationTargets)
+				targets = append(targets, targetAnnotationTargets...)
+			} else {
 				endpoints = append(endpoints, sc.extractHeadlessEndpoints(svc, hostname, ttl)...)
 			}
-		case v1.ServiceTypeNodePort:
-			// add the nodeTargets and extract an SRV endpoint
-			targets = append(targets, nodeTargets...)
-			endpoints = append(endpoints, sc.extractNodePortEndpoints(svc, nodeTargets, hostname, ttl)...)
 		}
+	case v1.ServiceTypeNodePort:
+		// add the nodeTargets and extract an SRV endpoint
+		targets = append(targets, nodeTargets...)
+		endpoints = append(endpoints, sc.extractNodePortEndpoints(svc, nodeTargets, hostname, ttl)...)
 	}
 
 	for _, t := range targets {
