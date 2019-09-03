@@ -2162,6 +2162,7 @@ func TestExternalServices(t *testing.T) {
 				"",
 				tc.fqdnTemplate,
 				false,
+				false,
 				tc.compatibility,
 				true,
 				false,
