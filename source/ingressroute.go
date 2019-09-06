@@ -209,14 +209,14 @@ func (sc *ingressRouteSource) endpointsFromTemplate(ingressRoute *contourapi.Ing
 		}
 	}
 
-	providerSpecific := getProviderSpecificAnnotations(ingressRoute.Annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 	// splits the FQDN template and removes the trailing periods
 	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
 	for _, hostname := range hostnameList {
 		hostname = strings.TrimSuffix(hostname, ".")
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific)...)
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 	return endpoints, nil
 }
@@ -302,11 +302,11 @@ func (sc *ingressRouteSource) endpointsFromIngressRoute(ingressRoute *contourapi
 		}
 	}
 
-	providerSpecific := getProviderSpecificAnnotations(ingressRoute.Annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
 
 	if virtualHost := ingressRoute.Spec.VirtualHost; virtualHost != nil {
 		if fqdn := virtualHost.Fqdn; fqdn != "" {
-			endpoints = append(endpoints, endpointsForHostname(fqdn, targets, ttl, providerSpecific)...)
+			endpoints = append(endpoints, endpointsForHostname(fqdn, targets, ttl, providerSpecific, setIdentifier)...)
 		}
 	}
 
@@ -314,7 +314,7 @@ func (sc *ingressRouteSource) endpointsFromIngressRoute(ingressRoute *contourapi
 	if !sc.ignoreHostnameAnnotation {
 		hostnameList := getHostnamesFromAnnotations(ingressRoute.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific)...)
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 		}
 	}
 
