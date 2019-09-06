@@ -519,10 +519,10 @@ func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint, recordsCac
 		}
 	}
 
-	setIdentifier := endpoint.SetIdentifier
+	setIdentifier := ep.SetIdentifier
 	if setIdentifier != "" {
 		change.ResourceRecordSet.SetIdentifier = aws.String(setIdentifier)
-		if prop, ok := endpoint.GetProviderSpecificProperty(providerSpecificWeight); ok {
+		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificWeight); ok {
 			weight, err := strconv.ParseInt(prop.Value, 10, 64)
 			if err != nil {
 				log.Errorf("Failed parsing value of %s: %s: %v; using weight of 0", providerSpecificWeight, prop.Value, err)
@@ -530,27 +530,27 @@ func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint, recordsCac
 			}
 			change.ResourceRecordSet.Weight = aws.Int64(weight)
 		}
-		if prop, ok := endpoint.GetProviderSpecificProperty(providerSpecificRegion); ok {
+		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificRegion); ok {
 			change.ResourceRecordSet.Region = aws.String(prop.Value)
 		}
-		if prop, ok := endpoint.GetProviderSpecificProperty(providerSpecificFailover); ok {
+		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificFailover); ok {
 			change.ResourceRecordSet.Failover = aws.String(prop.Value)
 		}
-		if _, ok := endpoint.GetProviderSpecificProperty(providerSpecificMultiValueAnswer); ok {
+		if _, ok := ep.GetProviderSpecificProperty(providerSpecificMultiValueAnswer); ok {
 			change.ResourceRecordSet.MultiValueAnswer = aws.Bool(true)
 		}
 
 		var geolocation = &route53.GeoLocation{}
 		useGeolocation := false
-		if prop, ok := endpoint.GetProviderSpecificProperty(providerSpecificGeolocationContinentCode); ok {
+		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationContinentCode); ok {
 			geolocation.ContinentCode = aws.String(prop.Value)
 			useGeolocation = true
 		} else {
-			if prop, ok := endpoint.GetProviderSpecificProperty(providerSpecificGeolocationCountryCode); ok {
+			if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationCountryCode); ok {
 				geolocation.CountryCode = aws.String(prop.Value)
 				useGeolocation = true
 			}
-			if prop, ok := endpoint.GetProviderSpecificProperty(providerSpecificGeolocationSubdivisionCode); ok {
+			if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationSubdivisionCode); ok {
 				geolocation.SubdivisionCode = aws.String(prop.Value)
 				useGeolocation = true
 			}
