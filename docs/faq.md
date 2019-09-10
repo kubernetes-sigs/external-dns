@@ -45,12 +45,13 @@ Currently, the following providers are supported:
 - Oracle Cloud Infrastructure DNS
 - Linode DNS
 - RFC2136
+- TransIP
 
 As stated in the README, we are currently looking for stable maintainers for those providers, to ensure that bugfixes and new features will be available for all of those.
 
 ### Which Kubernetes objects are supported?
 
-Services exposed via `type=LoadBalancer` and for the hostnames defined in Ingress objects as well as headless hostPort services. An initial effort to support type `NodePort` was started as of May 2018 and it is in progress at the time of writing.
+Services exposed via `type=LoadBalancer`, `type=ExternalName` and for the hostnames defined in Ingress objects as well as headless hostPort services. An initial effort to support type `NodePort` was started as of May 2018 and it is in progress at the time of writing.
 
 ### How do I specify a DNS name for my Kubernetes objects?
 
@@ -156,17 +157,30 @@ ExternalDNS can be configured to only use Services or Ingresses as source. In ca
 
 CNAMEs cannot co-exist with other records, therefore you can use the `--txt-prefix` flag which makes sure to create a TXT record with a name following the pattern `prefix.<CNAME record>`. For reference, see the issue https://github.com/kubernetes-incubator/external-dns/issues/262.
 
+### Can I force ExternalDNS to create CNAME records for ELB/ALB?
+
+The default logic is: when a target looks like an ELB/ALB, ExternalDNS will create ALIAS records for it.
+Under certain circumstances you want to force ExternalDNS to create CNAME records instead. If you want to do that, start ExternalDNS with the `--aws-prefer-cname` flag.
+
+Why should I want to force ExternalDNS to create CNAME records for ELB/ALB? Some motivations of users were:
+
+> "Our hosted zones records are synchronized with our enterprise DNS. The record type ALIAS is an AWS proprietary record type and AWS allows you to set a DNS record directly on AWS resources. Since this is not a DNS RfC standard and therefore can not be transferred and created in our enterprise DNS. So we need to force CNAME creation instead."
+
+or
+
+> "In case of ALIAS if we do nslookup with domain name, it will return only IPs of ELB. So it is always difficult for us to locate ELB in AWS console to which domain is pointing. If we configure it with CNAME it will return exact ELB CNAME, which is more helpful.!"
+
 ### Which permissions do I need when running ExternalDNS on a GCE or GKE node.
 
 You need to add either https://www.googleapis.com/auth/ndev.clouddns.readwrite or https://www.googleapis.com/auth/cloud-platform on your instance group's scope.
 
-### What metrics can I get from ExternalDNS and what do they mean?  
+### What metrics can I get from ExternalDNS and what do they mean?
 
 ExternalDNS exposes 2 types of metrics: Sources and Registry errors.
 
 `Source`s are mostly Kubernetes API objects. Examples of `source` errors may be connection errors to the Kubernetes API server itself or missing RBAC permissions. It can also stem from incompatible configuration in the objects itself like invalid characters, processing a broken fqdnTemplate, etc.
 
-`Registry` errors are mostly Provider errors, unless there's some coding flaw in the registry package. Provider errors often arise due to accessing their APIs due to network or missing cloud-provider permissions when reading records. When applying a changeset, errors will arise if the changeset applied is incompatible with the current state.  
+`Registry` errors are mostly Provider errors, unless there's some coding flaw in the registry package. Provider errors often arise due to accessing their APIs due to network or missing cloud-provider permissions when reading records. When applying a changeset, errors will arise if the changeset applied is incompatible with the current state.
 
 In case of an increased error count, you could correlate them with the `http_request_duration_seconds{handler="instrumented_http"}` metric which should show increased numbers for status codes 4xx (permissions, configuration, invalid changeset) or 5xx (apiserver down).
 

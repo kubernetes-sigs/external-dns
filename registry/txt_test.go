@@ -17,6 +17,7 @@ limitations under the License.
 package registry
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -68,14 +69,14 @@ func testTXTRegistryRecords(t *testing.T) {
 func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	p.ApplyChanges(&plan.Changes{
+	p.ApplyChanges(context.Background(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
-			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", endpoint.RecordTypeCNAME, ""),
+			newEndpointWithOwnerAndLabels("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, "", endpoint.Labels{"foo": "somefoo"}),
+			newEndpointWithOwnerAndLabels("bar.test-zone.example.org", "my-domain.com", endpoint.RecordTypeCNAME, "", endpoint.Labels{"bar": "somebar"}),
 			newEndpointWithOwner("txt.bar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("txt.bar.test-zone.example.org", "baz.test-zone.example.org", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwner("qux.test-zone.example.org", "random", endpoint.RecordTypeTXT, ""),
-			newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
+			newEndpointWithOwner("tar.test-zone.example.org", "tar.loadbalancer.com", endpoint.RecordTypeCNAME, "", endpoint.Labels{"tar": "sometar"}),
 			newEndpointWithOwner("TxT.tar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2\"", endpoint.RecordTypeTXT, ""), // case-insensitive TXT prefix
 			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwner("foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
@@ -88,6 +89,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "",
+				"foo":                  "somefoo",
 			},
 		},
 		{
@@ -96,6 +98,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
+				"bar":                  "somebar",
 			},
 		},
 		{
@@ -120,6 +123,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner-2",
+				"tar":                  "sometar",
 			},
 		},
 		{
@@ -141,13 +145,13 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	r, _ = NewTXTRegistry(p, "TxT.", "owner", time.Hour)
 	records, _ = r.Records()
 
-	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+	assert.True(t, testutils.SameEndpointLabels(records, expectedRecords))
 }
 
 func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	p.ApplyChanges(&plan.Changes{
+	p.ApplyChanges(context.Background(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", endpoint.RecordTypeCNAME, ""),
@@ -226,7 +230,12 @@ func testTXTRegistryApplyChanges(t *testing.T) {
 func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	p.ApplyChanges(&plan.Changes{
+	ctxEndpoints := []*endpoint.Endpoint{}
+	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
+	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
+		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
+	}
+	p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", endpoint.RecordTypeCNAME, ""),
@@ -273,7 +282,7 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 			newEndpointWithOwner("txt.tar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
 	}
-	p.OnApplyChanges = func(got *plan.Changes) {
+	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
 			"Create":    expected.Create,
 			"UpdateNew": expected.UpdateNew,
@@ -287,15 +296,21 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+		assert.Equal(t, nil, ctx.Value(provider.RecordsContextKey))
 	}
-	err := r.ApplyChanges(changes)
+	err := r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
 }
 
 func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 	p := provider.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	p.ApplyChanges(&plan.Changes{
+	ctxEndpoints := []*endpoint.Endpoint{}
+	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
+	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
+		assert.Equal(t, ctxEndpoints, ctx.Value(provider.RecordsContextKey))
+	}
+	p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", endpoint.RecordTypeCNAME, ""),
@@ -336,7 +351,7 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 		UpdateNew: []*endpoint.Endpoint{},
 		UpdateOld: []*endpoint.Endpoint{},
 	}
-	p.OnApplyChanges = func(got *plan.Changes) {
+	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
 		mExpected := map[string][]*endpoint.Endpoint{
 			"Create":    expected.Create,
 			"UpdateNew": expected.UpdateNew,
@@ -350,8 +365,9 @@ func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
 			"Delete":    got.Delete,
 		}
 		assert.True(t, testutils.SamePlanChanges(mGot, mExpected))
+		assert.Equal(t, nil, ctx.Value(provider.RecordsContextKey))
 	}
-	err := r.ApplyChanges(changes)
+	err := r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
 }
 
@@ -423,8 +439,17 @@ helper methods
 */
 
 func newEndpointWithOwner(dnsName, target, recordType, ownerID string) *endpoint.Endpoint {
+	return newEndpointWithOwnerAndLabels(dnsName, target, recordType, ownerID, nil)
+}
+
+func newEndpointWithOwnerAndLabels(dnsName, target, recordType, ownerID string, labels endpoint.Labels) *endpoint.Endpoint {
 	e := endpoint.NewEndpoint(dnsName, recordType, target)
 	e.Labels[endpoint.OwnerLabelKey] = ownerID
+	if labels != nil {
+		for k, v := range labels {
+			e.Labels[k] = v
+		}
+	}
 	return e
 }
 

@@ -17,27 +17,33 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/kubernetes-incubator/external-dns/provider"
 	"github.com/kubernetes-incubator/external-dns/registry"
 	"github.com/kubernetes-incubator/external-dns/source"
 )
 
 var (
-	registryErrors = prometheus.NewCounter(
+	registryErrorsTotal = prometheus.NewCounter(
 		prometheus.CounterOpts{
-			Name: "registry_errors_total",
-			Help: "Number of Registry errors.",
+			Namespace: "external_dns",
+			Subsystem: "registry",
+			Name:      "errors_total",
+			Help:      "Number of Registry errors.",
 		},
 	)
-	sourceErrors = prometheus.NewCounter(
+	sourceErrorsTotal = prometheus.NewCounter(
 		prometheus.CounterOpts{
-			Name: "source_errors_total",
-			Help: "Number of Source errors.",
+			Namespace: "external_dns",
+			Subsystem: "source",
+			Name:      "errors_total",
+			Help:      "Number of Source errors.",
 		},
 	)
 	sourceEndpointsTotal = prometheus.NewGauge(
@@ -56,13 +62,29 @@ var (
 			Help:      "Number of Endpoints in the registry",
 		},
 	)
+	deprecatedRegistryErrors = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Subsystem: "registry",
+			Name:      "errors_total",
+			Help:      "Number of Registry errors.",
+		},
+	)
+	deprecatedSourceErrors = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Subsystem: "source",
+			Name:      "errors_total",
+			Help:      "Number of Source errors.",
+		},
+	)
 )
 
 func init() {
-	prometheus.MustRegister(registryErrors)
-	prometheus.MustRegister(sourceErrors)
+	prometheus.MustRegister(registryErrorsTotal)
+	prometheus.MustRegister(sourceErrorsTotal)
 	prometheus.MustRegister(sourceEndpointsTotal)
 	prometheus.MustRegister(registryEndpointsTotal)
+	prometheus.MustRegister(deprecatedRegistryErrors)
+	prometheus.MustRegister(deprecatedSourceErrors)
 }
 
 // Controller is responsible for orchestrating the different components.
@@ -84,14 +106,18 @@ type Controller struct {
 func (c *Controller) RunOnce() error {
 	records, err := c.Registry.Records()
 	if err != nil {
-		registryErrors.Inc()
+		registryErrorsTotal.Inc()
+		deprecatedRegistryErrors.Inc()
 		return err
 	}
 	registryEndpointsTotal.Set(float64(len(records)))
 
+	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, records)
+
 	endpoints, err := c.Source.Endpoints()
 	if err != nil {
-		sourceErrors.Inc()
+		sourceErrorsTotal.Inc()
+		deprecatedSourceErrors.Inc()
 		return err
 	}
 	sourceEndpointsTotal.Set(float64(len(endpoints)))
@@ -104,9 +130,10 @@ func (c *Controller) RunOnce() error {
 
 	plan = plan.Calculate()
 
-	err = c.Registry.ApplyChanges(plan.Changes)
+	err = c.Registry.ApplyChanges(ctx, plan.Changes)
 	if err != nil {
-		registryErrors.Inc()
+		registryErrorsTotal.Inc()
+		deprecatedRegistryErrors.Inc()
 		return err
 	}
 	return nil

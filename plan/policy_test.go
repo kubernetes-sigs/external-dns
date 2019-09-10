@@ -52,6 +52,12 @@ func TestApply(t *testing.T) {
 			&Changes{Create: baz, UpdateOld: fooV1, UpdateNew: fooV2, Delete: bar},
 			&Changes{Create: baz, UpdateOld: fooV1, UpdateNew: fooV2, Delete: empty},
 		},
+		{
+			// CreateOnlyPolicy clears the list of updates and deletions.
+			&CreateOnlyPolicy{},
+			&Changes{Create: baz, UpdateOld: fooV1, UpdateNew: fooV2, Delete: bar},
+			&Changes{Create: baz, UpdateOld: empty, UpdateNew: empty, Delete: empty},
+		},
 	} {
 		// apply policy
 		changes := tc.policy.Apply(tc.changes)
@@ -68,6 +74,7 @@ func TestApply(t *testing.T) {
 func TestPolicies(t *testing.T) {
 	validatePolicy(t, Policies["sync"], &SyncPolicy{})
 	validatePolicy(t, Policies["upsert-only"], &UpsertOnlyPolicy{})
+	validatePolicy(t, Policies["create-only"], &CreateOnlyPolicy{})
 }
 
 // validatePolicy validates that a given policy is of the given type.

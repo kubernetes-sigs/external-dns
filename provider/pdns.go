@@ -443,7 +443,7 @@ func (p *PDNSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 
 // ApplyChanges takes a list of changes (endpoints) and updates the PDNS server
 // by sending the correct HTTP PATCH requests to a matching zone
-func (p *PDNSProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 
 	startTime := time.Now()
 

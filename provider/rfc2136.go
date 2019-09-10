@@ -17,9 +17,11 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/miekg/dns"
@@ -131,7 +133,7 @@ OuterLoop:
 		}
 
 		for idx, existingEndpoint := range eps {
-			if existingEndpoint.DNSName == rrFqdn && existingEndpoint.RecordType == rrType {
+			if existingEndpoint.DNSName == strings.TrimSuffix(rrFqdn, ".") && existingEndpoint.RecordType == rrType {
 				eps[idx].Targets = append(eps[idx].Targets, rrValues...)
 				continue OuterLoop
 			}
@@ -195,7 +197,7 @@ func (r rfc2136Provider) List() ([]dns.RR, error) {
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (r rfc2136Provider) ApplyChanges(changes *plan.Changes) error {
+func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	log.Debugf("ApplyChanges")
 
 	for _, ep := range changes.Create {
@@ -242,7 +244,7 @@ func (r rfc2136Provider) AddRecord(ep *endpoint.Endpoint) error {
 	log.Debugf("AddRecord.ep=%s", ep)
 	for _, target := range ep.Targets {
 		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ep.RecordTTL, ep.RecordType, target)
-		log.Debugf("Adding RR: %s", newRR)
+		log.Infof("Adding RR: %s", newRR)
 
 		rr, err := dns.NewRR(newRR)
 		if err != nil {
@@ -269,7 +271,7 @@ func (r rfc2136Provider) RemoveRecord(ep *endpoint.Endpoint) error {
 	log.Debugf("RemoveRecord.ep=%s", ep)
 
 	newRR := fmt.Sprintf("%s 0 %s 0.0.0.0", ep.DNSName, ep.RecordType)
-	log.Debugf("Removing RR: %s", newRR)
+	log.Infof("Removing RR: %s", newRR)
 
 	rr, err := dns.NewRR(newRR)
 	if err != nil {

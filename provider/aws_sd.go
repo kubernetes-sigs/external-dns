@@ -17,11 +17,14 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"strings"
 
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+
+	"regexp"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
@@ -36,8 +39,7 @@ import (
 )
 
 const (
-	sdElbHostnameSuffix = ".elb.amazonaws.com"
-	sdDefaultRecordTTL  = 300
+	sdDefaultRecordTTL = 300
 
 	sdNamespaceTypePublic  = "public"
 	sdNamespaceTypePrivate = "private"
@@ -45,6 +47,14 @@ const (
 	sdInstanceAttrIPV4  = "AWS_INSTANCE_IPV4"
 	sdInstanceAttrCname = "AWS_INSTANCE_CNAME"
 	sdInstanceAttrAlias = "AWS_ALIAS_DNS_NAME"
+)
+
+var (
+	// matches ELB with hostname format load-balancer.us-east-1.elb.amazonaws.com
+	sdElbHostnameRegex = regexp.MustCompile(`.+\.[^.]+\.elb\.amazonaws\.com$`)
+
+	// matches NLB with hostname format load-balancer.elb.us-east-1.amazonaws.com
+	sdNlbHostnameRegex = regexp.MustCompile(`.+\.elb\.[^.]+\.amazonaws\.com$`)
 )
 
 // AWSSDClient is the subset of the AWS Route53 Auto Naming API that we actually use. Add methods as required.
@@ -193,7 +203,7 @@ func (p *AWSSDProvider) instancesToEndpoint(ns *sd.NamespaceSummary, srv *sd.Ser
 }
 
 // ApplyChanges applies Kubernetes changes in endpoints to AWS API
-func (p *AWSSDProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *AWSSDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	// return early if there is nothing to change
 	if len(changes.Create) == 0 && len(changes.Delete) == 0 && len(changes.UpdateNew) == 0 {
 		log.Info("All records are already up to date")
@@ -666,5 +676,8 @@ func (p *AWSSDProvider) serviceTypeFromEndpoint(ep *endpoint.Endpoint) string {
 
 // determine if a given hostname belongs to an AWS load balancer
 func (p *AWSSDProvider) isAWSLoadBalancer(hostname string) bool {
-	return strings.HasSuffix(hostname, sdElbHostnameSuffix)
+	matchElb := sdElbHostnameRegex.MatchString(hostname)
+	matchNlb := sdNlbHostnameRegex.MatchString(hostname)
+
+	return matchElb || matchNlb
 }
