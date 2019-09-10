@@ -99,7 +99,9 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 	}
 
 	for _, ep := range endpoints {
-		ep.Labels = endpoint.NewLabels()
+		if ep.Labels == nil {
+			ep.Labels = endpoint.NewLabels()
+		}
 		if labels, ok := labelMap[ep.DNSName]; ok {
 			for k, v := range labels {
 				ep.Labels[k] = v
