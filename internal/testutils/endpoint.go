@@ -76,6 +76,24 @@ func SameEndpoints(a, b []*endpoint.Endpoint) bool {
 	return true
 }
 
+func SameEndpointLabels(a, b []*endpoint.Endpoint) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	sa := a[:]
+	sb := b[:]
+	sort.Sort(byAllFields(sa))
+	sort.Sort(byAllFields(sb))
+
+	for i := range sa {
+		if !reflect.DeepEqual(sa[i].Labels, sb[i].Labels) {
+			return false
+		}
+	}
+	return true
+}
+
 // SamePlanChanges verifies that two set of changes are the same
 func SamePlanChanges(a, b map[string][]*endpoint.Endpoint) bool {
 	return SameEndpoints(a["Create"], b["Create"]) && SameEndpoints(a["Delete"], b["Delete"]) &&
