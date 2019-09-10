@@ -48,6 +48,11 @@ func TestZoneIDName(t *testing.T) {
 	assert.Equal(t, "", zoneName)
 	assert.Equal(t, "", zoneID)
 
+	// no possible zone for entry of a substring to valid a zone
+	zoneID, zoneName = z.FindZone("nomatch-foo.bar")
+	assert.Equal(t, "", zoneName)
+	assert.Equal(t, "", zoneID)
+
 	// entry's suffix matches a subdomain but doesn't belong there
 	zoneID, zoneName = z.FindZone("name-foo.qux.baz")
 	assert.Equal(t, "qux.baz", zoneName)

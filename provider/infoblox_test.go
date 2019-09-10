@@ -487,8 +487,9 @@ func TestInfobloxZones(t *testing.T) {
 
 	provider := newInfobloxProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, &client)
 	zones, _ := provider.zones()
-
+	var emptyZoneAuth *ibclient.ZoneAuth
 	assert.Equal(t, provider.findZone(zones, "example.com").Fqdn, "example.com")
+	assert.Equal(t, provider.findZone(zones, "nomatch-example.com"), emptyZoneAuth)
 	assert.Equal(t, provider.findZone(zones, "nginx.example.com").Fqdn, "example.com")
 	assert.Equal(t, provider.findZone(zones, "lvl1-1.example.com").Fqdn, "lvl1-1.example.com")
 	assert.Equal(t, provider.findZone(zones, "lvl1-2.example.com").Fqdn, "example.com")
