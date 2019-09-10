@@ -25,6 +25,8 @@ import (
 
 	"sync"
 
+	cfclient "github.com/cloudfoundry-community/go-cfclient"
+	contour "github.com/heptio/contour/apis/generated/clientset/versioned"
 	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
 	istiocrd "istio.io/istio/pilot/pkg/config/kube/crd"
@@ -53,12 +55,18 @@ type Config struct {
 	KubeMaster                  string
 	ServiceTypeFilter           []string
 	IstioIngressGatewayServices []string
+	CFAPIEndpoint               string
+	CFUsername                  string
+	CFPassword                  string
+	ContourLoadBalancerService  string
 }
 
 // ClientGenerator provides clients
 type ClientGenerator interface {
 	KubeClient() (kubernetes.Interface, error)
 	IstioClient() (istiomodel.ConfigStore, error)
+	CloudFoundryClient(cfAPPEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error)
+	ContourClient() (contour.Interface, error)
 }
 
 // SingletonClientGenerator stores provider clients and guarantees that only one instance of client
@@ -69,8 +77,12 @@ type SingletonClientGenerator struct {
 	RequestTimeout time.Duration
 	kubeClient     kubernetes.Interface
 	istioClient    istiomodel.ConfigStore
+	cfClient       *cfclient.Client
+	contourClient  contour.Interface
 	kubeOnce       sync.Once
 	istioOnce      sync.Once
+	cfOnce         sync.Once
+	contourOnce    sync.Once
 }
 
 // KubeClient generates a kube client if it was not created before
@@ -89,6 +101,39 @@ func (p *SingletonClientGenerator) IstioClient() (istiomodel.ConfigStore, error)
 		p.istioClient, err = NewIstioClient(p.KubeConfig)
 	})
 	return p.istioClient, err
+}
+
+// CloudFoundryClient generates a cf client if it was not created before
+func (p *SingletonClientGenerator) CloudFoundryClient(cfAPIEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error) {
+	var err error
+	p.cfOnce.Do(func() {
+		p.cfClient, err = NewCFClient(cfAPIEndpoint, cfUsername, cfPassword)
+	})
+	return p.cfClient, err
+}
+
+// NewCFClient return a new CF client object.
+func NewCFClient(cfAPIEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error) {
+	c := &cfclient.Config{
+		ApiAddress: "https://" + cfAPIEndpoint,
+		Username:   cfUsername,
+		Password:   cfPassword,
+	}
+	client, err := cfclient.NewClient(c)
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
+}
+
+// ContourClient generates a contour client if it was not created before
+func (p *SingletonClientGenerator) ContourClient() (contour.Interface, error) {
+	var err error
+	p.contourOnce.Do(func() {
+		p.contourClient, err = NewContourClient(p.KubeConfig, p.KubeMaster, p.RequestTimeout)
+	})
+	return p.contourClient, err
 }
 
 // ByNames returns multiple Sources given multiple names.
@@ -130,6 +175,22 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 			return nil, err
 		}
 		return NewIstioGatewaySource(kubernetesClient, istioClient, cfg.IstioIngressGatewayServices, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+	case "cloudfoundry":
+		cfClient, err := p.CloudFoundryClient(cfg.CFAPIEndpoint, cfg.CFUsername, cfg.CFPassword)
+		if err != nil {
+			return nil, err
+		}
+		return NewCloudFoundrySource(cfClient)
+	case "contour-ingressroute":
+		kubernetesClient, err := p.KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		contourClient, err := p.ContourClient()
+		if err != nil {
+			return nil, err
+		}
+		return NewContourIngressRouteSource(kubernetesClient, contourClient, cfg.ContourLoadBalancerService, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
 	case "fake":
 		return NewFakeSource(cfg.FQDNTemplate)
 	case "connector":
@@ -210,6 +271,42 @@ func NewIstioClient(kubeConfig string) (*istiocrd.Client, error) {
 	}
 
 	log.Info("Created Istio client")
+
+	return client, nil
+}
+
+// NewContourClient returns a new Contour client object. It takes a Config and
+// uses KubeMaster and KubeConfig attributes to connect to the cluster. If
+// KubeConfig isn't provided it defaults to using the recommended default.
+func NewContourClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) (*contour.Clientset, error) {
+	if kubeConfig == "" {
+		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
+			kubeConfig = clientcmd.RecommendedHomeFile
+		}
+	}
+
+	config, err := clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
+		return instrumented_http.NewTransport(rt, &instrumented_http.Callbacks{
+			PathProcessor: func(path string) string {
+				parts := strings.Split(path, "/")
+				return parts[len(parts)-1]
+			},
+		})
+	}
+
+	config.Timeout = requestTimeout
+
+	client, err := contour.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Infof("Created Contour client %s", config.Host)
 
 	return client, nil
 }

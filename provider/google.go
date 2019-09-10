@@ -17,6 +17,7 @@ limitations under the License.
 package provider
 
 import (
+	goctx "context"
 	"fmt"
 	"strings"
 
@@ -160,7 +161,7 @@ func (p *GoogleProvider) Zones() (map[string]*dns.ManagedZone, error) {
 
 	f := func(resp *dns.ManagedZonesListResponse) error {
 		for _, zone := range resp.ManagedZones {
-			if p.domainFilter.Match(zone.DnsName) && p.zoneIDFilter.Match(fmt.Sprintf("%v", zone.Id)) {
+			if p.domainFilter.Match(zone.DnsName) && (p.zoneIDFilter.Match(fmt.Sprintf("%v", zone.Id)) || p.zoneIDFilter.Match(fmt.Sprintf("%v", zone.Name))) {
 				zones[zone.Name] = zone
 				log.Debugf("Matched %s (zone: %s)", zone.DnsName, zone.Name)
 			} else {
@@ -247,7 +248,7 @@ func (p *GoogleProvider) DeleteRecords(endpoints []*endpoint.Endpoint) error {
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *GoogleProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *GoogleProvider) ApplyChanges(ctx goctx.Context, changes *plan.Changes) error {
 	change := &dns.Change{}
 
 	change.Additions = append(change.Additions, p.newFilteredRecords(changes.Create)...)

@@ -13,20 +13,26 @@
 # limitations under the License.
 
 # builder image
-FROM golang as builder
+FROM golang:1.12.9 as builder
 
 WORKDIR /github.com/kubernetes-incubator/external-dns
+
 COPY . .
-RUN go mod vendor
-RUN make test
-RUN make build
+RUN go mod vendor && \
+    make test && \
+    make build
 
 # final image
-FROM registry.opensource.zalan.do/stups/alpine:latest
+FROM alpine:3.10
 LABEL maintainer="Team Teapot @ Zalando SE <team-teapot@zalando.de>"
+
+RUN apk add --no-cache ca-certificates && \
+    update-ca-certificates
 
 COPY --from=builder /github.com/kubernetes-incubator/external-dns/build/external-dns /bin/external-dns
 
-USER nobody
+# Run as UID for nobody since k8s pod securityContext runAsNonRoot can't resolve the user ID:
+# https://github.com/kubernetes/kubernetes/issues/40958
+USER 65534
 
 ENTRYPOINT ["/bin/external-dns"]

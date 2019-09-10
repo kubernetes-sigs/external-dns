@@ -17,12 +17,12 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
 
 	"github.com/digitalocean/godo"
-	"github.com/digitalocean/godo/context"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
@@ -438,7 +438,7 @@ func TestDigitalOceanApplyChanges(t *testing.T) {
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.bar.com", Targets: endpoint.Targets{"target"}}}
 	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.bar.de", Targets: endpoint.Targets{"target-old"}}}
 	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.foo.com", Targets: endpoint.Targets{"target-new"}, RecordType: "CNAME", RecordTTL: 100}}
-	err := provider.ApplyChanges(changes)
+	err := provider.ApplyChanges(context.Background(), changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}

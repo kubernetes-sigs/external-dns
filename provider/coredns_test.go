@@ -17,12 +17,15 @@ limitations under the License.
 package provider
 
 import (
+	"context"
 	"strings"
 	"testing"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 )
+
+const defaultCoreDNSPrefix = "/skydns/"
 
 type fakeETCDClient struct {
 	services map[string]*Service
@@ -59,7 +62,10 @@ func TestAServiceTranslation(t *testing.T) {
 			"/skydns/com/example": {Host: expectedTarget},
 		},
 	}
-	provider := coreDNSProvider{client: client}
+	provider := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
 	endpoints, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
@@ -88,7 +94,10 @@ func TestCNAMEServiceTranslation(t *testing.T) {
 			"/skydns/com/example": {Host: expectedTarget},
 		},
 	}
-	provider := coreDNSProvider{client: client}
+	provider := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
 	endpoints, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
@@ -117,7 +126,10 @@ func TestTXTServiceTranslation(t *testing.T) {
 			"/skydns/com/example": {Text: expectedTarget},
 		},
 	}
-	provider := coreDNSProvider{client: client}
+	provider := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
 	endpoints, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
@@ -148,7 +160,10 @@ func TestAWithTXTServiceTranslation(t *testing.T) {
 			"/skydns/com/example": {Host: "1.2.3.4", Text: "string"},
 		},
 	}
-	provider := coreDNSProvider{client: client}
+	provider := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
 	endpoints, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
@@ -187,7 +202,10 @@ func TestCNAMEWithTXTServiceTranslation(t *testing.T) {
 			"/skydns/com/example": {Host: "example.net", Text: "string"},
 		},
 	}
-	provider := coreDNSProvider{client: client}
+	provider := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
 	endpoints, err := provider.Records()
 	if err != nil {
 		t.Fatal(err)
@@ -218,7 +236,10 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 	client := fakeETCDClient{
 		map[string]*Service{},
 	}
-	coredns := coreDNSProvider{client: client}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
 
 	changes1 := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -227,7 +248,7 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("domain2.local", endpoint.RecordTypeCNAME, "site.local"),
 		},
 	}
-	coredns.ApplyChanges(changes1)
+	coredns.ApplyChanges(context.Background(), changes1)
 
 	expectedServices1 := map[string]*Service{
 		"/skydns/local/domain1": {Host: "5.5.5.5", Text: "string1"},
@@ -285,7 +306,7 @@ func applyServiceChanges(provider coreDNSProvider, changes *plan.Changes) {
 			}
 		}
 	}
-	provider.ApplyChanges(changes)
+	provider.ApplyChanges(context.Background(), changes)
 }
 
 func validateServices(services, expectedServices map[string]*Service, t *testing.T, step int) {

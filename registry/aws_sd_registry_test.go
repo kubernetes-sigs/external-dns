@@ -17,6 +17,7 @@ limitations under the License.
 package registry
 
 import (
+	"context"
 	"testing"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -35,7 +36,7 @@ func (p *inMemoryProvider) Records() ([]*endpoint.Endpoint, error) {
 	return p.endpoints, nil
 }
 
-func (p *inMemoryProvider) ApplyChanges(changes *plan.Changes) error {
+func (p *inMemoryProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	p.onApplyChanges(changes)
 	return nil
 }
@@ -151,7 +152,7 @@ func TestAWSSDRegistry_Records_ApplyChanges(t *testing.T) {
 	r, err := NewAWSSDRegistry(p, "owner")
 	require.NoError(t, err)
 
-	err = r.ApplyChanges(changes)
+	err = r.ApplyChanges(context.Background(), changes)
 	require.NoError(t, err)
 }
 

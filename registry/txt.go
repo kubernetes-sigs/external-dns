@@ -17,6 +17,7 @@ limitations under the License.
 package registry
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -98,7 +99,9 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 	}
 
 	for _, ep := range endpoints {
-		ep.Labels = endpoint.NewLabels()
+		if ep.Labels == nil {
+			ep.Labels = endpoint.NewLabels()
+		}
 		if labels, ok := labelMap[ep.DNSName]; ok {
 			for k, v := range labels {
 				ep.Labels[k] = v
@@ -117,7 +120,7 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 
 // ApplyChanges updates dns provider with the changes
 // for each created/deleted record it will also take into account TXT records for creation/deletion
-func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
+func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
 		UpdateNew: filterOwnedRecords(im.ownerID, changes.UpdateNew),
@@ -171,7 +174,11 @@ func (im *TXTRegistry) ApplyChanges(changes *plan.Changes) error {
 		}
 	}
 
-	return im.provider.ApplyChanges(filteredChanges)
+	// when caching is enabled, disable the provider from using the cache
+	if im.cacheInterval > 0 {
+		ctx = context.WithValue(ctx, provider.RecordsContextKey, nil)
+	}
+	return im.provider.ApplyChanges(ctx, filteredChanges)
 }
 
 /**

@@ -117,7 +117,35 @@ func (cs *crdSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	}
 
 	for _, dnsEndpoint := range result.Items {
-		endpoints = append(endpoints, dnsEndpoint.Spec.Endpoints...)
+		// Make sure that all endpoints have targets for A or CNAME type
+		crdEndpoints := []*endpoint.Endpoint{}
+		for _, ep := range dnsEndpoint.Spec.Endpoints {
+			if (ep.RecordType == "CNAME" || ep.RecordType == "A" || ep.RecordType == "AAAA") && len(ep.Targets) < 1 {
+				log.Warnf("Endpoint %s with DNSName %s has an empty list of targets", dnsEndpoint.ObjectMeta.Name, ep.DNSName)
+				continue
+			}
+
+			illegalTarget := false
+			for _, target := range ep.Targets {
+				if strings.HasSuffix(target, ".") {
+					illegalTarget = true
+					break
+				}
+			}
+			if illegalTarget {
+				log.Warnf("Endpoint %s with DNSName %s has an illegal target. The subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com')", dnsEndpoint.ObjectMeta.Name, ep.DNSName)
+				continue
+			}
+
+			if ep.Labels == nil {
+				ep.Labels = endpoint.NewLabels()
+			}
+
+			crdEndpoints = append(crdEndpoints, ep)
+		}
+
+		cs.setResourceLabel(&dnsEndpoint, crdEndpoints)
+		endpoints = append(endpoints, crdEndpoints...)
 
 		if dnsEndpoint.Status.ObservedGeneration == dnsEndpoint.Generation {
 			continue
@@ -132,6 +160,12 @@ func (cs *crdSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	}
 
 	return endpoints, nil
+}
+
+func (cs *crdSource) setResourceLabel(crd *endpoint.DNSEndpoint, endpoints []*endpoint.Endpoint) {
+	for _, ep := range endpoints {
+		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("crd/%s/%s", crd.ObjectMeta.Namespace, crd.ObjectMeta.Name)
+	}
 }
 
 func (cs *crdSource) List(opts *metav1.ListOptions) (result *endpoint.DNSEndpointList, err error) {
