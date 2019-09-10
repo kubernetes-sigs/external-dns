@@ -18,11 +18,14 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/kubernetes-sigs/external-dns/endpoint"
 	"github.com/kubernetes-sigs/external-dns/plan"
 	"github.com/kubernetes-sigs/external-dns/provider"
 	"github.com/kubernetes-sigs/external-dns/registry"
@@ -100,6 +103,8 @@ type Controller struct {
 	Policy plan.Policy
 	// The interval between individual synchronizations
 	Interval time.Duration
+	//Needs to create PTR Records
+	RDNSEnabled bool
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -115,6 +120,10 @@ func (c *Controller) RunOnce() error {
 	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, records)
 
 	endpoints, err := c.Source.Endpoints()
+	if c.RDNSEnabled {
+		// Transform DNS records to PTR records and append here
+		endpoints = append(endpoints, c.transformToPTREndPoints(endpoints)...)
+	}
 	if err != nil {
 		sourceErrorsTotal.Inc()
 		deprecatedSourceErrors.Inc()
@@ -155,4 +164,52 @@ func (c *Controller) Run(stopChan <-chan struct{}) {
 			return
 		}
 	}
+}
+
+//TODO Move to a dnsutils package later
+func (c *Controller) transformToPTREndPoints(endPoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+
+	resultEndPoints := make(map[string]*endpoint.Endpoint, 0)
+
+	for _, ep := range endPoints {
+
+		if ep.RecordType != endpoint.RecordTypeA || len(ep.Targets) != 1 || len(strings.Split(strings.TrimSuffix(ep.DNSName, "."), ".")) <= 1 {
+			log.Info("Ignore creating a PTR record since it doesn't have a valid target ")
+			continue
+		}
+
+		// Check if a reverse PTR already exists and the current one is more specific replace it and continue
+		ptr := getPTRRecord(ep.Targets[0])
+		if p, exists := resultEndPoints[ptr]; exists {
+			if len(p.Targets[0]) < len(ep.DNSName) {
+				log.Infof("Updating PTR target from %s to %s for %s", p.Targets[0], ep.DNSName, p.DNSName)
+				p.Targets[0] = ep.DNSName
+			}
+			continue
+		}
+		pep := new(endpoint.Endpoint)
+		pep.RecordType = endpoint.RecordTypePTR
+		pep.RecordTTL = ep.RecordTTL
+		pep.Targets = make(endpoint.Targets, 0)
+		pep.Targets = append(pep.Targets, ep.DNSName)
+		pep.DNSName = ptr
+		log.Info(fmt.Sprintf("Adding a PTR record %s %s", pep.DNSName, pep.Targets[0]))
+		log.Info(fmt.Sprintf("Adding a PTR record %v", pep))
+		resultEndPoints[ptr] = pep
+
+	}
+	ret := make([]*endpoint.Endpoint, 0)
+	for _, v := range resultEndPoints {
+		ret = append(ret, v)
+	}
+	return ret
+}
+func getPTRRecord(ip string) (ptr string) {
+	segments := strings.Split(ip, ".")
+	for i := len(segments)/2 - 1; i >= 0; i-- {
+		opp := len(segments) - 1 - i
+		segments[i], segments[opp] = segments[opp], segments[i]
+	}
+	ptr = fmt.Sprintf("%s.in-addr.arpa.", strings.Join(segments, "."))
+	return ptr
 }

@@ -111,6 +111,7 @@ type AWSProvider struct {
 	// filter hosted zones by tags
 	zoneTagFilter ZoneTagFilter
 	preferCNAME   bool
+	delegates     []*AWSProvider
 }
 
 // AWSConfig contains configuration to create a new AWS provider.
@@ -122,7 +123,7 @@ type AWSConfig struct {
 	BatchChangeSize      int
 	BatchChangeInterval  time.Duration
 	EvaluateTargetHealth bool
-	AssumeRole           string
+	AssumeRole           []string
 	APIRetries           int
 	PreferCNAME          bool
 	DryRun               bool
@@ -141,21 +142,47 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 		}),
 	)
 
-	session, err := session.NewSessionWithOptions(session.Options{
+	pSession, err := session.NewSessionWithOptions(session.Options{
 		Config:            *config,
 		SharedConfigState: session.SharedConfigEnable,
 	})
 	if err != nil {
 		return nil, err
 	}
+	// When DNS records are created across dns zones owned by different accounts
+	// Typical example is, DNS Zone for creating A records owned by project accounts and
+	// arpa zone owned by Infrastructure account
+	delegates := make([]*AWSProvider, 0)
+	if awsConfig.AssumeRole != nil {
+		for _, role := range awsConfig.AssumeRole {
+			log.Infof("Assuming role: %s", role)
+			dSession, err := session.NewSessionWithOptions(session.Options{
+				Config:            *config,
+				SharedConfigState: session.SharedConfigEnable,
+			})
+			if err != nil {
+				return nil, err
+			}
+			dSession.Config.WithCredentials(stscreds.NewCredentials(dSession, role))
+			delegate := &AWSProvider{
+				client:               route53.New(dSession),
+				domainFilter:         awsConfig.DomainFilter,
+				zoneIDFilter:         awsConfig.ZoneIDFilter,
+				zoneTypeFilter:       awsConfig.ZoneTypeFilter,
+				zoneTagFilter:        awsConfig.ZoneTagFilter,
+				batchChangeSize:      awsConfig.BatchChangeSize,
+				batchChangeInterval:  awsConfig.BatchChangeInterval,
+				evaluateTargetHealth: awsConfig.EvaluateTargetHealth,
+				preferCNAME:          awsConfig.PreferCNAME,
+				dryRun:               awsConfig.DryRun,
+			}
+			delegates = append(delegates, delegate)
+		}
 
-	if awsConfig.AssumeRole != "" {
-		log.Infof("Assuming role: %s", awsConfig.AssumeRole)
-		session.Config.WithCredentials(stscreds.NewCredentials(session, awsConfig.AssumeRole))
 	}
 
 	provider := &AWSProvider{
-		client:               route53.New(session),
+		client:               route53.New(pSession),
 		domainFilter:         awsConfig.DomainFilter,
 		zoneIDFilter:         awsConfig.ZoneIDFilter,
 		zoneTypeFilter:       awsConfig.ZoneTypeFilter,
@@ -165,6 +192,7 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 		evaluateTargetHealth: awsConfig.EvaluateTargetHealth,
 		preferCNAME:          awsConfig.PreferCNAME,
 		dryRun:               awsConfig.DryRun,
+		delegates:            delegates,
 	}
 
 	return provider, nil
@@ -237,8 +265,23 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 	if err != nil {
 		return nil, err
 	}
-
-	return p.records(zones)
+	totalRecords := make([]*endpoint.Endpoint, 0)
+	records, err := p.records(zones)
+	if err != nil {
+		return nil, err
+	}
+	totalRecords = append(totalRecords, records...)
+	// Get Records from delegates
+	if p.delegates != nil {
+		for _, delegate := range p.delegates {
+			records, err = delegate.Records()
+			if err != nil {
+				return nil, err
+			}
+			totalRecords = append(totalRecords, records...)
+		}
+	}
+	return totalRecords, err
 }
 
 func (p *AWSProvider) records(zones map[string]*route53.HostedZone) ([]*endpoint.Endpoint, error) {
@@ -324,6 +367,7 @@ func (p *AWSProvider) doRecords(action string, endpoints []*endpoint.Endpoint) e
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+
 	zones, err := p.Zones()
 	if err != nil {
 		return err
@@ -343,7 +387,22 @@ func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 	combinedChanges = append(combinedChanges, p.newChanges(route53.ChangeActionCreate, changes.Create, records, zones)...)
 	combinedChanges = append(combinedChanges, p.newChanges(route53.ChangeActionUpsert, changes.UpdateNew, records, zones)...)
 	combinedChanges = append(combinedChanges, p.newChanges(route53.ChangeActionDelete, changes.Delete, records, zones)...)
+	log.Info("***********************************")
+	for _, c := range combinedChanges {
+		log.Info(c.GoString())
+	}
+	log.Info("***********************************")
 
+	// Call all delegates
+	if p.delegates != nil {
+		for _, delegate := range p.delegates {
+			err = delegate.ApplyChanges(ctx, changes)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	//Finally submit changes locally
 	return p.submitChanges(combinedChanges, zones)
 }
 

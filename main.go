@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -132,7 +133,7 @@ func main() {
 			log.Infof("Registry \"%s\" cannot be used with AWS ServiceDiscovery. Switching to \"aws-sd\".", cfg.Registry)
 			cfg.Registry = "aws-sd"
 		}
-		p, err = provider.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.AWSAssumeRole, cfg.DryRun)
+		p, err = provider.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.AWSAssumeRole[0], cfg.DryRun)
 	case "azure":
 		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.DryRun)
 	case "vinyldns":
@@ -255,12 +256,21 @@ func main() {
 	if !exists {
 		log.Fatalf("unknown policy: %s", cfg.Policy)
 	}
-
+	//Check if Any of the domain filter or template is arpa domain
+	ptrRecordsNeeded := false
+	fqdnTemplates := strings.Split(cfg.FQDNTemplate, ",")
+	for _, s := range append(fqdnTemplates, cfg.DomainFilter...) {
+		if strings.HasSuffix(s, "arpa") || strings.HasSuffix(s, "arpa.") {
+			ptrRecordsNeeded = true
+			break
+		}
+	}
 	ctrl := controller.Controller{
-		Source:   endpointsSource,
-		Registry: r,
-		Policy:   policy,
-		Interval: cfg.Interval,
+		Source:      endpointsSource,
+		Registry:    r,
+		Policy:      policy,
+		Interval:    cfg.Interval,
+		RDNSEnabled: ptrRecordsNeeded,
 	}
 
 	if cfg.Once {
