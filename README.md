@@ -162,7 +162,6 @@ support](https://github.com/golang/go/wiki/Modules#installing-and-activating-mod
 Assuming Go has been setup with module support it can be built simply by running:
 
 ```console
-$ export GO111MODULE=on # needed if the project is checked out in your $GOPATH.
 $ make
 ```
 
