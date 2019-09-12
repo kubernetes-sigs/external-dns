@@ -18,7 +18,10 @@ Snippet from [Cloudflare - Getting Started](https://api.cloudflare.com/#getting-
 
 >The Cloudflare API is a RESTful API based on HTTPS requests and JSON responses. If you are registered with Cloudflare, you can obtain your API key from the bottom of the "My Account" page, found here: [Go to My account](https://dash.cloudflare.com/profile).
 
-The environment vars `CF_API_KEY` and `CF_API_EMAIL` will be needed to run ExternalDNS with Cloudflare.
+API Token will be preferred for authentication if `CF_API_TOKEN` environment variable is set. 
+Otherwise `CF_API_KEY` and `CF_API_EMAIL` should be set to run ExternalDNS with Cloudflare.
+
+When using API Token authentication the token should be granted Zone `Read` and DNS `Edit` privileges.
 
 ## Deploy ExternalDNS
 
