@@ -509,9 +509,20 @@ func TestRecords(t *testing.T) {
 }
 
 func TestNewCloudFlareProvider(t *testing.T) {
+	_ = os.Setenv("CF_API_TOKEN", "abc123def")
+	_, err := NewCloudFlareProvider(
+		NewDomainFilter([]string{"ext-dns-test.zalando.to."}),
+		NewZoneIDFilter([]string{""}),
+		25,
+		false,
+		true)
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
+	_ = os.Unsetenv("CF_API_TOKEN")
 	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
 	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
-	_, err := NewCloudFlareProvider(
+	_, err = NewCloudFlareProvider(
 		NewDomainFilter([]string{"ext-dns-test.zalando.to."}),
 		NewZoneIDFilter([]string{""}),
 		1,
