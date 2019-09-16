@@ -26,7 +26,7 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
-	"github.com/Azure/azure-sdk-for-go/arm/dns"
+	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2018-05-01/dns"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
@@ -53,16 +53,16 @@ type config struct {
 
 // ZonesClient is an interface of dns.ZoneClient that can be stubbed for testing.
 type ZonesClient interface {
-	ListByResourceGroup(resourceGroupName string, top *int32) (result dns.ZoneListResult, err error)
-	ListByResourceGroupNextResults(lastResults dns.ZoneListResult) (result dns.ZoneListResult, err error)
+	ListByResourceGroup(ctx context.Context, resourceGroupName string, top *int32) (result dns.ZoneListResult, err error)
+	listByResourceGroupNextResults(ctx context.Context, lastResults dns.ZoneListResult) (result dns.ZoneListResult, err error)
 }
 
 // RecordsClient is an interface of dns.RecordClient that can be stubbed for testing.
 type RecordsClient interface {
-	ListByDNSZone(resourceGroupName string, zoneName string, top *int32) (result dns.RecordSetListResult, err error)
-	ListByDNSZoneNextResults(list dns.RecordSetListResult) (result dns.RecordSetListResult, err error)
-	Delete(resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, ifMatch string) (result autorest.Response, err error)
-	CreateOrUpdate(resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, parameters dns.RecordSet, ifMatch string, ifNoneMatch string) (result dns.RecordSet, err error)
+	ListByDNSZone(ctx context.Context, resourceGroupName string, zoneName string, top *int32, recordsetnamesuffix string) (result dns.RecordSetListResult, err error)
+	listByDNSZoneNextResults(ctx context.Context, lastResults dns.RecordSetListResult) (result dns.RecordSetListResult, err error)
+	Delete(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, ifMatch string) (result autorest.Response, err error)
+	CreateOrUpdate(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, parameters dns.RecordSet, ifMatch string, ifNoneMatch string) (result dns.RecordSet, err error)
 }
 
 // AzureProvider implements the DNS provider for Microsoft's Azure cloud platform.
@@ -163,14 +163,14 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 // Records gets the current records.
 //
 // Returns the current records or an error if the operation failed.
-func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
-	zones, err := p.zones()
+func (p *AzureProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
+	zones, err := p.zones(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, zone := range zones {
-		err := p.iterateRecords(*zone.Name, func(recordSet dns.RecordSet) bool {
+		err := p.iterateRecords(ctx, *zone.Name, func(recordSet dns.RecordSet) bool {
 			if recordSet.Name == nil || recordSet.Type == nil {
 				log.Error("Skipping invalid record set with nil name or type.")
 				return true
@@ -211,22 +211,22 @@ func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 //
 // Returns nil if the operation was successful or an error if the operation failed.
 func (p *AzureProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	zones, err := p.zones()
+	zones, err := p.zones(ctx)
 	if err != nil {
 		return err
 	}
 
 	deleted, updated := p.mapChanges(zones, changes)
-	p.deleteRecords(deleted)
-	p.updateRecords(updated)
+	p.deleteRecords(ctx, deleted)
+	p.updateRecords(ctx, updated)
 	return nil
 }
 
-func (p *AzureProvider) zones() ([]dns.Zone, error) {
+func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
 	log.Debug("Retrieving Azure DNS zones.")
 
 	var zones []dns.Zone
-	list, err := p.zonesClient.ListByResourceGroup(p.resourceGroup, nil)
+	list, err := p.zonesClient.ListByResourceGroup(ctx, p.resourceGroup, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +248,7 @@ func (p *AzureProvider) zones() ([]dns.Zone, error) {
 			zones = append(zones, zone)
 		}
 
-		list, err = p.zonesClient.ListByResourceGroupNextResults(list)
+		list, err = p.zonesClient.listByResourceGroupNextResults(ctx, list)
 		if err != nil {
 			return nil, err
 		}
@@ -257,10 +257,10 @@ func (p *AzureProvider) zones() ([]dns.Zone, error) {
 	return zones, nil
 }
 
-func (p *AzureProvider) iterateRecords(zoneName string, callback func(dns.RecordSet) bool) error {
+func (p *AzureProvider) iterateRecords(ctx context.Context, zoneName string, callback func(dns.RecordSet) bool) error {
 	log.Debugf("Retrieving Azure DNS records for zone '%s'.", zoneName)
 
-	list, err := p.recordsClient.ListByDNSZone(p.resourceGroup, zoneName, nil)
+	list, err := p.recordsClient.ListByDNSZone(ctx, p.resourceGroup, zoneName, nil, "") // TODO
 	if err != nil {
 		return err
 	}
@@ -272,7 +272,7 @@ func (p *AzureProvider) iterateRecords(zoneName string, callback func(dns.Record
 			}
 		}
 
-		list, err = p.recordsClient.ListByDNSZoneNextResults(list)
+		list, err = p.recordsClient.listByDNSZoneNextResults(ctx, list)
 		if err != nil {
 			return err
 		}
@@ -323,7 +323,7 @@ func (p *AzureProvider) mapChanges(zones []dns.Zone, changes *plan.Changes) (azu
 	return deleted, updated
 }
 
-func (p *AzureProvider) deleteRecords(deleted azureChangeMap) {
+func (p *AzureProvider) deleteRecords(ctx context.Context, deleted azureChangeMap) {
 	// Delete records first
 	for zone, endpoints := range deleted {
 		for _, endpoint := range endpoints {
@@ -332,7 +332,7 @@ func (p *AzureProvider) deleteRecords(deleted azureChangeMap) {
 				log.Infof("Would delete %s record named '%s' for Azure DNS zone '%s'.", endpoint.RecordType, name, zone)
 			} else {
 				log.Infof("Deleting %s record named '%s' for Azure DNS zone '%s'.", endpoint.RecordType, name, zone)
-				if _, err := p.recordsClient.Delete(p.resourceGroup, zone, name, dns.RecordType(endpoint.RecordType), ""); err != nil {
+				if _, err := p.recordsClient.Delete(ctx, p.resourceGroup, zone, name, dns.RecordType(endpoint.RecordType), ""); err != nil {
 					log.Errorf(
 						"Failed to delete %s record named '%s' for Azure DNS zone '%s': %v",
 						endpoint.RecordType,
@@ -346,7 +346,7 @@ func (p *AzureProvider) deleteRecords(deleted azureChangeMap) {
 	}
 }
 
-func (p *AzureProvider) updateRecords(updated azureChangeMap) {
+func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMap) {
 	for zone, endpoints := range updated {
 		for _, endpoint := range endpoints {
 			name := p.recordSetNameForZone(zone, endpoint)
@@ -372,6 +372,7 @@ func (p *AzureProvider) updateRecords(updated azureChangeMap) {
 			recordSet, err := p.newRecordSet(endpoint)
 			if err == nil {
 				_, err = p.recordsClient.CreateOrUpdate(
+					ctx,
 					p.resourceGroup,
 					zone,
 					name,
