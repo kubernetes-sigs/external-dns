@@ -119,9 +119,9 @@ type cloudFlareChange struct {
 func NewCloudFlareProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zonesPerPage int, proxiedByDefault bool, dryRun bool) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
 	var (
-    config *cloudflare.API
-	  err error
-  )
+		config *cloudflare.API
+		err    error
+	)
 	if os.Getenv("CF_API_TOKEN") != "" {
 		config, err = cloudflare.NewWithAPIToken(os.Getenv("CF_API_TOKEN"))
 	} else {
