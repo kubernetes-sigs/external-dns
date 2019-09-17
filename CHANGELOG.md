@@ -1,5 +1,20 @@
-  - Add `create-only` policy, which prevents records from being updated or deleted (#1155) @danieldabate
-  - AWS: re-introduce accidentally removed `--aws-api-retries` flag (#1158) @coreypobrien
+## v0.5.17 - 2019-09-17
+
+  - Exoscale: add context support (#1193) @greut
+  - Cloudflare: Support API Token Auth (#1189) @Evesy
+  - AWS: Fix IAM Roles for Service Accounts permission problem (#1185) @serialx
+  - Core: Upgrade go version to 1.13 in external-dns (#1184) @tariq1890
+  - AWS: Update the AWS SDK to support Web Identity providers for IAM credentials (#1182) @MarcusNoble
+  - Docs: Update rfc2136 tutorial for use with Microsoft DNS (#1178) @bjschafer
+  - AWS: Update the AWS go SDK to support AWS IAM for Service Accounts (#1172) @micahhausler
+  - AWS-SD: Add support for AWS Network Load Balancers (#1170) @vanekjar
+  - Core: Add create-only policy (#1160) @danieldabate
+  - AWS: Fix --aws-api-retries (#1158) @coreypobrien
+  - Source: Support delegate Heptio Contour IngressRoutes (#1144) @jonasrmichel
+  - Core: TXTRegistry: do not overwrite labels of records returned by the provider (#1136) @multi-io
+  - Infoblox: Fixing incorrect match of zone dns names (#1128) @gregsidelinger
+  - Source: Improvements to the source CRD (#1107) @JoaoBraveCoding
+  - Core: Fix txt prefix bug (#1013) @p53
 
 ## v0.5.16 - 2019-08-16
 
