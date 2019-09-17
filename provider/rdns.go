@@ -29,9 +29,10 @@ import (
 	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/coreos/etcd/clientv3"
 	"github.com/pkg/errors"
-	"istio.io/istio/pkg/log"
 
 	"github.com/kubernetes-sigs/external-dns/endpoint"
 	"github.com/kubernetes-sigs/external-dns/plan"

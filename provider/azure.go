@@ -163,7 +163,8 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 // Records gets the current records.
 //
 // Returns the current records or an error if the operation failed.
-func (p *AzureProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
+func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
+	ctx := context.Background()
 	zones, err := p.zones(ctx)
 	if err != nil {
 		return nil, err
