@@ -160,14 +160,14 @@ func (client *mockRecordsClient) CreateOrUpdate(resourceGroupName string, zoneNa
 	return parameters, nil
 }
 
-func newAzureProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, zonesClient ZonesClient, recordsClient RecordsClient) *AzureProvider {
+func newAzureProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, zonesClient dns.ZonesClient, recordsClient dns.RecordSetsClient) *AzureProvider {
 	return &AzureProvider{
 		domainFilter:  domainFilter,
 		zoneIDFilter:  zoneIDFilter,
 		dryRun:        dryRun,
 		resourceGroup: resourceGroup,
 		zonesClient:   zonesClient,
-		recordsClient: recordsClient,
+		recordSetsClient: recordsClient,
 	}
 }
 
@@ -291,7 +291,7 @@ func TestAzureApplyChangesDryRun(t *testing.T) {
 	validateAzureEndpoints(t, recordsClient.updatedEndpoints, []*endpoint.Endpoint{})
 }
 
-func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordsClient) {
+func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client dns.RecordSetsClient) {
 	provider := newAzureProvider(
 		NewDomainFilter([]string{""}),
 		NewZoneIDFilter([]string{""}),
