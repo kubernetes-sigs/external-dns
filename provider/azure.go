@@ -53,13 +53,13 @@ type config struct {
 
 // ZonesClient is an interface of dns.ZoneClient that can be stubbed for testing.
 type ZonesClient interface {
-	ListByResourceGroup(ctx context.Context, resourceGroupName string, top *int32) (result dns.ZoneListResult, err error)
+	ListByResourceGroup(ctx context.Context, resourceGroupName string, top *int32) (result dns.ZoneListResultPage, err error)
 	listByResourceGroupNextResults(ctx context.Context, lastResults dns.ZoneListResult) (result dns.ZoneListResult, err error)
 }
 
-// RecordsClient is an interface of dns.RecordClient that can be stubbed for testing.
-type RecordsClient interface {
-	ListByDNSZone(ctx context.Context, resourceGroupName string, zoneName string, top *int32, recordsetnamesuffix string) (result dns.RecordSetListResult, err error)
+// RecordSetsClient is an interface of dns.RecordSetsClient that can be stubbed for testing.
+type RecordSetsClient interface {
+	ListByDNSZone(ctx context.Context, resourceGroupName string, zoneName string, top *int32, recordsetnamesuffix string) (result dns.RecordSetListResultPage, err error)
 	listByDNSZoneNextResults(ctx context.Context, lastResults dns.RecordSetListResult) (result dns.RecordSetListResult, err error)
 	Delete(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, ifMatch string) (result autorest.Response, err error)
 	CreateOrUpdate(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, parameters dns.RecordSet, ifMatch string, ifNoneMatch string) (result dns.RecordSet, err error)
@@ -67,12 +67,12 @@ type RecordsClient interface {
 
 // AzureProvider implements the DNS provider for Microsoft's Azure cloud platform.
 type AzureProvider struct {
-	domainFilter  DomainFilter
-	zoneIDFilter  ZoneIDFilter
-	dryRun        bool
-	resourceGroup string
-	zonesClient   ZonesClient
-	recordsClient RecordsClient
+	domainFilter     DomainFilter
+	zoneIDFilter     ZoneIDFilter
+	dryRun           bool
+	resourceGroup    string
+	zonesClient      dns.ZonesClient
+	recordSetsClient dns.RecordSetsClient
 }
 
 // NewAzureProvider creates a new Azure provider.
@@ -111,16 +111,16 @@ func NewAzureProvider(configFile string, domainFilter DomainFilter, zoneIDFilter
 
 	zonesClient := dns.NewZonesClientWithBaseURI(environment.ResourceManagerEndpoint, cfg.SubscriptionID)
 	zonesClient.Authorizer = autorest.NewBearerAuthorizer(token)
-	recordsClient := dns.NewRecordSetsClientWithBaseURI(environment.ResourceManagerEndpoint, cfg.SubscriptionID)
-	recordsClient.Authorizer = autorest.NewBearerAuthorizer(token)
+	recordSetsClient := dns.NewRecordSetsClientWithBaseURI(environment.ResourceManagerEndpoint, cfg.SubscriptionID)
+	recordSetsClient.Authorizer = autorest.NewBearerAuthorizer(token)
 
 	provider := &AzureProvider{
-		domainFilter:  domainFilter,
-		zoneIDFilter:  zoneIDFilter,
-		dryRun:        dryRun,
-		resourceGroup: cfg.ResourceGroup,
-		zonesClient:   zonesClient,
-		recordsClient: recordsClient,
+		domainFilter:     domainFilter,
+		zoneIDFilter:     zoneIDFilter,
+		dryRun:           dryRun,
+		resourceGroup:    cfg.ResourceGroup,
+		zonesClient:      zonesClient,
+		recordSetsClient: recordSetsClient,
 	}
 	return provider, nil
 }
@@ -231,8 +231,8 @@ func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
 		return nil, err
 	}
 
-	for list.Value != nil && len(*list.Value) > 0 {
-		for _, zone := range *list.Value {
+	for list.Values() != nil && len(list.Values()) > 0 {
+		for _, zone := range list.Values() {
 			if zone.Name == nil {
 				continue
 			}
@@ -248,10 +248,10 @@ func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
 			zones = append(zones, zone)
 		}
 
-		list, err = p.zonesClient.listByResourceGroupNextResults(ctx, list)
-		if err != nil {
-			return nil, err
-		}
+		//list, err = p.zonesClient.listByResourceGroupNextResults(ctx, list)
+		//if err != nil {
+		//	return nil, err
+		//}
 	}
 	log.Debugf("Found %d Azure DNS zone(s).", len(zones))
 	return zones, nil
@@ -260,22 +260,22 @@ func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
 func (p *AzureProvider) iterateRecords(ctx context.Context, zoneName string, callback func(dns.RecordSet) bool) error {
 	log.Debugf("Retrieving Azure DNS records for zone '%s'.", zoneName)
 
-	list, err := p.recordsClient.ListByDNSZone(ctx, p.resourceGroup, zoneName, nil, "") // TODO
+	list, err := p.recordSetsClient.ListByDNSZone(ctx, p.resourceGroup, zoneName, nil, "") // TODO
 	if err != nil {
 		return err
 	}
 
-	for list.Value != nil && len(*list.Value) > 0 {
-		for _, recordSet := range *list.Value {
+	for list.Values() != nil && len(list.Values()) > 0 {
+		for _, recordSet := range list.Values() {
 			if !callback(recordSet) {
 				return nil
 			}
 		}
 
-		list, err = p.recordsClient.listByDNSZoneNextResults(ctx, list)
-		if err != nil {
-			return err
-		}
+		//list, err = p.recordSetsClient.listByDNSZoneNextResults(ctx, list)
+		//if err != nil {
+		//	return err
+		//}
 	}
 	return nil
 }
@@ -332,7 +332,7 @@ func (p *AzureProvider) deleteRecords(ctx context.Context, deleted azureChangeMa
 				log.Infof("Would delete %s record named '%s' for Azure DNS zone '%s'.", endpoint.RecordType, name, zone)
 			} else {
 				log.Infof("Deleting %s record named '%s' for Azure DNS zone '%s'.", endpoint.RecordType, name, zone)
-				if _, err := p.recordsClient.Delete(ctx, p.resourceGroup, zone, name, dns.RecordType(endpoint.RecordType), ""); err != nil {
+				if _, err := p.recordSetsClient.Delete(ctx, p.resourceGroup, zone, name, dns.RecordType(endpoint.RecordType), ""); err != nil {
 					log.Errorf(
 						"Failed to delete %s record named '%s' for Azure DNS zone '%s': %v",
 						endpoint.RecordType,
@@ -371,7 +371,7 @@ func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMa
 
 			recordSet, err := p.newRecordSet(endpoint)
 			if err == nil {
-				_, err = p.recordsClient.CreateOrUpdate(
+				_, err = p.recordSetsClient.CreateOrUpdate(
 					ctx,
 					p.resourceGroup,
 					zone,
