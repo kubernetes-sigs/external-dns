@@ -28,11 +28,11 @@ import (
 
 // EgoscaleClientI for replaceable implementation
 type EgoscaleClientI interface {
-	GetRecords(string) ([]egoscale.DNSRecord, error)
-	GetDomains() ([]egoscale.DNSDomain, error)
-	CreateRecord(string, egoscale.DNSRecord) (*egoscale.DNSRecord, error)
-	DeleteRecord(string, int64) error
-	UpdateRecord(string, egoscale.UpdateDNSRecord) (*egoscale.DNSRecord, error)
+	GetRecords(context.Context, string) ([]egoscale.DNSRecord, error)
+	GetDomains(context.Context) ([]egoscale.DNSDomain, error)
+	CreateRecord(context.Context, string, egoscale.DNSRecord) (*egoscale.DNSRecord, error)
+	DeleteRecord(context.Context, string, int64) error
+	UpdateRecord(context.Context, string, egoscale.UpdateDNSRecord) (*egoscale.DNSRecord, error)
 }
 
 // ExoscaleProvider initialized as dns provider with no records
@@ -68,8 +68,8 @@ func NewExoscaleProviderWithClient(endpoint, apiKey, apiSecret string, client Eg
 	return ep
 }
 
-func (ep *ExoscaleProvider) getZones() (map[int64]string, error) {
-	dom, err := ep.client.GetDomains()
+func (ep *ExoscaleProvider) getZones(ctx context.Context) (map[int64]string, error) {
+	dom, err := ep.client.GetDomains(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 		return nil
 	}
 
-	zones, err := ep.getZones()
+	zones, err := ep.getZones(ctx)
 	if err != nil {
 		return err
 	}
@@ -106,7 +106,7 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 					TTL:        int(epoint.RecordTTL),
 					Content:    epoint.Targets[0],
 				}
-				_, err := ep.client.CreateRecord(zones[zoneID], rec)
+				_, err := ep.client.CreateRecord(ctx, zones[zoneID], rec)
 				if err != nil {
 					return err
 				}
@@ -116,7 +116,7 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 	for _, epoint := range changes.UpdateNew {
 		if ep.domain.Match(epoint.DNSName) {
 			if zoneID, name := ep.filter.EndpointZoneID(epoint, zones); zoneID != 0 {
-				records, err := ep.client.GetRecords(zones[zoneID])
+				records, err := ep.client.GetRecords(ctx, zones[zoneID])
 				if err != nil {
 					return err
 				}
@@ -131,7 +131,7 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 							Content:    epoint.Targets[0],
 							Prio:       r.Prio,
 						}
-						if _, err := ep.client.UpdateRecord(zones[zoneID], rec); err != nil {
+						if _, err := ep.client.UpdateRecord(ctx, zones[zoneID], rec); err != nil {
 							return err
 						}
 						break
@@ -150,14 +150,14 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 	for _, epoint := range changes.Delete {
 		if ep.domain.Match(epoint.DNSName) {
 			if zoneID, name := ep.filter.EndpointZoneID(epoint, zones); zoneID != 0 {
-				records, err := ep.client.GetRecords(zones[zoneID])
+				records, err := ep.client.GetRecords(ctx, zones[zoneID])
 				if err != nil {
 					return err
 				}
 
 				for _, r := range records {
 					if r.Name == name {
-						if err := ep.client.DeleteRecord(zones[zoneID], r.ID); err != nil {
+						if err := ep.client.DeleteRecord(ctx, zones[zoneID], r.ID); err != nil {
 							return err
 						}
 						break
@@ -174,13 +174,13 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 func (ep *ExoscaleProvider) Records() ([]*endpoint.Endpoint, error) {
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	domains, err := ep.client.GetDomains()
+	domains, err := ep.client.GetDomains(context.TODO())
 	if err != nil {
 		return nil, err
 	}
 
 	for _, d := range domains {
-		record, err := ep.client.GetRecords(d.Name)
+		record, err := ep.client.GetRecords(context.TODO(), d.Name)
 		if err != nil {
 			return nil, err
 		}
