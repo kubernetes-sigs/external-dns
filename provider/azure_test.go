@@ -49,13 +49,13 @@ func createMockZone(zone string, id string) dns.Zone {
 	}
 }
 
-func (client *mockZonesClient) ListByResourceGroup(ctx context.Context, resourceGroupName string, top *int32) (dns.ZoneListResultPage, error) {
+func (client *mockZonesClient) ListByResourceGroup(ctx context.Context, resourceGroupName string, top *int32) (result dns.ZoneListResultPage, err error) {
 	// Don't bother filtering by resource group or implementing paging since that's the responsibility
 	// of the Azure DNS service
 	return *client.mockZoneListResultPage, nil
 }
 
-func (client *mockZonesClient) listByResourceGroupNextResults(ctx context.Context, lastResults dns.ZoneListResult) (dns.ZoneListResult, error) {
+func (client *mockZonesClient) listByResourceGroupNextResults(ctx context.Context, lastResults dns.ZoneListResult) (result dns.ZoneListResult, err error) {
 	return dns.ZoneListResult{}, nil
 }
 
@@ -124,15 +124,15 @@ func createMockRecordSetMultiWithTTL(name, recordType string, ttl int64, values 
 
 }
 
-func (client *mockRecordSetsClient) ListByDNSZone(ctx context.Context, resourceGroupName string, zoneName string, top *int32) (dns.RecordSetListResultPage, error) {
+func (client *mockRecordSetsClient) ListByDNSZone(ctx context.Context, resourceGroupName string, zoneName string, top *int32, recordsetnamesuffix string) (result dns.RecordSetListResultPage, err error) {
 	return dns.RecordSetListResultPage{}, nil // todo add
 }
 
-func (client *mockRecordSetsClient) listByDNSZoneNextResults(ctx context.Context, list dns.RecordSetListResult) (dns.RecordSetListResult, error) {
+func (client *mockRecordSetsClient) listByDNSZoneNextResults(ctx context.Context, lastResults dns.RecordSetListResult) (result dns.RecordSetListResult, err error) {
 	return dns.RecordSetListResult{}, nil
 }
 
-func (client *mockRecordSetsClient) Delete(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, ifMatch string) (autorest.Response, error) {
+func (client *mockRecordSetsClient) Delete(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, ifMatch string) (result autorest.Response, err error) {
 	client.deletedEndpoints = append(
 		client.deletedEndpoints,
 		endpoint.NewEndpoint(
@@ -144,7 +144,7 @@ func (client *mockRecordSetsClient) Delete(ctx context.Context, resourceGroupNam
 	return autorest.Response{}, nil
 }
 
-func (client *mockRecordSetsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, parameters dns.RecordSet, ifMatch string, ifNoneMatch string) (dns.RecordSet, error) {
+func (client *mockRecordSetsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, parameters dns.RecordSet, ifMatch string, ifNoneMatch string) (result dns.RecordSet, err error) {
 	var ttl endpoint.TTL
 	if parameters.TTL != nil {
 		ttl = endpoint.TTL(*parameters.TTL)
@@ -163,11 +163,11 @@ func (client *mockRecordSetsClient) CreateOrUpdate(ctx context.Context, resource
 
 func newAzureProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, zonesClient dns.ZonesClient, recordsClient dns.RecordSetsClient) *AzureProvider {
 	return &AzureProvider{
-		domainFilter:  domainFilter,
-		zoneIDFilter:  zoneIDFilter,
-		dryRun:        dryRun,
-		resourceGroup: resourceGroup,
-		zonesClient:   zonesClient,
+		domainFilter:     domainFilter,
+		zoneIDFilter:     zoneIDFilter,
+		dryRun:           dryRun,
+		resourceGroup:    resourceGroup,
+		zonesClient:      zonesClient,
 		recordSetsClient: recordsClient,
 	}
 }
@@ -294,21 +294,22 @@ func TestAzureApplyChangesDryRun(t *testing.T) {
 }
 
 func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client dns.RecordSetsClient) {
+	zonesClient := mockZonesClient{
+		mockZoneListResult: &dns.ZoneListResult{
+			Value: &[]dns.Zone{
+				createMockZone("example.com", "/dnszones/example.com"),
+				createMockZone("other.com", "/dnszones/other.com"),
+			},
+		},
+		mockZoneListResultPage: &dns.ZoneListResultPage{},
+	}
+
 	provider := newAzureProvider(
 		NewDomainFilter([]string{""}),
 		NewZoneIDFilter([]string{""}),
 		dryRun,
 		"group",
-		&mockZonesClient{
-			mockZoneListResult: &dns.ZoneListResult{
-				Value: &[]dns.Zone{
-					createMockZone("example.com", "/dnszones/example.com"),
-					createMockZone("other.com", "/dnszones/other.com"),
-				},
-			},
-			mockZoneListResultPage: &dns.ZoneListResultPage{
-			},
-		},
+		&zonesClient,
 		client,
 	)
 
