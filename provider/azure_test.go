@@ -161,7 +161,7 @@ func (client *mockRecordSetsClient) CreateOrUpdate(ctx context.Context, resource
 	return parameters, nil
 }
 
-func newAzureProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, zonesClient dns.ZonesClient, recordsClient dns.RecordSetsClient) *AzureProvider {
+func newAzureProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, zonesClient ZonesClient, recordsClient RecordSetsClient) *AzureProvider {
 	return &AzureProvider{
 		domainFilter:     domainFilter,
 		zoneIDFilter:     zoneIDFilter,
@@ -293,7 +293,7 @@ func TestAzureApplyChangesDryRun(t *testing.T) {
 	validateAzureEndpoints(t, recordsClient.updatedEndpoints, []*endpoint.Endpoint{})
 }
 
-func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client dns.RecordSetsClient) {
+func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordSetsClient) {
 	zonesClient := mockZonesClient{
 		mockZoneListResult: &dns.ZoneListResult{
 			Value: &[]dns.Zone{
