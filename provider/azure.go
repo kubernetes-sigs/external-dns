@@ -71,8 +71,8 @@ type AzureProvider struct {
 	zoneIDFilter     ZoneIDFilter
 	dryRun           bool
 	resourceGroup    string
-	zonesClient      dns.ZonesClient
-	recordSetsClient dns.RecordSetsClient
+	zonesClient      ZonesClient
+	recordSetsClient RecordSetsClient
 }
 
 // NewAzureProvider creates a new Azure provider.
