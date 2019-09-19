@@ -32,10 +32,11 @@ import (
 )
 
 type mockZonesClient struct {
-	mockZoneListResult *dns.ZoneListResult
+	mockZoneListResult     *dns.ZoneListResult
+	mockZoneListResultPage *dns.ZoneListResultPage
 }
 
-type mockRecordsClient struct {
+type mockRecordSetsClient struct {
 	mockRecordSet    *[]dns.RecordSet
 	deletedEndpoints []*endpoint.Endpoint
 	updatedEndpoints []*endpoint.Endpoint
@@ -48,13 +49,13 @@ func createMockZone(zone string, id string) dns.Zone {
 	}
 }
 
-func (client *mockZonesClient) ListByResourceGroup(resourceGroupName string, top *int32) (dns.ZoneListResult, error) {
+func (client *mockZonesClient) ListByResourceGroup(ctx context.Context, resourceGroupName string, top *int32) (dns.ZoneListResultPage, error) {
 	// Don't bother filtering by resource group or implementing paging since that's the responsibility
 	// of the Azure DNS service
-	return *client.mockZoneListResult, nil
+	return *client.mockZoneListResultPage, nil
 }
 
-func (client *mockZonesClient) ListByResourceGroupNextResults(lastResults dns.ZoneListResult) (dns.ZoneListResult, error) {
+func (client *mockZonesClient) listByResourceGroupNextResults(ctx context.Context, lastResults dns.ZoneListResult) (dns.ZoneListResult, error) {
 	return dns.ZoneListResult{}, nil
 }
 
@@ -123,15 +124,15 @@ func createMockRecordSetMultiWithTTL(name, recordType string, ttl int64, values 
 
 }
 
-func (client *mockRecordsClient) ListByDNSZone(resourceGroupName string, zoneName string, top *int32) (dns.RecordSetListResult, error) {
-	return dns.RecordSetListResult{Value: client.mockRecordSet}, nil
+func (client *mockRecordSetsClient) ListByDNSZone(ctx context.Context, resourceGroupName string, zoneName string, top *int32) (dns.RecordSetListResultPage, error) {
+	return dns.RecordSetListResultPage{}, nil // todo add
 }
 
-func (client *mockRecordsClient) ListByDNSZoneNextResults(list dns.RecordSetListResult) (dns.RecordSetListResult, error) {
+func (client *mockRecordSetsClient) listByDNSZoneNextResults(ctx context.Context, list dns.RecordSetListResult) (dns.RecordSetListResult, error) {
 	return dns.RecordSetListResult{}, nil
 }
 
-func (client *mockRecordsClient) Delete(resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, ifMatch string) (autorest.Response, error) {
+func (client *mockRecordSetsClient) Delete(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, ifMatch string) (autorest.Response, error) {
 	client.deletedEndpoints = append(
 		client.deletedEndpoints,
 		endpoint.NewEndpoint(
@@ -143,7 +144,7 @@ func (client *mockRecordsClient) Delete(resourceGroupName string, zoneName strin
 	return autorest.Response{}, nil
 }
 
-func (client *mockRecordsClient) CreateOrUpdate(resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, parameters dns.RecordSet, ifMatch string, ifNoneMatch string) (dns.RecordSet, error) {
+func (client *mockRecordSetsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, parameters dns.RecordSet, ifMatch string, ifNoneMatch string) (dns.RecordSet, error) {
 	var ttl endpoint.TTL
 	if parameters.TTL != nil {
 		ttl = endpoint.TTL(*parameters.TTL)
@@ -182,9 +183,10 @@ func TestAzureRecord(t *testing.T) {
 				createMockZone("example.com", "/dnszones/example.com"),
 			},
 		},
+		mockZoneListResultPage: &dns.ZoneListResultPage{},
 	}
 
-	recordsClient := mockRecordsClient{
+	recordsClient := mockRecordSetsClient{
 		mockRecordSet: &[]dns.RecordSet{
 			createMockRecordSet("@", "NS", "ns1-03.azure-dns.com."),
 			createMockRecordSet("@", "SOA", "Email: azuredns-hostmaster.microsoft.com"),
@@ -224,7 +226,7 @@ func TestAzureMultiRecord(t *testing.T) {
 		},
 	}
 
-	recordsClient := mockRecordsClient{
+	recordsClient := mockRecordSetsClient{
 		mockRecordSet: &[]dns.RecordSet{
 			createMockRecordSet("@", "NS", "ns1-03.azure-dns.com."),
 			createMockRecordSet("@", "SOA", "Email: azuredns-hostmaster.microsoft.com"),
@@ -256,7 +258,7 @@ func TestAzureMultiRecord(t *testing.T) {
 }
 
 func TestAzureApplyChanges(t *testing.T) {
-	recordsClient := mockRecordsClient{}
+	recordsClient := mockRecordSetsClient{}
 
 	testAzureApplyChangesInternal(t, false, &recordsClient)
 
@@ -282,7 +284,7 @@ func TestAzureApplyChanges(t *testing.T) {
 }
 
 func TestAzureApplyChangesDryRun(t *testing.T) {
-	recordsClient := mockRecordsClient{}
+	recordsClient := mockRecordSetsClient{}
 
 	testAzureApplyChangesInternal(t, true, &recordsClient)
 
@@ -303,6 +305,8 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client dns.RecordS
 					createMockZone("example.com", "/dnszones/example.com"),
 					createMockZone("other.com", "/dnszones/other.com"),
 				},
+			},
+			mockZoneListResultPage: &dns.ZoneListResultPage{
 			},
 		},
 		client,
