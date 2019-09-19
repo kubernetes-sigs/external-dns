@@ -186,7 +186,7 @@ func TestAzureRecord(t *testing.T) {
 		mockZoneListResultPage: &dns.ZoneListResultPage{},
 	}
 
-	recordsClient := mockRecordSetsClient{
+	recordSetsClient := mockRecordSetsClient{
 		mockRecordSet: &[]dns.RecordSet{
 			createMockRecordSet("@", "NS", "ns1-03.azure-dns.com."),
 			createMockRecordSet("@", "SOA", "Email: azuredns-hostmaster.microsoft.com"),
@@ -198,7 +198,7 @@ func TestAzureRecord(t *testing.T) {
 		},
 	}
 
-	provider := newAzureProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s", &zonesClient, &recordsClient)
+	provider := newAzureProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s", &zonesClient, &recordSetsClient)
 
 	actual, err := provider.Records()
 
@@ -226,7 +226,7 @@ func TestAzureMultiRecord(t *testing.T) {
 		},
 	}
 
-	recordsClient := mockRecordSetsClient{
+	recordSetsClient := mockRecordSetsClient{
 		mockRecordSet: &[]dns.RecordSet{
 			createMockRecordSet("@", "NS", "ns1-03.azure-dns.com."),
 			createMockRecordSet("@", "SOA", "Email: azuredns-hostmaster.microsoft.com"),
@@ -238,7 +238,7 @@ func TestAzureMultiRecord(t *testing.T) {
 		},
 	}
 
-	provider := newAzureProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s", &zonesClient, &recordsClient)
+	provider := newAzureProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s", &zonesClient, &recordSetsClient)
 
 	actual, err := provider.Records()
 
