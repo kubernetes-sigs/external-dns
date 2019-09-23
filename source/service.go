@@ -371,7 +371,6 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 		Labels:           endpoint.NewLabels(),
 		Targets:          make(endpoint.Targets, 0, defaultTargetsCapacity),
 		DNSName:          hostname,
-		ProviderSpecific: providerSpecific,
 	}
 
 	epCNAME := &endpoint.Endpoint{
@@ -380,7 +379,6 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 		Labels:           endpoint.NewLabels(),
 		Targets:          make(endpoint.Targets, 0, defaultTargetsCapacity),
 		DNSName:          hostname,
-		ProviderSpecific: providerSpecific,
 	}
 
 	var endpoints []*endpoint.Endpoint
@@ -422,6 +420,10 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 	}
 	if len(epCNAME.Targets) > 0 {
 		endpoints = append(endpoints, epCNAME)
+	}
+
+	for i := range endpoints {
+		endpoints[i].ProviderSpecific = providerSpecific
 	}
 	return endpoints
 }
