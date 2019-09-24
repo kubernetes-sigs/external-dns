@@ -505,6 +505,12 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 		}
 	}
 
+	ignoreExternalIPs, ok := svc.Annotations[ignoreExternalIPsAnnotationKey]
+	if ok && ignoreExternalIPs == "true" {
+		log.Debugf("ignoreExternalIPs is %s, so externalIPs are ignored and internalIPs are used instead. internalIPs = %s", ignoreExternalIPs, internalIPs)
+		return internalIPs, nil
+	}
+
 	if len(externalIPs) > 0 {
 		return externalIPs, nil
 	}
