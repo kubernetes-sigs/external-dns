@@ -102,6 +102,15 @@ func getProviderSpecificAnnotations(annotations map[string]string) endpoint.Prov
 			Value: "true",
 		})
 	}
+	for k, v := range annotations {
+		if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/alibaba-cloud") {
+			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/alibaba-cloud-")
+			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+				Name:  fmt.Sprintf("alibaba-cloud/%s", attr),
+				Value: v,
+			})
+		}
+	}
 	return providerSpecificAnnotations
 }
 

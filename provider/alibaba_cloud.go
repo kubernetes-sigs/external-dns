@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -31,7 +32,7 @@ import (
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
 	log "github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -40,6 +41,8 @@ const (
 	defaultAlibabaCloudPageSize             = 50
 	nullHostAlibabaCloud                    = "@"
 	pVTZDoamin                              = "pvtz.aliyuncs.com"
+
+	providerSpecificWeight = "alibaba-cloud/weight"
 )
 
 // AlibabaCloudDNSAPI is a minimal implementation of DNS API that we actually use, used primarily for unit testing.
@@ -50,6 +53,10 @@ type AlibabaCloudDNSAPI interface {
 	UpdateDomainRecord(request *alidns.UpdateDomainRecordRequest) (response *alidns.UpdateDomainRecordResponse, err error)
 	DescribeDomainRecords(request *alidns.DescribeDomainRecordsRequest) (response *alidns.DescribeDomainRecordsResponse, err error)
 	DescribeDomains(request *alidns.DescribeDomainsRequest) (response *alidns.DescribeDomainsResponse, err error)
+	SetDNSSLBStatus(request *alidns.SetDNSSLBStatusRequest) (response *alidns.SetDNSSLBStatusResponse, err error)
+	DescribeDNSSLBSubDomains(request *alidns.DescribeDNSSLBSubDomainsRequest) (response *alidns.DescribeDNSSLBSubDomainsResponse, err error)
+	DescribeSubDomainRecords(request *alidns.DescribeSubDomainRecordsRequest) (response *alidns.DescribeSubDomainRecordsResponse, err error)
+	UpdateDNSSLBWeight(request *alidns.UpdateDNSSLBWeightRequest) (response *alidns.UpdateDNSSLBWeightResponse, err error)
 }
 
 // AlibabaCloudPrivateZoneAPI is a minimal implementation of Private Zone API that we actually use, used primarily for unit testing.
@@ -88,6 +95,16 @@ type alibabaCloudConfig struct {
 	RoleName        string    `json:"-" yaml:"-"` // For ECS RAM role only
 	StsToken        string    `json:"-" yaml:"-"`
 	ExpireTime      time.Time `json:"-" yaml:"-"`
+}
+
+type weightRecord struct {
+	Type       string `json:"Type" xml:"Type"`
+	RecordId   string `json:"RecordId" xml:"RecordId"`
+	Value      string `json:"Value" xml:"Value"`
+	DomainName string `json:"DomainName" xml:"DomainName"`
+	Weight     int    `json:"Weight" xml:"Weight"`
+	Status     string `json:"Status" xml:"Status"`
+	TTL        int    `json:"TTL" xml:"TTL"`
 }
 
 // NewAlibabaCloudProvider creates a new Alibaba Cloud provider.
@@ -330,12 +347,16 @@ func (p *AlibabaCloudProvider) recordsForDNS() (endpoints []*endpoint.Endpoint, 
 		}
 
 		var targets []string
+		var weightTargetMap = make(map[string]int)
 		for _, record := range recordList {
 			target := record.Value
+			weight := record.Weight
+			if weight > -1 {
+				weightTargetMap[target] = weight
+			}
 			if recordType == "TXT" {
 				target = p.unescapeTXTRecordValue(target)
 			}
-			targets = append(targets, target)
 		}
 		ep := endpoint.NewEndpointWithTTL(name, recordType, endpoint.TTL(ttl), targets...)
 		endpoints = append(endpoints, ep)
@@ -448,6 +469,11 @@ func (p *AlibabaCloudProvider) getDomainRecords(domainName string) ([]alidns.Rec
 			return nil, err
 		}
 
+		weightRecords, err := p.getRecordsWithWeight(domainName)
+		if err != nil {
+			return nil, err
+		}
+		weightRecordMap := groupByWeightRecord(weightRecords)
 		for _, record := range response.DomainRecords.Record {
 
 			domainName := record.DomainName
@@ -461,6 +487,8 @@ func (p *AlibabaCloudProvider) getDomainRecords(domainName string) ([]alidns.Rec
 				continue
 			}
 
+			addWeightToRecord(weightRecordMap, record)
+
 			//TODO filter Locked record
 			results = append(results, record)
 		}
@@ -473,6 +501,22 @@ func (p *AlibabaCloudProvider) getDomainRecords(domainName string) ([]alidns.Rec
 	}
 
 	return results, nil
+}
+
+func addWeightToRecord(weightRecordMap map[string]weightRecord, record alidns.Record) {
+	if _, ok := weightRecordMap[record.Value]; ok {
+		record.Weight = weightRecordMap[record.Value].Weight
+	} else {
+		record.Weight = -1
+	}
+}
+
+func groupByWeightRecord(weightRecords []weightRecord) map[string]weightRecord {
+	weightRecordMap := make(map[string]weightRecord)
+	for _, weightRecord := range weightRecords {
+		weightRecordMap[weightRecord.Value] = weightRecord
+	}
+	return weightRecordMap
 }
 
 func (p *AlibabaCloudProvider) applyChangesForDNS(changes *plan.Changes) error {
@@ -533,6 +577,118 @@ func (p *AlibabaCloudProvider) createRecord(endpoint *endpoint.Endpoint, target 
 		log.Errorf("Failed to create %s record named '%s' to '%s' with ttl %d for Alibaba Cloud DNS: %v", endpoint.RecordType, endpoint.DNSName, target, ttl, err)
 	}
 	return err
+}
+
+func (p *AlibabaCloudProvider) getSupplyWeightDomainList(domainName string) ([]string, error) {
+	var domainNames []string
+	request := alidns.CreateDescribeDNSSLBSubDomainsRequest()
+	request.PageSize = requests.NewInteger(defaultAlibabaCloudPageSize)
+	request.PageNumber = "1"
+	request.Domain = domainName
+	for {
+		resp, err := p.dnsClient.DescribeDNSSLBSubDomains(request)
+		if err != nil {
+			log.Errorf("Failed to describe domains for Alibaba Cloud DNS: %v", err)
+			return nil, err
+		}
+		for _, tmpDomain := range resp.SlbSubDomains.SlbSubDomain {
+			if tmpDomain.Open {
+				domainNames = append(domainNames, tmpDomain.SubDomain)
+			}
+		}
+		nextPage := getNextPageNumber(resp.PageNumber, defaultAlibabaCloudPageSize, resp.TotalCount)
+		if nextPage == 0 {
+			break
+		} else {
+			request.PageNumber = requests.NewInteger(nextPage)
+		}
+	}
+	return domainNames, nil
+}
+
+func (p *AlibabaCloudProvider) isSupplyWeight(domainName string) (bool, error) {
+	if domainName == "" {
+		return false, fmt.Errorf("SubDomain cannot be empty")
+	}
+	domains, err := p.getDomainList();
+	if err != nil {
+		return false, err
+	}
+	for _, domain := range domains {
+		supplyWeightDomains, err := p.getSupplyWeightDomainList(domain)
+		if err != nil {
+			return false, nil
+		}
+		for _, supplyWeightDomain := range supplyWeightDomains {
+			if domainName == supplyWeightDomain {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+
+func (p *AlibabaCloudProvider) getRecordsWithWeight(domainName string) ([]weightRecord, error) {
+	weightRecords := make([]weightRecord, 0)
+	if len(domainName) == 0 {
+		return nil, fmt.Errorf("subDomain is empty")
+	}
+	request := alidns.CreateDescribeSubDomainRecordsRequest()
+	request.SubDomain = domainName
+	resp, err := p.getDNSClient().DescribeSubDomainRecords(request)
+	if err != nil {
+		return nil, err
+	}
+	for _, record := range resp.DomainRecords.Record {
+		weightRecord := weightRecord{
+			RecordId:   record.RecordId,
+			Type:       record.Type,
+			DomainName: domainName,
+			Value:      record.Value,
+			TTL:        record.TTL,
+			Weight:     record.Weight,
+			Status:     record.Status,
+		}
+		weightRecords = append(weightRecords, weightRecord)
+	}
+	return weightRecords, nil
+}
+
+func (p *AlibabaCloudProvider) setWeightSupport(endpoints []*endpoint.Endpoint, isOpen bool) error {
+	if len(endpoints) == 0 {
+		return fmt.Errorf("endpoints is empty")
+	}
+	endpoint := endpoints[0]
+	_, domain := p.splitDNSName(endpoint)
+	request := alidns.CreateSetDNSSLBStatusRequest()
+	request.SubDomain = domain
+	request.Open = requests.NewBoolean(isOpen)
+	_, err := p.getDNSClient().SetDNSSLBStatus(request)
+	if err == nil {
+		log.Infof("Enable domain weight status %s in Alibaba Cloud DNS", domain)
+	} else {
+		log.Errorf("Failed to enable domain weight status %s in Alibaba Cloud DNS: %v", domain, err)
+	}
+	return nil
+}
+
+func (p *AlibabaCloudProvider) updateWeight(endpoint *endpoint.Endpoint, RecordId string) error {
+	request := alidns.CreateUpdateDNSSLBWeightRequest()
+	if prop, ok := endpoint.GetProviderSpecificProperty(providerSpecificWeight); ok {
+		weight, err := strconv.ParseInt(prop.Value, 10, 64)
+		if err != nil {
+			log.Errorf("Failed parsing value of %s: %s: %v; using weight of 0", providerSpecificWeight, prop.Value, err)
+			weight = 0
+		}
+		request.Weight = requests.NewInteger64(weight)
+	}
+	_, err := p.getDNSClient().UpdateDNSSLBWeight(request)
+	if err == nil {
+		log.Infof("change domain record weight %s in Alibaba Cloud DNS", request.RecordId)
+	} else {
+		log.Errorf("Failed to change domain record weight %s in Alibaba Cloud DNS: %v", request.RecordId, err)
+	}
+	return nil
 }
 
 func (p *AlibabaCloudProvider) createRecords(endpoints []*endpoint.Endpoint) error {
