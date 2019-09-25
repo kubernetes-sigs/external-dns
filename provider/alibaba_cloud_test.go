@@ -54,6 +54,26 @@ func NewMockAlibabaCloudDNSAPI() *MockAlibabaCloudDNSAPI {
 	return &api
 }
 
+func (m *MockAlibabaCloudDNSAPI) SetDNSSLBStatus(request *alidns.SetDNSSLBStatusRequest) (response *alidns.SetDNSSLBStatusResponse, err error) {
+
+	return nil, nil
+}
+
+func (m *MockAlibabaCloudDNSAPI) DescribeDNSSLBSubDomains(request *alidns.DescribeDNSSLBSubDomainsRequest) (response *alidns.DescribeDNSSLBSubDomainsResponse, err error) {
+
+	return nil, nil
+}
+
+func (m *MockAlibabaCloudDNSAPI) DescribeSubDomainRecords(request *alidns.DescribeSubDomainRecordsRequest) (response *alidns.DescribeSubDomainRecordsResponse, err error) {
+
+	return nil, nil
+}
+
+func (m *MockAlibabaCloudDNSAPI) UpdateDNSSLBWeight(request *alidns.UpdateDNSSLBWeightRequest) (response *alidns.UpdateDNSSLBWeightResponse, err error) {
+
+	return nil, nil
+}
+
 func (m *MockAlibabaCloudDNSAPI) AddDomainRecord(request *alidns.AddDomainRecordRequest) (response *alidns.AddDomainRecordResponse, err error) {
 	ttl, _ := request.TTL.GetValue()
 	m.records = append(m.records, alidns.Record{

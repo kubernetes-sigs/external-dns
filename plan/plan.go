@@ -18,6 +18,7 @@ package plan
 
 import (
 	"fmt"
+	"github.com/google/martian/log"
 	"strings"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -75,12 +76,12 @@ func newPlanTable() planTable { //TODO: make resolver configurable
 // current corresponds to the record currently occupying dns name on the dns provider
 // candidates corresponds to the list of records which would like to have this dnsName
 type planTableRow struct {
-	current    *endpoint.Endpoint
+	currents   []*endpoint.Endpoint
 	candidates []*endpoint.Endpoint
 }
 
 func (t planTableRow) String() string {
-	return fmt.Sprintf("planTableRow{current=%v, candidates=%v}", t.current, t.candidates)
+	return fmt.Sprintf("planTableRow{current=%v, candidates=%v}", t.currents, t.candidates)
 }
 
 func (t planTable) addCurrent(e *endpoint.Endpoint) {
@@ -88,7 +89,7 @@ func (t planTable) addCurrent(e *endpoint.Endpoint) {
 	if _, ok := t.rows[dnsName]; !ok {
 		t.rows[dnsName] = &planTableRow{}
 	}
-	t.rows[dnsName].current = e
+	t.rows[dnsName].currents = append(t.rows[dnsName].currents, e)
 }
 
 func (t planTable) addCandidate(e *endpoint.Endpoint) {
@@ -102,15 +103,18 @@ func (t planTable) addCandidate(e *endpoint.Endpoint) {
 // TODO: allows record type change, which might not be supported by all dns providers
 func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*endpoint.Endpoint) {
 	for _, row := range t.rows {
-		if row.current != nil && len(row.candidates) > 0 { //dns name is taken
-			update := t.resolver.ResolveUpdate(row.current, row.candidates)
-			// compare "update" to "current" to figure out if actual update is required
-			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || shouldUpdateProviderSpecific(update, row.current) {
-				inheritOwner(row.current, update)
-				updateNew = append(updateNew, update)
-				updateOld = append(updateOld, row.current)
+		log.Infof("row:=%v", row)
+		if len(row.currents) > 0 && len(row.candidates) > 0 { //dns name is taken
+			for _, current := range row.currents {
+				update := t.resolver.ResolveUpdate(current, row.candidates)
+				// compare "update" to "current" to figure out if actual update is required
+				if shouldUpdateTTL(update, current) || targetChanged(update, current) || shouldUpdateProviderSpecific(update, current) {
+					inheritOwner(current, update)
+					updateNew = append(updateNew, update)
+					updateOld = append(updateOld, current)
+				}
+				continue
 			}
-			continue
 		}
 	}
 	return
@@ -118,7 +122,7 @@ func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*en
 
 func (t planTable) getCreates() (createList []*endpoint.Endpoint) {
 	for _, row := range t.rows {
-		if row.current == nil { //dns name not taken
+		if len(row.currents) == 0 { //dns name not taken
 			createList = append(createList, t.resolver.ResolveCreate(row.candidates))
 		}
 	}
@@ -127,8 +131,10 @@ func (t planTable) getCreates() (createList []*endpoint.Endpoint) {
 
 func (t planTable) getDeletes() (deleteList []*endpoint.Endpoint) {
 	for _, row := range t.rows {
-		if row.current != nil && len(row.candidates) == 0 {
-			deleteList = append(deleteList, row.current)
+		if len(row.currents) > 0 && len(row.candidates) == 0 {
+			for _, current := range row.currents {
+				deleteList = append(deleteList, current)
+			}
 		}
 	}
 	return

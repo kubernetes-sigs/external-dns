@@ -127,7 +127,8 @@ func (c *Controller) RunOnce() error {
 		Current:  records,
 		Desired:  endpoints,
 	}
-
+	log.Infof("Current : %v ", records)
+	log.Infof("Desired : %v ", endpoints)
 	plan = plan.Calculate()
 
 	err = c.Registry.ApplyChanges(ctx, plan.Changes)

@@ -336,34 +336,29 @@ func (p *AlibabaCloudProvider) recordsForDNS() (endpoints []*endpoint.Endpoint, 
 	if err != nil {
 		return nil, err
 	}
+	log.Infof("records :%v", records)
+	log.Infof("groupRecords :%v", p.groupRecords(records))
 	for _, recordList := range p.groupRecords(records) {
-		newEndpoints := make([]*endpoint.Endpoint, 0)
-		name := p.getDNSName(recordList[0].RR, recordList[0].DomainName)
-		recordType := recordList[0].Type
-		ttl := recordList[0].TTL
-		weight := recordList[0].Weight
-
-		if ttl == defaultAlibabaCloudRecordTTL {
-			ttl = 0
-		}
-
-		var targets []string
 		for _, record := range recordList {
+			var targets []string
+			name := p.getDNSName(record.RR, record.DomainName)
+			weight := record.Weight
 			target := record.Value
+			recordType := record.Type
+			ttl := record.TTL
+
+			if ttl == defaultAlibabaCloudRecordTTL {
+				ttl = 0
+			}
 			if recordType == "TXT" {
 				target = p.unescapeTXTRecordValue(target)
 			}
 			targets = append(targets, target)
+			ep := endpoint.NewEndpointWithTTL(name, recordType, endpoint.TTL(ttl), targets...).WithProviderSpecific(providerSpecificWeight, fmt.Sprintf("%d", weight))
+			endpoints = append(endpoints, ep)
 		}
-		ep := endpoint.NewEndpointWithTTL(name, recordType, endpoint.TTL(ttl), targets...)
-		newEndpoints = append(newEndpoints, ep)
-		for _, ep := range newEndpoints {
-			if weight > -1 {
-				ep.WithProviderSpecific(providerSpecificWeight, fmt.Sprintf("%d", weight))
-			}
-		}
-		endpoints = append(endpoints, ep)
 	}
+	log.Infof("endpoints :%v", endpoints)
 	return endpoints, nil
 }
 
@@ -394,9 +389,13 @@ func (p *AlibabaCloudProvider) groupRecords(records []alidns.Record) (endpointMa
 
 		key := p.getRecordKey(record)
 
-		recordList := endpointMap[key]
-		endpointMap[key] = append(recordList, record)
-
+		if _, ok := endpointMap[key]; !ok {
+			recordList := make([]alidns.Record, 0)
+			endpointMap[key] = append(recordList, record)
+		} else {
+			recordList := endpointMap[key]
+			endpointMap[key] = append(recordList, record)
+		}
 	}
 
 	return endpointMap
@@ -594,7 +593,7 @@ func (p *AlibabaCloudProvider) getSupplyWeightDomainList(domainName string) ([]s
 	for {
 		resp, err := p.dnsClient.DescribeDNSSLBSubDomains(request)
 		if err != nil {
-			log.Errorf("Failed to describe domains for Alibaba Cloud DNS: %v", err)
+			log.Errorf("Failed to describe sub domains for Alibaba Cloud DNS: %v", err)
 			return nil, err
 		}
 		for _, tmpDomain := range resp.SlbSubDomains.SlbSubDomain {
@@ -614,7 +613,7 @@ func (p *AlibabaCloudProvider) getSupplyWeightDomainList(domainName string) ([]s
 
 func (p *AlibabaCloudProvider) isSupplyWeight(domainName string) (bool, error) {
 	if domainName == "" {
-		return false, fmt.Errorf("SubDomain cannot be empty")
+		return false, fmt.Errorf("domainName cannot be empty")
 	}
 	domains, err := p.getDomainList();
 	if err != nil {
@@ -637,7 +636,7 @@ func (p *AlibabaCloudProvider) isSupplyWeight(domainName string) (bool, error) {
 func (p *AlibabaCloudProvider) getRecordsWithWeight(domainName string) ([]weightRecord, error) {
 	weightRecords := make([]weightRecord, 0)
 	if len(domainName) == 0 {
-		return nil, fmt.Errorf("subDomain is empty")
+		return nil, fmt.Errorf("domainName is empty")
 	}
 	request := alidns.CreateDescribeSubDomainRecordsRequest()
 	request.SubDomain = domainName
