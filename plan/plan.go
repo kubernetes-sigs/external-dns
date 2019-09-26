@@ -18,7 +18,6 @@ package plan
 
 import (
 	"fmt"
-	"github.com/google/martian/log"
 	"strings"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
@@ -103,9 +102,8 @@ func (t planTable) addCandidate(e *endpoint.Endpoint) {
 // TODO: allows record type change, which might not be supported by all dns providers
 func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*endpoint.Endpoint) {
 	for _, row := range t.rows {
-		log.Infof("row:=%v", row)
-		if len(row.currents) > 0 && len(row.candidates) > 0 { //dns name is taken
-			for _, current := range row.currents {
+		for _, current := range row.currents {
+			if current != nil && len(row.candidates) > 0 { //dns name is taken
 				update := t.resolver.ResolveUpdate(current, row.candidates)
 				// compare "update" to "current" to figure out if actual update is required
 				if shouldUpdateTTL(update, current) || targetChanged(update, current) || shouldUpdateProviderSpecific(update, current) {
@@ -113,8 +111,24 @@ func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*en
 					updateNew = append(updateNew, update)
 					updateOld = append(updateOld, current)
 				}
-				continue
 			}
+		}
+	}
+	return removeDuplicate(updateNew), removeDuplicate(updateOld)
+}
+
+func removeDuplicate(endpoints []*endpoint.Endpoint) (newEndpoints []*endpoint.Endpoint) {
+	newEndpoints = make([]*endpoint.Endpoint, 0)
+	for i := 0; i < len(endpoints); i++ {
+		repeat := false
+		for j := i + 1; j < len(endpoints); j++ {
+			if endpoints[i] == endpoints[j] {
+				repeat = true
+				break
+			}
+		}
+		if !repeat {
+			newEndpoints = append(newEndpoints, endpoints[i])
 		}
 	}
 	return
@@ -124,6 +138,16 @@ func (t planTable) getCreates() (createList []*endpoint.Endpoint) {
 	for _, row := range t.rows {
 		if len(row.currents) == 0 { //dns name not taken
 			createList = append(createList, t.resolver.ResolveCreate(row.candidates))
+		} else if len(row.currents) < len(row.candidates) {
+			currentResources := make([]string, len(row.currents))
+			for _, current := range row.currents {
+				currentResources = append(currentResources, current.Labels[endpoint.ResourceLabelKey])
+			}
+			for _, ep := range row.candidates {
+				if !isContainResource(currentResources, ep.Labels[endpoint.ResourceLabelKey]) {
+					createList = append(createList, ep)
+				}
+			}
 		}
 	}
 	return
@@ -134,6 +158,16 @@ func (t planTable) getDeletes() (deleteList []*endpoint.Endpoint) {
 		if len(row.currents) > 0 && len(row.candidates) == 0 {
 			for _, current := range row.currents {
 				deleteList = append(deleteList, current)
+			}
+		} else if len(row.currents) > 0 && len(row.currents) > len(row.candidates) {
+			candidateResources := make([]string, len(row.candidates))
+			for _, candidate := range row.candidates {
+				candidateResources = append(candidateResources, candidate.Labels[endpoint.ResourceLabelKey])
+			}
+			for _, ep := range row.currents {
+				if !isContainResource(candidateResources, ep.Labels[endpoint.ResourceLabelKey]) {
+					deleteList = append(deleteList, ep)
+				}
 			}
 		}
 	}
@@ -152,7 +186,6 @@ func (p *Plan) Calculate() *Plan {
 	for _, desired := range filterRecordsForPlan(p.Desired) {
 		t.addCandidate(desired)
 	}
-
 	changes := &Changes{}
 	changes.Create = t.getCreates()
 	changes.Delete = t.getDeletes()
@@ -171,6 +204,9 @@ func (p *Plan) Calculate() *Plan {
 }
 
 func inheritOwner(from, to *endpoint.Endpoint) {
+	if from == nil {
+		return
+	}
 	if to.Labels == nil {
 		to.Labels = map[string]string{}
 	}
@@ -181,10 +217,16 @@ func inheritOwner(from, to *endpoint.Endpoint) {
 }
 
 func targetChanged(desired, current *endpoint.Endpoint) bool {
+	if desired == nil {
+		return false
+	}
 	return !desired.Targets.Same(current.Targets)
 }
 
 func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
+	if desired == nil {
+		return false
+	}
 	if !desired.RecordTTL.IsConfigured() {
 		return false
 	}
@@ -192,6 +234,9 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 }
 
 func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
+	if desired == nil {
+		return false
+	}
 	if current.ProviderSpecific == nil && len(desired.ProviderSpecific) == 0 {
 		return false
 	}
@@ -244,4 +289,17 @@ func normalizeDNSName(dnsName string) string {
 		s += "."
 	}
 	return s
+}
+
+func isContainResource(resources []string, resourceLabel string) bool {
+	index := -1
+	for i := 0; i < len(resources); i++ {
+		if resources[i] == resourceLabel {
+			index = i
+		}
+	}
+	if index == -1 {
+		return false
+	}
+	return true
 }

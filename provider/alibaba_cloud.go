@@ -336,8 +336,6 @@ func (p *AlibabaCloudProvider) recordsForDNS() (endpoints []*endpoint.Endpoint, 
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("records :%v", records)
-	log.Infof("groupRecords :%v", p.groupRecords(records))
 	for _, recordList := range p.groupRecords(records) {
 		for _, record := range recordList {
 			var targets []string
@@ -358,7 +356,6 @@ func (p *AlibabaCloudProvider) recordsForDNS() (endpoints []*endpoint.Endpoint, 
 			endpoints = append(endpoints, ep)
 		}
 	}
-	log.Infof("endpoints :%v", endpoints)
 	return endpoints, nil
 }
 
@@ -578,9 +575,11 @@ func (p *AlibabaCloudProvider) createRecord(endpoint *endpoint.Endpoint, target 
 	} else {
 		log.Errorf("Failed to create %s record named '%s' to '%s' with ttl %d for Alibaba Cloud DNS: %v", endpoint.RecordType, endpoint.DNSName, target, ttl, err)
 	}
-	if err := p.updateWeight(endpoint, response.RecordId); err != nil {
-		return err
-	}
+	//if request.Type == "A" {
+	//	if err := p.updateWeight(endpoint, response.RecordId); err != nil {
+	//		return err
+	//	}
+	//}
 	return err
 }
 
@@ -812,23 +811,6 @@ func (p *AlibabaCloudProvider) updateRecords(recordMap map[string][]alidns.Recor
 					// Update record
 					p.updateRecord(record, endpoint)
 				}
-			} else {
-				p.deleteRecord(record.RecordId)
-			}
-		}
-		for _, target := range endpoint.Targets {
-			if endpoint.RecordType == "TXT" {
-				target = p.escapeTXTRecordValue(target)
-			}
-			found := false
-			for _, record := range records {
-				// Find matched record to delete
-				if record.Value == target {
-					found = true
-				}
-			}
-			if !found {
-				p.createRecord(endpoint, target)
 			}
 		}
 	}
