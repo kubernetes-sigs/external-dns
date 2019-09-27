@@ -136,9 +136,7 @@ func removeDuplicate(endpoints []*endpoint.Endpoint) (newEndpoints []*endpoint.E
 
 func (t planTable) getCreates() (createList []*endpoint.Endpoint) {
 	for _, row := range t.rows {
-		if len(row.currents) == 0 { //dns name not taken
-			createList = append(createList, t.resolver.ResolveCreate(row.candidates))
-		} else if len(row.currents) < len(row.candidates) {
+		if len(row.currents) < len(row.candidates) {
 			currentResources := make([]string, len(row.currents))
 			for _, current := range row.currents {
 				currentResources = append(currentResources, current.Labels[endpoint.ResourceLabelKey])
@@ -155,11 +153,7 @@ func (t planTable) getCreates() (createList []*endpoint.Endpoint) {
 
 func (t planTable) getDeletes() (deleteList []*endpoint.Endpoint) {
 	for _, row := range t.rows {
-		if len(row.currents) > 0 && len(row.candidates) == 0 {
-			for _, current := range row.currents {
-				deleteList = append(deleteList, current)
-			}
-		} else if len(row.currents) > 0 && len(row.currents) > len(row.candidates) {
+		if len(row.currents) > 0 {
 			candidateResources := make([]string, len(row.candidates))
 			for _, candidate := range row.candidates {
 				candidateResources = append(candidateResources, candidate.Labels[endpoint.ResourceLabelKey])
@@ -199,14 +193,10 @@ func (p *Plan) Calculate() *Plan {
 		Desired: p.Desired,
 		Changes: changes,
 	}
-
 	return plan
 }
 
 func inheritOwner(from, to *endpoint.Endpoint) {
-	if from == nil {
-		return
-	}
 	if to.Labels == nil {
 		to.Labels = map[string]string{}
 	}

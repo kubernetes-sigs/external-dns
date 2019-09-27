@@ -758,7 +758,6 @@ func (p *AlibabaCloudProvider) deleteRecords(recordMap map[string][]alidns.Recor
 			if record.Type == "TXT" {
 				value = p.unescapeTXTRecordValue(value)
 			}
-
 			for _, target := range endpoint.Targets {
 				// Find matched record to delete
 				if value == target {
