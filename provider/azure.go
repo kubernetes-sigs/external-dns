@@ -53,14 +53,12 @@ type config struct {
 
 // ZonesClient is an interface of dns.ZoneClient that can be stubbed for testing.
 type ZonesClient interface {
-	ListByResourceGroup(ctx context.Context, resourceGroupName string, top *int32) (result dns.ZoneListResultPage, err error)
-	listByResourceGroupNextResults(ctx context.Context, lastResults dns.ZoneListResult) (result dns.ZoneListResult, err error)
+	ListByResourceGroupComplete(ctx context.Context, resourceGroupName string, top *int32) (result dns.ZoneListResultIterator, err error)
 }
 
 // RecordSetsClient is an interface of dns.RecordSetsClient that can be stubbed for testing.
 type RecordSetsClient interface {
-	ListByDNSZone(ctx context.Context, resourceGroupName string, zoneName string, top *int32, recordsetnamesuffix string) (result dns.RecordSetListResultPage, err error)
-	listByDNSZoneNextResults(ctx context.Context, lastResults dns.RecordSetListResult) (result dns.RecordSetListResult, err error)
+	ListAllByDNSZoneComplete(ctx context.Context, resourceGroupName string, zoneName string, top *int32, recordSetNameSuffix string) (result dns.RecordSetListResultIterator, err error)
 	Delete(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, ifMatch string) (result autorest.Response, err error)
 	CreateOrUpdate(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, parameters dns.RecordSet, ifMatch string, ifNoneMatch string) (result dns.RecordSet, err error)
 }
@@ -224,36 +222,37 @@ func (p *AzureProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 }
 
 func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
-	log.Debug("Retrieving Azure DNS zones.")
+	log.Debugf("Retrieving Azure DNS zones for rg: %s.", p.resourceGroup)
 
 	var zones []dns.Zone
-	list, err := p.zonesClient.ListByResourceGroup(ctx, p.resourceGroup, nil)
+
+	i, err := p.zonesClient.ListByResourceGroupComplete(ctx, p.resourceGroup, nil)
+
 	if err != nil {
 		return nil, err
 	}
 
-	for list.Values() != nil && len(list.Values()) > 0 {
-		for _, zone := range list.Values() {
-			if zone.Name == nil {
-				continue
-			}
+	for i.NotDone() {
+		zone := i.Value()
+		log.Debugf("Validating Zone: %v", *zone.Name)
 
-			if !p.domainFilter.Match(*zone.Name) {
-				continue
-			}
-
-			if !p.zoneIDFilter.Match(*zone.ID) {
-				continue
-			}
-
-			zones = append(zones, zone)
+		if zone.Name == nil {
+			continue
 		}
 
-		//list, err = p.zonesClient.listByResourceGroupNextResults(ctx, list)
-		//if err != nil {
-		//	return nil, err
-		//}
+		if !p.domainFilter.Match(*zone.Name) {
+			continue
+		}
+
+		if !p.zoneIDFilter.Match(*zone.ID) {
+			continue
+		}
+
+		zones = append(zones, zone)
+
+		i.NextWithContext(ctx)
 	}
+
 	log.Debugf("Found %d Azure DNS zone(s).", len(zones))
 	return zones, nil
 }
@@ -261,23 +260,20 @@ func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
 func (p *AzureProvider) iterateRecords(ctx context.Context, zoneName string, callback func(dns.RecordSet) bool) error {
 	log.Debugf("Retrieving Azure DNS records for zone '%s'.", zoneName)
 
-	list, err := p.recordSetsClient.ListByDNSZone(ctx, p.resourceGroup, zoneName, nil, "") // TODO
+	i, err := p.recordSetsClient.ListAllByDNSZoneComplete(ctx, p.resourceGroup, zoneName, nil, "")
+
 	if err != nil {
 		return err
 	}
 
-	for list.Values() != nil && len(list.Values()) > 0 {
-		for _, recordSet := range list.Values() {
-			if !callback(recordSet) {
-				return nil
-			}
+	for i.NotDone() {
+		if !callback(i.Value()) {
+			return nil
 		}
 
-		//list, err = p.recordSetsClient.listByDNSZoneNextResults(ctx, list)
-		//if err != nil {
-		//	return err
-		//}
+		i.NextWithContext(ctx)
 	}
+
 	return nil
 }
 

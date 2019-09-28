@@ -114,7 +114,7 @@ func (c fakeDesignateClient) UpdateRecordSet(zoneID, recordSetID string, opts re
 	if opts.Description != nil {
 		rs.Description = *opts.Description
 	}
-	rs.TTL = opts.TTL
+	rs.TTL = *opts.TTL
 	rs.Records = opts.Records
 	return nil
 }
