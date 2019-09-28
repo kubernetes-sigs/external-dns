@@ -18,6 +18,8 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2018-05-01/dns"
@@ -217,18 +219,33 @@ func TestAzureRecord(t *testing.T) {
 		endpoint.NewEndpointWithTTL("hack.example.com", endpoint.RecordTypeCNAME, 10, "hack.azurewebsites.net"),
 	}
 
+	debug, _ := json.Marshal(actual)
+	fmt.Printf("Debugging azure test: %v", debug)
+
 	validateAzureEndpoints(t, actual, expected)
 
 }
 
+
 func TestAzureMultiRecord(t *testing.T) {
+
 	zlr := dns.ZoneListResult{
 		Value: &[]dns.Zone{
 			createMockZone("example.com", "/dnszones/example.com"),
 		},
 	}
+	results := []dns.ZoneListResult{
+		zlr,
+	}
+
 	mockZoneListResultPage := dns.NewZoneListResultPage(func(ctxParam context.Context, zlrParam dns.ZoneListResult) (dns.ZoneListResult, error) {
-		return zlr, nil
+		if len(results) > 0 {
+			result := results[0]
+			results = nil
+			return result, nil
+		} else {
+			return dns.ZoneListResult{}, nil
+		}
 	})
 	mockZoneClientIterator := dns.NewZoneListResultIterator(mockZoneListResultPage)
 

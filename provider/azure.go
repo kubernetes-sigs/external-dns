@@ -232,6 +232,11 @@ func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
 		return nil, err
 	}
 
+	err = i.NextWithContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	for i.NotDone() {
 		zone := i.Value()
 		log.Debugf("Validating Zone: %v", *zone.Name)
@@ -250,10 +255,14 @@ func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
 
 		zones = append(zones, zone)
 
-		i.NextWithContext(ctx)
+		err := i.NextWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	log.Debugf("Found %d Azure DNS zone(s).", len(zones))
+	log.Printf("Found %d Azure DNS zone(s).", len(zones))
 	return zones, nil
 }
 
