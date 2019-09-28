@@ -262,7 +262,6 @@ func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
 	}
 
 	log.Debugf("Found %d Azure DNS zone(s).", len(zones))
-	log.Printf("Found %d Azure DNS zone(s).", len(zones))
 	return zones, nil
 }
 
@@ -275,12 +274,20 @@ func (p *AzureProvider) iterateRecords(ctx context.Context, zoneName string, cal
 		return err
 	}
 
+	err = i.NextWithContext(ctx)
+	if err != nil {
+		return err
+	}
+
 	for i.NotDone() {
 		if !callback(i.Value()) {
 			return nil
 		}
 
-		i.NextWithContext(ctx)
+		err := i.NextWithContext(ctx)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
