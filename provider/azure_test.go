@@ -173,8 +173,19 @@ func TestAzureRecord(t *testing.T) {
 			createMockZone("example.com", "/dnszones/example.com"),
 		},
 	}
+	results := []dns.ZoneListResult{
+		zlr,
+	}
+
+
 	mockZoneListResultPage := dns.NewZoneListResultPage(func(ctxParam context.Context, zlrParam dns.ZoneListResult) (dns.ZoneListResult, error) {
-		return zlr, nil
+		if len(results) > 0 {
+			result := results[0]
+			results = nil
+			return result, nil
+		} else {
+			return dns.ZoneListResult{}, nil
+		}
 	})
 	mockZoneClientIterator := dns.NewZoneListResultIterator(mockZoneListResultPage)
 
@@ -194,8 +205,18 @@ func TestAzureRecord(t *testing.T) {
 		},
 	}
 
+	rsResults := []dns.RecordSetListResult{
+		rslr,
+	}
+
 	mockRecordSetListResultPage := dns.NewRecordSetListResultPage(func(ctxParam context.Context, rslrParam dns.RecordSetListResult) (dns.RecordSetListResult, error) {
-		return rslr, nil
+		if len(rsResults) > 0 {
+			result := rsResults[0]
+			rsResults = nil
+			return result, nil
+		} else {
+			return dns.RecordSetListResult{}, nil
+		}
 	})
 
 	mockRecordSetListIterator := dns.NewRecordSetListResultIterator(mockRecordSetListResultPage)
@@ -265,8 +286,18 @@ func TestAzureMultiRecord(t *testing.T) {
 		},
 	}
 
+	rsResults := []dns.RecordSetListResult{
+		rslr,
+	}
+
 	mockRecordSetListResultPage := dns.NewRecordSetListResultPage(func(ctxParam context.Context, rslrParam dns.RecordSetListResult) (dns.RecordSetListResult, error) {
-		return rslr, nil
+		if len(rsResults) > 0 {
+			result := rsResults[0]
+			rsResults = nil
+			return result, nil
+		} else {
+			return dns.RecordSetListResult{}, nil
+		}
 	})
 
 	mockRecordSetListIterator := dns.NewRecordSetListResultIterator(mockRecordSetListResultPage)
@@ -337,8 +368,19 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordSetsC
 			createMockZone("other.com", "/dnszones/other.com"),
 		},
 	}
+
+	results := []dns.ZoneListResult{
+		zlr,
+	}
+
 	mockZoneListResultPage := dns.NewZoneListResultPage(func(ctxParam context.Context, zlrParam dns.ZoneListResult) (dns.ZoneListResult, error) {
-		return zlr, nil
+		if len(results) > 0 {
+			result := results[0]
+			results = nil
+			return result, nil
+		} else {
+			return dns.ZoneListResult{}, nil
+		}
 	})
 	mockZoneClientIterator := dns.NewZoneListResultIterator(mockZoneListResultPage)
 
