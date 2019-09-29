@@ -243,6 +243,8 @@ func main() {
 		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTOwnerID, cfg.TXTCacheInterval)
 	case "aws-sd":
 		r, err = registry.NewAWSSDRegistry(p.(*provider.AWSSDProvider), cfg.TXTOwnerID)
+	case "alibaba-cloud-sd":
+		r, err = registry.NewAlibabaCloudSDRegistry(p.(*provider.AlibabaCloudProvider), cfg.TXTPrefix,cfg.TXTOwnerID)
 	default:
 		log.Fatalf("unknown registry: %s", cfg.Registry)
 	}

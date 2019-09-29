@@ -76,7 +76,6 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	labelMap := map[string]endpoint.Labels{}
-
 	for _, record := range records {
 		if record.RecordType != endpoint.RecordTypeTXT {
 			endpoints = append(endpoints, record)
