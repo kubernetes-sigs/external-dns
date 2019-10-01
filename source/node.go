@@ -25,6 +25,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
@@ -36,12 +37,13 @@ import (
 )
 
 type nodeSource struct {
-	client       kubernetes.Interface
-	fqdnTemplate *template.Template
-	nodeInformer coreinformers.NodeInformer
+	client           kubernetes.Interface
+	annotationFilter string
+	fqdnTemplate     *template.Template
+	nodeInformer     coreinformers.NodeInformer
 }
 
-func NewNodeSource(kubeClient kubernetes.Interface, fqdnTemplate string) (Source, error) {
+func NewNodeSource(kubeClient kubernetes.Interface, annotationFilter, fqdnTemplate string) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -82,15 +84,21 @@ func NewNodeSource(kubeClient kubernetes.Interface, fqdnTemplate string) (Source
 	}
 
 	return &nodeSource{
-		client:       kubeClient,
-		fqdnTemplate: tmpl,
-		nodeInformer: nodeInformer,
+		client:           kubeClient,
+		annotationFilter: annotationFilter,
+		fqdnTemplate:     tmpl,
+		nodeInformer:     nodeInformer,
 	}, nil
 }
 
 // Endpoints returns endpoint objects for each service that should be processed.
 func (ns *nodeSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	nodes, err := ns.nodeInformer.Lister().List(labels.Everything())
+	if err != nil {
+		return nil, err
+	}
+
+	nodes, err = ns.filterByAnnotations(nodes)
 	if err != nil {
 		return nil, err
 	}
@@ -148,4 +156,35 @@ func (ns *nodeSource) nodeAddress(node *v1.Node) (string, error) {
 	}
 
 	return "", fmt.Errorf("could not find node address for %s", node.Name)
+}
+
+// filterByAnnotations filters a list of nodes by a given annotation selector.
+func (ns *nodeSource) filterByAnnotations(nodes []*v1.Node) ([]*v1.Node, error) {
+	labelSelector, err := metav1.ParseToLabelSelector(ns.annotationFilter)
+	if err != nil {
+		return nil, err
+	}
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		return nil, err
+	}
+
+	// empty filter returns original list
+	if selector.Empty() {
+		return nodes, nil
+	}
+
+	filteredList := []*v1.Node{}
+
+	for _, node := range nodes {
+		// convert the node's annotations to an equivalent label selector
+		annotations := labels.Set(node.Annotations)
+
+		// include node if its annotations match the selector
+		if selector.Matches(annotations) {
+			filteredList = append(filteredList, node)
+		}
+	}
+
+	return filteredList, nil
 }

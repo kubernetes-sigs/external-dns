@@ -14,16 +14,17 @@ import (
 func TestNodeSource(t *testing.T) {
 	//suite.Run(t, new(ServiceSuite))
 	//t.Run("Interface", testServiceSourceImplementsSource)
-	//t.Run("NewNodeSource", testNodeSourceNewNodeSource)
+	t.Run("NewNodeSource", testNodeSourceNewNodeSource)
 	t.Run("Endpoints", testNodeSourceEndpoints)
 }
 
 // testNodeSourceNewNodeSource tests that NewNodeService doesn't return an error.
 func testNodeSourceNewNodeSource(t *testing.T) {
 	for _, ti := range []struct {
-		title        string
-		fqdnTemplate string
-		expectError  bool
+		title            string
+		annotationFilter string
+		fqdnTemplate     string
+		expectError      bool
 	}{
 		{
 			title:        "invalid template",
@@ -39,10 +40,16 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 			expectError:  false,
 			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
 		},
+		{
+			title:            "non-empty annotation filter label",
+			expectError:      false,
+			annotationFilter: "kubernetes.io/ingress.class=nginx",
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			_, err := NewNodeSource(
 				fake.NewSimpleClientset(),
+				ti.annotationFilter,
 				ti.fqdnTemplate,
 			)
 
@@ -58,65 +65,71 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 // testNodeSourceEndpoints tests that various node generate the correct endpoints.
 func testNodeSourceEndpoints(t *testing.T) {
 	for _, tc := range []struct {
-		title         string
-		fqdnTemplate  string
-		nodeName      string
-		nodeAddresses []v1.NodeAddress
-		labels        map[string]string
-		annotations   map[string]string
-		expected      []*endpoint.Endpoint
-		expectError   bool
+		title            string
+		annotationFilter string
+		fqdnTemplate     string
+		nodeName         string
+		nodeAddresses    []v1.NodeAddress
+		labels           map[string]string
+		annotations      map[string]string
+		expected         []*endpoint.Endpoint
+		expectError      bool
 	}{
 		{
 			"node with short hostname returns one endpoint",
 			"",
+			"",
 			"node1",
 			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
 			map[string]string{},
 			map[string]string{},
 			[]*endpoint.Endpoint{
-                {RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
-            },
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
 			false,
 		},
-        {
+		{
 			"node with fqdn returns one endpoint",
+			"",
 			"",
 			"node1.example.org",
 			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
 			map[string]string{},
 			map[string]string{},
 			[]*endpoint.Endpoint{
-                {RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
-            },
+				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
 			false,
 		},
 		{
 			"node with fqdn template returns endpoint with expanded hostname",
+			"",
 			"{{.Name}}.example.org",
 			"node1",
 			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
 			map[string]string{},
 			map[string]string{},
 			[]*endpoint.Endpoint{
-                {RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
-            },
+				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
 			false,
 		},
-        {
+		{
 			"node with fqdn and fqdn template returns one endpoint",
+			"",
 			"{{.Name}}.example.org",
 			"node1.example.org",
 			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
 			map[string]string{},
 			map[string]string{},
 			[]*endpoint.Endpoint{
-                {RecordType: "A", DNSName: "node1.example.org.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
-            },
+				{RecordType: "A", DNSName: "node1.example.org.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
 			false,
 		},
 		{
 			"node with both external and internal IP returns an endpoint with external IP",
+			"",
 			"",
 			"node1",
 			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}, {v1.NodeInternalIP, "2.3.4.5"}},
@@ -127,8 +140,9 @@ func testNodeSourceEndpoints(t *testing.T) {
 			},
 			false,
 		},
-        {
+		{
 			"node with only internal IP returns an endpoint with internal IP",
+			"",
 			"",
 			"node1",
 			[]v1.NodeAddress{{v1.NodeInternalIP, "2.3.4.5"}},
@@ -139,13 +153,57 @@ func testNodeSourceEndpoints(t *testing.T) {
 			},
 			false,
 		},
-        {
+		{
 			"node with neither external nor internal IP returns no endpoints",
+			"",
 			"",
 			"node1",
 			[]v1.NodeAddress{},
 			map[string]string{},
 			map[string]string{},
+			[]*endpoint.Endpoint{},
+			false,
+		},
+		{
+			"annotated node without annotation filter returns endpoint",
+			"",
+			"",
+			"node1",
+			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			map[string]string{},
+			map[string]string{
+				"service.beta.kubernetes.io/external-traffic": "OnlyLocal",
+			},
+			[]*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			false,
+		},
+		{
+			"annotated node with matching annotation filter returns endpoint",
+			"service.beta.kubernetes.io/external-traffic in (Global, OnlyLocal)",
+			"",
+			"node1",
+			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			map[string]string{},
+			map[string]string{
+				"service.beta.kubernetes.io/external-traffic": "OnlyLocal",
+			},
+			[]*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			false,
+		},
+		{
+			"annotated node with non-matching annotation filter returns endpoint",
+			"service.beta.kubernetes.io/external-traffic in (Global, OnlyLocal)",
+			"",
+			"node1",
+			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			map[string]string{},
+			map[string]string{
+				"service.beta.kubernetes.io/external-traffic": "SomethingElse",
+			},
 			[]*endpoint.Endpoint{},
 			false,
 		},
@@ -171,6 +229,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			// Create our object under test and get the endpoints.
 			client, err := NewNodeSource(
 				kubernetes,
+				tc.annotationFilter,
 				tc.fqdnTemplate,
 			)
 			require.NoError(t, err)
