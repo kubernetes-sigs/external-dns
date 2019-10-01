@@ -107,6 +107,14 @@ func (ns *nodeSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 	// create endpoints for all nodes
 	for _, node := range nodes {
+		// Check controller annotation to see if we are responsible.
+		controller, ok := node.Annotations[controllerAnnotationKey]
+		if ok && controller != controllerAnnotationValue {
+			log.Debugf("Skipping node %s because controller value does not match, found: %s, required: %s",
+				node.Name, controller, controllerAnnotationValue)
+			continue
+		}
+
 		log.Debugf("creating endpoint for node %s", node.Name)
 
 		// create new endpoint with the information we already have

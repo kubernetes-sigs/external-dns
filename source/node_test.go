@@ -207,6 +207,34 @@ func testNodeSourceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{},
 			false,
 		},
+		{
+			"our controller type is dns-controller",
+			"",
+			"",
+			"node1",
+			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			map[string]string{},
+			map[string]string{
+				controllerAnnotationKey: controllerAnnotationValue,
+			},
+			[]*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			false,
+		},
+		{
+			"different controller types are ignored",
+			"",
+			"",
+			"node1",
+			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			map[string]string{},
+			map[string]string{
+				controllerAnnotationKey: "not-dns-controller",
+			},
+			[]*endpoint.Endpoint{},
+			false,
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			// Create a Kubernetes testing client
