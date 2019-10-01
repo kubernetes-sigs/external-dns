@@ -1,0 +1,189 @@
+package source
+
+import (
+	"testing"
+
+	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
+)
+
+func TestNodeSource(t *testing.T) {
+	//suite.Run(t, new(ServiceSuite))
+	//t.Run("Interface", testServiceSourceImplementsSource)
+	//t.Run("NewNodeSource", testNodeSourceNewNodeSource)
+	t.Run("Endpoints", testNodeSourceEndpoints)
+}
+
+// testNodeSourceNewNodeSource tests that NewNodeService doesn't return an error.
+func testNodeSourceNewNodeSource(t *testing.T) {
+	for _, ti := range []struct {
+		title        string
+		fqdnTemplate string
+		expectError  bool
+	}{
+		{
+			title:        "invalid template",
+			expectError:  true,
+			fqdnTemplate: "{{.Name",
+		},
+		{
+			title:       "valid empty template",
+			expectError: false,
+		},
+		{
+			title:        "valid template",
+			expectError:  false,
+			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
+		},
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			_, err := NewNodeSource(
+				fake.NewSimpleClientset(),
+				ti.fqdnTemplate,
+			)
+
+			if ti.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+// testNodeSourceEndpoints tests that various node generate the correct endpoints.
+func testNodeSourceEndpoints(t *testing.T) {
+	for _, tc := range []struct {
+		title         string
+		fqdnTemplate  string
+		nodeName      string
+		nodeAddresses []v1.NodeAddress
+		labels        map[string]string
+		annotations   map[string]string
+		expected      []*endpoint.Endpoint
+		expectError   bool
+	}{
+		{
+			"node with short hostname returns one endpoint",
+			"",
+			"node1",
+			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			map[string]string{},
+			map[string]string{},
+			[]*endpoint.Endpoint{
+                {RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+            },
+			false,
+		},
+        {
+			"node with fqdn returns one endpoint",
+			"",
+			"node1.example.org",
+			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			map[string]string{},
+			map[string]string{},
+			[]*endpoint.Endpoint{
+                {RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+            },
+			false,
+		},
+		{
+			"node with fqdn template returns endpoint with expanded hostname",
+			"{{.Name}}.example.org",
+			"node1",
+			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			map[string]string{},
+			map[string]string{},
+			[]*endpoint.Endpoint{
+                {RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+            },
+			false,
+		},
+        {
+			"node with fqdn and fqdn template returns one endpoint",
+			"{{.Name}}.example.org",
+			"node1.example.org",
+			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			map[string]string{},
+			map[string]string{},
+			[]*endpoint.Endpoint{
+                {RecordType: "A", DNSName: "node1.example.org.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+            },
+			false,
+		},
+		{
+			"node with both external and internal IP returns an endpoint with external IP",
+			"",
+			"node1",
+			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}, {v1.NodeInternalIP, "2.3.4.5"}},
+			map[string]string{},
+			map[string]string{},
+			[]*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			false,
+		},
+        {
+			"node with only internal IP returns an endpoint with internal IP",
+			"",
+			"node1",
+			[]v1.NodeAddress{{v1.NodeInternalIP, "2.3.4.5"}},
+			map[string]string{},
+			map[string]string{},
+			[]*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"2.3.4.5"}},
+			},
+			false,
+		},
+        {
+			"node with neither external nor internal IP returns no endpoints",
+			"",
+			"node1",
+			[]v1.NodeAddress{},
+			map[string]string{},
+			map[string]string{},
+			[]*endpoint.Endpoint{},
+			false,
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			// Create a Kubernetes testing client
+			kubernetes := fake.NewSimpleClientset()
+
+			node := &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        tc.nodeName,
+					Labels:      tc.labels,
+					Annotations: tc.annotations,
+				},
+				Status: v1.NodeStatus{
+					Addresses: tc.nodeAddresses,
+				},
+			}
+
+			_, err := kubernetes.CoreV1().Nodes().Create(node)
+			require.NoError(t, err)
+
+			// Create our object under test and get the endpoints.
+			client, err := NewNodeSource(
+				kubernetes,
+				tc.fqdnTemplate,
+			)
+			require.NoError(t, err)
+
+			endpoints, err := client.Endpoints()
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			// Validate returned endpoints against desired endpoints.
+			validateEndpoints(t, endpoints, tc.expected)
+		})
+	}
+}
