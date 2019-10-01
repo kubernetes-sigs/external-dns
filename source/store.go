@@ -153,6 +153,12 @@ func ByNames(p ClientGenerator, names []string, cfg *Config) ([]Source, error) {
 // BuildWithConfig allows to generate a Source implementation from the shared config
 func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, error) {
 	switch source {
+	case "node":
+		client, err := p.KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		return NewNodeSource(client, cfg.FQDNTemplate)
 	case "service":
 		client, err := p.KubeClient()
 		if err != nil {
