@@ -51,6 +51,12 @@ func createMockZone(zone string, id string) dns.Zone {
 }
 
 func (client *mockZonesClient) ListByResourceGroupComplete(ctx context.Context, resourceGroupName string, top *int32) (result dns.ZoneListResultIterator, err error) {
+	// pre-iterate to first item to emulate behaviour of Azure SDK
+	err = client.mockZonesClientIterator.NextWithContext(ctx)
+	if err != nil {
+		return *client.mockZonesClientIterator, err
+	}
+
 	return *client.mockZonesClientIterator, nil
 }
 
@@ -120,6 +126,12 @@ func createMockRecordSetMultiWithTTL(name, recordType string, ttl int64, values 
 }
 
 func (client *mockRecordSetsClient) ListAllByDNSZoneComplete(ctx context.Context, resourceGroupName string, zoneName string, top *int32, recordSetNameSuffix string) (result dns.RecordSetListResultIterator, err error) {
+	// pre-iterate to first item to emulate behaviour of Azure SDK
+	err = client.mockRecordSetListIterator.NextWithContext(ctx)
+	if err != nil {
+		return *client.mockRecordSetListIterator, err
+	}
+
 	return *client.mockRecordSetListIterator, nil
 }
 
@@ -176,7 +188,6 @@ func TestAzureRecord(t *testing.T) {
 	results := []dns.ZoneListResult{
 		zlr,
 	}
-
 
 	mockZoneListResultPage := dns.NewZoneListResultPage(func(ctxParam context.Context, zlrParam dns.ZoneListResult) (dns.ZoneListResult, error) {
 		if len(results) > 0 {
@@ -246,7 +257,6 @@ func TestAzureRecord(t *testing.T) {
 	validateAzureEndpoints(t, actual, expected)
 
 }
-
 
 func TestAzureMultiRecord(t *testing.T) {
 

@@ -227,12 +227,6 @@ func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
 	var zones []dns.Zone
 
 	i, err := p.zonesClient.ListByResourceGroupComplete(ctx, p.resourceGroup, nil)
-
-	if err != nil {
-		return nil, err
-	}
-
-	err = i.NextWithContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -269,12 +263,6 @@ func (p *AzureProvider) iterateRecords(ctx context.Context, zoneName string, cal
 	log.Debugf("Retrieving Azure DNS records for zone '%s'.", zoneName)
 
 	i, err := p.recordSetsClient.ListAllByDNSZoneComplete(ctx, p.resourceGroup, zoneName, nil, "")
-
-	if err != nil {
-		return err
-	}
-
-	err = i.NextWithContext(ctx)
 	if err != nil {
 		return err
 	}
