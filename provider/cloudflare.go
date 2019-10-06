@@ -117,8 +117,16 @@ type cloudFlareChange struct {
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
 func NewCloudFlareProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zonesPerPage int, proxiedByDefault bool, dryRun bool) (*CloudFlareProvider, error) {
-	// initialize via API email and API key and returns new API object
-	config, err := cloudflare.New(os.Getenv("CF_API_KEY"), os.Getenv("CF_API_EMAIL"))
+	// initialize via chosen auth method and returns new API object
+	var (
+		config *cloudflare.API
+		err    error
+	)
+	if os.Getenv("CF_API_TOKEN") != "" {
+		config, err = cloudflare.NewWithAPIToken(os.Getenv("CF_API_TOKEN"))
+	} else {
+		config, err = cloudflare.New(os.Getenv("CF_API_KEY"), os.Getenv("CF_API_EMAIL"))
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize cloudflare provider: %v", err)
 	}

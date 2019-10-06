@@ -85,6 +85,7 @@ func main() {
 		CFAPIEndpoint:               cfg.CFAPIEndpoint,
 		CFUsername:                  cfg.CFUsername,
 		CFPassword:                  cfg.CFPassword,
+		ContourLoadBalancerService:  cfg.ContourLoadBalancerService,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
@@ -100,7 +101,7 @@ func main() {
 	// Combine multiple sources into a single, deduplicated source.
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
 
-	domainFilter := provider.NewDomainFilter(cfg.DomainFilter)
+	domainFilter := provider.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
 	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
@@ -121,6 +122,7 @@ func main() {
 				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
 				AssumeRole:           cfg.AWSAssumeRole,
 				APIRetries:           cfg.AWSAPIRetries,
+				PreferCNAME:          cfg.AWSPreferCNAME,
 				DryRun:               cfg.DryRun,
 			},
 		)
@@ -133,6 +135,8 @@ func main() {
 		p, err = provider.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.AWSAssumeRole, cfg.DryRun)
 	case "azure":
 		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.DryRun)
+	case "vinyldns":
+		p, err = provider.NewVinylDNSProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "cloudflare":
 		p, err = provider.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareZonesPerPage, cfg.CloudflareProxied, cfg.DryRun)
 	case "rcodezero":
@@ -175,7 +179,14 @@ func main() {
 			},
 		)
 	case "coredns", "skydns":
-		p, err = provider.NewCoreDNSProvider(domainFilter, cfg.DryRun)
+		p, err = provider.NewCoreDNSProvider(domainFilter, cfg.CoreDNSPrefix, cfg.DryRun)
+	case "rdns":
+		p, err = provider.NewRDNSProvider(
+			provider.RDNSConfig{
+				DomainFilter: domainFilter,
+				DryRun:       cfg.DryRun,
+			},
+		)
 	case "exoscale":
 		p, err = provider.NewExoscaleProvider(cfg.ExoscaleEndpoint, cfg.ExoscaleAPIKey, cfg.ExoscaleAPISecret, cfg.DryRun, provider.ExoscaleWithDomain(domainFilter), provider.ExoscaleWithLogging()), nil
 	case "inmemory":

@@ -99,7 +99,9 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 	}
 
 	for _, ep := range endpoints {
-		ep.Labels = endpoint.NewLabels()
+		if ep.Labels == nil {
+			ep.Labels = endpoint.NewLabels()
+		}
 		if labels, ok := labelMap[ep.DNSName]; ok {
 			for k, v := range labels {
 				ep.Labels[k] = v
@@ -200,12 +202,13 @@ type prefixNameMapper struct {
 var _ nameMapper = prefixNameMapper{}
 
 func newPrefixNameMapper(prefix string) prefixNameMapper {
-	return prefixNameMapper{prefix: prefix}
+	return prefixNameMapper{prefix: strings.ToLower(prefix)}
 }
 
 func (pr prefixNameMapper) toEndpointName(txtDNSName string) string {
-	if strings.HasPrefix(txtDNSName, pr.prefix) {
-		return strings.TrimPrefix(txtDNSName, pr.prefix)
+	lowerDNSName := strings.ToLower(txtDNSName)
+	if strings.HasPrefix(lowerDNSName, pr.prefix) {
+		return strings.TrimPrefix(lowerDNSName, pr.prefix)
 	}
 	return ""
 }

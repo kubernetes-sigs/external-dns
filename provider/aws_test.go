@@ -860,6 +860,7 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 	} {
 		provider, _ := newAWSProvider(t, NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), NewZoneIDFilter([]string{}), NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, []*endpoint.Endpoint{})
 
+		// Test dualstack and ipv4 load balancer targets
 		records := []*endpoint.Endpoint{
 			{
 				DNSName:    "create-test.zone-1.ext-dns-test-2.teapot.zalan.do",
@@ -871,6 +872,18 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 						Value: key,
 					},
 				},
+			},
+			{
+				DNSName:    "create-test-dualstack.zone-1.ext-dns-test-2.teapot.zalan.do",
+				Targets:    endpoint.Targets{"bar.eu-central-1.elb.amazonaws.com"},
+				RecordType: endpoint.RecordTypeCNAME,
+				ProviderSpecific: endpoint.ProviderSpecific{
+					endpoint.ProviderSpecificProperty{
+						Name:  providerSpecificEvaluateTargetHealth,
+						Value: key,
+					},
+				},
+				Labels: map[string]string{endpoint.DualstackLabelKey: "true"},
 			},
 		}
 
@@ -886,7 +899,25 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 					HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
 				},
 				Name: aws.String("create-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
-				Type: aws.String(endpoint.RecordTypeA),
+				Type: aws.String(route53.RRTypeA),
+			},
+			{
+				AliasTarget: &route53.AliasTarget{
+					DNSName:              aws.String("bar.eu-central-1.elb.amazonaws.com."),
+					EvaluateTargetHealth: aws.Bool(evaluateTargetHealth),
+					HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
+				},
+				Name: aws.String("create-test-dualstack.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type: aws.String(route53.RRTypeA),
+			},
+			{
+				AliasTarget: &route53.AliasTarget{
+					DNSName:              aws.String("bar.eu-central-1.elb.amazonaws.com."),
+					EvaluateTargetHealth: aws.Bool(evaluateTargetHealth),
+					HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
+				},
+				Name: aws.String("create-test-dualstack.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type: aws.String(route53.RRTypeAaaa),
 			},
 		})
 	}
@@ -894,18 +925,21 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 
 func TestAWSisLoadBalancer(t *testing.T) {
 	for _, tc := range []struct {
-		target     string
-		recordType string
-		expected   bool
+		target      string
+		recordType  string
+		preferCNAME bool
+		expected    bool
 	}{
-		{"bar.eu-central-1.elb.amazonaws.com", endpoint.RecordTypeCNAME, true},
-		{"foo.example.org", endpoint.RecordTypeCNAME, false},
+		{"bar.eu-central-1.elb.amazonaws.com", endpoint.RecordTypeCNAME, false, true},
+		{"bar.eu-central-1.elb.amazonaws.com", endpoint.RecordTypeCNAME, true, false},
+		{"foo.example.org", endpoint.RecordTypeCNAME, false, false},
+		{"foo.example.org", endpoint.RecordTypeCNAME, true, false},
 	} {
 		ep := &endpoint.Endpoint{
 			Targets:    endpoint.Targets{tc.target},
 			RecordType: tc.recordType,
 		}
-		assert.Equal(t, tc.expected, isAWSLoadBalancer(ep))
+		assert.Equal(t, tc.expected, useAlias(ep, tc.preferCNAME))
 	}
 }
 
@@ -1212,5 +1246,5 @@ func addZoneTags(tagMap map[string][]*route53.Tag, zoneID string, tags map[strin
 }
 
 func validateRecords(t *testing.T, records []*route53.ResourceRecordSet, expected []*route53.ResourceRecordSet) {
-	assert.Equal(t, expected, records)
+	assert.ElementsMatch(t, expected, records)
 }

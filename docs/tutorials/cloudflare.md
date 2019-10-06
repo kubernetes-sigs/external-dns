@@ -18,7 +18,10 @@ Snippet from [Cloudflare - Getting Started](https://api.cloudflare.com/#getting-
 
 >The Cloudflare API is a RESTful API based on HTTPS requests and JSON responses. If you are registered with Cloudflare, you can obtain your API key from the bottom of the "My Account" page, found here: [Go to My account](https://dash.cloudflare.com/profile).
 
-The environment vars `CF_API_KEY` and `CF_API_EMAIL` will be needed to run ExternalDNS with Cloudflare.
+API Token will be preferred for authentication if `CF_API_TOKEN` environment variable is set. 
+Otherwise `CF_API_KEY` and `CF_API_EMAIL` should be set to run ExternalDNS with Cloudflare.
+
+When using API Token authentication the token should be granted Zone `Read` and DNS `Edit` privileges.
 
 ## Deploy ExternalDNS
 
@@ -165,6 +168,7 @@ of the DNS zone (e.g. 'www.example.com').
 
 By setting the TTL annotation on the service, you have to pass a valid TTL, which must be 120 or above.
 This annotation is optional, if you won't set it, it will be 1 (automatic) which is 300.
+For Cloudflare proxied entries, set the TTL annotation to 1 (automatic), or do not set it.
 
 ExternalDNS uses this annotation to determine what services should be registered with DNS.  Removing the annotation
 will cause ExternalDNS to remove the corresponding DNS records.

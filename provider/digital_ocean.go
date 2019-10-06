@@ -17,16 +17,14 @@ limitations under the License.
 package provider
 
 import (
-	goctx "context"
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/digitalocean/godo"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
-
-	"github.com/digitalocean/godo"
-	"github.com/digitalocean/godo/context"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
@@ -262,7 +260,7 @@ func (p *DigitalOceanProvider) submitChanges(changes []*DigitalOceanChange) erro
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *DigitalOceanProvider) ApplyChanges(ctx goctx.Context, changes *plan.Changes) error {
+func (p *DigitalOceanProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	combinedChanges := make([]*DigitalOceanChange, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 
 	combinedChanges = append(combinedChanges, newDigitalOceanChanges(DigitalOceanCreate, changes.Create)...)

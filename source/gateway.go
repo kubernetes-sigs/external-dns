@@ -273,6 +273,15 @@ func (sc *gatewaySource) endpointsFromGatewayConfig(config istiomodel.Config) ([
 			if host == "" {
 				continue
 			}
+
+			parts := strings.Split(host, "/")
+
+			// If the input hostname is of the form my-namespace/foo.bar.com, remove the namespace
+			// before appending it to the list of endpoints to create
+			if len(parts) == 2 {
+				host = parts[1]
+			}
+
 			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific)...)
 		}
 	}

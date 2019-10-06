@@ -20,13 +20,14 @@ import (
 	"errors"
 	"testing"
 
+	cfclient "github.com/cloudfoundry-community/go-cfclient"
+	contour "github.com/heptio/contour/apis/generated/clientset/versioned"
+	fakeContour "github.com/heptio/contour/apis/generated/clientset/versioned/fake"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 	istiomodel "istio.io/istio/pilot/pkg/model"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
-
-	cfclient "github.com/cloudfoundry-community/go-cfclient"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/suite"
 )
 
 type MockClientGenerator struct {
@@ -34,6 +35,7 @@ type MockClientGenerator struct {
 	kubeClient         kubernetes.Interface
 	istioClient        istiomodel.ConfigStore
 	cloudFoundryClient *cfclient.Client
+	contourClient      contour.Interface
 }
 
 func (m *MockClientGenerator) KubeClient() (kubernetes.Interface, error) {
@@ -63,6 +65,15 @@ func (m *MockClientGenerator) CloudFoundryClient(cfAPIEndpoint string, cfUsernam
 	return nil, args.Error(1)
 }
 
+func (m *MockClientGenerator) ContourClient() (contour.Interface, error) {
+	args := m.Called()
+	if args.Error(1) == nil {
+		m.contourClient = args.Get(0).(contour.Interface)
+		return m.contourClient, nil
+	}
+	return nil, args.Error(1)
+}
+
 type ByNamesTestSuite struct {
 	suite.Suite
 }
@@ -71,8 +82,9 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 	mockClientGenerator := new(MockClientGenerator)
 	mockClientGenerator.On("KubeClient").Return(fake.NewSimpleClientset(), nil)
 	mockClientGenerator.On("IstioClient").Return(NewFakeConfigStore(), nil)
+	mockClientGenerator.On("ContourClient").Return(fakeContour.NewSimpleClientset(), nil)
 
-	sources, err := ByNames(mockClientGenerator, []string{"service", "ingress", "istio-gateway", "istio-virtual-service", "fake"}, minimalConfig)
+	sources, err := ByNames(mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-ingressroute", "fake"}, minimalConfig)
 	suite.NoError(err, "should not generate errors")
 	suite.Len(sources, 5, "should generate all five sources")
 }
@@ -109,7 +121,8 @@ func (suite *ByNamesTestSuite) TestKubeClientFails() {
 	_, err = ByNames(mockClientGenerator, []string{"istio-gateway"}, minimalConfig)
 	suite.Error(err, "should return an error if kubernetes client cannot be created")
 
-	_, err = ByNames(mockClientGenerator, []string{"istio-virtual-service"}, minimalConfig)
+	_, err = ByNames(mockClientGenerator, []string{"contour-ingressroute"}, minimalConfig)
+
 	suite.Error(err, "should return an error if kubernetes client cannot be created")
 }
 
@@ -117,12 +130,13 @@ func (suite *ByNamesTestSuite) TestIstioClientFails() {
 	mockClientGenerator := new(MockClientGenerator)
 	mockClientGenerator.On("KubeClient").Return(fake.NewSimpleClientset(), nil)
 	mockClientGenerator.On("IstioClient").Return(nil, errors.New("foo"))
+	mockClientGenerator.On("ContourClient").Return(nil, errors.New("foo"))
 
 	_, err := ByNames(mockClientGenerator, []string{"istio-gateway"}, minimalConfig)
 	suite.Error(err, "should return an error if istio client cannot be created")
 
-	_, err = ByNames(mockClientGenerator, []string{"istio-virtual-service"}, minimalConfig)
-	suite.Error(err, "should return an error if istio client cannot be created")
+	_, err = ByNames(mockClientGenerator, []string{"contour-ingressroute"}, minimalConfig)
+	suite.Error(err, "should return an error if contour client cannot be created")
 }
 
 func TestByNames(t *testing.T) {
@@ -131,4 +145,5 @@ func TestByNames(t *testing.T) {
 
 var minimalConfig = &Config{
 	IstioIngressGatewayServices: []string{"istio-system/istio-ingressgateway"},
+	ContourLoadBalancerService:  "heptio-contour/contour",
 }

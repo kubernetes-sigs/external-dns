@@ -43,7 +43,7 @@ ExternalDNS' current release is `v0.5`. This version allows you to keep selected
 * [RFC2136](https://tools.ietf.org/html/rfc2136)
 * [NS1](https://ns1.com/)
 * [TransIP](https://www.transip.eu/domain-name/)
-
+* [VinylDNS](https://www.vinyldns.io)
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` (or greater) with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -53,7 +53,14 @@ Note that all flags can be replaced with environment variables; for instance,
 
 ## Status of providers
 
-ExternalDNS supports multiple DNS providers which have been implemented by the [ExternalDNS contributors](https://github.com/kubernetes-incubator/external-dns/graphs/contributors). Maintaining all of those in a central repository is a challenge and we have limited resources to test changes. This means that it is very hard to test all providers for possible regressions and, as written in the [Contributing](## Contributing) section, we encourage contributors to step in as maintainers for the individual providers and help by testing the integrations.
+ExternalDNS supports multiple DNS providers which have been implemented by the [ExternalDNS contributors](https://github.com/kubernetes-incubator/external-dns/graphs/contributors). Maintaining all of those in a central repository is a challenge and we have limited resources to test changes. This means that it is very hard to test all providers for possible regressions and, as written in the [Contributing](#Contributing) section, we encourage contributors to step in as maintainers for the individual providers and help by testing the integrations.
+
+End-to-end testing of ExternalDNS is currently
+[performed](https://github.com/zalando-incubator/kubernetes-on-aws/blob/dev/test/e2e/external_dns.go)
+in the separate
+[kubernetes-on-aws](https://github.com/zalando-incubator/kubernetes-on-aws)
+repository.
+
 We define the following stability levels for providers:
 
 - **Stable**: Used for smoke tests before a release, used in production and maintainers are active.
@@ -83,7 +90,8 @@ The following table clarifies the current status of the providers according to t
 | RFC2136 | Alpha |
 | NS1 | Alpha |
 | TransIP | Alpha |
-
+| VinylDNS | Alpha |
+| RancherDNS | Alpha |
 
 ## Running ExternalDNS:
 
@@ -97,24 +105,37 @@ The are two ways of running ExternalDNS:
 The following tutorials are provided:
 
 * [Alibaba Cloud](docs/tutorials/alibabacloud.md)
-* [AWS (Route53)](docs/tutorials/aws.md)
-* [AWS (Service Discovery)](docs/tutorials/aws-sd.md)
+* AWS
+	* [ALB Ingress Controller](docs/tutorials/alb-ingress.md)
+	* [Route53](docs/tutorials/aws.md)
+		* [Same domain for public and private Route53 zones](docs/tutorials/public-private-route53.md)
+	* [Service Discovery](docs/tutorials/aws-sd.md)
 * [Azure](docs/tutorials/azure.md)
-* [CoreDNS](docs/tutorials/coredns.md)
 * [Cloudflare](docs/tutorials/cloudflare.md)
-* [RcodeZero](docs/tutorials/rcodezero.md)
+* [CoreDNS](docs/tutorials/coredns.md)
 * [DigitalOcean](docs/tutorials/digitalocean.md)
-* [Infoblox](docs/tutorials/infoblox.md)
+* [DNSimple](docs/tutorials/dnsimple.md)
 * [Dyn](docs/tutorials/dyn.md)
+* [Exoscale](docs/tutorials/exoscale.md)
+* [ExternalName Services](docs/tutorials/externalname.md)
 * Google Container Engine
 	* [Using Google's Default Ingress Controller](docs/tutorials/gke.md)
 	* [Using the Nginx Ingress Controller](docs/tutorials/nginx-ingress.md)
-* [Exoscale](docs/tutorials/exoscale.md)
-* [Oracle Cloud Infrastructure (OCI) DNS](docs/tutorials/oracle.md)
+* [Headless Services](docs/tutorials/hostport.md)
+* [Infoblox](docs/tutorials/infoblox.md)
+* [Istio Gateway Source](docs/tutorials/istio.md)
+* [Kubernetes Security Context](docs/tutorials/security-context.md)
 * [Linode](docs/tutorials/linode.md)
-* [RFC2136](docs/tutorials/rfc2136.md)
+* [Nginx Ingress Controller](docs/tutorials/nginx-ingress.md)
 * [NS1](docs/tutorials/ns1.md)
+* [OpenStack Designate](docs/tutorials/designate.md)
+* [Oracle Cloud Infrastructure (OCI) DNS](docs/tutorials/oracle.md)
+* [PowerDNS](docs/tutorials/pdns.md)
+* [RcodeZero](docs/tutorials/rcodezero.md)
+* [RancherDNS (RDNS)](docs/tutorials/rdns.md)
+* [RFC2136](docs/tutorials/rfc2136.md)
 * [TransIP](docs/tutorials/transip.md)
+* [VinylDNS](docs/tutorials/vinyldns.md)
 
 ### Running Locally
 
@@ -141,7 +162,6 @@ support](https://github.com/golang/go/wiki/Modules#installing-and-activating-mod
 Assuming Go has been setup with module support it can be built simply by running:
 
 ```console
-$ export GO111MODULE=on # needed if the project is checked out in your $GOPATH.
 $ make
 ```
 

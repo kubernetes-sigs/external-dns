@@ -192,6 +192,28 @@ func hasTrailingDot(target string) bool {
 	return strings.HasSuffix(target, ".")
 }
 
+func TestGoogleZonesIDFilter(t *testing.T) {
+	provider := newGoogleProviderZoneOverlap(t, NewDomainFilter([]string{"cluster.local."}), NewZoneIDFilter([]string{"10002"}), false, []*endpoint.Endpoint{})
+
+	zones, err := provider.Zones()
+	require.NoError(t, err)
+
+	validateZones(t, zones, map[string]*dns.ManagedZone{
+		"internal-2": {Name: "internal-2", DnsName: "cluster.local.", Id: 10002},
+	})
+}
+
+func TestGoogleZonesNameFilter(t *testing.T) {
+	provider := newGoogleProviderZoneOverlap(t, NewDomainFilter([]string{"cluster.local."}), NewZoneIDFilter([]string{"internal-2"}), false, []*endpoint.Endpoint{})
+
+	zones, err := provider.Zones()
+	require.NoError(t, err)
+
+	validateZones(t, zones, map[string]*dns.ManagedZone{
+		"internal-2": {Name: "internal-2", DnsName: "cluster.local.", Id: 10002},
+	})
+}
+
 func TestGoogleZones(t *testing.T) {
 	provider := newGoogleProvider(t, NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), NewZoneIDFilter([]string{""}), false, []*endpoint.Endpoint{})
 
@@ -560,6 +582,41 @@ func validateChangeRecord(t *testing.T, record *dns.ResourceRecordSet, expected 
 	assert.Equal(t, expected.Rrdatas, record.Rrdatas)
 	assert.Equal(t, expected.Ttl, record.Ttl)
 	assert.Equal(t, expected.Type, record.Type)
+}
+
+func newGoogleProviderZoneOverlap(t *testing.T, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, records []*endpoint.Endpoint) *GoogleProvider {
+	provider := &GoogleProvider{
+		project:                  "zalando-external-dns-test",
+		dryRun:                   false,
+		domainFilter:             domainFilter,
+		zoneIDFilter:             zoneIDFilter,
+		resourceRecordSetsClient: &mockResourceRecordSetsClient{},
+		managedZonesClient:       &mockManagedZonesClient{},
+		changesClient:            &mockChangesClient{},
+	}
+
+	createZone(t, provider, &dns.ManagedZone{
+		Name:    "internal-1",
+		DnsName: "cluster.local.",
+		Id:      10001,
+	})
+
+	createZone(t, provider, &dns.ManagedZone{
+		Name:    "internal-2",
+		DnsName: "cluster.local.",
+		Id:      10002,
+	})
+
+	createZone(t, provider, &dns.ManagedZone{
+		Name:    "internal-3",
+		DnsName: "cluster.local.",
+		Id:      10003,
+	})
+
+	provider.dryRun = dryRun
+
+	return provider
+
 }
 
 func newGoogleProvider(t *testing.T, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, records []*endpoint.Endpoint) *GoogleProvider {
