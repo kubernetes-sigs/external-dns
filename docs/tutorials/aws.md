@@ -43,7 +43,6 @@ Create a DNS zone which will contain the managed DNS records.
 $ aws route53 create-hosted-zone --name "external-dns-test.my-org.com." --caller-reference "external-dns-test-$(date +%s)"
 ```
 
-
 Make a note of the ID of the hosted zone you just created, which will serve as the value for my-hostedzone-identifier.
 
 ```console
@@ -66,6 +65,8 @@ In this case it's the ones shown above but your's will differ.
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
 Then apply one of the following manifests file to deploy ExternalDNS. You can check if your cluster has RBAC by `kubectl api-versions | grep rbac.authorization.k8s.io`.
+
+For clusters with RBAC enabled, be sure to choose the correct `namespace`.
 
 ### Manifest (for clusters without RBAC enabled)
 ```yaml
@@ -162,8 +163,6 @@ spec:
       securityContext:
         fsGroup: 65534 # For ExternalDNS to be able to read Kubernetes and AWS token files
 ```
-
-
 
 ## Arguments
 

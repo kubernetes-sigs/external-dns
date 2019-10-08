@@ -194,7 +194,9 @@ Locally run a single sync loop of ExternalDNS.
 $ external-dns --registry txt --txt-owner-id my-cluster-id --provider google --google-project example-project --source service --once --dry-run
 ```
 
-This should output the DNS records it will modify to match the managed zone with the DNS records you desire. Note TXT records having `my-cluster-id` value embedded. Those are used to ensure that ExternalDNS is aware of the records it manages.
+This should output the DNS records it will modify to match the managed zone with the DNS records you desire. It also assumes you are running in the `default` namespace. See the [FAQ](docs/faq.md) for more information regarding namespaces.
+
+Note: TXT records will have `my-cluster-id` value embedded. Those are used to ensure that ExternalDNS is aware of the records it manages.
 
 Once you're satisfied with the result, you can run ExternalDNS like you would run it in your cluster: as a control loop, and **not in dry-run** mode:
 
