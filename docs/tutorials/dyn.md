@@ -25,15 +25,17 @@ In case of the dyn provider, the flag `--zone-id-filter` is mandatory as it spec
 
 Create a deployment file called `externaldns.yaml` with the following contents:
 
-```
-$ cat > externaldns.yaml <<EOF
-apiVersion: extensions/v1beta1
+```yaml
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: external-dns
 spec:
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: external-dns
   template:
     metadata:
       labels:

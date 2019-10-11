@@ -126,7 +126,7 @@ According to the `nginx-ingress-controller` [docs](https://github.com/kubernetes
 For example if your `nginx-ingress-controller` Service's name is `nginx-ingress-controller-svc` and it's in the `default` namespace the start of your resource YAML might look like the following. Note the second to last line.
 
 ```
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx-ingress-controller
