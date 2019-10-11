@@ -32,6 +32,7 @@ import (
 	istiocontroller "istio.io/istio/pilot/pkg/config/kube/crd/controller"
 	istiomodel "istio.io/istio/pilot/pkg/model"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -219,13 +220,26 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 // uses KubeMaster and KubeConfig attributes to connect to the cluster. If
 // KubeConfig isn't provided it defaults to using the recommended default.
 func NewKubeClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) (*kubernetes.Clientset, error) {
+	log.Infof("Instantiating new Kubernetes client")
+
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
 			kubeConfig = clientcmd.RecommendedHomeFile
 		}
 	}
+	log.Debugf("kubeMaster: %s", kubeMaster)
+	log.Debugf("kubeConfig: %s", kubeConfig)
 
-	config, err := clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
+	// evaluate whether to use kubeConfig-file or serviceaccount-token
+	var config *rest.Config
+	var err error
+	if kubeConfig == "" {
+		log.Infof("Using inCluster-config based on serviceaccount-token")
+		config, err = rest.InClusterConfig()
+	} else {
+		log.Infof("Using kubeConfig")
+		config, err = clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
+	}
 	if err != nil {
 		return nil, err
 	}
