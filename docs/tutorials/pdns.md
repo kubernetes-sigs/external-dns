@@ -23,13 +23,16 @@ Deploying external DNS for PowerDNS is actually nearly identical to deploying
 it for other providers. This is what a sample `deployment.yaml` looks like:
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: deploy-external-dns
+  name: external-dns
 spec:
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: external-dns
   template:
     metadata:
       labels:
@@ -106,11 +109,14 @@ subjects:
 Spin up a simple "Hello World" HTTP server with the following spec (`kubectl apply -f`):
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: echo
 spec:
+  selector:
+    matchLabels:
+      app: echo
   template:
     metadata:
       labels:

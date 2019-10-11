@@ -9,7 +9,7 @@ Consult [External DNS nginx ingress docs](nginx-ingress.md) for installation gui
 Specify `ingress-class` in nginx-ingress-controller container args:
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
@@ -112,7 +112,7 @@ Consult [External DNS nginx ingress docs](nginx-ingress.md) for installation gui
 Make sure to specify `ingress-class` in nginx-ingress-controller container args:
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
