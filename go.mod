@@ -49,7 +49,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/natefinch/lumberjack v2.0.0+incompatible // indirect
 	github.com/nesv/go-dynect v0.6.0
-	github.com/nic-at/rc0go v1.1.0
+	github.com/nic-at/rc0go v1.1.1
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/oracle/oci-go-sdk v1.8.0
