@@ -131,6 +131,8 @@ type AWSProvider struct {
 	// filter hosted zones by tags
 	zoneTagFilter provider.ZoneTagFilter
 	preferCNAME   bool
+	// find best zone match
+	awsUseBestZoneMatch bool
 }
 
 // AWSConfig contains configuration to create a new AWS provider.
@@ -146,6 +148,7 @@ type AWSConfig struct {
 	APIRetries           int
 	PreferCNAME          bool
 	DryRun               bool
+	AwsUseBestZoneMatch  bool
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
@@ -185,6 +188,7 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 		evaluateTargetHealth: awsConfig.EvaluateTargetHealth,
 		preferCNAME:          awsConfig.PreferCNAME,
 		dryRun:               awsConfig.DryRun,
+		awsUseBestZoneMatch:  awsConfig.AwsUseBestZoneMatch,
 	}
 
 	return provider, nil
@@ -408,7 +412,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes []*route53.Chan
 	}
 
 	// separate into per-zone change sets to be passed to the API.
-	changesByZone := changesByZone(zones, changes)
+	changesByZone := changesByZone(zones, changes, p.awsUseBestZoneMatch)
 	if len(changesByZone) == 0 {
 		log.Info("All records are already up to date, there are no changes for the matching hosted zones")
 	}
@@ -659,22 +663,25 @@ func sortChangesByActionNameType(cs []*route53.Change) []*route53.Change {
 }
 
 // changesByZone separates a multi-zone change into a single change per zone.
-func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Change) map[string][]*route53.Change {
+func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Change, awsUseBestZoneMatch bool) map[string][]*route53.Change {
 	changes := make(map[string][]*route53.Change)
 
 	for _, z := range zones {
 		changes[aws.StringValue(z.Id)] = []*route53.Change{}
 	}
-
 	for _, c := range changeSet {
-		hostname := provider.EnsureTrailingDot(aws.StringValue(c.ResourceRecordSet.Name))
-
-		zones := suitableZones(hostname, zones)
-		if len(zones) == 0 {
+		hostname := ensureTrailingDot(aws.StringValue(c.ResourceRecordSet.Name))
+		var thisZones []*route53.HostedZone
+		if awsUseBestZoneMatch {
+			thisZones = findBestZone(hostname, zones)
+		} else {
+			thisZones = suitableZones(hostname, zones)
+		}
+		if len(thisZones) == 0 {
 			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", c.String())
 			continue
 		}
-		for _, z := range zones {
+		for _, z := range thisZones {
 			changes[aws.StringValue(z.Id)] = append(changes[aws.StringValue(z.Id)], c)
 			log.Debugf("Adding %s to zone %s [Id: %s]", hostname, aws.StringValue(z.Name), aws.StringValue(z.Id))
 		}
@@ -714,6 +721,31 @@ func suitableZones(hostname string, zones map[string]*route53.HostedZone) []*rou
 		matchingZones = append(matchingZones, publicZone)
 	}
 
+	return matchingZones
+}
+
+// Return the list of zones that cover the longest suffix.
+func findBestZone(hostname string, zones map[string]*route53.HostedZone) []*route53.HostedZone {
+	// return only one zone with the longest match.
+	// This allows to only create the record in the best matching domain name.
+	var matchingZones []*route53.HostedZone
+	var maxNameLength int
+	for _, zone := range zones {
+		if aws.StringValue(zone.Name) == hostname || strings.HasSuffix(hostname, "."+aws.StringValue(zone.Name)) {
+			// The hosname is  zone.name or ends with zone.name as suffix.
+			if len(aws.StringValue(zone.Name)) >= maxNameLength {
+				if len(aws.StringValue(zone.Name)) == maxNameLength {
+					// if len (zone.name) is equal to the longest zone found, append to the current response.
+					// This should not be a possible scenario
+					matchingZones = append(matchingZones, zone)
+				} else {
+					// if len (zone.name) is greater than the last zone.name found, replace the array with a new one
+					maxNameLength = len(aws.StringValue(zone.Name))
+					matchingZones = []*route53.HostedZone{zone}
+				}
+			}
+		}
+	}
 	return matchingZones
 }
 

@@ -175,6 +175,7 @@ func main() {
 				APIRetries:           cfg.AWSAPIRetries,
 				PreferCNAME:          cfg.AWSPreferCNAME,
 				DryRun:               cfg.DryRun,
+				AwsUseBestZoneMatch:  cfg.AwsUseBestZoneMatch,
 			},
 		)
 	case "aws-sd":

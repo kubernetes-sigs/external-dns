@@ -142,6 +142,7 @@ type Config struct {
 	TransIPAccountName                string
 	TransIPPrivateKeyFile             string
 	DigitalOceanAPIPageSize           int
+	AwsUseBestZoneMatch               bool
 }
 
 var defaultConfig = &Config{
@@ -241,6 +242,7 @@ var defaultConfig = &Config{
 	TransIPAccountName:          "",
 	TransIPPrivateKeyFile:       "",
 	DigitalOceanAPIPageSize:     50,
+	AwsUseBestZoneMatch:         false,
 }
 
 // NewConfig returns new Config object
@@ -415,6 +417,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("metrics-address", "Specify where to serve the metrics and health check endpoint (default: :7979)").Default(defaultConfig.MetricsAddress).StringVar(&cfg.MetricsAddress)
 	app.Flag("log-level", "Set the level of logging. (default: info, options: panic, debug, info, warning, error, fatal").Default(defaultConfig.LogLevel).EnumVar(&cfg.LogLevel, allLogLevelsAsStrings()...)
 
+	// Best Zone Match flag
+	app.Flag("aws-best-zone-match", "Search for the longest zone suffix possible when filtering zones (default: disabled)").Default(strconv.FormatBool(defaultConfig.AwsUseBestZoneMatch)).BoolVar(&cfg.AwsUseBestZoneMatch)
 	_, err := app.Parse(args)
 	if err != nil {
 		return err

@@ -637,7 +637,7 @@ func TestAWSChangesByZones(t *testing.T) {
 		},
 	}
 
-	changesByZone := changesByZone(zones, changes)
+	changesByZone := changesByZone(zones, changes, false)
 	require.Len(t, changesByZone, 3)
 
 	validateAWSChangeRecords(t, changesByZone["foo-example-org"], []*route53.Change{
@@ -681,6 +681,40 @@ func TestAWSChangesByZones(t *testing.T) {
 			Action: aws.String(route53.ChangeActionDelete),
 			ResourceRecordSet: &route53.ResourceRecordSet{
 				Name: aws.String("wambo.bar.example.org"), TTL: aws.Int64(20),
+			},
+		},
+	})
+}
+
+func TestAWSChangesByZonesWithBestzone(t *testing.T) {
+	changes := []*route53.Change{
+		{
+			Action: aws.String(route53.ChangeActionCreate),
+			ResourceRecordSet: &route53.ResourceRecordSet{
+				Name: aws.String("bar.foo.example.org"), TTL: aws.Int64(1),
+			},
+		},
+	}
+
+	zones := map[string]*route53.HostedZone{
+		"foo-example-org": {
+			Id:   aws.String("foo-example-org"),
+			Name: aws.String("foo.example.org."),
+		},
+		"example-org": {
+			Id:   aws.String("example-org"),
+			Name: aws.String("example.org."),
+		},
+	}
+
+	changesByZone := changesByZone(zones, changes, true)
+	require.Len(t, changesByZone, 1)
+
+	validateAWSChangeRecords(t, changesByZone["foo-example-org"], []*route53.Change{
+		{
+			Action: aws.String(route53.ChangeActionCreate),
+			ResourceRecordSet: &route53.ResourceRecordSet{
+				Name: aws.String("bar.foo.example.org"), TTL: aws.Int64(1),
 			},
 		},
 	})
