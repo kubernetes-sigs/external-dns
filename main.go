@@ -75,6 +75,8 @@ func main() {
 		Compatibility:               cfg.Compatibility,
 		PublishInternal:             cfg.PublishInternal,
 		PublishHostIP:               cfg.PublishHostIP,
+		CreateNodePortSRV:           cfg.CreateNodePortSRV,
+		NodePortNodeRole:            cfg.NodePortNodeRole,
 		ConnectorServer:             cfg.ConnectorSourceServer,
 		CRDSourceAPIVersion:         cfg.CRDSourceAPIVersion,
 		CRDSourceKind:               cfg.CRDSourceKind,

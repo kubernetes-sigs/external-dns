@@ -27,7 +27,8 @@ import (
 )
 
 const (
-	passwordMask = "******"
+	passwordMask        = "******"
+	defaultNodePortRole = "node"
 )
 
 var (
@@ -51,6 +52,8 @@ type Config struct {
 	Compatibility               string
 	PublishInternal             bool
 	PublishHostIP               bool
+	CreateNodePortSRV           bool
+	NodePortNodeRole            string
 	ConnectorSourceServer       string
 	Provider                    string
 	GoogleProject               string
@@ -279,6 +282,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule)").Default(defaultConfig.Compatibility).EnumVar(&cfg.Compatibility, "", "mate", "molecule")
 	app.Flag("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)").BoolVar(&cfg.PublishInternal)
 	app.Flag("publish-host-ip", "Allow external-dns to publish host-ip for headless services (optional)").BoolVar(&cfg.PublishHostIP)
+	app.Flag("create-node-port-srv", "Creates an SRV record for NodePorts alongside the other DNS records (optional)").BoolVar(&cfg.CreateNodePortSRV)
+	app.Flag("node-port-node-role", "The role label to filter nodes by when selecting NodePort targets (defaults to 'node', the k8s default for all worker nodes)").Default(defaultNodePortRole).StringVar(&cfg.NodePortNodeRole)
 	app.Flag("connector-source-server", "The server to connect for connector source, valid only when using connector source").Default(defaultConfig.ConnectorSourceServer).StringVar(&cfg.ConnectorSourceServer)
 	app.Flag("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source").Default(defaultConfig.CRDSourceAPIVersion).StringVar(&cfg.CRDSourceAPIVersion)
 	app.Flag("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion").Default(defaultConfig.CRDSourceKind).StringVar(&cfg.CRDSourceKind)

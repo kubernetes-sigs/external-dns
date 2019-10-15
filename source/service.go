@@ -42,6 +42,7 @@ import (
 
 const (
 	defaultTargetsCapacity = 10
+	nodeRoleLabelKey       = "kubernetes.io/role"
 )
 
 // serviceSource is an implementation of Source for Kubernetes service objects.
@@ -60,6 +61,8 @@ type serviceSource struct {
 	ignoreHostnameAnnotation bool
 	publishInternal          bool
 	publishHostIP            bool
+	createNodePortSRV        bool
+	nodePortNodeRole         string
 	serviceInformer          coreinformers.ServiceInformer
 	podInformer              coreinformers.PodInformer
 	nodeInformer             coreinformers.NodeInformer
@@ -67,15 +70,15 @@ type serviceSource struct {
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, cfg *Config) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
 	)
-	if fqdnTemplate != "" {
+	if cfg.FQDNTemplate != "" {
 		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
 			"trimPrefix": strings.TrimPrefix,
-		}).Parse(fqdnTemplate)
+		}).Parse(cfg.FQDNTemplate)
 		if err != nil {
 			return nil, err
 		}
@@ -83,7 +86,7 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 
 	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed
-	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
+	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(cfg.Namespace))
 	serviceInformer := informerFactory.Core().V1().Services()
 	podInformer := informerFactory.Core().V1().Pods()
 	nodeInformer := informerFactory.Core().V1().Nodes()
@@ -125,20 +128,22 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	// Transform the slice into a map so it will
 	// be way much easier and fast to filter later
 	serviceTypes := make(map[string]struct{})
-	for _, serviceType := range serviceTypeFilter {
+	for _, serviceType := range cfg.ServiceTypeFilter {
 		serviceTypes[serviceType] = struct{}{}
 	}
 
 	return &serviceSource{
 		client:                   kubeClient,
-		namespace:                namespace,
-		annotationFilter:         annotationFilter,
-		compatibility:            compatibility,
+		namespace:                cfg.Namespace,
+		annotationFilter:         cfg.AnnotationFilter,
+		compatibility:            cfg.Compatibility,
 		fqdnTemplate:             tmpl,
-		combineFQDNAnnotation:    combineFqdnAnnotation,
-		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
-		publishInternal:          publishInternal,
-		publishHostIP:            publishHostIP,
+		combineFQDNAnnotation:    cfg.CombineFQDNAndAnnotation,
+		ignoreHostnameAnnotation: cfg.IgnoreHostnameAnnotation,
+		publishInternal:          cfg.PublishInternal,
+		publishHostIP:            cfg.PublishHostIP,
+		createNodePortSRV:        cfg.CreateNodePortSRV,
+		nodePortNodeRole:         cfg.NodePortNodeRole,
 		serviceInformer:          serviceInformer,
 		podInformer:              podInformer,
 		nodeInformer:             nodeInformer,
@@ -397,13 +402,16 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 			endpoints = append(endpoints, sc.extractHeadlessEndpoints(svc, hostname, ttl)...)
 		}
 	case v1.ServiceTypeNodePort:
-		// add the nodeTargets and extract an SRV endpoint
+		// add the nodeTargets
 		targets, err = sc.extractNodePortTargets(svc)
 		if err != nil {
 			log.Errorf("Unable to extract targets from service %s/%s error: %v", svc.Namespace, svc.Name, err)
 			return endpoints
 		}
-		endpoints = append(endpoints, sc.extractNodePortEndpoints(svc, targets, hostname, ttl)...)
+		// If the user wants an SRV record as well, extract that here
+		if sc.createNodePortSRV {
+			endpoints = append(endpoints, sc.extractNodePortSRVEndpoints(svc, targets, hostname, ttl)...)
+		}
 	case v1.ServiceTypeExternalName:
 		targets = append(targets, extractServiceExternalName(svc)...)
 	}
@@ -464,6 +472,11 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 
 	switch svc.Spec.ExternalTrafficPolicy {
 	case v1.ServiceExternalTrafficPolicyTypeLocal:
+		// k8s services with an externalTrafficPolicy of Local will ensure that traffic is only
+		// routed locally within a node -- not to other nodes via NATing. In this mode, a pod is
+		// only accessible by directly accessing the node on which it resides. Therefore,
+		// we need to find which node(s) the pod(s) selected by the service are residing on, and
+		// only include those nodes in the targets.
 		labelSelector, err := metav1.ParseToLabelSelector(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
 		if err != nil {
 			return nil, err
@@ -488,7 +501,10 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 			}
 		}
 	default:
-		nodes, err = sc.nodeInformer.Lister().List(labels.Everything())
+		nodeSelector := labels.Set{nodeRoleLabelKey: sc.nodePortNodeRole}
+		// Ensure we filter out the master from the list of nodes by only selecting
+		// nodes labeled with the "node" role, not the "master" role
+		nodes, err = sc.nodeInformer.Lister().List(labels.SelectorFromSet(nodeSelector))
 		if err != nil {
 			return nil, err
 		}
@@ -512,7 +528,7 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 	return internalIPs, nil
 }
 
-func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, nodeTargets endpoint.Targets, hostname string, ttl endpoint.TTL) []*endpoint.Endpoint {
+func (sc *serviceSource) extractNodePortSRVEndpoints(svc *v1.Service, nodeTargets endpoint.Targets, hostname string, ttl endpoint.TTL) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	for _, port := range svc.Spec.Ports {

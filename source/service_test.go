@@ -44,18 +44,20 @@ func (suite *ServiceSuite) SetupTest() {
 	fakeClient := fake.NewSimpleClientset()
 	var err error
 
-	suite.sc, err = NewServiceSource(
-		fakeClient,
-		"",
-		"",
-		"{{.Name}}",
-		false,
-		"",
-		false,
-		false,
-		[]string{},
-		false,
-	)
+	cfg := &Config{
+		Namespace:                "",
+		AnnotationFilter:         "",
+		FQDNTemplate:             "{{.Name}}",
+		CombineFQDNAndAnnotation: false,
+		Compatibility:            "",
+		PublishInternal:          false,
+		PublishHostIP:            false,
+		NodePortNodeRole:         "node",
+		ServiceTypeFilter:        []string{},
+		IgnoreHostnameAnnotation: false,
+	}
+
+	suite.sc, err = NewServiceSource(fakeClient, cfg)
 	suite.fooWithTargets = &v1.Service{
 		Spec: v1.ServiceSpec{
 			Type: v1.ServiceTypeLoadBalancer,
@@ -136,18 +138,20 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			_, err := NewServiceSource(
-				fake.NewSimpleClientset(),
-				"",
-				ti.annotationFilter,
-				ti.fqdnTemplate,
-				false,
-				"",
-				false,
-				false,
-				ti.serviceTypesFilter,
-				false,
-			)
+			cfg := &Config{
+				Namespace:                "",
+				AnnotationFilter:         ti.annotationFilter,
+				FQDNTemplate:             ti.fqdnTemplate,
+				CombineFQDNAndAnnotation: false,
+				Compatibility:            "",
+				PublishInternal:          false,
+				PublishHostIP:            false,
+				NodePortNodeRole:         "node",
+				ServiceTypeFilter:        ti.serviceTypesFilter,
+				IgnoreHostnameAnnotation: false,
+			}
+
+			_, err := NewServiceSource(fake.NewSimpleClientset(), cfg)
 
 			if ti.expectError {
 				assert.Error(t, err)
@@ -1076,18 +1080,19 @@ func testServiceSourceEndpoints(t *testing.T) {
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
-			client, _ := NewServiceSource(
-				kubernetes,
-				tc.targetNamespace,
-				tc.annotationFilter,
-				tc.fqdnTemplate,
-				tc.combineFQDNAndAnnotation,
-				tc.compatibility,
-				false,
-				false,
-				tc.serviceTypesFilter,
-				tc.ignoreHostnameAnnotation,
-			)
+			cfg := &Config{
+				Namespace:                tc.targetNamespace,
+				AnnotationFilter:         tc.annotationFilter,
+				FQDNTemplate:             tc.fqdnTemplate,
+				CombineFQDNAndAnnotation: tc.combineFQDNAndAnnotation,
+				Compatibility:            tc.compatibility,
+				PublishInternal:          false,
+				PublishHostIP:            false,
+				NodePortNodeRole:         "node",
+				ServiceTypeFilter:        tc.serviceTypesFilter,
+				IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
+			}
+			client, _ := NewServiceSource(kubernetes, cfg)
 			require.NoError(t, err)
 
 			var res []*endpoint.Endpoint
@@ -1246,18 +1251,19 @@ func TestClusterIpServices(t *testing.T) {
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
-			client, _ := NewServiceSource(
-				kubernetes,
-				tc.targetNamespace,
-				tc.annotationFilter,
-				tc.fqdnTemplate,
-				false,
-				tc.compatibility,
-				true,
-				false,
-				[]string{},
-				tc.ignoreHostnameAnnotation,
-			)
+			cfg := &Config{
+				Namespace:                tc.targetNamespace,
+				AnnotationFilter:         tc.annotationFilter,
+				FQDNTemplate:             tc.fqdnTemplate,
+				CombineFQDNAndAnnotation: false,
+				Compatibility:            tc.compatibility,
+				PublishInternal:          true,
+				PublishHostIP:            false,
+				NodePortNodeRole:         "node",
+				ServiceTypeFilter:        []string{},
+				IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
+			}
+			client, _ := NewServiceSource(kubernetes, cfg)
 			require.NoError(t, err)
 
 			endpoints, err := client.Endpoints()
@@ -1319,7 +1325,8 @@ func TestNodePortServices(t *testing.T) {
 			false,
 			[]*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
+					Name:   "node1",
+					Labels: map[string]string{"kubernetes.io/role": "node"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -1329,12 +1336,24 @@ func TestNodePortServices(t *testing.T) {
 				},
 			}, {
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
+					Name:   "node2",
+					Labels: map[string]string{"kubernetes.io/role": "node"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name:   "node3",
+					Labels: map[string]string{"kubernetes.io/role": "master"},
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.3"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.3"},
 					},
 				},
 			}},
@@ -1362,7 +1381,8 @@ func TestNodePortServices(t *testing.T) {
 			false,
 			[]*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
+					Name:   "node1",
+					Labels: map[string]string{"kubernetes.io/role": "node"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -1372,12 +1392,24 @@ func TestNodePortServices(t *testing.T) {
 				},
 			}, {
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
+					Name:   "node2",
+					Labels: map[string]string{"kubernetes.io/role": "node"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name:   "node3",
+					Labels: map[string]string{"kubernetes.io/role": "master"},
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.3"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.3"},
 					},
 				},
 			}},
@@ -1406,7 +1438,8 @@ func TestNodePortServices(t *testing.T) {
 			false,
 			[]*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
+					Name:   "node1",
+					Labels: map[string]string{"kubernetes.io/role": "node"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -1416,12 +1449,24 @@ func TestNodePortServices(t *testing.T) {
 				},
 			}, {
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
+					Name:   "node2",
+					Labels: map[string]string{"kubernetes.io/role": "node"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name:   "node3",
+					Labels: map[string]string{"kubernetes.io/role": "master"},
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.3"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.3"},
 					},
 				},
 			}},
@@ -1452,7 +1497,8 @@ func TestNodePortServices(t *testing.T) {
 			false,
 			[]*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
+					Name:   "node1",
+					Labels: map[string]string{"kubernetes.io/role": "node"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -1461,11 +1507,23 @@ func TestNodePortServices(t *testing.T) {
 				},
 			}, {
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
+					Name:   "node2",
+					Labels: map[string]string{"kubernetes.io/role": "node"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name:   "node3",
+					Labels: map[string]string{"kubernetes.io/role": "master"},
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.3"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.3"},
 					},
 				},
 			}},
@@ -1496,7 +1554,8 @@ func TestNodePortServices(t *testing.T) {
 			false,
 			[]*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "node1",
+					Name:   "node1",
+					Labels: map[string]string{"kubernetes.io/role": "node"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -1506,12 +1565,24 @@ func TestNodePortServices(t *testing.T) {
 				},
 			}, {
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "node2",
+					Name:   "node2",
+					Labels: map[string]string{"kubernetes.io/role": "node"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name:   "node3",
+					Labels: map[string]string{"kubernetes.io/role": "master"},
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.3"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.3"},
 					},
 				},
 			}},
@@ -1577,18 +1648,20 @@ func TestNodePortServices(t *testing.T) {
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
-			client, _ := NewServiceSource(
-				kubernetes,
-				tc.targetNamespace,
-				tc.annotationFilter,
-				tc.fqdnTemplate,
-				false,
-				tc.compatibility,
-				true,
-				false,
-				[]string{},
-				tc.ignoreHostnameAnnotation,
-			)
+			cfg := &Config{
+				Namespace:                tc.targetNamespace,
+				AnnotationFilter:         tc.annotationFilter,
+				FQDNTemplate:             tc.fqdnTemplate,
+				CombineFQDNAndAnnotation: false,
+				Compatibility:            tc.compatibility,
+				PublishInternal:          true,
+				PublishHostIP:            false,
+				NodePortNodeRole:         "node",
+				ServiceTypeFilter:        []string{},
+				CreateNodePortSRV:        true,
+				IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
+			}
+			client, _ := NewServiceSource(kubernetes, cfg)
 			require.NoError(t, err)
 
 			endpoints, err := client.Endpoints()
@@ -1811,18 +1884,19 @@ func TestHeadlessServices(t *testing.T) {
 			}
 
 			// Create our object under test and get the endpoints.
-			client, _ := NewServiceSource(
-				kubernetes,
-				tc.targetNamespace,
-				"",
-				tc.fqdnTemplate,
-				false,
-				tc.compatibility,
-				true,
-				false,
-				[]string{},
-				tc.ignoreHostnameAnnotation,
-			)
+			cfg := &Config{
+				Namespace:                tc.targetNamespace,
+				AnnotationFilter:         "",
+				FQDNTemplate:             tc.fqdnTemplate,
+				CombineFQDNAndAnnotation: false,
+				Compatibility:            tc.compatibility,
+				PublishInternal:          true,
+				PublishHostIP:            false,
+				NodePortNodeRole:         "node",
+				ServiceTypeFilter:        []string{},
+				IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
+			}
+			client, _ := NewServiceSource(kubernetes, cfg)
 			require.NoError(t, err)
 
 			endpoints, err := client.Endpoints()
@@ -2045,18 +2119,19 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			}
 
 			// Create our object under test and get the endpoints.
-			client, _ := NewServiceSource(
-				kubernetes,
-				tc.targetNamespace,
-				"",
-				tc.fqdnTemplate,
-				false,
-				tc.compatibility,
-				true,
-				true,
-				[]string{},
-				tc.ignoreHostnameAnnotation,
-			)
+			cfg := &Config{
+				Namespace:                tc.targetNamespace,
+				AnnotationFilter:         "",
+				FQDNTemplate:             tc.fqdnTemplate,
+				CombineFQDNAndAnnotation: false,
+				Compatibility:            tc.compatibility,
+				PublishInternal:          true,
+				PublishHostIP:            true,
+				NodePortNodeRole:         "node",
+				ServiceTypeFilter:        []string{},
+				IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
+			}
+			client, _ := NewServiceSource(kubernetes, cfg)
 			require.NoError(t, err)
 
 			endpoints, err := client.Endpoints()
@@ -2149,18 +2224,19 @@ func TestExternalServices(t *testing.T) {
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
-			client, _ := NewServiceSource(
-				kubernetes,
-				tc.targetNamespace,
-				"",
-				tc.fqdnTemplate,
-				false,
-				tc.compatibility,
-				true,
-				false,
-				[]string{},
-				tc.ignoreHostnameAnnotation,
-			)
+			cfg := &Config{
+				Namespace:                tc.targetNamespace,
+				AnnotationFilter:         "",
+				FQDNTemplate:             tc.fqdnTemplate,
+				CombineFQDNAndAnnotation: false,
+				Compatibility:            tc.compatibility,
+				PublishInternal:          true,
+				PublishHostIP:            false,
+				NodePortNodeRole:         "node",
+				ServiceTypeFilter:        []string{},
+				IgnoreHostnameAnnotation: tc.ignoreHostnameAnnotation,
+			}
+			client, _ := NewServiceSource(kubernetes, cfg)
 			require.NoError(t, err)
 
 			endpoints, err := client.Endpoints()
@@ -2200,7 +2276,19 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
 	require.NoError(b, err)
 
-	client, err := NewServiceSource(kubernetes, v1.NamespaceAll, "", "", false, "", false, false, []string{}, false)
+	cfg := &Config{
+		Namespace:                v1.NamespaceAll,
+		AnnotationFilter:         "",
+		FQDNTemplate:             "",
+		CombineFQDNAndAnnotation: false,
+		Compatibility:            "",
+		PublishInternal:          false,
+		PublishHostIP:            false,
+		NodePortNodeRole:         "node",
+		ServiceTypeFilter:        []string{},
+		IgnoreHostnameAnnotation: false,
+	}
+	client, _ := NewServiceSource(kubernetes, cfg)
 	require.NoError(b, err)
 
 	for i := 0; i < b.N; i++ {
