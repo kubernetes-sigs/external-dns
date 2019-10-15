@@ -144,7 +144,7 @@ func (suite *PlanTestSuite) SetupTest() {
 func (suite *PlanTestSuite) TestSyncFirstRound() {
 	current := []*endpoint.Endpoint{}
 	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.bar127A}
-	expectedCreate := []*endpoint.Endpoint{suite.fooV1Cname, suite.bar127A} //v1 is chosen because of resolver taking "min"
+	expectedCreate := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.bar127A} //v1 is chosen because of resolver taking "min"
 	expectedUpdateOld := []*endpoint.Endpoint{}
 	expectedUpdateNew := []*endpoint.Endpoint{}
 	expectedDelete := []*endpoint.Endpoint{}
@@ -165,7 +165,7 @@ func (suite *PlanTestSuite) TestSyncFirstRound() {
 func (suite *PlanTestSuite) TestSyncSecondRound() {
 	current := []*endpoint.Endpoint{suite.fooV1Cname}
 	desired := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooV1Cname, suite.bar127A}
-	expectedCreate := []*endpoint.Endpoint{suite.bar127A}
+	expectedCreate := []*endpoint.Endpoint{suite.fooV2Cname, suite.bar127A}
 	expectedUpdateOld := []*endpoint.Endpoint{}
 	expectedUpdateNew := []*endpoint.Endpoint{}
 	expectedDelete := []*endpoint.Endpoint{}
@@ -186,9 +186,9 @@ func (suite *PlanTestSuite) TestSyncSecondRound() {
 func (suite *PlanTestSuite) TestSyncSecondRoundMigration() {
 	current := []*endpoint.Endpoint{suite.fooV2CnameNoLabel}
 	desired := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooV1Cname, suite.bar127A}
-	expectedCreate := []*endpoint.Endpoint{suite.bar127A}
-	expectedUpdateOld := []*endpoint.Endpoint{suite.fooV2CnameNoLabel}
-	expectedUpdateNew := []*endpoint.Endpoint{suite.fooV1Cname}
+	expectedCreate := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooV1Cname, suite.bar127A}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
@@ -251,18 +251,9 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithOwnerInherited() {
 	desired := []*endpoint.Endpoint{suite.fooV2Cname}
 
 	expectedCreate := []*endpoint.Endpoint{}
-	expectedUpdateOld := []*endpoint.Endpoint{suite.fooV1Cname}
-	expectedUpdateNew := []*endpoint.Endpoint{{
-		DNSName:    suite.fooV2Cname.DNSName,
-		Targets:    suite.fooV2Cname.Targets,
-		RecordType: suite.fooV2Cname.RecordType,
-		RecordTTL:  suite.fooV2Cname.RecordTTL,
-		Labels: map[string]string{
-			endpoint.ResourceLabelKey: suite.fooV2Cname.Labels[endpoint.ResourceLabelKey],
-			endpoint.OwnerLabelKey:    suite.fooV1Cname.Labels[endpoint.OwnerLabelKey],
-		},
-	}}
-	expectedDelete := []*endpoint.Endpoint{}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{suite.fooV1Cname}
 
 	p := &Plan{
 		Policies: []Policy{&SyncPolicy{}},
@@ -301,10 +292,10 @@ func (suite *PlanTestSuite) TestIdempotency() {
 func (suite *PlanTestSuite) TestDifferentTypes() {
 	current := []*endpoint.Endpoint{suite.fooV1Cname}
 	desired := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooA5}
-	expectedCreate := []*endpoint.Endpoint{}
-	expectedUpdateOld := []*endpoint.Endpoint{suite.fooV1Cname}
-	expectedUpdateNew := []*endpoint.Endpoint{suite.fooA5}
-	expectedDelete := []*endpoint.Endpoint{}
+	expectedCreate := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooA5}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{suite.fooV1Cname}
 
 	p := &Plan{
 		Policies: []Policy{&SyncPolicy{}},

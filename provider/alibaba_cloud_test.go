@@ -55,23 +55,35 @@ func NewMockAlibabaCloudDNSAPI() *MockAlibabaCloudDNSAPI {
 }
 
 func (m *MockAlibabaCloudDNSAPI) SetDNSSLBStatus(request *alidns.SetDNSSLBStatusRequest) (response *alidns.SetDNSSLBStatusResponse, err error) {
-
-	return nil, nil
+	for _, record := range m.records {
+		if record.Type == "A" {
+			record.Weight = 3
+		}
+	}
+	response = alidns.CreateSetDNSSLBStatusResponse()
+	return response, nil
 }
 
 func (m *MockAlibabaCloudDNSAPI) DescribeDNSSLBSubDomains(request *alidns.DescribeDNSSLBSubDomainsRequest) (response *alidns.DescribeDNSSLBSubDomainsResponse, err error) {
 
-	return nil, nil
+	response = alidns.CreateDescribeDNSSLBSubDomainsResponse()
+	return response, nil
 }
 
 func (m *MockAlibabaCloudDNSAPI) DescribeSubDomainRecords(request *alidns.DescribeSubDomainRecordsRequest) (response *alidns.DescribeSubDomainRecordsResponse, err error) {
 
-	return nil, nil
+	response = alidns.CreateDescribeSubDomainRecordsResponse()
+	return response, nil
 }
 
 func (m *MockAlibabaCloudDNSAPI) UpdateDNSSLBWeight(request *alidns.UpdateDNSSLBWeightRequest) (response *alidns.UpdateDNSSLBWeightResponse, err error) {
-
-	return nil, nil
+	for _, record := range m.records {
+		if record.Type == "A" {
+			record.Weight = 3
+		}
+	}
+	response = alidns.CreateUpdateDNSSLBWeightResponse()
+	return response, nil
 }
 
 func (m *MockAlibabaCloudDNSAPI) AddDomainRecord(request *alidns.AddDomainRecordRequest) (response *alidns.AddDomainRecordResponse, err error) {

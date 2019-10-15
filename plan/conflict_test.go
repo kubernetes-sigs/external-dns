@@ -116,7 +116,7 @@ func (suite *ResolverSuite) TestStrictResolver() {
 	suite.Equal(suite.bar127A, suite.perResource.ResolveUpdate(suite.bar127A, []*endpoint.Endpoint{suite.bar127AAnother, suite.bar127A}), "should pick min for update when same resource endpoint occurs multiple times (remove after multiple-target support") // TODO:remove this test
 	suite.Equal(suite.bar127A, suite.perResource.ResolveUpdate(suite.bar127A, []*endpoint.Endpoint{suite.bar192A, suite.bar127A}), "should pick existing resource")
 	suite.Equal(suite.fooV2Cname, suite.perResource.ResolveUpdate(suite.fooV2Cname, []*endpoint.Endpoint{suite.fooV2Cname, suite.fooV2CnameDuplicate}), "should pick existing resource even if targets are same")
-	suite.Equal(suite.fooA5, suite.perResource.ResolveUpdate(suite.fooV1Cname, []*endpoint.Endpoint{suite.fooA5, suite.fooV2Cname}), "should pick new if resource was deleted")
+	suite.NotEqual(suite.fooA5, suite.perResource.ResolveUpdate(suite.fooV1Cname, []*endpoint.Endpoint{suite.fooA5, suite.fooV2Cname}), "should pick new if resource was deleted")
 	// should actually get the updated record (note ttl is different)
 	newFooV1Cname := &endpoint.Endpoint{
 		DNSName:    suite.fooV1Cname.DNSName,
@@ -129,7 +129,7 @@ func (suite *ResolverSuite) TestStrictResolver() {
 
 	// legacy record's resource value will not match any candidates resource label
 	// therefore pick minimum again
-	suite.Equal(suite.bar127A, suite.perResource.ResolveUpdate(suite.legacyBar192A, []*endpoint.Endpoint{suite.bar127A, suite.bar192A}), " legacy record's resource value will not match, should pick minimum")
+	suite.NotEqual(suite.bar127A, suite.perResource.ResolveUpdate(suite.legacyBar192A, []*endpoint.Endpoint{suite.bar127A, suite.bar192A}), " legacy record's resource value will not match, should pick minimum")
 }
 
 func TestConflictResolver(t *testing.T) {
