@@ -18,8 +18,6 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2018-05-01/dns"
@@ -250,9 +248,6 @@ func TestAzureRecord(t *testing.T) {
 		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeTXT, recordTTL, "heritage=external-dns,external-dns/owner=default"),
 		endpoint.NewEndpointWithTTL("hack.example.com", endpoint.RecordTypeCNAME, 10, "hack.azurewebsites.net"),
 	}
-
-	debug, _ := json.Marshal(actual)
-	fmt.Printf("Debugging azure test: %v", debug)
 
 	validateAzureEndpoints(t, actual, expected)
 
