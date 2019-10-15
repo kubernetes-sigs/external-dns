@@ -280,3 +280,12 @@ As tags, you can use your version of choice or use `latest` that always resolves
 If you wish to build your own image, you can use the provided [Dockerfile](../Dockerfile) as a starting point.
 
 We are currently working with the Kubernetes community to provide official images for the project similarly to what is done with the other official Kubernetes projects, but we don't have an ETA on when those images will be available.
+
+### Why am I seeing time out errors even though I have connectivity to my cluster?
+
+If you're seeing an error such as this:
+```
+FATA[0060] failed to sync cache: timed out waiting for the condition
+```
+
+You may not have the correct permissions required to query all the necessary resources in your kubernetes cluster. Specifically, you may be running in a `namespace` that you don't have these permissions in. By default, commands are run against the `default` namespace. Try changing this to your particular namespace to see if that fixes the issue.
