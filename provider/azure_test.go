@@ -31,14 +31,56 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// mockZonesClient implements the methods of the Azure DNS Zones Client which are used in the Azure Provider
+// and returns static results which are defined per test
 type mockZonesClient struct {
 	mockZonesClientIterator *dns.ZoneListResultIterator
 }
 
+// mockZonesClient implements the methods of the Azure DNS RecordSet Client which are used in the Azure Provider
+// and returns static results which are defined per test
 type mockRecordSetsClient struct {
 	mockRecordSetListIterator *dns.RecordSetListResultIterator
 	deletedEndpoints          []*endpoint.Endpoint
 	updatedEndpoints          []*endpoint.Endpoint
+}
+
+// mockZoneListResultPageIterator is used to paginate forward through a list of zones
+type mockZoneListResultPageIterator struct {
+	offset  int
+	results []dns.ZoneListResult
+}
+
+// getNextPage provides the next page based on the offset of the mockZoneListResultPageIterator
+func (m *mockZoneListResultPageIterator) getNextPage(context.Context, dns.ZoneListResult) (dns.ZoneListResult, error) {
+	// it assumed that instances of this kind of iterator are only skimmed through once per test
+	// otherwise a real implementation is required, e.g. based on a linked list
+	if m.offset < len(m.results) {
+		m.offset = m.offset + 1
+		return m.results[m.offset-1], nil
+	}
+
+	// paged to last page or empty
+	return dns.ZoneListResult{}, nil
+}
+
+// mockZoneListResultPageIterator is used to paginate forward through a list of recordsets
+type mockRecordSetListResultPageIterator struct {
+	offset  int
+	results []dns.RecordSetListResult
+}
+
+// getNextPage provides the next page based on the offset of the mockRecordSetListResultPageIterator
+func (m *mockRecordSetListResultPageIterator) getNextPage(context.Context, dns.RecordSetListResult) (dns.RecordSetListResult, error) {
+	// it assumed that instances of this kind of iterator are only skimmed through once per test
+	// otherwise a real implementation is required, e.g. based on a linked list
+	if m.offset < len(m.results) {
+		m.offset = m.offset + 1
+		return m.results[m.offset-1], nil
+	}
+
+	// paged to last page or empty
+	return dns.RecordSetListResult{}, nil
 }
 
 func createMockZone(zone string, id string) dns.Zone {
@@ -162,6 +204,40 @@ func (client *mockRecordSetsClient) CreateOrUpdate(ctx context.Context, resource
 	return parameters, nil
 }
 
+// newMockedAzureProvider creates an AzureProvider comprising the mocked clients for zones and recordsets
+func newMockedAzureProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, zones *[]dns.Zone, recordSets *[]dns.RecordSet) (*AzureProvider, error) {
+	// init zone-related parts of the mock-client
+	pageIterator := mockZoneListResultPageIterator{
+		results: []dns.ZoneListResult{
+			{
+				Value: zones,
+			},
+		},
+	}
+
+	mockZoneListResultPage := dns.NewZoneListResultPage(pageIterator.getNextPage)
+	mockZoneClientIterator := dns.NewZoneListResultIterator(mockZoneListResultPage)
+	zonesClient := mockZonesClient{
+		mockZonesClientIterator: &mockZoneClientIterator,
+	}
+
+	// init record-related parts of the mock-client
+	resultPageIterator := mockRecordSetListResultPageIterator{
+		results: []dns.RecordSetListResult{
+			{
+				Value: recordSets,
+			},
+		},
+	}
+	mockRecordSetListResultPage := dns.NewRecordSetListResultPage(resultPageIterator.getNextPage)
+	mockRecordSetListIterator := dns.NewRecordSetListResultIterator(mockRecordSetListResultPage)
+	recordSetsClient := mockRecordSetsClient{
+		mockRecordSetListIterator: &mockRecordSetListIterator,
+	}
+
+	return newAzureProvider(domainFilter, zoneIDFilter, dryRun, resourceGroup, &zonesClient, &recordSetsClient), nil
+}
+
 func newAzureProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, zonesClient ZonesClient, recordsClient RecordSetsClient) *AzureProvider {
 	return &AzureProvider{
 		domainFilter:     domainFilter,
@@ -178,32 +254,11 @@ func validateAzureEndpoints(t *testing.T, endpoints []*endpoint.Endpoint, expect
 }
 
 func TestAzureRecord(t *testing.T) {
-	zlr := dns.ZoneListResult{
-		Value: &[]dns.Zone{
+	provider, err := newMockedAzureProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s",
+		&[]dns.Zone{
 			createMockZone("example.com", "/dnszones/example.com"),
 		},
-	}
-	results := []dns.ZoneListResult{
-		zlr,
-	}
-
-	mockZoneListResultPage := dns.NewZoneListResultPage(func(ctxParam context.Context, zlrParam dns.ZoneListResult) (dns.ZoneListResult, error) {
-		if len(results) > 0 {
-			result := results[0]
-			results = nil
-			return result, nil
-		} else {
-			return dns.ZoneListResult{}, nil
-		}
-	})
-	mockZoneClientIterator := dns.NewZoneListResultIterator(mockZoneListResultPage)
-
-	zonesClient := mockZonesClient{
-		mockZonesClientIterator: &mockZoneClientIterator,
-	}
-
-	rslr := dns.RecordSetListResult{
-		Value: &[]dns.RecordSet{
+		&[]dns.RecordSet{
 			createMockRecordSet("@", "NS", "ns1-03.azure-dns.com."),
 			createMockRecordSet("@", "SOA", "Email: azuredns-hostmaster.microsoft.com"),
 			createMockRecordSet("@", endpoint.RecordTypeA, "123.123.123.122"),
@@ -211,30 +266,7 @@ func TestAzureRecord(t *testing.T) {
 			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
 			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
-		},
-	}
-
-	rsResults := []dns.RecordSetListResult{
-		rslr,
-	}
-
-	mockRecordSetListResultPage := dns.NewRecordSetListResultPage(func(ctxParam context.Context, rslrParam dns.RecordSetListResult) (dns.RecordSetListResult, error) {
-		if len(rsResults) > 0 {
-			result := rsResults[0]
-			rsResults = nil
-			return result, nil
-		} else {
-			return dns.RecordSetListResult{}, nil
-		}
-	})
-
-	mockRecordSetListIterator := dns.NewRecordSetListResultIterator(mockRecordSetListResultPage)
-
-	recordSetsClient := mockRecordSetsClient{
-		mockRecordSetListIterator: &mockRecordSetListIterator,
-	}
-
-	provider := newAzureProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s", &zonesClient, &recordSetsClient)
+		})
 
 	actual, err := provider.Records()
 
@@ -254,33 +286,11 @@ func TestAzureRecord(t *testing.T) {
 }
 
 func TestAzureMultiRecord(t *testing.T) {
-
-	zlr := dns.ZoneListResult{
-		Value: &[]dns.Zone{
+	provider, err := newMockedAzureProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s",
+		&[]dns.Zone{
 			createMockZone("example.com", "/dnszones/example.com"),
 		},
-	}
-	results := []dns.ZoneListResult{
-		zlr,
-	}
-
-	mockZoneListResultPage := dns.NewZoneListResultPage(func(ctxParam context.Context, zlrParam dns.ZoneListResult) (dns.ZoneListResult, error) {
-		if len(results) > 0 {
-			result := results[0]
-			results = nil
-			return result, nil
-		} else {
-			return dns.ZoneListResult{}, nil
-		}
-	})
-	mockZoneClientIterator := dns.NewZoneListResultIterator(mockZoneListResultPage)
-
-	zonesClient := mockZonesClient{
-		mockZonesClientIterator: &mockZoneClientIterator,
-	}
-
-	rslr := dns.RecordSetListResult{
-		Value: &[]dns.RecordSet{
+		&[]dns.RecordSet{
 			createMockRecordSet("@", "NS", "ns1-03.azure-dns.com."),
 			createMockRecordSet("@", "SOA", "Email: azuredns-hostmaster.microsoft.com"),
 			createMockRecordSet("@", endpoint.RecordTypeA, "123.123.123.122", "234.234.234.233"),
@@ -288,30 +298,7 @@ func TestAzureMultiRecord(t *testing.T) {
 			createMockRecordSetMultiWithTTL("nginx", endpoint.RecordTypeA, 3600, "123.123.123.123", "234.234.234.234"),
 			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
-		},
-	}
-
-	rsResults := []dns.RecordSetListResult{
-		rslr,
-	}
-
-	mockRecordSetListResultPage := dns.NewRecordSetListResultPage(func(ctxParam context.Context, rslrParam dns.RecordSetListResult) (dns.RecordSetListResult, error) {
-		if len(rsResults) > 0 {
-			result := rsResults[0]
-			rsResults = nil
-			return result, nil
-		} else {
-			return dns.RecordSetListResult{}, nil
-		}
-	})
-
-	mockRecordSetListIterator := dns.NewRecordSetListResultIterator(mockRecordSetListResultPage)
-
-	recordSetsClient := mockRecordSetsClient{
-		mockRecordSetListIterator: &mockRecordSetListIterator,
-	}
-
-	provider := newAzureProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s", &zonesClient, &recordSetsClient)
+		})
 
 	actual, err := provider.Records()
 
