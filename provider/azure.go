@@ -222,7 +222,7 @@ func (p *AzureProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 }
 
 func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
-	log.Debugf("Retrieving Azure DNS zones for rg: %s.", p.resourceGroup)
+	log.Debugf("Retrieving Azure DNS zones for resource group: %s.", p.resourceGroup)
 
 	var zones []dns.Zone
 
@@ -233,7 +233,6 @@ func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
 
 	for i.NotDone() {
 		zone := i.Value()
-		log.Debugf("Validating Zone: %v", *zone.Name)
 
 		if zone.Name != nil && p.domainFilter.Match(*zone.Name) && p.zoneIDFilter.Match(*zone.ID) {
 			zones = append(zones, zone)
