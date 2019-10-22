@@ -231,8 +231,10 @@ func NewKubeClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) 
 	log.Debugf("kubeConfig: %s", kubeConfig)
 
 	// evaluate whether to use kubeConfig-file or serviceaccount-token
-	var config *rest.Config
-	var err error
+	var (
+		config *rest.Config
+		err    error
+	)
 	if kubeConfig == "" {
 		log.Infof("Using inCluster-config based on serviceaccount-token")
 		config, err = rest.InClusterConfig()
