@@ -226,19 +226,19 @@ func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
 
 	var zones []dns.Zone
 
-	i, err := p.zonesClient.ListByResourceGroupComplete(ctx, p.resourceGroup, nil)
+	zonesIterator, err := p.zonesClient.ListByResourceGroupComplete(ctx, p.resourceGroup, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	for i.NotDone() {
-		zone := i.Value()
+	for zonesIterator.NotDone() {
+		zone := zonesIterator.Value()
 
 		if zone.Name != nil && p.domainFilter.Match(*zone.Name) && p.zoneIDFilter.Match(*zone.ID) {
 			zones = append(zones, zone)
 		}
 
-		err := i.NextWithContext(ctx)
+		err := zonesIterator.NextWithContext(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -251,17 +251,17 @@ func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
 func (p *AzureProvider) iterateRecords(ctx context.Context, zoneName string, callback func(dns.RecordSet) bool) error {
 	log.Debugf("Retrieving Azure DNS records for zone '%s'.", zoneName)
 
-	i, err := p.recordSetsClient.ListAllByDNSZoneComplete(ctx, p.resourceGroup, zoneName, nil, "")
+	recordSetsIterator, err := p.recordSetsClient.ListAllByDNSZoneComplete(ctx, p.resourceGroup, zoneName, nil, "")
 	if err != nil {
 		return err
 	}
 
-	for i.NotDone() {
-		if !callback(i.Value()) {
+	for recordSetsIterator.NotDone() {
+		if !callback(recordSetsIterator.Value()) {
 			return nil
 		}
 
-		err := i.NextWithContext(ctx)
+		err := recordSetsIterator.NextWithContext(ctx)
 		if err != nil {
 			return err
 		}
