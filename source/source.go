@@ -45,6 +45,8 @@ const (
 const (
 	// The annotation used for determining if traffic will go through Cloudflare
 	CloudflareProxiedKey = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
+
+	AlibabaCloudWeightKey = "external-dns.alpha.kubernetes.io/alibaba-cloud-weight"
 )
 
 const (
@@ -96,20 +98,18 @@ func getProviderSpecificAnnotations(annotations map[string]string) endpoint.Prov
 			Value: v,
 		})
 	}
+	v, exists = annotations[AlibabaCloudWeightKey]
+	if exists {
+		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+			Name:  AlibabaCloudWeightKey,
+			Value: v,
+		})
+	}
 	if getAliasFromAnnotations(annotations) {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  "alias",
 			Value: "true",
 		})
-	}
-	for k, v := range annotations {
-		if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/alibaba-cloud") {
-			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/alibaba-cloud-")
-			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-				Name:  fmt.Sprintf("alibaba-cloud/%s", attr),
-				Value: v,
-			})
-		}
 	}
 	return providerSpecificAnnotations
 }
