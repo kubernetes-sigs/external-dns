@@ -59,7 +59,7 @@ func (s PerResource) ResolveUpdate(current *endpoint.Endpoint, candidates []*end
 			return ep
 		}
 	}
-	return nil
+	return s.ResolveCreate(candidates)
 }
 
 // less returns true if endpoint x is less than y

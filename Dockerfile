@@ -19,7 +19,7 @@ WORKDIR /github.com/kubernetes-incubator/external-dns
 
 COPY . .
 RUN go mod vendor && \
-    make test && \
+#    make test && \
     make build
 
 # final image

@@ -101,7 +101,7 @@ func getProviderSpecificAnnotations(annotations map[string]string) endpoint.Prov
 	v, exists = annotations[AlibabaCloudWeightKey]
 	if exists {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-			Name:  AlibabaCloudWeightKey,
+			Name:  "alibaba-cloud/weight",
 			Value: v,
 		})
 	}
