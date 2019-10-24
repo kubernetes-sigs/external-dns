@@ -175,7 +175,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			map[string]string{},
 			map[string]string{},
 			[]*endpoint.Endpoint{},
-			false,
+			true,
 		},
 		{
 			"annotated node without annotation filter returns endpoint",
