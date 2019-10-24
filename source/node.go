@@ -58,7 +58,7 @@ func NewNodeSource(kubeClient kubernetes.Interface, annotationFilter, fqdnTempla
 		}
 	}
 
-	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
+	// Use shared informers to listen for add/update/delete of nodes.
 	// Set resync period to 0, to prevent processing when nothing has changed
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0)
 	nodeInformer := informerFactory.Core().V1().Nodes()
@@ -117,9 +117,15 @@ func (ns *nodeSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 		log.Debugf("creating endpoint for node %s", node.Name)
 
+		ttl, err := getTTLFromAnnotations(node.Annotations)
+		if err != nil {
+			log.Warn(err)
+		}
+
 		// create new endpoint with the information we already have
 		ep := &endpoint.Endpoint{
 			RecordType: "A", // hardcoded DNS record type
+			RecordTTL:  ttl,
 		}
 
 		if ns.fqdnTemplate != nil {

@@ -248,6 +248,49 @@ func testNodeSourceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{},
 			false,
 		},
+		{
+			"ttl not annotated should have RecordTTL.IsConfigured set to false",
+			"",
+			"",
+			"node1",
+			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			map[string]string{},
+			map[string]string{},
+			[]*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(0)},
+			},
+			false,
+		},
+		{
+			"ttl annotated but invalid should have RecordTTL.IsConfigured set to false",
+			"",
+			"",
+			"node1",
+			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			map[string]string{},
+			map[string]string{
+				ttlAnnotationKey: "foo",
+			},
+			[]*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(0)},
+			},
+			false,
+		},
+		{
+			"ttl annotated and is valid should set Record.TTL",
+			"",
+			"",
+			"node1",
+			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			map[string]string{},
+			map[string]string{
+				ttlAnnotationKey: "10",
+			},
+			[]*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(10)},
+			},
+			false,
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			// Create a Kubernetes testing client
