@@ -139,8 +139,7 @@ func (ns *nodeSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 		addrs, err := ns.nodeAddresses(node)
 		if err != nil {
-			log.Error(err)
-			continue
+			return nil, fmt.Errorf("failed to get node address from %s: %s", node.Name, err.Error())
 		}
 
 		ep.Targets = endpoint.Targets(addrs)
