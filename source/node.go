@@ -103,7 +103,7 @@ func (ns *nodeSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		return nil, err
 	}
 
-	endpoints := []*endpoint.Endpoint{}
+	endpoints := map[string]*endpoint.Endpoint{}
 
 	// create endpoints for all nodes
 	for _, node := range nodes {
@@ -137,33 +137,51 @@ func (ns *nodeSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			log.Debugf("not applying template for %s", node.Name)
 		}
 
-		addr, err := ns.nodeAddress(node)
+		addrs, err := ns.nodeAddresses(node)
 		if err != nil {
 			log.Error(err)
 			continue
 		}
 
-		ep.Targets = endpoint.Targets([]string{addr})
+		ep.Targets = endpoint.Targets(addrs)
 
 		log.Debugf("adding endpoint %s", ep)
-		endpoints = append(endpoints, ep)
+		if _, ok := endpoints[ep.DNSName]; ok {
+			endpoints[ep.DNSName].Targets = append(endpoints[ep.DNSName].Targets, ep.Targets...)
+		} else {
+			endpoints[ep.DNSName] = ep
+		}
 	}
 
-	return endpoints, nil
+	endpointsSlice := []*endpoint.Endpoint{}
+	for _, ep := range endpoints {
+		endpointsSlice = append(endpointsSlice, ep)
+	}
+
+	return endpointsSlice, nil
 }
 
 // nodeAddress returns node's externalIP and if that's not found, node's internalIP
 // basically what k8s.io/kubernetes/pkg/util/node.GetPreferredNodeAddress does
-func (ns *nodeSource) nodeAddress(node *v1.Node) (string, error) {
-	for _, t := range []v1.NodeAddressType{v1.NodeExternalIP, v1.NodeInternalIP} {
-		for _, addr := range node.Status.Addresses {
-			if addr.Type == t {
-				return addr.Address, nil
-			}
-		}
+func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
+	addresses := map[v1.NodeAddressType][]string{
+		v1.NodeExternalIP: []string{},
+		v1.NodeInternalIP: []string{},
 	}
 
-	return "", fmt.Errorf("could not find node address for %s", node.Name)
+	for _, addr := range node.Status.Addresses {
+		addresses[addr.Type] = append(addresses[addr.Type], addr.Address)
+	}
+
+	if len(addresses[v1.NodeExternalIP]) > 0 {
+		return addresses[v1.NodeExternalIP], nil
+	}
+
+	if len(addresses[v1.NodeInternalIP]) > 0 {
+		return addresses[v1.NodeInternalIP], nil
+	}
+
+	return nil, fmt.Errorf("could not find node address for %s", node.Name)
 }
 
 // filterByAnnotations filters a list of nodes by a given annotation selector.

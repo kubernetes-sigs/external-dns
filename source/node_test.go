@@ -128,6 +128,19 @@ func testNodeSourceEndpoints(t *testing.T) {
 			false,
 		},
 		{
+			"node with fqdn template returns two endpoints with multiple IP addresses and expanded hostname",
+			"",
+			"{{.Name}}.example.org",
+			"node1",
+			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}, {v1.NodeExternalIP, "5.6.7.8"}},
+			map[string]string{},
+			map[string]string{},
+			[]*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4", "5.6.7.8"}},
+			},
+			false,
+		},
+		{
 			"node with both external and internal IP returns an endpoint with external IP",
 			"",
 			"",
