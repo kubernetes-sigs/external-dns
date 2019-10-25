@@ -12,8 +12,6 @@ import (
 )
 
 func TestNodeSource(t *testing.T) {
-	//suite.Run(t, new(ServiceSuite))
-	//t.Run("Interface", testServiceSourceImplementsSource)
 	t.Run("NewNodeSource", testNodeSourceNewNodeSource)
 	t.Run("Endpoints", testNodeSourceEndpoints)
 }
