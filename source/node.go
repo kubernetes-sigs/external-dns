@@ -43,6 +43,7 @@ type nodeSource struct {
 	nodeInformer     coreinformers.NodeInformer
 }
 
+// NewNodeSource creates a new nodeSource with the given config.
 func NewNodeSource(kubeClient kubernetes.Interface, annotationFilter, fqdnTemplate string) (Source, error) {
 	var (
 		tmpl *template.Template
