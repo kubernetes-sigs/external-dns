@@ -1,0 +1,63 @@
+# Add 'docs' to any changes within 'docs' folder or any subfolders
+docs:
+  - docs/**/*
+
+# Add 'provider/alibaba' in file which starts with alibaba
+provider/alibaba: provider/alibaba*
+
+# Add 'provider/aws' in file which starts with aws
+provider/aws: provider/aws*
+
+# Add 'provider/azure' in file which starts with azure
+provider/azure: provider/azure*
+
+# Add 'provider/cloudflare' in file which starts with cloudflare
+provider/cloudflare: provider/cloudflare*
+
+# Add 'provider/coredns' in file which starts with coredns
+provider/coredns: provider/coredns*
+
+# Add 'provider/designate' in file which starts with designate
+provider/designate: provider/designate*
+
+# Add 'provider/digitalocean' in file which starts with digitalocean
+provider/digitalocean: provider/digital_ocean*
+
+# Add 'provider/dnssimple' in file which starts with dnssimple
+provider/dnssimple: provider/dnssimple*
+
+# Add 'provider/dyn' in file which starts with dyn
+provider/dyn: provider/dyn*
+
+# Add 'provider/exoscale' in file which starts with exoscale
+provider/exoscale: provider/exoscale*
+
+# Add 'provider/transip' in file which starts with transip
+provider/transip: provider/transip*
+
+# Add 'provider/rfc2136' in file which starts with rfc2136
+provider/rfc2136: provider/rfc2136*
+
+# Add 'provider/rdns' in file which starts with rdns
+provider/rdns: provider/rdns*
+
+# Add 'provider/powerdns' in file which starts with pdns
+provider/powerdns: provider/pdns*
+
+# Add 'provider/google' in file which starts with google
+provider/google: provider/google*
+
+# Add 'provider/infoblox' in file which starts with infoblox
+provider/infoblox: provider/infoblox*
+
+# Add 'provider/linode' in file which starts with linode
+provider/linode: provider/linode*
+
+# Add 'provider/ns1' in file which starts with ns1
+provider/ns1: provider/ns1*
+
+# Add 'provider/oci' in file which starts with oci
+provider/oci: provider/oci*
+
+# Add 'provider/vinyldns' in file which starts with vinyldns
+provider/vinyldns: provider/vinyldns*
