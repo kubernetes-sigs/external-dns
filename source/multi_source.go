@@ -16,7 +16,7 @@ limitations under the License.
 
 package source
 
-import "github.com/kubernetes-incubator/external-dns/endpoint"
+import "github.com/kubernetes-sigs/external-dns/endpoint"
 
 // multiSource is a Source that merges the endpoints of its nested Sources.
 type multiSource struct {

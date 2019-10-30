@@ -1,7 +1,7 @@
 # Registry
 #### [Old name: storage]
 
-Initial discussion - https://github.com/kubernetes-incubator/external-dns/issues/44
+Initial discussion - https://github.com/kubernetes-sigs/external-dns/issues/44
 
 ## Purpose
 
@@ -102,7 +102,7 @@ It is possible that the configmap will go out of sync with the dns provider stat
 
 Components:
 * Source - all endpoints ( collection of ingress, service[type=LoadBalancer] etc.)
-* [Plan](https://github.com/kubernetes-incubator/external-dns/issues/13) - object responsible for the create of change lists in external-dns
+* [Plan](https://github.com/kubernetes-sigs/external-dns/issues/13) - object responsible for the create of change lists in external-dns
 * Provider - interface to access the DNS provider API
 
 Registry will serve as wrapper around `Provider` providing additional information regarding endpoint ownership. Ownership will further taken into account by `Plan` to filter out records to include only records managed by current ExternalDNS instance (having same `owner-id` value)

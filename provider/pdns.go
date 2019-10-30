@@ -33,9 +33,9 @@ import (
 	"net"
 
 	pgo "github.com/ffledgling/pdns-go"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/pkg/tlsutils"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/kubernetes-sigs/external-dns/endpoint"
+	"github.com/kubernetes-sigs/external-dns/pkg/tlsutils"
+	"github.com/kubernetes-sigs/external-dns/plan"
 )
 
 type pdnsChangeType string

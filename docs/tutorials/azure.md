@@ -167,7 +167,7 @@ Ensure that your nginx-ingress deployment has the following arg: added to it:
 - --publish-service=namespace/nginx-ingress-controller-svcname
 ```
 
-For more details see here: [nginx-ingress external-dns](https://github.com/kubernetes-incubator/external-dns/blob/master/docs/faq.md#why-is-externaldns-only-adding-a-single-ip-address-in-route-53-on-aws-when-using-the-nginx-ingress-controller-how-do-i-get-it-to-use-the-fqdn-of-the-elb-assigned-to-my-nginx-ingress-controller-service-instead)
+For more details see here: [nginx-ingress external-dns](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/faq.md#why-is-externaldns-only-adding-a-single-ip-address-in-route-53-on-aws-when-using-the-nginx-ingress-controller-how-do-i-get-it-to-use-the-fqdn-of-the-elb-assigned-to-my-nginx-ingress-controller-service-instead)
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
 Then apply one of the following manifests file to deploy ExternalDNS.

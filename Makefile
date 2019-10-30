@@ -48,7 +48,7 @@ SOURCES        = $(shell find . -name '*.go')
 IMAGE         ?= registry.opensource.zalan.do/teapot/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty)
 BUILD_FLAGS   ?= -v
-LDFLAGS       ?= -X github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s
+LDFLAGS       ?= -X github.com/kubernetes-sigs/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s
 
 build: build/$(BINARY)
 
