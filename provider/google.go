@@ -19,6 +19,7 @@ package provider
 import (
 	goctx "context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"cloud.google.com/go/compute/metadata"
@@ -104,6 +105,8 @@ type GoogleProvider struct {
 	project string
 	// Enabled dry-run will print any modifying actions rather than execute them.
 	dryRun bool
+	// Max batch size to submit to Google Cloud DNS per transaction.
+	batchChangeSize int
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter DomainFilter
 	// only consider hosted zones ending with this zone id
@@ -117,7 +120,7 @@ type GoogleProvider struct {
 }
 
 // NewGoogleProvider initializes a new Google CloudDNS based Provider.
-func NewGoogleProvider(project string, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool) (*GoogleProvider, error) {
+func NewGoogleProvider(project string, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, batchChangeSize int, dryRun bool) (*GoogleProvider, error) {
 	gcloud, err := google.DefaultClient(context.TODO(), dns.NdevClouddnsReadwriteScope)
 	if err != nil {
 		return nil, err
@@ -146,6 +149,7 @@ func NewGoogleProvider(project string, domainFilter DomainFilter, zoneIDFilter Z
 	provider := &GoogleProvider{
 		project:                  project,
 		dryRun:                   dryRun,
+		batchChangeSize:          batchChangeSize,
 		domainFilter:             domainFilter,
 		zoneIDFilter:             zoneIDFilter,
 		resourceRecordSetsClient: resourceRecordSetsService{dnsClient.ResourceRecordSets},
@@ -290,27 +294,100 @@ func (p *GoogleProvider) submitChange(change *dns.Change) error {
 	// separate into per-zone change sets to be passed to the API.
 	changes := separateChange(zones, change)
 
-	for z, c := range changes {
-		log.Infof("Change zone: %v", z)
-		for _, del := range c.Deletions {
-			log.Infof("Del records: %s %s %s %d", del.Name, del.Type, del.Rrdatas, del.Ttl)
-		}
-		for _, add := range c.Additions {
-			log.Infof("Add records: %s %s %s %d", add.Name, add.Type, add.Rrdatas, add.Ttl)
-		}
-	}
+	for zone, change := range changes {
+		for batch, c := range batchChange(change, p.batchChangeSize) {
+			log.Infof("Change zone: %v batch #%d", zone, batch)
+			for _, del := range c.Deletions {
+				log.Infof("Del records: %s %s %s %d", del.Name, del.Type, del.Rrdatas, del.Ttl)
+			}
+			for _, add := range c.Additions {
+				log.Infof("Add records: %s %s %s %d", add.Name, add.Type, add.Rrdatas, add.Ttl)
+			}
 
-	if p.dryRun {
-		return nil
-	}
+			if p.dryRun {
+				continue
+			}
 
-	for z, c := range changes {
-		if _, err := p.changesClient.Create(p.project, z, c).Do(); err != nil {
-			return err
+			if _, err := p.changesClient.Create(p.project, zone, c).Do(); err != nil {
+				return err
+			}
 		}
 	}
 
 	return nil
+}
+
+// batchChange seperates a zone in multiple transaction.
+func batchChange(change *dns.Change, batchSize int) []*dns.Change {
+	changes := []*dns.Change{}
+
+	if batchSize == 0 {
+		return append(changes, change)
+	}
+
+	type dnsChange struct {
+		additions []*dns.ResourceRecordSet
+		deletions []*dns.ResourceRecordSet
+	}
+
+	changesByName := map[string]*dnsChange{}
+
+	for _, a := range change.Additions {
+		change, ok := changesByName[a.Name]
+		if !ok {
+			change = &dnsChange{}
+			changesByName[a.Name] = change
+		}
+
+		change.additions = append(change.additions, a)
+	}
+
+	for _, a := range change.Deletions {
+		change, ok := changesByName[a.Name]
+		if !ok {
+			change = &dnsChange{}
+			changesByName[a.Name] = change
+		}
+
+		change.deletions = append(change.deletions, a)
+	}
+
+	names := make([]string, 0)
+	for v := range changesByName {
+		names = append(names, v)
+	}
+	sort.Strings(names)
+
+	currentChange := &dns.Change{}
+	var totalChanges int
+	for _, name := range names {
+		c := changesByName[name]
+
+		totalChangesByName := len(c.additions) + len(c.deletions)
+
+		if totalChangesByName > batchSize {
+			log.Warnf("Total changes for %s exceeds max batch size of %d, total changes: %d", name,
+				batchSize, totalChangesByName)
+			continue
+		}
+
+		if totalChanges+totalChangesByName > batchSize {
+			totalChanges = 0
+			changes = append(changes, currentChange)
+			currentChange = &dns.Change{}
+		}
+
+		currentChange.Additions = append(currentChange.Additions, c.additions...)
+		currentChange.Deletions = append(currentChange.Deletions, c.deletions...)
+
+		totalChanges += totalChangesByName
+	}
+
+	if totalChanges > 0 {
+		changes = append(changes, currentChange)
+	}
+
+	return changes
 }
 
 // separateChange separates a multi-zone change into a single change per zone.

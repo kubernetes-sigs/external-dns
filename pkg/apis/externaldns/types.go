@@ -54,6 +54,7 @@ type Config struct {
 	ConnectorSourceServer       string
 	Provider                    string
 	GoogleProject               string
+	GoogleBatchChangeSize       int
 	DomainFilter                []string
 	ExcludeDomains              []string
 	ZoneIDFilter                []string
@@ -145,6 +146,7 @@ var defaultConfig = &Config{
 	ConnectorSourceServer:       "localhost:8080",
 	Provider:                    "",
 	GoogleProject:               "",
+	GoogleBatchChangeSize:       1000,
 	DomainFilter:                []string{},
 	ExcludeDomains:              []string{},
 	AlibabaCloudConfigFile:      "/etc/kubernetes/alibaba-cloud.json",
@@ -290,6 +292,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("exclude-domains", "Exclude subdomains (optional)").Default("").StringsVar(&cfg.ExcludeDomains)
 	app.Flag("zone-id-filter", "Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.ZoneIDFilter)
 	app.Flag("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
+	app.Flag("google-batch-change-size", "When using the Google provider, set the maximum number of changes that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.GoogleBatchChangeSize)).IntVar(&cfg.GoogleBatchChangeSize)
 	app.Flag("alibaba-cloud-config-file", "When using the Alibaba Cloud provider, specify the Alibaba Cloud configuration file (required when --provider=alibabacloud").Default(defaultConfig.AlibabaCloudConfigFile).StringVar(&cfg.AlibabaCloudConfigFile)
 	app.Flag("alibaba-cloud-zone-type", "When using the Alibaba Cloud provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AlibabaCloudZoneType).EnumVar(&cfg.AlibabaCloudZoneType, "", "public", "private")
 	app.Flag("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AWSZoneType).EnumVar(&cfg.AWSZoneType, "", "public", "private")
