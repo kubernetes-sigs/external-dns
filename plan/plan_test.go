@@ -187,8 +187,8 @@ func (suite *PlanTestSuite) TestSyncSecondRoundMigration() {
 	current := []*endpoint.Endpoint{suite.fooV2CnameNoLabel}
 	desired := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooV1Cname, suite.bar127A}
 	expectedCreate := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooV1Cname, suite.bar127A}
-	expectedUpdateOld := []*endpoint.Endpoint{}
-	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedUpdateOld := []*endpoint.Endpoint{suite.fooV2CnameNoLabel}
+	expectedUpdateNew := []*endpoint.Endpoint{suite.fooV1Cname}
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
@@ -251,8 +251,8 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithOwnerInherited() {
 	desired := []*endpoint.Endpoint{suite.fooV2Cname}
 
 	expectedCreate := []*endpoint.Endpoint{}
-	expectedUpdateOld := []*endpoint.Endpoint{}
-	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedUpdateOld := []*endpoint.Endpoint{suite.fooV1Cname}
+	expectedUpdateNew := []*endpoint.Endpoint{suite.fooV2Cname}
 	expectedDelete := []*endpoint.Endpoint{suite.fooV1Cname}
 
 	p := &Plan{
@@ -260,7 +260,6 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithOwnerInherited() {
 		Current:  current,
 		Desired:  desired,
 	}
-
 	changes := p.Calculate().Changes
 	validateEntries(suite.T(), changes.Create, expectedCreate)
 	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
@@ -293,8 +292,8 @@ func (suite *PlanTestSuite) TestDifferentTypes() {
 	current := []*endpoint.Endpoint{suite.fooV1Cname}
 	desired := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooA5}
 	expectedCreate := []*endpoint.Endpoint{suite.fooV2Cname, suite.fooA5}
-	expectedUpdateOld := []*endpoint.Endpoint{}
-	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedUpdateOld := []*endpoint.Endpoint{suite.fooV1Cname}
+	expectedUpdateNew := []*endpoint.Endpoint{suite.fooA5}
 	expectedDelete := []*endpoint.Endpoint{suite.fooV1Cname}
 
 	p := &Plan{
