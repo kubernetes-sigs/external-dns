@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
+	"github.com/kubernetes-sigs/external-dns/pkg/apis/externaldns"
 )
 
 // ValidateConfig performs validation on the Config object

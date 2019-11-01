@@ -23,10 +23,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/kubernetes-incubator/external-dns/plan"
-	"github.com/kubernetes-incubator/external-dns/provider"
-	"github.com/kubernetes-incubator/external-dns/registry"
-	"github.com/kubernetes-incubator/external-dns/source"
+	"github.com/kubernetes-sigs/external-dns/plan"
+	"github.com/kubernetes-sigs/external-dns/provider"
+	"github.com/kubernetes-sigs/external-dns/registry"
+	"github.com/kubernetes-sigs/external-dns/source"
 )
 
 var (

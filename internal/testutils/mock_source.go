@@ -19,7 +19,7 @@ package testutils
 import (
 	"github.com/stretchr/testify/mock"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-sigs/external-dns/endpoint"
 )
 
 // MockSource returns mock endpoints.

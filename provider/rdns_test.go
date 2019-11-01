@@ -27,8 +27,8 @@ import (
 	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/kubernetes-sigs/external-dns/endpoint"
+	"github.com/kubernetes-sigs/external-dns/plan"
 )
 
 type fakeEtcdv3Client struct {

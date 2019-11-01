@@ -19,8 +19,8 @@ package plan
 import (
 	"testing"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/internal/testutils"
+	"github.com/kubernetes-sigs/external-dns/endpoint"
+	"github.com/kubernetes-sigs/external-dns/internal/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )

@@ -4,7 +4,7 @@
 
 The provider has been written for and tested against [PowerDNS](https://github.com/PowerDNS/pdns) v4.1.x and thus requires **PowerDNS Auth Server >= 4.1.x**
 
-PowerDNS provider support was added via [this PR](https://github.com/kubernetes-incubator/external-dns/pull/373), thus you need to use external-dns version >= v0.5
+PowerDNS provider support was added via [this PR](https://github.com/kubernetes-sigs/external-dns/pull/373), thus you need to use external-dns version >= v0.5
 
 The PDNS provider expects that your PowerDNS instance is already setup and
 functional. It expects that zones, you wish to add records to, already exist

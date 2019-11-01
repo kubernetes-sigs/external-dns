@@ -19,8 +19,8 @@ package source
 import (
 	"testing"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/internal/testutils"
+	"github.com/kubernetes-sigs/external-dns/endpoint"
+	"github.com/kubernetes-sigs/external-dns/internal/testutils"
 )
 
 // Validates that dedupSource is a Source

@@ -29,7 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-sigs/external-dns/endpoint"
 )
 
 // This is a compile-time validation that ingressRouteSource is a Source.

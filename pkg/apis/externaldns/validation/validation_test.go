@@ -19,7 +19,7 @@ package validation
 import (
 	"testing"
 
-	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
+	"github.com/kubernetes-sigs/external-dns/pkg/apis/externaldns"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

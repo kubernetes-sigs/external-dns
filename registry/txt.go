@@ -23,9 +23,9 @@ import (
 
 	"strings"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
-	"github.com/kubernetes-incubator/external-dns/provider"
+	"github.com/kubernetes-sigs/external-dns/endpoint"
+	"github.com/kubernetes-sigs/external-dns/plan"
+	"github.com/kubernetes-sigs/external-dns/provider"
 	log "github.com/sirupsen/logrus"
 )
 
