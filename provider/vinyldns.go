@@ -22,8 +22,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/kubernetes-sigs/external-dns/endpoint"
+	"github.com/kubernetes-sigs/external-dns/plan"
 	log "github.com/sirupsen/logrus"
 	"github.com/vinyldns/go-vinyldns/vinyldns"
 )

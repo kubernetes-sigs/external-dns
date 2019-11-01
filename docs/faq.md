@@ -151,11 +151,11 @@ spec:
 
 ### I have a Service/Ingress but it's ignored by ExternalDNS. Why?
 
-ExternalDNS can be configured to only use Services or Ingresses as source. In case Services or Ingresses seem to be ignored in your setup, consider checking how the flag `--source` was configured when deployed. For reference, see the issue https://github.com/kubernetes-incubator/external-dns/issues/267.
+ExternalDNS can be configured to only use Services or Ingresses as source. In case Services or Ingresses seem to be ignored in your setup, consider checking how the flag `--source` was configured when deployed. For reference, see the issue https://github.com/kubernetes-sigs/external-dns/issues/267.
 
 ### I'm using an ELB with TXT registry but the CNAME record clashes with the TXT record. How to avoid this?
 
-CNAMEs cannot co-exist with other records, therefore you can use the `--txt-prefix` flag which makes sure to create a TXT record with a name following the pattern `prefix.<CNAME record>`. For reference, see the issue https://github.com/kubernetes-incubator/external-dns/issues/262.
+CNAMEs cannot co-exist with other records, therefore you can use the `--txt-prefix` flag which makes sure to create a TXT record with a name following the pattern `prefix.<CNAME record>`. For reference, see the issue https://github.com/kubernetes-sigs/external-dns/issues/262.
 
 ### Can I force ExternalDNS to create CNAME records for ELB/ALB?
 
@@ -260,7 +260,7 @@ and one with `--annotation-filter=kubernetes.io/ingress.class=nginx-external`.
 
 ### Can external-dns manage(add/remove) records in a hosted zone which is setup in different AWS account?
 
-Yes, give it the correct cross-account/assume-role permissions and use the `--aws-assume-role` flag https://github.com/kubernetes-incubator/external-dns/pull/524#issue-181256561
+Yes, give it the correct cross-account/assume-role permissions and use the `--aws-assume-role` flag https://github.com/kubernetes-sigs/external-dns/pull/524#issue-181256561
 
 ### How do I provide multiple values to the annotation `external-dns.alpha.kubernetes.io/hostname`?
 

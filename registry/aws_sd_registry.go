@@ -20,9 +20,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
-	"github.com/kubernetes-incubator/external-dns/provider"
+	"github.com/kubernetes-sigs/external-dns/endpoint"
+	"github.com/kubernetes-sigs/external-dns/plan"
+	"github.com/kubernetes-sigs/external-dns/provider"
 )
 
 // AWSSDRegistry implements registry interface with ownership information associated via the Description field of SD Service

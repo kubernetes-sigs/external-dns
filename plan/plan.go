@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-sigs/external-dns/endpoint"
 )
 
 // Plan can convert a list of desired and current records to a series of create,
@@ -191,7 +191,7 @@ func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
 	}
 	for _, c := range current.ProviderSpecific {
 		// don't consider target health when detecting changes
-		// see: https://github.com/kubernetes-incubator/external-dns/issues/869#issuecomment-458576954
+		// see: https://github.com/kubernetes-sigs/external-dns/issues/869#issuecomment-458576954
 		if c.Name == "aws/evaluate-target-health" {
 			continue
 		}

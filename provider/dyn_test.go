@@ -24,7 +24,7 @@ import (
 	"github.com/nesv/go-dynect/dynect"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-sigs/external-dns/endpoint"
 )
 
 func TestDynMerge_NoUpdateOnTTL0Changes(t *testing.T) {

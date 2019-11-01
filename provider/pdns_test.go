@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	pgo "github.com/ffledgling/pdns-go"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-sigs/external-dns/endpoint"
 )
 
 // FIXME: What do we do about labels?

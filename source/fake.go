@@ -26,7 +26,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/kubernetes-sigs/external-dns/endpoint"
 )
 
 // fakeSource is an implementation of Source that provides dummy endpoints for
