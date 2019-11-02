@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/linki/instrumented_http"
@@ -106,6 +107,8 @@ type GoogleProvider struct {
 	dryRun bool
 	// Max batch size to submit to Google Cloud DNS per transaction.
 	batchChangeSize int
+	// Interval between batch updates.
+	batchChangeInterval time.Duration
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter DomainFilter
 	// only consider hosted zones ending with this zone id
@@ -119,7 +122,7 @@ type GoogleProvider struct {
 }
 
 // NewGoogleProvider initializes a new Google CloudDNS based Provider.
-func NewGoogleProvider(project string, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, batchChangeSize int, dryRun bool) (*GoogleProvider, error) {
+func NewGoogleProvider(project string, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, batchChangeSize int, batchChangeInterval time.Duration, dryRun bool) (*GoogleProvider, error) {
 	gcloud, err := google.DefaultClient(context.TODO(), dns.NdevClouddnsReadwriteScope)
 	if err != nil {
 		return nil, err
@@ -149,6 +152,7 @@ func NewGoogleProvider(project string, domainFilter DomainFilter, zoneIDFilter Z
 		project:                  project,
 		dryRun:                   dryRun,
 		batchChangeSize:          batchChangeSize,
+		batchChangeInterval:      batchChangeInterval,
 		domainFilter:             domainFilter,
 		zoneIDFilter:             zoneIDFilter,
 		resourceRecordSetsClient: resourceRecordSetsService{dnsClient.ResourceRecordSets},
@@ -310,6 +314,8 @@ func (p *GoogleProvider) submitChange(change *dns.Change) error {
 			if _, err := p.changesClient.Create(p.project, zone, c).Do(); err != nil {
 				return err
 			}
+
+			time.Sleep(p.batchChangeInterval)
 		}
 	}
 
