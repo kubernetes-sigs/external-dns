@@ -23,7 +23,7 @@ spec:
       - name: external-dns
         image: registry.opensource.zalan.do/teapot/external-dns:latest
         args:
-        - --debug
+        - --log-level=debug
         - --source=service
         - --source=ingress
         - --namespace=dev
