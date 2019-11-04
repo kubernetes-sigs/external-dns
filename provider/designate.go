@@ -320,10 +320,10 @@ func (p designateProvider) Records() ([]*endpoint.Endpoint, error) {
 					return nil
 				}
 				for _, record := range recordSet.Records {
-					ep := endpoint.NewEndpoint(recordSet.Name, recordSet.Type, record)
-					ep.Labels[designateRecordSetID] = recordSet.ID
-					ep.Labels[designateZoneID] = recordSet.ZoneID
-					ep.Labels[designateOriginalRecords] = strings.Join(recordSet.Records, "\000")
+					ep := endpoint.NewEndpoint(recordSet.Name, recordSet.Type, record).
+						WithProviderSpecific(designateRecordSetID, recordSet.ID).
+						WithProviderSpecific(designateZoneID, recordSet.ZoneID).
+						WithProviderSpecific(designateOriginalRecords, strings.Join(recordSet.Records, "\000"))
 					result = append(result, ep)
 				}
 				return nil
@@ -358,14 +358,20 @@ func addEndpoint(ep *endpoint.Endpoint, recordSets map[string]*recordSet, delete
 		}
 	}
 	if rs.zoneID == "" {
-		rs.zoneID = ep.Labels[designateZoneID]
+		if prop, ok := ep.GetProviderSpecificProperty(designateZoneID); ok {
+			rs.zoneID = prop.Value
+		}
 	}
 	if rs.recordSetID == "" {
-		rs.recordSetID = ep.Labels[designateRecordSetID]
+		if prop, ok := ep.GetProviderSpecificProperty(designateRecordSetID); ok {
+			rs.recordSetID = prop.Value
+		}
 	}
-	for _, rec := range strings.Split(ep.Labels[designateOriginalRecords], "\000") {
-		if _, ok := rs.names[rec]; !ok && rec != "" {
-			rs.names[rec] = true
+	if prop, ok := ep.GetProviderSpecificProperty(designateOriginalRecords); ok {
+		for _, rec := range strings.Split(prop.Value, "\000") {
+			if _, ok := rs.names[rec]; !ok && rec != "" {
+				rs.names[rec] = true
+			}
 		}
 	}
 	targets := ep.Targets

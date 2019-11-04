@@ -244,60 +244,120 @@ func TestDesignateRecords(t *testing.T) {
 			DNSName:    "www.example.com",
 			RecordType: endpoint.RecordTypeA,
 			Targets:    endpoint.Targets{"10.1.1.1"},
-			Labels: map[string]string{
-				designateRecordSetID:     rs11ID,
-				designateZoneID:          zone1ID,
-				designateOriginalRecords: "10.1.1.1",
+			Labels:     map[string]string{},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				endpoint.ProviderSpecificProperty{
+					Name: designateRecordSetID,
+					Value: rs11ID,
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateZoneID,
+					Value: zone1ID,
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateOriginalRecords,
+					Value: "10.1.1.1",
+				},
 			},
 		},
 		{
 			DNSName:    "www.example.com",
 			RecordType: endpoint.RecordTypeTXT,
 			Targets:    endpoint.Targets{"text1"},
-			Labels: map[string]string{
-				designateRecordSetID:     rs12ID,
-				designateZoneID:          zone1ID,
-				designateOriginalRecords: "text1",
+			Labels:     map[string]string{},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				endpoint.ProviderSpecificProperty{
+					Name: designateRecordSetID,
+					Value: rs12ID,
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateZoneID,
+					Value: zone1ID,
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateOriginalRecords,
+					Value: "text1",
+				},
 			},
 		},
 		{
 			DNSName:    "ftp.example.com",
 			RecordType: endpoint.RecordTypeA,
 			Targets:    endpoint.Targets{"10.1.1.2"},
-			Labels: map[string]string{
-				designateRecordSetID:     rs14ID,
-				designateZoneID:          zone1ID,
-				designateOriginalRecords: "10.1.1.2",
+			Labels:     map[string]string{},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				endpoint.ProviderSpecificProperty{
+					Name: designateRecordSetID,
+					Value: rs14ID,
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateZoneID,
+					Value: zone1ID,
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateOriginalRecords,
+					Value: "10.1.1.2",
+				},
 			},
 		},
 		{
 			DNSName:    "srv.test.net",
 			RecordType: endpoint.RecordTypeA,
 			Targets:    endpoint.Targets{"10.2.1.1"},
-			Labels: map[string]string{
-				designateRecordSetID:     rs21ID,
-				designateZoneID:          zone2ID,
-				designateOriginalRecords: "10.2.1.1\00010.2.1.2",
+			Labels:     map[string]string{},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				endpoint.ProviderSpecificProperty{
+					Name: designateRecordSetID,
+					Value: rs21ID,
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateZoneID,
+					Value: zone2ID,
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateOriginalRecords,
+					Value: "10.2.1.1\00010.2.1.2",
+				},
 			},
 		},
 		{
 			DNSName:    "srv.test.net",
 			RecordType: endpoint.RecordTypeA,
 			Targets:    endpoint.Targets{"10.2.1.2"},
-			Labels: map[string]string{
-				designateRecordSetID:     rs21ID,
-				designateZoneID:          zone2ID,
-				designateOriginalRecords: "10.2.1.1\00010.2.1.2",
+			Labels:     map[string]string{},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				endpoint.ProviderSpecificProperty{
+					Name: designateRecordSetID,
+					Value: rs21ID,
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateZoneID,
+					Value: zone2ID,
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateOriginalRecords,
+					Value: "10.2.1.1\00010.2.1.2",
+				},
 			},
 		},
 		{
 			DNSName:    "db.test.net",
 			RecordType: endpoint.RecordTypeCNAME,
 			Targets:    endpoint.Targets{"sql.test.net"},
-			Labels: map[string]string{
-				designateRecordSetID:     rs22ID,
-				designateZoneID:          zone2ID,
-				designateOriginalRecords: "sql.test.net.",
+			Labels:     map[string]string{},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				endpoint.ProviderSpecificProperty{
+					Name: designateRecordSetID,
+					Value: rs22ID,
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateZoneID,
+					Value: zone2ID,
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateOriginalRecords,
+					Value: "sql.test.net.",
+				},
 			},
 		},
 	}
@@ -452,20 +512,40 @@ func testDesignateUpdateRecords(t *testing.T, client *fakeDesignateClient) []*re
 			DNSName:    "ftp.example.com",
 			RecordType: endpoint.RecordTypeA,
 			Targets:    endpoint.Targets{"10.1.1.2"},
-			Labels: map[string]string{
-				designateZoneID:          "zone-1",
-				designateRecordSetID:     expected[2].ID,
-				designateOriginalRecords: "10.1.1.2",
+			Labels:     map[string]string{},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				endpoint.ProviderSpecificProperty{
+					Name: designateRecordSetID,
+					Value: expected[2].ID,
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateZoneID,
+					Value: "zone-1",
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateOriginalRecords,
+					Value: "10.1.1.2",
+				},
 			},
 		},
 		{
 			DNSName:    "srv.test.net.",
 			RecordType: endpoint.RecordTypeA,
 			Targets:    endpoint.Targets{"10.2.1.2"},
-			Labels: map[string]string{
-				designateZoneID:          "zone-2",
-				designateRecordSetID:     expected[3].ID,
-				designateOriginalRecords: "10.2.1.1\00010.2.1.2",
+			Labels:     map[string]string{},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				endpoint.ProviderSpecificProperty{
+					Name: designateRecordSetID,
+					Value: expected[3].ID,
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateZoneID,
+					Value: "zone-2",
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateOriginalRecords,
+					Value: "10.2.1.1\00010.2.1.2",
+				},
 			},
 		},
 	}
@@ -474,20 +554,40 @@ func testDesignateUpdateRecords(t *testing.T, client *fakeDesignateClient) []*re
 			DNSName:    "ftp.example.com",
 			RecordType: endpoint.RecordTypeA,
 			Targets:    endpoint.Targets{"10.3.3.1"},
-			Labels: map[string]string{
-				designateZoneID:          "zone-1",
-				designateRecordSetID:     expected[2].ID,
-				designateOriginalRecords: "10.1.1.2",
+			Labels:     map[string]string{},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				endpoint.ProviderSpecificProperty{
+					Name: designateRecordSetID,
+					Value: expected[2].ID,
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateZoneID,
+					Value: "zone-1",
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateOriginalRecords,
+					Value: "10.1.1.2",
+				},
 			},
 		},
 		{
 			DNSName:    "srv.test.net.",
 			RecordType: endpoint.RecordTypeA,
 			Targets:    endpoint.Targets{"10.3.3.2"},
-			Labels: map[string]string{
-				designateZoneID:          "zone-2",
-				designateRecordSetID:     expected[3].ID,
-				designateOriginalRecords: "10.2.1.1\00010.2.1.2",
+			Labels:     map[string]string{},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				endpoint.ProviderSpecificProperty{
+					Name: designateRecordSetID,
+					Value: expected[3].ID,
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateZoneID,
+					Value: "zone-2",
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateOriginalRecords,
+					Value: "10.2.1.1\00010.2.1.2",
+				},
 			},
 		},
 	}
@@ -535,20 +635,40 @@ func testDesignateDeleteRecords(t *testing.T, client *fakeDesignateClient) {
 			DNSName:    "www.example.com.",
 			RecordType: endpoint.RecordTypeA,
 			Targets:    endpoint.Targets{"10.1.1.1"},
-			Labels: map[string]string{
-				designateZoneID:          "zone-1",
-				designateRecordSetID:     expected[0].ID,
-				designateOriginalRecords: "10.1.1.1",
+			Labels:     map[string]string{},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				endpoint.ProviderSpecificProperty{
+					Name: designateRecordSetID,
+					Value: expected[0].ID,
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateZoneID,
+					Value: "zone-1",
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateOriginalRecords,
+					Value: "10.1.1.1",
+				},
 			},
 		},
 		{
 			DNSName:    "srv.test.net.",
 			RecordType: endpoint.RecordTypeA,
 			Targets:    endpoint.Targets{"10.2.1.1"},
-			Labels: map[string]string{
-				designateZoneID:          "zone-2",
-				designateRecordSetID:     expected[3].ID,
-				designateOriginalRecords: "10.2.1.1\00010.3.3.2",
+			Labels:     map[string]string{},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				endpoint.ProviderSpecificProperty{
+					Name: designateRecordSetID,
+					Value: expected[3].ID,
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateZoneID,
+					Value: "zone-2",
+				},
+				endpoint.ProviderSpecificProperty{
+					Name: designateOriginalRecords,
+					Value: "10.2.1.1\00010.3.3.2",
+				},
 			},
 		},
 	}
