@@ -129,13 +129,31 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		UpdateOld: filterOwnedRecords(im.ownerID, changes.UpdateOld),
 		Delete:    filterOwnedRecords(im.ownerID, changes.Delete),
 	}
+
+	// Retain ProviderSpecific properties from existing TXT record if present
+	providerSpecificPropertyMap := map[string]endpoint.ProviderSpecific{}
+	records, err := im.provider.Records()
+	if err != nil {
+		return err
+	}
+	for _, r := range records {
+		if r.RecordType == endpoint.RecordTypeTXT {
+			_, err := endpoint.NewLabelsFromString(r.Targets[0])
+			if err == nil {
+				key := fmt.Sprintf("%s::%s", r.DNSName, r.SetIdentifier)
+				providerSpecificPropertyMap[key] = r.ProviderSpecific
+			}
+		}
+	}
+
 	for _, r := range filteredChanges.Create {
 		if r.Labels == nil {
 			r.Labels = make(map[string]string)
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
+		key := fmt.Sprintf("%s::%s", r.DNSName, r.SetIdentifier)
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
-		txt.ProviderSpecific = r.ProviderSpecific
+		txt.ProviderSpecific = providerSpecificPropertyMap[key]
 		filteredChanges.Create = append(filteredChanges.Create, txt)
 
 		if im.cacheInterval > 0 {
@@ -144,8 +162,9 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	}
 
 	for _, r := range filteredChanges.Delete {
+		key := fmt.Sprintf("%s::%s", r.DNSName, r.SetIdentifier)
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
-		txt.ProviderSpecific = r.ProviderSpecific
+		txt.ProviderSpecific = providerSpecificPropertyMap[key]
 
 		// when we delete TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
@@ -158,8 +177,9 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateOld {
+		key := fmt.Sprintf("%s::%s", r.DNSName, r.SetIdentifier)
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
-		txt.ProviderSpecific = r.ProviderSpecific
+		txt.ProviderSpecific = providerSpecificPropertyMap[key]
 		// when we updateOld TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
 		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, txt)
@@ -171,8 +191,9 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateNew {
+		key := fmt.Sprintf("%s::%s", r.DNSName, r.SetIdentifier)
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
-		txt.ProviderSpecific = r.ProviderSpecific
+		txt.ProviderSpecific = providerSpecificPropertyMap[key]
 		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, txt)
 		// add new version of record to cache
 		if im.cacheInterval > 0 {
