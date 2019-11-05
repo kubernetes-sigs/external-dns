@@ -39,6 +39,8 @@ It is important to manually create all the zones that are going to be used for k
 
 Create a deployment file called `externaldns.yaml` with the following contents:
 
+### Manifest (for clusters without RBAC enabled)
+
 ```yaml
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -54,14 +56,87 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns
+        image: registry.opensource.zalan.do/teapot/external-dns:latest
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=designate
         env: # values from openrc file
         - name: OS_AUTH_URL
-          value: http://controller/identity/v3
+          value: https://controller/identity/v3
+        - name: OS_REGION_NAME
+          value: RegionOne
+        - name: OS_USERNAME
+          value: admin
+        - name: OS_PASSWORD
+          value: p@ssw0rd
+        - name: OS_PROJECT_NAME
+          value: demo
+        - name: OS_USER_DOMAIN_NAME
+          value: Default
+```
+
+### Manifest (for clusters without RBAC enabled)
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: external-dns
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: external-dns
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get","watch","list"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["extensions"] 
+  resources: ["ingresses"] 
+  verbs: ["get","watch","list"]
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["watch","list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: external-dns-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: external-dns
+subjects:
+- kind: ServiceAccount
+  name: external-dns
+  namespace: default
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: external-dns
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: external-dns
+    spec:
+      containers:
+      - name: external-dns
+        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        args:
+        - --source=service # ingress is also possible
+        - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
+        - --provider=designate
+        env: # values from openrc file
+        - name: OS_AUTH_URL
+          value: https://controller/identity/v3
         - name: OS_REGION_NAME
           value: RegionOne
         - name: OS_USERNAME
@@ -79,6 +154,22 @@ Create the deployment for ExternalDNS:
 ```console
 $ kubectl create -f externaldns.yaml
 ```
+
+### Optional: Trust self-sign certificates
+If your OpenStack-Installation is configured with a self-sign certificate, you could extend the `pod.spec` with following secret-mount:
+```yaml
+        volumeMounts:
+        - mountPath: /etc/ssl/certs/
+          name: cacerts 
+      volumes:
+      - name: cacerts
+        secret:
+          defaultMode: 420
+          secretName: self-sign-certs
+```
+
+content of the secret `self-sign-certs` must be the certificate/chain in PEM format.
+
 
 ## Deploying an Nginx Service
 
