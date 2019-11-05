@@ -3,10 +3,11 @@ on:
 - pull_request
 
 jobs:
-  triage:
+  label:
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/labeler@v2
-      if: github.repository == 'kubernetes-sigs/external-dns'
-      with:
-        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+      - uses: actions/labeler@v2
+        if: contains(github.repository, 'kubernetes-sigs/external-dns')
+        with:
+          repo-token: '${{ secrets.GITHUB_TOKEN }}'
