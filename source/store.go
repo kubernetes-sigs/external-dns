@@ -25,13 +25,14 @@ import (
 
 	"sync"
 
-	cfclient "github.com/cloudfoundry-community/go-cfclient"
+	"github.com/cloudfoundry-community/go-cfclient"
 	contour "github.com/heptio/contour/apis/generated/clientset/versioned"
 	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
-	istiocrd "istio.io/istio/pilot/pkg/config/kube/crd"
+	istiocontroller "istio.io/istio/pilot/pkg/config/kube/crd/controller"
 	istiomodel "istio.io/istio/pilot/pkg/model"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -219,13 +220,28 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 // uses KubeMaster and KubeConfig attributes to connect to the cluster. If
 // KubeConfig isn't provided it defaults to using the recommended default.
 func NewKubeClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) (*kubernetes.Clientset, error) {
+	log.Infof("Instantiating new Kubernetes client")
+
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
 			kubeConfig = clientcmd.RecommendedHomeFile
 		}
 	}
+	log.Debugf("kubeMaster: %s", kubeMaster)
+	log.Debugf("kubeConfig: %s", kubeConfig)
 
-	config, err := clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
+	// evaluate whether to use kubeConfig-file or serviceaccount-token
+	var (
+		config *rest.Config
+		err    error
+	)
+	if kubeConfig == "" {
+		log.Infof("Using inCluster-config based on serviceaccount-token")
+		config, err = rest.InClusterConfig()
+	} else {
+		log.Infof("Using kubeConfig")
+		config, err = clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -259,14 +275,14 @@ func NewKubeClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) 
 // wrappers) to the client's config at this level. Furthermore, the Istio client
 // constructor does not expose the ability to override the Kubernetes master,
 // so the Master config attribute has no effect.
-func NewIstioClient(kubeConfig string) (*istiocrd.Client, error) {
+func NewIstioClient(kubeConfig string) (*istiocontroller.Client, error) {
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
 			kubeConfig = clientcmd.RecommendedHomeFile
 		}
 	}
 
-	client, err := istiocrd.NewClient(
+	client, err := istiocontroller.NewClient(
 		kubeConfig,
 		"",
 		istiomodel.ConfigDescriptor{istiomodel.Gateway},
