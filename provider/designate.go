@@ -19,18 +19,17 @@ package provider
 import (
 	"context"
 	"fmt"
-	"net"
-	"net/http"
-	"os"
-	"strings"
-	"time"
-
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/dns/v2/recordsets"
 	"github.com/gophercloud/gophercloud/openstack/dns/v2/zones"
 	"github.com/gophercloud/gophercloud/pagination"
 	log "github.com/sirupsen/logrus"
+	"net"
+	"net/http"
+	"os"
+	"strings"
+	"time"
 
 	"github.com/kubernetes-sigs/external-dns/endpoint"
 	"github.com/kubernetes-sigs/external-dns/pkg/tlsutils"
@@ -447,8 +446,10 @@ func (p designateProvider) upsertRecordSet(rs *recordSet, managedZones map[strin
 		}
 		return p.client.DeleteRecordSet(rs.zoneID, rs.recordSetID)
 	} else {
+		ttl := 0
 		opts := recordsets.UpdateOpts{
 			Records: records,
+			TTL:     &ttl,
 		}
 		log.Infof("Updating records: %s/%s: %s", rs.dnsName, rs.recordType, strings.Join(records, ","))
 		if p.dryRun {
