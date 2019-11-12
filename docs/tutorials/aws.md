@@ -70,13 +70,16 @@ For clusters with RBAC enabled, be sure to choose the correct `namespace`.
 
 ### Manifest (for clusters without RBAC enabled)
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: external-dns
 spec:
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: external-dns
   template:
     metadata:
       labels:
@@ -115,8 +118,8 @@ rules:
 - apiGroups: [""]
   resources: ["pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions"] 
-  resources: ["ingresses"] 
+- apiGroups: ["extensions"]
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
@@ -135,13 +138,16 @@ subjects:
   name: external-dns
   namespace: default
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: external-dns
 spec:
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: external-dns
   template:
     metadata:
       labels:
