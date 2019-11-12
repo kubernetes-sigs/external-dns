@@ -4,9 +4,6 @@
 This tutorial describes how to setup ExternalDNS for managing records in Azure Private DNS.  
 It assumes to deploy ExternalDNS as a container Kubernetes.
 
->Note: With Azure Private DNS we refer to the successor of the private-zone functionality in Azure DNS, which is 
-a separate, independent product.
-
 
 It comprises of the following steps:
 1) Provision Azure Private DNS
