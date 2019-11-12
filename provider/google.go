@@ -31,6 +31,7 @@ import (
 	"golang.org/x/oauth2/google"
 
 	googleapi "google.golang.org/api/googleapi"
+	"google.golang.org/api/option"
 
 	"github.com/kubernetes-sigs/external-dns/endpoint"
 	"github.com/kubernetes-sigs/external-dns/plan"
@@ -129,7 +130,7 @@ func NewGoogleProvider(project string, domainFilter DomainFilter, zoneIDFilter Z
 		},
 	})
 
-	dnsClient, err := dns.New(gcloud)
+	dnsClient, err := dns.NewService(context.TODO(), option.WithHTTPClient(gcloud))
 	if err != nil {
 		return nil, err
 	}
