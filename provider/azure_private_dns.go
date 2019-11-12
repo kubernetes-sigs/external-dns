@@ -164,7 +164,7 @@ func (p *AzurePrivateDNSProvider) ApplyChanges(ctx context.Context, changes *pla
 }
 
 func (p *AzurePrivateDNSProvider) zones(ctx context.Context) ([]privatedns.PrivateZone, error) {
-	log.Debugf("Retrieving Azure DNS zones for Resource Group '%s'", p.resourceGroup)
+	log.Debugf("Retrieving Azure Private DNS zones for Resource Group '%s'", p.resourceGroup)
 
 	var zones []privatedns.PrivateZone
 
@@ -197,7 +197,7 @@ func (p *AzurePrivateDNSProvider) zones(ctx context.Context) ([]privatedns.Priva
 		}
 	}
 
-	log.Debugf("Found %d Azure DNS zone(s).", len(zones))
+	log.Debugf("Found %d Azure Private DNS zone(s).", len(zones))
 	return zones, nil
 }
 
@@ -238,7 +238,7 @@ func (p *AzurePrivateDNSProvider) mapChanges(zones []privatedns.PrivateZone, cha
 		if zone == "" {
 			if _, ok := ignored[change.DNSName]; !ok {
 				ignored[change.DNSName] = true
-				log.Infof("Ignoring changes to '%s' because a suitable Azure DNS zone was not found.", change.DNSName)
+				log.Infof("Ignoring changes to '%s' because a suitable Azure Private DNS zone was not found.", change.DNSName)
 			}
 			return
 		}
@@ -271,12 +271,12 @@ func (p *AzurePrivateDNSProvider) deleteRecords(ctx context.Context, deleted azu
 		for _, endpoint := range endpoints {
 			name := p.recordSetNameForZone(zone, endpoint)
 			if p.dryRun {
-				log.Infof("Would delete %s record named '%s' for Azure DNS zone '%s'.", endpoint.RecordType, name, zone)
+				log.Infof("Would delete %s record named '%s' for Azure Private DNS zone '%s'.", endpoint.RecordType, name, zone)
 			} else {
-				log.Infof("Deleting %s record named '%s' for Azure DNS zone '%s'.", endpoint.RecordType, name, zone)
+				log.Infof("Deleting %s record named '%s' for Azure Private DNS zone '%s'.", endpoint.RecordType, name, zone)
 				if _, err := p.recordSetsClient.Delete(ctx, p.resourceGroup, zone, privatedns.RecordType(endpoint.RecordType), name, ""); err != nil {
 					log.Errorf(
-						"Failed to delete %s record named '%s' for Azure DNS zone '%s': %v",
+						"Failed to delete %s record named '%s' for Azure Private DNS zone '%s': %v",
 						endpoint.RecordType,
 						name,
 						zone,
@@ -295,7 +295,7 @@ func (p *AzurePrivateDNSProvider) updateRecords(ctx context.Context, updated azu
 			name := p.recordSetNameForZone(zone, endpoint)
 			if p.dryRun {
 				log.Infof(
-					"Would update %s record named '%s' to '%s' for Azure DNS zone '%s'.",
+					"Would update %s record named '%s' to '%s' for Azure Private DNS zone '%s'.",
 					endpoint.RecordType,
 					name,
 					endpoint.Targets,
@@ -305,7 +305,7 @@ func (p *AzurePrivateDNSProvider) updateRecords(ctx context.Context, updated azu
 			}
 
 			log.Infof(
-				"Updating %s record named '%s' to '%s' for Azure DNS zone '%s'.",
+				"Updating %s record named '%s' to '%s' for Azure Private DNS zone '%s'.",
 				endpoint.RecordType,
 				name,
 				endpoint.Targets,
@@ -327,7 +327,7 @@ func (p *AzurePrivateDNSProvider) updateRecords(ctx context.Context, updated azu
 			}
 			if err != nil {
 				log.Errorf(
-					"Failed to update %s record named '%s' to '%s' for DNS zone '%s': %v",
+					"Failed to update %s record named '%s' to '%s' for Azure Private DNS zone '%s': %v",
 					endpoint.RecordType,
 					name,
 					endpoint.Targets,
