@@ -19,6 +19,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/Azure/go-autorest/autorest"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -36,18 +37,30 @@ type azurePrivateDNSConfig struct {
 	ResourceGroup  string `json:"resourceGroup" yaml:"resourceGroup"`
 }
 
-// AzureProvider implements the DNS provider for Microsoft's Azure cloud platform.
+// PrivateZonesClient is an interface of privatedns.PrivateZoneClient that can be stubbed for testing.
+type PrivateZonesClient interface {
+	ListByResourceGroupComplete(ctx context.Context, resourceGroupName string, top *int32) (result privatedns.PrivateZoneListResultIterator, err error)
+}
+
+// PrivateRecordSetsClient is an interface of privatedns.RecordSetsClient that can be stubbed for testing.
+type PrivateRecordSetsClient interface {
+	ListComplete(ctx context.Context, resourceGroupName string, zoneName string, top *int32, recordSetNameSuffix string) (result privatedns.RecordSetListResultIterator, err error)
+	Delete(ctx context.Context, resourceGroupName string, privateZoneName string, recordType privatedns.RecordType, relativeRecordSetName string, ifMatch string) (result autorest.Response, err error)
+	CreateOrUpdate(ctx context.Context, resourceGroupName string, privateZoneName string, recordType privatedns.RecordType, relativeRecordSetName string, parameters privatedns.RecordSet, ifMatch string, ifNoneMatch string) (result privatedns.RecordSet, err error)
+}
+
+// AzurePrivateDNSProvider implements the DNS provider for Microsoft's Azure Private DNS service
 type AzurePrivateDNSProvider struct {
 	domainFilter     DomainFilter
 	zoneIDFilter     ZoneIDFilter
 	dryRun           bool
 	subscriptionID   string
 	resourceGroup    string
-	zonesClient      privatedns.PrivateZonesClient
-	recordSetsClient privatedns.RecordSetsClient
+	zonesClient      PrivateZonesClient
+	recordSetsClient PrivateRecordSetsClient
 }
 
-// NewAzureProvider creates a new Azure provider.
+// NewAzurePrivateDNSProvider creates a new Azure Private DNS provider.
 //
 // Returns the provider or an error if a provider could not be created.
 func NewAzurePrivateDNSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, resourceGroup string, subscriptionID string, dryRun bool) (*AzurePrivateDNSProvider, error) {
