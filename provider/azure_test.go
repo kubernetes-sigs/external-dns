@@ -370,9 +370,8 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordSetsC
 			result := results[0]
 			results = nil
 			return result, nil
-		} else {
-			return dns.ZoneListResult{}, nil
 		}
+		return dns.ZoneListResult{}, nil
 	})
 	mockZoneClientIterator := dns.NewZoneListResultIterator(mockZoneListResultPage)
 

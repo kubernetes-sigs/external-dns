@@ -38,9 +38,9 @@ import (
 )
 
 const (
-	// The annotation used for determining if an ALB ingress is dualstack
+	// ALBDualstackAnnotationKey is the annotation used for determining if an ALB ingress is dualstack
 	ALBDualstackAnnotationKey = "alb.ingress.kubernetes.io/ip-address-type"
-	// The value of the ALB dualstack annotation that indicates it is dualstack
+	// ALBDualstackAnnotationValue is the value of the ALB dualstack annotation that indicates it is dualstack
 	ALBDualstackAnnotationValue = "dualstack"
 )
 
