@@ -53,7 +53,7 @@ type ingressRouteSource struct {
 	ingressRouteInformer       extinformers.IngressRouteInformer
 }
 
-// NewIngressRouteSource creates a new ingressRouteSource with the given config.
+// NewContourIngressRouteSource creates a new contourIngressRouteSource with the given config.
 func NewContourIngressRouteSource(
 	kubeClient kubernetes.Interface,
 	contourClient contour.Interface,
