@@ -76,6 +76,7 @@ func SameEndpoints(a, b []*endpoint.Endpoint) bool {
 	return true
 }
 
+// SameEndpointLabels verifies that labels of the two slices of endpoints are the same
 func SameEndpointLabels(a, b []*endpoint.Endpoint) bool {
 	if len(a) != len(b) {
 		return false
