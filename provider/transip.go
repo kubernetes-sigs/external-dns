@@ -304,7 +304,7 @@ func (p *TransIPProvider) dnsEntriesAreEqual(a, b transip.DNSEntries) bool {
 				continue
 			}
 
-			match += 1
+			match++
 		}
 	}
 
