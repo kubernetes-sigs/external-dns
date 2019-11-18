@@ -25,14 +25,12 @@ import (
 	"strings"
 )
 
-// AWSSDRegistry implements registry interface with ownership information associated via the Description field of SD Service
 type AlibabaCloudSDRegistry struct {
 	provider provider.Provider
 	ownerID  string
 	prefix   string
 }
 
-// NewAWSSDRegistry returns implementation of registry for AWS SD
 func NewAlibabaCloudSDRegistry(provider provider.Provider, prefix string, ownerID string) (*AlibabaCloudSDRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
@@ -44,8 +42,7 @@ func NewAlibabaCloudSDRegistry(provider provider.Provider, prefix string, ownerI
 	}, nil
 }
 
-// Records calls AWS SD API and expects AWS SD provider to provider Owner/Resource information as a serialized
-// value in the AWSSDDescriptionLabel value in the Labels map
+
 func (adr *AlibabaCloudSDRegistry) Records() ([]*endpoint.Endpoint, error) {
 	records, err := adr.provider.Records()
 	if err != nil {
@@ -92,8 +89,6 @@ func (adr *AlibabaCloudSDRegistry) toTxtKey(ep *endpoint.Endpoint) string {
 	return strings.ReplaceAll(ep.Targets[0], ".", "_") + "-" + ep.DNSName
 }
 
-// ApplyChanges filters out records not owned the External-DNS, additionally it adds the required label
-// inserted in the AWS SD instance as a CreateID field
 func (adr *AlibabaCloudSDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
