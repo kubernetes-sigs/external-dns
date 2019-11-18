@@ -54,7 +54,7 @@ Finally, create the mentioned link with the VNET.
 
 ```
 $ az network private-dns link vnet create -g externaldns -n mylink \
-   -z example.com -v myvnet
+   -z example.com -v myvnet --registration-enabled false
 ```
 
 ## Configure service principal for managing the zone
@@ -66,7 +66,7 @@ More powerful role-assignments like `owner` or assignments on subscription-level
 
 Start off by **creating the service principal** without role-assignments.
 ```
-$ az ad sp create-for-rbac -n externaldns-sp
+$ az ad sp create-for-rbac --skip-assignment -n http://externaldns-sp
 {
   "appId": "appId GUID",  <-- aadClientId value
   ...
@@ -82,17 +82,11 @@ But first **retrieve the ID's** of the objects to assign roles on.
 
 ```
 # find out the resource ids of the resource group where the dns zone is deployed, and the dns zone itself
-$ az group show --name externaldns
-{
-  "id": "/subscriptions/id/resourceGroups/externaldns",
-  ...
-}
+$ az group show --name externaldns --query id -o tsv
+/subscriptions/id/resourceGroups/externaldns
 
-$ az network private-dns zone show --name example.com -g externaldns
-{
-  "id": "/subscriptions/.../resourceGroups/externaldns/providers/Microsoft.Network/privateDnsZones/example.com",
-  ...
-}
+$ az network private-dns zone show --name example.com -g externaldns --query id -o tsv
+/subscriptions/.../resourceGroups/externaldns/providers/Microsoft.Network/privateDnsZones/example.com
 ```
 Now, **create role assignments**.
 ```
@@ -113,7 +107,7 @@ Azure-CLI features functionality for automatically maintaining this file for AKS
 Then apply one of the following manifests depending on whether you use RBAC or not.
 
 The credentials of the service principal are provided to ExternalDNS as environment-variables.   
-At the end of this section, we additionaly describe how to provide them as a _file_.
+At the end of this section, we additionally describe how to provide them as a _file_.
 
 ### Manifest (for clusters without RBAC enabled)
 ```yaml
