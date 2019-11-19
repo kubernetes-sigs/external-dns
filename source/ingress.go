@@ -187,14 +187,14 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 		targets = targetsFromIngressStatus(ing.Status)
 	}
 
-	providerSpecific := getProviderSpecificAnnotations(ing.Annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ing.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 	// splits the FQDN template and removes the trailing periods
 	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
 	for _, hostname := range hostnameList {
 		hostname = strings.TrimSuffix(hostname, ".")
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific)...)
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 	return endpoints, nil
 }
@@ -261,13 +261,13 @@ func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool) [
 		targets = targetsFromIngressStatus(ing.Status)
 	}
 
-	providerSpecific := getProviderSpecificAnnotations(ing.Annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ing.Annotations)
 
 	for _, rule := range ing.Spec.Rules {
 		if rule.Host == "" {
 			continue
 		}
-		endpoints = append(endpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific)...)
+		endpoints = append(endpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 
 	for _, tls := range ing.Spec.TLS {
@@ -275,7 +275,7 @@ func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool) [
 			if host == "" {
 				continue
 			}
-			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific)...)
+			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
 		}
 	}
 
@@ -283,7 +283,7 @@ func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool) [
 	if !ignoreHostnameAnnotation {
 		hostnameList := getHostnamesFromAnnotations(ing.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific)...)
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 		}
 	}
 	return endpoints
