@@ -262,6 +262,7 @@ Here's a rough outline on what is to come (subject to change):
 - [x] Support for RcodeZero
 - [x] Support for NS1
 - [x] Support for TransIP
+- [x] Support for Azure Private DNS
 
 ### v0.6
 
