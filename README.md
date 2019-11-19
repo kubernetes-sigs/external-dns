@@ -110,7 +110,8 @@ The following tutorials are provided:
 	* [Route53](docs/tutorials/aws.md)
 		* [Same domain for public and private Route53 zones](docs/tutorials/public-private-route53.md)
 	* [Service Discovery](docs/tutorials/aws-sd.md)
-* [Azure](docs/tutorials/azure.md)
+* [Azure DNS](docs/tutorials/azure.md)
+* [Azure Private DNS](docs/tutorials/azure-private-dns.md)
 * [Cloudflare](docs/tutorials/cloudflare.md)
 * [CoreDNS](docs/tutorials/coredns.md)
 * [DigitalOcean](docs/tutorials/digitalocean.md)
@@ -261,6 +262,7 @@ Here's a rough outline on what is to come (subject to change):
 - [x] Support for RcodeZero
 - [x] Support for NS1
 - [x] Support for TransIP
+- [x] Support for Azure Private DNS
 
 ### v0.6
 
