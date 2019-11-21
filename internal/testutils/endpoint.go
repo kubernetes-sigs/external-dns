@@ -47,10 +47,10 @@ func (b byAllFields) Less(i, j int) bool {
 // SameEndpoint returns true if two endpoints are same
 // considers example.org. and example.org DNSName/Target as different endpoints
 func SameEndpoint(a, b *endpoint.Endpoint) bool {
-	return a.DNSName == b.DNSName && a.Targets.Same(b.Targets) && a.RecordType == b.RecordType &&
+	return a.DNSName == b.DNSName && a.Targets.Same(b.Targets) && a.RecordType == b.RecordType && a.SetIdentifier == b.SetIdentifier &&
 		a.Labels[endpoint.OwnerLabelKey] == b.Labels[endpoint.OwnerLabelKey] && a.RecordTTL == b.RecordTTL &&
 		a.Labels[endpoint.ResourceLabelKey] == b.Labels[endpoint.ResourceLabelKey] &&
-		SameProverSpecific(a.ProviderSpecific, b.ProviderSpecific)
+		SameProviderSpecific(a.ProviderSpecific, b.ProviderSpecific)
 }
 
 // SameEndpoints compares two slices of endpoints regardless of order
@@ -76,6 +76,7 @@ func SameEndpoints(a, b []*endpoint.Endpoint) bool {
 	return true
 }
 
+// SameEndpointLabels verifies that labels of the two slices of endpoints are the same
 func SameEndpointLabels(a, b []*endpoint.Endpoint) bool {
 	if len(a) != len(b) {
 		return false
@@ -100,7 +101,7 @@ func SamePlanChanges(a, b map[string][]*endpoint.Endpoint) bool {
 		SameEndpoints(a["UpdateOld"], b["UpdateOld"]) && SameEndpoints(a["UpdateNew"], b["UpdateNew"])
 }
 
-// SameProverSpecific verifies that two maps contain the same string/string key/value pairs
-func SameProverSpecific(a, b endpoint.ProviderSpecific) bool {
+// SameProviderSpecific verifies that two maps contain the same string/string key/value pairs
+func SameProviderSpecific(a, b endpoint.ProviderSpecific) bool {
 	return reflect.DeepEqual(a, b)
 }

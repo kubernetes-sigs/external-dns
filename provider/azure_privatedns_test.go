@@ -18,41 +18,38 @@ package provider
 
 import (
 	"context"
+	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2018-05-01/dns"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 
 	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/internal/testutils"
 	"github.com/kubernetes-sigs/external-dns/plan"
-	"github.com/stretchr/testify/assert"
 )
 
-// mockZonesClient implements the methods of the Azure DNS Zones Client which are used in the Azure Provider
+// mockPrivateZonesClient implements the methods of the Azure Private DNS Zones Client which are used in the Azure Private DNS Provider
 // and returns static results which are defined per test
-type mockZonesClient struct {
-	mockZonesClientIterator *dns.ZoneListResultIterator
+type mockPrivateZonesClient struct {
+	mockZonesClientIterator *privatedns.PrivateZoneListResultIterator
 }
 
-// mockZonesClient implements the methods of the Azure DNS RecordSet Client which are used in the Azure Provider
+// mockPrivateRecordSetsClient implements the methods of the Azure Private DNS RecordSet Client which are used in the Azure Private DNS Provider
 // and returns static results which are defined per test
-type mockRecordSetsClient struct {
-	mockRecordSetListIterator *dns.RecordSetListResultIterator
+type mockPrivateRecordSetsClient struct {
+	mockRecordSetListIterator *privatedns.RecordSetListResultIterator
 	deletedEndpoints          []*endpoint.Endpoint
 	updatedEndpoints          []*endpoint.Endpoint
 }
 
-// mockZoneListResultPageIterator is used to paginate forward through a list of zones
-type mockZoneListResultPageIterator struct {
+// mockPrivateZoneListResultPageIterator is used to paginate forward through a list of zones
+type mockPrivateZoneListResultPageIterator struct {
 	offset  int
-	results []dns.ZoneListResult
+	results []privatedns.PrivateZoneListResult
 }
 
 // getNextPage provides the next page based on the offset of the mockZoneListResultPageIterator
-func (m *mockZoneListResultPageIterator) getNextPage(context.Context, dns.ZoneListResult) (dns.ZoneListResult, error) {
+func (m *mockPrivateZoneListResultPageIterator) getNextPage(context.Context, privatedns.PrivateZoneListResult) (privatedns.PrivateZoneListResult, error) {
 	// it assumed that instances of this kind of iterator are only skimmed through once per test
 	// otherwise a real implementation is required, e.g. based on a linked list
 	if m.offset < len(m.results) {
@@ -61,17 +58,17 @@ func (m *mockZoneListResultPageIterator) getNextPage(context.Context, dns.ZoneLi
 	}
 
 	// paged to last page or empty
-	return dns.ZoneListResult{}, nil
+	return privatedns.PrivateZoneListResult{}, nil
 }
 
-// mockZoneListResultPageIterator is used to paginate forward through a list of recordsets
-type mockRecordSetListResultPageIterator struct {
+// mockPrivateRecordSetListResultPageIterator is used to paginate forward through a list of recordsets
+type mockPrivateRecordSetListResultPageIterator struct {
 	offset  int
-	results []dns.RecordSetListResult
+	results []privatedns.RecordSetListResult
 }
 
 // getNextPage provides the next page based on the offset of the mockRecordSetListResultPageIterator
-func (m *mockRecordSetListResultPageIterator) getNextPage(context.Context, dns.RecordSetListResult) (dns.RecordSetListResult, error) {
+func (m *mockPrivateRecordSetListResultPageIterator) getNextPage(context.Context, privatedns.RecordSetListResult) (privatedns.RecordSetListResult, error) {
 	// it assumed that instances of this kind of iterator are only skimmed through once per test
 	// otherwise a real implementation is required, e.g. based on a linked list
 	if m.offset < len(m.results) {
@@ -80,17 +77,17 @@ func (m *mockRecordSetListResultPageIterator) getNextPage(context.Context, dns.R
 	}
 
 	// paged to last page or empty
-	return dns.RecordSetListResult{}, nil
+	return privatedns.RecordSetListResult{}, nil
 }
 
-func createMockZone(zone string, id string) dns.Zone {
-	return dns.Zone{
+func createMockPrivateZone(zone string, id string) privatedns.PrivateZone {
+	return privatedns.PrivateZone{
 		ID:   to.StringPtr(id),
 		Name: to.StringPtr(zone),
 	}
 }
 
-func (client *mockZonesClient) ListByResourceGroupComplete(ctx context.Context, resourceGroupName string, top *int32) (result dns.ZoneListResultIterator, err error) {
+func (client *mockPrivateZonesClient) ListByResourceGroupComplete(ctx context.Context, resourceGroupName string, top *int32) (result privatedns.PrivateZoneListResultIterator, err error) {
 	// pre-iterate to first item to emulate behaviour of Azure SDK
 	err = client.mockZonesClientIterator.NextWithContext(ctx)
 	if err != nil {
@@ -100,32 +97,32 @@ func (client *mockZonesClient) ListByResourceGroupComplete(ctx context.Context, 
 	return *client.mockZonesClientIterator, nil
 }
 
-func aRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
-	aRecords := make([]dns.ARecord, len(values))
+func privateARecordSetPropertiesGetter(values []string, ttl int64) *privatedns.RecordSetProperties {
+	aRecords := make([]privatedns.ARecord, len(values))
 	for i, value := range values {
-		aRecords[i] = dns.ARecord{
+		aRecords[i] = privatedns.ARecord{
 			Ipv4Address: to.StringPtr(value),
 		}
 	}
-	return &dns.RecordSetProperties{
+	return &privatedns.RecordSetProperties{
 		TTL:      to.Int64Ptr(ttl),
 		ARecords: &aRecords,
 	}
 }
 
-func cNameRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
-	return &dns.RecordSetProperties{
+func privateCNameRecordSetPropertiesGetter(values []string, ttl int64) *privatedns.RecordSetProperties {
+	return &privatedns.RecordSetProperties{
 		TTL: to.Int64Ptr(ttl),
-		CnameRecord: &dns.CnameRecord{
+		CnameRecord: &privatedns.CnameRecord{
 			Cname: to.StringPtr(values[0]),
 		},
 	}
 }
 
-func txtRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
-	return &dns.RecordSetProperties{
+func privateTxtRecordSetPropertiesGetter(values []string, ttl int64) *privatedns.RecordSetProperties {
+	return &privatedns.RecordSetProperties{
 		TTL: to.Int64Ptr(ttl),
-		TxtRecords: &[]dns.TxtRecord{
+		TxtRecords: &[]privatedns.TxtRecord{
 			{
 				Value: &[]string{values[0]},
 			},
@@ -133,39 +130,39 @@ func txtRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProp
 	}
 }
 
-func othersRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
-	return &dns.RecordSetProperties{
+func privateOthersRecordSetPropertiesGetter(values []string, ttl int64) *privatedns.RecordSetProperties {
+	return &privatedns.RecordSetProperties{
 		TTL: to.Int64Ptr(ttl),
 	}
 }
-func createMockRecordSet(name, recordType string, values ...string) dns.RecordSet {
-	return createMockRecordSetMultiWithTTL(name, recordType, 0, values...)
+func createPrivateMockRecordSet(name, recordType string, values ...string) privatedns.RecordSet {
+	return createPrivateMockRecordSetMultiWithTTL(name, recordType, 0, values...)
 }
-func createMockRecordSetWithTTL(name, recordType, value string, ttl int64) dns.RecordSet {
-	return createMockRecordSetMultiWithTTL(name, recordType, ttl, value)
+func createPrivateMockRecordSetWithTTL(name, recordType, value string, ttl int64) privatedns.RecordSet {
+	return createPrivateMockRecordSetMultiWithTTL(name, recordType, ttl, value)
 }
-func createMockRecordSetMultiWithTTL(name, recordType string, ttl int64, values ...string) dns.RecordSet {
-	var getterFunc func(values []string, ttl int64) *dns.RecordSetProperties
+func createPrivateMockRecordSetMultiWithTTL(name, recordType string, ttl int64, values ...string) privatedns.RecordSet {
+	var getterFunc func(values []string, ttl int64) *privatedns.RecordSetProperties
 
 	switch recordType {
 	case endpoint.RecordTypeA:
-		getterFunc = aRecordSetPropertiesGetter
+		getterFunc = privateARecordSetPropertiesGetter
 	case endpoint.RecordTypeCNAME:
-		getterFunc = cNameRecordSetPropertiesGetter
+		getterFunc = privateCNameRecordSetPropertiesGetter
 	case endpoint.RecordTypeTXT:
-		getterFunc = txtRecordSetPropertiesGetter
+		getterFunc = privateTxtRecordSetPropertiesGetter
 	default:
-		getterFunc = othersRecordSetPropertiesGetter
+		getterFunc = privateOthersRecordSetPropertiesGetter
 	}
-	return dns.RecordSet{
+	return privatedns.RecordSet{
 		Name:                to.StringPtr(name),
-		Type:                to.StringPtr("Microsoft.Network/dnszones/" + recordType),
+		Type:                to.StringPtr("Microsoft.Network/privateDnsZones" + recordType),
 		RecordSetProperties: getterFunc(values, ttl),
 	}
 
 }
 
-func (client *mockRecordSetsClient) ListAllByDNSZoneComplete(ctx context.Context, resourceGroupName string, zoneName string, top *int32, recordSetNameSuffix string) (result dns.RecordSetListResultIterator, err error) {
+func (client *mockPrivateRecordSetsClient) ListComplete(ctx context.Context, resourceGroupName string, zoneName string, top *int32, recordSetNameSuffix string) (result privatedns.RecordSetListResultIterator, err error) {
 	// pre-iterate to first item to emulate behaviour of Azure SDK
 	err = client.mockRecordSetListIterator.NextWithContext(ctx)
 	if err != nil {
@@ -175,11 +172,11 @@ func (client *mockRecordSetsClient) ListAllByDNSZoneComplete(ctx context.Context
 	return *client.mockRecordSetListIterator, nil
 }
 
-func (client *mockRecordSetsClient) Delete(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, ifMatch string) (result autorest.Response, err error) {
+func (client *mockPrivateRecordSetsClient) Delete(ctx context.Context, resourceGroupName string, privateZoneName string, recordType privatedns.RecordType, relativeRecordSetName string, ifMatch string) (result autorest.Response, err error) {
 	client.deletedEndpoints = append(
 		client.deletedEndpoints,
 		endpoint.NewEndpoint(
-			formatAzureDNSName(relativeRecordSetName, zoneName),
+			formatAzureDNSName(relativeRecordSetName, privateZoneName),
 			string(recordType),
 			"",
 		),
@@ -187,7 +184,7 @@ func (client *mockRecordSetsClient) Delete(ctx context.Context, resourceGroupNam
 	return autorest.Response{}, nil
 }
 
-func (client *mockRecordSetsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, parameters dns.RecordSet, ifMatch string, ifNoneMatch string) (result dns.RecordSet, err error) {
+func (client *mockPrivateRecordSetsClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, privateZoneName string, recordType privatedns.RecordType, relativeRecordSetName string, parameters privatedns.RecordSet, ifMatch string, ifNoneMatch string) (result privatedns.RecordSet, err error) {
 	var ttl endpoint.TTL
 	if parameters.TTL != nil {
 		ttl = endpoint.TTL(*parameters.TTL)
@@ -195,77 +192,73 @@ func (client *mockRecordSetsClient) CreateOrUpdate(ctx context.Context, resource
 	client.updatedEndpoints = append(
 		client.updatedEndpoints,
 		endpoint.NewEndpointWithTTL(
-			formatAzureDNSName(relativeRecordSetName, zoneName),
+			formatAzureDNSName(relativeRecordSetName, privateZoneName),
 			string(recordType),
 			ttl,
-			extractAzureTargets(&parameters)...,
+			extractAzurePrivateDNSTargets(&parameters)...,
 		),
 	)
 	return parameters, nil
 }
 
-// newMockedAzureProvider creates an AzureProvider comprising the mocked clients for zones and recordsets
-func newMockedAzureProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, zones *[]dns.Zone, recordSets *[]dns.RecordSet) (*AzureProvider, error) {
+// newMockedAzurePrivateDNSProvider creates an AzureProvider comprising the mocked clients for zones and recordsets
+func newMockedAzurePrivateDNSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, zones *[]privatedns.PrivateZone, recordSets *[]privatedns.RecordSet) (*AzurePrivateDNSProvider, error) {
 	// init zone-related parts of the mock-client
-	pageIterator := mockZoneListResultPageIterator{
-		results: []dns.ZoneListResult{
+	pageIterator := mockPrivateZoneListResultPageIterator{
+		results: []privatedns.PrivateZoneListResult{
 			{
 				Value: zones,
 			},
 		},
 	}
 
-	mockZoneListResultPage := dns.NewZoneListResultPage(pageIterator.getNextPage)
-	mockZoneClientIterator := dns.NewZoneListResultIterator(mockZoneListResultPage)
-	zonesClient := mockZonesClient{
+	mockZoneListResultPage := privatedns.NewPrivateZoneListResultPage(pageIterator.getNextPage)
+	mockZoneClientIterator := privatedns.NewPrivateZoneListResultIterator(mockZoneListResultPage)
+	zonesClient := mockPrivateZonesClient{
 		mockZonesClientIterator: &mockZoneClientIterator,
 	}
 
 	// init record-related parts of the mock-client
-	resultPageIterator := mockRecordSetListResultPageIterator{
-		results: []dns.RecordSetListResult{
+	resultPageIterator := mockPrivateRecordSetListResultPageIterator{
+		results: []privatedns.RecordSetListResult{
 			{
 				Value: recordSets,
 			},
 		},
 	}
-	mockRecordSetListResultPage := dns.NewRecordSetListResultPage(resultPageIterator.getNextPage)
-	mockRecordSetListIterator := dns.NewRecordSetListResultIterator(mockRecordSetListResultPage)
-	recordSetsClient := mockRecordSetsClient{
+	mockRecordSetListResultPage := privatedns.NewRecordSetListResultPage(resultPageIterator.getNextPage)
+	mockRecordSetListIterator := privatedns.NewRecordSetListResultIterator(mockRecordSetListResultPage)
+	recordSetsClient := mockPrivateRecordSetsClient{
 		mockRecordSetListIterator: &mockRecordSetListIterator,
 	}
 
-	return newAzureProvider(domainFilter, zoneIDFilter, dryRun, resourceGroup, &zonesClient, &recordSetsClient), nil
+	return newAzurePrivateDNSProvider(domainFilter, zoneIDFilter, dryRun, resourceGroup, &zonesClient, &recordSetsClient), nil
 }
 
-func newAzureProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, zonesClient ZonesClient, recordsClient RecordSetsClient) *AzureProvider {
-	return &AzureProvider{
+func newAzurePrivateDNSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, privateZonesClient PrivateZonesClient, privateRecordsClient PrivateRecordSetsClient) *AzurePrivateDNSProvider {
+	return &AzurePrivateDNSProvider{
 		domainFilter:     domainFilter,
 		zoneIDFilter:     zoneIDFilter,
 		dryRun:           dryRun,
 		resourceGroup:    resourceGroup,
-		zonesClient:      zonesClient,
-		recordSetsClient: recordsClient,
+		zonesClient:      privateZonesClient,
+		recordSetsClient: privateRecordsClient,
 	}
 }
 
-func validateAzureEndpoints(t *testing.T, endpoints []*endpoint.Endpoint, expected []*endpoint.Endpoint) {
-	assert.True(t, testutils.SameEndpoints(endpoints, expected), "expected and actual endpoints don't match. %s:%s", endpoints, expected)
-}
-
-func TestAzureRecord(t *testing.T) {
-	provider, err := newMockedAzureProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s",
-		&[]dns.Zone{
-			createMockZone("example.com", "/dnszones/example.com"),
+func TestAzurePrivateDNSRecord(t *testing.T) {
+	provider, err := newMockedAzurePrivateDNSProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s",
+		&[]privatedns.PrivateZone{
+			createMockPrivateZone("example.com", "/privateDnsZones/example.com"),
 		},
-		&[]dns.RecordSet{
-			createMockRecordSet("@", "NS", "ns1-03.azure-dns.com."),
-			createMockRecordSet("@", "SOA", "Email: azuredns-hostmaster.microsoft.com"),
-			createMockRecordSet("@", endpoint.RecordTypeA, "123.123.123.122"),
-			createMockRecordSet("@", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
-			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
-			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
-			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
+		&[]privatedns.RecordSet{
+			createPrivateMockRecordSet("@", "NS", "ns1-03.azure-dns.com."),
+			createPrivateMockRecordSet("@", "SOA", "Email: azuredns-hostmaster.microsoft.com"),
+			createPrivateMockRecordSet("@", endpoint.RecordTypeA, "123.123.123.122"),
+			createPrivateMockRecordSet("@", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
+			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
+			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
+			createPrivateMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 		})
 
 	actual, err := provider.Records()
@@ -285,19 +278,19 @@ func TestAzureRecord(t *testing.T) {
 
 }
 
-func TestAzureMultiRecord(t *testing.T) {
-	provider, err := newMockedAzureProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s",
-		&[]dns.Zone{
-			createMockZone("example.com", "/dnszones/example.com"),
+func TestAzurePrivateDNSMultiRecord(t *testing.T) {
+	provider, err := newMockedAzurePrivateDNSProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s",
+		&[]privatedns.PrivateZone{
+			createMockPrivateZone("example.com", "/privateDnsZones/example.com"),
 		},
-		&[]dns.RecordSet{
-			createMockRecordSet("@", "NS", "ns1-03.azure-dns.com."),
-			createMockRecordSet("@", "SOA", "Email: azuredns-hostmaster.microsoft.com"),
-			createMockRecordSet("@", endpoint.RecordTypeA, "123.123.123.122", "234.234.234.233"),
-			createMockRecordSet("@", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
-			createMockRecordSetMultiWithTTL("nginx", endpoint.RecordTypeA, 3600, "123.123.123.123", "234.234.234.234"),
-			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
-			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
+		&[]privatedns.RecordSet{
+			createPrivateMockRecordSet("@", "NS", "ns1-03.azure-dns.com."),
+			createPrivateMockRecordSet("@", "SOA", "Email: azuredns-hostmaster.microsoft.com"),
+			createPrivateMockRecordSet("@", endpoint.RecordTypeA, "123.123.123.122", "234.234.234.233"),
+			createPrivateMockRecordSet("@", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
+			createPrivateMockRecordSetMultiWithTTL("nginx", endpoint.RecordTypeA, 3600, "123.123.123.123", "234.234.234.234"),
+			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
+			createPrivateMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 		})
 
 	actual, err := provider.Records()
@@ -317,10 +310,10 @@ func TestAzureMultiRecord(t *testing.T) {
 
 }
 
-func TestAzureApplyChanges(t *testing.T) {
-	recordsClient := mockRecordSetsClient{}
+func TestAzurePrivateDNSApplyChanges(t *testing.T) {
+	recordsClient := mockPrivateRecordSetsClient{}
 
-	testAzureApplyChangesInternal(t, false, &recordsClient)
+	testAzurePrivateDNSApplyChangesInternal(t, false, &recordsClient)
 
 	validateAzureEndpoints(t, recordsClient.deletedEndpoints, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("old.example.com", endpoint.RecordTypeA, ""),
@@ -343,7 +336,7 @@ func TestAzureApplyChanges(t *testing.T) {
 	})
 }
 
-func TestAzureApplyChangesDryRun(t *testing.T) {
+func TestAzurePrivateDNSApplyChangesDryRun(t *testing.T) {
 	recordsClient := mockRecordSetsClient{}
 
 	testAzureApplyChangesInternal(t, true, &recordsClient)
@@ -353,33 +346,34 @@ func TestAzureApplyChangesDryRun(t *testing.T) {
 	validateAzureEndpoints(t, recordsClient.updatedEndpoints, []*endpoint.Endpoint{})
 }
 
-func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordSetsClient) {
-	zlr := dns.ZoneListResult{
-		Value: &[]dns.Zone{
-			createMockZone("example.com", "/dnszones/example.com"),
-			createMockZone("other.com", "/dnszones/other.com"),
+func testAzurePrivateDNSApplyChangesInternal(t *testing.T, dryRun bool, client PrivateRecordSetsClient) {
+	zlr := privatedns.PrivateZoneListResult{
+		Value: &[]privatedns.PrivateZone{
+			createMockPrivateZone("example.com", "/privateDnsZones/example.com"),
+			createMockPrivateZone("other.com", "/privateDnsZones/other.com"),
 		},
 	}
 
-	results := []dns.ZoneListResult{
+	results := []privatedns.PrivateZoneListResult{
 		zlr,
 	}
 
-	mockZoneListResultPage := dns.NewZoneListResultPage(func(ctxParam context.Context, zlrParam dns.ZoneListResult) (dns.ZoneListResult, error) {
+	mockZoneListResultPage := privatedns.NewPrivateZoneListResultPage(func(ctxParam context.Context, zlrParam privatedns.PrivateZoneListResult) (privatedns.PrivateZoneListResult, error) {
 		if len(results) > 0 {
 			result := results[0]
 			results = nil
 			return result, nil
+		} else {
+			return privatedns.PrivateZoneListResult{}, nil
 		}
-		return dns.ZoneListResult{}, nil
 	})
-	mockZoneClientIterator := dns.NewZoneListResultIterator(mockZoneListResultPage)
+	mockZoneClientIterator := privatedns.NewPrivateZoneListResultIterator(mockZoneListResultPage)
 
-	zonesClient := mockZonesClient{
+	zonesClient := mockPrivateZonesClient{
 		mockZonesClientIterator: &mockZoneClientIterator,
 	}
 
-	provider := newAzureProvider(
+	provider := newAzurePrivateDNSProvider(
 		NewDomainFilter([]string{""}),
 		NewZoneIDFilter([]string{""}),
 		dryRun,
@@ -427,20 +421,5 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordSetsC
 
 	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
 		t.Fatal(err)
-	}
-}
-
-func TestAzureGetAccessToken(t *testing.T) {
-	env := azure.PublicCloud
-	cfg := config{
-		ClientID:                    "",
-		ClientSecret:                "",
-		TenantID:                    "",
-		UseManagedIdentityExtension: false,
-	}
-
-	_, err := getAccessToken(cfg, env)
-	if err == nil {
-		t.Fatalf("expected to fail, but got no error")
 	}
 }
