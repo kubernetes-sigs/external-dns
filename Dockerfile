@@ -18,7 +18,7 @@ FROM golang:1.13 as builder
 #ARG  http_proxy="http://LAB-SVC-Inception:Welcome1@nadevproxy.logistics.corp:3128"
 #ARG https_proxy="http://LAB-SVC-Inception:Welcome1@nadevproxy.logistics.corp:3128"
 
-WORKDIR /github.com/kubernetes-sigs/external-dns
+WORKDIR /github.com/cevalogistics/external-dns
 
 COPY . .
 RUN go mod vendor && \
