@@ -26,7 +26,7 @@ import (
 	"sync"
 
 	"github.com/cloudfoundry-community/go-cfclient"
-	contour "github.com/heptio/contour/apis/generated/clientset/versioned"
+	contour "github.com/projectcontour/contour/apis/generated/clientset/versioned"
 	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
 	istiocontroller "istio.io/istio/pilot/pkg/config/kube/crd/controller"

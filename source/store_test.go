@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
-	contour "github.com/heptio/contour/apis/generated/clientset/versioned"
-	fakeContour "github.com/heptio/contour/apis/generated/clientset/versioned/fake"
+	contour "github.com/projectcontour/contour/apis/generated/clientset/versioned"
+	fakeContour "github.com/projectcontour/contour/apis/generated/clientset/versioned/fake"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	istiomodel "istio.io/istio/pilot/pkg/model"

@@ -19,8 +19,8 @@ package source
 import (
 	"testing"
 
-	contour "github.com/heptio/contour/apis/contour/v1beta1"
-	fakeContour "github.com/heptio/contour/apis/generated/clientset/versioned/fake"
+	contour "github.com/projectcontour/contour/apis/contour/v1beta1"
+	fakeContour "github.com/projectcontour/contour/apis/generated/clientset/versioned/fake"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

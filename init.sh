@@ -12,7 +12,7 @@ fi
 docker rmi -f external-dns:${VERSION} || echo "No Image"
 docker rmi -f cevalogistics/external-dns:${VERSION} || echo "No Image"
 
-echo  Mixlplix | docker --debug login --password-stdin --username rsliotta 
+echo  dbc55c0b-6992-4503-a02a-b934247f6e42 | docker --debug login --password-stdin --username rsliotta 
 docker build . -t external-dns:${VERSION} --no-cache
 docker tag  external-dns:${VERSION} cevalogistics/external-dns:${VERSION}
 docker push cevalogistics/external-dns:${VERSION} 
