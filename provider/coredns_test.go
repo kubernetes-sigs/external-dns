@@ -18,11 +18,13 @@ package provider
 
 import (
 	"context"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/kubernetes-sigs/external-dns/endpoint"
 	"github.com/kubernetes-sigs/external-dns/plan"
+	log "github.com/sirupsen/logrus"
 )
 
 const defaultCoreDNSPrefix = "/skydns/"
@@ -233,6 +235,10 @@ func TestCNAMEWithTXTServiceTranslation(t *testing.T) {
 }
 
 func TestCoreDNSApplyChanges(t *testing.T) {
+
+	os.Setenv("COREDNS_ONPREM_ADDRESS_SUPPORT", "true")
+	log.SetLevel(log.DebugLevel)
+
 	client := fakeETCDClient{
 		map[string]*Service{},
 	}
@@ -293,6 +299,23 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 		"/skydns/local/domain2": {Host: "site.local"},
 	}
 	validateServices(client.services, expectedServices3, t, 3)
+
+	changes4 := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("domain1.local;9.9.9.9", endpoint.RecordTypeA, "8.8.8.8"),
+			endpoint.NewEndpoint("domain1.local;9.9.9.9", endpoint.RecordTypeTXT, "string4"),
+			endpoint.NewEndpoint("domain3.local", endpoint.RecordTypeCNAME, "site.local"),
+		},
+	}
+	coredns.ApplyChanges(context.Background(), changes4)
+
+	expectedServices4 := map[string]*Service{
+		"/skydns/local/domain1": {Host: "9.9.9.9", Text: "string4"},
+		"/skydns/local/domain2": {Host: "site.local"},
+		"/skydns/local/domain3": {Host: "site.local"},
+	}
+	validateServices(client.services, expectedServices4, t, 4)
+
 }
 
 func applyServiceChanges(provider coreDNSProvider, changes *plan.Changes) {

@@ -18,6 +18,7 @@ require (
 	github.com/cloudflare/cloudflare-go v0.10.1
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/coreos/etcd v3.3.15+incompatible
+	github.com/davecgh/go-spew v1.1.1
 	github.com/denverdino/aliyungo v0.0.0-20180815121905-69560d9530f5
 	github.com/digitalocean/godo v1.19.0
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
