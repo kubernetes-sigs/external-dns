@@ -5,9 +5,5 @@ jobs:
     runs-on: ubuntu-latest
     name: This job will build and deploy to docker hub
     steps:
-    - name: Build Action
-      id: build
-      uses: cevalogistics/external-dns@master
-    # Use the output from the `hello` step
-    - name: Get the output time
-      run: echo "The time was ${{ steps.hello.outputs.time }}"
+    - name: Build Action 
+      run: init.sh
