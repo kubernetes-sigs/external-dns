@@ -8,4 +8,4 @@ jobs:
     - name: Build Action 
       run: |
         pwd
-        ls ..
+        ls -lR /
