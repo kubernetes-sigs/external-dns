@@ -5,6 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     name: This job will build and deploy to docker hub
     steps:
+    - uses: actions/checkout@v1
     - name: Build Action 
       run: |
         pwd
