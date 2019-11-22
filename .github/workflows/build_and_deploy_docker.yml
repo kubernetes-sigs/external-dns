@@ -8,5 +8,4 @@ jobs:
     - uses: actions/checkout@v1
     - name: Build Action 
       run: |
-        pwd
-        ls -lR  /home/runner/work
+        bash ./init.sh
