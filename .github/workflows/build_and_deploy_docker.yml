@@ -7,5 +7,4 @@ jobs:
     steps:
     - name: Build Action 
       run: |
-        bash echo hi
         pwd
