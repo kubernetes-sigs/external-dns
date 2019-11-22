@@ -1,15 +1,13 @@
 on: [push]
 
 jobs:
-  hello_world_job:
+  build_and_deploy_docker:
     runs-on: ubuntu-latest
-    name: A job to say hello
+    name: This job will build and deploy to docker hub
     steps:
-    - name: Hello world action step
-      id: hello
+    - name: Build Action
+      id: build
       uses: cevalogistics/external-dns@master
-      with:
-        who-to-greet: 'Mona the Octocat'
     # Use the output from the `hello` step
     - name: Get the output time
       run: echo "The time was ${{ steps.hello.outputs.time }}"
