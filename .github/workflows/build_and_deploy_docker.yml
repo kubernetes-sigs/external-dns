@@ -6,4 +6,6 @@ jobs:
     name: This job will build and deploy to docker hub
     steps:
     - name: Build Action 
-      run: bash pwd
+      run: |
+        bash echo hi
+        pwd
