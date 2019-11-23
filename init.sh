@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-export VERSION=0.91
+export VERSION=0.92
 
 #export  http_proxy="http://LAB-SVC-Inception:Welcome1@nadevproxy.logistics.corp:3128"
 #export https_proxy="http://LAB-SVC-Inception:Welcome1@nadevproxy.logistics.corp:3128"
