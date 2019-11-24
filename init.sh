@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-export VERSION=0.92
+export VERSION=0.5.7.${BUILD_NUMBER}
 
 #export  http_proxy="http://LAB-SVC-Inception:Welcome1@nadevproxy.logistics.corp:3128"
 #export https_proxy="http://LAB-SVC-Inception:Welcome1@nadevproxy.logistics.corp:3128"
@@ -16,3 +16,4 @@ echo  ${docker_token} | docker --debug login --password-stdin --username ${docke
 docker build . -t external-dns:${VERSION} --no-cache
 docker tag  external-dns:${VERSION} cevalogistics/external-dns:${VERSION}
 docker push cevalogistics/external-dns:${VERSION} 
+docker push cevalogistics/external-dns:latest
