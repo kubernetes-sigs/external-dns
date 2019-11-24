@@ -1,3 +1,4 @@
+name: external_dns_on_prom
 on: [push]
 
 jobs:
