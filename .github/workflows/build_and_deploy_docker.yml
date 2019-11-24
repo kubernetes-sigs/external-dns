@@ -3,7 +3,7 @@ on: [push]
 jobs:
   build_and_deploy_docker:
     runs-on: ubuntu-latest
-    name: This job will build and deploy to docker hub
+    name: external_dns_onprem
     steps:
     - uses: actions/checkout@v1
     - name: Build Action 
