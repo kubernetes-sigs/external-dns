@@ -3,6 +3,7 @@ This tutorial describes how to setup ExternalDNS for usage within a [minikube](h
 You need to:
 * install CoreDNS with [etcd](https://github.com/etcd-io/etcd) enabled
 * install external-dns with coredns as a provider
+  * New:  Enable on-prem ip address support for sites with external Load Balancers and Ingress
 * enable ingress controller for the minikube cluster
 
 
@@ -232,4 +233,10 @@ If you don't see a command prompt, try pressing enter.
 dnstools# dig @10.100.4.143 nginx.example.org +short
 10.0.2.15
 dnstools#  
+```
+
+
+
+```
+## On-Prem Address Support for sites with External Load Balancer and Ingress
 ```
