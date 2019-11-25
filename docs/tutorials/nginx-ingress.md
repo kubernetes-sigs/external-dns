@@ -1,6 +1,6 @@
 # Setting up ExternalDNS on GKE with nginx-ingress-controller
 
-This tutorial describes how to setup ExternalDNS for usage within a GKE cluster that doesn't make use of Google's [default ingress controller](https://github.com/kubernetes/ingress/tree/master/controllers/gce) but rather uses [nginx-ingress-controller](https://github.com/kubernetes/ingress/tree/master/controllers/nginx) for that task.
+This tutorial describes how to setup ExternalDNS for usage within a GKE cluster that doesn't make use of Google's [default ingress controller](https://github.com/kubernetes/ingress-gce) but rather uses [nginx-ingress-controller](https://github.com/kubernetes/ingress-nginx) for that task.
 
 Setup your environment to work with Google Cloud Platform. Fill in your values as needed, e.g. target project.
 
