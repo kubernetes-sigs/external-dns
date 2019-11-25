@@ -362,3 +362,4 @@ func mergeLabels(e *endpoint.Endpoint, labels map[string]string) {
 		}
 	}
 }
+
