@@ -28,6 +28,7 @@ Providers
 - [ ] InMemory
 - [x] Linode
 - [x] TransIP
+- [x] RFC2136
 
 PRs welcome!
 
