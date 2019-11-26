@@ -19,17 +19,18 @@ package provider
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/dns/v2/recordsets"
 	"github.com/gophercloud/gophercloud/openstack/dns/v2/zones"
 	"github.com/gophercloud/gophercloud/pagination"
 	log "github.com/sirupsen/logrus"
-	"net"
-	"net/http"
-	"os"
-	"strings"
-	"time"
 
 	"github.com/kubernetes-sigs/external-dns/endpoint"
 	"github.com/kubernetes-sigs/external-dns/pkg/tlsutils"

@@ -19,8 +19,9 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/Azure/go-autorest/autorest"
 	"strings"
+
+	"github.com/Azure/go-autorest/autorest"
 
 	log "github.com/sirupsen/logrus"
 
@@ -104,17 +105,15 @@ func (p *AzurePrivateDNSProvider) Records() (endpoints []*endpoint.Endpoint, _ e
 			if recordSet.Type == nil {
 				log.Debugf("Skipping invalid record set with missing type.")
 				return
-			} else {
-				recordType = strings.TrimLeft(*recordSet.Type, "Microsoft.Network/privateDnsZones")
 			}
+			recordType = strings.TrimLeft(*recordSet.Type, "Microsoft.Network/privateDnsZones")
 
 			var name string
 			if recordSet.Name == nil {
 				log.Debugf("Skipping invalid record set with missing name.")
 				return
-			} else {
-				name = formatAzureDNSName(*recordSet.Name, *zone.Name)
 			}
+			name = formatAzureDNSName(*recordSet.Name, *zone.Name)
 
 			targets := extractAzurePrivateDNSTargets(&recordSet)
 			if len(targets) == 0 {
