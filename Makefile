@@ -31,7 +31,7 @@ cover-html: cover
 
 # Run all the linters
 lint:
-	golangci-lint run ./...
+	golangci-lint run --timeout=5m ./...
 
 
 # The verify target runs tasks similar to the CI tasks, but without code coverage
