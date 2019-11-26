@@ -268,6 +268,10 @@ func TestAzureRecord(t *testing.T) {
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 		})
 
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	actual, err := provider.Records()
 
 	if err != nil {
@@ -299,6 +303,10 @@ func TestAzureMultiRecord(t *testing.T) {
 			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 		})
+
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	actual, err := provider.Records()
 
