@@ -18,8 +18,9 @@ package provider
 
 import (
 	"context"
-	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
 	"testing"
+
+	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -261,6 +262,10 @@ func TestAzurePrivateDNSRecord(t *testing.T) {
 			createPrivateMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 		})
 
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	actual, err := provider.Records()
 
 	if err != nil {
@@ -292,6 +297,10 @@ func TestAzurePrivateDNSMultiRecord(t *testing.T) {
 			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
 			createPrivateMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 		})
+
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	actual, err := provider.Records()
 
@@ -363,9 +372,8 @@ func testAzurePrivateDNSApplyChangesInternal(t *testing.T, dryRun bool, client P
 			result := results[0]
 			results = nil
 			return result, nil
-		} else {
-			return privatedns.PrivateZoneListResult{}, nil
 		}
+		return privatedns.PrivateZoneListResult{}, nil
 	})
 	mockZoneClientIterator := privatedns.NewPrivateZoneListResultIterator(mockZoneListResultPage)
 

@@ -78,7 +78,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			"node1",
-			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
 			map[string]string{},
 			[]*endpoint.Endpoint{
@@ -91,7 +91,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			"node1.example.org",
-			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
 			map[string]string{},
 			[]*endpoint.Endpoint{
@@ -104,7 +104,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"",
 			"{{.Name}}.example.org",
 			"node1",
-			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
 			map[string]string{},
 			[]*endpoint.Endpoint{
@@ -117,7 +117,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"",
 			"{{.Name}}.example.org",
 			"node1.example.org",
-			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
 			map[string]string{},
 			[]*endpoint.Endpoint{
@@ -130,7 +130,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"",
 			"{{.Name}}.example.org",
 			"node1",
-			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}, {v1.NodeExternalIP, "5.6.7.8"}},
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeExternalIP, Address: "5.6.7.8"}},
 			map[string]string{},
 			map[string]string{},
 			[]*endpoint.Endpoint{
@@ -143,7 +143,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			"node1",
-			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}, {v1.NodeInternalIP, "2.3.4.5"}},
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeInternalIP, Address: "2.3.4.5"}},
 			map[string]string{},
 			map[string]string{},
 			[]*endpoint.Endpoint{
@@ -156,7 +156,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			"node1",
-			[]v1.NodeAddress{{v1.NodeInternalIP, "2.3.4.5"}},
+			[]v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2.3.4.5"}},
 			map[string]string{},
 			map[string]string{},
 			[]*endpoint.Endpoint{
@@ -180,7 +180,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			"node1",
-			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
 			map[string]string{
 				"service.beta.kubernetes.io/external-traffic": "OnlyLocal",
@@ -195,7 +195,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"service.beta.kubernetes.io/external-traffic in (Global, OnlyLocal)",
 			"",
 			"node1",
-			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
 			map[string]string{
 				"service.beta.kubernetes.io/external-traffic": "OnlyLocal",
@@ -210,7 +210,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"service.beta.kubernetes.io/external-traffic in (Global, OnlyLocal)",
 			"",
 			"node1",
-			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
 			map[string]string{
 				"service.beta.kubernetes.io/external-traffic": "SomethingElse",
@@ -223,7 +223,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			"node1",
-			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
 			map[string]string{
 				controllerAnnotationKey: controllerAnnotationValue,
@@ -238,7 +238,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			"node1",
-			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
 			map[string]string{
 				controllerAnnotationKey: "not-dns-controller",
@@ -251,7 +251,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			"node1",
-			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
 			map[string]string{},
 			[]*endpoint.Endpoint{
@@ -264,7 +264,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			"node1",
-			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
 			map[string]string{
 				ttlAnnotationKey: "foo",
@@ -279,7 +279,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"",
 			"",
 			"node1",
-			[]v1.NodeAddress{{v1.NodeExternalIP, "1.2.3.4"}},
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
 			map[string]string{
 				ttlAnnotationKey: "10",
