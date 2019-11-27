@@ -355,7 +355,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("rfc2136-tsig-secret", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)").Default(defaultConfig.RFC2136TSIGSecret).StringVar(&cfg.RFC2136TSIGSecret)
 	app.Flag("rfc2136-tsig-secret-alg", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)").Default(defaultConfig.RFC2136TSIGSecretAlg).StringVar(&cfg.RFC2136TSIGSecretAlg)
 	app.Flag("rfc2136-tsig-axfr", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)").BoolVar(&cfg.RFC2136TAXFR)
-        app.Flag("rfc2136-net", "When using the RFC2136 provider, specify the net value to switch udp, tcp or tcp-tls").Default(defaultConfig.RFC2136NET).StringVar(&cfg.RFC2136NET)
+        app.Flag("rfc2136-net", "When using the RFC2136 provider, specify the net value to switch network protocol, udp, tcp or tcp-tls is supported").Default(defaultConfig.RFC2136NET).StringVar(&cfg.RFC2136NET)
 
 	// Flags related to TransIP provider
 	app.Flag("transip-account", "When using the TransIP provider, specify the account name (required when --provider=transip)").Default(defaultConfig.TransIPAccountName).StringVar(&cfg.TransIPAccountName)
