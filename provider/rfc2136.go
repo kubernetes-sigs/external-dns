@@ -78,7 +78,7 @@ func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, k
 		domainFilter: domainFilter,
 		dryRun:       dryRun,
 		axfr:         axfr,
-		net:          net
+                net:          net,
 	}
 	if actions != nil {
 		r.actions = actions

@@ -97,7 +97,7 @@ func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, a string) (env chan *dns.Envelo
 }
 
 func createRfc2136StubProvider(stub *rfc2136Stub) (Provider, error) {
-	return NewRfc2136Provider("", 0, "", false, "key", "secret", "hmac-sha512", true, DomainFilter{}, false, stub)
+	return NewRfc2136Provider("", 0, "", false, "key", "secret", "hmac-sha512", true, "", DomainFilter{}, false, stub)
 }
 
 // TestRfc2136GetRecordsMultipleTargets simulates a single record with multiple targets.
