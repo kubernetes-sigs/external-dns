@@ -41,6 +41,7 @@ type rfc2136Provider struct {
 	tsigSecretAlg string
 	insecure      bool
 	axfr          bool
+	net           string
 
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter DomainFilter
@@ -64,7 +65,7 @@ type rfc2136Actions interface {
 }
 
 // NewRfc2136Provider is a factory function for OpenStack rfc2136 providers
-func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter DomainFilter, dryRun bool, actions rfc2136Actions) (Provider, error) {
+func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, net string, domainFilter DomainFilter, dryRun bool, actions rfc2136Actions) (Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok && !insecure {
 		return nil, errors.Errorf("%s is not supported TSIG algorithm", secretAlg)
@@ -77,6 +78,7 @@ func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, k
 		domainFilter: domainFilter,
 		dryRun:       dryRun,
 		axfr:         axfr,
+		net:          net
 	}
 	if actions != nil {
 		r.actions = actions
@@ -294,6 +296,7 @@ func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 
 	c := new(dns.Client)
 	c.SingleInflight = true
+	c.Net = r.net
 
 	if !r.insecure {
 		c.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}

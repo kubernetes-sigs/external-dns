@@ -124,6 +124,7 @@ type Config struct {
 	RFC2136TSIGSecret           string `secure:"yes"`
 	RFC2136TSIGSecretAlg        string
 	RFC2136TAXFR                bool
+	RFC2136NET                  string
 	NS1Endpoint                 string
 	NS1IgnoreSSL                bool
 	TransIPAccountName          string
@@ -212,6 +213,7 @@ var defaultConfig = &Config{
 	RFC2136TSIGSecret:           "",
 	RFC2136TSIGSecretAlg:        "",
 	RFC2136TAXFR:                true,
+	RFC2136NET:                  "udp"
 	NS1Endpoint:                 "",
 	NS1IgnoreSSL:                false,
 	TransIPAccountName:          "",
