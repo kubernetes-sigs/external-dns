@@ -164,14 +164,14 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 				return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
 			}
 			return token, nil
-		} else {
-			log.Info("Resolving to system assigned identity.")
-			token, err := adal.NewServicePrincipalTokenFromMSI(msiEndpoint, environment.ServiceManagementEndpoint)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
-			}
-			return token, nil
 		}
+
+		log.Info("Resolving to system assigned identity.")
+		token, err := adal.NewServicePrincipalTokenFromMSI(msiEndpoint, environment.ServiceManagementEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
+		}
+		return token, nil
 	}
 
 	return nil, fmt.Errorf("no credentials provided for Azure API")
