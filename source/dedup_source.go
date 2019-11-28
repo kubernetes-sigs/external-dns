@@ -17,8 +17,6 @@ limitations under the License.
 package source
 
 import (
-	log "github.com/sirupsen/logrus"
-
 	"github.com/kubernetes-sigs/external-dns/endpoint"
 )
 
@@ -46,7 +44,6 @@ func (ms *dedupSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		identifier := ep.DNSName + " / " + ep.SetIdentifier + " / " + ep.Targets.String()
 
 		if _, ok := collected[identifier]; ok {
-			log.Debugf("Removing duplicate endpoint %s", ep)
 			continue
 		}
 
