@@ -1,4 +1,5 @@
 /*
+
 Copyright 2017 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,6 +28,7 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -249,7 +251,6 @@ func NewCoreDNSProvider(domainFilter DomainFilter, prefix string, dryRun bool) (
 	if err != nil {
 		return nil, err
 	}
-
 	return coreDNSProvider{
 		client:        client,
 		dryRun:        dryRun,
@@ -300,6 +301,13 @@ func (p coreDNSProvider) Records() ([]*endpoint.Endpoint, error) {
 
 // ApplyChanges stores changes back to etcd converting them to CoreDNS format and aggregating A/CNAME and TXT records
 func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+
+	isOnPremAddressSupportAllowedStr := strings.ToLower(os.Getenv("COREDNS_ONPREM_ADDRESS_SUPPORT"))
+	isOnPremAddressSupportAllowed := isOnPremAddressSupportAllowedStr == "true" || isOnPremAddressSupportAllowedStr == "yes" || isOnPremAddressSupportAllowedStr == "1"
+	if isOnPremAddressSupportAllowed {
+		log.Warnf("CoreDNS On-Prem Support Enabled")
+	}
+
 	grouped := map[string][]*endpoint.Endpoint{}
 	for _, ep := range changes.Create {
 		grouped[ep.DNSName] = append(grouped[ep.DNSName], ep)
@@ -318,17 +326,29 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			if ep.RecordType == endpoint.RecordTypeTXT {
 				continue
 			}
-
 			for _, target := range ep.Targets {
 				prefix := ep.Labels[randomPrefixLabel]
 				if prefix == "" {
 					prefix = fmt.Sprintf("%08x", rand.Int31())
 				}
+				setdnsName := dnsName
+				if ep.RecordType == endpoint.RecordTypeA {
+					if isOnPremAddressSupportAllowed {
+						matched, _ := regexp.MatchString(";", setdnsName)
+						// Test the result.
+						if matched {
+							result := strings.Split(setdnsName, ";")
+							target = result[1]
+							setdnsName = result[0]
+							log.Warnf("CoreDNS On-Prem Support 'A' Record - Found IP Address surrogate: %s split: %v", setdnsName, result[1])
+						}
+					}
+				}
 
 				service := Service{
 					Host:        target,
 					Text:        ep.Labels["originalText"],
-					Key:         p.etcdKeyFor(prefix + "." + dnsName),
+					Key:         p.etcdKeyFor(prefix + "." + setdnsName),
 					TargetStrip: strings.Count(prefix, ".") + 1,
 					TTL:         uint32(ep.RecordTTL),
 				}
