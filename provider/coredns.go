@@ -1,6 +1,9 @@
 /*
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 4a4f7278... pr_1301 - CoreDNS Feature - On Premise Addresses
 Copyright 2017 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
