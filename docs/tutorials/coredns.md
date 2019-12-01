@@ -6,6 +6,8 @@ You need to:
   * New:  Enable on-prem ip address support for sites with external Load Balancers and Ingress
 * enable ingress controller for the minikube cluster
 
+ 
+
 
 ## Creating a cluster
 ```
