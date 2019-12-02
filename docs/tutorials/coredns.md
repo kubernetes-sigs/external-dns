@@ -3,6 +3,7 @@ This tutorial describes how to setup ExternalDNS for usage within a [minikube](h
 You need to:
 * install CoreDNS with [etcd](https://github.com/etcd-io/etcd) enabled
 * install external-dns with coredns as a provider
+  * New:  Enable on-premise ip address support for sites with external Load Balancers and Ingress
 * enable ingress controller for the minikube cluster
 
 
@@ -233,3 +234,39 @@ dnstools# dig @10.100.4.143 nginx.example.org +short
 10.0.2.15
 dnstools#  
 ```
+
+
+
+```
+## On-Prem Address Support for sites with External Load Balancer and Ingress
+```
+
+This new feature extends the CoreDNS provider to allow the internal IP Address that comes from the K8S discovery to be replaced with an IP Address from outside the cluster.  This becomes extremely useful when making use of NodePort, and Ingress tied to an EXTERNAL Load Balancer such as F5, and Citrix Netscaler.
+
+It works like this.  The developer utilizes the same annotation that external DNS provides but appends a semi-colon [;] after the hostname and an IP address.  This will be replaced on the ‘A’ records.
+
+Here is an example:
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    note: External-DNS-only-see-annotation
+  name: xxx
+  namespace: default
+  annotations:
+    note:  "DNS ONLY SERVICE to map a static 'A' record to a hostname in DNS"
+    external-dns.alpha.kubernetes.io/hostname: "xxx.subdomain.logistics.corp;10.1.43.17"
+spec:
+  ports:
+  - port: 53
+  sessionAffinity: None
+  type: ClusterIP
+```
+
+
+
+The feature is enabled only when an environment variable is passed to the container so it is safe as well.
+
+The Environment variable is 'COREDNS_ONPREM_ADDRESS_SUPPORT' and must be set to true to enable the feature.
