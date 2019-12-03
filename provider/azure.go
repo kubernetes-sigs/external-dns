@@ -49,6 +49,7 @@ type config struct {
 	ClientID                    string `json:"aadClientId" yaml:"aadClientId"`
 	ClientSecret                string `json:"aadClientSecret" yaml:"aadClientSecret"`
 	UseManagedIdentityExtension bool   `json:"useManagedIdentityExtension" yaml:"useManagedIdentityExtension"`
+	UserAssignedIdentityID      string `json:"userAssignedIdentityID" yaml:"userAssignedIdentityID"`
 }
 
 // ZonesClient is an interface of dns.ZoneClient that can be stubbed for testing.
@@ -65,18 +66,19 @@ type RecordSetsClient interface {
 
 // AzureProvider implements the DNS provider for Microsoft's Azure cloud platform.
 type AzureProvider struct {
-	domainFilter     DomainFilter
-	zoneIDFilter     ZoneIDFilter
-	dryRun           bool
-	resourceGroup    string
-	zonesClient      ZonesClient
-	recordSetsClient RecordSetsClient
+	domainFilter                 DomainFilter
+	zoneIDFilter                 ZoneIDFilter
+	dryRun                       bool
+	resourceGroup                string
+	userAssignedIdentityClientID string
+	zonesClient                  ZonesClient
+	recordSetsClient             RecordSetsClient
 }
 
 // NewAzureProvider creates a new Azure provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAzureProvider(configFile string, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, resourceGroup string, dryRun bool) (*AzureProvider, error) {
+func NewAzureProvider(configFile string, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, resourceGroup string, userAssignedIdentityClientID string, dryRun bool) (*AzureProvider, error) {
 	contents, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
@@ -90,6 +92,10 @@ func NewAzureProvider(configFile string, domainFilter DomainFilter, zoneIDFilter
 	// If a resource group was given, override what was present in the config file
 	if resourceGroup != "" {
 		cfg.ResourceGroup = resourceGroup
+	}
+	// If userAssignedIdentityClientID is provided explicitly, override existing one in config file
+	if userAssignedIdentityClientID != "" {
+		cfg.UserAssignedIdentityID = userAssignedIdentityClientID
 	}
 
 	var environment azure.Environment
@@ -113,34 +119,22 @@ func NewAzureProvider(configFile string, domainFilter DomainFilter, zoneIDFilter
 	recordSetsClient.Authorizer = autorest.NewBearerAuthorizer(token)
 
 	provider := &AzureProvider{
-		domainFilter:     domainFilter,
-		zoneIDFilter:     zoneIDFilter,
-		dryRun:           dryRun,
-		resourceGroup:    cfg.ResourceGroup,
-		zonesClient:      zonesClient,
-		recordSetsClient: recordSetsClient,
+		domainFilter:                 domainFilter,
+		zoneIDFilter:                 zoneIDFilter,
+		dryRun:                       dryRun,
+		resourceGroup:                cfg.ResourceGroup,
+		userAssignedIdentityClientID: cfg.UserAssignedIdentityID,
+		zonesClient:                  zonesClient,
+		recordSetsClient:             recordSetsClient,
 	}
 	return provider, nil
 }
 
 // getAccessToken retrieves Azure API access token.
 func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePrincipalToken, error) {
-	// Try to retrive token with MSI.
-	if cfg.UseManagedIdentityExtension {
-		log.Info("Using managed identity extension to retrieve access token for Azure API.")
-		msiEndpoint, err := adal.GetMSIVMEndpoint()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get the managed service identity endpoint: %v", err)
-		}
-
-		token, err := adal.NewServicePrincipalTokenFromMSI(msiEndpoint, environment.ServiceManagementEndpoint)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
-		}
-		return token, nil
-	}
-
 	// Try to retrieve token with service principal credentials.
+	// Try to use service principal first, some AKS clusters are in an intermediate state that `UseManagedIdentityExtension` is `true`
+	// and service principal exists. In this case, we still want to use service principal to authenticate.
 	if len(cfg.ClientID) > 0 && len(cfg.ClientSecret) > 0 {
 		log.Info("Using client_id+client_secret to retrieve access token for Azure API.")
 		oauthConfig, err := adal.NewOAuthConfig(environment.ActiveDirectoryEndpoint, cfg.TenantID)
@@ -151,6 +145,31 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 		token, err := adal.NewServicePrincipalToken(*oauthConfig, cfg.ClientID, cfg.ClientSecret, environment.ResourceManagerEndpoint)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create service principal token: %v", err)
+		}
+		return token, nil
+	}
+
+	// Try to retrive token with MSI.
+	if cfg.UseManagedIdentityExtension {
+		log.Info("Using managed identity extension to retrieve access token for Azure API.")
+		msiEndpoint, err := adal.GetMSIVMEndpoint()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get the managed service identity endpoint: %v", err)
+		}
+
+		if cfg.UserAssignedIdentityID != "" {
+			log.Infof("Resolving to user assigned identity, client id is %s.", cfg.UserAssignedIdentityID)
+			token, err := adal.NewServicePrincipalTokenFromMSIWithUserAssignedID(msiEndpoint, environment.ServiceManagementEndpoint, cfg.UserAssignedIdentityID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
+			}
+			return token, nil
+		}
+
+		log.Info("Resolving to system assigned identity.")
+		token, err := adal.NewServicePrincipalTokenFromMSI(msiEndpoint, environment.ServiceManagementEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
 		}
 		return token, nil
 	}

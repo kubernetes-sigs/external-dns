@@ -205,7 +205,7 @@ func (client *mockRecordSetsClient) CreateOrUpdate(ctx context.Context, resource
 }
 
 // newMockedAzureProvider creates an AzureProvider comprising the mocked clients for zones and recordsets
-func newMockedAzureProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, zones *[]dns.Zone, recordSets *[]dns.RecordSet) (*AzureProvider, error) {
+func newMockedAzureProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, userAssignedIdentityClientID string, zones *[]dns.Zone, recordSets *[]dns.RecordSet) (*AzureProvider, error) {
 	// init zone-related parts of the mock-client
 	pageIterator := mockZoneListResultPageIterator{
 		results: []dns.ZoneListResult{
@@ -235,17 +235,18 @@ func newMockedAzureProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter
 		mockRecordSetListIterator: &mockRecordSetListIterator,
 	}
 
-	return newAzureProvider(domainFilter, zoneIDFilter, dryRun, resourceGroup, &zonesClient, &recordSetsClient), nil
+	return newAzureProvider(domainFilter, zoneIDFilter, dryRun, resourceGroup, userAssignedIdentityClientID, &zonesClient, &recordSetsClient), nil
 }
 
-func newAzureProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, zonesClient ZonesClient, recordsClient RecordSetsClient) *AzureProvider {
+func newAzureProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, userAssignedIdentityClientID string, zonesClient ZonesClient, recordsClient RecordSetsClient) *AzureProvider {
 	return &AzureProvider{
-		domainFilter:     domainFilter,
-		zoneIDFilter:     zoneIDFilter,
-		dryRun:           dryRun,
-		resourceGroup:    resourceGroup,
-		zonesClient:      zonesClient,
-		recordSetsClient: recordsClient,
+		domainFilter:                 domainFilter,
+		zoneIDFilter:                 zoneIDFilter,
+		dryRun:                       dryRun,
+		resourceGroup:                resourceGroup,
+		userAssignedIdentityClientID: userAssignedIdentityClientID,
+		zonesClient:                  zonesClient,
+		recordSetsClient:             recordsClient,
 	}
 }
 
@@ -254,7 +255,7 @@ func validateAzureEndpoints(t *testing.T, endpoints []*endpoint.Endpoint, expect
 }
 
 func TestAzureRecord(t *testing.T) {
-	provider, err := newMockedAzureProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s",
+	provider, err := newMockedAzureProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s", "",
 		&[]dns.Zone{
 			createMockZone("example.com", "/dnszones/example.com"),
 		},
@@ -290,7 +291,7 @@ func TestAzureRecord(t *testing.T) {
 }
 
 func TestAzureMultiRecord(t *testing.T) {
-	provider, err := newMockedAzureProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s",
+	provider, err := newMockedAzureProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s", "",
 		&[]dns.Zone{
 			createMockZone("example.com", "/dnszones/example.com"),
 		},
@@ -392,6 +393,7 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordSetsC
 		NewZoneIDFilter([]string{""}),
 		dryRun,
 		"group",
+		"",
 		&zonesClient,
 		client,
 	)
