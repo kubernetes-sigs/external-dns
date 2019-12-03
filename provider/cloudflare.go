@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2017 The Kubernetes Authors. ewf
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -62,6 +62,7 @@ type cloudFlareDNS interface {
 	CreateDNSRecord(zoneID string, rr cloudflare.DNSRecord) (*cloudflare.DNSRecordResponse, error)
 	DeleteDNSRecord(zoneID, recordID string) error
 	UpdateDNSRecord(zoneID, recordID string, rr cloudflare.DNSRecord) error
+	ZoneDetails(zoneID string) (cloudflare.Zone, error)
 }
 
 type zoneService struct {
@@ -96,6 +97,10 @@ func (z zoneService) DeleteDNSRecord(zoneID, recordID string) error {
 
 func (z zoneService) ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error) {
 	return z.service.ListZonesContext(ctx, opts...)
+}
+
+func (z zoneService) ZoneDetails(zoneID string) (cloudflare.Zone, error) {
+	return z.service.ZoneDetails(zoneID)
 }
 
 // CloudFlareProvider is an implementation of Provider for CloudFlare DNS.
@@ -151,6 +156,26 @@ func (p *CloudFlareProvider) Zones() ([]cloudflare.Zone, error) {
 	ctx := context.TODO()
 	p.PaginationOptions.Page = 1
 
+	// if there is a zoneIDfilter configured
+	// && if the filter isnt just a blank string (used in tests)
+	if len(p.zoneIDFilter.zoneIDs) > 0 && p.zoneIDFilter.zoneIDs[0] != "" {
+		log.Debugln("zoneIDFilter configured. only looking up zone IDs defined")
+		for _, zoneID := range p.zoneIDFilter.zoneIDs {
+			log.Debugf("looking up zone %s", zoneID)
+			detailResponse, err := p.Client.ZoneDetails(zoneID)
+			if err != nil {
+				return nil, err
+			}
+			log.WithFields(log.Fields{
+				"zoneName": detailResponse.Name,
+				"zoneID":   detailResponse.ID,
+			}).Debugln("adding zone for consideration")
+			result = append(result, detailResponse)
+		}
+		return result, nil
+	}
+
+	log.Debugln("no zoneIDFilter configured, looking at all zones")
 	for {
 		zonesResponse, err := p.Client.ListZonesContext(ctx, cloudflare.WithPagination(p.PaginationOptions))
 		if err != nil {
@@ -159,10 +184,7 @@ func (p *CloudFlareProvider) Zones() ([]cloudflare.Zone, error) {
 
 		for _, zone := range zonesResponse.Result {
 			if !p.domainFilter.Match(zone.Name) {
-				continue
-			}
-
-			if !p.zoneIDFilter.Match(zone.ID) {
+				log.Debugf("zone %s not in domain filter", zone.Name)
 				continue
 			}
 			result = append(result, zone)

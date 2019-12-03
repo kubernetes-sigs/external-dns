@@ -77,6 +77,23 @@ func (m *mockCloudFlareClient) ListZonesContext(ctx context.Context, opts ...clo
 	}, nil
 }
 
+func (m *mockCloudFlareClient) ZoneDetails(zoneID string) (cloudflare.Zone, error) {
+	switch zoneID {
+	case "1234567890":
+		return cloudflare.Zone{
+			ID:   "1234567890",
+			Name: "ext-dns-test.zalando.to.",
+		}, nil
+	case "1234567891":
+		return cloudflare.Zone{
+			ID:   "1234567891",
+			Name: "foo.com.",
+		}, nil
+	default:
+		return cloudflare.Zone{}, fmt.Errorf("zoneID %s is not mocked", zoneID)
+	}
+}
+
 type mockCloudFlareUserDetailsFail struct{}
 
 func (m *mockCloudFlareUserDetailsFail) CreateDNSRecord(zoneID string, rr cloudflare.DNSRecord) (*cloudflare.DNSRecordResponse, error) {
@@ -181,6 +198,23 @@ func (m *mockCloudFlareDNSRecordsFail) ListZonesContext(ctx context.Context, opt
 	}, nil
 }
 
+func (m *mockCloudFlareDNSRecordsFail) ZoneDetails(zoneID string) (cloudflare.Zone, error) {
+	switch zoneID {
+	case "1234567890":
+		return cloudflare.Zone{
+			ID:   "1234567890",
+			Name: "ext-dns-test.zalando.to.",
+		}, nil
+	case "1234567891":
+		return cloudflare.Zone{
+			ID:   "1234567891",
+			Name: "foo.com.",
+		}, nil
+	default:
+		return cloudflare.Zone{}, fmt.Errorf("zoneID %s is not mocked", zoneID)
+	}
+}
+
 type mockCloudFlareZoneIDByNameFail struct{}
 
 func (m *mockCloudFlareZoneIDByNameFail) CreateDNSRecord(zoneID string, rr cloudflare.DNSRecord) (*cloudflare.DNSRecordResponse, error) {
@@ -275,6 +309,10 @@ func (m *mockCloudFlareListZonesFail) ListZonesContext(ctx context.Context, opts
 	return cloudflare.ZonesResponse{}, fmt.Errorf("no zones available")
 }
 
+func (m *mockCloudFlareListZonesFail) ZoneDetails(zoneID string) (cloudflare.Zone, error) {
+	return cloudflare.Zone{}, fmt.Errorf("no zones available")
+}
+
 type mockCloudFlareCreateRecordsFail struct{}
 
 func (m *mockCloudFlareCreateRecordsFail) CreateDNSRecord(zoneID string, rr cloudflare.DNSRecord) (*cloudflare.DNSRecordResponse, error) {
@@ -303,6 +341,10 @@ func (m *mockCloudFlareCreateRecordsFail) ZoneIDByName(zoneName string) (string,
 
 func (m *mockCloudFlareCreateRecordsFail) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
 	return []cloudflare.Zone{{}}, fmt.Errorf("no zones available")
+}
+
+func (m *mockCloudFlareCreateRecordsFail) ZoneDetails(zoneID string) (cloudflare.Zone, error) {
+	return cloudflare.Zone{}, fmt.Errorf("no zones available")
 }
 
 func (m *mockCloudFlareCreateRecordsFail) ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error) {
@@ -474,6 +516,23 @@ func TestCloudFlareZones(t *testing.T) {
 		Client:       &mockCloudFlareClient{},
 		domainFilter: NewDomainFilter([]string{"zalando.to."}),
 		zoneIDFilter: NewZoneIDFilter([]string{""}),
+	}
+
+	zones, err := provider.Zones()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	validateCloudFlareZones(t, zones, []cloudflare.Zone{
+		{Name: "ext-dns-test.zalando.to."},
+	})
+}
+
+func TestCloudFlareZonesWithIDFilter(t *testing.T) {
+	provider := &CloudFlareProvider{
+		Client:       &mockCloudFlareClient{},
+		domainFilter: NewDomainFilter([]string{""}),
+		zoneIDFilter: NewZoneIDFilter([]string{"1234567890"}),
 	}
 
 	zones, err := provider.Zones()

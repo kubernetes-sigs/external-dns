@@ -16,10 +16,13 @@
 FROM golang:1.13 as builder
 
 WORKDIR /github.com/kubernetes-sigs/external-dns
+COPY go.mod .
+COPY go.sum .
+RUN go mod vendor && \
+    go mod download
 
 COPY . .
-RUN go mod vendor && \
-    make test && \
+RUN make test && \
     make build
 
 # final image
