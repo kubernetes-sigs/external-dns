@@ -38,6 +38,8 @@ const (
 	controllerAnnotationKey = "external-dns.alpha.kubernetes.io/controller"
 	// The annotation used for defining the desired hostname
 	hostnameAnnotationKey = "external-dns.alpha.kubernetes.io/hostname"
+	// The annotation used for specifying whether the public or private interface address is used
+	accessAnnotationKey = "external-dns.alpha.kubernetes.io/access"
 	// The annotation used for defining the desired ingress target
 	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
 	// The annotation used for defining the desired DNS record TTL
@@ -105,6 +107,11 @@ func getHostnamesFromAnnotations(annotations map[string]string) []string {
 		return nil
 	}
 	return strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
+}
+
+func getAccessFromAnnotations(annotations map[string]string) string {
+	accessAnnotation := annotations[accessAnnotationKey]
+	return accessAnnotation
 }
 
 func getAliasFromAnnotations(annotations map[string]string) bool {
