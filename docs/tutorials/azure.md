@@ -94,10 +94,10 @@ Create the service principal
 ``` bash
 > az ad sp create-for-rbac -n ExternalDnsServicePrincipal
 {
-  "appId": "appId GUID",  <-- aadClientId value
+  "appId": "appId GUID",  --> aadClientId value
   ...
-  "password": "password",  <-- aadClientSecret value
-  "tenant": "AzureAD Tenant Id"  <-- tenantId value
+  "password": "password",  --> aadClientSecret value
+  "tenant": "AzureAD Tenant Id"  --> tenantId value
 }
 ```
 
