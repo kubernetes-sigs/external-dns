@@ -51,7 +51,7 @@ func (sdr *AWSSDRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 	}
 
 	for _, record := range records {
-		labels, err := endpoint.NewLabelsFromString(record.Labels[endpoint.AWSSDDescriptionLabel])
+		labels, err := endpoint.NewLabelsFromStringPlain(record.Labels[endpoint.AWSSDDescriptionLabel])
 		if err != nil {
 			// if we fail to parse the output then simply assume the endpoint is not managed by any instance of External DNS
 			record.Labels = endpoint.NewLabels()
@@ -84,6 +84,6 @@ func (sdr *AWSSDRegistry) ApplyChanges(ctx context.Context, changes *plan.Change
 func (sdr *AWSSDRegistry) updateLabels(endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
 		ep.Labels[endpoint.OwnerLabelKey] = sdr.ownerID
-		ep.Labels[endpoint.AWSSDDescriptionLabel] = ep.Labels.Serialize(false)
+		ep.Labels[endpoint.AWSSDDescriptionLabel] = ep.Labels.SerializePlain(false)
 	}
 }
