@@ -265,7 +265,7 @@ func main() {
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":
-		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTOwnerID, cfg.TXTCacheInterval)
+		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey))
 	case "aws-sd":
 		r, err = registry.NewAWSSDRegistry(p.(*provider.AWSSDProvider), cfg.TXTOwnerID)
 	default:

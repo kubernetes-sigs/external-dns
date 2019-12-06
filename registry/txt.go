@@ -40,21 +40,35 @@ type TXTRegistry struct {
 	recordsCache            []*endpoint.Endpoint
 	recordsCacheRefreshTime time.Time
 	cacheInterval           time.Duration
+
+	// encrypt text records
+	txtEncryptEnabled bool
+	txtEncryptAESKey  []byte
 }
 
 // NewTXTRegistry returns new TXTRegistry object
-func NewTXTRegistry(provider provider.Provider, txtPrefix, ownerID string, cacheInterval time.Duration) (*TXTRegistry, error) {
+func NewTXTRegistry(provider provider.Provider, txtPrefix, ownerID string, cacheInterval time.Duration, txtEncryptEnabled bool, txtEncryptAESKey []byte) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
+	}
+	if len(txtEncryptAESKey) == 0 {
+		txtEncryptAESKey = nil
+	} else if len(txtEncryptAESKey) != 32 {
+		return nil, errors.New("The AES Encryption key must have a length of 32 bytes")
+	}
+	if txtEncryptEnabled && txtEncryptAESKey == nil {
+		return nil, errors.New("The AES Encryption key must be set when TXT record encryption is enabled")
 	}
 
 	mapper := newPrefixNameMapper(txtPrefix)
 
 	return &TXTRegistry{
-		provider:      provider,
-		ownerID:       ownerID,
-		mapper:        mapper,
-		cacheInterval: cacheInterval,
+		provider:          provider,
+		ownerID:           ownerID,
+		mapper:            mapper,
+		cacheInterval:     cacheInterval,
+		txtEncryptEnabled: txtEncryptEnabled,
+		txtEncryptAESKey:  txtEncryptAESKey,
 	}, nil
 }
 
@@ -84,7 +98,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			continue
 		}
 		// We simply assume that TXT records for the registry will always have only one target.
-		labels, err := endpoint.NewLabelsFromString(record.Targets[0])
+		labels, err := endpoint.NewLabelsFromString(record.Targets[0], im.txtEncryptAESKey)
 		if err == endpoint.ErrInvalidHeritage {
 			//if no heritage is found or it is invalid
 			//case when value of txt record cannot be identified
@@ -134,7 +148,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 			r.Labels = make(map[string]string)
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey)).WithSetIdentifier(r.SetIdentifier)
 		txt.ProviderSpecific = r.ProviderSpecific
 		filteredChanges.Create = append(filteredChanges.Create, txt)
 
@@ -144,7 +158,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	}
 
 	for _, r := range filteredChanges.Delete {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey)).WithSetIdentifier(r.SetIdentifier)
 		txt.ProviderSpecific = r.ProviderSpecific
 
 		// when we delete TXT records for which value has changed (due to new label) this would still work because
@@ -158,7 +172,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateOld {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey)).WithSetIdentifier(r.SetIdentifier)
 		txt.ProviderSpecific = r.ProviderSpecific
 		// when we updateOld TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
@@ -171,7 +185,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateNew {
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey)).WithSetIdentifier(r.SetIdentifier)
 		txt.ProviderSpecific = r.ProviderSpecific
 		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, txt)
 		// add new version of record to cache
