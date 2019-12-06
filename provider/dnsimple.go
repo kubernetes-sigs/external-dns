@@ -235,7 +235,7 @@ func (p *dnsimpleProvider) submitChanges(changes []*dnsimpleChange) error {
 	for _, change := range changes {
 		zone := dnsimpleSuitableZone(change.ResourceRecordSet.Name, zones)
 		if zone == nil {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", change.ResourceRecordSet.Name)
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", change.ResourceRecordSet.Name)
 			continue
 		}
 
