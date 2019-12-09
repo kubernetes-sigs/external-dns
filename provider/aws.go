@@ -662,7 +662,7 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Ch
 
 		zones := suitableZones(hostname, zones)
 		if len(zones) == 0 {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.String())
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", c.String())
 			continue
 		}
 		for _, z := range zones {

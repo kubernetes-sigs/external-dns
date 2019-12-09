@@ -504,7 +504,7 @@ func endpointsByZone(zoneNameIDMapper zoneIDName, endpoints []*endpoint.Endpoint
 	for _, ep := range endpoints {
 		zoneID, _ := zoneNameIDMapper.FindZone(ep.DNSName)
 		if zoneID == "" {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", ep.DNSName)
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", ep.DNSName)
 			continue
 		}
 		endpointsByZone[zoneID] = append(endpointsByZone[zoneID], ep)
