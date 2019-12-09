@@ -415,7 +415,7 @@ func (p designateProvider) upsertRecordSet(rs *recordSet, managedZones map[strin
 			return err
 		}
 		if rs.zoneID == "" {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", rs.dnsName)
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", rs.dnsName)
 			return nil
 		}
 	}
