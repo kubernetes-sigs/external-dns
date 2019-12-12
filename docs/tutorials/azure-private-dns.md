@@ -1,20 +1,48 @@
-
 # Set up ExternalDNS for Azure Private DNS
 
-This tutorial describes how to setup ExternalDNS for managing records in Azure Private DNS.  
-It assumes to deploy ExternalDNS as a container Kubernetes.
-
+This tutorial describes how to set up ExternalDNS for managing records in Azure Private DNS.  
 
 It comprises of the following steps:
-1) Provision Azure Private DNS
-2) Configure service principal for managing the zone
-3) Deploy ExternalDNS  
+1) Install 	NGINX Ingress Controller 
+2) Provision Azure Private DNS
+3) Configure service principal for managing the zone
+4) Deploy ExternalDNS  
+
+Everything will be deployed on Kubernetes.   
+Therefore, please see the subsequent prerequisites.
 
 ## Prerequisites
-- Azure Kubernetes Service available
-- nginx-ingress-controller incl. `--publish-service=namespace/nginx-ingress-controller-svcname` available
+- Azure Kubernetes Service is deployed and ready
 - [Azure CLI 2.0](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) and `kubectl` installed on the box to execute the subsequent steps 
 
+## Install NGINX Ingress Controller 
+
+Helm is used to deploy the ingress controller. 
+
+We employ the popular chart [stable/nginx-ingress](https://github.com/helm/charts/tree/master/stable/nginx-ingress).
+
+```
+helm install stable/nginx-ingress \
+     --name nginx-ingress \
+     --set controller.publishService.enabled=true
+```
+  
+The parameter `controller.publishService.enabled` needs to be set to `true.`  
+
+It will make the ingress controller update the endpoint records of ingress-resources to contain the external-ip of the loadbalancer serving the ingress-controller. 
+This is crucial as ExternalDNS reads those endpoints records when creating DNS-Records from ingress-resources.  
+In the subsequent parameter we will make use of this. If you don't want to work with ingress-resources in your later use, you can leave the parameter out.
+
+If you do not want to deploy the ingress controller with Helm, ensure to pass the following cmdline-flags to it through the mechanism of your choice:
+
+```
+flags:
+--publish-service=<namespace of ingress-controller >/<svcname of ingress-controller>
+--update-status=true (default-value)
+
+example:
+./nginx-ingress-controller --publish-service=default/nginx-ingress-controller
+``` 
 
 ## Provision Azure Private DNS
 
@@ -106,8 +134,7 @@ Azure-CLI features functionality for automatically maintaining this file for AKS
 
 Then apply one of the following manifests depending on whether you use RBAC or not.
 
-The credentials of the service principal are provided to ExternalDNS as environment-variables.   
-At the end of this section, we additionally describe how to provide them as a _file_.
+The credentials of the service principal are provided to ExternalDNS as environment-variables.
 
 ### Manifest (for clusters without RBAC enabled)
 ```yaml
