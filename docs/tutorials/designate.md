@@ -76,7 +76,7 @@ spec:
           value: Default
 ```
 
-### Manifest (for clusters without RBAC enabled)
+### Manifest (for clusters with RBAC enabled)
 
 ```yaml
 apiVersion: v1
