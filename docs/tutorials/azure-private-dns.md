@@ -22,7 +22,7 @@ Helm is used to deploy the ingress controller.
 We employ the popular chart [stable/nginx-ingress](https://github.com/helm/charts/tree/master/stable/nginx-ingress).
 
 ```
-helm install stable/nginx-ingress \
+$ helm install stable/nginx-ingress \
      --name nginx-ingress \
      --set controller.publishService.enabled=true
 ```
@@ -32,6 +32,18 @@ The parameter `controller.publishService.enabled` needs to be set to `true.`
 It will make the ingress controller update the endpoint records of ingress-resources to contain the external-ip of the loadbalancer serving the ingress-controller. 
 This is crucial as ExternalDNS reads those endpoints records when creating DNS-Records from ingress-resources.  
 In the subsequent parameter we will make use of this. If you don't want to work with ingress-resources in your later use, you can leave the parameter out.
+
+Verify the correct propagation of the loadbalancer's ip by listing the ingresses.
+```
+$ kubectl get ingress
+```
+The address column should contain the ip for each ingress. ExternalDNS will pick up exactly this piece of information.
+```
+NAME     HOSTS             ADDRESS          PORTS   AGE
+nginx1   sample1.aks.com   52.167.195.110   80      6d22h
+nginx2   sample2.aks.com   52.167.195.110   80      6d21h
+```
+
 
 If you do not want to deploy the ingress controller with Helm, ensure to pass the following cmdline-flags to it through the mechanism of your choice:
 
