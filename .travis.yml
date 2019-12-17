@@ -30,4 +30,5 @@ script:
 # - travis_wait 20 roveralls
 # - goveralls -coverprofile=roveralls.coverprofile -service=travis-ci
 # - make build.docker
+- gcloud docker -a
 - IMAGE=staging-k8s.gcr.io/external-dns VERSION=$(git describe --tags --always --dirty) make build.push
