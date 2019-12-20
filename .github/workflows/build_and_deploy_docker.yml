@@ -1,5 +1,5 @@
 #Workflows
-name: external_dns_on_prom
+name: external_dns_on_prem
 on: [push]
 
 jobs:
