@@ -1,0 +1,23 @@
+#Workflows
+name: external_dns_on_prom
+on: [push]
+
+jobs:
+  build_and_deploy_docker:
+    runs-on: ubuntu-latest
+    name: external_dns_onprem
+    steps:
+    - name: Generate build number
+      uses: einaregilsson/build-number@v2 
+      with:
+        token: ${{secrets.github_token}}        
+    - name: Print new build number
+      run: echo "Build number is $BUILD_NUMBER"
+      # Or, if you're on Windows: echo "Build number is ${env:BUILD_NUMBER}"
+    - uses: actions/checkout@v1
+    - name: Build Action 
+      env: # Or as an environment variable
+          docker_login: ${{ secrets.docker_login }}
+          docker_token: ${{ secrets.docker_token }}      
+      run: |
+        bash ./init.sh
