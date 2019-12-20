@@ -3,7 +3,7 @@
 This tutorial describes how to set up ExternalDNS for managing records in Azure Private DNS.  
 
 It comprises of the following steps:
-1) Install 	NGINX Ingress Controller 
+1) Install NGINX Ingress Controller 
 2) Provision Azure Private DNS
 3) Configure service principal for managing the zone
 4) Deploy ExternalDNS  
