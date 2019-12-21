@@ -214,16 +214,7 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname string, ttl endpoint.TTL) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
-	labelSelector, err := metav1.ParseToLabelSelector(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
-	if err != nil {
-		return nil
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
-	if err != nil {
-		return nil
-	}
-
-	pods, err := sc.podInformer.Lister().Pods(svc.Namespace).List(selector)
+	pods, err := sc.selectTargetedPods(svc)
 	if err != nil {
 		log.Errorf("List Pods of service[%s] error:%v", svc.GetName(), err)
 		return endpoints
@@ -466,15 +457,7 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 
 	switch svc.Spec.ExternalTrafficPolicy {
 	case v1.ServiceExternalTrafficPolicyTypeLocal:
-		labelSelector, err := metav1.ParseToLabelSelector(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
-		if err != nil {
-			return nil, err
-		}
-		selector, err := metav1.LabelSelectorAsSelector(labelSelector)
-		if err != nil {
-			return nil, err
-		}
-		pods, err := sc.podInformer.Lister().Pods(svc.Namespace).List(selector)
+		pods, err := sc.selectTargetedPods(svc)
 		if err != nil {
 			return nil, err
 		}
@@ -548,4 +531,18 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, nodeTargets e
 	}
 
 	return endpoints
+}
+
+func (sc *serviceSource) selectTargetedPods(svc *v1.Service) ([]*v1.Pod, error) {
+	labelSelector, err := metav1.ParseToLabelSelector(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
+	if err != nil {
+		return nil, err
+	}
+
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		return nil, err
+	}
+
+	return sc.podInformer.Lister().Pods(svc.Namespace).List(selector)
 }
