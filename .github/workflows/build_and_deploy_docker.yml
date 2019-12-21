@@ -14,7 +14,9 @@ jobs:
     - name: Print new build number
       run: echo "Build number is $BUILD_NUMBER"
       # Or, if you're on Windows: echo "Build number is ${env:BUILD_NUMBER}"
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
+      with:
+        ref: pr_1301  
     - name: Build Action 
       env: # Or as an environment variable
           docker_login: ${{ secrets.docker_login }}
