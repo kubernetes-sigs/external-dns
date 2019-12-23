@@ -266,7 +266,6 @@ spec:
 ```
 
 
-
 The feature is enabled only when an environment variable is passed to the container so it is safe as well.
 
 The Environment variable is 'COREDNS_ONPREM_ADDRESS_SUPPORT' and must be set to true to enable the feature.
