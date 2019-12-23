@@ -249,11 +249,13 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 
 	}
 
-	headlessDomains := []string{}
+	var headlessDomains []string
 	for headlessDomain := range targetsByHeadlessDomain {
 		headlessDomains = append(headlessDomains, headlessDomain)
 	}
 	sort.Strings(headlessDomains)
+
+	var srvRecordTargetHosts []string
 	for _, headlessDomain := range headlessDomains {
 		targets := targetsByHeadlessDomain[headlessDomain]
 		if ttl.IsConfigured() {
@@ -261,6 +263,14 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		} else {
 			endpoints = append(endpoints, endpoint.NewEndpoint(headlessDomain, endpoint.RecordTypeA, targets...))
 		}
+		if headlessDomain != hostname {
+			srvRecordTargetHosts = append(srvRecordTargetHosts, headlessDomain)
+		}
+	}
+
+	if len(srvRecordTargetHosts) > 0 {
+		srvEndpoints := sc.extractSrvRecordEndpoints(svc, hostname, ttl, srvRecordTargetHosts...)
+		endpoints = append(endpoints, srvEndpoints...)
 	}
 
 	return endpoints
@@ -378,12 +388,13 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 	switch svc.Spec.Type {
 	case v1.ServiceTypeLoadBalancer:
 		targets = append(targets, extractLoadBalancerTargets(svc)...)
+		endpoints = append(endpoints, sc.extractSrvRecordEndpoints(svc, hostname, ttl)...)
 	case v1.ServiceTypeClusterIP:
-		if sc.publishInternal {
-			targets = append(targets, extractServiceIps(svc)...)
-		}
 		if svc.Spec.ClusterIP == v1.ClusterIPNone {
 			endpoints = append(endpoints, sc.extractHeadlessEndpoints(svc, hostname, ttl)...)
+		} else if sc.publishInternal {
+			targets = append(targets, extractClusterIps(svc)...)
+			endpoints = append(endpoints, sc.extractSrvRecordEndpoints(svc, hostname, ttl)...)
 		}
 	case v1.ServiceTypeNodePort:
 		// add the nodeTargets and extract an SRV endpoint
@@ -392,7 +403,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 			log.Errorf("Unable to extract targets from service %s/%s error: %v", svc.Namespace, svc.Name, err)
 			return endpoints
 		}
-		endpoints = append(endpoints, sc.extractSRVRecordEndpoints(svc, hostname, ttl)...)
+		endpoints = append(endpoints, sc.extractSrvRecordEndpoints(svc, hostname, ttl)...)
 	case v1.ServiceTypeExternalName:
 		targets = append(targets, extractServiceExternalName(svc)...)
 	}
@@ -419,7 +430,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 	return endpoints
 }
 
-func extractServiceIps(svc *v1.Service) endpoint.Targets {
+func extractClusterIps(svc *v1.Service) endpoint.Targets {
 	if svc.Spec.ClusterIP == v1.ClusterIPNone {
 		log.Debugf("Unable to associate %s headless service with a Cluster IP", svc.Name)
 		return endpoint.Targets{}
@@ -497,18 +508,37 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 	return internalIPs, nil
 }
 
-func (sc *serviceSource) extractSRVRecordEndpoints(svc *v1.Service, hostname string, ttl endpoint.TTL) []*endpoint.Endpoint {
+// Try to extract SRV records for all services with named ports
+func (sc *serviceSource) extractSrvRecordEndpoints(svc *v1.Service, hostname string, ttl endpoint.TTL, targetHosts ...string) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	for _, port := range svc.Spec.Ports {
-		if port.NodePort > 0 {
-			// build a target with a priority of 0, weight of 0, and pointing the given port on the given host
-			target := fmt.Sprintf("0 50 %d %s", port.NodePort, hostname)
+		if port.Name == "" {
+			// Unnamed ports do not have a SRV record.
+			continue
+		}
 
-			// figure out the portname
-			portName := port.Name
-			if portName == "" {
-				portName = fmt.Sprintf("%d", port.NodePort)
+		var exposedPort int32
+		switch svc.Spec.Type {
+		case v1.ServiceTypeLoadBalancer:
+			fallthrough
+		case v1.ServiceTypeNodePort:
+			exposedPort = port.NodePort
+		case v1.ServiceTypeClusterIP:
+			exposedPort = port.Port
+		}
+
+		if exposedPort > 0 {
+			var targets []string
+			if len(targetHosts) == 0 {
+				targetHosts = append(targetHosts, hostname)
+			}
+
+			for _, targetHost := range targetHosts {
+				// build a target with a priority of 0, weight of 0,
+				// and pointing the given port on the given host
+				target := fmt.Sprintf("0 50 %d %s", exposedPort, targetHost)
+				targets = append(targets, target)
 			}
 
 			// figure out the protocol
@@ -517,13 +547,13 @@ func (sc *serviceSource) extractSRVRecordEndpoints(svc *v1.Service, hostname str
 				protocol = "tcp"
 			}
 
-			recordName := fmt.Sprintf("_%s._%s.%s", portName, protocol, hostname)
+			recordName := fmt.Sprintf("_%s._%s.%s", port.Name, protocol, hostname)
 
 			var ep *endpoint.Endpoint
 			if ttl.IsConfigured() {
-				ep = endpoint.NewEndpointWithTTL(recordName, endpoint.RecordTypeSRV, ttl, target)
+				ep = endpoint.NewEndpointWithTTL(recordName, endpoint.RecordTypeSRV, ttl, targets...)
 			} else {
-				ep = endpoint.NewEndpoint(recordName, endpoint.RecordTypeSRV, target)
+				ep = endpoint.NewEndpoint(recordName, endpoint.RecordTypeSRV, targets...)
 			}
 
 			endpoints = append(endpoints, ep)
