@@ -769,6 +769,36 @@ func testServiceSourceEndpoints(t *testing.T) {
 			false,
 		},
 		{
+			"multiple named ports return a single endpoint and one SRV endpoints for each named port",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeLoadBalancer,
+			"",
+			"",
+			false,
+			false,
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+			},
+			"",
+			[]v1.ServicePort{
+				{Name: "http", Port: 8888, NodePort: 30192},
+				{Name: "https", Port: 8889, NodePort: 30193, Protocol: "UDP"},
+				{Port: 8890, NodePort: 30194},
+			},
+			[]string{"1.2.3.4"},
+			[]string{},
+			[]*endpoint.Endpoint{
+				{DNSName: "_http._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_https._udp.foo.example.org", Targets: endpoint.Targets{"0 50 30193 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			false,
+		},
+		{
 			"services annotated with legacy mate annotations are ignored in default mode",
 			"",
 			"",
@@ -1254,6 +1284,34 @@ func TestClusterIpServices(t *testing.T) {
 			[]*endpoint.Endpoint{},
 			false,
 		},
+		{
+			"annotated ClusterIp services with multiple named ports return an endpoint with Cluster IP and multiple SRV endpoints",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			false,
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+			},
+			"1.2.3.4",
+			[]v1.ServicePort{
+				{Name: "http", Port: 8888},
+				{Name: "https", Port: 8889, Protocol: "UDP"},
+				{Port: 8890},
+			},
+			[]string{},
+			[]*endpoint.Endpoint{
+				{DNSName: "_http._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 8888 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_https._udp.foo.example.org", Targets: endpoint.Targets{"0 50 8889 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			false,
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			// Create a Kubernetes testing client
@@ -1361,7 +1419,7 @@ func TestNodePortServices(t *testing.T) {
 			[]v1.ServicePort{{Name: "http", Port: 8888, NodePort: 30192}},
 			nil,
 			[]*endpoint.Endpoint{
-				{DNSName: "_30192._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_http._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
@@ -1450,7 +1508,7 @@ func TestNodePortServices(t *testing.T) {
 			[]v1.ServicePort{{Name: "http", Port: 8888, NodePort: 30192}},
 			nil,
 			[]*endpoint.Endpoint{
-				{DNSName: "_30192._tcp.foo.bar.example.com", Targets: endpoint.Targets{"0 50 30192 foo.bar.example.com"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_http._tcp.foo.bar.example.com", Targets: endpoint.Targets{"0 50 30192 foo.bar.example.com"}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.bar.example.com", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
@@ -1497,7 +1555,7 @@ func TestNodePortServices(t *testing.T) {
 			[]v1.ServicePort{{Name: "http", Port: 8888, NodePort: 30192}},
 			nil,
 			[]*endpoint.Endpoint{
-				{DNSName: "_30192._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_http._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
@@ -1542,7 +1600,7 @@ func TestNodePortServices(t *testing.T) {
 			[]v1.ServicePort{{Name: "http", Port: 8888, NodePort: 30192}},
 			nil,
 			[]*endpoint.Endpoint{
-				{DNSName: "_30192._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_http._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
@@ -1570,6 +1628,58 @@ func TestNodePortServices(t *testing.T) {
 			[]string{"master-0"},
 			[]int{1},
 			[]v1.PodPhase{v1.PodRunning},
+		},
+		{
+			"annotated NodePort services with multiple named ports return an endpoint with IP addresses of the cluster's nodes and multiple SRV endpoints",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeNodePort,
+			v1.ServiceExternalTrafficPolicyTypeCluster,
+			"",
+			"",
+			false,
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+			},
+			[]v1.ServicePort{
+				{Name: "http", Port: 8888, NodePort: 30192},
+				{Name: "https", Port: 8889, NodePort: 30193, Protocol: "UDP"},
+				{Port: 8890, NodePort: 30194},
+			},
+			nil,
+			[]*endpoint.Endpoint{
+				{DNSName: "_http._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_https._udp.foo.example.org", Targets: endpoint.Targets{"0 50 30193 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			[]*v1.Node{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node1",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node2",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+					},
+				},
+			}},
+			[]string{},
+			[]int{},
+			[]v1.PodPhase{},
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
@@ -1820,6 +1930,56 @@ func TestHeadlessServices(t *testing.T) {
 			},
 			false,
 		},
+		{
+			"annotated Headless services with multiple named ports return endpoints for each selected Pod and SRV endpoints for each ports",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			false,
+			map[string]string{"component": "foo"},
+			map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+			},
+			v1.ClusterIPNone,
+			[]string{"1.1.1.1", "1.1.1.2"},
+			map[string]string{
+				"component": "foo",
+			},
+			[]v1.ServicePort{
+				{Name: "http", Port: 8888},
+				{Name: "https", Port: 8889, Protocol: "UDP"},
+				{Port: 8890},
+			},
+			[]string{},
+			[]string{"foo-0", "foo-1"},
+			[]string{"foo-0", "foo-1"},
+			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
+			[]*endpoint.Endpoint{
+				{
+					DNSName: "_http._tcp.service.example.org",
+					Targets: endpoint.Targets{
+						"0 50 8888 foo-0.service.example.org",
+						"0 50 8888 foo-1.service.example.org",
+					},
+					RecordType: endpoint.RecordTypeSRV,
+				},
+				{
+					DNSName: "_https._udp.service.example.org",
+					Targets: endpoint.Targets{
+						"0 50 8889 foo-0.service.example.org",
+						"0 50 8889 foo-1.service.example.org",
+					},
+					RecordType: endpoint.RecordTypeSRV,
+				},
+				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
+				{DNSName: "foo-1.service.example.org", Targets: endpoint.Targets{"1.1.1.2"}},
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1", "1.1.1.2"}},
+			},
+			false,
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			// Create a Kubernetes testing client
@@ -2057,6 +2217,56 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			[]string{"", ""},
 			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
 			[]*endpoint.Endpoint{
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1", "1.1.1.2"}},
+			},
+			false,
+		},
+		{
+			"annotated Headless services with multiple named ports return endpoints for each selected Pod and SRV endpoints for each ports",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			false,
+			map[string]string{"component": "foo"},
+			map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+			},
+			v1.ClusterIPNone,
+			[]string{"1.1.1.1", "1.1.1.2"},
+			map[string]string{
+				"component": "foo",
+			},
+			[]v1.ServicePort{
+				{Name: "http", Port: 8888},
+				{Name: "https", Port: 8889, Protocol: "UDP"},
+				{Port: 8890},
+			},
+			[]string{},
+			[]string{"foo-0", "foo-1"},
+			[]string{"foo-0", "foo-1"},
+			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
+			[]*endpoint.Endpoint{
+				{
+					DNSName: "_http._tcp.service.example.org",
+					Targets: endpoint.Targets{
+						"0 50 8888 foo-0.service.example.org",
+						"0 50 8888 foo-1.service.example.org",
+					},
+					RecordType: endpoint.RecordTypeSRV,
+				},
+				{
+					DNSName: "_https._udp.service.example.org",
+					Targets: endpoint.Targets{
+						"0 50 8889 foo-0.service.example.org",
+						"0 50 8889 foo-1.service.example.org",
+					},
+					RecordType: endpoint.RecordTypeSRV,
+				},
+				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
+				{DNSName: "foo-1.service.example.org", Targets: endpoint.Targets{"1.1.1.2"}},
 				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1", "1.1.1.2"}},
 			},
 			false,
