@@ -309,7 +309,7 @@ func ns1ChangesByZone(zones []*dns.Zone, changeSets []*ns1Change) map[string][]*
 	for _, c := range changeSets {
 		zone, _ := zoneNameIDMapper.FindZone(c.Endpoint.DNSName)
 		if zone == "" {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.Endpoint.DNSName)
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", c.Endpoint.DNSName)
 			continue
 		}
 		changes[zone] = append(changes[zone], c)
