@@ -15,9 +15,6 @@
 # builder image
 FROM golang:1.13 as builder
 
-#ARG  http_proxy="http://LAB-SVC-Inception:Welcome1@nadevproxy.logistics.corp:3128"
-#ARG https_proxy="http://LAB-SVC-Inception:Welcome1@nadevproxy.logistics.corp:3128"
-
 WORKDIR /github.com/kubernetes-sigs/external-dns
 
 COPY . .
@@ -28,9 +25,6 @@ RUN go mod vendor && \
 # final image
 FROM alpine:3.10
 LABEL maintainer="Team Teapot @ Zalando SE <team-teapot@zalando.de>"
-
-#RUN http_proxy="http://LAB-SVC-Inception:Welcome1@nadevproxy.logistics.corp:3128" apk add ca-certificates && update-ca-certificates
-RUN apk add ca-certificates && update-ca-certificates
 
 RUN apk add --no-cache ca-certificates && \
     update-ca-certificates
