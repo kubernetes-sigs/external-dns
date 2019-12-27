@@ -265,9 +265,6 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)").Default(defaultConfig.KubeConfig).StringVar(&cfg.KubeConfig)
 	app.Flag("request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout").Default(defaultConfig.RequestTimeout.String()).DurationVar(&cfg.RequestTimeout)
 
-	// Flags related to Istio
-	app.Flag("istio-ingress-gateway", "The fully-qualified name of the Istio ingress gateway service. Flag can be specified multiple times (default: istio-system/istio-ingressgateway)").Default("istio-system/istio-ingressgateway").StringsVar(&cfg.IstioIngressGatewayServices)
-
 	// Flags related to cloud foundry
 	app.Flag("cf-api-endpoint", "The fully-qualified domain name of the cloud foundry instance you are targeting").Default(defaultConfig.CFAPIEndpoint).StringVar(&cfg.CFAPIEndpoint)
 	app.Flag("cf-username", "The username to log into the cloud foundry API").Default(defaultConfig.CFUsername).StringVar(&cfg.CFUsername)
