@@ -106,3 +106,15 @@ INFO[0000] Connected to cluster at https://192.168.99.100:8443
 INFO[0000] CREATE: foo.bar.com 180 IN A 192.168.99.216
 INFO[0000] CREATE: foo.bar.com 0 IN TXT "heritage=external-dns,external-dns/owner=default"
 ```
+
+### RBAC configuration
+
+If you use RBAC, extend the `external-dns` ClusterRole with:
+```
+- apiGroups: ["externaldns.k8s.io"]
+  resources: ["dnsendpoints"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["externaldns.k8s.io"]
+  resources: ["dnsendpoints/status"]
+  verbs: ["*"]
+```
