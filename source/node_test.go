@@ -3,12 +3,13 @@ package source
 import (
 	"testing"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 func TestNodeSource(t *testing.T) {

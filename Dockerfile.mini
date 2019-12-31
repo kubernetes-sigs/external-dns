@@ -14,7 +14,7 @@
 
 FROM golang:1.13 as builder
 
-WORKDIR /github.com/kubernetes-sigs/external-dns
+WORKDIR /sigs.k8s.io/external-dns
 
 COPY . .
 RUN apt-get update && \
@@ -27,7 +27,7 @@ RUN apt-get update && \
 FROM gcr.io/distroless/static
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --from=builder /github.com/kubernetes-sigs/external-dns/build/external-dns /bin/external-dns
+COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /bin/external-dns
 
 # Run as UID for nobody since k8s pod securityContext runAsNonRoot can't resolve the user ID:
 # https://github.com/kubernetes/kubernetes/issues/40958

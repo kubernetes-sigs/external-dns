@@ -27,13 +27,13 @@ import (
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/kubernetes-sigs/external-dns/controller"
-	"github.com/kubernetes-sigs/external-dns/pkg/apis/externaldns"
-	"github.com/kubernetes-sigs/external-dns/pkg/apis/externaldns/validation"
-	"github.com/kubernetes-sigs/external-dns/plan"
-	"github.com/kubernetes-sigs/external-dns/provider"
-	"github.com/kubernetes-sigs/external-dns/registry"
-	"github.com/kubernetes-sigs/external-dns/source"
+	"sigs.k8s.io/external-dns/controller"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
+	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/registry"
+	"sigs.k8s.io/external-dns/source"
 )
 
 func main() {

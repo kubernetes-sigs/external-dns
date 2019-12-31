@@ -19,23 +19,22 @@ package provider
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"math"
+	"net"
 	"net/http"
 	"sort"
 	"strings"
 	"time"
 
+	pgo "github.com/ffledgling/pdns-go"
 	log "github.com/sirupsen/logrus"
 
-	"crypto/tls"
-	"net"
-
-	pgo "github.com/ffledgling/pdns-go"
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/pkg/tlsutils"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/tlsutils"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 type pdnsChangeType string
