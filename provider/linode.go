@@ -22,15 +22,14 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/linode/linodego"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 
-	"strings"
-
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 // LinodeDomainClient interface to ease testing

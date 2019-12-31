@@ -20,7 +20,7 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 /** test utility functions for endpoints verifications */

@@ -33,8 +33,8 @@ import (
 	etcdcv3 "github.com/coreos/etcd/clientv3"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 func init() {

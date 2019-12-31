@@ -20,7 +20,8 @@ import (
 	"net/url"
 
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
-	"github.com/kubernetes-sigs/external-dns/endpoint"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 type cloudfoundrySource struct {

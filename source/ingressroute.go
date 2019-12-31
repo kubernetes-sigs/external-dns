@@ -28,7 +28,6 @@ import (
 	contour "github.com/heptio/contour/apis/generated/clientset/versioned"
 	contourinformers "github.com/heptio/contour/apis/generated/informers/externalversions"
 	extinformers "github.com/heptio/contour/apis/generated/informers/externalversions/contour/v1beta1"
-	"github.com/kubernetes-sigs/external-dns/endpoint"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,6 +35,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // ingressRouteSource is an implementation of Source for Heptio Contour IngressRoute objects.

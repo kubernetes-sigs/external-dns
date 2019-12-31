@@ -22,13 +22,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/internal/testutils"
-	"github.com/kubernetes-sigs/external-dns/plan"
-	"github.com/kubernetes-sigs/external-dns/provider"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 const (
