@@ -315,18 +315,6 @@ ExternalDNS is an effort to unify the following similar projects in order to bri
 * Zalando's [Mate](https://github.com/linki/mate)
 * Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 
-## Kubernetes Incubator
-
-This is a [Kubernetes Incubator project](https://github.com/kubernetes/community/blob/master/incubator.md).
-The project was established 2017-Feb-9 (initial announcement [here](https://groups.google.com/forum/#!searchin/kubernetes-dev/external$20dns%7Csort:relevance/kubernetes-dev/2wGQUB0fUuE/9OXz01i2BgAJ)).
-The incubator team for the project is:
-
-* Sponsor: sig-network
-* Champion: Tim Hockin (@thockin)
-* SIG: sig-network
-
-For more information about sig-network, such as meeting times and agenda, check out the [community site](https://github.com/kubernetes/community/tree/master/sig-network).
-
 ### Code of conduct
 
 Participation in the Kubernetes community is governed by the [Kubernetes Code of Conduct](code-of-conduct.md).
