@@ -21,9 +21,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
-
 	"sync"
+	"time"
 
 	"github.com/cloudfoundry-community/go-cfclient"
 	contour "github.com/heptio/contour/apis/generated/clientset/versioned"

@@ -19,15 +19,15 @@ package registry
 import (
 	"context"
 	"errors"
-	"time"
-
 	"fmt"
 	"strings"
+	"time"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
-	"github.com/kubernetes-sigs/external-dns/provider"
 	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 // TXTRegistry implements registry interface with ownership implemented via associated TXT records

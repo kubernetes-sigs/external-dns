@@ -17,23 +17,21 @@ limitations under the License.
 package source
 
 import (
-	"testing"
-
-	istionetworking "istio.io/api/networking/v1alpha3"
-	istiomodel "istio.io/istio/pilot/pkg/model"
-
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-
 	"strconv"
 	"sync"
+	"testing"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	istionetworking "istio.io/api/networking/v1alpha3"
+	istiomodel "istio.io/istio/pilot/pkg/model"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // This is a compile-time validation that gatewaySource is a Source.

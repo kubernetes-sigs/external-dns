@@ -23,10 +23,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	rc0 "github.com/nic-at/rc0go"
 	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 // RcodeZeroProvider implements the DNS provider for RcodeZero Anycast DNS.
