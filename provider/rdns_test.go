@@ -65,7 +65,7 @@ func (c fakeEtcdv3Client) List(rootDomain string) ([]RDNSRecord, error) {
 
 		k := &mvccpb.KeyValue{
 			Key:   []byte(v.Key),
-			Value: []byte(b),
+			Value: b,
 		}
 
 		r.Kvs = append(r.Kvs, k)

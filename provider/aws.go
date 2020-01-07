@@ -749,9 +749,9 @@ func canonicalHostedZone(hostname string) string {
 }
 
 // cleanZoneID removes the "/hostedzone/" prefix
-func cleanZoneID(ID string) string {
-	if strings.HasPrefix(ID, "/hostedzone/") {
-		ID = strings.TrimPrefix(ID, "/hostedzone/")
+func cleanZoneID(id string) string {
+	if strings.HasPrefix(id, "/hostedzone/") {
+		id = strings.TrimPrefix(id, "/hostedzone/")
 	}
-	return ID
+	return id
 }

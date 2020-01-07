@@ -187,13 +187,11 @@ func (p *LinodeProvider) submitChanges(changes LinodeChanges) error {
 
 		if p.DryRun {
 			log.WithFields(logFields).Info("Would create record.")
-		} else {
-			if _, err := p.Client.CreateDomainRecord(context.TODO(), change.Domain.ID, change.Options); err != nil {
-				log.WithFields(logFields).Errorf(
-					"Failed to Create record: %v",
-					err,
-				)
-			}
+		} else if _, err := p.Client.CreateDomainRecord(context.TODO(), change.Domain.ID, change.Options); err != nil {
+			log.WithFields(logFields).Errorf(
+				"Failed to Create record: %v",
+				err,
+			)
 		}
 	}
 
@@ -210,13 +208,11 @@ func (p *LinodeProvider) submitChanges(changes LinodeChanges) error {
 
 		if p.DryRun {
 			log.WithFields(logFields).Info("Would delete record.")
-		} else {
-			if err := p.Client.DeleteDomainRecord(context.TODO(), change.Domain.ID, change.DomainRecord.ID); err != nil {
-				log.WithFields(logFields).Errorf(
-					"Failed to Delete record: %v",
-					err,
-				)
-			}
+		} else if err := p.Client.DeleteDomainRecord(context.TODO(), change.Domain.ID, change.DomainRecord.ID); err != nil {
+			log.WithFields(logFields).Errorf(
+				"Failed to Delete record: %v",
+				err,
+			)
 		}
 	}
 
@@ -233,13 +229,11 @@ func (p *LinodeProvider) submitChanges(changes LinodeChanges) error {
 
 		if p.DryRun {
 			log.WithFields(logFields).Info("Would update record.")
-		} else {
-			if _, err := p.Client.UpdateDomainRecord(context.TODO(), change.Domain.ID, change.DomainRecord.ID, change.Options); err != nil {
-				log.WithFields(logFields).Errorf(
-					"Failed to Update record: %v",
-					err,
-				)
-			}
+		} else if _, err := p.Client.UpdateDomainRecord(context.TODO(), change.Domain.ID, change.DomainRecord.ID, change.Options); err != nil {
+			log.WithFields(logFields).Errorf(
+				"Failed to Update record: %v",
+				err,
+			)
 		}
 	}
 

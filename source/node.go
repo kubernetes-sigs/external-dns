@@ -171,8 +171,8 @@ func (ns *nodeSource) Endpoints() ([]*endpoint.Endpoint, error) {
 // basically what k8s.io/kubernetes/pkg/util/node.GetPreferredNodeAddress does
 func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 	addresses := map[v1.NodeAddressType][]string{
-		v1.NodeExternalIP: []string{},
-		v1.NodeInternalIP: []string{},
+		v1.NodeExternalIP: {},
+		v1.NodeInternalIP: {},
 	}
 
 	for _, addr := range node.Status.Addresses {

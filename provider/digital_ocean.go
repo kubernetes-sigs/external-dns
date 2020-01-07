@@ -62,7 +62,7 @@ func NewDigitalOceanProvider(domainFilter DomainFilter, dryRun bool) (*DigitalOc
 	if !ok {
 		return nil, fmt.Errorf("No token found")
 	}
-	oauthClient := oauth2.NewClient(oauth2.NoContext, oauth2.StaticTokenSource(&oauth2.Token{
+	oauthClient := oauth2.NewClient(context.TODO(), oauth2.StaticTokenSource(&oauth2.Token{
 		AccessToken: token,
 	}))
 	client := godo.NewClient(oauthClient)
