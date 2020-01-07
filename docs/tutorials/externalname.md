@@ -21,6 +21,9 @@ spec:
     matchLabels:
       app: external-dns
   template:
+    metadata:
+      labels:
+        app: external-dns
     spec:
       containers:
       - name: external-dns
