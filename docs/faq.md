@@ -132,6 +132,9 @@ metadata:
   name: nginx-ingress-controller
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-ingress
   template:
     metadata:
       labels:
