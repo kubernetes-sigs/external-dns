@@ -22,9 +22,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/endpoint"
 
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 type MockAlibabaCloudDNSAPI struct {

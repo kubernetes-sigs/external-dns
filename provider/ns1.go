@@ -25,12 +25,11 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-
 	api "gopkg.in/ns1/ns1-go.v2/rest"
 	"gopkg.in/ns1/ns1-go.v2/rest/model/dns"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -309,7 +308,7 @@ func ns1ChangesByZone(zones []*dns.Zone, changeSets []*ns1Change) map[string][]*
 	for _, c := range changeSets {
 		zone, _ := zoneNameIDMapper.FindZone(c.Endpoint.DNSName)
 		if zone == "" {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.Endpoint.DNSName)
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", c.Endpoint.DNSName)
 			continue
 		}
 		changes[zone] = append(changes[zone], c)

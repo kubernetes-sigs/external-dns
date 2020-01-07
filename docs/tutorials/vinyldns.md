@@ -42,6 +42,10 @@ nginx        10.0.0.115   34.x.x.x      80:30543/TCP   2m
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
 Then apply one of the following manifests file to deploy ExternalDNS.
 
+**Note for examples below**
+
+When using `registry=txt` option, make sure to also use the `txt-prefix` and `txt-owner-id` options as well. If you try to create a `TXT` record in VinylDNS without a prefix, it will try to create a `TXT` record with the same name as your actual DNS record and fail (creating a stranded record `external-dns` cannot manage).
+
 ### Manifest (for clusters without RBAC enabled)
 
 ```yaml
@@ -67,6 +71,9 @@ spec:
         - --provider=vinyldns
         - --source=service
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
+        - --registry=txt
+        - --txt-owner-id=grizz
+        - --txt-prefix=txt-
         env:
         - name: VINYLDNS_HOST
           value: "YOUR_VINYLDNS_HOST"
@@ -138,6 +145,9 @@ spec:
         - --provider=vinyldns
         - --source=service
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
+        - --registry=txt
+        - --txt-owner-id=grizz
+        - --txt-prefix=txt-
         env:
         env:
         - name: VINYLDNS_HOST
@@ -167,7 +177,7 @@ export VINYLDNS_SECRET_KEY=<secret key>
     --domain-filter=elements.capsps.comcast.net. \
     --zone-id-filter=20e8bfd2-3a70-4e1b-8e11-c9c1948528d3 \
     --registry=txt \
-    --txt-owner-id=grizz- \
+    --txt-owner-id=grizz \
     --txt-prefix=txt- \
     --namespace=default \
     --once \

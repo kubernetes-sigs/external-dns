@@ -2,7 +2,7 @@
 
 <!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
-- [Move ExternalDNS out of Kubernetes incubator](#move-externaldns-out-of-kubernetes-incubator)
+- [Move ExternalDNS out of Kubernetes incubator](#move-externaldns-out-of-kubernetes-sigs)
 	- [Summary](#summary)
 	- [Motivation](#motivation)
 		- [Goals](#goals)
@@ -17,7 +17,7 @@
 
 ## Summary
 
-[ExternalDNS](https://github.com/kubernetes-incubator/external-dns) is a project that synchronizes Kubernetes’ Services, Ingresses and other Kubernetes resources to DNS backends for several DNS providers.
+[ExternalDNS](https://github.com/kubernetes-sigs/external-dns) is a project that synchronizes Kubernetes’ Services, Ingresses and other Kubernetes resources to DNS backends for several DNS providers.
 
 The projects was started as a Kubernetes Incubator project in February 2017 and being the Kubernetes incubation initiative officially over, the maintainers want to propose the project to be moved to the kubernetes GitHub organization or to kubernetes-sigs, under the sponsorship of sig-network.
 
@@ -35,7 +35,7 @@ When the project was proposed (see the [original discussion](https://github.com/
 
 ExternalDNS’ goal from the beginning was to provide an officially supported solution to those problems.
 
-After two years of development, the project is still in the kubernetes-incubator.
+After two years of development, the project is still in the kubernetes-sigs.
 
 The incubation has been officially discontinued and to quote @thockin "Incubator projects should either become real projects in Kubernetes, shut themselves down, or move elsewhere" (see original thread [here](https://groups.google.com/forum/#!topic/kubernetes-sig-network/fvpDC_nxtEM)).
 
@@ -57,7 +57,7 @@ External DNS...
 
 * Supports already 18 different DNS providers including all major public clouds (AWS, Azure, GCP).
 
-Given that the kubernetes-incubator organization will eventually be shut down, the possible alternatives to moving to be an official Kubernetes project are the following:
+Given that the kubernetes-sigs organization will eventually be shut down, the possible alternatives to moving to be an official Kubernetes project are the following:
 
 * Shut down the project
 

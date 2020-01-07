@@ -21,9 +21,10 @@ import (
 	"strings"
 
 	"github.com/exoscale/egoscale"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
 	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 // EgoscaleClientI for replaceable implementation

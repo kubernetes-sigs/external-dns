@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // test helper functions

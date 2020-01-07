@@ -29,8 +29,8 @@ import (
 	"github.com/nesv/go-dynect/dynect"
 	"github.com/sanyu/dynectsoap/dynectsoap"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (

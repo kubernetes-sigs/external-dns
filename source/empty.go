@@ -16,7 +16,7 @@ limitations under the License.
 
 package source
 
-import "github.com/kubernetes-incubator/external-dns/endpoint"
+import "sigs.k8s.io/external-dns/endpoint"
 
 // emptySource is a Source that returns no endpoints.
 type emptySource struct{}

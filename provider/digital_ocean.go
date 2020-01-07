@@ -26,8 +26,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -323,7 +323,7 @@ func digitalOceanChangesByZone(zones []godo.Domain, changeSet []*DigitalOceanCha
 	for _, c := range changeSet {
 		zone, _ := zoneNameIDMapper.FindZone(c.ResourceRecordSet.Name)
 		if zone == "" {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.ResourceRecordSet.Name)
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", c.ResourceRecordSet.Name)
 			continue
 		}
 		changes[zone] = append(changes[zone], c)

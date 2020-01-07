@@ -32,9 +32,9 @@ import (
 	"github.com/gophercloud/gophercloud/pagination"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/pkg/tlsutils"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/tlsutils"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -415,7 +415,7 @@ func (p designateProvider) upsertRecordSet(rs *recordSet, managedZones map[strin
 			return err
 		}
 		if rs.zoneID == "" {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", rs.dnsName)
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", rs.dnsName)
 			return nil
 		}
 	}
@@ -447,8 +447,10 @@ func (p designateProvider) upsertRecordSet(rs *recordSet, managedZones map[strin
 		}
 		return p.client.DeleteRecordSet(rs.zoneID, rs.recordSetID)
 	} else {
+		ttl := 0
 		opts := recordsets.UpdateOpts{
 			Records: records,
+			TTL:     &ttl,
 		}
 		log.Infof("Updating records: %s/%s: %s", rs.dnsName, rs.recordType, strings.Join(records, ","))
 		if p.dryRun {

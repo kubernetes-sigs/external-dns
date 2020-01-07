@@ -37,94 +37,98 @@ var (
 
 // Config is a project-wide configuration
 type Config struct {
-	Master                      string
-	KubeConfig                  string
-	RequestTimeout              time.Duration
-	IstioIngressGatewayServices []string
-	ContourLoadBalancerService  string
-	Sources                     []string
-	Namespace                   string
-	AnnotationFilter            string
-	FQDNTemplate                string
-	CombineFQDNAndAnnotation    bool
-	IgnoreHostnameAnnotation    bool
-	Compatibility               string
-	PublishInternal             bool
-	PublishHostIP               bool
-	ConnectorSourceServer       string
-	Provider                    string
-	GoogleProject               string
-	DomainFilter                []string
-	ExcludeDomains              []string
-	ZoneIDFilter                []string
-	AlibabaCloudConfigFile      string
-	AlibabaCloudZoneType        string
-	AWSZoneType                 string
-	AWSZoneTagFilter            []string
-	AWSAssumeRole               string
-	AWSBatchChangeSize          int
-	AWSBatchChangeInterval      time.Duration
-	AWSEvaluateTargetHealth     bool
-	AWSAPIRetries               int
-	AWSPreferCNAME              bool
-	AzureConfigFile             string
-	AzureResourceGroup          string
-	CloudflareProxied           bool
-	CloudflareZonesPerPage      int
-	CoreDNSPrefix               string
-	RcodezeroTXTEncrypt         bool
-	InfobloxGridHost            string
-	InfobloxWapiPort            int
-	InfobloxWapiUsername        string
-	InfobloxWapiPassword        string `secure:"yes"`
-	InfobloxWapiVersion         string
-	InfobloxSSLVerify           bool
-	InfobloxView                string
-	InfobloxMaxResults          int
-	DynCustomerName             string
-	DynUsername                 string
-	DynPassword                 string `secure:"yes"`
-	DynMinTTLSeconds            int
-	OCIConfigFile               string
-	InMemoryZones               []string
-	PDNSServer                  string
-	PDNSAPIKey                  string `secure:"yes"`
-	PDNSTLSEnabled              bool
-	TLSCA                       string
-	TLSClientCert               string
-	TLSClientCertKey            string
-	Policy                      string
-	Registry                    string
-	TXTOwnerID                  string
-	TXTPrefix                   string
-	Interval                    time.Duration
-	Once                        bool
-	DryRun                      bool
-	LogFormat                   string
-	MetricsAddress              string
-	LogLevel                    string
-	TXTCacheInterval            time.Duration
-	ExoscaleEndpoint            string
-	ExoscaleAPIKey              string `secure:"yes"`
-	ExoscaleAPISecret           string `secure:"yes"`
-	CRDSourceAPIVersion         string
-	CRDSourceKind               string
-	ServiceTypeFilter           []string
-	CFAPIEndpoint               string
-	CFUsername                  string
-	CFPassword                  string
-	RFC2136Host                 string
-	RFC2136Port                 int
-	RFC2136Zone                 string
-	RFC2136Insecure             bool
-	RFC2136TSIGKeyName          string
-	RFC2136TSIGSecret           string `secure:"yes"`
-	RFC2136TSIGSecretAlg        string
-	RFC2136TAXFR                bool
-	NS1Endpoint                 string
-	NS1IgnoreSSL                bool
-	TransIPAccountName          string
-	TransIPPrivateKeyFile       string
+	Master                            string
+	KubeConfig                        string
+	RequestTimeout                    time.Duration
+	IstioIngressGatewayServices       []string
+	ContourLoadBalancerService        string
+	Sources                           []string
+	Namespace                         string
+	AnnotationFilter                  string
+	FQDNTemplate                      string
+	CombineFQDNAndAnnotation          bool
+	IgnoreHostnameAnnotation          bool
+	Compatibility                     string
+	PublishInternal                   bool
+	PublishHostIP                     bool
+	ConnectorSourceServer             string
+	Provider                          string
+	GoogleProject                     string
+	GoogleBatchChangeSize             int
+	GoogleBatchChangeInterval         time.Duration
+	DomainFilter                      []string
+	ExcludeDomains                    []string
+	ZoneIDFilter                      []string
+	AlibabaCloudConfigFile            string
+	AlibabaCloudZoneType              string
+	AWSZoneType                       string
+	AWSZoneTagFilter                  []string
+	AWSAssumeRole                     string
+	AWSBatchChangeSize                int
+	AWSBatchChangeInterval            time.Duration
+	AWSEvaluateTargetHealth           bool
+	AWSAPIRetries                     int
+	AWSPreferCNAME                    bool
+	AzureConfigFile                   string
+	AzureResourceGroup                string
+	AzureSubscriptionID               string
+	AzureUserAssignedIdentityClientID string
+	CloudflareProxied                 bool
+	CloudflareZonesPerPage            int
+	CoreDNSPrefix                     string
+	RcodezeroTXTEncrypt               bool
+	InfobloxGridHost                  string
+	InfobloxWapiPort                  int
+	InfobloxWapiUsername              string
+	InfobloxWapiPassword              string `secure:"yes"`
+	InfobloxWapiVersion               string
+	InfobloxSSLVerify                 bool
+	InfobloxView                      string
+	InfobloxMaxResults                int
+	DynCustomerName                   string
+	DynUsername                       string
+	DynPassword                       string `secure:"yes"`
+	DynMinTTLSeconds                  int
+	OCIConfigFile                     string
+	InMemoryZones                     []string
+	PDNSServer                        string
+	PDNSAPIKey                        string `secure:"yes"`
+	PDNSTLSEnabled                    bool
+	TLSCA                             string
+	TLSClientCert                     string
+	TLSClientCertKey                  string
+	Policy                            string
+	Registry                          string
+	TXTOwnerID                        string
+	TXTPrefix                         string
+	Interval                          time.Duration
+	Once                              bool
+	DryRun                            bool
+	LogFormat                         string
+	MetricsAddress                    string
+	LogLevel                          string
+	TXTCacheInterval                  time.Duration
+	ExoscaleEndpoint                  string
+	ExoscaleAPIKey                    string `secure:"yes"`
+	ExoscaleAPISecret                 string `secure:"yes"`
+	CRDSourceAPIVersion               string
+	CRDSourceKind                     string
+	ServiceTypeFilter                 []string
+	CFAPIEndpoint                     string
+	CFUsername                        string
+	CFPassword                        string
+	RFC2136Host                       string
+	RFC2136Port                       int
+	RFC2136Zone                       string
+	RFC2136Insecure                   bool
+	RFC2136TSIGKeyName                string
+	RFC2136TSIGSecret                 string `secure:"yes"`
+	RFC2136TSIGSecretAlg              string
+	RFC2136TAXFR                      bool
+	NS1Endpoint                       string
+	NS1IgnoreSSL                      bool
+	TransIPAccountName                string
+	TransIPPrivateKeyFile             string
 }
 
 var defaultConfig = &Config{
@@ -145,6 +149,8 @@ var defaultConfig = &Config{
 	ConnectorSourceServer:       "localhost:8080",
 	Provider:                    "",
 	GoogleProject:               "",
+	GoogleBatchChangeSize:       1000,
+	GoogleBatchChangeInterval:   time.Second,
 	DomainFilter:                []string{},
 	ExcludeDomains:              []string{},
 	AlibabaCloudConfigFile:      "/etc/kubernetes/alibaba-cloud.json",
@@ -158,6 +164,7 @@ var defaultConfig = &Config{
 	AWSPreferCNAME:              false,
 	AzureConfigFile:             "/etc/kubernetes/azure.json",
 	AzureResourceGroup:          "",
+	AzureSubscriptionID:         "",
 	CloudflareProxied:           false,
 	CloudflareZonesPerPage:      50,
 	CoreDNSPrefix:               "/skydns/",
@@ -258,9 +265,6 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)").Default(defaultConfig.KubeConfig).StringVar(&cfg.KubeConfig)
 	app.Flag("request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout").Default(defaultConfig.RequestTimeout.String()).DurationVar(&cfg.RequestTimeout)
 
-	// Flags related to Istio
-	app.Flag("istio-ingress-gateway", "The fully-qualified name of the Istio ingress gateway service. Flag can be specified multiple times (default: istio-system/istio-ingressgateway)").Default("istio-system/istio-ingressgateway").StringsVar(&cfg.IstioIngressGatewayServices)
-
 	// Flags related to cloud foundry
 	app.Flag("cf-api-endpoint", "The fully-qualified domain name of the cloud foundry instance you are targeting").Default(defaultConfig.CFAPIEndpoint).StringVar(&cfg.CFAPIEndpoint)
 	app.Flag("cf-username", "The username to log into the cloud foundry API").Default(defaultConfig.CFUsername).StringVar(&cfg.CFUsername)
@@ -270,7 +274,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("contour-load-balancer", "The fully-qualified name of the Contour load balancer service. (default: heptio-contour/contour)").Default("heptio-contour/contour").StringVar(&cfg.ContourLoadBalancerService)
 
 	// Flags related to processing sources
-	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, fake, connector, istio-gateway, cloudfoundry, contour-ingressroute, crd, empty").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "istio-gateway", "cloudfoundry", "contour-ingressroute", "fake", "connector", "crd", "empty")
+	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, fake, connector, istio-gateway, cloudfoundry, contour-ingressroute, crd, empty)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "istio-gateway", "cloudfoundry", "contour-ingressroute", "fake", "connector", "crd", "empty")
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
 	app.Flag("annotation-filter", "Filter sources managed by external-dns via annotation using label selector semantics (default: all sources)").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
 	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
@@ -285,11 +289,13 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("service-type-filter", "The service types to take care about (default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)").StringsVar(&cfg.ServiceTypeFilter)
 
 	// Flags related to providers
-	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, google, azure, cloudflare, rcodezero, digitalocean, dnsimple, infoblox, dyn, designate, coredns, skydns, inmemory, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "infoblox", "dyn", "designate", "coredns", "skydns", "inmemory", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns")
+	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, google, azure, azure-dns, azure-private-dns, cloudflare, rcodezero, digitalocean, dnsimple, infoblox, dyn, designate, coredns, skydns, inmemory, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "infoblox", "dyn", "designate", "coredns", "skydns", "inmemory", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns")
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("exclude-domains", "Exclude subdomains (optional)").Default("").StringsVar(&cfg.ExcludeDomains)
 	app.Flag("zone-id-filter", "Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.ZoneIDFilter)
 	app.Flag("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
+	app.Flag("google-batch-change-size", "When using the Google provider, set the maximum number of changes that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.GoogleBatchChangeSize)).IntVar(&cfg.GoogleBatchChangeSize)
+	app.Flag("google-batch-change-interval", "When using the Google provider, set the interval between batch changes.").Default(defaultConfig.GoogleBatchChangeInterval.String()).DurationVar(&cfg.GoogleBatchChangeInterval)
 	app.Flag("alibaba-cloud-config-file", "When using the Alibaba Cloud provider, specify the Alibaba Cloud configuration file (required when --provider=alibabacloud").Default(defaultConfig.AlibabaCloudConfigFile).StringVar(&cfg.AlibabaCloudConfigFile)
 	app.Flag("alibaba-cloud-zone-type", "When using the Alibaba Cloud provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AlibabaCloudZoneType).EnumVar(&cfg.AlibabaCloudZoneType, "", "public", "private")
 	app.Flag("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AWSZoneType).EnumVar(&cfg.AWSZoneType, "", "public", "private")
@@ -301,7 +307,9 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("aws-api-retries", "When using the AWS provider, set the maximum number of retries for API calls before giving up.").Default(strconv.Itoa(defaultConfig.AWSAPIRetries)).IntVar(&cfg.AWSAPIRetries)
 	app.Flag("aws-prefer-cname", "When using the AWS provider, prefer using CNAME instead of ALIAS (default: disabled)").BoolVar(&cfg.AWSPreferCNAME)
 	app.Flag("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure").Default(defaultConfig.AzureConfigFile).StringVar(&cfg.AzureConfigFile)
-	app.Flag("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (optional)").Default(defaultConfig.AzureResourceGroup).StringVar(&cfg.AzureResourceGroup)
+	app.Flag("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (required when --provider=azure-private-dns)").Default(defaultConfig.AzureResourceGroup).StringVar(&cfg.AzureResourceGroup)
+	app.Flag("azure-subscription-id", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure-private-dns)").Default(defaultConfig.AzureSubscriptionID).StringVar(&cfg.AzureSubscriptionID)
+	app.Flag("azure-user-assigned-identity-client-id", "When using the Azure provider, override the client id of user assigned identity in config file (optional)").Default("").StringVar(&cfg.AzureUserAssignedIdentityClientID)
 	app.Flag("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.CloudflareProxied)
 	app.Flag("cloudflare-zones-per-page", "When using the Cloudflare provider, specify how many zones per page listed, max. possible 50 (default: 50)").Default(strconv.Itoa(defaultConfig.CloudflareZonesPerPage)).IntVar(&cfg.CloudflareZonesPerPage)
 	app.Flag("coredns-prefix", "When using the CoreDNS provider, specify the prefix name").Default(defaultConfig.CoreDNSPrefix).StringVar(&cfg.CoreDNSPrefix)

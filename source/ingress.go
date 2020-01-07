@@ -22,10 +22,8 @@ import (
 	"sort"
 	"strings"
 	"text/template"
-
 	"time"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,12 +33,14 @@ import (
 	extinformers "k8s.io/client-go/informers/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 const (
-	// The annotation used for determining if an ALB ingress is dualstack
+	// ALBDualstackAnnotationKey is the annotation used for determining if an ALB ingress is dualstack
 	ALBDualstackAnnotationKey = "alb.ingress.kubernetes.io/ip-address-type"
-	// The value of the ALB dualstack annotation that indicates it is dualstack
+	// ALBDualstackAnnotationValue is the value of the ALB dualstack annotation that indicates it is dualstack
 	ALBDualstackAnnotationValue = "dualstack"
 )
 
@@ -187,14 +187,14 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 		targets = targetsFromIngressStatus(ing.Status)
 	}
 
-	providerSpecific := getProviderSpecificAnnotations(ing.Annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ing.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 	// splits the FQDN template and removes the trailing periods
 	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
 	for _, hostname := range hostnameList {
 		hostname = strings.TrimSuffix(hostname, ".")
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific)...)
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 	return endpoints, nil
 }
@@ -261,13 +261,13 @@ func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool) [
 		targets = targetsFromIngressStatus(ing.Status)
 	}
 
-	providerSpecific := getProviderSpecificAnnotations(ing.Annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ing.Annotations)
 
 	for _, rule := range ing.Spec.Rules {
 		if rule.Host == "" {
 			continue
 		}
-		endpoints = append(endpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific)...)
+		endpoints = append(endpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 
 	for _, tls := range ing.Spec.TLS {
@@ -275,7 +275,7 @@ func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool) [
 			if host == "" {
 				continue
 			}
-			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific)...)
+			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
 		}
 	}
 
@@ -283,7 +283,7 @@ func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool) [
 	if !ignoreHostnameAnnotation {
 		hostnameList := getHostnamesFromAnnotations(ing.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific)...)
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 		}
 	}
 	return endpoints

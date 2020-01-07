@@ -22,15 +22,14 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/linode/linodego"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 
-	"strings"
-
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 // LinodeDomainClient interface to ease testing
@@ -504,7 +503,7 @@ func endpointsByZone(zoneNameIDMapper zoneIDName, endpoints []*endpoint.Endpoint
 	for _, ep := range endpoints {
 		zoneID, _ := zoneNameIDMapper.FindZone(ep.DNSName)
 		if zoneID == "" {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", ep.DNSName)
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", ep.DNSName)
 			continue
 		}
 		endpointsByZone[zoneID] = append(endpointsByZone[zoneID], ep)

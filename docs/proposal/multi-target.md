@@ -10,7 +10,7 @@ ingress/service owns the record it can have multiple targets enable iff they are
 
 ## Use cases  
 
-See https://github.com/kubernetes-incubator/external-dns/issues/239
+See https://github.com/kubernetes-sigs/external-dns/issues/239
 
 ## Current behaviour 
 *(as of the moment of writing)*
@@ -60,7 +60,7 @@ Once Create/Update/Delete lists are calculated correctly (this is where conflict
 `provider` specific implementation will decide how to convert the structures into required formats. If DNS provider does not (or partially) support multi targets
 then it is up to the provider to make sure that the change list of records passed to the DNS provider API is valid. **TODO**: explain best strategy.    
 
-Additionally see https://github.com/kubernetes-incubator/external-dns/issues/258
+Additionally see https://github.com/kubernetes-sigs/external-dns/issues/258
 
 ## Implementation plan
 
@@ -68,19 +68,19 @@ Brief summary of open PRs and what they are trying to address:
 
 ### PRs 
 
-1. https://github.com/kubernetes-incubator/external-dns/pull/243 - first attempt to add support for multiple targets. It is lagging far behind from master tip
+1. https://github.com/kubernetes-sigs/external-dns/pull/243 - first attempt to add support for multiple targets. It is lagging far behind from master tip
     
     *what it does*: unfinished attempt to extend `Endpoint` struct, for it to allow multiple targets (essentially `target string -> targets []string`)
     
     *action*: evaluate if rebasing makes sense, or we can just close it. 
     
-2. https://github.com/kubernetes-incubator/external-dns/pull/261 - attempt to rework `plan` to make it work correctly with multiple targets. 
+2. https://github.com/kubernetes-sigs/external-dns/pull/261 - attempt to rework `plan` to make it work correctly with multiple targets. 
     
     *what it does* : attempts to fix issues with `plan` described in `Current Behaviour` section above. Included tests reveal the current problem with `plan`
     
     *action*: rebase on master and make necessary changes to satisfy requirements listed in this document including back-reference to owning record
     
-3. https://github.com/kubernetes-incubator/external-dns/pull/326 - attempt to add multiple target support. 
+3. https://github.com/kubernetes-sigs/external-dns/pull/326 - attempt to add multiple target support. 
     
     *what it does*: for each pair `DNS Name` + `Record Type` it aggregates **all** targets from the cluster and passes them to Provider. It adds basic support
     for DO, Azura, Cloudflare, AWS, GCP, however those are not tested (?). (DNSSimple and Infoblox providers were not updated)
@@ -88,8 +88,8 @@ Brief summary of open PRs and what they are trying to address:
     *action*: the `plan` logic will probably needs to be reworked, however the rest concerning support in Providers and extending `Endpoint` struct can be reused. 
     Rebase on master and add missing pieces. Depends on `2`. 
     
- Related PRs: https://github.com/kubernetes-incubator/external-dns/pull/331/files,  https://github.com/kubernetes-incubator/external-dns/pull/347/files - aiming at AWS Route53 weighted records.
-These PRs should be considered after common agreement about the way to address multi-target support is achieved. Related discussion:  https://github.com/kubernetes-incubator/external-dns/issues/196
+ Related PRs: https://github.com/kubernetes-sigs/external-dns/pull/331/files,  https://github.com/kubernetes-sigs/external-dns/pull/347/files - aiming at AWS Route53 weighted records.
+These PRs should be considered after common agreement about the way to address multi-target support is achieved. Related discussion:  https://github.com/kubernetes-sigs/external-dns/issues/196
 
 ### How to proceed from here
 
@@ -116,4 +116,4 @@ The following steps are needed:
 ## Open questions 
 
 - Handling cases when ingress/service targets include both hostnames and IPs - postpone this until use cases occurs
-- "Weighted records scope": https://github.com/kubernetes-incubator/external-dns/issues/196 - this should be considered once multi-target support is implemented
+- "Weighted records scope": https://github.com/kubernetes-sigs/external-dns/issues/196 - this should be considered once multi-target support is implemented

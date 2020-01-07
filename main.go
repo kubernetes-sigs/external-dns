@@ -27,13 +27,13 @@ import (
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/kubernetes-incubator/external-dns/controller"
-	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
-	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns/validation"
-	"github.com/kubernetes-incubator/external-dns/plan"
-	"github.com/kubernetes-incubator/external-dns/provider"
-	"github.com/kubernetes-incubator/external-dns/registry"
-	"github.com/kubernetes-incubator/external-dns/source"
+	"sigs.k8s.io/external-dns/controller"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
+	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/registry"
+	"sigs.k8s.io/external-dns/source"
 )
 
 func main() {
@@ -133,8 +133,10 @@ func main() {
 			cfg.Registry = "aws-sd"
 		}
 		p, err = provider.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.AWSAssumeRole, cfg.DryRun)
-	case "azure":
-		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.DryRun)
+	case "azure-dns", "azure":
+		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
+	case "azure-private-dns":
+		p, err = provider.NewAzurePrivateDNSProvider(domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureSubscriptionID, cfg.DryRun)
 	case "vinyldns":
 		p, err = provider.NewVinylDNSProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "cloudflare":
@@ -142,7 +144,7 @@ func main() {
 	case "rcodezero":
 		p, err = provider.NewRcodeZeroProvider(domainFilter, cfg.DryRun, cfg.RcodezeroTXTEncrypt)
 	case "google":
-		p, err = provider.NewGoogleProvider(cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.DryRun)
+		p, err = provider.NewGoogleProvider(cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.DryRun)
 	case "digitalocean":
 		p, err = provider.NewDigitalOceanProvider(domainFilter, cfg.DryRun)
 	case "linode":

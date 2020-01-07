@@ -25,9 +25,10 @@ import (
 	"testing"
 
 	ibclient "github.com/infobloxopen/infoblox-go-client"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/stretchr/testify/assert"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 type mockIBConnector struct {

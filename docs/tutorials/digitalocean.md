@@ -30,6 +30,10 @@ kind: Deployment
 metadata:
   name: external-dns
 spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: external-dns
   strategy:
     type: Recreate
   selector:
@@ -95,6 +99,10 @@ kind: Deployment
 metadata:
   name: external-dns
 spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: external-dns
   strategy:
     type: Recreate
   selector:
@@ -129,6 +137,7 @@ kind: Deployment
 metadata:
   name: nginx
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: nginx

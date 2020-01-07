@@ -22,22 +22,19 @@ import (
 	"sort"
 	"strings"
 	"text/template"
-
-	kubeinformers "k8s.io/client-go/informers"
-	coreinformers "k8s.io/client-go/informers/core/v1"
-	"k8s.io/client-go/tools/cache"
+	"time"
 
 	log "github.com/sirupsen/logrus"
-
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	kubeinformers "k8s.io/client-go/informers"
+	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
 
-	"time"
-
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 const (
@@ -285,10 +282,10 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 		return nil, fmt.Errorf("failed to apply template on service %s: %v", svc.String(), err)
 	}
 
-	providerSpecific := getProviderSpecificAnnotations(svc.Annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(svc.Annotations)
 	hostnameList := strings.Split(strings.Replace(buf.String(), " ", "", -1), ",")
 	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific)...)
+		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier)...)
 	}
 
 	return endpoints, nil
@@ -299,10 +296,10 @@ func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 	// Skip endpoints if we do not want entries from annotations
 	if !sc.ignoreHostnameAnnotation {
-		providerSpecific := getProviderSpecificAnnotations(svc.Annotations)
+		providerSpecific, setIdentifier := getProviderSpecificAnnotations(svc.Annotations)
 		hostnameList := getHostnamesFromAnnotations(svc.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific)...)
+			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier)...)
 		}
 	}
 	return endpoints
@@ -358,7 +355,7 @@ func (sc *serviceSource) setResourceLabel(service *v1.Service, endpoints []*endp
 	}
 }
 
-func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific) []*endpoint.Endpoint {
+func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string) []*endpoint.Endpoint {
 	hostname = strings.TrimSuffix(hostname, ".")
 	ttl, err := getTTLFromAnnotations(svc.Annotations)
 	if err != nil {
@@ -366,21 +363,19 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 	}
 
 	epA := &endpoint.Endpoint{
-		RecordTTL:        ttl,
-		RecordType:       endpoint.RecordTypeA,
-		Labels:           endpoint.NewLabels(),
-		Targets:          make(endpoint.Targets, 0, defaultTargetsCapacity),
-		DNSName:          hostname,
-		ProviderSpecific: providerSpecific,
+		RecordTTL:  ttl,
+		RecordType: endpoint.RecordTypeA,
+		Labels:     endpoint.NewLabels(),
+		Targets:    make(endpoint.Targets, 0, defaultTargetsCapacity),
+		DNSName:    hostname,
 	}
 
 	epCNAME := &endpoint.Endpoint{
-		RecordTTL:        ttl,
-		RecordType:       endpoint.RecordTypeCNAME,
-		Labels:           endpoint.NewLabels(),
-		Targets:          make(endpoint.Targets, 0, defaultTargetsCapacity),
-		DNSName:          hostname,
-		ProviderSpecific: providerSpecific,
+		RecordTTL:  ttl,
+		RecordType: endpoint.RecordTypeCNAME,
+		Labels:     endpoint.NewLabels(),
+		Targets:    make(endpoint.Targets, 0, defaultTargetsCapacity),
+		DNSName:    hostname,
 	}
 
 	var endpoints []*endpoint.Endpoint
@@ -422,6 +417,10 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 	}
 	if len(epCNAME.Targets) > 0 {
 		endpoints = append(endpoints, epCNAME)
+	}
+	for _, endpoint := range endpoints {
+		endpoint.ProviderSpecific = providerSpecific
+		endpoint.SetIdentifier = setIdentifier
 	}
 	return endpoints
 }

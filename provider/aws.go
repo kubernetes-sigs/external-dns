@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,21 +28,30 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
 	recordTTL = 300
 	// provider specific key that designates whether an AWS ALIAS record has the EvaluateTargetHealth
 	// field set to true.
-	providerSpecificEvaluateTargetHealth = "aws/evaluate-target-health"
+	providerSpecificEvaluateTargetHealth       = "aws/evaluate-target-health"
+	providerSpecificWeight                     = "aws/weight"
+	providerSpecificRegion                     = "aws/region"
+	providerSpecificFailover                   = "aws/failover"
+	providerSpecificGeolocationContinentCode   = "aws/geolocation-continent-code"
+	providerSpecificGeolocationCountryCode     = "aws/geolocation-country-code"
+	providerSpecificGeolocationSubdivisionCode = "aws/geolocation-subdivision-code"
+	providerSpecificMultiValueAnswer           = "aws/multi-value-answer"
 )
 
 var (
 	// see: https://docs.aws.amazon.com/general/latest/gr/rande.html#elb_region
+	// and: https://docs.aws.amazon.com/govcloud-us/latest/UserGuide/using-govcloud-endpoints.html
 	canonicalHostedZones = map[string]string{
 		// Application Load Balancers and Classic Load Balancers
 		"us-east-2.elb.amazonaws.com":         "Z3AADJGX6KTTL2",
@@ -63,6 +73,8 @@ var (
 		"sa-east-1.elb.amazonaws.com":         "Z2P70J7HTTTPLU",
 		"cn-north-1.elb.amazonaws.com.cn":     "Z3BX2TMKNYI13Y",
 		"cn-northwest-1.elb.amazonaws.com.cn": "Z3BX2TMKNYI13Y",
+		"us-gov-west-1.amazonaws.com":         "Z1K6XKP9SAGWDV",
+		"me-south-1.elb.amazonaws.com":        "ZS929ML54UICD",
 		// Network Load Balancers
 		"elb.us-east-2.amazonaws.com":         "ZLMOA37VPKANP",
 		"elb.us-east-1.amazonaws.com":         "Z26RNL4JYFTOTI",
@@ -82,6 +94,7 @@ var (
 		"elb.sa-east-1.amazonaws.com":         "ZTK26PT1VY4CU",
 		"elb.cn-north-1.amazonaws.com.cn":     "Z3QFB96KMJ7ED6",
 		"elb.cn-northwest-1.amazonaws.com.cn": "ZQEIKTCZ8352D",
+		"elb.me-south-1.amazonaws.com":        "Z3QSRYVP46NYYV",
 	}
 )
 
@@ -245,8 +258,10 @@ func (p *AWSProvider) records(zones map[string]*route53.HostedZone) ([]*endpoint
 	endpoints := make([]*endpoint.Endpoint, 0)
 	f := func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool) {
 		for _, r := range resp.ResourceRecordSets {
+			newEndpoints := make([]*endpoint.Endpoint, 0)
+
 			// TODO(linki, ownership): Remove once ownership system is in place.
-			// See: https://github.com/kubernetes-incubator/external-dns/pull/122/files/74e2c3d3e237411e619aefc5aab694742001cdec#r109863370
+			// See: https://github.com/kubernetes-sigs/external-dns/pull/122/files/74e2c3d3e237411e619aefc5aab694742001cdec#r109863370
 
 			if !supportedRecordType(aws.StringValue(r.Type)) {
 				continue
@@ -263,7 +278,7 @@ func (p *AWSProvider) records(zones map[string]*route53.HostedZone) ([]*endpoint
 					targets[idx] = aws.StringValue(rr.Value)
 				}
 
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.Type), ttl, targets...))
+				newEndpoints = append(newEndpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.Type), ttl, targets...))
 			}
 
 			if r.AliasTarget != nil {
@@ -274,6 +289,36 @@ func (p *AWSProvider) records(zones map[string]*route53.HostedZone) ([]*endpoint
 				ep := endpoint.
 					NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), endpoint.RecordTypeCNAME, ttl, aws.StringValue(r.AliasTarget.DNSName)).
 					WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", aws.BoolValue(r.AliasTarget.EvaluateTargetHealth)))
+				newEndpoints = append(newEndpoints, ep)
+			}
+
+			for _, ep := range newEndpoints {
+				if r.SetIdentifier != nil {
+					ep.SetIdentifier = aws.StringValue(r.SetIdentifier)
+					switch {
+					case r.Weight != nil:
+						ep.WithProviderSpecific(providerSpecificWeight, fmt.Sprintf("%d", aws.Int64Value(r.Weight)))
+					case r.Region != nil:
+						ep.WithProviderSpecific(providerSpecificRegion, aws.StringValue(r.Region))
+					case r.Failover != nil:
+						ep.WithProviderSpecific(providerSpecificFailover, aws.StringValue(r.Failover))
+					case r.MultiValueAnswer != nil && aws.BoolValue(r.MultiValueAnswer):
+						ep.WithProviderSpecific(providerSpecificMultiValueAnswer, "")
+					case r.GeoLocation != nil:
+						if r.GeoLocation.ContinentCode != nil {
+							ep.WithProviderSpecific(providerSpecificGeolocationContinentCode, aws.StringValue(r.GeoLocation.ContinentCode))
+						} else {
+							if r.GeoLocation.CountryCode != nil {
+								ep.WithProviderSpecific(providerSpecificGeolocationCountryCode, aws.StringValue(r.GeoLocation.CountryCode))
+							}
+							if r.GeoLocation.SubdivisionCode != nil {
+								ep.WithProviderSpecific(providerSpecificGeolocationSubdivisionCode, aws.StringValue(r.GeoLocation.SubdivisionCode))
+							}
+						}
+					default:
+						// one of the above needs to be set, otherwise SetIdentifier doesn't make sense
+					}
+				}
 				endpoints = append(endpoints, ep)
 			}
 		}
@@ -479,6 +524,47 @@ func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint, recordsCac
 		}
 	}
 
+	setIdentifier := ep.SetIdentifier
+	if setIdentifier != "" {
+		change.ResourceRecordSet.SetIdentifier = aws.String(setIdentifier)
+		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificWeight); ok {
+			weight, err := strconv.ParseInt(prop.Value, 10, 64)
+			if err != nil {
+				log.Errorf("Failed parsing value of %s: %s: %v; using weight of 0", providerSpecificWeight, prop.Value, err)
+				weight = 0
+			}
+			change.ResourceRecordSet.Weight = aws.Int64(weight)
+		}
+		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificRegion); ok {
+			change.ResourceRecordSet.Region = aws.String(prop.Value)
+		}
+		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificFailover); ok {
+			change.ResourceRecordSet.Failover = aws.String(prop.Value)
+		}
+		if _, ok := ep.GetProviderSpecificProperty(providerSpecificMultiValueAnswer); ok {
+			change.ResourceRecordSet.MultiValueAnswer = aws.Bool(true)
+		}
+
+		var geolocation = &route53.GeoLocation{}
+		useGeolocation := false
+		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationContinentCode); ok {
+			geolocation.ContinentCode = aws.String(prop.Value)
+			useGeolocation = true
+		} else {
+			if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationCountryCode); ok {
+				geolocation.CountryCode = aws.String(prop.Value)
+				useGeolocation = true
+			}
+			if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGeolocationSubdivisionCode); ok {
+				geolocation.SubdivisionCode = aws.String(prop.Value)
+				useGeolocation = true
+			}
+		}
+		if useGeolocation {
+			change.ResourceRecordSet.GeoLocation = geolocation
+		}
+	}
+
 	return change, dualstack
 }
 
@@ -577,7 +663,7 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Ch
 
 		zones := suitableZones(hostname, zones)
 		if len(zones) == 0 {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.String())
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", c.String())
 			continue
 		}
 		for _, z := range zones {
