@@ -65,13 +65,16 @@ Then apply the following manifest file to deploy ExternalDNS.
 ### Manifest (for clusters without RBAC enabled)
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: external-dns
 spec:
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: external-dns
   template:
     metadata:
       labels:
@@ -128,13 +131,16 @@ subjects:
   name: external-dns
   namespace: default
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: external-dns
 spec:
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: external-dns
   template:
     metadata:
       labels:
@@ -177,11 +183,14 @@ spec:
 
 ---
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx
 spec:
+  selector:
+    matchLabels:
+      app: nginx
   template:
     metadata:
       labels:
