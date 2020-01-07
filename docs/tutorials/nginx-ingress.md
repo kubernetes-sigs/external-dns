@@ -282,7 +282,7 @@ Use `--dry-run` if you want to be extra careful on the first run. Note, that you
 Create the following sample application to test that ExternalDNS works.
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: nginx
