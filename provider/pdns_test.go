@@ -19,17 +19,15 @@ package provider
 import (
 	"context"
 	"errors"
-
-	//"fmt"
 	"net/http"
 	"strings"
 	"testing"
 
+	pgo "github.com/ffledgling/pdns-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	pgo "github.com/ffledgling/pdns-go"
-	"github.com/kubernetes-sigs/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // FIXME: What do we do about labels?

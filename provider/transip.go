@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	log "github.com/sirupsen/logrus"
 	"github.com/transip/gotransip"
 	transip "github.com/transip/gotransip/domain"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (

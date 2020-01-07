@@ -26,17 +26,14 @@ import (
 	"cloud.google.com/go/compute/metadata"
 	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
-
-	dns "google.golang.org/api/dns/v1"
-
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
-
+	dns "google.golang.org/api/dns/v1"
 	googleapi "google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (

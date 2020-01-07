@@ -20,8 +20,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
 	"github.com/stretchr/testify/assert"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 func TestGetTTLFromAnnotations(t *testing.T) {

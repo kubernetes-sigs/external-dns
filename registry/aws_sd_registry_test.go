@@ -20,11 +20,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/internal/testutils"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 type inMemoryProvider struct {

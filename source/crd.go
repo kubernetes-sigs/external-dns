@@ -21,7 +21,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -30,6 +29,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // crdSource is an implementation of Source that provides endpoints by listing
