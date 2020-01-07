@@ -22,9 +22,10 @@ import (
 	"testing"
 
 	"github.com/exoscale/egoscale"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/stretchr/testify/assert"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 type createRecordExoscale struct {

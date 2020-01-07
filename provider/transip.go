@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
 	log "github.com/sirupsen/logrus"
 	"github.com/transip/gotransip"
 	transip "github.com/transip/gotransip/domain"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -304,7 +305,7 @@ func (p *TransIPProvider) dnsEntriesAreEqual(a, b transip.DNSEntries) bool {
 				continue
 			}
 
-			match += 1
+			match++
 		}
 	}
 

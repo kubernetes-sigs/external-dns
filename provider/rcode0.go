@@ -23,10 +23,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
 	rc0 "github.com/nic-at/rc0go"
 	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 // RcodeZeroProvider implements the DNS provider for RcodeZero Anycast DNS.
@@ -166,7 +167,7 @@ func rcodezeroChangesByZone(zones []*rc0.Zone, changeSet []*rc0.RRSetChange) map
 	for _, c := range changeSet {
 		zone, _ := zoneNameIDMapper.FindZone(c.Name)
 		if zone == "" {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.Name)
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", c.Name)
 			continue
 		}
 		changes[zone] = append(changes[zone], c)

@@ -4,12 +4,12 @@ CRD source provides a generic mechanism to manage DNS records in your favourite 
 
 ### Details
 
-CRD source watches for a user specified CRD to extract [Endpoints](https://github.com/kubernetes-incubator/external-dns/blob/master/endpoint/endpoint.go) from its `Spec`.
+CRD source watches for a user specified CRD to extract [Endpoints](https://github.com/kubernetes-sigs/external-dns/blob/master/endpoint/endpoint.go) from its `Spec`.
 So users need to create such a CRD and register it to the kubernetes cluster and then create new object(s) of the CRD specifying the Endpoints.
 
 ### Registering CRD
 
-Here is typical example of [CRD API type](https://github.com/kubernetes-incubator/external-dns/blob/master/endpoint/endpoint.go) which provides Endpoints to `CRD source`:
+Here is typical example of [CRD API type](https://github.com/kubernetes-sigs/external-dns/blob/master/endpoint/endpoint.go) which provides Endpoints to `CRD source`:
 
 ```go
 type TTL int64
@@ -105,4 +105,16 @@ INFO[0000] running in dry-run mode. No changes to DNS records will be made.
 INFO[0000] Connected to cluster at https://192.168.99.100:8443
 INFO[0000] CREATE: foo.bar.com 180 IN A 192.168.99.216
 INFO[0000] CREATE: foo.bar.com 0 IN TXT "heritage=external-dns,external-dns/owner=default"
+```
+
+### RBAC configuration
+
+If you use RBAC, extend the `external-dns` ClusterRole with:
+```
+- apiGroups: ["externaldns.k8s.io"]
+  resources: ["dnsendpoints"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["externaldns.k8s.io"]
+  resources: ["dnsendpoints/status"]
+  verbs: ["*"]
 ```

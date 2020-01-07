@@ -28,7 +28,6 @@ import (
 	contour "github.com/heptio/contour/apis/generated/clientset/versioned"
 	contourinformers "github.com/heptio/contour/apis/generated/informers/externalversions"
 	extinformers "github.com/heptio/contour/apis/generated/informers/externalversions/contour/v1beta1"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,6 +35,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // ingressRouteSource is an implementation of Source for Heptio Contour IngressRoute objects.
@@ -53,7 +54,7 @@ type ingressRouteSource struct {
 	ingressRouteInformer       extinformers.IngressRouteInformer
 }
 
-// NewIngressRouteSource creates a new ingressRouteSource with the given config.
+// NewContourIngressRouteSource creates a new contourIngressRouteSource with the given config.
 func NewContourIngressRouteSource(
 	kubeClient kubernetes.Interface,
 	contourClient contour.Interface,
@@ -209,14 +210,14 @@ func (sc *ingressRouteSource) endpointsFromTemplate(ingressRoute *contourapi.Ing
 		}
 	}
 
-	providerSpecific := getProviderSpecificAnnotations(ingressRoute.Annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 	// splits the FQDN template and removes the trailing periods
 	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
 	for _, hostname := range hostnameList {
 		hostname = strings.TrimSuffix(hostname, ".")
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific)...)
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 	return endpoints, nil
 }
@@ -302,11 +303,11 @@ func (sc *ingressRouteSource) endpointsFromIngressRoute(ingressRoute *contourapi
 		}
 	}
 
-	providerSpecific := getProviderSpecificAnnotations(ingressRoute.Annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
 
 	if virtualHost := ingressRoute.Spec.VirtualHost; virtualHost != nil {
 		if fqdn := virtualHost.Fqdn; fqdn != "" {
-			endpoints = append(endpoints, endpointsForHostname(fqdn, targets, ttl, providerSpecific)...)
+			endpoints = append(endpoints, endpointsForHostname(fqdn, targets, ttl, providerSpecific, setIdentifier)...)
 		}
 	}
 
@@ -314,7 +315,7 @@ func (sc *ingressRouteSource) endpointsFromIngressRoute(ingressRoute *contourapi
 	if !sc.ignoreHostnameAnnotation {
 		hostnameList := getHostnamesFromAnnotations(ingressRoute.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific)...)
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 		}
 	}
 

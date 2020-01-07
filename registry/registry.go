@@ -19,9 +19,10 @@ package registry
 import (
 	"context"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
 	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 // Registry is an interface which should enables ownership concept in external-dns

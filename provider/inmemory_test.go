@@ -20,12 +20,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/internal/testutils"
-	"github.com/kubernetes-incubator/external-dns/plan"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 var (
@@ -43,11 +43,12 @@ func TestInMemoryProvider(t *testing.T) {
 
 func testInMemoryFindByType(t *testing.T) {
 	for _, ti := range []struct {
-		title         string
-		findType      string
-		records       []*inMemoryRecord
-		expected      *inMemoryRecord
-		expectedEmpty bool
+		title             string
+		findType          string
+		findSetIdentifier string
+		records           []*inMemoryRecord
+		expected          *inMemoryRecord
+		expectedEmpty     bool
 	}{
 		{
 			title:         "no records, empty type",
@@ -112,10 +113,32 @@ func testInMemoryFindByType(t *testing.T) {
 				Type: endpoint.RecordTypeA,
 			},
 		},
+		{
+			title:             "multiple records, right type and set identifier",
+			findType:          endpoint.RecordTypeA,
+			findSetIdentifier: "test-set-1",
+			records: []*inMemoryRecord{
+				{
+					Type:          endpoint.RecordTypeA,
+					SetIdentifier: "test-set-1",
+				},
+				{
+					Type:          endpoint.RecordTypeA,
+					SetIdentifier: "test-set-2",
+				},
+				{
+					Type: endpoint.RecordTypeTXT,
+				},
+			},
+			expected: &inMemoryRecord{
+				Type:          endpoint.RecordTypeA,
+				SetIdentifier: "test-set-1",
+			},
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			c := newInMemoryClient()
-			record := c.findByType(ti.findType, ti.records)
+			record := c.findByTypeAndSetIdentifier(ti.findType, ti.findSetIdentifier, ti.records)
 			if ti.expectedEmpty {
 				assert.Nil(t, record)
 			} else {

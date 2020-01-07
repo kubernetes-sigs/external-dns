@@ -3,9 +3,10 @@ package provider
 import (
 	"testing"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/stretchr/testify/assert"
 	transip "github.com/transip/gotransip/domain"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 func TestTransIPDnsEntriesAreEqual(t *testing.T) {

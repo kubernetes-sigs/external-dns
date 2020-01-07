@@ -19,25 +19,24 @@ package provider
 import (
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 	"testing"
 
-	dns "google.golang.org/api/dns/v1"
-
-	"golang.org/x/net/context"
-
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
-
-	"google.golang.org/api/googleapi"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/net/context"
+	dns "google.golang.org/api/dns/v1"
+	"google.golang.org/api/googleapi"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 var (
-	testZones   = map[string]*dns.ManagedZone{}
-	testRecords = map[string]map[string]*dns.ResourceRecordSet{}
+	testZones                    = map[string]*dns.ManagedZone{}
+	testRecords                  = map[string]map[string]*dns.ResourceRecordSet{}
+	googleDefaultBatchChangeSize = 4000
 )
 
 type mockManagedZonesCreateCall struct {
@@ -548,6 +547,94 @@ func TestSeparateChanges(t *testing.T) {
 		Deletions: []*dns.ResourceRecordSet{
 			{Name: "wambo.bar.example.org.", Ttl: 20},
 		},
+	})
+}
+
+func TestGoogleBatchChangeSet(t *testing.T) {
+	cs := &dns.Change{}
+
+	for i := 1; i <= googleDefaultBatchChangeSize; i += 2 {
+		cs.Additions = append(cs.Additions, &dns.ResourceRecordSet{
+			Name: fmt.Sprintf("host-%d.example.org.", i),
+			Ttl:  2,
+		})
+		cs.Deletions = append(cs.Deletions, &dns.ResourceRecordSet{
+			Name: fmt.Sprintf("host-%d.example.org.", i),
+			Ttl:  20,
+		})
+	}
+
+	batchCs := batchChange(cs, googleDefaultBatchChangeSize)
+
+	require.Equal(t, 1, len(batchCs))
+
+	sortChangesByName(cs)
+	validateChange(t, batchCs[0], cs)
+}
+
+func TestGoogleBatchChangeSetExceeding(t *testing.T) {
+	cs := &dns.Change{}
+	const testCount = 50
+	const testLimit = 11
+	const expectedBatchCount = 5
+	const expectedChangesCount = 10
+
+	for i := 1; i <= testCount; i += 2 {
+		cs.Additions = append(cs.Additions, &dns.ResourceRecordSet{
+			Name: fmt.Sprintf("host-%d.example.org.", i),
+			Ttl:  2,
+		})
+		cs.Deletions = append(cs.Deletions, &dns.ResourceRecordSet{
+			Name: fmt.Sprintf("host-%d.example.org.", i),
+			Ttl:  20,
+		})
+	}
+
+	batchCs := batchChange(cs, testLimit)
+
+	require.Equal(t, expectedBatchCount, len(batchCs))
+
+	dnsChange := &dns.Change{}
+	for _, c := range batchCs {
+		dnsChange.Additions = append(dnsChange.Additions, c.Additions...)
+		dnsChange.Deletions = append(dnsChange.Deletions, c.Deletions...)
+	}
+
+	require.Equal(t, len(cs.Additions), len(dnsChange.Additions))
+	require.Equal(t, len(cs.Deletions), len(dnsChange.Deletions))
+
+	sortChangesByName(cs)
+	sortChangesByName(dnsChange)
+
+	validateChange(t, dnsChange, cs)
+}
+
+func TestGoogleBatchChangeSetExceedingNameChange(t *testing.T) {
+	cs := &dns.Change{}
+	const testCount = 10
+	const testLimit = 1
+
+	cs.Additions = append(cs.Additions, &dns.ResourceRecordSet{
+		Name: "host-1.example.org.",
+		Ttl:  2,
+	})
+	cs.Deletions = append(cs.Deletions, &dns.ResourceRecordSet{
+		Name: "host-1.example.org.",
+		Ttl:  20,
+	})
+
+	batchCs := batchChange(cs, testLimit)
+
+	require.Equal(t, 0, len(batchCs))
+}
+
+func sortChangesByName(cs *dns.Change) {
+	sort.SliceStable(cs.Additions, func(i, j int) bool {
+		return cs.Additions[i].Name < cs.Additions[j].Name
+	})
+
+	sort.SliceStable(cs.Deletions, func(i, j int) bool {
+		return cs.Deletions[i].Name < cs.Deletions[j].Name
 	})
 }
 

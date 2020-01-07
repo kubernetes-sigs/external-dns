@@ -118,8 +118,8 @@ rules:
 - apiGroups: [""]
   resources: ["pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions"] 
-  resources: ["ingresses"] 
+- apiGroups: ["extensions"]
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
@@ -184,7 +184,7 @@ Annotations which are specific to AWS.
 
 ### alias
 
-`external-dns.alpha.kubernetes.io/alias` if set to `true` on an ingress, it will create an ALIAS record when the target is an ALIAS as well. To make the target an alias, the ingress needs to be configured correctly as described in [the docs](./nginx-ingress.md#with-a-separate-tcp-load-balancer).
+`external-dns.alpha.kubernetes.io/alias` if set to `true` on an ingress, it will create an ALIAS record when the target is an ALIAS as well. To make the target an alias, the ingress needs to be configured correctly as described in [the docs](./nginx-ingress.md#with-a-separate-tcp-load-balancer). In particular, the argument `--publish-service=default/nginx-ingress-controller` has to be set on the `nginx-ingress-controller` container. If one uses the `nginx-ingress` Helm chart, this flag can be set with the `controller.publishService.enabled` configuration option.
 
 ## Verify ExternalDNS works (Ingress example)
 
@@ -329,6 +329,23 @@ spec:
 ```
 
 This will set the DNS record's TTL to 60 seconds.
+
+## Routing policies
+
+Route53 offers [different routing policies](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html). The routing policy for a record can be controlled with the following annotations:
+
+* `external-dns.alpha.kubernetes.io/set-identifier`: this **needs** to be set to use any of the following routing policies
+
+For any given DNS name, only **one** of the following routing policies can be used:
+
+* Weighted records: `external-dns.alpha.kubernetes.io/aws-weight`
+* Latency-based routing: `external-dns.alpha.kubernetes.io/aws-region`
+* Failover:`external-dns.alpha.kubernetes.io/aws-failover`
+* Geolocation-based routing:
+  * `external-dns.alpha.kubernetes.io/aws-geolocation-continent-code`
+  * `external-dns.alpha.kubernetes.io/aws-geolocation-country-code`
+  * `external-dns.alpha.kubernetes.io/aws-geolocation-subdivision-code`
+* Multi-value answer:`external-dns.alpha.kubernetes.io/aws-multi-value-answer`
 
 ## Clean up
 
