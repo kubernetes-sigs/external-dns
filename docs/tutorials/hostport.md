@@ -25,6 +25,9 @@ spec:
     matchLabels:
       app: external-dns
   template:
+    metadata:
+      labels:
+        app: external-dns
     spec:
       containers:
       - name: external-dns
@@ -89,6 +92,9 @@ spec:
     matchLabels:
       app: external-dns
   template:
+    metadata:
+      labels:
+        app: external-dns
     spec:
       serviceAccountName: external-dns
       containers:
