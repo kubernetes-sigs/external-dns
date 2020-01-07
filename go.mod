@@ -59,6 +59,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.0.0-20190503184539-c338b28ceaa1 // indirect
 	k8s.io/apimachinery v0.0.0-20190612205821-1799e75a0719
 	k8s.io/client-go v10.0.0+incompatible
+	k8s.io/klog v0.3.1
 	k8s.io/kube-openapi v0.0.0-20190401085232-94e1e7b7574c // indirect
 )
 
@@ -76,4 +77,5 @@ replace (
 	k8s.io/cli-runtime => k8s.io/cli-runtime v0.0.0-20190817224438-0337ccdab819
 	k8s.io/client-go => k8s.io/client-go v0.0.0-20190817222206-ee6c071a42cf
 	k8s.io/code-generator => k8s.io/code-generator v0.0.0-20181117043124-c2090bec4d9b
+	k8s.io/klog => github.com/mikkeloscar/knolog v0.0.0-20190326191552-80742771eb6b
 )
