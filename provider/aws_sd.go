@@ -283,14 +283,12 @@ func (p *AWSSDProvider) submitCreates(namespaces []*sd.NamespaceSummary, changes
 				}
 				// update local list of services
 				services[*srv.Name] = srv
-			} else {
+			} else if (ch.RecordTTL.IsConfigured() && *srv.DnsConfig.DnsRecords[0].TTL != int64(ch.RecordTTL)) ||
+				aws.StringValue(srv.Description) != ch.Labels[endpoint.AWSSDDescriptionLabel] {
 				// update service when TTL or Description differ
-				if (ch.RecordTTL.IsConfigured() && *srv.DnsConfig.DnsRecords[0].TTL != int64(ch.RecordTTL)) ||
-					aws.StringValue(srv.Description) != ch.Labels[endpoint.AWSSDDescriptionLabel] {
-					err = p.UpdateService(srv, ch)
-					if err != nil {
-						return err
-					}
+				err = p.UpdateService(srv, ch)
+				if err != nil {
+					return err
 				}
 			}
 
@@ -442,13 +440,13 @@ func (p *AWSSDProvider) CreateService(namespaceID *string, srvName *string, ep *
 			Name:        srvName,
 			Description: aws.String(ep.Labels[endpoint.AWSSDDescriptionLabel]),
 			DnsConfig: &sd.DnsConfig{
-				NamespaceId:   namespaceID,
 				RoutingPolicy: aws.String(routingPolicy),
 				DnsRecords: []*sd.DnsRecord{{
 					Type: aws.String(srvType),
 					TTL:  aws.Int64(ttl),
 				}},
 			},
+			NamespaceId: namespaceID,
 		})
 		if err != nil {
 			return nil, err

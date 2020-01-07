@@ -156,7 +156,7 @@ func (p *dnsimpleProvider) Zones() (map[string]dnsimple.Zone, error) {
 	return zones, nil
 }
 
-// Records retuns a list of endpoints in a given zone
+// Records returns a list of endpoints in a given zone
 func (p *dnsimpleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.Zones()
 	if err != nil {

@@ -108,7 +108,7 @@ func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, erro
 
 	var requestBuilder ibclient.HttpRequestBuilder
 	if infobloxConfig.MaxResults != 0 {
-		// use our own HttpRequestBuilder which sets _max_results paramter on GET requests
+		// use our own HttpRequestBuilder which sets _max_results parameter on GET requests
 		requestBuilder = NewMaxResultsRequestBuilder(infobloxConfig.MaxResults)
 	} else {
 		// use the default HttpRequestBuilder of the infoblox client

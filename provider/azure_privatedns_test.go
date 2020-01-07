@@ -54,7 +54,7 @@ func (m *mockPrivateZoneListResultPageIterator) getNextPage(context.Context, pri
 	// it assumed that instances of this kind of iterator are only skimmed through once per test
 	// otherwise a real implementation is required, e.g. based on a linked list
 	if m.offset < len(m.results) {
-		m.offset = m.offset + 1
+		m.offset++
 		return m.results[m.offset-1], nil
 	}
 
@@ -73,7 +73,7 @@ func (m *mockPrivateRecordSetListResultPageIterator) getNextPage(context.Context
 	// it assumed that instances of this kind of iterator are only skimmed through once per test
 	// otherwise a real implementation is required, e.g. based on a linked list
 	if m.offset < len(m.results) {
-		m.offset = m.offset + 1
+		m.offset++
 		return m.results[m.offset-1], nil
 	}
 

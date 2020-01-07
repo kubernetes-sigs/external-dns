@@ -320,7 +320,7 @@ func (p *GoogleProvider) submitChange(change *dns.Change) error {
 	return nil
 }
 
-// batchChange seperates a zone in multiple transaction.
+// batchChange separates a zone in multiple transaction.
 func batchChange(change *dns.Change, batchSize int) []*dns.Change {
 	changes := []*dns.Change{}
 
@@ -441,7 +441,7 @@ func newRecord(ep *endpoint.Endpoint) *dns.ResourceRecordSet {
 		targets[0] = ensureTrailingDot(targets[0])
 	}
 
-	// no annotation results in a Ttl of 0, default to 300 for backwards-compatability
+	// no annotation results in a Ttl of 0, default to 300 for backwards-compatibility
 	var ttl int64 = googleRecordTTL
 	if ep.RecordTTL.IsConfigured() {
 		ttl = int64(ep.RecordTTL)

@@ -17,3 +17,6 @@ linters:
     - ineffassign
     - golint
     - goimports
+    - misspell
+    - unconvert
+    - staticcheck

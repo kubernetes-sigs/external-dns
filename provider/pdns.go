@@ -42,7 +42,7 @@ type pdnsChangeType string
 const (
 	apiBase = "/api/v1"
 
-	// Unless we use something like pdnsproxy (discontinued upsteam), this value will _always_ be localhost
+	// Unless we use something like pdnsproxy (discontinued upstream), this value will _always_ be localhost
 	defaultServerID = "localhost"
 	defaultTTL      = 300
 
@@ -455,7 +455,7 @@ func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	// valid call and a no-op, but we might as well not make the call to
 	// prevent unnecessary logging
 	if len(changes.Create) > 0 {
-		// "Replacing" non-existant records creates them
+		// "Replacing" non-existent records creates them
 		err := p.mutateRecords(changes.Create, PdnsReplace)
 		if err != nil {
 			return err

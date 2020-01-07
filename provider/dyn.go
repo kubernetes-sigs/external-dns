@@ -40,7 +40,7 @@ const (
 	// when rate limit is hit retry up to 5 times after sleep 1m between retries
 	dynMaxRetriesOnErrRateLimited = 5
 
-	// two consecutive bad logins happen at least this many seconds appart
+	// two consecutive bad logins happen at least this many seconds apart
 	// While it is easy to get the username right, misconfiguring the password
 	// can get account blocked. Exit(1) is not a good solution
 	// as k8s will restart the pod and another login attempt will be made
@@ -51,7 +51,7 @@ const (
 )
 
 func unixNow() int64 {
-	return int64(time.Now().Unix())
+	return time.Now().Unix()
 }
 
 // DynConfig hold connection parameters to dyn.com and internal state

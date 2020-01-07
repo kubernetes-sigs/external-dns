@@ -56,7 +56,7 @@ func (m *mockZoneListResultPageIterator) getNextPage(context.Context, dns.ZoneLi
 	// it assumed that instances of this kind of iterator are only skimmed through once per test
 	// otherwise a real implementation is required, e.g. based on a linked list
 	if m.offset < len(m.results) {
-		m.offset = m.offset + 1
+		m.offset++
 		return m.results[m.offset-1], nil
 	}
 
@@ -75,7 +75,7 @@ func (m *mockRecordSetListResultPageIterator) getNextPage(context.Context, dns.R
 	// it assumed that instances of this kind of iterator are only skimmed through once per test
 	// otherwise a real implementation is required, e.g. based on a linked list
 	if m.offset < len(m.results) {
-		m.offset = m.offset + 1
+		m.offset++
 		return m.results[m.offset-1], nil
 	}
 

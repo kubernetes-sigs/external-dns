@@ -624,7 +624,7 @@ func TestMutableMockOCIDNSClient(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// GetZoneRecords and check we're back in the origional state
+	// GetZoneRecords and check we're back in the original state
 	recordsResponse, err = client.GetZoneRecords(context.Background(), dns.GetZoneRecordsRequest{
 		ZoneNameOrId: zones[0].Id,
 	})
