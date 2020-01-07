@@ -17,36 +17,39 @@ limitations under the License.
 package source
 
 import (
-	"strconv"
-	"sync"
 	"testing"
+
+	istionetworking "istio.io/api/networking/v1alpha3"
+	istiomodel "istio.io/istio/pilot/pkg/model"
+
+	"github.com/kubernetes-sigs/external-dns/endpoint"
+
+	//"strconv"
+	//"sync"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	istionetworking "istio.io/api/networking/v1alpha3"
-	istiomodel "istio.io/istio/pilot/pkg/model"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-
-	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // This is a compile-time validation that gatewaySource is a Source.
-var _ Source = &gatewaySource{}
+var _ Source = &istioVirtualServiceSource{}
 
-var gatewayType = istiomodel.Gateway.Type
+var virtualServiceType = istiomodel.VirtualService.Type
 
-type GatewaySuite struct {
+type VirtualServiceSuite struct {
 	suite.Suite
 	source     Source
 	lbServices []*v1.Service
-	config     istiomodel.Config
+	gwconfig   istiomodel.Config
+	vsconfig   istiomodel.Config
 }
 
-func (suite *GatewaySuite) SetupTest() {
+func (suite *VirtualServiceSuite) SetupTest() {
 	fakeKubernetesClient := fake.NewSimpleClientset()
 	fakeIstioClient := NewFakeConfigStore()
 	var err error
@@ -61,7 +64,7 @@ func (suite *GatewaySuite) SetupTest() {
 		(fakeIngressGatewayService{
 			ips:       []string{"1.1.1.1"},
 			hostnames: []string{"v42"},
-			namespace: "istio-other",
+			namespace: "istio-system",
 			name:      "istio-gateway2",
 		}).Service(),
 	}
@@ -71,7 +74,7 @@ func (suite *GatewaySuite) SetupTest() {
 		suite.NoError(err, "should succeed")
 	}
 
-	suite.source, err = NewIstioGatewaySource(
+	suite.source, err = NewIstioVirtualServiceSource(
 		fakeKubernetesClient,
 		fakeIstioClient,
 		"",
@@ -80,31 +83,42 @@ func (suite *GatewaySuite) SetupTest() {
 		false,
 		false,
 	)
-	suite.NoError(err, "should initialize gateway source")
+	suite.NoError(err, "should initialize virtualservice source")
 
-	suite.config = (fakeGatewayConfig{
+	suite.gwconfig = (fakeGatewayConfig{
 		name:      "foo-gateway-with-targets",
-		namespace: "default",
-		dnsnames:  [][]string{{"foo"}},
+		namespace: "istio-system",
+		dnsnames:  [][]string{{}},
 	}).Config()
-	_, err = fakeIstioClient.Create(suite.config)
+	_, err = fakeIstioClient.Create(suite.gwconfig)
+	suite.NoError(err, "should succeed")
+
+	suite.vsconfig = (fakeVirtualServiceConfig{
+		name:      "foo-virtualservice",
+		namespace: "istio-other",
+		gateways:  []string{"istio-system/foo-gateway-with-targets"},
+		dnsnames:  []string{"foo"},
+	}).Config()
+	_, err = fakeIstioClient.Create(suite.vsconfig)
 	suite.NoError(err, "should succeed")
 }
 
-func (suite *GatewaySuite) TestResourceLabelIsSet() {
-	endpoints, _ := suite.source.Endpoints()
+func (suite *VirtualServiceSuite) TestResourceLabelIsSet() {
+	endpoints, err := suite.source.Endpoints()
+	suite.NoError(err, "should succeed")
+	suite.Equal(len(endpoints), 2, "should return the correct number of endpoints")
 	for _, ep := range endpoints {
-		suite.Equal("gateway/default/foo-gateway-with-targets", ep.Labels[endpoint.ResourceLabelKey], "should set correct resource label")
+		suite.Equal("virtualservice/istio-other/foo-virtualservice", ep.Labels[endpoint.ResourceLabelKey], "should set correct resource label")
 	}
 }
 
-func TestGateway(t *testing.T) {
-	suite.Run(t, new(GatewaySuite))
-	t.Run("endpointsFromGatewayConfig", testEndpointsFromGatewayConfig)
-	t.Run("Endpoints", testGatewayEndpoints)
+func TestVirtualService(t *testing.T) {
+	suite.Run(t, new(VirtualServiceSuite))
+	t.Run("endpointsFromVirtualServiceConfig", testEndpointsFromVirtualServiceConfig)
+	t.Run("Endpoints", testVirtualServiceEndpoints)
 }
 
-func TestNewIstioGatewaySource(t *testing.T) {
+func TestNewIstioVirtualServiceSource(t *testing.T) {
 	for _, ti := range []struct {
 		title                    string
 		annotationFilter         string
@@ -144,7 +158,7 @@ func TestNewIstioGatewaySource(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			_, err := NewIstioGatewaySource(
+			_, err := NewIstioVirtualServiceSource(
 				fake.NewSimpleClientset(),
 				NewFakeConfigStore(),
 				"",
@@ -162,11 +176,12 @@ func TestNewIstioGatewaySource(t *testing.T) {
 	}
 }
 
-func testEndpointsFromGatewayConfig(t *testing.T) {
+func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 	for _, ti := range []struct {
 		title      string
 		lbServices []fakeIngressGatewayService
-		config     fakeGatewayConfig
+		gwconfig   fakeGatewayConfig
+		vsconfig   fakeVirtualServiceConfig
 		expected   []*endpoint.Endpoint
 	}{
 		{
@@ -176,7 +191,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 					hostnames: []string{"lb.com"}, // Kubernetes omits the trailing dot
 				},
 			},
-			config: fakeGatewayConfig{
+			gwconfig: fakeGatewayConfig{
 				dnsnames: [][]string{
 					{"foo.bar"}, // Kubernetes requires removal of trailing dot
 				},
@@ -195,7 +210,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 					hostnames: []string{"lb.com"}, // Kubernetes omits the trailing dot
 				},
 			},
-			config: fakeGatewayConfig{
+			gwconfig: fakeGatewayConfig{
 				dnsnames: [][]string{
 					{"my-namespace/foo.bar"}, // Kubernetes requires removal of trailing dot
 				},
@@ -214,7 +229,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 					ips: []string{"8.8.8.8"},
 				},
 			},
-			config: fakeGatewayConfig{
+			gwconfig: fakeGatewayConfig{
 				dnsnames: [][]string{
 					{"foo.bar"},
 				},
@@ -234,7 +249,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 					hostnames: []string{"elb.com", "alb.com"},
 				},
 			},
-			config: fakeGatewayConfig{
+			gwconfig: fakeGatewayConfig{
 				dnsnames: [][]string{
 					{"foo.bar"},
 				},
@@ -258,7 +273,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 					hostnames: []string{"elb.com", "alb.com"},
 				},
 			},
-			config: fakeGatewayConfig{
+			gwconfig: fakeGatewayConfig{
 				dnsnames: [][]string{},
 			},
 			expected: []*endpoint.Endpoint{},
@@ -271,7 +286,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 					hostnames: []string{"elb.com", "alb.com"},
 				},
 			},
-			config: fakeGatewayConfig{
+			gwconfig: fakeGatewayConfig{
 				dnsnames: [][]string{
 					{""},
 				},
@@ -281,7 +296,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 		{
 			title:      "no targets",
 			lbServices: []fakeIngressGatewayService{{}},
-			config: fakeGatewayConfig{
+			gwconfig: fakeGatewayConfig{
 				dnsnames: [][]string{
 					{""},
 				},
@@ -302,7 +317,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 					name:      "gateway2",
 				},
 			},
-			config: fakeGatewayConfig{
+			gwconfig: fakeGatewayConfig{
 				dnsnames: [][]string{
 					{"foo.bar"}, // Kubernetes requires removal of trailing dot
 				},
@@ -316,9 +331,9 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			if source, err := newTestGatewaySource(ti.lbServices); err != nil {
+			if source, err := newTestVirtualServiceSource(ti.lbServices, []fakeGatewayConfig{ti.gwconfig}); err != nil {
 				require.NoError(t, err)
-			} else if endpoints, err := source.endpointsFromGatewayConfig(ti.config.Config()); err != nil {
+			} else if endpoints, err := source.endpointsFromVirtualServiceConfig(ti.vsconfig.Config()); err != nil {
 				require.NoError(t, err)
 			} else {
 				validateEndpoints(t, endpoints, ti.expected)
@@ -327,14 +342,15 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 	}
 }
 
-func testGatewayEndpoints(t *testing.T) {
+func testVirtualServiceEndpoints(t *testing.T) {
 	namespace := "testing"
 	for _, ti := range []struct {
 		title                    string
 		targetNamespace          string
 		annotationFilter         string
 		lbServices               []fakeIngressGatewayService
-		configItems              []fakeGatewayConfig
+		gwConfigs                []fakeGatewayConfig
+		vsConfigs                []fakeVirtualServiceConfig
 		expected                 []*endpoint.Endpoint
 		expectError              bool
 		fqdnTemplate             string
@@ -354,7 +370,7 @@ func testGatewayEndpoints(t *testing.T) {
 					hostnames: []string{"lb.com"},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -394,7 +410,7 @@ func testGatewayEndpoints(t *testing.T) {
 					hostnames: []string{"lb.com"},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: "testing1",
@@ -435,7 +451,7 @@ func testGatewayEndpoints(t *testing.T) {
 					namespace: "testing1",
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: "testing1",
@@ -467,7 +483,7 @@ func testGatewayEndpoints(t *testing.T) {
 					ips: []string{"8.8.8.8"},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -493,7 +509,7 @@ func testGatewayEndpoints(t *testing.T) {
 					ips: []string{"8.8.8.8"},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -514,7 +530,7 @@ func testGatewayEndpoints(t *testing.T) {
 					ips: []string{"8.8.8.8"},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -536,7 +552,7 @@ func testGatewayEndpoints(t *testing.T) {
 					ips: []string{"8.8.8.8"},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -562,7 +578,7 @@ func testGatewayEndpoints(t *testing.T) {
 					ips: []string{"8.8.8.8"},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -582,7 +598,7 @@ func testGatewayEndpoints(t *testing.T) {
 					ips: []string{"8.8.8.8"},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -607,7 +623,7 @@ func testGatewayEndpoints(t *testing.T) {
 					ips: []string{"8.8.8.8"},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -628,7 +644,7 @@ func testGatewayEndpoints(t *testing.T) {
 					hostnames: []string{"elb.com"},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -658,7 +674,7 @@ func testGatewayEndpoints(t *testing.T) {
 					ips: []string{"8.8.8.8"},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -679,7 +695,7 @@ func testGatewayEndpoints(t *testing.T) {
 					ips: []string{"8.8.8.8"},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:        "fake1",
 					namespace:   namespace,
@@ -709,7 +725,7 @@ func testGatewayEndpoints(t *testing.T) {
 					ips: []string{"8.8.8.8"},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:        "fake1",
 					namespace:   namespace,
@@ -763,7 +779,7 @@ func testGatewayEndpoints(t *testing.T) {
 					ips: []string{"8.8.8.8"},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -815,7 +831,7 @@ func testGatewayEndpoints(t *testing.T) {
 					ips: []string{"1.2.3.4"},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -846,7 +862,7 @@ func testGatewayEndpoints(t *testing.T) {
 					ips: []string{"1.2.3.4"},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -882,7 +898,7 @@ func testGatewayEndpoints(t *testing.T) {
 					ips: []string{},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -914,7 +930,7 @@ func testGatewayEndpoints(t *testing.T) {
 					ips: []string{"8.8.8.8"},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -933,15 +949,6 @@ func testGatewayEndpoints(t *testing.T) {
 					},
 					dnsnames: [][]string{{"example2.org"}},
 				},
-				{
-					name:      "fake3",
-					namespace: namespace,
-					annotations: map[string]string{
-						targetAnnotationKey: "gateway-target.com",
-						ttlAnnotationKey:    "10s",
-					},
-					dnsnames: [][]string{{"example3.org"}},
-				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
@@ -954,11 +961,6 @@ func testGatewayEndpoints(t *testing.T) {
 					Targets:   endpoint.Targets{"gateway-target.com"},
 					RecordTTL: endpoint.TTL(1),
 				},
-				{
-					DNSName:   "example3.org",
-					Targets:   endpoint.Targets{"gateway-target.com"},
-					RecordTTL: endpoint.TTL(10),
-				},
 			},
 		},
 		{
@@ -970,7 +972,7 @@ func testGatewayEndpoints(t *testing.T) {
 					hostnames: []string{},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -1024,7 +1026,7 @@ func testGatewayEndpoints(t *testing.T) {
 					hostnames: []string{},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -1046,7 +1048,7 @@ func testGatewayEndpoints(t *testing.T) {
 					hostnames: []string{"lb.com"},
 				},
 			},
-			configItems: []fakeGatewayConfig{
+			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -1087,7 +1089,10 @@ func testGatewayEndpoints(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			configs := make([]istiomodel.Config, 0)
-			for _, item := range ti.configItems {
+			for _, item := range ti.gwConfigs {
+				configs = append(configs, item.Config())
+			}
+			for _, item := range ti.vsConfigs {
 				configs = append(configs, item.Config())
 			}
 
@@ -1105,7 +1110,7 @@ func testGatewayEndpoints(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			gatewaySource, err := NewIstioGatewaySource(
+			virtualServiceSource, err := NewIstioVirtualServiceSource(
 				fakeKubernetesClient,
 				fakeIstioClient,
 				ti.targetNamespace,
@@ -1116,7 +1121,7 @@ func testGatewayEndpoints(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			res, err := gatewaySource.Endpoints()
+			res, err := virtualServiceSource.Endpoints()
 			if ti.expectError {
 				assert.Error(t, err)
 			} else {
@@ -1128,10 +1133,16 @@ func testGatewayEndpoints(t *testing.T) {
 	}
 }
 
-// gateway specific helper functions
-func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService) (*gatewaySource, error) {
+func newTestVirtualServiceSource(loadBalancerList []fakeIngressGatewayService, gwList []fakeGatewayConfig) (*istioVirtualServiceSource, error) {
 	fakeKubernetesClient := fake.NewSimpleClientset()
 	fakeIstioClient := NewFakeConfigStore()
+
+	for _, gw := range gwList {
+		_, err := fakeIstioClient.Create(gw.Config())
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	for _, lb := range loadBalancerList {
 		service := lb.Service()
@@ -1141,7 +1152,7 @@ func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService) (*gatewa
 		}
 	}
 
-	src, err := NewIstioGatewaySource(
+	src, err := NewIstioVirtualServiceSource(
 		fakeKubernetesClient,
 		fakeIstioClient,
 		"",
@@ -1154,187 +1165,37 @@ func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService) (*gatewa
 		return nil, err
 	}
 
-	gwsrc, ok := src.(*gatewaySource)
+	vssrc, ok := src.(*istioVirtualServiceSource)
 	if !ok {
-		return nil, errors.New("underlying source type was not gateway")
+		return nil, errors.New("underlying source type was not virtualservice")
 	}
 
-	return gwsrc, nil
+	return vssrc, nil
 }
 
-type fakeIngressGatewayService struct {
-	ips       []string
-	hostnames []string
-	namespace string
-	name      string
-}
-
-func (ig fakeIngressGatewayService) Service() *v1.Service {
-	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: ig.namespace,
-			Name:      ig.name,
-		},
-		Status: v1.ServiceStatus{
-			LoadBalancer: v1.LoadBalancerStatus{
-				Ingress: []v1.LoadBalancerIngress{},
-			},
-		},
-	}
-
-	for _, ip := range ig.ips {
-		svc.Status.LoadBalancer.Ingress = append(svc.Status.LoadBalancer.Ingress, v1.LoadBalancerIngress{
-			IP: ip,
-		})
-	}
-	for _, hostname := range ig.hostnames {
-		svc.Status.LoadBalancer.Ingress = append(svc.Status.LoadBalancer.Ingress, v1.LoadBalancerIngress{
-			Hostname: hostname,
-		})
-	}
-
-	return svc
-}
-
-type fakeGatewayConfig struct {
+type fakeVirtualServiceConfig struct {
 	namespace   string
 	name        string
+	gateways    []string
 	annotations map[string]string
-	dnsnames    [][]string
-	selector    map[string]string
+	dnsnames    []string
 }
 
-func (c fakeGatewayConfig) Config() istiomodel.Config {
-	gw := &istionetworking.Gateway{
-		Servers: []*istionetworking.Server{},
+func (c fakeVirtualServiceConfig) Config() istiomodel.Config {
+	vs := &istionetworking.VirtualService{
+		Gateways: c.gateways,
+		Hosts:    c.dnsnames,
 	}
-
-	for _, dnsnames := range c.dnsnames {
-		gw.Servers = append(gw.Servers, &istionetworking.Server{
-			Hosts: dnsnames,
-		})
-	}
-
-	gw.Selector = c.selector
 
 	config := istiomodel.Config{
 		ConfigMeta: istiomodel.ConfigMeta{
 			Namespace:   c.namespace,
 			Name:        c.name,
-			Type:        gatewayType,
+			Type:        virtualServiceType,
 			Annotations: c.annotations,
 		},
-		Spec: gw,
+		Spec: vs,
 	}
 
 	return config
-}
-
-type fakeConfigStore struct {
-	descriptor istiomodel.ConfigDescriptor
-	configs    []*istiomodel.Config
-	sync.RWMutex
-}
-
-func NewFakeConfigStore() istiomodel.ConfigStore {
-	return &fakeConfigStore{
-		descriptor: istiomodel.ConfigDescriptor{
-			istiomodel.Gateway,
-		},
-		configs: make([]*istiomodel.Config, 0),
-	}
-}
-
-func (f *fakeConfigStore) ConfigDescriptor() istiomodel.ConfigDescriptor {
-	return f.descriptor
-}
-
-func (f *fakeConfigStore) Get(typ, name, namespace string) (config *istiomodel.Config) {
-	f.RLock()
-	defer f.RUnlock()
-
-	if cfg, _ := f.get(typ, name, namespace); cfg != nil {
-		config = cfg
-	}
-
-	return
-}
-
-func (f *fakeConfigStore) get(typ, name, namespace string) (*istiomodel.Config, int) {
-	for idx, cfg := range f.configs {
-		if cfg.Type == typ && cfg.Name == name && cfg.Namespace == namespace {
-			return cfg, idx
-		}
-	}
-
-	return nil, -1
-}
-
-func (f *fakeConfigStore) List(typ, namespace string) (configs []istiomodel.Config, err error) {
-	f.RLock()
-	defer f.RUnlock()
-
-	if namespace == "" {
-		for _, cfg := range f.configs {
-			configs = append(configs, *cfg)
-		}
-	} else {
-		for _, cfg := range f.configs {
-			if cfg.Type == typ && cfg.Namespace == namespace {
-				configs = append(configs, *cfg)
-			}
-		}
-	}
-
-	return
-}
-
-func (f *fakeConfigStore) Create(config istiomodel.Config) (revision string, err error) {
-	f.Lock()
-	defer f.Unlock()
-
-	if cfg, _ := f.get(config.Type, config.Name, config.Namespace); cfg != nil {
-		err = errors.New("config already exists")
-	} else {
-		revision = "0"
-		cfg := &config
-		cfg.ResourceVersion = revision
-		f.configs = append(f.configs, cfg)
-	}
-
-	return
-}
-
-func (f *fakeConfigStore) Update(config istiomodel.Config) (newRevision string, err error) {
-	f.Lock()
-	defer f.Unlock()
-
-	if oldCfg, idx := f.get(config.Type, config.Name, config.Namespace); oldCfg == nil {
-		err = errors.New("config does not exist")
-	} else if oldRevision, e := strconv.Atoi(oldCfg.ResourceVersion); e != nil {
-		err = e
-	} else {
-		newRevision = strconv.Itoa(oldRevision + 1)
-		cfg := &config
-		cfg.ResourceVersion = newRevision
-		f.configs[idx] = cfg
-	}
-
-	return
-}
-
-func (f *fakeConfigStore) Delete(typ, name, namespace string) error {
-	f.Lock()
-	defer f.Unlock()
-
-	_, idx := f.get(typ, name, namespace)
-	if idx < 0 {
-		return errors.New("config does not exist")
-	}
-
-	copy(f.configs[idx:], f.configs[idx+1:])
-	f.configs[len(f.configs)-1] = nil
-	f.configs = f.configs[:len(f.configs)-1]
-
-	return nil
 }

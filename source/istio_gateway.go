@@ -38,10 +38,10 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-// gatewaySource is an implementation of Source for Istio Gateway objects.
+// istioGatewaySource is an implementation of Source for Istio Gateway objects.
 // The gateway implementation uses the spec.servers.hosts values for the hostnames.
 // Use targetAnnotationKey to explicitly set Endpoint.
-type gatewaySource struct {
+type istioGatewaySource struct {
 	kubeClient               kubernetes.Interface
 	istioClient              istiomodel.ConfigStore
 	namespace                string
@@ -52,7 +52,7 @@ type gatewaySource struct {
 	serviceInformer          coreinformers.ServiceInformer
 }
 
-// NewIstioGatewaySource creates a new gatewaySource with the given config.
+// NewIstioGatewaySource creates a new istioGatewaySource with the given config.
 func NewIstioGatewaySource(
 	kubeClient kubernetes.Interface,
 	istioClient istiomodel.ConfigStore,
@@ -101,7 +101,7 @@ func NewIstioGatewaySource(
 		return nil, fmt.Errorf("failed to sync cache: %v", err)
 	}
 
-	return &gatewaySource{
+	return &istioGatewaySource{
 		kubeClient:               kubeClient,
 		istioClient:              istioClient,
 		namespace:                namespace,
@@ -115,7 +115,7 @@ func NewIstioGatewaySource(
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all gateway resources in the source's namespace(s).
-func (sc *gatewaySource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (sc *istioGatewaySource) Endpoints() ([]*endpoint.Endpoint, error) {
 	configs, err := sc.istioClient.List(istiomodel.Gateway.Type, sc.namespace)
 	if err != nil {
 		return nil, err
@@ -173,10 +173,10 @@ func (sc *gatewaySource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
-func (sc *gatewaySource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+func (sc *istioGatewaySource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
 }
 
-func (sc *gatewaySource) endpointsFromTemplate(config *istiomodel.Config) ([]*endpoint.Endpoint, error) {
+func (sc *istioGatewaySource) endpointsFromTemplate(config *istiomodel.Config) ([]*endpoint.Endpoint, error) {
 	// Process the whole template string
 	var buf bytes.Buffer
 	err := sc.fqdnTemplate.Execute(&buf, config)
@@ -213,7 +213,7 @@ func (sc *gatewaySource) endpointsFromTemplate(config *istiomodel.Config) ([]*en
 }
 
 // filterByAnnotations filters a list of configs by a given annotation selector.
-func (sc *gatewaySource) filterByAnnotations(configs []istiomodel.Config) ([]istiomodel.Config, error) {
+func (sc *istioGatewaySource) filterByAnnotations(configs []istiomodel.Config) ([]istiomodel.Config, error) {
 	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
 	if err != nil {
 		return nil, err
@@ -243,30 +243,27 @@ func (sc *gatewaySource) filterByAnnotations(configs []istiomodel.Config) ([]ist
 	return filteredList, nil
 }
 
-func (sc *gatewaySource) setResourceLabel(config istiomodel.Config, endpoints []*endpoint.Endpoint) {
+func (sc *istioGatewaySource) setResourceLabel(config istiomodel.Config, endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
 		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("gateway/%s/%s", config.Namespace, config.Name)
 	}
 }
 
-func (sc *gatewaySource) targetsFromGatewayConfig(config *istiomodel.Config) (targets endpoint.Targets, err error) {
+func (sc *istioGatewaySource) targetsFromGatewayConfig(config *istiomodel.Config) (targets endpoint.Targets, err error) {
 	gateway := config.Spec.(*istionetworking.Gateway)
-	labelSelector, err := metav1.ParseToLabelSelector(labels.Set(gateway.Selector).String())
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
-	if err != nil {
-		return nil, err
-	}
 
-	services, err := sc.serviceInformer.Lister().Services(sc.namespace).List(selector)
+	services, err := sc.serviceInformer.Lister().Services(config.Namespace).List(labels.Everything())
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
 	for _, service := range services {
+		if !labels.Equals(service.Spec.Selector, gateway.Selector) {
+			// Only consider services which have the same selector as the Gateway CR.
+			// Use the target annotation to override if this picks the wrong service.
+			continue
+		}
 		for _, lb := range service.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
 				targets = append(targets, lb.IP)
@@ -281,7 +278,7 @@ func (sc *gatewaySource) targetsFromGatewayConfig(config *istiomodel.Config) (ta
 }
 
 // endpointsFromGatewayConfig extracts the endpoints from an Istio Gateway Config object
-func (sc *gatewaySource) endpointsFromGatewayConfig(config istiomodel.Config) ([]*endpoint.Endpoint, error) {
+func (sc *istioGatewaySource) endpointsFromGatewayConfig(config istiomodel.Config) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	ttl, err := getTTLFromAnnotations(config.Annotations)

@@ -184,6 +184,16 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 			return nil, err
 		}
 		return NewIstioGatewaySource(kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+	case "istio-virtualservice":
+		kubernetesClient, err := p.KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		istioClient, err := p.IstioClient()
+		if err != nil {
+			return nil, err
+		}
+		return NewIstioVirtualServiceSource(kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
 	case "cloudfoundry":
 		cfClient, err := p.CloudFoundryClient(cfg.CFAPIEndpoint, cfg.CFUsername, cfg.CFPassword)
 		if err != nil {
@@ -307,7 +317,7 @@ func NewIstioClient(kubeConfig string) (*istiocontroller.Client, error) {
 	client, err := istiocontroller.NewClient(
 		kubeConfig,
 		"",
-		istiomodel.ConfigDescriptor{istiomodel.Gateway},
+		istiomodel.ConfigDescriptor{istiomodel.Gateway, istiomodel.VirtualService},
 		"",
 	)
 	if err != nil {
