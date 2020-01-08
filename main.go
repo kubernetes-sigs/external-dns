@@ -129,7 +129,7 @@ func main() {
 	case "aws-sd":
 		// Check that only compatible Registry is used with AWS-SD
 		if cfg.Registry != "noop" && cfg.Registry != "aws-sd" {
-			log.Infof("Registry \"%s\" cannot be used with AWS ServiceDiscovery. Switching to \"aws-sd\".", cfg.Registry)
+			log.Infof("Registry \"%s\" cannot be used with AWS Cloud Map. Switching to \"aws-sd\".", cfg.Registry)
 			cfg.Registry = "aws-sd"
 		}
 		p, err = provider.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.AWSAssumeRole, cfg.DryRun)
