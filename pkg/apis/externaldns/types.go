@@ -73,6 +73,7 @@ type Config struct {
 	AzureResourceGroup                string
 	AzureSubscriptionID               string
 	AzureUserAssignedIdentityClientID string
+	BluecatConfigFile                 string
 	CloudflareProxied                 bool
 	CloudflareZonesPerPage            int
 	CoreDNSPrefix                     string
@@ -165,6 +166,7 @@ var defaultConfig = &Config{
 	AzureConfigFile:             "/etc/kubernetes/azure.json",
 	AzureResourceGroup:          "",
 	AzureSubscriptionID:         "",
+	BluecatConfigFile:           "/etc/kubernetes/bluecat.json",
 	CloudflareProxied:           false,
 	CloudflareZonesPerPage:      50,
 	CoreDNSPrefix:               "/skydns/",
