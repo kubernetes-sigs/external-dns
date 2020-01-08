@@ -58,7 +58,7 @@ var (
 	sdNlbHostnameRegex = regexp.MustCompile(`.+\.elb\.[^.]+\.amazonaws\.com$`)
 )
 
-// AWSSDClient is the subset of the AWS Route53 Auto Naming API that we actually use. Add methods as required.
+// AWSSDClient is the subset of the AWS Cloud Map API that we actually use. Add methods as required.
 // Signatures must match exactly. Taken from https://github.com/aws/aws-sdk-go/blob/master/service/servicediscovery/api.go
 type AWSSDClient interface {
 	CreateService(input *sd.CreateServiceInput) (*sd.CreateServiceOutput, error)
@@ -71,7 +71,7 @@ type AWSSDClient interface {
 	UpdateService(input *sd.UpdateServiceInput) (*sd.UpdateServiceOutput, error)
 }
 
-// AWSSDProvider is an implementation of Provider for AWS Route53 Auto Naming.
+// AWSSDProvider is an implementation of Provider for AWS Cloud Map.
 type AWSSDProvider struct {
 	client AWSSDClient
 	dryRun bool
@@ -81,7 +81,7 @@ type AWSSDProvider struct {
 	namespaceTypeFilter *sd.NamespaceFilter
 }
 
-// NewAWSSDProvider initializes a new AWS Route53 Auto Naming based Provider.
+// NewAWSSDProvider initializes a new AWS Cloud Map based Provider.
 func NewAWSSDProvider(domainFilter DomainFilter, namespaceType string, assumeRole string, dryRun bool) (*AWSSDProvider, error) {
 	config := aws.NewConfig()
 
