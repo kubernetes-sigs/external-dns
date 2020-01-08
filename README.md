@@ -26,7 +26,7 @@ To see ExternalDNS in action, have a look at this [video](https://www.youtube.co
 ExternalDNS' current release is `v0.5`. This version allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
 * [Google Cloud DNS](https://cloud.google.com/dns/docs/)
 * [AWS Route 53](https://aws.amazon.com/route53/)
-* [AWS Service Discovery](https://docs.aws.amazon.com/Route53/latest/APIReference/overview-service-discovery.html)
+* [AWS Cloud Map](https://docs.aws.amazon.com/cloud-map/)
 * [AzureDNS](https://azure.microsoft.com/en-us/services/dns)
 * [CloudFlare](https://www.cloudflare.com/dns)
 * [RcodeZero](https://www.rcodezero.at/)
@@ -73,7 +73,7 @@ The following table clarifies the current status of the providers according to t
 | -------- | ------ |
 | Google Cloud DNS | Stable |
 | AWS Route 53 | Stable |
-| AWS Service Discovery | Beta |
+| AWS Cloud Map | Beta |
 | AzureDNS | Beta |
 | CloudFlare | Beta
 | RcodeZero | Alpha |
@@ -109,7 +109,7 @@ The following tutorials are provided:
 	* [ALB Ingress Controller](docs/tutorials/alb-ingress.md)
 	* [Route53](docs/tutorials/aws.md)
 		* [Same domain for public and private Route53 zones](docs/tutorials/public-private-route53.md)
-	* [Service Discovery](docs/tutorials/aws-sd.md)
+	* [Cloud Map](docs/tutorials/aws-sd.md)
 * [Azure DNS](docs/tutorials/azure.md)
 * [Azure Private DNS](docs/tutorials/azure-private-dns.md)
 * [Cloudflare](docs/tutorials/cloudflare.md)
