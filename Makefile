@@ -72,9 +72,7 @@ clean:
 .PHONY: release.staging
 
 release.staging:
-	echo "PULL-BASE: $(PULL_BASE_REF)"
-	echo "TAG: $(TAG)"
-	IMAGE=$(IMAGE_STAGING) $(MAKE) build.docker build.push
+	IMAGE=$(IMAGE_STAGING) VERSION=$(TAG) $(MAKE) build.docker build.push
 
 release.prod:
 	$(MAKE) build.docker build.push
