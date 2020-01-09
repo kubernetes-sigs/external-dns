@@ -168,7 +168,7 @@ func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, res 
 }
 
 func (client *mockIBConnector) DeleteObject(ref string) (refRes string, err error) {
-	re, _ := regexp.Compile(`([^/]+)/[^:]+:([^/]+)/default`)
+	re := regexp.MustCompile(`([^/]+)/[^:]+:([^/]+)/default`)
 	result := re.FindStringSubmatch(ref)
 
 	switch result[1] {

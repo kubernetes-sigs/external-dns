@@ -536,7 +536,7 @@ func (c *PDNSAPIClientStub) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http
 /******************************************************************************/
 // API that returns a zones with no records
 type PDNSAPIClientStubEmptyZones struct {
-	// Keep track of all zones we recieve via PatchZone
+	// Keep track of all zones we receive via PatchZone
 	patchedZones []pgo.Zone
 }
 

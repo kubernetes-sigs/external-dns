@@ -75,7 +75,7 @@ func NewRoute53APIStub() *Route53APIStub {
 
 func (r *Route53APIStub) ListResourceRecordSetsPages(input *route53.ListResourceRecordSetsInput, fn func(p *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool)) error {
 	output := route53.ListResourceRecordSetsOutput{} // TODO: Support optional input args.
-	if len(r.recordSets) <= 0 {
+	if len(r.recordSets) == 0 {
 		output.ResourceRecordSets = []*route53.ResourceRecordSet{}
 	} else if _, ok := r.recordSets[aws.StringValue(input.HostedZoneId)]; !ok {
 		output.ResourceRecordSets = []*route53.ResourceRecordSet{}

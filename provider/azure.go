@@ -149,7 +149,7 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 		return token, nil
 	}
 
-	// Try to retrive token with MSI.
+	// Try to retrieve token with MSI.
 	if cfg.UseManagedIdentityExtension {
 		log.Info("Using managed identity extension to retrieve access token for Azure API.")
 		msiEndpoint, err := adal.GetMSIVMEndpoint()
@@ -193,7 +193,7 @@ func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				log.Error("Skipping invalid record set with nil name or type.")
 				return true
 			}
-			recordType := strings.TrimLeft(*recordSet.Type, "Microsoft.Network/dnszones/")
+			recordType := strings.TrimPrefix(*recordSet.Type, "Microsoft.Network/dnszones/")
 			if !supportedRecordType(recordType) {
 				return true
 			}
@@ -208,7 +208,7 @@ func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				ttl = endpoint.TTL(*recordSet.TTL)
 			}
 
-			ep := endpoint.NewEndpointWithTTL(name, recordType, endpoint.TTL(ttl), targets...)
+			ep := endpoint.NewEndpointWithTTL(name, recordType, ttl, targets...)
 			log.Debugf(
 				"Found %s record for '%s' with target '%s'.",
 				ep.RecordType,
