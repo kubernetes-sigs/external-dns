@@ -60,7 +60,7 @@ func (cs *connectorSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		return nil, err
 	}
 
-	log.Debugf("Recieved endpoints: %#v", endpoints)
+	log.Debugf("Received endpoints: %#v", endpoints)
 
 	return endpoints, nil
 }

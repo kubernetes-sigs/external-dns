@@ -237,10 +237,10 @@ func (p *AlibabaCloudProvider) refreshStsToken(sleepTime time.Duration) {
 		sleepTime = p.nextExpire.Sub(nowTime)
 		p.clientLock.RUnlock()
 		log.Infof("Distance expiration time %v", sleepTime)
-		if sleepTime < time.Duration(10*time.Minute) {
-			sleepTime = time.Duration(time.Second * 1)
+		if sleepTime < 10*time.Minute {
+			sleepTime = time.Second * 1
 		} else {
-			sleepTime = time.Duration(9 * time.Minute)
+			sleepTime = 9 * time.Minute
 			log.Info("Next fetch sts sleep interval : ", sleepTime.String())
 			continue
 		}

@@ -106,7 +106,7 @@ func (p *AzurePrivateDNSProvider) Records() (endpoints []*endpoint.Endpoint, _ e
 				log.Debugf("Skipping invalid record set with missing type.")
 				return
 			}
-			recordType = strings.TrimLeft(*recordSet.Type, "Microsoft.Network/privateDnsZones")
+			recordType = strings.TrimPrefix(*recordSet.Type, "Microsoft.Network/privateDnsZones")
 
 			var name string
 			if recordSet.Name == nil {
@@ -126,7 +126,7 @@ func (p *AzurePrivateDNSProvider) Records() (endpoints []*endpoint.Endpoint, _ e
 				ttl = endpoint.TTL(*recordSet.TTL)
 			}
 
-			ep := endpoint.NewEndpointWithTTL(name, recordType, endpoint.TTL(ttl), targets...)
+			ep := endpoint.NewEndpointWithTTL(name, recordType, ttl, targets...)
 			log.Debugf(
 				"Found %s record for '%s' with target '%s'.",
 				ep.RecordType,
