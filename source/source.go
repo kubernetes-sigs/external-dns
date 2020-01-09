@@ -22,6 +22,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -65,7 +66,7 @@ func getTTLFromAnnotations(annotations map[string]string) (endpoint.TTL, error) 
 	if !exists {
 		return ttlNotConfigured, nil
 	}
-	ttlValue, err := strconv.ParseInt(ttlAnnotation, 10, 64)
+	ttlValue, err := parseTTL(ttlAnnotation)
 	if err != nil {
 		return ttlNotConfigured, fmt.Errorf("\"%v\" is not a valid TTL value", ttlAnnotation)
 	}
@@ -73,6 +74,21 @@ func getTTLFromAnnotations(annotations map[string]string) (endpoint.TTL, error) 
 		return ttlNotConfigured, fmt.Errorf("TTL value must be between [%d, %d]", ttlMinimum, ttlMaximum)
 	}
 	return endpoint.TTL(ttlValue), nil
+}
+
+// parseTTL parses TTL from string, returning duration in seconds.
+// parseTTL supports both integers like "600" and durations based
+// on Go Duration like "10m", hence "600" and "10m" represent the same value.
+//
+// Note: for durations like "1.5s" the fraction is omitted (resulting in 1 second
+// for the example).
+func parseTTL(s string) (ttlSeconds int64, err error) {
+	ttlDuration, err := time.ParseDuration(s)
+	if err != nil {
+		return strconv.ParseInt(s, 10, 64)
+	}
+
+	return int64(ttlDuration.Seconds()), nil
 }
 
 func getHostnamesFromAnnotations(annotations map[string]string) []string {

@@ -815,6 +815,16 @@ func testIngressEndpoints(t *testing.T) {
 					dnsnames: []string{"example2.org"},
 					ips:      []string{"8.8.8.8"},
 				},
+				{
+					name:      "fake3",
+					namespace: namespace,
+					annotations: map[string]string{
+						targetAnnotationKey: "ingress-target.com",
+						ttlAnnotationKey:    "10s",
+					},
+					dnsnames: []string{"example3.org"},
+					ips:      []string{"8.8.4.4"},
+				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
@@ -826,6 +836,11 @@ func testIngressEndpoints(t *testing.T) {
 					DNSName:   "example2.org",
 					Targets:   endpoint.Targets{"ingress-target.com"},
 					RecordTTL: endpoint.TTL(1),
+				},
+				{
+					DNSName:   "example3.org",
+					Targets:   endpoint.Targets{"ingress-target.com"},
+					RecordTTL: endpoint.TTL(10),
 				},
 			},
 		},
