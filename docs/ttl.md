@@ -2,6 +2,7 @@ Configure DNS record TTL (Time-To-Live)
 =======================================
 
 An optional annotation `external-dns.alpha.kubernetes.io/ttl` is available to customize the TTL value of a DNS record.
+TTL is specified as an integer encoded as string representing seconds.
 
 To configure it, simply annotate a service/ingress, e.g.:
 
@@ -15,7 +16,21 @@ metadata:
   ...
 ```
 
-TTL must be a positive integer encoded as string.
+TTL can also be specified as a duration value parsable by Golang [time.ParseDuration](https://golang.org/pkg/time/#ParseDuration):
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com.
+    external-dns.alpha.kubernetes.io/ttl: "1m"
+  ...
+```
+
+Both examples result in the same value of 60 seconds TTL.
+
+TTL must be a positive value.
 
 Providers
 =========

@@ -933,6 +933,15 @@ func testGatewayEndpoints(t *testing.T) {
 					},
 					dnsnames: [][]string{{"example2.org"}},
 				},
+				{
+					name:      "fake3",
+					namespace: namespace,
+					annotations: map[string]string{
+						targetAnnotationKey: "gateway-target.com",
+						ttlAnnotationKey:    "10s",
+					},
+					dnsnames: [][]string{{"example3.org"}},
+				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
@@ -944,6 +953,11 @@ func testGatewayEndpoints(t *testing.T) {
 					DNSName:   "example2.org",
 					Targets:   endpoint.Targets{"gateway-target.com"},
 					RecordTTL: endpoint.TTL(1),
+				},
+				{
+					DNSName:   "example3.org",
+					Targets:   endpoint.Targets{"gateway-target.com"},
+					RecordTTL: endpoint.TTL(10),
 				},
 			},
 		},
