@@ -298,7 +298,8 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 				ep := endpoint.
 					NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), endpoint.RecordTypeCNAME, ttl, aws.StringValue(r.AliasTarget.DNSName)).
 					WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", aws.BoolValue(r.AliasTarget.EvaluateTargetHealth))).
-					WithProviderSpecific(providerSpecificAlias, "true")
+					WithProviderSpecific(providerSpecificAlias, "true").
+					WithProviderSpecific(providerSpecificTargetHostedZone, aws.StringValue(r.AliasTarget.HostedZoneId))
 				newEndpoints = append(newEndpoints, ep)
 			}
 
