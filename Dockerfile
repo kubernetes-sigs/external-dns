@@ -15,6 +15,8 @@
 # builder image
 FROM golang:1.13 as builder
 
+ARG VERSION
+
 WORKDIR /sigs.k8s.io/external-dns
 
 COPY . .
