@@ -60,10 +60,10 @@ build.push: build.docker
 	docker push "$(IMAGE):$(VERSION)"
 
 build.docker:
-	docker build --rm --tag "$(IMAGE):$(VERSION)" .
+	docker build --rm --tag "$(IMAGE):$(VERSION)" --build-arg VERSION="$(VERSION)" .
 
 build.mini:
-	docker build --rm --tag "$(IMAGE):$(VERSION)-mini" -f Dockerfile.mini .
+	docker build --rm --tag "$(IMAGE):$(VERSION)-mini" --build-arg VERSION="$(VERSION)" -f Dockerfile.mini .
 
 clean:
 	@rm -rf build
@@ -72,7 +72,7 @@ clean:
 .PHONY: release.staging
 
 release.staging:
-	IMAGE=$(IMAGE_STAGING) VERSION=$(TAG) $(MAKE) build.docker build.push
+	IMAGE=$(IMAGE_STAGING) $(MAKE) build.docker build.push
 
 release.prod:
 	$(MAKE) build.docker build.push
