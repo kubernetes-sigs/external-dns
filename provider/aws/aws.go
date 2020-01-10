@@ -298,7 +298,8 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 				ep := endpoint.
 					NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), endpoint.RecordTypeCNAME, ttl, aws.StringValue(r.AliasTarget.DNSName)).
 					WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", aws.BoolValue(r.AliasTarget.EvaluateTargetHealth))).
-					WithProviderSpecific(providerSpecificAlias, "true")
+					WithProviderSpecific(providerSpecificAlias, "true").
+					WithProviderSpecific(providerSpecificTargetHostedZone, aws.StringValue(r.AliasTarget.HostedZoneId))
 				newEndpoints = append(newEndpoints, ep)
 			}
 
@@ -760,18 +761,15 @@ func useAlias(ep *endpoint.Endpoint, preferCNAME bool) bool {
 	return false
 }
 
-// isAWSAlias determines if a given hostname belongs to an AWS Alias record by doing an reverse lookup.
-func isAWSAlias(ep *endpoint.Endpoint, addrs []*endpoint.Endpoint) string {
-	if prop, exists := ep.GetProviderSpecificProperty("alias"); ep.RecordType == endpoint.RecordTypeCNAME && exists && prop.Value == "true" {
-		for _, addr := range addrs {
-			if len(ep.Targets) > 0 && addr.DNSName == ep.Targets[0] {
-				if hostedZoneID, ok := ep.GetProviderSpecificProperty("hostedZoneID"); ok {
-					return hostedZoneID.Value
-				}
-				if canonicalHostedZone := canonicalHostedZone(addr.Targets[0]); canonicalHostedZone != "" {
-					return canonicalHostedZone
-				}
-			}
+// isAWSAlias determines if a given hostname is an AWS Alias record
+func isAWSAlias(ep *endpoint.Endpoint) string {
+	prop, exists := ep.GetProviderSpecificProperty(providerSpecificAlias)
+	if exists && prop.Value == "true" && ep.RecordType == endpoint.RecordTypeCNAME && len(ep.Targets) > 0 {
+		// alias records can only point to canonical hosted zones (e.g. to ELBs) or other records in the same zone
+
+		if hostedZoneID, ok := ep.GetProviderSpecificProperty(providerSpecificTargetHostedZone); ok {
+			// existing Endpoint where we got the target hosted zone from the Route53 data
+			return hostedZoneID.Value
 		}
 
 		// check if the target is in a canonical hosted zone
