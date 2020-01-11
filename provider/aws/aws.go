@@ -298,8 +298,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 				ep := endpoint.
 					NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), endpoint.RecordTypeCNAME, ttl, aws.StringValue(r.AliasTarget.DNSName)).
 					WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", aws.BoolValue(r.AliasTarget.EvaluateTargetHealth))).
-					WithProviderSpecific(providerSpecificAlias, "true").
-					WithProviderSpecific(providerSpecificTargetHostedZone, aws.StringValue(r.AliasTarget.HostedZoneId))
+					WithProviderSpecific(providerSpecificAlias, "true")
 				newEndpoints = append(newEndpoints, ep)
 			}
 
@@ -367,6 +366,8 @@ func (p *AWSProvider) DeleteRecords(ctx context.Context, endpoints []*endpoint.E
 
 func (p *AWSProvider) doRecords(ctx context.Context, action string, endpoints []*endpoint.Endpoint) error {
 	zones, err := p.Zones(ctx)
+	p.ModifyEndpoints(endpoints)
+
 	if err != nil {
 		return err
 	}
@@ -482,6 +483,30 @@ func (p *AWSProvider) newChanges(action string, endpoints []*endpoint.Endpoint, 
 	return changes
 }
 
+func (p *AWSProvider) ModifyEndpoints(endpoints []*endpoint.Endpoint) {
+	for _, ep := range endpoints {
+		alias := false
+		if _, ok := ep.GetProviderSpecificProperty(providerSpecificAlias); ok {
+			alias = true
+		} else if useAlias(ep, p.preferCNAME) {
+			alias = true
+			log.Debugf("Modifying endpoint: %v, setting %s=true", ep, providerSpecificAlias)
+			ep.ProviderSpecific = append(ep.ProviderSpecific, endpoint.ProviderSpecificProperty{
+				Name:  providerSpecificAlias,
+				Value: "true",
+			})
+		}
+
+		if _, ok := ep.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); alias && !ok {
+			log.Debugf("Modifying endpoint: %v, setting %s=%t", ep, providerSpecificEvaluateTargetHealth, p.evaluateTargetHealth)
+			ep.ProviderSpecific = append(ep.ProviderSpecific, endpoint.ProviderSpecificProperty{
+				Name:  providerSpecificEvaluateTargetHealth,
+				Value: fmt.Sprintf("%t", p.evaluateTargetHealth),
+			})
+		}
+	}
+}
+
 // newChange returns a route53 Change and a boolean indicating if there should also be a change to a AAAA record
 // returned Change is based on the given record by the given action, e.g.
 // action=ChangeActionCreate returns a change for creation of the record and
@@ -494,7 +519,7 @@ func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint, recordsCac
 		},
 	}
 	dualstack := false
-	if useAlias(ep, p.preferCNAME) {
+	if targetHostedZone := isAWSAlias(ep); targetHostedZone != "" {
 		evalTargetHealth := p.evaluateTargetHealth
 		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); ok {
 			evalTargetHealth = prop.Value == "true"
@@ -503,19 +528,11 @@ func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint, recordsCac
 		if val, ok := ep.Labels[endpoint.DualstackLabelKey]; ok {
 			dualstack = val == "true"
 		}
-
-		change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
-		change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
-			DNSName:              aws.String(ep.Targets[0]),
-			HostedZoneId:         aws.String(canonicalHostedZone(ep.Targets[0])),
-			EvaluateTargetHealth: aws.Bool(evalTargetHealth),
-		}
-	} else if targetHostedZone := isAWSAlias(ep); targetHostedZone != "" {
 		change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
 		change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
 			DNSName:              aws.String(ep.Targets[0]),
 			HostedZoneId:         aws.String(cleanZoneID(targetHostedZone)),
-			EvaluateTargetHealth: aws.Bool(p.evaluateTargetHealth),
+			EvaluateTargetHealth: aws.Bool(evalTargetHealth),
 		}
 	} else {
 		change.ResourceRecordSet.Type = aws.String(ep.RecordType)
@@ -681,7 +698,7 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Ch
 				// if it's not, this will fail
 				rrset := *c.ResourceRecordSet
 				aliasTarget := *rrset.AliasTarget
-				aliasTarget.HostedZoneId = z.Id
+				aliasTarget.HostedZoneId = aws.String(cleanZoneID(aws.StringValue(z.Id)))
 				rrset.AliasTarget = &aliasTarget
 				c = &route53.Change{
 					Action:            c.Action,

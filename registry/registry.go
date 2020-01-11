@@ -20,9 +20,9 @@ import (
 	"context"
 
 	log "github.com/sirupsen/logrus"
-
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 // Registry is an interface which should enables ownership concept in external-dns
@@ -30,6 +30,7 @@ import (
 // each entry includes owner information
 // ApplyChanges(changes *plan.Changes) propagates the changes to the DNS Provider API and correspondingly updates ownership depending on type of registry being used
 type Registry interface {
+	Provider() *provider.Provider
 	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 	ApplyChanges(ctx context.Context, changes *plan.Changes) error
 	PropertyValuesEqual(attribute string, previous string, current string) bool

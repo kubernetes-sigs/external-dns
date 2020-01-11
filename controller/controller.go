@@ -139,6 +139,12 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	}
 	sourceEndpointsTotal.Set(float64(len(endpoints)))
 
+	if prov := c.Registry.Provider(); prov != nil {
+		if endpointModifyingProvider, ok := (*prov).(provider.EndpointModifyingProvider); ok {
+			endpointModifyingProvider.ModifyEndpoints(endpoints)
+		}
+	}
+
 	plan := &plan.Plan{
 		Policies:           []plan.Policy{c.Policy},
 		Current:            records,
