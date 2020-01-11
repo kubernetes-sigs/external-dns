@@ -44,6 +44,11 @@ type EndpointModifyingProvider interface {
 	ModifyEndpoints([]*endpoint.Endpoint)
 }
 
+type EndpointModifyingProvider interface {
+	Provider
+	ModifyEndpoints([]*endpoint.Endpoint)
+}
+
 type contextKey struct {
 	name string
 }
