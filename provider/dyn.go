@@ -588,7 +588,7 @@ func (d *dynProviderState) commit(client *dynect.Client) error {
 // Records makes on average C + 2*Z  requests (Z = number of zones): 1 login + 1 fetchAllRecords
 // A cache is used to avoid querying for every single record found. C is proportional to the number
 // of expired/changed records
-func (d *dynProviderState) Records() ([]*endpoint.Endpoint, error) {
+func (d *dynProviderState) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	client, err := d.login()
 	if err != nil {
 		return nil, err

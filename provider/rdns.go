@@ -113,7 +113,7 @@ func NewRDNSProvider(config RDNSConfig) (*RDNSProvider, error) {
 
 // Records returns all DNS records found in Rancher DNS(RDNS) etcdv3 backend. Depending on the record fields
 // it may be mapped to one or two records of type A, TXT, A+TXT.
-func (p RDNSProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p RDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	var result []*endpoint.Endpoint
 
 	rs, err := p.client.List(p.rootDomain)

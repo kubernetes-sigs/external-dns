@@ -199,7 +199,7 @@ func (p *GoogleProvider) Zones() (map[string]*dns.ManagedZone, error) {
 }
 
 // Records returns the list of records in all relevant zones.
-func (p *GoogleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
+func (p *GoogleProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.Zones()
 	if err != nil {
 		return nil, err

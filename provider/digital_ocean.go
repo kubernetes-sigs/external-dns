@@ -94,7 +94,7 @@ func (p *DigitalOceanProvider) Zones() ([]godo.Domain, error) {
 }
 
 // Records returns the list of records in a given zone.
-func (p *DigitalOceanProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p *DigitalOceanProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.Zones()
 	if err != nil {
 		return nil, err

@@ -132,16 +132,18 @@ func TestNS1Records(t *testing.T) {
 		domainFilter: NewDomainFilter([]string{"foo.com."}),
 		zoneIDFilter: NewZoneIDFilter([]string{""}),
 	}
-	records, err := provider.Records()
+	ctx := context.Background()
+
+	records, err := provider.Records(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(records))
 
 	provider.client = &MockNS1GetZoneFail{}
-	_, err = provider.Records()
+	_, err = provider.Records(ctx)
 	require.Error(t, err)
 
 	provider.client = &MockNS1ListZonesFail{}
-	_, err = provider.Records()
+	_, err = provider.Records(ctx)
 	require.Error(t, err)
 }
 

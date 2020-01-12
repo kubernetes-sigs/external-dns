@@ -233,7 +233,7 @@ func testInMemoryRecords(t *testing.T) {
 			im.client = c
 			f := filter{domain: ti.zone}
 			im.filter = &f
-			records, err := im.Records()
+			records, err := im.Records(context.Background())
 			if ti.expectError {
 				assert.Nil(t, records)
 				assert.EqualError(t, err, ErrZoneNotFound.Error())

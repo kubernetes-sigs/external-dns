@@ -113,7 +113,7 @@ func TestARecordTranslation(t *testing.T) {
 		rootDomain: "lb.rancher.cloud",
 	}
 
-	endpoints, err := provider.Records()
+	endpoints, err := provider.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +148,7 @@ func TestTXTRecordTranslation(t *testing.T) {
 		rootDomain: "lb.rancher.cloud",
 	}
 
-	endpoints, err := provider.Records()
+	endpoints, err := provider.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,7 +184,7 @@ func TestAWithTXTRecordTranslation(t *testing.T) {
 		rootDomain: "lb.rancher.cloud",
 	}
 
-	endpoints, err := provider.Records()
+	endpoints, err := provider.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +248,7 @@ func TestRDNSApplyChanges(t *testing.T) {
 		},
 	}
 
-	records, _ := provider.Records()
+	records, _ := provider.Records(context.Background())
 	for _, ep := range records {
 		if ep.DNSName == "p1xaf1.lb.rancher.cloud" {
 			changes2.UpdateOld = append(changes2.UpdateOld, ep)

@@ -45,6 +45,7 @@ func testNoopInit(t *testing.T) {
 }
 
 func testNoopRecords(t *testing.T) {
+	ctx := context.Background()
 	p := provider.NewInMemoryProvider()
 	p.CreateZone("org")
 	providerRecords := []*endpoint.Endpoint{
@@ -54,13 +55,13 @@ func testNoopRecords(t *testing.T) {
 			RecordType: endpoint.RecordTypeCNAME,
 		},
 	}
-	p.ApplyChanges(context.Background(), &plan.Changes{
+	p.ApplyChanges(ctx, &plan.Changes{
 		Create: providerRecords,
 	})
 
 	r, _ := NewNoopRegistry(p)
 
-	eps, err := r.Records()
+	eps, err := r.Records(ctx)
 	require.NoError(t, err)
 	assert.True(t, testutils.SameEndpoints(eps, providerRecords))
 }
@@ -131,6 +132,6 @@ func testNoopApplyChanges(t *testing.T) {
 			},
 		},
 	}))
-	res, _ := p.Records()
+	res, _ := p.Records(ctx)
 	assert.True(t, testutils.SameEndpoints(res, expectedUpdate))
 }

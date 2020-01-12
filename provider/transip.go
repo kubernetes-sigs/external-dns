@@ -221,7 +221,7 @@ func (p *TransIPProvider) Zones() ([]transip.Domain, error) {
 }
 
 // Records returns the list of records in a given zone.
-func (p *TransIPProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p *TransIPProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.Zones()
 	if err != nil {
 		return nil, err

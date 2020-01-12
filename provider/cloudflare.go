@@ -176,7 +176,7 @@ func (p *CloudFlareProvider) Zones() ([]cloudflare.Zone, error) {
 }
 
 // Records returns the list of records.
-func (p *CloudFlareProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.Zones()
 	if err != nil {
 		return nil, err
