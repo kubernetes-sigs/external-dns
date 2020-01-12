@@ -33,7 +33,7 @@ type inMemoryProvider struct {
 	onApplyChanges func(changes *plan.Changes)
 }
 
-func (p *inMemoryProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p *inMemoryProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return p.endpoints, nil
 }
 
@@ -101,7 +101,7 @@ func TestAWSSDRegistryTest_Records(t *testing.T) {
 	}
 
 	r, _ := NewAWSSDRegistry(p, "owner")
-	records, _ := r.Records()
+	records, _ := r.Records(context.Background())
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 }

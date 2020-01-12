@@ -308,7 +308,7 @@ func (p designateProvider) getHostZoneID(hostname string, managedZones map[strin
 }
 
 // Records returns the list of records.
-func (p designateProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p designateProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	var result []*endpoint.Endpoint
 	managedZones, err := p.getZones()
 	if err != nil {

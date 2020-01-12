@@ -172,7 +172,7 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 }
 
 // Records returns the list of endpoints
-func (ep *ExoscaleProvider) Records() ([]*endpoint.Endpoint, error) {
+func (ep *ExoscaleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := make([]*endpoint.Endpoint, 0)
 
 	domains, err := ep.client.GetDomains(context.TODO())

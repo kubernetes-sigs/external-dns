@@ -257,7 +257,7 @@ func TestLinodeRecords(t *testing.T) {
 		mock.Anything,
 	).Return(createBazRecords(), nil).Once()
 
-	actual, err := provider.Records()
+	actual, err := provider.Records(context.Background())
 	require.NoError(t, err)
 
 	expected := []*endpoint.Endpoint{

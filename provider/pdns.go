@@ -412,7 +412,7 @@ func (p *PDNSProvider) mutateRecords(endpoints []*endpoint.Endpoint, changetype 
 }
 
 // Records returns all DNS records controlled by the configured PDNS server (for all zones)
-func (p *PDNSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
+func (p *PDNSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
 
 	zones, _, err := p.client.ListZones()
 	if err != nil {

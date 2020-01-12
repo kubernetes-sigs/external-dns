@@ -90,8 +90,7 @@ func NewAzurePrivateDNSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFi
 // Records gets the current records.
 //
 // Returns the current records or an error if the operation failed.
-func (p *AzurePrivateDNSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
-	ctx := context.Background()
+func (p *AzurePrivateDNSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.zones(ctx)
 	if err != nil {
 		return nil, err

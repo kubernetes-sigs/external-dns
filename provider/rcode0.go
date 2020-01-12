@@ -96,7 +96,7 @@ func (p *RcodeZeroProvider) Zones() ([]*rc0.Zone, error) {
 // Records returns resource records
 //
 // Decrypts TXT records if TXT-Encrypt flag is set and key is provided
-func (p *RcodeZeroProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p *RcodeZeroProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 
 	zones, err := p.Zones()
 	if err != nil {

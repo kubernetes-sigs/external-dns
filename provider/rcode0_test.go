@@ -73,7 +73,9 @@ func TestRcodeZeroProvider_Records(t *testing.T) {
 		}),
 	}
 
-	endpoints, err := provider.Records() // should return 6 rrs
+	ctx := context.Background()
+
+	endpoints, err := provider.Records(ctx) // should return 6 rrs
 
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
@@ -82,7 +84,7 @@ func TestRcodeZeroProvider_Records(t *testing.T) {
 
 	mockRRSetService.TestErrorReturned = true
 
-	_, err = provider.Records()
+	_, err = provider.Records(ctx)
 	if err == nil {
 		t.Errorf("expected to fail, %s", err)
 	}

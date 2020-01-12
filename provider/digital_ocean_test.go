@@ -509,15 +509,16 @@ func TestDigitalOceanAllRecords(t *testing.T) {
 	provider := &DigitalOceanProvider{
 		Client: &mockDigitalOceanClient{},
 	}
+	ctx := context.Background()
 
-	records, err := provider.Records()
+	records, err := provider.Records(ctx)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
 	require.Equal(t, 5, len(records))
 
 	provider.Client = &mockDigitalOceanRecordsFail{}
-	_, err = provider.Records()
+	_, err = provider.Records(ctx)
 	if err == nil {
 		t.Errorf("expected to fail, %s", err)
 	}

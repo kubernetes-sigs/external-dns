@@ -287,7 +287,7 @@ func TestOCIRecords(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			provider := newOCIProvider(&mockOCIDNSClient{}, tc.domainFilter, tc.zoneIDFilter, false)
-			endpoints, err := provider.Records()
+			endpoints, err := provider.Records(context.Background())
 			require.NoError(t, err)
 			require.ElementsMatch(t, tc.expected, endpoints)
 		})
@@ -829,9 +829,11 @@ func TestOCIApplyChanges(t *testing.T) {
 				NewZoneIDFilter([]string{""}),
 				tc.dryRun,
 			)
-			err := provider.ApplyChanges(context.Background(), tc.changes)
+
+			ctx := context.Background()
+			err := provider.ApplyChanges(ctx, tc.changes)
 			require.Equal(t, tc.err, err)
-			endpoints, err := provider.Records()
+			endpoints, err := provider.Records(ctx)
 			require.NoError(t, err)
 			require.ElementsMatch(t, tc.expectedEndpoints, endpoints)
 		})

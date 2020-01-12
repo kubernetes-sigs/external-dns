@@ -303,7 +303,7 @@ func TestDesignateRecords(t *testing.T) {
 		},
 	}
 
-	endpoints, err := client.ToProvider().Records()
+	endpoints, err := client.ToProvider().Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
