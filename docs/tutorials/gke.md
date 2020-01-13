@@ -328,3 +328,6 @@ $ gcloud dns record-sets transaction remove ns-cloud-e{1..4}.googledomains.com. 
     --name "external-dns-test.gcp.zalan.do." --ttl 300 --type NS --zone "gcp-zalan-do"
 $ gcloud dns record-sets transaction execute --zone "gcp-zalan-do"
 ```
+
+### User Demo How-To Blogs and Examples
+* A full demo on GKE Kubernetes + CloudDNS + SA-Permissions [How-to Kubernetes with DNS management (ssl-manager pre-req)](https://medium.com/@jpantjsoha/how-to-kubernetes-with-dns-management-for-gitops-31239ea75d8d)
