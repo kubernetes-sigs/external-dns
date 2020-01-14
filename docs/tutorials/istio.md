@@ -1,5 +1,5 @@
-# Configuring ExternalDNS to use the Istio Gateway Source
-This tutorial describes how to configure ExternalDNS to use the Istio Gateway source.
+# Configuring ExternalDNS to use the Istio Gateway or VirtualService Source
+This tutorial describes how to configure ExternalDNS to use the Istio Gateway or VirtualService source.
 It is meant to supplement the other provider-specific setup tutorials.
 
 **Note:** Using the Istio Gateway source requires Istio >=1.0.0.
@@ -32,7 +32,8 @@ spec:
         args:
         - --source=service
         - --source=ingress
-        - --source=istio-gateway
+        - --source=istio-gateway        # chose on
+        - --source=istio-virtualservice # or both
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
@@ -63,7 +64,8 @@ rules:
   resources: ["nodes"]
   verbs: ["list"]
 - apiGroups: ["networking.istio.io"]
-  resources: ["gateways"]
+  # chose one or both; using the VirtualService source requires both:
+  resources: ["gateways", "virtualservices"]
   verbs: ["get","watch","list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -101,7 +103,8 @@ spec:
         args:
         - --source=service
         - --source=ingress
-        - --source=istio-gateway
+        - --source=istio-gateway        # chose one
+        - --source=istio-virtualservice # or both
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
@@ -130,8 +133,7 @@ kubectl patch clusterrole external-dns --type='json' \
   -p='[{"op": "add", "path": "/rules/4", "value": { "apiGroups": [ "networking.istio.io"], "resources": ["gateways"],"verbs": ["get", "watch", "list" ]} }]'
 ```
 
-### Verify External DNS works (Gateway example)
-
+### Verify External DNS works
 Follow the [Istio ingress traffic tutorial](https://istio.io/docs/tasks/traffic-management/ingress/) 
 to deploy a sample service that will be exposed outside of the service mesh.
 The following are relevant snippets from that tutorial.
@@ -147,13 +149,16 @@ Otherwise:
 $ kubectl apply -f <(istioctl kube-inject -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/httpbin/httpbin.yaml)
 ```
 
-#### Create an Istio Gateway:
+#### Using a Gateway as a source
+
+##### Create an Istio Gateway:
 ```bash
-$ cat <<EOF | kubectl apply -f -
+$ cat <<EOF | kubectlapply -f -
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
   name: httpbin-gateway
+  namespace: istio-system
 spec:
   selector:
     istio: ingressgateway # use Istio default gateway implementation
@@ -163,11 +168,11 @@ spec:
       name: http
       protocol: HTTP
     hosts:
-    - "httpbin.example.com"
+    - "httpbin.example.com" # this is used by external-dns to extract DNS names
 EOF
 ```
 
-#### Configure routes for traffic entering via the Gateway:
+##### Configure routes for traffic entering via the Gateway:
 ```bash
 $ cat <<EOF | kubectl apply -f -
 apiVersion: networking.istio.io/v1alpha3
@@ -178,7 +183,56 @@ spec:
   hosts:
   - "httpbin.example.com"
   gateways:
-  - httpbin-gateway
+  - istio-system/httpbin-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /status
+    - uri:
+        prefix: /delay
+    route:
+    - destination:
+        port:
+          number: 8000
+        host: httpbin
+EOF
+```
+
+#### Using a VirtualService as a source
+
+##### Create an Istio Gateway:
+```bash
+$ cat <<EOF | kubectl apply -f -
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: httpbin-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway # use Istio default gateway implementation
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+EOF
+```
+
+##### Configure routes for traffic entering via the Gateway:
+```bash
+$ cat <<EOF | kubectl apply -f -
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: httpbin
+spec:
+  hosts:
+  - "httpbin.example.com" # this is used by external-dns to extract DNS names
+  gateways:
+  - istio-system/httpbin-gateway
   http:
   - match:
     - uri:
