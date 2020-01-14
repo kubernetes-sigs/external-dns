@@ -82,6 +82,9 @@ spec:
       containers:
       - name: external-dns
         image: registry.opensource.zalan.do/teapot/external-dns:latest
+        env:
+          - name: AWS_REGION
+            value: us-east-1 # put your CloudMap NameSpace region
         args:
         - --source=service
         - --source=ingress
@@ -149,6 +152,9 @@ spec:
       containers:
       - name: external-dns
         image: registry.opensource.zalan.do/teapot/external-dns:latest
+        env:
+          - name: AWS_REGION
+            value: us-east-1 # put your CloudMap NameSpace region
         args:
         - --source=service
         - --source=ingress
