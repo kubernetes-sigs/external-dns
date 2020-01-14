@@ -512,7 +512,7 @@ func testGatewayEndpoints(t *testing.T) {
 			lbServices: []fakeIngressGatewayService{
 				{
 					namespace: namespace,
-					ips: []string{"8.8.8.8"},
+					ips:       []string{"8.8.8.8"},
 				},
 			},
 			configItems: []fakeGatewayConfig{
@@ -539,7 +539,7 @@ func testGatewayEndpoints(t *testing.T) {
 			lbServices: []fakeIngressGatewayService{
 				{
 					namespace: namespace,
-					ips: []string{"8.8.8.8"},
+					ips:       []string{"8.8.8.8"},
 				},
 			},
 			configItems: []fakeGatewayConfig{
@@ -561,7 +561,7 @@ func testGatewayEndpoints(t *testing.T) {
 			lbServices: []fakeIngressGatewayService{
 				{
 					namespace: namespace,
-					ips: []string{"8.8.8.8"},
+					ips:       []string{"8.8.8.8"},
 				},
 			},
 			configItems: []fakeGatewayConfig{
@@ -584,7 +584,7 @@ func testGatewayEndpoints(t *testing.T) {
 			lbServices: []fakeIngressGatewayService{
 				{
 					namespace: namespace,
-					ips: []string{"8.8.8.8"},
+					ips:       []string{"8.8.8.8"},
 				},
 			},
 			configItems: []fakeGatewayConfig{
@@ -611,7 +611,7 @@ func testGatewayEndpoints(t *testing.T) {
 			lbServices: []fakeIngressGatewayService{
 				{
 					namespace: namespace,
-					ips: []string{"8.8.8.8"},
+					ips:       []string{"8.8.8.8"},
 				},
 			},
 			configItems: []fakeGatewayConfig{
@@ -632,7 +632,7 @@ func testGatewayEndpoints(t *testing.T) {
 			lbServices: []fakeIngressGatewayService{
 				{
 					namespace: namespace,
-					ips: []string{"8.8.8.8"},
+					ips:       []string{"8.8.8.8"},
 				},
 			},
 			configItems: []fakeGatewayConfig{
@@ -658,7 +658,7 @@ func testGatewayEndpoints(t *testing.T) {
 			lbServices: []fakeIngressGatewayService{
 				{
 					namespace: namespace,
-					ips: []string{"8.8.8.8"},
+					ips:       []string{"8.8.8.8"},
 				},
 			},
 			configItems: []fakeGatewayConfig{
@@ -711,7 +711,7 @@ func testGatewayEndpoints(t *testing.T) {
 			lbServices: []fakeIngressGatewayService{
 				{
 					namespace: namespace,
-					ips: []string{"8.8.8.8"},
+					ips:       []string{"8.8.8.8"},
 				},
 			},
 			configItems: []fakeGatewayConfig{
@@ -733,7 +733,7 @@ func testGatewayEndpoints(t *testing.T) {
 			lbServices: []fakeIngressGatewayService{
 				{
 					namespace: namespace,
-					ips: []string{"8.8.8.8"},
+					ips:       []string{"8.8.8.8"},
 				},
 			},
 			configItems: []fakeGatewayConfig{
@@ -764,7 +764,7 @@ func testGatewayEndpoints(t *testing.T) {
 			lbServices: []fakeIngressGatewayService{
 				{
 					namespace: namespace,
-					ips: []string{"8.8.8.8"},
+					ips:       []string{"8.8.8.8"},
 				},
 			},
 			configItems: []fakeGatewayConfig{
@@ -819,7 +819,7 @@ func testGatewayEndpoints(t *testing.T) {
 			lbServices: []fakeIngressGatewayService{
 				{
 					namespace: namespace,
-					ips: []string{"8.8.8.8"},
+					ips:       []string{"8.8.8.8"},
 				},
 			},
 			configItems: []fakeGatewayConfig{
@@ -872,7 +872,7 @@ func testGatewayEndpoints(t *testing.T) {
 			lbServices: []fakeIngressGatewayService{
 				{
 					namespace: namespace,
-					ips: []string{"1.2.3.4"},
+					ips:       []string{"1.2.3.4"},
 				},
 			},
 			configItems: []fakeGatewayConfig{
@@ -904,7 +904,7 @@ func testGatewayEndpoints(t *testing.T) {
 			lbServices: []fakeIngressGatewayService{
 				{
 					namespace: namespace,
-					ips: []string{"1.2.3.4"},
+					ips:       []string{"1.2.3.4"},
 				},
 			},
 			configItems: []fakeGatewayConfig{
@@ -941,7 +941,7 @@ func testGatewayEndpoints(t *testing.T) {
 			lbServices: []fakeIngressGatewayService{
 				{
 					namespace: namespace,
-					ips: []string{},
+					ips:       []string{},
 				},
 			},
 			configItems: []fakeGatewayConfig{
@@ -974,7 +974,7 @@ func testGatewayEndpoints(t *testing.T) {
 			lbServices: []fakeIngressGatewayService{
 				{
 					namespace: namespace,
-					ips: []string{"8.8.8.8"},
+					ips:       []string{"8.8.8.8"},
 				},
 			},
 			configItems: []fakeGatewayConfig{
@@ -1233,6 +1233,7 @@ type fakeIngressGatewayService struct {
 	hostnames []string
 	namespace string
 	name      string
+	selector  map[string]string
 }
 
 func (ig fakeIngressGatewayService) Service() *v1.Service {
@@ -1245,6 +1246,9 @@ func (ig fakeIngressGatewayService) Service() *v1.Service {
 			LoadBalancer: v1.LoadBalancerStatus{
 				Ingress: []v1.LoadBalancerIngress{},
 			},
+		},
+		Spec: v1.ServiceSpec{
+			Selector: ig.selector,
 		},
 	}
 

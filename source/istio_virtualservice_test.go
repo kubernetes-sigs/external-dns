@@ -22,7 +22,7 @@ import (
 	istionetworking "istio.io/api/networking/v1alpha3"
 	istiomodel "istio.io/istio/pilot/pkg/model"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/endpoint"
 
 	//"strconv"
 	//"sync"
@@ -88,7 +88,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 	suite.gwconfig = (fakeGatewayConfig{
 		name:      "foo-gateway-with-targets",
 		namespace: "istio-system",
-		dnsnames:  [][]string{{}},
+		dnsnames:  [][]string{{"*"}},
 	}).Config()
 	_, err = fakeIstioClient.Create(suite.gwconfig)
 	suite.NoError(err, "should succeed")
@@ -114,6 +114,7 @@ func (suite *VirtualServiceSuite) TestResourceLabelIsSet() {
 
 func TestVirtualService(t *testing.T) {
 	suite.Run(t, new(VirtualServiceSuite))
+	t.Run("virtualServiceBindsToGateway", testVirtualServiceBindsToGateway)
 	t.Run("endpointsFromVirtualServiceConfig", testEndpointsFromVirtualServiceConfig)
 	t.Run("Endpoints", testVirtualServiceEndpoints)
 }
@@ -176,6 +177,189 @@ func TestNewIstioVirtualServiceSource(t *testing.T) {
 	}
 }
 
+func testVirtualServiceBindsToGateway(t *testing.T) {
+	for _, ti := range []struct {
+		title    string
+		gwconfig fakeGatewayConfig
+		vsconfig fakeVirtualServiceConfig
+		vsHost   string
+		expected bool
+	}{
+		{
+			title: "matching host *",
+			gwconfig: fakeGatewayConfig{
+				dnsnames: [][]string{{"*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{},
+			vsHost:   "foo.bar",
+			expected: true,
+		},
+		{
+			title: "matching host *.<domain>",
+			gwconfig: fakeGatewayConfig{
+				dnsnames: [][]string{{"*.foo.bar"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{},
+			vsHost:   "baz.foo.bar",
+			expected: true,
+		},
+		{
+			title: "not matching host *.<domain>",
+			gwconfig: fakeGatewayConfig{
+				dnsnames: [][]string{{"*.foo.bar"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{},
+			vsHost:   "foo.bar",
+			expected: false,
+		},
+		{
+			title: "not matching host *.<domain>",
+			gwconfig: fakeGatewayConfig{
+				dnsnames: [][]string{{"*.foo.bar"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{},
+			vsHost:   "bazfoo.bar",
+			expected: false,
+		},
+		{
+			title: "not matching host *.<domain>",
+			gwconfig: fakeGatewayConfig{
+				dnsnames: [][]string{{"*.foo.bar"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{},
+			vsHost:   "*foo.bar",
+			expected: false,
+		},
+		{
+			title: "matching host */*",
+			gwconfig: fakeGatewayConfig{
+				dnsnames: [][]string{{"*/*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{},
+			vsHost:   "foo.bar",
+			expected: true,
+		},
+		{
+			title: "matching host <namespace>/*",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"myns/*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				namespace: "myns",
+			},
+			vsHost:   "foo.bar",
+			expected: true,
+		},
+		{
+			title: "matching host ./*",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"./*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				namespace: "istio-system",
+			},
+			vsHost:   "foo.bar",
+			expected: true,
+		},
+		{
+			title: "not matching host ./*",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"./*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				namespace: "myns",
+			},
+			vsHost:   "foo.bar",
+			expected: false,
+		},
+		{
+			title: "not matching host <namespace>/*",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"myns/*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				namespace: "otherns",
+			},
+			vsHost:   "foo.bar",
+			expected: false,
+		},
+		{
+			title: "not matching host <namespace>/*",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"myns/*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				namespace: "otherns",
+			},
+			vsHost:   "foo.bar",
+			expected: false,
+		},
+		{
+			title: "matching exportTo *",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				namespace: "otherns",
+				exportTo:  "*",
+			},
+			vsHost:   "foo.bar",
+			expected: true,
+		},
+		{
+			title: "matching exportTo <namespace>",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				namespace: "otherns",
+				exportTo:  "istio-system",
+			},
+			vsHost:   "foo.bar",
+			expected: true,
+		},
+		{
+			title: "not matching exportTo <namespace>",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				namespace: "otherns",
+				exportTo:  "myns",
+			},
+			vsHost:   "foo.bar",
+			expected: false,
+		},
+		{
+			title: "not matching exportTo .",
+			gwconfig: fakeGatewayConfig{
+				namespace: "istio-system",
+				dnsnames:  [][]string{{"*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				namespace: "otherns",
+				exportTo:  ".",
+			},
+			vsHost:   "foo.bar",
+			expected: false,
+		},
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			vsconfig := ti.vsconfig.Config()
+			gwconfig := ti.gwconfig.Config()
+			require.Equal(t, ti.expected, virtualServiceBindsToGateway(&vsconfig, &gwconfig, ti.vsHost))
+		})
+	}
+}
+
 func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 	for _, ti := range []struct {
 		title      string
@@ -192,28 +376,12 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 				},
 			},
 			gwconfig: fakeGatewayConfig{
-				dnsnames: [][]string{
-					{"foo.bar"}, // Kubernetes requires removal of trailing dot
-				},
+				name:     "mygw",
+				dnsnames: [][]string{{"*"}},
 			},
-			expected: []*endpoint.Endpoint{
-				{
-					DNSName: "foo.bar",
-					Targets: endpoint.Targets{"lb.com"},
-				},
-			},
-		},
-		{
-			title: "one namespaced rule.host one lb.hostname",
-			lbServices: []fakeIngressGatewayService{
-				{
-					hostnames: []string{"lb.com"}, // Kubernetes omits the trailing dot
-				},
-			},
-			gwconfig: fakeGatewayConfig{
-				dnsnames: [][]string{
-					{"my-namespace/foo.bar"}, // Kubernetes requires removal of trailing dot
-				},
+			vsconfig: fakeVirtualServiceConfig{
+				gateways: []string{"mygw"},
+				dnsnames: []string{"foo.bar"},
 			},
 			expected: []*endpoint.Endpoint{
 				{
@@ -230,9 +398,12 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 				},
 			},
 			gwconfig: fakeGatewayConfig{
-				dnsnames: [][]string{
-					{"foo.bar"},
-				},
+				name:     "mygw",
+				dnsnames: [][]string{{"*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				gateways: []string{"mygw"},
+				dnsnames: []string{"foo.bar"},
 			},
 			expected: []*endpoint.Endpoint{
 				{
@@ -250,9 +421,12 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 				},
 			},
 			gwconfig: fakeGatewayConfig{
-				dnsnames: [][]string{
-					{"foo.bar"},
-				},
+				name:     "mygw",
+				dnsnames: [][]string{{"*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				gateways: []string{"mygw"},
+				dnsnames: []string{"foo.bar"},
 			},
 			expected: []*endpoint.Endpoint{
 				{
@@ -274,7 +448,30 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 				},
 			},
 			gwconfig: fakeGatewayConfig{
-				dnsnames: [][]string{},
+				name:     "mygw",
+				dnsnames: [][]string{{"*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				gateways: []string{"mygw"},
+				dnsnames: []string{},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title: "no rule.gateway",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:       []string{"8.8.8.8", "127.0.0.1"},
+					hostnames: []string{"elb.com", "alb.com"},
+				},
+			},
+			gwconfig: fakeGatewayConfig{
+				name:     "mygw",
+				dnsnames: [][]string{{"*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				gateways: []string{},
+				dnsnames: []string{"foo.bar"},
 			},
 			expected: []*endpoint.Endpoint{},
 		},
@@ -297,35 +494,48 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 			title:      "no targets",
 			lbServices: []fakeIngressGatewayService{{}},
 			gwconfig: fakeGatewayConfig{
-				dnsnames: [][]string{
-					{""},
-				},
+				name:     "mygw",
+				dnsnames: [][]string{{"*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				gateways: []string{},
+				dnsnames: []string{"foo.bar"},
 			},
 			expected: []*endpoint.Endpoint{},
 		},
 		{
-			title: "one gateway, two ingressgateway loadbalancer hostnames",
+			title: "matching selectors for service and gateway",
 			lbServices: []fakeIngressGatewayService{
 				{
-					hostnames: []string{"lb.com"},
-					namespace: "istio-other",
-					name:      "gateway1",
+					name: "service1",
+					selector: map[string]string{
+						"app": "myservice",
+					},
+					hostnames: []string{"elb.com", "alb.com"},
 				},
 				{
-					hostnames: []string{"lb2.com"},
-					namespace: "istio-other",
-					name:      "gateway2",
+					name: "service2",
+					selector: map[string]string{
+						"app": "otherservice",
+					},
+					ips: []string{"8.8.8.8", "127.0.0.1"},
 				},
 			},
 			gwconfig: fakeGatewayConfig{
-				dnsnames: [][]string{
-					{"foo.bar"}, // Kubernetes requires removal of trailing dot
+				name:     "mygw",
+				dnsnames: [][]string{{"*"}},
+				selector: map[string]string{
+					"app": "myservice",
 				},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				gateways: []string{"mygw"},
+				dnsnames: []string{"foo.bar"},
 			},
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "foo.bar",
-					Targets: endpoint.Targets{"lb.com", "lb2.com"},
+					Targets: endpoint.Targets{"elb.com", "alb.com"},
 				},
 			},
 		},
@@ -358,14 +568,10 @@ func testVirtualServiceEndpoints(t *testing.T) {
 		ignoreHostnameAnnotation bool
 	}{
 		{
-			title:           "no gateway",
-			targetNamespace: "",
-		},
-		{
-			title:           "two simple gateways, one ingressgateway loadbalancer service",
-			targetNamespace: "",
+			title: "two simple virtualservices with one gateway each, one ingressgateway loadbalancer service",
 			lbServices: []fakeIngressGatewayService{
 				{
+					namespace: namespace,
 					ips:       []string{"8.8.8.8"},
 					hostnames: []string{"lb.com"},
 				},
@@ -380,6 +586,20 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					dnsnames:  [][]string{{"new.org"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
+					namespace: namespace,
+					gateways:  []string{"fake1"},
+					dnsnames:  []string{"example.org"},
+				},
+				{
+					name:      "vs2",
+					namespace: namespace,
+					gateways:  []string{"fake2"},
+					dnsnames:  []string{"new.org"},
 				},
 			},
 			expected: []*endpoint.Endpoint{
@@ -402,24 +622,33 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:           "two simple gateways on different namespaces, one ingressgateway loadbalancer service",
-			targetNamespace: "",
+			title: "two simple virtualservices on different namespaces with the same target gateway, one ingressgateway loadbalancer service",
 			lbServices: []fakeIngressGatewayService{
 				{
 					ips:       []string{"8.8.8.8"},
 					hostnames: []string{"lb.com"},
+					namespace: "istio-system",
 				},
 			},
 			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
+					namespace: "istio-system",
+					dnsnames:  [][]string{{"*"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
 					namespace: "testing1",
-					dnsnames:  [][]string{{"example.org"}},
+					gateways:  []string{"istio-system/fake1"},
+					dnsnames:  []string{"example.org"},
 				},
 				{
-					name:      "fake2",
+					name:      "vs2",
 					namespace: "testing2",
-					dnsnames:  [][]string{{"new.org"}},
+					gateways:  []string{"istio-system/fake1"},
+					dnsnames:  []string{"new.org"},
 				},
 			},
 			expected: []*endpoint.Endpoint{
@@ -442,7 +671,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:           "two simple gateways on different namespaces and a target namespace, one ingressgateway loadbalancer service",
+			title:           "two simple virtualservices with one gateway on different namespaces and a target namespace, one ingressgateway loadbalancer service",
 			targetNamespace: "testing1",
 			lbServices: []fakeIngressGatewayService{
 				{
@@ -455,12 +684,21 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				{
 					name:      "fake1",
 					namespace: "testing1",
-					dnsnames:  [][]string{{"example.org"}},
+					dnsnames:  [][]string{{"*"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
+					namespace: "testing1",
+					gateways:  []string{"testing1/fake1"},
+					dnsnames:  []string{"example.org"},
 				},
 				{
-					name:      "fake2",
+					name:      "vs2",
 					namespace: "testing2",
-					dnsnames:  [][]string{{"new.org"}},
+					gateways:  []string{"testing1/fake1"},
+					dnsnames:  []string{"new.org"},
 				},
 			},
 			expected: []*endpoint.Endpoint{
@@ -476,21 +714,29 @@ func testVirtualServiceEndpoints(t *testing.T) {
 		},
 		{
 			title:            "valid matching annotation filter expression",
-			targetNamespace:  "",
-			annotationFilter: "kubernetes.io/gateway.class in (alb, nginx)",
+			annotationFilter: "kubernetes.io/virtualservice.class in (alb, nginx)",
 			lbServices: []fakeIngressGatewayService{
 				{
-					ips: []string{"8.8.8.8"},
+					ips:       []string{"8.8.8.8"},
+					namespace: namespace,
 				},
 			},
 			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
+					dnsnames:  [][]string{{"*"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
+					namespace: namespace,
 					annotations: map[string]string{
-						"kubernetes.io/gateway.class": "nginx",
+						"kubernetes.io/virtualservice.class": "nginx",
 					},
-					dnsnames: [][]string{{"example.org"}},
+					gateways: []string{"fake1"},
+					dnsnames: []string{"example.org"},
 				},
 			},
 			expected: []*endpoint.Endpoint{
@@ -502,110 +748,63 @@ func testVirtualServiceEndpoints(t *testing.T) {
 		},
 		{
 			title:            "valid non-matching annotation filter expression",
-			targetNamespace:  "",
 			annotationFilter: "kubernetes.io/gateway.class in (alb, nginx)",
 			lbServices: []fakeIngressGatewayService{
 				{
-					ips: []string{"8.8.8.8"},
+					ips:       []string{"8.8.8.8"},
+					namespace: namespace,
 				},
 			},
 			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
+					dnsnames:  [][]string{{"*"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
+					namespace: namespace,
 					annotations: map[string]string{
-						"kubernetes.io/gateway.class": "tectonic",
+						"kubernetes.io/virtualservice.class": "tectonic",
 					},
-					dnsnames: [][]string{{"example.org"}},
+					gateways: []string{"fake1"},
+					dnsnames: []string{"example.org"},
 				},
 			},
 			expected: []*endpoint.Endpoint{},
 		},
 		{
 			title:            "invalid annotation filter expression",
-			targetNamespace:  "",
 			annotationFilter: "kubernetes.io/gateway.name in (a b)",
+			expected:         []*endpoint.Endpoint{},
+			expectError:      true,
+		},
+		{
+			title: "our controller type is dns-controller",
 			lbServices: []fakeIngressGatewayService{
 				{
-					ips: []string{"8.8.8.8"},
+					ips:       []string{"8.8.8.8"},
+					namespace: namespace,
 				},
 			},
 			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
-					annotations: map[string]string{
-						"kubernetes.io/gateway.class": "alb",
-					},
-					dnsnames: [][]string{{"example.org"}},
+					dnsnames:  [][]string{{"*"}},
 				},
 			},
-			expected:    []*endpoint.Endpoint{},
-			expectError: true,
-		},
-		{
-			title:            "valid matching annotation filter label",
-			targetNamespace:  "",
-			annotationFilter: "kubernetes.io/gateway.class=nginx",
-			lbServices: []fakeIngressGatewayService{
+			vsConfigs: []fakeVirtualServiceConfig{
 				{
-					ips: []string{"8.8.8.8"},
-				},
-			},
-			gwConfigs: []fakeGatewayConfig{
-				{
-					name:      "fake1",
-					namespace: namespace,
-					annotations: map[string]string{
-						"kubernetes.io/gateway.class": "nginx",
-					},
-					dnsnames: [][]string{{"example.org"}},
-				},
-			},
-			expected: []*endpoint.Endpoint{
-				{
-					DNSName: "example.org",
-					Targets: endpoint.Targets{"8.8.8.8"},
-				},
-			},
-		},
-		{
-			title:            "valid non-matching annotation filter label",
-			targetNamespace:  "",
-			annotationFilter: "kubernetes.io/gateway.class=nginx",
-			lbServices: []fakeIngressGatewayService{
-				{
-					ips: []string{"8.8.8.8"},
-				},
-			},
-			gwConfigs: []fakeGatewayConfig{
-				{
-					name:      "fake1",
-					namespace: namespace,
-					annotations: map[string]string{
-						"kubernetes.io/gateway.class": "alb",
-					},
-					dnsnames: [][]string{{"example.org"}},
-				},
-			},
-			expected: []*endpoint.Endpoint{},
-		},
-		{
-			title:           "our controller type is dns-controller",
-			targetNamespace: "",
-			lbServices: []fakeIngressGatewayService{
-				{
-					ips: []string{"8.8.8.8"},
-				},
-			},
-			gwConfigs: []fakeGatewayConfig{
-				{
-					name:      "fake1",
+					name:      "vs1",
 					namespace: namespace,
 					annotations: map[string]string{
 						controllerAnnotationKey: controllerAnnotationValue,
 					},
-					dnsnames: [][]string{{"example.org"}},
+					gateways: []string{"fake1"},
+					dnsnames: []string{"example.org"},
 				},
 			},
 			expected: []*endpoint.Endpoint{
@@ -616,101 +815,100 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:           "different controller types are ignored",
-			targetNamespace: "",
+			title: "different controller types are ignored",
 			lbServices: []fakeIngressGatewayService{
 				{
-					ips: []string{"8.8.8.8"},
+					ips:       []string{"8.8.8.8"},
+					namespace: namespace,
 				},
 			},
 			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
+					namespace: namespace,
+					dnsnames:  [][]string{{"*"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
 					namespace: namespace,
 					annotations: map[string]string{
 						controllerAnnotationKey: "some-other-tool",
 					},
-					dnsnames: [][]string{{"example.org"}},
+					gateways: []string{"fake1"},
+					dnsnames: []string{"example.org"},
 				},
 			},
 			expected: []*endpoint.Endpoint{},
 		},
 		{
-			title:           "template for gateway if host is missing",
-			targetNamespace: "",
+			title: "template for virtualservice if host is missing",
 			lbServices: []fakeIngressGatewayService{
 				{
 					ips:       []string{"8.8.8.8"},
 					hostnames: []string{"elb.com"},
+					namespace: namespace,
 				},
 			},
 			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
-					annotations: map[string]string{
-						controllerAnnotationKey: controllerAnnotationValue,
-					},
-					dnsnames: [][]string{},
+					dnsnames:  [][]string{{"*"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
+					namespace: namespace,
+					gateways:  []string{"fake1"},
+					dnsnames:  []string{""},
 				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "fake1.ext-dns.test.com",
+					DNSName: "vs1.ext-dns.test.com",
 					Targets: endpoint.Targets{"8.8.8.8"},
 				},
 				{
-					DNSName: "fake1.ext-dns.test.com",
+					DNSName: "vs1.ext-dns.test.com",
 					Targets: endpoint.Targets{"elb.com"},
 				},
 			},
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
 		},
 		{
-			title:           "another controller annotation skipped even with template",
-			targetNamespace: "",
+			title: "multiple FQDN template hostnames",
 			lbServices: []fakeIngressGatewayService{
 				{
-					ips: []string{"8.8.8.8"},
+					ips:       []string{"8.8.8.8"},
+					namespace: namespace,
 				},
 			},
 			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
-					annotations: map[string]string{
-						controllerAnnotationKey: "other-controller",
-					},
-					dnsnames: [][]string{},
+					dnsnames:  [][]string{{"*"}},
 				},
 			},
-			expected:     []*endpoint.Endpoint{},
-			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
-		},
-		{
-			title:           "multiple FQDN template hostnames",
-			targetNamespace: "",
-			lbServices: []fakeIngressGatewayService{
+			vsConfigs: []fakeVirtualServiceConfig{
 				{
-					ips: []string{"8.8.8.8"},
-				},
-			},
-			gwConfigs: []fakeGatewayConfig{
-				{
-					name:        "fake1",
-					namespace:   namespace,
-					annotations: map[string]string{},
-					dnsnames:    [][]string{},
+					name:      "vs1",
+					namespace: namespace,
+					gateways:  []string{"fake1"},
+					dnsnames:  []string{""},
 				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName:    "fake1.ext-dns.test.com",
+					DNSName:    "vs1.ext-dns.test.com",
 					Targets:    endpoint.Targets{"8.8.8.8"},
 					RecordType: endpoint.RecordTypeA,
 				},
 				{
-					DNSName:    "fake1.ext-dna.test.com",
+					DNSName:    "vs1.ext-dna.test.com",
 					Targets:    endpoint.Targets{"8.8.8.8"},
 					RecordType: endpoint.RecordTypeA,
 				},
@@ -718,52 +916,44 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com, {{.Name}}.ext-dna.test.com",
 		},
 		{
-			title:           "multiple FQDN template hostnames",
-			targetNamespace: "",
-			lbServices: []fakeIngressGatewayService{
-				{
-					ips: []string{"8.8.8.8"},
-				},
-			},
+			title: "multiple FQDN template hostnames with restricted gw.hosts",
 			gwConfigs: []fakeGatewayConfig{
 				{
-					name:        "fake1",
-					namespace:   namespace,
-					annotations: map[string]string{},
-					dnsnames:    [][]string{},
-				},
-				{
-					name:      "fake2",
+					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
 						targetAnnotationKey: "gateway-target.com",
 					},
-					dnsnames: [][]string{{"example.org"}},
+					dnsnames: [][]string{{"*.org", "*.ext-dns.test.com"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
+					namespace: namespace,
+					gateways:  []string{"fake1"},
+					dnsnames:  []string{"example.org"},
+				},
+				{
+					name:      "vs2",
+					namespace: namespace,
+					gateways:  []string{"fake1"},
+					dnsnames:  []string{},
 				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName:    "fake1.ext-dns.test.com",
-					Targets:    endpoint.Targets{"8.8.8.8"},
-					RecordType: endpoint.RecordTypeA,
+					DNSName:    "vs1.ext-dns.test.com",
+					Targets:    endpoint.Targets{"gateway-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
-					DNSName:    "fake1.ext-dna.test.com",
-					Targets:    endpoint.Targets{"8.8.8.8"},
-					RecordType: endpoint.RecordTypeA,
+					DNSName:    "vs2.ext-dns.test.com",
+					Targets:    endpoint.Targets{"gateway-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"gateway-target.com"},
-					RecordType: endpoint.RecordTypeCNAME,
-				},
-				{
-					DNSName:    "fake2.ext-dns.test.com",
-					Targets:    endpoint.Targets{"gateway-target.com"},
-					RecordType: endpoint.RecordTypeCNAME,
-				},
-				{
-					DNSName:    "fake2.ext-dna.test.com",
 					Targets:    endpoint.Targets{"gateway-target.com"},
 					RecordType: endpoint.RecordTypeCNAME,
 				},
@@ -772,37 +962,76 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			combineFQDNAndAnnotation: true,
 		},
 		{
-			title:           "gateway rules with annotation",
-			targetNamespace: "",
+			title: "virtualservice with target annotation",
 			lbServices: []fakeIngressGatewayService{
 				{
-					ips: []string{"8.8.8.8"},
+					ips:       []string{"8.8.8.8"},
+					namespace: namespace,
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
+					namespace: namespace,
+					gateways:  []string{"fake1"},
+					annotations: map[string]string{
+						targetAnnotationKey: "virtualservice-target.com",
+					},
+					dnsnames: []string{"example.org"},
+				},
+				{
+					name:      "vs2",
+					namespace: namespace,
+					gateways:  []string{"fake1"},
+					annotations: map[string]string{
+						targetAnnotationKey: "virtualservice-target.com",
+					},
+					dnsnames: []string{"example2.org"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					Targets:    endpoint.Targets{"virtualservice-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "example2.org",
+					Targets:    endpoint.Targets{"virtualservice-target.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+			},
+		},
+		{
+			title: "virtualservice; gateway with target annotation",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:       []string{"8.8.8.8"},
+					namespace: namespace,
 				},
 			},
 			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
+					dnsnames:  [][]string{{"*"}},
 					annotations: map[string]string{
 						targetAnnotationKey: "gateway-target.com",
 					},
-					dnsnames: [][]string{{"example.org"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
+					namespace: namespace,
+					gateways:  []string{"fake1"},
+					dnsnames:  []string{"example.org"},
 				},
 				{
-					name:      "fake2",
+					name:      "vs2",
 					namespace: namespace,
-					annotations: map[string]string{
-						targetAnnotationKey: "gateway-target.com",
-					},
-					dnsnames: [][]string{{"example2.org"}},
-				},
-				{
-					name:      "fake3",
-					namespace: namespace,
-					annotations: map[string]string{
-						targetAnnotationKey: "1.2.3.4",
-					},
-					dnsnames: [][]string{{"example3.org"}},
+					gateways:  []string{"fake1"},
+					dnsnames:  []string{"example2.org"},
 				},
 			},
 			expected: []*endpoint.Endpoint{
@@ -816,29 +1045,32 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					Targets:    endpoint.Targets{"gateway-target.com"},
 					RecordType: endpoint.RecordTypeCNAME,
 				},
-				{
-					DNSName:    "example3.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
-					RecordType: endpoint.RecordTypeA,
-				},
 			},
 		},
 		{
-			title:           "gateway rules with hostname annotation",
-			targetNamespace: "",
+			title: "virtualservice with hostname annotation",
 			lbServices: []fakeIngressGatewayService{
 				{
-					ips: []string{"1.2.3.4"},
+					ips:       []string{"1.2.3.4"},
+					namespace: namespace,
 				},
 			},
 			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
+					dnsnames:  [][]string{{"*"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
+					namespace: namespace,
+					gateways:  []string{"fake1"},
 					annotations: map[string]string{
 						hostnameAnnotationKey: "dns-through-hostname.com",
 					},
-					dnsnames: [][]string{{"example.org"}},
+					dnsnames: []string{"example.org"},
 				},
 			},
 			expected: []*endpoint.Endpoint{
@@ -855,123 +1087,89 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:           "gateway rules with hostname annotation having multiple hostnames",
-			targetNamespace: "",
+			title: "virtualservice with hostname annotation having multiple hostnames, restricted by gw.hosts",
 			lbServices: []fakeIngressGatewayService{
 				{
-					ips: []string{"1.2.3.4"},
+					ips:       []string{"1.2.3.4"},
+					namespace: namespace,
 				},
 			},
 			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
+					dnsnames:  [][]string{{"*.bar.com"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
+					namespace: namespace,
+					gateways:  []string{"fake1"},
 					annotations: map[string]string{
-						hostnameAnnotationKey: "dns-through-hostname.com, another-dns-through-hostname.com",
+						hostnameAnnotationKey: "foo.bar.com, another-dns-through-hostname.com",
 					},
-					dnsnames: [][]string{{"example.org"}},
+					dnsnames: []string{"baz.bar.org"},
 				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
-					RecordType: endpoint.RecordTypeA,
-				},
-				{
-					DNSName:    "dns-through-hostname.com",
-					Targets:    endpoint.Targets{"1.2.3.4"},
-					RecordType: endpoint.RecordTypeA,
-				},
-				{
-					DNSName:    "another-dns-through-hostname.com",
+					DNSName:    "foo.bar.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
 				},
 			},
 		},
 		{
-			title:           "gateway rules with hostname and target annotation",
-			targetNamespace: "",
+			title: "virtualservices with annotation and custom TTL",
 			lbServices: []fakeIngressGatewayService{
 				{
-					ips: []string{},
+					ips:       []string{"8.8.8.8"},
+					namespace: namespace,
 				},
 			},
 			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
-					annotations: map[string]string{
-						hostnameAnnotationKey: "dns-through-hostname.com",
-						targetAnnotationKey:   "gateway-target.com",
-					},
-					dnsnames: [][]string{{"example.org"}},
+					dnsnames:  [][]string{{"*"}},
 				},
 			},
-			expected: []*endpoint.Endpoint{
+			vsConfigs: []fakeVirtualServiceConfig{
 				{
-					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"gateway-target.com"},
-					RecordType: endpoint.RecordTypeCNAME,
-				},
-				{
-					DNSName:    "dns-through-hostname.com",
-					Targets:    endpoint.Targets{"gateway-target.com"},
-					RecordType: endpoint.RecordTypeCNAME,
-				},
-			},
-		},
-		{
-			title:           "gateway rules with annotation and custom TTL",
-			targetNamespace: "",
-			lbServices: []fakeIngressGatewayService{
-				{
-					ips: []string{"8.8.8.8"},
-				},
-			},
-			gwConfigs: []fakeGatewayConfig{
-				{
-					name:      "fake1",
+					name:      "vs1",
 					namespace: namespace,
+					gateways:  []string{"fake1"},
 					annotations: map[string]string{
-						targetAnnotationKey: "gateway-target.com",
-						ttlAnnotationKey:    "6",
+						ttlAnnotationKey: "6",
 					},
-					dnsnames: [][]string{{"example.org"}},
+					dnsnames: []string{"example.org"},
 				},
 				{
-					name:      "fake2",
+					name:      "vs2",
 					namespace: namespace,
+					gateways:  []string{"fake1"},
 					annotations: map[string]string{
-						targetAnnotationKey: "gateway-target.com",
-						ttlAnnotationKey:    "1",
+						ttlAnnotationKey: "1",
 					},
-					dnsnames: [][]string{{"example2.org"}},
+					dnsnames: []string{"example2.org"},
 				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:   "example.org",
-					Targets:   endpoint.Targets{"gateway-target.com"},
+					Targets:   endpoint.Targets{"8.8.8.8"},
 					RecordTTL: endpoint.TTL(6),
 				},
 				{
 					DNSName:   "example2.org",
-					Targets:   endpoint.Targets{"gateway-target.com"},
+					Targets:   endpoint.Targets{"8.8.8.8"},
 					RecordTTL: endpoint.TTL(1),
 				},
 			},
 		},
 		{
-			title:           "template for gateway with annotation",
-			targetNamespace: "",
-			lbServices: []fakeIngressGatewayService{
-				{
-					ips:       []string{},
-					hostnames: []string{},
-				},
-			},
+			title: "template for virtualservice; gateway with target annotation",
 			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
@@ -979,7 +1177,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					annotations: map[string]string{
 						targetAnnotationKey: "gateway-target.com",
 					},
-					dnsnames: [][]string{},
+					dnsnames: [][]string{{"*"}},
 				},
 				{
 					name:      "fake2",
@@ -987,7 +1185,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					annotations: map[string]string{
 						targetAnnotationKey: "gateway-target.com",
 					},
-					dnsnames: [][]string{},
+					dnsnames: [][]string{{"*"}},
 				},
 				{
 					name:      "fake3",
@@ -995,22 +1193,42 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					annotations: map[string]string{
 						targetAnnotationKey: "1.2.3.4",
 					},
-					dnsnames: [][]string{},
+					dnsnames: [][]string{{"*"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
+					namespace: namespace,
+					gateways:  []string{"fake1"},
+					dnsnames:  []string{},
+				},
+				{
+					name:      "vs2",
+					namespace: namespace,
+					gateways:  []string{"fake2"},
+					dnsnames:  []string{},
+				},
+				{
+					name:      "vs3",
+					namespace: namespace,
+					gateways:  []string{"fake3"},
+					dnsnames:  []string{},
 				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName:    "fake1.ext-dns.test.com",
+					DNSName:    "vs1.ext-dns.test.com",
 					Targets:    endpoint.Targets{"gateway-target.com"},
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
-					DNSName:    "fake2.ext-dns.test.com",
+					DNSName:    "vs2.ext-dns.test.com",
 					Targets:    endpoint.Targets{"gateway-target.com"},
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
-					DNSName:    "fake3.ext-dns.test.com",
+					DNSName:    "vs3.ext-dns.test.com",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
 				},
@@ -1018,52 +1236,39 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
 		},
 		{
-			title:           "Ingress with empty annotation",
-			targetNamespace: "",
-			lbServices: []fakeIngressGatewayService{
-				{
-					ips:       []string{},
-					hostnames: []string{},
-				},
-			},
-			gwConfigs: []fakeGatewayConfig{
-				{
-					name:      "fake1",
-					namespace: namespace,
-					annotations: map[string]string{
-						targetAnnotationKey: "",
-					},
-					dnsnames: [][]string{},
-				},
-			},
-			expected:     []*endpoint.Endpoint{},
-			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
-		},
-		{
-			title:           "ignore hostname annotations",
-			targetNamespace: "",
+			title: "ignore hostname annotations",
 			lbServices: []fakeIngressGatewayService{
 				{
 					ips:       []string{"8.8.8.8"},
 					hostnames: []string{"lb.com"},
+					namespace: namespace,
 				},
 			},
 			gwConfigs: []fakeGatewayConfig{
 				{
 					name:      "fake1",
 					namespace: namespace,
+					dnsnames:  [][]string{{"*"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
+					namespace: namespace,
+					gateways:  []string{"fake1"},
 					annotations: map[string]string{
 						hostnameAnnotationKey: "ignore.me",
 					},
-					dnsnames: [][]string{{"example.org"}},
+					dnsnames: []string{"example.org"},
 				},
 				{
-					name:      "fake2",
+					name:      "vs2",
 					namespace: namespace,
+					gateways:  []string{"fake1"},
 					annotations: map[string]string{
 						hostnameAnnotationKey: "ignore.me.too",
 					},
-					dnsnames: [][]string{{"new.org"}},
+					dnsnames: []string{"new.org"},
 				},
 			},
 			expected: []*endpoint.Endpoint{
@@ -1085,6 +1290,114 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				},
 			},
 			ignoreHostnameAnnotation: true,
+		},
+		{
+			title: "complex setup with multiple gateways and multiple vs.hosts only matching some of the gateway",
+			lbServices: []fakeIngressGatewayService{
+				{
+					name: "svc1",
+					selector: map[string]string{
+						"app": "igw1",
+					},
+					hostnames: []string{"target1.com"},
+					namespace: "istio-system",
+				},
+				{
+					name: "svc2",
+					selector: map[string]string{
+						"app": "igw2",
+					},
+					hostnames: []string{"target2.com"},
+					namespace: "testing1",
+				},
+				{
+					name: "svc3",
+					selector: map[string]string{
+						"app": "igw3",
+					},
+					hostnames: []string{"target3.com"},
+					namespace: "testing2",
+				},
+			},
+			gwConfigs: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "istio-system",
+					dnsnames:  [][]string{{"*"}},
+					selector: map[string]string{
+						"app": "igw1",
+					},
+				},
+				{
+					name:      "fake2",
+					namespace: "testing1",
+					dnsnames:  [][]string{{"*.baz.com"}, {"*.bar.com"}},
+					selector: map[string]string{
+						"app": "igw2",
+					},
+				},
+				{
+					name:      "fake3",
+					namespace: "testing2",
+					dnsnames:  [][]string{{"*.bax.com", "*.bar.com"}},
+					selector: map[string]string{
+						"app": "igw3",
+					},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
+					namespace: "testing3",
+					gateways:  []string{"istio-system/fake1", "testing1/fake2"},
+					dnsnames:  []string{"somedomain.com", "foo.bar.com"},
+				},
+				{
+					name:      "vs2",
+					namespace: "testing2",
+					gateways:  []string{"testing1/fake2", "fake3"},
+					dnsnames:  []string{"hello.bar.com", "hello.bax.com", "hello.bak.com"},
+				},
+				{
+					name:      "vs3",
+					namespace: "testing1",
+					gateways:  []string{"istio-system/fake1", "testing2/fake3"},
+					dnsnames:  []string{"world.bax.com", "world.bak.com"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "somedomain.com",
+					Targets:    endpoint.Targets{"target1.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "foo.bar.com",
+					Targets:    endpoint.Targets{"target1.com", "target2.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "hello.bar.com",
+					Targets:    endpoint.Targets{"target2.com", "target3.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "hello.bax.com",
+					Targets:    endpoint.Targets{"target3.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "world.bak.com",
+					Targets:    endpoint.Targets{"target1.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "world.bax.com",
+					Targets:    endpoint.Targets{"target1.com", "target3.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+			},
+			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
@@ -1137,16 +1450,16 @@ func newTestVirtualServiceSource(loadBalancerList []fakeIngressGatewayService, g
 	fakeKubernetesClient := fake.NewSimpleClientset()
 	fakeIstioClient := NewFakeConfigStore()
 
-	for _, gw := range gwList {
-		_, err := fakeIstioClient.Create(gw.Config())
+	for _, lb := range loadBalancerList {
+		service := lb.Service()
+		_, err := fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(service)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	for _, lb := range loadBalancerList {
-		service := lb.Service()
-		_, err := fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(service)
+	for _, gw := range gwList {
+		_, err := fakeIstioClient.Create(gw.Config())
 		if err != nil {
 			return nil, err
 		}
@@ -1179,12 +1492,16 @@ type fakeVirtualServiceConfig struct {
 	gateways    []string
 	annotations map[string]string
 	dnsnames    []string
+	exportTo    string
 }
 
 func (c fakeVirtualServiceConfig) Config() istiomodel.Config {
 	vs := &istionetworking.VirtualService{
 		Gateways: c.gateways,
 		Hosts:    c.dnsnames,
+	}
+	if c.exportTo != "" {
+		vs.ExportTo = []string{c.exportTo}
 	}
 
 	config := istiomodel.Config{

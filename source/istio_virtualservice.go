@@ -36,8 +36,8 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // istioVirtualServiceSource is an implementation of Source for Istio VirtualService objects.
@@ -175,6 +175,30 @@ func (sc *istioVirtualServiceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
+func (sc *istioVirtualServiceSource) getGateway(gateway string, vsconfig *istiomodel.Config) *istiomodel.Config {
+	if gateway == "" || gateway == "mesh" {
+		// This refers to "all sidecars in the mesh"; ignore.
+		return nil
+	}
+
+	namespace, name, err := parseGateway(gateway)
+	if err != nil {
+		log.Debugf("Failed parsing gateway %s of virtualservice %s/%s", gateway, vsconfig.Namespace, vsconfig.Name)
+		return nil
+	}
+	if namespace == "" {
+		namespace = vsconfig.Namespace
+	}
+
+	gwconfig := sc.istioClient.Get(istiomodel.Gateway.Type, name, namespace)
+	if gwconfig == nil {
+		log.Debugf("Gateway %s referenced by virtualservice %s/%s not found", gateway, vsconfig.Namespace, vsconfig.Name)
+		return nil
+	}
+
+	return gwconfig
+}
+
 func (sc *istioVirtualServiceSource) endpointsFromTemplate(config *istiomodel.Config) ([]*endpoint.Endpoint, error) {
 	// Process the whole template string
 	var buf bytes.Buffer
@@ -192,17 +216,16 @@ func (sc *istioVirtualServiceSource) endpointsFromTemplate(config *istiomodel.Co
 
 	var endpoints []*endpoint.Endpoint
 
-	targets, err := sc.targetsFromVirtualServiceConfig(config)
-	if err != nil {
-		return endpoints, err
-	}
-
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(config.Annotations)
 
 	// splits the FQDN template and removes the trailing periods
 	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
 	for _, hostname := range hostnameList {
 		hostname = strings.TrimSuffix(hostname, ".")
+		targets, err := sc.targetsFromVirtualServiceConfig(config, hostname)
+		if err != nil {
+			return endpoints, err
+		}
 		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 	return endpoints, nil
@@ -246,6 +269,11 @@ func (sc *istioVirtualServiceSource) setResourceLabel(config istiomodel.Config, 
 }
 
 func (sc *istioVirtualServiceSource) targetsFromGatewayConfig(config *istiomodel.Config) (targets endpoint.Targets, err error) {
+	targets = getTargetsFromTargetAnnotation(config.Annotations)
+	if len(targets) > 0 {
+		return
+	}
+
 	gateway := config.Spec.(*istionetworking.Gateway)
 
 	services, err := sc.serviceInformer.Lister().Services(config.Namespace).List(labels.Everything())
@@ -273,71 +301,41 @@ func (sc *istioVirtualServiceSource) targetsFromGatewayConfig(config *istiomodel
 	return
 }
 
-func (sc *istioVirtualServiceSource) targetsFromVirtualServiceConfig(config *istiomodel.Config) (targets endpoint.Targets, err error) {
-	targets = getTargetsFromTargetAnnotation(config.Annotations)
-	if len(targets) > 0 {
-		return targets, nil
-	}
-
-	virtualservice := config.Spec.(*istionetworking.VirtualService)
-
-	for _, gateway := range virtualservice.Gateways {
-		if gateway == "" || gateway == "mesh" {
-			// This refers to "all sidecars in the mesh"; ignore.
+func (sc *istioVirtualServiceSource) targetsFromVirtualServiceConfig(vsconfig *istiomodel.Config, vsHost string) ([]string, error) {
+	var targets []string
+	// for each host we need to iterate through the gateways because each host might match for only one of the gateways
+	for _, gateway := range vsconfig.Spec.(*istionetworking.VirtualService).Gateways {
+		gwconfig := sc.getGateway(gateway, vsconfig)
+		if gwconfig == nil {
 			continue
 		}
-		namespace, name, err := parseIngressGateway(gateway)
-		if err != nil {
-			log.Debugf("Failed parsing gateway %s of virtualservice %s/%s", gateway, config.Namespace, config.Name)
+		if !virtualServiceBindsToGateway(vsconfig, gwconfig, vsHost) {
 			continue
 		}
-
-		gwconfig := sc.istioClient.Get(istiomodel.Gateway.Type, name, namespace)
-		if err != nil {
-			log.Debugf("Failed reading gateway %s/%s of virtualservice %s/%s", namespace, name, config.Namespace, config.Name)
-			continue
-		}
-
-		// TODO check if this virtualservice can be bound to this gateway
-		// (i.e. if gateway doesn't have a namespace restriction in its hosts list)
-
-		targets = getTargetsFromTargetAnnotation(gwconfig.Annotations)
-		if len(targets) > 0 {
-			break
-		}
-
-		targets, err = sc.targetsFromGatewayConfig(gwconfig)
+		tgs, err := sc.targetsFromGatewayConfig(gwconfig)
 		if err != nil {
 			return targets, err
 		}
-
-		if len(targets) > 0 {
-			break
-		}
+		targets = append(targets, tgs...)
 	}
 
-	return targets, err
+	return targets, nil
 }
 
 // endpointsFromGatewayConfig extracts the endpoints from an Istio Gateway Config object
-func (sc *istioVirtualServiceSource) endpointsFromVirtualServiceConfig(config istiomodel.Config) ([]*endpoint.Endpoint, error) {
+func (sc *istioVirtualServiceSource) endpointsFromVirtualServiceConfig(vsconfig istiomodel.Config) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	ttl, err := getTTLFromAnnotations(config.Annotations)
+	ttl, err := getTTLFromAnnotations(vsconfig.Annotations)
 	if err != nil {
 		log.Warn(err)
 	}
 
-	targets, err := sc.targetsFromVirtualServiceConfig(&config)
-	if err != nil {
-		return endpoints, err
-	}
+	targetsFromAnnotation := getTargetsFromTargetAnnotation(vsconfig.Annotations)
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(config.Annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(vsconfig.Annotations)
 
-	virtualservice := config.Spec.(*istionetworking.VirtualService)
-
-	for _, host := range virtualservice.Hosts {
+	for _, host := range vsconfig.Spec.(*istionetworking.VirtualService).Hosts {
 		if host == "" || host == "*" {
 			continue
 		}
@@ -350,16 +348,96 @@ func (sc *istioVirtualServiceSource) endpointsFromVirtualServiceConfig(config is
 			host = parts[1]
 		}
 
+		targets := targetsFromAnnotation
+		if len(targets) == 0 {
+			targets, err = sc.targetsFromVirtualServiceConfig(&vsconfig, host)
+			if err != nil {
+				return endpoints, err
+			}
+		}
+
 		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 
 	// Skip endpoints if we do not want entries from annotations
 	if !sc.ignoreHostnameAnnotation {
-		hostnameList := getHostnamesFromAnnotations(config.Annotations)
+		hostnameList := getHostnamesFromAnnotations(vsconfig.Annotations)
 		for _, hostname := range hostnameList {
+			targets := targetsFromAnnotation
+			if len(targets) == 0 {
+				targets, err = sc.targetsFromVirtualServiceConfig(&vsconfig, hostname)
+				if err != nil {
+					return endpoints, err
+				}
+			}
 			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 		}
 	}
 
 	return endpoints, nil
+}
+
+// checks if the given VirtualService should actually bind to the given gateway
+// see requirements here: https://istio.io/docs/reference/config/networking/gateway/#Server
+func virtualServiceBindsToGateway(vsconfig, gwconfig *istiomodel.Config, vsHost string) bool {
+	vs := vsconfig.Spec.(*istionetworking.VirtualService)
+
+	isValid := false
+	if len(vs.ExportTo) == 0 {
+		isValid = true
+	} else {
+		for _, ns := range vs.ExportTo {
+			if ns == "*" || ns == gwconfig.Namespace || (ns == "." && gwconfig.Namespace == vsconfig.Namespace) {
+				isValid = true
+			}
+		}
+	}
+	if !isValid {
+		return false
+	}
+
+	gw := gwconfig.Spec.(*istionetworking.Gateway)
+	for _, server := range gw.Servers {
+		for _, host := range server.Hosts {
+			namespace := "*"
+			parts := strings.Split(host, "/")
+			if len(parts) == 2 {
+				namespace = parts[0]
+				host = parts[1]
+			} else if len(parts) != 1 {
+				log.Debugf("Gateway %s/%s has invalid host %s", gwconfig.Namespace, gwconfig.Name, host)
+				continue
+			}
+
+			if namespace == "*" || namespace == vsconfig.Namespace || (namespace == "." && vsconfig.Namespace == gwconfig.Namespace) {
+				if host == "*" {
+					return true
+				}
+
+				suffixMatch := false
+				if strings.HasPrefix(host, "*.") {
+					suffixMatch = true
+				}
+
+				if host == vsHost || (suffixMatch && strings.HasSuffix(vsHost, host[1:len(host)])) {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+func parseGateway(gateway string) (namespace, name string, err error) {
+	parts := strings.Split(gateway, "/")
+	if len(parts) == 2 {
+		namespace, name = parts[0], parts[1]
+	} else if len(parts) == 1 {
+		name = parts[0]
+	} else {
+		err = fmt.Errorf("invalid gateway name (name or namespace/name) found '%v'", gateway)
+	}
+
+	return
 }
