@@ -63,6 +63,7 @@ type Config struct {
 	AlibabaCloudZoneType              string
 	AWSZoneType                       string
 	AWSZoneTagFilter                  []string
+	AWSSubdomainFilter                []string
 	AWSAssumeRole                     string
 	AWSBatchChangeSize                int
 	AWSBatchChangeInterval            time.Duration
@@ -160,6 +161,7 @@ var defaultConfig = &Config{
 	AlibabaCloudConfigFile:      "/etc/kubernetes/alibaba-cloud.json",
 	AWSZoneType:                 "",
 	AWSZoneTagFilter:            []string{},
+	AWSSubdomainFilter:          []string{},
 	AWSAssumeRole:               "",
 	AWSBatchChangeSize:          1000,
 	AWSBatchChangeInterval:      time.Second,
@@ -300,6 +302,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, google, azure, azure-dns, azure-private-dns, cloudflare, rcodezero, digitalocean, dnsimple, akamai, infoblox, dyn, designate, coredns, skydns, inmemory, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "akamai", "infoblox", "dyn", "designate", "coredns", "skydns", "inmemory", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns")
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("exclude-domains", "Exclude subdomains (optional)").Default("").StringsVar(&cfg.ExcludeDomains)
+	app.Flag("subdomain-filter", "Allow only changes to specific subdomain").Default("").StringsVar(&cfg.AWSSubdomainFilter)
 	app.Flag("zone-id-filter", "Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.ZoneIDFilter)
 	app.Flag("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
 	app.Flag("google-batch-change-size", "When using the Google provider, set the maximum number of changes that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.GoogleBatchChangeSize)).IntVar(&cfg.GoogleBatchChangeSize)

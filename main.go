@@ -108,6 +108,7 @@ func main() {
 	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
+	subdomainFilter := provider.NewDomainFilter(cfg.AWSSubdomainFilter)
 
 	var p provider.Provider
 	switch cfg.Provider {
@@ -132,6 +133,7 @@ func main() {
 				ZoneIDFilter:         zoneIDFilter,
 				ZoneTypeFilter:       zoneTypeFilter,
 				ZoneTagFilter:        zoneTagFilter,
+				SubdomainFilter:      subdomainFilter,
 				BatchChangeSize:      cfg.AWSBatchChangeSize,
 				BatchChangeInterval:  cfg.AWSBatchChangeInterval,
 				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,

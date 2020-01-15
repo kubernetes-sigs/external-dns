@@ -124,7 +124,9 @@ type AWSProvider struct {
 	zoneTypeFilter ZoneTypeFilter
 	// filter hosted zones by tags
 	zoneTagFilter ZoneTagFilter
-	preferCNAME   bool
+	// only allow changes to specified subdomain and its subdomains
+	subdomainFilter DomainFilter
+	preferCNAME     bool
 }
 
 // AWSConfig contains configuration to create a new AWS provider.
@@ -133,6 +135,7 @@ type AWSConfig struct {
 	ZoneIDFilter         ZoneIDFilter
 	ZoneTypeFilter       ZoneTypeFilter
 	ZoneTagFilter        ZoneTagFilter
+	SubdomainFilter      DomainFilter
 	BatchChangeSize      int
 	BatchChangeInterval  time.Duration
 	EvaluateTargetHealth bool
@@ -174,6 +177,7 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 		zoneIDFilter:         awsConfig.ZoneIDFilter,
 		zoneTypeFilter:       awsConfig.ZoneTypeFilter,
 		zoneTagFilter:        awsConfig.ZoneTagFilter,
+		subdomainFilter:      awsConfig.SubdomainFilter,
 		batchChangeSize:      awsConfig.BatchChangeSize,
 		batchChangeInterval:  awsConfig.BatchChangeInterval,
 		evaluateTargetHealth: awsConfig.EvaluateTargetHealth,
@@ -401,8 +405,10 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes []*route53.Chan
 		return nil
 	}
 
+	filteredChangesBySubdomains := filteredChangesBySubdomains(changes, p)
+
 	// separate into per-zone change sets to be passed to the API.
-	changesByZone := changesByZone(zones, changes)
+	changesByZone := changesByZone(zones, filteredChangesBySubdomains)
 	if len(changesByZone) == 0 {
 		log.Info("All records are already up to date, there are no changes for the matching hosted zones")
 	}
@@ -649,6 +655,18 @@ func sortChangesByActionNameType(cs []*route53.Change) []*route53.Change {
 	})
 
 	return cs
+}
+
+func filteredChangesBySubdomains(changeSet []*route53.Change, p *AWSProvider) []*route53.Change {
+	changes := []*route53.Change{}
+
+	for _, c := range changeSet {
+		hostname := aws.StringValue(c.ResourceRecordSet.Name)
+		if p.subdomainFilter.Match(hostname) {
+			changes = append(changes, c)
+		}
+	}
+	return changes
 }
 
 // changesByZone separates a multi-zone change into a single change per zone.
