@@ -382,7 +382,6 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 
 	var endpoints []*endpoint.Endpoint
 	var targets endpoint.Targets
-	print(svc.Spec.Type == v1.ServiceTypeClusterIP)
 
 	switch svc.Spec.Type {
 	case v1.ServiceTypeLoadBalancer:
