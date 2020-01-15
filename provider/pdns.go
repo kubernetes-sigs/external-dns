@@ -225,7 +225,7 @@ type PDNSProvider struct {
 }
 
 // NewPDNSProvider initializes a new PowerDNS based Provider.
-func NewPDNSProvider(config PDNSConfig) (*PDNSProvider, error) {
+func NewPDNSProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, error) {
 
 	// Do some input validation
 
@@ -252,7 +252,7 @@ func NewPDNSProvider(config PDNSConfig) (*PDNSProvider, error) {
 	provider := &PDNSProvider{
 		client: &PDNSAPIClient{
 			dryRun:       config.DryRun,
-			authCtx:      context.WithValue(context.TODO(), pgo.ContextAPIKey, pgo.APIKey{Key: config.APIKey}),
+			authCtx:      context.WithValue(ctx, pgo.ContextAPIKey, pgo.APIKey{Key: config.APIKey}),
 			client:       pgo.NewAPIClient(pdnsClientConfig),
 			domainFilter: config.DomainFilter,
 		},

@@ -101,8 +101,8 @@ func NewLinodeProvider(domainFilter DomainFilter, dryRun bool, appVersion string
 }
 
 // Zones returns the list of hosted zones.
-func (p *LinodeProvider) Zones() ([]*linodego.Domain, error) {
-	zones, err := p.fetchZones()
+func (p *LinodeProvider) Zones(ctx context.Context) ([]*linodego.Domain, error) {
+	zones, err := p.fetchZones(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (p *LinodeProvider) Zones() ([]*linodego.Domain, error) {
 
 // Records returns the list of records in a given zone.
 func (p *LinodeProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	zones, err := p.Zones()
+	zones, err := p.Zones(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (p *LinodeProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 	var endpoints []*endpoint.Endpoint
 
 	for _, zone := range zones {
-		records, err := p.fetchRecords(zone.ID)
+		records, err := p.fetchRecords(ctx, zone.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -143,8 +143,8 @@ func (p *LinodeProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 	return endpoints, nil
 }
 
-func (p *LinodeProvider) fetchRecords(domainID int) ([]*linodego.DomainRecord, error) {
-	records, err := p.Client.ListDomainRecords(context.TODO(), domainID, nil)
+func (p *LinodeProvider) fetchRecords(ctx context.Context, domainID int) ([]*linodego.DomainRecord, error) {
+	records, err := p.Client.ListDomainRecords(ctx, domainID, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -152,10 +152,10 @@ func (p *LinodeProvider) fetchRecords(domainID int) ([]*linodego.DomainRecord, e
 	return records, nil
 }
 
-func (p *LinodeProvider) fetchZones() ([]*linodego.Domain, error) {
+func (p *LinodeProvider) fetchZones(ctx context.Context) ([]*linodego.Domain, error) {
 	var zones []*linodego.Domain
 
-	allZones, err := p.Client.ListDomains(context.TODO(), linodego.NewListOptions(0, ""))
+	allZones, err := p.Client.ListDomains(ctx, linodego.NewListOptions(0, ""))
 
 	if err != nil {
 		return nil, err
@@ -173,7 +173,7 @@ func (p *LinodeProvider) fetchZones() ([]*linodego.Domain, error) {
 }
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
-func (p *LinodeProvider) submitChanges(changes LinodeChanges) error {
+func (p *LinodeProvider) submitChanges(ctx context.Context, changes LinodeChanges) error {
 	for _, change := range changes.Creates {
 		logFields := log.Fields{
 			"record":   change.Options.Name,
@@ -187,7 +187,7 @@ func (p *LinodeProvider) submitChanges(changes LinodeChanges) error {
 
 		if p.DryRun {
 			log.WithFields(logFields).Info("Would create record.")
-		} else if _, err := p.Client.CreateDomainRecord(context.TODO(), change.Domain.ID, change.Options); err != nil {
+		} else if _, err := p.Client.CreateDomainRecord(ctx, change.Domain.ID, change.Options); err != nil {
 			log.WithFields(logFields).Errorf(
 				"Failed to Create record: %v",
 				err,
@@ -208,7 +208,7 @@ func (p *LinodeProvider) submitChanges(changes LinodeChanges) error {
 
 		if p.DryRun {
 			log.WithFields(logFields).Info("Would delete record.")
-		} else if err := p.Client.DeleteDomainRecord(context.TODO(), change.Domain.ID, change.DomainRecord.ID); err != nil {
+		} else if err := p.Client.DeleteDomainRecord(ctx, change.Domain.ID, change.DomainRecord.ID); err != nil {
 			log.WithFields(logFields).Errorf(
 				"Failed to Delete record: %v",
 				err,
@@ -229,7 +229,7 @@ func (p *LinodeProvider) submitChanges(changes LinodeChanges) error {
 
 		if p.DryRun {
 			log.WithFields(logFields).Info("Would update record.")
-		} else if _, err := p.Client.UpdateDomainRecord(context.TODO(), change.Domain.ID, change.DomainRecord.ID, change.Options); err != nil {
+		} else if _, err := p.Client.UpdateDomainRecord(ctx, change.Domain.ID, change.DomainRecord.ID, change.Options); err != nil {
 			log.WithFields(logFields).Errorf(
 				"Failed to Update record: %v",
 				err,
@@ -259,7 +259,7 @@ func getPriority() *int {
 func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	recordsByZoneID := make(map[string][]*linodego.DomainRecord)
 
-	zones, err := p.fetchZones()
+	zones, err := p.fetchZones(ctx)
 
 	if err != nil {
 		return err
@@ -276,7 +276,7 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 
 	// Fetch records for each zone
 	for _, zone := range zones {
-		records, err := p.fetchRecords(zone.ID)
+		records, err := p.fetchRecords(ctx, zone.ID)
 
 		if err != nil {
 			return err
@@ -484,7 +484,7 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		}
 	}
 
-	return p.submitChanges(LinodeChanges{
+	return p.submitChanges(ctx, LinodeChanges{
 		Creates: linodeCreates,
 		Deletes: linodeDeletes,
 		Updates: linodeUpdates,

@@ -194,7 +194,7 @@ func hasTrailingDot(target string) bool {
 func TestGoogleZonesIDFilter(t *testing.T) {
 	provider := newGoogleProviderZoneOverlap(t, NewDomainFilter([]string{"cluster.local."}), NewZoneIDFilter([]string{"10002"}), false, []*endpoint.Endpoint{})
 
-	zones, err := provider.Zones()
+	zones, err := provider.Zones(context.Background())
 	require.NoError(t, err)
 
 	validateZones(t, zones, map[string]*dns.ManagedZone{
@@ -205,7 +205,7 @@ func TestGoogleZonesIDFilter(t *testing.T) {
 func TestGoogleZonesNameFilter(t *testing.T) {
 	provider := newGoogleProviderZoneOverlap(t, NewDomainFilter([]string{"cluster.local."}), NewZoneIDFilter([]string{"internal-2"}), false, []*endpoint.Endpoint{})
 
-	zones, err := provider.Zones()
+	zones, err := provider.Zones(context.Background())
 	require.NoError(t, err)
 
 	validateZones(t, zones, map[string]*dns.ManagedZone{
@@ -216,7 +216,7 @@ func TestGoogleZonesNameFilter(t *testing.T) {
 func TestGoogleZones(t *testing.T) {
 	provider := newGoogleProvider(t, NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), NewZoneIDFilter([]string{""}), false, []*endpoint.Endpoint{})
 
-	zones, err := provider.Zones()
+	zones, err := provider.Zones(context.Background())
 	require.NoError(t, err)
 
 	validateZones(t, zones, map[string]*dns.ManagedZone{
@@ -777,7 +777,7 @@ func setupGoogleRecords(t *testing.T, provider *GoogleProvider, endpoints []*end
 
 func clearGoogleRecords(t *testing.T, provider *GoogleProvider, zone string) {
 	recordSets := []*dns.ResourceRecordSet{}
-	require.NoError(t, provider.resourceRecordSetsClient.List(provider.project, zone).Pages(context.TODO(), func(resp *dns.ResourceRecordSetsListResponse) error {
+	require.NoError(t, provider.resourceRecordSetsClient.List(provider.project, zone).Pages(context.Background(), func(resp *dns.ResourceRecordSetsListResponse) error {
 		for _, r := range resp.Rrsets {
 			switch r.Type {
 			case endpoint.RecordTypeA, endpoint.RecordTypeCNAME:

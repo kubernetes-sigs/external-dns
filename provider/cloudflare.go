@@ -146,9 +146,8 @@ func NewCloudFlareProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter,
 }
 
 // Zones returns the list of hosted zones.
-func (p *CloudFlareProvider) Zones() ([]cloudflare.Zone, error) {
+func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, error) {
 	result := []cloudflare.Zone{}
-	ctx := context.TODO()
 	p.PaginationOptions.Page = 1
 
 	for {
@@ -177,7 +176,7 @@ func (p *CloudFlareProvider) Zones() ([]cloudflare.Zone, error) {
 
 // Records returns the list of records.
 func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	zones, err := p.Zones()
+	zones, err := p.Zones(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -208,17 +207,17 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareUpdate, changes.UpdateNew, proxiedByDefault)...)
 	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareDelete, changes.Delete, proxiedByDefault)...)
 
-	return p.submitChanges(combinedChanges)
+	return p.submitChanges(ctx, combinedChanges)
 }
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
-func (p *CloudFlareProvider) submitChanges(changes []*cloudFlareChange) error {
+func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloudFlareChange) error {
 	// return early if there is nothing to change
 	if len(changes) == 0 {
 		return nil
 	}
 
-	zones, err := p.Zones()
+	zones, err := p.Zones(ctx)
 	if err != nil {
 		return err
 	}

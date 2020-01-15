@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"os/signal"
@@ -59,6 +60,8 @@ func main() {
 		log.Fatalf("failed to parse log level: %v", err)
 	}
 	log.SetLevel(ll)
+
+	ctx := context.Background()
 
 	stopChan := make(chan struct{}, 1)
 
@@ -144,9 +147,9 @@ func main() {
 	case "rcodezero":
 		p, err = provider.NewRcodeZeroProvider(domainFilter, cfg.DryRun, cfg.RcodezeroTXTEncrypt)
 	case "google":
-		p, err = provider.NewGoogleProvider(cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.DryRun)
+		p, err = provider.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.DryRun)
 	case "digitalocean":
-		p, err = provider.NewDigitalOceanProvider(domainFilter, cfg.DryRun)
+		p, err = provider.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun)
 	case "linode":
 		p, err = provider.NewLinodeProvider(domainFilter, cfg.DryRun, externaldns.Version)
 	case "dnsimple":
@@ -197,6 +200,7 @@ func main() {
 		p, err = provider.NewDesignateProvider(domainFilter, cfg.DryRun)
 	case "pdns":
 		p, err = provider.NewPDNSProvider(
+			ctx,
 			provider.PDNSConfig{
 				DomainFilter: domainFilter,
 				DryRun:       cfg.DryRun,
@@ -266,14 +270,14 @@ func main() {
 	}
 
 	if cfg.Once {
-		err := ctrl.RunOnce()
+		err := ctrl.RunOnce(ctx)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		os.Exit(0)
 	}
-	ctrl.Run(stopChan)
+	ctrl.Run(ctx, stopChan)
 }
 
 func handleSigterm(stopChan chan struct{}) {

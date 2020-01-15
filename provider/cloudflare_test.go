@@ -477,7 +477,7 @@ func TestCloudFlareZones(t *testing.T) {
 		zoneIDFilter: NewZoneIDFilter([]string{""}),
 	}
 
-	zones, err := provider.Zones()
+	zones, err := provider.Zones(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}

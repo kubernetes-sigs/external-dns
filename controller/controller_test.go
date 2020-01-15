@@ -146,7 +146,7 @@ func TestRunOnce(t *testing.T) {
 		Policy:   &plan.SyncPolicy{},
 	}
 
-	assert.NoError(t, ctrl.RunOnce())
+	assert.NoError(t, ctrl.RunOnce(context.Background()))
 
 	// Validate that the mock source was called.
 	source.AssertExpectations(t)
