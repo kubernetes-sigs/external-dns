@@ -141,7 +141,7 @@ func newNS1ProviderWithHTTPClient(config NS1Config, client *http.Client) (*NS1Pr
 }
 
 // Records returns the endpoints this provider knows about
-func (p *NS1Provider) Records() ([]*endpoint.Endpoint, error) {
+func (p *NS1Provider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.zonesFiltered()
 	if err != nil {
 		return nil, err

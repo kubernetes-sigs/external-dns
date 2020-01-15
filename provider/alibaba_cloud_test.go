@@ -246,7 +246,7 @@ func newTestAlibabaCloudProvider(private bool) *AlibabaCloudProvider {
 
 func TestAlibabaCloudPrivateProvider_Records(t *testing.T) {
 	p := newTestAlibabaCloudProvider(true)
-	endpoints, err := p.Records()
+	endpoints, err := p.Records(context.Background())
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
 	} else {
@@ -261,7 +261,7 @@ func TestAlibabaCloudPrivateProvider_Records(t *testing.T) {
 
 func TestAlibabaCloudProvider_Records(t *testing.T) {
 	p := newTestAlibabaCloudProvider(false)
-	endpoints, err := p.Records()
+	endpoints, err := p.Records(context.Background())
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
 	} else {
@@ -302,8 +302,9 @@ func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 			},
 		},
 	}
-	p.ApplyChanges(context.Background(), &changes)
-	endpoints, err := p.Records()
+	ctx := context.Background()
+	p.ApplyChanges(ctx, &changes)
+	endpoints, err := p.Records(ctx)
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
 	} else {
@@ -318,7 +319,7 @@ func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 
 func TestAlibabaCloudProvider_Records_PrivateZone(t *testing.T) {
 	p := newTestAlibabaCloudProvider(true)
-	endpoints, err := p.Records()
+	endpoints, err := p.Records(context.Background())
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
 	} else {
@@ -359,8 +360,9 @@ func TestAlibabaCloudProvider_ApplyChanges_PrivateZone(t *testing.T) {
 			},
 		},
 	}
-	p.ApplyChanges(context.Background(), &changes)
-	endpoints, err := p.Records()
+	ctx := context.Background()
+	p.ApplyChanges(ctx, &changes)
+	endpoints, err := p.Records(ctx)
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
 	} else {

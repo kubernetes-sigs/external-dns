@@ -138,7 +138,7 @@ func newSdNamespaceFilter(namespaceTypeConfig string) *sd.NamespaceFilter {
 }
 
 // Records returns list of all endpoints.
-func (p *AWSSDProvider) Records() (endpoints []*endpoint.Endpoint, err error) {
+func (p *AWSSDProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, err error) {
 	namespaces, err := p.ListNamespaces()
 	if err != nil {
 		return nil, err

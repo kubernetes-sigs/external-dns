@@ -39,7 +39,7 @@ type mockProvider struct {
 }
 
 // Records returns the desired mock endpoints.
-func (p *mockProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p *mockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return p.RecordsStore, nil
 }
 

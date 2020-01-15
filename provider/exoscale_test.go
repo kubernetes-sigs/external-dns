@@ -107,7 +107,7 @@ func contains(arr []*endpoint.Endpoint, name string) bool {
 func TestExoscaleGetRecords(t *testing.T) {
 	provider := NewExoscaleProviderWithClient("", "", "", NewExoscaleClientStub(), false)
 
-	if recs, err := provider.Records(); err == nil {
+	if recs, err := provider.Records(context.Background()); err == nil {
 		assert.Equal(t, 3, len(recs))
 		assert.True(t, contains(recs, "v1.foo.com"))
 		assert.True(t, contains(recs, "v2.bar.com"))

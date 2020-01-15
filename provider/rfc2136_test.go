@@ -113,7 +113,7 @@ func TestRfc2136GetRecordsMultipleTargets(t *testing.T) {
 	provider, err := createRfc2136StubProvider(stub)
 	assert.NoError(t, err)
 
-	recs, err := provider.Records()
+	recs, err := provider.Records(context.Background())
 	assert.NoError(t, err)
 
 	assert.Equal(t, 1, len(recs), "expected single record")
@@ -142,7 +142,7 @@ func TestRfc2136GetRecords(t *testing.T) {
 	provider, err := createRfc2136StubProvider(stub)
 	assert.NoError(t, err)
 
-	recs, err := provider.Records()
+	recs, err := provider.Records(context.Background())
 	assert.NoError(t, err)
 
 	assert.Equal(t, 6, len(recs))

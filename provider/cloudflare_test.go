@@ -491,19 +491,21 @@ func TestRecords(t *testing.T) {
 	provider := &CloudFlareProvider{
 		Client: &mockCloudFlareClient{},
 	}
-	records, err := provider.Records()
+	ctx := context.Background()
+
+	records, err := provider.Records(ctx)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
 
 	assert.Equal(t, 1, len(records))
 	provider.Client = &mockCloudFlareDNSRecordsFail{}
-	_, err = provider.Records()
+	_, err = provider.Records(ctx)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
 	provider.Client = &mockCloudFlareListZonesFail{}
-	_, err = provider.Records()
+	_, err = provider.Records(ctx)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}

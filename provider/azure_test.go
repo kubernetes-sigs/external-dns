@@ -273,7 +273,8 @@ func TestAzureRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	actual, err := provider.Records()
+	ctx := context.Background()
+	actual, err := provider.Records(ctx)
 
 	if err != nil {
 		t.Fatal(err)
@@ -309,7 +310,8 @@ func TestAzureMultiRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	actual, err := provider.Records()
+	ctx := context.Background()
+	actual, err := provider.Records(ctx)
 
 	if err != nil {
 		t.Fatal(err)

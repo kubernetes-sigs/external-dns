@@ -281,7 +281,7 @@ func (p *AlibabaCloudProvider) refreshStsToken(sleepTime time.Duration) {
 // Records gets the current records.
 //
 // Returns the current records or an error if the operation failed.
-func (p *AlibabaCloudProvider) Records() (endpoints []*endpoint.Endpoint, err error) {
+func (p *AlibabaCloudProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, err error) {
 	if p.privateZone {
 		endpoints, err = p.privateZoneRecords()
 	} else {

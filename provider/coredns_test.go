@@ -66,7 +66,7 @@ func TestAServiceTranslation(t *testing.T) {
 		client:        client,
 		coreDNSPrefix: defaultCoreDNSPrefix,
 	}
-	endpoints, err := provider.Records()
+	endpoints, err := provider.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +98,7 @@ func TestCNAMEServiceTranslation(t *testing.T) {
 		client:        client,
 		coreDNSPrefix: defaultCoreDNSPrefix,
 	}
-	endpoints, err := provider.Records()
+	endpoints, err := provider.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +130,7 @@ func TestTXTServiceTranslation(t *testing.T) {
 		client:        client,
 		coreDNSPrefix: defaultCoreDNSPrefix,
 	}
-	endpoints, err := provider.Records()
+	endpoints, err := provider.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -164,7 +164,7 @@ func TestAWithTXTServiceTranslation(t *testing.T) {
 		client:        client,
 		coreDNSPrefix: defaultCoreDNSPrefix,
 	}
-	endpoints, err := provider.Records()
+	endpoints, err := provider.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,7 +206,7 @@ func TestCNAMEWithTXTServiceTranslation(t *testing.T) {
 		client:        client,
 		coreDNSPrefix: defaultCoreDNSPrefix,
 	}
-	endpoints, err := provider.Records()
+	endpoints, err := provider.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -264,7 +264,7 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("domain1.local", "A", "6.6.6.6"),
 		},
 	}
-	records, _ := coredns.Records()
+	records, _ := coredns.Records(context.Background())
 	for _, ep := range records {
 		if ep.DNSName == "domain1.local" {
 			changes2.UpdateOld = append(changes2.UpdateOld, ep)
@@ -296,7 +296,8 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 }
 
 func applyServiceChanges(provider coreDNSProvider, changes *plan.Changes) {
-	records, _ := provider.Records()
+	ctx := context.Background()
+	records, _ := provider.Records(ctx)
 	for _, col := range [][]*endpoint.Endpoint{changes.Create, changes.UpdateNew, changes.Delete} {
 		for _, record := range col {
 			for _, existingRecord := range records {
@@ -306,7 +307,7 @@ func applyServiceChanges(provider coreDNSProvider, changes *plan.Changes) {
 			}
 		}
 	}
-	provider.ApplyChanges(context.Background(), changes)
+	provider.ApplyChanges(ctx, changes)
 }
 
 func validateServices(services, expectedServices map[string]*Service, t *testing.T, step int) {

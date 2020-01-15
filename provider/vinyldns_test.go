@@ -90,18 +90,20 @@ func TestVinylDNSServices(t *testing.T) {
 }
 
 func testVinylDNSProviderRecords(t *testing.T) {
+	ctx := context.Background()
+
 	mockVinylDNSProvider.domainFilter = NewDomainFilter([]string{"example.com"})
-	result, err := mockVinylDNSProvider.Records()
+	result, err := mockVinylDNSProvider.Records(ctx)
 	assert.Nil(t, err)
 	assert.Equal(t, len(vinylDNSRecords), len(result))
 
 	mockVinylDNSProvider.zoneFilter = NewZoneIDFilter([]string{"0"})
-	result, err = mockVinylDNSProvider.Records()
+	result, err = mockVinylDNSProvider.Records(ctx)
 	assert.Nil(t, err)
 	assert.Equal(t, len(vinylDNSRecords), len(result))
 
 	mockVinylDNSProvider.zoneFilter = NewZoneIDFilter([]string{"1"})
-	result, err = mockVinylDNSProvider.Records()
+	result, err = mockVinylDNSProvider.Records(ctx)
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(result))
 }

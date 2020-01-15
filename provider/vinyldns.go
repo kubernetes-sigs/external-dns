@@ -75,7 +75,7 @@ func NewVinylDNSProvider(domainFilter DomainFilter, zoneFilter ZoneIDFilter, dry
 	}, nil
 }
 
-func (p *vinyldnsProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
+func (p *vinyldnsProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.client.Zones()
 	if err != nil {
 		return nil, err
