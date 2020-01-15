@@ -57,6 +57,7 @@ type serviceSource struct {
 	ignoreHostnameAnnotation bool
 	publishInternal          bool
 	publishHostIP            bool
+	publishPodIP             bool
 	serviceInformer          coreinformers.ServiceInformer
 	podInformer              coreinformers.PodInformer
 	nodeInformer             coreinformers.NodeInformer
@@ -64,7 +65,7 @@ type serviceSource struct {
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, publishPodIP bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -136,6 +137,7 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
 		publishInternal:          publishInternal,
 		publishHostIP:            publishHostIP,
+		publishPodIP:             publishPodIP,
 		serviceInformer:          serviceInformer,
 		podInformer:              podInformer,
 		nodeInformer:             nodeInformer,
@@ -230,7 +232,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 	for _, v := range pods {
 		headlessDomains := []string{hostname}
 
-		if v.Spec.Hostname != "" {
+		if v.Spec.Hostname != "" && !sc.publishPodIP {
 			headlessDomains = append(headlessDomains, fmt.Sprintf("%s.%s", v.Spec.Hostname, hostname))
 		}
 		for _, headlessDomain := range headlessDomains {
@@ -380,6 +382,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 
 	var endpoints []*endpoint.Endpoint
 	var targets endpoint.Targets
+	print(svc.Spec.Type == v1.ServiceTypeClusterIP)
 
 	switch svc.Spec.Type {
 	case v1.ServiceTypeLoadBalancer:
@@ -388,7 +391,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 		if sc.publishInternal {
 			targets = append(targets, extractServiceIps(svc)...)
 		}
-		if svc.Spec.ClusterIP == v1.ClusterIPNone {
+		if svc.Spec.ClusterIP == v1.ClusterIPNone || sc.publishPodIP {
 			endpoints = append(endpoints, sc.extractHeadlessEndpoints(svc, hostname, ttl)...)
 		}
 	case v1.ServiceTypeNodePort:
