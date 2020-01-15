@@ -30,7 +30,7 @@ import (
 // each entry includes owner information
 // ApplyChanges(changes *plan.Changes) propagates the changes to the DNS Provider API and correspondingly updates ownership depending on type of registry being used
 type Registry interface {
-	Records() ([]*endpoint.Endpoint, error)
+	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 	ApplyChanges(ctx context.Context, changes *plan.Changes) error
 }
 

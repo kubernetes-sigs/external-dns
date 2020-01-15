@@ -44,8 +44,8 @@ func NewAWSSDRegistry(provider provider.Provider, ownerID string) (*AWSSDRegistr
 
 // Records calls AWS SD API and expects AWS SD provider to provider Owner/Resource information as a serialized
 // value in the AWSSDDescriptionLabel value in the Labels map
-func (sdr *AWSSDRegistry) Records() ([]*endpoint.Endpoint, error) {
-	records, err := sdr.provider.Records()
+func (sdr *AWSSDRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	records, err := sdr.provider.Records(ctx)
 	if err != nil {
 		return nil, err
 	}

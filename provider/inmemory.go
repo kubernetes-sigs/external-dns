@@ -119,7 +119,7 @@ func (im *InMemoryProvider) Zones() map[string]string {
 }
 
 // Records returns the list of endpoints
-func (im *InMemoryProvider) Records() ([]*endpoint.Endpoint, error) {
+func (im *InMemoryProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	defer im.OnRecords()
 
 	endpoints := make([]*endpoint.Endpoint, 0)

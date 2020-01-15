@@ -157,8 +157,7 @@ func (p *OCIProvider) newFilteredRecordOperations(endpoints []*endpoint.Endpoint
 }
 
 // Records returns the list of records in a given hosted zone.
-func (p *OCIProvider) Records() ([]*endpoint.Endpoint, error) {
-	ctx := context.Background()
+func (p *OCIProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.zones(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting zones")

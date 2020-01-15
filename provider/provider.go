@@ -27,7 +27,7 @@ import (
 
 // Provider defines the interface DNS providers should implement.
 type Provider interface {
-	Records() ([]*endpoint.Endpoint, error)
+	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 	ApplyChanges(ctx context.Context, changes *plan.Changes) error
 }
 

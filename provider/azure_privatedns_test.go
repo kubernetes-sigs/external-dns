@@ -266,7 +266,7 @@ func TestAzurePrivateDNSRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	actual, err := provider.Records()
+	actual, err := provider.Records(context.Background())
 
 	if err != nil {
 		t.Fatal(err)
@@ -302,7 +302,7 @@ func TestAzurePrivateDNSMultiRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	actual, err := provider.Records()
+	actual, err := provider.Records(context.Background())
 
 	if err != nil {
 		t.Fatal(err)

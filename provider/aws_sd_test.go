@@ -289,7 +289,7 @@ func TestAWSSDProvider_Records(t *testing.T) {
 
 	provider := newTestAWSSDProvider(api, NewDomainFilter([]string{}), "")
 
-	endpoints, _ := provider.Records()
+	endpoints, _ := provider.Records(context.Background())
 
 	assert.True(t, testutils.SameEndpoints(expectedEndpoints, endpoints), "expected and actual endpoints don't match, expected=%v, actual=%v", expectedEndpoints, endpoints)
 }
@@ -317,8 +317,10 @@ func TestAWSSDProvider_ApplyChanges(t *testing.T) {
 
 	provider := newTestAWSSDProvider(api, NewDomainFilter([]string{}), "")
 
+	ctx := context.Background()
+
 	// apply creates
-	provider.ApplyChanges(context.Background(), &plan.Changes{
+	provider.ApplyChanges(ctx, &plan.Changes{
 		Create: expectedEndpoints,
 	})
 
@@ -330,16 +332,17 @@ func TestAWSSDProvider_ApplyChanges(t *testing.T) {
 	assert.NotNil(t, existingServices["service3"])
 
 	// make sure instances were registered
-	endpoints, _ := provider.Records()
+	endpoints, _ := provider.Records(ctx)
 	assert.True(t, testutils.SameEndpoints(expectedEndpoints, endpoints), "expected and actual endpoints don't match, expected=%v, actual=%v", expectedEndpoints, endpoints)
 
+	ctx = context.Background()
 	// apply deletes
-	provider.ApplyChanges(context.Background(), &plan.Changes{
+	provider.ApplyChanges(ctx, &plan.Changes{
 		Delete: expectedEndpoints,
 	})
 
 	// make sure all instances are gone
-	endpoints, _ = provider.Records()
+	endpoints, _ = provider.Records(ctx)
 	assert.Empty(t, endpoints)
 }
 

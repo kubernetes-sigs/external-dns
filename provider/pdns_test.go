@@ -793,9 +793,11 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRecords() {
 		client: &PDNSAPIClientStub{},
 	}
 
+	ctx := context.Background()
+
 	/* We test that endpoints are returned correctly for a Zone when Records() is called
 	 */
-	eps, err := p.Records()
+	eps, err := p.Records(ctx)
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), endpointsMixedRecords, eps)
 
@@ -804,13 +806,13 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRecords() {
 	p = &PDNSProvider{
 		client: &PDNSAPIClientStubListZoneFailure{},
 	}
-	_, err = p.Records()
+	_, err = p.Records(ctx)
 	assert.NotNil(suite.T(), err)
 
 	p = &PDNSProvider{
 		client: &PDNSAPIClientStubListZonesFailure{},
 	}
-	_, err = p.Records()
+	_, err = p.Records(ctx)
 	assert.NotNil(suite.T(), err)
 
 }

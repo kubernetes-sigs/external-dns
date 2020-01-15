@@ -260,7 +260,7 @@ func NewCoreDNSProvider(domainFilter DomainFilter, prefix string, dryRun bool) (
 
 // Records returns all DNS records found in CoreDNS etcd backend. Depending on the record fields
 // it may be mapped to one or two records of type A, CNAME, TXT, A+TXT, CNAME+TXT
-func (p coreDNSProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	var result []*endpoint.Endpoint
 	services, err := p.client.GetServices(p.coreDNSPrefix)
 	if err != nil {

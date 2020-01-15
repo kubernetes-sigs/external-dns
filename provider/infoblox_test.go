@@ -355,7 +355,7 @@ func TestInfobloxRecords(t *testing.T) {
 	}
 
 	provider := newInfobloxProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, &client)
-	actual, err := provider.Records()
+	actual, err := provider.Records(context.Background())
 
 	if err != nil {
 		t.Fatal(err)
