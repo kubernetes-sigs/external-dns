@@ -157,7 +157,7 @@ func createPrivateMockRecordSetMultiWithTTL(name, recordType string, ttl int64, 
 	}
 	return privatedns.RecordSet{
 		Name:                to.StringPtr(name),
-		Type:                to.StringPtr("Microsoft.Network/privateDnsZones" + recordType),
+		Type:                to.StringPtr("Microsoft.Network/privateDnsZones/" + recordType),
 		RecordSetProperties: getterFunc(values, ttl),
 	}
 
