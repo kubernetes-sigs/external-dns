@@ -18,22 +18,13 @@ Hosted Zone IDs.
   "Statement": [
     {
       "Effect": "Allow",
-      "Action": [
-        "route53:ChangeResourceRecordSets"
-      ],
-      "Resource": [
-        "arn:aws:route53:::hostedzone/*"
-      ]
+      "Action": ["route53:ChangeResourceRecordSets"],
+      "Resource": ["arn:aws:route53:::hostedzone/*"]
     },
     {
       "Effect": "Allow",
-      "Action": [
-        "route53:ListHostedZones",
-        "route53:ListResourceRecordSets"
-      ],
-      "Resource": [
-        "*"
-      ]
+      "Action": ["route53:ListHostedZones", "route53:ListResourceRecordSets"],
+      "Resource": ["*"]
     }
   ]
 }
@@ -85,7 +76,7 @@ instance metadata service (169.254.169.254). This is allowed by default.
 
 ## Set up a hosted zone
 
-*If you prefer to try-out ExternalDNS in one of the existing hosted-zones you can skip this step*
+_If you prefer to try-out ExternalDNS in one of the existing hosted-zones you can skip this step_
 
 Create a DNS zone which will contain the managed DNS records.
 
@@ -119,6 +110,7 @@ Then apply one of the following manifests file to deploy ExternalDNS. You can ch
 For clusters with RBAC enabled, be sure to choose the correct `namespace`.
 
 ### Manifest (for clusters without RBAC enabled)
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -140,17 +132,17 @@ spec:
         iam.amazonaws.com/role: arn:aws:iam::ACCOUNT-ID:role/IAM-SERVICE-ROLE-NAME
     spec:
       containers:
-      - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:latest
-        args:
-        - --source=service
-        - --source=ingress
-        - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
-        - --provider=aws
-        - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
-        - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
-        - --registry=txt
-        - --txt-owner-id=my-hostedzone-identifier
+        - name: external-dns
+          image: registry.opensource.zalan.do/teapot/external-dns:latest
+          args:
+            - --source=service
+            - --source=ingress
+            - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
+            - --provider=aws
+            - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+            - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
+            - --registry=txt
+            - --txt-owner-id=my-hostedzone-identifier
 ```
 
 ### Manifest (for clusters with RBAC enabled)
@@ -171,18 +163,18 @@ kind: ClusterRole
 metadata:
   name: external-dns
 rules:
-- apiGroups: [""]
-  resources: ["services"]
-  verbs: ["get","watch","list"]
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["get","watch","list"]
-- apiGroups: ["extensions"]
-  resources: ["ingresses"]
-  verbs: ["get","watch","list"]
-- apiGroups: [""]
-  resources: ["nodes"]
-  verbs: ["list","watch"]
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: ["extensions"]
+    resources: ["ingresses"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
@@ -193,9 +185,9 @@ roleRef:
   kind: ClusterRole
   name: external-dns
 subjects:
-- kind: ServiceAccount
-  name: external-dns
-  namespace: default
+  - kind: ServiceAccount
+    name: external-dns
+    namespace: default
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -218,17 +210,17 @@ spec:
     spec:
       serviceAccountName: external-dns
       containers:
-      - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:latest
-        args:
-        - --source=service
-        - --source=ingress
-        - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
-        - --provider=aws
-        - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
-        - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
-        - --registry=txt
-        - --txt-owner-id=my-hostedzone-identifier
+        - name: external-dns
+          image: registry.opensource.zalan.do/teapot/external-dns:latest
+          args:
+            - --source=service
+            - --source=ingress
+            - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
+            - --provider=aws
+            - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+            - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
+            - --registry=txt
+            - --txt-owner-id=my-hostedzone-identifier
       securityContext:
         fsGroup: 65534 # For ExternalDNS to be able to read Kubernetes and AWS token files
 ```
@@ -240,6 +232,10 @@ This list is not the full list, but a few arguments that where chosen.
 ### aws-zone-type
 
 `aws-zone-type` allows filtering for private and public zones
+
+### subdomainFilter
+
+`subdomainFilter` allows only domains matched by the subdomainfilter to be created.
 
 ## Annotations
 
@@ -264,12 +260,12 @@ metadata:
     kubernetes.io/ingress.class: "nginx" # use the one that corresponds to your ingress controller.
 spec:
   rules:
-  - host: foo.bar.com
-    http:
-      paths:
-      - backend:
-          serviceName: foo
-          servicePort: 80
+    - host: foo.bar.com
+      http:
+        paths:
+          - backend:
+              serviceName: foo
+              servicePort: 80
 ```
 
 ## Verify ExternalDNS works (Service example)
@@ -290,14 +286,13 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-  - port: 80
-    name: http
-    targetPort: 80
+    - port: 80
+      name: http
+      targetPort: 80
   selector:
     app: nginx
 
 ---
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -312,11 +307,11 @@ spec:
         app: nginx
     spec:
       containers:
-      - image: nginx
-        name: nginx
-        ports:
-        - containerPort: 80
-          name: http
+        - image: nginx
+          name: nginx
+          ports:
+            - containerPort: 80
+              name: http
 ```
 
 After roughly two minutes check that a corresponding DNS record for your service was created.
@@ -387,8 +382,7 @@ metadata:
   annotations:
     external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.my-org.com
     external-dns.alpha.kubernetes.io/ttl: 60
-spec:
-    ...
+spec: ...
 ```
 
 This will set the DNS record's TTL to 60 seconds.
@@ -397,18 +391,18 @@ This will set the DNS record's TTL to 60 seconds.
 
 Route53 offers [different routing policies](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html). The routing policy for a record can be controlled with the following annotations:
 
-* `external-dns.alpha.kubernetes.io/set-identifier`: this **needs** to be set to use any of the following routing policies
+- `external-dns.alpha.kubernetes.io/set-identifier`: this **needs** to be set to use any of the following routing policies
 
 For any given DNS name, only **one** of the following routing policies can be used:
 
-* Weighted records: `external-dns.alpha.kubernetes.io/aws-weight`
-* Latency-based routing: `external-dns.alpha.kubernetes.io/aws-region`
-* Failover:`external-dns.alpha.kubernetes.io/aws-failover`
-* Geolocation-based routing:
-  * `external-dns.alpha.kubernetes.io/aws-geolocation-continent-code`
-  * `external-dns.alpha.kubernetes.io/aws-geolocation-country-code`
-  * `external-dns.alpha.kubernetes.io/aws-geolocation-subdivision-code`
-* Multi-value answer:`external-dns.alpha.kubernetes.io/aws-multi-value-answer`
+- Weighted records: `external-dns.alpha.kubernetes.io/aws-weight`
+- Latency-based routing: `external-dns.alpha.kubernetes.io/aws-region`
+- Failover:`external-dns.alpha.kubernetes.io/aws-failover`
+- Geolocation-based routing:
+  - `external-dns.alpha.kubernetes.io/aws-geolocation-continent-code`
+  - `external-dns.alpha.kubernetes.io/aws-geolocation-country-code`
+  - `external-dns.alpha.kubernetes.io/aws-geolocation-subdivision-code`
+- Multi-value answer:`external-dns.alpha.kubernetes.io/aws-multi-value-answer`
 
 ## Clean up
 
