@@ -4,7 +4,12 @@ It is meant to supplement the other provider-specific setup tutorials.
 
 **Note:** Using the Istio Gateway source requires Istio >=1.0.0.
 
+* Manifest (for clusters without RBAC enabled)
+* Manifest (for clusters with RBAC enabled)
+* Update existing Existing DNS Deployment
+
 ### Manifest (for clusters without RBAC enabled)
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -108,7 +113,22 @@ spec:
         - --txt-owner-id=my-identifier
 ```
 
+### Update existing Existing DNS Deployment
+
+* For clusters with running `external-dns`, you can just update the deployment.
+* With access to the `kube-system` namespace, update the existing `external-dns` deployment.
+  * Add a parameter to the arguments of the container to create dns entries with `--source=istio-gateway`.
+
+Execute the following command or update the argument.
+
+```console
+kubectl patch deployment external-dns --type='json' \
+  -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/2", "value": "--source=istio-gateway" }]'
+deployment.extensions/external-dns patched
+```
+
 ### Verify External DNS works (Gateway example)
+
 Follow the [Istio ingress traffic tutorial](https://istio.io/docs/tasks/traffic-management/ingress/) 
 to deploy a sample service that will be exposed outside of the service mesh.
 The following are relevant snippets from that tutorial.
