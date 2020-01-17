@@ -124,7 +124,13 @@ Execute the following command or update the argument.
 ```console
 kubectl patch deployment external-dns --type='json' \
   -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/2", "value": "--source=istio-gateway" }]'
-deployment.extensions/external-dns patched
+```
+
+In case the setup uses a `clusterrole`, just append a new value to the enable the istio group.
+
+```console
+kubectl patch clusterrole external-dns --type='json' \
+  -p='[{"op": "add", "path": "/rules/4", "value": { "apiGroups": [ "networking.istio.io"], "resources": ["gateways"],"verbs": ["get", "watch", "list" ]} }]'
 ```
 
 ### Verify External DNS works (Gateway example)
@@ -213,3 +219,37 @@ transfer-encoding: chunked
 ```
 
 **Note:** The `-H` flag in the original Istio tutorial is no longer necessary in the `curl` commands.
+
+### Debug External-DNS
+
+* Look for the deployment pod to see the status
+
+```console$ kubectl get pods | grep external-dns
+external-dns-6b84999479-4knv9     1/1     Running   0   3h29m
+```
+
+* Watch for the logs as follows
+
+```console
+$ kubectl logs -f external-dns-6b84999479-4knv9
+```
+
+At this point, you can `create` or `update` any `Istio Gateway` object with `hosts` entries array.
+
+> **ATTENTION**: Make sure to specify those whose account is related to the DNS record.
+
+* Successful executions will print the following
+
+```console
+time="2020-01-17T06:08:08Z" level=info msg="Desired change: CREATE httpbin.example.com A"
+time="2020-01-17T06:08:08Z" level=info msg="Desired change: CREATE httpbin.example.comm TXT"
+time="2020-01-17T06:08:08Z" level=info msg="2 record(s) in zone example.comm. were successfully updated"
+time="2020-01-17T06:09:08Z" level=info msg="All records are already up to date, there are no changes for the matching hosted zones"
+```
+
+* If there's any problem around `clusterrole`, you would see the errors showing wrong permissions:
+
+```console
+source \"gateways\" in API group \"networking.istio.io\" at the cluster scope"
+time="2020-01-17T06:07:08Z" level=error msg="gateways.networking.istio.io is forbidden: User \"system:serviceaccount:kube-system:external-dns\" cannot list resource \"gateways\" in API group \"networking.istio.io\" at the cluster scope"
+```
