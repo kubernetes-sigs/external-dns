@@ -35,7 +35,7 @@ var `NS1_APIKEY` will be needed to run ExternalDNS with NS1.
 
 4.  Enter the name of the application and modify permissions and settings as desired. Once complete, click **Create Key**. The new API key appears in the list.
 
-    Note: Set the permissions for your API keys just as you would for a user or team associated with your organization's NS1 account. For more information, refer to the article [Creating and Managing API Keys](https://ns1.com/knowledgebase/creating-and-managing-users) in the NS1 Knowledge Base.
+    Note: Set the permissions for your API keys just as you would for a user or team associated with your organization's NS1 account. For more information, refer to the article [Creating and Managing API Keys](https://help.ns1.com/hc/en-us/articles/360026140094-Creating-managing-users) in the NS1 Knowledge Base.
 
 ## Deploy ExternalDNS
 
