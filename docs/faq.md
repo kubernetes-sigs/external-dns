@@ -119,7 +119,7 @@ By default the `nginx-ingress-controller` assigns a single IP address to an Ingr
 
 In most AWS deployments, you'll instead want the Route 53 entry to be the FQDN of the ELB that is assigned to the `nginx-ingress-controller` Service. To accomplish this, when you create the `nginx-ingress-controller` Deployment, you need to provide the `--publish-service` option to the `/nginx-ingress-controller` executable under `args`. Once this is deployed new Ingress resources will get the ELB's FQDN and ExternalDNS will use the same when creating records in Route 53.
 
-According to the `nginx-ingress-controller` [docs](https://github.com/kubernetes/ingress/tree/master/controllers/nginx) the value you need to provide `--publish-service` is:
+According to the `nginx-ingress-controller` [docs](https://kubernetes.github.io/ingress-nginx/) the value you need to provide `--publish-service` is:
 
 > Service fronting the ingress controllers. Takes the form namespace/name. The controller will set the endpoint records on the ingress objects to reflect those on the service.
 
