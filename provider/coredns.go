@@ -366,6 +366,7 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 					prefix = fmt.Sprintf("%08x", rand.Int31())
 				}
 				services = append(services, Service{
+					Text:        ep.Labels["originalText"],
 					Key:         p.etcdKeyFor(prefix + "." + dnsName),
 					TargetStrip: strings.Count(prefix, ".") + 1,
 					TTL:         uint32(ep.RecordTTL),
@@ -394,7 +395,9 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		dnsName := ep.DNSName
 		if ep.Labels[randomPrefixLabel] != "" {
 			dnsName = ep.Labels[randomPrefixLabel] + "." + dnsName
-		} else { continue }
+		} else {
+			continue
+		}
 		key := p.etcdKeyFor(dnsName)
 		log.Infof("Delete key %s", key)
 		if !p.dryRun {
