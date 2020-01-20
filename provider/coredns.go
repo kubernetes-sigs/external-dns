@@ -326,10 +326,14 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			if ep.RecordType == endpoint.RecordTypeTXT {
 				continue
 			}
+			setText := ""
 			for _, target := range ep.Targets {
 				prefix := ep.Labels[randomPrefixLabel]
 				if prefix == "" {
 					prefix = fmt.Sprintf("%08x", rand.Int31())
+				}
+				if setText == "" {
+					setText = ep.Labels["originalText"]
 				}
 				setdnsName := dnsName
 				if ep.RecordType == endpoint.RecordTypeA {
@@ -346,8 +350,9 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				}
 
 				service := Service{
-					Host:        target,
-					Text:        ep.Labels["originalText"],
+					Host: target,
+					//					Text:        ep.Labels["originalText"],
+					Text:        setText,
 					Key:         p.etcdKeyFor(prefix + "." + setdnsName),
 					TargetStrip: strings.Count(prefix, ".") + 1,
 					TTL:         uint32(ep.RecordTTL),
@@ -366,7 +371,6 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 					prefix = fmt.Sprintf("%08x", rand.Int31())
 				}
 				services = append(services, Service{
-					Text:        ep.Labels["originalText"],
 					Key:         p.etcdKeyFor(prefix + "." + dnsName),
 					TargetStrip: strings.Count(prefix, ".") + 1,
 					TTL:         uint32(ep.RecordTTL),
@@ -376,9 +380,9 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			index++
 		}
 
-		//	for i := index; index > 0 && i < len(services); i++ {
-		//		services[i].Text = ""
-		//	}
+		for i := index; index > 0 && i < len(services); i++ {
+			services[i].Text = ""
+		}
 
 		for _, service := range services {
 			log.Infof("Add/set key %s to Host=%s, Text=%s, TTL=%d", service.Key, service.Host, service.Text, service.TTL)
