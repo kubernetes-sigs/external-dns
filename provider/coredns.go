@@ -361,6 +361,7 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			}
 		}
 		index := 0
+		setText := ""
 		for _, ep := range group {
 			if ep.RecordType != endpoint.RecordTypeTXT {
 				continue
@@ -370,7 +371,11 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				if prefix == "" {
 					prefix = fmt.Sprintf("%08x", rand.Int31())
 				}
+				if setText == "" {
+					setText = ep.Labels["originalText"]
+				}
 				services = append(services, Service{
+					Text:        setText,
 					Key:         p.etcdKeyFor(prefix + "." + dnsName),
 					TargetStrip: strings.Count(prefix, ".") + 1,
 					TTL:         uint32(ep.RecordTTL),
