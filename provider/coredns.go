@@ -392,7 +392,8 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	}
 
 	for _, ep := range changes.Delete {
-		spew.Printf("ep: %v ", ep)
+		str := spew.Sdump(ep)
+		log.Infof("ep: %v ", str)
 
 		dnsName := ep.DNSName
 		if ep.Labels[randomPrefixLabel] != "" {
