@@ -219,7 +219,12 @@ func (p *AkamaiProvider) Records(context.Context) (endpoints []*endpoint.Endpoin
 		return endpoints, err
 	}
 	for _, zone := range zones.Zones {
-		records, _ := p.fetchRecordSet(zone.Zone)
+		records, err := p.fetchRecordSet(zone.Zone)
+		if err != nil {
+			log.Warnf("No recordsets could be fetched for zone: '%s'!", zone.Zone)
+			continue
+		}
+
 		for _, record := range records.Recordsets {
 			rdata := make([]string, len(record.Rdata))
 
