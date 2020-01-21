@@ -103,8 +103,7 @@ type Controller struct {
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
-func (c *Controller) RunOnce() error {
-	ctx := context.Background()
+func (c *Controller) RunOnce(ctx context.Context) error {
 	records, err := c.Registry.Records(ctx)
 	if err != nil {
 		registryErrorsTotal.Inc()
@@ -141,11 +140,11 @@ func (c *Controller) RunOnce() error {
 }
 
 // Run runs RunOnce in a loop with a delay until stopChan receives a value.
-func (c *Controller) Run(stopChan <-chan struct{}) {
+func (c *Controller) Run(ctx context.Context, stopChan <-chan struct{}) {
 	ticker := time.NewTicker(c.Interval)
 	defer ticker.Stop()
 	for {
-		err := c.RunOnce()
+		err := c.RunOnce(ctx)
 		if err != nil {
 			log.Error(err)
 		}

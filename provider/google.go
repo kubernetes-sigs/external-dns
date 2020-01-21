@@ -116,11 +116,13 @@ type GoogleProvider struct {
 	managedZonesClient managedZonesServiceInterface
 	// A client for managing change sets
 	changesClient changesServiceInterface
+	// The context parameter to be passed for gcloud API calls.
+	ctx context.Context
 }
 
 // NewGoogleProvider initializes a new Google CloudDNS based Provider.
-func NewGoogleProvider(project string, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, batchChangeSize int, batchChangeInterval time.Duration, dryRun bool) (*GoogleProvider, error) {
-	gcloud, err := google.DefaultClient(context.TODO(), dns.NdevClouddnsReadwriteScope)
+func NewGoogleProvider(ctx context.Context, project string, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, batchChangeSize int, batchChangeInterval time.Duration, dryRun bool) (*GoogleProvider, error) {
+	gcloud, err := google.DefaultClient(ctx, dns.NdevClouddnsReadwriteScope)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +134,7 @@ func NewGoogleProvider(project string, domainFilter DomainFilter, zoneIDFilter Z
 		},
 	})
 
-	dnsClient, err := dns.NewService(context.TODO(), option.WithHTTPClient(gcloud))
+	dnsClient, err := dns.NewService(ctx, option.WithHTTPClient(gcloud))
 	if err != nil {
 		return nil, err
 	}
@@ -155,13 +157,14 @@ func NewGoogleProvider(project string, domainFilter DomainFilter, zoneIDFilter Z
 		resourceRecordSetsClient: resourceRecordSetsService{dnsClient.ResourceRecordSets},
 		managedZonesClient:       managedZonesService{dnsClient.ManagedZones},
 		changesClient:            changesService{dnsClient.Changes},
+		ctx:                      ctx,
 	}
 
 	return provider, nil
 }
 
 // Zones returns the list of hosted zones.
-func (p *GoogleProvider) Zones() (map[string]*dns.ManagedZone, error) {
+func (p *GoogleProvider) Zones(ctx context.Context) (map[string]*dns.ManagedZone, error) {
 	zones := make(map[string]*dns.ManagedZone)
 
 	f := func(resp *dns.ManagedZonesListResponse) error {
@@ -178,7 +181,7 @@ func (p *GoogleProvider) Zones() (map[string]*dns.ManagedZone, error) {
 	}
 
 	log.Debugf("Matching zones against domain filters: %v", p.domainFilter.filters)
-	if err := p.managedZonesClient.List(p.project).Pages(context.TODO(), f); err != nil {
+	if err := p.managedZonesClient.List(p.project).Pages(ctx, f); err != nil {
 		return nil, err
 	}
 
@@ -199,7 +202,7 @@ func (p *GoogleProvider) Zones() (map[string]*dns.ManagedZone, error) {
 
 // Records returns the list of records in all relevant zones.
 func (p *GoogleProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
-	zones, err := p.Zones()
+	zones, err := p.Zones(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +233,7 @@ func (p *GoogleProvider) CreateRecords(endpoints []*endpoint.Endpoint) error {
 
 	change.Additions = append(change.Additions, p.newFilteredRecords(endpoints)...)
 
-	return p.submitChange(change)
+	return p.submitChange(p.ctx, change)
 }
 
 // UpdateRecords updates a given set of old records to a new set of records in a given hosted zone.
@@ -240,7 +243,7 @@ func (p *GoogleProvider) UpdateRecords(records, oldRecords []*endpoint.Endpoint)
 	change.Additions = append(change.Additions, p.newFilteredRecords(records)...)
 	change.Deletions = append(change.Deletions, p.newFilteredRecords(oldRecords)...)
 
-	return p.submitChange(change)
+	return p.submitChange(p.ctx, change)
 }
 
 // DeleteRecords deletes a given set of DNS records in a given zone.
@@ -249,7 +252,7 @@ func (p *GoogleProvider) DeleteRecords(endpoints []*endpoint.Endpoint) error {
 
 	change.Deletions = append(change.Deletions, p.newFilteredRecords(endpoints)...)
 
-	return p.submitChange(change)
+	return p.submitChange(p.ctx, change)
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
@@ -263,7 +266,7 @@ func (p *GoogleProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 
 	change.Deletions = append(change.Deletions, p.newFilteredRecords(changes.Delete)...)
 
-	return p.submitChange(change)
+	return p.submitChange(ctx, change)
 }
 
 // newFilteredRecords returns a collection of RecordSets based on the given endpoints and domainFilter.
@@ -280,13 +283,13 @@ func (p *GoogleProvider) newFilteredRecords(endpoints []*endpoint.Endpoint) []*d
 }
 
 // submitChange takes a zone and a Change and sends it to Google.
-func (p *GoogleProvider) submitChange(change *dns.Change) error {
+func (p *GoogleProvider) submitChange(ctx context.Context, change *dns.Change) error {
 	if len(change.Additions) == 0 && len(change.Deletions) == 0 {
 		log.Info("All records are already up to date")
 		return nil
 	}
 
-	zones, err := p.Zones()
+	zones, err := p.Zones(ctx)
 	if err != nil {
 		return err
 	}

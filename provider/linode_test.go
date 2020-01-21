@@ -160,7 +160,7 @@ func TestLinodeStripRecordName(t *testing.T) {
 	}))
 }
 
-func TestLinodeFetchZonesNoFiilters(t *testing.T) {
+func TestLinodeFetchZonesNoFilters(t *testing.T) {
 	mockDomainClient := MockDomainClient{}
 
 	provider := &LinodeProvider{
@@ -176,7 +176,7 @@ func TestLinodeFetchZonesNoFiilters(t *testing.T) {
 	).Return(createZones(), nil).Once()
 
 	expected := createZones()
-	actual, err := provider.fetchZones()
+	actual, err := provider.fetchZones(context.Background())
 	require.NoError(t, err)
 
 	mockDomainClient.AssertExpectations(t)
@@ -202,7 +202,7 @@ func TestLinodeFetchZonesWithFilter(t *testing.T) {
 		{ID: 1, Domain: "foo.com"},
 		{ID: 3, Domain: "baz.com"},
 	}
-	actual, err := provider.fetchZones()
+	actual, err := provider.fetchZones(context.Background())
 	require.NoError(t, err)
 
 	mockDomainClient.AssertExpectations(t)
