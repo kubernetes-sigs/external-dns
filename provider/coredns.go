@@ -35,7 +35,6 @@ import (
 	etcdcv3 "github.com/coreos/etcd/clientv3"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/kubernetes-sigs/external-dns/endpoint"
 	"github.com/kubernetes-sigs/external-dns/plan"
 )
@@ -310,9 +309,6 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	}
 
 	for _, ep := range changes.Delete {
-		str := spew.Sdump(ep)
-		log.Infof("ep: %v ", str)
-
 		dnsName := ep.DNSName
 		if ep.Labels[randomPrefixLabel] != "" {
 			dnsName = ep.Labels[randomPrefixLabel] + "." + dnsName
@@ -405,26 +401,6 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				if err != nil {
 					return err
 				}
-			}
-		}
-	}
-
-	for _, ep := range changes.Delete {
-		str := spew.Sdump(ep)
-		log.Infof("ep: %v ", str)
-
-		dnsName := ep.DNSName
-		if ep.Labels[randomPrefixLabel] != "" {
-			dnsName = ep.Labels[randomPrefixLabel] + "." + dnsName
-		} else {
-			continue
-		}
-		key := p.etcdKeyFor(dnsName)
-		log.Infof("Delete key %s", key)
-		if !p.dryRun {
-			err := p.client.DeleteService(key)
-			if err != nil {
-				return err
 			}
 		}
 	}
