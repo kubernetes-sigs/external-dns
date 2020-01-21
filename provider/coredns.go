@@ -309,6 +309,24 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		log.Warnf("CoreDNS On-Prem Support Enabled")
 	}
 
+	for _, ep := range changes.Delete {
+		str := spew.Sdump(ep)
+		log.Infof("ep: %v ", str)
+
+		dnsName := ep.DNSName
+		if ep.Labels[randomPrefixLabel] != "" {
+			dnsName = ep.Labels[randomPrefixLabel] + "." + dnsName
+		}
+		key := p.etcdKeyFor(dnsName)
+		log.Infof("Delete key %s", key)
+		if !p.dryRun {
+			err := p.client.DeleteService(key)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	grouped := map[string][]*endpoint.Endpoint{}
 	for _, ep := range changes.Create {
 		grouped[ep.DNSName] = append(grouped[ep.DNSName], ep)
