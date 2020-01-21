@@ -3,6 +3,7 @@ package provider
 import (
   "bytes"
   "context"
+  "crypto/tls"
   "encoding/json"
   "fmt"
   "io/ioutil"
@@ -22,7 +23,7 @@ type bluecatConfig struct {
   GatewayHost          string `json:"gatewayHost" yaml:"gatewayHost"`
   GatewayUsername      string `json:"gatewayUsername" yaml:"gatewayUsername"`
   GatewayPassword      string `json:"gatewayPassword" yaml:"gatewayPassword"`
-  BluecatConfiguration string `json:"bluecatConfiguration" yaml:"bluecatConfiguration"`
+  DNSConfiguration     string `json:"dnsConfiguration" yaml:"dnsConfiguration"`
   View                 string `json:"dnsView" yaml:"dnsView"`
 }
 
@@ -38,16 +39,17 @@ type IGatewayClient interface {
 }
 
 type GatewayClient struct {
-  Token                string
-  BluecatConfiguration string
-  View                 string
+  Cookie           http.Cookie
+  Token            string
+  Host             string
+  DNSConfiguration string
+  View             string
 }
 
 type BluecatZone struct {
-  Id           int
-  Name         string
-  AbsoluteName string
-  Deployable   bool
+  Id         int    `json:"id"`
+  Name       string `json:"name"`
+  Properties string `json:"properties"`
 }
 
 type BluecatHostRecord struct {
@@ -79,13 +81,13 @@ func NewBluecatProvider(configFile string, domainFilter DomainFilter, zoneIDFilt
     return nil, fmt.Errorf("failed to read Bluecat config file '%s': %v", configFile, err)
   }
 
-  token, err := getBluecatGatewayToken(cfg)
+  token, cookie, err := getBluecatGatewayToken(cfg)
   if err != nil {
     return nil, fmt.Errorf("failed to get API token from Bluecat Gateway: %v", err)
   }
   log.Printf("Gateway API token is: %s", token)
 
-  gatewayClient := NewGatewayClient(token, cfg.BluecatConfiguration, cfg.View)
+  gatewayClient := NewGatewayClient(cookie, token, cfg.GatewayHost, cfg.DNSConfiguration, cfg.View)
 
   provider := &BluecatProvider{
     domainFilter:  domainFilter,
@@ -96,11 +98,13 @@ func NewBluecatProvider(configFile string, domainFilter DomainFilter, zoneIDFilt
   return provider, nil
 }
 
-func NewGatewayClient(token, bluecatConfiguration, view string) GatewayClient {
+func NewGatewayClient(cookie http.Cookie, token, gatewayHost, dnsConfiguration, view string) GatewayClient {
   return GatewayClient{
-    Token:                token,
-    BluecatConfiguration: bluecatConfiguration,
-    View:                 view,
+    Cookie:           cookie,
+    Token:            token,
+    Host:             gatewayHost,
+    DNSConfiguration: dnsConfiguration,
+    View:             view,
   }
 }
 
@@ -119,7 +123,8 @@ func (p *BluecatProvider) Records() (endpoints []*endpoint.Endpoint, err error) 
     }
     for _, rec := range resH {
       for _, ip := range rec.Addresses {
-        endpoints = append(endpoints, endpoint.NewEndpoint(rec.AbsoluteName, endpoint.RecordTypeA, ip))
+        ep := endpoint.NewEndpoint(rec.AbsoluteName, endpoint.RecordTypeA, ip)
+        endpoints = append(endpoints, ep)
       }
     }
 
@@ -138,11 +143,18 @@ func (p *BluecatProvider) Records() (endpoints []*endpoint.Endpoint, err error) 
 }
 
 func (p *BluecatProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+  zones, err := p.zones()
+  if err != nil {
+    return err
+  }
+
+  log.Printf("In apply changes, zones: %v", zones)
+
   return nil
 }
 
 func (p *BluecatProvider) zones() ([]string, error) {
-  log.Debugf("retrieving Bluecat zones for configuration: %s, view: %s", p.gatewayClient.BluecatConfiguration, p.gatewayClient.View)
+  log.Debugf("retrieving Bluecat zones for configuration: %s, view: %s", p.gatewayClient.DNSConfiguration, p.gatewayClient.View)
   var zones []string
 
   zonelist, err := p.gatewayClient.getBluecatZones()
@@ -165,41 +177,72 @@ func (p *BluecatProvider) zones() ([]string, error) {
 }
 
 // getBluecatGatewayToken retrieves a Bluecat Gateway API token.
-func getBluecatGatewayToken(cfg bluecatConfig) (string, error) {
+func getBluecatGatewayToken(cfg bluecatConfig) (string, http.Cookie, error) {
   body, err := json.Marshal(map[string]string{
     "username": cfg.GatewayUsername,
     "password": cfg.GatewayPassword,
   })
   if err != nil {
-    return "", fmt.Errorf("no credentials provided or could not unmarshal credentials for Bluecat Gateway")
+    return "", http.Cookie{}, fmt.Errorf("no credentials provided or could not unmarshal credentials for Bluecat Gateway")
   }
 
-  resp, err := http.Post(fmt.Sprintf("%s/%s", cfg.GatewayHost, "/rest_login"), "application/json", bytes.NewBuffer(body))
+  transportCfg := &http.Transport{
+    TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+  }
+  c := &http.Client{Transport: transportCfg}
+
+  resp, err := c.Post(cfg.GatewayHost + "/rest_login", "application/json", bytes.NewBuffer(body))
   if err != nil {
-    return "", fmt.Errorf("error obtaining API token from Bluecat Gateway")
+    return "", http.Cookie{}, fmt.Errorf("error obtaining API token from Bluecat Gateway: %s", err)
   }
 
   defer resp.Body.Close()
 
   res, err := ioutil.ReadAll(resp.Body)
   if err != nil {
-    return "", fmt.Errorf("error reading get_token response from Bluecat Gateway")
+    return "", http.Cookie{}, fmt.Errorf("error reading get_token response from Bluecat Gateway")
   }
 
   resJSON := map[string]string{}
   err = json.Unmarshal(res, &resJSON)
   if err != nil {
-    return "", fmt.Errorf("error unmarshaling json response (auth) from Bluecat Gateway")
+    return "", http.Cookie{}, fmt.Errorf("error unmarshaling json response (auth) from Bluecat Gateway")
   }
 
   // Example response: {"access_token": "BAMAuthToken: abc123"}
   // We only care about the actual token string - i.e. abc123
-  return strings.Split(resJSON["access_token"], " ")[1], nil
+  // The gateway also creates a cookie as part of the response. This seems to be the actual auth mechanism, at least
+  // for now.
+  return strings.Split(resJSON["access_token"], " ")[1], *resp.Cookies()[0], nil
 }
 
-// TODO
 func (c *GatewayClient) getBluecatZones() ([]BluecatZone, error) {
-  return []BluecatZone{}, nil
+
+  transportCfg := &http.Transport{
+    TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+  }
+  client := &http.Client{
+    Transport: transportCfg,
+  }
+
+  rootZone := "com"
+  url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/zones/" + rootZone + "/zones/"
+  req, err := http.NewRequest("GET", url, nil)
+  req.Header.Add("Accept", "application/json")
+  req.Header.Add("Authorization", "Basic " + c.Token)
+  req.AddCookie(&c.Cookie)
+
+  resp, err := client.Do(req)
+  if err != nil {
+    return nil, fmt.Errorf("error retrieving zone(s) from gateway: %s, %s", rootZone, err)
+  }
+
+  defer resp.Body.Close()
+
+  zones := []BluecatZone{}
+  json.NewDecoder(resp.Body).Decode(&zones)
+
+  return zones, nil
 }
 
 // TODO
@@ -210,4 +253,28 @@ func (c *GatewayClient) getHostRecords(zone string, records *[]BluecatHostRecord
 // TODO
 func (c *GatewayClient) getCNAMERecords(zone string, records *[]BluecatCNAMERecord) error {
   return nil
+}
+
+//splitProperties is a helper function to break a '|' separated string into key/value pairs
+// i.e. "foo=bar|baz=mop"
+func splitProperties(props string) map[string]string {
+  propMap := make(map[string]string)
+  splits := strings.Split(props, "|")
+  for _, pair := range splits {
+    items := strings.Split(pair, "=")
+    propMap[items[0]] = items[1]
+  }
+  return propMap
+}
+
+//expandZone takes an absolute domain name such as 'example.com' and returns a zone hierarchy used by Bluecat Gateway,
+//such as '/zones/com/zones/example/'
+func expandZone(zone string) string {
+  ze := "/zones/"
+  parts := strings.Split(zone, ".")
+  last := len(parts) - 1
+  for i := range parts {
+    ze = ze + parts[last-i] + "/"
+  }
+  return ze
 }

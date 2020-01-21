@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"github.com/kubernetes-sigs/external-dns/endpoint"
 	"strings"
 	"testing"
 )
@@ -11,13 +12,23 @@ type mockGatewayClient struct {
 	mockBluecatCNAMEs *[]BluecatCNAMERecord
 }
 
-func (c *mockGatewayClient)
-
 func createMockBluecatZone(fqdn string) BluecatZone {
 	return BluecatZone{
-		AbsoluteName: fqdn,
 		Name:         strings.Split(fqdn, ".")[0],
-		Deployable:   true,
+	}
+}
+
+func createMockBluecatHost(fqdn, target string) BluecatHostRecord {
+	return BluecatHostRecord{
+		Name:          fqdn,
+		Addresses:     []string{target},
+	}
+}
+
+func createMockBluecatCNAME(alias, target string) BluecatCNAMERecord {
+	return BluecatCNAMERecord{
+		Name:             alias,
+		LinkedRecordName: target,
 	}
 }
 
@@ -35,14 +46,27 @@ func TestBluecatRecords(t *testing.T) {
 		mockBluecatZones:  &[]BluecatZone{
 			createMockBluecatZone("example.com"),
 		},
-		mockBluecatHosts:  &[]BluecatHostRecord{},
-		mockBluecatCNAMEs: &[]BluecatCNAMERecord{},
+		mockBluecatHosts:  &[]BluecatHostRecord{
+			createMockBluecatHost("example.com", "123.123.123.122"),
+			createMockBluecatHost("nginx.example.com", "123.123.123.123"),
+			createMockBluecatHost("whitespace.example.com", "123.123.123.124"),
+		},
+		mockBluecatCNAMEs: &[]BluecatCNAMERecord{
+			createMockBluecatCNAME("hack.example.com", "bluecatnetworks.com"),
+		},
 	}
 
-	provider := newBluecatProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string("")), true, client)
-
+	provider := newBluecatProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, client)
 	actual, err := provider.Records()
+
 	if err != nil {
 		t.Fatal(err)
 	}
+	expected := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "123.123.123.122"),
+		endpoint.NewEndpoint("nginx.example.com", endpoint.RecordTypeA, "123.123.123.123"),
+		endpoint.NewEndpoint("whitespace.example.com", endpoint.RecordTypeA, "123.123.123.124"),
+		endpoint.NewEndpoint("hack.example.com", endpoint.RecordTypeCNAME, "bluecatnetworks.com"),
+	}
+	validateEndpoints(t, actual, expected)
 }
