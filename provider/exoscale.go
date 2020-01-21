@@ -175,13 +175,13 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 func (ep *ExoscaleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	domains, err := ep.client.GetDomains(context.TODO())
+	domains, err := ep.client.GetDomains(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, d := range domains {
-		record, err := ep.client.GetRecords(context.TODO(), d.Name)
+		record, err := ep.client.GetRecords(ctx, d.Name)
 		if err != nil {
 			return nil, err
 		}

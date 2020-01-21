@@ -57,12 +57,12 @@ type DigitalOceanChange struct {
 }
 
 // NewDigitalOceanProvider initializes a new DigitalOcean DNS based Provider.
-func NewDigitalOceanProvider(domainFilter DomainFilter, dryRun bool) (*DigitalOceanProvider, error) {
+func NewDigitalOceanProvider(ctx context.Context, domainFilter DomainFilter, dryRun bool) (*DigitalOceanProvider, error) {
 	token, ok := os.LookupEnv("DO_TOKEN")
 	if !ok {
 		return nil, fmt.Errorf("No token found")
 	}
-	oauthClient := oauth2.NewClient(context.TODO(), oauth2.StaticTokenSource(&oauth2.Token{
+	oauthClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(&oauth2.Token{
 		AccessToken: token,
 	}))
 	client := godo.NewClient(oauthClient)
@@ -76,10 +76,10 @@ func NewDigitalOceanProvider(domainFilter DomainFilter, dryRun bool) (*DigitalOc
 }
 
 // Zones returns the list of hosted zones.
-func (p *DigitalOceanProvider) Zones() ([]godo.Domain, error) {
+func (p *DigitalOceanProvider) Zones(ctx context.Context) ([]godo.Domain, error) {
 	result := []godo.Domain{}
 
-	zones, err := p.fetchZones()
+	zones, err := p.fetchZones(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -95,13 +95,13 @@ func (p *DigitalOceanProvider) Zones() ([]godo.Domain, error) {
 
 // Records returns the list of records in a given zone.
 func (p *DigitalOceanProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	zones, err := p.Zones()
+	zones, err := p.Zones(ctx)
 	if err != nil {
 		return nil, err
 	}
 	endpoints := []*endpoint.Endpoint{}
 	for _, zone := range zones {
-		records, err := p.fetchRecords(zone.Name)
+		records, err := p.fetchRecords(ctx, zone.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -124,11 +124,11 @@ func (p *DigitalOceanProvider) Records(ctx context.Context) ([]*endpoint.Endpoin
 	return endpoints, nil
 }
 
-func (p *DigitalOceanProvider) fetchRecords(zoneName string) ([]godo.DomainRecord, error) {
+func (p *DigitalOceanProvider) fetchRecords(ctx context.Context, zoneName string) ([]godo.DomainRecord, error) {
 	allRecords := []godo.DomainRecord{}
 	listOptions := &godo.ListOptions{}
 	for {
-		records, resp, err := p.Client.Records(context.TODO(), zoneName, listOptions)
+		records, resp, err := p.Client.Records(ctx, zoneName, listOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -149,11 +149,11 @@ func (p *DigitalOceanProvider) fetchRecords(zoneName string) ([]godo.DomainRecor
 	return allRecords, nil
 }
 
-func (p *DigitalOceanProvider) fetchZones() ([]godo.Domain, error) {
+func (p *DigitalOceanProvider) fetchZones(ctx context.Context) ([]godo.Domain, error) {
 	allZones := []godo.Domain{}
 	listOptions := &godo.ListOptions{}
 	for {
-		zones, resp, err := p.Client.List(context.TODO(), listOptions)
+		zones, resp, err := p.Client.List(ctx, listOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -175,13 +175,13 @@ func (p *DigitalOceanProvider) fetchZones() ([]godo.Domain, error) {
 }
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
-func (p *DigitalOceanProvider) submitChanges(changes []*DigitalOceanChange) error {
+func (p *DigitalOceanProvider) submitChanges(ctx context.Context, changes []*DigitalOceanChange) error {
 	// return early if there is nothing to change
 	if len(changes) == 0 {
 		return nil
 	}
 
-	zones, err := p.Zones()
+	zones, err := p.Zones(ctx)
 	if err != nil {
 		return err
 	}
@@ -189,7 +189,7 @@ func (p *DigitalOceanProvider) submitChanges(changes []*DigitalOceanChange) erro
 	// separate into per-zone change sets to be passed to the API.
 	changesByZone := digitalOceanChangesByZone(zones, changes)
 	for zoneName, changes := range changesByZone {
-		records, err := p.fetchRecords(zoneName)
+		records, err := p.fetchRecords(ctx, zoneName)
 		if err != nil {
 			log.Errorf("Failed to list records in the zone: %s", zoneName)
 			continue
@@ -225,7 +225,7 @@ func (p *DigitalOceanProvider) submitChanges(changes []*DigitalOceanChange) erro
 
 			switch change.Action {
 			case DigitalOceanCreate:
-				_, _, err = p.Client.CreateRecord(context.TODO(), zoneName,
+				_, _, err = p.Client.CreateRecord(ctx, zoneName,
 					&godo.DomainRecordEditRequest{
 						Data: change.ResourceRecordSet.Data,
 						Name: change.ResourceRecordSet.Name,
@@ -237,13 +237,13 @@ func (p *DigitalOceanProvider) submitChanges(changes []*DigitalOceanChange) erro
 				}
 			case DigitalOceanDelete:
 				recordID := p.getRecordID(records, change.ResourceRecordSet)
-				_, err = p.Client.DeleteRecord(context.TODO(), zoneName, recordID)
+				_, err = p.Client.DeleteRecord(ctx, zoneName, recordID)
 				if err != nil {
 					return err
 				}
 			case DigitalOceanUpdate:
 				recordID := p.getRecordID(records, change.ResourceRecordSet)
-				_, _, err = p.Client.EditRecord(context.TODO(), zoneName, recordID,
+				_, _, err = p.Client.EditRecord(ctx, zoneName, recordID,
 					&godo.DomainRecordEditRequest{
 						Data: change.ResourceRecordSet.Data,
 						Name: change.ResourceRecordSet.Name,
@@ -267,7 +267,7 @@ func (p *DigitalOceanProvider) ApplyChanges(ctx context.Context, changes *plan.C
 	combinedChanges = append(combinedChanges, newDigitalOceanChanges(DigitalOceanUpdate, changes.UpdateNew)...)
 	combinedChanges = append(combinedChanges, newDigitalOceanChanges(DigitalOceanDelete, changes.Delete)...)
 
-	return p.submitChanges(combinedChanges)
+	return p.submitChanges(ctx, combinedChanges)
 }
 
 // newDigitalOceanChanges returns a collection of Changes based on the given records and action.
