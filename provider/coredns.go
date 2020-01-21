@@ -35,6 +35,7 @@ import (
 	etcdcv3 "github.com/coreos/etcd/clientv3"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/kubernetes-sigs/external-dns/endpoint"
 	"github.com/kubernetes-sigs/external-dns/plan"
 )
@@ -326,14 +327,10 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			if ep.RecordType == endpoint.RecordTypeTXT {
 				continue
 			}
-			setText := ""
 			for _, target := range ep.Targets {
 				prefix := ep.Labels[randomPrefixLabel]
 				if prefix == "" {
 					prefix = fmt.Sprintf("%08x", rand.Int31())
-				}
-				if setText == "" {
-					setText = ep.Labels["originalText"]
 				}
 				setdnsName := dnsName
 				if ep.RecordType == endpoint.RecordTypeA {
@@ -350,9 +347,8 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				}
 
 				service := Service{
-					Host: target,
-					//					Text:        ep.Labels["originalText"],
-					Text:        setText,
+					Host:        target,
+					Text:        ep.Labels["originalText"],
 					Key:         p.etcdKeyFor(prefix + "." + setdnsName),
 					TargetStrip: strings.Count(prefix, ".") + 1,
 					TTL:         uint32(ep.RecordTTL),
@@ -361,7 +357,6 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			}
 		}
 		index := 0
-		setText := ""
 		for _, ep := range group {
 			if ep.RecordType != endpoint.RecordTypeTXT {
 				continue
@@ -371,11 +366,7 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				if prefix == "" {
 					prefix = fmt.Sprintf("%08x", rand.Int31())
 				}
-				if setText == "" {
-					setText = ep.Labels["originalText"]
-				}
 				services = append(services, Service{
-					Text:        setText,
 					Key:         p.etcdKeyFor(prefix + "." + dnsName),
 					TargetStrip: strings.Count(prefix, ".") + 1,
 					TTL:         uint32(ep.RecordTTL),
@@ -401,6 +392,8 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	}
 
 	for _, ep := range changes.Delete {
+		spew.Printf("ep: %v ", ep)
+
 		dnsName := ep.DNSName
 		if ep.Labels[randomPrefixLabel] != "" {
 			dnsName = ep.Labels[randomPrefixLabel] + "." + dnsName
