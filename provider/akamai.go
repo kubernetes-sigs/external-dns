@@ -20,10 +20,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -67,13 +65,6 @@ type AkamaiProvider struct {
 	config       edgegrid.Config
 	dryRun       bool
 	client       akamaiClient
-}
-
-type akamaiError struct {
-	Title     string `json:"title"`
-	Status    int    `json:"status"`
-	Detail    string `json:"detail"`
-	RequestID string `json:"requestId"`
 }
 
 type akamaiZones struct {
@@ -120,59 +111,40 @@ func NewAkamaiProvider(akamaiConfig AkamaiConfig) *AkamaiProvider {
 	return provider
 }
 
-func (p *AkamaiProvider) request(method, path string, body io.Reader) ([]byte, error) {
+func (p *AkamaiProvider) request(method, path string, body io.Reader) (*http.Response, error) {
 	req, err := p.client.NewRequest(p.config, method, fmt.Sprintf("https://%s/%s", p.config.Host, path), body)
 	if err != nil {
 		log.Errorf("Akamai client failed to prepare the request")
 		return nil, err
 	}
 	resp, err := p.client.Do(p.config, req)
+
 	if err != nil {
 		log.Errorf("Akamai client failed to do the request")
 		return nil, err
 	}
-
-	//204 means no body on success by choice
-	if resp.StatusCode == 204 {
-		return nil, nil
+	if !c.IsSuccess(resp) {
+		return nil, c.NewAPIError(resp)
 	}
 
-	defer resp.Body.Close()
-	byt, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Errorf("ioutil failed to read the response-body of the request to Akamai")
-		return nil, err
-	}
-
-	//catch authentication errors here, they aren't handled very well by the client
-	akamaiError := akamaiError{}
-	err = json.Unmarshal([]byte(byt), &akamaiError)
-	if err != nil {
-		log.Errorf("Failed to unmarshal the response-body of the request to Akamai")
-		return nil, err
-	}
-	if akamaiError.Status >= 300 {
-		log.Errorf("Received an error from Akamai!\ntitle: %s \nstatus: %v \ndetail: %s \nrequestId: %s", akamaiError.Title, akamaiError.Status, akamaiError.Detail, akamaiError.RequestID)
-		return nil, errors.New("AkamaiError")
-	}
-
-	return byt, err
+	return resp, err
 }
 
 //Look here for endpoint documentation -> https://developer.akamai.com/api/web_performance/fast_dns_zone_management/v2.html#getzones
 func (p *AkamaiProvider) fetchZones() (zones akamaiZones, err error) {
 	log.Debugf("Trying to fetch zones from Akamai")
-	res, err := p.request("GET", "config-dns/v2/zones?showAll=true&types=primary%2Csecondary", nil)
+	resp, err := p.request("GET", "config-dns/v2/zones?showAll=true&types=primary%2Csecondary", nil)
 	if err != nil {
 		log.Errorf("Failed to fetch zones from Akamai")
 		return zones, err
 	}
 
-	err = json.Unmarshal([]byte(res), &zones)
+	err = json.NewDecoder(resp.Body).Decode(&zones)
 	if err != nil {
-		log.Errorf("Could not unmarshal json response from Akamai on zone request")
+		log.Errorf("Could not decode json response from Akamai on zone request")
 		return zones, err
 	}
+	defer resp.Body.Close()
 
 	filteredZones := akamaiZones{}
 	for _, zone := range zones.Zones {
@@ -196,15 +168,16 @@ func (p *AkamaiProvider) fetchZones() (zones akamaiZones, err error) {
 //Look here for endpoint documentation -> https://developer.akamai.com/api/web_performance/fast_dns_zone_management/v2.html#getzonerecordsets
 func (p *AkamaiProvider) fetchRecordSet(zone string) (recordSet akamaiRecordsets, err error) {
 	log.Debugf("Trying to fetch endpoints for zone: '%s' from Akamai", zone)
-	res, err := p.request("GET", "config-dns/v2/zones/"+zone+"/recordsets?showAll=true&types=A%2CTXT%2CCNAME", nil)
+	resp, err := p.request("GET", "config-dns/v2/zones/"+zone+"/recordsets?showAll=true&types=A%2CTXT%2CCNAME", nil)
 	if err != nil {
 		log.Errorf("Failed to fetch records from Akamai for zone: '%s'", zone)
 		return recordSet, err
 	}
+	defer resp.Body.Close()
 
-	err = json.Unmarshal([]byte(res), &recordSet)
+	err = json.NewDecoder(resp.Body).Decode(&recordSet)
 	if err != nil {
-		log.Errorf("Could not unmarshal json response from Akamai for zone: '%s' on request", zone)
+		log.Errorf("Could not decode json response from Akamai for zone: '%s' on request", zone)
 		return recordSet, err
 	}
 

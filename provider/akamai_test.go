@@ -51,20 +51,29 @@ func (m *mockAkamaiClient) NewRequest(config edgegrid.Config, met, p string, b i
 		}
 	case met == "DELETE":
 		b = bytes.NewReader([]byte("{\"title\": \"Success\", \"status\": 200, \"detail\": \"Record deleted\", \"requestId\": \"4321\"}"))
+	case met == "ERROR":
+		b = bytes.NewReader([]byte("{\"status\": 404 }"))
 	}
 	req := httptest.NewRequest(met, p, b)
 	return req, nil
 }
 
 func (m *mockAkamaiClient) Do(config edgegrid.Config, req *http.Request) (*http.Response, error) {
-	handler := func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) (isError bool) {
 		b, _ := ioutil.ReadAll(r.Body)
 		io.WriteString(w, string(b))
+		if string(b) == "{\"status\": 404 }" {
+			return true
+		}
+		return false
 	}
 	w := httptest.NewRecorder()
-	handler(w, req)
-
+	err := handler(w, req)
 	resp := w.Result()
+
+	if err == true {
+		resp.StatusCode = 400
+	}
 
 	return resp, nil
 }
@@ -76,11 +85,12 @@ func TestRequestError(t *testing.T) {
 	c := NewAkamaiProvider(config)
 	c.client = client
 
-	m := "GET"
+	m := "ERROR"
 	p := ""
-	b := "{\"title\": \"MockError\", \"status\": 404, \"detail\": \"MockError\", \"requestId\": \"1234\"}"
-	x, _ := c.request(m, p, bytes.NewReader([]byte(b)))
+	b := ""
+	x, err := c.request(m, p, bytes.NewReader([]byte(b)))
 	assert.Nil(t, x)
+	assert.NotNil(t, err)
 }
 
 func TestFetchZonesZoneIDFilter(t *testing.T) {
