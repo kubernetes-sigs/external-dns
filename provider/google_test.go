@@ -578,7 +578,6 @@ func TestGoogleBatchChangeSetExceeding(t *testing.T) {
 	const testCount = 50
 	const testLimit = 11
 	const expectedBatchCount = 5
-	const expectedChangesCount = 10
 
 	for i := 1; i <= testCount; i += 2 {
 		cs.Additions = append(cs.Additions, &dns.ResourceRecordSet{
@@ -612,7 +611,6 @@ func TestGoogleBatchChangeSetExceeding(t *testing.T) {
 
 func TestGoogleBatchChangeSetExceedingNameChange(t *testing.T) {
 	cs := &dns.Change{}
-	const testCount = 10
 	const testLimit = 1
 
 	cs.Additions = append(cs.Additions, &dns.ResourceRecordSet{

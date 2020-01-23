@@ -47,17 +47,8 @@ type mockRRSetService struct {
 	TestErrorReturned bool
 }
 
-func (m *mockRcodeZeroClient) resetMockServices() {
-	m.Zones = &mockZoneManagementService{}
-	m.RRSet = &mockRRSetService{}
-}
-
 func (m *mockZoneManagementService) resetTestConditions() {
 	m.TestNilZonesReturned = false
-	m.TestErrorReturned = false
-}
-
-func (m *mockRRSetService) resetTestConditions() {
 	m.TestErrorReturned = false
 }
 
