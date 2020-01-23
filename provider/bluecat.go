@@ -15,8 +15,8 @@ import (
 
   yaml "gopkg.in/yaml.v2"
 
-  "github.com/kubernetes-sigs/external-dns/endpoint"
-  "github.com/kubernetes-sigs/external-dns/plan"
+  "sigs.k8s.io/external-dns/endpoint"
+  "sigs.k8s.io/external-dns/plan"
 )
 
 type bluecatConfig struct {
@@ -25,6 +25,7 @@ type bluecatConfig struct {
   GatewayPassword      string `json:"gatewayPassword" yaml:"gatewayPassword"`
   DNSConfiguration     string `json:"dnsConfiguration" yaml:"dnsConfiguration"`
   View                 string `json:"dnsView" yaml:"dnsView"`
+  RootZone             string `json:"rootZone" yaml:"rootZone"`
 }
 
 type BluecatProvider struct {
@@ -34,22 +35,20 @@ type BluecatProvider struct {
   gatewayClient GatewayClient
 }
 
-type IGatewayClient interface {
-
-}
-
 type GatewayClient struct {
   Cookie           http.Cookie
   Token            string
   Host             string
   DNSConfiguration string
   View             string
+  RootZone         string
 }
 
 type BluecatZone struct {
   Id         int    `json:"id"`
   Name       string `json:"name"`
   Properties string `json:"properties"`
+  Type       string `json:"type"`
 }
 
 type BluecatHostRecord struct {
@@ -87,7 +86,7 @@ func NewBluecatProvider(configFile string, domainFilter DomainFilter, zoneIDFilt
   }
   log.Printf("Gateway API token is: %s", token)
 
-  gatewayClient := NewGatewayClient(cookie, token, cfg.GatewayHost, cfg.DNSConfiguration, cfg.View)
+  gatewayClient := NewGatewayClient(cookie, token, cfg.GatewayHost, cfg.DNSConfiguration, cfg.View, cfg.RootZone)
 
   provider := &BluecatProvider{
     domainFilter:  domainFilter,
@@ -98,17 +97,23 @@ func NewBluecatProvider(configFile string, domainFilter DomainFilter, zoneIDFilt
   return provider, nil
 }
 
-func NewGatewayClient(cookie http.Cookie, token, gatewayHost, dnsConfiguration, view string) GatewayClient {
+func NewGatewayClient(cookie http.Cookie, token, gatewayHost, dnsConfiguration, view, rootZone string) GatewayClient {
+  // Right now the Bluecat gateway doesn't seem to have a way to get the root zone from the API. If the user
+  // doesn't provide one via the config file we'll assume it's 'com'
+  if rootZone == "" {
+    rootZone = "com"
+  }
   return GatewayClient{
     Cookie:           cookie,
     Token:            token,
     Host:             gatewayHost,
     DNSConfiguration: dnsConfiguration,
     View:             view,
+    RootZone:         rootZone,
   }
 }
 
-func (p *BluecatProvider) Records() (endpoints []*endpoint.Endpoint, err error) {
+func (p *BluecatProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, err error) {
   zones, err := p.zones()
   if err != nil {
     return nil, fmt.Errorf("could not fetch zones: %s", err)
@@ -143,12 +148,10 @@ func (p *BluecatProvider) Records() (endpoints []*endpoint.Endpoint, err error) 
 }
 
 func (p *BluecatProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-  zones, err := p.zones()
+  _, err := p.zones()
   if err != nil {
     return err
   }
-
-  log.Printf("In apply changes, zones: %v", zones)
 
   return nil
 }
@@ -157,7 +160,7 @@ func (p *BluecatProvider) zones() ([]string, error) {
   log.Debugf("retrieving Bluecat zones for configuration: %s, view: %s", p.gatewayClient.DNSConfiguration, p.gatewayClient.View)
   var zones []string
 
-  zonelist, err := p.gatewayClient.getBluecatZones()
+  zonelist, err := p.gatewayClient.getBluecatZones(p.gatewayClient.RootZone)
   if err != nil {
     return nil, err
   }
@@ -171,8 +174,11 @@ func (p *BluecatProvider) zones() ([]string, error) {
       continue
     }
 
-    zones = append(zones, zone.Name)
+    zoneProps := splitProperties(zone.Properties)
+
+    zones = append(zones, zoneProps["absoluteName"])
   }
+  log.Debugf("found %n zones", len(zones))
   return zones, nil
 }
 
@@ -216,8 +222,7 @@ func getBluecatGatewayToken(cfg bluecatConfig) (string, http.Cookie, error) {
   return strings.Split(resJSON["access_token"], " ")[1], *resp.Cookies()[0], nil
 }
 
-func (c *GatewayClient) getBluecatZones() ([]BluecatZone, error) {
-
+func (c *GatewayClient) getBluecatZones(zoneName string) ([]BluecatZone, error) {
   transportCfg := &http.Transport{
     TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
   }
@@ -225,8 +230,8 @@ func (c *GatewayClient) getBluecatZones() ([]BluecatZone, error) {
     Transport: transportCfg,
   }
 
-  rootZone := "com"
-  url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/zones/" + rootZone + "/zones/"
+  zoneTree := expandZone(zoneName)
+  url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zoneTree
   req, err := http.NewRequest("GET", url, nil)
   req.Header.Add("Accept", "application/json")
   req.Header.Add("Authorization", "Basic " + c.Token)
@@ -234,7 +239,7 @@ func (c *GatewayClient) getBluecatZones() ([]BluecatZone, error) {
 
   resp, err := client.Do(req)
   if err != nil {
-    return nil, fmt.Errorf("error retrieving zone(s) from gateway: %s, %s", rootZone, err)
+    return nil, fmt.Errorf("error retrieving zone(s) from gateway: %s, %s", zoneName, err)
   }
 
   defer resp.Body.Close()
@@ -242,8 +247,20 @@ func (c *GatewayClient) getBluecatZones() ([]BluecatZone, error) {
   zones := []BluecatZone{}
   json.NewDecoder(resp.Body).Decode(&zones)
 
+  // Bluecat Gateway only returns subzones one level deeper than the provided zone so this recursion is needed
+  // to traverse subzones until none are returned
+  for _, zone := range zones {
+    zoneProps := splitProperties(zone.Properties)
+    subZones, err := c.getBluecatZones(zoneProps["absoluteName"])
+    if err != nil {
+      return nil, fmt.Errorf("error retrieving subzones from gateway: %s, %s", zoneName, err)
+    }
+    zones = append(zones, subZones...)
+  }
+
   return zones, nil
 }
+
 
 // TODO
 func (c *GatewayClient) getHostRecords(zone string, records *[]BluecatHostRecord) error {
@@ -259,22 +276,31 @@ func (c *GatewayClient) getCNAMERecords(zone string, records *[]BluecatCNAMEReco
 // i.e. "foo=bar|baz=mop"
 func splitProperties(props string) map[string]string {
   propMap := make(map[string]string)
+
+  // remove trailing | character before we split
+  props = strings.TrimSuffix(props, "|")
+
   splits := strings.Split(props, "|")
   for _, pair := range splits {
     items := strings.Split(pair, "=")
     propMap[items[0]] = items[1]
   }
+
   return propMap
 }
 
 //expandZone takes an absolute domain name such as 'example.com' and returns a zone hierarchy used by Bluecat Gateway,
 //such as '/zones/com/zones/example/'
 func expandZone(zone string) string {
-  ze := "/zones/"
+  ze := "zones/"
   parts := strings.Split(zone, ".")
-  last := len(parts) - 1
-  for i := range parts {
-    ze = ze + parts[last-i] + "/"
+  if len(parts) > 1 {
+    last := len(parts) - 1
+    for i := range parts {
+      ze = ze + parts[last-i] + "/zones/"
+    }
+  } else {
+    ze = ze + zone + "/zones/"
   }
   return ze
 }
