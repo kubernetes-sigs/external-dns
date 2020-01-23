@@ -68,7 +68,6 @@ type AlibabaCloudPrivateZoneAPI interface {
 type AlibabaCloudProvider struct {
 	domainFilter         DomainFilter
 	zoneIDFilter         ZoneIDFilter // Private Zone only
-	zoneTypeFilter       ZoneTypeFilter
 	MaxChangeCount       int
 	EvaluateTargetHealth bool
 	AssumeRole           string

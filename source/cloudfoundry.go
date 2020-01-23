@@ -26,7 +26,6 @@ import (
 
 type cloudfoundrySource struct {
 	client *cfclient.Client
-	config Config
 }
 
 // NewCloudFoundrySource creates a new cloudfoundrySource with the given config

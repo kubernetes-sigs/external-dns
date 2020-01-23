@@ -591,7 +591,7 @@ func batchChangeSet(cs []*route53.Change, batchSize int) [][]*route53.Change {
 
 	batchChanges := make([][]*route53.Change, 0)
 
-	changesByName := make(map[string][]*route53.Change, 0)
+	changesByName := make(map[string][]*route53.Change)
 	for _, v := range cs {
 		changesByName[*v.ResourceRecordSet.Name] = append(changesByName[*v.ResourceRecordSet.Name], v)
 	}

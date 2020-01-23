@@ -21,22 +21,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Azure/go-autorest/autorest"
-
-	log "github.com/sirupsen/logrus"
-
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/privatedns/mgmt/privatedns"
+	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
+	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
-
-type azurePrivateDNSConfig struct {
-	SubscriptionID string `json:"subscriptionId" yaml:"subscriptionId"`
-	ResourceGroup  string `json:"resourceGroup" yaml:"resourceGroup"`
-}
 
 // PrivateZonesClient is an interface of privatedns.PrivateZoneClient that can be stubbed for testing.
 type PrivateZonesClient interface {

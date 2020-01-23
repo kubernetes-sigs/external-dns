@@ -82,9 +82,7 @@ func (r *Route53APIStub) ListResourceRecordSetsPagesWithContext(ctx context.Cont
 		output.ResourceRecordSets = []*route53.ResourceRecordSet{}
 	} else {
 		for _, rrsets := range r.recordSets[aws.StringValue(input.HostedZoneId)] {
-			for _, rrset := range rrsets {
-				output.ResourceRecordSets = append(output.ResourceRecordSets, rrset)
-			}
+			output.ResourceRecordSets = append(output.ResourceRecordSets, rrsets...)
 		}
 	}
 	lastPage := true
@@ -1131,9 +1129,7 @@ func listAWSRecords(t *testing.T, client Route53API, zone string) []*route53.Res
 	require.NoError(t, client.ListResourceRecordSetsPagesWithContext(context.Background(), &route53.ListResourceRecordSetsInput{
 		HostedZoneId: aws.String(zone),
 	}, func(resp *route53.ListResourceRecordSetsOutput, _ bool) bool {
-		for _, recordSet := range resp.ResourceRecordSets {
-			recordSets = append(recordSets, recordSet)
-		}
+		recordSets = append(recordSets, resp.ResourceRecordSets...)
 		return true
 	}))
 

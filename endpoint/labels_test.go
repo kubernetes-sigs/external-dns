@@ -31,7 +31,6 @@ type LabelsSuite struct {
 	barText              string
 	barTextAsMap         Labels
 	noHeritageText       string
-	noHeritageAsMap      Labels
 	wrongHeritageText    string
 	multipleHeritageText string //considered invalid
 }

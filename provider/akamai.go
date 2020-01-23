@@ -289,16 +289,6 @@ func (p *AkamaiProvider) newAkamaiRecord(dnsName, recordType string, targets ...
 	}
 }
 
-func (p *AkamaiProvider) newAkamaiRecordsets(dnsName, recordType string, targets ...string) *akamaiRecordsets {
-	akamaiRecords := make([]akamaiRecord, 0)
-	akamaiRecord := p.newAkamaiRecord(dnsName, recordType, targets...)
-	akamaiRecords = append(akamaiRecords, *akamaiRecord)
-
-	return &akamaiRecordsets{
-		Recordsets: akamaiRecords,
-	}
-}
-
 func (p *AkamaiProvider) createRecords(zoneNameIDMapper zoneIDName, endpoints []*endpoint.Endpoint) (created []*endpoint.Endpoint, failed []*endpoint.Endpoint) {
 	for _, endpoint := range endpoints {
 
