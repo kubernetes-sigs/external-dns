@@ -111,6 +111,18 @@ func main() {
 
 	var p provider.Provider
 	switch cfg.Provider {
+	case "akamai":
+		p = provider.NewAkamaiProvider(
+			provider.AkamaiConfig{
+				DomainFilter:          domainFilter,
+				ZoneIDFilter:          zoneIDFilter,
+				ServiceConsumerDomain: cfg.AkamaiServiceConsumerDomain,
+				ClientToken:           cfg.AkamaiClientToken,
+				ClientSecret:          cfg.AkamaiClientSecret,
+				AccessToken:           cfg.AkamaiAccessToken,
+				DryRun:                cfg.DryRun,
+			},
+		)
 	case "alibabacloud":
 		p, err = provider.NewAlibabaCloudProvider(cfg.AlibabaCloudConfigFile, domainFilter, zoneIDFilter, cfg.AlibabaCloudZoneType, cfg.DryRun)
 	case "aws":

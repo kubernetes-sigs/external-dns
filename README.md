@@ -92,6 +92,7 @@ The following table clarifies the current status of the providers according to t
 | TransIP | Alpha |
 | VinylDNS | Alpha |
 | RancherDNS | Alpha |
+| Akamai FastDNS | Alpha |
 
 ## Running ExternalDNS:
 

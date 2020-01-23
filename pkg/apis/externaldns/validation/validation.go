@@ -43,6 +43,22 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		}
 	}
 
+	// Akamai provider specific validations
+	if cfg.Provider == "akamai" {
+		if cfg.AkamaiServiceConsumerDomain == "" {
+			return errors.New("no Akamai ServiceConsumerDomain specified")
+		}
+		if cfg.AkamaiClientToken == "" {
+			return errors.New("no Akamai client token specified")
+		}
+		if cfg.AkamaiClientSecret == "" {
+			return errors.New("no Akamai client secret specified")
+		}
+		if cfg.AkamaiAccessToken == "" {
+			return errors.New("no Akamai access token specified")
+		}
+	}
+
 	// Infoblox provider specific validations
 	if cfg.Provider == "infoblox" {
 		if cfg.InfobloxGridHost == "" {
