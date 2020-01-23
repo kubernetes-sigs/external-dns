@@ -22,10 +22,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	rc0 "github.com/nic-at/rc0go"
 	"github.com/stretchr/testify/require"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -72,7 +73,9 @@ func TestRcodeZeroProvider_Records(t *testing.T) {
 		}),
 	}
 
-	endpoints, err := provider.Records() // should return 6 rrs
+	ctx := context.Background()
+
+	endpoints, err := provider.Records(ctx) // should return 6 rrs
 
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
@@ -81,7 +84,7 @@ func TestRcodeZeroProvider_Records(t *testing.T) {
 
 	mockRRSetService.TestErrorReturned = true
 
-	_, err = provider.Records()
+	_, err = provider.Records(ctx)
 	if err == nil {
 		t.Errorf("expected to fail, %s", err)
 	}

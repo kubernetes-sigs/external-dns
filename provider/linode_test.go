@@ -21,12 +21,13 @@ import (
 	"os"
 	"testing"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	"github.com/linode/linodego"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 type MockDomainClient struct {
@@ -256,7 +257,7 @@ func TestLinodeRecords(t *testing.T) {
 		mock.Anything,
 	).Return(createBazRecords(), nil).Once()
 
-	actual, err := provider.Records()
+	actual, err := provider.Records(context.Background())
 	require.NoError(t, err)
 
 	expected := []*endpoint.Endpoint{

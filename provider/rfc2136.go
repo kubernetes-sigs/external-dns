@@ -28,8 +28,8 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 // rfc2136 provider type
@@ -95,7 +95,7 @@ func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, k
 }
 
 // Records returns the list of records.
-func (r rfc2136Provider) Records() ([]*endpoint.Endpoint, error) {
+func (r rfc2136Provider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	rrs, err := r.List()
 	if err != nil {
 		return nil, err

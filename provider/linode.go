@@ -22,15 +22,14 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/linode/linodego"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 
-	"strings"
-
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 // LinodeDomainClient interface to ease testing
@@ -112,7 +111,7 @@ func (p *LinodeProvider) Zones() ([]*linodego.Domain, error) {
 }
 
 // Records returns the list of records in a given zone.
-func (p *LinodeProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p *LinodeProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.Zones()
 	if err != nil {
 		return nil, err
@@ -188,13 +187,11 @@ func (p *LinodeProvider) submitChanges(changes LinodeChanges) error {
 
 		if p.DryRun {
 			log.WithFields(logFields).Info("Would create record.")
-		} else {
-			if _, err := p.Client.CreateDomainRecord(context.TODO(), change.Domain.ID, change.Options); err != nil {
-				log.WithFields(logFields).Errorf(
-					"Failed to Create record: %v",
-					err,
-				)
-			}
+		} else if _, err := p.Client.CreateDomainRecord(context.TODO(), change.Domain.ID, change.Options); err != nil {
+			log.WithFields(logFields).Errorf(
+				"Failed to Create record: %v",
+				err,
+			)
 		}
 	}
 
@@ -211,13 +208,11 @@ func (p *LinodeProvider) submitChanges(changes LinodeChanges) error {
 
 		if p.DryRun {
 			log.WithFields(logFields).Info("Would delete record.")
-		} else {
-			if err := p.Client.DeleteDomainRecord(context.TODO(), change.Domain.ID, change.DomainRecord.ID); err != nil {
-				log.WithFields(logFields).Errorf(
-					"Failed to Delete record: %v",
-					err,
-				)
-			}
+		} else if err := p.Client.DeleteDomainRecord(context.TODO(), change.Domain.ID, change.DomainRecord.ID); err != nil {
+			log.WithFields(logFields).Errorf(
+				"Failed to Delete record: %v",
+				err,
+			)
 		}
 	}
 
@@ -234,13 +229,11 @@ func (p *LinodeProvider) submitChanges(changes LinodeChanges) error {
 
 		if p.DryRun {
 			log.WithFields(logFields).Info("Would update record.")
-		} else {
-			if _, err := p.Client.UpdateDomainRecord(context.TODO(), change.Domain.ID, change.DomainRecord.ID, change.Options); err != nil {
-				log.WithFields(logFields).Errorf(
-					"Failed to Update record: %v",
-					err,
-				)
-			}
+		} else if _, err := p.Client.UpdateDomainRecord(context.TODO(), change.Domain.ID, change.DomainRecord.ID, change.Options); err != nil {
+			log.WithFields(logFields).Errorf(
+				"Failed to Update record: %v",
+				err,
+			)
 		}
 	}
 
@@ -504,7 +497,7 @@ func endpointsByZone(zoneNameIDMapper zoneIDName, endpoints []*endpoint.Endpoint
 	for _, ep := range endpoints {
 		zoneID, _ := zoneNameIDMapper.FindZone(ep.DNSName)
 		if zoneID == "" {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", ep.DNSName)
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", ep.DNSName)
 			continue
 		}
 		endpointsByZone[zoneID] = append(endpointsByZone[zoneID], ep)

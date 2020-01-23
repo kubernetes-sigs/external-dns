@@ -26,12 +26,14 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -100,11 +102,11 @@ var (
 // Route53API is the subset of the AWS Route53 API that we actually use.  Add methods as required. Signatures must match exactly.
 // mostly taken from: https://github.com/kubernetes/kubernetes/blob/853167624edb6bc0cfdcdfb88e746e178f5db36c/federation/pkg/dnsprovider/providers/aws/route53/stubs/route53api.go
 type Route53API interface {
-	ListResourceRecordSetsPages(input *route53.ListResourceRecordSetsInput, fn func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool)) error
-	ChangeResourceRecordSets(*route53.ChangeResourceRecordSetsInput) (*route53.ChangeResourceRecordSetsOutput, error)
-	CreateHostedZone(*route53.CreateHostedZoneInput) (*route53.CreateHostedZoneOutput, error)
-	ListHostedZonesPages(input *route53.ListHostedZonesInput, fn func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool)) error
-	ListTagsForResource(input *route53.ListTagsForResourceInput) (*route53.ListTagsForResourceOutput, error)
+	ListResourceRecordSetsPagesWithContext(ctx context.Context, input *route53.ListResourceRecordSetsInput, fn func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool), opts ...request.Option) error
+	ChangeResourceRecordSetsWithContext(ctx context.Context, input *route53.ChangeResourceRecordSetsInput, opts ...request.Option) (*route53.ChangeResourceRecordSetsOutput, error)
+	CreateHostedZoneWithContext(ctx context.Context, input *route53.CreateHostedZoneInput, opts ...request.Option) (*route53.CreateHostedZoneOutput, error)
+	ListHostedZonesPagesWithContext(ctx context.Context, input *route53.ListHostedZonesInput, fn func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool), opts ...request.Option) error
+	ListTagsForResourceWithContext(ctx context.Context, input *route53.ListTagsForResourceInput, opts ...request.Option) (*route53.ListTagsForResourceOutput, error)
 }
 
 // AWSProvider is an implementation of Provider for AWS Route53.
@@ -183,7 +185,7 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 }
 
 // Zones returns the list of hosted zones.
-func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
+func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53.HostedZone, error) {
 	zones := make(map[string]*route53.HostedZone)
 
 	var tagErr error
@@ -203,7 +205,7 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 
 			// Only fetch tags if a tag filter was specified
 			if !p.zoneTagFilter.IsEmpty() {
-				tags, err := p.tagsForZone(*zone.Id)
+				tags, err := p.tagsForZone(ctx, *zone.Id)
 				if err != nil {
 					tagErr = err
 					return false
@@ -219,7 +221,7 @@ func (p *AWSProvider) Zones() (map[string]*route53.HostedZone, error) {
 		return true
 	}
 
-	err := p.client.ListHostedZonesPages(&route53.ListHostedZonesInput{}, f)
+	err := p.client.ListHostedZonesPagesWithContext(ctx, &route53.ListHostedZonesInput{}, f)
 	if err != nil {
 		return nil, err
 	}
@@ -244,16 +246,16 @@ func wildcardUnescape(s string) string {
 }
 
 // Records returns the list of records in a given hosted zone.
-func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
-	zones, err := p.Zones()
+func (p *AWSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
+	zones, err := p.Zones(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return p.records(zones)
+	return p.records(ctx, zones)
 }
 
-func (p *AWSProvider) records(zones map[string]*route53.HostedZone) ([]*endpoint.Endpoint, error) {
+func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.HostedZone) ([]*endpoint.Endpoint, error) {
 	endpoints := make([]*endpoint.Endpoint, 0)
 	f := func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool) {
 		for _, r := range resp.ResourceRecordSets {
@@ -330,7 +332,7 @@ func (p *AWSProvider) records(zones map[string]*route53.HostedZone) ([]*endpoint
 			HostedZoneId: z.Id,
 		}
 
-		if err := p.client.ListResourceRecordSetsPages(params, f); err != nil {
+		if err := p.client.ListResourceRecordSetsPagesWithContext(ctx, params, f); err != nil {
 			return nil, err
 		}
 	}
@@ -339,36 +341,36 @@ func (p *AWSProvider) records(zones map[string]*route53.HostedZone) ([]*endpoint
 }
 
 // CreateRecords creates a given set of DNS records in the given hosted zone.
-func (p *AWSProvider) CreateRecords(endpoints []*endpoint.Endpoint) error {
-	return p.doRecords(route53.ChangeActionCreate, endpoints)
+func (p *AWSProvider) CreateRecords(ctx context.Context, endpoints []*endpoint.Endpoint) error {
+	return p.doRecords(ctx, route53.ChangeActionCreate, endpoints)
 }
 
 // UpdateRecords updates a given set of old records to a new set of records in a given hosted zone.
-func (p *AWSProvider) UpdateRecords(endpoints, _ []*endpoint.Endpoint) error {
-	return p.doRecords(route53.ChangeActionUpsert, endpoints)
+func (p *AWSProvider) UpdateRecords(ctx context.Context, endpoints, _ []*endpoint.Endpoint) error {
+	return p.doRecords(ctx, route53.ChangeActionUpsert, endpoints)
 }
 
 // DeleteRecords deletes a given set of DNS records in a given zone.
-func (p *AWSProvider) DeleteRecords(endpoints []*endpoint.Endpoint) error {
-	return p.doRecords(route53.ChangeActionDelete, endpoints)
+func (p *AWSProvider) DeleteRecords(ctx context.Context, endpoints []*endpoint.Endpoint) error {
+	return p.doRecords(ctx, route53.ChangeActionDelete, endpoints)
 }
 
-func (p *AWSProvider) doRecords(action string, endpoints []*endpoint.Endpoint) error {
-	zones, err := p.Zones()
+func (p *AWSProvider) doRecords(ctx context.Context, action string, endpoints []*endpoint.Endpoint) error {
+	zones, err := p.Zones(ctx)
 	if err != nil {
 		return err
 	}
 
-	records, err := p.records(zones)
+	records, err := p.records(ctx, zones)
 	if err != nil {
 		log.Errorf("getting records failed: %v", err)
 	}
-	return p.submitChanges(p.newChanges(action, endpoints, records, zones), zones)
+	return p.submitChanges(ctx, p.newChanges(action, endpoints, records, zones), zones)
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	zones, err := p.Zones()
+	zones, err := p.Zones(ctx)
 	if err != nil {
 		return err
 	}
@@ -376,7 +378,7 @@ func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 	records, ok := ctx.Value(RecordsContextKey).([]*endpoint.Endpoint)
 	if !ok {
 		var err error
-		records, err = p.records(zones)
+		records, err = p.records(ctx, zones)
 		if err != nil {
 			log.Errorf("getting records failed: %v", err)
 		}
@@ -388,11 +390,11 @@ func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 	combinedChanges = append(combinedChanges, p.newChanges(route53.ChangeActionUpsert, changes.UpdateNew, records, zones)...)
 	combinedChanges = append(combinedChanges, p.newChanges(route53.ChangeActionDelete, changes.Delete, records, zones)...)
 
-	return p.submitChanges(combinedChanges, zones)
+	return p.submitChanges(ctx, combinedChanges, zones)
 }
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
-func (p *AWSProvider) submitChanges(changes []*route53.Change, zones map[string]*route53.HostedZone) error {
+func (p *AWSProvider) submitChanges(ctx context.Context, changes []*route53.Change, zones map[string]*route53.HostedZone) error {
 	// return early if there is nothing to change
 	if len(changes) == 0 {
 		log.Info("All records are already up to date")
@@ -424,7 +426,7 @@ func (p *AWSProvider) submitChanges(changes []*route53.Change, zones map[string]
 					},
 				}
 
-				if _, err := p.client.ChangeResourceRecordSets(params); err != nil {
+				if _, err := p.client.ChangeResourceRecordSetsWithContext(ctx, params); err != nil {
 					log.Errorf("Failure in zone %s [Id: %s]", aws.StringValue(zones[z].Name), z)
 					log.Error(err) //TODO(ideahitme): consider changing the interface in cases when this error might be a concern for other components
 					failedUpdate = true
@@ -567,8 +569,8 @@ func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint, recordsCac
 	return change, dualstack
 }
 
-func (p *AWSProvider) tagsForZone(zoneID string) (map[string]string, error) {
-	response, err := p.client.ListTagsForResource(&route53.ListTagsForResourceInput{
+func (p *AWSProvider) tagsForZone(ctx context.Context, zoneID string) (map[string]string, error) {
+	response, err := p.client.ListTagsForResourceWithContext(ctx, &route53.ListTagsForResourceInput{
 		ResourceType: aws.String("hostedzone"),
 		ResourceId:   aws.String(zoneID),
 	})
@@ -662,7 +664,7 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Ch
 
 		zones := suitableZones(hostname, zones)
 		if len(zones) == 0 {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.String())
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", c.String())
 			continue
 		}
 		for _, z := range zones {
@@ -748,9 +750,9 @@ func canonicalHostedZone(hostname string) string {
 }
 
 // cleanZoneID removes the "/hostedzone/" prefix
-func cleanZoneID(ID string) string {
-	if strings.HasPrefix(ID, "/hostedzone/") {
-		ID = strings.TrimPrefix(ID, "/hostedzone/")
+func cleanZoneID(id string) string {
+	if strings.HasPrefix(id, "/hostedzone/") {
+		id = strings.TrimPrefix(id, "/hostedzone/")
 	}
-	return ID
+	return id
 }

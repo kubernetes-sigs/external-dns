@@ -21,9 +21,10 @@ import (
 	"net"
 	"testing"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 type ConnectorSuite struct {

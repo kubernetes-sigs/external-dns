@@ -20,11 +20,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/internal/testutils"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 type inMemoryProvider struct {
@@ -32,7 +33,7 @@ type inMemoryProvider struct {
 	onApplyChanges func(changes *plan.Changes)
 }
 
-func (p *inMemoryProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p *inMemoryProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return p.endpoints, nil
 }
 
@@ -100,7 +101,7 @@ func TestAWSSDRegistryTest_Records(t *testing.T) {
 	}
 
 	r, _ := NewAWSSDRegistry(p, "owner")
-	records, _ := r.Records()
+	records, _ := r.Records(context.Background())
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 }

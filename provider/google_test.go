@@ -23,17 +23,14 @@ import (
 	"strings"
 	"testing"
 
-	dns "google.golang.org/api/dns/v1"
-
-	"golang.org/x/net/context"
-
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
-
-	"google.golang.org/api/googleapi"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/net/context"
+	dns "google.golang.org/api/dns/v1"
+	"google.golang.org/api/googleapi"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 var (
@@ -238,7 +235,7 @@ func TestGoogleRecords(t *testing.T) {
 
 	provider := newGoogleProvider(t, NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), NewZoneIDFilter([]string{""}), false, originalEndpoints)
 
-	records, err := provider.Records()
+	records, err := provider.Records(context.Background())
 	require.NoError(t, err)
 
 	validateEndpoints(t, records, originalEndpoints)
@@ -281,7 +278,7 @@ func TestGoogleRecordsFilter(t *testing.T) {
 
 	require.NoError(t, provider.CreateRecords(ignoredEndpoints))
 
-	records, err := provider.Records()
+	records, err := provider.Records(context.Background())
 	require.NoError(t, err)
 
 	// assert that due to filtering no changes were made.
@@ -299,7 +296,7 @@ func TestGoogleCreateRecords(t *testing.T) {
 
 	require.NoError(t, provider.CreateRecords(records))
 
-	records, err := provider.Records()
+	records, err := provider.Records(context.Background())
 	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
@@ -324,7 +321,7 @@ func TestGoogleUpdateRecords(t *testing.T) {
 
 	require.NoError(t, provider.UpdateRecords(updatedRecords, currentRecords))
 
-	records, err := provider.Records()
+	records, err := provider.Records(context.Background())
 	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
@@ -345,7 +342,7 @@ func TestGoogleDeleteRecords(t *testing.T) {
 
 	require.NoError(t, provider.DeleteRecords(originalEndpoints))
 
-	records, err := provider.Records()
+	records, err := provider.Records(context.Background())
 	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{})
@@ -413,7 +410,7 @@ func TestGoogleApplyChanges(t *testing.T) {
 
 	require.NoError(t, provider.ApplyChanges(context.Background(), changes))
 
-	records, err := provider.Records()
+	records, err := provider.Records(context.Background())
 	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{
@@ -468,9 +465,10 @@ func TestGoogleApplyChangesDryRun(t *testing.T) {
 		Delete:    deleteRecords,
 	}
 
-	require.NoError(t, provider.ApplyChanges(context.Background(), changes))
+	ctx := context.Background()
+	require.NoError(t, provider.ApplyChanges(ctx, changes))
 
-	records, err := provider.Records()
+	records, err := provider.Records(ctx)
 	require.NoError(t, err)
 
 	validateEndpoints(t, records, originalEndpoints)
@@ -763,14 +761,15 @@ func setupGoogleRecords(t *testing.T, provider *GoogleProvider, endpoints []*end
 	clearGoogleRecords(t, provider, "zone-2-ext-dns-test-2-gcp-zalan-do")
 	clearGoogleRecords(t, provider, "zone-3-ext-dns-test-2-gcp-zalan-do")
 
-	records, err := provider.Records()
+	ctx := context.Background()
+	records, err := provider.Records(ctx)
 	require.NoError(t, err)
 
 	validateEndpoints(t, records, []*endpoint.Endpoint{})
 
 	require.NoError(t, provider.CreateRecords(endpoints))
 
-	records, err = provider.Records()
+	records, err = provider.Records(ctx)
 	require.NoError(t, err)
 
 	validateEndpoints(t, records, endpoints)

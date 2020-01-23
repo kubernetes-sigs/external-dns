@@ -31,8 +31,9 @@ import (
 
 	"github.com/gophercloud/gophercloud/openstack/dns/v2/recordsets"
 	"github.com/gophercloud/gophercloud/openstack/dns/v2/zones"
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 var lastGeneratedDesignateID int32
@@ -302,7 +303,7 @@ func TestDesignateRecords(t *testing.T) {
 		},
 	}
 
-	endpoints, err := client.ToProvider().Records()
+	endpoints, err := client.ToProvider().Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}

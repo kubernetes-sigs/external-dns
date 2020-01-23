@@ -29,8 +29,8 @@ import (
 	"github.com/nesv/go-dynect/dynect"
 	"github.com/sanyu/dynectsoap/dynectsoap"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -40,7 +40,7 @@ const (
 	// when rate limit is hit retry up to 5 times after sleep 1m between retries
 	dynMaxRetriesOnErrRateLimited = 5
 
-	// two consecutive bad logins happen at least this many seconds appart
+	// two consecutive bad logins happen at least this many seconds apart
 	// While it is easy to get the username right, misconfiguring the password
 	// can get account blocked. Exit(1) is not a good solution
 	// as k8s will restart the pod and another login attempt will be made
@@ -51,7 +51,7 @@ const (
 )
 
 func unixNow() int64 {
-	return int64(time.Now().Unix())
+	return time.Now().Unix()
 }
 
 // DynConfig hold connection parameters to dyn.com and internal state
@@ -588,7 +588,7 @@ func (d *dynProviderState) commit(client *dynect.Client) error {
 // Records makes on average C + 2*Z  requests (Z = number of zones): 1 login + 1 fetchAllRecords
 // A cache is used to avoid querying for every single record found. C is proportional to the number
 // of expired/changed records
-func (d *dynProviderState) Records() ([]*endpoint.Endpoint, error) {
+func (d *dynProviderState) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	client, err := d.login()
 	if err != nil {
 		return nil, err

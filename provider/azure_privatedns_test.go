@@ -25,8 +25,8 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 // mockPrivateZonesClient implements the methods of the Azure Private DNS Zones Client which are used in the Azure Private DNS Provider
@@ -54,7 +54,7 @@ func (m *mockPrivateZoneListResultPageIterator) getNextPage(context.Context, pri
 	// it assumed that instances of this kind of iterator are only skimmed through once per test
 	// otherwise a real implementation is required, e.g. based on a linked list
 	if m.offset < len(m.results) {
-		m.offset = m.offset + 1
+		m.offset++
 		return m.results[m.offset-1], nil
 	}
 
@@ -73,7 +73,7 @@ func (m *mockPrivateRecordSetListResultPageIterator) getNextPage(context.Context
 	// it assumed that instances of this kind of iterator are only skimmed through once per test
 	// otherwise a real implementation is required, e.g. based on a linked list
 	if m.offset < len(m.results) {
-		m.offset = m.offset + 1
+		m.offset++
 		return m.results[m.offset-1], nil
 	}
 
@@ -266,7 +266,7 @@ func TestAzurePrivateDNSRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	actual, err := provider.Records()
+	actual, err := provider.Records(context.Background())
 
 	if err != nil {
 		t.Fatal(err)
@@ -302,7 +302,7 @@ func TestAzurePrivateDNSMultiRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	actual, err := provider.Records()
+	actual, err := provider.Records(context.Background())
 
 	if err != nil {
 		t.Fatal(err)

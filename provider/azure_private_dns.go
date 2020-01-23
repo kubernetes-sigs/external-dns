@@ -29,8 +29,8 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 type azurePrivateDNSConfig struct {
@@ -90,8 +90,7 @@ func NewAzurePrivateDNSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFi
 // Records gets the current records.
 //
 // Returns the current records or an error if the operation failed.
-func (p *AzurePrivateDNSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
-	ctx := context.Background()
+func (p *AzurePrivateDNSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.zones(ctx)
 	if err != nil {
 		return nil, err
@@ -106,7 +105,7 @@ func (p *AzurePrivateDNSProvider) Records() (endpoints []*endpoint.Endpoint, _ e
 				log.Debugf("Skipping invalid record set with missing type.")
 				return
 			}
-			recordType = strings.TrimLeft(*recordSet.Type, "Microsoft.Network/privateDnsZones")
+			recordType = strings.TrimPrefix(*recordSet.Type, "Microsoft.Network/privateDnsZones")
 
 			var name string
 			if recordSet.Name == nil {
@@ -126,7 +125,7 @@ func (p *AzurePrivateDNSProvider) Records() (endpoints []*endpoint.Endpoint, _ e
 				ttl = endpoint.TTL(*recordSet.TTL)
 			}
 
-			ep := endpoint.NewEndpointWithTTL(name, recordType, endpoint.TTL(ttl), targets...)
+			ep := endpoint.NewEndpointWithTTL(name, recordType, ttl, targets...)
 			log.Debugf(
 				"Found %s record for '%s' with target '%s'.",
 				ep.RecordType,

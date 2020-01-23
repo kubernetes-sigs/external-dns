@@ -26,11 +26,12 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	sd "github.com/aws/aws-sdk-go/service/servicediscovery"
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/internal/testutils"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 // Compile time check for interface conformance
@@ -58,10 +59,10 @@ func (s *AWSSDClientStub) CreateService(input *sd.CreateServiceInput) (*sd.Creat
 		CreatorRequestId: input.CreatorRequestId,
 	}
 
-	nsServices, ok := s.services[*input.DnsConfig.NamespaceId]
+	nsServices, ok := s.services[*input.NamespaceId]
 	if !ok {
 		nsServices = make(map[string]*sd.Service)
-		s.services[*input.DnsConfig.NamespaceId] = nsServices
+		s.services[*input.NamespaceId] = nsServices
 	}
 	nsServices[*srv.Id] = srv
 
@@ -288,7 +289,7 @@ func TestAWSSDProvider_Records(t *testing.T) {
 
 	provider := newTestAWSSDProvider(api, NewDomainFilter([]string{}), "")
 
-	endpoints, _ := provider.Records()
+	endpoints, _ := provider.Records(context.Background())
 
 	assert.True(t, testutils.SameEndpoints(expectedEndpoints, endpoints), "expected and actual endpoints don't match, expected=%v, actual=%v", expectedEndpoints, endpoints)
 }
@@ -316,8 +317,10 @@ func TestAWSSDProvider_ApplyChanges(t *testing.T) {
 
 	provider := newTestAWSSDProvider(api, NewDomainFilter([]string{}), "")
 
+	ctx := context.Background()
+
 	// apply creates
-	provider.ApplyChanges(context.Background(), &plan.Changes{
+	provider.ApplyChanges(ctx, &plan.Changes{
 		Create: expectedEndpoints,
 	})
 
@@ -329,16 +332,17 @@ func TestAWSSDProvider_ApplyChanges(t *testing.T) {
 	assert.NotNil(t, existingServices["service3"])
 
 	// make sure instances were registered
-	endpoints, _ := provider.Records()
+	endpoints, _ := provider.Records(ctx)
 	assert.True(t, testutils.SameEndpoints(expectedEndpoints, endpoints), "expected and actual endpoints don't match, expected=%v, actual=%v", expectedEndpoints, endpoints)
 
+	ctx = context.Background()
 	// apply deletes
-	provider.ApplyChanges(context.Background(), &plan.Changes{
+	provider.ApplyChanges(ctx, &plan.Changes{
 		Delete: expectedEndpoints,
 	})
 
 	// make sure all instances are gone
-	endpoints, _ = provider.Records()
+	endpoints, _ = provider.Records(ctx)
 	assert.Empty(t, endpoints)
 }
 
@@ -538,13 +542,13 @@ func TestAWSSDProvider_CreateService(t *testing.T) {
 	expectedServices["A-srv"] = &sd.Service{
 		Name: aws.String("A-srv"),
 		DnsConfig: &sd.DnsConfig{
-			NamespaceId:   aws.String("private"),
 			RoutingPolicy: aws.String(sd.RoutingPolicyMultivalue),
 			DnsRecords: []*sd.DnsRecord{{
 				Type: aws.String(sd.RecordTypeA),
 				TTL:  aws.Int64(60),
 			}},
 		},
+		NamespaceId: aws.String("private"),
 	}
 
 	// CNAME type
@@ -556,13 +560,13 @@ func TestAWSSDProvider_CreateService(t *testing.T) {
 	expectedServices["CNAME-srv"] = &sd.Service{
 		Name: aws.String("CNAME-srv"),
 		DnsConfig: &sd.DnsConfig{
-			NamespaceId:   aws.String("private"),
 			RoutingPolicy: aws.String(sd.RoutingPolicyWeighted),
 			DnsRecords: []*sd.DnsRecord{{
 				Type: aws.String(sd.RecordTypeCname),
 				TTL:  aws.Int64(80),
 			}},
 		},
+		NamespaceId: aws.String("private"),
 	}
 
 	// ALIAS type
@@ -574,13 +578,13 @@ func TestAWSSDProvider_CreateService(t *testing.T) {
 	expectedServices["ALIAS-srv"] = &sd.Service{
 		Name: aws.String("ALIAS-srv"),
 		DnsConfig: &sd.DnsConfig{
-			NamespaceId:   aws.String("private"),
 			RoutingPolicy: aws.String(sd.RoutingPolicyWeighted),
 			DnsRecords: []*sd.DnsRecord{{
 				Type: aws.String(sd.RecordTypeA),
 				TTL:  aws.Int64(100),
 			}},
 		},
+		NamespaceId: aws.String("private"),
 	}
 
 	validateAWSSDServicesMapsEqual(t, expectedServices, api.services["private"])

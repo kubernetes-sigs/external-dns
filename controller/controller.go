@@ -23,10 +23,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/kubernetes-sigs/external-dns/plan"
-	"github.com/kubernetes-sigs/external-dns/provider"
-	"github.com/kubernetes-sigs/external-dns/registry"
-	"github.com/kubernetes-sigs/external-dns/source"
+	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/registry"
+	"sigs.k8s.io/external-dns/source"
 )
 
 var (
@@ -104,7 +104,8 @@ type Controller struct {
 
 // RunOnce runs a single iteration of a reconciliation loop.
 func (c *Controller) RunOnce() error {
-	records, err := c.Registry.Records()
+	ctx := context.Background()
+	records, err := c.Registry.Records(ctx)
 	if err != nil {
 		registryErrorsTotal.Inc()
 		deprecatedRegistryErrors.Inc()
@@ -112,7 +113,7 @@ func (c *Controller) RunOnce() error {
 	}
 	registryEndpointsTotal.Set(float64(len(records)))
 
-	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, records)
+	ctx = context.WithValue(ctx, provider.RecordsContextKey, records)
 
 	endpoints, err := c.Source.Endpoints()
 	if err != nil {

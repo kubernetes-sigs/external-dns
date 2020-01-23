@@ -26,8 +26,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 type mockOCIDNSClient struct{}
@@ -287,7 +287,7 @@ func TestOCIRecords(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			provider := newOCIProvider(&mockOCIDNSClient{}, tc.domainFilter, tc.zoneIDFilter, false)
-			endpoints, err := provider.Records()
+			endpoints, err := provider.Records(context.Background())
 			require.NoError(t, err)
 			require.ElementsMatch(t, tc.expected, endpoints)
 		})
@@ -624,7 +624,7 @@ func TestMutableMockOCIDNSClient(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// GetZoneRecords and check we're back in the origional state
+	// GetZoneRecords and check we're back in the original state
 	recordsResponse, err = client.GetZoneRecords(context.Background(), dns.GetZoneRecordsRequest{
 		ZoneNameOrId: zones[0].Id,
 	})
@@ -829,9 +829,11 @@ func TestOCIApplyChanges(t *testing.T) {
 				NewZoneIDFilter([]string{""}),
 				tc.dryRun,
 			)
-			err := provider.ApplyChanges(context.Background(), tc.changes)
+
+			ctx := context.Background()
+			err := provider.ApplyChanges(ctx, tc.changes)
 			require.Equal(t, tc.err, err)
-			endpoints, err := provider.Records()
+			endpoints, err := provider.Records(ctx)
 			require.NoError(t, err)
 			require.ElementsMatch(t, tc.expectedEndpoints, endpoints)
 		})

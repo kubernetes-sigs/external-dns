@@ -26,8 +26,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -62,7 +62,7 @@ func NewDigitalOceanProvider(domainFilter DomainFilter, dryRun bool) (*DigitalOc
 	if !ok {
 		return nil, fmt.Errorf("No token found")
 	}
-	oauthClient := oauth2.NewClient(oauth2.NoContext, oauth2.StaticTokenSource(&oauth2.Token{
+	oauthClient := oauth2.NewClient(context.TODO(), oauth2.StaticTokenSource(&oauth2.Token{
 		AccessToken: token,
 	}))
 	client := godo.NewClient(oauthClient)
@@ -94,7 +94,7 @@ func (p *DigitalOceanProvider) Zones() ([]godo.Domain, error) {
 }
 
 // Records returns the list of records in a given zone.
-func (p *DigitalOceanProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p *DigitalOceanProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.Zones()
 	if err != nil {
 		return nil, err
@@ -323,7 +323,7 @@ func digitalOceanChangesByZone(zones []godo.Domain, changeSet []*DigitalOceanCha
 	for _, c := range changeSet {
 		zone, _ := zoneNameIDMapper.FindZone(c.ResourceRecordSet.Name)
 		if zone == "" {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.ResourceRecordSet.Name)
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", c.ResourceRecordSet.Name)
 			continue
 		}
 		changes[zone] = append(changes[zone], c)

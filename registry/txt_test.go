@@ -22,13 +22,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/internal/testutils"
-	"github.com/kubernetes-sigs/external-dns/plan"
-	"github.com/kubernetes-sigs/external-dns/provider"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 const (
@@ -67,9 +67,10 @@ func testTXTRegistryRecords(t *testing.T) {
 }
 
 func testTXTRegistryRecordsPrefixed(t *testing.T) {
+	ctx := context.Background()
 	p := provider.NewInMemoryProvider()
 	p.CreateZone(testZone)
-	p.ApplyChanges(context.Background(), &plan.Changes{
+	p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwnerAndLabels("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, "", endpoint.Labels{"foo": "somefoo"}),
 			newEndpointWithOwnerAndLabels("bar.test-zone.example.org", "my-domain.com", endpoint.RecordTypeCNAME, "", endpoint.Labels{"bar": "somebar"}),
@@ -159,21 +160,22 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	}
 
 	r, _ := NewTXTRegistry(p, "txt.", "owner", time.Hour)
-	records, _ := r.Records()
+	records, _ := r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 
 	// Ensure prefix is case-insensitive
 	r, _ = NewTXTRegistry(p, "TxT.", "owner", time.Hour)
-	records, _ = r.Records()
+	records, _ = r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpointLabels(records, expectedRecords))
 }
 
 func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 	p := provider.NewInMemoryProvider()
+	ctx := context.Background()
 	p.CreateZone(testZone)
-	p.ApplyChanges(context.Background(), &plan.Changes{
+	p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foo.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwner("bar.test-zone.example.org", "my-domain.com", endpoint.RecordTypeCNAME, ""),
@@ -239,7 +241,7 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 	}
 
 	r, _ := NewTXTRegistry(p, "", "owner", time.Hour)
-	records, _ := r.Records()
+	records, _ := r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 }

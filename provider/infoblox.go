@@ -25,9 +25,10 @@ import (
 	"strings"
 
 	ibclient "github.com/infobloxopen/infoblox-go-client"
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	"github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 // InfobloxConfig clarifies the method signature
@@ -107,7 +108,7 @@ func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, erro
 
 	var requestBuilder ibclient.HttpRequestBuilder
 	if infobloxConfig.MaxResults != 0 {
-		// use our own HttpRequestBuilder which sets _max_results paramter on GET requests
+		// use our own HttpRequestBuilder which sets _max_results parameter on GET requests
 		requestBuilder = NewMaxResultsRequestBuilder(infobloxConfig.MaxResults)
 	} else {
 		// use the default HttpRequestBuilder of the infoblox client
@@ -134,7 +135,7 @@ func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, erro
 }
 
 // Records gets the current records.
-func (p *InfobloxProvider) Records() (endpoints []*endpoint.Endpoint, err error) {
+func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, err error) {
 	zones, err := p.zones()
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch zones: %s", err)

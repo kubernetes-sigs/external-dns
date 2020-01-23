@@ -24,9 +24,10 @@ import (
 	"strings"
 
 	"github.com/dnsimple/dnsimple-go/dnsimple"
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const dnsimpleRecordTTL = 3600 // Default TTL of 1 hour if not set (DNSimple's default)
@@ -155,8 +156,8 @@ func (p *dnsimpleProvider) Zones() (map[string]dnsimple.Zone, error) {
 	return zones, nil
 }
 
-// Records retuns a list of endpoints in a given zone
-func (p *dnsimpleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
+// Records returns a list of endpoints in a given zone
+func (p *dnsimpleProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.Zones()
 	if err != nil {
 		return nil, err
@@ -235,7 +236,7 @@ func (p *dnsimpleProvider) submitChanges(changes []*dnsimpleChange) error {
 	for _, change := range changes {
 		zone := dnsimpleSuitableZone(change.ResourceRecordSet.Name, zones)
 		if zone == nil {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", change.ResourceRecordSet.Name)
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", change.ResourceRecordSet.Name)
 			continue
 		}
 

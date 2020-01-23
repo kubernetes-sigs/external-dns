@@ -10,14 +10,20 @@ The main use cases that inspired this feature is the necessity for having a subd
 
 ### External DNS
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: external-dns
 spec:
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: external-dns
   template:
+    metadata:
+      labels:
+        app: external-dns
     spec:
       containers:
       - name: external-dns

@@ -23,13 +23,14 @@ import (
 	"os"
 	"testing"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	api "gopkg.in/ns1/ns1-go.v2/rest"
 	"gopkg.in/ns1/ns1-go.v2/rest/model/dns"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 type MockNS1DomainClient struct {
@@ -131,16 +132,18 @@ func TestNS1Records(t *testing.T) {
 		domainFilter: NewDomainFilter([]string{"foo.com."}),
 		zoneIDFilter: NewZoneIDFilter([]string{""}),
 	}
-	records, err := provider.Records()
+	ctx := context.Background()
+
+	records, err := provider.Records(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(records))
 
 	provider.client = &MockNS1GetZoneFail{}
-	_, err = provider.Records()
+	_, err = provider.Records(ctx)
 	require.Error(t, err)
 
 	provider.client = &MockNS1ListZonesFail{}
-	_, err = provider.Records()
+	_, err = provider.Records(ctx)
 	require.Error(t, err)
 }
 

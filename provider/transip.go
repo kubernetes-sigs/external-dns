@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	log "github.com/sirupsen/logrus"
 	"github.com/transip/gotransip"
 	transip "github.com/transip/gotransip/domain"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -220,7 +221,7 @@ func (p *TransIPProvider) Zones() ([]transip.Domain, error) {
 }
 
 // Records returns the list of records in a given zone.
-func (p *TransIPProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p *TransIPProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.Zones()
 	if err != nil {
 		return nil, err

@@ -17,7 +17,7 @@ limitations under the License.
 package provider
 
 import (
-	goctx "context"
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -26,17 +26,13 @@ import (
 	"cloud.google.com/go/compute/metadata"
 	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
-
-	dns "google.golang.org/api/dns/v1"
-
-	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
-
+	dns "google.golang.org/api/dns/v1"
 	googleapi "google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -202,7 +198,7 @@ func (p *GoogleProvider) Zones() (map[string]*dns.ManagedZone, error) {
 }
 
 // Records returns the list of records in all relevant zones.
-func (p *GoogleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
+func (p *GoogleProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.Zones()
 	if err != nil {
 		return nil, err
@@ -220,7 +216,7 @@ func (p *GoogleProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 	}
 
 	for _, z := range zones {
-		if err := p.resourceRecordSetsClient.List(p.project, z.Name).Pages(context.TODO(), f); err != nil {
+		if err := p.resourceRecordSetsClient.List(p.project, z.Name).Pages(ctx, f); err != nil {
 			return nil, err
 		}
 	}
@@ -257,7 +253,7 @@ func (p *GoogleProvider) DeleteRecords(endpoints []*endpoint.Endpoint) error {
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p *GoogleProvider) ApplyChanges(ctx goctx.Context, changes *plan.Changes) error {
+func (p *GoogleProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	change := &dns.Change{}
 
 	change.Additions = append(change.Additions, p.newFilteredRecords(changes.Create)...)
@@ -323,7 +319,7 @@ func (p *GoogleProvider) submitChange(change *dns.Change) error {
 	return nil
 }
 
-// batchChange seperates a zone in multiple transaction.
+// batchChange separates a zone in multiple transaction.
 func batchChange(change *dns.Change, batchSize int) []*dns.Change {
 	changes := []*dns.Change{}
 
@@ -444,7 +440,7 @@ func newRecord(ep *endpoint.Endpoint) *dns.ResourceRecordSet {
 		targets[0] = ensureTrailingDot(targets[0])
 	}
 
-	// no annotation results in a Ttl of 0, default to 300 for backwards-compatability
+	// no annotation results in a Ttl of 0, default to 300 for backwards-compatibility
 	var ttl int64 = googleRecordTTL
 	if ep.RecordTTL.IsConfigured() {
 		ttl = int64(ep.RecordTTL)

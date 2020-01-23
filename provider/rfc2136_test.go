@@ -21,11 +21,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 type rfc2136Stub struct {
@@ -112,7 +113,7 @@ func TestRfc2136GetRecordsMultipleTargets(t *testing.T) {
 	provider, err := createRfc2136StubProvider(stub)
 	assert.NoError(t, err)
 
-	recs, err := provider.Records()
+	recs, err := provider.Records(context.Background())
 	assert.NoError(t, err)
 
 	assert.Equal(t, 1, len(recs), "expected single record")
@@ -141,7 +142,7 @@ func TestRfc2136GetRecords(t *testing.T) {
 	provider, err := createRfc2136StubProvider(stub)
 	assert.NoError(t, err)
 
-	recs, err := provider.Records()
+	recs, err := provider.Records(context.Background())
 	assert.NoError(t, err)
 
 	assert.Equal(t, 6, len(recs))

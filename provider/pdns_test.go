@@ -19,17 +19,15 @@ package provider
 import (
 	"context"
 	"errors"
-
-	//"fmt"
 	"net/http"
 	"strings"
 	"testing"
 
+	pgo "github.com/ffledgling/pdns-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	pgo "github.com/ffledgling/pdns-go"
-	"github.com/kubernetes-sigs/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // FIXME: What do we do about labels?
@@ -538,7 +536,7 @@ func (c *PDNSAPIClientStub) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http
 /******************************************************************************/
 // API that returns a zones with no records
 type PDNSAPIClientStubEmptyZones struct {
-	// Keep track of all zones we recieve via PatchZone
+	// Keep track of all zones we receive via PatchZone
 	patchedZones []pgo.Zone
 }
 
@@ -795,9 +793,11 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRecords() {
 		client: &PDNSAPIClientStub{},
 	}
 
+	ctx := context.Background()
+
 	/* We test that endpoints are returned correctly for a Zone when Records() is called
 	 */
-	eps, err := p.Records()
+	eps, err := p.Records(ctx)
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), endpointsMixedRecords, eps)
 
@@ -806,13 +806,13 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRecords() {
 	p = &PDNSProvider{
 		client: &PDNSAPIClientStubListZoneFailure{},
 	}
-	_, err = p.Records()
+	_, err = p.Records(ctx)
 	assert.NotNil(suite.T(), err)
 
 	p = &PDNSProvider{
 		client: &PDNSAPIClientStubListZonesFailure{},
 	}
-	_, err = p.Records()
+	_, err = p.Records(ctx)
 	assert.NotNil(suite.T(), err)
 
 }

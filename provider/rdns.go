@@ -29,13 +29,12 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/coreos/etcd/clientv3"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -114,7 +113,7 @@ func NewRDNSProvider(config RDNSConfig) (*RDNSProvider, error) {
 
 // Records returns all DNS records found in Rancher DNS(RDNS) etcdv3 backend. Depending on the record fields
 // it may be mapped to one or two records of type A, TXT, A+TXT.
-func (p RDNSProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p RDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	var result []*endpoint.Endpoint
 
 	rs, err := p.client.List(p.rootDomain)

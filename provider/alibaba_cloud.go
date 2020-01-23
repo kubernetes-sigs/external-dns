@@ -28,10 +28,11 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/denverdino/aliyungo/metadata"
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	log "github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -236,10 +237,10 @@ func (p *AlibabaCloudProvider) refreshStsToken(sleepTime time.Duration) {
 		sleepTime = p.nextExpire.Sub(nowTime)
 		p.clientLock.RUnlock()
 		log.Infof("Distance expiration time %v", sleepTime)
-		if sleepTime < time.Duration(10*time.Minute) {
-			sleepTime = time.Duration(time.Second * 1)
+		if sleepTime < 10*time.Minute {
+			sleepTime = time.Second * 1
 		} else {
-			sleepTime = time.Duration(9 * time.Minute)
+			sleepTime = 9 * time.Minute
 			log.Info("Next fetch sts sleep interval : ", sleepTime.String())
 			continue
 		}
@@ -280,7 +281,7 @@ func (p *AlibabaCloudProvider) refreshStsToken(sleepTime time.Duration) {
 // Records gets the current records.
 //
 // Returns the current records or an error if the operation failed.
-func (p *AlibabaCloudProvider) Records() (endpoints []*endpoint.Endpoint, err error) {
+func (p *AlibabaCloudProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, err error) {
 	if p.privateZone {
 		endpoints, err = p.privateZoneRecords()
 	} else {

@@ -22,37 +22,40 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"time"
 
 	log "github.com/sirupsen/logrus"
-
 	istionetworking "istio.io/api/networking/v1alpha3"
 	istiomodel "istio.io/istio/pilot/pkg/model"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-
-	"github.com/kubernetes-sigs/external-dns/endpoint"
+	"k8s.io/apimachinery/pkg/util/wait"
+	kubeinformers "k8s.io/client-go/informers"
+	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // gatewaySource is an implementation of Source for Istio Gateway objects.
 // The gateway implementation uses the spec.servers.hosts values for the hostnames.
 // Use targetAnnotationKey to explicitly set Endpoint.
 type gatewaySource struct {
-	kubeClient                  kubernetes.Interface
-	istioClient                 istiomodel.ConfigStore
-	istioIngressGatewayServices []string
-	namespace                   string
-	annotationFilter            string
-	fqdnTemplate                *template.Template
-	combineFQDNAnnotation       bool
-	ignoreHostnameAnnotation    bool
+	kubeClient               kubernetes.Interface
+	istioClient              istiomodel.ConfigStore
+	namespace                string
+	annotationFilter         string
+	fqdnTemplate             *template.Template
+	combineFQDNAnnotation    bool
+	ignoreHostnameAnnotation bool
+	serviceInformer          coreinformers.ServiceInformer
 }
 
 // NewIstioGatewaySource creates a new gatewaySource with the given config.
 func NewIstioGatewaySource(
 	kubeClient kubernetes.Interface,
 	istioClient istiomodel.ConfigStore,
-	istioIngressGatewayServices []string,
 	namespace string,
 	annotationFilter string,
 	fqdnTemplate string,
@@ -63,11 +66,6 @@ func NewIstioGatewaySource(
 		tmpl *template.Template
 		err  error
 	)
-	for _, lbService := range istioIngressGatewayServices {
-		if _, _, err = parseIngressGateway(lbService); err != nil {
-			return nil, err
-		}
-	}
 
 	if fqdnTemplate != "" {
 		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
@@ -78,15 +76,40 @@ func NewIstioGatewaySource(
 		}
 	}
 
+	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
+	// Set resync period to 0, to prevent processing when nothing has changed
+	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
+	serviceInformer := informerFactory.Core().V1().Services()
+
+	// Add default resource event handlers to properly initialize informer.
+	serviceInformer.Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				log.Debug("service added")
+			},
+		},
+	)
+
+	// TODO informer is not explicitly stopped since controller is not passing in its channel.
+	informerFactory.Start(wait.NeverStop)
+
+	// wait for the local cache to be populated.
+	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
+		return serviceInformer.Informer().HasSynced() == true, nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	}
+
 	return &gatewaySource{
-		kubeClient:                  kubeClient,
-		istioClient:                 istioClient,
-		istioIngressGatewayServices: istioIngressGatewayServices,
-		namespace:                   namespace,
-		annotationFilter:            annotationFilter,
-		fqdnTemplate:                tmpl,
-		combineFQDNAnnotation:       combineFqdnAnnotation,
-		ignoreHostnameAnnotation:    ignoreHostnameAnnotation,
+		kubeClient:               kubeClient,
+		istioClient:              istioClient,
+		namespace:                namespace,
+		annotationFilter:         annotationFilter,
+		fqdnTemplate:             tmpl,
+		combineFQDNAnnotation:    combineFqdnAnnotation,
+		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
+		serviceInformer:          serviceInformer,
 	}, nil
 }
 
@@ -168,7 +191,7 @@ func (sc *gatewaySource) endpointsFromTemplate(config *istiomodel.Config) ([]*en
 	targets := getTargetsFromTargetAnnotation(config.Annotations)
 
 	if len(targets) == 0 {
-		targets, err = sc.targetsFromIstioIngressGatewayServices()
+		targets, err = sc.targetsFromGatewayConfig(config)
 		if err != nil {
 			return nil, err
 		}
@@ -223,22 +246,30 @@ func (sc *gatewaySource) setResourceLabel(config istiomodel.Config, endpoints []
 	}
 }
 
-func (sc *gatewaySource) targetsFromIstioIngressGatewayServices() (targets endpoint.Targets, err error) {
-	for _, lbService := range sc.istioIngressGatewayServices {
-		lbNamespace, lbName, err := parseIngressGateway(lbService)
-		if err != nil {
-			return nil, err
-		}
-		if svc, err := sc.kubeClient.CoreV1().Services(lbNamespace).Get(lbName, metav1.GetOptions{}); err != nil {
-			log.Warn(err)
-		} else {
-			for _, lb := range svc.Status.LoadBalancer.Ingress {
-				if lb.IP != "" {
-					targets = append(targets, lb.IP)
-				}
-				if lb.Hostname != "" {
-					targets = append(targets, lb.Hostname)
-				}
+func (sc *gatewaySource) targetsFromGatewayConfig(config *istiomodel.Config) (targets endpoint.Targets, err error) {
+	gateway := config.Spec.(*istionetworking.Gateway)
+	labelSelector, err := metav1.ParseToLabelSelector(labels.Set(gateway.Selector).String())
+	if err != nil {
+		return nil, err
+	}
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		return nil, err
+	}
+
+	services, err := sc.serviceInformer.Lister().Services(sc.namespace).List(selector)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	for _, service := range services {
+		for _, lb := range service.Status.LoadBalancer.Ingress {
+			if lb.IP != "" {
+				targets = append(targets, lb.IP)
+			}
+			if lb.Hostname != "" {
+				targets = append(targets, lb.Hostname)
 			}
 		}
 	}
@@ -258,7 +289,7 @@ func (sc *gatewaySource) endpointsFromGatewayConfig(config istiomodel.Config) ([
 	targets := getTargetsFromTargetAnnotation(config.Annotations)
 
 	if len(targets) == 0 {
-		targets, err = sc.targetsFromIstioIngressGatewayServices()
+		targets, err = sc.targetsFromGatewayConfig(&config)
 		if err != nil {
 			return nil, err
 		}
