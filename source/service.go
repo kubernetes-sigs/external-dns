@@ -306,15 +306,29 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 			}
 
 			for _, headlessDomain := range headlessDomains {
-				var ep string
+				var ep []string
 				if sc.publishHostIP {
-					ep = pod.Status.HostIP
+					ep = append(ep, pod.Status.HostIP)
 					log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, ep)
+
+				} else if _, ok := svc.Annotations[externalIPAnnotationKey]; ok {
+					node, err := sc.nodeInformer.Lister().Get(pod.Spec.NodeName)
+					if err != nil {
+						return nil
+					}
+					var externalIPs endpoint.Targets
+					for _, address := range node.Status.Addresses {
+						if address.Type == v1.NodeExternalIP {
+							externalIPs = append(externalIPs, address.Address)
+						}
+					}
+					ep = append(ep, externalIPs...)
+					log.Debugf("Generating matching endpoint %s with Host ExternalIPs %v", headlessDomain, externalIPs)
 				} else {
-					ep = address.IP
+					ep = append(ep, address.IP)
 					log.Debugf("Generating matching endpoint %s with EndpointAddress IP %s", headlessDomain, ep)
 				}
-				targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], ep)
+				targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], ep...)
 			}
 		}
 	}
