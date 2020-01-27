@@ -53,16 +53,31 @@ type BluecatZone struct {
 
 type BluecatHostRecord struct {
   Id            int    `json:"id"`
-  Name          string `json: "name"`
-  Properties    string `json: "properties"`
-  Type          string `json: "type"`
+  Name          string `json:"name"`
+  Properties    string `json:"properties"`
+  Type          string `json:"type"`
 }
 
 type BluecatCNAMERecord struct {
   Id            int    `json:"id"`
-  Name          string `json: "name"`
-  Properties    string `json: "properties"`
-  Type          string `json: "type"`
+  Name          string `json:"name"`
+  Properties    string `json:"properties"`
+  Type          string `json:"type"`
+}
+
+type bluecatRecordSet struct {
+  obj interface{}
+  res interface{}
+}
+
+type bluecatCreateHostRecordRequest struct {
+  Name       string `json:"absolute_name"`
+  Ip4Address string `json:"ip4_address"`
+}
+
+type bluecatCreateCNAMERecordRequest struct {
+  Name         string `json:"absolute_name"`
+  LinkedRecord string `json:"linked_record"`
 }
 
 func NewBluecatProvider(configFile string, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool) (*BluecatProvider, error) {
@@ -147,12 +162,66 @@ func (p *BluecatProvider) Records(ctx context.Context) (endpoints []*endpoint.En
 }
 
 func (p *BluecatProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-  _, err := p.zones()
+  zones, err := p.zones()
   if err != nil {
     return err
   }
 
+  created, deleted := p.mapChanges(zones, changes)
+  p.deleteRecords(deleted)
+  p.createRecords(created)
+
   return nil
+}
+
+type bluecatChangeMap map[string][]*endpoint.Endpoint
+
+func (p *BluecatProvider) mapChanges(zones []string, changes *plan.Changes) (bluecatChangeMap, bluecatChangeMap) {
+  created := bluecatChangeMap{}
+  deleted := bluecatChangeMap{}
+
+  mapChange := func(changeMap bluecatChangeMap, change *endpoint.Endpoint) {
+    zone := p.findZone(zones, change.DNSName)
+    if zone == "" {
+      log.Debugf("ignoring changes to '%s' because a suitable Bluecat DNS zone was not found", change.DNSName)
+      return
+    }
+    changeMap[zone] = append(changeMap[zone], change)
+  }
+
+  for _, change := range changes.Delete {
+    mapChange(deleted, change)
+  }
+  for _, change := range changes.UpdateOld {
+    mapChange(deleted, change)
+  }
+  for _, change := range changes.Create {
+    mapChange(created, change)
+  }
+  for _, change := range changes.UpdateNew {
+    mapChange(created, change)
+  }
+
+  return created, deleted
+}
+
+// findZone finds the most specific matching zone for a given record 'name' from a list of all zones
+func (p *BluecatProvider) findZone(zones []string, name string) string {
+  var result string
+
+  for _, zone := range zones {
+    if strings.HasSuffix(name, "."+zone) {
+      if result == "" || len(zone) > len(result) {
+        result = zone
+      }
+    } else if strings.EqualFold(name, zone) {
+      if result == "" || len(zone) > len(result) {
+        result = zone
+      }
+    }
+  }
+
+  return result
 }
 
 func (p *BluecatProvider) zones() ([]string, error) {
@@ -179,6 +248,155 @@ func (p *BluecatProvider) zones() ([]string, error) {
   }
   log.Debugf("found %d zones", len(zones))
   return zones, nil
+}
+
+func (p *BluecatProvider) createRecords(created bluecatChangeMap) {
+  for zone, endpoints := range created {
+    for _, ep := range endpoints {
+      if p.dryRun {
+        log.Infof("would create %s record named '%s' to '%s' for Bluecat DNS zone '%s'.",
+          ep.RecordType,
+          ep.DNSName,
+          ep.Targets,
+          zone,
+        )
+        continue
+      }
+
+      log.Infof("creating %s record named '%s' to '%s' for Bluecat DNS zone '%s'.",
+        ep.RecordType,
+        ep.DNSName,
+        ep.Targets,
+        zone,
+      )
+
+      recordSet, err := p.recordSet(ep, false)
+      if err != nil {
+        log.Errorf(
+          "Failed to retrieve %s record named '%s' to '%s' for Bluecat DNS zone '%s': %v",
+          ep.RecordType,
+          ep.DNSName,
+          ep.Targets,
+          zone,
+          err,
+        )
+        continue
+      }
+
+      switch ep.RecordType {
+      case endpoint.RecordTypeA:
+        _, err = p.gatewayClient.createHostRecord(zone, recordSet.obj.(*bluecatCreateHostRecordRequest))
+      case endpoint.RecordTypeCNAME:
+        _, err = p.gatewayClient.createCNAMERecord(zone, recordSet.obj.(*bluecatCreateCNAMERecordRequest))
+      }
+      if err != nil {
+        log.Errorf(
+          "Failed to create %s record named '%s' to '%s' for Bluecat DNS zone '%s': %v",
+          ep.RecordType,
+          ep.DNSName,
+          ep.Targets,
+          zone,
+          err,
+        )
+      }
+    }
+  }
+}
+
+func (p *BluecatProvider) deleteRecords(deleted bluecatChangeMap) {
+  // run deletions first
+  for zone, endpoints := range deleted {
+    for _, ep := range endpoints {
+      if p.dryRun {
+        log.Infof("would delete %s record named '%s' for Bluecat DNS zone '%s'.",
+          ep.RecordType,
+          ep.DNSName,
+          zone,
+        )
+        continue
+      } else {
+        log.Infof("deleting %s record named '%s' for Bluecat DNS zone '%s'.",
+          ep.RecordType,
+          ep.DNSName,
+          zone,
+        )
+
+        recordSet, err := p.recordSet(ep, true)
+        if err != nil {
+          log.Errorf(
+            "Failed to retrieve %s record named '%s' to '%s' for Bluecat DNS zone '%s': %v",
+            ep.RecordType,
+            ep.DNSName,
+            ep.Targets,
+            zone,
+            err,
+          )
+          continue
+        }
+
+        switch ep.RecordType {
+        case endpoint.RecordTypeA:
+          for _, record := range *recordSet.res.(*[]BluecatHostRecord) {
+            err = p.gatewayClient.deleteHostRecord(record.Name)
+          }
+        case endpoint.RecordTypeCNAME:
+          for _, record := range *recordSet.res.(*[]BluecatCNAMERecord) {
+            err = p.gatewayClient.deleteCNAMERecord(record.Name)
+          }
+        }
+        if err != nil {
+          log.Errorf("Failed to delete %s record named '%s' for Bluecat DNS zone '%s': %v",
+            ep.RecordType,
+            ep.DNSName,
+            zone,
+            err,)
+        }
+      }
+    }
+  }
+}
+
+func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (recordSet bluecatRecordSet, err error) {
+  switch ep.RecordType {
+  case endpoint.RecordTypeA:
+    nameSplit := strings.Split(ep.DNSName, ".")
+    var res []BluecatHostRecord
+    obj := bluecatCreateHostRecordRequest{
+      Name:       nameSplit[0],
+      Ip4Address: ep.Targets[0],
+    }
+    if getObject {
+      var record BluecatHostRecord
+      err := p.gatewayClient.getHostRecord(ep.DNSName, &record)
+      if err != nil {
+        return
+      }
+      res = append(res, record)
+    }
+    recordSet = bluecatRecordSet{
+      obj: obj,
+      res: &res,
+    }
+  case endpoint.RecordTypeCNAME:
+    var res []BluecatCNAMERecord
+    obj := bluecatCreateCNAMERecordRequest{
+      Name:         ep.DNSName,
+      LinkedRecord: ep.Targets[0],
+    }
+    if getObject {
+      var record BluecatCNAMERecord
+      err := p.gatewayClient.getCNAMERecord(ep.DNSName, &record)
+      if err != nil {
+        return
+      }
+      res = append(res, record)
+    }
+    recordSet = bluecatRecordSet{
+      obj: obj,
+      res: &res,
+    }
+  }
+  return
 }
 
 // getBluecatGatewayToken retrieves a Bluecat Gateway API token.
@@ -319,6 +537,159 @@ func (c *GatewayClient) getCNAMERecords(zone string, records *[]BluecatCNAMEReco
   json.NewDecoder(resp.Body).Decode(records)
   return nil
 }
+
+func (c *GatewayClient) getHostRecord(name string, record *BluecatHostRecord) error {
+  transportCfg := &http.Transport{
+    TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+  }
+  client := &http.Client{
+    Transport: transportCfg,
+  }
+
+  url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
+                  "/views/" + c.View + "/" +
+                  "host_records/" + name + "/"
+  req, err := http.NewRequest("GET", url, nil)
+  req.Header.Add("Accept", "application/json")
+  req.Header.Add("Authorization", "Basic " + c.Token)
+  req.AddCookie(&c.Cookie)
+
+  resp, err := client.Do(req)
+  if err != nil {
+    return fmt.Errorf("error retrieving record(s) from gateway: %s, %s", name, err)
+  }
+
+  defer resp.Body.Close()
+
+  json.NewDecoder(resp.Body).Decode(record)
+  return nil
+}
+
+func (c *GatewayClient) getCNAMERecord(name string, record *BluecatCNAMERecord) error {
+  transportCfg := &http.Transport{
+    TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+  }
+  client := &http.Client{
+    Transport: transportCfg,
+  }
+
+  url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
+      "/views/" + c.View + "/" +
+      "cname_records/" + name + "/"
+  req, err := http.NewRequest("GET", url, nil)
+  req.Header.Add("Accept", "application/json")
+  req.Header.Add("Authorization", "Basic " + c.Token)
+  req.AddCookie(&c.Cookie)
+
+  resp, err := client.Do(req)
+  if err != nil {
+    return fmt.Errorf("error retrieving record(s) from gateway: %s, %s", name, err)
+  }
+
+  defer resp.Body.Close()
+
+  json.NewDecoder(resp.Body).Decode(record)
+  return nil
+}
+
+func (c *GatewayClient) createHostRecord(zone string, req *bluecatCreateHostRecordRequest) (res interface{}, err error) {
+  transportCfg := &http.Transport{
+    TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+  }
+  client := &http.Client{
+    Transport: transportCfg,
+  }
+
+  zonePath := expandZone(zone)
+  // Remove the trailing 'zones/'
+  zonePath = strings.TrimSuffix(zonePath, "zones/")
+
+  url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "host_records/"
+  body, _ := json.Marshal(req)
+
+  hreq, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+  hreq.Header.Add("Accept", "application/json")
+  hreq.Header.Add("Authorization", "Basic " + c.Token)
+  hreq.AddCookie(&c.Cookie)
+
+  res, err = client.Do(hreq)
+
+  return
+}
+
+func (c *GatewayClient) createCNAMERecord(zone string, req *bluecatCreateCNAMERecordRequest) (res interface{}, err error) {
+  transportCfg := &http.Transport{
+    TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+  }
+  client := &http.Client{
+    Transport: transportCfg,
+  }
+
+  zonePath := expandZone(zone)
+  // Remove the trailing 'zones/'
+  zonePath = strings.TrimSuffix(zonePath, "zones/")
+
+  url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "cname_records/"
+  body, _ := json.Marshal(req)
+
+  hreq, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+  hreq.Header.Add("Accept", "application/json")
+  hreq.Header.Add("Authorization", "Basic " + c.Token)
+  hreq.AddCookie(&c.Cookie)
+
+  res, err = client.Do(hreq)
+
+  return
+}
+
+func (c *GatewayClient) deleteHostRecord(name string) error {
+  transportCfg := &http.Transport{
+    TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+  }
+  client := &http.Client{
+    Transport: transportCfg,
+  }
+
+  url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
+      "/views/" + c.View + "/" +
+      "host_records/" + name + "/"
+  req, err := http.NewRequest("DELETE", url, nil)
+  req.Header.Add("Accept", "application/json")
+  req.Header.Add("Authorization", "Basic " + c.Token)
+  req.AddCookie(&c.Cookie)
+
+  _, err = client.Do(req)
+  if err != nil {
+    return fmt.Errorf("error deleting record(s) from gateway: %s, %s", name, err)
+  }
+
+  return nil
+}
+
+func (c *GatewayClient) deleteCNAMERecord(name string) error {
+  transportCfg := &http.Transport{
+    TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+  }
+  client := &http.Client{
+    Transport: transportCfg,
+  }
+
+  url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
+      "/views/" + c.View + "/" +
+      "cname_records/" + name + "/"
+  req, err := http.NewRequest("DELETE", url, nil)
+  req.Header.Add("Accept", "application/json")
+  req.Header.Add("Authorization", "Basic " + c.Token)
+  req.AddCookie(&c.Cookie)
+
+  _, err = client.Do(req)
+  if err != nil {
+    return fmt.Errorf("error deleting record(s) from gateway: %s, %s", name, err)
+  }
+
+  return nil
+}
+
 
 //splitProperties is a helper function to break a '|' separated string into key/value pairs
 // i.e. "foo=bar|baz=mop"
