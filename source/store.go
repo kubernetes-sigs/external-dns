@@ -213,7 +213,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewCRDSource(crdClient, cfg.Namespace, cfg.CRDSourceKind, scheme)
+		return NewCRDSource(crdClient, cfg.Namespace, cfg.CRDSourceKind, cfg.AnnotationFilter, scheme)
 	case "skipper-routegroup":
 		master := cfg.KubeMaster
 		tokenPath := ""

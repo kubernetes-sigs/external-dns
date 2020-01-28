@@ -24,6 +24,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -37,10 +38,11 @@ import (
 // crdSource is an implementation of Source that provides endpoints by listing
 // specified CRD and fetching Endpoints embedded in Spec.
 type crdSource struct {
-	crdClient   rest.Interface
-	namespace   string
-	crdResource string
-	codec       runtime.ParameterCodec
+	crdClient        rest.Interface
+	namespace        string
+	crdResource      string
+	codec            runtime.ParameterCodec
+	annotationFilter string
 }
 
 func addKnownTypes(scheme *runtime.Scheme, groupVersion schema.GroupVersion) error {
@@ -100,12 +102,13 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, kube
 }
 
 // NewCRDSource creates a new crdSource with the given config.
-func NewCRDSource(crdClient rest.Interface, namespace, kind string, scheme *runtime.Scheme) (Source, error) {
+func NewCRDSource(crdClient rest.Interface, namespace, kind string, annotationFilter string, scheme *runtime.Scheme) (Source, error) {
 	return &crdSource{
-		crdResource: strings.ToLower(kind) + "s",
-		namespace:   namespace,
-		crdClient:   crdClient,
-		codec:       runtime.NewParameterCodec(scheme),
+		crdResource:      strings.ToLower(kind) + "s",
+		namespace:        namespace,
+		annotationFilter: annotationFilter,
+		crdClient:        crdClient,
+		codec:            runtime.NewParameterCodec(scheme),
 	}, nil
 }
 
@@ -117,6 +120,11 @@ func (cs *crdSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	result, err := cs.List(&metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	result, err = cs.filterByAnnotations(result)
 	if err != nil {
 		return nil, err
 	}
@@ -195,4 +203,35 @@ func (cs *crdSource) UpdateStatus(dnsEndpoint *endpoint.DNSEndpoint) (result *en
 		Do().
 		Into(result)
 	return
+}
+
+// filterByAnnotations filters a list of dnsendpoints by a given annotation selector.
+func (cs *crdSource) filterByAnnotations(dnsendpoints *endpoint.DNSEndpointList) (*endpoint.DNSEndpointList, error) {
+	labelSelector, err := metav1.ParseToLabelSelector(cs.annotationFilter)
+	if err != nil {
+		return nil, err
+	}
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		return nil, err
+	}
+
+	// empty filter returns original list
+	if selector.Empty() {
+		return dnsendpoints, nil
+	}
+
+	filteredList := endpoint.DNSEndpointList{}
+
+	for _, dnsendpoint := range dnsendpoints.Items {
+		// convert the dnsendpoint' annotations to an equivalent label selector
+		annotations := labels.Set(dnsendpoint.Annotations)
+
+		// include dnsendpoint if its annotations match the selector
+		if selector.Matches(annotations) {
+			filteredList.Items = append(filteredList.Items, dnsendpoint)
+		}
+	}
+
+	return &filteredList, nil
 }
