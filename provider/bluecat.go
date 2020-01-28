@@ -166,8 +166,11 @@ func (p *BluecatProvider) ApplyChanges(ctx context.Context, changes *plan.Change
   if err != nil {
     return err
   }
-
+  log.Infof("zones is: %+v\n", zones)
+  log.Infof("changes: %+v\n", changes)
   created, deleted := p.mapChanges(zones, changes)
+  log.Infof("created: %+v\n", created)
+  log.Infof("deleted: %+v\n", deleted)
   p.deleteRecords(deleted)
   p.createRecords(created)
 
@@ -367,7 +370,7 @@ func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (reco
     }
     if getObject {
       var record BluecatHostRecord
-      err := p.gatewayClient.getHostRecord(ep.DNSName, &record)
+      err = p.gatewayClient.getHostRecord(ep.DNSName, &record)
       if err != nil {
         return
       }
@@ -385,7 +388,7 @@ func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (reco
     }
     if getObject {
       var record BluecatCNAMERecord
-      err := p.gatewayClient.getCNAMERecord(ep.DNSName, &record)
+      err = p.gatewayClient.getCNAMERecord(ep.DNSName, &record)
       if err != nil {
         return
       }
