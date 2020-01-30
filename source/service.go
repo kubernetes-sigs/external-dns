@@ -113,7 +113,7 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 
 	// wait for the local cache to be populated.
 	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
-		return serviceInformer.Informer().HasSynced() == true, nil
+		return serviceInformer.Informer().HasSynced(), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to sync cache: %v", err)
@@ -234,9 +234,9 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 			headlessDomains = append(headlessDomains, fmt.Sprintf("%s.%s", v.Spec.Hostname, hostname))
 		}
 		for _, headlessDomain := range headlessDomains {
-			if sc.publishHostIP == true {
+			if sc.publishHostIP {
 				log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, v.Status.HostIP)
-				// To reduce traffice on the DNS API only add record for running Pods. Good Idea?
+				// To reduce traffic on the DNS API only add record for running Pods. Good Idea?
 				if v.Status.Phase == v1.PodRunning {
 					targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], v.Status.HostIP)
 				} else {

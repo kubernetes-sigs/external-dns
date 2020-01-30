@@ -104,7 +104,7 @@ func NewContourIngressRouteSource(
 
 	// wait for the local cache to be populated.
 	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
-		return ingressRouteInformer.Informer().HasSynced() == true, nil
+		return ingressRouteInformer.Informer().HasSynced(), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to sync cache: %v", err)

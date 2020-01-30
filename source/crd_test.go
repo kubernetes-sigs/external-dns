@@ -52,7 +52,7 @@ func defaultHeader() http.Header {
 	return header
 }
 
-func objBody(codec runtime.Codec, obj runtime.Object) io.ReadCloser {
+func objBody(codec runtime.Encoder, obj runtime.Object) io.ReadCloser {
 	return ioutil.NopCloser(bytes.NewReader([]byte(runtime.EncodeOrDie(codec, obj))))
 }
 

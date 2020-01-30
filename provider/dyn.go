@@ -395,19 +395,6 @@ func (d *dynProviderState) fetchAllRecordsInZone(zone string) (*dynectsoap.GetAl
 
 }
 
-// fetchAllRecordLinksInZone list all records in a zone with a single call. Records not matched by the
-// DomainFilter are ignored. The response is a list of links that can be fed to dynect.Client.Do()
-// directly
-func (d *dynProviderState) fetchAllRecordLinksInZone(client *dynect.Client, zone string) ([]string, error) {
-	var allRecords dynect.AllRecordsResponse
-	err := client.Do("GET", fmt.Sprintf("AllRecord/%s/", zone), nil, &allRecords)
-	if err != nil {
-		return nil, err
-	}
-
-	return filterAndFixLinks(allRecords.Data, d.DomainFilter), nil
-}
-
 // buildLinkToRecord build a resource link. The symmetry of the dyn API is used to save
 // switch-case boilerplate.
 // Empty response means the endpoint is not mappable to a records link: either because the fqdn
@@ -604,7 +591,7 @@ func (d *dynProviderState) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 	for _, zone := range zones {
 		serial, err := d.fetchZoneSerial(client, zone)
 		if err != nil {
-			if strings.Index(err.Error(), "404 Not Found") >= 0 {
+			if strings.Contains(err.Error(), "404 Not Found") {
 				log.Infof("Ignore zone %s as it does not exist", zone)
 				continue
 			}

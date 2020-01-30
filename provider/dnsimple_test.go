@@ -37,8 +37,6 @@ var mockProvider dnsimpleProvider
 var dnsimpleListRecordsResponse dnsimple.ZoneRecordsResponse
 var dnsimpleListZonesResponse dnsimple.ZonesResponse
 
-type mockDnsimpleZonesService struct{}
-
 func TestDnsimpleServices(t *testing.T) {
 	// Setup example responses
 	firstZone := dnsimple.Zone{
