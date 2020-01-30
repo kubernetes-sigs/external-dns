@@ -115,7 +115,7 @@ func newNS1ProviderWithHTTPClient(config NS1Config, client *http.Client) (*NS1Pr
 		clientArgs = append(clientArgs, api.SetEndpoint(config.NS1Endpoint))
 	}
 
-	if config.NS1IgnoreSSL == true {
+	if config.NS1IgnoreSSL {
 		log.Info("ns1-ignoressl flag is True, skipping SSL verification")
 		defaultTransport := http.DefaultTransport.(*http.Transport)
 		tr := &http.Transport{

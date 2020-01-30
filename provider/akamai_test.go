@@ -62,10 +62,7 @@ func (m *mockAkamaiClient) Do(config edgegrid.Config, req *http.Request) (*http.
 	handler := func(w http.ResponseWriter, r *http.Request) (isError bool) {
 		b, _ := ioutil.ReadAll(r.Body)
 		io.WriteString(w, string(b))
-		if string(b) == "{\"status\": 404 }" {
-			return true
-		}
-		return false
+		return string(b) == "{\"status\": 404 }"
 	}
 	w := httptest.NewRecorder()
 	err := handler(w, req)

@@ -95,7 +95,7 @@ func NewIstioGatewaySource(
 
 	// wait for the local cache to be populated.
 	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
-		return serviceInformer.Informer().HasSynced() == true, nil
+		return serviceInformer.Informer().HasSynced(), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to sync cache: %v", err)
@@ -326,15 +326,4 @@ func (sc *gatewaySource) endpointsFromGatewayConfig(config istiomodel.Config) ([
 	}
 
 	return endpoints, nil
-}
-
-func parseIngressGateway(ingressGateway string) (namespace, name string, err error) {
-	parts := strings.Split(ingressGateway, "/")
-	if len(parts) != 2 {
-		err = fmt.Errorf("invalid ingress gateway service (namespace/name) found '%v'", ingressGateway)
-	} else {
-		namespace, name = parts[0], parts[1]
-	}
-
-	return
 }
