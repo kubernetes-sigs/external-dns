@@ -249,6 +249,10 @@ Annotations which are specific to AWS.
 
 `external-dns.alpha.kubernetes.io/alias` if set to `true` on an ingress, it will create an ALIAS record when the target is an ALIAS as well. To make the target an alias, the ingress needs to be configured correctly as described in [the docs](./nginx-ingress.md#with-a-separate-tcp-load-balancer). In particular, the argument `--publish-service=default/nginx-ingress-controller` has to be set on the `nginx-ingress-controller` container. If one uses the `nginx-ingress` Helm chart, this flag can be set with the `controller.publishService.enabled` configuration option.
 
+### subdomainFilter
+
+`subdomainFilter` allows only domains matched by the subdomainfilter to be created.
+
 ## Verify ExternalDNS works (Ingress example)
 
 Create an ingress resource manifest file.
