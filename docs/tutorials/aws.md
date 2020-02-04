@@ -195,7 +195,6 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: external-dns
-  namespace: default
 ---
 apiVersion: apps/v1
 kind: Deployment
