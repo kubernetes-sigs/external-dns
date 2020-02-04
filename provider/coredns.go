@@ -308,22 +308,22 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		log.Warnf("CoreDNS On-Prem Support Enabled")
 	}
 
-	for _, ep := range changes.Delete {
-		dnsName := ep.DNSName
-		text := ep.Targets
-		if ep.Labels[randomPrefixLabel] != "" {
-			dnsName = ep.Labels[randomPrefixLabel] + "." + dnsName
-		}
-		key := p.etcdKeyFor(dnsName)
+	// for _, ep := range changes.Delete {
+	// 	dnsName := ep.DNSName
+	// 	text := ep.Targets
+	// 	if ep.Labels[randomPrefixLabel] != "" {
+	// 		dnsName = ep.Labels[randomPrefixLabel] + "." + dnsName
+	// 	}
+	// 	key := p.etcdKeyFor(dnsName)
 
-		log.Infof("Delete key %s, %s", key, text)
-		if !p.dryRun {
-			err := p.client.DeleteService(key)
-			if err != nil {
-				return err
-			}
-		}
-	}
+	// 	log.Infof("Delete key %s, %s", key, text)
+	// 	if !p.dryRun {
+	// 		err := p.client.DeleteService(key)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 	}
+	// }
 
 	grouped := map[string][]*endpoint.Endpoint{}
 	for _, ep := range changes.Create {
@@ -403,6 +403,23 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				if err != nil {
 					return err
 				}
+			}
+		}
+	}
+
+	for _, ep := range changes.Delete {
+		dnsName := ep.DNSName
+		text := ep.Targets
+		if ep.Labels[randomPrefixLabel] != "" {
+			dnsName = ep.Labels[randomPrefixLabel] + "." + dnsName
+		}
+		key := p.etcdKeyFor(dnsName)
+
+		log.Infof("Delete key %s, %s", key, text)
+		if !p.dryRun {
+			err := p.client.DeleteService(key)
+			if err != nil {
+				return err
 			}
 		}
 	}
