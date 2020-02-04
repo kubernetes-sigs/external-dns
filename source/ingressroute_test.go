@@ -824,6 +824,15 @@ func testIngressRouteEndpoints(t *testing.T) {
 					},
 					host: "example2.org",
 				},
+				{
+					name:      "fake3",
+					namespace: namespace,
+					annotations: map[string]string{
+						targetAnnotationKey: "ingressroute-target.com",
+						ttlAnnotationKey:    "10s",
+					},
+					host: "example3.org",
+				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
@@ -835,6 +844,11 @@ func testIngressRouteEndpoints(t *testing.T) {
 					DNSName:   "example2.org",
 					Targets:   endpoint.Targets{"ingressroute-target.com"},
 					RecordTTL: endpoint.TTL(1),
+				},
+				{
+					DNSName:   "example3.org",
+					Targets:   endpoint.Targets{"ingressroute-target.com"},
+					RecordTTL: endpoint.TTL(10),
 				},
 			},
 		},
