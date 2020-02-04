@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -106,6 +107,9 @@ func NewCRDSource(crdClient rest.Interface, namespace, kind string, scheme *runt
 		crdClient:   crdClient,
 		codec:       runtime.NewParameterCodec(scheme),
 	}, nil
+}
+
+func (cs *crdSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
 }
 
 // Endpoints returns endpoint objects.

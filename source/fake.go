@@ -54,6 +54,9 @@ func NewFakeSource(fqdnTemplate string) (Source, error) {
 	}, nil
 }
 
+func (sc *fakeSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+}
+
 // Endpoints returns endpoint objects.
 func (sc *fakeSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	endpoints := make([]*endpoint.Endpoint, 10)
