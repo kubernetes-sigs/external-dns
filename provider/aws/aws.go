@@ -128,7 +128,7 @@ type AWSProvider struct {
 	// filter hosted zones by tags
 	zoneTagFilter ZoneTagFilter
 	// only allow changes to specified subdomain and its subdomains
-	subdomainFilter DomainFilter
+	subdomainFilter SubdomainFilter
 	preferCNAME     bool
 }
 
@@ -138,7 +138,7 @@ type AWSConfig struct {
 	ZoneIDFilter         ZoneIDFilter
 	ZoneTypeFilter       ZoneTypeFilter
 	ZoneTagFilter        ZoneTagFilter
-	SubdomainFilter      DomainFilter
+	SubdomainFilter      SubdomainFilter
 	BatchChangeSize      int
 	BatchChangeInterval  time.Duration
 	EvaluateTargetHealth bool

@@ -145,7 +145,7 @@ func main() {
 	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
-	subdomainFilter := provider.NewDomainFilter(cfg.SubdomainFilter)
+	subdomainFilter := provider.NewSubdomainFilter(cfg.SubdomainFilter)
 
 	var p provider.Provider
 	switch cfg.Provider {
