@@ -16,7 +16,11 @@ limitations under the License.
 
 package source
 
-import "sigs.k8s.io/external-dns/endpoint"
+import (
+	"time"
+
+	"sigs.k8s.io/external-dns/endpoint"
+)
 
 // multiSource is a Source that merges the endpoints of its nested Sources.
 type multiSource struct {
@@ -37,6 +41,12 @@ func (ms *multiSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	}
 
 	return result, nil
+}
+
+func (ms *multiSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+	for _, s := range ms.children {
+		s.AddEventHandler(handler, stopChan, minInterval)
+	}
 }
 
 // NewMultiSource creates a new multiSource.

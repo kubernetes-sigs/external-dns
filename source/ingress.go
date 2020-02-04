@@ -33,6 +33,7 @@ import (
 	extinformers "k8s.io/client-go/informers/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/kubernetes/pkg/util/async"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -56,6 +57,7 @@ type ingressSource struct {
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
 	ingressInformer          extinformers.IngressInformer
+	runner                   *async.BoundedFrequencyRunner
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
@@ -302,4 +304,33 @@ func targetsFromIngressStatus(status v1beta1.IngressStatus) endpoint.Targets {
 	}
 
 	return targets
+}
+
+func (sc *ingressSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+	// Add custom resource event handler
+	log.Debug("Adding (bounded) event handler for ingress")
+
+	maxInterval := 24 * time.Hour // handler will be called if it has not run in 24 hours
+	burst := 2                    // allow up to two handler burst calls
+	log.Debugf("Adding handler to BoundedFrequencyRunner with minInterval: %v, syncPeriod: %v, bursts: %d",
+		minInterval, maxInterval, burst)
+	sc.runner = async.NewBoundedFrequencyRunner("ingress-handler", func() {
+		_ = handler()
+	}, minInterval, maxInterval, burst)
+	go sc.runner.Loop(stopChan)
+
+	// run the handler function as soon as the BoundedFrequencyRunner will allow when an update occurs
+	sc.ingressInformer.Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				sc.runner.Run()
+			},
+			UpdateFunc: func(old interface{}, new interface{}) {
+				sc.runner.Run()
+			},
+			DeleteFunc: func(obj interface{}) {
+				sc.runner.Run()
+			},
+		},
+	)
 }

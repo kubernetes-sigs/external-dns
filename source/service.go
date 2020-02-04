@@ -33,6 +33,7 @@ import (
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/kubernetes/pkg/util/async"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -61,6 +62,7 @@ type serviceSource struct {
 	podInformer              coreinformers.PodInformer
 	nodeInformer             coreinformers.NodeInformer
 	serviceTypeFilter        map[string]struct{}
+	runner                   *async.BoundedFrequencyRunner
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
@@ -89,21 +91,18 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	serviceInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				log.Debug("service added")
 			},
 		},
 	)
 	podInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				log.Debug("pod added")
 			},
 		},
 	)
 	nodeInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				log.Debug("node added")
 			},
 		},
 	)
@@ -545,4 +544,33 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, nodeTargets e
 	}
 
 	return endpoints
+}
+
+func (sc *serviceSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+	// Add custom resource event handler
+	log.Debug("Adding (bounded) event handler for service")
+
+	maxInterval := 24 * time.Hour // handler will be called if it has not run in 24 hours
+	burst := 2                    // allow up to two handler burst calls
+	log.Debugf("Adding handler to BoundedFrequencyRunner with minInterval: %v, syncPeriod: %v, bursts: %d",
+		minInterval, maxInterval, burst)
+	sc.runner = async.NewBoundedFrequencyRunner("service-handler", func() {
+		_ = handler()
+	}, minInterval, maxInterval, burst)
+	go sc.runner.Loop(stopChan)
+
+	// run the handler function as soon as the BoundedFrequencyRunner will allow when an update occurs
+	sc.serviceInformer.Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				sc.runner.Run()
+			},
+			UpdateFunc: func(old interface{}, new interface{}) {
+				sc.runner.Run()
+			},
+			DeleteFunc: func(obj interface{}) {
+				sc.runner.Run()
+			},
+		},
+	)
 }

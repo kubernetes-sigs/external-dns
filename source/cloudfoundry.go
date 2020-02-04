@@ -18,6 +18,7 @@ package source
 
 import (
 	"net/url"
+	"time"
 
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
 
@@ -33,6 +34,9 @@ func NewCloudFoundrySource(cfClient *cfclient.Client) (Source, error) {
 	return &cloudfoundrySource{
 		client: cfClient,
 	}, nil
+}
+
+func (rs *cloudfoundrySource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
 }
 
 // Endpoints returns endpoint objects

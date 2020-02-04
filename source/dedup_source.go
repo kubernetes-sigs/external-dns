@@ -17,6 +17,8 @@ limitations under the License.
 package source
 
 import (
+	"time"
+
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -55,4 +57,8 @@ func (ms *dedupSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	}
 
 	return result, nil
+}
+
+func (ms *dedupSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+	ms.source.AddEventHandler(handler, stopChan, minInterval)
 }
