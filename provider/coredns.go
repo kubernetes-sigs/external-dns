@@ -310,11 +310,13 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 
 	for _, ep := range changes.Delete {
 		dnsName := ep.DNSName
+		text := ep.Targets
 		if ep.Labels[randomPrefixLabel] != "" {
 			dnsName = ep.Labels[randomPrefixLabel] + "." + dnsName
 		}
 		key := p.etcdKeyFor(dnsName)
-		log.Infof("Delete key %s", key)
+
+		log.Infof("Delete key %s, %s", key, text)
 		if !p.dryRun {
 			err := p.client.DeleteService(key)
 			if err != nil {
