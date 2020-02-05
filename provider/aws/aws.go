@@ -349,11 +349,12 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 					default:
 						// one of the above needs to be set, otherwise SetIdentifier doesn't make sense
 					}
-
-					if r.HealthCheckId != nil {
-						ep.WithProviderSpecific(providerSpecificHealthCheckID, aws.StringValue(r.HealthCheckId))
-					}
 				}
+
+				if r.HealthCheckId != nil {
+					ep.WithProviderSpecific(providerSpecificHealthCheckID, aws.StringValue(r.HealthCheckId))
+				}
+
 				endpoints = append(endpoints, ep)
 			}
 		}
