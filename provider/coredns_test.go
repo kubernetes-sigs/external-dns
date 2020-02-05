@@ -22,9 +22,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	log "github.com/sirupsen/logrus"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const defaultCoreDNSPrefix = "/skydns/"
@@ -302,8 +302,9 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 
 	changes4 := &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			endpoint.NewEndpoint("domain1.local;9.9.9.9", endpoint.RecordTypeA, "8.8.8.8"),
-			endpoint.NewEndpoint("domain1.local;9.9.9.9", endpoint.RecordTypeTXT, "string4"),
+			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "9.9.9.9"),
+			//	endpoint.NewEndpoint("domain1.local;9.9.9.9", endpoint.RecordTypeA, "8.8.8.8"),
+			//	endpoint.NewEndpoint("domain1.local;9.9.9.9", endpoint.RecordTypeTXT, "string4"),
 			endpoint.NewEndpoint("domain3.local", endpoint.RecordTypeCNAME, "site.local"),
 		},
 	}
@@ -315,6 +316,15 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 		"/skydns/local/domain3": {Host: "site.local"},
 	}
 	validateServices(client.services, expectedServices4, t, 4)
+
+	changes5 := &plan.Changes{
+		Delete: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("domain1.local;9.9.9.9", endpoint.RecordTypeA, "9.9.9.9"),
+			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeTXT, "string4"),
+			endpoint.NewEndpoint("domain3.local", endpoint.RecordTypeA, "site.local"),
+		},
+	}
+	coredns.ApplyChanges(context.Background(), changes5)
 
 }
 

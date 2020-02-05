@@ -18,11 +18,14 @@ package source
 
 import (
 	"net"
+	"os"
 	"testing"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/wait"
-
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/log"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -90,6 +93,10 @@ func (suite *ServiceSuite) TestResourceLabelIsSet() {
 }
 
 func TestServiceSource(t *testing.T) {
+
+	os.Setenv("COREDNS_ONPREM_ADDRESS_SUPPORT", "true")
+	log.SetLevel(log.DebugLevel)
+
 	suite.Run(t, new(ServiceSuite))
 	t.Run("Interface", testServiceSourceImplementsSource)
 	t.Run("NewServiceSource", testServiceSourceNewServiceSource)
@@ -240,6 +247,31 @@ func testServiceSourceEndpoints(t *testing.T) {
 			},
 			false,
 		},
+
+		{
+			"annotated services return an endpoint with target IP",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeLoadBalancer,
+			"",
+			"",
+			false,
+			false,
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey: "bob.example.org;1.2.3.4.",
+			},
+			"",
+			[]string{"9.8.7.6"},
+			[]string{},
+			[]*endpoint.Endpoint{
+				{DNSName: "bob.example.org", Targets: endpoint.Targets{"9.8.7.6"}},
+			},
+			false,
+		},
+
 		{
 			"hostname annotation on services is ignored",
 			"",

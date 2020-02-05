@@ -302,27 +302,10 @@ func (p coreDNSProvider) Records() ([]*endpoint.Endpoint, error) {
 // ApplyChanges stores changes back to etcd converting them to CoreDNS format and aggregating A/CNAME and TXT records
 func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 
-	isOnPremAddressSupportAllowedStr := strings.ToLower(os.Getenv("COREDNS_ONPREM_ADDRESS_SUPPORT"))
-	isOnPremAddressSupportAllowed := isOnPremAddressSupportAllowedStr == "true" || isOnPremAddressSupportAllowedStr == "yes" || isOnPremAddressSupportAllowedStr == "1"
-	if isOnPremAddressSupportAllowed {
-		log.Warnf("CoreDNS On-Prem Support Enabled")
-	}
-
-	// for _, ep := range changes.Delete {
-	// 	dnsName := ep.DNSName
-	// 	text := ep.Targets
-	// 	if ep.Labels[randomPrefixLabel] != "" {
-	// 		dnsName = ep.Labels[randomPrefixLabel] + "." + dnsName
-	// 	}
-	// 	key := p.etcdKeyFor(dnsName)
-
-	// 	log.Infof("Delete key %s, %s", key, text)
-	// 	if !p.dryRun {
-	// 		err := p.client.DeleteService(key)
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 	}
+	// isOnPremAddressSupportAllowedStr := strings.ToLower(os.Getenv("COREDNS_ONPREM_ADDRESS_SUPPORT"))
+	// isOnPremAddressSupportAllowed := isOnPremAddressSupportAllowedStr == "true" || isOnPremAddressSupportAllowedStr == "yes" || isOnPremAddressSupportAllowedStr == "1"
+	// if isOnPremAddressSupportAllowed {
+	// 	log.Warnf("CoreDNS On-Prem Support Enabled")
 	// }
 
 	grouped := map[string][]*endpoint.Endpoint{}
@@ -349,18 +332,18 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 					prefix = fmt.Sprintf("%08x", rand.Int31())
 				}
 				setdnsName := dnsName
-				if ep.RecordType == endpoint.RecordTypeA {
-					if isOnPremAddressSupportAllowed {
-						matched, _ := regexp.MatchString(";", setdnsName)
-						// Test the result.
-						if matched {
-							result := strings.Split(setdnsName, ";")
-							target = result[1]
-							setdnsName = result[0]
-							log.Warnf("CoreDNS On-Prem Support 'A' Record - Found IP Address surrogate: %s split: %v", setdnsName, result[1])
-						}
+				//if ep.RecordType == endpoint.RecordTypeA {
+				if isOnPremAddressSupportAllowed {
+					matched, _ := regexp.MatchString(";", setdnsName)
+					// Test the result.
+					if matched {
+						result := strings.Split(setdnsName, ";")
+						target = result[1]
+						setdnsName = result[0]
+						log.Warnf("CoreDNS On-Prem Support 'A' Record - Found IP Address surrogate: %s split: %v", setdnsName, result[1])
 					}
 				}
+				//}
 
 				service := Service{
 					Host:        target,
@@ -382,8 +365,20 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				if prefix == "" {
 					prefix = fmt.Sprintf("%08x", rand.Int31())
 				}
+				setdnsName := dnsName
+				// if isOnPremAddressSupportAllowed {
+				// 	matched, _ := regexp.MatchString(";", setdnsName)
+				// 	// Test the result.
+				// 	if matched {
+				// 		result := strings.Split(setdnsName, ";")
+				// 		//target = result[1]
+				// 		setdnsName = result[0]
+				// 		log.Warnf("CoreDNS On-Prem Support 'A' Record - Found IP Address surrogate: %s split: %v", setdnsName, result[1])
+				// 	}
+				// }
+
 				services = append(services, Service{
-					Key:         p.etcdKeyFor(prefix + "." + dnsName),
+					Key:         p.etcdKeyFor(prefix + "." + setdnsName),
 					TargetStrip: strings.Count(prefix, ".") + 1,
 					TTL:         uint32(ep.RecordTTL),
 				})

@@ -19,6 +19,8 @@ package source
 import (
 	"bytes"
 	"fmt"
+	"os"
+	"regexp"
 	"sort"
 	"strings"
 	"text/template"
@@ -148,6 +150,10 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 
 // Endpoints returns endpoint objects for each service that should be processed.
 func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
+
+	isOnPremAddressSupportAllowedStr := strings.ToLower(os.Getenv("COREDNS_ONPREM_ADDRESS_SUPPORT"))
+	isOnPremAddressSupportAllowed := isOnPremAddressSupportAllowedStr == "true" || isOnPremAddressSupportAllowedStr == "yes" || isOnPremAddressSupportAllowedStr == "1"
+
 	services, err := sc.serviceInformer.Lister().Services(sc.namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
@@ -206,7 +212,27 @@ func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 	for _, ep := range endpoints {
 		sort.Sort(ep.Targets)
+
+		if isOnPremAddressSupportAllowed {
+			if ep.RecordType == endpoint.RecordTypeA {
+				matched, _ := regexp.MatchString(";", ep.DNSName)
+				// Test the result.
+				if matched {
+					log.Warnf("CoreDNS On-Prem Support Enabled")
+					log.Debugf("TEST Endpoints generated from service:  %v", ep)
+					result := strings.Split(ep.DNSName, ";")
+					ep.Targets[0] = result[1]
+					ep.DNSName = result[0]
+					log.Warnf("CoreDNS On-Prem Support 'A' Record - Found IP Address surrogate: %s - %v", ep.DNSName, result[1])
+					log.Debugf("FINAL Endpoints generated from service:  %v", ep)
+				}
+			}
+		}
+
 	}
+	//for _, ep := range endpoints {
+	//	sort.Sort(ep.Targets)
+	//}
 
 	return endpoints, nil
 }
