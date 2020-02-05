@@ -392,9 +392,9 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			index++
 		}
 
-		//for i := index; index > 0 && i < len(services); i++ {
-		//	services[i].Text = ""
-		//}
+		for i := index; index > 0 && i < len(services); i++ {
+			services[i].Text = ""
+		}
 
 		for _, service := range services {
 			log.Infof("Add/set key %s to Host=%s, Text=%s, TTL=%d", service.Key, service.Host, service.Text, service.TTL)
