@@ -221,6 +221,11 @@ Now you can experiment and watch how ExternalDNS makes sure that your DNS record
 
 The [tutorials](docs/tutorials) section contains examples, including Ingress resources, and shows you how to set up ExternalDNS in different environments such as other cloud providers and alternative Ingress controllers.
 
+#### Docker Container Setup
+If you don't want to setup Go locally, we provide a Dockerfile that builds and tests external-dns for you.  To build the docker image:
+```console
+$ docker build .
+```
 # Note
 
 If using a txt registry and attempting to use a CNAME the `--txt-prefix` must be set to avoid conflicts.  Changing `--txt-prefix` will result in lost ownership over previously created records.
