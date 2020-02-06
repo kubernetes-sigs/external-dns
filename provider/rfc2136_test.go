@@ -18,6 +18,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -95,7 +96,7 @@ func createRfc2136StubProvider(stub *rfc2136Stub) (Provider, error) {
 	return NewRfc2136Provider("", 0, "", false, "key", "secret", "hmac-sha512", true, DomainFilter{}, false, stub, 300)
 }
 
-func extractAuthoritySectionFromMessage(msg *dns.Msg) []string {
+func extractAuthoritySectionFromMessage(msg fmt.Stringer) []string {
 	const searchPattern = "AUTHORITY SECTION:"
 	data := msg.String()
 	authoritySectionOffset := strings.Index(data, searchPattern)
