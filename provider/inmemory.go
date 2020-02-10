@@ -43,7 +43,7 @@ var (
 // InMemoryProvider - dns provider only used for testing purposes
 // initialized as dns provider with no records
 type InMemoryProvider struct {
-	domain         DomainFilter
+	domain         endpoint.DomainFilter
 	client         *inMemoryClient
 	filter         *filter
 	OnApplyChanges func(ctx context.Context, changes *plan.Changes)
@@ -74,7 +74,7 @@ func InMemoryWithLogging() InMemoryOption {
 }
 
 // InMemoryWithDomain modifies the domain on which dns zones are filtered
-func InMemoryWithDomain(domainFilter DomainFilter) InMemoryOption {
+func InMemoryWithDomain(domainFilter endpoint.DomainFilter) InMemoryOption {
 	return func(p *InMemoryProvider) {
 		p.domain = domainFilter
 	}
@@ -97,7 +97,7 @@ func NewInMemoryProvider(opts ...InMemoryOption) *InMemoryProvider {
 		filter:         &filter{},
 		OnApplyChanges: func(ctx context.Context, changes *plan.Changes) {},
 		OnRecords:      func() {},
-		domain:         NewDomainFilter([]string{""}),
+		domain:         endpoint.NewDomainFilter([]string{""}),
 		client:         newInMemoryClient(),
 	}
 

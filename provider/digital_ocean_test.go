@@ -152,7 +152,7 @@ func TestNewDigitalOceanChanges(t *testing.T) {
 func TestDigitalOceanZones(t *testing.T) {
 	provider := &DigitalOceanProvider{
 		Client:       &mockDigitalOceanClient{},
-		domainFilter: NewDomainFilter([]string{"com"}),
+		domainFilter: endpoint.NewDomainFilter([]string{"com"}),
 	}
 
 	zones, err := provider.Zones(context.Background())
@@ -187,12 +187,12 @@ func TestDigitalOceanApplyChanges(t *testing.T) {
 
 func TestNewDigitalOceanProvider(t *testing.T) {
 	_ = os.Setenv("DO_TOKEN", "xxxxxxxxxxxxxxxxx")
-	_, err := NewDigitalOceanProvider(context.Background(), NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
+	_, err := NewDigitalOceanProvider(context.Background(), endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
 	_ = os.Unsetenv("DO_TOKEN")
-	_, err = NewDigitalOceanProvider(context.Background(), NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
+	_, err = NewDigitalOceanProvider(context.Background(), endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}

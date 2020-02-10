@@ -59,7 +59,7 @@ type RDNSClient interface {
 // RDNSConfig contains configuration to create a new Rancher DNS(RDNS) provider.
 type RDNSConfig struct {
 	DryRun       bool
-	DomainFilter DomainFilter
+	DomainFilter endpoint.DomainFilter
 	RootDomain   string
 }
 
@@ -67,7 +67,7 @@ type RDNSConfig struct {
 type RDNSProvider struct {
 	client       RDNSClient
 	dryRun       bool
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 	rootDomain   string
 }
 

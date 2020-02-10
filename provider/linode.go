@@ -44,7 +44,7 @@ type LinodeDomainClient interface {
 // LinodeProvider is an implementation of Provider for Digital Ocean's DNS.
 type LinodeProvider struct {
 	Client       LinodeDomainClient
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 	DryRun       bool
 }
 
@@ -75,7 +75,7 @@ type LinodeChangeDelete struct {
 }
 
 // NewLinodeProvider initializes a new Linode DNS based Provider.
-func NewLinodeProvider(domainFilter DomainFilter, dryRun bool, appVersion string) (*LinodeProvider, error) {
+func NewLinodeProvider(domainFilter endpoint.DomainFilter, dryRun bool, appVersion string) (*LinodeProvider, error) {
 	token, ok := os.LookupEnv("LINODE_TOKEN")
 	if !ok {
 		return nil, fmt.Errorf("no token found")

@@ -45,7 +45,7 @@ type PrivateRecordSetsClient interface {
 
 // AzurePrivateDNSProvider implements the DNS provider for Microsoft's Azure Private DNS service
 type AzurePrivateDNSProvider struct {
-	domainFilter     DomainFilter
+	domainFilter     endpoint.DomainFilter
 	zoneIDFilter     ZoneIDFilter
 	dryRun           bool
 	subscriptionID   string
@@ -57,7 +57,7 @@ type AzurePrivateDNSProvider struct {
 // NewAzurePrivateDNSProvider creates a new Azure Private DNS provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAzurePrivateDNSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, resourceGroup string, subscriptionID string, dryRun bool) (*AzurePrivateDNSProvider, error) {
+func NewAzurePrivateDNSProvider(domainFilter endpoint.DomainFilter, zoneIDFilter ZoneIDFilter, resourceGroup string, subscriptionID string, dryRun bool) (*AzurePrivateDNSProvider, error) {
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
 		return nil, err

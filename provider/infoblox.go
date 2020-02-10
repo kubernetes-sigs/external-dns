@@ -33,7 +33,7 @@ import (
 
 // InfobloxConfig clarifies the method signature
 type InfobloxConfig struct {
-	DomainFilter DomainFilter
+	DomainFilter endpoint.DomainFilter
 	ZoneIDFilter ZoneIDFilter
 	Host         string
 	Port         int
@@ -49,7 +49,7 @@ type InfobloxConfig struct {
 // InfobloxProvider implements the DNS provider for Infoblox.
 type InfobloxProvider struct {
 	client       ibclient.IBConnector
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 	zoneIDFilter ZoneIDFilter
 	view         string
 	dryRun       bool
