@@ -108,7 +108,7 @@ func TestFetchZonesZoneIDFilter(t *testing.T) {
 
 func TestFetchZonesEmpty(t *testing.T) {
 	config := AkamaiConfig{
-		DomainFilter: NewDomainFilter([]string{"Nonexistent"}),
+		DomainFilter: endpoint.NewDomainFilter([]string{"Nonexistent"}),
 		ZoneIDFilter: NewZoneIDFilter([]string{"Nonexistent"}),
 	}
 
@@ -184,7 +184,7 @@ func TestAkamaiRecordsEmpty(t *testing.T) {
 
 func TestAkamaiRecordsFilters(t *testing.T) {
 	config := AkamaiConfig{
-		DomainFilter: NewDomainFilter([]string{"www.exclude.me"}),
+		DomainFilter: endpoint.NewDomainFilter([]string{"www.exclude.me"}),
 		ZoneIDFilter: NewZoneIDFilter([]string{"Exclude-Me"}),
 	}
 
@@ -221,7 +221,7 @@ func TestCreateRecords(t *testing.T) {
 
 func TestCreateRecordsDomainFilter(t *testing.T) {
 	config := AkamaiConfig{
-		DomainFilter: NewDomainFilter([]string{"example.com"}),
+		DomainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
 	}
 
 	client := &mockAkamaiClient{}
@@ -260,7 +260,7 @@ func TestDeleteRecords(t *testing.T) {
 
 func TestDeleteRecordsDomainFilter(t *testing.T) {
 	config := AkamaiConfig{
-		DomainFilter: NewDomainFilter([]string{"example.com"}),
+		DomainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
 	}
 
 	client := &mockAkamaiClient{}
@@ -299,7 +299,7 @@ func TestUpdateRecords(t *testing.T) {
 
 func TestUpdateRecordsDomainFilter(t *testing.T) {
 	config := AkamaiConfig{
-		DomainFilter: NewDomainFilter([]string{"example.com"}),
+		DomainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
 	}
 
 	client := &mockAkamaiClient{}

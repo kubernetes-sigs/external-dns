@@ -92,7 +92,7 @@ func TestRcodeZeroProvider_ApplyChanges(t *testing.T) {
 			Zones: mockZoneManagementService,
 			RRSet: mockRRSetService,
 		}),
-		DomainFilter: NewDomainFilter([]string{testZoneOne}),
+		DomainFilter: endpoint.NewDomainFilter([]string{testZoneOne}),
 	}
 
 	changes := mockChanges()
@@ -154,7 +154,7 @@ func Test_submitChanges(t *testing.T) {
 			Zones: mockZoneManagementService,
 			RRSet: mockRRSetService,
 		}),
-		DomainFilter: NewDomainFilter([]string{testZoneOne}),
+		DomainFilter: endpoint.NewDomainFilter([]string{testZoneOne}),
 	}
 
 	changes := mockRRSetChanges(rrsetChangesUnsupportedChangeType)
@@ -235,7 +235,7 @@ func TestRcodeZeroProvider_Zones(t *testing.T) {
 func TestNewRcodeZeroProvider(t *testing.T) {
 
 	_ = os.Setenv("RC0_API_KEY", "123")
-	p, err := NewRcodeZeroProvider(NewDomainFilter([]string{"ext-dns-test." + testZoneOne + "."}), true, true)
+	p, err := NewRcodeZeroProvider(endpoint.NewDomainFilter([]string{"ext-dns-test." + testZoneOne + "."}), true, true)
 
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
@@ -246,7 +246,7 @@ func TestNewRcodeZeroProvider(t *testing.T) {
 	require.Equal(t, true, p.DomainFilter.IsConfigured())
 	require.Equal(t, false, p.DomainFilter.Match("ext-dns-test."+testZoneTwo+".")) // filter is set, so it should match only provided domains
 
-	p, err = NewRcodeZeroProvider(DomainFilter{}, false, false)
+	p, err = NewRcodeZeroProvider(endpoint.DomainFilter{}, false, false)
 
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
@@ -257,7 +257,7 @@ func TestNewRcodeZeroProvider(t *testing.T) {
 	require.Equal(t, true, p.DomainFilter.Match("ext-dns-test."+testZoneOne+".")) // filter is not set, so it should match any
 
 	_ = os.Unsetenv("RC0_API_KEY")
-	_, err = NewRcodeZeroProvider(DomainFilter{}, false, false)
+	_, err = NewRcodeZeroProvider(endpoint.DomainFilter{}, false, false)
 
 	if err == nil {
 		t.Errorf("expected to fail")

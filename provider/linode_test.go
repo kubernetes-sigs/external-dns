@@ -138,11 +138,11 @@ func TestLinodeConvertRecordType(t *testing.T) {
 
 func TestNewLinodeProvider(t *testing.T) {
 	_ = os.Setenv("LINODE_TOKEN", "xxxxxxxxxxxxxxxxx")
-	_, err := NewLinodeProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true, "1.0")
+	_, err := NewLinodeProvider(endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true, "1.0")
 	require.NoError(t, err)
 
 	_ = os.Unsetenv("LINODE_TOKEN")
-	_, err = NewLinodeProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true, "1.0")
+	_, err = NewLinodeProvider(endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true, "1.0")
 	require.Error(t, err)
 }
 
@@ -165,7 +165,7 @@ func TestLinodeFetchZonesNoFilters(t *testing.T) {
 
 	provider := &LinodeProvider{
 		Client:       &mockDomainClient,
-		domainFilter: NewDomainFilter([]string{}),
+		domainFilter: endpoint.NewDomainFilter([]string{}),
 		DryRun:       false,
 	}
 
@@ -188,7 +188,7 @@ func TestLinodeFetchZonesWithFilter(t *testing.T) {
 
 	provider := &LinodeProvider{
 		Client:       &mockDomainClient,
-		domainFilter: NewDomainFilter([]string{".com"}),
+		domainFilter: endpoint.NewDomainFilter([]string{".com"}),
 		DryRun:       false,
 	}
 
@@ -228,7 +228,7 @@ func TestLinodeRecords(t *testing.T) {
 
 	provider := &LinodeProvider{
 		Client:       &mockDomainClient,
-		domainFilter: NewDomainFilter([]string{}),
+		domainFilter: endpoint.NewDomainFilter([]string{}),
 		DryRun:       false,
 	}
 
@@ -278,7 +278,7 @@ func TestLinodeApplyChanges(t *testing.T) {
 
 	provider := &LinodeProvider{
 		Client:       &mockDomainClient,
-		domainFilter: NewDomainFilter([]string{}),
+		domainFilter: endpoint.NewDomainFilter([]string{}),
 		DryRun:       false,
 	}
 
@@ -389,7 +389,7 @@ func TestLinodeApplyChangesTargetAdded(t *testing.T) {
 
 	provider := &LinodeProvider{
 		Client:       &mockDomainClient,
-		domainFilter: NewDomainFilter([]string{}),
+		domainFilter: endpoint.NewDomainFilter([]string{}),
 		DryRun:       false,
 	}
 
@@ -448,7 +448,7 @@ func TestLinodeApplyChangesTargetRemoved(t *testing.T) {
 
 	provider := &LinodeProvider{
 		Client:       &mockDomainClient,
-		domainFilter: NewDomainFilter([]string{}),
+		domainFilter: endpoint.NewDomainFilter([]string{}),
 		DryRun:       false,
 	}
 
@@ -504,7 +504,7 @@ func TestLinodeApplyChangesNoChanges(t *testing.T) {
 
 	provider := &LinodeProvider{
 		Client:       &mockDomainClient,
-		domainFilter: NewDomainFilter([]string{}),
+		domainFilter: endpoint.NewDomainFilter([]string{}),
 		DryRun:       false,
 	}
 

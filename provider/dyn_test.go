@@ -188,7 +188,7 @@ func TestDyn_buildLinkToRecord(t *testing.T) {
 	provider := &dynProviderState{
 		DynConfig: DynConfig{
 			ZoneIDFilter: NewZoneIDFilter([]string{"example.com"}),
-			DomainFilter: NewDomainFilter([]string{"the-target.example.com"}),
+			DomainFilter: endpoint.NewDomainFilter([]string{"the-target.example.com"}),
 		},
 	}
 
@@ -227,7 +227,7 @@ func TestDyn_filterAndFixLinks(t *testing.T) {
 		"/REST/NSRecord/example.com/the-target.google.com/",
 		"/REST/NSRecord/example.com/the-target.example.com/",
 	}
-	filter := NewDomainFilter([]string{"example.com"})
+	filter := endpoint.NewDomainFilter([]string{"example.com"})
 	result := filterAndFixLinks(links, filter)
 
 	// should skip non-example.com records and NS records too

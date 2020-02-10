@@ -46,7 +46,7 @@ const (
 type DigitalOceanProvider struct {
 	Client godo.DomainsService
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 	DryRun       bool
 }
 
@@ -57,7 +57,7 @@ type DigitalOceanChange struct {
 }
 
 // NewDigitalOceanProvider initializes a new DigitalOcean DNS based Provider.
-func NewDigitalOceanProvider(ctx context.Context, domainFilter DomainFilter, dryRun bool) (*DigitalOceanProvider, error) {
+func NewDigitalOceanProvider(ctx context.Context, domainFilter endpoint.DomainFilter, dryRun bool) (*DigitalOceanProvider, error) {
 	token, ok := os.LookupEnv("DO_TOKEN")
 	if !ok {
 		return nil, fmt.Errorf("No token found")

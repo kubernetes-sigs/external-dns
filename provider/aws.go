@@ -117,7 +117,7 @@ type AWSProvider struct {
 	batchChangeInterval  time.Duration
 	evaluateTargetHealth bool
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 	// filter hosted zones by id
 	zoneIDFilter ZoneIDFilter
 	// filter hosted zones by type (e.g. private or public)
@@ -129,7 +129,7 @@ type AWSProvider struct {
 
 // AWSConfig contains configuration to create a new AWS provider.
 type AWSConfig struct {
-	DomainFilter         DomainFilter
+	DomainFilter         endpoint.DomainFilter
 	ZoneIDFilter         ZoneIDFilter
 	ZoneTypeFilter       ZoneTypeFilter
 	ZoneTagFilter        ZoneTagFilter
