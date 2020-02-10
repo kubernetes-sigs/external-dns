@@ -129,7 +129,7 @@ func (m *MockNS1ListZonesFail) ListZones() ([]*dns.Zone, *http.Response, error) 
 func TestNS1Records(t *testing.T) {
 	provider := &NS1Provider{
 		client:       &MockNS1DomainClient{},
-		domainFilter: NewDomainFilter([]string{"foo.com."}),
+		domainFilter: endpoint.NewDomainFilter([]string{"foo.com."}),
 		zoneIDFilter: NewZoneIDFilter([]string{""}),
 	}
 	ctx := context.Background()
@@ -150,7 +150,7 @@ func TestNS1Records(t *testing.T) {
 func TestNewNS1Provider(t *testing.T) {
 	_ = os.Setenv("NS1_APIKEY", "xxxxxxxxxxxxxxxxx")
 	testNS1Config := NS1Config{
-		DomainFilter: NewDomainFilter([]string{"foo.com."}),
+		DomainFilter: endpoint.NewDomainFilter([]string{"foo.com."}),
 		ZoneIDFilter: NewZoneIDFilter([]string{""}),
 		DryRun:       false,
 	}
@@ -165,7 +165,7 @@ func TestNewNS1Provider(t *testing.T) {
 func TestNS1Zones(t *testing.T) {
 	provider := &NS1Provider{
 		client:       &MockNS1DomainClient{},
-		domainFilter: NewDomainFilter([]string{"foo.com."}),
+		domainFilter: endpoint.NewDomainFilter([]string{"foo.com."}),
 		zoneIDFilter: NewZoneIDFilter([]string{""}),
 	}
 

@@ -30,6 +30,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"sigs.k8s.io/external-dns/controller"
+	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
 	"sigs.k8s.io/external-dns/plan"
@@ -111,7 +112,7 @@ func main() {
 	// Combine multiple sources into a single, deduplicated source.
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
 
-	domainFilter := provider.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
+	domainFilter := endpoint.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
 	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
@@ -282,10 +283,11 @@ func main() {
 	}
 
 	ctrl := controller.Controller{
-		Source:   endpointsSource,
-		Registry: r,
-		Policy:   policy,
-		Interval: cfg.Interval,
+		Source:       endpointsSource,
+		Registry:     r,
+		Policy:       policy,
+		Interval:     cfg.Interval,
+		DomainFilter: domainFilter,
 	}
 
 	if cfg.UpdateEvents {

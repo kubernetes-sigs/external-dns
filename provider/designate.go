@@ -229,12 +229,12 @@ type designateProvider struct {
 	client designateClientInterface
 
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 	dryRun       bool
 }
 
 // NewDesignateProvider is a factory function for OpenStack designate providers
-func NewDesignateProvider(domainFilter DomainFilter, dryRun bool) (Provider, error) {
+func NewDesignateProvider(domainFilter endpoint.DomainFilter, dryRun bool) (Provider, error) {
 	client, err := newDesignateClient()
 	if err != nil {
 		return nil, err

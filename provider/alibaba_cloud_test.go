@@ -22,6 +22,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
+
 	"sigs.k8s.io/external-dns/endpoint"
 
 	"sigs.k8s.io/external-dns/plan"
@@ -232,7 +233,7 @@ func newTestAlibabaCloudProvider(private bool) *AlibabaCloudProvider {
 	//	cfg.AccessKeyID,
 	//	cfg.AccessKeySecret,
 	//)
-	domainFilterTest := NewDomainFilter([]string{"container-service.top.", "example.org"})
+	domainFilterTest := endpoint.NewDomainFilter([]string{"container-service.top.", "example.org"})
 
 	return &AlibabaCloudProvider{
 		domainFilter: domainFilterTest,

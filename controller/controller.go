@@ -23,6 +23,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 
+	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/registry"
@@ -100,6 +101,8 @@ type Controller struct {
 	Policy plan.Policy
 	// The interval between individual synchronizations
 	Interval time.Duration
+	// The DomainFilter defines which DNS records to keep or exclude
+	DomainFilter endpoint.DomainFilter
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -123,9 +126,10 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	sourceEndpointsTotal.Set(float64(len(endpoints)))
 
 	plan := &plan.Plan{
-		Policies: []plan.Policy{c.Policy},
-		Current:  records,
-		Desired:  endpoints,
+		Policies:     []plan.Policy{c.Policy},
+		Current:      records,
+		Desired:      endpoints,
+		DomainFilter: c.DomainFilter,
 	}
 
 	plan = plan.Calculate()
