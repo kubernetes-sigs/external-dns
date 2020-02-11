@@ -93,14 +93,13 @@ func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, a string) (env chan *dns.Envelo
 }
 
 func createRfc2136StubProvider(stub *rfc2136Stub) (Provider, error) {
-	return NewRfc2136Provider("", 0, "", false, "key", "secret", "hmac-sha512", true, DomainFilter{}, false, stub, 300)
+	return NewRfc2136Provider("", 0, "", false, "key", "secret", "hmac-sha512", true, DomainFilter{}, false, 300, stub)
 }
 
 func extractAuthoritySectionFromMessage(msg fmt.Stringer) []string {
 	const searchPattern = "AUTHORITY SECTION:"
-	data := msg.String()
-	authoritySectionOffset := strings.Index(data, searchPattern)
-	return strings.Split(strings.TrimSpace(data[authoritySectionOffset+len(searchPattern):]), "\n")
+	authoritySectionOffset := strings.Index(msg.String(), searchPattern)
+	return strings.Split(strings.TrimSpace(msg.String()[authoritySectionOffset+len(searchPattern):]), "\n")
 }
 
 // TestRfc2136GetRecordsMultipleTargets simulates a single record with multiple targets.
