@@ -135,7 +135,13 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 	// Try to retrieve token with service principal credentials.
 	// Try to use service principal first, some AKS clusters are in an intermediate state that `UseManagedIdentityExtension` is `true`
 	// and service principal exists. In this case, we still want to use service principal to authenticate.
-	if len(cfg.ClientID) > 0 && len(cfg.ClientSecret) > 0 {
+	if len(cfg.ClientID) > 0 &&
+		len(cfg.ClientSecret) > 0 &&
+		// due to some historical reason, for pure MSI cluster,
+		// they will use "msi" as placeholder in azure.json.
+		// In this case, we shouldn't try to use SPN to authenticate.
+		!strings.EqualFold(cfg.ClientID, "msi") &&
+		!strings.EqualFold(cfg.ClientSecret, "msi") {
 		log.Info("Using client_id+client_secret to retrieve access token for Azure API.")
 		oauthConfig, err := adal.NewOAuthConfig(environment.ActiveDirectoryEndpoint, cfg.TenantID)
 		if err != nil {

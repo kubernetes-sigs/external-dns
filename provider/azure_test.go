@@ -18,6 +18,7 @@ package provider
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2018-05-01/dns"
@@ -454,5 +455,43 @@ func TestAzureGetAccessToken(t *testing.T) {
 	_, err := getAccessToken(cfg, env)
 	if err == nil {
 		t.Fatalf("expected to fail, but got no error")
+	}
+
+	// Expect to use managed identity in this case
+	cfg = config{
+		ClientID:                    "msi",
+		ClientSecret:                "msi",
+		TenantID:                    "cefe8aef-5127-4d65-a299-012053f81f60",
+		UserAssignedIdentityID:      "userAssignedIdentityClientID",
+		UseManagedIdentityExtension: true,
+	}
+	token, err := getAccessToken(cfg, env)
+	if err != nil {
+		t.Fatalf("expected to construct a token successfully, but got error %v", err)
+	}
+	_, err = token.MarshalJSON()
+	if err == nil ||
+		!strings.Contains(err.Error(), "marshalling ServicePrincipalMSISecret is not supported") {
+		t.Fatalf("expected to fail to marshal token, but got %v", err)
+	}
+
+	// Expect to use SPN in this case
+	cfg = config{
+		ClientID:                    "SPNClientID",
+		ClientSecret:                "SPNSecret",
+		TenantID:                    "cefe8aef-5127-4d65-a299-012053f81f60",
+		UserAssignedIdentityID:      "userAssignedIdentityClientID",
+		UseManagedIdentityExtension: true,
+	}
+	token, err = getAccessToken(cfg, env)
+	if err != nil {
+		t.Fatalf("expected to construct a token successfully, but got error %v", err)
+	}
+	innerToken, err := token.MarshalJSON()
+	if err != nil {
+		t.Fatalf("expected to marshal token successfully, but got error %v", err)
+	}
+	if !strings.Contains(string(innerToken), "SPNClientID") {
+		t.Fatalf("expect the clientID of the token is SPNClientID, but got token %s", string(innerToken))
 	}
 }
