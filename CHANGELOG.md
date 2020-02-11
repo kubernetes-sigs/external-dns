@@ -1,47 +1,67 @@
+## v0.6.0 - 2020-02-11
+
+  - Azure Private DNS: Fix endless loop in zone-detection (#1397) @saidst
+  - Uprade golangci-lint and add megacheck & interface linters (#1390) @tariq1890
+  - Update alpine base image to 3.11 (#1387) @tariq1890
+  - New provider: Akamai FastDNS (#1384) @KarstenSiemer
+  - Docs: Fix broken links (#1382) @ttonline6
+  - Docs: Fix broken links (#1381) @ttonline6
+  - Docs: Update AWS documentation (#1380) @otterley
+  - Docs: istio.md: update existing external-dns to enable Istio Gateway DNS for customers (#1378) @marcellodesales
+  - Remove context.TODO()s in external-dns (#1374) @tariq1890
+  - Docs: add region for aws-sd external-dns deployment (#1367) @guitarrapc
+  - Docs: a how-to of a working GCP GKE app demo (#1365) @jpantsjoha
+  - Add ctx parameter to provider interface and AWS API (#1364) @tariq1890
+  - Add version to binary for --version flag (#1361) @linki
+  - Update aws sdk dep and golangci-lint release (#1360) @tariq1890
+  - Add support for human-friendly TTL values (#1237) @hypnoglow
+  - Change ApplyChanges in RFC2136 to batch update (#1164) @h3ndrk
+  - Add --watchers flag to allow controller to respond automatically to Ingress or Service updates (#687) @jlamillan
+
 ## v0.5.18 - 2020-01-09
 
-- Use correct link to contributors guide (#1349) @szuecs
-- AWS-SD: Rebrand AWS Auto Naming to Cloud Map (#1348) @vanekjar
-- Add more linters and improve code quality (#1347) @tariq1890
-- Suppress noisy logging of klog (#1344) @saidst
-- Update VinylDNS documentation (#1342) @dgrizzanti
-- Remove incubator references in README (#1341) @Raffo
-- Rename project root package to sigs.k8s.io (#1334) @tariq1890
-- Add CRD documentation and fix samples (#1332) @ytsarev
-- Add support for multiple Istio ingress gateways (#1328) @ashleyschuett
-- Enable image publishing to gcr.io via cloudbuild (#1326) @njuettner
-- Corrected a typo in the Readme (#1323) @drewhemm
-- Rework tutorial for Azure Private DNS (#1319) @saidst
-- Correct typos and superflous spaces in the provider code (#1315) @stensonb
-- Add missing bracket in CLI help output (#1308) @ekeih
-- Add missing service account to deployment spec in the docs (#1305) @linki
-- Bump the version of golangci-lint (#1296) @njuettner
-- Fix broken link of ingress-gce and ingress-nginx (#1290) @sivanzcw
-- Use apps/v1 for the deployment to be compatible with Kubernetes 1.16 (#1279) @scholzj
-- Normalize function return and comments on exported type (#1277) @sivanzcw
-- Use non-deprecated initializer with go context (#1271) @linki
-- Fix several golint errors (#1270) @bysph
-- Add Azure Private DNS Provider (#1269) @saidst
-- Fix tutorial for kubernetes 1.16+ (#1268) @yujunz
-- Add me-south region to list of canonical hosted zones (#1266) @poweroftrue
-- Add gov region to list of canonical hosted zones (#1260) @helgi
-- Update broken links to RDNS (#1259) @Slach
-- Designate: add snippet for RBAC environment (#1254) @bavarianbidi
-- Fix log-level parameter in tutorials (#1253) @bavarianbidi
-- Improve RFC2136 documentation (#1251) @alex-orange
-- Google Provider: Add support for batching updates (#1248) @vdesjardins
-- Azure: add support for specifying user assigned identity's clientID to authenticate (#1247) @norshtein
-- Automatically add provider labels on pull requests via Github actions (#1242) @njuettner
-- Improve documentation for nginx ingress controller on AWS (#1234) @PiotrJander
-- Use apps/v1 instead of extensions/v1beta1 in Deployment examples (#1225) @reegnz
-- Add documentation to make the use of namespaces clearer (#1223) @dgrizzanti
-- Add support for using Nodes as Source (#1218) @skoef
-- Add missing RBAC permissions for the ServiceAccount in the docs (#1206) @dooman87
-- Upgrade client-go + azure sdk (#1195) @timja
-- RFC2136: Add support for batching updates (#1164) @h3ndrk
-- Fix confusing arrow direction in the Azure tutorial (#1163) @adipascu
-- Route53: Add RBAC manifest and update wording around IAM policy (#1149) @dkeightley
-- Route53: Add support for all AWS Route53 routing policies; add additional Setldentifier abstraction layer (#1008) @devkid
+  - Use correct link to contributors guide (#1349) @szuecs
+  - AWS-SD: Rebrand AWS Auto Naming to Cloud Map (#1348) @vanekjar
+  - Add more linters and improve code quality (#1347) @tariq1890
+  - Suppress noisy logging of klog (#1344) @saidst
+  - Update VinylDNS documentation (#1342) @dgrizzanti
+  - Remove incubator references in README (#1341) @Raffo
+  - Rename project root package to sigs.k8s.io (#1334) @tariq1890
+  - Add CRD documentation and fix samples (#1332) @ytsarev
+  - Add support for multiple Istio ingress gateways (#1328) @ashleyschuett
+  - Enable image publishing to gcr.io via cloudbuild (#1326) @njuettner
+  - Corrected a typo in the Readme (#1323) @drewhemm
+  - Rework tutorial for Azure Private DNS (#1319) @saidst
+  - Correct typos and superflous spaces in the provider code (#1315) @stensonb
+  - Add missing bracket in CLI help output (#1308) @ekeih
+  - Add missing service account to deployment spec in the docs (#1305) @linki
+  - Bump the version of golangci-lint (#1296) @njuettner
+  - Fix broken link of ingress-gce and ingress-nginx (#1290) @sivanzcw
+  - Use apps/v1 for the deployment to be compatible with Kubernetes 1.16 (#1279) @scholzj
+  - Normalize function return and comments on exported type (#1277) @sivanzcw
+  - Use non-deprecated initializer with go context (#1271) @linki
+  - Fix several golint errors (#1270) @bysph
+  - Add Azure Private DNS Provider (#1269) @saidst
+  - Fix tutorial for kubernetes 1.16+ (#1268) @yujunz
+  - Add me-south region to list of canonical hosted zones (#1266) @poweroftrue
+  - Add gov region to list of canonical hosted zones (#1260) @helgi
+  - Update broken links to RDNS (#1259) @Slach
+  - Designate: add snippet for RBAC environment (#1254) @bavarianbidi
+  - Fix log-level parameter in tutorials (#1253) @bavarianbidi
+  - Improve RFC2136 documentation (#1251) @alex-orange
+  - Google Provider: Add support for batching updates (#1248) @vdesjardins
+  - Azure: add support for specifying user assigned identity's clientID to authenticate (#1247) @norshtein
+  - Automatically add provider labels on pull requests via Github actions (#1242) @njuettner
+  - Improve documentation for nginx ingress controller on AWS (#1234) @PiotrJander
+  - Use apps/v1 instead of extensions/v1beta1 in Deployment examples (#1225) @reegnz
+  - Add documentation to make the use of namespaces clearer (#1223) @dgrizzanti
+  - Add support for using Nodes as Source (#1218) @skoef
+  - Add missing RBAC permissions for the ServiceAccount in the docs (#1206) @dooman87
+  - Upgrade client-go + azure sdk (#1195) @timja
+  - RFC2136: Add support for batching updates (#1164) @h3ndrk
+  - Fix confusing arrow direction in the Azure tutorial (#1163) @adipascu
+  - Route53: Add RBAC manifest and update wording around IAM policy (#1149) @dkeightley
+  - Route53: Add support for all AWS Route53 routing policies; add additional Setldentifier abstraction layer (#1008) @devkid
 
 ## v0.5.17 - 2019-09-17
 
