@@ -168,19 +168,9 @@ func (p *AzurePrivateDNSProvider) zones(ctx context.Context) ([]privatedns.Priva
 		zone := i.Value()
 		log.Debugf("Validating Zone: %v", *zone.Name)
 
-		if zone.Name == nil {
-			continue
+		if zone.Name != nil && p.domainFilter.Match(*zone.Name) && p.zoneIDFilter.Match(*zone.ID) {
+			zones = append(zones, zone)
 		}
-
-		if !p.domainFilter.Match(*zone.Name) {
-			continue
-		}
-
-		if !p.zoneIDFilter.Match(*zone.ID) {
-			continue
-		}
-
-		zones = append(zones, zone)
 
 		err := i.NextWithContext(ctx)
 		if err != nil {
