@@ -98,7 +98,7 @@ func (p *AzurePrivateDNSProvider) Records(ctx context.Context) (endpoints []*end
 				log.Debugf("Skipping invalid record set with missing type.")
 				return
 			}
-			recordType = strings.TrimPrefix(*recordSet.Type, "Microsoft.Network/privateDnsZones")
+			recordType = strings.TrimPrefix(*recordSet.Type, "Microsoft.Network/privateDnsZones/")
 
 			var name string
 			if recordSet.Name == nil {
