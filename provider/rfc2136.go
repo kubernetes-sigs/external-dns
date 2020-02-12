@@ -41,7 +41,7 @@ type rfc2136Provider struct {
 	tsigSecretAlg string
 	insecure      bool
 	axfr          bool
-	minTTLSeconds int64
+	minTTL        time.Duration
 
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter DomainFilter
@@ -65,20 +65,20 @@ type rfc2136Actions interface {
 }
 
 // NewRfc2136Provider is a factory function for OpenStack rfc2136 providers
-func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter DomainFilter, dryRun bool, minTTLSeconds int64, actions rfc2136Actions) (Provider, error) {
+func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter DomainFilter, dryRun bool, minTTL time.Duration, actions rfc2136Actions) (Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok && !insecure {
 		return nil, errors.Errorf("%s is not supported TSIG algorithm", secretAlg)
 	}
 
 	r := &rfc2136Provider{
-		nameserver:    net.JoinHostPort(host, strconv.Itoa(port)),
-		zoneName:      dns.Fqdn(zoneName),
-		insecure:      insecure,
-		domainFilter:  domainFilter,
-		dryRun:        dryRun,
-		axfr:          axfr,
-		minTTLSeconds: minTTLSeconds,
+		nameserver:   net.JoinHostPort(host, strconv.Itoa(port)),
+		zoneName:     dns.Fqdn(zoneName),
+		insecure:     insecure,
+		domainFilter: domainFilter,
+		dryRun:       dryRun,
+		axfr:         axfr,
+		minTTL:       minTTL,
 	}
 	if actions != nil {
 		r.actions = actions
@@ -256,7 +256,7 @@ func (r rfc2136Provider) UpdateRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 func (r rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 	log.Debugf("AddRecord.ep=%s", ep)
 
-	var ttl = r.minTTLSeconds
+	var ttl = int64(r.minTTL.Seconds())
 	if ep.RecordTTL.IsConfigured() && int64(ep.RecordTTL) > ttl {
 		ttl = int64(ep.RecordTTL)
 	}

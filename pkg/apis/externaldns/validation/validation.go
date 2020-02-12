@@ -83,7 +83,7 @@ func ValidateConfig(cfg *externaldns.Config) error {
 	}
 
 	if cfg.Provider == "rfc2136" {
-		if cfg.RFC2136MinTTLSeconds < 0 {
+		if cfg.RFC2136MinTTL < 0 {
 			return errors.New("TTL specified for rfc2136 is negative")
 		}
 	}
