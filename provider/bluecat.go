@@ -52,17 +52,24 @@ type BluecatZone struct {
 }
 
 type BluecatHostRecord struct {
-  Id            int    `json:"id"`
-  Name          string `json:"name"`
-  Properties    string `json:"properties"`
-  Type          string `json:"type"`
+  Id         int    `json:"id"`
+  Name       string `json:"name"`
+  Properties string `json:"properties"`
+  Type       string `json:"type"`
 }
 
 type BluecatCNAMERecord struct {
-  Id            int    `json:"id"`
-  Name          string `json:"name"`
-  Properties    string `json:"properties"`
-  Type          string `json:"type"`
+  Id         int    `json:"id"`
+  Name       string `json:"name"`
+  Properties string `json:"properties"`
+  Type       string `json:"type"`
+}
+
+//TODO verify model once implemented by Bluecat Gateway
+type BluecatTXTRecord struct {
+  Id   int `json:"id"`
+  Name string `json:"name"`
+  Text string `json:"text"`
 }
 
 type bluecatRecordSet struct {
@@ -78,6 +85,12 @@ type bluecatCreateHostRecordRequest struct {
 type bluecatCreateCNAMERecordRequest struct {
   Name         string `json:"absolute_name"`
   LinkedRecord string `json:"linked_record"`
+}
+
+// TODO Verify request model once implemented by Bluecat Gateway
+type bluecatCreateTXTRecordRequest struct {
+  Name string `json:"name"`
+  Text string `json:"text"`
 }
 
 func NewBluecatProvider(configFile string, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool) (*BluecatProvider, error) {
@@ -155,6 +168,18 @@ func (p *BluecatProvider) Records(ctx context.Context) (endpoints []*endpoint.En
       propMap := splitProperties(rec.Properties)
       endpoints = append(endpoints, endpoint.NewEndpoint(propMap["absoluteName"], endpoint.RecordTypeCNAME, propMap["linkedRecordName"]))
     }
+
+    // TODO not yet implemented by Bluecat Gateway
+    /*
+    var resT []BluecatTXTRecord
+    err = p.gatewayClient.getTXTRecords(zone, &resT)
+    if err != nil {
+      return nil, fmt.Errorf("could not fetch TXT records for zone: '#{zone}': #{err}")
+    }
+    for _, rec := range resT {
+      endpoints = append(endpoints, endpoint.NewEndpoint(rec.Name, endpoint.RecordTypeTXT, rec.Text))
+    }
+    */
   }
 
   log.Debugf("fetched %d records from Bluecat", len(endpoints))
@@ -291,6 +316,9 @@ func (p *BluecatProvider) createRecords(created bluecatChangeMap) {
         _, err = p.gatewayClient.createHostRecord(zone, recordSet.obj.(*bluecatCreateHostRecordRequest))
       case endpoint.RecordTypeCNAME:
         _, err = p.gatewayClient.createCNAMERecord(zone, recordSet.obj.(*bluecatCreateCNAMERecordRequest))
+      // TODO TXT CRUD not yet implemented by Bluecat Gateway
+      //case endpoint.RecordTypeTXT:
+      //  _, err = p.gatewayClient.createTXTRecord(zone, recordSet.obj.(*bluecatCreateTXTRecordRequest))
       }
       if err != nil {
         log.Errorf(
@@ -346,6 +374,11 @@ func (p *BluecatProvider) deleteRecords(deleted bluecatChangeMap) {
           for _, record := range *recordSet.res.(*[]BluecatCNAMERecord) {
             err = p.gatewayClient.deleteCNAMERecord(record.Name)
           }
+        // TODO Not yet implemented by Bluecat Gateway
+        //case endpoint.RecordTypeTXT:
+        //  for _, record := range *recordSet.res.(*[]BluecatTXTRecord) {
+        //    err = p.gatewayClient.deleteTXTRecord(record.Name)
+        //  }
         }
         if err != nil {
           log.Errorf("Failed to delete %s record named '%s' for Bluecat DNS zone '%s': %v",
@@ -398,6 +431,25 @@ func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (reco
       obj: obj,
       res: &res,
     }
+  //TODO Not yet implemented by Bluecat Gateway
+  //case endpoint.RecordTypeTXT:
+  //  var res []BluecatTXTRecord
+  //  obj := bluecatCreateTXTRecordRequest{
+  //    Name: ep.DNSName,
+  //    Text: ep.Targets[0],
+  //  }
+  //  if getObject {
+  //    var record BluecatTXTRecord
+  //    err = p.gatewayClient.getTXTRecord(ep.DNSName, &record)
+  //    if err != nil {
+  //      return
+  //    }
+  //    res = append(res, record)
+  //  }
+  //  recordSet = bluecatRecordSet{
+  //    obj: obj,
+  //    res: &res,
+  //  }
   }
   return
 }
@@ -541,6 +593,38 @@ func (c *GatewayClient) getCNAMERecords(zone string, records *[]BluecatCNAMEReco
   return nil
 }
 
+/* TODO not yet implemented by Bluecat Gateway
+func (c *GatewayClient) getTXTRecords(zone string, records *[]BluecatTXTRecord) error {
+  transportCfg := &http.Transport{
+    TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+  }
+  client := &http.Client{
+    Transport: transportCfg,
+  }
+
+  zonePath := expandZone(zone)
+
+  // Remove the trailing 'zones/'
+  zonePath = strings.TrimSuffix(zonePath, "zones/")
+
+  // TODO Verify correct route once implemented by Bluecat Gateway
+  url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "txt_records/"
+  req, err := http.NewRequest("GET", url, nil)
+  req.Header.Add("Accept", "application/json")
+  req.Header.Add("Authorization", "Basic " + c.Token)
+  req.AddCookie(&c.Cookie)
+
+  resp, err := client.Do(req)
+  if err != nil {
+    return fmt.Errorf("error retrieving record(s) from gateway: %s, %s", zone, err)
+  }
+
+  defer resp.Body.Close()
+
+  json.NewDecoder(resp.Body).Decode(records)
+  return nil
+}*/
+
 func (c *GatewayClient) getHostRecord(name string, record *BluecatHostRecord) error {
   transportCfg := &http.Transport{
     TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
@@ -595,6 +679,35 @@ func (c *GatewayClient) getCNAMERecord(name string, record *BluecatCNAMERecord) 
   return nil
 }
 
+/* TODO Not yet implemented by Bluecat Gateway
+func (c *GatewayClient) getTXTRecord(name string, record *BluecatTXTRecord) error {
+  transportCfg := &http.Transport{
+    TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+  }
+  client := &http.Client{
+    Transport: transportCfg,
+  }
+
+  // TODO verify correct route once implemented by Bluecat Gateway
+  url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
+      "/views/" + c.View + "/" +
+      "txt_records/" + name + "/"
+  req, err := http.NewRequest("GET", url, nil)
+  req.Header.Add("Accept", "application/json")
+  req.Header.Add("Authorization", "Basic " + c.Token)
+  req.AddCookie(&c.Cookie)
+
+  resp, err := client.Do(req)
+  if err != nil {
+    return fmt.Errorf("error retrieving record(s) from gateway: %s, %s", name, err)
+  }
+
+  defer resp.Body.Close()
+
+  json.NewDecoder(resp.Body).Decode(record)
+  return nil
+}*/
+
 func (c *GatewayClient) createHostRecord(zone string, req *bluecatCreateHostRecordRequest) (res interface{}, err error) {
   transportCfg := &http.Transport{
     TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
@@ -645,6 +758,33 @@ func (c *GatewayClient) createCNAMERecord(zone string, req *bluecatCreateCNAMERe
   return
 }
 
+/* TODO Not yet implemented by Bluecat Gateway
+func (c *GatewayClient) createTXTRecord(zone string, req *bluecatCreateTXTRecordRequest) (res interface{}, err error) {
+  transportCfg := &http.Transport{
+    TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+  }
+  client := &http.Client{
+    Transport: transportCfg,
+  }
+
+  zonePath := expandZone(zone)
+  // Remove the trailing 'zones/'
+  zonePath = strings.TrimSuffix(zonePath, "zones/")
+
+  // TODO verify correct route once implemented by Bluecat Gateway
+  url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "txt_records/"
+  body, _ := json.Marshal(req)
+
+  hreq, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+  hreq.Header.Add("Accept", "application/json")
+  hreq.Header.Add("Authorization", "Basic " + c.Token)
+  hreq.AddCookie(&c.Cookie)
+
+  res, err = client.Do(hreq)
+
+  return
+}*/
+
 func (c *GatewayClient) deleteHostRecord(name string) error {
   transportCfg := &http.Transport{
     TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
@@ -693,6 +833,31 @@ func (c *GatewayClient) deleteCNAMERecord(name string) error {
   return nil
 }
 
+/* TODO Not yet implemented by Bluecat Gateway
+func (c *GatewayClient) deleteTXTRecord(name string) error {
+  transportCfg := &http.Transport{
+    TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+  }
+  client := &http.Client{
+    Transport: transportCfg,
+  }
+
+  // TODO Verify correct route once implemented by Bluecat Gateway
+  url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
+      "/views/" + c.View + "/" +
+      "txt_records/" + name + "/"
+  req, err := http.NewRequest("DELETE", url, nil)
+  req.Header.Add("Accept", "application/json")
+  req.Header.Add("Authorization", "Basic " + c.Token)
+  req.AddCookie(&c.Cookie)
+
+  _, err = client.Do(req)
+  if err != nil {
+    return fmt.Errorf("error deleting record(s) from gateway: %s, %s", name, err)
+  }
+
+  return nil
+}*/
 
 //splitProperties is a helper function to break a '|' separated string into key/value pairs
 // i.e. "foo=bar|baz=mop"
