@@ -32,7 +32,7 @@ metadata:
   name: external-dns
   labels:
     app.kubernetes.io/name: external-dns
-    app.kubernetes.io/version: v0.5.18
+    app.kubernetes.io/version: v0.6.0
 spec:
   strategy:
     type: Recreate
@@ -43,13 +43,13 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: external-dns
-        app.kubernetes.io/version: v0.5.18
+        app.kubernetes.io/version: v0.6.0
     spec:
       # Only use if you're also using RBAC
       # serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.18
+        image: eu.gcr.io/k8s-artifacts-prod/external-dns/external-dns:v0.6.0
         args:
         - --source=ingress # or service or both
         - --provider=akamai

@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.6 # minimum version is v0.5.6
+        image: eu.gcr.io/k8s-artifacts-prod/external-dns/external-dns:v0.6.0 # minimum version is v0.5.6
         args:
         - ... # your arguments here
         securityContext:
