@@ -6,6 +6,7 @@ import (
   "crypto/tls"
   "encoding/json"
   "fmt"
+  "io"
   "io/ioutil"
   "net/http"
   "strconv"
@@ -504,10 +505,7 @@ func (c *GatewayClient) getBluecatZones(zoneName string) ([]BluecatZone, error) 
 
   zonePath := expandZone(zoneName)
   url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath
-  req, err := http.NewRequest("GET", url, nil)
-  req.Header.Add("Accept", "application/json")
-  req.Header.Add("Authorization", "Basic " + c.Token)
-  req.AddCookie(&c.Cookie)
+  req, err := c.buildHTTPRequest("GET", url, nil)
 
   resp, err := client.Do(req)
   if err != nil {
@@ -547,10 +545,7 @@ func (c *GatewayClient) getHostRecords(zone string, records *[]BluecatHostRecord
   zonePath = strings.TrimSuffix(zonePath, "zones/")
 
   url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "host_records/"
-  req, err := http.NewRequest("GET", url, nil)
-  req.Header.Add("Accept", "application/json")
-  req.Header.Add("Authorization", "Basic " + c.Token)
-  req.AddCookie(&c.Cookie)
+  req, err := c.buildHTTPRequest("GET", url, nil)
 
   resp, err := client.Do(req)
   if err != nil {
@@ -577,10 +572,7 @@ func (c *GatewayClient) getCNAMERecords(zone string, records *[]BluecatCNAMEReco
   zonePath = strings.TrimSuffix(zonePath, "zones/")
 
   url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "cname_records/"
-  req, err := http.NewRequest("GET", url, nil)
-  req.Header.Add("Accept", "application/json")
-  req.Header.Add("Authorization", "Basic " + c.Token)
-  req.AddCookie(&c.Cookie)
+  req, err := c.buildHTTPRequest("GET", url, nil)
 
   resp, err := client.Do(req)
   if err != nil {
@@ -609,10 +601,7 @@ func (c *GatewayClient) getTXTRecords(zone string, records *[]BluecatTXTRecord) 
 
   // TODO Verify correct route once implemented by Bluecat Gateway
   url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "txt_records/"
-  req, err := http.NewRequest("GET", url, nil)
-  req.Header.Add("Accept", "application/json")
-  req.Header.Add("Authorization", "Basic " + c.Token)
-  req.AddCookie(&c.Cookie)
+  req, err := c.buildHTTPRequest("GET", url, nil)
 
   resp, err := client.Do(req)
   if err != nil {
@@ -636,10 +625,7 @@ func (c *GatewayClient) getHostRecord(name string, record *BluecatHostRecord) er
   url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
                   "/views/" + c.View + "/" +
                   "host_records/" + name + "/"
-  req, err := http.NewRequest("GET", url, nil)
-  req.Header.Add("Accept", "application/json")
-  req.Header.Add("Authorization", "Basic " + c.Token)
-  req.AddCookie(&c.Cookie)
+  req, err := c.buildHTTPRequest("GET", url, nil)
 
   resp, err := client.Do(req)
   if err != nil {
@@ -663,10 +649,7 @@ func (c *GatewayClient) getCNAMERecord(name string, record *BluecatCNAMERecord) 
   url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
       "/views/" + c.View + "/" +
       "cname_records/" + name + "/"
-  req, err := http.NewRequest("GET", url, nil)
-  req.Header.Add("Accept", "application/json")
-  req.Header.Add("Authorization", "Basic " + c.Token)
-  req.AddCookie(&c.Cookie)
+  req, err := c.buildHTTPRequest("GET", url, nil)
 
   resp, err := client.Do(req)
   if err != nil {
@@ -692,10 +675,7 @@ func (c *GatewayClient) getTXTRecord(name string, record *BluecatTXTRecord) erro
   url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
       "/views/" + c.View + "/" +
       "txt_records/" + name + "/"
-  req, err := http.NewRequest("GET", url, nil)
-  req.Header.Add("Accept", "application/json")
-  req.Header.Add("Authorization", "Basic " + c.Token)
-  req.AddCookie(&c.Cookie)
+  req, err := c.buildHTTPRequest("GET", url, nil)
 
   resp, err := client.Do(req)
   if err != nil {
@@ -723,10 +703,7 @@ func (c *GatewayClient) createHostRecord(zone string, req *bluecatCreateHostReco
   url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "host_records/"
   body, _ := json.Marshal(req)
 
-  hreq, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
-  hreq.Header.Add("Accept", "application/json")
-  hreq.Header.Add("Authorization", "Basic " + c.Token)
-  hreq.AddCookie(&c.Cookie)
+  hreq, err := c.buildHTTPRequest("POST", url, bytes.NewBuffer(body))
 
   res, err = client.Do(hreq)
 
@@ -748,10 +725,7 @@ func (c *GatewayClient) createCNAMERecord(zone string, req *bluecatCreateCNAMERe
   url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "cname_records/"
   body, _ := json.Marshal(req)
 
-  hreq, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
-  hreq.Header.Add("Accept", "application/json")
-  hreq.Header.Add("Authorization", "Basic " + c.Token)
-  hreq.AddCookie(&c.Cookie)
+  hreq, err := c.buildHTTPRequest("POST", url, bytes.NewBuffer(body))
 
   res, err = client.Do(hreq)
 
@@ -775,10 +749,7 @@ func (c *GatewayClient) createTXTRecord(zone string, req *bluecatCreateTXTRecord
   url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "txt_records/"
   body, _ := json.Marshal(req)
 
-  hreq, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
-  hreq.Header.Add("Accept", "application/json")
-  hreq.Header.Add("Authorization", "Basic " + c.Token)
-  hreq.AddCookie(&c.Cookie)
+  hreq, err := c.buildHTTPRequest("POST", url, bytes.NewBuffer(body))
 
   res, err = client.Do(hreq)
 
@@ -796,10 +767,7 @@ func (c *GatewayClient) deleteHostRecord(name string) error {
   url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
       "/views/" + c.View + "/" +
       "host_records/" + name + "/"
-  req, err := http.NewRequest("DELETE", url, nil)
-  req.Header.Add("Accept", "application/json")
-  req.Header.Add("Authorization", "Basic " + c.Token)
-  req.AddCookie(&c.Cookie)
+  req, err := c.buildHTTPRequest("DELETE", url, nil)
 
   _, err = client.Do(req)
   if err != nil {
@@ -820,10 +788,7 @@ func (c *GatewayClient) deleteCNAMERecord(name string) error {
   url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
       "/views/" + c.View + "/" +
       "cname_records/" + name + "/"
-  req, err := http.NewRequest("DELETE", url, nil)
-  req.Header.Add("Accept", "application/json")
-  req.Header.Add("Authorization", "Basic " + c.Token)
-  req.AddCookie(&c.Cookie)
+  req, err := c.buildHTTPRequest("DELETE", url, nil)
 
   _, err = client.Do(req)
   if err != nil {
@@ -846,10 +811,8 @@ func (c *GatewayClient) deleteTXTRecord(name string) error {
   url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
       "/views/" + c.View + "/" +
       "txt_records/" + name + "/"
-  req, err := http.NewRequest("DELETE", url, nil)
-  req.Header.Add("Accept", "application/json")
-  req.Header.Add("Authorization", "Basic " + c.Token)
-  req.AddCookie(&c.Cookie)
+
+  req, err := c.buildHTTPRequest("DELETE", url, nil)
 
   _, err = client.Do(req)
   if err != nil {
@@ -858,6 +821,15 @@ func (c *GatewayClient) deleteTXTRecord(name string) error {
 
   return nil
 }*/
+
+//buildHTTPRequest builds a standard http Request and adds authentication headers required by Bluecat Gateway
+func (c *GatewayClient) buildHTTPRequest(method, url string, body io.Reader) (*http.Request, error) {
+  req, err := http.NewRequest(method, url, body)
+  req.Header.Add("Accept", "application/json")
+  req.Header.Add("Authorization", "Basic " + c.Token)
+  req.AddCookie(&c.Cookie)
+  return req, err
+}
 
 //splitProperties is a helper function to break a '|' separated string into key/value pairs
 // i.e. "foo=bar|baz=mop"

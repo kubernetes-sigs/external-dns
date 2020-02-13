@@ -26,6 +26,8 @@ require (
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
 	github.com/go-resty/resty v1.8.0 // indirect
 	github.com/gobs/pretty v0.0.0-20180724170744-09732c25a95b // indirect
+	github.com/gogo/protobuf v1.3.1 // indirect
+	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/gophercloud/gophercloud v0.1.0
 	github.com/heptio/contour v0.15.0
 	github.com/infobloxopen/infoblox-go-client v0.0.0-20180606155407-61dc5f9b0a65
@@ -35,7 +37,8 @@ require (
 	github.com/miekg/dns v1.0.14
 	github.com/nesv/go-dynect v0.6.0
 	github.com/nic-at/rc0go v1.1.0
-	github.com/openshift/client-go v0.0.0-20200116152001-92a2713fa240
+	github.com/openshift/api v0.0.0-20190322043348-8741ff068a47
+	github.com/openshift/client-go v3.9.0+incompatible
 	github.com/oracle/oci-go-sdk v1.8.0
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.3
@@ -44,19 +47,23 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/go-aws-auth v0.0.0-20180515143844-0c1422d1fdb9 // indirect
 	github.com/smartystreets/gunit v1.1.1 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/transip/gotransip v5.8.2+incompatible
 	github.com/vinyldns/go-vinyldns v0.0.0-20190611170422-7119fe55ed92
-	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553
+	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
+	golang.org/x/tools v0.0.0-20200115044656-831fdb1e1868 // indirect
 	google.golang.org/api v0.9.0
 	gopkg.in/ns1/ns1-go.v2 v2.0.0-20190322154155-0dafb5275fd1
 	gopkg.in/yaml.v2 v2.2.4
 	istio.io/api v0.0.0-20190820204432-483f2547d882
 	istio.io/istio v0.0.0-20190322063008-2b1331886076
-	k8s.io/api v0.17.1
-	k8s.io/apimachinery v0.17.1
+	k8s.io/api v0.17.3
+	k8s.io/apimachinery v0.17.3
 	k8s.io/client-go v10.0.0+incompatible
+	k8s.io/code-generator v0.17.1 // indirect
+	k8s.io/klog v1.0.0 // indirect
 )
 
 replace (
