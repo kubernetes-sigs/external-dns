@@ -26,6 +26,7 @@ import (
 
 	"github.com/cloudfoundry-community/go-cfclient"
 	contour "github.com/heptio/contour/apis/generated/clientset/versioned"
+	openshift "github.com/openshift/client-go/route/clientset/versioned"
 	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
 	istiocontroller "istio.io/istio/pilot/pkg/config/kube/crd/controller"
@@ -67,22 +68,25 @@ type ClientGenerator interface {
 	IstioClient() (istiomodel.ConfigStore, error)
 	CloudFoundryClient(cfAPPEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error)
 	ContourClient() (contour.Interface, error)
+	OpenShiftClient() (openshift.Interface, error)
 }
 
 // SingletonClientGenerator stores provider clients and guarantees that only one instance of client
 // will be generated
 type SingletonClientGenerator struct {
-	KubeConfig     string
-	KubeMaster     string
-	RequestTimeout time.Duration
-	kubeClient     kubernetes.Interface
-	istioClient    istiomodel.ConfigStore
-	cfClient       *cfclient.Client
-	contourClient  contour.Interface
-	kubeOnce       sync.Once
-	istioOnce      sync.Once
-	cfOnce         sync.Once
-	contourOnce    sync.Once
+	KubeConfig      string
+	KubeMaster      string
+	RequestTimeout  time.Duration
+	kubeClient      kubernetes.Interface
+	istioClient     istiomodel.ConfigStore
+	cfClient        *cfclient.Client
+	contourClient   contour.Interface
+	openshiftClient openshift.Interface
+	kubeOnce        sync.Once
+	istioOnce       sync.Once
+	cfOnce          sync.Once
+	contourOnce     sync.Once
+	openshiftOnce   sync.Once
 }
 
 // KubeClient generates a kube client if it was not created before
@@ -134,6 +138,14 @@ func (p *SingletonClientGenerator) ContourClient() (contour.Interface, error) {
 		p.contourClient, err = NewContourClient(p.KubeConfig, p.KubeMaster, p.RequestTimeout)
 	})
 	return p.contourClient, err
+}
+
+func (p *SingletonClientGenerator) OpenShiftClient() (openshift.Interface, error) {
+	var err error
+	p.openshiftOnce.Do(func() {
+		p.openshiftClient, err = NewOpenShiftClient(p.KubeConfig, p.KubeMaster, p.RequestTimeout)
+	})
+	return p.openshiftClient, err
 }
 
 // ByNames returns multiple Sources given multiple names.
@@ -197,6 +209,12 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 			return nil, err
 		}
 		return NewContourIngressRouteSource(kubernetesClient, contourClient, cfg.ContourLoadBalancerService, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+	case "openshift-route":
+		ocpClient, err := p.OpenShiftClient()
+		if err != nil {
+			return nil, err
+		}
+		return NewOcpRouteSource(ocpClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
 	case "fake":
 		return NewFakeSource(cfg.FQDNTemplate)
 	case "connector":
@@ -328,6 +346,39 @@ func NewContourClient(kubeConfig, kubeMaster string, requestTimeout time.Duratio
 	}
 
 	log.Infof("Created Contour client %s", config.Host)
+
+	return client, nil
+}
+
+func NewOpenShiftClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) (*openshift.Clientset, error) {
+	if kubeConfig == "" {
+		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
+			kubeConfig = clientcmd.RecommendedHomeFile
+		}
+	}
+
+	config, err := clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
+		return instrumented_http.NewTransport(rt, &instrumented_http.Callbacks{
+			PathProcessor:  func(path string) string {
+				parts := strings.Split(path, "/")
+				return parts[len(parts)-1]
+			},
+		})
+	}
+
+	config.Timeout = requestTimeout
+
+	client, err := openshift.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Infof("Created OpenShift client %s", config.Host)
 
 	return client, nil
 }
