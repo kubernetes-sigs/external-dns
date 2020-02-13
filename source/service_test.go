@@ -1788,6 +1788,33 @@ func TestHeadlessServices(t *testing.T) {
 			},
 			false,
 		},
+		{
+			"annotated Headless services return only a unique set of targets",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			false,
+			map[string]string{"component": "foo"},
+			map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+			},
+			v1.ClusterIPNone,
+			[]string{"1.1.1.1", "1.1.1.1", "1.1.1.2"},
+			map[string]string{
+				"component": "foo",
+			},
+			[]string{},
+			[]string{"foo-0", "foo-1", "foo-3"},
+			[]string{"", "", ""},
+			[]v1.PodPhase{v1.PodRunning, v1.PodRunning, v1.PodRunning},
+			[]*endpoint.Endpoint{
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1", "1.1.1.2"}},
+			},
+			false,
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			// Create a Kubernetes testing client

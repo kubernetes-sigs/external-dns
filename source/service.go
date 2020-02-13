@@ -260,7 +260,20 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 	}
 	sort.Strings(headlessDomains)
 	for _, headlessDomain := range headlessDomains {
-		targets := targetsByHeadlessDomain[headlessDomain]
+		allTargets := targetsByHeadlessDomain[headlessDomain]
+		targets := []string{}
+
+		deduppedTargets := map[string]bool{}
+		for _, target := range allTargets {
+			if _, ok := deduppedTargets[target]; ok {
+				log.Debugf("Removing duplicate target %s", target)
+				continue
+			}
+
+			deduppedTargets[target] = true
+			targets = append(targets, target)
+		}
+
 		if ttl.IsConfigured() {
 			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(headlessDomain, endpoint.RecordTypeA, ttl, targets...))
 		} else {
