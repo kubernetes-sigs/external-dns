@@ -35,6 +35,7 @@ require (
 	github.com/miekg/dns v1.0.14
 	github.com/nesv/go-dynect v0.6.0
 	github.com/nic-at/rc0go v1.1.0
+	github.com/openshift/client-go v0.0.0-20200116152001-92a2713fa240
 	github.com/oracle/oci-go-sdk v1.8.0
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.3
@@ -46,15 +47,15 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/transip/gotransip v5.8.2+incompatible
 	github.com/vinyldns/go-vinyldns v0.0.0-20190611170422-7119fe55ed92
-	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
+	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	google.golang.org/api v0.9.0
 	gopkg.in/ns1/ns1-go.v2 v2.0.0-20190322154155-0dafb5275fd1
 	gopkg.in/yaml.v2 v2.2.4
 	istio.io/api v0.0.0-20190820204432-483f2547d882
 	istio.io/istio v0.0.0-20190322063008-2b1331886076
-	k8s.io/api v0.0.0-20190620084959-7cf5895f2711
-	k8s.io/apimachinery v0.0.0-20190612205821-1799e75a0719
+	k8s.io/api v0.17.1
+	k8s.io/apimachinery v0.17.1
 	k8s.io/client-go v10.0.0+incompatible
 )
 
