@@ -308,22 +308,23 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 			for _, headlessDomain := range headlessDomains {
 				var ep []string
 				if sc.publishHostIP {
-					ep = append(ep, pod.Status.HostIP)
-					log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, ep)
-
-				} else if _, ok := svc.Annotations[externalIPAnnotationKey]; ok {
-					node, err := sc.nodeInformer.Lister().Get(pod.Spec.NodeName)
-					if err != nil {
-						return nil
-					}
-					var externalIPs endpoint.Targets
-					for _, address := range node.Status.Addresses {
-						if address.Type == v1.NodeExternalIP {
-							externalIPs = append(externalIPs, address.Address)
+					if _, ok := svc.Annotations[externalIPAnnotationKey]; ok {
+						node, err := sc.nodeInformer.Lister().Get(pod.Spec.NodeName)
+						if err != nil {
+							return nil
 						}
+						var externalIPs endpoint.Targets
+						for _, address := range node.Status.Addresses {
+							if address.Type == v1.NodeExternalIP {
+								externalIPs = append(externalIPs, address.Address)
+							}
+						}
+						ep = append(ep, externalIPs...)
+						log.Debugf("Generating matching endpoint %s with Host ExternalIPs %v", headlessDomain, externalIPs)
+					} else {
+						ep = append(ep, pod.Status.HostIP)
+						log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, ep)
 					}
-					ep = append(ep, externalIPs...)
-					log.Debugf("Generating matching endpoint %s with Host ExternalIPs %v", headlessDomain, externalIPs)
 				} else {
 					ep = append(ep, address.IP)
 					log.Debugf("Generating matching endpoint %s with EndpointAddress IP %s", headlessDomain, ep)
