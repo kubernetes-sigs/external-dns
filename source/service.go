@@ -101,7 +101,6 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	endpointsInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				log.Debug("endpoints added")
 			},
 		},
 	)

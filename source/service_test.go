@@ -1879,8 +1879,7 @@ func TestHeadlessServices(t *testing.T) {
 			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
 			require.NoError(t, err)
 
-			var addresses []v1.EndpointAddress
-			var notReadyAddresses []v1.EndpointAddress
+			var addresses, notReadyAddresses []v1.EndpointAddress
 			for i, podname := range tc.podnames {
 				pod := &v1.Pod{
 					Spec: v1.PodSpec{
