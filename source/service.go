@@ -263,14 +263,14 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		allTargets := targetsByHeadlessDomain[headlessDomain]
 		targets := []string{}
 
-		deduppedTargets := map[string]bool{}
+		deduppedTargets := map[string]struct{}{}
 		for _, target := range allTargets {
 			if _, ok := deduppedTargets[target]; ok {
 				log.Debugf("Removing duplicate target %s", target)
 				continue
 			}
 
-			deduppedTargets[target] = true
+			deduppedTargets[target] = struct{}{}
 			targets = append(targets, target)
 		}
 
