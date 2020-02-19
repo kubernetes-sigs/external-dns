@@ -124,3 +124,29 @@ func TestValidateBadIgnoreHostnameAnnotationsConfig(t *testing.T) {
 
 	assert.Error(t, ValidateConfig(cfg))
 }
+
+func TestValidateBadRfc2136Config(t *testing.T) {
+	cfg := externaldns.NewConfig()
+
+	cfg.LogFormat = "json"
+	cfg.Sources = []string{"test-source"}
+	cfg.Provider = "rfc2136"
+	cfg.RFC2136MinTTL = -1
+
+	err := ValidateConfig(cfg)
+
+	assert.NotNil(t, err)
+}
+
+func TestValidateGoodRfc2136Config(t *testing.T) {
+	cfg := externaldns.NewConfig()
+
+	cfg.LogFormat = "json"
+	cfg.Sources = []string{"test-source"}
+	cfg.Provider = "rfc2136"
+	cfg.RFC2136MinTTL = 3600
+
+	err := ValidateConfig(cfg)
+
+	assert.Nil(t, err)
+}
