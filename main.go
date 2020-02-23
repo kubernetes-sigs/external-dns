@@ -173,6 +173,8 @@ func main() {
 		p, err = provider.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.DryRun)
 	case "digitalocean":
 		p, err = provider.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun)
+	case "ovh":
+		p, err = provider.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.OVHGenerateConsumerKey, cfg.DryRun)
 	case "linode":
 		p, err = provider.NewLinodeProvider(domainFilter, cfg.DryRun, externaldns.Version)
 	case "dnsimple":
