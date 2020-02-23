@@ -44,6 +44,7 @@ ExternalDNS' current release is `v0.6`. This version allows you to keep selected
 * [NS1](https://ns1.com/)
 * [TransIP](https://www.transip.eu/domain-name/)
 * [VinylDNS](https://www.vinyldns.io)
+* [OVH](https://www.ovh.com)
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` (or greater) with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -93,6 +94,7 @@ The following table clarifies the current status of the providers according to t
 | VinylDNS | Alpha |
 | RancherDNS | Alpha |
 | Akamai FastDNS | Alpha |
+| OVH | Alpha |
 
 ## Running ExternalDNS:
 
@@ -139,6 +141,7 @@ The following tutorials are provided:
 * [RFC2136](docs/tutorials/rfc2136.md)
 * [TransIP](docs/tutorials/transip.md)
 * [VinylDNS](docs/tutorials/vinyldns.md)
+* [OVH](docs/tutorials/ovh.md)
 
 ### Running Locally
 
@@ -269,6 +272,7 @@ Here's a rough outline on what is to come (subject to change):
 ### v0.6
 
 - [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller) (This could also directly become `v1.0`)
+- [x] Support for OVH
 
 ### v1.0
 
