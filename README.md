@@ -111,6 +111,7 @@ The following tutorials are provided:
 	* [Route53](docs/tutorials/aws.md)
 		* [Same domain for public and private Route53 zones](docs/tutorials/public-private-route53.md)
 	* [Cloud Map](docs/tutorials/aws-sd.md)
+	* [Kube Ingress AWS Controller](docs/tutorials/kube-ingress-aws.md)
 * [Azure DNS](docs/tutorials/azure.md)
 * [Azure Private DNS](docs/tutorials/azure-private-dns.md)
 * [Cloudflare](docs/tutorials/cloudflare.md)

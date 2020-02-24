@@ -60,6 +60,8 @@ type Config struct {
 	CFUsername                     string
 	CFPassword                     string
 	ContourLoadBalancerService     string
+	SkipperRouteGroupVersion       string
+	RequestTimeout                 time.Duration
 }
 
 // ClientGenerator provides clients
@@ -212,16 +214,24 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 			return nil, err
 		}
 		return NewCRDSource(crdClient, cfg.Namespace, cfg.CRDSourceKind, scheme)
+	case "skipper-routegroup":
+		master := cfg.KubeMaster
+		tokenPath := ""
+		token := ""
+		restConfig, err := GetRestConfig(cfg.KubeConfig, cfg.KubeMaster)
+		if err == nil {
+			master = restConfig.Host
+			tokenPath = restConfig.BearerTokenFile
+			token = restConfig.BearerToken
+		}
+		return NewRouteGroupSource(cfg.RequestTimeout, token, tokenPath, master, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.SkipperRouteGroupVersion, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
 	}
 	return nil, ErrSourceNotFound
 }
 
-// NewKubeClient returns a new Kubernetes client object. It takes a Config and
-// uses KubeMaster and KubeConfig attributes to connect to the cluster. If
-// KubeConfig isn't provided it defaults to using the recommended default.
-func NewKubeClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) (*kubernetes.Clientset, error) {
-	log.Infof("Instantiating new Kubernetes client")
-
+// GetRestConfig returns the rest clients config to get automatically
+// data if you run inside a cluster or by passing flags.
+func GetRestConfig(kubeConfig, kubeMaster string) (*rest.Config, error) {
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
 			kubeConfig = clientcmd.RecommendedHomeFile
@@ -246,6 +256,20 @@ func NewKubeClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) 
 		return nil, err
 	}
 
+	return config, nil
+}
+
+// NewKubeClient returns a new Kubernetes client object. It takes a Config and
+// uses KubeMaster and KubeConfig attributes to connect to the cluster. If
+// KubeConfig isn't provided it defaults to using the recommended default.
+func NewKubeClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) (*kubernetes.Clientset, error) {
+	log.Infof("Instantiating new Kubernetes client")
+	config, err := GetRestConfig(kubeConfig, kubeMaster)
+	if err != nil {
+		return nil, err
+	}
+
+	config.Timeout = requestTimeout
 	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
 		return instrumented_http.NewTransport(rt, &instrumented_http.Callbacks{
 			PathProcessor: func(path string) string {
@@ -254,8 +278,6 @@ func NewKubeClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) 
 			},
 		})
 	}
-
-	config.Timeout = requestTimeout
 
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
