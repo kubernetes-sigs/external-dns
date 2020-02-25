@@ -32,10 +32,7 @@ import (
 
 const (
 	ovhDefaultTTL = 0
-)
-
-const (
-	ovhCreate = iota
+	ovhCreate     = iota
 	ovhDelete
 )
 
@@ -167,20 +164,18 @@ func (p *OVHProvider) refresh(zone string) error {
 }
 
 func (p *OVHProvider) change(change ovhChange) error {
-	var err error = nil
 	switch change.Action {
 	case ovhCreate:
 		log.Debugf("OVH: Add an entry to %s\n", change.String())
-		err = p.client.Post(fmt.Sprintf("/domain/zone/%s/record", change.Zone), change.ovhRecordFields, nil)
+		return p.client.Post(fmt.Sprintf("/domain/zone/%s/record", change.Zone), change.ovhRecordFields, nil)
 	case ovhDelete:
 		if change.ID == 0 {
-			err = ErrRecordToMutateNotFound
-			break
+			return ErrRecordToMutateNotFound
 		}
 		log.Debugf("OVH: Delete an entry to %s\n", change.String())
-		err = p.client.Delete(fmt.Sprintf("/domain/zone/%s/record/%d", change.Zone, change.ID), nil)
+		return p.client.Delete(fmt.Sprintf("/domain/zone/%s/record/%d", change.Zone, change.ID), nil)
 	}
-	return err
+	return nil
 }
 
 func (p *OVHProvider) zonesRecords(ctx context.Context) ([]string, []ovhRecord, error) {
