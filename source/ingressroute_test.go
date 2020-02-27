@@ -19,9 +19,10 @@ package source
 import (
 	"testing"
 
-	contour "github.com/heptio/contour/apis/contour/v1beta1"
-	fakeContour "github.com/heptio/contour/apis/generated/clientset/versioned/fake"
 	"github.com/pkg/errors"
+	contour "github.com/projectcontour/contour/apis/contour/v1beta1"
+	fakeContour "github.com/projectcontour/contour/apis/generated/clientset/versioned/fake"
+	contourv1 "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -1104,7 +1105,7 @@ func (ir fakeIngressRoute) IngressRoute() *contour.IngressRoute {
 		spec = contour.IngressRouteSpec{}
 	} else {
 		spec = contour.IngressRouteSpec{
-			VirtualHost: &contour.VirtualHost{
+			VirtualHost: &contourv1.VirtualHost{
 				Fqdn: ir.host,
 			},
 		}
@@ -1117,7 +1118,7 @@ func (ir fakeIngressRoute) IngressRoute() *contour.IngressRoute {
 			Annotations: ir.annotations,
 		},
 		Spec: spec,
-		Status: contour.Status{
+		Status: contourv1.Status{
 			CurrentStatus: status,
 		},
 	}

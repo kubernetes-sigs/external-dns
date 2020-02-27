@@ -1548,7 +1548,7 @@ func TestNodePortServices(t *testing.T) {
 
 			// Create the nodes
 			for _, node := range tc.nodes {
-				if _, err := kubernetes.Core().Nodes().Create(node); err != nil {
+				if _, err := kubernetes.CoreV1().Nodes().Create(node); err != nil {
 					t.Fatal(err)
 				}
 			}

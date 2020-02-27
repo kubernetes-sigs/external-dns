@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/fake"
@@ -63,7 +63,7 @@ func (suite *IngressSuite) SetupTest() {
 		hostnames:   []string{"v1"},
 		annotations: map[string]string{ALBDualstackAnnotationKey: ALBDualstackAnnotationValue},
 	}).Ingress()
-	_, err = fakeClient.Extensions().Ingresses(suite.fooWithTargets.Namespace).Create(suite.fooWithTargets)
+	_, err = fakeClient.NetworkingV1beta1().Ingresses(suite.fooWithTargets.Namespace).Create(suite.fooWithTargets)
 	suite.NoError(err, "should succeed")
 }
 
@@ -1010,7 +1010,7 @@ func testIngressEndpoints(t *testing.T) {
 				ti.ignoreHostnameAnnotation,
 			)
 			for _, ingress := range ingresses {
-				_, err := fakeClient.Extensions().Ingresses(ingress.Namespace).Create(ingress)
+				_, err := fakeClient.NetworkingV1beta1().Ingresses(ingress.Namespace).Create(ingress)
 				require.NoError(t, err)
 			}
 

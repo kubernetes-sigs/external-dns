@@ -77,7 +77,7 @@ func startCRDServerToServeTargets(endpoints []*endpoint.Endpoint, apiVersion, ki
 		},
 	}
 
-	codecFactory := serializer.DirectCodecFactory{
+	codecFactory := serializer.WithoutConversionCodecFactory{
 		CodecFactory: serializer.NewCodecFactory(scheme),
 	}
 

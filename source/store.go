@@ -25,8 +25,8 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-community/go-cfclient"
-	contour "github.com/heptio/contour/apis/generated/clientset/versioned"
 	"github.com/linki/instrumented_http"
+	contour "github.com/projectcontour/contour/apis/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	istiocontroller "istio.io/istio/pilot/pkg/config/kube/crd/controller"
 	istiomodel "istio.io/istio/pilot/pkg/model"
@@ -281,19 +281,20 @@ func NewIstioClient(kubeConfig string) (*istiocontroller.Client, error) {
 		}
 	}
 
-	client, err := istiocontroller.NewClient(
-		kubeConfig,
-		"",
-		istiomodel.ConfigDescriptor{istiomodel.Gateway},
-		"",
-	)
-	if err != nil {
-		return nil, err
-	}
+	return nil, errors.New("Istio needs to be update to support latest version")
+	//client, err := istiocontroller.NewClient(
+	//	kubeConfig,
+	//	"",
+	//	istiomodel.ConfigDescriptor{istiomodel.Gateway},
+	//	"",
+	//)
+	//if err != nil {
+	//	return nil, err
+	//}
 
-	log.Info("Created Istio client")
+	//log.Info("Created Istio client")
 
-	return client, nil
+	//return client, nil
 }
 
 // NewContourClient returns a new Contour client object. It takes a Config and
