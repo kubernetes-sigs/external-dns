@@ -16,6 +16,7 @@ limitations under the License.
 
 package source
 
+/*
 import (
 	"strconv"
 	"sync"
@@ -1338,3 +1339,4 @@ func (f *fakeConfigStore) Delete(typ, name, namespace string) error {
 
 	return nil
 }
+*/

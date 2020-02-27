@@ -27,8 +27,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	istionetworking "istio.io/api/networking/v1alpha3"
 	istiomodel "istio.io/istio/pilot/pkg/model"
+	istioresource "istio.io/istio/pkg/config/schema/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
@@ -116,7 +118,8 @@ func NewIstioGatewaySource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all gateway resources in the source's namespace(s).
 func (sc *gatewaySource) Endpoints() ([]*endpoint.Endpoint, error) {
-	configs, err := sc.istioClient.List(istiomodel.Gateway.Type, sc.namespace)
+	gatewayKind := schema.FromAPIVersionAndKind("networking.istio.io/v1alpha3", "Gateway")
+	configs, err := sc.istioClient.List(istioresource.FromKubernetesGVK(&gatewayKind), sc.namespace)
 	if err != nil {
 		return nil, err
 	}

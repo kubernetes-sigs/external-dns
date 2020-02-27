@@ -25,11 +25,12 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/networking/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
-	extinformers "k8s.io/client-go/informers/extensions/v1beta1"
+	netinformers "k8s.io/client-go/informers/networking/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/kubernetes/pkg/util/async"
@@ -55,7 +56,7 @@ type ingressSource struct {
 	fqdnTemplate             *template.Template
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
-	ingressInformer          extinformers.IngressInformer
+	ingressInformer          netinformers.IngressInformer
 	runner                   *async.BoundedFrequencyRunner
 }
 
@@ -77,7 +78,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	// Use shared informer to listen for add/update/delete of ingresses in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
-	ingressInformer := informerFactory.Extensions().V1beta1().Ingresses()
+	ingressInformer := informerFactory.Networking().V1beta1().Ingresses()
 
 	// Add default resource event handlers to properly initialize informer.
 	ingressInformer.Informer().AddEventHandler(
@@ -202,7 +203,11 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 
 // filterByAnnotations filters a list of ingresses by a given annotation selector.
 func (sc *ingressSource) filterByAnnotations(ingresses []*v1beta1.Ingress) ([]*v1beta1.Ingress, error) {
-	selector, err := getLabelSelector(sc.annotationFilter)
+	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
+	if err != nil {
+		return nil, err
+	}
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
 	if err != nil {
 		return nil, err
 	}
@@ -215,8 +220,11 @@ func (sc *ingressSource) filterByAnnotations(ingresses []*v1beta1.Ingress) ([]*v
 	filteredList := []*v1beta1.Ingress{}
 
 	for _, ingress := range ingresses {
+		// convert the ingress' annotations to an equivalent label selector
+		annotations := labels.Set(ingress.Annotations)
+
 		// include ingress if its annotations match the selector
-		if matchLabelSelector(selector, ingress.Annotations) {
+		if selector.Matches(annotations) {
 			filteredList = append(filteredList, ingress)
 		}
 	}
