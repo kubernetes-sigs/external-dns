@@ -1,6 +1,6 @@
 # Setting up ExternalDNS for Services on RcodeZero
 
-This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using [RcodeZero Anycast DNS](https://www.rcodezero.at). Make sure to use **>=0.5.0** version of ExternalDNS for this tutorial.
+This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using [RcodeZero Anycast DNS](https://www.rcodezero.at/de/home). Make sure to use **>=0.5.0** version of ExternalDNS for this tutorial.
 
 The following steps are required to use RcodeZero with ExternalDNS:
 
