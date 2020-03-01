@@ -297,27 +297,30 @@ func newOvhChange(action int, endpoints []*endpoint.Endpoint, zones []string, re
 		zoneNameIDMapper.Add(zone, zone)
 	}
 
-	for _, endpoint := range endpoints {
-		zone, _ := zoneNameIDMapper.FindZone(endpoint.DNSName)
+	for _, e := range endpoints {
+		zone, _ := zoneNameIDMapper.FindZone(e.DNSName)
 		if zone == "" {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", endpoint.DNSName)
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", e.DNSName)
 			continue
 		}
-		for _, target := range endpoint.Targets {
+		for _, target := range e.Targets {
+			if e.RecordType == endpoint.RecordTypeCNAME {
+				target = target + "."
+			}
 			change := ovhChange{
 				Action: action,
 				ovhRecord: ovhRecord{
 					Zone: zone,
 					ovhRecordFields: ovhRecordFields{
-						FieldType: endpoint.RecordType,
-						SubDomain: strings.TrimSuffix(endpoint.DNSName, "."+zone),
+						FieldType: e.RecordType,
+						SubDomain: strings.TrimSuffix(e.DNSName, "."+zone),
 						TTL:       ovhDefaultTTL,
 						Target:    target,
 					},
 				},
 			}
-			if endpoint.RecordTTL.IsConfigured() {
-				change.TTL = int64(endpoint.RecordTTL)
+			if e.RecordTTL.IsConfigured() {
+				change.TTL = int64(e.RecordTTL)
 			}
 			for _, record := range records {
 				if record.Zone == change.Zone && record.SubDomain == change.SubDomain && record.FieldType == change.FieldType && record.Target == change.Target {
