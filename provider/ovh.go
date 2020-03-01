@@ -90,8 +90,8 @@ func NewOVHProvider(ctx context.Context, domainFilter DomainFilter, endpoint str
 		if err != nil {
 			return nil, err
 		}
-		log.Infof("Generated consumer key: %s\n", response.ConsumerKey)
-		log.Infof("Please visit %s to validate it\n", response.ValidationURL)
+		log.Infof("Generated consumer key: %s", response.ConsumerKey)
+		log.Infof("Please visit %s to validate it", response.ValidationURL)
 		return nil, fmt.Errorf("You have to validated the consumer key")
 	}
 	// TODO: Add Dry Run support
@@ -113,7 +113,7 @@ func (p *OVHProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 		return nil, err
 	}
 	endpoints := ovhGroupByNameAndType(records)
-	log.Infof("OVH: %d endpoints have been found\n", len(endpoints))
+	log.Infof("OVH: %d endpoints have been found", len(endpoints))
 	return endpoints, nil
 }
 
@@ -133,7 +133,7 @@ func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 	allChanges = append(allChanges, newOvhChange(ovhDelete, changes.UpdateOld, zones, records)...)
 	allChanges = append(allChanges, newOvhChange(ovhDelete, changes.Delete, zones, records)...)
 
-	log.Infof("OVH: %d changes will be done\n", len(allChanges))
+	log.Infof("OVH: %d changes will be done", len(allChanges))
 
 	eg, _ := errgroup.WithContext(ctx)
 	for _, change := range allChanges {
@@ -145,7 +145,7 @@ func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 		return err
 	}
 
-	log.Infof("OVH: %d zones will be refreshed\n", len(zonesChangeUniques))
+	log.Infof("OVH: %d zones will be refreshed", len(zonesChangeUniques))
 
 	eg, _ = errgroup.WithContext(ctx)
 	for zone := range zonesChangeUniques {
@@ -159,20 +159,20 @@ func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 }
 
 func (p *OVHProvider) refresh(zone string) error {
-	log.Debugf("OVH: Refresh %s zone\n", zone)
+	log.Debugf("OVH: Refresh %s zone", zone)
 	return p.client.Post(fmt.Sprintf("/domain/zone/%s/refresh", zone), nil, nil)
 }
 
 func (p *OVHProvider) change(change ovhChange) error {
 	switch change.Action {
 	case ovhCreate:
-		log.Debugf("OVH: Add an entry to %s\n", change.String())
+		log.Debugf("OVH: Add an entry to %s", change.String())
 		return p.client.Post(fmt.Sprintf("/domain/zone/%s/record", change.Zone), change.ovhRecordFields, nil)
 	case ovhDelete:
 		if change.ID == 0 {
 			return ErrRecordToMutateNotFound
 		}
-		log.Debugf("OVH: Delete an entry to %s\n", change.String())
+		log.Debugf("OVH: Delete an entry to %s", change.String())
 		return p.client.Delete(fmt.Sprintf("/domain/zone/%s/record/%d", change.Zone, change.ID), nil)
 	}
 	return nil
@@ -214,7 +214,7 @@ func (p *OVHProvider) zones() ([]string, error) {
 			filteredZones = append(filteredZones, zoneName)
 		}
 	}
-	log.Infof("OVH: %d zones found\n", len(filteredZones))
+	log.Infof("OVH: %d zones found", len(filteredZones))
 	return filteredZones, nil
 }
 
@@ -223,7 +223,7 @@ func (p *OVHProvider) records(ctx *context.Context, zone *string, records chan<-
 	ovhRecords := make([]ovhRecord, len(recordsIds))
 	eg, _ := errgroup.WithContext(*ctx)
 
-	log.Debugf("OVH: Getting records for %s\n", *zone)
+	log.Debugf("OVH: Getting records for %s", *zone)
 	if err := p.client.Get(fmt.Sprintf("/domain/zone/%s/record", *zone), &recordsIds); err != nil {
 		return err
 	}
@@ -246,12 +246,12 @@ func (p *OVHProvider) records(ctx *context.Context, zone *string, records chan<-
 func (p *OVHProvider) record(zone *string, id uint64, records chan<- ovhRecord) error {
 	record := ovhRecord{}
 
-	log.Debugf("OVH: Getting record %d for %s\n", id, *zone)
+	log.Debugf("OVH: Getting record %d for %s", id, *zone)
 	if err := p.client.Get(fmt.Sprintf("/domain/zone/%s/record/%d", *zone, id), &record); err != nil {
 		return err
 	}
 	if supportedRecordType(record.FieldType) {
-		log.Debugf("OVH: Record %d for %s is %+v\n", id, *zone, record)
+		log.Debugf("OVH: Record %d for %s is %+v", id, *zone, record)
 		records <- record
 	}
 	return nil
