@@ -171,6 +171,7 @@ func TestOvhNewChange(t *testing.T) {
 	endpoints := []*endpoint.Endpoint{
 		{DNSName: ".example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.42"}},
 		{DNSName: "ovh.example.net", RecordType: "A", Targets: []string{"203.0.113.43"}},
+		{DNSName: "ovh2.example.net", RecordType: "CNAME", Targets: []string{"ovh.example.net"}},
 		{DNSName: "test.example.org"},
 	}
 
@@ -179,6 +180,7 @@ func TestOvhNewChange(t *testing.T) {
 	assert.ElementsMatch(changes, []ovhChange{
 		{Action: ovhCreate, ovhRecord: ovhRecord{Zone: "example.net", ovhRecordFields: ovhRecordFields{SubDomain: "", FieldType: "A", TTL: 10, Target: "203.0.113.42"}}},
 		{Action: ovhCreate, ovhRecord: ovhRecord{Zone: "example.net", ovhRecordFields: ovhRecordFields{SubDomain: "ovh", FieldType: "A", TTL: ovhDefaultTTL, Target: "203.0.113.43"}}},
+		{Action: ovhCreate, ovhRecord: ovhRecord{Zone: "example.net", ovhRecordFields: ovhRecordFields{SubDomain: "ovh2", FieldType: "CNAME", TTL: ovhDefaultTTL, Target: "ovh.example.net."}}},
 	})
 
 	// Delete change
