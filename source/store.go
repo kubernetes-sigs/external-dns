@@ -42,6 +42,7 @@ var ErrSourceNotFound = errors.New("source not found")
 type Config struct {
 	Namespace                      string
 	AnnotationFilter               string
+	LabelFilter                    string
 	FQDNTemplate                   string
 	CombineFQDNAndAnnotation       bool
 	IgnoreHostnameAnnotation       bool
@@ -246,7 +247,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewCRDSource(crdClient, cfg.Namespace, cfg.CRDSourceKind, cfg.AnnotationFilter, scheme)
+		return NewCRDSource(crdClient, cfg.Namespace, cfg.CRDSourceKind, cfg.AnnotationFilter, cfg.LabelFilter, scheme)
 	case "skipper-routegroup":
 		apiServerURL := cfg.APIServerURL
 		tokenPath := ""
