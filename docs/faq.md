@@ -204,7 +204,7 @@ $ docker run \
   -e EXTERNAL_DNS_SOURCE=$'service\ningress' \
   -e EXTERNAL_DNS_PROVIDER=google \
   -e EXTERNAL_DNS_DOMAIN_FILTER=$'foo.com\nbar.com' \
-  registry.opensource.zalan.do/teapot/external-dns:latest
+  us.gcr.io/k8s-artifacts-prod/external-dns/external-dns:v0.6.0
 time="2017-08-08T14:10:26Z" level=info msg="config: &{Master: KubeConfig: Sources:[service ingress] Namespace: ...
 ```
 
@@ -272,7 +272,7 @@ Separate them by `,`.
 
 ### Are there official Docker images provided?
 
-When we tag a new release, we push a Docker image on Zalando's public Docker registry with the following name: 
+When we tag a new release, we push a Docker image on Zalando's public Docker registry with the following name:
 
 ```
 registry.opensource.zalan.do/teapot/external-dns
