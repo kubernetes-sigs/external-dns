@@ -43,7 +43,7 @@ type crdSource struct {
 	crdResource      string
 	codec            runtime.ParameterCodec
 	annotationFilter string
-	labelFilter       string
+	labelFilter      string
 }
 
 func addKnownTypes(scheme *runtime.Scheme, groupVersion schema.GroupVersion) error {
@@ -108,7 +108,7 @@ func NewCRDSource(crdClient rest.Interface, namespace, kind string, annotationFi
 		crdResource:      strings.ToLower(kind) + "s",
 		namespace:        namespace,
 		annotationFilter: annotationFilter,
-		labelFilter: labelFilter,
+		labelFilter:      labelFilter,
 		crdClient:        crdClient,
 		codec:            runtime.NewParameterCodec(scheme),
 	}, nil
@@ -121,15 +121,20 @@ func (cs *crdSource) AddEventHandler(ctx context.Context, handler func()) {
 func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
-	var result *endpoint.DNSEndpointList
-	var err error
-	
+	var (
+		result *endpoint.DNSEndpointList
+		err    error
+	)
+
 	if cs.labelFilter != "" {
-		result, err = cs.List(&metav1.ListOptions{LabelSelector: cs.labelFilter})
+		result, err = cs.List(ctx, &metav1.ListOptions{LabelSelector: cs.labelFilter})
 	} else {
-		result, err = cs.List(&metav1.ListOptions{})
+		result, err = cs.List(ctx, &metav1.ListOptions{})
 	}
-	
+	if err != nil {
+		return nil, err
+	}
+
 	result, err = cs.filterByAnnotations(result)
 
 	if err != nil {
