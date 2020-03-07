@@ -174,7 +174,7 @@ func main() {
 	case "digitalocean":
 		p, err = provider.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun)
 	case "ovh":
-		p, err = provider.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.OVHGenerateConsumerKey, cfg.DryRun)
+		p, err = provider.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.DryRun)
 	case "linode":
 		p, err = provider.NewLinodeProvider(domainFilter, cfg.DryRun, externaldns.Version)
 	case "dnsimple":

@@ -20,56 +20,47 @@ You first need to create an OVH application.
 
 Using the [OVH documentation](https://docs.ovh.com/gb/en/customer/first-steps-with-ovh-api/#creation-of-your-application-keys) you will have your `Application key` and `Application secret`
 
-And you will need a `Consumer key`, you can ask `External DNS` to generate that for you, using the `--ovh-generate-consumer` option.
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: external-dns
-spec:
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app: external-dns
-  template:
-    metadata:
-      labels:
-        app: external-dns
-    spec:
-      containers:
-      - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:latest
-        args:
-        - --provider=ovh
-        - --ovh-generate-consumer
-        env:
-        - name: OVH_APPLICATION_KEY
-          value: "YOUR_OVH_APPLICATION_KEY"
-        - name: OVH_APPLICATION_SECRET
-          value: "YOUR_OVH_APPLICATION_SECRET"
-```
-
-In log, you will have two log lines :
-```
-INFO[0000] Generated consumer key: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-INFO[0000] Please visit https://eu.api.ovh.com/auth/?credentialToken=YYYYYYYYYYYYYY to validate it
-```
-
-Keep the `Consumer key` and go to the link to allow external dns to manage your OVH Dns zone.
-
-You can also generate the key manually, here the access needed :
+And you will need to generate your consumer key, here the permissions needed :
 - GET on `/domain/zone`
 - GET on `/domain/zone/*/record`
-- POST on `/domain/zone/*/record`
-- PUT on `/domain/zone/*/record`
-- DELETE on `/domain/zone/*/record`
 - GET on `/domain/zone/*/record/*`
-- POST on `/domain/zone/*/record/*`
-- PUT on `/domain/zone/*/record/*`
+- POST on `/domain/zone/*/record`
 - DELETE on `/domain/zone/*/record/*`
 - POST on `/domain/zone/*/refresh`
+
+You can use the following `curl` request to generate & validated your `Consumer key`
+
+```bash
+curl -XPOST -H "X-Ovh-Application: <ApplicationKey>" -H "Content-type: application/json" https://eu.api.ovh.com/1.0/auth/credential -d '{
+  "accessRules": [
+    {
+      "method": "GET",
+      "path": "/domain/zone"
+    },
+    {
+      "method": "GET",
+      "path": "/domain/zone/*/record"
+    },
+    {
+      "method": "GET",
+      "path": "/domain/zone/*/record/*"
+    },
+    {
+      "method": "POST",
+      "path": "/domain/zone/*/record"
+    },
+    {
+      "method": "DELETE",
+      "path": "/domain/zone/*/record/*"
+    },
+    {
+      "method": "POST",
+      "path": "/domain/zone/*/refresh"
+    }
+  ],
+  "redirection":"https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/ovh.md#creating-ovh-credentials"
+}'
+```
 
 ## Deploy ExternalDNS
 
