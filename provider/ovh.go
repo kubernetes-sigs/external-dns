@@ -76,23 +76,10 @@ type ovhChange struct {
 }
 
 // NewOVHProvider initializes a new OVH DNS based Provider.
-func NewOVHProvider(ctx context.Context, domainFilter DomainFilter, endpoint string, generateConsumerKey bool, dryRun bool) (*OVHProvider, error) {
+func NewOVHProvider(ctx context.Context, domainFilter DomainFilter, endpoint string, dryRun bool) (*OVHProvider, error) {
 	client, err := ovh.NewEndpointClient(endpoint)
 	if err != nil {
 		return nil, err
-	}
-	if generateConsumerKey {
-		ckReq := client.NewCkRequest()
-		ckReq.AddRules(ovh.ReadOnly, "/domain/zone")
-		ckReq.AddRecursiveRules(ovh.ReadWrite, "/domain/zone/*/record")
-		ckReq.AddRules([]string{"POST"}, "/domain/zone/*/refresh")
-		response, err := ckReq.Do()
-		if err != nil {
-			return nil, err
-		}
-		log.Infof("Generated consumer key: %s", response.ConsumerKey)
-		log.Infof("Please visit %s to validate it", response.ValidationURL)
-		return nil, fmt.Errorf("You have to validated the consumer key")
 	}
 	// TODO: Add Dry Run support
 	if dryRun {
