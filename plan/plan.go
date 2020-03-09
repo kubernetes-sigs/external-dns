@@ -23,6 +23,10 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
+type AttributeComparator interface {
+	AttributeValuesEqual(attribute string, value1 *string, value2 *string) bool
+}
+
 // Plan can convert a list of desired and current records to a series of create,
 // update and delete actions.
 type Plan struct {
@@ -110,7 +114,7 @@ func (t planTable) addCandidate(e *endpoint.Endpoint) {
 // Calculate computes the actions needed to move current state towards desired
 // state. It then passes those changes to the current policy for further
 // processing. It returns a copy of Plan with the changes populated.
-func (p *Plan) Calculate() *Plan {
+func (p *Plan) Calculate(ac AttributeComparator) *Plan {
 	t := newPlanTable()
 
 	for _, current := range filterRecordsForPlan(p.Current, p.DomainFilter) {
@@ -135,7 +139,7 @@ func (p *Plan) Calculate() *Plan {
 			if row.current != nil && len(row.candidates) > 0 { //dns name is taken
 				update := t.resolver.ResolveUpdate(row.current, row.candidates)
 				// compare "update" to "current" to figure out if actual update is required
-				if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || shouldUpdateProviderSpecific(update, row.current) {
+				if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || shouldUpdateProviderSpecific(ac, update, row.current) {
 					inheritOwner(row.current, update)
 					changes.UpdateNew = append(changes.UpdateNew, update)
 					changes.UpdateOld = append(changes.UpdateOld, row.current)
@@ -178,7 +182,7 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 	return desired.RecordTTL != current.RecordTTL
 }
 
-func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
+func shouldUpdateProviderSpecific(ac AttributeComparator, desired, current *endpoint.Endpoint) bool {
 	if current.ProviderSpecific == nil && len(desired.ProviderSpecific) == 0 {
 		return false
 	}
@@ -192,7 +196,7 @@ func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
 		found := false
 		for _, d := range desired.ProviderSpecific {
 			if d.Name == c.Name {
-				if d.Value != c.Value {
+				if !ac.AttributeValuesEqual(c.Name, &c.Value, &d.Value) {
 					// provider-specific attribute updated
 					return true
 				}
@@ -202,7 +206,7 @@ func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
 		}
 		if !found {
 			// provider-specific attribute deleted
-			return true
+			return !ac.AttributeValuesEqual(c.Name, &c.Value, nil)
 		}
 	}
 	for _, d := range desired.ProviderSpecific {
@@ -215,7 +219,7 @@ func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
 		}
 		if !found {
 			// provider-specific attribute added
-			return true
+			return !ac.AttributeValuesEqual(d.Name, nil, &d.Value)
 		}
 	}
 

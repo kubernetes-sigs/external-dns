@@ -66,6 +66,7 @@ type RecordSetsClient interface {
 
 // AzureProvider implements the DNS provider for Microsoft's Azure cloud platform.
 type AzureProvider struct {
+	BaseProvider
 	domainFilter                 endpoint.DomainFilter
 	zoneIDFilter                 ZoneIDFilter
 	dryRun                       bool

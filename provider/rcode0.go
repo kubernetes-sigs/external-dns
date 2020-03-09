@@ -32,6 +32,7 @@ import (
 
 // RcodeZeroProvider implements the DNS provider for RcodeZero Anycast DNS.
 type RcodeZeroProvider struct {
+	BaseProvider
 	Client *rc0.Client
 
 	DomainFilter endpoint.DomainFilter

@@ -98,6 +98,7 @@ func (c changesService) Create(project string, managedZone string, change *dns.C
 
 // GoogleProvider is an implementation of Provider for Google CloudDNS.
 type GoogleProvider struct {
+	BaseProvider
 	// The Google project to work in
 	project string
 	// Enabled dry-run will print any modifying actions rather than execute them.

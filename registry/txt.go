@@ -187,6 +187,11 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	return im.provider.ApplyChanges(ctx, filteredChanges)
 }
 
+// AttributeValuesEqual compares two attribute values for equality
+func (im *TXTRegistry) AttributeValuesEqual(attribute string, value1 *string, value2 *string) bool {
+	return im.provider.AttributeValuesEqual(attribute, value1, value2)
+}
+
 /**
   TXT registry specific private methods
 */

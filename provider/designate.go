@@ -226,6 +226,7 @@ func (c designateClient) DeleteRecordSet(zoneID, recordSetID string) error {
 
 // designate provider type
 type designateProvider struct {
+	BaseProvider
 	client designateClientInterface
 
 	// only consider hosted zones managing domains ending in this suffix

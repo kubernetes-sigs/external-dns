@@ -43,6 +43,7 @@ var (
 // InMemoryProvider - dns provider only used for testing purposes
 // initialized as dns provider with no records
 type InMemoryProvider struct {
+	BaseProvider
 	domain         endpoint.DomainFilter
 	client         *inMemoryClient
 	filter         *filter

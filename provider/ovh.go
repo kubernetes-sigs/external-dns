@@ -45,6 +45,8 @@ var (
 
 // OVHProvider is an implementation of Provider for OVH DNS.
 type OVHProvider struct {
+	BaseProvider
+
 	client ovhClient
 
 	domainFilter endpoint.DomainFilter

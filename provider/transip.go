@@ -22,6 +22,7 @@ const (
 
 // TransIPProvider is an implementation of Provider for TransIP.
 type TransIPProvider struct {
+	BaseProvider
 	client       gotransip.SOAPClient
 	domainFilter endpoint.DomainFilter
 	dryRun       bool

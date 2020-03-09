@@ -56,6 +56,7 @@ type coreDNSClient interface {
 }
 
 type coreDNSProvider struct {
+	BaseProvider
 	dryRun        bool
 	coreDNSPrefix string
 	domainFilter  endpoint.DomainFilter

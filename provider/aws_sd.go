@@ -73,6 +73,7 @@ type AWSSDClient interface {
 
 // AWSSDProvider is an implementation of Provider for AWS Cloud Map.
 type AWSSDProvider struct {
+	BaseProvider
 	client AWSSDClient
 	dryRun bool
 	// only consider namespaces ending in this suffix

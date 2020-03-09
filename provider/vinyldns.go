@@ -47,6 +47,7 @@ type vinyldnsZoneInterface interface {
 }
 
 type vinyldnsProvider struct {
+	BaseProvider
 	client       vinyldnsZoneInterface
 	zoneFilter   ZoneIDFilter
 	domainFilter endpoint.DomainFilter

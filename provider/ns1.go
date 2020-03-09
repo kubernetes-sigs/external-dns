@@ -93,6 +93,7 @@ type NS1Config struct {
 
 // NS1Provider is the NS1 provider
 type NS1Provider struct {
+	BaseProvider
 	client       NS1DomainClient
 	domainFilter endpoint.DomainFilter
 	zoneIDFilter ZoneIDFilter

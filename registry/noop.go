@@ -45,3 +45,8 @@ func (im *NoopRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 func (im *NoopRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	return im.provider.ApplyChanges(ctx, changes)
 }
+
+// AttributeValuesEqual compares two attribute values for equality
+func (im *NoopRegistry) AttributeValuesEqual(attribute string, value1 *string, value2 *string) bool {
+	return im.provider.AttributeValuesEqual(attribute, value1, value2)
+}

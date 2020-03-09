@@ -52,6 +52,7 @@ type OCIConfig struct {
 // OCIProvider is an implementation of Provider for Oracle Cloud Infrastructure
 // (OCI) DNS.
 type OCIProvider struct {
+	BaseProvider
 	client ociDNSClient
 	cfg    OCIConfig
 

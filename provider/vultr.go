@@ -37,6 +37,8 @@ const (
 )
 
 type VultrProvider struct {
+	BaseProvider
+
 	client govultr.Client
 
 	domainFilter endpoint.DomainFilter

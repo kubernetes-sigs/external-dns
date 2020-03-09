@@ -87,3 +87,8 @@ func (sdr *AWSSDRegistry) updateLabels(endpoints []*endpoint.Endpoint) {
 		ep.Labels[endpoint.AWSSDDescriptionLabel] = ep.Labels.Serialize(false)
 	}
 }
+
+// AttributeValuesEqual compares two attribute values for equality
+func (sdr *AWSSDRegistry) AttributeValuesEqual(attribute string, value1 *string, value2 *string) bool {
+	return sdr.provider.AttributeValuesEqual(attribute, value1, value2)
+}

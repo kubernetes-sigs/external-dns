@@ -65,6 +65,7 @@ type RDNSConfig struct {
 
 // RDNSProvider is an implementation of Provider for Rancher DNS(RDNS).
 type RDNSProvider struct {
+	BaseProvider
 	client       RDNSClient
 	dryRun       bool
 	domainFilter endpoint.DomainFilter

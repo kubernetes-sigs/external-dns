@@ -103,6 +103,7 @@ func (snap *ZoneSnapshot) StoreRecordsForSerial(zone string, serial int, records
 
 // DynProvider is the actual interface impl.
 type dynProviderState struct {
+	BaseProvider
 	DynConfig
 	LastLoginErrorTime int64
 

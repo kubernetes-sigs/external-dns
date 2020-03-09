@@ -32,6 +32,7 @@ import (
 type Registry interface {
 	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 	ApplyChanges(ctx context.Context, changes *plan.Changes) error
+	AttributeValuesEqual(attribute string, value1 *string, value2 *string) bool
 }
 
 //TODO(ideahitme): consider moving this to Plan

@@ -141,7 +141,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		DomainFilter: c.DomainFilter,
 	}
 
-	plan = plan.Calculate()
+	plan = plan.Calculate(c.Registry)
 
 	err = c.Registry.ApplyChanges(ctx, plan.Changes)
 	if err != nil {

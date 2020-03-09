@@ -38,6 +38,7 @@ type EgoscaleClientI interface {
 
 // ExoscaleProvider initialized as dns provider with no records
 type ExoscaleProvider struct {
+	BaseProvider
 	domain         endpoint.DomainFilter
 	client         EgoscaleClientI
 	filter         *zoneFilter

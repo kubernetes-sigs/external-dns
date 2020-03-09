@@ -44,6 +44,7 @@ const (
 
 // DigitalOceanProvider is an implementation of Provider for Digital Ocean's DNS.
 type DigitalOceanProvider struct {
+	BaseProvider
 	Client godo.DomainsService
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter endpoint.DomainFilter

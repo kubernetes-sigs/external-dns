@@ -28,6 +28,7 @@ import (
 	"github.com/maxatome/go-testdeep/td"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/source"
 )
 
 type MockAction struct {
@@ -232,7 +233,7 @@ func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endp
 		DomainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
 	}
 
-	changes := plan.Calculate().Changes
+	changes := plan.Calculate(provider).Changes
 
 	// Records other than A and CNAME are not supported by planner, just create them
 	for _, endpoint := range endpoints {
@@ -938,7 +939,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 		DomainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
 	}
 
-	planned := plan.Calculate()
+	planned := plan.Calculate(provider)
 
 	err = provider.ApplyChanges(context.Background(), planned.Changes)
 
@@ -975,4 +976,51 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 			},
 		},
 	})
+}
+
+func runBaseProviderTest(t *testing.T, cp plan.AttributeComparator) {
+	foo := "Foo"
+	bar := "Bar"
+
+	assert.True(t, cp.AttributeValuesEqual("some.attribute", nil, nil), "Both attributes not present")
+	assert.False(t, cp.AttributeValuesEqual("some.attribute", nil, &foo), "First attribute missing")
+	assert.False(t, cp.AttributeValuesEqual("some.attribute", &foo, nil), "Second attribute missing")
+	assert.True(t, cp.AttributeValuesEqual("some.attribute", &foo, &foo), "Attributes the same")
+	assert.False(t, cp.AttributeValuesEqual("some.attribute", &foo, &bar), "Attributes differ")
+}
+
+func TestAttributeEquality(t *testing.T) {
+	provNoProxy := &CloudFlareProvider{
+		Client:           &mockCloudFlareClient{},
+		proxiedByDefault: false,
+	}
+
+	provProxy := &CloudFlareProvider{
+		Client:           &mockCloudFlareClient{},
+		proxiedByDefault: true,
+	}
+
+	trueStr := "true"
+	falseStr := "false"
+
+	// Check behaviour for cloudflare-proxied attribute
+	assert.True(t, provNoProxy.AttributeValuesEqual(source.CloudflareProxiedKey, nil, nil), "Both defaulted")
+	assert.True(t, provNoProxy.AttributeValuesEqual(source.CloudflareProxiedKey, nil, &falseStr), "First defaulted, second equal")
+	assert.False(t, provNoProxy.AttributeValuesEqual(source.CloudflareProxiedKey, nil, &trueStr), "First defaulted, second not equal")
+	assert.True(t, provNoProxy.AttributeValuesEqual(source.CloudflareProxiedKey, &falseStr, nil), "Second defaulted, first equal")
+	assert.False(t, provNoProxy.AttributeValuesEqual(source.CloudflareProxiedKey, &trueStr, nil), "Second defaulted, first not equal")
+	assert.True(t, provNoProxy.AttributeValuesEqual(source.CloudflareProxiedKey, &trueStr, &trueStr), "Both equal, true")
+	assert.True(t, provNoProxy.AttributeValuesEqual(source.CloudflareProxiedKey, &falseStr, &falseStr), "Both equal, false")
+
+	assert.True(t, provProxy.AttributeValuesEqual(source.CloudflareProxiedKey, nil, nil), "Both defaulted")
+	assert.True(t, provProxy.AttributeValuesEqual(source.CloudflareProxiedKey, nil, &trueStr), "First defaulted, second equal")
+	assert.False(t, provProxy.AttributeValuesEqual(source.CloudflareProxiedKey, nil, &falseStr), "First defaulted, second not equal")
+	assert.True(t, provProxy.AttributeValuesEqual(source.CloudflareProxiedKey, &trueStr, nil), "Second defaulted, first equal")
+	assert.False(t, provProxy.AttributeValuesEqual(source.CloudflareProxiedKey, &falseStr, nil), "Second defaulted, first not equal")
+	assert.True(t, provProxy.AttributeValuesEqual(source.CloudflareProxiedKey, &trueStr, &trueStr), "Both equal, true")
+	assert.True(t, provProxy.AttributeValuesEqual(source.CloudflareProxiedKey, &falseStr, &falseStr), "Both equal, false")
+
+	// Test base provider behaviour
+	runBaseProviderTest(t, provNoProxy)
+	runBaseProviderTest(t, provProxy)
 }

@@ -66,6 +66,7 @@ type AlibabaCloudPrivateZoneAPI interface {
 
 // AlibabaCloudProvider implements the DNS provider for Alibaba Cloud.
 type AlibabaCloudProvider struct {
+	BaseProvider
 	domainFilter         endpoint.DomainFilter
 	zoneIDFilter         ZoneIDFilter // Private Zone only
 	MaxChangeCount       int

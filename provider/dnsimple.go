@@ -84,6 +84,7 @@ func (z dnsimpleZoneService) UpdateRecord(accountID string, zoneID string, recor
 }
 
 type dnsimpleProvider struct {
+	BaseProvider
 	client       dnsimpleZoneServiceInterface
 	identity     identityService
 	accountID    string
