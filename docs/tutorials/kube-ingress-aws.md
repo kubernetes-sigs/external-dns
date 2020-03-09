@@ -18,7 +18,7 @@ create ALBs and NLBs, follow the [Setup Guide][2].
 [2]: https://github.com/zalando-incubator/kube-ingress-aws-controller/tree/master/deploy
 
 
-### optional RouteGroup
+### Optional RouteGroup
 
 [RouteGroup][3] is a CRD, that enables you to do complex routing with
 [Skipper][4].
@@ -126,7 +126,7 @@ spec:
 Note that the Service object is of type `ClusterIP`, because we will
 target [Skipper][4] and do the HTTP routing in Skipper. We don't need
 a Service of type `LoadBalancer` here, since we will be using a shared
-skipper-ingress for all Ingress. Skipper use `hostnetwork` to be able
+skipper-ingress for all Ingress. Skipper use `hostNetwork` to be able
 to get traffic from AWS LoadBalancers EC2 network. ALBs or NLBs, will
 be created based on need and will be shared across all ingress as
 default.
@@ -273,7 +273,7 @@ use AWS ALIAS record to automatically maintain IP adresses of the NLB.
 
 [Kube-ingress-aws-controller][1], [Skipper][4] and external-dns
 support [RouteGroups][3]. External-dns needs to be started with
-`--source=routegroup` parameter in order to work on RouteGroup objects.
+`--source=skipper-routegroup` parameter in order to work on RouteGroup objects.
 
 Here we can not show [all RouteGroup
 capabilities](https://opensource.zalando.com/skipper/kubernetes/routegroups/),
