@@ -138,6 +138,7 @@ func (cli *routeGroupClient) updateToken() {
 	token, err := ioutil.ReadFile(cli.tokenFile)
 	if err != nil {
 		log.Errorf("Failed to read token from file (%s): %v", cli.tokenFile, err)
+		return
 	}
 
 	cli.mu.Lock()
