@@ -1,3 +1,14 @@
+## v0.7.0 - 2020-03-09
+
+  - New source: Add support for Skipper's RouteGroup CRD (#1444) @szuecs
+  - Docs: Update docker image references of ExternalDNS (#1427) @tariq1890
+  - Remove duplicate targets from endpoints for headless services (#1426) @thomasv314
+  - Add issue templates to Github (#1424) @njuettner
+  - Azure: Don't use SPN to authenticate when clientid or secret is 'msi' (#1422) @norshtein
+  - Rfc2136: Add option to define minimum TTL (#1412) @ouzklcn
+  - Azure Private DNS: Fix updates of unchanged records (#1377) @jasper-d
+  - Headless service: Retrieve endpoints via Endpoints resource (#1005) @devkid
+
 ## v0.6.0 - 2020-02-11
 
   - Azure Private DNS: Fix endless loop in zone-detection (#1397) @saidst
