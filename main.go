@@ -91,6 +91,8 @@ func main() {
 		CFUsername:                     cfg.CFUsername,
 		CFPassword:                     cfg.CFPassword,
 		ContourLoadBalancerService:     cfg.ContourLoadBalancerService,
+		SkipperRouteGroupVersion:       cfg.SkipperRouteGroupVersion,
+		RequestTimeout:                 cfg.RequestTimeout,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.

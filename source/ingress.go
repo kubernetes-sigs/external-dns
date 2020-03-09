@@ -26,7 +26,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/extensions/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
@@ -203,11 +202,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 
 // filterByAnnotations filters a list of ingresses by a given annotation selector.
 func (sc *ingressSource) filterByAnnotations(ingresses []*v1beta1.Ingress) ([]*v1beta1.Ingress, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := getLabelSelector(sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -220,11 +215,8 @@ func (sc *ingressSource) filterByAnnotations(ingresses []*v1beta1.Ingress) ([]*v
 	filteredList := []*v1beta1.Ingress{}
 
 	for _, ingress := range ingresses {
-		// convert the ingress' annotations to an equivalent label selector
-		annotations := labels.Set(ingress.Annotations)
-
 		// include ingress if its annotations match the selector
-		if selector.Matches(annotations) {
+		if matchLabelSelector(selector, ingress.Annotations) {
 			filteredList = append(filteredList, ingress)
 		}
 	}
