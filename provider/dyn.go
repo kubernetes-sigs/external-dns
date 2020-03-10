@@ -56,7 +56,7 @@ func unixNow() int64 {
 
 // DynConfig hold connection parameters to dyn.com and internal state
 type DynConfig struct {
-	DomainFilter  DomainFilter
+	DomainFilter  endpoint.DomainFilter
 	ZoneIDFilter  ZoneIDFilter
 	DryRun        bool
 	CustomerName  string
@@ -153,7 +153,7 @@ func NewDynProvider(config DynConfig) (Provider, error) {
 
 // filterAndFixLinks removes from `links` all the records we don't care about
 // and strops the /REST/ prefix
-func filterAndFixLinks(links []string, filter DomainFilter) []string {
+func filterAndFixLinks(links []string, filter endpoint.DomainFilter) []string {
 	var result []string
 	for _, link := range links {
 

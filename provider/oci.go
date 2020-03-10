@@ -55,7 +55,7 @@ type OCIProvider struct {
 	client ociDNSClient
 	cfg    OCIConfig
 
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 	zoneIDFilter ZoneIDFilter
 	dryRun       bool
 }
@@ -83,7 +83,7 @@ func LoadOCIConfig(path string) (*OCIConfig, error) {
 }
 
 // NewOCIProvider initialises a new OCI DNS based Provider.
-func NewOCIProvider(cfg OCIConfig, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool) (*OCIProvider, error) {
+func NewOCIProvider(cfg OCIConfig, domainFilter endpoint.DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool) (*OCIProvider, error) {
 	var client ociDNSClient
 	client, err := dns.NewDnsClientWithConfigurationProvider(common.NewRawConfigurationProvider(
 		cfg.Auth.TenancyID,
@@ -109,7 +109,7 @@ func NewOCIProvider(cfg OCIConfig, domainFilter DomainFilter, zoneIDFilter ZoneI
 func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, error) {
 	zones := make(map[string]dns.ZoneSummary)
 
-	log.Debugf("Matching zones against domain filters: %v", p.domainFilter.filters)
+	log.Debugf("Matching zones against domain filters: %v", p.domainFilter.Filters)
 	var page *string
 	for {
 		resp, err := p.client.ListZones(ctx, dns.ListZonesRequest{
@@ -137,7 +137,7 @@ func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, er
 
 	if len(zones) == 0 {
 		if p.domainFilter.IsConfigured() {
-			log.Warnf("No zones in compartment %q match domain filters %v", p.cfg.CompartmentID, p.domainFilter.filters)
+			log.Warnf("No zones in compartment %q match domain filters %v", p.cfg.CompartmentID, p.domainFilter.Filters)
 		} else {
 			log.Warnf("No zones found in compartment %q", p.cfg.CompartmentID)
 		}

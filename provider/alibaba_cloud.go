@@ -66,7 +66,7 @@ type AlibabaCloudPrivateZoneAPI interface {
 
 // AlibabaCloudProvider implements the DNS provider for Alibaba Cloud.
 type AlibabaCloudProvider struct {
-	domainFilter         DomainFilter
+	domainFilter         endpoint.DomainFilter
 	zoneIDFilter         ZoneIDFilter // Private Zone only
 	MaxChangeCount       int
 	EvaluateTargetHealth bool
@@ -93,7 +93,7 @@ type alibabaCloudConfig struct {
 // NewAlibabaCloudProvider creates a new Alibaba Cloud provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAlibabaCloudProvider(configFile string, domainFilter DomainFilter, zoneIDFileter ZoneIDFilter, zoneType string, dryRun bool) (*AlibabaCloudProvider, error) {
+func NewAlibabaCloudProvider(configFile string, domainFilter endpoint.DomainFilter, zoneIDFileter ZoneIDFilter, zoneType string, dryRun bool) (*AlibabaCloudProvider, error) {
 	cfg := alibabaCloudConfig{}
 	if configFile != "" {
 		contents, err := ioutil.ReadFile(configFile)
@@ -382,7 +382,7 @@ func (p *AlibabaCloudProvider) records() ([]alidns.Record, error) {
 	log.Infof("Retrieving Alibaba Cloud DNS Domain Records")
 	var results []alidns.Record
 
-	if len(p.domainFilter.filters) == 1 && p.domainFilter.filters[0] == "" {
+	if len(p.domainFilter.Filters) == 1 && p.domainFilter.Filters[0] == "" {
 		domainNames, tmpErr := p.getDomainList()
 		if tmpErr != nil {
 			log.Errorf("AlibabaCloudProvider getDomainList error %v", tmpErr)
@@ -397,7 +397,7 @@ func (p *AlibabaCloudProvider) records() ([]alidns.Record, error) {
 			results = append(results, tmpResults...)
 		}
 	} else {
-		for _, domainName := range p.domainFilter.filters {
+		for _, domainName := range p.domainFilter.Filters {
 			tmpResults, err := p.getDomainRecords(domainName)
 			if err != nil {
 				log.Errorf("getDomainRecords %s error %v", domainName, err)
@@ -672,7 +672,7 @@ func (p *AlibabaCloudProvider) splitDNSName(endpoint *endpoint.Endpoint) (rr str
 
 	found := false
 
-	for _, filter := range p.domainFilter.filters {
+	for _, filter := range p.domainFilter.Filters {
 		if strings.HasSuffix(name, "."+filter) {
 			rr = name[0 : len(name)-len(filter)-1]
 			domain = filter

@@ -58,7 +58,7 @@ type coreDNSClient interface {
 type coreDNSProvider struct {
 	dryRun        bool
 	coreDNSPrefix string
-	domainFilter  DomainFilter
+	domainFilter  endpoint.DomainFilter
 	client        coreDNSClient
 }
 
@@ -244,7 +244,7 @@ func newETCDClient() (coreDNSClient, error) {
 }
 
 // NewCoreDNSProvider is a CoreDNS provider constructor
-func NewCoreDNSProvider(domainFilter DomainFilter, prefix string, dryRun bool) (Provider, error) {
+func NewCoreDNSProvider(domainFilter endpoint.DomainFilter, prefix string, dryRun bool) (Provider, error) {
 	client, err := newETCDClient()
 	if err != nil {
 		return nil, err

@@ -35,6 +35,8 @@ type Plan struct {
 	// List of changes necessary to move towards desired state
 	// Populated after calling Calculate()
 	Changes *Changes
+	// DomainFilter matches DNS names
+	DomainFilter endpoint.DomainFilter
 }
 
 // Changes holds lists of actions to be executed by dns providers
@@ -111,10 +113,10 @@ func (t planTable) addCandidate(e *endpoint.Endpoint) {
 func (p *Plan) Calculate() *Plan {
 	t := newPlanTable()
 
-	for _, current := range filterRecordsForPlan(p.Current) {
+	for _, current := range filterRecordsForPlan(p.Current, p.DomainFilter) {
 		t.addCurrent(current)
 	}
-	for _, desired := range filterRecordsForPlan(p.Desired) {
+	for _, desired := range filterRecordsForPlan(p.Desired, p.DomainFilter) {
 		t.addCandidate(desired)
 	}
 
@@ -227,10 +229,15 @@ func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
 // Per RFC 1034, CNAME records conflict with all other records - it is the
 // only record with this property. The behavior of the planner may need to be
 // made more sophisticated to codify this.
-func filterRecordsForPlan(records []*endpoint.Endpoint) []*endpoint.Endpoint {
+func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.DomainFilter) []*endpoint.Endpoint {
 	filtered := []*endpoint.Endpoint{}
 
 	for _, record := range records {
+		// Ignore records that do not match the domain filter provided
+		if !domainFilter.Match(record.DNSName) {
+			continue
+		}
+
 		// Explicitly specify which records we want to use for planning.
 		// TODO: Add AAAA records as well when they are supported.
 		switch record.RecordType {

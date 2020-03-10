@@ -191,7 +191,7 @@ func TestNewDesignateProvider(t *testing.T) {
 	os.Setenv("OS_USER_DOMAIN_NAME", "Default")
 	os.Setenv("OPENSTACK_CA_FILE", tmpfile.Name())
 
-	if _, err := NewDesignateProvider(DomainFilter{}, true); err != nil {
+	if _, err := NewDesignateProvider(endpoint.DomainFilter{}, true); err != nil {
 		t.Fatalf("Failed to initialize Designate provider: %s", err)
 	}
 }

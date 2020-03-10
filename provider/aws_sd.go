@@ -76,13 +76,13 @@ type AWSSDProvider struct {
 	client AWSSDClient
 	dryRun bool
 	// only consider namespaces ending in this suffix
-	namespaceFilter DomainFilter
+	namespaceFilter endpoint.DomainFilter
 	// filter namespace by type (private or public)
 	namespaceTypeFilter *sd.NamespaceFilter
 }
 
 // NewAWSSDProvider initializes a new AWS Cloud Map based Provider.
-func NewAWSSDProvider(domainFilter DomainFilter, namespaceType string, assumeRole string, dryRun bool) (*AWSSDProvider, error) {
+func NewAWSSDProvider(domainFilter endpoint.DomainFilter, namespaceType string, assumeRole string, dryRun bool) (*AWSSDProvider, error) {
 	config := aws.NewConfig()
 
 	config = config.WithHTTPClient(
