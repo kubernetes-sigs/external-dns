@@ -92,7 +92,7 @@ func TestVinylDNSServices(t *testing.T) {
 func testVinylDNSProviderRecords(t *testing.T) {
 	ctx := context.Background()
 
-	mockVinylDNSProvider.domainFilter = NewDomainFilter([]string{"example.com"})
+	mockVinylDNSProvider.domainFilter = endpoint.NewDomainFilter([]string{"example.com"})
 	result, err := mockVinylDNSProvider.Records(ctx)
 	assert.Nil(t, err)
 	assert.Equal(t, len(vinylDNSRecords), len(result))
@@ -134,11 +134,11 @@ func testVinylDNSSuitableZone(t *testing.T) {
 
 func TestNewVinylDNSProvider(t *testing.T) {
 	os.Setenv("VINYLDNS_ACCESS_KEY", "xxxxxxxxxxxxxxxxxxxxxxxxxx")
-	_, err := NewVinylDNSProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{"0"}), true)
+	_, err := NewVinylDNSProvider(endpoint.NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{"0"}), true)
 	assert.Nil(t, err)
 
 	os.Unsetenv("VINYLDNS_ACCESS_KEY")
-	_, err = NewVinylDNSProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{"0"}), true)
+	_, err = NewVinylDNSProvider(endpoint.NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{"0"}), true)
 	assert.NotNil(t, err)
 	if err == nil {
 		t.Errorf("Expected to fail new provider on empty token")

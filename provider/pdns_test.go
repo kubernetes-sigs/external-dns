@@ -476,21 +476,21 @@ var (
 		},
 	}
 
-	DomainFilterListSingle = DomainFilter{
-		filters: []string{
+	DomainFilterListSingle = endpoint.DomainFilter{
+		Filters: []string{
 			"example.com",
 		},
 	}
 
-	DomainFilterListMultiple = DomainFilter{
-		filters: []string{
+	DomainFilterListMultiple = endpoint.DomainFilter{
+		Filters: []string{
 			"example.com",
 			"mock.com",
 		},
 	}
 
-	DomainFilterListEmpty = DomainFilter{
-		filters: []string{},
+	DomainFilterListEmpty = endpoint.DomainFilter{
+		Filters: []string{},
 	}
 
 	DomainFilterEmptyClient = &PDNSAPIClient{
@@ -643,7 +643,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 		context.Background(),
 		PDNSConfig{
 			Server:       "http://localhost:8081",
-			DomainFilter: NewDomainFilter([]string{""}),
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 		})
 	assert.Error(suite.T(), err, "--pdns-api-key should be specified")
 
@@ -652,7 +652,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 		PDNSConfig{
 			Server:       "http://localhost:8081",
 			APIKey:       "foo",
-			DomainFilter: NewDomainFilter([]string{"example.com", "example.org"}),
+			DomainFilter: endpoint.NewDomainFilter([]string{"example.com", "example.org"}),
 		})
 	assert.Nil(suite.T(), err, "--domain-filter should raise no error")
 
@@ -661,7 +661,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 		PDNSConfig{
 			Server:       "http://localhost:8081",
 			APIKey:       "foo",
-			DomainFilter: NewDomainFilter([]string{""}),
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 			DryRun:       true,
 		})
 	assert.Error(suite.T(), err, "--dry-run should raise an error")
@@ -672,7 +672,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 		PDNSConfig{
 			Server:       "http://localhost:8081",
 			APIKey:       "foo",
-			DomainFilter: NewDomainFilter([]string{""}),
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 		})
 	assert.Nil(suite.T(), err, "Regular case should raise no error")
 }
@@ -684,7 +684,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 		PDNSConfig{
 			Server:       "http://localhost:8081",
 			APIKey:       "foo",
-			DomainFilter: NewDomainFilter([]string{""}),
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 		})
 	assert.Nil(suite.T(), err, "Omitted TLS Config case should raise no error")
 
@@ -693,7 +693,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 		PDNSConfig{
 			Server:       "http://localhost:8081",
 			APIKey:       "foo",
-			DomainFilter: NewDomainFilter([]string{""}),
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 			TLSConfig: TLSConfig{
 				TLSEnabled: false,
 			},
@@ -705,7 +705,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 		PDNSConfig{
 			Server:       "http://localhost:8081",
 			APIKey:       "foo",
-			DomainFilter: NewDomainFilter([]string{""}),
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 			TLSConfig: TLSConfig{
 				TLSEnabled:            false,
 				CAFilePath:            "/path/to/ca.crt",
@@ -720,7 +720,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 		PDNSConfig{
 			Server:       "http://localhost:8081",
 			APIKey:       "foo",
-			DomainFilter: NewDomainFilter([]string{""}),
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 			TLSConfig: TLSConfig{
 				TLSEnabled: true,
 			},
@@ -732,7 +732,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 		PDNSConfig{
 			Server:       "http://localhost:8081",
 			APIKey:       "foo",
-			DomainFilter: NewDomainFilter([]string{""}),
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 			TLSConfig: TLSConfig{
 				TLSEnabled: true,
 				CAFilePath: "../internal/testresources/ca.pem",
@@ -745,7 +745,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 		PDNSConfig{
 			Server:       "http://localhost:8081",
 			APIKey:       "foo",
-			DomainFilter: NewDomainFilter([]string{""}),
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 			TLSConfig: TLSConfig{
 				TLSEnabled:         true,
 				CAFilePath:         "../internal/testresources/ca.pem",
@@ -759,7 +759,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 		PDNSConfig{
 			Server:       "http://localhost:8081",
 			APIKey:       "foo",
-			DomainFilter: NewDomainFilter([]string{""}),
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 			TLSConfig: TLSConfig{
 				TLSEnabled:            true,
 				CAFilePath:            "../internal/testresources/ca.pem",
@@ -773,7 +773,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 		PDNSConfig{
 			Server:       "http://localhost:8081",
 			APIKey:       "foo",
-			DomainFilter: NewDomainFilter([]string{""}),
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 			TLSConfig: TLSConfig{
 				TLSEnabled:            true,
 				CAFilePath:            "../internal/testresources/ca.pem",

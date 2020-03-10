@@ -49,7 +49,7 @@ func (*akamaiOpenClient) Do(config edgegrid.Config, req *http.Request) (*http.Re
 
 // AkamaiConfig clarifies the method signature
 type AkamaiConfig struct {
-	DomainFilter          DomainFilter
+	DomainFilter          endpoint.DomainFilter
 	ZoneIDFilter          ZoneIDFilter
 	ServiceConsumerDomain string
 	ClientToken           string
@@ -60,7 +60,7 @@ type AkamaiConfig struct {
 
 // AkamaiProvider implements the DNS provider for Akamai.
 type AkamaiProvider struct {
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 	zoneIDFilter ZoneIDFilter
 	config       edgegrid.Config
 	dryRun       bool

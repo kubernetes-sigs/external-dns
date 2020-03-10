@@ -102,7 +102,7 @@ func (z zoneService) ListZonesContext(ctx context.Context, opts ...cloudflare.Re
 type CloudFlareProvider struct {
 	Client cloudFlareDNS
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter      DomainFilter
+	domainFilter      endpoint.DomainFilter
 	zoneIDFilter      ZoneIDFilter
 	proxiedByDefault  bool
 	DryRun            bool
@@ -116,7 +116,7 @@ type cloudFlareChange struct {
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zonesPerPage int, proxiedByDefault bool, dryRun bool) (*CloudFlareProvider, error) {
+func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter ZoneIDFilter, zonesPerPage int, proxiedByDefault bool, dryRun bool) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
 	var (
 		config *cloudflare.API

@@ -84,7 +84,7 @@ func (n NS1DomainService) ListZones() ([]*dns.Zone, *http.Response, error) {
 
 // NS1Config passes cli args to the NS1Provider
 type NS1Config struct {
-	DomainFilter DomainFilter
+	DomainFilter endpoint.DomainFilter
 	ZoneIDFilter ZoneIDFilter
 	NS1Endpoint  string
 	NS1IgnoreSSL bool
@@ -94,7 +94,7 @@ type NS1Config struct {
 // NS1Provider is the NS1 provider
 type NS1Provider struct {
 	client       NS1DomainClient
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 	zoneIDFilter ZoneIDFilter
 	dryRun       bool
 }
