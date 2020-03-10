@@ -1,6 +1,7 @@
-## v0.7.0 - 2020-03-09
+## v0.7.0 - 2020-03-10
 
   - New source: Add support for Skipper's RouteGroup CRD (#1444) @szuecs
+  - Change DomainFilter to apply to records as well (#1442) @bl1nk
   - Docs: Update docker image references of ExternalDNS (#1427) @tariq1890
   - Remove duplicate targets from endpoints for headless services (#1426) @thomasv314
   - Add issue templates to Github (#1424) @njuettner
