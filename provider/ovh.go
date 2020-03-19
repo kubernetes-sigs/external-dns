@@ -47,7 +47,7 @@ var (
 type OVHProvider struct {
 	client ovhClient
 
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 	DryRun       bool
 }
 
@@ -76,7 +76,7 @@ type ovhChange struct {
 }
 
 // NewOVHProvider initializes a new OVH DNS based Provider.
-func NewOVHProvider(ctx context.Context, domainFilter DomainFilter, endpoint string, dryRun bool) (*OVHProvider, error) {
+func NewOVHProvider(ctx context.Context, domainFilter endpoint.DomainFilter, endpoint string, dryRun bool) (*OVHProvider, error) {
 	client, err := ovh.NewEndpointClient(endpoint)
 	if err != nil {
 		return nil, err
