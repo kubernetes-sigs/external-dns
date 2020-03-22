@@ -351,6 +351,8 @@ func TestInfobloxRecords(t *testing.T) {
 			createMockInfobloxObject("whitespace.example.com", endpoint.RecordTypeA, "123.123.123.124"),
 			createMockInfobloxObject("whitespace.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=white space"),
 			createMockInfobloxObject("hack.example.com", endpoint.RecordTypeCNAME, "cerberus.infoblox.com"),
+			createMockInfobloxObject("multiple.example.com", endpoint.RecordTypeA, "123.123.123.122,123.123.123.121"),
+			createMockInfobloxObject("multiple.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
 		},
 	}
 
@@ -368,6 +370,8 @@ func TestInfobloxRecords(t *testing.T) {
 		endpoint.NewEndpoint("whitespace.example.com", endpoint.RecordTypeA, "123.123.123.124"),
 		endpoint.NewEndpoint("whitespace.example.com", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=white space\""),
 		endpoint.NewEndpoint("hack.example.com", endpoint.RecordTypeCNAME, "cerberus.infoblox.com"),
+		endpoint.NewEndpoint("multiple.example.com", endpoint.RecordTypeA, "123.123.123.122,123.123.123.121"),
+		endpoint.NewEndpoint("multiple.example.com", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=default\""),
 	}
 	validateEndpoints(t, actual, expected)
 }
@@ -388,6 +392,8 @@ func TestInfobloxApplyChanges(t *testing.T) {
 		endpoint.NewEndpoint("other.com", endpoint.RecordTypeTXT, "tag"),
 		endpoint.NewEndpoint("new.example.com", endpoint.RecordTypeA, "111.222.111.222"),
 		endpoint.NewEndpoint("newcname.example.com", endpoint.RecordTypeCNAME, "other.com"),
+		endpoint.NewEndpoint("multiple.example.com", endpoint.RecordTypeA, "1.2.3.4,3.4.5.6,8.9.10.11"),
+		endpoint.NewEndpoint("multiple.example.com", endpoint.RecordTypeTXT, "tag-multiple-A-records"),
 	})
 
 	validateEndpoints(t, client.deletedEndpoints, []*endpoint.Endpoint{
@@ -444,6 +450,8 @@ func testInfobloxApplyChangesInternal(t *testing.T, dryRun bool, client ibclient
 		endpoint.NewEndpoint("other.com", endpoint.RecordTypeTXT, "tag"),
 		endpoint.NewEndpoint("nope.com", endpoint.RecordTypeA, "4.4.4.4"),
 		endpoint.NewEndpoint("nope.com", endpoint.RecordTypeTXT, "tag"),
+		endpoint.NewEndpoint("multiple.example.com", endpoint.RecordTypeA, "1.2.3.4,3.4.5.6,8.9.10.11"),
+		endpoint.NewEndpoint("multiple.example.com", endpoint.RecordTypeTXT, "tag-multiple-A-records"),
 	}
 
 	updateOldRecords := []*endpoint.Endpoint{
