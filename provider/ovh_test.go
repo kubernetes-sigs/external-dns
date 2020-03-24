@@ -59,7 +59,7 @@ func TestOvhZones(t *testing.T) {
 	client := new(mockOvhClient)
 	provider := &OVHProvider{
 		client:       client,
-		domainFilter: NewDomainFilter([]string{"com"}),
+		domainFilter: endpoint.NewDomainFilter([]string{"com"}),
 	}
 
 	// Basic zones
