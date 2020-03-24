@@ -258,6 +258,28 @@ func NewCoreDNSProvider(domainFilter endpoint.DomainFilter, prefix string, dryRu
 	}, nil
 }
 
+// Find takes a Endpoint slice and looks for an element in it. If found it will
+// return it's key, otherwise it will return -1 and a bool of false.
+func findEp(slice []*endpoint.Endpoint, dnsName string) (int, bool) {
+	for i, item := range slice {
+		if item.DNSName == dnsName {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
+// Find takes a EndpointLabels map and looks for an element in it. If found it will
+// return it's key, otherwise it will return -1 and a bool of false.
+func findLabelInTargets(targets []string, label string) (string, bool) {
+	for _, target := range targets {
+		if target == label {
+			return target, true
+		}
+	}
+	return "", false
+}
+
 // Records returns all DNS records found in CoreDNS etcd backend. Depending on the record fields
 // it may be mapped to one or two records of type A, CNAME, TXT, A+TXT, CNAME+TXT
 func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
@@ -273,16 +295,27 @@ func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 		if !p.domainFilter.Match(dnsName) {
 			continue
 		}
+		log.Debugf("Getting service (%v) with service host (%s)", service, service.Host)
 		prefix := strings.Join(domains[:service.TargetStrip], ".")
 		if service.Host != "" {
-			ep := endpoint.NewEndpointWithTTL(
-				dnsName,
-				guessRecordType(service.Host),
-				endpoint.TTL(service.TTL),
-				service.Host,
-			)
+			foundEpIndex, found := findEp(result, dnsName)
+			var ep *endpoint.Endpoint
+			if found {
+				ep = result[foundEpIndex]
+				ep.Targets = append(ep.Targets, service.Host)
+				log.Debugf("Exteding ep (%s) with new service host (%s)", ep, service.Host)
+			} else {
+				ep = endpoint.NewEndpointWithTTL(
+					dnsName,
+					guessRecordType(service.Host),
+					endpoint.TTL(service.TTL),
+					service.Host,
+				)
+				log.Debugf("Creating new ep (%s) with new service host (%s)", ep, service.Host)
+			}
 			ep.Labels["originalText"] = service.Text
 			ep.Labels[randomPrefixLabel] = prefix
+			ep.Labels[service.Host] = prefix
 			result = append(result, ep)
 		}
 		if service.Text != "" {
@@ -305,7 +338,8 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		grouped[ep.DNSName] = append(grouped[ep.DNSName], ep)
 	}
 	for i, ep := range changes.UpdateNew {
-		ep.Labels[randomPrefixLabel] = changes.UpdateOld[i].Labels[randomPrefixLabel]
+		ep.Labels = changes.UpdateOld[i].Labels
+		log.Debugf("Updating labels (%s)  with old labels(%s)", ep.Labels, changes.UpdateOld[i].Labels)
 		grouped[ep.DNSName] = append(grouped[ep.DNSName], ep)
 	}
 	for dnsName, group := range grouped {
@@ -320,9 +354,11 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			}
 
 			for _, target := range ep.Targets {
-				prefix := ep.Labels[randomPrefixLabel]
+				prefix := ep.Labels[target]
+				log.Debugf("Getting prefix(%s) from label(%s)", prefix, target)
 				if prefix == "" {
 					prefix = fmt.Sprintf("%08x", rand.Int31())
+					log.Infof("Generating new prefix: (%s)", prefix)
 				}
 
 				service := Service{
@@ -333,7 +369,29 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 					TTL:         uint32(ep.RecordTTL),
 				}
 				services = append(services, service)
+				ep.Labels[target] = prefix
+				log.Debugf("Putting prefix(%s) to label(%s)", prefix, target)
+				log.Debugf("Ep labels structure now: (%v)", ep.Labels)
 			}
+
+			// Clean outdated targets
+			for label, labelPrefix := range ep.Labels {
+				log.Debugf("Finding label (%s) in targets(%v)", label, ep.Targets)
+				if _, ok := findLabelInTargets(ep.Targets, label); !ok {
+					log.Debugf("Found non existing label(%s) in targets(%v)", label, ep.Targets)
+					dnsName := ep.DNSName
+					dnsName = labelPrefix + "." + dnsName
+					key := p.etcdKeyFor(dnsName)
+					log.Infof("Delete key %s", key)
+					if !p.dryRun {
+						err := p.client.DeleteService(key)
+						if err != nil {
+							return err
+						}
+					}
+				}
+			}
+
 		}
 		index := 0
 		for _, ep := range group {
