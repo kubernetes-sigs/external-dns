@@ -71,7 +71,7 @@ We define the following stability levels for providers:
 The following table clarifies the current status of the providers according to the aforementioned stability levels:
 
 | Provider | Status | Maintainers | 
-| -------- | ------ |
+| -------- | ------ | ----------- |
 | Google Cloud DNS | Stable | |
 | AWS Route 53 | Stable | |
 | AWS Cloud Map | Beta | |
