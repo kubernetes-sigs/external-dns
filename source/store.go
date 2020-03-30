@@ -306,18 +306,13 @@ func NewIstioClient(kubeConfig string) (*istiocontroller.Client, error) {
 		}
 	}
 
-	schemas := istiocrd.SupportedSchemas
-	domainSuffix := ""
-	ledger := istioledger.Make(time.Minute)
-	revision := ""
-
 	client, err := istiocontroller.NewClient(
 		kubeConfig,
-		"",
-		schemas,
-		domainSuffix,
-		ledger,
-		revision,
+		"", // context
+		istiocrd.SupportedSchemas,
+		"",                            // domainSuffix
+		istioledger.Make(time.Minute), //ledger
+		"",                            // revision
 	)
 	if err != nil {
 		return nil, err
