@@ -269,7 +269,7 @@ func findEp(slice []*endpoint.Endpoint, dnsName string) (int, bool) {
 	return -1, false
 }
 
-// Find takes a EndpointLabels map and looks for an element in it. If found it will
+// Find takes a ep.Targets string slice and looks for an element in it. If found it will
 // return it's key, otherwise it will return -1 and a bool of false.
 func findLabelInTargets(targets []string, label string) (string, bool) {
 	for _, target := range targets {
@@ -376,6 +376,12 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 
 			// Clean outdated targets
 			for label, labelPrefix := range ep.Labels {
+				// Skip non Target related labels
+				labelsToSkip := []string{"originalText", "prefix", "resource"}
+				if _, ok := findLabelInTargets(labelsToSkip, label); ok {
+					continue
+				}
+
 				log.Debugf("Finding label (%s) in targets(%v)", label, ep.Targets)
 				if _, ok := findLabelInTargets(ep.Targets, label); !ok {
 					log.Debugf("Found non existing label(%s) in targets(%v)", label, ep.Targets)
