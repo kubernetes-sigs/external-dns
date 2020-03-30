@@ -28,8 +28,10 @@ import (
 	"github.com/linki/instrumented_http"
 	contour "github.com/projectcontour/contour/apis/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
+	istiocrd "istio.io/istio/pilot/pkg/config/kube/crd"
 	istiocontroller "istio.io/istio/pilot/pkg/config/kube/crd/controller"
 	istiomodel "istio.io/istio/pilot/pkg/model"
+	istioledger "istio.io/pkg/ledger"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -304,20 +306,26 @@ func NewIstioClient(kubeConfig string) (*istiocontroller.Client, error) {
 		}
 	}
 
-	return nil, errors.New("Istio needs to be update to support latest version")
-	//client, err := istiocontroller.NewClient(
-	//	kubeConfig,
-	//	"",
-	//	istiomodel.ConfigDescriptor{istiomodel.Gateway},
-	//	"",
-	//)
-	//if err != nil {
-	//	return nil, err
-	//}
+	schemas := istiocrd.SupportedSchemas
+	domainSuffix := ""
+	ledger := istioledger.Make(time.Minute)
+	revision := ""
 
-	//log.Info("Created Istio client")
+	client, err := istiocontroller.NewClient(
+		kubeConfig,
+		"",
+		schemas,
+		domainSuffix,
+		ledger,
+		revision,
+	)
+	if err != nil {
+		return nil, err
+	}
 
-	//return client, nil
+	log.Info("Created Istio client")
+
+	return client, nil
 }
 
 // NewContourClient returns a new Contour client object. It takes a Config and
