@@ -14,8 +14,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag jgrumboe/external-dns
+      run: docker build . --file Dockerfile --tag porscheinformatik/external-dns
     - name: Login to DockerHub Registry
       run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
     - name: Push Docker image
-      run: docker push jgrumboe/external-dns
+      run: docker push porscheinformatik/external-dns
