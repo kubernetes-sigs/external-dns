@@ -81,12 +81,12 @@ type ByNamesTestSuite struct {
 func (suite *ByNamesTestSuite) TestAllInitialized() {
 	mockClientGenerator := new(MockClientGenerator)
 	mockClientGenerator.On("KubeClient").Return(fake.NewSimpleClientset(), nil)
-	mockClientGenerator.On("IstioClient").Return(NewFakeConfigStore(), nil)
+	//mockClientGenerator.On("IstioClient").Return(NewFakeConfigStore(), nil)
 	mockClientGenerator.On("ContourClient").Return(fakeContour.NewSimpleClientset(), nil)
 
-	sources, err := ByNames(mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-ingressroute", "fake"}, minimalConfig)
+	sources, err := ByNames(mockClientGenerator, []string{"service", "ingress" /*"istio-gateway",*/, "contour-ingressroute", "fake"}, minimalConfig)
 	suite.NoError(err, "should not generate errors")
-	suite.Len(sources, 5, "should generate all five sources")
+	suite.Len(sources, 4, "should generate all four sources")
 }
 
 func (suite *ByNamesTestSuite) TestOnlyFake() {
