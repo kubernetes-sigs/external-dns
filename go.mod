@@ -55,6 +55,7 @@ require (
 	gopkg.in/yaml.v2 v2.2.8
 	istio.io/api v0.0.0-20200227124350-5ce1c9cc553f
 	istio.io/istio v0.0.0-20200227051249-587f118ac5da
+	istio.io/pkg v0.0.0-20200131182711-9ba13e0e34bb
 	k8s.io/api v0.17.2
 	k8s.io/apimachinery v0.17.2
 	k8s.io/client-go v0.17.2
@@ -69,7 +70,6 @@ replace (
 	github.com/Azure/go-autorest/autorest/azure/auth => github.com/Azure/go-autorest/autorest/azure/auth v0.3.0
 	github.com/golang/glog => github.com/kubermatic/glog-logrus v0.0.0-20180829085450-3fa5b9870d1d
 	github.com/h2non/gock => gopkg.in/h2non/gock.v1 v1.0.14
-	k8s.io/klog => github.com/mikkeloscar/knolog v0.0.0-20190326191552-80742771eb6b
 	k8s.io/api => k8s.io/api v0.16.7
 	k8s.io/api-machinery => k8s.io/api-machinery v0.16.7
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.16.7
@@ -83,6 +83,7 @@ replace (
 	k8s.io/component-base => k8s.io/component-base v0.16.7
 	k8s.io/cri-api => k8s.io/cri-api v0.16.7
 	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.16.7
+	k8s.io/klog => github.com/mikkeloscar/knolog v0.0.0-20190326191552-80742771eb6b
 	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.16.7
 	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.16.7
 	k8s.io/kube-proxy => k8s.io/kube-proxy v0.16.7

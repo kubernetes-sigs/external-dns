@@ -16,11 +16,11 @@ limitations under the License.
 
 package source
 
-/*
 import (
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -28,6 +28,10 @@ import (
 	"github.com/stretchr/testify/suite"
 	istionetworking "istio.io/api/networking/v1alpha3"
 	istiomodel "istio.io/istio/pilot/pkg/model"
+	istiocollection "istio.io/istio/pkg/config/schema/collection"
+	istiocollections "istio.io/istio/pkg/config/schema/collections"
+	istioresource "istio.io/istio/pkg/config/schema/resource"
+	"istio.io/pkg/ledger"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -38,7 +42,7 @@ import (
 // This is a compile-time validation that gatewaySource is a Source.
 var _ Source = &gatewaySource{}
 
-var gatewayType = istiomodel.Gateway.Type
+var gatewayKind = istiocollections.IstioNetworkingV1Alpha3Gateways.Resource().Kind()
 
 type GatewaySuite struct {
 	suite.Suite
@@ -1222,7 +1226,7 @@ func (c fakeGatewayConfig) Config() istiomodel.Config {
 		ConfigMeta: istiomodel.ConfigMeta{
 			Namespace:   c.namespace,
 			Name:        c.name,
-			Type:        gatewayType,
+			Type:        gatewayKind,
 			Annotations: c.annotations,
 		},
 		Spec: gw,
@@ -1232,25 +1236,35 @@ func (c fakeGatewayConfig) Config() istiomodel.Config {
 }
 
 type fakeConfigStore struct {
-	descriptor istiomodel.ConfigDescriptor
+	descriptor istiocollection.Schemas
 	configs    []*istiomodel.Config
 	sync.RWMutex
 }
 
 func NewFakeConfigStore() istiomodel.ConfigStore {
 	return &fakeConfigStore{
-		descriptor: istiomodel.ConfigDescriptor{
-			istiomodel.Gateway,
-		},
-		configs: make([]*istiomodel.Config, 0),
+		descriptor: istiocollections.Istio,
+		configs:    make([]*istiomodel.Config, 0),
 	}
 }
 
-func (f *fakeConfigStore) ConfigDescriptor() istiomodel.ConfigDescriptor {
+func (f *fakeConfigStore) Schemas() istiocollection.Schemas {
 	return f.descriptor
 }
 
-func (f *fakeConfigStore) Get(typ, name, namespace string) (config *istiomodel.Config) {
+func (f *fakeConfigStore) ConfigDescriptor() istiocollection.Schemas {
+	return f.descriptor
+}
+
+func (f *fakeConfigStore) GetLedger() ledger.Ledger {
+	return ledger.Make(time.Minute)
+}
+
+func (f *fakeConfigStore) SetLedger(led ledger.Ledger) error {
+	return errors.New("error setting ledger")
+}
+
+func (f *fakeConfigStore) Get(typ istioresource.GroupVersionKind, name, namespace string) (config *istiomodel.Config) {
 	f.RLock()
 	defer f.RUnlock()
 
@@ -1261,9 +1275,9 @@ func (f *fakeConfigStore) Get(typ, name, namespace string) (config *istiomodel.C
 	return
 }
 
-func (f *fakeConfigStore) get(typ, name, namespace string) (*istiomodel.Config, int) {
+func (f *fakeConfigStore) get(typ istioresource.GroupVersionKind, name, namespace string) (*istiomodel.Config, int) {
 	for idx, cfg := range f.configs {
-		if cfg.Type == typ && cfg.Name == name && cfg.Namespace == namespace {
+		if cfg.Type == typ.Kind && cfg.Name == name && cfg.Namespace == namespace {
 			return cfg, idx
 		}
 	}
@@ -1271,7 +1285,7 @@ func (f *fakeConfigStore) get(typ, name, namespace string) (*istiomodel.Config, 
 	return nil, -1
 }
 
-func (f *fakeConfigStore) List(typ, namespace string) (configs []istiomodel.Config, err error) {
+func (f *fakeConfigStore) List(typ istioresource.GroupVersionKind, namespace string) (configs []istiomodel.Config, err error) {
 	f.RLock()
 	defer f.RUnlock()
 
@@ -1281,7 +1295,7 @@ func (f *fakeConfigStore) List(typ, namespace string) (configs []istiomodel.Conf
 		}
 	} else {
 		for _, cfg := range f.configs {
-			if cfg.Type == typ && cfg.Namespace == namespace {
+			if cfg.Type == typ.Kind && cfg.Namespace == namespace {
 				configs = append(configs, *cfg)
 			}
 		}
@@ -1294,7 +1308,7 @@ func (f *fakeConfigStore) Create(config istiomodel.Config) (revision string, err
 	f.Lock()
 	defer f.Unlock()
 
-	if cfg, _ := f.get(config.Type, config.Name, config.Namespace); cfg != nil {
+	if cfg, _ := f.get(config.GroupVersionKind(), config.Name, config.Namespace); cfg != nil {
 		err = errors.New("config already exists")
 	} else {
 		revision = "0"
@@ -1306,11 +1320,15 @@ func (f *fakeConfigStore) Create(config istiomodel.Config) (revision string, err
 	return
 }
 
+func (f *fakeConfigStore) Version() string {
+	return "foo"
+}
+
 func (f *fakeConfigStore) Update(config istiomodel.Config) (newRevision string, err error) {
 	f.Lock()
 	defer f.Unlock()
 
-	if oldCfg, idx := f.get(config.Type, config.Name, config.Namespace); oldCfg == nil {
+	if oldCfg, idx := f.get(config.GroupVersionKind(), config.Name, config.Namespace); oldCfg == nil {
 		err = errors.New("config does not exist")
 	} else if oldRevision, e := strconv.Atoi(oldCfg.ResourceVersion); e != nil {
 		err = e
@@ -1324,7 +1342,7 @@ func (f *fakeConfigStore) Update(config istiomodel.Config) (newRevision string, 
 	return
 }
 
-func (f *fakeConfigStore) Delete(typ, name, namespace string) error {
+func (f *fakeConfigStore) Delete(typ istioresource.GroupVersionKind, name, namespace string) error {
 	f.Lock()
 	defer f.Unlock()
 
@@ -1339,4 +1357,7 @@ func (f *fakeConfigStore) Delete(typ, name, namespace string) error {
 
 	return nil
 }
-*/
+
+func (f *fakeConfigStore) GetResourceAtVersion(string, string) (string, error) {
+	panic("implement me")
+}
