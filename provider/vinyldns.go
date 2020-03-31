@@ -49,7 +49,7 @@ type vinyldnsZoneInterface interface {
 type vinyldnsProvider struct {
 	client       vinyldnsZoneInterface
 	zoneFilter   ZoneIDFilter
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 	dryRun       bool
 }
 
@@ -59,7 +59,7 @@ type vinyldnsChange struct {
 }
 
 // NewVinylDNSProvider provides support for VinylDNS records
-func NewVinylDNSProvider(domainFilter DomainFilter, zoneFilter ZoneIDFilter, dryRun bool) (Provider, error) {
+func NewVinylDNSProvider(domainFilter endpoint.DomainFilter, zoneFilter ZoneIDFilter, dryRun bool) (Provider, error) {
 	_, ok := os.LookupEnv("VINYLDNS_ACCESS_KEY")
 	if !ok {
 		return nil, fmt.Errorf("no vinyldns access key found")

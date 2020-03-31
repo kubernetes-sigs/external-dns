@@ -109,10 +109,7 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services"]
-  verbs: ["get","watch","list"]
-- apiGroups: [""]
-  resources: ["pods"]
+  resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions"] 
   resources: ["ingresses"] 

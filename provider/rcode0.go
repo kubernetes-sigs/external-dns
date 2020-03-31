@@ -34,7 +34,7 @@ import (
 type RcodeZeroProvider struct {
 	Client *rc0.Client
 
-	DomainFilter DomainFilter
+	DomainFilter endpoint.DomainFilter
 	DryRun       bool
 	TXTEncrypt   bool
 	Key          []byte
@@ -43,7 +43,7 @@ type RcodeZeroProvider struct {
 // NewRcodeZeroProvider creates a new RcodeZero Anycast DNS provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewRcodeZeroProvider(domainFilter DomainFilter, dryRun bool, txtEnc bool) (*RcodeZeroProvider, error) {
+func NewRcodeZeroProvider(domainFilter endpoint.DomainFilter, dryRun bool, txtEnc bool) (*RcodeZeroProvider, error) {
 
 	client, err := rc0.NewClient(os.Getenv("RC0_API_KEY"))
 

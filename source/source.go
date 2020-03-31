@@ -24,6 +24,8 @@ import (
 	"strings"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -208,4 +210,17 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 	}
 
 	return endpoints
+}
+
+func getLabelSelector(annotationFilter string) (labels.Selector, error) {
+	labelSelector, err := metav1.ParseToLabelSelector(annotationFilter)
+	if err != nil {
+		return nil, err
+	}
+	return metav1.LabelSelectorAsSelector(labelSelector)
+}
+
+func matchLabelSelector(selector labels.Selector, srcAnnotations map[string]string) bool {
+	annotations := labels.Set(srcAnnotations)
+	return selector.Matches(annotations)
 }

@@ -23,12 +23,12 @@ const (
 // TransIPProvider is an implementation of Provider for TransIP.
 type TransIPProvider struct {
 	client       gotransip.SOAPClient
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 	dryRun       bool
 }
 
 // NewTransIPProvider initializes a new TransIP Provider.
-func NewTransIPProvider(accountName, privateKeyFile string, domainFilter DomainFilter, dryRun bool) (*TransIPProvider, error) {
+func NewTransIPProvider(accountName, privateKeyFile string, domainFilter endpoint.DomainFilter, dryRun bool) (*TransIPProvider, error) {
 	// check given arguments
 	if accountName == "" {
 		return nil, errors.New("required --transip-account not set")

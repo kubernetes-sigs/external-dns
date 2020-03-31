@@ -247,7 +247,7 @@ func TestNewCloudFlareChangeProxiable(t *testing.T) {
 func TestCloudFlareZones(t *testing.T) {
 	provider := &CloudFlareProvider{
 		Client:       &mockCloudFlareClient{},
-		domainFilter: NewDomainFilter([]string{"zalando.to."}),
+		domainFilter: endpoint.NewDomainFilter([]string{"zalando.to."}),
 		zoneIDFilter: NewZoneIDFilter([]string{""}),
 	}
 
@@ -288,7 +288,7 @@ func TestRecords(t *testing.T) {
 func TestNewCloudFlareProvider(t *testing.T) {
 	_ = os.Setenv("CF_API_TOKEN", "abc123def")
 	_, err := NewCloudFlareProvider(
-		NewDomainFilter([]string{"ext-dns-test.zalando.to."}),
+		endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}),
 		NewZoneIDFilter([]string{""}),
 		25,
 		false,
@@ -300,7 +300,7 @@ func TestNewCloudFlareProvider(t *testing.T) {
 	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
 	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
 	_, err = NewCloudFlareProvider(
-		NewDomainFilter([]string{"ext-dns-test.zalando.to."}),
+		endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}),
 		NewZoneIDFilter([]string{""}),
 		1,
 		false,
@@ -311,7 +311,7 @@ func TestNewCloudFlareProvider(t *testing.T) {
 	_ = os.Unsetenv("CF_API_KEY")
 	_ = os.Unsetenv("CF_API_EMAIL")
 	_, err = NewCloudFlareProvider(
-		NewDomainFilter([]string{"ext-dns-test.zalando.to."}),
+		endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}),
 		NewZoneIDFilter([]string{""}),
 		50,
 		false,

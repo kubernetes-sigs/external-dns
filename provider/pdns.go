@@ -62,7 +62,7 @@ const (
 
 // PDNSConfig is comprised of the fields necessary to create a new PDNSProvider
 type PDNSConfig struct {
-	DomainFilter DomainFilter
+	DomainFilter endpoint.DomainFilter
 	DryRun       bool
 	Server       string
 	APIKey       string
@@ -142,7 +142,7 @@ type PDNSAPIClient struct {
 	dryRun       bool
 	authCtx      context.Context
 	client       *pgo.APIClient
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 }
 
 // ListZones : Method returns all enabled zones from PowerDNS

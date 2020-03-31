@@ -44,6 +44,7 @@ ExternalDNS' current release is `v0.6`. This version allows you to keep selected
 * [NS1](https://ns1.com/)
 * [TransIP](https://www.transip.eu/domain-name/)
 * [VinylDNS](https://www.vinyldns.io)
+* [OVH](https://www.ovh.com)
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` (or greater) with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -69,30 +70,31 @@ We define the following stability levels for providers:
 
 The following table clarifies the current status of the providers according to the aforementioned stability levels:
 
-| Provider | Status |
-| -------- | ------ |
-| Google Cloud DNS | Stable |
-| AWS Route 53 | Stable |
-| AWS Cloud Map | Beta |
-| AzureDNS | Beta |
-| CloudFlare | Beta
-| RcodeZero | Alpha |
-| DigitalOcean | Alpha |
-| DNSimple | Alpha |
-| Infoblox | Alpha |
-| Dyn | Alpha |
-| OpenStack Designate | Alpha |
-| PowerDNS | Alpha |
-| CoreDNS | Alpha |
-| Exoscale | Alpha |
-| Oracle Cloud Infrastructure DNS | Alpha |
-| Linode DNS | Alpha |
-| RFC2136 | Alpha |
-| NS1 | Alpha |
-| TransIP | Alpha |
-| VinylDNS | Alpha |
-| RancherDNS | Alpha |
-| Akamai FastDNS | Alpha |
+| Provider | Status | Maintainers | 
+| -------- | ------ | ----------- |
+| Google Cloud DNS | Stable | |
+| AWS Route 53 | Stable | |
+| AWS Cloud Map | Beta | |
+| AzureDNS | Beta | |
+| CloudFlare | Beta | |
+| RcodeZero | Alpha | |
+| DigitalOcean | Alpha | |
+| DNSimple | Alpha | |
+| Infoblox | Alpha | @saileshgiri |
+| Dyn | Alpha | |
+| OpenStack Designate | Alpha | |
+| PowerDNS | Alpha | |
+| CoreDNS | Alpha | |
+| Exoscale | Alpha | |
+| Oracle Cloud Infrastructure DNS | Alpha | |
+| Linode DNS | Alpha | |
+| RFC2136 | Alpha | |
+| NS1 | Alpha | |
+| TransIP | Alpha | |
+| VinylDNS | Alpha | |
+| RancherDNS | Alpha | |
+| Akamai FastDNS | Alpha | |
+| OVH | Alpha | |
 
 ## Running ExternalDNS:
 
@@ -111,6 +113,7 @@ The following tutorials are provided:
 	* [Route53](docs/tutorials/aws.md)
 		* [Same domain for public and private Route53 zones](docs/tutorials/public-private-route53.md)
 	* [Cloud Map](docs/tutorials/aws-sd.md)
+	* [Kube Ingress AWS Controller](docs/tutorials/kube-ingress-aws.md)
 * [Azure DNS](docs/tutorials/azure.md)
 * [Azure Private DNS](docs/tutorials/azure-private-dns.md)
 * [Cloudflare](docs/tutorials/cloudflare.md)
@@ -138,6 +141,7 @@ The following tutorials are provided:
 * [RFC2136](docs/tutorials/rfc2136.md)
 * [TransIP](docs/tutorials/transip.md)
 * [VinylDNS](docs/tutorials/vinyldns.md)
+* [OVH](docs/tutorials/ovh.md)
 
 ### Running Locally
 
@@ -268,6 +272,7 @@ Here's a rough outline on what is to come (subject to change):
 ### v0.6
 
 - [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller) (This could also directly become `v1.0`)
+- [x] Support for OVH
 
 ### v1.0
 

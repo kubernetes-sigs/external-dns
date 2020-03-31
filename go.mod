@@ -27,6 +27,7 @@ require (
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
 	github.com/go-resty/resty v1.8.0 // indirect
 	github.com/gobs/pretty v0.0.0-20180724170744-09732c25a95b // indirect
+	github.com/golang/sync v0.0.0-20180314180146-1d60e4601c6f
 	github.com/gophercloud/gophercloud v0.1.0
 	github.com/infobloxopen/infoblox-go-client v0.0.0-20180606155407-61dc5f9b0a65
 	github.com/linki/instrumented_http v0.2.0
@@ -35,6 +36,7 @@ require (
 	github.com/nesv/go-dynect v0.6.0
 	github.com/nic-at/rc0go v1.1.0
 	github.com/oracle/oci-go-sdk v1.8.0
+	github.com/ovh/go-ovh v0.0.0-20181109152953-ba5adb4cf014
 	github.com/pkg/errors v0.8.1
 	github.com/projectcontour/contour v1.0.0
 	github.com/prometheus/client_golang v1.1.0

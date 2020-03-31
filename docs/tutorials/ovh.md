@@ -1,41 +1,66 @@
-# Setting up ExternalDNS for Services on NS1
+# Setting up ExternalDNS for Services on OVH
 
 This tutorial describes how to setup ExternalDNS for use within a
-Kubernetes cluster using NS1 DNS.
+Kubernetes cluster using OVH DNS.
 
-Make sure to use **>=0.5** version of ExternalDNS for this tutorial.
+Make sure to use **>=0.6** version of ExternalDNS for this tutorial.
 
-## Creating a zone with NS1 DNS
+## Creating a zone with OVH DNS
 
-If you are new to NS1, we recommend you first read the following
+If you are new to OVH, we recommend you first read the following
 instructions for creating a zone.
 
-[Creating a zone using the NS1
-portal](https://ns1.com/knowledgebase/creating-a-zone)
+[Creating a zone using the OVH manager](https://docs.ovh.com/gb/en/domains/create_a_dns_zone_for_a_domain_which_is_not_registered_at_ovh/)
 
-[Creating a zone using the NS1
-API](https://ns1.com/api#put-create-a-new-dns-zone)
+[Creating a zone using the OVH API](https://api.ovh.com/console/)
 
-## Creating NS1 Credentials
+## Creating OVH Credentials
 
-All NS1 products are API-first, meaning everything that can be done on
-the portal---including managing zones and records, data sources and
-feeds, and account settings and users---can be done via API.
+You first need to create an OVH application.
 
-The NS1 API is a standard REST API with JSON responses. The environment
-var `NS1_APIKEY` will be needed to run ExternalDNS with NS1.
+Using the [OVH documentation](https://docs.ovh.com/gb/en/customer/first-steps-with-ovh-api/#creation-of-your-application-keys) you will have your `Application key` and `Application secret`
 
-### To add or delete an API key
+And you will need to generate your consumer key, here the permissions needed :
+- GET on `/domain/zone`
+- GET on `/domain/zone/*/record`
+- GET on `/domain/zone/*/record/*`
+- POST on `/domain/zone/*/record`
+- DELETE on `/domain/zone/*/record/*`
+- POST on `/domain/zone/*/refresh`
 
-1.  Log into the NS1 portal at [my.nsone.net](http://my.nsone.net).
+You can use the following `curl` request to generate & validated your `Consumer key`
 
-2.  Click your username in the upper-right corner, and navigate to **Account Settings** \> **Users & Teams**.
-
-3.  Navigate to the _API Keys_ tab, and click **Add Key**.
-
-4.  Enter the name of the application and modify permissions and settings as desired. Once complete, click **Create Key**. The new API key appears in the list.
-
-    Note: Set the permissions for your API keys just as you would for a user or team associated with your organization's NS1 account. For more information, refer to the article [Creating and Managing API Keys](https://help.ns1.com/hc/en-us/articles/360026140094-Creating-managing-users) in the NS1 Knowledge Base.
+```bash
+curl -XPOST -H "X-Ovh-Application: <ApplicationKey>" -H "Content-type: application/json" https://eu.api.ovh.com/1.0/auth/credential -d '{
+  "accessRules": [
+    {
+      "method": "GET",
+      "path": "/domain/zone"
+    },
+    {
+      "method": "GET",
+      "path": "/domain/zone/*/record"
+    },
+    {
+      "method": "GET",
+      "path": "/domain/zone/*/record/*"
+    },
+    {
+      "method": "POST",
+      "path": "/domain/zone/*/record"
+    },
+    {
+      "method": "DELETE",
+      "path": "/domain/zone/*/record/*"
+    },
+    {
+      "method": "POST",
+      "path": "/domain/zone/*/refresh"
+    }
+  ],
+  "redirection":"https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/ovh.md#creating-ovh-credentials"
+}'
+```
 
 ## Deploy ExternalDNS
 
@@ -65,10 +90,14 @@ spec:
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
-        - --provider=ns1
+        - --provider=ovh
         env:
-        - name: NS1_APIKEY
-          value: "YOUR_NS1_API_KEY"
+        - name: OVH_APPLICATION_KEY
+          value: "YOUR_OVH_APPLICATION_KEY"
+        - name: OVH_APPLICATION_SECRET
+          value: "YOUR_OVH_APPLICATION_SECRET"
+        - name: OVH_CONSUMER_KEY
+          value: "YOUR_OVH_CONSUMER_KEY_AFTER_VALIDATED_LINK"
 ```
 
 ### Manifest (for clusters with RBAC enabled)
@@ -85,10 +114,13 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services","endpoints","pods"]
+  resources: ["services"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions"] 
-  resources: ["ingresses"] 
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["extensions"]
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
@@ -129,10 +161,14 @@ spec:
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
-        - --provider=ns1
+        - --provider=ovh
         env:
-        - name: NS1_APIKEY
-          value: "YOUR_NS1_API_KEY"
+        - name: OVH_APPLICATION_KEY
+          value: "YOUR_OVH_APPLICATION_KEY"
+        - name: OVH_APPLICATION_SECRET
+          value: "YOUR_OVH_APPLICATION_SECRET"
+        - name: OVH_CONSUMER_KEY
+          value: "YOUR_OVH_CONSUMER_KEY_AFTER_VALIDATED_LINK"
 ```
 
 ## Deploying an Nginx Service
@@ -178,7 +214,7 @@ spec:
 
 **A note about annotations**
 
-Verify that the annotation on the service uses the same hostname as the NS1 DNS zone created above. The annotation may also be a subdomain of the DNS zone (e.g. 'www.example.com').
+Verify that the annotation on the service uses the same hostname as the OVH DNS zone created above. The annotation may also be a subdomain of the DNS zone (e.g. 'www.example.com').
 
 The TTL annotation can be used to configure the TTL on DNS records managed by ExternalDNS and is optional. If this annotation is not set, the TTL on records managed by ExternalDNS will default to 10.
 
@@ -190,11 +226,11 @@ ExternalDNS uses the hostname annotation to determine which services should be r
 $ kubectl create -f nginx.yaml
 ```
 
-Depending on where you run your service, it may take some time for your cloud provider to create an external IP for the service. Once an external IP is assigned, ExternalDNS detects the new service IP address and synchronizes the NS1 DNS records.
+Depending on where you run your service, it may take some time for your cloud provider to create an external IP for the service. Once an external IP is assigned, ExternalDNS detects the new service IP address and synchronizes the OVH DNS records.
 
-## Verifying NS1 DNS records
+## Verifying OVH DNS records
 
-Use the NS1 portal or API to verify that the A record for your domain shows the external IP address of the services.
+Use the OVH manager or API to verify that the A record for your domain shows the external IP address of the services.
 
 ## Cleanup
 

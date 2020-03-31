@@ -180,7 +180,7 @@ func (s *AWSSDClientStub) UpdateService(input *sd.UpdateServiceInput) (*sd.Updat
 	return &sd.UpdateServiceOutput{}, nil
 }
 
-func newTestAWSSDProvider(api AWSSDClient, domainFilter DomainFilter, namespaceTypeFilter string) *AWSSDProvider {
+func newTestAWSSDProvider(api AWSSDClient, domainFilter endpoint.DomainFilter, namespaceTypeFilter string) *AWSSDProvider {
 	return &AWSSDProvider{
 		client:              api,
 		namespaceFilter:     domainFilter,
@@ -287,7 +287,7 @@ func TestAWSSDProvider_Records(t *testing.T) {
 		instances:  instances,
 	}
 
-	provider := newTestAWSSDProvider(api, NewDomainFilter([]string{}), "")
+	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "")
 
 	endpoints, _ := provider.Records(context.Background())
 
@@ -315,7 +315,7 @@ func TestAWSSDProvider_ApplyChanges(t *testing.T) {
 		{DNSName: "service3.private.com", Targets: endpoint.Targets{"cname.target.com"}, RecordType: endpoint.RecordTypeCNAME, RecordTTL: 100},
 	}
 
-	provider := newTestAWSSDProvider(api, NewDomainFilter([]string{}), "")
+	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "")
 
 	ctx := context.Background()
 
@@ -366,14 +366,14 @@ func TestAWSSDProvider_ListNamespaces(t *testing.T) {
 
 	for _, tc := range []struct {
 		msg                 string
-		domainFilter        DomainFilter
+		domainFilter        endpoint.DomainFilter
 		namespaceTypeFilter string
 		expectedNamespaces  []*sd.NamespaceSummary
 	}{
-		{"public filter", NewDomainFilter([]string{}), "public", []*sd.NamespaceSummary{namespaceToNamespaceSummary(namespaces["public"])}},
-		{"private filter", NewDomainFilter([]string{}), "private", []*sd.NamespaceSummary{namespaceToNamespaceSummary(namespaces["private"])}},
-		{"domain filter", NewDomainFilter([]string{"public.com"}), "", []*sd.NamespaceSummary{namespaceToNamespaceSummary(namespaces["public"])}},
-		{"non-existing domain", NewDomainFilter([]string{"xxx.com"}), "", []*sd.NamespaceSummary{}},
+		{"public filter", endpoint.NewDomainFilter([]string{}), "public", []*sd.NamespaceSummary{namespaceToNamespaceSummary(namespaces["public"])}},
+		{"private filter", endpoint.NewDomainFilter([]string{}), "private", []*sd.NamespaceSummary{namespaceToNamespaceSummary(namespaces["private"])}},
+		{"domain filter", endpoint.NewDomainFilter([]string{"public.com"}), "", []*sd.NamespaceSummary{namespaceToNamespaceSummary(namespaces["public"])}},
+		{"non-existing domain", endpoint.NewDomainFilter([]string{"xxx.com"}), "", []*sd.NamespaceSummary{}},
 	} {
 		provider := newTestAWSSDProvider(api, tc.domainFilter, tc.namespaceTypeFilter)
 
@@ -438,7 +438,7 @@ func TestAWSSDProvider_ListServicesByNamespace(t *testing.T) {
 	}{
 		{map[string]*sd.Service{"service1": services["private"]["srv1"], "service2": services["private"]["srv2"]}},
 	} {
-		provider := newTestAWSSDProvider(api, NewDomainFilter([]string{}), "")
+		provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "")
 
 		result, err := provider.ListServicesByNamespaceID(namespaces["private"].Id)
 		require.NoError(t, err)
@@ -494,7 +494,7 @@ func TestAWSSDProvider_ListInstancesByService(t *testing.T) {
 		instances:  instances,
 	}
 
-	provider := newTestAWSSDProvider(api, NewDomainFilter([]string{}), "")
+	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "")
 
 	result, err := provider.ListInstancesByServiceID(services["private"]["srv1"].Id)
 	require.NoError(t, err)
@@ -531,7 +531,7 @@ func TestAWSSDProvider_CreateService(t *testing.T) {
 
 	expectedServices := make(map[string]*sd.Service)
 
-	provider := newTestAWSSDProvider(api, NewDomainFilter([]string{}), "")
+	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "")
 
 	// A type
 	provider.CreateService(aws.String("private"), aws.String("A-srv"), &endpoint.Endpoint{
@@ -635,7 +635,7 @@ func TestAWSSDProvider_UpdateService(t *testing.T) {
 		services:   services,
 	}
 
-	provider := newTestAWSSDProvider(api, NewDomainFilter([]string{}), "")
+	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "")
 
 	// update service with different TTL
 	provider.UpdateService(services["private"]["srv1"], &endpoint.Endpoint{
@@ -702,7 +702,7 @@ func TestAWSSDProvider_RegisterInstance(t *testing.T) {
 		instances:  make(map[string]map[string]*sd.Instance),
 	}
 
-	provider := newTestAWSSDProvider(api, NewDomainFilter([]string{}), "")
+	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "")
 
 	expectedInstances := make(map[string]*sd.Instance)
 
@@ -819,7 +819,7 @@ func TestAWSSDProvider_DeregisterInstance(t *testing.T) {
 		instances:  instances,
 	}
 
-	provider := newTestAWSSDProvider(api, NewDomainFilter([]string{}), "")
+	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "")
 
 	provider.DeregisterInstance(services["private"]["srv1"], endpoint.NewEndpoint("srv1.private.com.", endpoint.RecordTypeA, "1.2.3.4"))
 

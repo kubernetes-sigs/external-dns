@@ -30,6 +30,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"sigs.k8s.io/external-dns/controller"
+	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
 	"sigs.k8s.io/external-dns/plan"
@@ -71,25 +72,28 @@ func main() {
 
 	// Create a source.Config from the flags passed by the user.
 	sourceCfg := &source.Config{
-		Namespace:                   cfg.Namespace,
-		AnnotationFilter:            cfg.AnnotationFilter,
-		FQDNTemplate:                cfg.FQDNTemplate,
-		CombineFQDNAndAnnotation:    cfg.CombineFQDNAndAnnotation,
-		IgnoreHostnameAnnotation:    cfg.IgnoreHostnameAnnotation,
-		Compatibility:               cfg.Compatibility,
-		PublishInternal:             cfg.PublishInternal,
-		PublishHostIP:               cfg.PublishHostIP,
-		ConnectorServer:             cfg.ConnectorSourceServer,
-		CRDSourceAPIVersion:         cfg.CRDSourceAPIVersion,
-		CRDSourceKind:               cfg.CRDSourceKind,
-		KubeConfig:                  cfg.KubeConfig,
-		KubeMaster:                  cfg.Master,
-		ServiceTypeFilter:           cfg.ServiceTypeFilter,
-		IstioIngressGatewayServices: cfg.IstioIngressGatewayServices,
-		CFAPIEndpoint:               cfg.CFAPIEndpoint,
-		CFUsername:                  cfg.CFUsername,
-		CFPassword:                  cfg.CFPassword,
-		ContourLoadBalancerService:  cfg.ContourLoadBalancerService,
+		Namespace:                      cfg.Namespace,
+		AnnotationFilter:               cfg.AnnotationFilter,
+		FQDNTemplate:                   cfg.FQDNTemplate,
+		CombineFQDNAndAnnotation:       cfg.CombineFQDNAndAnnotation,
+		IgnoreHostnameAnnotation:       cfg.IgnoreHostnameAnnotation,
+		Compatibility:                  cfg.Compatibility,
+		PublishInternal:                cfg.PublishInternal,
+		PublishHostIP:                  cfg.PublishHostIP,
+		AlwaysPublishNotReadyAddresses: cfg.AlwaysPublishNotReadyAddresses,
+		ConnectorServer:                cfg.ConnectorSourceServer,
+		CRDSourceAPIVersion:            cfg.CRDSourceAPIVersion,
+		CRDSourceKind:                  cfg.CRDSourceKind,
+		KubeConfig:                     cfg.KubeConfig,
+		KubeMaster:                     cfg.Master,
+		ServiceTypeFilter:              cfg.ServiceTypeFilter,
+		IstioIngressGatewayServices:    cfg.IstioIngressGatewayServices,
+		CFAPIEndpoint:                  cfg.CFAPIEndpoint,
+		CFUsername:                     cfg.CFUsername,
+		CFPassword:                     cfg.CFPassword,
+		ContourLoadBalancerService:     cfg.ContourLoadBalancerService,
+		SkipperRouteGroupVersion:       cfg.SkipperRouteGroupVersion,
+		RequestTimeout:                 cfg.RequestTimeout,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
@@ -111,7 +115,7 @@ func main() {
 	// Combine multiple sources into a single, deduplicated source.
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
 
-	domainFilter := provider.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
+	domainFilter := endpoint.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
 	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
@@ -169,6 +173,8 @@ func main() {
 		p, err = provider.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.DryRun)
 	case "digitalocean":
 		p, err = provider.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun)
+	case "ovh":
+		p, err = provider.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.DryRun)
 	case "linode":
 		p, err = provider.NewLinodeProvider(domainFilter, cfg.DryRun, externaldns.Version)
 	case "dnsimple":
@@ -282,10 +288,11 @@ func main() {
 	}
 
 	ctrl := controller.Controller{
-		Source:   endpointsSource,
-		Registry: r,
-		Policy:   policy,
-		Interval: cfg.Interval,
+		Source:       endpointsSource,
+		Registry:     r,
+		Policy:       policy,
+		Interval:     cfg.Interval,
+		DomainFilter: domainFilter,
 	}
 
 	if cfg.UpdateEvents {
