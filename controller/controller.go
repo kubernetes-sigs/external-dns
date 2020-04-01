@@ -63,6 +63,14 @@ var (
 			Help:      "Number of Endpoints in the registry",
 		},
 	)
+	lastSyncTimestamp = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "controller",
+			Name:      "last_sync_timestamp_seconds",
+			Help:      "Timestamp of last successful sync with the DNS provider",
+		},
+	)
 	deprecatedRegistryErrors = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Subsystem: "registry",
@@ -84,6 +92,7 @@ func init() {
 	prometheus.MustRegister(sourceErrorsTotal)
 	prometheus.MustRegister(sourceEndpointsTotal)
 	prometheus.MustRegister(registryEndpointsTotal)
+	prometheus.MustRegister(lastSyncTimestamp)
 	prometheus.MustRegister(deprecatedRegistryErrors)
 	prometheus.MustRegister(deprecatedSourceErrors)
 }
@@ -140,6 +149,8 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		deprecatedRegistryErrors.Inc()
 		return err
 	}
+
+	lastSyncTimestamp.SetToCurrentTime()
 	return nil
 }
 
