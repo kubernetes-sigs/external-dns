@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"regexp"
 
 	log "github.com/sirupsen/logrus"
 
@@ -43,12 +44,16 @@ type TXTRegistry struct {
 }
 
 // NewTXTRegistry returns new TXTRegistry object
-func NewTXTRegistry(provider provider.Provider, txtPrefix, ownerID string, cacheInterval time.Duration) (*TXTRegistry, error) {
+func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
 
-	mapper := newPrefixNameMapper(txtPrefix)
+	if len(txtPrefix) > 0 && len(txtSuffix) > 0 {
+		return nil, errors.New("txt-prefix and txt-suffix are mutual exclusive")
+	}
+
+	mapper := newaffixNameMapper(txtPrefix, txtSuffix)
 
 	return &TXTRegistry{
 		provider:      provider,
@@ -201,26 +206,50 @@ type nameMapper interface {
 	toTXTName(string) string
 }
 
-type prefixNameMapper struct {
+type affixNameMapper struct {
 	prefix string
+	suffix string
 }
 
-var _ nameMapper = prefixNameMapper{}
+var _ nameMapper = affixNameMapper{}
 
-func newPrefixNameMapper(prefix string) prefixNameMapper {
-	return prefixNameMapper{prefix: strings.ToLower(prefix)}
+func newaffixNameMapper(prefix string, suffix string) affixNameMapper {
+	return affixNameMapper{prefix: strings.ToLower(prefix), suffix: strings.ToLower(suffix)}
 }
 
-func (pr prefixNameMapper) toEndpointName(txtDNSName string) string {
+/* func (pr affixNameMapper) toEndpointName(txtDNSName string) string {
 	lowerDNSName := strings.ToLower(txtDNSName)
-	if strings.HasPrefix(lowerDNSName, pr.prefix) {
+	regex := regexp.MustCompile(`\.`)
+    DNSName := regex.Split(lowerDNSName, 2)
+	if (strings.HasPrefix(DNSName[0], pr.prefix) && strings.HasSuffix(DNSName[0], pr.suffix)) {
+		DNSName[0] = strings.TrimPrefix(DNSName[0], pr.prefix)
+		DNSName[0] = strings.TrimSuffix(DNSName[0], pr.suffix)
+		return DNSName[0] + "." + DNSName[1]
+	}
+	return ""
+}*/
+
+func (pr affixNameMapper) toEndpointName(txtDNSName string) string {
+	lowerDNSName := strings.ToLower(txtDNSName)
+	if strings.HasPrefix(lowerDNSName, pr.prefix) && len(pr.suffix) == 0 {
 		return strings.TrimPrefix(lowerDNSName, pr.prefix)
+	}
+
+	if len(pr.suffix) > 0 {
+		regex := regexp.MustCompile(`\.`)
+		DNSName := regex.Split(lowerDNSName, 2)
+		if strings.HasSuffix(DNSName[0], pr.suffix) {
+			return strings.TrimSuffix(DNSName[0], pr.suffix) + "." + DNSName[1]
+		}	
 	}
 	return ""
 }
 
-func (pr prefixNameMapper) toTXTName(endpointDNSName string) string {
-	return pr.prefix + endpointDNSName
+
+func (pr affixNameMapper) toTXTName(endpointDNSName string) string {
+	regex := regexp.MustCompile(`\.`)
+    DNSName := regex.Split(endpointDNSName, 2)
+	return pr.prefix + DNSName[0] + pr.suffix + "." + DNSName[1]
 }
 
 func (im *TXTRegistry) addToCache(ep *endpoint.Endpoint) {
