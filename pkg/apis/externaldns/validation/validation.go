@@ -91,5 +91,10 @@ func ValidateConfig(cfg *externaldns.Config) error {
 	if cfg.IgnoreHostnameAnnotation && cfg.FQDNTemplate == "" {
 		return errors.New("FQDN Template must be set if ignoring annotations")
 	}
+
+	if len(cfg.TXTPrefix) > 0 && len(cfg.TXTSuffix) > 0 {
+		return errors.New("txt-prefix and txt-suffix are mutual exclusive")
+	}
+
 	return nil
 }
