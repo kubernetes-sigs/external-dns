@@ -1,3 +1,11 @@
+## v0.7.1 - 2020-04-01
+
+  - Prometheus metric: timestamp of last successful sync with the DNS provider (#1480) @njuettner
+  - Bump alpine base image to 3.11.5 (#1477) @Annegies
+  - Docs: Add first maintainers in list (#1472) @Raffo
+  - Fix DomainFilter type in OVH provider (#1469) @ytsarev
+  - New provider: OVH (#1439) @Hugome
+
 ## v0.7.0 - 2020-03-10
 
   - New source: Add support for Skipper's RouteGroup CRD (#1444) @szuecs
