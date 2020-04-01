@@ -108,6 +108,9 @@ func NewOcpRouteSource(
 	}, nil
 }
 
+func (ors *ocpRouteSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+}
+
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all OpenShift Route resources on all namespaces
 func (ors *ocpRouteSource) Endpoints() ([]*endpoint.Endpoint, error) {
