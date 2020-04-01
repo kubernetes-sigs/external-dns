@@ -173,7 +173,7 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routeapi.Route) ([]*e
 	var buf bytes.Buffer
 	err := ors.fqdnTemplate.Execute(&buf, ocpRoute)
 	if err != nil {
-		return nil, fmt.Errorf("failed to apply template on OpenShift Route #{route.String()}: #{err}")
+		return nil, fmt.Errorf("failed to apply template on OpenShift Route %s: %s", ocpRoute.Name, err)
 	}
 
 	hostnames := buf.String()
@@ -233,7 +233,7 @@ func (ors *ocpRouteSource) filterByAnnotations(ocpRoutes []*routeapi.Route) ([]*
 
 func (ors *ocpRouteSource) setResourceLabel(ocpRoute *routeapi.Route, endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
-		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("route/${ocpRoute.Namespace}/${ocpRoute.Name}")
+		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("route/%s/%s", ocpRoute.Namespace, ocpRoute.Name)
 	}
 }
 
