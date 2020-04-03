@@ -29,9 +29,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"go.etcd.io/etcd/clientv3"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"

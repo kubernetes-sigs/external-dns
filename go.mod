@@ -18,7 +18,6 @@ require (
 	github.com/aws/aws-sdk-go v1.27.4
 	github.com/cloudflare/cloudflare-go v0.10.1
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
-	github.com/coreos/etcd v3.3.15+incompatible
 	github.com/denverdino/aliyungo v0.0.0-20180815121905-69560d9530f5
 	github.com/digitalocean/godo v1.19.0
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
@@ -40,7 +39,7 @@ require (
 	github.com/oracle/oci-go-sdk v1.8.0
 	github.com/ovh/go-ovh v0.0.0-20181109152953-ba5adb4cf014
 	github.com/pkg/errors v0.8.1
-	github.com/prometheus/client_golang v0.9.3
+	github.com/prometheus/client_golang v1.0.0
 	github.com/sanyu/dynectsoap v0.0.0-20181203081243-b83de5edc4e0
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/sirupsen/logrus v1.4.2
@@ -49,6 +48,7 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/transip/gotransip v5.8.2+incompatible
 	github.com/vinyldns/go-vinyldns v0.0.0-20190611170422-7119fe55ed92
+	go.etcd.io/etcd v0.5.0-alpha.5.0.20200401174654-e694b7bb0875
 	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	google.golang.org/api v0.9.0
