@@ -18,14 +18,17 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 type rfc2136Stub struct {
@@ -43,14 +46,8 @@ func newStub() *rfc2136Stub {
 }
 
 func (r *rfc2136Stub) SendMessage(msg *dns.Msg) error {
-	const searchPattern = "AUTHORITY SECTION:"
-
-	data := msg.String()
-	log.Info(data)
-
-	authoritySectionOffset := strings.Index(data, searchPattern)
-	lines := strings.Split(strings.TrimSpace(data[authoritySectionOffset+len(searchPattern):]), "\n")
-
+	log.Info(msg.String())
+	lines := extractAuthoritySectionFromMessage(msg)
 	for _, line := range lines {
 		// break at first empty line
 		if len(strings.TrimSpace(line)) == 0 {
@@ -97,7 +94,13 @@ func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, a string) (env chan *dns.Envelo
 }
 
 func createRfc2136StubProvider(stub *rfc2136Stub) (Provider, error) {
-	return NewRfc2136Provider("", 0, "", false, "key", "secret", "hmac-sha512", true, DomainFilter{}, false, stub)
+	return NewRfc2136Provider("", 0, "", false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, stub)
+}
+
+func extractAuthoritySectionFromMessage(msg fmt.Stringer) []string {
+	const searchPattern = "AUTHORITY SECTION:"
+	authoritySectionOffset := strings.Index(msg.String(), searchPattern)
+	return strings.Split(strings.TrimSpace(msg.String()[authoritySectionOffset+len(searchPattern):]), "\n")
 }
 
 // TestRfc2136GetRecordsMultipleTargets simulates a single record with multiple targets.
@@ -112,7 +115,7 @@ func TestRfc2136GetRecordsMultipleTargets(t *testing.T) {
 	provider, err := createRfc2136StubProvider(stub)
 	assert.NoError(t, err)
 
-	recs, err := provider.Records()
+	recs, err := provider.Records(context.Background())
 	assert.NoError(t, err)
 
 	assert.Equal(t, 1, len(recs), "expected single record")
@@ -141,7 +144,7 @@ func TestRfc2136GetRecords(t *testing.T) {
 	provider, err := createRfc2136StubProvider(stub)
 	assert.NoError(t, err)
 
-	recs, err := provider.Records()
+	recs, err := provider.Records(context.Background())
 	assert.NoError(t, err)
 
 	assert.Equal(t, 6, len(recs))
@@ -161,6 +164,7 @@ func TestRfc2136ApplyChanges(t *testing.T) {
 				DNSName:    "v1.foo.com",
 				RecordType: "A",
 				Targets:    []string{"1.2.3.4"},
+				RecordTTL:  endpoint.TTL(400),
 			},
 			{
 				DNSName:    "v1.foobar.com",
@@ -195,5 +199,50 @@ func TestRfc2136ApplyChanges(t *testing.T) {
 	assert.Equal(t, 2, len(stub.updateMsgs))
 	assert.True(t, strings.Contains(stub.updateMsgs[0].String(), "v2.foo.com"))
 	assert.True(t, strings.Contains(stub.updateMsgs[1].String(), "v2.foobar.com"))
+
+}
+
+func TestRfc2136ApplyChangesWithDifferentTTLs(t *testing.T) {
+	stub := newStub()
+
+	provider, err := createRfc2136StubProvider(stub)
+	assert.NoError(t, err)
+
+	p := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			{
+				DNSName:    "v1.foo.com",
+				RecordType: "A",
+				Targets:    []string{"2.1.1.1"},
+				RecordTTL:  endpoint.TTL(400),
+			},
+			{
+				DNSName:    "v2.foo.com",
+				RecordType: "A",
+				Targets:    []string{"3.2.2.2"},
+				RecordTTL:  endpoint.TTL(200),
+			},
+			{
+				DNSName:    "v3.foo.com",
+				RecordType: "A",
+				Targets:    []string{"4.3.3.3"},
+			},
+		},
+	}
+
+	err = provider.ApplyChanges(context.Background(), p)
+	assert.NoError(t, err)
+
+	createRecords := extractAuthoritySectionFromMessage(stub.createMsgs[0])
+	assert.Equal(t, 3, len(createRecords))
+	assert.True(t, strings.Contains(createRecords[0], "v1.foo.com"))
+	assert.True(t, strings.Contains(createRecords[0], "2.1.1.1"))
+	assert.True(t, strings.Contains(createRecords[0], "400"))
+	assert.True(t, strings.Contains(createRecords[1], "v2.foo.com"))
+	assert.True(t, strings.Contains(createRecords[1], "3.2.2.2"))
+	assert.True(t, strings.Contains(createRecords[1], "300"))
+	assert.True(t, strings.Contains(createRecords[2], "v3.foo.com"))
+	assert.True(t, strings.Contains(createRecords[2], "4.3.3.3"))
+	assert.True(t, strings.Contains(createRecords[2], "300"))
 
 }

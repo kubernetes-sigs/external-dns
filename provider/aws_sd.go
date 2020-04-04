@@ -31,11 +31,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	sd "github.com/aws/aws-sdk-go/service/servicediscovery"
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/pkg/apis/externaldns"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -57,7 +58,7 @@ var (
 	sdNlbHostnameRegex = regexp.MustCompile(`.+\.elb\.[^.]+\.amazonaws\.com$`)
 )
 
-// AWSSDClient is the subset of the AWS Route53 Auto Naming API that we actually use. Add methods as required.
+// AWSSDClient is the subset of the AWS Cloud Map API that we actually use. Add methods as required.
 // Signatures must match exactly. Taken from https://github.com/aws/aws-sdk-go/blob/master/service/servicediscovery/api.go
 type AWSSDClient interface {
 	CreateService(input *sd.CreateServiceInput) (*sd.CreateServiceOutput, error)
@@ -70,18 +71,18 @@ type AWSSDClient interface {
 	UpdateService(input *sd.UpdateServiceInput) (*sd.UpdateServiceOutput, error)
 }
 
-// AWSSDProvider is an implementation of Provider for AWS Route53 Auto Naming.
+// AWSSDProvider is an implementation of Provider for AWS Cloud Map.
 type AWSSDProvider struct {
 	client AWSSDClient
 	dryRun bool
 	// only consider namespaces ending in this suffix
-	namespaceFilter DomainFilter
+	namespaceFilter endpoint.DomainFilter
 	// filter namespace by type (private or public)
 	namespaceTypeFilter *sd.NamespaceFilter
 }
 
-// NewAWSSDProvider initializes a new AWS Route53 Auto Naming based Provider.
-func NewAWSSDProvider(domainFilter DomainFilter, namespaceType string, assumeRole string, dryRun bool) (*AWSSDProvider, error) {
+// NewAWSSDProvider initializes a new AWS Cloud Map based Provider.
+func NewAWSSDProvider(domainFilter endpoint.DomainFilter, namespaceType string, assumeRole string, dryRun bool) (*AWSSDProvider, error) {
 	config := aws.NewConfig()
 
 	config = config.WithHTTPClient(
@@ -137,7 +138,7 @@ func newSdNamespaceFilter(namespaceTypeConfig string) *sd.NamespaceFilter {
 }
 
 // Records returns list of all endpoints.
-func (p *AWSSDProvider) Records() (endpoints []*endpoint.Endpoint, err error) {
+func (p *AWSSDProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, err error) {
 	namespaces, err := p.ListNamespaces()
 	if err != nil {
 		return nil, err
@@ -282,14 +283,12 @@ func (p *AWSSDProvider) submitCreates(namespaces []*sd.NamespaceSummary, changes
 				}
 				// update local list of services
 				services[*srv.Name] = srv
-			} else {
+			} else if (ch.RecordTTL.IsConfigured() && *srv.DnsConfig.DnsRecords[0].TTL != int64(ch.RecordTTL)) ||
+				aws.StringValue(srv.Description) != ch.Labels[endpoint.AWSSDDescriptionLabel] {
 				// update service when TTL or Description differ
-				if (ch.RecordTTL.IsConfigured() && *srv.DnsConfig.DnsRecords[0].TTL != int64(ch.RecordTTL)) ||
-					aws.StringValue(srv.Description) != ch.Labels[endpoint.AWSSDDescriptionLabel] {
-					err = p.UpdateService(srv, ch)
-					if err != nil {
-						return err
-					}
+				err = p.UpdateService(srv, ch)
+				if err != nil {
+					return err
 				}
 			}
 
@@ -441,13 +440,13 @@ func (p *AWSSDProvider) CreateService(namespaceID *string, srvName *string, ep *
 			Name:        srvName,
 			Description: aws.String(ep.Labels[endpoint.AWSSDDescriptionLabel]),
 			DnsConfig: &sd.DnsConfig{
-				NamespaceId:   namespaceID,
 				RoutingPolicy: aws.String(routingPolicy),
 				DnsRecords: []*sd.DnsRecord{{
 					Type: aws.String(srvType),
 					TTL:  aws.Int64(ttl),
 				}},
 			},
+			NamespaceId: namespaceID,
 		})
 		if err != nil {
 			return nil, err

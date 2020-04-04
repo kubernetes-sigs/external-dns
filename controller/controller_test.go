@@ -21,12 +21,13 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+	"time"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/internal/testutils"
-	"github.com/kubernetes-sigs/external-dns/plan"
-	"github.com/kubernetes-sigs/external-dns/provider"
-	"github.com/kubernetes-sigs/external-dns/registry"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/registry"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,7 +40,7 @@ type mockProvider struct {
 }
 
 // Records returns the desired mock endpoints.
-func (p *mockProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p *mockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return p.RecordsStore, nil
 }
 
@@ -146,8 +147,49 @@ func TestRunOnce(t *testing.T) {
 		Policy:   &plan.SyncPolicy{},
 	}
 
-	assert.NoError(t, ctrl.RunOnce())
+	assert.NoError(t, ctrl.RunOnce(context.Background()))
 
 	// Validate that the mock source was called.
 	source.AssertExpectations(t)
+}
+
+// TestSourceEventHandler tests that the Controller can use a Source's registered handler as a callback.
+func TestSourceEventHandler(t *testing.T) {
+	source := new(testutils.MockSource)
+
+	handlerCh := make(chan bool)
+	timeoutCh := make(chan bool, 1)
+	stopChan := make(chan struct{}, 1)
+
+	ctrl := &Controller{
+		Source:   source,
+		Registry: nil,
+		Policy:   &plan.SyncPolicy{},
+	}
+
+	// Define and register a simple handler that sends a message to a channel to show it was called.
+	handler := func() error {
+		handlerCh <- true
+		return nil
+	}
+	// Example of preventing handler from being called more than once every 5 seconds.
+	ctrl.Source.AddEventHandler(handler, stopChan, 5*time.Second)
+
+	// Send timeout message after 10 seconds to fail test if handler is not called.
+	go func() {
+		time.Sleep(10 * time.Second)
+		timeoutCh <- true
+	}()
+
+	// Wait until we either receive a message from handlerCh or timeoutCh channel after 10 seconds.
+	select {
+	case msg := <-handlerCh:
+		assert.True(t, msg)
+	case <-timeoutCh:
+		assert.Fail(t, "timed out waiting for event handler to be called")
+	}
+
+	close(stopChan)
+	close(handlerCh)
+	close(timeoutCh)
 }

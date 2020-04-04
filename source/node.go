@@ -33,7 +33,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 type nodeSource struct {
@@ -78,7 +78,7 @@ func NewNodeSource(kubeClient kubernetes.Interface, annotationFilter, fqdnTempla
 
 	// wait for the local cache to be populated.
 	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
-		return nodeInformer.Informer().HasSynced() == true, nil
+		return nodeInformer.Informer().HasSynced(), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to sync cache: %v", err)
@@ -167,12 +167,15 @@ func (ns *nodeSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpointsSlice, nil
 }
 
+func (ns *nodeSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+}
+
 // nodeAddress returns node's externalIP and if that's not found, node's internalIP
 // basically what k8s.io/kubernetes/pkg/util/node.GetPreferredNodeAddress does
 func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 	addresses := map[v1.NodeAddressType][]string{
-		v1.NodeExternalIP: []string{},
-		v1.NodeInternalIP: []string{},
+		v1.NodeExternalIP: {},
+		v1.NodeInternalIP: {},
 	}
 
 	for _, addr := range node.Status.Addresses {

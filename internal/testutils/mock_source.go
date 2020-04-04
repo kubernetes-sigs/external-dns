@@ -17,9 +17,10 @@ limitations under the License.
 package testutils
 
 import (
-	"github.com/stretchr/testify/mock"
+	"time"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
+	"github.com/stretchr/testify/mock"
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // MockSource returns mock endpoints.
@@ -37,4 +38,24 @@ func (m *MockSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	}
 
 	return endpoints.([]*endpoint.Endpoint), args.Error(1)
+}
+
+// AddEventHandler adds an event handler function that's called when sources that support such a thing have changed.
+func (m *MockSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+	// Execute callback handler no more than once per minInterval, until a message on stopChan is received.
+	go func() {
+		var lastCallbackTime time.Time
+		for {
+			select {
+			case <-stopChan:
+				return
+			default:
+				now := time.Now()
+				if now.After(lastCallbackTime.Add(minInterval)) {
+					handler()
+					lastCallbackTime = time.Now()
+				}
+			}
+		}
+	}()
 }

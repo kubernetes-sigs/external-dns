@@ -19,23 +19,22 @@ package provider
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"math"
+	"net"
 	"net/http"
 	"sort"
 	"strings"
 	"time"
 
+	pgo "github.com/ffledgling/pdns-go"
 	log "github.com/sirupsen/logrus"
 
-	"crypto/tls"
-	"net"
-
-	pgo "github.com/ffledgling/pdns-go"
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/pkg/tlsutils"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/tlsutils"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 type pdnsChangeType string
@@ -43,7 +42,7 @@ type pdnsChangeType string
 const (
 	apiBase = "/api/v1"
 
-	// Unless we use something like pdnsproxy (discontinued upsteam), this value will _always_ be localhost
+	// Unless we use something like pdnsproxy (discontinued upstream), this value will _always_ be localhost
 	defaultServerID = "localhost"
 	defaultTTL      = 300
 
@@ -63,7 +62,7 @@ const (
 
 // PDNSConfig is comprised of the fields necessary to create a new PDNSProvider
 type PDNSConfig struct {
-	DomainFilter DomainFilter
+	DomainFilter endpoint.DomainFilter
 	DryRun       bool
 	Server       string
 	APIKey       string
@@ -143,7 +142,7 @@ type PDNSAPIClient struct {
 	dryRun       bool
 	authCtx      context.Context
 	client       *pgo.APIClient
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 }
 
 // ListZones : Method returns all enabled zones from PowerDNS
@@ -226,7 +225,7 @@ type PDNSProvider struct {
 }
 
 // NewPDNSProvider initializes a new PowerDNS based Provider.
-func NewPDNSProvider(config PDNSConfig) (*PDNSProvider, error) {
+func NewPDNSProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, error) {
 
 	// Do some input validation
 
@@ -253,7 +252,7 @@ func NewPDNSProvider(config PDNSConfig) (*PDNSProvider, error) {
 	provider := &PDNSProvider{
 		client: &PDNSAPIClient{
 			dryRun:       config.DryRun,
-			authCtx:      context.WithValue(context.TODO(), pgo.ContextAPIKey, pgo.APIKey{Key: config.APIKey}),
+			authCtx:      context.WithValue(ctx, pgo.ContextAPIKey, pgo.APIKey{Key: config.APIKey}),
 			client:       pgo.NewAPIClient(pdnsClientConfig),
 			domainFilter: config.DomainFilter,
 		},
@@ -413,7 +412,7 @@ func (p *PDNSProvider) mutateRecords(endpoints []*endpoint.Endpoint, changetype 
 }
 
 // Records returns all DNS records controlled by the configured PDNS server (for all zones)
-func (p *PDNSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
+func (p *PDNSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
 
 	zones, _, err := p.client.ListZones()
 	if err != nil {
@@ -456,7 +455,7 @@ func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	// valid call and a no-op, but we might as well not make the call to
 	// prevent unnecessary logging
 	if len(changes.Create) > 0 {
-		// "Replacing" non-existant records creates them
+		// "Replacing" non-existent records creates them
 		err := p.mutateRecords(changes.Create, PdnsReplace)
 		if err != nil {
 			return err

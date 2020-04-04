@@ -19,9 +19,10 @@ package registry
 import (
 	"context"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 // Registry is an interface which should enables ownership concept in external-dns
@@ -29,7 +30,7 @@ import (
 // each entry includes owner information
 // ApplyChanges(changes *plan.Changes) propagates the changes to the DNS Provider API and correspondingly updates ownership depending on type of registry being used
 type Registry interface {
-	Records() ([]*endpoint.Endpoint, error)
+	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 	ApplyChanges(ctx context.Context, changes *plan.Changes) error
 }
 

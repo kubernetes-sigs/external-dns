@@ -26,8 +26,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 type mockOCIDNSClient struct{}
@@ -100,7 +100,7 @@ func (c *mockOCIDNSClient) PatchZoneRecords(ctx context.Context, request dns.Pat
 }
 
 // newOCIProvider creates an OCI provider with API calls mocked out.
-func newOCIProvider(client ociDNSClient, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool) *OCIProvider {
+func newOCIProvider(client ociDNSClient, domainFilter endpoint.DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool) *OCIProvider {
 	return &OCIProvider{
 		client: client,
 		cfg: OCIConfig{
@@ -183,7 +183,7 @@ hKRtDhmSdWBo3tJK12RrAe4t7CUe8gMgTvU7ExlcA3xQkseFPx9K
 		t.Run(name, func(t *testing.T) {
 			_, err := NewOCIProvider(
 				tc.config,
-				NewDomainFilter([]string{"com"}),
+				endpoint.NewDomainFilter([]string{"com"}),
 				NewZoneIDFilter([]string{""}),
 				false,
 			)
@@ -199,13 +199,13 @@ hKRtDhmSdWBo3tJK12RrAe4t7CUe8gMgTvU7ExlcA3xQkseFPx9K
 func TestOCIZones(t *testing.T) {
 	testCases := []struct {
 		name         string
-		domainFilter DomainFilter
+		domainFilter endpoint.DomainFilter
 		zoneIDFilter ZoneIDFilter
 		expected     map[string]dns.ZoneSummary
 	}{
 		{
 			name:         "DomainFilter_com",
-			domainFilter: NewDomainFilter([]string{"com"}),
+			domainFilter: endpoint.NewDomainFilter([]string{"com"}),
 			zoneIDFilter: NewZoneIDFilter([]string{""}),
 			expected: map[string]dns.ZoneSummary{
 				"foo.com": {
@@ -219,7 +219,7 @@ func TestOCIZones(t *testing.T) {
 			},
 		}, {
 			name:         "DomainFilter_foo.com",
-			domainFilter: NewDomainFilter([]string{"foo.com"}),
+			domainFilter: endpoint.NewDomainFilter([]string{"foo.com"}),
 			zoneIDFilter: NewZoneIDFilter([]string{""}),
 			expected: map[string]dns.ZoneSummary{
 				"foo.com": {
@@ -229,7 +229,7 @@ func TestOCIZones(t *testing.T) {
 			},
 		}, {
 			name:         "ZoneIDFilter_ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959",
-			domainFilter: NewDomainFilter([]string{""}),
+			domainFilter: endpoint.NewDomainFilter([]string{""}),
 			zoneIDFilter: NewZoneIDFilter([]string{"ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"}),
 			expected: map[string]dns.ZoneSummary{
 				"foo.com": {
@@ -252,13 +252,13 @@ func TestOCIZones(t *testing.T) {
 func TestOCIRecords(t *testing.T) {
 	testCases := []struct {
 		name         string
-		domainFilter DomainFilter
+		domainFilter endpoint.DomainFilter
 		zoneIDFilter ZoneIDFilter
 		expected     []*endpoint.Endpoint
 	}{
 		{
 			name:         "unfiltered",
-			domainFilter: NewDomainFilter([]string{""}),
+			domainFilter: endpoint.NewDomainFilter([]string{""}),
 			zoneIDFilter: NewZoneIDFilter([]string{""}),
 			expected: []*endpoint.Endpoint{
 				endpoint.NewEndpointWithTTL("foo.foo.com", endpoint.RecordTypeA, endpoint.TTL(ociRecordTTL), "127.0.0.1"),
@@ -268,7 +268,7 @@ func TestOCIRecords(t *testing.T) {
 			},
 		}, {
 			name:         "DomainFilter_foo.com",
-			domainFilter: NewDomainFilter([]string{"foo.com"}),
+			domainFilter: endpoint.NewDomainFilter([]string{"foo.com"}),
 			zoneIDFilter: NewZoneIDFilter([]string{""}),
 			expected: []*endpoint.Endpoint{
 				endpoint.NewEndpointWithTTL("foo.foo.com", endpoint.RecordTypeA, endpoint.TTL(ociRecordTTL), "127.0.0.1"),
@@ -277,7 +277,7 @@ func TestOCIRecords(t *testing.T) {
 			},
 		}, {
 			name:         "ZoneIDFilter_ocid1.dns-zone.oc1..502aeddba262b92fd13ed7874f6f1404",
-			domainFilter: NewDomainFilter([]string{""}),
+			domainFilter: endpoint.NewDomainFilter([]string{""}),
 			zoneIDFilter: NewZoneIDFilter([]string{"ocid1.dns-zone.oc1..502aeddba262b92fd13ed7874f6f1404"}),
 			expected: []*endpoint.Endpoint{
 				endpoint.NewEndpointWithTTL("foo.bar.com", endpoint.RecordTypeA, endpoint.TTL(ociRecordTTL), "127.0.0.1"),
@@ -287,7 +287,7 @@ func TestOCIRecords(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			provider := newOCIProvider(&mockOCIDNSClient{}, tc.domainFilter, tc.zoneIDFilter, false)
-			endpoints, err := provider.Records()
+			endpoints, err := provider.Records(context.Background())
 			require.NoError(t, err)
 			require.ElementsMatch(t, tc.expected, endpoints)
 		})
@@ -624,7 +624,7 @@ func TestMutableMockOCIDNSClient(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// GetZoneRecords and check we're back in the origional state
+	// GetZoneRecords and check we're back in the original state
 	recordsResponse, err = client.GetZoneRecords(context.Background(), dns.GetZoneRecordsRequest{
 		ZoneNameOrId: zones[0].Id,
 	})
@@ -825,13 +825,15 @@ func TestOCIApplyChanges(t *testing.T) {
 			client := newMutableMockOCIDNSClient(tc.zones, tc.records)
 			provider := newOCIProvider(
 				client,
-				NewDomainFilter([]string{""}),
+				endpoint.NewDomainFilter([]string{""}),
 				NewZoneIDFilter([]string{""}),
 				tc.dryRun,
 			)
-			err := provider.ApplyChanges(context.Background(), tc.changes)
+
+			ctx := context.Background()
+			err := provider.ApplyChanges(ctx, tc.changes)
 			require.Equal(t, tc.err, err)
-			endpoints, err := provider.Records()
+			endpoints, err := provider.Records(ctx)
 			require.NoError(t, err)
 			require.ElementsMatch(t, tc.expectedEndpoints, endpoints)
 		})

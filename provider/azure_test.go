@@ -18,17 +18,18 @@ package provider
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2018-05-01/dns"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
-
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/internal/testutils"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	"github.com/stretchr/testify/assert"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 // mockZonesClient implements the methods of the Azure DNS Zones Client which are used in the Azure Provider
@@ -56,7 +57,7 @@ func (m *mockZoneListResultPageIterator) getNextPage(context.Context, dns.ZoneLi
 	// it assumed that instances of this kind of iterator are only skimmed through once per test
 	// otherwise a real implementation is required, e.g. based on a linked list
 	if m.offset < len(m.results) {
-		m.offset = m.offset + 1
+		m.offset++
 		return m.results[m.offset-1], nil
 	}
 
@@ -75,7 +76,7 @@ func (m *mockRecordSetListResultPageIterator) getNextPage(context.Context, dns.R
 	// it assumed that instances of this kind of iterator are only skimmed through once per test
 	// otherwise a real implementation is required, e.g. based on a linked list
 	if m.offset < len(m.results) {
-		m.offset = m.offset + 1
+		m.offset++
 		return m.results[m.offset-1], nil
 	}
 
@@ -205,7 +206,7 @@ func (client *mockRecordSetsClient) CreateOrUpdate(ctx context.Context, resource
 }
 
 // newMockedAzureProvider creates an AzureProvider comprising the mocked clients for zones and recordsets
-func newMockedAzureProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, userAssignedIdentityClientID string, zones *[]dns.Zone, recordSets *[]dns.RecordSet) (*AzureProvider, error) {
+func newMockedAzureProvider(domainFilter endpoint.DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, userAssignedIdentityClientID string, zones *[]dns.Zone, recordSets *[]dns.RecordSet) (*AzureProvider, error) {
 	// init zone-related parts of the mock-client
 	pageIterator := mockZoneListResultPageIterator{
 		results: []dns.ZoneListResult{
@@ -238,7 +239,7 @@ func newMockedAzureProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter
 	return newAzureProvider(domainFilter, zoneIDFilter, dryRun, resourceGroup, userAssignedIdentityClientID, &zonesClient, &recordSetsClient), nil
 }
 
-func newAzureProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, userAssignedIdentityClientID string, zonesClient ZonesClient, recordsClient RecordSetsClient) *AzureProvider {
+func newAzureProvider(domainFilter endpoint.DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, userAssignedIdentityClientID string, zonesClient ZonesClient, recordsClient RecordSetsClient) *AzureProvider {
 	return &AzureProvider{
 		domainFilter:                 domainFilter,
 		zoneIDFilter:                 zoneIDFilter,
@@ -255,7 +256,7 @@ func validateAzureEndpoints(t *testing.T, endpoints []*endpoint.Endpoint, expect
 }
 
 func TestAzureRecord(t *testing.T) {
-	provider, err := newMockedAzureProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s", "",
+	provider, err := newMockedAzureProvider(endpoint.NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s", "",
 		&[]dns.Zone{
 			createMockZone("example.com", "/dnszones/example.com"),
 		},
@@ -273,7 +274,8 @@ func TestAzureRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	actual, err := provider.Records()
+	ctx := context.Background()
+	actual, err := provider.Records(ctx)
 
 	if err != nil {
 		t.Fatal(err)
@@ -291,7 +293,7 @@ func TestAzureRecord(t *testing.T) {
 }
 
 func TestAzureMultiRecord(t *testing.T) {
-	provider, err := newMockedAzureProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s", "",
+	provider, err := newMockedAzureProvider(endpoint.NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s", "",
 		&[]dns.Zone{
 			createMockZone("example.com", "/dnszones/example.com"),
 		},
@@ -309,7 +311,8 @@ func TestAzureMultiRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	actual, err := provider.Records()
+	ctx := context.Background()
+	actual, err := provider.Records(ctx)
 
 	if err != nil {
 		t.Fatal(err)
@@ -389,7 +392,7 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordSetsC
 	}
 
 	provider := newAzureProvider(
-		NewDomainFilter([]string{""}),
+		endpoint.NewDomainFilter([]string{""}),
 		NewZoneIDFilter([]string{""}),
 		dryRun,
 		"group",
@@ -452,5 +455,43 @@ func TestAzureGetAccessToken(t *testing.T) {
 	_, err := getAccessToken(cfg, env)
 	if err == nil {
 		t.Fatalf("expected to fail, but got no error")
+	}
+
+	// Expect to use managed identity in this case
+	cfg = config{
+		ClientID:                    "msi",
+		ClientSecret:                "msi",
+		TenantID:                    "cefe8aef-5127-4d65-a299-012053f81f60",
+		UserAssignedIdentityID:      "userAssignedIdentityClientID",
+		UseManagedIdentityExtension: true,
+	}
+	token, err := getAccessToken(cfg, env)
+	if err != nil {
+		t.Fatalf("expected to construct a token successfully, but got error %v", err)
+	}
+	_, err = token.MarshalJSON()
+	if err == nil ||
+		!strings.Contains(err.Error(), "marshalling ServicePrincipalMSISecret is not supported") {
+		t.Fatalf("expected to fail to marshal token, but got %v", err)
+	}
+
+	// Expect to use SPN in this case
+	cfg = config{
+		ClientID:                    "SPNClientID",
+		ClientSecret:                "SPNSecret",
+		TenantID:                    "cefe8aef-5127-4d65-a299-012053f81f60",
+		UserAssignedIdentityID:      "userAssignedIdentityClientID",
+		UseManagedIdentityExtension: true,
+	}
+	token, err = getAccessToken(cfg, env)
+	if err != nil {
+		t.Fatalf("expected to construct a token successfully, but got error %v", err)
+	}
+	innerToken, err := token.MarshalJSON()
+	if err != nil {
+		t.Fatalf("expected to marshal token successfully, but got error %v", err)
+	}
+	if !strings.Contains(string(innerToken), "SPNClientID") {
+		t.Fatalf("expect the clientID of the token is SPNClientID, but got token %s", string(innerToken))
 	}
 }

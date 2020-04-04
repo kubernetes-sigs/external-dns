@@ -33,8 +33,8 @@ import (
 	etcdcv3 "github.com/coreos/etcd/clientv3"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 func init() {
@@ -58,7 +58,7 @@ type coreDNSClient interface {
 type coreDNSProvider struct {
 	dryRun        bool
 	coreDNSPrefix string
-	domainFilter  DomainFilter
+	domainFilter  endpoint.DomainFilter
 	client        coreDNSClient
 }
 
@@ -244,7 +244,7 @@ func newETCDClient() (coreDNSClient, error) {
 }
 
 // NewCoreDNSProvider is a CoreDNS provider constructor
-func NewCoreDNSProvider(domainFilter DomainFilter, prefix string, dryRun bool) (Provider, error) {
+func NewCoreDNSProvider(domainFilter endpoint.DomainFilter, prefix string, dryRun bool) (Provider, error) {
 	client, err := newETCDClient()
 	if err != nil {
 		return nil, err
@@ -260,7 +260,7 @@ func NewCoreDNSProvider(domainFilter DomainFilter, prefix string, dryRun bool) (
 
 // Records returns all DNS records found in CoreDNS etcd backend. Depending on the record fields
 // it may be mapped to one or two records of type A, CNAME, TXT, A+TXT, CNAME+TXT
-func (p coreDNSProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	var result []*endpoint.Endpoint
 	services, err := p.client.GetServices(p.coreDNSPrefix)
 	if err != nil {

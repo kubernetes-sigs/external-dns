@@ -45,10 +45,11 @@ test:
 
 BINARY        ?= external-dns
 SOURCES        = $(shell find . -name '*.go')
-IMAGE         ?= registry.opensource.zalan.do/teapot/$(BINARY)
+IMAGE_STAGING  = gcr.io/k8s-staging-external-dns/$(BINARY)
+IMAGE         ?= us.gcr.io/k8s-artifacts-prod/external-dns/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty)
 BUILD_FLAGS   ?= -v
-LDFLAGS       ?= -X github.com/kubernetes-sigs/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s
+LDFLAGS       ?= -X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s
 
 build: build/$(BINARY)
 
@@ -59,10 +60,19 @@ build.push: build.docker
 	docker push "$(IMAGE):$(VERSION)"
 
 build.docker:
-	docker build --rm --tag "$(IMAGE):$(VERSION)" .
+	docker build --rm --tag "$(IMAGE):$(VERSION)" --build-arg VERSION="$(VERSION)" .
 
 build.mini:
-	docker build --rm --tag "$(IMAGE):$(VERSION)-mini" -f Dockerfile.mini .
+	docker build --rm --tag "$(IMAGE):$(VERSION)-mini" --build-arg VERSION="$(VERSION)" -f Dockerfile.mini .
 
 clean:
 	@rm -rf build
+
+ # Builds and push container images to the staging bucket.
+.PHONY: release.staging
+
+release.staging:
+	IMAGE=$(IMAGE_STAGING) $(MAKE) build.docker build.push
+
+release.prod:
+	$(MAKE) build.docker build.push

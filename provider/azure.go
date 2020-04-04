@@ -32,8 +32,8 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -66,7 +66,7 @@ type RecordSetsClient interface {
 
 // AzureProvider implements the DNS provider for Microsoft's Azure cloud platform.
 type AzureProvider struct {
-	domainFilter                 DomainFilter
+	domainFilter                 endpoint.DomainFilter
 	zoneIDFilter                 ZoneIDFilter
 	dryRun                       bool
 	resourceGroup                string
@@ -78,7 +78,7 @@ type AzureProvider struct {
 // NewAzureProvider creates a new Azure provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAzureProvider(configFile string, domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, resourceGroup string, userAssignedIdentityClientID string, dryRun bool) (*AzureProvider, error) {
+func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zoneIDFilter ZoneIDFilter, resourceGroup string, userAssignedIdentityClientID string, dryRun bool) (*AzureProvider, error) {
 	contents, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
@@ -135,7 +135,13 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 	// Try to retrieve token with service principal credentials.
 	// Try to use service principal first, some AKS clusters are in an intermediate state that `UseManagedIdentityExtension` is `true`
 	// and service principal exists. In this case, we still want to use service principal to authenticate.
-	if len(cfg.ClientID) > 0 && len(cfg.ClientSecret) > 0 {
+	if len(cfg.ClientID) > 0 &&
+		len(cfg.ClientSecret) > 0 &&
+		// due to some historical reason, for pure MSI cluster,
+		// they will use "msi" as placeholder in azure.json.
+		// In this case, we shouldn't try to use SPN to authenticate.
+		!strings.EqualFold(cfg.ClientID, "msi") &&
+		!strings.EqualFold(cfg.ClientSecret, "msi") {
 		log.Info("Using client_id+client_secret to retrieve access token for Azure API.")
 		oauthConfig, err := adal.NewOAuthConfig(environment.ActiveDirectoryEndpoint, cfg.TenantID)
 		if err != nil {
@@ -149,7 +155,7 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 		return token, nil
 	}
 
-	// Try to retrive token with MSI.
+	// Try to retrieve token with MSI.
 	if cfg.UseManagedIdentityExtension {
 		log.Info("Using managed identity extension to retrieve access token for Azure API.")
 		msiEndpoint, err := adal.GetMSIVMEndpoint()
@@ -180,8 +186,7 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 // Records gets the current records.
 //
 // Returns the current records or an error if the operation failed.
-func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
-	ctx := context.Background()
+func (p *AzureProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.zones(ctx)
 	if err != nil {
 		return nil, err
@@ -193,7 +198,7 @@ func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				log.Error("Skipping invalid record set with nil name or type.")
 				return true
 			}
-			recordType := strings.TrimLeft(*recordSet.Type, "Microsoft.Network/dnszones/")
+			recordType := strings.TrimPrefix(*recordSet.Type, "Microsoft.Network/dnszones/")
 			if !supportedRecordType(recordType) {
 				return true
 			}
@@ -208,7 +213,7 @@ func (p *AzureProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 				ttl = endpoint.TTL(*recordSet.TTL)
 			}
 
-			ep := endpoint.NewEndpointWithTTL(name, recordType, endpoint.TTL(ttl), targets...)
+			ep := endpoint.NewEndpointWithTTL(name, recordType, ttl, targets...)
 			log.Debugf(
 				"Found %s record for '%s' with target '%s'.",
 				ep.RecordType,

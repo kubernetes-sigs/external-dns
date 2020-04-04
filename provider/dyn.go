@@ -29,8 +29,8 @@ import (
 	"github.com/nesv/go-dynect/dynect"
 	"github.com/sanyu/dynectsoap/dynectsoap"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -40,7 +40,7 @@ const (
 	// when rate limit is hit retry up to 5 times after sleep 1m between retries
 	dynMaxRetriesOnErrRateLimited = 5
 
-	// two consecutive bad logins happen at least this many seconds appart
+	// two consecutive bad logins happen at least this many seconds apart
 	// While it is easy to get the username right, misconfiguring the password
 	// can get account blocked. Exit(1) is not a good solution
 	// as k8s will restart the pod and another login attempt will be made
@@ -51,12 +51,12 @@ const (
 )
 
 func unixNow() int64 {
-	return int64(time.Now().Unix())
+	return time.Now().Unix()
 }
 
 // DynConfig hold connection parameters to dyn.com and internal state
 type DynConfig struct {
-	DomainFilter  DomainFilter
+	DomainFilter  endpoint.DomainFilter
 	ZoneIDFilter  ZoneIDFilter
 	DryRun        bool
 	CustomerName  string
@@ -153,7 +153,7 @@ func NewDynProvider(config DynConfig) (Provider, error) {
 
 // filterAndFixLinks removes from `links` all the records we don't care about
 // and strops the /REST/ prefix
-func filterAndFixLinks(links []string, filter DomainFilter) []string {
+func filterAndFixLinks(links []string, filter endpoint.DomainFilter) []string {
 	var result []string
 	for _, link := range links {
 
@@ -395,19 +395,6 @@ func (d *dynProviderState) fetchAllRecordsInZone(zone string) (*dynectsoap.GetAl
 
 }
 
-// fetchAllRecordLinksInZone list all records in a zone with a single call. Records not matched by the
-// DomainFilter are ignored. The response is a list of links that can be fed to dynect.Client.Do()
-// directly
-func (d *dynProviderState) fetchAllRecordLinksInZone(client *dynect.Client, zone string) ([]string, error) {
-	var allRecords dynect.AllRecordsResponse
-	err := client.Do("GET", fmt.Sprintf("AllRecord/%s/", zone), nil, &allRecords)
-	if err != nil {
-		return nil, err
-	}
-
-	return filterAndFixLinks(allRecords.Data, d.DomainFilter), nil
-}
-
 // buildLinkToRecord build a resource link. The symmetry of the dyn API is used to save
 // switch-case boilerplate.
 // Empty response means the endpoint is not mappable to a records link: either because the fqdn
@@ -588,7 +575,7 @@ func (d *dynProviderState) commit(client *dynect.Client) error {
 // Records makes on average C + 2*Z  requests (Z = number of zones): 1 login + 1 fetchAllRecords
 // A cache is used to avoid querying for every single record found. C is proportional to the number
 // of expired/changed records
-func (d *dynProviderState) Records() ([]*endpoint.Endpoint, error) {
+func (d *dynProviderState) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	client, err := d.login()
 	if err != nil {
 		return nil, err
@@ -604,7 +591,7 @@ func (d *dynProviderState) Records() ([]*endpoint.Endpoint, error) {
 	for _, zone := range zones {
 		serial, err := d.fetchZoneSerial(client, zone)
 		if err != nil {
-			if strings.Index(err.Error(), "404 Not Found") >= 0 {
+			if strings.Contains(err.Error(), "404 Not Found") {
 				log.Infof("Ignore zone %s as it does not exist", zone)
 				continue
 			}

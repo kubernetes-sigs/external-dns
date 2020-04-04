@@ -75,7 +75,7 @@ type `LoadBalancer` here, since we will be using an Ingress to create an ALB.
 Create the following Ingress to expose the echoserver application to the Internet.
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   annotations:

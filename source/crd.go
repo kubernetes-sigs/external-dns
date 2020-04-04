@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -30,6 +30,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // crdSource is an implementation of Source that provides endpoints by listing
@@ -105,6 +107,9 @@ func NewCRDSource(crdClient rest.Interface, namespace, kind string, scheme *runt
 		crdClient:   crdClient,
 		codec:       runtime.NewParameterCodec(scheme),
 	}, nil
+}
+
+func (cs *crdSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
 }
 
 // Endpoints returns endpoint objects.

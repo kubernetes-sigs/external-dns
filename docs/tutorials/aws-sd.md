@@ -1,51 +1,50 @@
-# Setting up ExternalDNS using AWS Service Discovery API
+# Setting up ExternalDNS using AWS Cloud Map API
 
-This tutorial describes how to set up ExternalDNS for usage within a Kubernetes cluster on AWS with [Service Discovery API](https://docs.aws.amazon.com/Route53/latest/APIReference/overview-service-discovery.html).
+This tutorial describes how to set up ExternalDNS for usage within a Kubernetes cluster with [AWS Cloud Map API](https://docs.aws.amazon.com/cloud-map/).
 
-The **Service Discovery API** is an alternative approach to managing DNS records directly using the Route53 API. It is more suitable for a dynamic environment where service endpoints change frequently. It abstracts away technical details of the DNS protocol and offers a simplified model. Service discovery consists of three main API calls:
+**AWS Cloud Map** API is an alternative approach to managing DNS records directly using the Route53 API. It is more suitable for a dynamic environment where service endpoints change frequently. It abstracts away technical details of the DNS protocol and offers a simplified model. AWS Cloud Map consists of three main API calls:
 
 * CreatePublicDnsNamespace – automatically creates a DNS hosted zone
 * CreateService – creates a new named service inside the specified namespace
 * RegisterInstance/DeregisterInstance – can be called multiple times to create a DNS record for the specified *Service*
 
-Learn more about the API in the [Amazon Route 53 API Reference](https://docs.aws.amazon.com/Route53/latest/APIReference/API_Operations_Amazon_Route_53_Auto_Naming.html).
-
+Learn more about the API in the [AWS Cloud Map API Reference](https://docs.aws.amazon.com/cloud-map/latest/api/API_Operations.html).
 
 ## IAM Permissions
 
-To use the service discovery API, a user must have permissions to create the DNS namespace. Additionally you need to make sure that your nodes (on which External DNS runs) have an IAM instance profile with the `AmazonRoute53AutoNamingFullAccess` managed policy attached, this provides the permissions below.
+To use the AWS Cloud Map API, a user must have permissions to create the DNS namespace. Additionally you need to make sure that your nodes (on which External DNS runs) have an IAM instance profile with the `AWSCloudMapFullAccess` managed policy attached, that provides following permissions:
 
 ```
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "route53:GetHostedZone",
-                "route53:ListHostedZonesByName",
-                "route53:CreateHostedZone",
-                "route53:DeleteHostedZone",
-                "route53:ChangeResourceRecordSets",
-                "route53:CreateHealthCheck",
-                "route53:GetHealthCheck",
-                "route53:DeleteHealthCheck",
-                "route53:UpdateHealthCheck",
-                "ec2:DescribeVpcs",
-                "ec2:DescribeRegions",
-                "servicediscovery:*"
-            ],
-            "Resource": [
-                "*"
-            ]
-        }
-    ]
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "route53:GetHostedZone",
+        "route53:ListHostedZonesByName",
+        "route53:CreateHostedZone",
+        "route53:DeleteHostedZone",
+        "route53:ChangeResourceRecordSets",
+        "route53:CreateHealthCheck",
+        "route53:GetHealthCheck",
+        "route53:DeleteHealthCheck",
+        "route53:UpdateHealthCheck",
+        "ec2:DescribeVpcs",
+        "ec2:DescribeRegions",
+        "servicediscovery:*"
+      ],
+      "Resource": [
+        "*"
+      ]
+    }
+  ]
 }
 ```
 
 ## Set up a namespace
 
-Create a DNS namespace using the service discovery API
+Create a DNS namespace using the AWS Cloud Map API:
 
 ```console
 $ aws servicediscovery create-public-dns-namespace --name "external-dns-test.my-org.com"
@@ -65,13 +64,16 @@ Then apply the following manifest file to deploy ExternalDNS.
 ### Manifest (for clusters without RBAC enabled)
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: external-dns
 spec:
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: external-dns
   template:
     metadata:
       labels:
@@ -80,6 +82,9 @@ spec:
       containers:
       - name: external-dns
         image: registry.opensource.zalan.do/teapot/external-dns:latest
+        env:
+          - name: AWS_REGION
+            value: us-east-1 # put your CloudMap NameSpace region
         args:
         - --source=service
         - --source=ingress
@@ -103,13 +108,10 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services"]
+  resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["get","watch","list"]
-- apiGroups: ["extensions"] 
-  resources: ["ingresses"] 
+- apiGroups: ["extensions"]
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
@@ -128,13 +130,16 @@ subjects:
   name: external-dns
   namespace: default
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: external-dns
 spec:
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: external-dns
   template:
     metadata:
       labels:
@@ -144,6 +149,9 @@ spec:
       containers:
       - name: external-dns
         image: registry.opensource.zalan.do/teapot/external-dns:latest
+        env:
+          - name: AWS_REGION
+            value: us-east-1 # put your CloudMap NameSpace region
         args:
         - --source=service
         - --source=ingress
@@ -177,11 +185,14 @@ spec:
 
 ---
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx
 spec:
+  selector:
+    matchLabels:
+      app: nginx
   template:
     metadata:
       labels:

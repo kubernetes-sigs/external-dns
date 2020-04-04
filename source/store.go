@@ -21,9 +21,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
-
 	"sync"
+	"time"
 
 	"github.com/cloudfoundry-community/go-cfclient"
 	contour "github.com/heptio/contour/apis/generated/clientset/versioned"
@@ -41,25 +40,28 @@ var ErrSourceNotFound = errors.New("source not found")
 
 // Config holds shared configuration options for all Sources.
 type Config struct {
-	Namespace                   string
-	AnnotationFilter            string
-	FQDNTemplate                string
-	CombineFQDNAndAnnotation    bool
-	IgnoreHostnameAnnotation    bool
-	Compatibility               string
-	PublishInternal             bool
-	PublishHostIP               bool
-	ConnectorServer             string
-	CRDSourceAPIVersion         string
-	CRDSourceKind               string
-	KubeConfig                  string
-	KubeMaster                  string
-	ServiceTypeFilter           []string
-	IstioIngressGatewayServices []string
-	CFAPIEndpoint               string
-	CFUsername                  string
-	CFPassword                  string
-	ContourLoadBalancerService  string
+	Namespace                      string
+	AnnotationFilter               string
+	FQDNTemplate                   string
+	CombineFQDNAndAnnotation       bool
+	IgnoreHostnameAnnotation       bool
+	Compatibility                  string
+	PublishInternal                bool
+	PublishHostIP                  bool
+	AlwaysPublishNotReadyAddresses bool
+	ConnectorServer                string
+	CRDSourceAPIVersion            string
+	CRDSourceKind                  string
+	KubeConfig                     string
+	KubeMaster                     string
+	ServiceTypeFilter              []string
+	IstioIngressGatewayServices    []string
+	CFAPIEndpoint                  string
+	CFUsername                     string
+	CFPassword                     string
+	ContourLoadBalancerService     string
+	SkipperRouteGroupVersion       string
+	RequestTimeout                 time.Duration
 }
 
 // ClientGenerator provides clients
@@ -165,7 +167,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewServiceSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation)
+		return NewServiceSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.AlwaysPublishNotReadyAddresses, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation)
 	case "ingress":
 		client, err := p.KubeClient()
 		if err != nil {
@@ -181,7 +183,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewIstioGatewaySource(kubernetesClient, istioClient, cfg.IstioIngressGatewayServices, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+		return NewIstioGatewaySource(kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
 	case "cloudfoundry":
 		cfClient, err := p.CloudFoundryClient(cfg.CFAPIEndpoint, cfg.CFUsername, cfg.CFPassword)
 		if err != nil {
@@ -212,16 +214,24 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 			return nil, err
 		}
 		return NewCRDSource(crdClient, cfg.Namespace, cfg.CRDSourceKind, scheme)
+	case "skipper-routegroup":
+		master := cfg.KubeMaster
+		tokenPath := ""
+		token := ""
+		restConfig, err := GetRestConfig(cfg.KubeConfig, cfg.KubeMaster)
+		if err == nil {
+			master = restConfig.Host
+			tokenPath = restConfig.BearerTokenFile
+			token = restConfig.BearerToken
+		}
+		return NewRouteGroupSource(cfg.RequestTimeout, token, tokenPath, master, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.SkipperRouteGroupVersion, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
 	}
 	return nil, ErrSourceNotFound
 }
 
-// NewKubeClient returns a new Kubernetes client object. It takes a Config and
-// uses KubeMaster and KubeConfig attributes to connect to the cluster. If
-// KubeConfig isn't provided it defaults to using the recommended default.
-func NewKubeClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) (*kubernetes.Clientset, error) {
-	log.Infof("Instantiating new Kubernetes client")
-
+// GetRestConfig returns the rest clients config to get automatically
+// data if you run inside a cluster or by passing flags.
+func GetRestConfig(kubeConfig, kubeMaster string) (*rest.Config, error) {
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
 			kubeConfig = clientcmd.RecommendedHomeFile
@@ -246,6 +256,20 @@ func NewKubeClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) 
 		return nil, err
 	}
 
+	return config, nil
+}
+
+// NewKubeClient returns a new Kubernetes client object. It takes a Config and
+// uses KubeMaster and KubeConfig attributes to connect to the cluster. If
+// KubeConfig isn't provided it defaults to using the recommended default.
+func NewKubeClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) (*kubernetes.Clientset, error) {
+	log.Infof("Instantiating new Kubernetes client")
+	config, err := GetRestConfig(kubeConfig, kubeMaster)
+	if err != nil {
+		return nil, err
+	}
+
+	config.Timeout = requestTimeout
 	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
 		return instrumented_http.NewTransport(rt, &instrumented_http.Callbacks{
 			PathProcessor: func(path string) string {
@@ -254,8 +278,6 @@ func NewKubeClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) 
 			},
 		})
 	}
-
-	config.Timeout = requestTimeout
 
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {

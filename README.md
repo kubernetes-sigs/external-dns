@@ -21,12 +21,12 @@ The [FAQ](docs/faq.md) contains additional information and addresses several que
 
 To see ExternalDNS in action, have a look at this [video](https://www.youtube.com/watch?v=9HQ2XgL9YVI) or read this [blogpost](https://medium.com/wearetheledger/deploying-test-environments-with-azure-devops-eks-and-externaldns-67abe647e4e).
 
-## The Latest Release: v0.5
+## The Latest Release: v0.6
 
-ExternalDNS' current release is `v0.5`. This version allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
+ExternalDNS' current release is `v0.6`. This version allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
 * [Google Cloud DNS](https://cloud.google.com/dns/docs/)
 * [AWS Route 53](https://aws.amazon.com/route53/)
-* [AWS Service Discovery](https://docs.aws.amazon.com/Route53/latest/APIReference/overview-service-discovery.html)
+* [AWS Cloud Map](https://docs.aws.amazon.com/cloud-map/)
 * [AzureDNS](https://azure.microsoft.com/en-us/services/dns)
 * [CloudFlare](https://www.cloudflare.com/dns)
 * [RcodeZero](https://www.rcodezero.at/)
@@ -44,6 +44,7 @@ ExternalDNS' current release is `v0.5`. This version allows you to keep selected
 * [NS1](https://ns1.com/)
 * [TransIP](https://www.transip.eu/domain-name/)
 * [VinylDNS](https://www.vinyldns.io)
+* [OVH](https://www.ovh.com)
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` (or greater) with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -69,29 +70,31 @@ We define the following stability levels for providers:
 
 The following table clarifies the current status of the providers according to the aforementioned stability levels:
 
-| Provider | Status |
-| -------- | ------ |
-| Google Cloud DNS | Stable |
-| AWS Route 53 | Stable |
-| AWS Service Discovery | Beta |
-| AzureDNS | Beta |
-| CloudFlare | Beta
-| RcodeZero | Alpha |
-| DigitalOcean | Alpha |
-| DNSimple | Alpha |
-| Infoblox | Alpha |
-| Dyn | Alpha |
-| OpenStack Designate | Alpha |
-| PowerDNS | Alpha |
-| CoreDNS | Alpha |
-| Exoscale | Alpha |
-| Oracle Cloud Infrastructure DNS | Alpha |
-| Linode DNS | Alpha |
-| RFC2136 | Alpha |
-| NS1 | Alpha |
-| TransIP | Alpha |
-| VinylDNS | Alpha |
-| RancherDNS | Alpha |
+| Provider | Status | Maintainers | 
+| -------- | ------ | ----------- |
+| Google Cloud DNS | Stable | |
+| AWS Route 53 | Stable | |
+| AWS Cloud Map | Beta | |
+| AzureDNS | Beta | |
+| CloudFlare | Beta | |
+| RcodeZero | Alpha | |
+| DigitalOcean | Alpha | |
+| DNSimple | Alpha | |
+| Infoblox | Alpha | @saileshgiri |
+| Dyn | Alpha | |
+| OpenStack Designate | Alpha | |
+| PowerDNS | Alpha | |
+| CoreDNS | Alpha | |
+| Exoscale | Alpha | |
+| Oracle Cloud Infrastructure DNS | Alpha | |
+| Linode DNS | Alpha | |
+| RFC2136 | Alpha | |
+| NS1 | Alpha | |
+| TransIP | Alpha | |
+| VinylDNS | Alpha | |
+| RancherDNS | Alpha | |
+| Akamai FastDNS | Alpha | |
+| OVH | Alpha | |
 
 ## Running ExternalDNS:
 
@@ -109,7 +112,8 @@ The following tutorials are provided:
 	* [ALB Ingress Controller](docs/tutorials/alb-ingress.md)
 	* [Route53](docs/tutorials/aws.md)
 		* [Same domain for public and private Route53 zones](docs/tutorials/public-private-route53.md)
-	* [Service Discovery](docs/tutorials/aws-sd.md)
+	* [Cloud Map](docs/tutorials/aws-sd.md)
+	* [Kube Ingress AWS Controller](docs/tutorials/kube-ingress-aws.md)
 * [Azure DNS](docs/tutorials/azure.md)
 * [Azure Private DNS](docs/tutorials/azure-private-dns.md)
 * [Cloudflare](docs/tutorials/cloudflare.md)
@@ -137,6 +141,7 @@ The following tutorials are provided:
 * [RFC2136](docs/tutorials/rfc2136.md)
 * [TransIP](docs/tutorials/transip.md)
 * [VinylDNS](docs/tutorials/vinyldns.md)
+* [OVH](docs/tutorials/ovh.md)
 
 ### Running Locally
 
@@ -267,6 +272,7 @@ Here's a rough outline on what is to come (subject to change):
 ### v0.6
 
 - [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller) (This could also directly become `v1.0`)
+- [x] Support for OVH
 
 ### v1.0
 
@@ -315,17 +321,8 @@ ExternalDNS is an effort to unify the following similar projects in order to bri
 * Zalando's [Mate](https://github.com/linki/mate)
 * Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 
-## Kubernetes Incubator
-
-This is a [Kubernetes Incubator project](https://github.com/kubernetes/community/blob/master/incubator.md).
-The project was established 2017-Feb-9 (initial announcement [here](https://groups.google.com/forum/#!searchin/kubernetes-dev/external$20dns%7Csort:relevance/kubernetes-dev/2wGQUB0fUuE/9OXz01i2BgAJ)).
-The incubator team for the project is:
-
-* Sponsor: sig-network
-* Champion: Tim Hockin (@thockin)
-* SIG: sig-network
-
-For more information about sig-network, such as meeting times and agenda, check out the [community site](https://github.com/kubernetes/community/tree/master/sig-network).
+### User Demo How-To Blogs and Examples
+* A full demo on GKE Kubernetes. See [How-to Kubernetes with DNS management (ssl-manager pre-req)](https://medium.com/@jpantjsoha/how-to-kubernetes-with-dns-management-for-gitops-31239ea75d8d)
 
 ### Code of conduct
 

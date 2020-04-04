@@ -25,18 +25,17 @@ import (
 	"strconv"
 
 	"github.com/dnsimple/dnsimple-go/dnsimple"
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 var mockProvider dnsimpleProvider
 var dnsimpleListRecordsResponse dnsimple.ZoneRecordsResponse
 var dnsimpleListZonesResponse dnsimple.ZonesResponse
-
-type mockDnsimpleZonesService struct{}
 
 func TestDnsimpleServices(t *testing.T) {
 	// Setup example responses
@@ -151,13 +150,14 @@ func testDnsimpleProviderZones(t *testing.T) {
 }
 
 func testDnsimpleProviderRecords(t *testing.T) {
+	ctx := context.Background()
 	mockProvider.accountID = "1"
-	result, err := mockProvider.Records()
+	result, err := mockProvider.Records(ctx)
 	assert.Nil(t, err)
 	assert.Equal(t, len(dnsimpleListRecordsResponse.Data), len(result))
 
 	mockProvider.accountID = "2"
-	_, err = mockProvider.Records()
+	_, err = mockProvider.Records(ctx)
 	assert.NotNil(t, err)
 }
 func testDnsimpleProviderApplyChanges(t *testing.T) {
@@ -203,7 +203,7 @@ func testDnsimpleSuitableZone(t *testing.T) {
 
 func TestNewDnsimpleProvider(t *testing.T) {
 	os.Setenv("DNSIMPLE_OAUTH", "xxxxxxxxxxxxxxxxxxxxxxxxxx")
-	_, err := NewDnsimpleProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true)
+	_, err := NewDnsimpleProvider(endpoint.NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true)
 	if err == nil {
 		t.Errorf("Expected to fail new provider on bad token")
 	}

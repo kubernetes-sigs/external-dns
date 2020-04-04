@@ -101,8 +101,8 @@ $ az network private-dns link vnet create -g externaldns -n mylink \
 ExternalDNS needs permissions to make changes in Azure Private DNS.  
 These permissions are roles assigned to the service principal used by ExternalDNS.
 
-A service principal with a minimum access level of `contributor` to the Private DNS zone(s) and `reader` to the resource group containing the Azure Private DNS zone(s) is necessary.
-More powerful role-assignments like `owner` or assignments on subscription-level work too. 
+A service principal with a minimum access level of `Private DNS Zone Contributor` to the Private DNS zone(s) and `Reader` to the resource group containing the Azure Private DNS zone(s) is necessary.
+More powerful role-assignments like `Owner` or assignments on subscription-level work too. 
 
 Start off by **creating the service principal** without role-assignments.
 ```
@@ -134,7 +134,7 @@ Now, **create role assignments**.
 $ az role assignment create --role "Reader" --assignee <appId GUID> --scope <resource group resource id>  
 
 # 2. as a contributor to DNS Zone itself
-$ az role assignment create --role "Contributor" --assignee <appId GUID> --scope <dns zone resource id>  
+$ az role assignment create --role "Private DNS Zone Contributor" --assignee <appId GUID> --scope <dns zone resource id>  
 ```
 
 ## Deploy ExternalDNS
@@ -194,10 +194,7 @@ metadata:
   name: externaldns
 rules:
 - apiGroups: [""]
-  resources: ["services"]
-  verbs: ["get","watch","list"]
-- apiGroups: [""]
-  resources: ["pods"]
+  resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions"] 
   resources: ["ingresses"] 
@@ -268,10 +265,7 @@ metadata:
   name: externaldns
 rules:
 - apiGroups: [""]
-  resources: ["services"]
-  verbs: ["get","watch","list"]
-- apiGroups: [""]
-  resources: ["pods"]
+  resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions"]
   resources: ["ingresses"]

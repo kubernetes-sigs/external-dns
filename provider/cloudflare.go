@@ -27,9 +27,9 @@ import (
 	cloudflare "github.com/cloudflare/cloudflare-go"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
-	"github.com/kubernetes-sigs/external-dns/source"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/source"
 )
 
 const (
@@ -102,7 +102,7 @@ func (z zoneService) ListZonesContext(ctx context.Context, opts ...cloudflare.Re
 type CloudFlareProvider struct {
 	Client cloudFlareDNS
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter      DomainFilter
+	domainFilter      endpoint.DomainFilter
 	zoneIDFilter      ZoneIDFilter
 	proxiedByDefault  bool
 	DryRun            bool
@@ -116,7 +116,7 @@ type cloudFlareChange struct {
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, zonesPerPage int, proxiedByDefault bool, dryRun bool) (*CloudFlareProvider, error) {
+func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter ZoneIDFilter, zonesPerPage int, proxiedByDefault bool, dryRun bool) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
 	var (
 		config *cloudflare.API
@@ -146,9 +146,8 @@ func NewCloudFlareProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter,
 }
 
 // Zones returns the list of hosted zones.
-func (p *CloudFlareProvider) Zones() ([]cloudflare.Zone, error) {
+func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, error) {
 	result := []cloudflare.Zone{}
-	ctx := context.TODO()
 	p.PaginationOptions.Page = 1
 
 	for {
@@ -176,8 +175,8 @@ func (p *CloudFlareProvider) Zones() ([]cloudflare.Zone, error) {
 }
 
 // Records returns the list of records.
-func (p *CloudFlareProvider) Records() ([]*endpoint.Endpoint, error) {
-	zones, err := p.Zones()
+func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	zones, err := p.Zones(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -208,17 +207,17 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareUpdate, changes.UpdateNew, proxiedByDefault)...)
 	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareDelete, changes.Delete, proxiedByDefault)...)
 
-	return p.submitChanges(combinedChanges)
+	return p.submitChanges(ctx, combinedChanges)
 }
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
-func (p *CloudFlareProvider) submitChanges(changes []*cloudFlareChange) error {
+func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloudFlareChange) error {
 	// return early if there is nothing to change
 	if len(changes) == 0 {
 		return nil
 	}
 
-	zones, err := p.Zones()
+	zones, err := p.Zones(ctx)
 	if err != nil {
 		return err
 	}

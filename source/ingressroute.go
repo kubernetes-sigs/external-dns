@@ -28,7 +28,6 @@ import (
 	contour "github.com/heptio/contour/apis/generated/clientset/versioned"
 	contourinformers "github.com/heptio/contour/apis/generated/informers/externalversions"
 	extinformers "github.com/heptio/contour/apis/generated/informers/externalversions/contour/v1beta1"
-	"github.com/kubernetes-sigs/external-dns/endpoint"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,6 +35,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // ingressRouteSource is an implementation of Source for Heptio Contour IngressRoute objects.
@@ -103,7 +104,7 @@ func NewContourIngressRouteSource(
 
 	// wait for the local cache to be populated.
 	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
-		return ingressRouteInformer.Informer().HasSynced() == true, nil
+		return ingressRouteInformer.Informer().HasSynced(), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to sync cache: %v", err)
@@ -330,4 +331,7 @@ func parseContourLoadBalancerService(service string) (namespace, name string, er
 	}
 
 	return
+}
+
+func (sc *ingressRouteSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
 }

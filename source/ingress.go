@@ -22,19 +22,19 @@ import (
 	"sort"
 	"strings"
 	"text/template"
-
 	"time"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/extensions/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
 	extinformers "k8s.io/client-go/informers/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/kubernetes/pkg/util/async"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 const (
@@ -56,6 +56,7 @@ type ingressSource struct {
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
 	ingressInformer          extinformers.IngressInformer
+	runner                   *async.BoundedFrequencyRunner
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
@@ -91,7 +92,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 
 	// wait for the local cache to be populated.
 	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
-		return ingressInformer.Informer().HasSynced() == true, nil
+		return ingressInformer.Informer().HasSynced(), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to sync cache: %v", err)
@@ -201,11 +202,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 
 // filterByAnnotations filters a list of ingresses by a given annotation selector.
 func (sc *ingressSource) filterByAnnotations(ingresses []*v1beta1.Ingress) ([]*v1beta1.Ingress, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := getLabelSelector(sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -218,11 +215,8 @@ func (sc *ingressSource) filterByAnnotations(ingresses []*v1beta1.Ingress) ([]*v
 	filteredList := []*v1beta1.Ingress{}
 
 	for _, ingress := range ingresses {
-		// convert the ingress' annotations to an equivalent label selector
-		annotations := labels.Set(ingress.Annotations)
-
 		// include ingress if its annotations match the selector
-		if selector.Matches(annotations) {
+		if matchLabelSelector(selector, ingress.Annotations) {
 			filteredList = append(filteredList, ingress)
 		}
 	}
@@ -302,4 +296,33 @@ func targetsFromIngressStatus(status v1beta1.IngressStatus) endpoint.Targets {
 	}
 
 	return targets
+}
+
+func (sc *ingressSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+	// Add custom resource event handler
+	log.Debug("Adding (bounded) event handler for ingress")
+
+	maxInterval := 24 * time.Hour // handler will be called if it has not run in 24 hours
+	burst := 2                    // allow up to two handler burst calls
+	log.Debugf("Adding handler to BoundedFrequencyRunner with minInterval: %v, syncPeriod: %v, bursts: %d",
+		minInterval, maxInterval, burst)
+	sc.runner = async.NewBoundedFrequencyRunner("ingress-handler", func() {
+		_ = handler()
+	}, minInterval, maxInterval, burst)
+	go sc.runner.Loop(stopChan)
+
+	// run the handler function as soon as the BoundedFrequencyRunner will allow when an update occurs
+	sc.ingressInformer.Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				sc.runner.Run()
+			},
+			UpdateFunc: func(old interface{}, new interface{}) {
+				sc.runner.Run()
+			},
+			DeleteFunc: func(obj interface{}) {
+				sc.runner.Run()
+			},
+		},
+	)
 }

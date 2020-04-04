@@ -22,8 +22,11 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 const (
@@ -57,6 +60,9 @@ const (
 // Source defines the interface Endpoint sources should implement.
 type Source interface {
 	Endpoints() ([]*endpoint.Endpoint, error)
+	// AddEventHandler adds an event handler function that's called when (supported) sources have changed.
+	// The handler should not be called more than than once per time.Duration and not again after stop channel is closed.
+	AddEventHandler(func() error, <-chan struct{}, time.Duration)
 }
 
 func getTTLFromAnnotations(annotations map[string]string) (endpoint.TTL, error) {
@@ -65,7 +71,7 @@ func getTTLFromAnnotations(annotations map[string]string) (endpoint.TTL, error) 
 	if !exists {
 		return ttlNotConfigured, nil
 	}
-	ttlValue, err := strconv.ParseInt(ttlAnnotation, 10, 64)
+	ttlValue, err := parseTTL(ttlAnnotation)
 	if err != nil {
 		return ttlNotConfigured, fmt.Errorf("\"%v\" is not a valid TTL value", ttlAnnotation)
 	}
@@ -73,6 +79,21 @@ func getTTLFromAnnotations(annotations map[string]string) (endpoint.TTL, error) 
 		return ttlNotConfigured, fmt.Errorf("TTL value must be between [%d, %d]", ttlMinimum, ttlMaximum)
 	}
 	return endpoint.TTL(ttlValue), nil
+}
+
+// parseTTL parses TTL from string, returning duration in seconds.
+// parseTTL supports both integers like "600" and durations based
+// on Go Duration like "10m", hence "600" and "10m" represent the same value.
+//
+// Note: for durations like "1.5s" the fraction is omitted (resulting in 1 second
+// for the example).
+func parseTTL(s string) (ttlSeconds int64, err error) {
+	ttlDuration, err := time.ParseDuration(s)
+	if err != nil {
+		return strconv.ParseInt(s, 10, 64)
+	}
+
+	return int64(ttlDuration.Seconds()), nil
 }
 
 func getHostnamesFromAnnotations(annotations map[string]string) []string {
@@ -189,4 +210,17 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 	}
 
 	return endpoints
+}
+
+func getLabelSelector(annotationFilter string) (labels.Selector, error) {
+	labelSelector, err := metav1.ParseToLabelSelector(annotationFilter)
+	if err != nil {
+		return nil, err
+	}
+	return metav1.LabelSelectorAsSelector(labelSelector)
+}
+
+func matchLabelSelector(selector labels.Selector, srcAnnotations map[string]string) bool {
+	annotations := labels.Set(srcAnnotations)
+	return selector.Matches(annotations)
 }

@@ -23,19 +23,12 @@ import (
 	"testing"
 
 	"github.com/digitalocean/godo"
-
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-)
 
-type mockDigitalOceanInterface interface {
-	List(context.Context, *godo.ListOptions) ([]godo.Domain, *godo.Response, error)
-	Create(context.Context, *godo.DomainCreateRequest) (*godo.Domain, *godo.Response, error)
-	Delete(context.Context, string) (*godo.Response, error)
-}
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
+)
 
 type mockDigitalOceanClient struct{}
 
@@ -114,150 +107,6 @@ func (m *mockDigitalOceanClient) Records(ctx context.Context, domain string, opt
 	}
 }
 
-type mockDigitalOceanListFail struct{}
-
-func (m *mockDigitalOceanListFail) List(context.Context, *godo.ListOptions) ([]godo.Domain, *godo.Response, error) {
-	return []godo.Domain{}, nil, fmt.Errorf("Fail to get domains")
-}
-
-func (m *mockDigitalOceanListFail) Create(context.Context, *godo.DomainCreateRequest) (*godo.Domain, *godo.Response, error) {
-	return &godo.Domain{Name: "example.com"}, nil, nil
-}
-
-func (m *mockDigitalOceanListFail) CreateRecord(context.Context, string, *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
-	return &godo.DomainRecord{ID: 1}, nil, nil
-}
-
-func (m *mockDigitalOceanListFail) Delete(context.Context, string) (*godo.Response, error) {
-	return nil, nil
-}
-func (m *mockDigitalOceanListFail) DeleteRecord(ctx context.Context, domain string, id int) (*godo.Response, error) {
-	return nil, nil
-}
-func (m *mockDigitalOceanListFail) EditRecord(ctx context.Context, domain string, id int, editRequest *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
-	return &godo.DomainRecord{ID: 1}, nil, nil
-}
-
-func (m *mockDigitalOceanListFail) Get(ctx context.Context, name string) (*godo.Domain, *godo.Response, error) {
-	return &godo.Domain{Name: "example.com"}, nil, nil
-}
-
-func (m *mockDigitalOceanListFail) Record(ctx context.Context, domain string, id int) (*godo.DomainRecord, *godo.Response, error) {
-	return &godo.DomainRecord{ID: 1}, nil, nil
-}
-
-func (m *mockDigitalOceanListFail) Records(ctx context.Context, domain string, opt *godo.ListOptions) ([]godo.DomainRecord, *godo.Response, error) {
-	return []godo.DomainRecord{{ID: 1}, {ID: 2}}, nil, nil
-}
-
-type mockDigitalOceanGetFail struct{}
-
-func (m *mockDigitalOceanGetFail) List(context.Context, *godo.ListOptions) ([]godo.Domain, *godo.Response, error) {
-	return []godo.Domain{{Name: "foo.com"}, {Name: "bar.com"}}, nil, nil
-}
-
-func (m *mockDigitalOceanGetFail) Create(context.Context, *godo.DomainCreateRequest) (*godo.Domain, *godo.Response, error) {
-	return &godo.Domain{Name: "example.com"}, nil, nil
-}
-
-func (m *mockDigitalOceanGetFail) CreateRecord(context.Context, string, *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
-	return &godo.DomainRecord{ID: 1}, nil, nil
-}
-
-func (m *mockDigitalOceanGetFail) Delete(context.Context, string) (*godo.Response, error) {
-	return nil, nil
-}
-func (m *mockDigitalOceanGetFail) DeleteRecord(ctx context.Context, domain string, id int) (*godo.Response, error) {
-	return nil, nil
-}
-func (m *mockDigitalOceanGetFail) EditRecord(ctx context.Context, domain string, id int, editRequest *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
-	return &godo.DomainRecord{ID: 1}, nil, nil
-}
-
-func (m *mockDigitalOceanGetFail) Get(ctx context.Context, name string) (*godo.Domain, *godo.Response, error) {
-	return nil, nil, fmt.Errorf("Failed to get domain")
-}
-
-func (m *mockDigitalOceanGetFail) Record(ctx context.Context, domain string, id int) (*godo.DomainRecord, *godo.Response, error) {
-	return &godo.DomainRecord{ID: 1}, nil, nil
-}
-
-func (m *mockDigitalOceanGetFail) Records(ctx context.Context, domain string, opt *godo.ListOptions) ([]godo.DomainRecord, *godo.Response, error) {
-	return []godo.DomainRecord{{ID: 1}, {ID: 2}}, nil, nil
-}
-
-type mockDigitalOceanCreateFail struct{}
-
-func (m *mockDigitalOceanCreateFail) List(context.Context, *godo.ListOptions) ([]godo.Domain, *godo.Response, error) {
-	return []godo.Domain{{Name: "foo.com"}, {Name: "bar.com"}}, nil, nil
-}
-
-func (m *mockDigitalOceanCreateFail) Create(context.Context, *godo.DomainCreateRequest) (*godo.Domain, *godo.Response, error) {
-	return nil, nil, fmt.Errorf("Failed to create domain")
-}
-
-func (m *mockDigitalOceanCreateFail) CreateRecord(context.Context, string, *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
-	return &godo.DomainRecord{ID: 1}, nil, nil
-}
-
-func (m *mockDigitalOceanCreateFail) Delete(context.Context, string) (*godo.Response, error) {
-	return nil, nil
-}
-func (m *mockDigitalOceanCreateFail) DeleteRecord(ctx context.Context, domain string, id int) (*godo.Response, error) {
-	return nil, nil
-}
-func (m *mockDigitalOceanCreateFail) EditRecord(ctx context.Context, domain string, id int, editRequest *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
-	return &godo.DomainRecord{ID: 1}, nil, nil
-}
-
-func (m *mockDigitalOceanCreateFail) Get(ctx context.Context, name string) (*godo.Domain, *godo.Response, error) {
-	return &godo.Domain{Name: "example.com"}, nil, nil
-}
-
-func (m *mockDigitalOceanCreateFail) Record(ctx context.Context, domain string, id int) (*godo.DomainRecord, *godo.Response, error) {
-	return &godo.DomainRecord{ID: 1}, nil, nil
-}
-
-func (m *mockDigitalOceanCreateFail) Records(ctx context.Context, domain string, opt *godo.ListOptions) ([]godo.DomainRecord, *godo.Response, error) {
-	return []godo.DomainRecord{{ID: 1}, {ID: 2}}, nil, nil
-}
-
-type mockDigitalOceanDeleteFail struct{}
-
-func (m *mockDigitalOceanDeleteFail) List(context.Context, *godo.ListOptions) ([]godo.Domain, *godo.Response, error) {
-	return []godo.Domain{{Name: "foo.com"}, {Name: "bar.com"}}, nil, nil
-}
-
-func (m *mockDigitalOceanDeleteFail) Create(context.Context, *godo.DomainCreateRequest) (*godo.Domain, *godo.Response, error) {
-	return &godo.Domain{Name: "example.com"}, nil, nil
-}
-
-func (m *mockDigitalOceanDeleteFail) CreateRecord(context.Context, string, *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
-	return &godo.DomainRecord{ID: 1}, nil, nil
-}
-
-func (m *mockDigitalOceanDeleteFail) Delete(context.Context, string) (*godo.Response, error) {
-	return nil, fmt.Errorf("Failed to delete domain")
-}
-func (m *mockDigitalOceanDeleteFail) DeleteRecord(ctx context.Context, domain string, id int) (*godo.Response, error) {
-	return nil, nil
-}
-func (m *mockDigitalOceanDeleteFail) EditRecord(ctx context.Context, domain string, id int, editRequest *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
-	return &godo.DomainRecord{ID: 1}, nil, nil
-}
-
-func (m *mockDigitalOceanDeleteFail) Get(ctx context.Context, name string) (*godo.Domain, *godo.Response, error) {
-	return &godo.Domain{Name: "example.com"}, nil, nil
-}
-
-func (m *mockDigitalOceanDeleteFail) Record(ctx context.Context, domain string, id int) (*godo.DomainRecord, *godo.Response, error) {
-	return &godo.DomainRecord{ID: 1}, nil, nil
-}
-
-func (m *mockDigitalOceanDeleteFail) Records(ctx context.Context, domain string, opt *godo.ListOptions) ([]godo.DomainRecord, *godo.Response, error) {
-	return []godo.DomainRecord{{ID: 1}, {ID: 2}}, nil, nil
-}
-
 type mockDigitalOceanRecordsFail struct{}
 
 func (m *mockDigitalOceanRecordsFail) List(context.Context, *godo.ListOptions) ([]godo.Domain, *godo.Response, error) {
@@ -294,114 +143,6 @@ func (m *mockDigitalOceanRecordsFail) Records(ctx context.Context, domain string
 	return []godo.DomainRecord{}, nil, fmt.Errorf("Failed to get records")
 }
 
-type mockDigitalOceanUpdateRecordsFail struct{}
-
-func (m *mockDigitalOceanUpdateRecordsFail) List(context.Context, *godo.ListOptions) ([]godo.Domain, *godo.Response, error) {
-	return []godo.Domain{{Name: "foo.com"}, {Name: "bar.com"}}, nil, nil
-}
-
-func (m *mockDigitalOceanUpdateRecordsFail) Create(context.Context, *godo.DomainCreateRequest) (*godo.Domain, *godo.Response, error) {
-	return &godo.Domain{Name: "example.com"}, nil, nil
-}
-
-func (m *mockDigitalOceanUpdateRecordsFail) CreateRecord(context.Context, string, *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
-	return &godo.DomainRecord{ID: 1}, nil, nil
-}
-
-func (m *mockDigitalOceanUpdateRecordsFail) Delete(context.Context, string) (*godo.Response, error) {
-	return nil, nil
-}
-func (m *mockDigitalOceanUpdateRecordsFail) DeleteRecord(ctx context.Context, domain string, id int) (*godo.Response, error) {
-	return nil, nil
-}
-func (m *mockDigitalOceanUpdateRecordsFail) EditRecord(ctx context.Context, domain string, id int, editRequest *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
-	return nil, nil, fmt.Errorf("Failed to update record")
-}
-
-func (m *mockDigitalOceanUpdateRecordsFail) Get(ctx context.Context, name string) (*godo.Domain, *godo.Response, error) {
-	return &godo.Domain{Name: "example.com"}, nil, nil
-}
-
-func (m *mockDigitalOceanUpdateRecordsFail) Record(ctx context.Context, domain string, id int) (*godo.DomainRecord, *godo.Response, error) {
-	return &godo.DomainRecord{ID: 1}, nil, nil
-}
-
-func (m *mockDigitalOceanUpdateRecordsFail) Records(ctx context.Context, domain string, opt *godo.ListOptions) ([]godo.DomainRecord, *godo.Response, error) {
-	return []godo.DomainRecord{{ID: 1}, {ID: 2}}, nil, nil
-}
-
-type mockDigitalOceanDeleteRecordsFail struct{}
-
-func (m *mockDigitalOceanDeleteRecordsFail) List(context.Context, *godo.ListOptions) ([]godo.Domain, *godo.Response, error) {
-	return []godo.Domain{{Name: "foo.com"}, {Name: "bar.com"}}, nil, nil
-}
-
-func (m *mockDigitalOceanDeleteRecordsFail) Create(context.Context, *godo.DomainCreateRequest) (*godo.Domain, *godo.Response, error) {
-	return &godo.Domain{Name: "example.com"}, nil, nil
-}
-
-func (m *mockDigitalOceanDeleteRecordsFail) CreateRecord(context.Context, string, *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
-	return &godo.DomainRecord{ID: 1}, nil, nil
-}
-
-func (m *mockDigitalOceanDeleteRecordsFail) Delete(context.Context, string) (*godo.Response, error) {
-	return nil, nil
-}
-func (m *mockDigitalOceanDeleteRecordsFail) DeleteRecord(ctx context.Context, domain string, id int) (*godo.Response, error) {
-	return nil, fmt.Errorf("Failed to delete record")
-}
-func (m *mockDigitalOceanDeleteRecordsFail) EditRecord(ctx context.Context, domain string, id int, editRequest *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
-	return &godo.DomainRecord{ID: 1}, nil, nil
-}
-
-func (m *mockDigitalOceanDeleteRecordsFail) Get(ctx context.Context, name string) (*godo.Domain, *godo.Response, error) {
-	return &godo.Domain{Name: "example.com"}, nil, nil
-}
-
-func (m *mockDigitalOceanDeleteRecordsFail) Record(ctx context.Context, domain string, id int) (*godo.DomainRecord, *godo.Response, error) {
-	return &godo.DomainRecord{ID: 1}, nil, nil
-}
-
-func (m *mockDigitalOceanDeleteRecordsFail) Records(ctx context.Context, domain string, opt *godo.ListOptions) ([]godo.DomainRecord, *godo.Response, error) {
-	return []godo.DomainRecord{{ID: 1, Name: "foobar.ext-dns-test.zalando.to."}, {ID: 2}}, nil, nil
-}
-
-type mockDigitalOceanCreateRecordsFail struct{}
-
-func (m *mockDigitalOceanCreateRecordsFail) List(context.Context, *godo.ListOptions) ([]godo.Domain, *godo.Response, error) {
-	return []godo.Domain{{Name: "foo.com"}, {Name: "bar.com"}}, nil, nil
-}
-
-func (m *mockDigitalOceanCreateRecordsFail) Create(context.Context, *godo.DomainCreateRequest) (*godo.Domain, *godo.Response, error) {
-	return &godo.Domain{Name: "example.com"}, nil, nil
-}
-
-func (m *mockDigitalOceanCreateRecordsFail) CreateRecord(context.Context, string, *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
-	return nil, nil, fmt.Errorf("Failed to create record")
-}
-
-func (m *mockDigitalOceanCreateRecordsFail) Delete(context.Context, string) (*godo.Response, error) {
-	return nil, nil
-}
-func (m *mockDigitalOceanCreateRecordsFail) DeleteRecord(ctx context.Context, domain string, id int) (*godo.Response, error) {
-	return nil, nil
-}
-func (m *mockDigitalOceanCreateRecordsFail) EditRecord(ctx context.Context, domain string, id int, editRequest *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
-	return &godo.DomainRecord{ID: 1}, nil, nil
-}
-
-func (m *mockDigitalOceanCreateRecordsFail) Get(ctx context.Context, name string) (*godo.Domain, *godo.Response, error) {
-	return &godo.Domain{Name: "example.com"}, nil, nil
-}
-
-func (m *mockDigitalOceanCreateRecordsFail) Record(ctx context.Context, domain string, id int) (*godo.DomainRecord, *godo.Response, error) {
-	return &godo.DomainRecord{ID: 1}, nil, nil
-}
-
-func (m *mockDigitalOceanCreateRecordsFail) Records(ctx context.Context, domain string, opt *godo.ListOptions) ([]godo.DomainRecord, *godo.Response, error) {
-	return []godo.DomainRecord{{ID: 1, Name: "foobar.ext-dns-test.zalando.to."}, {ID: 2}}, nil, nil
-}
-
 func TestNewDigitalOceanChanges(t *testing.T) {
 	action := DigitalOceanCreate
 	endpoints := []*endpoint.Endpoint{{DNSName: "new", Targets: endpoint.Targets{"target"}}}
@@ -411,10 +152,10 @@ func TestNewDigitalOceanChanges(t *testing.T) {
 func TestDigitalOceanZones(t *testing.T) {
 	provider := &DigitalOceanProvider{
 		Client:       &mockDigitalOceanClient{},
-		domainFilter: NewDomainFilter([]string{"com"}),
+		domainFilter: endpoint.NewDomainFilter([]string{"com"}),
 	}
 
-	zones, err := provider.Zones()
+	zones, err := provider.Zones(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -446,12 +187,12 @@ func TestDigitalOceanApplyChanges(t *testing.T) {
 
 func TestNewDigitalOceanProvider(t *testing.T) {
 	_ = os.Setenv("DO_TOKEN", "xxxxxxxxxxxxxxxxx")
-	_, err := NewDigitalOceanProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
+	_, err := NewDigitalOceanProvider(context.Background(), endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
 	_ = os.Unsetenv("DO_TOKEN")
-	_, err = NewDigitalOceanProvider(NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
+	_, err = NewDigitalOceanProvider(context.Background(), endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
@@ -495,7 +236,7 @@ func TestDigitalOceanRecord(t *testing.T) {
 		Client: &mockDigitalOceanClient{},
 	}
 
-	records, err := provider.fetchRecords("example.com")
+	records, err := provider.fetchRecords(context.Background(), "example.com")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -510,15 +251,16 @@ func TestDigitalOceanAllRecords(t *testing.T) {
 	provider := &DigitalOceanProvider{
 		Client: &mockDigitalOceanClient{},
 	}
+	ctx := context.Background()
 
-	records, err := provider.Records()
+	records, err := provider.Records(ctx)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
 	require.Equal(t, 5, len(records))
 
 	provider.Client = &mockDigitalOceanRecordsFail{}
-	_, err = provider.Records()
+	_, err = provider.Records(ctx)
 	if err == nil {
 		t.Errorf("expected to fail, %s", err)
 	}

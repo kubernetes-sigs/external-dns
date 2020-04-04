@@ -21,22 +21,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Azure/go-autorest/autorest"
-
-	log "github.com/sirupsen/logrus"
-
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/privatedns/mgmt/privatedns"
+	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
+	log "github.com/sirupsen/logrus"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
-
-type azurePrivateDNSConfig struct {
-	SubscriptionID string `json:"subscriptionId" yaml:"subscriptionId"`
-	ResourceGroup  string `json:"resourceGroup" yaml:"resourceGroup"`
-}
 
 // PrivateZonesClient is an interface of privatedns.PrivateZoneClient that can be stubbed for testing.
 type PrivateZonesClient interface {
@@ -52,7 +45,7 @@ type PrivateRecordSetsClient interface {
 
 // AzurePrivateDNSProvider implements the DNS provider for Microsoft's Azure Private DNS service
 type AzurePrivateDNSProvider struct {
-	domainFilter     DomainFilter
+	domainFilter     endpoint.DomainFilter
 	zoneIDFilter     ZoneIDFilter
 	dryRun           bool
 	subscriptionID   string
@@ -64,7 +57,7 @@ type AzurePrivateDNSProvider struct {
 // NewAzurePrivateDNSProvider creates a new Azure Private DNS provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAzurePrivateDNSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, resourceGroup string, subscriptionID string, dryRun bool) (*AzurePrivateDNSProvider, error) {
+func NewAzurePrivateDNSProvider(domainFilter endpoint.DomainFilter, zoneIDFilter ZoneIDFilter, resourceGroup string, subscriptionID string, dryRun bool) (*AzurePrivateDNSProvider, error) {
 	authorizer, err := auth.NewAuthorizerFromEnvironment()
 	if err != nil {
 		return nil, err
@@ -90,8 +83,7 @@ func NewAzurePrivateDNSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFi
 // Records gets the current records.
 //
 // Returns the current records or an error if the operation failed.
-func (p *AzurePrivateDNSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
-	ctx := context.Background()
+func (p *AzurePrivateDNSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.zones(ctx)
 	if err != nil {
 		return nil, err
@@ -106,7 +98,7 @@ func (p *AzurePrivateDNSProvider) Records() (endpoints []*endpoint.Endpoint, _ e
 				log.Debugf("Skipping invalid record set with missing type.")
 				return
 			}
-			recordType = strings.TrimLeft(*recordSet.Type, "Microsoft.Network/privateDnsZones")
+			recordType = strings.TrimPrefix(*recordSet.Type, "Microsoft.Network/privateDnsZones/")
 
 			var name string
 			if recordSet.Name == nil {
@@ -126,7 +118,7 @@ func (p *AzurePrivateDNSProvider) Records() (endpoints []*endpoint.Endpoint, _ e
 				ttl = endpoint.TTL(*recordSet.TTL)
 			}
 
-			ep := endpoint.NewEndpointWithTTL(name, recordType, endpoint.TTL(ttl), targets...)
+			ep := endpoint.NewEndpointWithTTL(name, recordType, ttl, targets...)
 			log.Debugf(
 				"Found %s record for '%s' with target '%s'.",
 				ep.RecordType,
@@ -176,19 +168,9 @@ func (p *AzurePrivateDNSProvider) zones(ctx context.Context) ([]privatedns.Priva
 		zone := i.Value()
 		log.Debugf("Validating Zone: %v", *zone.Name)
 
-		if zone.Name == nil {
-			continue
+		if zone.Name != nil && p.domainFilter.Match(*zone.Name) && p.zoneIDFilter.Match(*zone.ID) {
+			zones = append(zones, zone)
 		}
-
-		if !p.domainFilter.Match(*zone.Name) {
-			continue
-		}
-
-		if !p.zoneIDFilter.Match(*zone.ID) {
-			continue
-		}
-
-		zones = append(zones, zone)
 
 		err := i.NextWithContext(ctx)
 		if err != nil {

@@ -19,7 +19,7 @@ package validation
 import (
 	"testing"
 
-	"github.com/kubernetes-sigs/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -123,4 +123,30 @@ func TestValidateBadIgnoreHostnameAnnotationsConfig(t *testing.T) {
 	cfg.FQDNTemplate = ""
 
 	assert.Error(t, ValidateConfig(cfg))
+}
+
+func TestValidateBadRfc2136Config(t *testing.T) {
+	cfg := externaldns.NewConfig()
+
+	cfg.LogFormat = "json"
+	cfg.Sources = []string{"test-source"}
+	cfg.Provider = "rfc2136"
+	cfg.RFC2136MinTTL = -1
+
+	err := ValidateConfig(cfg)
+
+	assert.NotNil(t, err)
+}
+
+func TestValidateGoodRfc2136Config(t *testing.T) {
+	cfg := externaldns.NewConfig()
+
+	cfg.LogFormat = "json"
+	cfg.Sources = []string{"test-source"}
+	cfg.Provider = "rfc2136"
+	cfg.RFC2136MinTTL = 3600
+
+	err := ValidateConfig(cfg)
+
+	assert.Nil(t, err)
 }

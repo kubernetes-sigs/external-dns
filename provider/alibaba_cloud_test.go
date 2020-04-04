@@ -22,9 +22,10 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
-	"github.com/kubernetes-sigs/external-dns/endpoint"
 
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+
+	"sigs.k8s.io/external-dns/plan"
 )
 
 type MockAlibabaCloudDNSAPI struct {
@@ -232,7 +233,7 @@ func newTestAlibabaCloudProvider(private bool) *AlibabaCloudProvider {
 	//	cfg.AccessKeyID,
 	//	cfg.AccessKeySecret,
 	//)
-	domainFilterTest := NewDomainFilter([]string{"container-service.top.", "example.org"})
+	domainFilterTest := endpoint.NewDomainFilter([]string{"container-service.top.", "example.org"})
 
 	return &AlibabaCloudProvider{
 		domainFilter: domainFilterTest,
@@ -246,7 +247,7 @@ func newTestAlibabaCloudProvider(private bool) *AlibabaCloudProvider {
 
 func TestAlibabaCloudPrivateProvider_Records(t *testing.T) {
 	p := newTestAlibabaCloudProvider(true)
-	endpoints, err := p.Records()
+	endpoints, err := p.Records(context.Background())
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
 	} else {
@@ -261,7 +262,7 @@ func TestAlibabaCloudPrivateProvider_Records(t *testing.T) {
 
 func TestAlibabaCloudProvider_Records(t *testing.T) {
 	p := newTestAlibabaCloudProvider(false)
-	endpoints, err := p.Records()
+	endpoints, err := p.Records(context.Background())
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
 	} else {
@@ -302,8 +303,9 @@ func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 			},
 		},
 	}
-	p.ApplyChanges(context.Background(), &changes)
-	endpoints, err := p.Records()
+	ctx := context.Background()
+	p.ApplyChanges(ctx, &changes)
+	endpoints, err := p.Records(ctx)
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
 	} else {
@@ -318,7 +320,7 @@ func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 
 func TestAlibabaCloudProvider_Records_PrivateZone(t *testing.T) {
 	p := newTestAlibabaCloudProvider(true)
-	endpoints, err := p.Records()
+	endpoints, err := p.Records(context.Background())
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
 	} else {
@@ -359,8 +361,9 @@ func TestAlibabaCloudProvider_ApplyChanges_PrivateZone(t *testing.T) {
 			},
 		},
 	}
-	p.ApplyChanges(context.Background(), &changes)
-	endpoints, err := p.Records()
+	ctx := context.Background()
+	p.ApplyChanges(ctx, &changes)
+	endpoints, err := p.Records(ctx)
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
 	} else {

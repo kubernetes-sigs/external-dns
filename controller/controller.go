@@ -23,10 +23,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/kubernetes-sigs/external-dns/plan"
-	"github.com/kubernetes-sigs/external-dns/provider"
-	"github.com/kubernetes-sigs/external-dns/registry"
-	"github.com/kubernetes-sigs/external-dns/source"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/registry"
+	"sigs.k8s.io/external-dns/source"
 )
 
 var (
@@ -62,6 +63,14 @@ var (
 			Help:      "Number of Endpoints in the registry",
 		},
 	)
+	lastSyncTimestamp = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "controller",
+			Name:      "last_sync_timestamp_seconds",
+			Help:      "Timestamp of last successful sync with the DNS provider",
+		},
+	)
 	deprecatedRegistryErrors = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Subsystem: "registry",
@@ -83,6 +92,7 @@ func init() {
 	prometheus.MustRegister(sourceErrorsTotal)
 	prometheus.MustRegister(sourceEndpointsTotal)
 	prometheus.MustRegister(registryEndpointsTotal)
+	prometheus.MustRegister(lastSyncTimestamp)
 	prometheus.MustRegister(deprecatedRegistryErrors)
 	prometheus.MustRegister(deprecatedSourceErrors)
 }
@@ -100,11 +110,13 @@ type Controller struct {
 	Policy plan.Policy
 	// The interval between individual synchronizations
 	Interval time.Duration
+	// The DomainFilter defines which DNS records to keep or exclude
+	DomainFilter endpoint.DomainFilter
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
-func (c *Controller) RunOnce() error {
-	records, err := c.Registry.Records()
+func (c *Controller) RunOnce(ctx context.Context) error {
+	records, err := c.Registry.Records(ctx)
 	if err != nil {
 		registryErrorsTotal.Inc()
 		deprecatedRegistryErrors.Inc()
@@ -112,7 +124,7 @@ func (c *Controller) RunOnce() error {
 	}
 	registryEndpointsTotal.Set(float64(len(records)))
 
-	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, records)
+	ctx = context.WithValue(ctx, provider.RecordsContextKey, records)
 
 	endpoints, err := c.Source.Endpoints()
 	if err != nil {
@@ -123,9 +135,10 @@ func (c *Controller) RunOnce() error {
 	sourceEndpointsTotal.Set(float64(len(endpoints)))
 
 	plan := &plan.Plan{
-		Policies: []plan.Policy{c.Policy},
-		Current:  records,
-		Desired:  endpoints,
+		Policies:     []plan.Policy{c.Policy},
+		Current:      records,
+		Desired:      endpoints,
+		DomainFilter: c.DomainFilter,
 	}
 
 	plan = plan.Calculate()
@@ -136,15 +149,17 @@ func (c *Controller) RunOnce() error {
 		deprecatedRegistryErrors.Inc()
 		return err
 	}
+
+	lastSyncTimestamp.SetToCurrentTime()
 	return nil
 }
 
 // Run runs RunOnce in a loop with a delay until stopChan receives a value.
-func (c *Controller) Run(stopChan <-chan struct{}) {
+func (c *Controller) Run(ctx context.Context, stopChan <-chan struct{}) {
 	ticker := time.NewTicker(c.Interval)
 	defer ticker.Stop()
 	for {
-		err := c.RunOnce()
+		err := c.RunOnce(ctx)
 		if err != nil {
 			log.Error(err)
 		}

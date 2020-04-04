@@ -25,8 +25,8 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 // mockPrivateZonesClient implements the methods of the Azure Private DNS Zones Client which are used in the Azure Private DNS Provider
@@ -54,7 +54,7 @@ func (m *mockPrivateZoneListResultPageIterator) getNextPage(context.Context, pri
 	// it assumed that instances of this kind of iterator are only skimmed through once per test
 	// otherwise a real implementation is required, e.g. based on a linked list
 	if m.offset < len(m.results) {
-		m.offset = m.offset + 1
+		m.offset++
 		return m.results[m.offset-1], nil
 	}
 
@@ -73,7 +73,7 @@ func (m *mockPrivateRecordSetListResultPageIterator) getNextPage(context.Context
 	// it assumed that instances of this kind of iterator are only skimmed through once per test
 	// otherwise a real implementation is required, e.g. based on a linked list
 	if m.offset < len(m.results) {
-		m.offset = m.offset + 1
+		m.offset++
 		return m.results[m.offset-1], nil
 	}
 
@@ -157,7 +157,7 @@ func createPrivateMockRecordSetMultiWithTTL(name, recordType string, ttl int64, 
 	}
 	return privatedns.RecordSet{
 		Name:                to.StringPtr(name),
-		Type:                to.StringPtr("Microsoft.Network/privateDnsZones" + recordType),
+		Type:                to.StringPtr("Microsoft.Network/privateDnsZones/" + recordType),
 		RecordSetProperties: getterFunc(values, ttl),
 	}
 
@@ -203,7 +203,7 @@ func (client *mockPrivateRecordSetsClient) CreateOrUpdate(ctx context.Context, r
 }
 
 // newMockedAzurePrivateDNSProvider creates an AzureProvider comprising the mocked clients for zones and recordsets
-func newMockedAzurePrivateDNSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, zones *[]privatedns.PrivateZone, recordSets *[]privatedns.RecordSet) (*AzurePrivateDNSProvider, error) {
+func newMockedAzurePrivateDNSProvider(domainFilter endpoint.DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, zones *[]privatedns.PrivateZone, recordSets *[]privatedns.RecordSet) (*AzurePrivateDNSProvider, error) {
 	// init zone-related parts of the mock-client
 	pageIterator := mockPrivateZoneListResultPageIterator{
 		results: []privatedns.PrivateZoneListResult{
@@ -236,7 +236,7 @@ func newMockedAzurePrivateDNSProvider(domainFilter DomainFilter, zoneIDFilter Zo
 	return newAzurePrivateDNSProvider(domainFilter, zoneIDFilter, dryRun, resourceGroup, &zonesClient, &recordSetsClient), nil
 }
 
-func newAzurePrivateDNSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, privateZonesClient PrivateZonesClient, privateRecordsClient PrivateRecordSetsClient) *AzurePrivateDNSProvider {
+func newAzurePrivateDNSProvider(domainFilter endpoint.DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, resourceGroup string, privateZonesClient PrivateZonesClient, privateRecordsClient PrivateRecordSetsClient) *AzurePrivateDNSProvider {
 	return &AzurePrivateDNSProvider{
 		domainFilter:     domainFilter,
 		zoneIDFilter:     zoneIDFilter,
@@ -248,7 +248,7 @@ func newAzurePrivateDNSProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFi
 }
 
 func TestAzurePrivateDNSRecord(t *testing.T) {
-	provider, err := newMockedAzurePrivateDNSProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s",
+	provider, err := newMockedAzurePrivateDNSProvider(endpoint.NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s",
 		&[]privatedns.PrivateZone{
 			createMockPrivateZone("example.com", "/privateDnsZones/example.com"),
 		},
@@ -266,7 +266,7 @@ func TestAzurePrivateDNSRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	actual, err := provider.Records()
+	actual, err := provider.Records(context.Background())
 
 	if err != nil {
 		t.Fatal(err)
@@ -284,7 +284,7 @@ func TestAzurePrivateDNSRecord(t *testing.T) {
 }
 
 func TestAzurePrivateDNSMultiRecord(t *testing.T) {
-	provider, err := newMockedAzurePrivateDNSProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s",
+	provider, err := newMockedAzurePrivateDNSProvider(endpoint.NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, "k8s",
 		&[]privatedns.PrivateZone{
 			createMockPrivateZone("example.com", "/privateDnsZones/example.com"),
 		},
@@ -302,7 +302,7 @@ func TestAzurePrivateDNSMultiRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	actual, err := provider.Records()
+	actual, err := provider.Records(context.Background())
 
 	if err != nil {
 		t.Fatal(err)
@@ -382,7 +382,7 @@ func testAzurePrivateDNSApplyChangesInternal(t *testing.T, dryRun bool, client P
 	}
 
 	provider := newAzurePrivateDNSProvider(
-		NewDomainFilter([]string{""}),
+		endpoint.NewDomainFilter([]string{""}),
 		NewZoneIDFilter([]string{""}),
 		dryRun,
 		"group",

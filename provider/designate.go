@@ -32,9 +32,9 @@ import (
 	"github.com/gophercloud/gophercloud/pagination"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/pkg/tlsutils"
-	"github.com/kubernetes-sigs/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/tlsutils"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -229,12 +229,12 @@ type designateProvider struct {
 	client designateClientInterface
 
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 	dryRun       bool
 }
 
 // NewDesignateProvider is a factory function for OpenStack designate providers
-func NewDesignateProvider(domainFilter DomainFilter, dryRun bool) (Provider, error) {
+func NewDesignateProvider(domainFilter endpoint.DomainFilter, dryRun bool) (Provider, error) {
 	client, err := newDesignateClient()
 	if err != nil {
 		return nil, err
@@ -308,7 +308,7 @@ func (p designateProvider) getHostZoneID(hostname string, managedZones map[strin
 }
 
 // Records returns the list of records.
-func (p designateProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p designateProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	var result []*endpoint.Endpoint
 	managedZones, err := p.getZones()
 	if err != nil {

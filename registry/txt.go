@@ -19,15 +19,15 @@ package registry
 import (
 	"context"
 	"errors"
-	"time"
-
 	"fmt"
 	"strings"
+	"time"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
-	"github.com/kubernetes-sigs/external-dns/provider"
 	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 // TXTRegistry implements registry interface with ownership implemented via associated TXT records
@@ -61,7 +61,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, ownerID string, cache
 // Records returns the current records from the registry excluding TXT Records
 // If TXT records was created previously to indicate ownership its corresponding value
 // will be added to the endpoints Labels map
-func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
+func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	// If we have the zones cached AND we have refreshed the cache since the
 	// last given interval, then just use the cached results.
 	if im.recordsCache != nil && time.Since(im.recordsCacheRefreshTime) < im.cacheInterval {
@@ -69,7 +69,7 @@ func (im *TXTRegistry) Records() ([]*endpoint.Endpoint, error) {
 		return im.recordsCache, nil
 	}
 
-	records, err := im.provider.Records()
+	records, err := im.provider.Records(ctx)
 	if err != nil {
 		return nil, err
 	}

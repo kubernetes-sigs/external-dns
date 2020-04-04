@@ -23,17 +23,18 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kubernetes-sigs/external-dns/endpoint"
-	"github.com/kubernetes-sigs/external-dns/plan"
 	rc0 "github.com/nic-at/rc0go"
 	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 // RcodeZeroProvider implements the DNS provider for RcodeZero Anycast DNS.
 type RcodeZeroProvider struct {
 	Client *rc0.Client
 
-	DomainFilter DomainFilter
+	DomainFilter endpoint.DomainFilter
 	DryRun       bool
 	TXTEncrypt   bool
 	Key          []byte
@@ -42,7 +43,7 @@ type RcodeZeroProvider struct {
 // NewRcodeZeroProvider creates a new RcodeZero Anycast DNS provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewRcodeZeroProvider(domainFilter DomainFilter, dryRun bool, txtEnc bool) (*RcodeZeroProvider, error) {
+func NewRcodeZeroProvider(domainFilter endpoint.DomainFilter, dryRun bool, txtEnc bool) (*RcodeZeroProvider, error) {
 
 	client, err := rc0.NewClient(os.Getenv("RC0_API_KEY"))
 
@@ -95,7 +96,7 @@ func (p *RcodeZeroProvider) Zones() ([]*rc0.Zone, error) {
 // Records returns resource records
 //
 // Decrypts TXT records if TXT-Encrypt flag is set and key is provided
-func (p *RcodeZeroProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p *RcodeZeroProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 
 	zones, err := p.Zones()
 	if err != nil {
@@ -128,10 +129,8 @@ func (p *RcodeZeroProvider) Records() ([]*endpoint.Endpoint, error) {
 						}
 					}
 
-				} else {
-					if !r.Records[0].Disabled {
-						endpoints = append(endpoints, endpoint.NewEndpointWithTTL(r.Name, r.Type, endpoint.TTL(r.TTL), r.Records[0].Content))
-					}
+				} else if !r.Records[0].Disabled {
+					endpoints = append(endpoints, endpoint.NewEndpointWithTTL(r.Name, r.Type, endpoint.TTL(r.TTL), r.Records[0].Content))
 				}
 
 			}
