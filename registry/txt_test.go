@@ -52,6 +52,7 @@ func testTXTRegistryNew(t *testing.T) {
 
 	r, err := NewTXTRegistry(p, "txt", "", "owner", time.Hour)
 	require.NoError(t, err)
+	assert.Equal(t, p, r.provider)
 
 	r, err = NewTXTRegistry(p, "", "txt", "owner", time.Hour)
 	require.NoError(t, err)
