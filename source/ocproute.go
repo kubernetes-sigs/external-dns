@@ -108,6 +108,7 @@ func NewOcpRouteSource(
 	}, nil
 }
 
+// TODO add a meaningful EventHandler
 func (ors *ocpRouteSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
 }
 
@@ -138,7 +139,7 @@ func (ors *ocpRouteSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		orEndpoints := endpointsFromOcpRoute(ocpRoute, ors.ignoreHostnameAnnotation)
 
 		// apply template if host is missing on OpenShift Route
-		if (ors.combineFQDNAnnotation || len(orEndpoints) ==0) && ors.fqdnTemplate != nil {
+		if (ors.combineFQDNAnnotation || len(orEndpoints) == 0) && ors.fqdnTemplate != nil {
 			oEndpoints, err := ors.endpointsFromTemplate(ocpRoute)
 			if err != nil {
 				return nil, err

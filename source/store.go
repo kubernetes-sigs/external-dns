@@ -143,6 +143,7 @@ func (p *SingletonClientGenerator) ContourClient() (contour.Interface, error) {
 	return p.contourClient, err
 }
 
+// OpenShiftClient generates an openshift client if it was not created before
 func (p *SingletonClientGenerator) OpenShiftClient() (openshift.Interface, error) {
 	var err error
 	p.openshiftOnce.Do(func() {
@@ -373,6 +374,9 @@ func NewContourClient(kubeConfig, kubeMaster string, requestTimeout time.Duratio
 	return client, nil
 }
 
+// NewOpenShiftClient returns a new Openshift client object. It takes a Config and
+// uses KubeMaster and KubeConfig attributes to connect to the cluster. If
+// KubeConfig isn't provided it defaults to using the recommended default.
 func NewOpenShiftClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) (*openshift.Clientset, error) {
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
