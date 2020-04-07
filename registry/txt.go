@@ -20,9 +20,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
-	"regexp"
 
 	log "github.com/sirupsen/logrus"
 
@@ -240,15 +240,14 @@ func (pr affixNameMapper) toEndpointName(txtDNSName string) string {
 		DNSName := regex.Split(lowerDNSName, 2)
 		if strings.HasSuffix(DNSName[0], pr.suffix) {
 			return strings.TrimSuffix(DNSName[0], pr.suffix) + "." + DNSName[1]
-		}	
+		}
 	}
 	return ""
 }
 
-
 func (pr affixNameMapper) toTXTName(endpointDNSName string) string {
 	regex := regexp.MustCompile(`\.`)
-    DNSName := regex.Split(endpointDNSName, 2)
+	DNSName := regex.Split(endpointDNSName, 2)
 	return pr.prefix + DNSName[0] + pr.suffix + "." + DNSName[1]
 }
 
