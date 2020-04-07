@@ -26,8 +26,8 @@ import (
 
 	"github.com/cloudfoundry-community/go-cfclient"
 	contour "github.com/heptio/contour/apis/generated/clientset/versioned"
-	openshift "github.com/openshift/client-go/route/clientset/versioned"
 	"github.com/linki/instrumented_http"
+	openshift "github.com/openshift/client-go/route/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	istiocontroller "istio.io/istio/pilot/pkg/config/kube/crd/controller"
 	istiomodel "istio.io/istio/pilot/pkg/model"
@@ -391,7 +391,7 @@ func NewOpenShiftClient(kubeConfig, kubeMaster string, requestTimeout time.Durat
 
 	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
 		return instrumented_http.NewTransport(rt, &instrumented_http.Callbacks{
-			PathProcessor:  func(path string) string {
+			PathProcessor: func(path string) string {
 				parts := strings.Split(path, "/")
 				return parts[len(parts)-1]
 			},
