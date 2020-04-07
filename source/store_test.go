@@ -22,8 +22,8 @@ import (
 
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
 	contour "github.com/heptio/contour/apis/generated/clientset/versioned"
-	openshift "github.com/openshift/client-go/route/clientset/versioned"
 	fakeContour "github.com/heptio/contour/apis/generated/clientset/versioned/fake"
+	openshift "github.com/openshift/client-go/route/clientset/versioned"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	istiomodel "istio.io/istio/pilot/pkg/model"

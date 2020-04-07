@@ -24,11 +24,11 @@ import (
 	"text/template"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	routeapi "github.com/openshift/api/route/v1"
 	versioned "github.com/openshift/client-go/route/clientset/versioned"
 	extInformers "github.com/openshift/client-go/route/informers/externalversions"
 	routeInformer "github.com/openshift/client-go/route/informers/externalversions/route/v1"
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -43,7 +43,7 @@ import (
 // does not update, or to override with alternative endpoint)
 type ocpRouteSource struct {
 	client                   versioned.Interface
-	namespace 	             string
+	namespace                string
 	annotationFilter         string
 	fqdnTemplate             *template.Template
 	combineFQDNAnnotation    bool
@@ -81,7 +81,7 @@ func NewOcpRouteSource(
 	// Add default resource event handlers to properly initialize informer.
 	routeInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc:    func(obj interface{}) {
+			AddFunc: func(obj interface{}) {
 			},
 		},
 	)
