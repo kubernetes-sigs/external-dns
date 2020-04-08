@@ -288,18 +288,20 @@ func TestAWSZones(t *testing.T) {
 	for _, ti := range []struct {
 		msg            string
 		zoneIDFilter   ZoneIDFilter
+		zoneNameFilter ZoneNameFilter
 		zoneTypeFilter ZoneTypeFilter
 		zoneTagFilter  ZoneTagFilter
 		expectedZones  map[string]*route53.HostedZone
 	}{
-		{"no filter", NewZoneIDFilter([]string{}), NewZoneTypeFilter(""), NewZoneTagFilter([]string{}), allZones},
-		{"public filter", NewZoneIDFilter([]string{}), NewZoneTypeFilter("public"), NewZoneTagFilter([]string{}), publicZones},
-		{"private filter", NewZoneIDFilter([]string{}), NewZoneTypeFilter("private"), NewZoneTagFilter([]string{}), privateZones},
-		{"unknown filter", NewZoneIDFilter([]string{}), NewZoneTypeFilter("unknown"), NewZoneTagFilter([]string{}), noZones},
-		{"zone id filter", NewZoneIDFilter([]string{"/hostedzone/zone-3.ext-dns-test-2.teapot.zalan.do."}), NewZoneTypeFilter(""), NewZoneTagFilter([]string{}), privateZones},
-		{"tag filter", NewZoneIDFilter([]string{}), NewZoneTypeFilter(""), NewZoneTagFilter([]string{"zone=3"}), privateZones},
+		{"no filter", NewZoneIDFilter([]string{}), NewZoneNameFilter([]string{}), NewZoneTypeFilter(""), NewZoneTagFilter([]string{}), allZones},
+		{"public filter", NewZoneIDFilter([]string{}), NewZoneNameFilter([]string{}), NewZoneTypeFilter("public"), NewZoneTagFilter([]string{}), publicZones},
+		{"private filter", NewZoneIDFilter([]string{}), NewZoneNameFilter([]string{}), NewZoneTypeFilter("private"), NewZoneTagFilter([]string{}), privateZones},
+		{"unknown filter", NewZoneIDFilter([]string{}), NewZoneNameFilter([]string{}), NewZoneTypeFilter("unknown"), NewZoneTagFilter([]string{}), noZones},
+		{"zone id filter", NewZoneIDFilter([]string{"/hostedzone/zone-3.ext-dns-test-2.teapot.zalan.do."}), NewZoneNameFilter([]string{}), NewZoneTypeFilter(""), NewZoneTagFilter([]string{}), privateZones},
+		{"zone name filter", NewZoneIDFilter([]string{}), NewZoneNameFilter([]string{"zone-3.ext-dns-test-2.teapot.zalan.do."}), NewZoneTypeFilter(""), NewZoneTagFilter([]string{}), privateZones},
+		{"tag filter", NewZoneIDFilter([]string{}), NewZoneNameFilter([]string{}), NewZoneTypeFilter(""), NewZoneTagFilter([]string{"zone=3"}), privateZones},
 	} {
-		provider, _ := newAWSProviderWithTagFilter(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), ti.zoneIDFilter, ti.zoneTypeFilter, ti.zoneTagFilter, defaultEvaluateTargetHealth, false, []*endpoint.Endpoint{})
+		provider, _ := newAWSProviderWithTagFilter(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), ti.zoneIDFilter, ti.zoneNameFilter, ti.zoneTypeFilter, ti.zoneTagFilter, defaultEvaluateTargetHealth, false, []*endpoint.Endpoint{})
 
 		zones, err := provider.Zones(context.Background())
 		require.NoError(t, err)
@@ -1181,10 +1183,10 @@ func escapeAWSRecords(t *testing.T, provider *AWSProvider, zone string) {
 	}
 }
 func newAWSProvider(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter ZoneIDFilter, zoneTypeFilter ZoneTypeFilter, evaluateTargetHealth, dryRun bool, records []*endpoint.Endpoint) (*AWSProvider, *Route53APIStub) {
-	return newAWSProviderWithTagFilter(t, domainFilter, zoneIDFilter, zoneTypeFilter, NewZoneTagFilter([]string{}), evaluateTargetHealth, dryRun, records)
+	return newAWSProviderWithTagFilter(t, domainFilter, zoneIDFilter, NewZoneNameFilter([]string{}), zoneTypeFilter, NewZoneTagFilter([]string{}), evaluateTargetHealth, dryRun, records)
 }
 
-func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter ZoneIDFilter, zoneTypeFilter ZoneTypeFilter, zoneTagFilter ZoneTagFilter, evaluateTargetHealth, dryRun bool, records []*endpoint.Endpoint) (*AWSProvider, *Route53APIStub) {
+func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter ZoneIDFilter, zoneNameFilter ZoneNameFilter, zoneTypeFilter ZoneTypeFilter, zoneTagFilter ZoneTagFilter, evaluateTargetHealth, dryRun bool, records []*endpoint.Endpoint) (*AWSProvider, *Route53APIStub) {
 	client := NewRoute53APIStub()
 
 	provider := &AWSProvider{
@@ -1194,6 +1196,7 @@ func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilte
 		evaluateTargetHealth: evaluateTargetHealth,
 		domainFilter:         domainFilter,
 		zoneIDFilter:         zoneIDFilter,
+		zoneNameFilter:       zoneNameFilter,
 		zoneTypeFilter:       zoneTypeFilter,
 		zoneTagFilter:        zoneTagFilter,
 		dryRun:               false,
