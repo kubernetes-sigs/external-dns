@@ -30,8 +30,8 @@ import (
 	"strings"
 	"time"
 
-	etcdcv3 "go.etcd.io/etcd/clientv3"
 	log "github.com/sirupsen/logrus"
+	etcdcv3 "go.etcd.io/etcd/clientv3"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
