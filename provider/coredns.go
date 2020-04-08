@@ -259,7 +259,7 @@ func NewCoreDNSProvider(domainFilter endpoint.DomainFilter, prefix string, dryRu
 }
 
 // Find takes a Endpoint slice and looks for an element in it. If found it will
-// return it's key, otherwise it will return -1 and a bool of false.
+// return its key, otherwise it will return -1 and a bool of false.
 func findEp(slice []*endpoint.Endpoint, dnsName string) (int, bool) {
 	for i, item := range slice {
 		if item.DNSName == dnsName {
@@ -270,7 +270,7 @@ func findEp(slice []*endpoint.Endpoint, dnsName string) (int, bool) {
 }
 
 // Find takes a ep.Targets string slice and looks for an element in it. If found it will
-// return it's key, otherwise it will return -1 and a bool of false.
+// return its string value, otherwise it will return empty string and a bool of false.
 func findLabelInTargets(targets []string, label string) (string, bool) {
 	for _, target := range targets {
 		if target == label {
