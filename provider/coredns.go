@@ -259,14 +259,14 @@ func NewCoreDNSProvider(domainFilter endpoint.DomainFilter, prefix string, dryRu
 }
 
 // Find takes a Endpoint slice and looks for an element in it. If found it will
-// return its key, otherwise it will return -1 and a bool of false.
-func findEp(slice []*endpoint.Endpoint, dnsName string) (int, bool) {
-	for i, item := range slice {
+// return Endpoint, otherwise it will return nil and a bool of false.
+func findEp(slice []*endpoint.Endpoint, dnsName string) (*endpoint.Endpoint, bool) {
+	for _, item := range slice {
 		if item.DNSName == dnsName {
-			return i, true
+			return item, true
 		}
 	}
-	return -1, false
+	return nil, false
 }
 
 // Find takes a ep.Targets string slice and looks for an element in it. If found it will
@@ -298,10 +298,8 @@ func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 		log.Debugf("Getting service (%v) with service host (%s)", service, service.Host)
 		prefix := strings.Join(domains[:service.TargetStrip], ".")
 		if service.Host != "" {
-			foundEpIndex, found := findEp(result, dnsName)
-			var ep *endpoint.Endpoint
+			ep, found := findEp(result, dnsName)
 			if found {
-				ep = result[foundEpIndex]
 				ep.Targets = append(ep.Targets, service.Host)
 				log.Debugf("Exteding ep (%s) with new service host (%s)", ep, service.Host)
 			} else {
