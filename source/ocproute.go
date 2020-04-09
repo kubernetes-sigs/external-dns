@@ -273,8 +273,8 @@ func targetsFromOcpRouteStatus(status routeapi.RouteStatus) endpoint.Targets {
 	var targets endpoint.Targets
 
 	for _, ing := range status.Ingress {
-		if ing.Host != "" {
-			targets = append(targets, ing.Host)
+		if ing.RouterCanonicalHostname != "" {
+			targets = append(targets, ing.RouterCanonicalHostname)
 		}
 	}
 
