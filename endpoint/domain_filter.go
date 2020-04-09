@@ -17,7 +17,10 @@ limitations under the License.
 package endpoint
 
 import (
+	"regexp"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // DomainFilter holds a lists of valid domain names
@@ -26,6 +29,10 @@ type DomainFilter struct {
 	Filters []string
 	// exclude define what domains not to match
 	exclude []string
+	// regex defines a regular expression to match the domains
+	regex string
+	// regexExclusion defines a regular expression to exclude the domains matched
+	regexExclusion string
 }
 
 // prepareFilters provides consistent trimming for filters/exclude params
@@ -39,16 +46,26 @@ func prepareFilters(filters []string) []string {
 
 // NewDomainFilterWithExclusions returns a new DomainFilter, given a list of matches and exclusions
 func NewDomainFilterWithExclusions(domainFilters []string, excludeDomains []string) DomainFilter {
-	return DomainFilter{prepareFilters(domainFilters), prepareFilters(excludeDomains)}
+	return DomainFilter{prepareFilters(domainFilters), prepareFilters(excludeDomains), "", ""}
 }
 
 // NewDomainFilter returns a new DomainFilter given a comma separated list of domains
 func NewDomainFilter(domainFilters []string) DomainFilter {
-	return DomainFilter{prepareFilters(domainFilters), []string{}}
+	return DomainFilter{prepareFilters(domainFilters), []string{}, "", ""}
+}
+
+// NewRegexDomainFilter returns a new DomainFilter given a regular expression
+func NewRegexDomainFilter(regexDomainFilter string, regexDomainExclusion string) DomainFilter {
+	return DomainFilter{[]string{}, []string{}, regexDomainFilter, regexDomainExclusion}
 }
 
 // Match checks whether a domain can be found in the DomainFilter.
+// RegexFilter takes precedence over Filters
 func (df DomainFilter) Match(domain string) bool {
+	if df.regex != "" {
+		return matchRegex(df.regex, df.regexExclusion, domain)
+	}
+
 	return matchFilter(df.Filters, domain, true) && !matchFilter(df.exclude, domain, false)
 }
 
@@ -78,9 +95,34 @@ func matchFilter(filters []string, domain string, emptyval bool) bool {
 	return false
 }
 
+// matchRegex determines if a domain matches the configured regular expressions in the DomainFilter.
+// The negativeRegex, if set, takes precedence over regex. Therefore,
+// matchRegex returns true when only regex regular expression matches the domain.
+// Otherwise, if either negativeRegex matches or regex does not match the domain, it will return false.
+func matchRegex(regex string, negativeRegex string, domain string) bool {
+	strippedDomain := strings.ToLower(strings.TrimSuffix(domain, "."))
+
+	if negativeRegex != "" {
+		match, err := regexp.MatchString(negativeRegex, strippedDomain)
+		if err != nil {
+			log.Errorf("Failed to filter domain %s with the regex-exclusion filter: %v", domain, err)
+		}
+		if match {
+			return false
+		}
+	}
+	match, err := regexp.MatchString(regex, strippedDomain)
+	if err != nil {
+		log.Errorf("Failed to filter domain %s with the regex filter: %v", domain, err)
+	}
+	return match
+}
+
 // IsConfigured returns true if DomainFilter is configured, false otherwise
 func (df DomainFilter) IsConfigured() bool {
-	if len(df.Filters) == 1 {
+	if df.regex != "" {
+		return true
+	} else if len(df.Filters) == 1 {
 		return df.Filters[0] != ""
 	}
 	return len(df.Filters) > 0
