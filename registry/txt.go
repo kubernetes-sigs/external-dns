@@ -40,6 +40,8 @@ type TXTRegistry struct {
 	recordsCache            []*endpoint.Endpoint
 	recordsCacheRefreshTime time.Time
 	cacheInterval           time.Duration
+
+	existingTXTRecords      map[string]endpoint.Labels
 }
 
 // NewTXTRegistry returns new TXTRegistry object
@@ -69,6 +71,8 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		return im.recordsCache, nil
 	}
 
+	im.existingTXTRecords = map[string]endpoint.Labels{}
+
 	records, err := im.provider.Records(ctx)
 	if err != nil {
 		return nil, err
@@ -95,6 +99,9 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		if err != nil {
 			return nil, err
 		}
+
+		im.existingTXTRecords[record.DNSName] = labels
+
 		key := fmt.Sprintf("%s::%s", im.mapper.toEndpointName(record.DNSName), record.SetIdentifier)
 		labelMap[key] = labels
 	}
@@ -150,6 +157,17 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
 		txt.ProviderSpecific = r.ProviderSpecific
+
+		if e, ok := im.existingTXTRecords[txt.DNSName]; ok {
+			if endpointOwner, ok := e[endpoint.OwnerLabelKey]; ok && endpointOwner == im.ownerID {
+				log.Debugf("Existing TXT record found for %s, deleting it.\n", txt.DNSName)
+
+				filteredChanges.Delete = append(filteredChanges.Delete, txt)
+			} else {
+				log.Debugf(`Existing TXT record found for %s, but it cannot be deleted because owner id does not match, found: "%s", required: "%s"`, txt.DNSName, endpointOwner, im.ownerID)
+			}
+		}
+
 		filteredChanges.Create = append(filteredChanges.Create, txt)
 
 		if im.cacheInterval > 0 {
