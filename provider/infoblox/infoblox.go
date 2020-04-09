@@ -247,6 +247,10 @@ func (p *InfobloxProvider) zones() ([]ibclient.ZoneAuth, error) {
 			continue
 		}
 
+		if p.view != "" && p.view != zone.View {
+			continue
+		}
+
 		result = append(result, zone)
 	}
 
