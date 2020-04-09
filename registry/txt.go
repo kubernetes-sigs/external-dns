@@ -129,19 +129,6 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		UpdateOld: filterOwnedRecords(im.ownerID, changes.UpdateOld),
 		Delete:    filterOwnedRecords(im.ownerID, changes.Delete),
 	}
-	for _, r := range filteredChanges.Create {
-		if r.Labels == nil {
-			r.Labels = make(map[string]string)
-		}
-		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
-		txt.ProviderSpecific = r.ProviderSpecific
-		filteredChanges.Create = append(filteredChanges.Create, txt)
-
-		if im.cacheInterval > 0 {
-			im.addToCache(r)
-		}
-	}
 
 	for _, r := range filteredChanges.Delete {
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
@@ -153,6 +140,20 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
+		}
+	}
+	
+	for _, r := range filteredChanges.Create {
+		if r.Labels == nil {
+			r.Labels = make(map[string]string)
+		}
+		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
+		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
+		txt.ProviderSpecific = r.ProviderSpecific
+		filteredChanges.Create = append(filteredChanges.Create, txt)
+
+		if im.cacheInterval > 0 {
+			im.addToCache(r)
 		}
 	}
 
