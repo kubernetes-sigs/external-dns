@@ -203,6 +203,7 @@ func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53.HostedZone
 				continue
 			}
 
+			// zoneNameFilter overrides domainFilter
 			if p.zoneNameFilter.IsConfigured() {
 				if !p.zoneNameFilter.Match(aws.StringValue(zone.Name)) {
 					continue
