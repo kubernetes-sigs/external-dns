@@ -98,7 +98,7 @@ func TestNewVultrProvider(t *testing.T) {
 func TestVultrProvider_Zones(t *testing.T) {
 	mocked := mockVultrDomain{nil}
 	provider := &VultrProvider{
-		client: *&govultr.Client{
+		client: govultr.Client{
 			DNSDomain: &mocked,
 		},
 	}
@@ -121,7 +121,7 @@ func TestVultrProvider_Records(t *testing.T) {
 	mockedDomain := mockVultrDomain{nil}
 
 	provider := &VultrProvider{
-		client: *&govultr.Client{
+		client: govultr.Client{
 			DNSRecord: &mocked,
 			DNSDomain: &mockedDomain,
 		},
@@ -147,7 +147,7 @@ func TestVultrProvider_ApplyChanges(t *testing.T) {
 	mockedDomain := mockVultrDomain{nil}
 
 	provider := &VultrProvider{
-		client: *&govultr.Client{
+		client: govultr.Client{
 			DNSRecord: &mocked,
 			DNSDomain: &mockedDomain,
 		},
@@ -171,7 +171,7 @@ func TestVultrProvider_getRecordID(t *testing.T) {
 	mockedDomain := mockVultrDomain{nil}
 
 	provider := &VultrProvider{
-		client: *&govultr.Client{
+		client: govultr.Client{
 			DNSRecord: &mocked,
 			DNSDomain: &mockedDomain,
 		},
