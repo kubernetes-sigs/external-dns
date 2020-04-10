@@ -217,18 +217,6 @@ func newaffixNameMapper(prefix string, suffix string) affixNameMapper {
 	return affixNameMapper{prefix: strings.ToLower(prefix), suffix: strings.ToLower(suffix)}
 }
 
-/* func (pr affixNameMapper) toEndpointName(txtDNSName string) string {
-	lowerDNSName := strings.ToLower(txtDNSName)
-	regex := regexp.MustCompile(`\.`)
-    DNSName := regex.Split(lowerDNSName, 2)
-	if (strings.HasPrefix(DNSName[0], pr.prefix) && strings.HasSuffix(DNSName[0], pr.suffix)) {
-		DNSName[0] = strings.TrimPrefix(DNSName[0], pr.prefix)
-		DNSName[0] = strings.TrimSuffix(DNSName[0], pr.suffix)
-		return DNSName[0] + "." + DNSName[1]
-	}
-	return ""
-}*/
-
 func (pr affixNameMapper) toEndpointName(txtDNSName string) string {
 	lowerDNSName := strings.ToLower(txtDNSName)
 	if strings.HasPrefix(lowerDNSName, pr.prefix) && len(pr.suffix) == 0 {
