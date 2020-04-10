@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/vultr/govultr"
@@ -49,7 +50,7 @@ type VultrChanges struct {
 }
 
 // NewVultrProvider initializes a new Vultr BNS based provider
-func NewVultrProvider(ctx context.Context, domainFilter endpoint.DomainFilter, dryRun bool) (*VultrProvider, error) {
+func NewVultrProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*VultrProvider, error) {
 	apiKey, ok := os.LookupEnv("VULTR_API_KEY")
 	if !ok {
 		return nil, fmt.Errorf("no token found")
@@ -151,6 +152,14 @@ func (p *VultrProvider) submitChanges(ctx context.Context, changes []*VultrChang
 	for zoneName, changes := range zoneChanges {
 		for _, change := range changes {
 
+			log.WithFields(log.Fields{
+				"record": change.ResourceRecordSet.Name,
+				"type":   change.ResourceRecordSet.Type,
+				"ttl":    change.ResourceRecordSet.TTL,
+				"action": change.Action,
+				"zone":   zoneName,
+			}).Info("Changing record.")
+
 			switch change.Action {
 			case vultrCreate:
 				err = p.client.DNSRecord.Create(ctx, zoneName, change.ResourceRecordSet.Type, change.ResourceRecordSet.Name, change.ResourceRecordSet.Data, change.ResourceRecordSet.TTL, change.ResourceRecordSet.Priority)
@@ -202,29 +211,25 @@ func (p *VultrProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 	return p.submitChanges(ctx, combinedChanges)
 }
 
-func newVultrChange(action string, endpoint *endpoint.Endpoint) *VultrChanges {
-	ttl := vultrTTL
-
-	if endpoint.RecordTTL.IsConfigured() {
-		ttl = int(endpoint.RecordTTL)
-	}
-
-	change := &VultrChanges{
-		Action: action,
-		ResourceRecordSet: govultr.DNSRecord{
-			Type: endpoint.RecordType,
-			Name: endpoint.DNSName,
-			Data: endpoint.Targets[0],
-			TTL:  ttl,
-		},
-	}
-	return change
-}
-
 func newVultrChanges(action string, endpoints []*endpoint.Endpoint) []*VultrChanges {
 	changes := make([]*VultrChanges, 0, len(endpoints))
+	ttl := vultrTTL
 	for _, e := range endpoints {
-		changes = append(changes, newVultrChange(action, e))
+
+		if e.RecordTTL.IsConfigured() {
+			ttl = int(e.RecordTTL)
+		}
+
+		change := &VultrChanges{
+			Action: action,
+			ResourceRecordSet: govultr.DNSRecord{
+				Type: e.RecordType,
+				Name: e.DNSName,
+				Data: e.Targets[0],
+				TTL:  ttl,
+			},
+		}
+		changes = append(changes, change)
 	}
 	return changes
 }
@@ -257,8 +262,13 @@ func (p *VultrProvider) getRecordID(ctx context.Context, zone string, record gov
 	}
 
 	for _, r := range records {
-		if r.Name == record.Name && r.Type == record.Type {
-			return recordID, nil
+		strippedName := strings.TrimSuffix(record.Name, "."+zone)
+		if record.Name == zone {
+			strippedName = ""
+		}
+
+		if r.Name == strippedName && r.Type == record.Type {
+			return r.RecordID, nil
 		}
 	}
 
