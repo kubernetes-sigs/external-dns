@@ -95,6 +95,7 @@ The following table clarifies the current status of the providers according to t
 | RancherDNS | Alpha | |
 | Akamai FastDNS | Alpha | |
 | OVH | Alpha | |
+| Vultr | Alpha | |
 
 ## Running ExternalDNS:
 
@@ -142,6 +143,7 @@ The following tutorials are provided:
 * [TransIP](docs/tutorials/transip.md)
 * [VinylDNS](docs/tutorials/vinyldns.md)
 * [OVH](docs/tutorials/ovh.md)
+* [Vultr](docs/tutorials/vultr.md)
 
 ### Running Locally
 
