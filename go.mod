@@ -9,7 +9,7 @@ require (
 	github.com/Azure/go-autorest/autorest/adal v0.6.0
 	github.com/Azure/go-autorest/autorest/azure/auth v0.0.0-00010101000000-000000000000
 	github.com/Azure/go-autorest/autorest/to v0.3.0
-	github.com/akamai/AkamaiOPEN-edgegrid-golang v0.9.5
+	github.com/akamai/AkamaiOPEN-edgegrid-golang v0.9.10
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38 // indirect
 	github.com/alecthomas/colour v0.1.0 // indirect
 	github.com/alecthomas/kingpin v2.2.5+incompatible
@@ -68,7 +68,6 @@ replace (
 	github.com/Azure/go-autorest/autorest/adal => github.com/Azure/go-autorest/autorest/adal v0.6.0
 	github.com/Azure/go-autorest/autorest/azure/auth => github.com/Azure/go-autorest/autorest/azure/auth v0.3.0
 	github.com/golang/glog => github.com/kubermatic/glog-logrus v0.0.0-20180829085450-3fa5b9870d1d
-	github.com/h2non/gock => gopkg.in/h2non/gock.v1 v1.0.14
 	istio.io/api => istio.io/api v0.0.0-20190820204432-483f2547d882
 	istio.io/istio => istio.io/istio v0.0.0-20190911205955-c2bd59595ce6
 	k8s.io/api => k8s.io/api v0.0.0-20190817221950-ebce17126a01
