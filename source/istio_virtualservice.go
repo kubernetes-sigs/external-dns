@@ -175,6 +175,9 @@ func (sc *istioVirtualServiceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
+func (sc *istioVirtualServiceSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+}
+
 func (sc *istioVirtualServiceSource) getGateway(gateway string, vsconfig *istiomodel.Config) *istiomodel.Config {
 	if gateway == "" || gateway == "mesh" {
 		// This refers to "all sidecars in the mesh"; ignore.
