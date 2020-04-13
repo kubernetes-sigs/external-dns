@@ -97,7 +97,7 @@ func NewIstioVirtualServiceSource(
 
 	// wait for the local cache to be populated.
 	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
-		return serviceInformer.Informer().HasSynced() == true, nil
+		return serviceInformer.Informer().HasSynced(), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to sync cache: %v", err)
@@ -422,7 +422,7 @@ func virtualServiceBindsToGateway(vsconfig, gwconfig *istiomodel.Config, vsHost 
 					suffixMatch = true
 				}
 
-				if host == vsHost || (suffixMatch && strings.HasSuffix(vsHost, host[1:len(host)])) {
+				if host == vsHost || (suffixMatch && strings.HasSuffix(vsHost, host[1:])) {
 					return true
 				}
 			}
