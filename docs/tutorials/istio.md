@@ -32,7 +32,7 @@ spec:
         args:
         - --source=service
         - --source=ingress
-        - --source=istio-gateway        # chose on
+        - --source=istio-gateway        # chose one
         - --source=istio-virtualservice # or both
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
@@ -153,7 +153,7 @@ $ kubectl apply -f <(istioctl kube-inject -f https://raw.githubusercontent.com/i
 
 ##### Create an Istio Gateway:
 ```bash
-$ cat <<EOF | kubectlapply -f -
+$ cat <<EOF | kubectl apply -f -
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
