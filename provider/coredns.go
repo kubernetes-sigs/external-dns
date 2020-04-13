@@ -258,7 +258,7 @@ func NewCoreDNSProvider(domainFilter endpoint.DomainFilter, prefix string, dryRu
 	}, nil
 }
 
-// Find takes a Endpoint slice and looks for an element in it. If found it will
+// findEp takes an Endpoint slice and looks for an element in it. If found it will
 // return Endpoint, otherwise it will return nil and a bool of false.
 func findEp(slice []*endpoint.Endpoint, dnsName string) (*endpoint.Endpoint, bool) {
 	for _, item := range slice {
@@ -269,7 +269,7 @@ func findEp(slice []*endpoint.Endpoint, dnsName string) (*endpoint.Endpoint, boo
 	return nil, false
 }
 
-// Find takes a ep.Targets string slice and looks for an element in it. If found it will
+// findLabelInTargets takes an ep.Targets string slice and looks for an element in it. If found it will
 // return its string value, otherwise it will return empty string and a bool of false.
 func findLabelInTargets(targets []string, label string) (string, bool) {
 	for _, target := range targets {
@@ -301,7 +301,7 @@ func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 			ep, found := findEp(result, dnsName)
 			if found {
 				ep.Targets = append(ep.Targets, service.Host)
-				log.Debugf("Exteding ep (%s) with new service host (%s)", ep, service.Host)
+				log.Debugf("Extending ep (%s) with new service host (%s)", ep, service.Host)
 			} else {
 				ep = endpoint.NewEndpointWithTTL(
 					dnsName,
@@ -337,7 +337,7 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	}
 	for i, ep := range changes.UpdateNew {
 		ep.Labels = changes.UpdateOld[i].Labels
-		log.Debugf("Updating labels (%s)  with old labels(%s)", ep.Labels, changes.UpdateOld[i].Labels)
+		log.Debugf("Updating labels (%s) with old labels(%s)", ep.Labels, changes.UpdateOld[i].Labels)
 		grouped[ep.DNSName] = append(grouped[ep.DNSName], ep)
 	}
 	for dnsName, group := range grouped {
