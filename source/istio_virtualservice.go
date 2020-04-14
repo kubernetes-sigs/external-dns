@@ -271,39 +271,6 @@ func (sc *istioVirtualServiceSource) setResourceLabel(config istiomodel.Config, 
 	}
 }
 
-func (sc *istioVirtualServiceSource) targetsFromGatewayConfig(config *istiomodel.Config) (targets endpoint.Targets, err error) {
-	targets = getTargetsFromTargetAnnotation(config.Annotations)
-	if len(targets) > 0 {
-		return
-	}
-
-	gateway := config.Spec.(*istionetworking.Gateway)
-
-	services, err := sc.serviceInformer.Lister().Services(config.Namespace).List(labels.Everything())
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	for _, service := range services {
-		if !labels.Equals(service.Spec.Selector, gateway.Selector) {
-			// Only consider services which have the same selector as the Gateway CR.
-			// Use the target annotation to override if this picks the wrong service.
-			continue
-		}
-		for _, lb := range service.Status.LoadBalancer.Ingress {
-			if lb.IP != "" {
-				targets = append(targets, lb.IP)
-			}
-			if lb.Hostname != "" {
-				targets = append(targets, lb.Hostname)
-			}
-		}
-	}
-
-	return
-}
-
 func (sc *istioVirtualServiceSource) targetsFromVirtualServiceConfig(vsconfig *istiomodel.Config, vsHost string) ([]string, error) {
 	var targets []string
 	// for each host we need to iterate through the gateways because each host might match for only one of the gateways
@@ -315,7 +282,7 @@ func (sc *istioVirtualServiceSource) targetsFromVirtualServiceConfig(vsconfig *i
 		if !virtualServiceBindsToGateway(vsconfig, gwconfig, vsHost) {
 			continue
 		}
-		tgs, err := sc.targetsFromGatewayConfig(gwconfig)
+		tgs, err := targetsFromGatewayConfig(gwconfig, sc.serviceInformer)
 		if err != nil {
 			return targets, err
 		}

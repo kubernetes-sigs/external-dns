@@ -191,13 +191,9 @@ func (sc *istioGatewaySource) endpointsFromTemplate(config *istiomodel.Config) (
 		log.Warn(err)
 	}
 
-	targets := getTargetsFromTargetAnnotation(config.Annotations)
-
-	if len(targets) == 0 {
-		targets, err = sc.targetsFromGatewayConfig(config)
-		if err != nil {
-			return nil, err
-		}
+	targets, err := targetsFromGatewayConfig(config, sc.serviceInformer)
+	if err != nil {
+		return nil, err
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(config.Annotations)
@@ -249,21 +245,33 @@ func (sc *istioGatewaySource) setResourceLabel(config istiomodel.Config, endpoin
 	}
 }
 
-func (sc *istioGatewaySource) targetsFromGatewayConfig(config *istiomodel.Config) (targets endpoint.Targets, err error) {
+func gatewaySelectorMatchesServiceSelector(gwSelector, svcSelector map[string]string) bool {
+	for k, v := range gwSelector {
+		if lbl, ok := svcSelector[k]; !ok || lbl != v {
+			return false
+		}
+	}
+	return true
+}
+
+func targetsFromGatewayConfig(config *istiomodel.Config, serviceInformer coreinformers.ServiceInformer) (targets endpoint.Targets, err error) {
 	gateway := config.Spec.(*istionetworking.Gateway)
 
-	services, err := sc.serviceInformer.Lister().Services(config.Namespace).List(labels.Everything())
+	targets = getTargetsFromTargetAnnotation(config.Annotations)
+	if len(targets) > 0 {
+		return
+	}
+
+	services, err := serviceInformer.Lister().Services(config.Namespace).List(labels.Everything())
 	if err != nil {
 		log.Error(err)
 		return
 	}
-
 	for _, service := range services {
-		if !labels.Equals(service.Spec.Selector, gateway.Selector) {
-			// Only consider services which have the same selector as the Gateway CR.
-			// Use the target annotation to override if this picks the wrong service.
+		if !gatewaySelectorMatchesServiceSelector(gateway.Selector, service.Spec.Selector) {
 			continue
 		}
+
 		for _, lb := range service.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
 				targets = append(targets, lb.IP)
@@ -286,13 +294,9 @@ func (sc *istioGatewaySource) endpointsFromGatewayConfig(config istiomodel.Confi
 		log.Warn(err)
 	}
 
-	targets := getTargetsFromTargetAnnotation(config.Annotations)
-
-	if len(targets) == 0 {
-		targets, err = sc.targetsFromGatewayConfig(&config)
-		if err != nil {
-			return nil, err
-		}
+	targets, err := targetsFromGatewayConfig(&config, sc.serviceInformer)
+	if err != nil {
+		return nil, err
 	}
 
 	gateway := config.Spec.(*istionetworking.Gateway)
