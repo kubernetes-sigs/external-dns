@@ -125,9 +125,9 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
-		UpdateNew: filterOwnedRecords(im.ownerID, changes.UpdateNew),
-		UpdateOld: filterOwnedRecords(im.ownerID, changes.UpdateOld),
-		Delete:    filterOwnedRecords(im.ownerID, changes.Delete),
+		UpdateNew: filterOwnedRecords(im.ownerID, changes.UpdateNew, false),
+		UpdateOld: filterOwnedRecords(im.ownerID, changes.UpdateOld, true),
+		Delete:    filterOwnedRecords(im.ownerID, changes.Delete, false),
 	}
 	for _, r := range filteredChanges.Create {
 		if r.Labels == nil {

@@ -68,9 +68,9 @@ func (sdr *AWSSDRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 func (sdr *AWSSDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
-		UpdateNew: filterOwnedRecords(sdr.ownerID, changes.UpdateNew),
-		UpdateOld: filterOwnedRecords(sdr.ownerID, changes.UpdateOld),
-		Delete:    filterOwnedRecords(sdr.ownerID, changes.Delete),
+		UpdateNew: filterOwnedRecords(sdr.ownerID, changes.UpdateNew, false),
+		UpdateOld: filterOwnedRecords(sdr.ownerID, changes.UpdateOld, true),
+		Delete:    filterOwnedRecords(sdr.ownerID, changes.Delete, false),
 	}
 
 	sdr.updateLabels(filteredChanges.Create)
