@@ -32,7 +32,7 @@ spec:
         args:
         - --source=service
         - --source=ingress
-        - --source=istio-gateway        # chose one
+        - --source=istio-gateway        # choose one
         - --source=istio-virtualservice # or both
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
@@ -64,7 +64,7 @@ rules:
   resources: ["nodes"]
   verbs: ["list"]
 - apiGroups: ["networking.istio.io"]
-  # chose one or both; using the VirtualService source requires both:
+  # choose one or both; using the VirtualService source requires both:
   resources: ["gateways", "virtualservices"]
   verbs: ["get","watch","list"]
 ---
@@ -103,7 +103,7 @@ spec:
         args:
         - --source=service
         - --source=ingress
-        - --source=istio-gateway        # chose one
+        - --source=istio-gateway        # choose one
         - --source=istio-virtualservice # or both
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws

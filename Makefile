@@ -38,7 +38,7 @@ lint:
 .PHONY: verify test
 
 test:
-	go test -v -race $(shell go list ./... | grep -v /vendor/)
+	go test -v -race $(shell go list ./...)
 
 # The build targets allow to build the binary and docker image
 .PHONY: build build.docker build.mini

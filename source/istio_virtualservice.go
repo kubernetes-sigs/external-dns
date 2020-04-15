@@ -54,7 +54,7 @@ type istioVirtualServiceSource struct {
 	serviceInformer          coreinformers.ServiceInformer
 }
 
-// NewIstioGatewaySource creates a new istioVirtualServiceSource with the given config.
+// NewIstioVirtualServiceSource creates a new istioVirtualServiceSource with the given config.
 func NewIstioVirtualServiceSource(
 	kubeClient kubernetes.Interface,
 	istioClient istiomodel.ConfigStore,
@@ -116,7 +116,7 @@ func NewIstioVirtualServiceSource(
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
-// Retrieves all virtualservice resources in the source's namespace(s).
+// Retrieves all VirtualService resources in the source's namespace(s).
 func (sc *istioVirtualServiceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	configs, err := sc.istioClient.List(istiomodel.VirtualService.Type, sc.namespace)
 	if err != nil {
@@ -128,13 +128,13 @@ func (sc *istioVirtualServiceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		return nil, err
 	}
 
-	endpoints := []*endpoint.Endpoint{}
+	var endpoints []*endpoint.Endpoint
 
 	for _, config := range configs {
 		// Check controller annotation to see if we are responsible.
 		controller, ok := config.Annotations[controllerAnnotationKey]
 		if ok && controller != controllerAnnotationValue {
-			log.Debugf("Skipping virtualservice %s/%s because controller value does not match, found: %s, required: %s",
+			log.Debugf("Skipping VirtualService %s/%s because controller value does not match, found: %s, required: %s",
 				config.Namespace, config.Name, controller, controllerAnnotationValue)
 			continue
 		}
@@ -144,7 +144,7 @@ func (sc *istioVirtualServiceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			return nil, err
 		}
 
-		// apply template if host is missing on virtualservice
+		// apply template if host is missing on VirtualService
 		if (sc.combineFQDNAnnotation || len(gwEndpoints) == 0) && sc.fqdnTemplate != nil {
 			iEndpoints, err := sc.endpointsFromTemplate(&config)
 			if err != nil {
@@ -159,11 +159,11 @@ func (sc *istioVirtualServiceSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		}
 
 		if len(gwEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from virtualservice %s/%s", config.Namespace, config.Name)
+			log.Debugf("No endpoints could be generated from VirtualService %s/%s", config.Namespace, config.Name)
 			continue
 		}
 
-		log.Debugf("Endpoints generated from virtualservice: %s/%s: %v", config.Namespace, config.Name, gwEndpoints)
+		log.Debugf("Endpoints generated from VirtualService: %s/%s: %v", config.Namespace, config.Name, gwEndpoints)
 		sc.setResourceLabel(config, gwEndpoints)
 		endpoints = append(endpoints, gwEndpoints...)
 	}
@@ -186,7 +186,7 @@ func (sc *istioVirtualServiceSource) getGateway(gateway string, vsconfig *istiom
 
 	namespace, name, err := parseGateway(gateway)
 	if err != nil {
-		log.Debugf("Failed parsing gateway %s of virtualservice %s/%s", gateway, vsconfig.Namespace, vsconfig.Name)
+		log.Debugf("Failed parsing gateway %s of VirtualService %s/%s", gateway, vsconfig.Namespace, vsconfig.Name)
 		return nil
 	}
 	if namespace == "" {
@@ -195,7 +195,7 @@ func (sc *istioVirtualServiceSource) getGateway(gateway string, vsconfig *istiom
 
 	gwconfig := sc.istioClient.Get(istiomodel.Gateway.Type, name, namespace)
 	if gwconfig == nil {
-		log.Debugf("Gateway %s referenced by virtualservice %s/%s not found", gateway, vsconfig.Namespace, vsconfig.Name)
+		log.Debugf("Gateway %s referenced by VirtualService %s/%s not found", gateway, vsconfig.Namespace, vsconfig.Name)
 		return nil
 	}
 
@@ -210,7 +210,7 @@ func (sc *istioVirtualServiceSource) endpointsFromTemplate(config *istiomodel.Co
 		return nil, fmt.Errorf("failed to apply template on istio config %s: %v", config, err)
 	}
 
-	hostnames := buf.String()
+	hostnamesTemplate := buf.String()
 
 	ttl, err := getTTLFromAnnotations(config.Annotations)
 	if err != nil {
@@ -222,8 +222,8 @@ func (sc *istioVirtualServiceSource) endpointsFromTemplate(config *istiomodel.Co
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(config.Annotations)
 
 	// splits the FQDN template and removes the trailing periods
-	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
-	for _, hostname := range hostnameList {
+	hostnames := strings.Split(strings.Replace(hostnamesTemplate, " ", "", -1), ",")
+	for _, hostname := range hostnames {
 		hostname = strings.TrimSuffix(hostname, ".")
 		targets, err := sc.targetsFromVirtualServiceConfig(config, hostname)
 		if err != nil {
@@ -250,7 +250,7 @@ func (sc *istioVirtualServiceSource) filterByAnnotations(configs []istiomodel.Co
 		return configs, nil
 	}
 
-	filteredList := []istiomodel.Config{}
+	var filteredList []istiomodel.Config
 
 	for _, config := range configs {
 		// convert the annotations to an equivalent label selector
@@ -292,7 +292,7 @@ func (sc *istioVirtualServiceSource) targetsFromVirtualServiceConfig(vsconfig *i
 	return targets, nil
 }
 
-// endpointsFromGatewayConfig extracts the endpoints from an Istio Gateway Config object
+// endpointsFromVirtualServiceConfig extracts the endpoints from an Istio VirtualService Config object
 func (sc *istioVirtualServiceSource) endpointsFromVirtualServiceConfig(vsconfig istiomodel.Config) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 

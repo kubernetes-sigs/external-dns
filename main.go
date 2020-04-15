@@ -324,7 +324,7 @@ func handleSigterm(stopChan chan struct{}) {
 func serveMetrics(address string) {
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	})
 
 	http.Handle("/metrics", promhttp.Handler())

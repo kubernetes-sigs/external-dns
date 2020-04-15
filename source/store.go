@@ -141,7 +141,7 @@ func (p *SingletonClientGenerator) ContourClient() (contour.Interface, error) {
 
 // ByNames returns multiple Sources given multiple names.
 func ByNames(p ClientGenerator, names []string, cfg *Config) ([]Source, error) {
-	sources := []Source{}
+	var sources []Source
 	for _, name := range names {
 		source, err := BuildWithConfig(name, p, cfg)
 		if err != nil {

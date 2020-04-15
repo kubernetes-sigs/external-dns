@@ -126,7 +126,7 @@ func (sc *istioGatewaySource) Endpoints() ([]*endpoint.Endpoint, error) {
 		return nil, err
 	}
 
-	endpoints := []*endpoint.Endpoint{}
+	var endpoints []*endpoint.Endpoint
 
 	for _, config := range configs {
 		// Check controller annotation to see if we are responsible.
@@ -224,7 +224,7 @@ func (sc *istioGatewaySource) filterByAnnotations(configs []istiomodel.Config) (
 		return configs, nil
 	}
 
-	filteredList := []istiomodel.Config{}
+	var filteredList []istiomodel.Config
 
 	for _, config := range configs {
 		// convert the annotations to an equivalent label selector

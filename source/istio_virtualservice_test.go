@@ -32,7 +32,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-// This is a compile-time validation that gatewaySource is a Source.
+// This is a compile-time validation that istioVirtualServiceSource is a Source.
 var _ Source = &istioVirtualServiceSource{}
 
 var virtualServiceType = istiomodel.VirtualService.Type
@@ -113,6 +113,7 @@ func TestVirtualService(t *testing.T) {
 	t.Run("virtualServiceBindsToGateway", testVirtualServiceBindsToGateway)
 	t.Run("endpointsFromVirtualServiceConfig", testEndpointsFromVirtualServiceConfig)
 	t.Run("Endpoints", testVirtualServiceEndpoints)
+	t.Run("gatewaySelectorMatchesService", testGatewaySelectorMatchesService)
 }
 
 func TestNewIstioVirtualServiceSource(t *testing.T) {
@@ -1438,6 +1439,38 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			}
 
 			validateEndpoints(t, res, ti.expected)
+		})
+	}
+}
+
+func testGatewaySelectorMatchesService(t *testing.T) {
+	for _, ti := range []struct {
+		title      string
+		gwSelector map[string]string
+		lbSelector map[string]string
+		expected   bool
+	}{
+		{
+			title:      "gw selector matches lb selector",
+			gwSelector: map[string]string{"istio": "ingressgateway"},
+			lbSelector: map[string]string{"istio": "ingressgateway"},
+			expected:   true,
+		},
+		{
+			title:      "gw selector matches lb selector partially",
+			gwSelector: map[string]string{"istio": "ingressgateway"},
+			lbSelector: map[string]string{"release": "istio", "istio": "ingressgateway"},
+			expected:   true,
+		},
+		{
+			title:      "gw selector does not match lb selector",
+			gwSelector: map[string]string{"app": "mytest"},
+			lbSelector: map[string]string{"istio": "ingressgateway"},
+			expected:   false,
+		},
+	} {
+		t.Run(ti.title, func(t *testing.T) {
+			require.Equal(t, ti.expected, gatewaySelectorMatchesServiceSelector(ti.gwSelector, ti.lbSelector))
 		})
 	}
 }
