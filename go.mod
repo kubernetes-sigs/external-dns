@@ -10,10 +10,7 @@ require (
 	github.com/Azure/go-autorest/autorest/azure/auth v0.0.0-00010101000000-000000000000
 	github.com/Azure/go-autorest/autorest/to v0.3.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v0.9.10
-	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38 // indirect
-	github.com/alecthomas/colour v0.1.0 // indirect
-	github.com/alecthomas/kingpin v2.2.5+incompatible
-	github.com/alecthomas/repr v0.0.0-20181024024818-d37bc2a10ba1 // indirect
+	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20180828111155-cad214d7d71f
 	github.com/aws/aws-sdk-go v1.27.4
 	github.com/cloudflare/cloudflare-go v0.10.1
@@ -32,7 +29,6 @@ require (
 	github.com/infobloxopen/infoblox-go-client v0.0.0-20180606155407-61dc5f9b0a65
 	github.com/linki/instrumented_http v0.2.0
 	github.com/linode/linodego v0.3.0
-	github.com/mattn/go-isatty v0.0.11 // indirect
 	github.com/miekg/dns v1.0.14
 	github.com/nesv/go-dynect v0.6.0
 	github.com/nic-at/rc0go v1.1.0
@@ -41,7 +37,6 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.0.0
 	github.com/sanyu/dynectsoap v0.0.0-20181203081243-b83de5edc4e0
-	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/go-aws-auth v0.0.0-20180515143844-0c1422d1fdb9 // indirect
 	github.com/smartystreets/gunit v1.1.1 // indirect
@@ -51,7 +46,9 @@ require (
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20200401174654-e694b7bb0875
 	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
+	golang.org/x/sys v0.0.0-20191026070338-33540a1f6037 // indirect
 	google.golang.org/api v0.9.0
+	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/ns1/ns1-go.v2 v2.0.0-20190322154155-0dafb5275fd1
 	gopkg.in/yaml.v2 v2.2.4
 	istio.io/api v0.0.0-20190820204432-483f2547d882
