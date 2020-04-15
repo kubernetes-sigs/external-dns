@@ -12,7 +12,7 @@ require (
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v0.9.10
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38 // indirect
 	github.com/alecthomas/colour v0.1.0 // indirect
-	github.com/alecthomas/kingpin v2.2.5+incompatible
+	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/alecthomas/repr v0.0.0-20181024024818-d37bc2a10ba1 // indirect
 	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20180828111155-cad214d7d71f
 	github.com/aws/aws-sdk-go v1.27.4
