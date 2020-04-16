@@ -19,8 +19,10 @@ package endpoint
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -109,35 +111,43 @@ func (t Targets) IsLess(o Targets) bool {
 	return false
 }
 
-const (
-	// This property is parsed to boolean type before comparing
-	BooleanKind = "Boolean"
-)
+type PropertyKind interface {
+	Equal(string, string, string) bool
+}
 
-func CompareProperty(previous, current, kind string) bool {
-	switch kind {
-	case BooleanKind:
-		p, c := false, false
+type BooleanKind struct {
+	Default bool
+}
 
-		if previous == "true" {
-			p = true
+func (b BooleanKind) Equal(name, previous, current string) bool {
+	p, c := b.Default, b.Default
+
+	if previous != "" {
+		pp, err := strconv.ParseBool(previous)
+		if err != nil {
+			log.Errorf("Failed to parse attribute [%s]: %s", name, previous)
+		} else {
+			p = pp
 		}
-
-		if current == "true" {
-			c = true
-		}
-
-		return p == c
 	}
 
-	return previous == current
+	if current != "" {
+		cc, err := strconv.ParseBool(current)
+		if err != nil {
+			log.Errorf("Failed to parse attribute [%s]: %s", name, current)
+		} else {
+			c = cc
+		}
+	}
+
+	return p == c
 }
 
 // ProviderSpecificProperty holds the name and value of a configuration which is specific to individual DNS providers
 type ProviderSpecificProperty struct {
 	Name  string `json:"name,omitempty"`
 	Value string `json:"value,omitempty"`
-	Kind  string `json:"kind,omitempty"`
+	Kind  PropertyKind
 }
 
 func (e ProviderSpecificProperty) String() string {
@@ -207,7 +217,7 @@ func (e *Endpoint) WithProviderSpecific(key, value string) *Endpoint {
 	return e
 }
 
-func (e *Endpoint) WithProviderSpecificKind(key, value, kind string) *Endpoint {
+func (e *Endpoint) WithProviderSpecificKind(key, value string, kind PropertyKind) *Endpoint {
 	if e.ProviderSpecific == nil {
 		e.ProviderSpecific = ProviderSpecific{}
 	}

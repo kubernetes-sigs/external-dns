@@ -191,7 +191,7 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 		// As CloudFlare does not support "sets" of targets, but instead returns
 		// a single entry for each name/type/target, we have to group by name
 		// and record to allow the planner to calculate the correct plan. See #992.
-		endpoints = append(endpoints, groupByNameAndType(records)...)
+		endpoints = append(endpoints, p.groupByNameAndType(records)...)
 	}
 
 	return endpoints, nil
@@ -361,7 +361,7 @@ func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 	return proxied
 }
 
-func groupByNameAndType(records []cloudflare.DNSRecord) []*endpoint.Endpoint {
+func (p *CloudFlareProvider) groupByNameAndType(records []cloudflare.DNSRecord) []*endpoint.Endpoint {
 	endpoints := []*endpoint.Endpoint{}
 
 	// group supported records by name and type
@@ -392,7 +392,11 @@ func groupByNameAndType(records []cloudflare.DNSRecord) []*endpoint.Endpoint {
 				records[0].Type,
 				endpoint.TTL(records[0].TTL),
 				targets...).
-				WithProviderSpecificKind(source.CloudflareProxiedKey, strconv.FormatBool(records[0].Proxied), endpoint.BooleanKind))
+				WithProviderSpecificKind(
+					source.CloudflareProxiedKey,
+					strconv.FormatBool(records[0].Proxied),
+					endpoint.BooleanKind{Default: p.proxiedByDefault},
+				))
 	}
 
 	return endpoints

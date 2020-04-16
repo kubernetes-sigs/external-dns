@@ -28,25 +28,26 @@ import (
 
 type PlanTestSuite struct {
 	suite.Suite
-	fooV1Cname                       *endpoint.Endpoint
-	fooV2Cname                       *endpoint.Endpoint
-	fooV2TXT                         *endpoint.Endpoint
-	fooV2CnameNoLabel                *endpoint.Endpoint
-	fooV3CnameSameResource           *endpoint.Endpoint
-	fooA5                            *endpoint.Endpoint
-	bar127A                          *endpoint.Endpoint
-	bar127AWithTTL                   *endpoint.Endpoint
-	bar127AWithProviderSpecificUnset *endpoint.Endpoint
-	bar127AWithProviderSpecificTrue  *endpoint.Endpoint
-	bar127AWithProviderSpecificFalse *endpoint.Endpoint
-	bar192A                          *endpoint.Endpoint
-	multiple1                        *endpoint.Endpoint
-	multiple2                        *endpoint.Endpoint
-	multiple3                        *endpoint.Endpoint
-	domainFilterFiltered1            *endpoint.Endpoint
-	domainFilterFiltered2            *endpoint.Endpoint
-	domainFilterFiltered3            *endpoint.Endpoint
-	domainFilterExcluded             *endpoint.Endpoint
+	fooV1Cname                                 *endpoint.Endpoint
+	fooV2Cname                                 *endpoint.Endpoint
+	fooV2TXT                                   *endpoint.Endpoint
+	fooV2CnameNoLabel                          *endpoint.Endpoint
+	fooV3CnameSameResource                     *endpoint.Endpoint
+	fooA5                                      *endpoint.Endpoint
+	bar127A                                    *endpoint.Endpoint
+	bar127AWithTTL                             *endpoint.Endpoint
+	bar127AWithProviderSpecificUnset           *endpoint.Endpoint
+	bar127AWithProviderSpecificTrue            *endpoint.Endpoint
+	bar127AWithProviderSpecificFalse           *endpoint.Endpoint
+	bar127AWithProviderSpecificTrueDefaultTrue *endpoint.Endpoint
+	bar192A                                    *endpoint.Endpoint
+	multiple1                                  *endpoint.Endpoint
+	multiple2                                  *endpoint.Endpoint
+	multiple3                                  *endpoint.Endpoint
+	domainFilterFiltered1                      *endpoint.Endpoint
+	domainFilterFiltered2                      *endpoint.Endpoint
+	domainFilterFiltered3                      *endpoint.Endpoint
+	domainFilterExcluded                       *endpoint.Endpoint
 }
 
 func (suite *PlanTestSuite) SetupTest() {
@@ -131,7 +132,7 @@ func (suite *PlanTestSuite) SetupTest() {
 			endpoint.ProviderSpecificProperty{
 				Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
 				Value: "true",
-				Kind:  "Boolean",
+				Kind:  endpoint.BooleanKind{Default: false},
 			},
 		},
 	}
@@ -146,7 +147,22 @@ func (suite *PlanTestSuite) SetupTest() {
 			endpoint.ProviderSpecificProperty{
 				Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
 				Value: "false",
-				Kind:  "Boolean",
+				Kind:  endpoint.BooleanKind{Default: false},
+			},
+		},
+	}
+	suite.bar127AWithProviderSpecificTrueDefaultTrue = &endpoint.Endpoint{
+		DNSName:    "bar",
+		Targets:    endpoint.Targets{"127.0.0.1"},
+		RecordType: "A",
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "ingress/default/bar-127",
+		},
+		ProviderSpecific: endpoint.ProviderSpecific{
+			endpoint.ProviderSpecificProperty{
+				Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+				Value: "true",
+				Kind:  endpoint.BooleanKind{Default: true},
 			},
 		},
 	}
@@ -305,6 +321,27 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificChange() {
 
 func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificUnset() {
 	current := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificFalse}
+	desired := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificUnset}
+	expectedCreate := []*endpoint.Endpoint{}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
+func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificTrueUnset() {
+	current := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificTrueDefaultTrue}
 	desired := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificUnset}
 	expectedCreate := []*endpoint.Endpoint{}
 	expectedUpdateOld := []*endpoint.Endpoint{}

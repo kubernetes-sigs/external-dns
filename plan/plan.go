@@ -200,11 +200,11 @@ func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
 			}
 
 			if d, ok := desiredProperties[c.Name]; ok {
-				if !endpoint.CompareProperty(c.Value, d.Value, c.Kind) {
+				if !c.Kind.Equal(c.Name, c.Value, d.Value) {
 					return true
 				}
 			} else {
-				if !endpoint.CompareProperty(c.Value, "", c.Kind) {
+				if !c.Kind.Equal(c.Name, c.Value, "") {
 					return true
 				}
 			}
