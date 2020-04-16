@@ -178,44 +178,36 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 	return desired.RecordTTL != current.RecordTTL
 }
 
-func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
-	if current.ProviderSpecific == nil && len(desired.ProviderSpecific) == 0 {
-		return false
-	}
-	for _, c := range current.ProviderSpecific {
-		// don't consider target health when detecting changes
-		// see: https://github.com/kubernetes-sigs/external-dns/issues/869#issuecomment-458576954
-		if c.Name == "aws/evaluate-target-health" {
-			continue
-		}
+type propertyChange struct {
+	current string
+	desired string
+}
 
-		found := false
+func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
+	desiredProperties := map[string]endpoint.ProviderSpecificProperty{}
+
+	if desired.ProviderSpecific != nil {
 		for _, d := range desired.ProviderSpecific {
-			if d.Name == c.Name {
-				if d.Value != c.Value {
-					// provider-specific attribute updated
+			desiredProperties[d.Name] = d
+		}
+	}
+	if current.ProviderSpecific != nil {
+		for _, c := range current.ProviderSpecific {
+			// don't consider target health when detecting changes
+			// see: https://github.com/kubernetes-sigs/external-dns/issues/869#issuecomment-458576954
+			if c.Name == "aws/evaluate-target-health" {
+				continue
+			}
+
+			if d, ok := desiredProperties[c.Name]; ok {
+				if !endpoint.CompareProperty(c.Value, d.Value, c.Kind) {
 					return true
 				}
-				found = true
-				break
+			} else {
+				if !endpoint.CompareProperty(c.Value, "", c.Kind) {
+					return true
+				}
 			}
-		}
-		if !found {
-			// provider-specific attribute deleted
-			return true
-		}
-	}
-	for _, d := range desired.ProviderSpecific {
-		found := false
-		for _, c := range current.ProviderSpecific {
-			if d.Name == c.Name {
-				found = true
-				break
-			}
-		}
-		if !found {
-			// provider-specific attribute added
-			return true
 		}
 	}
 

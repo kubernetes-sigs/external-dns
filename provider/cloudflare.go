@@ -392,7 +392,7 @@ func groupByNameAndType(records []cloudflare.DNSRecord) []*endpoint.Endpoint {
 				records[0].Type,
 				endpoint.TTL(records[0].TTL),
 				targets...).
-				WithProviderSpecific(source.CloudflareProxiedKey, strconv.FormatBool(records[0].Proxied)))
+				WithProviderSpecificKind(source.CloudflareProxiedKey, strconv.FormatBool(records[0].Proxied), endpoint.BooleanKind))
 	}
 
 	return endpoints

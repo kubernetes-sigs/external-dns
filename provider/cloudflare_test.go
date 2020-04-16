@@ -273,6 +273,7 @@ func TestRecords(t *testing.T) {
 	}
 
 	assert.Equal(t, 1, len(records))
+
 	provider.Client = &mockCloudFlareDNSRecordsFail{}
 	_, err = provider.Records(ctx)
 	if err == nil {
@@ -283,6 +284,47 @@ func TestRecords(t *testing.T) {
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
+}
+
+func TestProviderPropertiesIdempotency(t *testing.T) {
+	provider := &CloudFlareProvider{
+		Client: &mockCloudFlareClient{},
+	}
+	ctx := context.Background()
+
+	current, err := provider.Records(ctx)
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
+	assert.Equal(t, 1, len(current))
+
+	desired := []*endpoint.Endpoint{}
+	for _, c := range current {
+		// Copy all except ProviderSpecific fields
+		desired = append(desired, &endpoint.Endpoint{
+			DNSName:       c.DNSName,
+			Targets:       c.Targets,
+			RecordType:    c.RecordType,
+			SetIdentifier: c.SetIdentifier,
+			RecordTTL:     c.RecordTTL,
+			Labels:        c.Labels,
+		})
+	}
+
+	plan := plan.Plan{
+		Current: current,
+		Desired: desired,
+	}
+
+	plan = *plan.Calculate()
+	assert.NotNil(t, plan.Changes, "should have plan")
+	if plan.Changes == nil {
+		return
+	}
+	assert.Equal(t, 0, len(plan.Changes.Create), "should not have creates")
+	assert.Equal(t, 0, len(plan.Changes.UpdateNew), "should not have new updates")
+	assert.Equal(t, 0, len(plan.Changes.UpdateOld), "should not have old updates")
+	assert.Equal(t, 0, len(plan.Changes.Delete), "should not have deletes")
 }
 
 func TestNewCloudFlareProvider(t *testing.T) {
@@ -416,6 +458,7 @@ func TestGroupByNameAndType(t *testing.T) {
 						{
 							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
 							Value: "false",
+							Kind:  endpoint.BooleanKind,
 						},
 					},
 				},
@@ -448,6 +491,7 @@ func TestGroupByNameAndType(t *testing.T) {
 						{
 							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
 							Value: "false",
+							Kind:  endpoint.BooleanKind,
 						},
 					},
 				},
@@ -492,6 +536,7 @@ func TestGroupByNameAndType(t *testing.T) {
 						{
 							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
 							Value: "false",
+							Kind:  endpoint.BooleanKind,
 						},
 					},
 				},
@@ -505,6 +550,7 @@ func TestGroupByNameAndType(t *testing.T) {
 						{
 							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
 							Value: "false",
+							Kind:  endpoint.BooleanKind,
 						},
 					},
 				},
@@ -543,6 +589,7 @@ func TestGroupByNameAndType(t *testing.T) {
 						{
 							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
 							Value: "false",
+							Kind:  endpoint.BooleanKind,
 						},
 					},
 				},
@@ -556,6 +603,7 @@ func TestGroupByNameAndType(t *testing.T) {
 						{
 							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
 							Value: "false",
+							Kind:  endpoint.BooleanKind,
 						},
 					},
 				},
@@ -594,6 +642,7 @@ func TestGroupByNameAndType(t *testing.T) {
 						{
 							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
 							Value: "false",
+							Kind:  endpoint.BooleanKind,
 						},
 					},
 				},

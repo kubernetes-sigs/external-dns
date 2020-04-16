@@ -36,6 +36,7 @@ type PlanTestSuite struct {
 	fooA5                            *endpoint.Endpoint
 	bar127A                          *endpoint.Endpoint
 	bar127AWithTTL                   *endpoint.Endpoint
+	bar127AWithProviderSpecificUnset *endpoint.Endpoint
 	bar127AWithProviderSpecificTrue  *endpoint.Endpoint
 	bar127AWithProviderSpecificFalse *endpoint.Endpoint
 	bar192A                          *endpoint.Endpoint
@@ -110,6 +111,15 @@ func (suite *PlanTestSuite) SetupTest() {
 			endpoint.ResourceLabelKey: "ingress/default/bar-127",
 		},
 	}
+	suite.bar127AWithProviderSpecificUnset = &endpoint.Endpoint{
+		DNSName:    "bar",
+		Targets:    endpoint.Targets{"127.0.0.1"},
+		RecordType: "A",
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "ingress/default/bar-127",
+		},
+		ProviderSpecific: endpoint.ProviderSpecific{},
+	}
 	suite.bar127AWithProviderSpecificTrue = &endpoint.Endpoint{
 		DNSName:    "bar",
 		Targets:    endpoint.Targets{"127.0.0.1"},
@@ -121,6 +131,7 @@ func (suite *PlanTestSuite) SetupTest() {
 			endpoint.ProviderSpecificProperty{
 				Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
 				Value: "true",
+				Kind:  "Boolean",
 			},
 		},
 	}
@@ -135,6 +146,7 @@ func (suite *PlanTestSuite) SetupTest() {
 			endpoint.ProviderSpecificProperty{
 				Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
 				Value: "false",
+				Kind:  "Boolean",
 			},
 		},
 	}
@@ -276,6 +288,27 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificChange() {
 	expectedCreate := []*endpoint.Endpoint{}
 	expectedUpdateOld := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificTrue}
 	expectedUpdateNew := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificFalse}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
+func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificUnset() {
+	current := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificFalse}
+	desired := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificUnset}
+	expectedCreate := []*endpoint.Endpoint{}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{

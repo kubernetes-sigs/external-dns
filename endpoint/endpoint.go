@@ -109,10 +109,35 @@ func (t Targets) IsLess(o Targets) bool {
 	return false
 }
 
+const (
+	// This property is parsed to boolean type before comparing
+	BooleanKind = "Boolean"
+)
+
+func CompareProperty(previous, current, kind string) bool {
+	switch kind {
+	case BooleanKind:
+		p, c := false, false
+
+		if previous == "true" {
+			p = true
+		}
+
+		if current == "true" {
+			c = true
+		}
+
+		return p == c
+	}
+
+	return previous == current
+}
+
 // ProviderSpecificProperty holds the name and value of a configuration which is specific to individual DNS providers
 type ProviderSpecificProperty struct {
 	Name  string `json:"name,omitempty"`
 	Value string `json:"value,omitempty"`
+	Kind  string `json:"kind,omitempty"`
 }
 
 // ProviderSpecific holds configuration which is specific to individual DNS providers
@@ -175,6 +200,15 @@ func (e *Endpoint) WithProviderSpecific(key, value string) *Endpoint {
 	}
 
 	e.ProviderSpecific = append(e.ProviderSpecific, ProviderSpecificProperty{Name: key, Value: value})
+	return e
+}
+
+func (e *Endpoint) WithProviderSpecificKind(key, value, kind string) *Endpoint {
+	if e.ProviderSpecific == nil {
+		e.ProviderSpecific = ProviderSpecific{}
+	}
+
+	e.ProviderSpecific = append(e.ProviderSpecific, ProviderSpecificProperty{Name: key, Value: value, Kind: kind})
 	return e
 }
 
