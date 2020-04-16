@@ -140,6 +140,10 @@ type ProviderSpecificProperty struct {
 	Kind  string `json:"kind,omitempty"`
 }
 
+func (e ProviderSpecificProperty) String() string {
+	return fmt.Sprintf("{%s %s}", e.Name, e.Value)
+}
+
 // ProviderSpecific holds configuration which is specific to individual DNS providers
 type ProviderSpecific []ProviderSpecificProperty
 
