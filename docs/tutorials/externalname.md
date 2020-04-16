@@ -50,7 +50,7 @@ metadata:
     external-dns.alpha.kubernetes.io/hostname: tenant1.example.org,tenant2.example.org
 spec:
   type: ExternalName
-  externalName: aws.external.com
+  externalName: aws.example.org
 ```
 
 This will create 2 CNAME records pointing to `aws.example.org`:
