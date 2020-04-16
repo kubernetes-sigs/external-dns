@@ -178,11 +178,6 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 	return desired.RecordTTL != current.RecordTTL
 }
 
-type propertyChange struct {
-	current string
-	desired string
-}
-
 func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
 	desiredProperties := map[string]endpoint.ProviderSpecificProperty{}
 

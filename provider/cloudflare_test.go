@@ -301,6 +301,11 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 		},
 		{
 			ProviderProxiedByDefault: true,
+			RecordsAreProxied:        true,
+			ShouldBeUpdated:          false,
+		},
+		{
+			ProviderProxiedByDefault: true,
 			RecordsAreProxied:        false,
 			ShouldBeUpdated:          true,
 		},
