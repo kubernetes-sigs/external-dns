@@ -33,6 +33,7 @@ require (
 	github.com/linki/instrumented_http v0.2.0
 	github.com/linode/linodego v0.3.0
 	github.com/mattn/go-isatty v0.0.11 // indirect
+	github.com/maxatome/go-testdeep v1.4.0
 	github.com/miekg/dns v1.0.14
 	github.com/nesv/go-dynect v0.6.0
 	github.com/nic-at/rc0go v1.1.0
