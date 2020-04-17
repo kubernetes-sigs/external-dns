@@ -38,7 +38,7 @@ require (
 	github.com/nic-at/rc0go v1.1.0
 	github.com/oracle/oci-go-sdk v1.8.0
 	github.com/ovh/go-ovh v0.0.0-20181109152953-ba5adb4cf014
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.0.0
 	github.com/sanyu/dynectsoap v0.0.0-20181203081243-b83de5edc4e0
 	github.com/sergi/go-diff v1.1.0 // indirect
