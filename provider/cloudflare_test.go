@@ -18,59 +18,187 @@ package provider
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os"
 	"testing"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
+	"github.com/maxatome/go-testdeep/td"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
 
-type mockCloudFlareClient struct{}
-
-func (m *mockCloudFlareClient) CreateDNSRecord(zoneID string, rr cloudflare.DNSRecord) (*cloudflare.DNSRecordResponse, error) {
-	return nil, nil
+type MockAction struct {
+	Name       string
+	ZoneId     string
+	RecordId   string
+	RecordData cloudflare.DNSRecord
 }
 
-func (m *mockCloudFlareClient) DNSRecords(zoneID string, rr cloudflare.DNSRecord) ([]cloudflare.DNSRecord, error) {
-	if zoneID == "1234567890" {
-		return []cloudflare.DNSRecord{
-				{ID: "1234567890", Name: "foobar.ext-dns-test.zalando.to.", Type: endpoint.RecordTypeA, TTL: 120},
-				{ID: "1231231233", Name: "foo.bar.com", TTL: 1}},
-			nil
+type mockCloudFlareClient struct {
+	User            cloudflare.User
+	Zones           map[string]string
+	Records         map[string]map[string]cloudflare.DNSRecord
+	Actions         []MockAction
+	listZonesError  error
+	dnsRecordsError error
+}
+
+var ExampleDomain = []cloudflare.DNSRecord{
+	{
+		ID:      "1234567890",
+		ZoneID:  "001",
+		Name:    "foobar.bar.com",
+		Type:    endpoint.RecordTypeA,
+		TTL:     120,
+		Content: "1.2.3.4",
+		Proxied: false,
+	},
+	{
+		ID:      "1231231233",
+		ZoneID:  "002",
+		Name:    "bar.foo.com",
+		Type:    endpoint.RecordTypeA,
+		TTL:     1,
+		Content: "2.3.4.5",
+		Proxied: false,
+	},
+}
+
+func NewMockCloudFlareClient() *mockCloudFlareClient {
+	return &mockCloudFlareClient{
+		User: cloudflare.User{ID: "xxxxxxxxxxxxxxxxxxx"},
+		Zones: map[string]string{
+			"001": "bar.com",
+			"002": "foo.com",
+		},
+		Records: map[string]map[string]cloudflare.DNSRecord{
+			"001": {},
+			"002": {},
+		},
+	}
+}
+
+func NewMockCloudFlareClientWithRecords(records map[string][]cloudflare.DNSRecord) *mockCloudFlareClient {
+	m := NewMockCloudFlareClient()
+
+	for zoneID, zoneRecords := range records {
+		if zone, ok := m.Records[zoneID]; ok {
+			for _, record := range zoneRecords {
+				zone[record.ID] = record
+			}
+		}
+	}
+
+	return m
+}
+
+func (m *mockCloudFlareClient) CreateDNSRecord(zoneID string, rr cloudflare.DNSRecord) (*cloudflare.DNSRecordResponse, error) {
+	m.Actions = append(m.Actions, MockAction{
+		Name:       "Create",
+		ZoneId:     zoneID,
+		RecordId:   rr.ID,
+		RecordData: rr,
+	})
+	if zone, ok := m.Records[zoneID]; ok {
+		zone[rr.ID] = rr
 	}
 	return nil, nil
 }
 
+func (m *mockCloudFlareClient) DNSRecords(zoneID string, rr cloudflare.DNSRecord) ([]cloudflare.DNSRecord, error) {
+	if m.dnsRecordsError != nil {
+		return nil, m.dnsRecordsError
+	}
+	result := []cloudflare.DNSRecord{}
+	if zone, ok := m.Records[zoneID]; ok {
+		for _, record := range zone {
+			result = append(result, record)
+		}
+		return result, nil
+	}
+	return result, nil
+}
+
 func (m *mockCloudFlareClient) UpdateDNSRecord(zoneID, recordID string, rr cloudflare.DNSRecord) error {
+	m.Actions = append(m.Actions, MockAction{
+		Name:       "Update",
+		ZoneId:     zoneID,
+		RecordId:   recordID,
+		RecordData: rr,
+	})
+	if zone, ok := m.Records[zoneID]; ok {
+		if _, ok := zone[recordID]; ok {
+			zone[recordID] = rr
+		}
+	}
 	return nil
 }
 
 func (m *mockCloudFlareClient) DeleteDNSRecord(zoneID, recordID string) error {
+	m.Actions = append(m.Actions, MockAction{
+		Name:     "Delete",
+		ZoneId:   zoneID,
+		RecordId: recordID,
+	})
+	if zone, ok := m.Records[zoneID]; ok {
+		if _, ok := zone[recordID]; ok {
+			delete(zone, recordID)
+			return nil
+		}
+	}
 	return nil
 }
 
 func (m *mockCloudFlareClient) UserDetails() (cloudflare.User, error) {
-	return cloudflare.User{ID: "xxxxxxxxxxxxxxxxxxx"}, nil
+	return m.User, nil
 }
 
 func (m *mockCloudFlareClient) ZoneIDByName(zoneName string) (string, error) {
-	return "1234567890", nil
+	for id, name := range m.Zones {
+		if name == zoneName {
+			return id, nil
+		}
+	}
+
+	return "", errors.New("Unknown zone: " + zoneName)
 }
 
 func (m *mockCloudFlareClient) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{ID: "1234567890", Name: "ext-dns-test.zalando.to."}, {ID: "1234567891", Name: "foo.com."}}, nil
+	if m.listZonesError != nil {
+		return nil, m.listZonesError
+	}
+
+	result := []cloudflare.Zone{}
+
+	for zoneId, zoneName := range m.Zones {
+		result = append(result, cloudflare.Zone{
+			ID:   zoneId,
+			Name: zoneName,
+		})
+	}
+
+	return result, nil
 }
 
 func (m *mockCloudFlareClient) ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error) {
+	if m.listZonesError != nil {
+		return cloudflare.ZonesResponse{}, m.listZonesError
+	}
+
+	result := []cloudflare.Zone{}
+
+	for zoneId, zoneName := range m.Zones {
+		result = append(result, cloudflare.Zone{
+			ID:   zoneId,
+			Name: zoneName,
+		})
+	}
+
 	return cloudflare.ZonesResponse{
-		Result: []cloudflare.Zone{
-			{ID: "1234567890", Name: "ext-dns-test.zalando.to."},
-			{ID: "1234567891", Name: "foo.com."}},
+		Result: result,
 		ResultInfo: cloudflare.ResultInfo{
 			Page:       1,
 			TotalPages: 1,
@@ -78,176 +206,310 @@ func (m *mockCloudFlareClient) ListZonesContext(ctx context.Context, opts ...clo
 	}, nil
 }
 
-type mockCloudFlareDNSRecordsFail struct{}
+func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endpoint.Endpoint, actions []MockAction, args ...interface{}) {
+	t.Helper()
 
-func (m *mockCloudFlareDNSRecordsFail) CreateDNSRecord(zoneID string, rr cloudflare.DNSRecord) (*cloudflare.DNSRecordResponse, error) {
-	return nil, nil
-}
+	var client *mockCloudFlareClient
 
-func (m *mockCloudFlareDNSRecordsFail) DNSRecords(zoneID string, rr cloudflare.DNSRecord) ([]cloudflare.DNSRecord, error) {
-	return []cloudflare.DNSRecord{}, fmt.Errorf("can not get records from zone")
-}
-func (m *mockCloudFlareDNSRecordsFail) UpdateDNSRecord(zoneID, recordID string, rr cloudflare.DNSRecord) error {
-	return nil
-}
-
-func (m *mockCloudFlareDNSRecordsFail) DeleteDNSRecord(zoneID, recordID string) error {
-	return nil
-}
-
-func (m *mockCloudFlareDNSRecordsFail) UserDetails() (cloudflare.User, error) {
-	return cloudflare.User{ID: "xxxxxxxxxxxxxxxxxxx"}, nil
-}
-
-func (m *mockCloudFlareDNSRecordsFail) ZoneIDByName(zoneName string) (string, error) {
-	return "", nil
-}
-
-func (m *mockCloudFlareDNSRecordsFail) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{Name: "ext-dns-test.zalando.to."}}, nil
-}
-
-func (m *mockCloudFlareDNSRecordsFail) ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error) {
-	return cloudflare.ZonesResponse{
-		Result: []cloudflare.Zone{
-			{ID: "1234567890", Name: "ext-dns-test.zalando.to."},
-			{ID: "1234567891", Name: "foo.com."}},
-		ResultInfo: cloudflare.ResultInfo{
-			TotalPages: 1,
-		},
-	}, nil
-}
-
-type mockCloudFlareListZonesFail struct{}
-
-func (m *mockCloudFlareListZonesFail) CreateDNSRecord(zoneID string, rr cloudflare.DNSRecord) (*cloudflare.DNSRecordResponse, error) {
-	return nil, nil
-}
-
-func (m *mockCloudFlareListZonesFail) DNSRecords(zoneID string, rr cloudflare.DNSRecord) ([]cloudflare.DNSRecord, error) {
-	return []cloudflare.DNSRecord{}, nil
-}
-
-func (m *mockCloudFlareListZonesFail) UpdateDNSRecord(zoneID, recordID string, rr cloudflare.DNSRecord) error {
-	return nil
-}
-
-func (m *mockCloudFlareListZonesFail) DeleteDNSRecord(zoneID, recordID string) error {
-	return nil
-}
-
-func (m *mockCloudFlareListZonesFail) UserDetails() (cloudflare.User, error) {
-	return cloudflare.User{}, nil
-}
-
-func (m *mockCloudFlareListZonesFail) ZoneIDByName(zoneName string) (string, error) {
-	return "1234567890", nil
-}
-
-func (m *mockCloudFlareListZonesFail) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
-	return []cloudflare.Zone{{}}, fmt.Errorf("no zones available")
-}
-
-func (m *mockCloudFlareListZonesFail) ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error) {
-	return cloudflare.ZonesResponse{}, fmt.Errorf("no zones available")
-}
-
-func TestNewCloudFlareChanges(t *testing.T) {
-	expect := []struct {
-		Name string
-		TTL  int
-	}{
-		{
-			"CustomRecordTTL",
-			120,
-		},
-		{
-			"DefaultRecordTTL",
-			1,
-		},
-	}
-	endpoints := []*endpoint.Endpoint{
-		{DNSName: "new", Targets: endpoint.Targets{"target"}, RecordTTL: 120},
-		{DNSName: "new2", Targets: endpoint.Targets{"target2"}},
-	}
-	changes := newCloudFlareChanges(cloudFlareCreate, endpoints, true)
-	for i, change := range changes {
-		assert.Equal(
-			t,
-			change.ResourceRecordSet[0].TTL,
-			expect[i].TTL,
-			expect[i].Name)
-	}
-}
-
-func TestNewCloudFlareChangeNoProxied(t *testing.T) {
-	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: "A", Targets: endpoint.Targets{"target"}}, false)
-	assert.False(t, change.ResourceRecordSet[0].Proxied)
-}
-
-func TestNewCloudFlareProxiedAnnotationTrue(t *testing.T) {
-	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: "A", Targets: endpoint.Targets{"target"}, ProviderSpecific: endpoint.ProviderSpecific{
-		endpoint.ProviderSpecificProperty{
-			Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-			Value: "true",
-		},
-	}}, false)
-	assert.True(t, change.ResourceRecordSet[0].Proxied)
-}
-
-func TestNewCloudFlareProxiedAnnotationFalse(t *testing.T) {
-	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: "A", Targets: endpoint.Targets{"target"}, ProviderSpecific: endpoint.ProviderSpecific{
-		endpoint.ProviderSpecificProperty{
-			Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-			Value: "false",
-		},
-	}}, true)
-	assert.False(t, change.ResourceRecordSet[0].Proxied)
-}
-
-func TestNewCloudFlareProxiedAnnotationIllegalValue(t *testing.T) {
-	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: "A", Targets: endpoint.Targets{"target"}, ProviderSpecific: endpoint.ProviderSpecific{
-		endpoint.ProviderSpecificProperty{
-			Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-			Value: "asdaslkjndaslkdjals",
-		},
-	}}, false)
-	assert.False(t, change.ResourceRecordSet[0].Proxied)
-}
-
-func TestNewCloudFlareChangeProxiable(t *testing.T) {
-	var cloudFlareTypes = []struct {
-		recordType string
-		proxiable  bool
-	}{
-		{"A", true},
-		{"CNAME", true},
-		{"LOC", false},
-		{"MX", false},
-		{"NS", false},
-		{"SPF", false},
-		{"TXT", false},
-		{"SRV", false},
+	if provider.Client == nil {
+		client = NewMockCloudFlareClient()
+		provider.Client = client
+	} else {
+		client = provider.Client.(*mockCloudFlareClient)
 	}
 
-	for _, cloudFlareType := range cloudFlareTypes {
-		change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "new", RecordType: cloudFlareType.recordType, Targets: endpoint.Targets{"target"}}, true)
+	ctx := context.Background()
 
-		if cloudFlareType.proxiable {
-			assert.True(t, change.ResourceRecordSet[0].Proxied)
-		} else {
-			assert.False(t, change.ResourceRecordSet[0].Proxied)
+	records, err := provider.Records(ctx)
+
+	if err != nil {
+		t.Fatalf("cannot fetch records, %s", err)
+	}
+
+	plan := &plan.Plan{
+		Current:      records,
+		Desired:      endpoints,
+		DomainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
+	}
+
+	changes := plan.Calculate().Changes
+
+	// Records other than A and CNAME are not supported by planner, just create them
+	for _, endpoint := range endpoints {
+		if endpoint.RecordType != "A" && endpoint.RecordType != "CNAME" {
+			changes.Create = append(changes.Create, endpoint)
 		}
 	}
 
-	change := newCloudFlareChange(cloudFlareCreate, &endpoint.Endpoint{DNSName: "*.foo", RecordType: "A", Targets: endpoint.Targets{"target"}}, true)
-	assert.False(t, change.ResourceRecordSet[0].Proxied)
+	err = provider.ApplyChanges(context.Background(), changes)
+
+	if err != nil {
+		t.Fatalf("cannot apply changes, %s", err)
+	}
+
+	td.Cmp(t, client.Actions, actions, args...)
 }
 
-func TestCloudFlareZones(t *testing.T) {
+func TestCloudflareA(t *testing.T) {
+	endpoints := []*endpoint.Endpoint{
+		{
+			RecordType: "A",
+			DNSName:    "bar.com",
+			Targets:    endpoint.Targets{"127.0.0.1", "127.0.0.2"},
+		},
+	}
+
+	AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
+		{
+			Name:   "Create",
+			ZoneId: "001",
+			RecordData: cloudflare.DNSRecord{
+				Type:    "A",
+				Name:    "bar.com",
+				Content: "127.0.0.1",
+				TTL:     1,
+				Proxied: false,
+			},
+		},
+		{
+			Name:   "Create",
+			ZoneId: "001",
+			RecordData: cloudflare.DNSRecord{
+				Type:    "A",
+				Name:    "bar.com",
+				Content: "127.0.0.2",
+				TTL:     1,
+				Proxied: false,
+			},
+		},
+	})
+}
+
+func TestCloudflareCname(t *testing.T) {
+	endpoints := []*endpoint.Endpoint{
+		{
+			RecordType: "CNAME",
+			DNSName:    "cname.bar.com",
+			Targets:    endpoint.Targets{"google.com", "facebook.com"},
+		},
+	}
+
+	AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
+		{
+			Name:   "Create",
+			ZoneId: "001",
+			RecordData: cloudflare.DNSRecord{
+				Type:    "CNAME",
+				Name:    "cname.bar.com",
+				Content: "google.com",
+				TTL:     1,
+				Proxied: false,
+			},
+		},
+		{
+			Name:   "Create",
+			ZoneId: "001",
+			RecordData: cloudflare.DNSRecord{
+				Type:    "CNAME",
+				Name:    "cname.bar.com",
+				Content: "facebook.com",
+				TTL:     1,
+				Proxied: false,
+			},
+		},
+	})
+}
+
+func TestCloudflareCustomTTL(t *testing.T) {
+	endpoints := []*endpoint.Endpoint{
+		{
+			RecordType: "A",
+			DNSName:    "ttl.bar.com",
+			Targets:    endpoint.Targets{"127.0.0.1"},
+			RecordTTL:  120,
+		},
+	}
+
+	AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
+		{
+			Name:   "Create",
+			ZoneId: "001",
+			RecordData: cloudflare.DNSRecord{
+				Type:    "A",
+				Name:    "ttl.bar.com",
+				Content: "127.0.0.1",
+				TTL:     120,
+				Proxied: false,
+			},
+		},
+	})
+}
+
+func TestCloudflareProxiedDefault(t *testing.T) {
+	endpoints := []*endpoint.Endpoint{
+		{
+			RecordType: "A",
+			DNSName:    "bar.com",
+			Targets:    endpoint.Targets{"127.0.0.1"},
+		},
+	}
+
+	AssertActions(t, &CloudFlareProvider{proxiedByDefault: true}, endpoints, []MockAction{
+		{
+			Name:   "Create",
+			ZoneId: "001",
+			RecordData: cloudflare.DNSRecord{
+				Type:    "A",
+				Name:    "bar.com",
+				Content: "127.0.0.1",
+				TTL:     1,
+				Proxied: true,
+			},
+		},
+	})
+}
+
+func TestCloudflareProxiedOverrideTrue(t *testing.T) {
+	endpoints := []*endpoint.Endpoint{
+		{
+			RecordType: "A",
+			DNSName:    "bar.com",
+			Targets:    endpoint.Targets{"127.0.0.1"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				endpoint.ProviderSpecificProperty{
+					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+					Value: "true",
+				},
+			},
+		},
+	}
+
+	AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
+		{
+			Name:   "Create",
+			ZoneId: "001",
+			RecordData: cloudflare.DNSRecord{
+				Type:    "A",
+				Name:    "bar.com",
+				Content: "127.0.0.1",
+				TTL:     1,
+				Proxied: true,
+			},
+		},
+	})
+}
+
+func TestCloudflareProxiedOverrideFalse(t *testing.T) {
+	endpoints := []*endpoint.Endpoint{
+		{
+			RecordType: "A",
+			DNSName:    "bar.com",
+			Targets:    endpoint.Targets{"127.0.0.1"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				endpoint.ProviderSpecificProperty{
+					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+					Value: "false",
+				},
+			},
+		},
+	}
+
+	AssertActions(t, &CloudFlareProvider{proxiedByDefault: true}, endpoints, []MockAction{
+		{
+			Name:   "Create",
+			ZoneId: "001",
+			RecordData: cloudflare.DNSRecord{
+				Type:    "A",
+				Name:    "bar.com",
+				Content: "127.0.0.1",
+				TTL:     1,
+				Proxied: false,
+			},
+		},
+	})
+}
+
+func TestCloudflareProxiedOverrideIllegal(t *testing.T) {
+	endpoints := []*endpoint.Endpoint{
+		{
+			RecordType: "A",
+			DNSName:    "bar.com",
+			Targets:    endpoint.Targets{"127.0.0.1"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				endpoint.ProviderSpecificProperty{
+					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+					Value: "asfasdfa",
+				},
+			},
+		},
+	}
+
+	AssertActions(t, &CloudFlareProvider{proxiedByDefault: true}, endpoints, []MockAction{
+		{
+			Name:   "Create",
+			ZoneId: "001",
+			RecordData: cloudflare.DNSRecord{
+				Type:    "A",
+				Name:    "bar.com",
+				Content: "127.0.0.1",
+				TTL:     1,
+				Proxied: true,
+			},
+		},
+	})
+}
+
+func TestCloudflareSetProxied(t *testing.T) {
+	var testCases = []struct {
+		recordType string
+		domain     string
+		proxiable  bool
+	}{
+		{"A", "bar.com", true},
+		{"CNAME", "bar.com", true},
+		{"TXT", "bar.com", false},
+		{"MX", "bar.com", false},
+		{"NS", "bar.com", false},
+		{"SPF", "bar.com", false},
+		{"SRV", "bar.com", false},
+		{"A", "*.bar.com", false},
+	}
+
+	for _, testCase := range testCases {
+		endpoints := []*endpoint.Endpoint{
+			{
+				RecordType: testCase.recordType,
+				DNSName:    testCase.domain,
+				Targets:    endpoint.Targets{"127.0.0.1"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					endpoint.ProviderSpecificProperty{
+						Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+						Value: "true",
+					},
+				},
+			},
+		}
+
+		AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
+			{
+				Name:   "Create",
+				ZoneId: "001",
+				RecordData: cloudflare.DNSRecord{
+					Type:    testCase.recordType,
+					Name:    testCase.domain,
+					Content: "127.0.0.1",
+					TTL:     1,
+					Proxied: testCase.proxiable,
+				},
+			},
+		}, testCase.recordType+" record on "+testCase.domain)
+	}
+}
+
+func TestCloudflareZones(t *testing.T) {
 	provider := &CloudFlareProvider{
-		Client:       &mockCloudFlareClient{},
-		domainFilter: endpoint.NewDomainFilter([]string{"zalando.to."}),
+		Client:       NewMockCloudFlareClient(),
+		domainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
 		zoneIDFilter: NewZoneIDFilter([]string{""}),
 	}
 
@@ -256,14 +518,17 @@ func TestCloudFlareZones(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	validateCloudFlareZones(t, zones, []cloudflare.Zone{
-		{Name: "ext-dns-test.zalando.to."},
-	})
+	assert.Equal(t, 1, len(zones))
+	assert.Equal(t, "bar.com", zones[0].Name)
 }
 
-func TestRecords(t *testing.T) {
+func TestCloudflareRecords(t *testing.T) {
+	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
+		"001": ExampleDomain,
+	})
+
 	provider := &CloudFlareProvider{
-		Client: &mockCloudFlareClient{},
+		Client: client,
 	}
 	ctx := context.Background()
 
@@ -272,23 +537,24 @@ func TestRecords(t *testing.T) {
 		t.Errorf("should not fail, %s", err)
 	}
 
-	assert.Equal(t, 1, len(records))
-	provider.Client = &mockCloudFlareDNSRecordsFail{}
+	assert.Equal(t, 2, len(records))
+	client.dnsRecordsError = errors.New("failed to list dns records")
 	_, err = provider.Records(ctx)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
-	provider.Client = &mockCloudFlareListZonesFail{}
+	client.dnsRecordsError = nil
+	client.listZonesError = errors.New("failed to list zones")
 	_, err = provider.Records(ctx)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
 }
 
-func TestNewCloudFlareProvider(t *testing.T) {
+func TestCloudflareProvider(t *testing.T) {
 	_ = os.Setenv("CF_API_TOKEN", "abc123def")
 	_, err := NewCloudFlareProvider(
-		endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}),
+		endpoint.NewDomainFilter([]string{"bar.com"}),
 		NewZoneIDFilter([]string{""}),
 		25,
 		false,
@@ -300,7 +566,7 @@ func TestNewCloudFlareProvider(t *testing.T) {
 	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
 	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
 	_, err = NewCloudFlareProvider(
-		endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}),
+		endpoint.NewDomainFilter([]string{"bar.com"}),
 		NewZoneIDFilter([]string{""}),
 		1,
 		false,
@@ -311,7 +577,7 @@ func TestNewCloudFlareProvider(t *testing.T) {
 	_ = os.Unsetenv("CF_API_KEY")
 	_ = os.Unsetenv("CF_API_EMAIL")
 	_, err = NewCloudFlareProvider(
-		endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}),
+		endpoint.NewDomainFilter([]string{"bar.com"}),
 		NewZoneIDFilter([]string{""}),
 		50,
 		false,
@@ -321,19 +587,57 @@ func TestNewCloudFlareProvider(t *testing.T) {
 	}
 }
 
-func TestApplyChanges(t *testing.T) {
+func TestCloudflareApplyChanges(t *testing.T) {
 	changes := &plan.Changes{}
+	client := NewMockCloudFlareClient()
 	provider := &CloudFlareProvider{
-		Client: &mockCloudFlareClient{},
+		Client: client,
 	}
-	changes.Create = []*endpoint.Endpoint{{DNSName: "new.ext-dns-test.zalando.to.", Targets: endpoint.Targets{"target"}}, {DNSName: "new.ext-dns-test.unrelated.to.", Targets: endpoint.Targets{"target"}}}
-	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Targets: endpoint.Targets{"target"}}}
-	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Targets: endpoint.Targets{"target-old"}}}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.zalando.to.", Targets: endpoint.Targets{"target-new"}}}
+	changes.Create = []*endpoint.Endpoint{{
+		DNSName: "new.bar.com",
+		Targets: endpoint.Targets{"target"},
+	}, {
+		DNSName: "new.ext-dns-test.unrelated.to",
+		Targets: endpoint.Targets{"target"},
+	}}
+	changes.Delete = []*endpoint.Endpoint{{
+		DNSName: "foobar.bar.com",
+		Targets: endpoint.Targets{"target"},
+	}}
+	changes.UpdateOld = []*endpoint.Endpoint{{
+		DNSName: "foobar.bar.com",
+		Targets: endpoint.Targets{"target-old"},
+	}}
+	changes.UpdateNew = []*endpoint.Endpoint{{
+		DNSName: "foobar.bar.com",
+		Targets: endpoint.Targets{"target-new"},
+	}}
 	err := provider.ApplyChanges(context.Background(), changes)
+
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
+
+	td.Cmp(t, client.Actions, []MockAction{
+		MockAction{
+			Name:   "Create",
+			ZoneId: "001",
+			RecordData: cloudflare.DNSRecord{
+				Name:    "new.bar.com",
+				Content: "target",
+				TTL:     1,
+			},
+		},
+		MockAction{
+			Name:   "Create",
+			ZoneId: "001",
+			RecordData: cloudflare.DNSRecord{
+				Name:    "foobar.bar.com",
+				Content: "target-new",
+				TTL:     1,
+			},
+		},
+	})
 
 	// empty changes
 	changes.Create = []*endpoint.Endpoint{}
@@ -347,7 +651,7 @@ func TestApplyChanges(t *testing.T) {
 	}
 }
 
-func TestCloudFlareGetRecordID(t *testing.T) {
+func TestCloudflareGetRecordID(t *testing.T) {
 	p := &CloudFlareProvider{}
 	records := []cloudflare.DNSRecord{
 		{
@@ -376,15 +680,7 @@ func TestCloudFlareGetRecordID(t *testing.T) {
 	})[0])
 }
 
-func validateCloudFlareZones(t *testing.T, zones []cloudflare.Zone, expected []cloudflare.Zone) {
-	require.Len(t, zones, len(expected))
-
-	for i, zone := range zones {
-		assert.Equal(t, expected[i].Name, zone.Name)
-	}
-}
-
-func TestGroupByNameAndType(t *testing.T) {
+func TestCloudflareGroupByNameAndType(t *testing.T) {
 	testCases := []struct {
 		Name              string
 		Records           []cloudflare.DNSRecord
@@ -604,4 +900,79 @@ func TestGroupByNameAndType(t *testing.T) {
 	for _, tc := range testCases {
 		assert.ElementsMatch(t, groupByNameAndType(tc.Records), tc.ExpectedEndpoints)
 	}
+}
+
+func TestCloudflareComplexUpdate(t *testing.T) {
+	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
+		"001": ExampleDomain,
+	})
+
+	provider := &CloudFlareProvider{
+		Client: client,
+	}
+	ctx := context.Background()
+
+	records, err := provider.Records(ctx)
+
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
+
+	plan := &plan.Plan{
+		Current: records,
+		Desired: []*endpoint.Endpoint{
+			{
+				DNSName:    "foobar.bar.com",
+				Targets:    endpoint.Targets{"1.2.3.4", "2.3.4.5"},
+				RecordType: endpoint.RecordTypeA,
+				RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+				Labels:     endpoint.Labels{},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+						Value: "true",
+					},
+				},
+			},
+		},
+		DomainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
+	}
+
+	planned := plan.Calculate()
+
+	err = provider.ApplyChanges(context.Background(), planned.Changes)
+
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
+
+	td.CmpDeeply(t, client.Actions, []MockAction{
+		MockAction{
+			Name:     "Delete",
+			ZoneId:   "001",
+			RecordId: "1234567890",
+		},
+		MockAction{
+			Name:   "Create",
+			ZoneId: "001",
+			RecordData: cloudflare.DNSRecord{
+				Name:    "foobar.bar.com",
+				Type:    "A",
+				Content: "1.2.3.4",
+				TTL:     1,
+				Proxied: true,
+			},
+		},
+		MockAction{
+			Name:   "Create",
+			ZoneId: "001",
+			RecordData: cloudflare.DNSRecord{
+				Name:    "foobar.bar.com",
+				Type:    "A",
+				Content: "2.3.4.5",
+				TTL:     1,
+				Proxied: true,
+			},
+		},
+	})
 }
