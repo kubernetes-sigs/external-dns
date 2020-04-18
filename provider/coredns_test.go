@@ -293,6 +293,24 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 		"/skydns/local/domain2": {Host: "site.local"},
 	}
 	validateServices(client.services, expectedServices3, t, 3)
+
+	// Test for multiple A records for the same FQDN
+	changes4 := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "5.5.5.5"),
+			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "6.6.6.6"),
+			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "7.7.7.7"),
+		},
+	}
+	coredns.ApplyChanges(context.Background(), changes4)
+
+	expectedServices4 := map[string]*Service{
+		"/skydns/local/domain2":   {Host: "site.local"},
+		"/skydns/local/domain1/1": {Host: "5.5.5.5"},
+		"/skydns/local/domain1/2": {Host: "6.6.6.6"},
+		"/skydns/local/domain1":   {Host: "7.7.7.7"},
+	}
+	validateServices(client.services, expectedServices4, t, 1)
 }
 
 func applyServiceChanges(provider coreDNSProvider, changes *plan.Changes) {
@@ -311,6 +329,7 @@ func applyServiceChanges(provider coreDNSProvider, changes *plan.Changes) {
 }
 
 func validateServices(services, expectedServices map[string]*Service, t *testing.T, step int) {
+	t.Helper()
 	if len(services) != len(expectedServices) {
 		t.Errorf("wrong number of records on step %d: %d != %d", step, len(services), len(expectedServices))
 	}
