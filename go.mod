@@ -36,6 +36,8 @@ require (
 	github.com/miekg/dns v1.0.14
 	github.com/nesv/go-dynect v0.6.0
 	github.com/nic-at/rc0go v1.1.0
+	github.com/openshift/api v0.0.0-20190322043348-8741ff068a47
+	github.com/openshift/client-go v3.9.0+incompatible
 	github.com/oracle/oci-go-sdk v1.8.0
 	github.com/ovh/go-ovh v0.0.0-20181109152953-ba5adb4cf014
 	github.com/pkg/errors v0.9.1
