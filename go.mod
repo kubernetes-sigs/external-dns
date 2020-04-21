@@ -55,7 +55,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	google.golang.org/api v0.9.0
 	gopkg.in/ns1/ns1-go.v2 v2.0.0-20190322154155-0dafb5275fd1
-	gopkg.in/yaml.v2 v2.2.4
+	gopkg.in/yaml.v2 v2.2.5
 	istio.io/api v0.0.0-20190820204432-483f2547d882
 	istio.io/istio v0.0.0-20190322063008-2b1331886076
 	k8s.io/api v0.0.0-20190620084959-7cf5895f2711
