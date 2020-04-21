@@ -9,7 +9,7 @@ require (
 	github.com/Azure/go-autorest/autorest/adal v0.6.0
 	github.com/Azure/go-autorest/autorest/azure/auth v0.0.0-00010101000000-000000000000
 	github.com/Azure/go-autorest/autorest/to v0.3.0
-	github.com/akamai/AkamaiOPEN-edgegrid-golang v0.9.10
+	github.com/akamai/AkamaiOPEN-edgegrid-golang v0.9.11
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38 // indirect
 	github.com/alecthomas/colour v0.1.0 // indirect
 	github.com/alecthomas/kingpin v2.2.5+incompatible
