@@ -23,6 +23,7 @@ import (
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
 	contour "github.com/heptio/contour/apis/generated/clientset/versioned"
 	fakeContour "github.com/heptio/contour/apis/generated/clientset/versioned/fake"
+	openshift "github.com/openshift/client-go/route/clientset/versioned"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	istiomodel "istio.io/istio/pilot/pkg/model"
@@ -36,6 +37,7 @@ type MockClientGenerator struct {
 	istioClient        istiomodel.ConfigStore
 	cloudFoundryClient *cfclient.Client
 	contourClient      contour.Interface
+	openshiftClient    openshift.Interface
 }
 
 func (m *MockClientGenerator) KubeClient() (kubernetes.Interface, error) {
@@ -70,6 +72,15 @@ func (m *MockClientGenerator) ContourClient() (contour.Interface, error) {
 	if args.Error(1) == nil {
 		m.contourClient = args.Get(0).(contour.Interface)
 		return m.contourClient, nil
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockClientGenerator) OpenShiftClient() (openshift.Interface, error) {
+	args := m.Called()
+	if args.Error(1) == nil {
+		m.openshiftClient = args.Get(0).(openshift.Interface)
+		return m.openshiftClient, nil
 	}
 	return nil, args.Error(1)
 }
