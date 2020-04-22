@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -112,6 +113,38 @@ type Controller struct {
 	Interval time.Duration
 	// The DomainFilter defines which DNS records to keep or exclude
 	DomainFilter endpoint.DomainFilter
+	// Used by RunOnceThrottled to ensure throttling, once per Interval
+	running      bool
+	minStartTime time.Time
+}
+
+var nowValue = struct{}{}
+
+// Make sure execution happens at most once per interval
+func (c *Controller) RunOnceThrottled(ctx context.Context) error {
+	now := time.Now()
+	testing := false
+	if v, ok := ctx.Value(nowValue).(time.Time); ok {
+		now = v
+		testing = true
+	}
+	if c.running || now.Before(c.minStartTime) {
+		// Normally when throttled this function is no-op, but when testing
+		// we need to signal that the function is throttled by returning an error
+		if testing {
+			return errors.New("throttled")
+		}
+		return nil
+	}
+	c.minStartTime = now.Add(c.Interval).Add(-time.Millisecond)
+	c.running = true
+	defer func() {
+		c.running = false
+	}()
+	if testing {
+		return nil
+	}
+	return c.RunOnce(ctx)
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -159,7 +192,7 @@ func (c *Controller) Run(ctx context.Context, stopChan <-chan struct{}) {
 	ticker := time.NewTicker(c.Interval)
 	defer ticker.Stop()
 	for {
-		err := c.RunOnce(ctx)
+		err := c.RunOnceThrottled(ctx)
 		if err != nil {
 			log.Error(err)
 		}

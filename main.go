@@ -295,13 +295,6 @@ func main() {
 		DomainFilter: domainFilter,
 	}
 
-	if cfg.UpdateEvents {
-		// Add RunOnce as the handler function that will be called when ingress/service sources have changed.
-		// Note that k8s Informers will perform an initial list operation, which results in the handler
-		// function initially being called for every Service/Ingress that exists limted by minInterval.
-		ctrl.Source.AddEventHandler(func() error { return ctrl.RunOnce(ctx) }, stopChan, 1*time.Minute)
-	}
-
 	if cfg.Once {
 		err := ctrl.RunOnce(ctx)
 		if err != nil {
@@ -310,6 +303,14 @@ func main() {
 
 		os.Exit(0)
 	}
+
+	if cfg.UpdateEvents {
+		// Add RunOnce as the handler function that will be called when ingress/service sources have changed.
+		// Note that k8s Informers will perform an initial list operation, which results in the handler
+		// function initially being called for every Service/Ingress that exists limted by minInterval.
+		ctrl.Source.AddEventHandler(func() error { return ctrl.RunOnceThrottled(ctx) }, stopChan, 1*time.Minute)
+	}
+
 	ctrl.Run(ctx, stopChan)
 }
 

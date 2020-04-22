@@ -193,3 +193,32 @@ func TestSourceEventHandler(t *testing.T) {
 	close(handlerCh)
 	close(timeoutCh)
 }
+
+func TestMaximumInterval(t *testing.T) {
+	ctrl := &Controller{Interval: time.Minute}
+
+	now := time.Now()
+	run := func() error {
+		return ctrl.RunOnceThrottled(context.WithValue(context.Background(), nowValue, now))
+	}
+
+	// There should be no error when running first time
+	assert.NoError(t, run())
+
+	// After one Interval function should run normally
+	now = now.Add(time.Minute)
+	assert.NoError(t, run())
+
+	// After less than Interval, function should throttle
+	now = now.Add(time.Second)
+	assert.Error(t, run())
+
+	// If function is still running, we should throttle
+	now = now.Add(time.Minute)
+	ctrl.running = true
+	assert.Error(t, run())
+
+	// If function stopped running, we can run it again
+	ctrl.running = false
+	assert.NoError(t, run())
+}
