@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	transip "github.com/transip/gotransip/domain"
+	transip "github.com/transip/gotransip/v6/domain"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -12,32 +12,32 @@ import (
 func TestTransIPDnsEntriesAreEqual(t *testing.T) {
 	p := TransIPProvider{}
 	// test with equal set
-	a := transip.DNSEntries{
-		transip.DNSEntry{
+	a := []transip.DNSEntry{
+		{
 			Name:    "www.example.org",
-			Type:    transip.DNSEntryTypeCNAME,
-			TTL:     3600,
+			Type:    "CNAME",
+			Expire:  3600,
 			Content: "www.example.com",
 		},
-		transip.DNSEntry{
+		{
 			Name:    "www.example.com",
-			Type:    transip.DNSEntryTypeA,
-			TTL:     3600,
+			Type:    "A",
+			Expire:  3600,
 			Content: "192.168.0.1",
 		},
 	}
 
-	b := transip.DNSEntries{
-		transip.DNSEntry{
+	b := []transip.DNSEntry{
+		{
 			Name:    "www.example.com",
-			Type:    transip.DNSEntryTypeA,
-			TTL:     3600,
+			Type:    "A",
+			Expire:  3600,
 			Content: "192.168.0.1",
 		},
-		transip.DNSEntry{
+		{
 			Name:    "www.example.org",
-			Type:    transip.DNSEntryTypeCNAME,
-			TTL:     3600,
+			Type:    "CNAME",
+			Expire:  3600,
 			Content: "www.example.com",
 		},
 	}
@@ -45,14 +45,14 @@ func TestTransIPDnsEntriesAreEqual(t *testing.T) {
 	assert.Equal(t, true, p.dnsEntriesAreEqual(a, b))
 
 	// change type on one of b's records
-	b[1].Type = transip.DNSEntryTypeNS
+	b[1].Type = "NS"
 	assert.Equal(t, false, p.dnsEntriesAreEqual(a, b))
-	b[1].Type = transip.DNSEntryTypeCNAME
+	b[1].Type = "CNAME"
 
 	// change ttl on one of b's records
-	b[1].TTL = 1800
+	b[1].Expire = 1800
 	assert.Equal(t, false, p.dnsEntriesAreEqual(a, b))
-	b[1].TTL = 3600
+	b[1].Expire = 3600
 
 	// change name on one of b's records
 	b[1].Name = "example.org"
@@ -70,11 +70,11 @@ func TestTransIPGetMinimalValidTTL(t *testing.T) {
 	assert.Equal(t, int64(transipMinimalValidTTL), p.getMinimalValidTTL(ep))
 
 	// test with lower than minimal ttl
-	ep.RecordTTL = (transipMinimalValidTTL - 1)
+	ep.RecordTTL = transipMinimalValidTTL - 1
 	assert.Equal(t, int64(transipMinimalValidTTL), p.getMinimalValidTTL(ep))
 
 	// test with higher than minimal ttl
-	ep.RecordTTL = (transipMinimalValidTTL + 1)
+	ep.RecordTTL = transipMinimalValidTTL + 1
 	assert.Equal(t, int64(transipMinimalValidTTL+1), p.getMinimalValidTTL(ep))
 }
 
@@ -123,43 +123,45 @@ func TestTransIPAddEndpointToEntries(t *testing.T) {
 	}
 
 	// prepare zone with DNS entry set
-	zone := transip.Domain{
-		Name: "example.org",
+	zone := TransIPZone{
+		domain: transip.Domain{
+			Name: "example.org",
+		},
 		// 2 matching A records
-		DNSEntries: transip.DNSEntries{
+		dnsEntries: []transip.DNSEntry{
 			// 1 non-matching A record
-			transip.DNSEntry{
+			{
 				Name:    "mail",
-				Type:    transip.DNSEntryTypeA,
+				Type:    "A",
 				Content: "192.168.0.1",
-				TTL:     3600,
+				Expire:  3600,
 			},
 			// 1 non-matching MX record
-			transip.DNSEntry{
+			{
 				Name:    "@",
-				Type:    transip.DNSEntryTypeMX,
+				Type:    "MX",
 				Content: "mail.example.org",
-				TTL:     3600,
+				Expire:  3600,
 			},
 		},
 	}
 
 	// add endpoint to zone's entries
-	result := p.addEndpointToEntries(ep, zone, zone.DNSEntries)
+	result := p.addEndpointToEntries(ep, zone, zone.dnsEntries)
 
 	assert.Equal(t, 4, len(result))
 	assert.Equal(t, "mail", result[0].Name)
-	assert.Equal(t, transip.DNSEntryTypeA, result[0].Type)
+	assert.Equal(t, "A", result[0].Type)
 	assert.Equal(t, "@", result[1].Name)
-	assert.Equal(t, transip.DNSEntryTypeMX, result[1].Type)
+	assert.Equal(t, "MX", result[1].Type)
 	assert.Equal(t, "www", result[2].Name)
-	assert.Equal(t, transip.DNSEntryTypeA, result[2].Type)
+	assert.Equal(t, "A", result[2].Type)
 	assert.Equal(t, "192.168.0.1", result[2].Content)
-	assert.Equal(t, int64(1800), result[2].TTL)
+	assert.Equal(t, 1800, result[2].Expire)
 	assert.Equal(t, "www", result[3].Name)
-	assert.Equal(t, transip.DNSEntryTypeA, result[3].Type)
+	assert.Equal(t, "A", result[3].Type)
 	assert.Equal(t, "192.168.0.2", result[3].Content)
-	assert.Equal(t, int64(1800), result[3].TTL)
+	assert.Equal(t, 1800, result[3].Expire)
 }
 
 func TestTransIPRemoveEndpointFromEntries(t *testing.T) {
@@ -172,35 +174,37 @@ func TestTransIPRemoveEndpointFromEntries(t *testing.T) {
 	}
 
 	// prepare zone with DNS entry set
-	zone := transip.Domain{
-		Name: "example.org",
+	zone := TransIPZone{
+		domain: transip.Domain{
+			Name: "example.org",
+		},
 		// 2 matching A records
-		DNSEntries: transip.DNSEntries{
-			transip.DNSEntry{
+		dnsEntries: []transip.DNSEntry{
+			{
 				Name:    "www",
-				Type:    transip.DNSEntryTypeA,
+				Type:    "A",
 				Content: "192.168.0.1",
-				TTL:     3600,
+				Expire:  3600,
 			},
-			transip.DNSEntry{
+			{
 				Name:    "www",
-				Type:    transip.DNSEntryTypeA,
+				Type:    "A",
 				Content: "192.168.0.2",
-				TTL:     3600,
+				Expire:  3600,
 			},
 			// 1 non-matching A record
-			transip.DNSEntry{
+			{
 				Name:    "mail",
-				Type:    transip.DNSEntryTypeA,
+				Type:    "A",
 				Content: "192.168.0.1",
-				TTL:     3600,
+				Expire:  3600,
 			},
 			// 1 non-matching MX record
-			transip.DNSEntry{
+			{
 				Name:    "@",
-				Type:    transip.DNSEntryTypeMX,
+				Type:    "MX",
 				Content: "mail.example.org",
-				TTL:     3600,
+				Expire:  3600,
 			},
 		},
 	}
@@ -210,7 +214,7 @@ func TestTransIPRemoveEndpointFromEntries(t *testing.T) {
 
 	assert.Equal(t, 2, len(result))
 	assert.Equal(t, "mail", result[0].Name)
-	assert.Equal(t, transip.DNSEntryTypeA, result[0].Type)
+	assert.Equal(t, "A", result[0].Type)
 	assert.Equal(t, "@", result[1].Name)
-	assert.Equal(t, transip.DNSEntryTypeMX, result[1].Type)
+	assert.Equal(t, "MX", result[1].Type)
 }

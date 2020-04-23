@@ -262,7 +262,7 @@ func (p *TransIPProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 			}
 
 			name = p.endpointNameForRecord(r, zone.domain)
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(name, string(r.Type), endpoint.TTL(r.Expire), r.Content))
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(name, r.Type, endpoint.TTL(r.Expire), r.Content))
 		}
 	}
 
@@ -345,7 +345,7 @@ func (p *TransIPProvider) removeEndpointFromEntries(ep *endpoint.Endpoint, zone 
 	// go over each DNS entry to see if it is a match
 	for _, e := range zone.dnsEntries {
 		// if we have match, don't copy it to the new entry set
-		if p.endpointNameForRecord(e, zone.domain) == ep.DNSName && string(e.Type) == ep.RecordType {
+		if p.endpointNameForRecord(e, zone.domain) == ep.DNSName && e.Type == ep.RecordType {
 			log.WithFields(log.Fields{
 				"name":    e.Name,
 				"content": e.Content,

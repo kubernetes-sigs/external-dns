@@ -48,7 +48,6 @@ require (
 	github.com/smartystreets/go-aws-auth v0.0.0-20180515143844-0c1422d1fdb9 // indirect
 	github.com/smartystreets/gunit v1.1.1 // indirect
 	github.com/stretchr/testify v1.5.1
-	github.com/transip/gotransip v5.8.2+incompatible
 	github.com/transip/gotransip/v6 v6.0.3
 	github.com/vinyldns/go-vinyldns v0.0.0-20190611170422-7119fe55ed92
 	github.com/vultr/govultr v0.3.2
