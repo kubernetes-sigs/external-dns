@@ -61,3 +61,6 @@ provider/oci: provider/oci*
 
 # Add 'provider/vinyldns' in file which starts with vinyldns
 provider/vinyldns: provider/vinyldns*
+
+# Add 'provider/vultr' in file which starts with vultr
+provider/vultr: provider/vultr*
