@@ -30,11 +30,11 @@ import (
 	"strings"
 	"time"
 
-	etcdcv3 "github.com/coreos/etcd/clientv3"
 	log "github.com/sirupsen/logrus"
+	etcdcv3 "go.etcd.io/etcd/clientv3"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 func init() {
@@ -58,7 +58,7 @@ type coreDNSClient interface {
 type coreDNSProvider struct {
 	dryRun        bool
 	coreDNSPrefix string
-	domainFilter  DomainFilter
+	domainFilter  endpoint.DomainFilter
 	client        coreDNSClient
 }
 
@@ -244,7 +244,7 @@ func newETCDClient() (coreDNSClient, error) {
 }
 
 // NewCoreDNSProvider is a CoreDNS provider constructor
-func NewCoreDNSProvider(domainFilter DomainFilter, prefix string, dryRun bool) (Provider, error) {
+func NewCoreDNSProvider(domainFilter endpoint.DomainFilter, prefix string, dryRun bool) (Provider, error) {
 	client, err := newETCDClient()
 	if err != nil {
 		return nil, err
@@ -258,9 +258,31 @@ func NewCoreDNSProvider(domainFilter DomainFilter, prefix string, dryRun bool) (
 	}, nil
 }
 
+// findEp takes an Endpoint slice and looks for an element in it. If found it will
+// return Endpoint, otherwise it will return nil and a bool of false.
+func findEp(slice []*endpoint.Endpoint, dnsName string) (*endpoint.Endpoint, bool) {
+	for _, item := range slice {
+		if item.DNSName == dnsName {
+			return item, true
+		}
+	}
+	return nil, false
+}
+
+// findLabelInTargets takes an ep.Targets string slice and looks for an element in it. If found it will
+// return its string value, otherwise it will return empty string and a bool of false.
+func findLabelInTargets(targets []string, label string) (string, bool) {
+	for _, target := range targets {
+		if target == label {
+			return target, true
+		}
+	}
+	return "", false
+}
+
 // Records returns all DNS records found in CoreDNS etcd backend. Depending on the record fields
 // it may be mapped to one or two records of type A, CNAME, TXT, A+TXT, CNAME+TXT
-func (p coreDNSProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	var result []*endpoint.Endpoint
 	services, err := p.client.GetServices(p.coreDNSPrefix)
 	if err != nil {
@@ -273,16 +295,25 @@ func (p coreDNSProvider) Records() ([]*endpoint.Endpoint, error) {
 		if !p.domainFilter.Match(dnsName) {
 			continue
 		}
+		log.Debugf("Getting service (%v) with service host (%s)", service, service.Host)
 		prefix := strings.Join(domains[:service.TargetStrip], ".")
 		if service.Host != "" {
-			ep := endpoint.NewEndpointWithTTL(
-				dnsName,
-				guessRecordType(service.Host),
-				endpoint.TTL(service.TTL),
-				service.Host,
-			)
+			ep, found := findEp(result, dnsName)
+			if found {
+				ep.Targets = append(ep.Targets, service.Host)
+				log.Debugf("Extending ep (%s) with new service host (%s)", ep, service.Host)
+			} else {
+				ep = endpoint.NewEndpointWithTTL(
+					dnsName,
+					guessRecordType(service.Host),
+					endpoint.TTL(service.TTL),
+					service.Host,
+				)
+				log.Debugf("Creating new ep (%s) with new service host (%s)", ep, service.Host)
+			}
 			ep.Labels["originalText"] = service.Text
 			ep.Labels[randomPrefixLabel] = prefix
+			ep.Labels[service.Host] = prefix
 			result = append(result, ep)
 		}
 		if service.Text != "" {
@@ -305,7 +336,8 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		grouped[ep.DNSName] = append(grouped[ep.DNSName], ep)
 	}
 	for i, ep := range changes.UpdateNew {
-		ep.Labels[randomPrefixLabel] = changes.UpdateOld[i].Labels[randomPrefixLabel]
+		ep.Labels = changes.UpdateOld[i].Labels
+		log.Debugf("Updating labels (%s) with old labels(%s)", ep.Labels, changes.UpdateOld[i].Labels)
 		grouped[ep.DNSName] = append(grouped[ep.DNSName], ep)
 	}
 	for dnsName, group := range grouped {
@@ -320,9 +352,11 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			}
 
 			for _, target := range ep.Targets {
-				prefix := ep.Labels[randomPrefixLabel]
+				prefix := ep.Labels[target]
+				log.Debugf("Getting prefix(%s) from label(%s)", prefix, target)
 				if prefix == "" {
 					prefix = fmt.Sprintf("%08x", rand.Int31())
+					log.Infof("Generating new prefix: (%s)", prefix)
 				}
 
 				service := Service{
@@ -333,7 +367,35 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 					TTL:         uint32(ep.RecordTTL),
 				}
 				services = append(services, service)
+				ep.Labels[target] = prefix
+				log.Debugf("Putting prefix(%s) to label(%s)", prefix, target)
+				log.Debugf("Ep labels structure now: (%v)", ep.Labels)
 			}
+
+			// Clean outdated targets
+			for label, labelPrefix := range ep.Labels {
+				// Skip non Target related labels
+				labelsToSkip := []string{"originalText", "prefix", "resource"}
+				if _, ok := findLabelInTargets(labelsToSkip, label); ok {
+					continue
+				}
+
+				log.Debugf("Finding label (%s) in targets(%v)", label, ep.Targets)
+				if _, ok := findLabelInTargets(ep.Targets, label); !ok {
+					log.Debugf("Found non existing label(%s) in targets(%v)", label, ep.Targets)
+					dnsName := ep.DNSName
+					dnsName = labelPrefix + "." + dnsName
+					key := p.etcdKeyFor(dnsName)
+					log.Infof("Delete key %s", key)
+					if !p.dryRun {
+						err := p.client.DeleteService(key)
+						if err != nil {
+							return err
+						}
+					}
+				}
+			}
+
 		}
 		index := 0
 		for _, ep := range group {

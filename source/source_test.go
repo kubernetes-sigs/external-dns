@@ -20,8 +20,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/stretchr/testify/assert"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 func TestGetTTLFromAnnotations(t *testing.T) {
@@ -62,9 +63,21 @@ func TestGetTTLFromAnnotations(t *testing.T) {
 			expectedErr: fmt.Errorf("TTL value must be between [%d, %d]", ttlMinimum, ttlMaximum),
 		},
 		{
-			title:       "TTL annotation value is set correctly",
+			title:       "TTL annotation value is set correctly using integer",
 			annotations: map[string]string{ttlAnnotationKey: "60"},
 			expectedTTL: endpoint.TTL(60),
+			expectedErr: nil,
+		},
+		{
+			title:       "TTL annotation value is set correctly using duration (whole)",
+			annotations: map[string]string{ttlAnnotationKey: "10m"},
+			expectedTTL: endpoint.TTL(600),
+			expectedErr: nil,
+		},
+		{
+			title:       "TTL annotation value is set correcly using duration (fractional)",
+			annotations: map[string]string{ttlAnnotationKey: "20.5s"},
+			expectedTTL: endpoint.TTL(20),
 			expectedErr: nil,
 		},
 	} {

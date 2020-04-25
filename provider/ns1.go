@@ -25,12 +25,11 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-
 	api "gopkg.in/ns1/ns1-go.v2/rest"
 	"gopkg.in/ns1/ns1-go.v2/rest/model/dns"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -85,7 +84,7 @@ func (n NS1DomainService) ListZones() ([]*dns.Zone, *http.Response, error) {
 
 // NS1Config passes cli args to the NS1Provider
 type NS1Config struct {
-	DomainFilter DomainFilter
+	DomainFilter endpoint.DomainFilter
 	ZoneIDFilter ZoneIDFilter
 	NS1Endpoint  string
 	NS1IgnoreSSL bool
@@ -95,7 +94,7 @@ type NS1Config struct {
 // NS1Provider is the NS1 provider
 type NS1Provider struct {
 	client       NS1DomainClient
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 	zoneIDFilter ZoneIDFilter
 	dryRun       bool
 }
@@ -116,7 +115,7 @@ func newNS1ProviderWithHTTPClient(config NS1Config, client *http.Client) (*NS1Pr
 		clientArgs = append(clientArgs, api.SetEndpoint(config.NS1Endpoint))
 	}
 
-	if config.NS1IgnoreSSL == true {
+	if config.NS1IgnoreSSL {
 		log.Info("ns1-ignoressl flag is True, skipping SSL verification")
 		defaultTransport := http.DefaultTransport.(*http.Transport)
 		tr := &http.Transport{
@@ -142,7 +141,7 @@ func newNS1ProviderWithHTTPClient(config NS1Config, client *http.Client) (*NS1Pr
 }
 
 // Records returns the endpoints this provider knows about
-func (p *NS1Provider) Records() ([]*endpoint.Endpoint, error) {
+func (p *NS1Provider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.zonesFiltered()
 	if err != nil {
 		return nil, err
@@ -309,7 +308,7 @@ func ns1ChangesByZone(zones []*dns.Zone, changeSets []*ns1Change) map[string][]*
 	for _, c := range changeSets {
 		zone, _ := zoneNameIDMapper.FindZone(c.Endpoint.DNSName)
 		if zone == "" {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", c.Endpoint.DNSName)
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", c.Endpoint.DNSName)
 			continue
 		}
 		changes[zone] = append(changes[zone], c)

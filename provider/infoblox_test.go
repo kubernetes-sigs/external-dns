@@ -25,9 +25,10 @@ import (
 	"testing"
 
 	ibclient "github.com/infobloxopen/infoblox-go-client"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/stretchr/testify/assert"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 type mockIBConnector struct {
@@ -167,7 +168,7 @@ func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, res 
 }
 
 func (client *mockIBConnector) DeleteObject(ref string) (refRes string, err error) {
-	re, _ := regexp.Compile(`([^/]+)/[^:]+:([^/]+)/default`)
+	re := regexp.MustCompile(`([^/]+)/[^:]+:([^/]+)/default`)
 	result := re.FindStringSubmatch(ref)
 
 	switch result[1] {
@@ -328,7 +329,7 @@ func createMockInfobloxObject(name, recordType, value string) ibclient.IBObject 
 	return nil
 }
 
-func newInfobloxProvider(domainFilter DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, client ibclient.IBConnector) *InfobloxProvider {
+func newInfobloxProvider(domainFilter endpoint.DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, client ibclient.IBConnector) *InfobloxProvider {
 	return &InfobloxProvider{
 		client:       client,
 		domainFilter: domainFilter,
@@ -353,8 +354,8 @@ func TestInfobloxRecords(t *testing.T) {
 		},
 	}
 
-	provider := newInfobloxProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, &client)
-	actual, err := provider.Records()
+	provider := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, &client)
+	actual, err := provider.Records(context.Background())
 
 	if err != nil {
 		t.Fatal(err)
@@ -426,7 +427,7 @@ func testInfobloxApplyChangesInternal(t *testing.T, dryRun bool, client ibclient
 	}
 
 	provider := newInfobloxProvider(
-		NewDomainFilter([]string{""}),
+		endpoint.NewDomainFilter([]string{""}),
 		NewZoneIDFilter([]string{""}),
 		dryRun,
 		client,
@@ -485,7 +486,7 @@ func TestInfobloxZones(t *testing.T) {
 		mockInfobloxObjects: &[]ibclient.IBObject{},
 	}
 
-	provider := newInfobloxProvider(NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, &client)
+	provider := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, &client)
 	zones, _ := provider.zones()
 	var emptyZoneAuth *ibclient.ZoneAuth
 	assert.Equal(t, provider.findZone(zones, "example.com").Fqdn, "example.com")

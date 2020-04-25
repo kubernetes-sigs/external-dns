@@ -28,10 +28,11 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/denverdino/aliyungo/metadata"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
 	log "github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -65,9 +66,8 @@ type AlibabaCloudPrivateZoneAPI interface {
 
 // AlibabaCloudProvider implements the DNS provider for Alibaba Cloud.
 type AlibabaCloudProvider struct {
-	domainFilter         DomainFilter
+	domainFilter         endpoint.DomainFilter
 	zoneIDFilter         ZoneIDFilter // Private Zone only
-	zoneTypeFilter       ZoneTypeFilter
 	MaxChangeCount       int
 	EvaluateTargetHealth bool
 	AssumeRole           string
@@ -93,7 +93,7 @@ type alibabaCloudConfig struct {
 // NewAlibabaCloudProvider creates a new Alibaba Cloud provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAlibabaCloudProvider(configFile string, domainFilter DomainFilter, zoneIDFileter ZoneIDFilter, zoneType string, dryRun bool) (*AlibabaCloudProvider, error) {
+func NewAlibabaCloudProvider(configFile string, domainFilter endpoint.DomainFilter, zoneIDFileter ZoneIDFilter, zoneType string, dryRun bool) (*AlibabaCloudProvider, error) {
 	cfg := alibabaCloudConfig{}
 	if configFile != "" {
 		contents, err := ioutil.ReadFile(configFile)
@@ -236,10 +236,10 @@ func (p *AlibabaCloudProvider) refreshStsToken(sleepTime time.Duration) {
 		sleepTime = p.nextExpire.Sub(nowTime)
 		p.clientLock.RUnlock()
 		log.Infof("Distance expiration time %v", sleepTime)
-		if sleepTime < time.Duration(10*time.Minute) {
-			sleepTime = time.Duration(time.Second * 1)
+		if sleepTime < 10*time.Minute {
+			sleepTime = time.Second * 1
 		} else {
-			sleepTime = time.Duration(9 * time.Minute)
+			sleepTime = 9 * time.Minute
 			log.Info("Next fetch sts sleep interval : ", sleepTime.String())
 			continue
 		}
@@ -280,7 +280,7 @@ func (p *AlibabaCloudProvider) refreshStsToken(sleepTime time.Duration) {
 // Records gets the current records.
 //
 // Returns the current records or an error if the operation failed.
-func (p *AlibabaCloudProvider) Records() (endpoints []*endpoint.Endpoint, err error) {
+func (p *AlibabaCloudProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, err error) {
 	if p.privateZone {
 		endpoints, err = p.privateZoneRecords()
 	} else {
@@ -382,7 +382,7 @@ func (p *AlibabaCloudProvider) records() ([]alidns.Record, error) {
 	log.Infof("Retrieving Alibaba Cloud DNS Domain Records")
 	var results []alidns.Record
 
-	if len(p.domainFilter.filters) == 1 && p.domainFilter.filters[0] == "" {
+	if len(p.domainFilter.Filters) == 1 && p.domainFilter.Filters[0] == "" {
 		domainNames, tmpErr := p.getDomainList()
 		if tmpErr != nil {
 			log.Errorf("AlibabaCloudProvider getDomainList error %v", tmpErr)
@@ -397,7 +397,7 @@ func (p *AlibabaCloudProvider) records() ([]alidns.Record, error) {
 			results = append(results, tmpResults...)
 		}
 	} else {
-		for _, domainName := range p.domainFilter.filters {
+		for _, domainName := range p.domainFilter.Filters {
 			tmpResults, err := p.getDomainRecords(domainName)
 			if err != nil {
 				log.Errorf("getDomainRecords %s error %v", domainName, err)
@@ -672,7 +672,7 @@ func (p *AlibabaCloudProvider) splitDNSName(endpoint *endpoint.Endpoint) (rr str
 
 	found := false
 
-	for _, filter := range p.domainFilter.filters {
+	for _, filter := range p.domainFilter.Filters {
 		if strings.HasSuffix(name, "."+filter) {
 			rr = name[0 : len(name)-len(filter)-1]
 			domain = filter

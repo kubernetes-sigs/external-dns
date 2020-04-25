@@ -21,8 +21,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const defaultCoreDNSPrefix = "/skydns/"
@@ -66,7 +66,7 @@ func TestAServiceTranslation(t *testing.T) {
 		client:        client,
 		coreDNSPrefix: defaultCoreDNSPrefix,
 	}
-	endpoints, err := provider.Records()
+	endpoints, err := provider.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +98,7 @@ func TestCNAMEServiceTranslation(t *testing.T) {
 		client:        client,
 		coreDNSPrefix: defaultCoreDNSPrefix,
 	}
-	endpoints, err := provider.Records()
+	endpoints, err := provider.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +130,7 @@ func TestTXTServiceTranslation(t *testing.T) {
 		client:        client,
 		coreDNSPrefix: defaultCoreDNSPrefix,
 	}
-	endpoints, err := provider.Records()
+	endpoints, err := provider.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -164,7 +164,7 @@ func TestAWithTXTServiceTranslation(t *testing.T) {
 		client:        client,
 		coreDNSPrefix: defaultCoreDNSPrefix,
 	}
-	endpoints, err := provider.Records()
+	endpoints, err := provider.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,7 +206,7 @@ func TestCNAMEWithTXTServiceTranslation(t *testing.T) {
 		client:        client,
 		coreDNSPrefix: defaultCoreDNSPrefix,
 	}
-	endpoints, err := provider.Records()
+	endpoints, err := provider.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -264,7 +264,7 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 			endpoint.NewEndpoint("domain1.local", "A", "6.6.6.6"),
 		},
 	}
-	records, _ := coredns.Records()
+	records, _ := coredns.Records(context.Background())
 	for _, ep := range records {
 		if ep.DNSName == "domain1.local" {
 			changes2.UpdateOld = append(changes2.UpdateOld, ep)
@@ -293,10 +293,29 @@ func TestCoreDNSApplyChanges(t *testing.T) {
 		"/skydns/local/domain2": {Host: "site.local"},
 	}
 	validateServices(client.services, expectedServices3, t, 3)
+
+	// Test for multiple A records for the same FQDN
+	changes4 := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "5.5.5.5"),
+			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "6.6.6.6"),
+			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "7.7.7.7"),
+		},
+	}
+	coredns.ApplyChanges(context.Background(), changes4)
+
+	expectedServices4 := map[string]*Service{
+		"/skydns/local/domain2":   {Host: "site.local"},
+		"/skydns/local/domain1/1": {Host: "5.5.5.5"},
+		"/skydns/local/domain1/2": {Host: "6.6.6.6"},
+		"/skydns/local/domain1":   {Host: "7.7.7.7"},
+	}
+	validateServices(client.services, expectedServices4, t, 1)
 }
 
 func applyServiceChanges(provider coreDNSProvider, changes *plan.Changes) {
-	records, _ := provider.Records()
+	ctx := context.Background()
+	records, _ := provider.Records(ctx)
 	for _, col := range [][]*endpoint.Endpoint{changes.Create, changes.UpdateNew, changes.Delete} {
 		for _, record := range col {
 			for _, existingRecord := range records {
@@ -306,10 +325,11 @@ func applyServiceChanges(provider coreDNSProvider, changes *plan.Changes) {
 			}
 		}
 	}
-	provider.ApplyChanges(context.Background(), changes)
+	provider.ApplyChanges(ctx, changes)
 }
 
 func validateServices(services, expectedServices map[string]*Service, t *testing.T, step int) {
+	t.Helper()
 	if len(services) != len(expectedServices) {
 		t.Errorf("wrong number of records on step %d: %d != %d", step, len(services), len(expectedServices))
 	}

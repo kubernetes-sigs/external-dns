@@ -4,7 +4,7 @@
 
 The provider has been written for and tested against [PowerDNS](https://github.com/PowerDNS/pdns) v4.1.x and thus requires **PowerDNS Auth Server >= 4.1.x**
 
-PowerDNS provider support was added via [this PR](https://github.com/kubernetes-incubator/external-dns/pull/373), thus you need to use external-dns version >= v0.5
+PowerDNS provider support was added via [this PR](https://github.com/kubernetes-sigs/external-dns/pull/373), thus you need to use external-dns version >= v0.5
 
 The PDNS provider expects that your PowerDNS instance is already setup and
 functional. It expects that zones, you wish to add records to, already exist
@@ -23,13 +23,16 @@ Deploying external DNS for PowerDNS is actually nearly identical to deploying
 it for other providers. This is what a sample `deployment.yaml` looks like:
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: deploy-external-dns
+  name: external-dns
 spec:
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: external-dns
   template:
     metadata:
       labels:
@@ -73,7 +76,7 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services"]
+  resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions"]
   resources: ["ingresses"]
@@ -106,11 +109,14 @@ subjects:
 Spin up a simple "Hello World" HTTP server with the following spec (`kubectl apply -f`):
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: echo
 spec:
+  selector:
+    matchLabels:
+      app: echo
   template:
     metadata:
       labels:

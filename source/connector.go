@@ -21,8 +21,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
 	log "github.com/sirupsen/logrus"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 const (
@@ -59,7 +60,10 @@ func (cs *connectorSource) Endpoints() ([]*endpoint.Endpoint, error) {
 		return nil, err
 	}
 
-	log.Debugf("Recieved endpoints: %#v", endpoints)
+	log.Debugf("Received endpoints: %#v", endpoints)
 
 	return endpoints, nil
+}
+
+func (cs *connectorSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
 }

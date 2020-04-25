@@ -17,3 +17,7 @@ linters:
     - ineffassign
     - golint
     - goimports
+    - misspell
+    - unconvert
+    - megacheck
+    - interfacer

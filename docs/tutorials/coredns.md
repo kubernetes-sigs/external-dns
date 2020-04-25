@@ -128,10 +128,7 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services"]
-  verbs: ["get","watch","list"]
-- apiGroups: [""]
-  resources: ["pods"]
+  resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions"]
   resources: ["ingresses"]
@@ -196,8 +193,8 @@ minikube addons enable ingress
 
 ## Testing ingress example
 ```
-$ cat ingress.yaml      
-apiVersion: extensions/v1beta1
+$ cat ingress.yaml
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: nginx

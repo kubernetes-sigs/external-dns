@@ -31,8 +31,9 @@ import (
 
 	"github.com/gophercloud/gophercloud/openstack/dns/v2/recordsets"
 	"github.com/gophercloud/gophercloud/openstack/dns/v2/zones"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 var lastGeneratedDesignateID int32
@@ -114,7 +115,8 @@ func (c fakeDesignateClient) UpdateRecordSet(zoneID, recordSetID string, opts re
 	if opts.Description != nil {
 		rs.Description = *opts.Description
 	}
-	rs.TTL = opts.TTL
+	rs.TTL = *opts.TTL
+
 	rs.Records = opts.Records
 	return nil
 }
@@ -189,7 +191,7 @@ func TestNewDesignateProvider(t *testing.T) {
 	os.Setenv("OS_USER_DOMAIN_NAME", "Default")
 	os.Setenv("OPENSTACK_CA_FILE", tmpfile.Name())
 
-	if _, err := NewDesignateProvider(DomainFilter{}, true); err != nil {
+	if _, err := NewDesignateProvider(endpoint.DomainFilter{}, true); err != nil {
 		t.Fatalf("Failed to initialize Designate provider: %s", err)
 	}
 }
@@ -301,7 +303,7 @@ func TestDesignateRecords(t *testing.T) {
 		},
 	}
 
-	endpoints, err := client.ToProvider().Records()
+	endpoints, err := client.ToProvider().Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}

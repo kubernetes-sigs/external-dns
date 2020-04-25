@@ -23,12 +23,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/stretchr/testify/assert"
+	"go.etcd.io/etcd/clientv3"
+	"go.etcd.io/etcd/mvcc/mvccpb"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 type fakeEtcdv3Client struct {
@@ -65,7 +65,7 @@ func (c fakeEtcdv3Client) List(rootDomain string) ([]RDNSRecord, error) {
 
 		k := &mvccpb.KeyValue{
 			Key:   []byte(v.Key),
-			Value: []byte(b),
+			Value: b,
 		}
 
 		r.Kvs = append(r.Kvs, k)
@@ -113,7 +113,7 @@ func TestARecordTranslation(t *testing.T) {
 		rootDomain: "lb.rancher.cloud",
 	}
 
-	endpoints, err := provider.Records()
+	endpoints, err := provider.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +148,7 @@ func TestTXTRecordTranslation(t *testing.T) {
 		rootDomain: "lb.rancher.cloud",
 	}
 
-	endpoints, err := provider.Records()
+	endpoints, err := provider.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,7 +184,7 @@ func TestAWithTXTRecordTranslation(t *testing.T) {
 		rootDomain: "lb.rancher.cloud",
 	}
 
-	endpoints, err := provider.Records()
+	endpoints, err := provider.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +248,7 @@ func TestRDNSApplyChanges(t *testing.T) {
 		},
 	}
 
-	records, _ := provider.Records()
+	records, _ := provider.Records(context.Background())
 	for _, ep := range records {
 		if ep.DNSName == "p1xaf1.lb.rancher.cloud" {
 			changes2.UpdateOld = append(changes2.UpdateOld, ep)

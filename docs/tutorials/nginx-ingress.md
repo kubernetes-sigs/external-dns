@@ -1,6 +1,6 @@
 # Setting up ExternalDNS on GKE with nginx-ingress-controller
 
-This tutorial describes how to setup ExternalDNS for usage within a GKE cluster that doesn't make use of Google's [default ingress controller](https://github.com/kubernetes/ingress/tree/master/controllers/gce) but rather uses [nginx-ingress-controller](https://github.com/kubernetes/ingress/tree/master/controllers/nginx) for that task.
+This tutorial describes how to setup ExternalDNS for usage within a GKE cluster that doesn't make use of Google's [default ingress controller](https://github.com/kubernetes/ingress-gce) but rather uses [nginx-ingress-controller](https://github.com/kubernetes/ingress-nginx) for that task.
 
 Setup your environment to work with Google Cloud Platform. Fill in your values as needed, e.g. target project.
 
@@ -78,11 +78,14 @@ spec:
 
 ---
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: default-http-backend
 spec:
+  selector:
+    matchLabels:
+      app: default-http-backend
   template:
     metadata:
       labels:
@@ -107,11 +110,14 @@ Change `--target-tags` to the corresponding tags of your nodes. You can find the
 Apply the following manifests to your cluster to deploy the nginx-based ingress controller. Note, how it receives a reference to the default backend's Service and that it listens on hostPorts. (You may have to use `hostNetwork: true` as well.)
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx-ingress-controller
 spec:
+  selector:
+    matchLabels:
+      app: nginx-ingress-controller
   template:
     metadata:
       labels:
@@ -166,11 +172,14 @@ spec:
 
 ---
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx-ingress-controller
 spec:
+  selector:
+    matchLabels:
+      app: nginx-ingress-controller
   template:
     metadata:
       labels:
@@ -213,10 +222,7 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services"]
-  verbs: ["get","watch","list"]
-- apiGroups: [""]
-  resources: ["pods"]
+  resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions"] 
   resources: ["ingresses"] 
@@ -238,13 +244,16 @@ subjects:
   name: external-dns
   namespace: default
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: external-dns
 spec:
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: external-dns
   template:
     metadata:
       labels:
@@ -270,7 +279,7 @@ Use `--dry-run` if you want to be extra careful on the first run. Note, that you
 Create the following sample application to test that ExternalDNS works.
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: nginx
@@ -300,11 +309,14 @@ spec:
 
 ---
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx
 spec:
+  selector:
+    matchLabels:
+      app: nginx
   template:
     metadata:
       labels:

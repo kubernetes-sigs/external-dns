@@ -2,36 +2,86 @@
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster on AWS. Make sure to use **>=0.4** version of ExternalDNS for this tutorial
 
-## IAM Permissions
+## IAM Policy
+
+The following IAM Policy document allows ExternalDNS to update Route53 Resource
+Record Sets and Hosted Zones. You'll want to create this Policy in IAM first. In
+our example, we'll call the policy AllowExternalDNSUpdates (but you can call
+it whatever you prefer).
+
+If you prefer, you may fine-tune the policy to permit updates only to explicit
+Hosted Zone IDs.
 
 ```json
 {
- "Version": "2012-10-17",
- "Statement": [
-   {
-     "Effect": "Allow",
-     "Action": [
-       "route53:ChangeResourceRecordSets"
-     ],
-     "Resource": [
-       "arn:aws:route53:::hostedzone/*"
-     ]
-   },
-   {
-     "Effect": "Allow",
-     "Action": [
-       "route53:ListHostedZones",
-       "route53:ListResourceRecordSets"
-     ],
-     "Resource": [
-       "*"
-     ]
-   }
- ]
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "route53:ChangeResourceRecordSets"
+      ],
+      "Resource": [
+        "arn:aws:route53:::hostedzone/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "route53:ListHostedZones",
+        "route53:ListResourceRecordSets"
+      ],
+      "Resource": [
+        "*"
+      ]
+    }
+  ]
 }
 ```
 
-When running on AWS, you need to make sure that your nodes (on which External DNS runs) have the IAM instance profile with the above IAM role assigned (either directly or via something like [kube2iam](https://github.com/jtblin/kube2iam)).
+## Create IAM Role
+
+You'll need to create an IAM Role that can be assumed by the ExternalDNS Pod.
+Note the role name; you'll need to refer to it in the K8S manifest below.
+
+Attach the AllowExternalDNSUpdates IAM Policy (above) to the role.
+
+The trust relationship associated with the IAM Role will vary depending on how
+you've configured your Kubernetes cluster:
+
+### Amazon EKS
+
+If your EKS-managed cluster is >= 1.13 and was created after 2019-09-04, refer
+to the [Amazon EKS
+documentation](https://docs.aws.amazon.com/eks/latest/userguide/create-service-account-iam-policy-and-role.html)
+for instructions on how to create the IAM Role. Otherwise, you will need to use
+kiam or kube2iam.
+
+### kiam
+
+If you're using [kiam](https://github.com/uswitch/kiam), follow the
+[instructions](https://github.com/uswitch/kiam/blob/master/docs/IAM.md) for
+creating the IAM role.
+
+### kube2iam
+
+If you're using [kube2iam](https://github.com/jtblin/kube2iam), follow the
+instructions for creating the IAM Role.
+
+### EC2 Instance Role (not recommended)
+
+**:warning: WARNING: This will grant all pods on the node the ability to
+manipulate Route 53 Resource Record Sets. If exploited by an attacker, this
+could lead to a serious security and/or availability incident. For this reason,
+it is not recommended.**
+
+Create an IAM Role for your EC2 instances as described in the [Amazon EC2
+documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html).
+Then, attach the associated Instance Profile to the EC2 instances that comprise
+your K8S cluster.
+
+For this method to work, you must permit your pods the ability to access the EC2
+instance metadata service (169.254.169.254). This is allowed by default.
 
 ## Set up a hosted zone
 
@@ -42,7 +92,6 @@ Create a DNS zone which will contain the managed DNS records.
 ```console
 $ aws route53 create-hosted-zone --name "external-dns-test.my-org.com." --caller-reference "external-dns-test-$(date +%s)"
 ```
-
 
 Make a note of the ID of the hosted zone you just created, which will serve as the value for my-hostedzone-identifier.
 
@@ -67,19 +116,28 @@ In this case it's the ones shown above but your's will differ.
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
 Then apply one of the following manifests file to deploy ExternalDNS. You can check if your cluster has RBAC by `kubectl api-versions | grep rbac.authorization.k8s.io`.
 
+For clusters with RBAC enabled, be sure to choose the correct `namespace`.
+
 ### Manifest (for clusters without RBAC enabled)
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: external-dns
 spec:
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: external-dns
   template:
     metadata:
       labels:
         app: external-dns
+      # If you're using kiam or kube2iam, specify the following annotation.
+      # Otherwise, you may safely omit it.
+      annotations:
+        iam.amazonaws.com/role: arn:aws:iam::ACCOUNT-ID:role/IAM-SERVICE-ROLE-NAME
     spec:
       containers:
       - name: external-dns
@@ -102,6 +160,11 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: external-dns
+  # If you're using Amazon EKS with IAM Roles for Service Accounts, specify the following annotation.
+  # Otherwise, you may safely omit it.
+  annotations:
+    # Substitute your account ID and IAM service role name below.
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT-ID:role/IAM-SERVICE-ROLE-NAME
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
@@ -109,13 +172,10 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services"]
+  resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["get","watch","list"]
-- apiGroups: ["extensions"] 
-  resources: ["ingresses"] 
+- apiGroups: ["extensions"]
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
@@ -134,17 +194,24 @@ subjects:
   name: external-dns
   namespace: default
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: external-dns
 spec:
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: external-dns
   template:
     metadata:
       labels:
         app: external-dns
+      # If you're using kiam or kube2iam, specify the following annotation.
+      # Otherwise, you may safely omit it.
+      annotations:
+        iam.amazonaws.com/role: arn:aws:iam::ACCOUNT-ID:role/IAM-SERVICE-ROLE-NAME
     spec:
       serviceAccountName: external-dns
       containers:
@@ -163,8 +230,6 @@ spec:
         fsGroup: 65534 # For ExternalDNS to be able to read Kubernetes and AWS token files
 ```
 
-
-
 ## Arguments
 
 This list is not the full list, but a few arguments that where chosen.
@@ -179,7 +244,7 @@ Annotations which are specific to AWS.
 
 ### alias
 
-`external-dns.alpha.kubernetes.io/alias` if set to `true` on an ingress, it will create an ALIAS record when the target is an ALIAS as well. To make the target an alias, the ingress needs to be configured correctly as described in [the docs](./nginx-ingress.md#with-a-separate-tcp-load-balancer).
+`external-dns.alpha.kubernetes.io/alias` if set to `true` on an ingress, it will create an ALIAS record when the target is an ALIAS as well. To make the target an alias, the ingress needs to be configured correctly as described in [the docs](./nginx-ingress.md#with-a-separate-tcp-load-balancer). In particular, the argument `--publish-service=default/nginx-ingress-controller` has to be set on the `nginx-ingress-controller` container. If one uses the `nginx-ingress` Helm chart, this flag can be set with the `controller.publishService.enabled` configuration option.
 
 ## Verify ExternalDNS works (Ingress example)
 
@@ -188,7 +253,7 @@ Create an ingress resource manifest file.
 > For ingress objects ExternalDNS will create a DNS record based on the host specified for the ingress object.
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: foo
@@ -230,11 +295,14 @@ spec:
 
 ---
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx
 spec:
+  selector:
+    matchLabels:
+      app: nginx
   template:
     metadata:
       labels:
@@ -321,6 +389,23 @@ spec:
 ```
 
 This will set the DNS record's TTL to 60 seconds.
+
+## Routing policies
+
+Route53 offers [different routing policies](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html). The routing policy for a record can be controlled with the following annotations:
+
+* `external-dns.alpha.kubernetes.io/set-identifier`: this **needs** to be set to use any of the following routing policies
+
+For any given DNS name, only **one** of the following routing policies can be used:
+
+* Weighted records: `external-dns.alpha.kubernetes.io/aws-weight`
+* Latency-based routing: `external-dns.alpha.kubernetes.io/aws-region`
+* Failover:`external-dns.alpha.kubernetes.io/aws-failover`
+* Geolocation-based routing:
+  * `external-dns.alpha.kubernetes.io/aws-geolocation-continent-code`
+  * `external-dns.alpha.kubernetes.io/aws-geolocation-country-code`
+  * `external-dns.alpha.kubernetes.io/aws-geolocation-subdivision-code`
+* Multi-value answer:`external-dns.alpha.kubernetes.io/aws-multi-value-answer`
 
 ## Clean up
 

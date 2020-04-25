@@ -32,9 +32,9 @@ import (
 	"github.com/gophercloud/gophercloud/pagination"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/pkg/tlsutils"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/tlsutils"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -229,12 +229,12 @@ type designateProvider struct {
 	client designateClientInterface
 
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 	dryRun       bool
 }
 
 // NewDesignateProvider is a factory function for OpenStack designate providers
-func NewDesignateProvider(domainFilter DomainFilter, dryRun bool) (Provider, error) {
+func NewDesignateProvider(domainFilter endpoint.DomainFilter, dryRun bool) (Provider, error) {
 	client, err := newDesignateClient()
 	if err != nil {
 		return nil, err
@@ -308,7 +308,7 @@ func (p designateProvider) getHostZoneID(hostname string, managedZones map[strin
 }
 
 // Records returns the list of records.
-func (p designateProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p designateProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	var result []*endpoint.Endpoint
 	managedZones, err := p.getZones()
 	if err != nil {
@@ -415,7 +415,7 @@ func (p designateProvider) upsertRecordSet(rs *recordSet, managedZones map[strin
 			return err
 		}
 		if rs.zoneID == "" {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected ", rs.dnsName)
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", rs.dnsName)
 			return nil
 		}
 	}
@@ -447,8 +447,10 @@ func (p designateProvider) upsertRecordSet(rs *recordSet, managedZones map[strin
 		}
 		return p.client.DeleteRecordSet(rs.zoneID, rs.recordSetID)
 	} else {
+		ttl := 0
 		opts := recordsets.UpdateOpts{
 			Records: records,
+			TTL:     &ttl,
 		}
 		log.Infof("Updating records: %s/%s: %s", rs.dnsName, rs.recordType, strings.Join(records, ","))
 		if p.dryRun {

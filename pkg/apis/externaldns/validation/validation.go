@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kubernetes-incubator/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
 // ValidateConfig performs validation on the Config object
@@ -40,6 +40,22 @@ func ValidateConfig(cfg *externaldns.Config) error {
 	if cfg.Provider == "azure" {
 		if cfg.AzureConfigFile == "" {
 			return errors.New("no Azure config file specified")
+		}
+	}
+
+	// Akamai provider specific validations
+	if cfg.Provider == "akamai" {
+		if cfg.AkamaiServiceConsumerDomain == "" {
+			return errors.New("no Akamai ServiceConsumerDomain specified")
+		}
+		if cfg.AkamaiClientToken == "" {
+			return errors.New("no Akamai client token specified")
+		}
+		if cfg.AkamaiClientSecret == "" {
+			return errors.New("no Akamai client secret specified")
+		}
+		if cfg.AkamaiAccessToken == "" {
+			return errors.New("no Akamai access token specified")
 		}
 	}
 
@@ -63,6 +79,12 @@ func ValidateConfig(cfg *externaldns.Config) error {
 
 		if cfg.DynMinTTLSeconds < 0 {
 			return errors.New("TTL specified for Dyn is negative")
+		}
+	}
+
+	if cfg.Provider == "rfc2136" {
+		if cfg.RFC2136MinTTL < 0 {
+			return errors.New("TTL specified for rfc2136 is negative")
 		}
 	}
 

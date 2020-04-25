@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-Exoscale provider support was added via [this PR](https://github.com/kubernetes-incubator/external-dns/pull/625), thus you need to use external-dns v0.5.5.
+Exoscale provider support was added via [this PR](https://github.com/kubernetes-sigs/external-dns/pull/625), thus you need to use external-dns v0.5.5.
 
 The Exoscale provider expects that your Exoscale zones, you wish to add records to, already exists
 and are configured correctly. It does not add, remove or configure new zones in anyway.
@@ -22,13 +22,16 @@ Deploying external DNS for Exoscale is actually nearly identical to deploying
 it for other providers. This is what a sample `deployment.yaml` looks like:
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: external-dns
 spec:
   strategy:
     type: Recreate
+  selector:
+    matchLabels:
+      app: external-dns
   template:
     metadata:
       labels:
@@ -38,7 +41,7 @@ spec:
       # serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.5
+        image: eu.gcr.io/k8s-artifacts-prod/external-dns/external-dns:v0.6.0
         args:
         - --source=ingress # or service or both
         - --provider=exoscale
@@ -69,10 +72,7 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services"]
-  verbs: ["get","watch","list"]
-- apiGroups: [""]
-  resources: ["pods"]
+  resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions"]
   resources: ["ingresses"]
@@ -104,7 +104,7 @@ subjects:
 Spin up a simple nginx HTTP server with the following spec (`kubectl apply -f`):
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: nginx
@@ -135,11 +135,14 @@ spec:
 
 ---
 
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx
 spec:
+  selector:
+    matchLabels:
+      app: nginx
   template:
     metadata:
       labels:

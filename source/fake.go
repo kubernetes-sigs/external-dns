@@ -26,7 +26,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // fakeSource is an implementation of Source that provides dummy endpoints for
@@ -52,6 +52,9 @@ func NewFakeSource(fqdnTemplate string) (Source, error) {
 	return &fakeSource{
 		dnsName: fqdnTemplate,
 	}, nil
+}
+
+func (sc *fakeSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
 }
 
 // Endpoints returns endpoint objects.

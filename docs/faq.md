@@ -119,19 +119,22 @@ By default the `nginx-ingress-controller` assigns a single IP address to an Ingr
 
 In most AWS deployments, you'll instead want the Route 53 entry to be the FQDN of the ELB that is assigned to the `nginx-ingress-controller` Service. To accomplish this, when you create the `nginx-ingress-controller` Deployment, you need to provide the `--publish-service` option to the `/nginx-ingress-controller` executable under `args`. Once this is deployed new Ingress resources will get the ELB's FQDN and ExternalDNS will use the same when creating records in Route 53.
 
-According to the `nginx-ingress-controller` [docs](https://github.com/kubernetes/ingress/tree/master/controllers/nginx) the value you need to provide `--publish-service` is:
+According to the `nginx-ingress-controller` [docs](https://kubernetes.github.io/ingress-nginx/) the value you need to provide `--publish-service` is:
 
 > Service fronting the ingress controllers. Takes the form namespace/name. The controller will set the endpoint records on the ingress objects to reflect those on the service.
 
 For example if your `nginx-ingress-controller` Service's name is `nginx-ingress-controller-svc` and it's in the `default` namespace the start of your resource YAML might look like the following. Note the second to last line.
 
 ```
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx-ingress-controller
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-ingress
   template:
     metadata:
       labels:
@@ -151,11 +154,11 @@ spec:
 
 ### I have a Service/Ingress but it's ignored by ExternalDNS. Why?
 
-ExternalDNS can be configured to only use Services or Ingresses as source. In case Services or Ingresses seem to be ignored in your setup, consider checking how the flag `--source` was configured when deployed. For reference, see the issue https://github.com/kubernetes-incubator/external-dns/issues/267.
+ExternalDNS can be configured to only use Services or Ingresses as source. In case Services or Ingresses seem to be ignored in your setup, consider checking how the flag `--source` was configured when deployed. For reference, see the issue https://github.com/kubernetes-sigs/external-dns/issues/267.
 
 ### I'm using an ELB with TXT registry but the CNAME record clashes with the TXT record. How to avoid this?
 
-CNAMEs cannot co-exist with other records, therefore you can use the `--txt-prefix` flag which makes sure to create a TXT record with a name following the pattern `prefix.<CNAME record>`. For reference, see the issue https://github.com/kubernetes-incubator/external-dns/issues/262.
+CNAMEs cannot co-exist with other records, therefore you can use the `--txt-prefix` flag which makes sure to create a TXT record with a name following the pattern `prefix.<CNAME record>`. For reference, see the issue https://github.com/kubernetes-sigs/external-dns/issues/262.
 
 ### Can I force ExternalDNS to create CNAME records for ELB/ALB?
 
@@ -260,7 +263,7 @@ and one with `--annotation-filter=kubernetes.io/ingress.class=nginx-external`.
 
 ### Can external-dns manage(add/remove) records in a hosted zone which is setup in different AWS account?
 
-Yes, give it the correct cross-account/assume-role permissions and use the `--aws-assume-role` flag https://github.com/kubernetes-incubator/external-dns/pull/524#issue-181256561
+Yes, give it the correct cross-account/assume-role permissions and use the `--aws-assume-role` flag https://github.com/kubernetes-sigs/external-dns/pull/524#issue-181256561
 
 ### How do I provide multiple values to the annotation `external-dns.alpha.kubernetes.io/hostname`?
 
@@ -280,3 +283,12 @@ As tags, you can use your version of choice or use `latest` that always resolves
 If you wish to build your own image, you can use the provided [Dockerfile](../Dockerfile) as a starting point.
 
 We are currently working with the Kubernetes community to provide official images for the project similarly to what is done with the other official Kubernetes projects, but we don't have an ETA on when those images will be available.
+
+### Why am I seeing time out errors even though I have connectivity to my cluster?
+
+If you're seeing an error such as this:
+```
+FATA[0060] failed to sync cache: timed out waiting for the condition
+```
+
+You may not have the correct permissions required to query all the necessary resources in your kubernetes cluster. Specifically, you may be running in a `namespace` that you don't have these permissions in. By default, commands are run against the `default` namespace. Try changing this to your particular namespace to see if that fixes the issue.

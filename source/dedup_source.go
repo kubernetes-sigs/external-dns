@@ -17,9 +17,11 @@ limitations under the License.
 package source
 
 import (
+	"time"
+
 	log "github.com/sirupsen/logrus"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // dedupSource is a Source that removes duplicate endpoints from its wrapped source.
@@ -43,7 +45,7 @@ func (ms *dedupSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	}
 
 	for _, ep := range endpoints {
-		identifier := ep.DNSName + " / " + ep.Targets.String()
+		identifier := ep.DNSName + " / " + ep.SetIdentifier + " / " + ep.Targets.String()
 
 		if _, ok := collected[identifier]; ok {
 			log.Debugf("Removing duplicate endpoint %s", ep)
@@ -55,4 +57,8 @@ func (ms *dedupSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	}
 
 	return result, nil
+}
+
+func (ms *dedupSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+	ms.source.AddEventHandler(handler, stopChan, minInterval)
 }

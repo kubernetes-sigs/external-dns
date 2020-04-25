@@ -19,17 +19,15 @@ package provider
 import (
 	"context"
 	"errors"
-
-	//"fmt"
 	"net/http"
 	"strings"
 	"testing"
 
+	pgo "github.com/ffledgling/pdns-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	pgo "github.com/ffledgling/pdns-go"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // FIXME: What do we do about labels?
@@ -478,40 +476,40 @@ var (
 		},
 	}
 
-	DomainFilterListSingle = DomainFilter{
-		filters: []string{
+	DomainFilterListSingle = endpoint.DomainFilter{
+		Filters: []string{
 			"example.com",
 		},
 	}
 
-	DomainFilterListMultiple = DomainFilter{
-		filters: []string{
+	DomainFilterListMultiple = endpoint.DomainFilter{
+		Filters: []string{
 			"example.com",
 			"mock.com",
 		},
 	}
 
-	DomainFilterListEmpty = DomainFilter{
-		filters: []string{},
+	DomainFilterListEmpty = endpoint.DomainFilter{
+		Filters: []string{},
 	}
 
 	DomainFilterEmptyClient = &PDNSAPIClient{
 		dryRun:       false,
-		authCtx:      context.WithValue(context.TODO(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
+		authCtx:      context.WithValue(context.Background(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
 		client:       pgo.NewAPIClient(pgo.NewConfiguration()),
 		domainFilter: DomainFilterListEmpty,
 	}
 
 	DomainFilterSingleClient = &PDNSAPIClient{
 		dryRun:       false,
-		authCtx:      context.WithValue(context.TODO(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
+		authCtx:      context.WithValue(context.Background(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
 		client:       pgo.NewAPIClient(pgo.NewConfiguration()),
 		domainFilter: DomainFilterListSingle,
 	}
 
 	DomainFilterMultipleClient = &PDNSAPIClient{
 		dryRun:       false,
-		authCtx:      context.WithValue(context.TODO(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
+		authCtx:      context.WithValue(context.Background(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
 		client:       pgo.NewAPIClient(pgo.NewConfiguration()),
 		domainFilter: DomainFilterListMultiple,
 	}
@@ -538,7 +536,7 @@ func (c *PDNSAPIClientStub) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http
 /******************************************************************************/
 // API that returns a zones with no records
 type PDNSAPIClientStubEmptyZones struct {
-	// Keep track of all zones we recieve via PatchZone
+	// Keep track of all zones we receive via PatchZone
 	patchedZones []pgo.Zone
 }
 
@@ -641,124 +639,148 @@ type NewPDNSProviderTestSuite struct {
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 
-	_, err := NewPDNSProvider(PDNSConfig{
-		Server:       "http://localhost:8081",
-		DomainFilter: NewDomainFilter([]string{""}),
-	})
+	_, err := NewPDNSProvider(
+		context.Background(),
+		PDNSConfig{
+			Server:       "http://localhost:8081",
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
+		})
 	assert.Error(suite.T(), err, "--pdns-api-key should be specified")
 
-	_, err = NewPDNSProvider(PDNSConfig{
-		Server:       "http://localhost:8081",
-		APIKey:       "foo",
-		DomainFilter: NewDomainFilter([]string{"example.com", "example.org"}),
-	})
+	_, err = NewPDNSProvider(
+		context.Background(),
+		PDNSConfig{
+			Server:       "http://localhost:8081",
+			APIKey:       "foo",
+			DomainFilter: endpoint.NewDomainFilter([]string{"example.com", "example.org"}),
+		})
 	assert.Nil(suite.T(), err, "--domain-filter should raise no error")
 
-	_, err = NewPDNSProvider(PDNSConfig{
-		Server:       "http://localhost:8081",
-		APIKey:       "foo",
-		DomainFilter: NewDomainFilter([]string{""}),
-		DryRun:       true,
-	})
+	_, err = NewPDNSProvider(
+		context.Background(),
+		PDNSConfig{
+			Server:       "http://localhost:8081",
+			APIKey:       "foo",
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
+			DryRun:       true,
+		})
 	assert.Error(suite.T(), err, "--dry-run should raise an error")
 
 	// This is our "regular" code path, no error should be thrown
-	_, err = NewPDNSProvider(PDNSConfig{
-		Server:       "http://localhost:8081",
-		APIKey:       "foo",
-		DomainFilter: NewDomainFilter([]string{""}),
-	})
+	_, err = NewPDNSProvider(
+		context.Background(),
+		PDNSConfig{
+			Server:       "http://localhost:8081",
+			APIKey:       "foo",
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
+		})
 	assert.Nil(suite.T(), err, "Regular case should raise no error")
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 
-	_, err := NewPDNSProvider(PDNSConfig{
-		Server:       "http://localhost:8081",
-		APIKey:       "foo",
-		DomainFilter: NewDomainFilter([]string{""}),
-	})
+	_, err := NewPDNSProvider(
+		context.Background(),
+		PDNSConfig{
+			Server:       "http://localhost:8081",
+			APIKey:       "foo",
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
+		})
 	assert.Nil(suite.T(), err, "Omitted TLS Config case should raise no error")
 
-	_, err = NewPDNSProvider(PDNSConfig{
-		Server:       "http://localhost:8081",
-		APIKey:       "foo",
-		DomainFilter: NewDomainFilter([]string{""}),
-		TLSConfig: TLSConfig{
-			TLSEnabled: false,
-		},
-	})
+	_, err = NewPDNSProvider(
+		context.Background(),
+		PDNSConfig{
+			Server:       "http://localhost:8081",
+			APIKey:       "foo",
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
+			TLSConfig: TLSConfig{
+				TLSEnabled: false,
+			},
+		})
 	assert.Nil(suite.T(), err, "Disabled TLS Config should raise no error")
 
-	_, err = NewPDNSProvider(PDNSConfig{
-		Server:       "http://localhost:8081",
-		APIKey:       "foo",
-		DomainFilter: NewDomainFilter([]string{""}),
-		TLSConfig: TLSConfig{
-			TLSEnabled:            false,
-			CAFilePath:            "/path/to/ca.crt",
-			ClientCertFilePath:    "/path/to/cert.pem",
-			ClientCertKeyFilePath: "/path/to/cert-key.pem",
-		},
-	})
+	_, err = NewPDNSProvider(
+		context.Background(),
+		PDNSConfig{
+			Server:       "http://localhost:8081",
+			APIKey:       "foo",
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
+			TLSConfig: TLSConfig{
+				TLSEnabled:            false,
+				CAFilePath:            "/path/to/ca.crt",
+				ClientCertFilePath:    "/path/to/cert.pem",
+				ClientCertKeyFilePath: "/path/to/cert-key.pem",
+			},
+		})
 	assert.Nil(suite.T(), err, "Disabled TLS Config with additional flags should raise no error")
 
-	_, err = NewPDNSProvider(PDNSConfig{
-		Server:       "http://localhost:8081",
-		APIKey:       "foo",
-		DomainFilter: NewDomainFilter([]string{""}),
-		TLSConfig: TLSConfig{
-			TLSEnabled: true,
-		},
-	})
+	_, err = NewPDNSProvider(
+		context.Background(),
+		PDNSConfig{
+			Server:       "http://localhost:8081",
+			APIKey:       "foo",
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
+			TLSConfig: TLSConfig{
+				TLSEnabled: true,
+			},
+		})
 	assert.Error(suite.T(), err, "Enabled TLS Config without --tls-ca should raise an error")
 
-	_, err = NewPDNSProvider(PDNSConfig{
-		Server:       "http://localhost:8081",
-		APIKey:       "foo",
-		DomainFilter: NewDomainFilter([]string{""}),
-		TLSConfig: TLSConfig{
-			TLSEnabled: true,
-			CAFilePath: "../internal/testresources/ca.pem",
-		},
-	})
+	_, err = NewPDNSProvider(
+		context.Background(),
+		PDNSConfig{
+			Server:       "http://localhost:8081",
+			APIKey:       "foo",
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
+			TLSConfig: TLSConfig{
+				TLSEnabled: true,
+				CAFilePath: "../internal/testresources/ca.pem",
+			},
+		})
 	assert.Nil(suite.T(), err, "Enabled TLS Config with --tls-ca should raise no error")
 
-	_, err = NewPDNSProvider(PDNSConfig{
-		Server:       "http://localhost:8081",
-		APIKey:       "foo",
-		DomainFilter: NewDomainFilter([]string{""}),
-		TLSConfig: TLSConfig{
-			TLSEnabled:         true,
-			CAFilePath:         "../internal/testresources/ca.pem",
-			ClientCertFilePath: "../internal/testresources/client-cert.pem",
-		},
-	})
+	_, err = NewPDNSProvider(
+		context.Background(),
+		PDNSConfig{
+			Server:       "http://localhost:8081",
+			APIKey:       "foo",
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
+			TLSConfig: TLSConfig{
+				TLSEnabled:         true,
+				CAFilePath:         "../internal/testresources/ca.pem",
+				ClientCertFilePath: "../internal/testresources/client-cert.pem",
+			},
+		})
 	assert.Error(suite.T(), err, "Enabled TLS Config with --tls-client-cert only should raise an error")
 
-	_, err = NewPDNSProvider(PDNSConfig{
-		Server:       "http://localhost:8081",
-		APIKey:       "foo",
-		DomainFilter: NewDomainFilter([]string{""}),
-		TLSConfig: TLSConfig{
-			TLSEnabled:            true,
-			CAFilePath:            "../internal/testresources/ca.pem",
-			ClientCertKeyFilePath: "../internal/testresources/client-cert-key.pem",
-		},
-	})
+	_, err = NewPDNSProvider(
+		context.Background(),
+		PDNSConfig{
+			Server:       "http://localhost:8081",
+			APIKey:       "foo",
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
+			TLSConfig: TLSConfig{
+				TLSEnabled:            true,
+				CAFilePath:            "../internal/testresources/ca.pem",
+				ClientCertKeyFilePath: "../internal/testresources/client-cert-key.pem",
+			},
+		})
 	assert.Error(suite.T(), err, "Enabled TLS Config with --tls-client-cert-key only should raise an error")
 
-	_, err = NewPDNSProvider(PDNSConfig{
-		Server:       "http://localhost:8081",
-		APIKey:       "foo",
-		DomainFilter: NewDomainFilter([]string{""}),
-		TLSConfig: TLSConfig{
-			TLSEnabled:            true,
-			CAFilePath:            "../internal/testresources/ca.pem",
-			ClientCertFilePath:    "../internal/testresources/client-cert.pem",
-			ClientCertKeyFilePath: "../internal/testresources/client-cert-key.pem",
-		},
-	})
+	_, err = NewPDNSProvider(
+		context.Background(),
+		PDNSConfig{
+			Server:       "http://localhost:8081",
+			APIKey:       "foo",
+			DomainFilter: endpoint.NewDomainFilter([]string{""}),
+			TLSConfig: TLSConfig{
+				TLSEnabled:            true,
+				CAFilePath:            "../internal/testresources/ca.pem",
+				ClientCertFilePath:    "../internal/testresources/client-cert.pem",
+				ClientCertKeyFilePath: "../internal/testresources/client-cert-key.pem",
+			},
+		})
 	assert.Nil(suite.T(), err, "Enabled TLS Config with all flags should raise no error")
 }
 
@@ -795,9 +817,11 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRecords() {
 		client: &PDNSAPIClientStub{},
 	}
 
+	ctx := context.Background()
+
 	/* We test that endpoints are returned correctly for a Zone when Records() is called
 	 */
-	eps, err := p.Records()
+	eps, err := p.Records(ctx)
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), endpointsMixedRecords, eps)
 
@@ -806,13 +830,13 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRecords() {
 	p = &PDNSProvider{
 		client: &PDNSAPIClientStubListZoneFailure{},
 	}
-	_, err = p.Records()
+	_, err = p.Records(ctx)
 	assert.NotNil(suite.T(), err)
 
 	p = &PDNSProvider{
 		client: &PDNSAPIClientStubListZonesFailure{},
 	}
-	_, err = p.Records()
+	_, err = p.Records(ctx)
 	assert.NotNil(suite.T(), err)
 
 }

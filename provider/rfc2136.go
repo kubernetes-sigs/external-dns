@@ -28,8 +28,8 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 // rfc2136 provider type
@@ -41,9 +41,10 @@ type rfc2136Provider struct {
 	tsigSecretAlg string
 	insecure      bool
 	axfr          bool
+	minTTL        time.Duration
 
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 	dryRun       bool
 	actions      rfc2136Actions
 }
@@ -64,7 +65,7 @@ type rfc2136Actions interface {
 }
 
 // NewRfc2136Provider is a factory function for OpenStack rfc2136 providers
-func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter DomainFilter, dryRun bool, actions rfc2136Actions) (Provider, error) {
+func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter endpoint.DomainFilter, dryRun bool, minTTL time.Duration, actions rfc2136Actions) (Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok && !insecure {
 		return nil, errors.Errorf("%s is not supported TSIG algorithm", secretAlg)
@@ -77,6 +78,7 @@ func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, k
 		domainFilter: domainFilter,
 		dryRun:       dryRun,
 		axfr:         axfr,
+		minTTL:       minTTL,
 	}
 	if actions != nil {
 		r.actions = actions
@@ -95,7 +97,7 @@ func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, k
 }
 
 // Records returns the list of records.
-func (r rfc2136Provider) Records() ([]*endpoint.Endpoint, error) {
+func (r rfc2136Provider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	rrs, err := r.List()
 	if err != nil {
 		return nil, err
@@ -198,7 +200,10 @@ func (r rfc2136Provider) List() ([]dns.RR, error) {
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	log.Debugf("ApplyChanges")
+	log.Debugf("ApplyChanges (Create: %d, UpdateOld: %d, UpdateNew: %d, Delete: %d)", len(changes.Create), len(changes.UpdateOld), len(changes.UpdateNew), len(changes.Delete))
+
+	m := new(dns.Msg)
+	m.SetUpdate(r.zoneName)
 
 	for _, ep := range changes.Create {
 
@@ -207,7 +212,7 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			continue
 		}
 
-		r.AddRecord(ep)
+		r.AddRecord(m, ep)
 	}
 	for _, ep := range changes.UpdateNew {
 
@@ -216,7 +221,7 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			continue
 		}
 
-		r.UpdateRecord(ep)
+		r.UpdateRecord(m, ep)
 	}
 	for _, ep := range changes.Delete {
 
@@ -225,25 +230,39 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			continue
 		}
 
-		r.RemoveRecord(ep)
+		r.RemoveRecord(m, ep)
+	}
+
+	// only send if there are records available
+	if len(m.Ns) > 0 {
+		err := r.actions.SendMessage(m)
+		if err != nil {
+			return fmt.Errorf("RFC2136 update failed: %v", err)
+		}
 	}
 
 	return nil
 }
 
-func (r rfc2136Provider) UpdateRecord(ep *endpoint.Endpoint) error {
-	err := r.RemoveRecord(ep)
+func (r rfc2136Provider) UpdateRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
+	err := r.RemoveRecord(m, ep)
 	if err != nil {
 		return err
 	}
 
-	return r.AddRecord(ep)
+	return r.AddRecord(m, ep)
 }
 
-func (r rfc2136Provider) AddRecord(ep *endpoint.Endpoint) error {
+func (r rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 	log.Debugf("AddRecord.ep=%s", ep)
+
+	var ttl = int64(r.minTTL.Seconds())
+	if ep.RecordTTL.IsConfigured() && int64(ep.RecordTTL) > ttl {
+		ttl = int64(ep.RecordTTL)
+	}
+
 	for _, target := range ep.Targets {
-		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ep.RecordTTL, ep.RecordType, target)
+		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ttl, ep.RecordType, target)
 		log.Infof("Adding RR: %s", newRR)
 
 		rr, err := dns.NewRR(newRR)
@@ -251,43 +270,24 @@ func (r rfc2136Provider) AddRecord(ep *endpoint.Endpoint) error {
 			return fmt.Errorf("failed to build RR: %v", err)
 		}
 
-		rrs := make([]dns.RR, 1)
-		rrs[0] = rr
-
-		m := new(dns.Msg)
-		m.SetUpdate(r.zoneName)
-		m.Insert(rrs)
-
-		err = r.actions.SendMessage(m)
-		if err != nil {
-			return fmt.Errorf("RFC2136 query failed: %v", err)
-		}
+		m.Insert([]dns.RR{rr})
 	}
 
 	return nil
 }
 
-func (r rfc2136Provider) RemoveRecord(ep *endpoint.Endpoint) error {
+func (r rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 	log.Debugf("RemoveRecord.ep=%s", ep)
+	for _, target := range ep.Targets {
+		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ep.RecordTTL, ep.RecordType, target)
+		log.Infof("Removing RR: %s", newRR)
 
-	newRR := fmt.Sprintf("%s 0 %s 0.0.0.0", ep.DNSName, ep.RecordType)
-	log.Infof("Removing RR: %s", newRR)
+		rr, err := dns.NewRR(newRR)
+		if err != nil {
+			return fmt.Errorf("failed to build RR: %v", err)
+		}
 
-	rr, err := dns.NewRR(newRR)
-	if err != nil {
-		return fmt.Errorf("failed to build RR: %v", err)
-	}
-
-	rrs := make([]dns.RR, 1)
-	rrs[0] = rr
-
-	m := new(dns.Msg)
-	m.SetUpdate(r.zoneName)
-	m.RemoveRRset(rrs)
-
-	err = r.actions.SendMessage(m)
-	if err != nil {
-		return fmt.Errorf("RFC2136 query failed: %v", err)
+		m.Remove([]dns.RR{rr})
 	}
 
 	return nil

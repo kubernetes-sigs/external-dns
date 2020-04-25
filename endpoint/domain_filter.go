@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package provider
+package endpoint
 
 import (
 	"strings"
@@ -22,7 +22,9 @@ import (
 
 // DomainFilter holds a lists of valid domain names
 type DomainFilter struct {
-	filters []string
+	// Filters define what domains to match
+	Filters []string
+	// exclude define what domains not to match
 	exclude []string
 }
 
@@ -47,7 +49,7 @@ func NewDomainFilter(domainFilters []string) DomainFilter {
 
 // Match checks whether a domain can be found in the DomainFilter.
 func (df DomainFilter) Match(domain string) bool {
-	return matchFilter(df.filters, domain, true) && !matchFilter(df.exclude, domain, false)
+	return matchFilter(df.Filters, domain, true) && !matchFilter(df.exclude, domain, false)
 }
 
 // matchFilter determines if any `filters` match `domain`.
@@ -78,8 +80,8 @@ func matchFilter(filters []string, domain string, emptyval bool) bool {
 
 // IsConfigured returns true if DomainFilter is configured, false otherwise
 func (df DomainFilter) IsConfigured() bool {
-	if len(df.filters) == 1 {
-		return df.filters[0] != ""
+	if len(df.Filters) == 1 {
+		return df.Filters[0] != ""
 	}
-	return len(df.filters) > 0
+	return len(df.Filters) > 0
 }

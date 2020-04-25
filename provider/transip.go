@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
 	log "github.com/sirupsen/logrus"
 	"github.com/transip/gotransip"
 	transip "github.com/transip/gotransip/domain"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -22,12 +23,12 @@ const (
 // TransIPProvider is an implementation of Provider for TransIP.
 type TransIPProvider struct {
 	client       gotransip.SOAPClient
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 	dryRun       bool
 }
 
 // NewTransIPProvider initializes a new TransIP Provider.
-func NewTransIPProvider(accountName, privateKeyFile string, domainFilter DomainFilter, dryRun bool) (*TransIPProvider, error) {
+func NewTransIPProvider(accountName, privateKeyFile string, domainFilter endpoint.DomainFilter, dryRun bool) (*TransIPProvider, error) {
 	// check given arguments
 	if accountName == "" {
 		return nil, errors.New("required --transip-account not set")
@@ -220,7 +221,7 @@ func (p *TransIPProvider) Zones() ([]transip.Domain, error) {
 }
 
 // Records returns the list of records in a given zone.
-func (p *TransIPProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p *TransIPProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.Zones()
 	if err != nil {
 		return nil, err
@@ -304,7 +305,7 @@ func (p *TransIPProvider) dnsEntriesAreEqual(a, b transip.DNSEntries) bool {
 				continue
 			}
 
-			match += 1
+			match++
 		}
 	}
 

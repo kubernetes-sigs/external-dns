@@ -22,25 +22,25 @@ import (
 	"sort"
 	"strings"
 	"text/template"
-
 	"time"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/extensions/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
 	extinformers "k8s.io/client-go/informers/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/k8sutils/async"
 )
 
 const (
-	// The annotation used for determining if an ALB ingress is dualstack
+	// ALBDualstackAnnotationKey is the annotation used for determining if an ALB ingress is dualstack
 	ALBDualstackAnnotationKey = "alb.ingress.kubernetes.io/ip-address-type"
-	// The value of the ALB dualstack annotation that indicates it is dualstack
+	// ALBDualstackAnnotationValue is the value of the ALB dualstack annotation that indicates it is dualstack
 	ALBDualstackAnnotationValue = "dualstack"
 )
 
@@ -56,6 +56,7 @@ type ingressSource struct {
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
 	ingressInformer          extinformers.IngressInformer
+	runner                   *async.BoundedFrequencyRunner
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
@@ -91,7 +92,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 
 	// wait for the local cache to be populated.
 	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
-		return ingressInformer.Informer().HasSynced() == true, nil
+		return ingressInformer.Informer().HasSynced(), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to sync cache: %v", err)
@@ -187,25 +188,21 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 		targets = targetsFromIngressStatus(ing.Status)
 	}
 
-	providerSpecific := getProviderSpecificAnnotations(ing.Annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ing.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 	// splits the FQDN template and removes the trailing periods
 	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
 	for _, hostname := range hostnameList {
 		hostname = strings.TrimSuffix(hostname, ".")
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific)...)
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 	return endpoints, nil
 }
 
 // filterByAnnotations filters a list of ingresses by a given annotation selector.
 func (sc *ingressSource) filterByAnnotations(ingresses []*v1beta1.Ingress) ([]*v1beta1.Ingress, error) {
-	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	selector, err := getLabelSelector(sc.annotationFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -218,11 +215,8 @@ func (sc *ingressSource) filterByAnnotations(ingresses []*v1beta1.Ingress) ([]*v
 	filteredList := []*v1beta1.Ingress{}
 
 	for _, ingress := range ingresses {
-		// convert the ingress' annotations to an equivalent label selector
-		annotations := labels.Set(ingress.Annotations)
-
 		// include ingress if its annotations match the selector
-		if selector.Matches(annotations) {
+		if matchLabelSelector(selector, ingress.Annotations) {
 			filteredList = append(filteredList, ingress)
 		}
 	}
@@ -261,13 +255,13 @@ func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool) [
 		targets = targetsFromIngressStatus(ing.Status)
 	}
 
-	providerSpecific := getProviderSpecificAnnotations(ing.Annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ing.Annotations)
 
 	for _, rule := range ing.Spec.Rules {
 		if rule.Host == "" {
 			continue
 		}
-		endpoints = append(endpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific)...)
+		endpoints = append(endpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 
 	for _, tls := range ing.Spec.TLS {
@@ -275,7 +269,7 @@ func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool) [
 			if host == "" {
 				continue
 			}
-			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific)...)
+			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
 		}
 	}
 
@@ -283,7 +277,7 @@ func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool) [
 	if !ignoreHostnameAnnotation {
 		hostnameList := getHostnamesFromAnnotations(ing.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific)...)
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 		}
 	}
 	return endpoints
@@ -302,4 +296,33 @@ func targetsFromIngressStatus(status v1beta1.IngressStatus) endpoint.Targets {
 	}
 
 	return targets
+}
+
+func (sc *ingressSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+	// Add custom resource event handler
+	log.Debug("Adding (bounded) event handler for ingress")
+
+	maxInterval := 24 * time.Hour // handler will be called if it has not run in 24 hours
+	burst := 2                    // allow up to two handler burst calls
+	log.Debugf("Adding handler to BoundedFrequencyRunner with minInterval: %v, syncPeriod: %v, bursts: %d",
+		minInterval, maxInterval, burst)
+	sc.runner = async.NewBoundedFrequencyRunner("ingress-handler", func() {
+		_ = handler()
+	}, minInterval, maxInterval, burst)
+	go sc.runner.Loop(stopChan)
+
+	// run the handler function as soon as the BoundedFrequencyRunner will allow when an update occurs
+	sc.ingressInformer.Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				sc.runner.Run()
+			},
+			UpdateFunc: func(old interface{}, new interface{}) {
+				sc.runner.Run()
+			},
+			DeleteFunc: func(obj interface{}) {
+				sc.runner.Run()
+			},
+		},
+	)
 }

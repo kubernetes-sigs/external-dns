@@ -22,9 +22,10 @@ import (
 	"testing"
 
 	"github.com/exoscale/egoscale"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
 	"github.com/stretchr/testify/assert"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 type createRecordExoscale struct {
@@ -106,7 +107,7 @@ func contains(arr []*endpoint.Endpoint, name string) bool {
 func TestExoscaleGetRecords(t *testing.T) {
 	provider := NewExoscaleProviderWithClient("", "", "", NewExoscaleClientStub(), false)
 
-	if recs, err := provider.Records(); err == nil {
+	if recs, err := provider.Records(context.Background()); err == nil {
 		assert.Equal(t, 3, len(recs))
 		assert.True(t, contains(recs, "v1.foo.com"))
 		assert.True(t, contains(recs, "v2.bar.com"))

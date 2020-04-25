@@ -18,14 +18,15 @@ package source
 
 import (
 	"net/url"
+	"time"
 
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 type cloudfoundrySource struct {
 	client *cfclient.Client
-	config Config
 }
 
 // NewCloudFoundrySource creates a new cloudfoundrySource with the given config
@@ -33,6 +34,9 @@ func NewCloudFoundrySource(cfClient *cfclient.Client) (Source, error) {
 	return &cloudfoundrySource{
 		client: cfClient,
 	}, nil
+}
+
+func (rs *cloudfoundrySource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
 }
 
 // Endpoints returns endpoint objects

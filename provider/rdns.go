@@ -29,12 +29,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
 	"github.com/pkg/errors"
-	"istio.io/istio/pkg/log"
+	log "github.com/sirupsen/logrus"
+	"go.etcd.io/etcd/clientv3"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -59,7 +59,7 @@ type RDNSClient interface {
 // RDNSConfig contains configuration to create a new Rancher DNS(RDNS) provider.
 type RDNSConfig struct {
 	DryRun       bool
-	DomainFilter DomainFilter
+	DomainFilter endpoint.DomainFilter
 	RootDomain   string
 }
 
@@ -67,7 +67,7 @@ type RDNSConfig struct {
 type RDNSProvider struct {
 	client       RDNSClient
 	dryRun       bool
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 	rootDomain   string
 }
 
@@ -113,7 +113,7 @@ func NewRDNSProvider(config RDNSConfig) (*RDNSProvider, error) {
 
 // Records returns all DNS records found in Rancher DNS(RDNS) etcdv3 backend. Depending on the record fields
 // it may be mapped to one or two records of type A, TXT, A+TXT.
-func (p RDNSProvider) Records() ([]*endpoint.Endpoint, error) {
+func (p RDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	var result []*endpoint.Endpoint
 
 	rs, err := p.client.List(p.rootDomain)
@@ -123,7 +123,7 @@ func (p RDNSProvider) Records() ([]*endpoint.Endpoint, error) {
 
 	for _, r := range rs {
 		domains := strings.Split(strings.TrimPrefix(r.Key, rdnsPrefix+"/"), "/")
-		keyToDnsNameSplits(domains)
+		keyToDNSNameSplits(domains)
 		dnsName := strings.Join(domains, ".")
 		if !p.domainFilter.Match(dnsName) {
 			continue
@@ -250,7 +250,7 @@ func (p *RDNSProvider) filterAndRemoveUseless(ep *endpoint.Endpoint, changes *pl
 		}
 		if !exist {
 			ds := strings.Split(strings.TrimPrefix(r.Key, rdnsPrefix+"/"), "/")
-			keyToDnsNameSplits(ds)
+			keyToDNSNameSplits(ds)
 			changes.Delete = append(changes.Delete, &endpoint.Endpoint{
 				DNSName: strings.Join(ds, "."),
 			})
@@ -455,7 +455,7 @@ func (c etcdv3Client) aggregationRecords(result *clientv3.GetResponse) ([]RDNSRe
 
 // appendRecords append record to an array
 func appendRecords(r RDNSRecord, dnsType string, bx map[RDNSRecordType]RDNSRecord, rs []RDNSRecord) ([]RDNSRecord, bool) {
-	dnsName := keyToParentDnsName(r.Key)
+	dnsName := keyToParentDNSName(r.Key)
 	bt := RDNSRecordType{Domain: dnsName, Type: dnsType}
 	if v, ok := bx[bt]; ok {
 		// skip the TXT records if already added to record list.
@@ -501,12 +501,12 @@ func keyFor(fqdn string) string {
 	return rdnsPrefix + dnsNameToKey(fqdn)
 }
 
-// keyToParentDnsName used to get dnsName.
+// keyToParentDNSName used to get dnsName.
 // e.g. /rdnsv3/cloud/rancher/lb/sample/xxx => xxx.sample.lb.rancher.cloud
 // e.g. /rdnsv3/cloud/rancher/lb/sample/xxx/1_1_1_1 => xxx.sample.lb.rancher.cloud
-func keyToParentDnsName(key string) string {
+func keyToParentDNSName(key string) string {
 	ds := strings.Split(strings.TrimPrefix(key, rdnsPrefix+"/"), "/")
-	keyToDnsNameSplits(ds)
+	keyToDNSNameSplits(ds)
 
 	dns := strings.Join(ds, ".")
 	prefix := strings.Split(dns, ".")[0]
@@ -532,9 +532,9 @@ func dnsNameToKey(domain string) string {
 	return "/" + strings.Join(ss, "/")
 }
 
-// keyToDnsNameSplits used to reverse etcdv3 path to domain splits.
+// keyToDNSNameSplits used to reverse etcdv3 path to domain splits.
 // e.g. /cloud/rancher/lb/sample => [sample lb rancher cloud]
-func keyToDnsNameSplits(ss []string) {
+func keyToDNSNameSplits(ss []string) {
 	for i := 0; i < len(ss)/2; i++ {
 		j := len(ss) - i - 1
 		ss[i], ss[j] = ss[j], ss[i]

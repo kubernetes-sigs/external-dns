@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // Plan can convert a list of desired and current records to a series of create,
@@ -35,6 +35,8 @@ type Plan struct {
 	// List of changes necessary to move towards desired state
 	// Populated after calling Calculate()
 	Changes *Changes
+	// DomainFilter matches DNS names
+	DomainFilter endpoint.DomainFilter
 }
 
 // Changes holds lists of actions to be executed by dns providers
@@ -63,12 +65,12 @@ bar.com |                | [->191.1.1.1, ->190.1.1.1]  |  = create (bar.com -> 1
 "=", i.e. result of calculation relies on supplied ConflictResolver
 */
 type planTable struct {
-	rows     map[string]*planTableRow
+	rows     map[string]map[string]*planTableRow
 	resolver ConflictResolver
 }
 
 func newPlanTable() planTable { //TODO: make resolver configurable
-	return planTable{map[string]*planTableRow{}, PerResource{}}
+	return planTable{map[string]map[string]*planTableRow{}, PerResource{}}
 }
 
 // planTableRow
@@ -86,52 +88,23 @@ func (t planTableRow) String() string {
 func (t planTable) addCurrent(e *endpoint.Endpoint) {
 	dnsName := normalizeDNSName(e.DNSName)
 	if _, ok := t.rows[dnsName]; !ok {
-		t.rows[dnsName] = &planTableRow{}
+		t.rows[dnsName] = make(map[string]*planTableRow)
 	}
-	t.rows[dnsName].current = e
+	if _, ok := t.rows[dnsName][e.SetIdentifier]; !ok {
+		t.rows[dnsName][e.SetIdentifier] = &planTableRow{}
+	}
+	t.rows[dnsName][e.SetIdentifier].current = e
 }
 
 func (t planTable) addCandidate(e *endpoint.Endpoint) {
 	dnsName := normalizeDNSName(e.DNSName)
 	if _, ok := t.rows[dnsName]; !ok {
-		t.rows[dnsName] = &planTableRow{}
+		t.rows[dnsName] = make(map[string]*planTableRow)
 	}
-	t.rows[dnsName].candidates = append(t.rows[dnsName].candidates, e)
-}
-
-// TODO: allows record type change, which might not be supported by all dns providers
-func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*endpoint.Endpoint) {
-	for _, row := range t.rows {
-		if row.current != nil && len(row.candidates) > 0 { //dns name is taken
-			update := t.resolver.ResolveUpdate(row.current, row.candidates)
-			// compare "update" to "current" to figure out if actual update is required
-			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || shouldUpdateProviderSpecific(update, row.current) {
-				inheritOwner(row.current, update)
-				updateNew = append(updateNew, update)
-				updateOld = append(updateOld, row.current)
-			}
-			continue
-		}
+	if _, ok := t.rows[dnsName][e.SetIdentifier]; !ok {
+		t.rows[dnsName][e.SetIdentifier] = &planTableRow{}
 	}
-	return
-}
-
-func (t planTable) getCreates() (createList []*endpoint.Endpoint) {
-	for _, row := range t.rows {
-		if row.current == nil { //dns name not taken
-			createList = append(createList, t.resolver.ResolveCreate(row.candidates))
-		}
-	}
-	return
-}
-
-func (t planTable) getDeletes() (deleteList []*endpoint.Endpoint) {
-	for _, row := range t.rows {
-		if row.current != nil && len(row.candidates) == 0 {
-			deleteList = append(deleteList, row.current)
-		}
-	}
-	return
+	t.rows[dnsName][e.SetIdentifier].candidates = append(t.rows[dnsName][e.SetIdentifier].candidates, e)
 }
 
 // Calculate computes the actions needed to move current state towards desired
@@ -140,17 +113,37 @@ func (t planTable) getDeletes() (deleteList []*endpoint.Endpoint) {
 func (p *Plan) Calculate() *Plan {
 	t := newPlanTable()
 
-	for _, current := range filterRecordsForPlan(p.Current) {
+	for _, current := range filterRecordsForPlan(p.Current, p.DomainFilter) {
 		t.addCurrent(current)
 	}
-	for _, desired := range filterRecordsForPlan(p.Desired) {
+	for _, desired := range filterRecordsForPlan(p.Desired, p.DomainFilter) {
 		t.addCandidate(desired)
 	}
 
 	changes := &Changes{}
-	changes.Create = t.getCreates()
-	changes.Delete = t.getDeletes()
-	changes.UpdateNew, changes.UpdateOld = t.getUpdates()
+
+	for _, topRow := range t.rows {
+		for _, row := range topRow {
+			if row.current == nil { //dns name not taken
+				changes.Create = append(changes.Create, t.resolver.ResolveCreate(row.candidates))
+			}
+			if row.current != nil && len(row.candidates) == 0 {
+				changes.Delete = append(changes.Delete, row.current)
+			}
+
+			// TODO: allows record type change, which might not be supported by all dns providers
+			if row.current != nil && len(row.candidates) > 0 { //dns name is taken
+				update := t.resolver.ResolveUpdate(row.current, row.candidates)
+				// compare "update" to "current" to figure out if actual update is required
+				if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || shouldUpdateProviderSpecific(update, row.current) {
+					inheritOwner(row.current, update)
+					changes.UpdateNew = append(changes.UpdateNew, update)
+					changes.UpdateOld = append(changes.UpdateOld, row.current)
+				}
+				continue
+			}
+		}
+	}
 	for _, pol := range p.Policies {
 		changes = pol.Apply(changes)
 	}
@@ -191,15 +184,38 @@ func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
 	}
 	for _, c := range current.ProviderSpecific {
 		// don't consider target health when detecting changes
-		// see: https://github.com/kubernetes-incubator/external-dns/issues/869#issuecomment-458576954
+		// see: https://github.com/kubernetes-sigs/external-dns/issues/869#issuecomment-458576954
 		if c.Name == "aws/evaluate-target-health" {
 			continue
 		}
 
+		found := false
 		for _, d := range desired.ProviderSpecific {
-			if d.Name == c.Name && d.Value != c.Value {
-				return true
+			if d.Name == c.Name {
+				if d.Value != c.Value {
+					// provider-specific attribute updated
+					return true
+				}
+				found = true
+				break
 			}
+		}
+		if !found {
+			// provider-specific attribute deleted
+			return true
+		}
+	}
+	for _, d := range desired.ProviderSpecific {
+		found := false
+		for _, c := range current.ProviderSpecific {
+			if d.Name == c.Name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			// provider-specific attribute added
+			return true
 		}
 	}
 
@@ -213,10 +229,15 @@ func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
 // Per RFC 1034, CNAME records conflict with all other records - it is the
 // only record with this property. The behavior of the planner may need to be
 // made more sophisticated to codify this.
-func filterRecordsForPlan(records []*endpoint.Endpoint) []*endpoint.Endpoint {
+func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.DomainFilter) []*endpoint.Endpoint {
 	filtered := []*endpoint.Endpoint{}
 
 	for _, record := range records {
+		// Ignore records that do not match the domain filter provided
+		if !domainFilter.Match(record.DNSName) {
+			continue
+		}
+
 		// Explicitly specify which records we want to use for planning.
 		// TODO: Add AAAA records as well when they are supported.
 		switch record.RecordType {

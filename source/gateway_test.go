@@ -17,23 +17,21 @@ limitations under the License.
 package source
 
 import (
-	"testing"
-
-	istionetworking "istio.io/api/networking/v1alpha3"
-	istiomodel "istio.io/istio/pilot/pkg/model"
-
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-
 	"strconv"
 	"sync"
+	"testing"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	istionetworking "istio.io/api/networking/v1alpha3"
+	istiomodel "istio.io/istio/pilot/pkg/model"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 // This is a compile-time validation that gatewaySource is a Source.
@@ -68,16 +66,15 @@ func (suite *GatewaySuite) SetupTest() {
 		}).Service(),
 	}
 
-	for _, loadBalancer := range suite.lbServices {
-		_, err = fakeKubernetesClient.CoreV1().Services(loadBalancer.Namespace).Create(loadBalancer)
+	for _, service := range suite.lbServices {
+		_, err = fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(service)
 		suite.NoError(err, "should succeed")
 	}
 
 	suite.source, err = NewIstioGatewaySource(
 		fakeKubernetesClient,
 		fakeIstioClient,
-		[]string{"istio-system/istio-ingressgateway"},
-		"default",
+		"",
 		"",
 		"{{.Name}}",
 		false,
@@ -150,7 +147,6 @@ func TestNewIstioGatewaySource(t *testing.T) {
 			_, err := NewIstioGatewaySource(
 				fake.NewSimpleClientset(),
 				NewFakeConfigStore(),
-				[]string{"istio-system/istio-ingressgateway"},
 				"",
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -436,6 +432,7 @@ func testGatewayEndpoints(t *testing.T) {
 				{
 					ips:       []string{"8.8.8.8"},
 					hostnames: []string{"lb.com"},
+					namespace: "testing1",
 				},
 			},
 			configItems: []fakeGatewayConfig{
@@ -936,6 +933,15 @@ func testGatewayEndpoints(t *testing.T) {
 					},
 					dnsnames: [][]string{{"example2.org"}},
 				},
+				{
+					name:      "fake3",
+					namespace: namespace,
+					annotations: map[string]string{
+						targetAnnotationKey: "gateway-target.com",
+						ttlAnnotationKey:    "10s",
+					},
+					dnsnames: [][]string{{"example3.org"}},
+				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
@@ -947,6 +953,11 @@ func testGatewayEndpoints(t *testing.T) {
 					DNSName:   "example2.org",
 					Targets:   endpoint.Targets{"gateway-target.com"},
 					RecordTTL: endpoint.TTL(1),
+				},
+				{
+					DNSName:   "example3.org",
+					Targets:   endpoint.Targets{"gateway-target.com"},
+					RecordTTL: endpoint.TTL(10),
 				},
 			},
 		},
@@ -1082,14 +1093,10 @@ func testGatewayEndpoints(t *testing.T) {
 
 			fakeKubernetesClient := fake.NewSimpleClientset()
 
-			var fakeLoadBalancerList []string
 			for _, lb := range ti.lbServices {
-				lbService := lb.Service()
-				_, err := fakeKubernetesClient.CoreV1().Services(lbService.Namespace).Create(lbService)
-				if err != nil {
-					require.NoError(t, err)
-				}
-				fakeLoadBalancerList = append(fakeLoadBalancerList, lbService.Namespace+"/"+lbService.Name)
+				service := lb.Service()
+				_, err := fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(service)
+				require.NoError(t, err)
 			}
 
 			fakeIstioClient := NewFakeConfigStore()
@@ -1101,7 +1108,6 @@ func testGatewayEndpoints(t *testing.T) {
 			gatewaySource, err := NewIstioGatewaySource(
 				fakeKubernetesClient,
 				fakeIstioClient,
-				fakeLoadBalancerList,
 				ti.targetNamespace,
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -1127,21 +1133,18 @@ func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService) (*gatewa
 	fakeKubernetesClient := fake.NewSimpleClientset()
 	fakeIstioClient := NewFakeConfigStore()
 
-	var lbList []string
 	for _, lb := range loadBalancerList {
-		lbService := lb.Service()
-		_, err := fakeKubernetesClient.CoreV1().Services(lbService.Namespace).Create(lbService)
+		service := lb.Service()
+		_, err := fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(service)
 		if err != nil {
 			return nil, err
 		}
-		lbList = append(lbList, lbService.Namespace+"/"+lbService.Name)
 	}
 
 	src, err := NewIstioGatewaySource(
 		fakeKubernetesClient,
 		fakeIstioClient,
-		lbList,
-		"default",
+		"",
 		"",
 		"{{.Name}}",
 		false,
@@ -1198,6 +1201,7 @@ type fakeGatewayConfig struct {
 	name        string
 	annotations map[string]string
 	dnsnames    [][]string
+	selector    map[string]string
 }
 
 func (c fakeGatewayConfig) Config() istiomodel.Config {
@@ -1210,6 +1214,8 @@ func (c fakeGatewayConfig) Config() istiomodel.Config {
 			Hosts: dnsnames,
 		})
 	}
+
+	gw.Selector = c.selector
 
 	config := istiomodel.Config{
 		ConfigMeta: istiomodel.ConfigMeta{

@@ -22,10 +22,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
 	log "github.com/sirupsen/logrus"
 	"github.com/vinyldns/go-vinyldns/vinyldns"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 const (
@@ -48,7 +49,7 @@ type vinyldnsZoneInterface interface {
 type vinyldnsProvider struct {
 	client       vinyldnsZoneInterface
 	zoneFilter   ZoneIDFilter
-	domainFilter DomainFilter
+	domainFilter endpoint.DomainFilter
 	dryRun       bool
 }
 
@@ -58,7 +59,7 @@ type vinyldnsChange struct {
 }
 
 // NewVinylDNSProvider provides support for VinylDNS records
-func NewVinylDNSProvider(domainFilter DomainFilter, zoneFilter ZoneIDFilter, dryRun bool) (Provider, error) {
+func NewVinylDNSProvider(domainFilter endpoint.DomainFilter, zoneFilter ZoneIDFilter, dryRun bool) (Provider, error) {
 	_, ok := os.LookupEnv("VINYLDNS_ACCESS_KEY")
 	if !ok {
 		return nil, fmt.Errorf("no vinyldns access key found")
@@ -74,7 +75,7 @@ func NewVinylDNSProvider(domainFilter DomainFilter, zoneFilter ZoneIDFilter, dry
 	}, nil
 }
 
-func (p *vinyldnsProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
+func (p *vinyldnsProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.client.Zones()
 	if err != nil {
 		return nil, err
@@ -96,7 +97,7 @@ func (p *vinyldnsProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 		}
 
 		for _, r := range records {
-			if supportedRecordType(string(r.Type)) {
+			if supportedRecordType(r.Type) {
 				recordsCount := len(r.Records)
 				log.Debugf(fmt.Sprintf("%s.%s.%d.%s", r.Name, r.Type, recordsCount, zone.Name))
 
@@ -114,7 +115,7 @@ func (p *vinyldnsProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 						}
 					}
 
-					endpoints = append(endpoints, endpoint.NewEndpointWithTTL(r.Name+"."+zone.Name, string(r.Type), endpoint.TTL(r.TTL), targets...))
+					endpoints = append(endpoints, endpoint.NewEndpointWithTTL(r.Name+"."+zone.Name, r.Type, endpoint.TTL(r.TTL), targets...))
 				}
 			}
 		}
