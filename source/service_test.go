@@ -1356,7 +1356,7 @@ func TestNodePortServices(t *testing.T) {
 			map[string]string{},
 			map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
-				ignoreExternalIPsAnnotationKey: "true",
+				nodeportTargetKey: "internal-ip",
 			},
 			nil,
 			[]*endpoint.Endpoint{
