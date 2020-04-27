@@ -122,9 +122,9 @@ func TestDnsimpleServices(t *testing.T) {
 		}
 
 		mockDNS.On("ListRecords", "1", record.ZoneID, &dnsimple.ZoneRecordListOptions{Name: record.Name, ListOptions: dnsimple.ListOptions{Page: 1}}).Return(&dnsimpleRecordResponse, nil)
-		mockDNS.On("CreateRecord", "1", record.ZoneID, simpleRecord).Return(&dnsimple.ZoneRecordResponse{}, nil)
-		mockDNS.On("DeleteRecord", "1", record.ZoneID, record.ID).Return(&dnsimple.ZoneRecordResponse{}, nil)
-		mockDNS.On("UpdateRecord", "1", record.ZoneID, record.ID, simpleRecord).Return(&dnsimple.ZoneRecordResponse{}, nil)
+		mockDNS.On("CreateRecord", "1", record.ZoneID, simpleRecord).Return(&dnsimple.ZoneRecord{}, nil)
+		mockDNS.On("DeleteRecord", "1", record.ZoneID, record.ID).Return(&dnsimple.ZoneRecord{}, nil)
+		mockDNS.On("UpdateRecord", "1", record.ZoneID, record.ID, simpleRecord).Return(&dnsimple.ZoneRecord{}, nil)
 	}
 
 	mockProvider = dnsimpleProvider{client: mockDNS}
@@ -236,23 +236,23 @@ type mockDnsimpleZoneServiceInterface struct {
 	mock.Mock
 }
 
-func (_m *mockDnsimpleZoneServiceInterface) CreateRecord(accountID string, zoneID string, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error) {
+func (_m *mockDnsimpleZoneServiceInterface) CreateRecord(accountID string, zoneID string, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecord, error) {
 	args := _m.Called(accountID, zoneID, recordAttributes)
-	var r0 *dnsimple.ZoneRecordResponse
+	var r0 *dnsimple.ZoneRecord
 
 	if args.Get(0) != nil {
-		r0 = args.Get(0).(*dnsimple.ZoneRecordResponse)
+		r0 = args.Get(0).(*dnsimple.ZoneRecord)
 	}
 
 	return r0, args.Error(1)
 }
 
-func (_m *mockDnsimpleZoneServiceInterface) DeleteRecord(accountID string, zoneID string, recordID int) (*dnsimple.ZoneRecordResponse, error) {
+func (_m *mockDnsimpleZoneServiceInterface) DeleteRecord(accountID string, zoneID string, recordID int) (*dnsimple.ZoneRecord, error) {
 	args := _m.Called(accountID, zoneID, recordID)
-	var r0 *dnsimple.ZoneRecordResponse
+	var r0 *dnsimple.ZoneRecord
 
 	if args.Get(0) != nil {
-		r0 = args.Get(0).(*dnsimple.ZoneRecordResponse)
+		r0 = args.Get(0).(*dnsimple.ZoneRecord)
 	}
 
 	return r0, args.Error(1)
@@ -280,12 +280,12 @@ func (_m *mockDnsimpleZoneServiceInterface) ListZones(accountID string, options 
 	return r0, args.Error(1)
 }
 
-func (_m *mockDnsimpleZoneServiceInterface) UpdateRecord(accountID string, zoneID string, recordID int, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error) {
+func (_m *mockDnsimpleZoneServiceInterface) UpdateRecord(accountID string, zoneID string, recordID int, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecord, error) {
 	args := _m.Called(accountID, zoneID, recordID, recordAttributes)
-	var r0 *dnsimple.ZoneRecordResponse
+	var r0 *dnsimple.ZoneRecord
 
 	if args.Get(0) != nil {
-		r0 = args.Get(0).(*dnsimple.ZoneRecordResponse)
+		r0 = args.Get(0).(*dnsimple.ZoneRecord)
 	}
 
 	return r0, args.Error(1)
