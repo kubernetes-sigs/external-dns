@@ -28,6 +28,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 )
 
@@ -105,6 +106,8 @@ func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter ZoneID
 	tc := oauth2.NewClient(context.Background(), ts)
 
 	client := dnsimple.NewClient(tc)
+	client.UserAgent = fmt.Sprintf("Kubernetes ExternalDNS/%s", externaldns.Version)
+
 	provider := &dnsimpleProvider{
 		client:       dnsimpleZoneService{service: client.Zones},
 		identity:     dnsimpleIdentityService{service: client.Identity},
