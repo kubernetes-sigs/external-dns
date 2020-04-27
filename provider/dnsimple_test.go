@@ -137,13 +137,14 @@ func TestDnsimpleServices(t *testing.T) {
 }
 
 func testDnsimpleProviderZones(t *testing.T) {
+	ctx := context.Background()
 	mockProvider.accountID = "1"
-	result, err := mockProvider.Zones()
+	result, err := mockProvider.Zones(ctx)
 	assert.Nil(t, err)
 	validateDnsimpleZones(t, result, dnsimpleListZonesResponse.Data)
 
 	mockProvider.accountID = "2"
-	_, err = mockProvider.Zones()
+	_, err = mockProvider.Zones(ctx)
 	assert.NotNil(t, err)
 }
 
@@ -191,8 +192,9 @@ func testDnsimpleProviderApplyChangesSkipsUnknown(t *testing.T) {
 }
 
 func testDnsimpleSuitableZone(t *testing.T) {
+	ctx := context.Background()
 	mockProvider.accountID = "1"
-	zones, err := mockProvider.Zones()
+	zones, err := mockProvider.Zones(ctx)
 	assert.Nil(t, err)
 
 	zone := dnsimpleSuitableZone("example-beta.example.com", zones)

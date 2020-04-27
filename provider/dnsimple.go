@@ -132,7 +132,7 @@ func (p *dnsimpleProvider) GetAccountID() (accountID string, err error) {
 }
 
 // Returns a list of filtered Zones
-func (p *dnsimpleProvider) Zones() (map[string]dnsimple.Zone, error) {
+func (p *dnsimpleProvider) Zones(ctx context.Context) (map[string]dnsimple.Zone, error) {
 	zones := make(map[string]dnsimple.Zone)
 	page := 1
 	listOptions := &dnsimple.ZoneListOptions{}
@@ -164,7 +164,7 @@ func (p *dnsimpleProvider) Zones() (map[string]dnsimple.Zone, error) {
 
 // Records returns a list of endpoints in a given zone
 func (p *dnsimpleProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
-	zones, err := p.Zones()
+	zones, err := p.Zones(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -230,12 +230,12 @@ func newDnsimpleChanges(action string, endpoints []*endpoint.Endpoint) []*dnsimp
 }
 
 // submitChanges takes a zone and a collection of changes and makes all changes from the collection
-func (p *dnsimpleProvider) submitChanges(changes []*dnsimpleChange) error {
+func (p *dnsimpleProvider) submitChanges(ctx context.Context, changes []*dnsimpleChange) error {
 	if len(changes) == 0 {
 		log.Infof("All records are already up to date")
 		return nil
 	}
-	zones, err := p.Zones()
+	zones, err := p.Zones(ctx)
 	if err != nil {
 		return err
 	}
@@ -325,18 +325,18 @@ func dnsimpleSuitableZone(hostname string, zones map[string]dnsimple.Zone) *dnsi
 }
 
 // CreateRecords creates records for a given slice of endpoints
-func (p *dnsimpleProvider) CreateRecords(endpoints []*endpoint.Endpoint) error {
-	return p.submitChanges(newDnsimpleChanges(dnsimpleCreate, endpoints))
+func (p *dnsimpleProvider) CreateRecords(ctx context.Context, endpoints []*endpoint.Endpoint) error {
+	return p.submitChanges(ctx, newDnsimpleChanges(dnsimpleCreate, endpoints))
 }
 
 // DeleteRecords deletes records for a given slice of endpoints
-func (p *dnsimpleProvider) DeleteRecords(endpoints []*endpoint.Endpoint) error {
-	return p.submitChanges(newDnsimpleChanges(dnsimpleDelete, endpoints))
+func (p *dnsimpleProvider) DeleteRecords(ctx context.Context, endpoints []*endpoint.Endpoint) error {
+	return p.submitChanges(ctx, newDnsimpleChanges(dnsimpleDelete, endpoints))
 }
 
 // UpdateRecords updates records for a given slice of endpoints
-func (p *dnsimpleProvider) UpdateRecords(endpoints []*endpoint.Endpoint) error {
-	return p.submitChanges(newDnsimpleChanges(dnsimpleUpdate, endpoints))
+func (p *dnsimpleProvider) UpdateRecords(ctx context.Context, endpoints []*endpoint.Endpoint) error {
+	return p.submitChanges(ctx, newDnsimpleChanges(dnsimpleUpdate, endpoints))
 }
 
 // ApplyChanges applies a given set of changes
@@ -347,7 +347,7 @@ func (p *dnsimpleProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 	combinedChanges = append(combinedChanges, newDnsimpleChanges(dnsimpleUpdate, changes.UpdateNew)...)
 	combinedChanges = append(combinedChanges, newDnsimpleChanges(dnsimpleDelete, changes.Delete)...)
 
-	return p.submitChanges(combinedChanges)
+	return p.submitChanges(ctx, combinedChanges)
 }
 
 func int64ToString(i int64) string {
