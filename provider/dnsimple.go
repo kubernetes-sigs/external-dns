@@ -37,57 +37,41 @@ type dnsimpleIdentityService struct {
 	service *dnsimple.IdentityService
 }
 
-func (i dnsimpleIdentityService) Whoami() (*dnsimple.WhoamiData, error) {
-	whoamiResponse, err := i.service.Whoami()
-	if err != nil {
-		return nil, err
-	}
-	return whoamiResponse.Data, err
+func (i dnsimpleIdentityService) Whoami() (*dnsimple.WhoamiResponse, error) {
+	return i.service.Whoami()
 }
 
 // dnsimpleZoneServiceInterface is an interface that contains all necessary zone services from DNSimple
 type dnsimpleZoneServiceInterface interface {
-	ListZones(accountID string, options *dnsimple.ZoneListOptions) ([]dnsimple.Zone, error)
-	ListRecords(accountID string, zoneID string, options *dnsimple.ZoneRecordListOptions) ([]dnsimple.ZoneRecord, error)
-	CreateRecord(accountID string, zoneID string, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecord, error)
-	DeleteRecord(accountID string, zoneID string, recordID int64) (*dnsimple.ZoneRecord, error)
-	UpdateRecord(accountID string, zoneID string, recordID int64, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecord, error)
+	ListZones(accountID string, options *dnsimple.ZoneListOptions) (*dnsimple.ZonesResponse, error)
+	ListRecords(accountID string, zoneID string, options *dnsimple.ZoneRecordListOptions) (*dnsimple.ZoneRecordsResponse, error)
+	CreateRecord(accountID string, zoneID string, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error)
+	DeleteRecord(accountID string, zoneID string, recordID int64) (*dnsimple.ZoneRecordResponse, error)
+	UpdateRecord(accountID string, zoneID string, recordID int64, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error)
 }
 
 type dnsimpleZoneService struct {
 	service *dnsimple.ZonesService
 }
 
-func (z dnsimpleZoneService) ListZones(accountID string, options *dnsimple.ZoneListOptions) (*dnsimple.zonesResponse, error) {
+func (z dnsimpleZoneService) ListZones(accountID string, options *dnsimple.ZoneListOptions) (*dnsimple.ZonesResponse, error) {
 	return z.service.ListZones(accountID, options)
 }
 
-func (z dnsimpleZoneService) ListRecords(accountID string, zoneID string, options *dnsimple.ZoneRecordListOptions) (*dnsimple.zoneRecordsResponse, error) {
+func (z dnsimpleZoneService) ListRecords(accountID string, zoneID string, options *dnsimple.ZoneRecordListOptions) (*dnsimple.ZoneRecordsResponse, error) {
 	return z.service.ListRecords(accountID, zoneID, options)
 }
 
-func (z dnsimpleZoneService) CreateRecord(accountID string, zoneID string, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecord, error) {
-	zoneRecordResponse, err := z.service.CreateRecord(accountID, zoneID, recordAttributes)
-	if err != nil {
-		return nil, err
-	}
-	return zoneRecordResponse.Data, err
+func (z dnsimpleZoneService) CreateRecord(accountID string, zoneID string, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error) {
+	return z.service.CreateRecord(accountID, zoneID, recordAttributes)
 }
 
-func (z dnsimpleZoneService) DeleteRecord(accountID string, zoneID string, recordID int64) (*dnsimple.ZoneRecord, error) {
-	zoneRecordResponse, err := z.service.DeleteRecord(accountID, zoneID, recordID)
-	if err != nil {
-		return nil, err
-	}
-	return zoneRecordResponse.Data, err
+func (z dnsimpleZoneService) DeleteRecord(accountID string, zoneID string, recordID int64) (*dnsimple.ZoneRecordResponse, error) {
+	return z.service.DeleteRecord(accountID, zoneID, recordID)
 }
 
-func (z dnsimpleZoneService) UpdateRecord(accountID string, zoneID string, recordID int64, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecord, error) {
-	zoneRecordResponse, err := z.service.UpdateRecord(accountID, zoneID, recordID, recordAttributes)
-	if err != nil {
-		return nil, err
-	}
-	return zoneRecordResponse.Data, err
+func (z dnsimpleZoneService) UpdateRecord(accountID string, zoneID string, recordID int64, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error) {
+	return z.service.UpdateRecord(accountID, zoneID, recordID, recordAttributes)
 }
 
 type dnsimpleProvider struct {
@@ -129,22 +113,22 @@ func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter ZoneID
 		dryRun:       dryRun,
 	}
 
-	whoamiData, err := provider.identity.Whoami()
+	whoamiResponse, err := provider.identity.Whoami()
 	if err != nil {
 		return nil, err
 	}
-	provider.accountID = int64ToString(whoamiData.Account.ID)
+	provider.accountID = int64ToString(whoamiResponse.Data.Account.ID)
 	return provider, nil
 }
 
 // Returns the account ID given DNSimple credentials
-func (p *dnsimpleProvider) GetAccountID(client dnsimple.Client) (accountID string, err error) {
+func (p *dnsimpleProvider) GetAccountID() (accountID string, err error) {
 	// get DNSimple client accountID
-	whoamiResponse, err := client.Identity.Whoami()
+	whoamiResponse, err := p.identity.Whoami()
 	if err != nil {
 		return "", err
 	}
-	return strconv.FormatInt(whoamiResponse.Data.Account.ID, 10), nil
+	return int64ToString(whoamiResponse.Data.Account.ID), nil
 }
 
 // Returns a list of filtered Zones
