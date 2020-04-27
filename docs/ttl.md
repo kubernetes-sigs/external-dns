@@ -44,6 +44,7 @@ Providers
 - [x] Linode
 - [x] TransIP
 - [x] RFC2136
+- [x] Vultr
 
 PRs welcome!
 
@@ -72,3 +73,6 @@ The Linode Provider default TTL is used when the TTL is 0. The default is 24 hou
 
 ### TransIP Provider
 The TransIP Provider minimal TTL is used when the TTL is 0. The minimal TTL is 60s.
+
+### Vultr Provider
+The Vultr provider minimal TTL is used when the TTL is 0. The default is 1 hour.

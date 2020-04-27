@@ -21,9 +21,9 @@ The [FAQ](docs/faq.md) contains additional information and addresses several que
 
 To see ExternalDNS in action, have a look at this [video](https://www.youtube.com/watch?v=9HQ2XgL9YVI) or read this [blogpost](https://medium.com/wearetheledger/deploying-test-environments-with-azure-devops-eks-and-externaldns-67abe647e4e).
 
-## The Latest Release: v0.6
+## The Latest Release: v0.7
 
-ExternalDNS' current release is `v0.6`. This version allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
+ExternalDNS' current release is `v0.7`. This version allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
 * [Google Cloud DNS](https://cloud.google.com/dns/docs/)
 * [AWS Route 53](https://aws.amazon.com/route53/)
 * [AWS Cloud Map](https://docs.aws.amazon.com/cloud-map/)
@@ -95,6 +95,7 @@ The following table clarifies the current status of the providers according to t
 | RancherDNS | Alpha | |
 | Akamai FastDNS | Alpha | |
 | OVH | Alpha | |
+| Vultr | Alpha | |
 
 ## Running ExternalDNS:
 
@@ -142,13 +143,14 @@ The following tutorials are provided:
 * [TransIP](docs/tutorials/transip.md)
 * [VinylDNS](docs/tutorials/vinyldns.md)
 * [OVH](docs/tutorials/ovh.md)
+* [Vultr](docs/tutorials/vultr.md)
 
 ### Running Locally
 
 #### Technical Requirements
 
 Make sure you have the following prerequisites:
-* A local Go 1.7+ development environment.
+* A local Go 1.11+ development environment.
 * Access to a Google/AWS account with the DNS API enabled.
 * Access to a Kubernetes cluster that supports exposing Services, e.g. GKE.
 
