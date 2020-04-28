@@ -120,7 +120,7 @@ type Controller struct {
 
 var nowValue = struct{}{}
 
-// Make sure execution happens at most once per interval
+// RunOnceThrottled  makes sure execution happens at most once per interval.
 func (c *Controller) RunOnceThrottled(ctx context.Context) error {
 	now := time.Now()
 	testing := false
