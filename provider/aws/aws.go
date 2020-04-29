@@ -99,6 +99,8 @@ var (
 		"elb.cn-north-1.amazonaws.com.cn":     "Z3QFB96KMJ7ED6",
 		"elb.cn-northwest-1.amazonaws.com.cn": "ZQEIKTCZ8352D",
 		"elb.me-south-1.amazonaws.com":        "Z3QSRYVP46NYYV",
+		// Global Accelerator
+		"awsglobalaccelerator.com": "Z2BJ6XQ5FK7U4H",
 	}
 )
 
