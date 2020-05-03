@@ -101,14 +101,15 @@ func TestDnsimpleServices(t *testing.T) {
 
 	// Setup mock services
 	mockDNS := &mockDnsimpleZoneServiceInterface{}
-	mockDNS.On("ListZones", "1", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: 1}}).Return(&dnsimpleListZonesResponse, nil)
-	mockDNS.On("ListZones", "2", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: 1}}).Return(nil, fmt.Errorf("Account ID not found"))
-	mockDNS.On("ListRecords", "1", "example.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: 1}}).Return(&dnsimpleListRecordsResponse, nil)
-	mockDNS.On("ListRecords", "1", "example-beta.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: 1}}).Return(&dnsimple.ZoneRecordsResponse{Response: dnsimple.Response{Pagination: &dnsimple.Pagination{}}}, nil)
+	mockDNS.On("ListZones", "1", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(&dnsimpleListZonesResponse, nil)
+	mockDNS.On("ListZones", "2", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(nil, fmt.Errorf("Account ID not found"))
+	mockDNS.On("ListRecords", "1", "example.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(&dnsimpleListRecordsResponse, nil)
+	mockDNS.On("ListRecords", "1", "example-beta.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(&dnsimple.ZoneRecordsResponse{Response: dnsimple.Response{Pagination: &dnsimple.Pagination{}}}, nil)
 
 	for _, record := range records {
-		simpleRecord := dnsimple.ZoneRecord{
-			Name:    record.Name,
+		recordName := record.Name
+		simpleRecord := dnsimple.ZoneRecordAttributes{
+			Name:    &recordName,
 			Type:    record.Type,
 			Content: record.Content,
 			TTL:     record.TTL,
@@ -119,7 +120,7 @@ func TestDnsimpleServices(t *testing.T) {
 			Data:     []dnsimple.ZoneRecord{record},
 		}
 
-		mockDNS.On("ListRecords", "1", record.ZoneID, &dnsimple.ZoneRecordListOptions{Name: record.Name, ListOptions: dnsimple.ListOptions{Page: 1}}).Return(&dnsimpleRecordResponse, nil)
+		mockDNS.On("ListRecords", "1", record.ZoneID, &dnsimple.ZoneRecordListOptions{Name: &recordName, ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(&dnsimpleRecordResponse, nil)
 		mockDNS.On("CreateRecord", "1", record.ZoneID, simpleRecord).Return(&dnsimple.ZoneRecordResponse{}, nil)
 		mockDNS.On("DeleteRecord", "1", record.ZoneID, record.ID).Return(&dnsimple.ZoneRecordResponse{}, nil)
 		mockDNS.On("UpdateRecord", "1", record.ZoneID, record.ID, simpleRecord).Return(&dnsimple.ZoneRecordResponse{}, nil)
@@ -165,7 +166,9 @@ func testDnsimpleProviderApplyChanges(t *testing.T) {
 		{DNSName: "example.example.com", Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeCNAME},
 		{DNSName: "custom-ttl.example.com", RecordTTL: 60, Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeCNAME},
 	}
-	changes.Delete = []*endpoint.Endpoint{{DNSName: "example-beta.example.com", Targets: endpoint.Targets{"127.0.0.1"}, RecordType: endpoint.RecordTypeA}}
+	changes.Delete = []*endpoint.Endpoint{
+		{DNSName: "example-beta.example.com", Targets: endpoint.Targets{"127.0.0.1"}, RecordType: endpoint.RecordTypeA},
+	}
 	changes.UpdateNew = []*endpoint.Endpoint{
 		{DNSName: "example.example.com", Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeCNAME},
 		{DNSName: "example.com", Targets: endpoint.Targets{"127.0.0.1"}, RecordType: endpoint.RecordTypeA},
@@ -236,7 +239,7 @@ type mockDnsimpleZoneServiceInterface struct {
 	mock.Mock
 }
 
-func (_m *mockDnsimpleZoneServiceInterface) CreateRecord(accountID string, zoneID string, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error) {
+func (_m *mockDnsimpleZoneServiceInterface) CreateRecord(accountID string, zoneID string, recordAttributes dnsimple.ZoneRecordAttributes) (*dnsimple.ZoneRecordResponse, error) {
 	args := _m.Called(accountID, zoneID, recordAttributes)
 	var r0 *dnsimple.ZoneRecordResponse
 
@@ -280,7 +283,7 @@ func (_m *mockDnsimpleZoneServiceInterface) ListZones(accountID string, options 
 	return r0, args.Error(1)
 }
 
-func (_m *mockDnsimpleZoneServiceInterface) UpdateRecord(accountID string, zoneID string, recordID int64, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error) {
+func (_m *mockDnsimpleZoneServiceInterface) UpdateRecord(accountID string, zoneID string, recordID int64, recordAttributes dnsimple.ZoneRecordAttributes) (*dnsimple.ZoneRecordResponse, error) {
 	args := _m.Called(accountID, zoneID, recordID, recordAttributes)
 	var r0 *dnsimple.ZoneRecordResponse
 

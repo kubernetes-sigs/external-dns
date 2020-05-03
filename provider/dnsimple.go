@@ -39,16 +39,16 @@ type dnsimpleIdentityService struct {
 }
 
 func (i dnsimpleIdentityService) Whoami() (*dnsimple.WhoamiResponse, error) {
-	return i.service.Whoami()
+	return i.service.Whoami(context.TODO())
 }
 
 // dnsimpleZoneServiceInterface is an interface that contains all necessary zone services from DNSimple
 type dnsimpleZoneServiceInterface interface {
 	ListZones(accountID string, options *dnsimple.ZoneListOptions) (*dnsimple.ZonesResponse, error)
 	ListRecords(accountID string, zoneID string, options *dnsimple.ZoneRecordListOptions) (*dnsimple.ZoneRecordsResponse, error)
-	CreateRecord(accountID string, zoneID string, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error)
+	CreateRecord(accountID string, zoneID string, recordAttributes dnsimple.ZoneRecordAttributes) (*dnsimple.ZoneRecordResponse, error)
 	DeleteRecord(accountID string, zoneID string, recordID int64) (*dnsimple.ZoneRecordResponse, error)
-	UpdateRecord(accountID string, zoneID string, recordID int64, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error)
+	UpdateRecord(accountID string, zoneID string, recordID int64, recordAttributes dnsimple.ZoneRecordAttributes) (*dnsimple.ZoneRecordResponse, error)
 }
 
 type dnsimpleZoneService struct {
@@ -56,23 +56,23 @@ type dnsimpleZoneService struct {
 }
 
 func (z dnsimpleZoneService) ListZones(accountID string, options *dnsimple.ZoneListOptions) (*dnsimple.ZonesResponse, error) {
-	return z.service.ListZones(accountID, options)
+	return z.service.ListZones(context.TODO(), accountID, options)
 }
 
 func (z dnsimpleZoneService) ListRecords(accountID string, zoneID string, options *dnsimple.ZoneRecordListOptions) (*dnsimple.ZoneRecordsResponse, error) {
-	return z.service.ListRecords(accountID, zoneID, options)
+	return z.service.ListRecords(context.TODO(), accountID, zoneID, options)
 }
 
-func (z dnsimpleZoneService) CreateRecord(accountID string, zoneID string, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error) {
-	return z.service.CreateRecord(accountID, zoneID, recordAttributes)
+func (z dnsimpleZoneService) CreateRecord(accountID string, zoneID string, recordAttributes dnsimple.ZoneRecordAttributes) (*dnsimple.ZoneRecordResponse, error) {
+	return z.service.CreateRecord(context.TODO(), accountID, zoneID, recordAttributes)
 }
 
 func (z dnsimpleZoneService) DeleteRecord(accountID string, zoneID string, recordID int64) (*dnsimple.ZoneRecordResponse, error) {
-	return z.service.DeleteRecord(accountID, zoneID, recordID)
+	return z.service.DeleteRecord(context.TODO(), accountID, zoneID, recordID)
 }
 
-func (z dnsimpleZoneService) UpdateRecord(accountID string, zoneID string, recordID int64, recordAttributes dnsimple.ZoneRecord) (*dnsimple.ZoneRecordResponse, error) {
-	return z.service.UpdateRecord(accountID, zoneID, recordID, recordAttributes)
+func (z dnsimpleZoneService) UpdateRecord(accountID string, zoneID string, recordID int64, recordAttributes dnsimple.ZoneRecordAttributes) (*dnsimple.ZoneRecordResponse, error) {
+	return z.service.UpdateRecord(context.TODO(), accountID, zoneID, recordID, recordAttributes)
 }
 
 type dnsimpleProvider struct {
@@ -140,7 +140,7 @@ func (p *dnsimpleProvider) Zones(ctx context.Context) (map[string]dnsimple.Zone,
 	page := 1
 	listOptions := &dnsimple.ZoneListOptions{}
 	for {
-		listOptions.Page = page
+		listOptions.Page = &page
 		zonesResponse, err := p.client.ListZones(p.accountID, listOptions)
 		if err != nil {
 			return nil, err
@@ -175,7 +175,7 @@ func (p *dnsimpleProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		page := 1
 		listOptions := &dnsimple.ZoneRecordListOptions{}
 		for {
-			listOptions.Page = page
+			listOptions.Page = &page
 			records, err := p.client.ListRecords(p.accountID, zone.Name, listOptions)
 			if err != nil {
 				return nil, err
@@ -257,15 +257,22 @@ func (p *dnsimpleProvider) submitChanges(ctx context.Context, changes []*dnsimpl
 			change.ResourceRecordSet.Name = strings.TrimSuffix(change.ResourceRecordSet.Name, fmt.Sprintf(".%s", zone.Name))
 		}
 
+		recordAttributes := dnsimple.ZoneRecordAttributes{
+			Name:    &change.ResourceRecordSet.Name,
+			Type:    change.ResourceRecordSet.Type,
+			Content: change.ResourceRecordSet.Content,
+			TTL:     change.ResourceRecordSet.TTL,
+		}
+
 		if !p.dryRun {
 			switch change.Action {
 			case dnsimpleCreate:
-				_, err := p.client.CreateRecord(p.accountID, zone.Name, change.ResourceRecordSet)
+				_, err := p.client.CreateRecord(p.accountID, zone.Name, recordAttributes)
 				if err != nil {
 					return err
 				}
 			case dnsimpleDelete:
-				recordID, err := p.GetRecordID(zone.Name, change.ResourceRecordSet.Name)
+				recordID, err := p.GetRecordID(zone.Name, *recordAttributes.Name)
 				if err != nil {
 					return err
 				}
@@ -274,11 +281,11 @@ func (p *dnsimpleProvider) submitChanges(ctx context.Context, changes []*dnsimpl
 					return err
 				}
 			case dnsimpleUpdate:
-				recordID, err := p.GetRecordID(zone.Name, change.ResourceRecordSet.Name)
+				recordID, err := p.GetRecordID(zone.Name, *recordAttributes.Name)
 				if err != nil {
 					return err
 				}
-				_, err = p.client.UpdateRecord(p.accountID, zone.Name, recordID, change.ResourceRecordSet)
+				_, err = p.client.UpdateRecord(p.accountID, zone.Name, recordID, recordAttributes)
 				if err != nil {
 					return err
 				}
@@ -291,9 +298,9 @@ func (p *dnsimpleProvider) submitChanges(ctx context.Context, changes []*dnsimpl
 // Returns the record ID for a given record name and zone
 func (p *dnsimpleProvider) GetRecordID(zone string, recordName string) (recordID int64, err error) {
 	page := 1
-	listOptions := &dnsimple.ZoneRecordListOptions{Name: recordName}
+	listOptions := &dnsimple.ZoneRecordListOptions{Name: &recordName}
 	for {
-		listOptions.Page = page
+		listOptions.Page = &page
 		records, err := p.client.ListRecords(p.accountID, zone, listOptions)
 		if err != nil {
 			return 0, err
