@@ -21,7 +21,7 @@ require (
 	github.com/denverdino/aliyungo v0.0.0-20180815121905-69560d9530f5
 	github.com/digitalocean/godo v1.34.0
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
-	github.com/dnsimple/dnsimple-go v0.40.1-0.20200427210330-d2464048fb9b
+	github.com/dnsimple/dnsimple-go v0.60.0
 	github.com/exoscale/egoscale v0.18.1
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
 	github.com/go-resty/resty v1.8.0 // indirect
