@@ -131,11 +131,11 @@ func TestDnsimpleServices(t *testing.T) {
 
 	// Run tests on mock services
 	t.Run("Zones", testDnsimpleProviderZones)
-	//t.Run("Records", testDnsimpleProviderRecords)
-	//t.Run("ApplyChanges", testDnsimpleProviderApplyChanges)
-	//t.Run("ApplyChanges/SkipUnknownZone", testDnsimpleProviderApplyChangesSkipsUnknown)
-	//t.Run("SuitableZone", testDnsimpleSuitableZone)
-	//t.Run("GetRecordID", testDnsimpleGetRecordID)
+	t.Run("Records", testDnsimpleProviderRecords)
+	t.Run("ApplyChanges", testDnsimpleProviderApplyChanges)
+	t.Run("ApplyChanges/SkipUnknownZone", testDnsimpleProviderApplyChangesSkipsUnknown)
+	t.Run("SuitableZone", testDnsimpleSuitableZone)
+	t.Run("GetRecordID", testDnsimpleGetRecordID)
 }
 
 func testDnsimpleProviderZones(t *testing.T) {
