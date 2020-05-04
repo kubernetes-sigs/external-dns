@@ -36,9 +36,6 @@ spec:
       app: external-dns
   strategy:
     type: Recreate
-  selector:
-    matchLabels:
-      app: external-dns
   template:
     metadata:
       labels:
@@ -102,9 +99,6 @@ spec:
       app: external-dns
   strategy:
     type: Recreate
-  selector:
-    matchLabels:
-      app: external-dns
   template:
     metadata:
       labels:
