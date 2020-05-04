@@ -670,6 +670,11 @@ func TestCloudflareGetRecordID(t *testing.T) {
 			ID:      "1",
 		},
 		{
+			Name: "bar.de",
+			Type: endpoint.RecordTypeA,
+			ID:   "2",
+		},
+		{
 			Name:    "bar.de",
 			Type:    endpoint.RecordTypeA,
 			Content: "1.2.3.4",

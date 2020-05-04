@@ -165,6 +165,8 @@ func main() {
 		p, err = provider.NewAzurePrivateDNSProvider(domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureSubscriptionID, cfg.DryRun)
 	case "vinyldns":
 		p, err = provider.NewVinylDNSProvider(domainFilter, zoneIDFilter, cfg.DryRun)
+	case "vultr":
+		p, err = provider.NewVultrProvider(domainFilter, cfg.DryRun)
 	case "cloudflare":
 		p, err = provider.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareZonesPerPage, cfg.CloudflareProxied, cfg.DryRun)
 	case "rcodezero":
