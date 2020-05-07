@@ -38,16 +38,14 @@ type dnsimpleIdentityService struct {
 	service *dnsimple.IdentityService
 }
 
-func (i dnsimpleIdentityService) Whoami() (*dnsimple.WhoamiResponse, error) {
-	return i.service.Whoami(context.TODO())
+func (i dnsimpleIdentityService) Whoami(ctx context.Context) (*dnsimple.WhoamiResponse, error) {
+	return i.service.Whoami(ctx)
 }
 
 // dnsimpleZoneServiceInterface is an interface that contains all necessary zone services from DNSimple
 type dnsimpleZoneServiceInterface interface {
-	ListZones(accountID string, options *dnsimple.ZoneListOptions) (*dnsimple.ZonesResponse, error)
-	ListZonesWithContext(ctx context.Context, accountID string, options *dnsimple.ZoneListOptions) (*dnsimple.ZonesResponse, error)
-	ListRecords(accountID string, zoneID string, options *dnsimple.ZoneRecordListOptions) (*dnsimple.ZoneRecordsResponse, error)
-	ListRecordsWithContext(ctx context.Context, accountID string, zoneID string, options *dnsimple.ZoneRecordListOptions) (*dnsimple.ZoneRecordsResponse, error)
+	ListZones(ctx context.Context, accountID string, options *dnsimple.ZoneListOptions) (*dnsimple.ZonesResponse, error)
+	ListRecords(ctx context.Context, accountID string, zoneID string, options *dnsimple.ZoneRecordListOptions) (*dnsimple.ZoneRecordsResponse, error)
 	CreateRecord(accountID string, zoneID string, recordAttributes dnsimple.ZoneRecordAttributes) (*dnsimple.ZoneRecordResponse, error)
 	DeleteRecord(accountID string, zoneID string, recordID int64) (*dnsimple.ZoneRecordResponse, error)
 	UpdateRecord(accountID string, zoneID string, recordID int64, recordAttributes dnsimple.ZoneRecordAttributes) (*dnsimple.ZoneRecordResponse, error)
@@ -57,19 +55,11 @@ type dnsimpleZoneService struct {
 	service *dnsimple.ZonesService
 }
 
-func (z dnsimpleZoneService) ListZones(accountID string, options *dnsimple.ZoneListOptions) (*dnsimple.ZonesResponse, error) {
-	return z.ListZonesWithContext(context.TODO(), accountID, options)
-}
-
-func (z dnsimpleZoneService) ListZonesWithContext(ctx context.Context, accountID string, options *dnsimple.ZoneListOptions) (*dnsimple.ZonesResponse, error) {
+func (z dnsimpleZoneService) ListZones(ctx context.Context, accountID string, options *dnsimple.ZoneListOptions) (*dnsimple.ZonesResponse, error) {
 	return z.service.ListZones(ctx, accountID, options)
 }
 
-func (z dnsimpleZoneService) ListRecords(accountID string, zoneID string, options *dnsimple.ZoneRecordListOptions) (*dnsimple.ZoneRecordsResponse, error) {
-	return z.ListRecordsWithContext(context.TODO(), accountID, zoneID, options)
-}
-
-func (z dnsimpleZoneService) ListRecordsWithContext(ctx context.Context, accountID string, zoneID string, options *dnsimple.ZoneRecordListOptions) (*dnsimple.ZoneRecordsResponse, error) {
+func (z dnsimpleZoneService) ListRecords(ctx context.Context, accountID string, zoneID string, options *dnsimple.ZoneRecordListOptions) (*dnsimple.ZoneRecordsResponse, error) {
 	return z.service.ListRecords(ctx, accountID, zoneID, options)
 }
 
@@ -105,7 +95,7 @@ const (
 	dnsimpleUpdate = "UPDATE"
 )
 
-// NewDnsimpleProvider initializes a new Dnsimple based provider
+// NewDnsimpleProvider initializes a new Dnsimple based provider.
 func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool) (Provider, error) {
 	oauthToken := os.Getenv("DNSIMPLE_OAUTH")
 	if len(oauthToken) == 0 {
@@ -126,7 +116,7 @@ func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter ZoneID
 		dryRun:       dryRun,
 	}
 
-	whoamiResponse, err := provider.identity.Whoami()
+	whoamiResponse, err := provider.identity.Whoami(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -134,10 +124,10 @@ func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter ZoneID
 	return provider, nil
 }
 
-// Returns the account ID given DNSimple credentials
-func (p *dnsimpleProvider) GetAccountID() (accountID string, err error) {
+// GetAccountID returns the account ID given DNSimple credentials.
+func (p *dnsimpleProvider) GetAccountID(ctx context.Context) (accountID string, err error) {
 	// get DNSimple client accountID
-	whoamiResponse, err := p.identity.Whoami()
+	whoamiResponse, err := p.identity.Whoami(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -151,7 +141,7 @@ func (p *dnsimpleProvider) Zones(ctx context.Context) (map[string]dnsimple.Zone,
 	listOptions := &dnsimple.ZoneListOptions{}
 	for {
 		listOptions.Page = &page
-		zonesResponse, err := p.client.ListZonesWithContext(ctx, p.accountID, listOptions)
+		zonesResponse, err := p.client.ListZones(ctx, p.accountID, listOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -186,7 +176,7 @@ func (p *dnsimpleProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		listOptions := &dnsimple.ZoneRecordListOptions{}
 		for {
 			listOptions.Page = &page
-			records, err := p.client.ListRecordsWithContext(ctx, p.accountID, zone.Name, listOptions)
+			records, err := p.client.ListRecords(ctx, p.accountID, zone.Name, listOptions)
 			if err != nil {
 				return nil, err
 			}
@@ -282,7 +272,7 @@ func (p *dnsimpleProvider) submitChanges(ctx context.Context, changes []*dnsimpl
 					return err
 				}
 			case dnsimpleDelete:
-				recordID, err := p.GetRecordIDWithContext(ctx, zone.Name, *recordAttributes.Name)
+				recordID, err := p.GetRecordID(ctx, zone.Name, *recordAttributes.Name)
 				if err != nil {
 					return err
 				}
@@ -291,7 +281,7 @@ func (p *dnsimpleProvider) submitChanges(ctx context.Context, changes []*dnsimpl
 					return err
 				}
 			case dnsimpleUpdate:
-				recordID, err := p.GetRecordIDWithContext(ctx, zone.Name, *recordAttributes.Name)
+				recordID, err := p.GetRecordID(ctx, zone.Name, *recordAttributes.Name)
 				if err != nil {
 					return err
 				}
@@ -306,17 +296,12 @@ func (p *dnsimpleProvider) submitChanges(ctx context.Context, changes []*dnsimpl
 }
 
 // GetRecordID returns the record ID for a given record name and zone.
-func (p *dnsimpleProvider) GetRecordID(zone string, recordName string) (recordID int64, err error) {
-	return p.GetRecordIDWithContext(context.Background(), zone, recordName)
-}
-
-// GetRecordIDWithContext returns the record ID for a given record name and zone.
-func (p *dnsimpleProvider) GetRecordIDWithContext(ctx context.Context, zone string, recordName string) (recordID int64, err error) {
+func (p *dnsimpleProvider) GetRecordID(ctx context.Context, zone string, recordName string) (recordID int64, err error) {
 	page := 1
 	listOptions := &dnsimple.ZoneRecordListOptions{Name: &recordName}
 	for {
 		listOptions.Page = &page
-		records, err := p.client.ListRecordsWithContext(ctx, p.accountID, zone, listOptions)
+		records, err := p.client.ListRecords(ctx, p.accountID, zone, listOptions)
 		if err != nil {
 			return 0, err
 		}
