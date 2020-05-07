@@ -36,6 +36,7 @@ const (
 	vultrTTL    = 3600
 )
 
+// VultrProvider is an implementation of Provider for Vultr DNS.
 type VultrProvider struct {
 	client govultr.Client
 
@@ -43,6 +44,7 @@ type VultrProvider struct {
 	DryRun       bool
 }
 
+// VultrChanges differentiates between ChangActions.
 type VultrChanges struct {
 	Action string
 
@@ -78,6 +80,7 @@ func (p *VultrProvider) Zones(ctx context.Context) ([]govultr.DNSDomain, error) 
 	return zones, nil
 }
 
+// Records returns the list of records.
 func (p *VultrProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.Zones(ctx)
 	if err != nil {
@@ -201,6 +204,7 @@ func (p *VultrProvider) submitChanges(ctx context.Context, changes []*VultrChang
 	return nil
 }
 
+// ApplyChanges applies a given set of changes in a given zone.
 func (p *VultrProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	combinedChanges := make([]*VultrChanges, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 
