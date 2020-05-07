@@ -173,9 +173,9 @@ func (m *mockCloudFlareClient) ListZones(zoneID ...string) ([]cloudflare.Zone, e
 
 	result := []cloudflare.Zone{}
 
-	for zoneId, zoneName := range m.Zones {
+	for zoneID, zoneName := range m.Zones {
 		result = append(result, cloudflare.Zone{
-			ID:   zoneId,
+			ID:   zoneID,
 			Name: zoneName,
 		})
 	}

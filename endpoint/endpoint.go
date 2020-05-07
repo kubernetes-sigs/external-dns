@@ -159,6 +159,7 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 	}
 }
 
+// WithSetIdentifier applies the given set identifier to the endpoint.
 func (e *Endpoint) WithSetIdentifier(setIdentifier string) *Endpoint {
 	e.SetIdentifier = setIdentifier
 	return e
