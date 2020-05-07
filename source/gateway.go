@@ -50,6 +50,7 @@ type gatewaySource struct {
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
 	serviceInformer          coreinformers.ServiceInformer
+	defaultAnnotations       map[string]string
 }
 
 // NewIstioGatewaySource creates a new gatewaySource with the given config.
@@ -61,6 +62,7 @@ func NewIstioGatewaySource(
 	fqdnTemplate string,
 	combineFqdnAnnotation bool,
 	ignoreHostnameAnnotation bool,
+	defaultAnnotations map[string]string,
 ) (Source, error) {
 	var (
 		tmpl *template.Template
@@ -110,6 +112,7 @@ func NewIstioGatewaySource(
 		combineFQDNAnnotation:    combineFqdnAnnotation,
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
 		serviceInformer:          serviceInformer,
+		defaultAnnotations:       defaultAnnotations,
 	}, nil
 }
 
@@ -200,7 +203,7 @@ func (sc *gatewaySource) endpointsFromTemplate(config *istiomodel.Config) ([]*en
 		}
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(config.Annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(annotationsWithDefaults(config.Annotations, sc.defaultAnnotations))
 
 	var endpoints []*endpoint.Endpoint
 	// splits the FQDN template and removes the trailing periods
@@ -300,7 +303,7 @@ func (sc *gatewaySource) endpointsFromGatewayConfig(config istiomodel.Config) ([
 
 	gateway := config.Spec.(*istionetworking.Gateway)
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(config.Annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(annotationsWithDefaults(config.Annotations, sc.defaultAnnotations))
 
 	for _, server := range gateway.Servers {
 		for _, host := range server.Hosts {

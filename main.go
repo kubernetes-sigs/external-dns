@@ -120,6 +120,7 @@ func main() {
 		ContourLoadBalancerService:     cfg.ContourLoadBalancerService,
 		SkipperRouteGroupVersion:       cfg.SkipperRouteGroupVersion,
 		RequestTimeout:                 cfg.RequestTimeout,
+		DefaultAnnotations:             source.DefaultAnnotations(cfg.CloudflareProxied),
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
@@ -194,7 +195,7 @@ func main() {
 	case "vultr":
 		p, err = vultr.NewVultrProvider(domainFilter, cfg.DryRun)
 	case "cloudflare":
-		p, err = cloudflare.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareZonesPerPage, cfg.CloudflareProxied, cfg.DryRun)
+		p, err = cloudflare.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareZonesPerPage, cfg.DryRun)
 	case "rcodezero":
 		p, err = rcode0.NewRcodeZeroProvider(domainFilter, cfg.DryRun, cfg.RcodezeroTXTEncrypt)
 	case "google":

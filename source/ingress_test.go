@@ -51,6 +51,7 @@ func (suite *IngressSuite) SetupTest() {
 		"{{.Name}}",
 		false,
 		false,
+		DefaultAnnotations(false),
 	)
 	suite.NoError(err, "should initialize ingress source")
 
@@ -133,6 +134,7 @@ func TestNewIngressSource(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				false,
+				DefaultAnnotations(false),
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -220,7 +222,7 @@ func testEndpointsFromIngress(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, false), ti.expected)
+			validateEndpoints(t, (&ingressSource{}).endpointsFromIngress(realIngress, false), ti.expected)
 		})
 	}
 }
@@ -1007,6 +1009,7 @@ func testIngressEndpoints(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				ti.ignoreHostnameAnnotation,
+				DefaultAnnotations(false),
 			)
 			for _, ingress := range ingresses {
 				_, err := fakeClient.Extensions().Ingresses(ingress.Namespace).Create(ingress)

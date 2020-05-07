@@ -53,6 +53,7 @@ type routeGroupSource struct {
 	fqdnTemplate             *template.Template
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
+	defaultAnnotations       map[string]string
 }
 
 // for testing
@@ -198,7 +199,7 @@ func parseTemplate(fqdnTemplate string) (tmpl *template.Template, err error) {
 }
 
 // NewRouteGroupSource creates a new routeGroupSource with the given config.
-func NewRouteGroupSource(timeout time.Duration, token, tokenPath, master, namespace, annotationFilter, fqdnTemplate, routegroupVersion string, combineFqdnAnnotation, ignoreHostnameAnnotation bool) (Source, error) {
+func NewRouteGroupSource(timeout time.Duration, token, tokenPath, master, namespace, annotationFilter, fqdnTemplate, routegroupVersion string, combineFqdnAnnotation, ignoreHostnameAnnotation bool, defaultAnnotations map[string]string) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -229,6 +230,7 @@ func NewRouteGroupSource(timeout time.Duration, token, tokenPath, master, namesp
 		fqdnTemplate:             tmpl,
 		combineFQDNAnnotation:    combineFqdnAnnotation,
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
+		defaultAnnotations:       defaultAnnotations,
 	}
 	if namespace != "" {
 		sc.apiEndpoint = apiServer + fmt.Sprintf(routeGroupNamespacedResource, routegroupVersion, namespace)
@@ -317,7 +319,7 @@ func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.E
 		targets = targetsFromRouteGroupStatus(rg.Status)
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(rg.Metadata.Annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(annotationsWithDefaults(rg.Metadata.Annotations, sc.defaultAnnotations))
 
 	var endpoints []*endpoint.Endpoint
 	// splits the FQDN template and removes the trailing periods
@@ -365,7 +367,7 @@ func (sc *routeGroupSource) endpointsFromRouteGroup(rg *routeGroup) []*endpoint.
 		}
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(rg.Metadata.Annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(annotationsWithDefaults(rg.Metadata.Annotations, sc.defaultAnnotations))
 
 	for _, src := range rg.Spec.Hosts {
 		if src == "" {

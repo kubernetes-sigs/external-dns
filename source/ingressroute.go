@@ -56,6 +56,7 @@ type ingressRouteSource struct {
 	ignoreHostnameAnnotation   bool
 	ingressRouteInformer       informers.GenericInformer
 	unstructuredConverter      *UnstructuredConverter
+	defaultAnnotations         map[string]string
 }
 
 // NewContourIngressRouteSource creates a new contourIngressRouteSource with the given config.
@@ -68,6 +69,7 @@ func NewContourIngressRouteSource(
 	fqdnTemplate string,
 	combineFqdnAnnotation bool,
 	ignoreHostnameAnnotation bool,
+	defaultAnnotations map[string]string,
 ) (Source, error) {
 	var (
 		tmpl *template.Template
@@ -126,6 +128,7 @@ func NewContourIngressRouteSource(
 		ignoreHostnameAnnotation:   ignoreHostnameAnnotation,
 		ingressRouteInformer:       ingressRouteInformer,
 		unstructuredConverter:      uc,
+		defaultAnnotations:         defaultAnnotations,
 	}, nil
 }
 
@@ -232,7 +235,7 @@ func (sc *ingressRouteSource) endpointsFromTemplate(ingressRoute *contourapi.Ing
 		}
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(annotationsWithDefaults(ingressRoute.Annotations, sc.defaultAnnotations))
 
 	var endpoints []*endpoint.Endpoint
 	// splits the FQDN template and removes the trailing periods
@@ -325,7 +328,7 @@ func (sc *ingressRouteSource) endpointsFromIngressRoute(ingressRoute *contourapi
 		}
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(annotationsWithDefaults(ingressRoute.Annotations, sc.defaultAnnotations))
 
 	if virtualHost := ingressRoute.Spec.VirtualHost; virtualHost != nil {
 		if fqdn := virtualHost.Fqdn; fqdn != "" {

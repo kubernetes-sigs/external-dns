@@ -247,3 +247,21 @@ func poll(interval time.Duration, timeout time.Duration, condition wait.Conditio
 
 	return wait.Poll(interval, timeout, condition)
 }
+
+// DefaultAnnotations produces a map of default annotations to be used by sources.
+func DefaultAnnotations(cloudflareProxied bool) map[string]string {
+	return map[string]string{
+		CloudflareProxiedKey: strconv.FormatBool(cloudflareProxied),
+	}
+}
+
+func annotationsWithDefaults(annotations, defaults map[string]string) map[string]string {
+	m := make(map[string]string)
+	for k, v := range defaults {
+		m[k] = v
+	}
+	for k, v := range annotations {
+		m[k] = v
+	}
+	return m
+}

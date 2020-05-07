@@ -79,6 +79,7 @@ func (suite *GatewaySuite) SetupTest() {
 		"{{.Name}}",
 		false,
 		false,
+		DefaultAnnotations(false),
 	)
 	suite.NoError(err, "should initialize gateway source")
 
@@ -152,6 +153,7 @@ func TestNewIstioGatewaySource(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				false,
+				DefaultAnnotations(false),
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -1113,6 +1115,7 @@ func testGatewayEndpoints(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				ti.ignoreHostnameAnnotation,
+				DefaultAnnotations(false),
 			)
 			require.NoError(t, err)
 
@@ -1149,6 +1152,7 @@ func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService) (*gatewa
 		"{{.Name}}",
 		false,
 		false,
+		DefaultAnnotations(false),
 	)
 	if err != nil {
 		return nil, err

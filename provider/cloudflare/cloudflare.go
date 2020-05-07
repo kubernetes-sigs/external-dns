@@ -104,7 +104,6 @@ type CloudFlareProvider struct {
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter      endpoint.DomainFilter
 	zoneIDFilter      provider.ZoneIDFilter
-	proxiedByDefault  bool
 	DryRun            bool
 	PaginationOptions cloudflare.PaginationOptions
 }
@@ -116,7 +115,7 @@ type cloudFlareChange struct {
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zonesPerPage int, proxiedByDefault bool, dryRun bool) (*CloudFlareProvider, error) {
+func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zonesPerPage int, dryRun bool) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
 	var (
 		config *cloudflare.API
@@ -132,11 +131,10 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 	}
 	provider := &CloudFlareProvider{
 		//Client: config,
-		Client:           zoneService{config},
-		domainFilter:     domainFilter,
-		zoneIDFilter:     zoneIDFilter,
-		proxiedByDefault: proxiedByDefault,
-		DryRun:           dryRun,
+		Client:       zoneService{config},
+		domainFilter: domainFilter,
+		zoneIDFilter: zoneIDFilter,
+		DryRun:       dryRun,
 		PaginationOptions: cloudflare.PaginationOptions{
 			PerPage: zonesPerPage,
 			Page:    1,
@@ -332,7 +330,7 @@ func (p *CloudFlareProvider) getRecordID(records []cloudflare.DNSRecord, record 
 
 func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoint.Endpoint, target string) *cloudFlareChange {
 	ttl := defaultCloudFlareRecordTTL
-	proxied := shouldBeProxied(endpoint, p.proxiedByDefault)
+	proxied := shouldBeProxied(endpoint)
 
 	if endpoint.RecordTTL.IsConfigured() {
 		ttl = int(endpoint.RecordTTL)
@@ -354,8 +352,8 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoi
 	}
 }
 
-func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
-	proxied := proxiedByDefault
+func shouldBeProxied(endpoint *endpoint.Endpoint) bool {
+	var proxied bool
 
 	for _, v := range endpoint.ProviderSpecific {
 		if v.Name == source.CloudflareProxiedKey {

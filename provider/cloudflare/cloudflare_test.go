@@ -355,30 +355,6 @@ func TestCloudflareCustomTTL(t *testing.T) {
 	})
 }
 
-func TestCloudflareProxiedDefault(t *testing.T) {
-	endpoints := []*endpoint.Endpoint{
-		{
-			RecordType: "A",
-			DNSName:    "bar.com",
-			Targets:    endpoint.Targets{"127.0.0.1"},
-		},
-	}
-
-	AssertActions(t, &CloudFlareProvider{proxiedByDefault: true}, endpoints, []MockAction{
-		{
-			Name:   "Create",
-			ZoneId: "001",
-			RecordData: cloudflare.DNSRecord{
-				Type:    "A",
-				Name:    "bar.com",
-				Content: "127.0.0.1",
-				TTL:     1,
-				Proxied: true,
-			},
-		},
-	})
-}
-
 func TestCloudflareProxiedOverrideTrue(t *testing.T) {
 	endpoints := []*endpoint.Endpoint{
 		{
@@ -424,7 +400,7 @@ func TestCloudflareProxiedOverrideFalse(t *testing.T) {
 		},
 	}
 
-	AssertActions(t, &CloudFlareProvider{proxiedByDefault: true}, endpoints, []MockAction{
+	AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
 		{
 			Name:   "Create",
 			ZoneId: "001",
@@ -454,7 +430,7 @@ func TestCloudflareProxiedOverrideIllegal(t *testing.T) {
 		},
 	}
 
-	AssertActions(t, &CloudFlareProvider{proxiedByDefault: true}, endpoints, []MockAction{
+	AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
 		{
 			Name:   "Create",
 			ZoneId: "001",
@@ -463,7 +439,7 @@ func TestCloudflareProxiedOverrideIllegal(t *testing.T) {
 				Name:    "bar.com",
 				Content: "127.0.0.1",
 				TTL:     1,
-				Proxied: true,
+				Proxied: false,
 			},
 		},
 	})
@@ -567,8 +543,7 @@ func TestCloudflareProvider(t *testing.T) {
 		endpoint.NewDomainFilter([]string{"bar.com"}),
 		provider.NewZoneIDFilter([]string{""}),
 		25,
-		false,
-		true)
+		false)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -579,8 +554,7 @@ func TestCloudflareProvider(t *testing.T) {
 		endpoint.NewDomainFilter([]string{"bar.com"}),
 		provider.NewZoneIDFilter([]string{""}),
 		1,
-		false,
-		true)
+		false)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -590,8 +564,7 @@ func TestCloudflareProvider(t *testing.T) {
 		endpoint.NewDomainFilter([]string{"bar.com"}),
 		provider.NewZoneIDFilter([]string{""}),
 		50,
-		false,
-		true)
+		false)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}

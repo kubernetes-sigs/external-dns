@@ -70,6 +70,7 @@ func (suite *IngressRouteSuite) SetupTest() {
 		"{{.Name}}",
 		false,
 		false,
+		DefaultAnnotations(false),
 	)
 	suite.NoError(err, "should initialize ingressroute source")
 
@@ -167,6 +168,7 @@ func TestNewContourIngressRouteSource(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				false,
+				DefaultAnnotations(false),
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -1028,6 +1030,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				ti.ignoreHostnameAnnotation,
+				DefaultAnnotations(false),
 			)
 			require.NoError(t, err)
 
@@ -1063,6 +1066,7 @@ func newTestIngressRouteSource(loadBalancer fakeLoadBalancerService) (*ingressRo
 		"{{.Name}}",
 		false,
 		false,
+		DefaultAnnotations(false),
 	)
 	if err != nil {
 		return nil, err
