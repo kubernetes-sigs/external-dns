@@ -45,6 +45,7 @@ Providers
 - [x] TransIP
 - [x] RFC2136
 - [x] Vultr
+- [x] UltraDNS
 
 PRs welcome!
 
@@ -76,3 +77,6 @@ The TransIP Provider minimal TTL is used when the TTL is 0. The minimal TTL is 6
 
 ### Vultr Provider
 The Vultr provider minimal TTL is used when the TTL is 0. The default is 1 hour.
+
+### UltraDNS 
+The UltraDNS provider minimal TTL is used when the TTL is 0. The default is 24 hour.
