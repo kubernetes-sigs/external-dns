@@ -203,9 +203,6 @@ func (r rfc2136Provider) List() ([]dns.RR, error) {
 func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	log.Debugf("ApplyChanges (Create: %d, UpdateOld: %d, UpdateNew: %d, Delete: %d)", len(changes.Create), len(changes.UpdateOld), len(changes.UpdateNew), len(changes.Delete))
 
-	m := new(dns.Msg)
-	m.SetUpdate(r.zoneName)
-
 	for _, ep := range changes.Create {
 
 		if !r.domainFilter.Match(ep.DNSName) {
@@ -213,7 +210,12 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			continue
 		}
 
-		r.AddRecord(m, ep)
+		if err := r.AddRecord(ep); err != nil {
+			return err
+		}
+		// make sure to not flood the server
+		time.Sleep(time.Millisecond * 100)
+
 	}
 	for _, ep := range changes.UpdateNew {
 
@@ -222,7 +224,11 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			continue
 		}
 
-		r.UpdateRecord(m, ep)
+		if err := r.UpdateRecord(ep); err != nil {
+			return err
+		}
+		// make sure to not flood the server
+		time.Sleep(time.Millisecond * 100)
 	}
 	for _, ep := range changes.Delete {
 
@@ -231,9 +237,14 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			continue
 		}
 
-		r.RemoveRecord(m, ep)
+		if err := r.RemoveRecord(ep); err != nil {
+			return err
+		}
+		// make sure to not flood the server
+		time.Sleep(time.Millisecond * 100)
 	}
 
+	/*
 	// only send if there are records available
 	if len(m.Ns) > 0 {
 		err := r.actions.SendMessage(m)
@@ -241,21 +252,25 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			return fmt.Errorf("RFC2136 update failed: %v", err)
 		}
 	}
+	*/
 
 	return nil
 }
 
-func (r rfc2136Provider) UpdateRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
-	err := r.RemoveRecord(m, ep)
+func (r rfc2136Provider) UpdateRecord(ep *endpoint.Endpoint) error {
+	err := r.RemoveRecord(ep)
 	if err != nil {
 		return err
 	}
 
-	return r.AddRecord(m, ep)
+	return r.AddRecord(ep)
 }
 
-func (r rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
+func (r rfc2136Provider) AddRecord(ep *endpoint.Endpoint) error {
 	log.Debugf("AddRecord.ep=%s", ep)
+
+	m := new(dns.Msg)
+	m.SetUpdate(r.zoneName)
 
 	var ttl = int64(r.minTTL.Seconds())
 	if ep.RecordTTL.IsConfigured() && int64(ep.RecordTTL) > ttl {
@@ -274,11 +289,20 @@ func (r rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 		m.Insert([]dns.RR{rr})
 	}
 
+	err := r.actions.SendMessage(m)
+	if err != nil {
+		return fmt.Errorf("RFC2136 update failed: %v", err)
+	}
+
 	return nil
 }
 
-func (r rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
+func (r rfc2136Provider) RemoveRecord(ep *endpoint.Endpoint) error {
 	log.Debugf("RemoveRecord.ep=%s", ep)
+
+	m := new(dns.Msg)
+	m.SetUpdate(r.zoneName)
+
 	for _, target := range ep.Targets {
 		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ep.RecordTTL, ep.RecordType, target)
 		log.Infof("Removing RR: %s", newRR)
@@ -289,6 +313,11 @@ func (r rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 		}
 
 		m.Remove([]dns.RR{rr})
+	}
+
+	err := r.actions.SendMessage(m)
+	if err != nil {
+		return fmt.Errorf("RFC2136 update failed: %v", err)
 	}
 
 	return nil
