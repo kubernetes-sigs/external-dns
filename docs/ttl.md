@@ -50,7 +50,7 @@ PRs welcome!
 
 Notes
 =====
-When the `external-dns.alpha.kubernetes.io/ttl` annotation is not provided, the TTL will default to 0 seconds and `enpoint.TTL.isConfigured()` will be false.
+When the `external-dns.alpha.kubernetes.io/ttl` annotation is not provided, the TTL will default to 0 seconds and `endpoint.TTL.isConfigured()` will be false.
 
 ### AWS Provider
 The AWS Provider overrides the value to 300s when the TTL is 0.
