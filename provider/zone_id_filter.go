@@ -20,7 +20,7 @@ import "strings"
 
 // ZoneIDFilter holds a list of zone ids to filter by
 type ZoneIDFilter struct {
-	ZoneIDs []string // FIXME this was temporarily put as public to allow the dyn provider to compile
+	ZoneIDs []string
 }
 
 // NewZoneIDFilter returns a new ZoneIDFilter given a list of zone ids

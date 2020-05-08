@@ -405,7 +405,7 @@ func (d *dynProviderState) buildLinkToRecord(ep *endpoint.Endpoint) string {
 		return ""
 	}
 	var matchingZone = ""
-	for _, zone := range d.ZoneIDFilter.ZoneIDs { // FIXME this should not access directly the ZoneIDs
+	for _, zone := range d.ZoneIDFilter.ZoneIDs {
 		if strings.HasSuffix(ep.DNSName, zone) {
 			matchingZone = zone
 			break
