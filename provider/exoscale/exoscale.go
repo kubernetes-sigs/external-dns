@@ -258,7 +258,6 @@ func (f *zoneFilter) EndpointZoneID(endpoint *endpoint.Endpoint, zones map[int64
 	return matchZoneID, name
 }
 
-// TODO see if we need tests for this, I copied over the dyn provider. Another option is to make this a helper function
 func merge(updateOld, updateNew []*endpoint.Endpoint) []*endpoint.Endpoint {
 	findMatch := func(template *endpoint.Endpoint) *endpoint.Endpoint {
 		for _, new := range updateNew {
