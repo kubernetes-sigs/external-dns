@@ -123,15 +123,15 @@ var nowValue = struct{}{}
 // RunOnceThrottled  makes sure execution happens at most once per interval.
 func (c *Controller) RunOnceThrottled(ctx context.Context) error {
 	now := time.Now()
-	testing := false
+	testEnv := false
 	if v, ok := ctx.Value(nowValue).(time.Time); ok {
 		now = v
-		testing = true
+		testEnv = true
 	}
 	if c.running || now.Before(c.minStartTime) {
 		// When throttled in non-test environment this function is no-op
 		// In test environment function returns an error so we can test it
-		if testing {
+		if testEnv {
 			return errors.New("throttled")
 		}
 		return nil
@@ -141,7 +141,7 @@ func (c *Controller) RunOnceThrottled(ctx context.Context) error {
 	defer func() {
 		c.running = false
 	}()
-	if testing {
+	if testEnv {
 		return nil
 	}
 	return c.RunOnce(ctx)
