@@ -461,7 +461,7 @@ func (d *dynProviderState) login() (*dynect.Client, error) {
 // the zones we are allowed to touch. Currently only exact matches are considered, not all
 // zones with the given suffix
 func (d *dynProviderState) zones(client *dynect.Client) []string {
-	return d.ZoneIDFilter.ZoneIDs // FIXME this should not access directly the ZoneIDs, no other provider does
+	return d.ZoneIDFilter.ZoneIDs
 }
 
 func (d *dynProviderState) buildRecordRequest(ep *endpoint.Endpoint) (string, *dynect.RecordRequest) {
