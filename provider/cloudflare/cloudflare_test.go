@@ -174,9 +174,9 @@ func (m *mockCloudFlareClient) ListZones(zoneID ...string) ([]cloudflare.Zone, e
 
 	result := []cloudflare.Zone{}
 
-	for zoneId, zoneName := range m.Zones {
+	for zoneID, zoneName := range m.Zones {
 		result = append(result, cloudflare.Zone{
-			ID:   zoneId,
+			ID:   zoneID,
 			Name: zoneName,
 		})
 	}
@@ -620,7 +620,7 @@ func TestCloudflareApplyChanges(t *testing.T) {
 	}
 
 	td.Cmp(t, client.Actions, []MockAction{
-		MockAction{
+		{
 			Name:   "Create",
 			ZoneId: "001",
 			RecordData: cloudflare.DNSRecord{
@@ -629,7 +629,7 @@ func TestCloudflareApplyChanges(t *testing.T) {
 				TTL:     1,
 			},
 		},
-		MockAction{
+		{
 			Name:   "Create",
 			ZoneId: "001",
 			RecordData: cloudflare.DNSRecord{
@@ -948,12 +948,12 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 	}
 
 	td.CmpDeeply(t, client.Actions, []MockAction{
-		MockAction{
+		{
 			Name:     "Delete",
 			ZoneId:   "001",
 			RecordId: "1234567890",
 		},
-		MockAction{
+		{
 			Name:   "Create",
 			ZoneId: "001",
 			RecordData: cloudflare.DNSRecord{
@@ -964,7 +964,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 				Proxied: true,
 			},
 		},
-		MockAction{
+		{
 			Name:   "Create",
 			ZoneId: "001",
 			RecordData: cloudflare.DNSRecord{
