@@ -184,11 +184,11 @@ func (r *Route53APIStub) ChangeResourceRecordSetsWithContext(ctx context.Context
 			change.ResourceRecordSet.AliasTarget.DNSName = aws.String(wildcardEscape(ensureTrailingDot(aws.StringValue(change.ResourceRecordSet.AliasTarget.DNSName))))
 		}
 
-		setId := ""
+		setID := ""
 		if change.ResourceRecordSet.SetIdentifier != nil {
-			setId = aws.StringValue(change.ResourceRecordSet.SetIdentifier)
+			setID = aws.StringValue(change.ResourceRecordSet.SetIdentifier)
 		}
-		key := aws.StringValue(change.ResourceRecordSet.Name) + "::" + aws.StringValue(change.ResourceRecordSet.Type) + "::" + setId
+		key := aws.StringValue(change.ResourceRecordSet.Name) + "::" + aws.StringValue(change.ResourceRecordSet.Type) + "::" + setID
 		switch aws.StringValue(change.Action) {
 		case route53.ChangeActionCreate:
 			if _, found := recordSets[key]; found {
