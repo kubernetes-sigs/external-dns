@@ -142,9 +142,9 @@ func TestOvhRecords(t *testing.T) {
 		sort.Strings(endoint.Targets)
 	}
 	assert.ElementsMatch(endpoints, []*endpoint.Endpoint{
-		&endpoint.Endpoint{DNSName: "example.org", RecordType: "A", RecordTTL: 10, Labels: endpoint.NewLabels(), Targets: []string{"203.0.113.42"}},
-		&endpoint.Endpoint{DNSName: "www.example.org", RecordType: "CNAME", RecordTTL: 10, Labels: endpoint.NewLabels(), Targets: []string{"example.org"}},
-		&endpoint.Endpoint{DNSName: "ovh.example.net", RecordType: "A", RecordTTL: 10, Labels: endpoint.NewLabels(), Targets: []string{"203.0.113.42", "203.0.113.43"}},
+		{DNSName: "example.org", RecordType: "A", RecordTTL: 10, Labels: endpoint.NewLabels(), Targets: []string{"203.0.113.42"}},
+		{DNSName: "www.example.org", RecordType: "CNAME", RecordTTL: 10, Labels: endpoint.NewLabels(), Targets: []string{"example.org"}},
+		{DNSName: "ovh.example.net", RecordType: "A", RecordTTL: 10, Labels: endpoint.NewLabels(), Targets: []string{"203.0.113.42", "203.0.113.43"}},
 	})
 	client.AssertExpectations(t)
 
@@ -283,10 +283,10 @@ func TestOvhCountTargets(t *testing.T) {
 		endpoints [][]*endpoint.Endpoint
 		count     int
 	}{
-		{[][]*endpoint.Endpoint{[]*endpoint.Endpoint{{DNSName: "ovh.example.net", Targets: endpoint.Targets{"target"}}}}, 1},
-		{[][]*endpoint.Endpoint{[]*endpoint.Endpoint{{DNSName: "ovh.example.net", Targets: endpoint.Targets{"target"}}, {DNSName: "ovh.example.net", Targets: endpoint.Targets{"target"}}}}, 2},
-		{[][]*endpoint.Endpoint{[]*endpoint.Endpoint{{DNSName: "ovh.example.net", Targets: endpoint.Targets{"target", "target", "target"}}}}, 3},
-		{[][]*endpoint.Endpoint{[]*endpoint.Endpoint{{DNSName: "ovh.example.net", Targets: endpoint.Targets{"target", "target"}}}, []*endpoint.Endpoint{{DNSName: "ovh.example.net", Targets: endpoint.Targets{"target", "target"}}}}, 4},
+		{[][]*endpoint.Endpoint{{{DNSName: "ovh.example.net", Targets: endpoint.Targets{"target"}}}}, 1},
+		{[][]*endpoint.Endpoint{{{DNSName: "ovh.example.net", Targets: endpoint.Targets{"target"}}, {DNSName: "ovh.example.net", Targets: endpoint.Targets{"target"}}}}, 2},
+		{[][]*endpoint.Endpoint{{{DNSName: "ovh.example.net", Targets: endpoint.Targets{"target", "target", "target"}}}}, 3},
+		{[][]*endpoint.Endpoint{{{DNSName: "ovh.example.net", Targets: endpoint.Targets{"target", "target"}}}, {{DNSName: "ovh.example.net", Targets: endpoint.Targets{"target", "target"}}}}, 4},
 	}
 	for _, test := range cases {
 		count := countTargets(test.endpoints...)
