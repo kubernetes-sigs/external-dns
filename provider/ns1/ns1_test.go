@@ -31,6 +31,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 type MockNS1DomainClient struct {
@@ -130,7 +131,7 @@ func TestNS1Records(t *testing.T) {
 	provider := &NS1Provider{
 		client:       &MockNS1DomainClient{},
 		domainFilter: endpoint.NewDomainFilter([]string{"foo.com."}),
-		zoneIDFilter: NewZoneIDFilter([]string{""}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
 	}
 	ctx := context.Background()
 
@@ -151,7 +152,7 @@ func TestNewNS1Provider(t *testing.T) {
 	_ = os.Setenv("NS1_APIKEY", "xxxxxxxxxxxxxxxxx")
 	testNS1Config := NS1Config{
 		DomainFilter: endpoint.NewDomainFilter([]string{"foo.com."}),
-		ZoneIDFilter: NewZoneIDFilter([]string{""}),
+		ZoneIDFilter: provider.NewZoneIDFilter([]string{""}),
 		DryRun:       false,
 	}
 	_, err := NewNS1Provider(testNS1Config)
@@ -166,7 +167,7 @@ func TestNS1Zones(t *testing.T) {
 	provider := &NS1Provider{
 		client:       &MockNS1DomainClient{},
 		domainFilter: endpoint.NewDomainFilter([]string{"foo.com."}),
-		zoneIDFilter: NewZoneIDFilter([]string{""}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
 	}
 
 	zones, err := provider.zonesFiltered()

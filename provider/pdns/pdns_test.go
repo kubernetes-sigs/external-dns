@@ -735,7 +735,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 			TLSConfig: TLSConfig{
 				TLSEnabled: true,
-				CAFilePath: "../internal/testresources/ca.pem",
+				CAFilePath: "../../internal/testresources/ca.pem",
 			},
 		})
 	assert.Nil(suite.T(), err, "Enabled TLS Config with --tls-ca should raise no error")
@@ -748,8 +748,8 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 			TLSConfig: TLSConfig{
 				TLSEnabled:         true,
-				CAFilePath:         "../internal/testresources/ca.pem",
-				ClientCertFilePath: "../internal/testresources/client-cert.pem",
+				CAFilePath:         "../../internal/testresources/ca.pem",
+				ClientCertFilePath: "../../internal/testresources/client-cert.pem",
 			},
 		})
 	assert.Error(suite.T(), err, "Enabled TLS Config with --tls-client-cert only should raise an error")
@@ -762,8 +762,8 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 			TLSConfig: TLSConfig{
 				TLSEnabled:            true,
-				CAFilePath:            "../internal/testresources/ca.pem",
-				ClientCertKeyFilePath: "../internal/testresources/client-cert-key.pem",
+				CAFilePath:            "../../internal/testresources/ca.pem",
+				ClientCertKeyFilePath: "../../internal/testresources/client-cert-key.pem",
 			},
 		})
 	assert.Error(suite.T(), err, "Enabled TLS Config with --tls-client-cert-key only should raise an error")
@@ -776,9 +776,9 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 			DomainFilter: endpoint.NewDomainFilter([]string{""}),
 			TLSConfig: TLSConfig{
 				TLSEnabled:            true,
-				CAFilePath:            "../internal/testresources/ca.pem",
-				ClientCertFilePath:    "../internal/testresources/client-cert.pem",
-				ClientCertKeyFilePath: "../internal/testresources/client-cert-key.pem",
+				CAFilePath:            "../../internal/testresources/ca.pem",
+				ClientCertFilePath:    "../../internal/testresources/client-cert.pem",
+				ClientCertKeyFilePath: "../../internal/testresources/client-cert-key.pem",
 			},
 		})
 	assert.Nil(suite.T(), err, "Enabled TLS Config with all flags should raise no error")

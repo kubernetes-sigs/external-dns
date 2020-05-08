@@ -28,6 +28,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 type mockOCIDNSClient struct{}
@@ -100,7 +101,7 @@ func (c *mockOCIDNSClient) PatchZoneRecords(ctx context.Context, request dns.Pat
 }
 
 // newOCIProvider creates an OCI provider with API calls mocked out.
-func newOCIProvider(client ociDNSClient, domainFilter endpoint.DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool) *OCIProvider {
+func newOCIProvider(client ociDNSClient, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) *OCIProvider {
 	return &OCIProvider{
 		client: client,
 		cfg: OCIConfig{
@@ -184,7 +185,7 @@ hKRtDhmSdWBo3tJK12RrAe4t7CUe8gMgTvU7ExlcA3xQkseFPx9K
 			_, err := NewOCIProvider(
 				tc.config,
 				endpoint.NewDomainFilter([]string{"com"}),
-				NewZoneIDFilter([]string{""}),
+				provider.NewZoneIDFilter([]string{""}),
 				false,
 			)
 			if err == nil {
@@ -200,13 +201,13 @@ func TestOCIZones(t *testing.T) {
 	testCases := []struct {
 		name         string
 		domainFilter endpoint.DomainFilter
-		zoneIDFilter ZoneIDFilter
+		zoneIDFilter provider.ZoneIDFilter
 		expected     map[string]dns.ZoneSummary
 	}{
 		{
 			name:         "DomainFilter_com",
 			domainFilter: endpoint.NewDomainFilter([]string{"com"}),
-			zoneIDFilter: NewZoneIDFilter([]string{""}),
+			zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
 			expected: map[string]dns.ZoneSummary{
 				"foo.com": {
 					Id:   common.String("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
@@ -220,7 +221,7 @@ func TestOCIZones(t *testing.T) {
 		}, {
 			name:         "DomainFilter_foo.com",
 			domainFilter: endpoint.NewDomainFilter([]string{"foo.com"}),
-			zoneIDFilter: NewZoneIDFilter([]string{""}),
+			zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
 			expected: map[string]dns.ZoneSummary{
 				"foo.com": {
 					Id:   common.String("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
@@ -230,7 +231,7 @@ func TestOCIZones(t *testing.T) {
 		}, {
 			name:         "ZoneIDFilter_ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959",
 			domainFilter: endpoint.NewDomainFilter([]string{""}),
-			zoneIDFilter: NewZoneIDFilter([]string{"ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"}),
+			zoneIDFilter: provider.NewZoneIDFilter([]string{"ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"}),
 			expected: map[string]dns.ZoneSummary{
 				"foo.com": {
 					Id:   common.String("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
@@ -253,13 +254,13 @@ func TestOCIRecords(t *testing.T) {
 	testCases := []struct {
 		name         string
 		domainFilter endpoint.DomainFilter
-		zoneIDFilter ZoneIDFilter
+		zoneIDFilter provider.ZoneIDFilter
 		expected     []*endpoint.Endpoint
 	}{
 		{
 			name:         "unfiltered",
 			domainFilter: endpoint.NewDomainFilter([]string{""}),
-			zoneIDFilter: NewZoneIDFilter([]string{""}),
+			zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
 			expected: []*endpoint.Endpoint{
 				endpoint.NewEndpointWithTTL("foo.foo.com", endpoint.RecordTypeA, endpoint.TTL(ociRecordTTL), "127.0.0.1"),
 				endpoint.NewEndpointWithTTL("foo.foo.com", endpoint.RecordTypeTXT, endpoint.TTL(ociRecordTTL), "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/default/my-svc"),
@@ -269,7 +270,7 @@ func TestOCIRecords(t *testing.T) {
 		}, {
 			name:         "DomainFilter_foo.com",
 			domainFilter: endpoint.NewDomainFilter([]string{"foo.com"}),
-			zoneIDFilter: NewZoneIDFilter([]string{""}),
+			zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
 			expected: []*endpoint.Endpoint{
 				endpoint.NewEndpointWithTTL("foo.foo.com", endpoint.RecordTypeA, endpoint.TTL(ociRecordTTL), "127.0.0.1"),
 				endpoint.NewEndpointWithTTL("foo.foo.com", endpoint.RecordTypeTXT, endpoint.TTL(ociRecordTTL), "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/default/my-svc"),
@@ -278,7 +279,7 @@ func TestOCIRecords(t *testing.T) {
 		}, {
 			name:         "ZoneIDFilter_ocid1.dns-zone.oc1..502aeddba262b92fd13ed7874f6f1404",
 			domainFilter: endpoint.NewDomainFilter([]string{""}),
-			zoneIDFilter: NewZoneIDFilter([]string{"ocid1.dns-zone.oc1..502aeddba262b92fd13ed7874f6f1404"}),
+			zoneIDFilter: provider.NewZoneIDFilter([]string{"ocid1.dns-zone.oc1..502aeddba262b92fd13ed7874f6f1404"}),
 			expected: []*endpoint.Endpoint{
 				endpoint.NewEndpointWithTTL("foo.bar.com", endpoint.RecordTypeA, endpoint.TTL(ociRecordTTL), "127.0.0.1"),
 			},
@@ -826,7 +827,7 @@ func TestOCIApplyChanges(t *testing.T) {
 			provider := newOCIProvider(
 				client,
 				endpoint.NewDomainFilter([]string{""}),
-				NewZoneIDFilter([]string{""}),
+				provider.NewZoneIDFilter([]string{""}),
 				tc.dryRun,
 			)
 
