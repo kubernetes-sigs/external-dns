@@ -129,8 +129,8 @@ func (c *Controller) RunOnceThrottled(ctx context.Context) error {
 		testing = true
 	}
 	if c.running || now.Before(c.minStartTime) {
-		// Normally when throttled this function is no-op, but when testing
-		// we need to signal that the function is throttled by returning an error
+		// When throttled in non-test environment this function is no-op
+		// In test environment function returns an error so we can test it
 		if testing {
 			return errors.New("throttled")
 		}
