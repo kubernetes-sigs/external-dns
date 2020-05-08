@@ -37,7 +37,8 @@ import (
 )
 
 const (
-	defaultIdleConnTimeout       = 30 * time.Second
+	defaultIdleConnTimeout = 30 * time.Second
+	// DefaultRoutegroupVersion is the default version for route groups.
 	DefaultRoutegroupVersion     = "zalando.org/v1"
 	routeGroupListResource       = "/apis/%s/routegroups"
 	routeGroupNamespacedResource = "/apis/%s/namespaces/%s/routegroups"
