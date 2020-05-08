@@ -32,6 +32,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 type mockAkamaiClient struct {
@@ -92,7 +93,7 @@ func TestRequestError(t *testing.T) {
 
 func TestFetchZonesZoneIDFilter(t *testing.T) {
 	config := AkamaiConfig{
-		ZoneIDFilter: NewZoneIDFilter([]string{"Test"}),
+		ZoneIDFilter: provider.NewZoneIDFilter([]string{"Test"}),
 	}
 
 	client := &mockAkamaiClient{}
@@ -109,7 +110,7 @@ func TestFetchZonesZoneIDFilter(t *testing.T) {
 func TestFetchZonesEmpty(t *testing.T) {
 	config := AkamaiConfig{
 		DomainFilter: endpoint.NewDomainFilter([]string{"Nonexistent"}),
-		ZoneIDFilter: NewZoneIDFilter([]string{"Nonexistent"}),
+		ZoneIDFilter: provider.NewZoneIDFilter([]string{"Nonexistent"}),
 	}
 
 	client := &mockAkamaiClient{}
@@ -171,7 +172,7 @@ func TestAkamaiRecords(t *testing.T) {
 
 func TestAkamaiRecordsEmpty(t *testing.T) {
 	config := AkamaiConfig{
-		ZoneIDFilter: NewZoneIDFilter([]string{"Nonexistent"}),
+		ZoneIDFilter: provider.NewZoneIDFilter([]string{"Nonexistent"}),
 	}
 
 	client := &mockAkamaiClient{}
@@ -185,7 +186,7 @@ func TestAkamaiRecordsEmpty(t *testing.T) {
 func TestAkamaiRecordsFilters(t *testing.T) {
 	config := AkamaiConfig{
 		DomainFilter: endpoint.NewDomainFilter([]string{"www.exclude.me"}),
-		ZoneIDFilter: NewZoneIDFilter([]string{"Exclude-Me"}),
+		ZoneIDFilter: provider.NewZoneIDFilter([]string{"Exclude-Me"}),
 	}
 
 	client := &mockAkamaiClient{}
@@ -208,7 +209,7 @@ func TestCreateRecords(t *testing.T) {
 	c := NewAkamaiProvider(config)
 	c.client = client
 
-	zoneNameIDMapper := zoneIDName{"example.com": "example.com"}
+	zoneNameIDMapper := provider.ZoneIDName{"example.com": "example.com"}
 	endpoints := make([]*endpoint.Endpoint, 0)
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"))
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"))
@@ -228,7 +229,7 @@ func TestCreateRecordsDomainFilter(t *testing.T) {
 	c := NewAkamaiProvider(config)
 	c.client = client
 
-	zoneNameIDMapper := zoneIDName{"example.com": "example.com"}
+	zoneNameIDMapper := provider.ZoneIDName{"example.com": "example.com"}
 	endpoints := make([]*endpoint.Endpoint, 0)
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"))
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"))
@@ -247,7 +248,7 @@ func TestDeleteRecords(t *testing.T) {
 	c := NewAkamaiProvider(config)
 	c.client = client
 
-	zoneNameIDMapper := zoneIDName{"example.com": "example.com"}
+	zoneNameIDMapper := provider.ZoneIDName{"example.com": "example.com"}
 	endpoints := make([]*endpoint.Endpoint, 0)
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"))
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"))
@@ -267,7 +268,7 @@ func TestDeleteRecordsDomainFilter(t *testing.T) {
 	c := NewAkamaiProvider(config)
 	c.client = client
 
-	zoneNameIDMapper := zoneIDName{"example.com": "example.com"}
+	zoneNameIDMapper := provider.ZoneIDName{"example.com": "example.com"}
 	endpoints := make([]*endpoint.Endpoint, 0)
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"))
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"))
@@ -286,7 +287,7 @@ func TestUpdateRecords(t *testing.T) {
 	c := NewAkamaiProvider(config)
 	c.client = client
 
-	zoneNameIDMapper := zoneIDName{"example.com": "example.com"}
+	zoneNameIDMapper := provider.ZoneIDName{"example.com": "example.com"}
 	endpoints := make([]*endpoint.Endpoint, 0)
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"))
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"))
@@ -306,7 +307,7 @@ func TestUpdateRecordsDomainFilter(t *testing.T) {
 	c := NewAkamaiProvider(config)
 	c.client = client
 
-	zoneNameIDMapper := zoneIDName{"example.com": "example.com"}
+	zoneNameIDMapper := provider.ZoneIDName{"example.com": "example.com"}
 	endpoints := make([]*endpoint.Endpoint, 0)
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeA, "10.0.0.2", "10.0.0.3"))
 	endpoints = append(endpoints, endpoint.NewEndpoint("www.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"))

@@ -31,6 +31,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 var mockProvider dnsimpleProvider
@@ -203,7 +204,7 @@ func testDnsimpleSuitableZone(t *testing.T) {
 
 func TestNewDnsimpleProvider(t *testing.T) {
 	os.Setenv("DNSIMPLE_OAUTH", "xxxxxxxxxxxxxxxxxxxxxxxxxx")
-	_, err := NewDnsimpleProvider(endpoint.NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true)
+	_, err := NewDnsimpleProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true)
 	if err == nil {
 		t.Errorf("Expected to fail new provider on bad token")
 	}

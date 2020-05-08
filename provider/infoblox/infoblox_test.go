@@ -28,7 +28,9 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 type mockIBConnector struct {
@@ -329,7 +331,7 @@ func createMockInfobloxObject(name, recordType, value string) ibclient.IBObject 
 	return nil
 }
 
-func newInfobloxProvider(domainFilter endpoint.DomainFilter, zoneIDFilter ZoneIDFilter, dryRun bool, client ibclient.IBConnector) *InfobloxProvider {
+func newInfobloxProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, client ibclient.IBConnector) *InfobloxProvider {
 	return &InfobloxProvider{
 		client:       client,
 		domainFilter: domainFilter,
@@ -354,7 +356,7 @@ func TestInfobloxRecords(t *testing.T) {
 		},
 	}
 
-	provider := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, &client)
+	provider := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, &client)
 	actual, err := provider.Records(context.Background())
 
 	if err != nil {
@@ -428,7 +430,7 @@ func testInfobloxApplyChangesInternal(t *testing.T, dryRun bool, client ibclient
 
 	provider := newInfobloxProvider(
 		endpoint.NewDomainFilter([]string{""}),
-		NewZoneIDFilter([]string{""}),
+		provider.NewZoneIDFilter([]string{""}),
 		dryRun,
 		client,
 	)
@@ -486,7 +488,7 @@ func TestInfobloxZones(t *testing.T) {
 		mockInfobloxObjects: &[]ibclient.IBObject{},
 	}
 
-	provider := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com"}), NewZoneIDFilter([]string{""}), true, &client)
+	provider := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, &client)
 	zones, _ := provider.zones()
 	var emptyZoneAuth *ibclient.ZoneAuth
 	assert.Equal(t, provider.findZone(zones, "example.com").Fqdn, "example.com")
@@ -520,4 +522,8 @@ func TestMaxResultsRequestBuilder(t *testing.T) {
 	req, _ = requestBuilder.BuildRequest(ibclient.CREATE, obj, "", ibclient.QueryParams{})
 
 	assert.True(t, req.URL.Query().Get("_max_results") == "")
+}
+
+func validateEndpoints(t *testing.T, endpoints []*endpoint.Endpoint, expected []*endpoint.Endpoint) {
+	assert.True(t, testutils.SameEndpoints(endpoints, expected), "actual and expected endpoints don't match. %s:%s", endpoints, expected)
 }

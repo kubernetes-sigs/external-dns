@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 func TestDynMerge_NoUpdateOnTTL0Changes(t *testing.T) {
@@ -187,7 +188,7 @@ func TestDyn_endpointToRecord(t *testing.T) {
 func TestDyn_buildLinkToRecord(t *testing.T) {
 	provider := &dynProviderState{
 		DynConfig: DynConfig{
-			ZoneIDFilter: NewZoneIDFilter([]string{"example.com"}),
+			ZoneIDFilter: provider.NewZoneIDFilter([]string{"example.com"}),
 			DomainFilter: endpoint.NewDomainFilter([]string{"the-target.example.com"}),
 		},
 	}

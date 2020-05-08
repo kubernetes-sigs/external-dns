@@ -28,6 +28,7 @@ import (
 	"github.com/maxatome/go-testdeep/td"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 type MockAction struct {
@@ -510,7 +511,7 @@ func TestCloudflareZones(t *testing.T) {
 	provider := &CloudFlareProvider{
 		Client:       NewMockCloudFlareClient(),
 		domainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
-		zoneIDFilter: NewZoneIDFilter([]string{""}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
 	}
 
 	zones, err := provider.Zones(context.Background())
@@ -555,7 +556,7 @@ func TestCloudflareProvider(t *testing.T) {
 	_ = os.Setenv("CF_API_TOKEN", "abc123def")
 	_, err := NewCloudFlareProvider(
 		endpoint.NewDomainFilter([]string{"bar.com"}),
-		NewZoneIDFilter([]string{""}),
+		provider.NewZoneIDFilter([]string{""}),
 		25,
 		false,
 		true)
@@ -567,7 +568,7 @@ func TestCloudflareProvider(t *testing.T) {
 	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
 	_, err = NewCloudFlareProvider(
 		endpoint.NewDomainFilter([]string{"bar.com"}),
-		NewZoneIDFilter([]string{""}),
+		provider.NewZoneIDFilter([]string{""}),
 		1,
 		false,
 		true)
@@ -578,7 +579,7 @@ func TestCloudflareProvider(t *testing.T) {
 	_ = os.Unsetenv("CF_API_EMAIL")
 	_, err = NewCloudFlareProvider(
 		endpoint.NewDomainFilter([]string{"bar.com"}),
-		NewZoneIDFilter([]string{""}),
+		provider.NewZoneIDFilter([]string{""}),
 		50,
 		false,
 		true)

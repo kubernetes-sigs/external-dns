@@ -29,6 +29,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 type rfc2136Stub struct {
@@ -93,7 +94,7 @@ func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, a string) (env chan *dns.Envelo
 	return outChan, nil
 }
 
-func createRfc2136StubProvider(stub *rfc2136Stub) (Provider, error) {
+func createRfc2136StubProvider(stub *rfc2136Stub) (provider.Provider, error) {
 	return NewRfc2136Provider("", 0, "", false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, stub)
 }
 
@@ -245,4 +246,13 @@ func TestRfc2136ApplyChangesWithDifferentTTLs(t *testing.T) {
 	assert.True(t, strings.Contains(createRecords[2], "4.3.3.3"))
 	assert.True(t, strings.Contains(createRecords[2], "300"))
 
+}
+
+func contains(arr []*endpoint.Endpoint, name string) bool {
+	for _, a := range arr {
+		if a.DNSName == name {
+			return true
+		}
+	}
+	return false
 }

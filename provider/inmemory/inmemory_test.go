@@ -26,10 +26,11 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 var (
-	_ Provider = &InMemoryProvider{}
+	_ provider.Provider = &InMemoryProvider{}
 )
 
 func TestInMemoryProvider(t *testing.T) {

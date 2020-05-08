@@ -34,6 +34,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 var lastGeneratedDesignateID int32
@@ -130,7 +131,7 @@ func (c fakeDesignateClient) DeleteRecordSet(zoneID, recordSetID string) error {
 	return nil
 }
 
-func (c fakeDesignateClient) ToProvider() Provider {
+func (c fakeDesignateClient) ToProvider() provider.Provider {
 	return &designateProvider{client: c}
 }
 
