@@ -6,7 +6,7 @@ It is meant to supplement the other provider-specific setup tutorials.
 
 * Manifest (for clusters without RBAC enabled)
 * Manifest (for clusters with RBAC enabled)
-* Update existing Existing DNS Deployment
+* Update existing ExternalDNS Deployment
 
 ### Manifest (for clusters without RBAC enabled)
 
@@ -48,7 +48,7 @@ kind: ServiceAccount
 metadata:
   name: external-dns
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: external-dns
@@ -66,7 +66,7 @@ rules:
   resources: ["gateways"]
   verbs: ["get","watch","list"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: external-dns-viewer
@@ -110,7 +110,7 @@ spec:
         - --txt-owner-id=my-identifier
 ```
 
-### Update existing Existing DNS Deployment
+### Update existing ExternalDNS Deployment
 
 * For clusters with running `external-dns`, you can just update the deployment.
 * With access to the `kube-system` namespace, update the existing `external-dns` deployment.
@@ -130,7 +130,7 @@ kubectl patch clusterrole external-dns --type='json' \
   -p='[{"op": "add", "path": "/rules/4", "value": { "apiGroups": [ "networking.istio.io"], "resources": ["gateways"],"verbs": ["get", "watch", "list" ]} }]'
 ```
 
-### Verify External DNS works (Gateway example)
+### Verify ExternalDNS works (Gateway example)
 
 Follow the [Istio ingress traffic tutorial](https://istio.io/docs/tasks/traffic-management/ingress/) 
 to deploy a sample service that will be exposed outside of the service mesh.
@@ -217,7 +217,7 @@ transfer-encoding: chunked
 
 **Note:** The `-H` flag in the original Istio tutorial is no longer necessary in the `curl` commands.
 
-### Debug External-DNS
+### Debug ExternalDNS
 
 * Look for the deployment pod to see the status
 
@@ -239,8 +239,8 @@ At this point, you can `create` or `update` any `Istio Gateway` object with `hos
 
 ```console
 time="2020-01-17T06:08:08Z" level=info msg="Desired change: CREATE httpbin.example.com A"
-time="2020-01-17T06:08:08Z" level=info msg="Desired change: CREATE httpbin.example.comm TXT"
-time="2020-01-17T06:08:08Z" level=info msg="2 record(s) in zone example.comm. were successfully updated"
+time="2020-01-17T06:08:08Z" level=info msg="Desired change: CREATE httpbin.example.com TXT"
+time="2020-01-17T06:08:08Z" level=info msg="2 record(s) in zone example.com. were successfully updated"
 time="2020-01-17T06:09:08Z" level=info msg="All records are already up to date, there are no changes for the matching hosted zones"
 ```
 
