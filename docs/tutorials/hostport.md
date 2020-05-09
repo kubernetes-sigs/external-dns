@@ -9,7 +9,7 @@ The main use cases that inspired this feature is the necessity for fixed address
 
 We will go through a small example of deploying a simple Kafka with use of a headless service.
 
-### Exernal DNS
+### External DNS
 
 A simple deploy could look like this:
 ### Manifest (for clusters without RBAC enabled)
@@ -81,7 +81,7 @@ subjects:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: exeternal-dns
+  name: external-dns
 spec:
   strategy:
     type: Recreate
