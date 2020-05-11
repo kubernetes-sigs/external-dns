@@ -982,7 +982,7 @@ func TestAWSisAWSAlias(t *testing.T) {
 		{"foo.example.org", endpoint.RecordTypeCNAME, false, ""},                                 // normal CNAME
 		{"bar.eu-central-1.elb.amazonaws.com", endpoint.RecordTypeCNAME, true, "Z215JYRZR1TBD5"}, // pointing to ELB DNS name
 		{"foobar.example.org", endpoint.RecordTypeCNAME, true, "Z1234567890ABC"},                 // HZID retrieved by Route53
-		{"baz.example.org", endpoint.RecordTypeCNAME, true, "same-zone"},                         // record to be created
+		{"baz.example.org", endpoint.RecordTypeCNAME, true, sameZoneAlias},                       // record to be created
 	} {
 		ep := &endpoint.Endpoint{
 			Targets:    endpoint.Targets{tc.target},
