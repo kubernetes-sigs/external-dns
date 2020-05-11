@@ -41,7 +41,7 @@ func TestRecordTypeFilter(t *testing.T) {
 		},
 	}
 	for _, r := range records {
-		got := supportedRecordType(r.rtype)
+		got := SupportedRecordType(r.rtype)
 		if r.expect != got {
 			t.Errorf("wrong record type %s: expect %v, but got %v", r.rtype, r.expect, got)
 		}

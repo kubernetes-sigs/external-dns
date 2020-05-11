@@ -39,7 +39,7 @@ func TestEnsureTrailingDot(t *testing.T) {
 		{"example.org.", "example.org."},
 		{"8.8.8.8", "8.8.8.8"},
 	} {
-		output := ensureTrailingDot(tc.input)
+		output := EnsureTrailingDot(tc.input)
 
 		if output != tc.expected {
 			t.Errorf("expected %s, got %s", tc.expected, output)

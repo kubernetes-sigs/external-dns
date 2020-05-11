@@ -28,6 +28,32 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"sigs.k8s.io/external-dns/provider/akamai"
+	"sigs.k8s.io/external-dns/provider/alibabacloud"
+	"sigs.k8s.io/external-dns/provider/aws"
+	"sigs.k8s.io/external-dns/provider/awssd"
+	"sigs.k8s.io/external-dns/provider/azure"
+	"sigs.k8s.io/external-dns/provider/cloudflare"
+	"sigs.k8s.io/external-dns/provider/coredns"
+	"sigs.k8s.io/external-dns/provider/designate"
+	"sigs.k8s.io/external-dns/provider/digitalocean"
+	"sigs.k8s.io/external-dns/provider/dnsimple"
+	"sigs.k8s.io/external-dns/provider/dyn"
+	"sigs.k8s.io/external-dns/provider/exoscale"
+	"sigs.k8s.io/external-dns/provider/google"
+	"sigs.k8s.io/external-dns/provider/infoblox"
+	"sigs.k8s.io/external-dns/provider/inmemory"
+	"sigs.k8s.io/external-dns/provider/linode"
+	"sigs.k8s.io/external-dns/provider/ns1"
+	"sigs.k8s.io/external-dns/provider/oci"
+	"sigs.k8s.io/external-dns/provider/ovh"
+	"sigs.k8s.io/external-dns/provider/pdns"
+	"sigs.k8s.io/external-dns/provider/rcode0"
+	"sigs.k8s.io/external-dns/provider/rdns"
+	"sigs.k8s.io/external-dns/provider/rfc2136"
+	"sigs.k8s.io/external-dns/provider/transip"
+	"sigs.k8s.io/external-dns/provider/vinyldns"
+	"sigs.k8s.io/external-dns/provider/vultr"
 
 	"sigs.k8s.io/external-dns/controller"
 	"sigs.k8s.io/external-dns/endpoint"
@@ -123,8 +149,8 @@ func main() {
 	var p provider.Provider
 	switch cfg.Provider {
 	case "akamai":
-		p = provider.NewAkamaiProvider(
-			provider.AkamaiConfig{
+		p = akamai.NewAkamaiProvider(
+			akamai.AkamaiConfig{
 				DomainFilter:          domainFilter,
 				ZoneIDFilter:          zoneIDFilter,
 				ServiceConsumerDomain: cfg.AkamaiServiceConsumerDomain,
@@ -135,10 +161,10 @@ func main() {
 			},
 		)
 	case "alibabacloud":
-		p, err = provider.NewAlibabaCloudProvider(cfg.AlibabaCloudConfigFile, domainFilter, zoneIDFilter, cfg.AlibabaCloudZoneType, cfg.DryRun)
+		p, err = alibabacloud.NewAlibabaCloudProvider(cfg.AlibabaCloudConfigFile, domainFilter, zoneIDFilter, cfg.AlibabaCloudZoneType, cfg.DryRun)
 	case "aws":
-		p, err = provider.NewAWSProvider(
-			provider.AWSConfig{
+		p, err = aws.NewAWSProvider(
+			aws.AWSConfig{
 				DomainFilter:         domainFilter,
 				ZoneIDFilter:         zoneIDFilter,
 				ZoneTypeFilter:       zoneTypeFilter,
@@ -158,32 +184,32 @@ func main() {
 			log.Infof("Registry \"%s\" cannot be used with AWS Cloud Map. Switching to \"aws-sd\".", cfg.Registry)
 			cfg.Registry = "aws-sd"
 		}
-		p, err = provider.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.AWSAssumeRole, cfg.DryRun)
+		p, err = awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.AWSAssumeRole, cfg.DryRun)
 	case "azure-dns", "azure":
-		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
+		p, err = azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
 	case "azure-private-dns":
-		p, err = provider.NewAzurePrivateDNSProvider(domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureSubscriptionID, cfg.DryRun)
+		p, err = azure.NewAzurePrivateDNSProvider(domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureSubscriptionID, cfg.DryRun)
 	case "vinyldns":
-		p, err = provider.NewVinylDNSProvider(domainFilter, zoneIDFilter, cfg.DryRun)
+		p, err = vinyldns.NewVinylDNSProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "vultr":
-		p, err = provider.NewVultrProvider(domainFilter, cfg.DryRun)
+		p, err = vultr.NewVultrProvider(domainFilter, cfg.DryRun)
 	case "cloudflare":
-		p, err = provider.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareZonesPerPage, cfg.CloudflareProxied, cfg.DryRun)
+		p, err = cloudflare.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareZonesPerPage, cfg.CloudflareProxied, cfg.DryRun)
 	case "rcodezero":
-		p, err = provider.NewRcodeZeroProvider(domainFilter, cfg.DryRun, cfg.RcodezeroTXTEncrypt)
+		p, err = rcode0.NewRcodeZeroProvider(domainFilter, cfg.DryRun, cfg.RcodezeroTXTEncrypt)
 	case "google":
-		p, err = provider.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.DryRun)
+		p, err = google.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.DryRun)
 	case "digitalocean":
-		p, err = provider.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun)
+		p, err = digitalocean.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun)
 	case "ovh":
-		p, err = provider.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.DryRun)
+		p, err = ovh.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.DryRun)
 	case "linode":
-		p, err = provider.NewLinodeProvider(domainFilter, cfg.DryRun, externaldns.Version)
+		p, err = linode.NewLinodeProvider(domainFilter, cfg.DryRun, externaldns.Version)
 	case "dnsimple":
-		p, err = provider.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
+		p, err = dnsimple.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "infoblox":
-		p, err = provider.NewInfobloxProvider(
-			provider.InfobloxConfig{
+		p, err = infoblox.NewInfobloxProvider(
+			infoblox.InfobloxConfig{
 				DomainFilter: domainFilter,
 				ZoneIDFilter: zoneIDFilter,
 				Host:         cfg.InfobloxGridHost,
@@ -198,8 +224,8 @@ func main() {
 			},
 		)
 	case "dyn":
-		p, err = provider.NewDynProvider(
-			provider.DynConfig{
+		p, err = dyn.NewDynProvider(
+			dyn.DynConfig{
 				DomainFilter:  domainFilter,
 				ZoneIDFilter:  zoneIDFilter,
 				DryRun:        cfg.DryRun,
@@ -211,29 +237,29 @@ func main() {
 			},
 		)
 	case "coredns", "skydns":
-		p, err = provider.NewCoreDNSProvider(domainFilter, cfg.CoreDNSPrefix, cfg.DryRun)
+		p, err = coredns.NewCoreDNSProvider(domainFilter, cfg.CoreDNSPrefix, cfg.DryRun)
 	case "rdns":
-		p, err = provider.NewRDNSProvider(
-			provider.RDNSConfig{
+		p, err = rdns.NewRDNSProvider(
+			rdns.RDNSConfig{
 				DomainFilter: domainFilter,
 				DryRun:       cfg.DryRun,
 			},
 		)
 	case "exoscale":
-		p, err = provider.NewExoscaleProvider(cfg.ExoscaleEndpoint, cfg.ExoscaleAPIKey, cfg.ExoscaleAPISecret, cfg.DryRun, provider.ExoscaleWithDomain(domainFilter), provider.ExoscaleWithLogging()), nil
+		p, err = exoscale.NewExoscaleProvider(cfg.ExoscaleEndpoint, cfg.ExoscaleAPIKey, cfg.ExoscaleAPISecret, cfg.DryRun, exoscale.ExoscaleWithDomain(domainFilter), exoscale.ExoscaleWithLogging()), nil
 	case "inmemory":
-		p, err = provider.NewInMemoryProvider(provider.InMemoryInitZones(cfg.InMemoryZones), provider.InMemoryWithDomain(domainFilter), provider.InMemoryWithLogging()), nil
+		p, err = inmemory.NewInMemoryProvider(inmemory.InMemoryInitZones(cfg.InMemoryZones), inmemory.InMemoryWithDomain(domainFilter), inmemory.InMemoryWithLogging()), nil
 	case "designate":
-		p, err = provider.NewDesignateProvider(domainFilter, cfg.DryRun)
+		p, err = designate.NewDesignateProvider(domainFilter, cfg.DryRun)
 	case "pdns":
-		p, err = provider.NewPDNSProvider(
+		p, err = pdns.NewPDNSProvider(
 			ctx,
-			provider.PDNSConfig{
+			pdns.PDNSConfig{
 				DomainFilter: domainFilter,
 				DryRun:       cfg.DryRun,
 				Server:       cfg.PDNSServer,
 				APIKey:       cfg.PDNSAPIKey,
-				TLSConfig: provider.TLSConfig{
+				TLSConfig: pdns.TLSConfig{
 					TLSEnabled:            cfg.PDNSTLSEnabled,
 					CAFilePath:            cfg.TLSCA,
 					ClientCertFilePath:    cfg.TLSClientCert,
@@ -242,16 +268,16 @@ func main() {
 			},
 		)
 	case "oci":
-		var config *provider.OCIConfig
-		config, err = provider.LoadOCIConfig(cfg.OCIConfigFile)
+		var config *oci.OCIConfig
+		config, err = oci.LoadOCIConfig(cfg.OCIConfigFile)
 		if err == nil {
-			p, err = provider.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.DryRun)
+			p, err = oci.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.DryRun)
 		}
 	case "rfc2136":
-		p, err = provider.NewRfc2136Provider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, nil)
+		p, err = rfc2136.NewRfc2136Provider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, nil)
 	case "ns1":
-		p, err = provider.NewNS1Provider(
-			provider.NS1Config{
+		p, err = ns1.NewNS1Provider(
+			ns1.NS1Config{
 				DomainFilter: domainFilter,
 				ZoneIDFilter: zoneIDFilter,
 				NS1Endpoint:  cfg.NS1Endpoint,
@@ -260,7 +286,7 @@ func main() {
 			},
 		)
 	case "transip":
-		p, err = provider.NewTransIPProvider(cfg.TransIPAccountName, cfg.TransIPPrivateKeyFile, domainFilter, cfg.DryRun)
+		p, err = transip.NewTransIPProvider(cfg.TransIPAccountName, cfg.TransIPPrivateKeyFile, domainFilter, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
@@ -275,7 +301,7 @@ func main() {
 	case "txt":
 		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTOwnerID, cfg.TXTCacheInterval)
 	case "aws-sd":
-		r, err = registry.NewAWSSDRegistry(p.(*provider.AWSSDProvider), cfg.TXTOwnerID)
+		r, err = registry.NewAWSSDRegistry(p.(*awssd.AWSSDProvider), cfg.TXTOwnerID)
 	default:
 		log.Fatalf("unknown registry: %s", cfg.Registry)
 	}

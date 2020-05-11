@@ -42,8 +42,8 @@ func (k *contextKey) String() string { return "provider context value " + k.name
 // type []*endpoint.Endpoint.
 var RecordsContextKey = &contextKey{"records"}
 
-// ensureTrailingDot ensures that the hostname receives a trailing dot if it hasn't already.
-func ensureTrailingDot(hostname string) string {
+// EnsureTrailingDot ensures that the hostname receives a trailing dot if it hasn't already.
+func EnsureTrailingDot(hostname string) string {
 	if net.ParseIP(hostname) != nil {
 		return hostname
 	}
