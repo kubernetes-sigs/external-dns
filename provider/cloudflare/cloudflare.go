@@ -210,7 +210,7 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 	for i, desired := range changes.UpdateNew {
 		current := changes.UpdateOld[i]
 
-		add, remove, leave := difference(current.Targets, desired.Targets)
+		add, remove, leave := provider.Difference(current.Targets, desired.Targets)
 
 		for _, a := range add {
 			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareCreate, desired, a))
