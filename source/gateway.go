@@ -18,6 +18,7 @@ package source
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -174,7 +175,7 @@ func (sc *gatewaySource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
-func (sc *gatewaySource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+func (sc *gatewaySource) AddEventHandler(ctx context.Context, handler func()) {
 }
 
 func (sc *gatewaySource) endpointsFromTemplate2(gateway networkingv1alpha3.Gateway) ([]*endpoint.Endpoint, error) {

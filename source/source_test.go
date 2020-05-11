@@ -17,12 +17,15 @@ limitations under the License.
 package source
 
 import (
+	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 )
 
 func TestGetTTLFromAnnotations(t *testing.T) {
@@ -104,4 +107,36 @@ func TestSuitableType(t *testing.T) {
 			t.Errorf("expected %s, got %s", tc.expected, recordType)
 		}
 	}
+}
+
+// TestSourceEventHandler that AddEventHandler calls provided handler
+func TestSourceEventHandler(t *testing.T) {
+	source := new(testutils.MockSource)
+
+	handlerCh := make(chan bool)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Define and register a simple handler that sends a message to a channel to show it was called.
+	handler := func() {
+		handlerCh <- true
+	}
+	// Example of preventing handler from being called more than once every 5 seconds.
+	source.AddEventHandler(ctx, handler)
+
+	// Send timeout message after 10 seconds to fail test if handler is not called.
+	go func() {
+		time.Sleep(10 * time.Second)
+		cancel()
+	}()
+
+	// Wait until we either receive a message from handlerCh or timeoutCh channel after 10 seconds.
+	select {
+	case msg := <-handlerCh:
+		assert.True(t, msg)
+	case <-ctx.Done():
+		assert.Fail(t, "timed out waiting for event handler to be called")
+	}
+
+	close(handlerCh)
 }

@@ -17,6 +17,7 @@ limitations under the License.
 package testutils
 
 import (
+	"context"
 	"time"
 
 	"github.com/stretchr/testify/mock"
@@ -40,21 +41,18 @@ func (m *MockSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints.([]*endpoint.Endpoint), args.Error(1)
 }
 
-// AddEventHandler adds an event handler function that's called when sources that support such a thing have changed.
-func (m *MockSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
-	// Execute callback handler no more than once per minInterval, until a message on stopChan is received.
+// AddEventHandler adds an event handler that should be triggered if something in source changes
+func (m *MockSource) AddEventHandler(ctx context.Context, handler func()) {
 	go func() {
-		var lastCallbackTime time.Time
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+
 		for {
 			select {
-			case <-stopChan:
+			case <-ctx.Done():
 				return
-			default:
-				now := time.Now()
-				if now.After(lastCallbackTime.Add(minInterval)) {
-					handler()
-					lastCallbackTime = time.Now()
-				}
+			case <-ticker.C:
+				handler()
 			}
 		}
 	}()
