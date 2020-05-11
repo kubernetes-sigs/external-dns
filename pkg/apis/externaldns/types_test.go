@@ -327,6 +327,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_INMEMORY_ZONE":                   "example.org\ncompany.com",
 				"EXTERNAL_DNS_OVH_ENDPOINT":                    "ovh-ca",
 				"EXTERNAL_DNS_DOMAIN_FILTER":                   "example.org\ncompany.com",
+				"EXTERNAL_DNS_SUBDOMAIN_FILTER":                "foo.example.org",
 				"EXTERNAL_DNS_EXCLUDE_DOMAINS":                 "xapi.example.org\nxapi.company.com",
 				"EXTERNAL_DNS_PDNS_SERVER":                     "http://ns.example.com:8081",
 				"EXTERNAL_DNS_PDNS_API_KEY":                    "some-secret-key",
