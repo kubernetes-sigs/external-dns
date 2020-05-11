@@ -53,7 +53,7 @@ func EnsureTrailingDot(hostname string) string {
 
 // Tells which entries need to be respectively
 // added, removed, or left untouched for "current" to be transformed to "desired"
-func difference(current, desired []string) (add []string, remove []string, leave []string) {
+func Difference(current, desired []string) (add []string, remove []string, leave []string) {
 	index := make(map[string]struct{}, len(current))
 	for _, x := range current {
 		index[x] = struct{}{}
