@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider/inmemory"
 )
 
 const (
@@ -42,7 +43,7 @@ func TestTXTRegistry(t *testing.T) {
 }
 
 func testTXTRegistryNew(t *testing.T) {
-	p := provider.NewInMemoryProvider()
+	p := inmemory.NewInMemoryProvider()
 	_, err := NewTXTRegistry(p, "txt", "", time.Hour)
 	require.Error(t, err)
 
@@ -68,7 +69,7 @@ func testTXTRegistryRecords(t *testing.T) {
 
 func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	ctx := context.Background()
-	p := provider.NewInMemoryProvider()
+	p := inmemory.NewInMemoryProvider()
 	p.CreateZone(testZone)
 	p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -172,7 +173,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 }
 
 func testTXTRegistryRecordsNoPrefix(t *testing.T) {
-	p := provider.NewInMemoryProvider()
+	p := inmemory.NewInMemoryProvider()
 	ctx := context.Background()
 	p.CreateZone(testZone)
 	p.ApplyChanges(ctx, &plan.Changes{
@@ -252,7 +253,7 @@ func testTXTRegistryApplyChanges(t *testing.T) {
 }
 
 func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
-	p := provider.NewInMemoryProvider()
+	p := inmemory.NewInMemoryProvider()
 	p.CreateZone(testZone)
 	ctxEndpoints := []*endpoint.Endpoint{}
 	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
@@ -343,7 +344,7 @@ func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {
 }
 
 func testTXTRegistryApplyChangesNoPrefix(t *testing.T) {
-	p := provider.NewInMemoryProvider()
+	p := inmemory.NewInMemoryProvider()
 	p.CreateZone(testZone)
 	ctxEndpoints := []*endpoint.Endpoint{}
 	ctx := context.WithValue(context.Background(), provider.RecordsContextKey, ctxEndpoints)
