@@ -169,7 +169,7 @@ func main() {
 		p, err = provider.NewVultrProvider(domainFilter, cfg.DryRun)
 
 	case "ultradns":
-		p, err = provider.NewUltraDNSProvider(domainFilter, cfg.DryRun)
+		p, err = provider.NewUltraDNSProvider(domainFilter, cfg.DryRun )
 
 	case "cloudflare":
 		p, err = provider.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareZonesPerPage, cfg.CloudflareProxied, cfg.DryRun)
