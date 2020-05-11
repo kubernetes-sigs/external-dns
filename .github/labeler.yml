@@ -65,5 +65,5 @@ provider/vinyldns: provider/vinyldns*
 # Add 'provider/vultr' in file which starts with vultr
 provider/vultr: provider/vultr*
 
-# Add 'provider/ultradns' in file which starts with vultr
-provider/vultr: provider/ultradns*
+# Add 'provider/ultradns' in file which starts with ultradns
+provider/ultradns: provider/ultradns*
