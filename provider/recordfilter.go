@@ -16,9 +16,9 @@ limitations under the License.
 
 package provider
 
-// supportedRecordType returns true only for supported record types.
+// SupportedRecordType returns true only for supported record types.
 // Currently A, CNAME, SRV, and TXT record types are supported.
-func supportedRecordType(recordType string) bool {
+func SupportedRecordType(recordType string) bool {
 	switch recordType {
 	case "A", "CNAME", "SRV", "TXT":
 		return true
