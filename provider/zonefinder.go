@@ -18,13 +18,13 @@ package provider
 
 import "strings"
 
-type zoneIDName map[string]string
+type ZoneIDName map[string]string
 
-func (z zoneIDName) Add(zoneID, zoneName string) {
+func (z ZoneIDName) Add(zoneID, zoneName string) {
 	z[zoneID] = zoneName
 }
 
-func (z zoneIDName) FindZone(hostname string) (suitableZoneID, suitableZoneName string) {
+func (z ZoneIDName) FindZone(hostname string) (suitableZoneID, suitableZoneName string) {
 	for zoneID, zoneName := range z {
 		if hostname == zoneName || strings.HasSuffix(hostname, "."+zoneName) {
 			if suitableZoneName == "" || len(zoneName) > len(suitableZoneName) {
