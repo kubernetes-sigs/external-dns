@@ -400,14 +400,14 @@ func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 func (p *AWSProvider) submitChanges(ctx context.Context, changes []*route53.Change, zones map[string]*route53.HostedZone) error {
 	// return early if there is nothing to change
 	if len(changes) == 0 {
-		log.Info("All records are already up to date")
+		log.Debug("All records are already up to date")
 		return nil
 	}
 
 	// separate into per-zone change sets to be passed to the API.
 	changesByZone := changesByZone(zones, changes)
 	if len(changesByZone) == 0 {
-		log.Info("All records are already up to date, there are no changes for the matching hosted zones")
+		log.Debug("All records are already up to date, there are no changes for the matching hosted zones")
 	}
 
 	var failedZones []string
