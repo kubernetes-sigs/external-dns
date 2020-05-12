@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 const (
@@ -73,6 +74,7 @@ type AWSSDClient interface {
 
 // AWSSDProvider is an implementation of Provider for AWS Cloud Map.
 type AWSSDProvider struct {
+	provider.BaseProvider
 	client AWSSDClient
 	dryRun bool
 	// only consider namespaces ending in this suffix

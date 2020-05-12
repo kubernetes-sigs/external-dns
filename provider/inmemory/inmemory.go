@@ -25,6 +25,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 var (
@@ -43,6 +44,7 @@ var (
 // InMemoryProvider - dns provider only used for testing purposes
 // initialized as dns provider with no records
 type InMemoryProvider struct {
+	provider.BaseProvider
 	domain         endpoint.DomainFilter
 	client         *inMemoryClient
 	filter         *filter

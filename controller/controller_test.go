@@ -35,6 +35,7 @@ import (
 
 // mockProvider returns mock endpoints and validates changes.
 type mockProvider struct {
+	provider.BaseProvider
 	RecordsStore  []*endpoint.Endpoint
 	ExpectChanges *plan.Changes
 }
