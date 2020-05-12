@@ -253,8 +253,8 @@ func (p *InfobloxProvider) zones() ([]ibclient.ZoneAuth, error) {
 		}
 
 		// Skip Reversemapping-zones as long as creation of PTR records is not supported
-		matchrevers, _ := regexp.MatchString("(/[0-9]+|.arpa)$", zone.Fqdn)
-		if matchrevers {
+		matchReverse, _ := regexp.MatchString("(/[0-9]+|.arpa)$", zone.Fqdn)
+		if matchReverse {
 			continue
 		}
 
