@@ -87,3 +87,7 @@ func (sdr *AWSSDRegistry) updateLabels(endpoints []*endpoint.Endpoint) {
 		ep.Labels[endpoint.AWSSDDescriptionLabel] = ep.Labels.Serialize(false)
 	}
 }
+
+func (sdr *AWSSDRegistry) PropertyValuesEqual(name string, previous string, current string) bool {
+	return sdr.provider.PropertyValuesEqual(name, previous, current)
+}

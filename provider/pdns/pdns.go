@@ -222,6 +222,7 @@ func (c *PDNSAPIClient) PatchZone(zoneID string, zoneStruct pgo.Zone) (resp *htt
 
 // PDNSProvider is an implementation of the Provider interface for PowerDNS
 type PDNSProvider struct {
+	provider.BaseProvider
 	client PDNSAPIProvider
 }
 

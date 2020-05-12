@@ -49,6 +49,7 @@ type InfobloxConfig struct {
 
 // InfobloxProvider implements the DNS provider for Infoblox.
 type InfobloxProvider struct {
+	provider.BaseProvider
 	client       ibclient.IBConnector
 	domainFilter endpoint.DomainFilter
 	zoneIDFilter provider.ZoneIDFilter
