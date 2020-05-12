@@ -44,7 +44,7 @@ func TestTXTRegistry(t *testing.T) {
 
 func testTXTRegistryNew(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
-	_, err := NewTXTRegistry(p, "txt", "", time.Hour)
+	_, err := NewTXTRegistry(p, "txt", "", "", time.Hour)
 	require.Error(t, err)
 
 	_, err = NewTXTRegistry(p, "", "txt", "", time.Hour)
