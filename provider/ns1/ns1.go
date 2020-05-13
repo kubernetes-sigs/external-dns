@@ -85,19 +85,21 @@ func (n NS1DomainService) ListZones() ([]*dns.Zone, *http.Response, error) {
 
 // NS1Config passes cli args to the NS1Provider
 type NS1Config struct {
-	DomainFilter endpoint.DomainFilter
-	ZoneIDFilter provider.ZoneIDFilter
-	NS1Endpoint  string
-	NS1IgnoreSSL bool
-	DryRun       bool
+	DomainFilter  endpoint.DomainFilter
+	ZoneIDFilter  provider.ZoneIDFilter
+	NS1Endpoint   string
+	NS1IgnoreSSL  bool
+	DryRun        bool
+	MinTTLSeconds int
 }
 
 // NS1Provider is the NS1 provider
 type NS1Provider struct {
-	client       NS1DomainClient
-	domainFilter endpoint.DomainFilter
-	zoneIDFilter provider.ZoneIDFilter
-	dryRun       bool
+	client        NS1DomainClient
+	domainFilter  endpoint.DomainFilter
+	zoneIDFilter  provider.ZoneIDFilter
+	dryRun        bool
+	minTTLSeconds int
 }
 
 // NewNS1Provider creates a new NS1 Provider
@@ -134,9 +136,10 @@ func newNS1ProviderWithHTTPClient(config NS1Config, client *http.Client) (*NS1Pr
 	apiClient := api.NewClient(client, clientArgs...)
 
 	provider := &NS1Provider{
-		client:       NS1DomainService{apiClient},
-		domainFilter: config.DomainFilter,
-		zoneIDFilter: config.ZoneIDFilter,
+		client:        NS1DomainService{apiClient},
+		domainFilter:  config.DomainFilter,
+		zoneIDFilter:  config.ZoneIDFilter,
+		minTTLSeconds: config.MinTTLSeconds,
 	}
 	return provider, nil
 }
