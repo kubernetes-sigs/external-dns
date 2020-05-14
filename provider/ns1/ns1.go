@@ -178,13 +178,16 @@ func (p *NS1Provider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 }
 
 // ns1BuildRecord returns a dns.Record for a change set
-func ns1BuildRecord(zoneName string, change *ns1Change) *dns.Record {
+func (p *NS1Provider) ns1BuildRecord(zoneName string, change *ns1Change) *dns.Record {
 	record := dns.NewRecord(zoneName, change.Endpoint.DNSName, change.Endpoint.RecordType)
 	for _, v := range change.Endpoint.Targets {
 		record.AddAnswer(dns.NewAnswer(strings.Split(v, " ")))
 	}
-	// set detault ttl
+	// set detault ttl, but respect minTTLSeconds
 	var ttl = ns1DefaultTTL
+	if p.minTTLSeconds > ttl {
+		ttl = p.minTTLSeconds
+	}
 	if change.Endpoint.RecordTTL.IsConfigured() {
 		ttl = int(change.Endpoint.RecordTTL)
 	}
@@ -209,7 +212,7 @@ func (p *NS1Provider) ns1SubmitChanges(changes []*ns1Change) error {
 	changesByZone := ns1ChangesByZone(zones, changes)
 	for zoneName, changes := range changesByZone {
 		for _, change := range changes {
-			record := ns1BuildRecord(zoneName, change)
+			record := p.ns1BuildRecord(zoneName, change)
 			logFields := log.Fields{
 				"record": record.Domain,
 				"type":   record.Type,
