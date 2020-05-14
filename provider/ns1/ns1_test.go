@@ -129,9 +129,10 @@ func (m *MockNS1ListZonesFail) ListZones() ([]*dns.Zone, *http.Response, error) 
 
 func TestNS1Records(t *testing.T) {
 	provider := &NS1Provider{
-		client:       &MockNS1DomainClient{},
-		domainFilter: endpoint.NewDomainFilter([]string{"foo.com."}),
-		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+		client:        &MockNS1DomainClient{},
+		domainFilter:  endpoint.NewDomainFilter([]string{"foo.com."}),
+		zoneIDFilter:  provider.NewZoneIDFilter([]string{""}),
+		minTTLSeconds: 3600,
 	}
 	ctx := context.Background()
 
@@ -195,10 +196,18 @@ func TestNS1BuildRecord(t *testing.T) {
 			RecordType: "A",
 		},
 	}
-	record := ns1BuildRecord("foo.com", change)
+
+	provider := &NS1Provider{
+		client:        &MockNS1DomainClient{},
+		domainFilter:  endpoint.NewDomainFilter([]string{"foo.com."}),
+		zoneIDFilter:  provider.NewZoneIDFilter([]string{""}),
+		minTTLSeconds: 300,
+	}
+
+	record := provider.ns1BuildRecord("foo.com", change)
 	assert.Equal(t, "foo.com", record.Zone)
 	assert.Equal(t, "new.foo.com", record.Domain)
-	assert.Equal(t, ns1DefaultTTL, record.TTL)
+	assert.Equal(t, 300, record.TTL)
 
 	changeWithTTL := &ns1Change{
 		Action: ns1Create,
@@ -206,13 +215,13 @@ func TestNS1BuildRecord(t *testing.T) {
 			DNSName:    "new-b",
 			Targets:    endpoint.Targets{"target"},
 			RecordType: "A",
-			RecordTTL:  100,
+			RecordTTL:  3600,
 		},
 	}
-	record = ns1BuildRecord("foo.com", changeWithTTL)
+	record = provider.ns1BuildRecord("foo.com", changeWithTTL)
 	assert.Equal(t, "foo.com", record.Zone)
 	assert.Equal(t, "new-b.foo.com", record.Domain)
-	assert.Equal(t, 100, record.TTL)
+	assert.Equal(t, 3600, record.TTL)
 }
 
 func TestNS1ApplyChanges(t *testing.T) {
