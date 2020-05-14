@@ -7,7 +7,7 @@ package hetzner
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os"
 	"strings"
 
@@ -41,7 +41,7 @@ type HetznerProvider struct {
 func NewHetznerProvider(ctx context.Context, domainFilter endpoint.DomainFilter, dryRun bool) (*HetznerProvider, error) {
 	token, ok := os.LookupEnv("HETZNER_TOKEN")
 	if !ok {
-		return nil, fmt.Errorf("No token found")
+		return nil, errors.New("no environment variable HETZNER_TOKEN provided")
 	}
 
 	provider := &HetznerProvider{
