@@ -91,7 +91,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	informerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
+	err = poll(time.Second, 60*time.Second, func() (bool, error) {
 		return ingressInformer.Informer().HasSynced(), nil
 	})
 	if err != nil {
