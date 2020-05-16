@@ -26,7 +26,9 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/config"
 )
 
 const (
@@ -223,4 +225,25 @@ func getLabelSelector(annotationFilter string) (labels.Selector, error) {
 func matchLabelSelector(selector labels.Selector, srcAnnotations map[string]string) bool {
 	annotations := labels.Set(srcAnnotations)
 	return selector.Matches(annotations)
+}
+
+func poll(interval time.Duration, timeout time.Duration, condition wait.ConditionFunc) error {
+	if config.FAST_POLL {
+		time.Sleep(5 * time.Millisecond)
+
+		ok, err := condition()
+
+		if err != nil {
+			return err
+		}
+
+		if ok {
+			return nil
+		}
+
+		interval = 50 * time.Millisecond
+		timeout = 10 * time.Second
+	}
+
+	return wait.Poll(interval, timeout, condition)
 }

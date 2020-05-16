@@ -46,6 +46,15 @@ func TestEnsureTrailingDot(t *testing.T) {
 	}
 }
 
+func TestDifference(t *testing.T) {
+	current := []string{"foo", "bar"}
+	desired := []string{"bar", "baz"}
+	add, remove, leave := Difference(current, desired)
+	assert.Equal(t, add, []string{"baz"})
+	assert.Equal(t, remove, []string{"foo"})
+	assert.Equal(t, leave, []string{"bar"})
+}
+
 func TestBaseProviderPropertyEquality(t *testing.T) {
 	p := BaseProvider{}
 	assert.True(t, p.PropertyValuesEqual("some.property", "", ""), "Both properties not present")
