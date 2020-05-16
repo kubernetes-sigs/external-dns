@@ -121,8 +121,11 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	informerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
-		return serviceInformer.Informer().HasSynced(), nil
+	err = poll(time.Second, 60*time.Second, func() (bool, error) {
+		return serviceInformer.Informer().HasSynced() &&
+			endpointsInformer.Informer().HasSynced() &&
+			podInformer.Informer().HasSynced() &&
+			nodeInformer.Informer().HasSynced(), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to sync cache: %v", err)
