@@ -51,9 +51,10 @@ func EnsureTrailingDot(hostname string) string {
 	return strings.TrimSuffix(hostname, ".") + "."
 }
 
-// Tells which entries need to be respectively
+// Difference tells which entries need to be respectively
 // added, removed, or left untouched for "current" to be transformed to "desired"
-func Difference(current, desired []string) (add []string, remove []string, leave []string) {
+func Difference(current, desired []string) ([]string, []string, []string) {
+	add, remove, leave := []string{}, []string{}, []string{}
 	index := make(map[string]struct{}, len(current))
 	for _, x := range current {
 		index[x] = struct{}{}
@@ -70,5 +71,5 @@ func Difference(current, desired []string) (add []string, remove []string, leave
 	for x := range index {
 		remove = append(remove, x)
 	}
-	return
+	return add, remove, leave
 }
