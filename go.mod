@@ -28,7 +28,6 @@ require (
 	github.com/gobs/pretty v0.0.0-20180724170744-09732c25a95b // indirect
 	github.com/golang/sync v0.0.0-20180314180146-1d60e4601c6f
 	github.com/gophercloud/gophercloud v0.1.0
-	github.com/heptio/contour v0.15.0
 	github.com/infobloxopen/infoblox-go-client v0.0.0-20180606155407-61dc5f9b0a65
 	github.com/linki/instrumented_http v0.2.0
 	github.com/linode/linodego v0.3.0
@@ -42,7 +41,8 @@ require (
 	github.com/oracle/oci-go-sdk v1.8.0
 	github.com/ovh/go-ovh v0.0.0-20181109152953-ba5adb4cf014
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.0.0
+	github.com/projectcontour/contour v1.4.0
+	github.com/prometheus/client_golang v1.1.0
 	github.com/sanyu/dynectsoap v0.0.0-20181203081243-b83de5edc4e0
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/sirupsen/logrus v1.4.2
@@ -53,17 +53,17 @@ require (
 	github.com/vinyldns/go-vinyldns v0.0.0-20190611170422-7119fe55ed92
 	github.com/vultr/govultr v0.3.2
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20200401174654-e694b7bb0875
-	golang.org/x/net v0.0.0-20190923162816-aa69164e4478
+	golang.org/x/net v0.0.0-20191004110552-13f9640d40b9
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	google.golang.org/api v0.9.0
 	gopkg.in/ns1/ns1-go.v2 v2.0.0-20190322154155-0dafb5275fd1
-	gopkg.in/yaml.v2 v2.2.5
+	gopkg.in/yaml.v2 v2.2.7
 	istio.io/api v0.0.0-20190820204432-483f2547d882
 	istio.io/istio v0.0.0-20190322063008-2b1331886076
-	k8s.io/api v0.0.0-20190620084959-7cf5895f2711
-	k8s.io/apimachinery v0.0.0-20190612205821-1799e75a0719
+	k8s.io/api v0.17.0
+	k8s.io/apimachinery v0.17.0
 	k8s.io/client-go v10.0.0+incompatible
-	k8s.io/klog v0.3.1
+	k8s.io/klog v1.0.0
 )
 
 replace (
@@ -79,4 +79,5 @@ replace (
 	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190817221809-bf4de9df677c
 	k8s.io/client-go => k8s.io/client-go v0.0.0-20190817222206-ee6c071a42cf
 	k8s.io/klog => github.com/mikkeloscar/knolog v0.0.0-20190326191552-80742771eb6b
+	github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.8.7-0.20190821215049-f062b07a671a
 )

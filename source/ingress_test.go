@@ -26,7 +26,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -1018,7 +1017,7 @@ func testIngressEndpoints(t *testing.T) {
 			var err error
 
 			// wait up to a few seconds for new resources to appear in informer cache.
-			err = wait.Poll(time.Second, 3*time.Second, func() (bool, error) {
+			err = poll(time.Second, 3*time.Second, func() (bool, error) {
 				res, err = ingressSource.Endpoints()
 				if err != nil {
 					// stop waiting if we get an error
