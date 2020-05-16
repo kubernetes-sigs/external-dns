@@ -22,6 +22,8 @@ import (
 	"testing"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
@@ -43,4 +45,13 @@ func TestEnsureTrailingDot(t *testing.T) {
 			t.Errorf("expected %s, got %s", tc.expected, output)
 		}
 	}
+}
+
+func TestDifference(t *testing.T) {
+	current := []string{"foo", "bar"}
+	desired := []string{"bar", "baz"}
+	add, remove, leave := Difference(current, desired)
+	assert.Equal(t, add, []string{"baz"})
+	assert.Equal(t, remove, []string{"foo"})
+	assert.Equal(t, leave, []string{"bar"})
 }
