@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -224,8 +223,7 @@ func (pr affixNameMapper) toEndpointName(txtDNSName string) string {
 	}
 
 	if len(pr.suffix) > 0 {
-		regex := regexp.MustCompile(`\.`)
-		DNSName := regex.Split(lowerDNSName, 2)
+		DNSName := strings.SplitN(lowerDNSName, ".", 2)
 		if strings.HasSuffix(DNSName[0], pr.suffix) {
 			return strings.TrimSuffix(DNSName[0], pr.suffix) + "." + DNSName[1]
 		}
@@ -234,8 +232,7 @@ func (pr affixNameMapper) toEndpointName(txtDNSName string) string {
 }
 
 func (pr affixNameMapper) toTXTName(endpointDNSName string) string {
-	regex := regexp.MustCompile(`\.`)
-	DNSName := regex.Split(endpointDNSName, 2)
+	DNSName := strings.SplitN(endpointDNSName, ".", 2)
 	return pr.prefix + DNSName[0] + pr.suffix + "." + DNSName[1]
 }
 
