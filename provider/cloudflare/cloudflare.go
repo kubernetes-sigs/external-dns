@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -112,8 +111,8 @@ type CloudFlareProvider struct {
 
 // cloudFlareChange differentiates between ChangActions
 type cloudFlareChange struct {
-	Action            string
-	ResourceRecordSet []cloudflare.DNSRecord
+	Action         string
+	ResourceRecord cloudflare.DNSRecord
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
@@ -200,15 +199,39 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	proxiedByDefault := p.proxiedByDefault
+	cloudflareChanges := []*cloudFlareChange{}
 
-	combinedChanges := make([]*cloudFlareChange, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
+	for _, endpoint := range changes.Create {
+		for _, target := range endpoint.Targets {
+			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareCreate, endpoint, target))
+		}
+	}
 
-	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareCreate, changes.Create, proxiedByDefault)...)
-	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareUpdate, changes.UpdateNew, proxiedByDefault)...)
-	combinedChanges = append(combinedChanges, newCloudFlareChanges(cloudFlareDelete, changes.Delete, proxiedByDefault)...)
+	for i, desired := range changes.UpdateNew {
+		current := changes.UpdateOld[i]
 
-	return p.submitChanges(ctx, combinedChanges)
+		add, remove, leave := provider.Difference(current.Targets, desired.Targets)
+
+		for _, a := range add {
+			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareCreate, desired, a))
+		}
+
+		for _, a := range leave {
+			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareUpdate, desired, a))
+		}
+
+		for _, a := range remove {
+			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, current, a))
+		}
+	}
+
+	for _, endpoint := range changes.Delete {
+		for _, target := range endpoint.Targets {
+			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, endpoint, target))
+		}
+	}
+
+	return p.submitChanges(ctx, cloudflareChanges)
 }
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
@@ -232,12 +255,11 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 		}
 		for _, change := range changes {
 			logFields := log.Fields{
-				"record":  change.ResourceRecordSet[0].Name,
-				"type":    change.ResourceRecordSet[0].Type,
-				"ttl":     change.ResourceRecordSet[0].TTL,
-				"targets": len(change.ResourceRecordSet),
-				"action":  change.Action,
-				"zone":    zoneID,
+				"record": change.ResourceRecord.Name,
+				"type":   change.ResourceRecord.Type,
+				"ttl":    change.ResourceRecord.TTL,
+				"action": change.Action,
+				"zone":   zoneID,
 			}
 
 			log.WithFields(logFields).Info("Changing record.")
@@ -246,24 +268,30 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 				continue
 			}
 
-			recordIDs := p.getRecordIDs(records, change.ResourceRecordSet[0])
-
-			// to simplify bookkeeping for multiple records, an update is executed as delete+create
-			if change.Action == cloudFlareDelete || change.Action == cloudFlareUpdate {
-				for _, recordID := range recordIDs {
-					err := p.Client.DeleteDNSRecord(zoneID, recordID)
-					if err != nil {
-						log.WithFields(logFields).Errorf("failed to delete record: %v", err)
-					}
+			if change.Action == cloudFlareUpdate {
+				recordID := p.getRecordID(records, change.ResourceRecord)
+				if recordID == "" {
+					log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
+					continue
 				}
-			}
-
-			if change.Action == cloudFlareCreate || change.Action == cloudFlareUpdate {
-				for _, record := range change.ResourceRecordSet {
-					_, err := p.Client.CreateDNSRecord(zoneID, record)
-					if err != nil {
-						log.WithFields(logFields).Errorf("failed to create record: %v", err)
-					}
+				err := p.Client.UpdateDNSRecord(zoneID, recordID, change.ResourceRecord)
+				if err != nil {
+					log.WithFields(logFields).Errorf("failed to delete record: %v", err)
+				}
+			} else if change.Action == cloudFlareDelete {
+				recordID := p.getRecordID(records, change.ResourceRecord)
+				if recordID == "" {
+					log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
+					continue
+				}
+				err := p.Client.DeleteDNSRecord(zoneID, recordID)
+				if err != nil {
+					log.WithFields(logFields).Errorf("failed to delete record: %v", err)
+				}
+			} else if change.Action == cloudFlareCreate {
+				_, err := p.Client.CreateDNSRecord(zoneID, change.ResourceRecord)
+				if err != nil {
+					log.WithFields(logFields).Errorf("failed to create record: %v", err)
 				}
 			}
 		}
@@ -282,9 +310,9 @@ func (p *CloudFlareProvider) changesByZone(zones []cloudflare.Zone, changeSet []
 	}
 
 	for _, c := range changeSet {
-		zoneID, _ := zoneNameIDMapper.FindZone(c.ResourceRecordSet[0].Name)
+		zoneID, _ := zoneNameIDMapper.FindZone(c.ResourceRecord.Name)
 		if zoneID == "" {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", c.ResourceRecordSet[0].Name)
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", c.ResourceRecord.Name)
 			continue
 		}
 		changes[zoneID] = append(changes[zoneID], c)
@@ -293,51 +321,36 @@ func (p *CloudFlareProvider) changesByZone(zones []cloudflare.Zone, changeSet []
 	return changes
 }
 
-func (p *CloudFlareProvider) getRecordIDs(records []cloudflare.DNSRecord, record cloudflare.DNSRecord) []string {
-	recordIDs := make([]string, 0)
+func (p *CloudFlareProvider) getRecordID(records []cloudflare.DNSRecord, record cloudflare.DNSRecord) string {
 	for _, zoneRecord := range records {
-		if zoneRecord.Name == record.Name && zoneRecord.Type == record.Type {
-			recordIDs = append(recordIDs, zoneRecord.ID)
+		if zoneRecord.Name == record.Name && zoneRecord.Type == record.Type && zoneRecord.Content == record.Content {
+			return zoneRecord.ID
 		}
 	}
-	sort.Strings(recordIDs)
-	return recordIDs
+	return ""
 }
 
-// newCloudFlareChanges returns a collection of Changes based on the given records and action.
-func newCloudFlareChanges(action string, endpoints []*endpoint.Endpoint, proxiedByDefault bool) []*cloudFlareChange {
-	changes := make([]*cloudFlareChange, 0, len(endpoints))
-
-	for _, endpoint := range endpoints {
-		changes = append(changes, newCloudFlareChange(action, endpoint, proxiedByDefault))
-	}
-
-	return changes
-}
-
-func newCloudFlareChange(action string, endpoint *endpoint.Endpoint, proxiedByDefault bool) *cloudFlareChange {
+func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoint.Endpoint, target string) *cloudFlareChange {
 	ttl := defaultCloudFlareRecordTTL
-	proxied := shouldBeProxied(endpoint, proxiedByDefault)
+	proxied := shouldBeProxied(endpoint, p.proxiedByDefault)
 
 	if endpoint.RecordTTL.IsConfigured() {
 		ttl = int(endpoint.RecordTTL)
 	}
 
-	resourceRecordSet := make([]cloudflare.DNSRecord, len(endpoint.Targets))
+	if len(endpoint.Targets) > 1 {
+		log.Errorf("Updates should have just one target")
+	}
 
-	for i := range endpoint.Targets {
-		resourceRecordSet[i] = cloudflare.DNSRecord{
+	return &cloudFlareChange{
+		Action: action,
+		ResourceRecord: cloudflare.DNSRecord{
 			Name:    endpoint.DNSName,
 			TTL:     ttl,
 			Proxied: proxied,
 			Type:    endpoint.RecordType,
-			Content: endpoint.Targets[i],
-		}
-	}
-
-	return &cloudFlareChange{
-		Action:            action,
-		ResourceRecordSet: resourceRecordSet,
+			Content: target,
+		},
 	}
 }
 
