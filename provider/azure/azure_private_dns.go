@@ -70,7 +70,6 @@ func NewAzurePrivateDNSProvider(domainFilter endpoint.DomainFilter, zoneIDFilter
 		return nil, err
 	}
 
-
 	zonesClient := privatedns.NewPrivateZonesClientWithBaseURI(settings.Environment.ResourceManagerEndpoint, subscriptionID)
 	zonesClient.Authorizer = authorizer
 	recordSetsClient := privatedns.NewRecordSetsClientWithBaseURI(settings.Environment.ResourceManagerEndpoint, subscriptionID)
