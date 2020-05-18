@@ -122,6 +122,7 @@ The following tutorials are provided:
 * [Cloudflare](docs/tutorials/cloudflare.md)
 * [CoreDNS](docs/tutorials/coredns.md)
 * [DigitalOcean](docs/tutorials/digitalocean.md)
+* [Hetzner](docs/tutorials/hetzner.md)
 * [DNSimple](docs/tutorials/dnsimple.md)
 * [Dyn](docs/tutorials/dyn.md)
 * [Exoscale](docs/tutorials/exoscale.md)
