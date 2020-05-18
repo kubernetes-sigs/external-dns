@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"errors"
 	"net/http"
 	"os"
 	"strings"
@@ -27,9 +26,9 @@ import (
 	"github.com/cloudfoundry-community/go-cfclient"
 	"github.com/linki/instrumented_http"
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	istiocontroller "istio.io/istio/pilot/pkg/config/kube/crd/controller"
-	istiomodel "istio.io/istio/pilot/pkg/model"
+	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -68,7 +67,7 @@ type Config struct {
 // ClientGenerator provides clients
 type ClientGenerator interface {
 	KubeClient() (kubernetes.Interface, error)
-	IstioClient() (istiomodel.ConfigStore, error)
+	IstioClient() (istioclient.Interface, error)
 	CloudFoundryClient(cfAPPEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error)
 	DynamicKubernetesClient() (dynamic.Interface, error)
 	OpenShiftClient() (openshift.Interface, error)
@@ -81,7 +80,7 @@ type SingletonClientGenerator struct {
 	KubeMaster      string
 	RequestTimeout  time.Duration
 	kubeClient      kubernetes.Interface
-	istioClient     istiomodel.ConfigStore
+	istioClient     *istioclient.Clientset
 	cfClient        *cfclient.Client
 	contourClient   dynamic.Interface
 	openshiftClient openshift.Interface
@@ -101,11 +100,11 @@ func (p *SingletonClientGenerator) KubeClient() (kubernetes.Interface, error) {
 	return p.kubeClient, err
 }
 
-// IstioClient generates an istio client if it was not created before
-func (p *SingletonClientGenerator) IstioClient() (istiomodel.ConfigStore, error) {
+// IstioClient generates an istio go client if it was not created before
+func (p *SingletonClientGenerator) IstioClient() (istioclient.Interface, error) {
 	var err error
 	p.istioOnce.Do(func() {
-		p.istioClient, err = NewIstioClient(p.KubeConfig)
+		p.istioClient, err = NewIstioClient(p.KubeConfig, p.KubeMaster)
 	})
 	return p.istioClient, err
 }
@@ -316,26 +315,24 @@ func NewKubeClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) 
 // wrappers) to the client's config at this level. Furthermore, the Istio client
 // constructor does not expose the ability to override the Kubernetes master,
 // so the Master config attribute has no effect.
-func NewIstioClient(kubeConfig string) (*istiocontroller.Client, error) {
+func NewIstioClient(kubeConfig string, kubeMaster string) (*istioclient.Clientset, error) {
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
 			kubeConfig = clientcmd.RecommendedHomeFile
 		}
 	}
 
-	client, err := istiocontroller.NewClient(
-		kubeConfig,
-		"",
-		istiomodel.ConfigDescriptor{istiomodel.Gateway},
-		"",
-	)
+	restCfg, err := clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Info("Created Istio client")
+	ic, err := istioclient.NewForConfig(restCfg)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create istio client")
+	}
 
-	return client, nil
+	return ic, nil
 }
 
 // NewDynamicKubernetesClient returns a new Dynamic Kubernetes client object. It takes a Config and
