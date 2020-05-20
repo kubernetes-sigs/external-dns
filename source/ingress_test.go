@@ -62,7 +62,7 @@ func (suite *IngressSuite) SetupTest() {
 		hostnames:   []string{"v1"},
 		annotations: map[string]string{ALBDualstackAnnotationKey: ALBDualstackAnnotationValue},
 	}).Ingress()
-	_, err = fakeClient.Extensions().Ingresses(suite.fooWithTargets.Namespace).Create(suite.fooWithTargets)
+	_, err = fakeClient.ExtensionsV1beta1().Ingresses(suite.fooWithTargets.Namespace).Create(suite.fooWithTargets)
 	suite.NoError(err, "should succeed")
 }
 
@@ -1009,7 +1009,7 @@ func testIngressEndpoints(t *testing.T) {
 				ti.ignoreHostnameAnnotation,
 			)
 			for _, ingress := range ingresses {
-				_, err := fakeClient.Extensions().Ingresses(ingress.Namespace).Create(ingress)
+				_, err := fakeClient.ExtensionsV1beta1().Ingresses(ingress.Namespace).Create(ingress)
 				require.NoError(t, err)
 			}
 
