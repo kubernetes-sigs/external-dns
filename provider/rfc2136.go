@@ -32,6 +32,11 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
+const (
+	// maximum size of a UDP transport message in DNS protocol
+	udpMaxMsgSize = 512
+)
+
 // rfc2136 provider type
 type rfc2136Provider struct {
 	nameserver    string
@@ -306,6 +311,10 @@ func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 	if !r.insecure {
 		c.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
 		msg.SetTsig(r.tsigKeyName, r.tsigSecretAlg, 300, time.Now().Unix())
+	}
+
+	if msg.Len() > udpMaxMsgSize {
+		c.Net = "tcp"
 	}
 
 	resp, _, err := c.Exchange(msg, r.nameserver)
