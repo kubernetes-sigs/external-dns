@@ -52,7 +52,7 @@ const (
 )
 
 var (
-	// see: https://docs.aws.amazon.com/general/latest/gr/rande.html#elb_region
+	// see: https://docs.aws.amazon.com/general/latest/gr/elb.html
 	canonicalHostedZones = map[string]string{
 		// Application Load Balancers and Classic Load Balancers
 		"us-east-2.elb.amazonaws.com":         "Z3AADJGX6KTTL2",
