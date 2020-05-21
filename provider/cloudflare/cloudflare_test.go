@@ -216,6 +216,19 @@ func (m *mockCloudFlareClient) ListZonesContext(ctx context.Context, opts ...clo
 	}, nil
 }
 
+func (m *mockCloudFlareClient) ZoneDetails(zoneID string) (cloudflare.Zone, error) {
+	for id, zoneName := range m.Zones {
+		if zoneID == id {
+			return cloudflare.Zone{
+				ID:   zoneID,
+				Name: zoneName,
+			}, nil
+		}
+	}
+
+	return cloudflare.Zone{}, errors.New("Unknown zoneID: " + zoneID)
+}
+
 func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endpoint.Endpoint, actions []MockAction, args ...interface{}) {
 	t.Helper()
 
@@ -528,6 +541,25 @@ func TestCloudflareZones(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	assert.Equal(t, 1, len(zones))
+	assert.Equal(t, "bar.com", zones[0].Name)
+}
+
+func TestCloudFlareZonesWithIDFilter(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	client.listZonesError = errors.New("shouldn't need to list zones when ZoneIDFilter in use")
+	provider := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"bar.com", "foo.com"}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{"001"}),
+	}
+
+	zones, err := provider.Zones(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// foo.com should *not* be returned as it doesn't match ZoneID filter
 	assert.Equal(t, 1, len(zones))
 	assert.Equal(t, "bar.com", zones[0].Name)
 }
