@@ -12,5 +12,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
     - name: Run tests
       run: make test
+    - name: Build, login and push
+      run: make build.latest

@@ -45,6 +45,7 @@ test:
 
 BINARY        ?= external-dns
 SOURCES        = $(shell find . -name '*.go')
+IMAGE_LATEST   = docker.pkg.github.com/kubernetes-sigs/external-dns/$(BINARY)
 IMAGE_STAGING  = gcr.io/k8s-staging-external-dns/$(BINARY)
 IMAGE         ?= us.gcr.io/k8s-artifacts-prod/external-dns/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty)
@@ -55,6 +56,11 @@ build: build/$(BINARY)
 
 build/$(BINARY): $(SOURCES)
 	CGO_ENABLED=0 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
+
+build.latest:
+	docker build --rm --tag "$(IMAGE)" --build-arg VERSION="$(VERSION)" .
+	echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u kubernetes-sigs --password-stdin
+	docker push $(IMAGE_LATEST)
 
 build.push: build.docker
 	docker push "$(IMAGE):$(VERSION)"
