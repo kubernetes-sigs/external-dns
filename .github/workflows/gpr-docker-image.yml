@@ -1,8 +1,8 @@
 name: Latest docker image
 
 on:
-  push:
-    branches: [ master ]
+  push
+#    branches: [ master ]
 
 jobs:
 
