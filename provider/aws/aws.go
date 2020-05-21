@@ -52,8 +52,7 @@ const (
 )
 
 var (
-	// see: https://docs.aws.amazon.com/general/latest/gr/rande.html#elb_region
-	// and: https://docs.aws.amazon.com/govcloud-us/latest/UserGuide/using-govcloud-endpoints.html
+	// see: https://docs.aws.amazon.com/general/latest/gr/elb.html
 	canonicalHostedZones = map[string]string{
 		// Application Load Balancers and Classic Load Balancers
 		"us-east-2.elb.amazonaws.com":         "Z3AADJGX6KTTL2",
@@ -76,7 +75,8 @@ var (
 		"sa-east-1.elb.amazonaws.com":         "Z2P70J7HTTTPLU",
 		"cn-north-1.elb.amazonaws.com.cn":     "Z3BX2TMKNYI13Y",
 		"cn-northwest-1.elb.amazonaws.com.cn": "Z3BX2TMKNYI13Y",
-		"us-gov-west-1.amazonaws.com":         "Z1K6XKP9SAGWDV",
+		"us-gov-west-1.elb.amazonaws.com":     "Z33AYJ8TM3BH4J",
+		"us-gov-east-1.elb.amazonaws.com":     "Z166TLBEWOO7G0",
 		"me-south-1.elb.amazonaws.com":        "ZS929ML54UICD",
 		// Network Load Balancers
 		"elb.us-east-2.amazonaws.com":         "ZLMOA37VPKANP",
@@ -98,6 +98,8 @@ var (
 		"elb.sa-east-1.amazonaws.com":         "ZTK26PT1VY4CU",
 		"elb.cn-north-1.amazonaws.com.cn":     "Z3QFB96KMJ7ED6",
 		"elb.cn-northwest-1.amazonaws.com.cn": "ZQEIKTCZ8352D",
+		"elb.us-gov-west-1.amazonaws.com":     "ZMG1MZ2THAWF1",
+		"elb.us-gov-east-1.amazonaws.com":     "Z1ZSMQQ6Q24QQ8",
 		"elb.me-south-1.amazonaws.com":        "Z3QSRYVP46NYYV",
 	}
 )
