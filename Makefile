@@ -59,7 +59,7 @@ build/$(BINARY): $(SOURCES)
 
 build.latest:
 	docker build --rm --tag "$(IMAGE_LATEST)" --build-arg VERSION="$(VERSION)" .
-	echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u kubernetes-sigs --password-stdin
+	docker login docker.pkg.github.com -u kubernetes-sigs --password ${{ secrets.GITHUB_TOKEN }}
 	docker push $(IMAGE_LATEST)
 
 build.push: build.docker
