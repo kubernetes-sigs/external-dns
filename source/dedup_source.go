@@ -17,7 +17,7 @@ limitations under the License.
 package source
 
 import (
-	"time"
+	"context"
 
 	log "github.com/sirupsen/logrus"
 
@@ -59,6 +59,6 @@ func (ms *dedupSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return result, nil
 }
 
-func (ms *dedupSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
-	ms.source.AddEventHandler(handler, stopChan, minInterval)
+func (ms *dedupSource) AddEventHandler(ctx context.Context, handler func()) {
+	ms.source.AddEventHandler(ctx, handler)
 }

@@ -18,6 +18,7 @@ package source
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
 	"text/template"
@@ -167,7 +168,7 @@ func (ns *nodeSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpointsSlice, nil
 }
 
-func (ns *nodeSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+func (ns *nodeSource) AddEventHandler(ctx context.Context, handler func()) {
 }
 
 // nodeAddress returns node's externalIP and if that's not found, node's internalIP
