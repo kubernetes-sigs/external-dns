@@ -89,12 +89,10 @@ func main() {
 	}
 	log.SetLevel(ll)
 
-	ctx := context.Background()
-
-	stopChan := make(chan struct{}, 1)
+	ctx, cancel := context.WithCancel(context.Background())
 
 	go serveMetrics(cfg.MetricsAddress)
-	go handleSigterm(stopChan)
+	go handleSigterm(cancel)
 
 	// Create a source.Config from the flags passed by the user.
 	sourceCfg := &source.Config{
@@ -323,13 +321,6 @@ func main() {
 		DomainFilter: domainFilter,
 	}
 
-	if cfg.UpdateEvents {
-		// Add RunOnce as the handler function that will be called when ingress/service sources have changed.
-		// Note that k8s Informers will perform an initial list operation, which results in the handler
-		// function initially being called for every Service/Ingress that exists limted by minInterval.
-		ctrl.Source.AddEventHandler(func() error { return ctrl.RunOnce(ctx) }, stopChan, 1*time.Minute)
-	}
-
 	if cfg.Once {
 		err := ctrl.RunOnce(ctx)
 		if err != nil {
@@ -338,15 +329,24 @@ func main() {
 
 		os.Exit(0)
 	}
-	ctrl.Run(ctx, stopChan)
+
+	if cfg.UpdateEvents {
+		// Add RunOnce as the handler function that will be called when ingress/service sources have changed.
+		// Note that k8s Informers will perform an initial list operation, which results in the handler
+		// function initially being called for every Service/Ingress that exists
+		ctrl.Source.AddEventHandler(ctx, func() { ctrl.ScheduleRunOnce(time.Now()) })
+	}
+
+	ctrl.ScheduleRunOnce(time.Now())
+	ctrl.Run(ctx)
 }
 
-func handleSigterm(stopChan chan struct{}) {
+func handleSigterm(cancel func()) {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGTERM)
 	<-signals
 	log.Info("Received SIGTERM. Terminating...")
-	close(stopChan)
+	cancel()
 }
 
 func serveMetrics(address string) {
