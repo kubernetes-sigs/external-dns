@@ -108,6 +108,7 @@ func main() {
 		Compatibility:                  cfg.Compatibility,
 		PublishInternal:                cfg.PublishInternal,
 		PublishHostIP:                  cfg.PublishHostIP,
+		PublishHeadlessRoot:            cfg.PublishHeadlessRoot,
 		AlwaysPublishNotReadyAddresses: cfg.AlwaysPublishNotReadyAddresses,
 		ConnectorServer:                cfg.ConnectorSourceServer,
 		CRDSourceAPIVersion:            cfg.CRDSourceAPIVersion,
