@@ -33,7 +33,7 @@ type HetznerChanges struct {
 }
 
 type HetznerProvider struct {
-	Client       hclouddns.HCloudDNS
+	Client       hclouddns.HCloudClientAdapter
 	domainFilter endpoint.DomainFilter
 	DryRun       bool
 }
@@ -44,8 +44,10 @@ func NewHetznerProvider(ctx context.Context, domainFilter endpoint.DomainFilter,
 		return nil, errors.New("no environment variable HETZNER_TOKEN provided")
 	}
 
+	client := hclouddns.New(token)
+
 	provider := &HetznerProvider{
-		Client:       *hclouddns.New(token),
+		Client:       client,
 		domainFilter: domainFilter,
 		DryRun:       dryRun,
 	}
