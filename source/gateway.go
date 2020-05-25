@@ -60,7 +60,7 @@ func NewIstioGatewaySource(
 	namespace string,
 	annotationFilter string,
 	fqdnTemplate string,
-	combineFqdnAnnotation bool,
+	combineFQDNAnnotation bool,
 	ignoreHostnameAnnotation bool,
 ) (Source, error) {
 	var (
@@ -108,7 +108,7 @@ func NewIstioGatewaySource(
 		namespace:                namespace,
 		annotationFilter:         annotationFilter,
 		fqdnTemplate:             tmpl,
-		combineFQDNAnnotation:    combineFqdnAnnotation,
+		combineFQDNAnnotation:    combineFQDNAnnotation,
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
 		serviceInformer:          serviceInformer,
 	}, nil
@@ -128,7 +128,7 @@ func (sc *gatewaySource) Endpoints() ([]*endpoint.Endpoint, error) {
 		return nil, err
 	}
 
-	endpoints := []*endpoint.Endpoint{}
+	var endpoints []*endpoint.Endpoint
 
 	for _, gateway := range gateways {
 		// Check controller annotation to see if we are responsible.
@@ -139,28 +139,33 @@ func (sc *gatewaySource) Endpoints() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 
-		gwEndpoints, err := sc.endpointsFromGatewayConfig(gateway)
+		gwHostnames, err := sc.hostNamesFromGateway(gateway)
 		if err != nil {
 			return nil, err
 		}
 
 		// apply template if host is missing on gateway
-		if (sc.combineFQDNAnnotation || len(gwEndpoints) == 0) && sc.fqdnTemplate != nil {
-			iEndpoints, err := sc.endpointsFromTemplate2(gateway)
+		if (sc.combineFQDNAnnotation || len(gwHostnames) == 0) && sc.fqdnTemplate != nil {
+			iHostnames, err := sc.hostNamesFromTemplate(gateway)
 			if err != nil {
 				return nil, err
 			}
 
 			if sc.combineFQDNAnnotation {
-				gwEndpoints = append(gwEndpoints, iEndpoints...)
+				gwHostnames = append(gwHostnames, iHostnames...)
 			} else {
-				gwEndpoints = iEndpoints
+				gwHostnames = iHostnames
 			}
 		}
 
-		if len(gwEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from gateway %s/%s", gateway.Namespace, gateway.Name)
+		if len(gwHostnames) == 0 {
+			log.Debugf("No hostnames could be generated from gateway %s/%s", gateway.Namespace, gateway.Name)
 			continue
+		}
+
+		gwEndpoints, err := sc.endpointsFromGateway(gwHostnames, gateway)
+		if err != nil {
+			return nil, err
 		}
 
 		log.Debugf("Endpoints generated from gateway: %s/%s: %v", gateway.Namespace, gateway.Name, gwEndpoints)
@@ -176,42 +181,6 @@ func (sc *gatewaySource) Endpoints() ([]*endpoint.Endpoint, error) {
 }
 
 func (sc *gatewaySource) AddEventHandler(ctx context.Context, handler func()) {
-}
-
-func (sc *gatewaySource) endpointsFromTemplate2(gateway networkingv1alpha3.Gateway) ([]*endpoint.Endpoint, error) {
-	// Process the whole template string
-	var buf bytes.Buffer
-	err := sc.fqdnTemplate.Execute(&buf, gateway)
-	if err != nil {
-		return nil, fmt.Errorf("failed to apply template on istio config %v: %v", gateway, err)
-	}
-
-	hostnames := buf.String()
-
-	ttl, err := getTTLFromAnnotations(gateway.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
-
-	targets := getTargetsFromTargetAnnotation(gateway.Annotations)
-
-	if len(targets) == 0 {
-		targets, err = sc.targetsFromGatewayConfig(gateway)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(gateway.Annotations)
-
-	var endpoints []*endpoint.Endpoint
-	// splits the FQDN template and removes the trailing periods
-	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
-	for _, hostname := range hostnameList {
-		hostname = strings.TrimSuffix(hostname, ".")
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
-	}
-	return endpoints, nil
 }
 
 // filterByAnnotations2 filters a list of configs by a given annotation selector.
@@ -271,8 +240,7 @@ func (sc *gatewaySource) targetsFromGatewayConfig(gateway networkingv1alpha3.Gat
 		for _, lb := range service.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
 				targets = append(targets, lb.IP)
-			}
-			if lb.Hostname != "" {
+			} else if lb.Hostname != "" {
 				targets = append(targets, lb.Hostname)
 			}
 		}
@@ -282,15 +250,16 @@ func (sc *gatewaySource) targetsFromGatewayConfig(gateway networkingv1alpha3.Gat
 }
 
 // endpointsFromGatewayConfig extracts the endpoints from an Istio Gateway Config object
-func (sc *gatewaySource) endpointsFromGatewayConfig(gateway networkingv1alpha3.Gateway) ([]*endpoint.Endpoint, error) {
+func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway networkingv1alpha3.Gateway) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	ttl, err := getTTLFromAnnotations(gateway.Annotations)
+	annotations := gateway.Annotations
+	ttl, err := getTTLFromAnnotations(annotations)
 	if err != nil {
 		log.Warn(err)
 	}
 
-	targets := getTargetsFromTargetAnnotation(gateway.Annotations)
+	targets := getTargetsFromTargetAnnotation(annotations)
 
 	if len(targets) == 0 {
 		targets, err = sc.targetsFromGatewayConfig(gateway)
@@ -299,8 +268,23 @@ func (sc *gatewaySource) endpointsFromGatewayConfig(gateway networkingv1alpha3.G
 		}
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(gateway.Annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(annotations)
 
+	// Skip endpoints if we do not want entries from annotations
+	if !sc.ignoreHostnameAnnotation {
+		hostnames = append(hostnames, getHostnamesFromAnnotations(annotations)...)
+	}
+
+	for _, host := range hostnames {
+		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
+	}
+
+	return endpoints, nil
+}
+
+func (sc *gatewaySource) hostNamesFromGateway(gateway networkingv1alpha3.Gateway) ([]string, error) {
+
+	var hostnames []string
 	for _, server := range gateway.Spec.Servers {
 		for _, host := range server.Hosts {
 			if host == "" {
@@ -315,17 +299,20 @@ func (sc *gatewaySource) endpointsFromGatewayConfig(gateway networkingv1alpha3.G
 				host = parts[1]
 			}
 
-			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
+			hostnames = append(hostnames, host)
 		}
 	}
+	return hostnames, nil
+}
 
-	// Skip endpoints if we do not want entries from annotations
-	if !sc.ignoreHostnameAnnotation {
-		hostnameList := getHostnamesFromAnnotations(gateway.Annotations)
-		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
-		}
+func (sc *gatewaySource) hostNamesFromTemplate(gateway networkingv1alpha3.Gateway) ([]string, error) {
+	// Process the whole template string
+	var buf bytes.Buffer
+	err := sc.fqdnTemplate.Execute(&buf, gateway)
+	if err != nil {
+		return nil, fmt.Errorf("failed to apply template on istio gateway %v: %v", gateway, err)
 	}
 
-	return endpoints, nil
+	hostnames := strings.Split(strings.Replace(buf.String(), " ", "", -1), ",")
+	return hostnames, nil
 }

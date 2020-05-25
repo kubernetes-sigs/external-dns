@@ -309,7 +309,9 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			gatewayCfg := ti.config.Config()
 			if source, err := newTestGatewaySource(ti.lbServices); err != nil {
 				require.NoError(t, err)
-			} else if endpoints, err := source.endpointsFromGatewayConfig(*gatewayCfg); err != nil {
+			} else if hostnames, err := source.hostNamesFromGateway(gatewayCfg); err != nil {
+				require.NoError(t, err)
+			} else if endpoints, err := source.endpointsFromGateway(hostnames, gatewayCfg); err != nil {
 				require.NoError(t, err)
 			} else {
 				validateEndpoints(t, endpoints, ti.expected)
@@ -1083,7 +1085,7 @@ func testGatewayEndpoints(t *testing.T) {
 			fakeIstioClient := NewFakeConfigStore()
 			for _, config := range ti.configItems {
 				gatewayCfg := config.Config()
-				_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(ti.targetNamespace).Create(gatewayCfg)
+				_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(ti.targetNamespace).Create(&gatewayCfg)
 				require.NoError(t, err)
 			}
 
@@ -1186,7 +1188,7 @@ type fakeGatewayConfig struct {
 	selector    map[string]string
 }
 
-func (c fakeGatewayConfig) Config() *networkingv1alpha3.Gateway {
+func (c fakeGatewayConfig) Config() networkingv1alpha3.Gateway {
 	gw := networkingv1alpha3.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        c.name,
@@ -1208,7 +1210,7 @@ func (c fakeGatewayConfig) Config() *networkingv1alpha3.Gateway {
 
 	gw.Spec.Servers = servers
 
-	return &gw
+	return gw
 }
 
 func NewFakeConfigStore() istioclient.Interface {
