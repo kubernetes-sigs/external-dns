@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 type mockHCloudClientAdapter interface {
@@ -184,4 +185,24 @@ func TestHetznerProvider_Records(t *testing.T) {
 	}
 	fmt.Printf("%+v\n", endpoints[0].DNSName)
 	assert.Equal(t, "blindage.org", endpoints[0].DNSName)
+}
+
+func TestHetznerProvider_ApplyChanges(t *testing.T) {
+	changes := &plan.Changes{}
+	mockedClient := mockHCloudNew("myHetznerToken")
+	mockedProvider := &HetznerProvider{
+		Client: mockedClient,
+	}
+
+	changes.Create = []*endpoint.Endpoint{
+		{DNSName: "test.org", Targets: endpoint.Targets{"target"}},
+		{DNSName: "test.test.org", Targets: endpoint.Targets{"target"}, RecordTTL: 666},
+	}
+	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test.test.org", Targets: endpoint.Targets{"target-new"}, RecordType: "A", RecordTTL: 777}}
+	changes.Delete = []*endpoint.Endpoint{{DNSName: "test.test.org", Targets: endpoint.Targets{"target"}, RecordType: "A"}}
+
+	err := mockedProvider.ApplyChanges(context.Background(), changes)
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
 }
