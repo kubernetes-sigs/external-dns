@@ -4,23 +4,50 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"reflect"
 	"testing"
 
 	hclouddns "git.blindage.org/21h/hcloud-dns"
+	"github.com/stretchr/testify/assert"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-type mockHetznerProvider struct {
-	HetznerProvider
-	Client mockHetznerClient
+type mockHCloudClientAdapter interface {
+	GetZone(ID string) (hclouddns.HCloudAnswerGetZone, error)
+	GetZones(params hclouddns.HCloudGetZonesParams) (hclouddns.HCloudAnswerGetZones, error)
+	UpdateZone(zone hclouddns.HCloudZone) (hclouddns.HCloudAnswerGetZone, error)
+	DeleteZone(ID string) (hclouddns.HCloudAnswerDeleteZone, error)
+	CreateZone(zone hclouddns.HCloudZone) (hclouddns.HCloudAnswerGetZone, error)
+	ImportZoneString(zoneID string, zonePlainText string) (hclouddns.HCloudAnswerGetZone, error)
+	ExportZoneToString(zoneID string) (hclouddns.HCloudAnswerGetZonePlainText, error)
+	ValidateZoneString(zonePlainText string) (hclouddns.HCloudAnswerZoneValidate, error)
+	GetRecords(params hclouddns.HCloudGetRecordsParams) (hclouddns.HCloudAnswerGetRecords, error)
+	UpdateRecord(record hclouddns.HCloudRecord) (hclouddns.HCloudAnswerGetRecord, error)
+	DeleteRecord(ID string) (hclouddns.HCloudAnswerDeleteRecord, error)
+	CreateRecord(record hclouddns.HCloudRecord) (hclouddns.HCloudAnswerGetRecord, error)
+	CreateRecordBulk(record []hclouddns.HCloudRecord) (hclouddns.HCloudAnswerCreateRecords, error)
+	UpdateRecordBulk(record []hclouddns.HCloudRecord) (hclouddns.HCloudAnswerUpdateRecords, error)
 }
 
-type mockHetznerClient struct {
-	hclouddns.HCloudDNS
+type mockHCloudClient struct {
+	Token string `yaml:"token"`
 }
 
-func (m *mockHetznerClient) GetZones(params hclouddns.HCloudGetZonesParams) (hclouddns.HCloudAnswerGetZones, error) {
+// New instance
+func mockHCloudNew(t string) mockHCloudClientAdapter {
+	return &mockHCloudClient{
+		Token: t,
+	}
+}
+
+// Mock all methods
+
+func (m *mockHCloudClient) GetZone(ID string) (hclouddns.HCloudAnswerGetZone, error) {
+	return hclouddns.HCloudAnswerGetZone{}, nil
+}
+
+func (m *mockHCloudClient) GetZones(params hclouddns.HCloudGetZonesParams) (hclouddns.HCloudAnswerGetZones, error) {
 	return hclouddns.HCloudAnswerGetZones{
 		Zones: []hclouddns.HCloudZone{
 			{
@@ -33,19 +60,55 @@ func (m *mockHetznerClient) GetZones(params hclouddns.HCloudGetZonesParams) (hcl
 	}, nil
 }
 
-func (m *mockHetznerClient) GetRecords(params hclouddns.HCloudGetRecordsParams) (hclouddns.HCloudAnswerGetRecords, error) {
+// zones
+func (m *mockHCloudClient) UpdateZone(zone hclouddns.HCloudZone) (hclouddns.HCloudAnswerGetZone, error) {
+	return hclouddns.HCloudAnswerGetZone{}, nil
+}
+func (m *mockHCloudClient) DeleteZone(ID string) (hclouddns.HCloudAnswerDeleteZone, error) {
+	return hclouddns.HCloudAnswerDeleteZone{}, nil
+}
+func (m *mockHCloudClient) CreateZone(zone hclouddns.HCloudZone) (hclouddns.HCloudAnswerGetZone, error) {
+	return hclouddns.HCloudAnswerGetZone{}, nil
+}
+func (m *mockHCloudClient) ImportZoneString(zoneID string, zonePlainText string) (hclouddns.HCloudAnswerGetZone, error) {
+	return hclouddns.HCloudAnswerGetZone{}, nil
+}
+func (m *mockHCloudClient) ExportZoneToString(zoneID string) (hclouddns.HCloudAnswerGetZonePlainText, error) {
+	return hclouddns.HCloudAnswerGetZonePlainText{}, nil
+}
+func (m *mockHCloudClient) ValidateZoneString(zonePlainText string) (hclouddns.HCloudAnswerZoneValidate, error) {
+	return hclouddns.HCloudAnswerZoneValidate{}, nil
+}
+
+// records
+func (m *mockHCloudClient) GetRecords(params hclouddns.HCloudGetRecordsParams) (hclouddns.HCloudAnswerGetRecords, error) {
 	return hclouddns.HCloudAnswerGetRecords{
 		Records: []hclouddns.HCloudRecord{
 			{
-				ID:         "HetznerRecordID",
-				RecordType: "A",
-				Name:       "local",
+				RecordType: hclouddns.RecordType("A"),
+				ID:         "ATypeRecordID",
+				ZoneID:     "HetznerZoneID",
+				Name:       "@",
 				Value:      "127.0.0.1",
 				TTL:        666,
-				ZoneID:     "HetznerZoneImocked.Client.D",
 			},
 		},
 	}, nil
+}
+func (m *mockHCloudClient) UpdateRecord(record hclouddns.HCloudRecord) (hclouddns.HCloudAnswerGetRecord, error) {
+	return hclouddns.HCloudAnswerGetRecord{}, nil
+}
+func (m *mockHCloudClient) DeleteRecord(ID string) (hclouddns.HCloudAnswerDeleteRecord, error) {
+	return hclouddns.HCloudAnswerDeleteRecord{}, nil
+}
+func (m *mockHCloudClient) CreateRecord(record hclouddns.HCloudRecord) (hclouddns.HCloudAnswerGetRecord, error) {
+	return hclouddns.HCloudAnswerGetRecord{}, nil
+}
+func (m *mockHCloudClient) CreateRecordBulk(record []hclouddns.HCloudRecord) (hclouddns.HCloudAnswerCreateRecords, error) {
+	return hclouddns.HCloudAnswerCreateRecords{}, nil
+}
+func (m *mockHCloudClient) UpdateRecordBulk(record []hclouddns.HCloudRecord) (hclouddns.HCloudAnswerUpdateRecords, error) {
+	return hclouddns.HCloudAnswerUpdateRecords{}, nil
 }
 
 func TestNewHetznerProvider(t *testing.T) {
@@ -63,24 +126,62 @@ func TestNewHetznerProvider(t *testing.T) {
 }
 
 func TestHetznerProvider_Records(t *testing.T) {
-	mockedClient := mockHetznerClient{}
-	mockedProvider := mockHetznerProvider{
+
+	mockedClient := mockHCloudNew("myHetznerToken")
+
+	mockedProvider := &HetznerProvider{
 		Client: mockedClient,
 	}
 
-	expectedZonesAnswer, err := mockedClient.GetZones(hclouddns.HCloudGetZonesParams{})
+	// Check test zone data is ok
+	expectedZonesAnswer := hclouddns.HCloudAnswerGetZones{
+		Zones: []hclouddns.HCloudZone{
+			{
+				ID:           "HetznerZoneID",
+				Name:         "blindage.org",
+				TTL:          666,
+				RecordsCount: 1,
+			},
+		},
+	}
+
+	testingZonesAnswer, err := mockedClient.GetZones(hclouddns.HCloudGetZonesParams{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println("expectedZonesAnswer:", expectedZonesAnswer)
 
+	if !reflect.DeepEqual(expectedZonesAnswer, testingZonesAnswer) {
+		t.Fatal(err)
+	}
+
+	// Check test record data is ok
+	expectedRecordsAnswer := hclouddns.HCloudAnswerGetRecords{
+		Records: []hclouddns.HCloudRecord{
+			{
+				RecordType: hclouddns.RecordType("A"),
+				ID:         "ATypeRecordID",
+				ZoneID:     "HetznerZoneID",
+				Name:       "@",
+				Value:      "127.0.0.1",
+				TTL:        666,
+			},
+		},
+	}
+
+	testingRecordsAnswer, err := mockedClient.GetRecords(hclouddns.HCloudGetRecordsParams{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(expectedRecordsAnswer, testingRecordsAnswer) {
+		t.Fatal(err)
+	}
+
+	// Now check Records function of provider, if ZoneID equal "blindage.org" must be returned
 	endpoints, err := mockedProvider.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println("endpoints:", endpoints)
-
-	// if !reflect.DeepEqual(expectedZonesAnswer.Zones, endpoints) {
-	// 	t.Fatal(err)
-	// }
+	fmt.Printf("%+v\n", endpoints[0].DNSName)
+	assert.Equal(t, "blindage.org", endpoints[0].DNSName)
 }
