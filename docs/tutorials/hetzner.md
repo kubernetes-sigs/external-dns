@@ -47,7 +47,7 @@ spec:
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
-        - --provider=hetznerYOUR_HETZNER_DNS_API_KEY
+        - --provider=hetzner
         env:
         - name: HETZNER_TOKEN
           value: "YOUR_HETZNER_DNS_API_KEY"
