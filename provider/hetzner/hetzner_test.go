@@ -126,13 +126,9 @@ func TestNewHetznerProvider(t *testing.T) {
 	}
 }
 
-func TestHetznerProvider_Records(t *testing.T) {
+func TestHetznerProvider_TestData(t *testing.T) {
 
 	mockedClient := mockHCloudNew("myHetznerToken")
-
-	mockedProvider := &HetznerProvider{
-		Client: mockedClient,
-	}
 
 	// Check test zone data is ok
 	expectedZonesAnswer := hclouddns.HCloudAnswerGetZones{
@@ -148,11 +144,11 @@ func TestHetznerProvider_Records(t *testing.T) {
 
 	testingZonesAnswer, err := mockedClient.GetZones(hclouddns.HCloudGetZonesParams{})
 	if err != nil {
-		t.Fatal(err)
+		t.Errorf("should not fail, %s", err)
 	}
 
 	if !reflect.DeepEqual(expectedZonesAnswer, testingZonesAnswer) {
-		t.Fatal(err)
+		t.Errorf("should be equal, %s", err)
 	}
 
 	// Check test record data is ok
@@ -171,17 +167,27 @@ func TestHetznerProvider_Records(t *testing.T) {
 
 	testingRecordsAnswer, err := mockedClient.GetRecords(hclouddns.HCloudGetRecordsParams{})
 	if err != nil {
-		t.Fatal(err)
+		t.Errorf("should not fail, %s", err)
 	}
 
 	if !reflect.DeepEqual(expectedRecordsAnswer, testingRecordsAnswer) {
-		t.Fatal(err)
+		t.Errorf("should be equal, %s", err)
+	}
+
+}
+
+func TestHetznerProvider_Records(t *testing.T) {
+
+	mockedClient := mockHCloudNew("myHetznerToken")
+
+	mockedProvider := &HetznerProvider{
+		Client: mockedClient,
 	}
 
 	// Now check Records function of provider, if ZoneID equal "blindage.org" must be returned
 	endpoints, err := mockedProvider.Records(context.Background())
 	if err != nil {
-		t.Fatal(err)
+		t.Errorf("should not fail, %s", err)
 	}
 	fmt.Printf("%+v\n", endpoints[0].DNSName)
 	assert.Equal(t, "blindage.org", endpoints[0].DNSName)
