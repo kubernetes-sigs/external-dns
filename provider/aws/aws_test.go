@@ -1024,8 +1024,8 @@ func TestAWSCanonicalHostedZone(t *testing.T) {
 		{"foo.eu-west-2.elb.amazonaws.com", "ZHURV8PSTC4K8"},
 		{"foo.eu-west-3.elb.amazonaws.com", "Z3Q77PNBQS71R4"},
 		{"foo.sa-east-1.elb.amazonaws.com", "Z2P70J7HTTTPLU"},
-		{"foo.cn-north-1.elb.amazonaws.com.cn", "Z3BX2TMKNYI13Y"},
-		{"foo.cn-northwest-1.elb.amazonaws.com.cn", "Z3BX2TMKNYI13Y"},
+		{"foo.cn-north-1.elb.amazonaws.com.cn", "Z1GDH35T77C1KE"},
+		{"foo.cn-northwest-1.elb.amazonaws.com.cn", "ZM7IZAIOVVDZF"},
 		// Network Load Balancers
 		{"foo.elb.us-east-2.amazonaws.com", "ZLMOA37VPKANP"},
 		{"foo.elb.us-east-1.amazonaws.com", "Z26RNL4JYFTOTI"},
