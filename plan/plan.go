@@ -25,6 +25,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
+// This type is used in Plan for comparing previous and current custom annotations
 type PropertyComparator func(name string, previous string, current string) bool
 
 // Plan can convert a list of desired and current records to a series of create,
@@ -262,6 +263,9 @@ func normalizeDNSName(dnsName string) string {
 	return s
 }
 
+// This is implementation of PropertyComparator for comparing boolean-line values
+// For example external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+// If value doesn't parse as boolean, the defaultValue is used
 func CompareBoolean(defaultValue bool, name, current, previous string) bool {
 	var err error
 
@@ -270,7 +274,6 @@ func CompareBoolean(defaultValue bool, name, current, previous string) bool {
 	if previous != "" {
 		v1, err = strconv.ParseBool(previous)
 		if err != nil {
-			log.Errorf("Failed to parse previous property [%s]: %v", name, previous)
 			v1 = defaultValue
 		}
 	}
@@ -278,7 +281,6 @@ func CompareBoolean(defaultValue bool, name, current, previous string) bool {
 	if current != "" {
 		v2, err = strconv.ParseBool(current)
 		if err != nil {
-			log.Errorf("Failed to parse current property [%s]: %v", name, current)
 			v2 = defaultValue
 		}
 	}
