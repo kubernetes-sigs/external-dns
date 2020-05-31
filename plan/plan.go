@@ -263,7 +263,7 @@ func normalizeDNSName(dnsName string) string {
 	return s
 }
 
-// This is implementation of PropertyComparator for comparing boolean-line values
+// CompareBoolean is an implementation of PropertyComparator for comparing boolean-line values
 // For example external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
 // If value doesn't parse as boolean, the defaultValue is used
 func CompareBoolean(defaultValue bool, name, current, previous string) bool {
