@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-// This type is used in Plan for comparing previous and current custom annotations
+// PropertyComparator is used in Plan for comparing the previous and current custom annotations.
 type PropertyComparator func(name string, previous string, current string) bool
 
 // Plan can convert a list of desired and current records to a series of create,
