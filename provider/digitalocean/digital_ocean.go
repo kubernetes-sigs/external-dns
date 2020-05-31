@@ -128,7 +128,7 @@ func (p *DigitalOceanProvider) Records(ctx context.Context) ([]*endpoint.Endpoin
 
 func (p *DigitalOceanProvider) fetchRecords(ctx context.Context, zoneName string) ([]godo.DomainRecord, error) {
 	allRecords := []godo.DomainRecord{}
-	listOptions := &godo.ListOptions{}
+	listOptions := &godo.ListOptions{PerPage: 200}
 	for {
 		records, resp, err := p.Client.Records(ctx, zoneName, listOptions)
 		if err != nil {
@@ -153,7 +153,7 @@ func (p *DigitalOceanProvider) fetchRecords(ctx context.Context, zoneName string
 
 func (p *DigitalOceanProvider) fetchZones(ctx context.Context) ([]godo.Domain, error) {
 	allZones := []godo.Domain{}
-	listOptions := &godo.ListOptions{}
+	listOptions := &godo.ListOptions{PerPage: 200}
 	for {
 		zones, resp, err := p.Client.List(ctx, listOptions)
 		if err != nil {
