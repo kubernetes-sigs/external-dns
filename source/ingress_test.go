@@ -1017,7 +1017,7 @@ func testIngressEndpoints(t *testing.T) {
 			var err error
 
 			// wait up to a few seconds for new resources to appear in informer cache.
-			err = poll(time.Second, 3*time.Second, func() (bool, error) {
+			err = poll(time.Second, 6*time.Second, func() (bool, error) {
 				res, err = ingressSource.Endpoints()
 				if err != nil {
 					// stop waiting if we get an error
