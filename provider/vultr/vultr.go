@@ -39,6 +39,7 @@ const (
 
 // VultrProvider is an implementation of Provider for Vultr DNS.
 type VultrProvider struct {
+	provider.BaseProvider
 	client govultr.Client
 
 	domainFilter endpoint.DomainFilter

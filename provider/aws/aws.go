@@ -116,6 +116,7 @@ type Route53API interface {
 
 // AWSProvider is an implementation of Provider for AWS Route53.
 type AWSProvider struct {
+	provider.BaseProvider
 	client               Route53API
 	dryRun               bool
 	batchChangeSize      int
