@@ -248,6 +248,84 @@ func TestRfc2136ApplyChangesWithDifferentTTLs(t *testing.T) {
 
 }
 
+func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
+	stub := newStub()
+
+	provider, err := createRfc2136StubProvider(stub)
+	assert.NoError(t, err)
+
+	p := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			{
+				DNSName:    "v1.foo.com",
+				RecordType: "A",
+				Targets:    []string{"1.2.3.4"},
+				RecordTTL:  endpoint.TTL(400),
+			},
+			{
+				DNSName:    "v1.foobar.com",
+				RecordType: "TXT",
+				Targets:    []string{"boom"},
+			},
+		},
+	}
+
+	err = provider.ApplyChanges(context.Background(), p)
+	assert.NoError(t, err)
+
+	p = &plan.Changes{
+		UpdateOld: []*endpoint.Endpoint{
+			{
+				DNSName:    "v1.foo.com",
+				RecordType: "A",
+				Targets:    []string{"1.2.3.4"},
+				RecordTTL:  endpoint.TTL(400),
+			},
+			{
+				DNSName:    "v1.foobar.com",
+				RecordType: "TXT",
+				Targets:    []string{"boom"},
+			},
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			{
+				DNSName:    "v1.foo.com",
+				RecordType: "A",
+				Targets:    []string{"1.2.3.5"},
+				RecordTTL:  endpoint.TTL(400),
+			},
+			{
+				DNSName:    "v1.foobar.com",
+				RecordType: "TXT",
+				Targets:    []string{"kablui"},
+			},
+		},
+	}
+
+	err = provider.ApplyChanges(context.Background(), p)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 4, len(stub.createMsgs))
+	assert.Equal(t, 2, len(stub.updateMsgs))
+
+	assert.True(t, strings.Contains(stub.createMsgs[0].String(), "v1.foo.com"))
+	assert.True(t, strings.Contains(stub.createMsgs[0].String(), "1.2.3.4"))
+	assert.True(t, strings.Contains(stub.createMsgs[2].String(), "v1.foo.com"))
+	assert.True(t, strings.Contains(stub.createMsgs[2].String(), "1.2.3.5"))
+
+	assert.True(t, strings.Contains(stub.updateMsgs[0].String(), "v1.foo.com"))
+	assert.True(t, strings.Contains(stub.updateMsgs[0].String(), "1.2.3.4"))
+
+	assert.True(t, strings.Contains(stub.createMsgs[1].String(), "v1.foobar.com"))
+	assert.True(t, strings.Contains(stub.createMsgs[1].String(), "boom"))
+	assert.True(t, strings.Contains(stub.createMsgs[3].String(), "v1.foobar.com"))
+	assert.True(t, strings.Contains(stub.createMsgs[3].String(), "kablui"))
+
+	assert.True(t, strings.Contains(stub.updateMsgs[1].String(), "v1.foobar.com"))
+	assert.True(t, strings.Contains(stub.updateMsgs[1].String(), "boom"))
+
+}
+
 func contains(arr []*endpoint.Endpoint, name string) bool {
 	for _, a := range arr {
 		if a.DNSName == name {
