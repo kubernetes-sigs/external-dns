@@ -44,6 +44,7 @@ type LinodeDomainClient interface {
 
 // LinodeProvider is an implementation of Provider for Digital Ocean's DNS.
 type LinodeProvider struct {
+	provider.BaseProvider
 	Client       LinodeDomainClient
 	domainFilter endpoint.DomainFilter
 	DryRun       bool

@@ -105,6 +105,7 @@ func (z zoneService) ZoneDetails(zoneID string) (cloudflare.Zone, error) {
 
 // CloudFlareProvider is an implementation of Provider for CloudFlare DNS.
 type CloudFlareProvider struct {
+	provider.BaseProvider
 	Client cloudFlareDNS
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter      endpoint.DomainFilter
@@ -255,6 +256,14 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 	}
 
 	return p.submitChanges(ctx, cloudflareChanges)
+}
+
+func (p *CloudFlareProvider) PropertyValuesEqual(name string, previous string, current string) bool {
+	if name == source.CloudflareProxiedKey {
+		return plan.CompareBoolean(p.proxiedByDefault, name, previous, current)
+	}
+
+	return p.BaseProvider.PropertyValuesEqual(name, previous, current)
 }
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.

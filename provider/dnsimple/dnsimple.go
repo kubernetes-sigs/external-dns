@@ -77,6 +77,7 @@ func (z dnsimpleZoneService) UpdateRecord(ctx context.Context, accountID string,
 }
 
 type dnsimpleProvider struct {
+	provider.BaseProvider
 	client       dnsimpleZoneServiceInterface
 	identity     dnsimpleIdentityService
 	accountID    string

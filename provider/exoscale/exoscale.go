@@ -25,6 +25,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 // EgoscaleClientI for replaceable implementation
@@ -38,6 +39,7 @@ type EgoscaleClientI interface {
 
 // ExoscaleProvider initialized as dns provider with no records
 type ExoscaleProvider struct {
+	provider.BaseProvider
 	domain         endpoint.DomainFilter
 	client         EgoscaleClientI
 	filter         *zoneFilter

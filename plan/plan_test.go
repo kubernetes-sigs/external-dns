@@ -38,6 +38,7 @@ type PlanTestSuite struct {
 	bar127AWithTTL                   *endpoint.Endpoint
 	bar127AWithProviderSpecificTrue  *endpoint.Endpoint
 	bar127AWithProviderSpecificFalse *endpoint.Endpoint
+	bar127AWithProviderSpecificUnset *endpoint.Endpoint
 	bar192A                          *endpoint.Endpoint
 	multiple1                        *endpoint.Endpoint
 	multiple2                        *endpoint.Endpoint
@@ -137,6 +138,15 @@ func (suite *PlanTestSuite) SetupTest() {
 				Value: "false",
 			},
 		},
+	}
+	suite.bar127AWithProviderSpecificUnset = &endpoint.Endpoint{
+		DNSName:    "bar",
+		Targets:    endpoint.Targets{"127.0.0.1"},
+		RecordType: "A",
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "ingress/default/bar-127",
+		},
+		ProviderSpecific: endpoint.ProviderSpecific{},
 	}
 	suite.bar192A = &endpoint.Endpoint{
 		DNSName:    "bar",
@@ -282,6 +292,54 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificChange() {
 		Policies: []Policy{&SyncPolicy{}},
 		Current:  current,
 		Desired:  desired,
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
+func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificDefaultFalse() {
+	current := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificFalse}
+	desired := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificUnset}
+	expectedCreate := []*endpoint.Endpoint{}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+		PropertyComparator: func(name, previous, current string) bool {
+			return CompareBoolean(false, name, previous, current)
+		},
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
+func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificDefualtTrue() {
+	current := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificTrue}
+	desired := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificUnset}
+	expectedCreate := []*endpoint.Endpoint{}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
+		PropertyComparator: func(name, previous, current string) bool {
+			return CompareBoolean(true, name, previous, current)
+		},
 	}
 
 	changes := p.Calculate().Changes

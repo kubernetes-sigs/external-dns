@@ -35,6 +35,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 const (
@@ -66,6 +67,7 @@ type RDNSConfig struct {
 
 // RDNSProvider is an implementation of Provider for Rancher DNS(RDNS).
 type RDNSProvider struct {
+	provider.BaseProvider
 	client       RDNSClient
 	dryRun       bool
 	domainFilter endpoint.DomainFilter
