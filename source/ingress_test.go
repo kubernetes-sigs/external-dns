@@ -1015,7 +1015,7 @@ func testIngressEndpoints(t *testing.T) {
 
 			// Wait for the Ingress resources to be visible to the source. We check the
 			// source's informer cache to detect when this occurs. (This violates encapsulation
-			// but is okay as this is a test.)
+			// but is okay as this is a test and we want to ensure the informer's cache updates.)
 			concreteIngressSource := source.(*ingressSource)
 			ingressLister := concreteIngressSource.ingressInformer.Lister()
 			err := poll(250*time.Millisecond, 6*time.Second, func() (bool, error) {
