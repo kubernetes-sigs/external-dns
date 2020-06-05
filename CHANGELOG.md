@@ -1,3 +1,48 @@
+## v0.7.2 - 2020-06-03
+
+- Update blogpost in README (#1610) @vanhumbeecka
+- Support for AWS Route53 in China (#1603) @greenu
+- Update Govcloud provider hosted zones (#1592) @clhuang
+- Fix issue with too large DNS messages (#1590) @dmayle
+- use the latest linode go version (#1587) @tariq1890
+- use istio client-go and clean up k8s deps (#1584) @tariq1890
+- Add owners for cloudflare and coredns providers (#1582) @Raffo
+- remove some code duplication in gateway source (#1575) @tariq1890
+- update Contour IngressRoute deps (#1569) @stevesloka
+- Make tests faster (#1568) @sheerun
+- Fix scheduling of reconciliation (#1567) @sheerun
+- fix minor typos in istio gateway source docs (#1566) @tariq1890
+- Provider structure refactor (#1565) @Raffo
+- Fix typo in ttl.md (#1564) @rtnpro
+- Fix goreportcard warnings (#1561) @squat
+- Use consistent headless service name in example (#1559) @lowkeyliesmyth
+- Update go versions to 1.14.x that were missed in commit 99cebfcf from PR #1476 (#1554) @stealthybox
+- Remove duplicate selector from DigitalOcean manifest (#1553) @ggordan
+- Upgrade DNSimple client and add support for contexts (#1551) @weppos
+- Upgrade github.com/miekg/dns to v1.1.25 (#1545) @davidcollom
+- Fix updates in CloudFlare provider (#1542) @sheerun
+- update readme for latest version (#1539) @elsesiy
+- Improve Cloudflare tests in preparation to fix other issues (#1537) @sheerun
+- Allow for custom property comparators (#1536) @sheerun
+- fix typo (#1535) @tmatias
+- Bump github.com/pkg/errors from 0.8.1 to 0.9.1 (#1531) @njuettner
+- Bump github.com/digitalocean/godo from 1.19.0 to 1.34.0 (#1530) @njuettner
+- Bump github.com/prometheus/client_golang from 1.0.0 to 1.5.1 (#1529) @njuettner
+- Bump github.com/akamai/AkamaiOPEN-edgegrid-golang from 0.9.10 to 0.9.11 (#1528) @njuettner
+- Fix RFC2316 Windows Documentation (#1516) @scottd018
+- remove dependency on kubernetes/kubernetes (#1513) @tariq1890
+- update akamai openapi dependency (#1511) @tariq1890
+- Vultr Provider (#1509) @ddymko
+- Add AWS region ap-east-1(HK) (#1497) @lovemai073
+- Fix: file coredns.go is not `goimports`-ed (#1496) @njuettner
+- Allow ZoneIDFilter for Cloudflare (#1494) @james-callahan
+- update etcd dependency to latest version (#1485) @tariq1890
+- Support for openshift routes (#1484) @jgrumboe
+- add --txt-suffix feature (#1483) @jgrumboe
+- update to go 1.14 (#1476) @jochen42
+- Multiple A records support for the same FQDN (#1475) @ytsarev
+- Implement annotation filter for CRD source (#1399) @ytsarev
+
 ## v0.7.1 - 2020-04-01
 
   - Prometheus metric: timestamp of last successful sync with the DNS provider (#1480) @njuettner
