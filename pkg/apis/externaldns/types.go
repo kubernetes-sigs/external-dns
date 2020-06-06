@@ -238,7 +238,7 @@ var defaultConfig = &Config{
 	NS1IgnoreSSL:                false,
 	TransIPAccountName:          "",
 	TransIPPrivateKeyFile:       "",
-	DigitalOceanAPIPageSize:     200,
+	DigitalOceanAPIPageSize:     50,
 }
 
 // NewConfig returns new Config object
