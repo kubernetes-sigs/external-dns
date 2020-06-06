@@ -152,7 +152,6 @@ func (p *NS1Provider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 	var endpoints []*endpoint.Endpoint
 
 	for _, zone := range zones {
-
 		// TODO handle Header Codes
 		zoneData, _, err := p.client.GetZone(zone.String())
 		if err != nil {

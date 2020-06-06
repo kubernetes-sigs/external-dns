@@ -158,7 +158,6 @@ func NewDynProvider(config DynConfig) (provider.Provider, error) {
 func filterAndFixLinks(links []string, filter endpoint.DomainFilter) []string {
 	var result []string
 	for _, link := range links {
-
 		// link looks like /REST/CNAMERecord/acme.com/exchange.acme.com/349386875
 
 		// strip /REST/
@@ -292,7 +291,6 @@ func (d *dynProviderState) allRecordsToEndpoints(records *dynectsoap.GetAllRecor
 	}
 
 	return result
-
 }
 
 func errorOrValue(err error, value interface{}) interface{} {
@@ -394,7 +392,6 @@ func (d *dynProviderState) fetchAllRecordsInZone(zone string) (*dynectsoap.GetAl
 	}
 
 	return &records, nil
-
 }
 
 // buildLinkToRecord build a resource link. The symmetry of the dyn API is used to save
@@ -570,7 +567,7 @@ func (d *dynProviderState) commit(client *dynect.Client) error {
 	case 1:
 		return errs[0]
 	default:
-		return fmt.Errorf("Multiple errors committing: %+v", errs)
+		return fmt.Errorf("multiple errors committing: %+v", errs)
 	}
 }
 
@@ -681,7 +678,7 @@ func (d *dynProviderState) ApplyChanges(ctx context.Context, changes *plan.Chang
 	case 1:
 		return errs[0]
 	default:
-		return fmt.Errorf("Multiple errors committing: %+v", errs)
+		return fmt.Errorf("multiple errors committing: %+v", errs)
 	}
 
 	if needsCommit {

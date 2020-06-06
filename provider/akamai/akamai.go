@@ -293,7 +293,6 @@ func (p *AkamaiProvider) newAkamaiRecord(dnsName, recordType string, targets ...
 
 func (p *AkamaiProvider) createRecords(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) (created []*endpoint.Endpoint, failed []*endpoint.Endpoint) {
 	for _, endpoint := range endpoints {
-
 		if !p.domainFilter.Match(endpoint.DNSName) {
 			log.Debugf("Skipping creation at Akamai of endpoint DNSName: '%s' RecordType: '%s', it does not match against Domain filters", endpoint.DNSName, endpoint.RecordType)
 			continue
@@ -324,7 +323,6 @@ func (p *AkamaiProvider) createRecords(zoneNameIDMapper provider.ZoneIDName, end
 
 func (p *AkamaiProvider) deleteRecords(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) (deleted []*endpoint.Endpoint, failed []*endpoint.Endpoint) {
 	for _, endpoint := range endpoints {
-
 		if !p.domainFilter.Match(endpoint.DNSName) {
 			log.Debugf("Skipping deletion at Akamai of endpoint: '%s' type: '%s', it does not match against Domain filters", endpoint.DNSName, endpoint.RecordType)
 			continue
@@ -353,7 +351,6 @@ func (p *AkamaiProvider) deleteRecords(zoneNameIDMapper provider.ZoneIDName, end
 
 func (p *AkamaiProvider) updateNewRecords(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) (updated []*endpoint.Endpoint, failed []*endpoint.Endpoint) {
 	for _, endpoint := range endpoints {
-
 		if !p.domainFilter.Match(endpoint.DNSName) {
 			log.Debugf("Skipping update at Akamai of endpoint DNSName: '%s' RecordType: '%s', it does not match against Domain filters", endpoint.DNSName, endpoint.RecordType)
 			continue
