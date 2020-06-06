@@ -433,7 +433,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes []*route53.Chan
 				}
 
 				if _, err := p.client.ChangeResourceRecordSetsWithContext(ctx, params); err != nil {
-					log.Errorf("failure in zone %s [Id: %s]", aws.StringValue(zones[z].Name), z)
+					log.Errorf("Failure in zone %s [Id: %s]", aws.StringValue(zones[z].Name), z)
 					log.Error(err) //TODO(ideahitme): consider changing the interface in cases when this error might be a concern for other components
 					failedUpdate = true
 				} else {

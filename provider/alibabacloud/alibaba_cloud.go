@@ -895,7 +895,7 @@ func (p *AlibabaCloudProvider) createPrivateZoneRecord(zones map[string]*alibaba
 	if err == nil {
 		log.Infof("Create %s record named '%s' to '%s' with ttl %d for Alibaba Cloud Private Zone: Record ID=%d", endpoint.RecordType, endpoint.DNSName, target, ttl, response.RecordId)
 	} else {
-		log.Errorf("failed to create %s record named '%s' to '%s' with ttl %d for Alibaba Cloud Private Zone: %v", endpoint.RecordType, endpoint.DNSName, target, ttl, err)
+		log.Errorf("Failed to create %s record named '%s' to '%s' with ttl %d for Alibaba Cloud Private Zone: %v", endpoint.RecordType, endpoint.DNSName, target, ttl, err)
 	}
 	return err
 }
