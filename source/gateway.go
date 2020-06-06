@@ -283,7 +283,6 @@ func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway networ
 }
 
 func (sc *gatewaySource) hostNamesFromGateway(gateway networkingv1alpha3.Gateway) ([]string, error) {
-
 	var hostnames []string
 	for _, server := range gateway.Spec.Servers {
 		for _, host := range server.Hosts {
