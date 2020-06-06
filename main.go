@@ -198,7 +198,7 @@ func main() {
 	case "google":
 		p, err = google.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.DryRun)
 	case "digitalocean":
-		p, err = digitalocean.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun)
+		p, err = digitalocean.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun, cfg.DigitalOceanAPIPageSize)
 	case "ovh":
 		p, err = ovh.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.DryRun)
 	case "linode":
