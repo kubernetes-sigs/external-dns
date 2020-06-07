@@ -200,7 +200,7 @@ func main() {
 	case "digitalocean":
 		p, err = digitalocean.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun, cfg.DigitalOceanAPIPageSize)
 	case "ovh":
-		p, err = ovh.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.DryRun)
+		p, err = ovh.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.DryRun)
 	case "linode":
 		p, err = linode.NewLinodeProvider(domainFilter, cfg.DryRun, externaldns.Version)
 	case "dnsimple":
