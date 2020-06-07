@@ -177,7 +177,7 @@ hKRtDhmSdWBo3tJK12RrAe4t7CUe8gMgTvU7ExlcA3xQkseFPx9K
 `,
 				},
 			},
-			err: errors.New("initialising OCI DNS API client: can not create client, bad configuration: PEM data was not found in buffer"),
+			err: errors.New("initializing OCI DNS API client: can not create client, bad configuration: PEM data was not found in buffer"),
 		},
 	}
 	for name, tc := range testCases {
