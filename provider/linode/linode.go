@@ -447,7 +447,6 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 					DomainRecord: record,
 				})
 			}
-
 		}
 	}
 

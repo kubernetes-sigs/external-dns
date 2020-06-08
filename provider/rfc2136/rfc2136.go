@@ -213,7 +213,6 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	m.SetUpdate(r.zoneName)
 
 	for _, ep := range changes.Create {
-
 		if !r.domainFilter.Match(ep.DNSName) {
 			log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
 			continue
@@ -222,7 +221,6 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		r.AddRecord(m, ep)
 	}
 	for i, ep := range changes.UpdateNew {
-
 		if !r.domainFilter.Match(ep.DNSName) {
 			log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
 			continue
@@ -231,7 +229,6 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		r.UpdateRecord(m, changes.UpdateOld[i], ep)
 	}
 	for _, ep := range changes.Delete {
-
 		if !r.domainFilter.Match(ep.DNSName) {
 			log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
 			continue

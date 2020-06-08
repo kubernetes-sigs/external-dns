@@ -453,7 +453,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes []*route53.Chan
 	}
 
 	if len(failedZones) > 0 {
-		return fmt.Errorf("Failed to submit all changes for the following zones: %v", failedZones)
+		return fmt.Errorf("failed to submit all changes for the following zones: %v", failedZones)
 	}
 
 	return nil
@@ -737,7 +737,6 @@ func isAWSAlias(ep *endpoint.Endpoint, addrs []*endpoint.Endpoint) string {
 				if hostedZone := canonicalHostedZone(addr.Targets[0]); hostedZone != "" {
 					return hostedZone
 				}
-
 			}
 		}
 	}

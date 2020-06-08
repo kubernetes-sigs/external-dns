@@ -174,8 +174,8 @@ func TestShouldRunOnce(t *testing.T) {
 	assert.False(t, ctrl.ShouldRunOnce(now))
 	assert.False(t, ctrl.ShouldRunOnce(now.Add(100*time.Microsecond)))
 
-	// But after MIN_INTERVAL we should run reconciliation
-	now = now.Add(MIN_INTERVAL)
+	// But after MinInterval we should run reconciliation
+	now = now.Add(MinInterval)
 	assert.True(t, ctrl.ShouldRunOnce(now))
 
 	// But just one time
