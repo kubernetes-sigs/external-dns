@@ -228,7 +228,7 @@ func matchLabelSelector(selector labels.Selector, srcAnnotations map[string]stri
 }
 
 func poll(interval time.Duration, timeout time.Duration, condition wait.ConditionFunc) error {
-	if config.FAST_POLL {
+	if config.FastPoll {
 		time.Sleep(5 * time.Millisecond)
 
 		ok, err := condition()

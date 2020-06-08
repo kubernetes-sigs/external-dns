@@ -160,14 +160,14 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	return nil
 }
 
-// MIN_INTERVAL is used as window for batching events
-const MIN_INTERVAL = 5 * time.Second
+// MinInterval is used as window for batching events
+const MinInterval = 5 * time.Second
 
 // RunOnceThrottled makes sure execution happens at most once per interval.
 func (c *Controller) ScheduleRunOnce(now time.Time) {
 	c.nextRunAtMux.Lock()
 	defer c.nextRunAtMux.Unlock()
-	c.nextRunAt = now.Add(MIN_INTERVAL)
+	c.nextRunAt = now.Add(MinInterval)
 }
 
 func (c *Controller) ShouldRunOnce(now time.Time) bool {
@@ -180,7 +180,7 @@ func (c *Controller) ShouldRunOnce(now time.Time) bool {
 	return true
 }
 
-// Run runs RunOnce in a loop with a delay until context is cancelled
+// Run runs RunOnce in a loop with a delay until context is canceled
 func (c *Controller) Run(ctx context.Context) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()

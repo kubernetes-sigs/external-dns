@@ -62,7 +62,7 @@ type DigitalOceanChange struct {
 func NewDigitalOceanProvider(ctx context.Context, domainFilter endpoint.DomainFilter, dryRun bool) (*DigitalOceanProvider, error) {
 	token, ok := os.LookupEnv("DO_TOKEN")
 	if !ok {
-		return nil, fmt.Errorf("No token found")
+		return nil, fmt.Errorf("no token found")
 	}
 	oauthClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(&oauth2.Token{
 		AccessToken: token,
