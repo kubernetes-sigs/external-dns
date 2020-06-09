@@ -116,7 +116,6 @@ func (p *HetznerProvider) submitChanges(ctx context.Context, changes []*HetznerC
 
 	for _, changes := range zoneChanges {
 		for _, change := range changes {
-
 			log.WithFields(log.Fields{
 				"record":  change.ResourceRecordSet.Name,
 				"type":    change.ResourceRecordSet.RecordType,
