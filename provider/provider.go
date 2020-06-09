@@ -29,6 +29,14 @@ import (
 type Provider interface {
 	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 	ApplyChanges(ctx context.Context, changes *plan.Changes) error
+	PropertyValuesEqual(name string, previous string, current string) bool
+}
+
+type BaseProvider struct {
+}
+
+func (b BaseProvider) PropertyValuesEqual(name, previous, current string) bool {
+	return previous == current
 }
 
 type contextKey struct {

@@ -48,6 +48,7 @@ type vinyldnsZoneInterface interface {
 }
 
 type vinyldnsProvider struct {
+	provider.BaseProvider
 	client       vinyldnsZoneInterface
 	zoneFilter   provider.ZoneIDFilter
 	domainFilter endpoint.DomainFilter
@@ -205,7 +206,7 @@ func (p *vinyldnsProvider) findRecordSetID(zoneID string, recordSetName string) 
 		}
 	}
 
-	return "", fmt.Errorf("Record not found")
+	return "", fmt.Errorf("record not found")
 }
 
 func (p *vinyldnsProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {

@@ -33,8 +33,14 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
+const (
+	// maximum size of a UDP transport message in DNS protocol
+	udpMaxMsgSize = 512
+)
+
 // rfc2136 provider type
 type rfc2136Provider struct {
+	provider.BaseProvider
 	nameserver    string
 	zoneName      string
 	tsigKeyName   string
@@ -207,7 +213,6 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	m.SetUpdate(r.zoneName)
 
 	for _, ep := range changes.Create {
-
 		if !r.domainFilter.Match(ep.DNSName) {
 			log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
 			continue
@@ -215,17 +220,15 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 
 		r.AddRecord(m, ep)
 	}
-	for _, ep := range changes.UpdateNew {
-
+	for i, ep := range changes.UpdateNew {
 		if !r.domainFilter.Match(ep.DNSName) {
 			log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
 			continue
 		}
 
-		r.UpdateRecord(m, ep)
+		r.UpdateRecord(m, changes.UpdateOld[i], ep)
 	}
 	for _, ep := range changes.Delete {
-
 		if !r.domainFilter.Match(ep.DNSName) {
 			log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
 			continue
@@ -245,13 +248,13 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	return nil
 }
 
-func (r rfc2136Provider) UpdateRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
-	err := r.RemoveRecord(m, ep)
+func (r rfc2136Provider) UpdateRecord(m *dns.Msg, oldEp *endpoint.Endpoint, newEp *endpoint.Endpoint) error {
+	err := r.RemoveRecord(m, oldEp)
 	if err != nil {
 		return err
 	}
 
-	return r.AddRecord(m, ep)
+	return r.AddRecord(m, newEp)
 }
 
 func (r rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
@@ -307,6 +310,10 @@ func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 	if !r.insecure {
 		c.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
 		msg.SetTsig(r.tsigKeyName, r.tsigSecretAlg, 300, time.Now().Unix())
+	}
+
+	if msg.Len() > udpMaxMsgSize {
+		c.Net = "tcp"
 	}
 
 	resp, _, err := c.Exchange(msg, r.nameserver)

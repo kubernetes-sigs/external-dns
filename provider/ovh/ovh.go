@@ -46,6 +46,8 @@ var (
 
 // OVHProvider is an implementation of Provider for OVH DNS.
 type OVHProvider struct {
+	provider.BaseProvider
+
 	client ovhClient
 
 	domainFilter endpoint.DomainFilter
@@ -95,7 +97,6 @@ func NewOVHProvider(ctx context.Context, domainFilter endpoint.DomainFilter, end
 
 // Records returns the list of records in all relevant zones.
 func (p *OVHProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-
 	_, records, err := p.zonesRecords(ctx)
 	if err != nil {
 		return nil, err

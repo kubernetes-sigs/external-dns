@@ -39,6 +39,7 @@ const (
 
 // VultrProvider is an implementation of Provider for Vultr DNS.
 type VultrProvider struct {
+	provider.BaseProvider
 	client govultr.Client
 
 	domainFilter endpoint.DomainFilter
@@ -155,7 +156,6 @@ func (p *VultrProvider) submitChanges(ctx context.Context, changes []*VultrChang
 
 	for zoneName, changes := range zoneChanges {
 		for _, change := range changes {
-
 			log.WithFields(log.Fields{
 				"record": change.ResourceRecordSet.Name,
 				"type":   change.ResourceRecordSet.Type,
@@ -201,7 +201,6 @@ func (p *VultrProvider) submitChanges(ctx context.Context, changes []*VultrChang
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -220,7 +219,6 @@ func newVultrChanges(action string, endpoints []*endpoint.Endpoint) []*VultrChan
 	changes := make([]*VultrChanges, 0, len(endpoints))
 	ttl := vultrTTL
 	for _, e := range endpoints {
-
 		if e.RecordTTL.IsConfigured() {
 			ttl = int(e.RecordTTL)
 		}
@@ -255,7 +253,6 @@ func seperateChangesByZone(zones []govultr.DNSDomain, changes []*VultrChanges) m
 			continue
 		}
 		change[zone] = append(change[zone], c)
-
 	}
 	return change
 }

@@ -18,6 +18,7 @@ package source
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -109,7 +110,7 @@ func NewOcpRouteSource(
 }
 
 // TODO add a meaningful EventHandler
-func (ors *ocpRouteSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+func (ors *ocpRouteSource) AddEventHandler(ctx context.Context, handler func()) {
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.

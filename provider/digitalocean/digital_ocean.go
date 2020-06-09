@@ -45,10 +45,13 @@ const (
 
 // DigitalOceanProvider is an implementation of Provider for Digital Ocean's DNS.
 type DigitalOceanProvider struct {
+	provider.BaseProvider
 	Client godo.DomainsService
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter endpoint.DomainFilter
-	DryRun       bool
+	// page size when querying paginated APIs
+	apiPageSize int
+	DryRun      bool
 }
 
 // DigitalOceanChange differentiates between ChangActions
@@ -58,10 +61,10 @@ type DigitalOceanChange struct {
 }
 
 // NewDigitalOceanProvider initializes a new DigitalOcean DNS based Provider.
-func NewDigitalOceanProvider(ctx context.Context, domainFilter endpoint.DomainFilter, dryRun bool) (*DigitalOceanProvider, error) {
+func NewDigitalOceanProvider(ctx context.Context, domainFilter endpoint.DomainFilter, dryRun bool, apiPageSize int) (*DigitalOceanProvider, error) {
 	token, ok := os.LookupEnv("DO_TOKEN")
 	if !ok {
-		return nil, fmt.Errorf("No token found")
+		return nil, fmt.Errorf("no token found")
 	}
 	oauthClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(&oauth2.Token{
 		AccessToken: token,
@@ -71,6 +74,7 @@ func NewDigitalOceanProvider(ctx context.Context, domainFilter endpoint.DomainFi
 	provider := &DigitalOceanProvider{
 		Client:       client.Domains,
 		domainFilter: domainFilter,
+		apiPageSize:  apiPageSize,
 		DryRun:       dryRun,
 	}
 	return provider, nil
@@ -127,7 +131,7 @@ func (p *DigitalOceanProvider) Records(ctx context.Context) ([]*endpoint.Endpoin
 
 func (p *DigitalOceanProvider) fetchRecords(ctx context.Context, zoneName string) ([]godo.DomainRecord, error) {
 	allRecords := []godo.DomainRecord{}
-	listOptions := &godo.ListOptions{}
+	listOptions := &godo.ListOptions{PerPage: p.apiPageSize}
 	for {
 		records, resp, err := p.Client.Records(ctx, zoneName, listOptions)
 		if err != nil {
@@ -152,7 +156,7 @@ func (p *DigitalOceanProvider) fetchRecords(ctx context.Context, zoneName string
 
 func (p *DigitalOceanProvider) fetchZones(ctx context.Context) ([]godo.Domain, error) {
 	allZones := []godo.Domain{}
-	listOptions := &godo.ListOptions{}
+	listOptions := &godo.ListOptions{PerPage: p.apiPageSize}
 	for {
 		zones, resp, err := p.Client.List(ctx, listOptions)
 		if err != nil {

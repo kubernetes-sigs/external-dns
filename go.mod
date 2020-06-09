@@ -16,23 +16,21 @@ require (
 	github.com/alecthomas/kingpin v2.2.5+incompatible
 	github.com/alecthomas/repr v0.0.0-20200325044227-4184120f674c // indirect
 	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20180828111155-cad214d7d71f
-	github.com/aws/aws-sdk-go v1.27.4
+	github.com/aws/aws-sdk-go v1.31.4
 	github.com/cloudflare/cloudflare-go v0.10.1
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/denverdino/aliyungo v0.0.0-20190125010748-a747050bb1ba
 	github.com/digitalocean/godo v1.34.0
-	github.com/dnaeon/go-vcr v1.0.1 // indirect
 	github.com/dnsimple/dnsimple-go v0.60.0
 	github.com/exoscale/egoscale v0.18.1
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
-	github.com/go-resty/resty v1.8.0 // indirect
 	github.com/gobs/pretty v0.0.0-20180724170744-09732c25a95b // indirect
 	github.com/golang/sync v0.0.0-20180314180146-1d60e4601c6f
 	github.com/gophercloud/gophercloud v0.1.0
 	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/infobloxopen/infoblox-go-client v0.0.0-20180606155407-61dc5f9b0a65
 	github.com/linki/instrumented_http v0.2.0
-	github.com/linode/linodego v0.3.0
+	github.com/linode/linodego v0.15.0
 	github.com/maxatome/go-testdeep v1.4.0
 	github.com/miekg/dns v1.1.25
 	github.com/nesv/go-dynect v0.6.0
@@ -54,16 +52,16 @@ require (
 	github.com/vinyldns/go-vinyldns v0.0.0-20190611170422-7119fe55ed92
 	github.com/vultr/govultr v0.3.2
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20200401174654-e694b7bb0875
-	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553
+	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	google.golang.org/api v0.15.0
 	gopkg.in/ns1/ns1-go.v2 v2.0.0-20190322154155-0dafb5275fd1
 	gopkg.in/yaml.v2 v2.2.8
 	istio.io/api v0.0.0-20200324230725-4b064f75ad8f
 	istio.io/client-go v0.0.0-20200324231043-96a582576da1
-	k8s.io/api v0.17.2
-	k8s.io/apimachinery v0.17.2
-	k8s.io/client-go v0.17.2
+	k8s.io/api v0.17.5
+	k8s.io/apimachinery v0.17.5
+	k8s.io/client-go v0.17.5
 	k8s.io/klog v1.0.0
 )
 
