@@ -175,11 +175,9 @@ func (p *HetznerProvider) newHetznerChanges(action string, endpoints []*endpoint
 	changes := make([]*HetznerChanges, 0, len(endpoints))
 	ttl := hetznerTTL
 	for _, e := range endpoints {
-
 		if e.RecordTTL.IsConfigured() {
 			ttl = int(e.RecordTTL)
 		}
-
 		change := &HetznerChanges{
 			Action: action,
 			ResourceRecordSet: hclouddns.HCloudRecord{
@@ -212,7 +210,6 @@ func (p *HetznerProvider) seperateChangesByZone(zones []hclouddns.HCloudZone, ch
 		c.ZoneName = zoneName
 		c.ZoneID = zoneID
 		change[zoneID] = append(change[zoneID], c)
-
 	}
 	return change
 }
