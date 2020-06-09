@@ -41,6 +41,7 @@ type HetznerChanges struct {
 }
 
 type HetznerProvider struct {
+	provider.BaseProvider
 	Client       hclouddns.HCloudClientAdapter
 	domainFilter endpoint.DomainFilter
 	DryRun       bool
