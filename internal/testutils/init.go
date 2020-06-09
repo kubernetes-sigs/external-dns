@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	config.FAST_POLL = true
+	config.FastPoll = true
 	if os.Getenv("DEBUG") == "" {
 		logrus.SetOutput(ioutil.Discard)
 		log.SetOutput(ioutil.Discard)

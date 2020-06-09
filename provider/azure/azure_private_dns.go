@@ -46,6 +46,7 @@ type PrivateRecordSetsClient interface {
 
 // AzurePrivateDNSProvider implements the DNS provider for Microsoft's Azure Private DNS service
 type AzurePrivateDNSProvider struct {
+	provider.BaseProvider
 	domainFilter     endpoint.DomainFilter
 	zoneIDFilter     provider.ZoneIDFilter
 	dryRun           bool

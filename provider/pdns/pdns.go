@@ -117,7 +117,6 @@ func (tlsConfig *TLSConfig) setHTTPClient(pdnsClientConfig *pgo.Configuration) e
 
 // Function for debug printing
 func stringifyHTTPResponseBody(r *http.Response) (body string) {
-
 	if r == nil {
 		return ""
 	}
@@ -126,7 +125,6 @@ func stringifyHTTPResponseBody(r *http.Response) (body string) {
 	buf.ReadFrom(r.Body)
 	body = buf.String()
 	return body
-
 }
 
 // PDNSAPIProvider : Interface used and extended by the PDNSAPIClient struct as
@@ -162,7 +160,6 @@ func (c *PDNSAPIClient) ListZones() (zones []pgo.Zone, resp *http.Response, err 
 
 	log.Errorf("Unable to fetch zones. %v", err)
 	return zones, resp, err
-
 }
 
 // PartitionZones : Method returns a slice of zones that adhere to the domain filter and a slice of ones that does not adhere to the filter
@@ -191,14 +188,12 @@ func (c *PDNSAPIClient) ListZone(zoneID string) (zone pgo.Zone, resp *http.Respo
 			log.Debugf("Retrying ListZone() ... %d", i)
 			time.Sleep(retryAfterTime * (1 << uint(i)))
 			continue
-
 		}
 		return zone, resp, err
 	}
 
 	log.Errorf("Unable to list zone. %v", err)
 	return zone, resp, err
-
 }
 
 // PatchZone : Method used to update the contents of a particular zone from PowerDNS
@@ -211,7 +206,6 @@ func (c *PDNSAPIClient) PatchZone(zoneID string, zoneStruct pgo.Zone) (resp *htt
 			log.Debugf("Retrying PatchZone() ... %d", i)
 			time.Sleep(retryAfterTime * (1 << uint(i)))
 			continue
-
 		}
 		return resp, err
 	}
@@ -222,16 +216,16 @@ func (c *PDNSAPIClient) PatchZone(zoneID string, zoneStruct pgo.Zone) (resp *htt
 
 // PDNSProvider is an implementation of the Provider interface for PowerDNS
 type PDNSProvider struct {
+	provider.BaseProvider
 	client PDNSAPIProvider
 }
 
 // NewPDNSProvider initializes a new PowerDNS based Provider.
 func NewPDNSProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, error) {
-
 	// Do some input validation
 
 	if config.APIKey == "" {
-		return nil, errors.New("Missing API Key for PDNS. Specify using --pdns-api-key=")
+		return nil, errors.New("missing API Key for PDNS. Specify using --pdns-api-key=")
 	}
 
 	// We do not support dry running, exit safely instead of surprising the user
@@ -258,7 +252,6 @@ func NewPDNSProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, err
 			domainFilter: config.DomainFilter,
 		},
 	}
-
 	return provider, nil
 }
 
@@ -271,13 +264,11 @@ func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) (endpoints []*endpo
 			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rr.Name, rr.Type_, endpoint.TTL(rr.Ttl), record.Content))
 		}
 	}
-
 	return endpoints, nil
 }
 
 // ConvertEndpointsToZones marshals endpoints into pdns compatible Zone structs
 func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changetype pdnsChangeType) (zonelist []pgo.Zone, _ error) {
-
 	zonelist = []pgo.Zone{}
 	endpoints := make([]*endpoint.Endpoint, len(eps))
 	copy(endpoints, eps)
@@ -318,7 +309,7 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 				// external-dns v5.0.0-alpha onwards
 				records := []pgo.Record{}
 				for _, t := range ep.Targets {
-					if "CNAME" == ep.RecordType {
+					if ep.RecordType == "CNAME" {
 						t = provider.EnsureTrailingDot(t)
 					}
 
@@ -334,7 +325,7 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 				// DELETEs explicitly forbid a TTL, therefore only PATCHes need the TTL
 				if changetype == PdnsReplace {
 					if int64(ep.RecordTTL) > int64(math.MaxInt32) {
-						return nil, errors.New("Value of record TTL overflows, limited to int32")
+						return nil, errors.New("value of record TTL overflows, limited to int32")
 					}
 					if ep.RecordTTL == 0 {
 						// No TTL was specified for the record, we use the default
@@ -352,13 +343,10 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 				// If we didn't pop anything, we move to the next item in the list
 				i++
 			}
-
 		}
-
 		if len(zone.Rrsets) > 0 {
 			zonelist = append(zonelist, zone)
 		}
-
 	}
 
 	// residualZones is unsorted by name length like its counterpart
@@ -376,7 +364,6 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 			}
 		}
 	}
-
 	// If we still have some endpoints left, it means we couldn't find a matching zone (filtered or residual) for them
 	// We warn instead of hard fail here because we don't want a misconfig to cause everything to go down
 	if len(endpoints) > 0 {
@@ -401,20 +388,17 @@ func (p *PDNSProvider) mutateRecords(endpoints []*endpoint.Endpoint, changetype 
 		} else {
 			log.Debugf("Struct for PatchZone:\n%s", string(jso))
 		}
-
 		resp, err := p.client.PatchZone(zone.Id, zone)
 		if err != nil {
 			log.Debugf("PDNS API response: %s", stringifyHTTPResponseBody(resp))
 			return err
 		}
-
 	}
 	return nil
 }
 
 // Records returns all DNS records controlled by the configured PDNS server (for all zones)
 func (p *PDNSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
-
 	zones, _, err := p.client.ListZones()
 	if err != nil {
 		return nil, err
@@ -444,7 +428,6 @@ func (p *PDNSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpo
 // ApplyChanges takes a list of changes (endpoints) and updates the PDNS server
 // by sending the correct HTTP PATCH requests to a matching zone
 func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-
 	startTime := time.Now()
 
 	// Create
@@ -492,7 +475,6 @@ func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 			return err
 		}
 	}
-
 	log.Debugf("Changes pushed out to PowerDNS in %s\n", time.Since(startTime))
 	return nil
 }

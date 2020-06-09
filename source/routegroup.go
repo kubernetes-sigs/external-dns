@@ -18,6 +18,7 @@ package source
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -239,7 +240,7 @@ func NewRouteGroupSource(timeout time.Duration, token, tokenPath, master, namesp
 }
 
 // AddEventHandler for routegroup is currently a no op, because we do not implement caching, yet.
-func (sc *routeGroupSource) AddEventHandler(func() error, <-chan struct{}, time.Duration) {}
+func (sc *routeGroupSource) AddEventHandler(ctx context.Context, handler func()) {}
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all routeGroup resources on all namespaces.
