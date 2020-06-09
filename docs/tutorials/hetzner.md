@@ -2,7 +2,7 @@
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using Hetzner DNS.
 
-Make sure to use **>=0.7.2** version of ExternalDNS for this tutorial.
+Make sure to use **>=0.7.3** version of ExternalDNS for this tutorial.
 
 ## Creating a Hetzner DNS zone
 
@@ -43,7 +43,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        image: eu.gcr.io/k8s-artifacts-prod/external-dns/external-dns:v0.7.3
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
