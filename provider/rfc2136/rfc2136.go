@@ -220,13 +220,13 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 
 		r.AddRecord(m, ep)
 	}
-	for _, ep := range changes.UpdateNew {
+	for i, ep := range changes.UpdateNew {
 		if !r.domainFilter.Match(ep.DNSName) {
 			log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
 			continue
 		}
 
-		r.UpdateRecord(m, ep)
+		r.UpdateRecord(m, changes.UpdateOld[i], ep)
 	}
 	for _, ep := range changes.Delete {
 		if !r.domainFilter.Match(ep.DNSName) {
@@ -248,13 +248,13 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	return nil
 }
 
-func (r rfc2136Provider) UpdateRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
-	err := r.RemoveRecord(m, ep)
+func (r rfc2136Provider) UpdateRecord(m *dns.Msg, oldEp *endpoint.Endpoint, newEp *endpoint.Endpoint) error {
+	err := r.RemoveRecord(m, oldEp)
 	if err != nil {
 		return err
 	}
 
-	return r.AddRecord(m, ep)
+	return r.AddRecord(m, newEp)
 }
 
 func (r rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
