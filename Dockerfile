@@ -20,8 +20,8 @@ ARG VERSION
 WORKDIR /sigs.k8s.io/external-dns
 
 COPY . .
-RUN go mod vendor
-RUN make test && \
+RUN go mod vendor && \
+    make test && \
     make build
 
 # final image
