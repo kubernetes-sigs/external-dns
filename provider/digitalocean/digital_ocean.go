@@ -525,7 +525,6 @@ func processUpdateActions(
 				})
 			}
 		}
-
 	}
 
 	return nil
