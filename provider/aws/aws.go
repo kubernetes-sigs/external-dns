@@ -592,7 +592,8 @@ func (p *AWSProvider) tagsForZone(ctx context.Context, zoneID string) (map[strin
 
 func batchChangeSet(cs []*route53.Change, batchSize int) [][]*route53.Change {
 	if len(cs) <= batchSize {
-		return [][]*route53.Change{cs}
+		res := sortChangesByActionNameType(cs)
+		return [][]*route53.Change{res}
 	}
 
 	batchChanges := make([][]*route53.Change, 0)
@@ -639,10 +640,10 @@ func batchChangeSet(cs []*route53.Change, batchSize int) [][]*route53.Change {
 
 func sortChangesByActionNameType(cs []*route53.Change) []*route53.Change {
 	sort.SliceStable(cs, func(i, j int) bool {
-		if *cs[i].Action < *cs[j].Action {
+		if *cs[i].Action > *cs[j].Action {
 			return true
 		}
-		if *cs[i].Action > *cs[j].Action {
+		if *cs[i].Action < *cs[j].Action {
 			return false
 		}
 		if *cs[i].ResourceRecordSet.Name < *cs[j].ResourceRecordSet.Name {
