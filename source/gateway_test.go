@@ -1094,6 +1094,43 @@ func testGatewayEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{},
 		},
+		{
+			title:           "gateways with wildcard host and hostname annotation",
+			targetNamespace: "",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips: []string{"1.2.3.4"},
+				},
+			},
+			configItems: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "",
+					annotations: map[string]string{
+						hostnameAnnotationKey: "fake1.dns-through-hostname.com",
+					},
+					dnsnames: [][]string{{"*"}},
+				},
+				{
+					name:      "fake2",
+					namespace: "",
+					annotations: map[string]string{
+						hostnameAnnotationKey: "fake2.dns-through-hostname.com",
+					},
+					dnsnames: [][]string{{"some-namespace/*"}},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "fake1.dns-through-hostname.com",
+					Targets: endpoint.Targets{"1.2.3.4"},
+				},
+				{
+					DNSName: "fake2.dns-through-hostname.com",
+					Targets: endpoint.Targets{"1.2.3.4"},
+				},
+			},
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 

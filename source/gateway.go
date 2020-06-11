@@ -272,11 +272,6 @@ func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway networ
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(annotations)
 
-	// Skip endpoints if we do not want entries from annotations
-	if !sc.ignoreHostnameAnnotation {
-		hostnames = append(hostnames, getHostnamesFromAnnotations(annotations)...)
-	}
-
 	for _, host := range hostnames {
 		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
 	}
@@ -305,6 +300,11 @@ func (sc *gatewaySource) hostNamesFromGateway(gateway networkingv1alpha3.Gateway
 			}
 		}
 	}
+
+	if !sc.ignoreHostnameAnnotation {
+		hostnames = append(hostnames, getHostnamesFromAnnotations(gateway.Annotations)...)
+	}
+
 	return hostnames, nil
 }
 
