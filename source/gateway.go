@@ -300,7 +300,9 @@ func (sc *gatewaySource) hostNamesFromGateway(gateway networkingv1alpha3.Gateway
 				host = parts[1]
 			}
 
-			hostnames = append(hostnames, host)
+			if host != "*" {
+				hostnames = append(hostnames, host)
+			}
 		}
 	}
 	return hostnames, nil
