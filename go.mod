@@ -17,6 +17,7 @@ require (
 	github.com/alecthomas/repr v0.0.0-20200325044227-4184120f674c // indirect
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.357
 	github.com/aws/aws-sdk-go v1.31.4
+	github.com/bodgit/tsig v0.0.0-20200217090835-f646ed0b19cd
 	github.com/cloudflare/cloudflare-go v0.10.1
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/denverdino/aliyungo v0.0.0-20190125010748-a747050bb1ba
