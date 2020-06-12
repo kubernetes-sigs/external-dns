@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/bodgit/tsig"
-	gssClient "github.com/bodgit/tsig/client"
+	extendedClient "github.com/bodgit/tsig/client"
 	"github.com/bodgit/tsig/gss"
 	"github.com/miekg/dns"
 
@@ -87,7 +87,7 @@ type rfc2136Actions interface {
 // NewRfc2136Provider is a factory function for OpenStack rfc2136 providers
 func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, actions rfc2136Actions) (provider.Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
-	if !ok && !insecure {
+	if !ok && !insecure && !gssTsig {
 		return nil, errors.Errorf("%s is not supported TSIG algorithm", secretAlg)
 	}
 
@@ -111,13 +111,9 @@ func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, k
 	}
 
 	if !insecure {
-		if gssTsig {
-			log.Infof("Ignoring TSIG options: Preferring GSS-TSIG for secure DNS updates")
-		} else {
-			r.tsigKeyName = dns.Fqdn(keyName)
-			r.tsigSecret = secret
-			r.tsigSecretAlg = secretAlgChecked
-		}
+		r.tsigKeyName = dns.Fqdn(keyName)
+		r.tsigSecret = secret
+		r.tsigSecretAlg = secretAlgChecked
 	}
 
 	log.Infof("Configured RFC2136 with zone '%s' and nameserver '%s'", r.zoneName, r.nameserver)
@@ -341,7 +337,7 @@ func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 	}
 	log.Debugf("SendMessage")
 
-	c := new(dns.Client)
+	c := new(extendedClient.Client)
 	c.SingleInflight = true
 
 	if !r.insecure {
@@ -352,15 +348,13 @@ func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 			}
 			defer handle.Close()
 
-			c := gssClient.Client{}
-			c.TsigAlgorithm = map[string]*gssClient.TsigAlgorithm{
+			c.TsigAlgorithm = map[string]*extendedClient.TsigAlgorithm{
 				tsig.GSS: {
 					Generate: handle.GenerateGSS,
 					Verify:   handle.VerifyGSS,
 				},
 			}
 			c.TsigSecret = map[string]string{*keyName: ""}
-			c.SingleInflight = true
 
 			msg.SetTsig(*keyName, tsig.GSS, clockSkew, time.Now().Unix())
 		} else {
