@@ -17,6 +17,7 @@ limitations under the License.
 package source
 
 import (
+	"context"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,7 +66,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 	}
 
 	for _, service := range suite.lbServices {
-		_, err = fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(service)
+		_, err = fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
 		suite.NoError(err, "should succeed")
 	}
 
@@ -85,7 +86,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		namespace: "istio-system",
 		dnsnames:  [][]string{{"*"}},
 	}).Config()
-	_, err = fakeIstioClient.NetworkingV1alpha3().Gateways(suite.gwconfig.Namespace).Create(&suite.gwconfig)
+	_, err = fakeIstioClient.NetworkingV1alpha3().Gateways(suite.gwconfig.Namespace).Create(context.Background(), &suite.gwconfig, metav1.CreateOptions{})
 	suite.NoError(err, "should succeed")
 
 	suite.vsconfig = (fakeVirtualServiceConfig{
@@ -94,12 +95,12 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		gateways:  []string{"istio-system/foo-gateway-with-targets"},
 		dnsnames:  []string{"foo"},
 	}).Config()
-	_, err = fakeIstioClient.NetworkingV1alpha3().VirtualServices(suite.vsconfig.Namespace).Create(&suite.vsconfig)
+	_, err = fakeIstioClient.NetworkingV1alpha3().VirtualServices(suite.vsconfig.Namespace).Create(context.Background(), &suite.vsconfig, metav1.CreateOptions{})
 	suite.NoError(err, "should succeed")
 }
 
 func (suite *VirtualServiceSuite) TestResourceLabelIsSet() {
-	endpoints, err := suite.source.Endpoints()
+	endpoints, err := suite.source.Endpoints(context.Background())
 	suite.NoError(err, "should succeed")
 	suite.Equal(len(endpoints), 2, "should return the correct number of endpoints")
 	for _, ep := range endpoints {
@@ -539,7 +540,7 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			if source, err := newTestVirtualServiceSource(ti.lbServices, []fakeGatewayConfig{ti.gwconfig}); err != nil {
 				require.NoError(t, err)
-			} else if endpoints, err := source.endpointsFromVirtualService(ti.vsconfig.Config()); err != nil {
+			} else if endpoints, err := source.endpointsFromVirtualService(context.Background(), ti.vsconfig.Config()); err != nil {
 				require.NoError(t, err)
 			} else {
 				validateEndpoints(t, endpoints, ti.expected)
@@ -1411,19 +1412,19 @@ func testVirtualServiceEndpoints(t *testing.T) {
 
 			for _, lb := range ti.lbServices {
 				service := lb.Service()
-				_, err := fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(service)
+				_, err := fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
 			fakeIstioClient := NewFakeConfigStore()
 
 			for _, gateway := range gateways {
-				_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gateway.Namespace).Create(&gateway)
+				_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gateway.Namespace).Create(context.Background(), &gateway, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
 			for _, virtualservice := range virtualservices {
-				_, err := fakeIstioClient.NetworkingV1alpha3().VirtualServices(virtualservice.Namespace).Create(&virtualservice)
+				_, err := fakeIstioClient.NetworkingV1alpha3().VirtualServices(virtualservice.Namespace).Create(context.Background(), &virtualservice, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
@@ -1438,7 +1439,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			res, err := virtualServiceSource.Endpoints()
+			res, err := virtualServiceSource.Endpoints(context.Background())
 			if ti.expectError {
 				assert.Error(t, err)
 			} else {
@@ -1488,7 +1489,7 @@ func newTestVirtualServiceSource(loadBalancerList []fakeIngressGatewayService, g
 
 	for _, lb := range loadBalancerList {
 		service := lb.Service()
-		_, err := fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(service)
+		_, err := fakeKubernetesClient.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -1496,7 +1497,7 @@ func newTestVirtualServiceSource(loadBalancerList []fakeIngressGatewayService, g
 
 	for _, gw := range gwList {
 		gwObj := gw.Config()
-		_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gw.namespace).Create(&gwObj)
+		_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gw.namespace).Create(context.Background(), &gwObj, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}

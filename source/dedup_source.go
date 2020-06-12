@@ -35,11 +35,11 @@ func NewDedupSource(source Source) Source {
 }
 
 // Endpoints collects endpoints from its wrapped source and returns them without duplicates.
-func (ms *dedupSource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	result := []*endpoint.Endpoint{}
 	collected := map[string]bool{}
 
-	endpoints, err := ms.source.Endpoints()
+	endpoints, err := ms.source.Endpoints(ctx)
 	if err != nil {
 		return nil, err
 	}

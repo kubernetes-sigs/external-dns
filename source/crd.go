@@ -116,10 +116,10 @@ func (cs *crdSource) AddEventHandler(ctx context.Context, handler func()) {
 }
 
 // Endpoints returns endpoint objects.
-func (cs *crdSource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
-	result, err := cs.List(&metav1.ListOptions{})
+	result, err := cs.List(ctx, &metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +166,7 @@ func (cs *crdSource) Endpoints() ([]*endpoint.Endpoint, error) {
 
 		dnsEndpoint.Status.ObservedGeneration = dnsEndpoint.Generation
 		// Update the ObservedGeneration
-		_, err = cs.UpdateStatus(&dnsEndpoint)
+		_, err = cs.UpdateStatus(ctx, &dnsEndpoint)
 		if err != nil {
 			log.Warnf("Could not update ObservedGeneration of the CRD: %v", err)
 		}
@@ -181,18 +181,18 @@ func (cs *crdSource) setResourceLabel(crd *endpoint.DNSEndpoint, endpoints []*en
 	}
 }
 
-func (cs *crdSource) List(opts *metav1.ListOptions) (result *endpoint.DNSEndpointList, err error) {
+func (cs *crdSource) List(ctx context.Context, opts *metav1.ListOptions) (result *endpoint.DNSEndpointList, err error) {
 	result = &endpoint.DNSEndpointList{}
 	err = cs.crdClient.Get().
 		Namespace(cs.namespace).
 		Resource(cs.crdResource).
 		VersionedParams(opts, cs.codec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
-func (cs *crdSource) UpdateStatus(dnsEndpoint *endpoint.DNSEndpoint) (result *endpoint.DNSEndpoint, err error) {
+func (cs *crdSource) UpdateStatus(ctx context.Context, dnsEndpoint *endpoint.DNSEndpoint) (result *endpoint.DNSEndpoint, err error) {
 	result = &endpoint.DNSEndpoint{}
 	err = cs.crdClient.Put().
 		Namespace(dnsEndpoint.Namespace).
@@ -200,7 +200,7 @@ func (cs *crdSource) UpdateStatus(dnsEndpoint *endpoint.DNSEndpoint) (result *en
 		Name(dnsEndpoint.Name).
 		SubResource("status").
 		Body(dnsEndpoint).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
