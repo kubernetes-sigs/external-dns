@@ -60,11 +60,19 @@ require (
 	google.golang.org/api v0.15.0
 	gopkg.in/ns1/ns1-go.v2 v2.0.0-20190322154155-0dafb5275fd1
 	gopkg.in/yaml.v2 v2.2.8
+<<<<<<< HEAD
 	istio.io/api v0.0.0-20200529165953-72dad51d4ffc
 	istio.io/client-go v0.0.0-20200529172309-31c16ea3f751
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8
 	k8s.io/client-go v0.18.8
+=======
+	istio.io/api v0.0.0-20200324230725-4b064f75ad8f
+	istio.io/client-go v0.0.0-20200324231043-96a582576da1
+	k8s.io/api v0.17.5
+	k8s.io/apimachinery v0.17.5
+	k8s.io/client-go v0.17.5
+>>>>>>> b4cadd12... initial add support for gss-tsig
 )
 
 replace (
