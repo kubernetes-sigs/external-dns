@@ -347,6 +347,7 @@ func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 				return err
 			}
 			defer handle.Close()
+			defer handle.DeleteContext(keyName)
 
 			c.TsigAlgorithm = map[string]*extendedClient.TsigAlgorithm{
 				tsig.GSS: {
