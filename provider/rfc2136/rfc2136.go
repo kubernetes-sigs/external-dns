@@ -370,8 +370,11 @@ func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 
 	resp, _, err := c.Exchange(msg, r.nameserver)
 	if err != nil {
-		log.Infof("error in dns.Client.Exchange: %s", err)
-		return err
+		if resp != nil && resp.Rcode != dns.RcodeSuccess {
+			log.Infof("error in dns.Client.Exchange: %s", err)
+			return err
+		}
+		log.Warnf("warn in dns.Client.Exchange: %s", err)
 	}
 	if resp != nil && resp.Rcode != dns.RcodeSuccess {
 		log.Infof("Bad dns.Client.Exchange response: %s", resp)
