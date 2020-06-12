@@ -45,7 +45,7 @@ func NewConnectorSource(remoteServer string) (Source, error) {
 }
 
 // Endpoints returns endpoint objects.
-func (cs *connectorSource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (cs *connectorSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	conn, err := net.DialTimeout("tcp", cs.remoteServer, dialTimeout)

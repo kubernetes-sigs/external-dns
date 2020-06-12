@@ -111,7 +111,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all ingress resources on all namespaces
-func (sc *ingressSource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	ingresses, err := sc.ingressInformer.Lister().Ingresses(sc.namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
