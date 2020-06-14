@@ -1000,7 +1000,7 @@ func testIngressEndpoints(t *testing.T) {
 			}
 
 			fakeClient := fake.NewSimpleClientset()
-			ingressSource, _ := NewIngressSource(
+			source, _ := NewIngressSource(
 				fakeClient,
 				ti.targetNamespace,
 				ti.annotationFilter,
@@ -1013,25 +1013,37 @@ func testIngressEndpoints(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			var res []*endpoint.Endpoint
-			var err error
+			// Wait for the Ingress resources to be visible to the source. We check the
+			// source's informer cache to detect when this occurs. (This violates encapsulation
+			// but is okay as this is a test and we want to ensure the informer's cache updates.)
+			concreteIngressSource := source.(*ingressSource)
+			ingressLister := concreteIngressSource.ingressInformer.Lister()
+			err := poll(250*time.Millisecond, 6*time.Second, func() (bool, error) {
+				allIngressesPresent := true
+				for _, ingress := range ingresses {
+					// Skip ingresses that the source would also skip.
+					if ti.targetNamespace != "" && ti.targetNamespace != ingress.Namespace {
+						continue
+					}
 
-			// wait up to a few seconds for new resources to appear in informer cache.
-			err = poll(time.Second, 3*time.Second, func() (bool, error) {
-				res, err = ingressSource.Endpoints()
-				if err != nil {
-					// stop waiting if we get an error
-					return true, err
+					// Check for the presence of this ingress.
+					_, err := ingressLister.Ingresses(ingress.Namespace).Get(ingress.Name)
+					if err != nil {
+						allIngressesPresent = false
+						break
+					}
 				}
-				return len(res) >= len(ti.expected), nil
+				return allIngressesPresent, nil
 			})
+			require.NoError(t, err)
 
+			// Informer cache has all of the ingresses. Retrieve and validate their endpoints.
+			res, err := source.Endpoints()
 			if ti.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
-
 			validateEndpoints(t, res, ti.expected)
 		})
 	}
