@@ -417,6 +417,8 @@ github.com/openshift/client-go v0.0.0-20200116145930-eb24d03d8420 h1:+0HMnbsn4od
 github.com/openshift/client-go v0.0.0-20200116145930-eb24d03d8420/go.mod h1:4riOwdj99Hd/q+iAcJZfNCsQQQMwURnZV6RL4WHYS5w=
 github.com/oracle/oci-go-sdk v1.8.0 h1:4SO45bKV0I3/Mn1os3ANDZmV0eSE5z5CLdSUIkxtyzs=
 github.com/oracle/oci-go-sdk v1.8.0/go.mod h1:VQb79nF8Z2cwLkLS35ukwStZIg5F66tcBccjip/j888=
+github.com/oracle/oci-go-sdk v20.0.0+incompatible h1:PdKuaDT0DKwG7YMDpwjqsogpLhXt4z7Uxdabssvaucc=
+github.com/oracle/oci-go-sdk v20.0.0+incompatible/go.mod h1:VQb79nF8Z2cwLkLS35ukwStZIg5F66tcBccjip/j888=
 github.com/ovh/go-ovh v0.0.0-20181109152953-ba5adb4cf014 h1:37VE5TYj2m/FLA9SNr4z0+A0JefvTmR60Zwf8XSEV7c=
 github.com/ovh/go-ovh v0.0.0-20181109152953-ba5adb4cf014/go.mod h1:joRatxRJaZBsY3JAOEMcoOp05CnZzsx4scTxi95DHyQ=
 github.com/oxtoacart/bpool v0.0.0-20150712133111-4e1c5567d7c2 h1:CXwSGu/LYmbjEab5aMCs5usQRVBGThelUKBNnoSOuso=

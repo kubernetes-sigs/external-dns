@@ -267,7 +267,15 @@ func main() {
 		)
 	case "oci":
 		var config *oci.OCIConfig
-		config, err = oci.LoadOCIConfig(cfg.OCIConfigFile)
+		// if the instance-principal flag was set, and a compartment OCID was provided, then ignore the
+		// OCI config file, and provide a config that uses instance principal authentication.
+		if cfg.OCIAuthInstancePrincipal && len(cfg.OCICompartmentOCID) > 0 {
+			authConfig := oci.OCIAuthConfig{UseInstancePrincipal: true}
+			config = &oci.OCIConfig{Auth: authConfig, CompartmentID: cfg.OCICompartmentOCID}
+		} else {
+			config, err = oci.LoadOCIConfig(cfg.OCIConfigFile)
+		}
+
 		if err == nil {
 			p, err = oci.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.DryRun)
 		}

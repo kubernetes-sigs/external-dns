@@ -36,7 +36,7 @@ require (
 	github.com/nic-at/rc0go v1.1.0
 	github.com/openshift/api v0.0.0-20200302134843-001335d6cc34
 	github.com/openshift/client-go v0.0.0-20200116145930-eb24d03d8420
-	github.com/oracle/oci-go-sdk v1.8.0
+	github.com/oracle/oci-go-sdk v20.0.0+incompatible
 	github.com/ovh/go-ovh v0.0.0-20181109152953-ba5adb4cf014
 	github.com/pkg/errors v0.9.1
 	github.com/projectcontour/contour v1.4.0
