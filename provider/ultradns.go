@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	udnssdk "github.com/ultradns/ultradns-sdk-go"
+	udnssdk "github.com/aliasgharmhowwala/ultradns-sdk-go"
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -45,7 +45,7 @@ var ultradnsPoolType = "rdpool"
 
 //Setting custom headers for ultradns api calls
 var customHeader = []udnssdk.CustomHeader{
-	udnssdk.CustomHeader {
+	udnssdk.CustomHeader{
 		Key:   "UltraClient",
 		Value: "kube-client",
 	},
@@ -139,19 +139,55 @@ func NewUltraDNSProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*Ultr
 // Zones returns list of hosted zones
 func (p *UltraDNSProvider) Zones(ctx context.Context) ([]udnssdk.Zone, error) {
 	zoneKey := &udnssdk.ZoneKey{}
-	if p.AccountName != "" {
-		zoneKey = &udnssdk.ZoneKey{
-			Zone:        "",
-			AccountName: p.AccountName,
+	zones_appender := []udnssdk.Zone{}
+	if p.domainFilter.IsConfigured() {
+
+		for _, zone := range p.domainFilter.Filters {
+			if p.AccountName != "" {
+				zoneKey = &udnssdk.ZoneKey{
+					Zone:        zone,
+					AccountName: p.AccountName,
+				}
+
+				zones, err := p.fetchZones(ctx, zoneKey)
+				if err != nil {
+					return nil, err
+				}
+
+				zones_appender = append(zones_appender, zones...)
+
+			} else {
+
+				zoneKey = &udnssdk.ZoneKey{
+					Zone: zone,
+				}
+
+				zones, err := p.fetchZones(ctx, zoneKey)
+				if err != nil {
+					return nil, err
+				}
+
+				zones_appender = append(zones_appender, zones...)
+			}
 		}
-	}
 
-	zones, err := p.fetchZones(ctx, zoneKey)
-	if err != nil {
-		return nil, err
-	}
+		return zones_appender, nil
 
-	return zones, nil
+	} else {
+		if p.AccountName != "" {
+			zoneKey = &udnssdk.ZoneKey{
+				Zone:        "",
+				AccountName: p.AccountName,
+			}
+		}
+
+		zones, err := p.fetchZones(ctx, zoneKey)
+		if err != nil {
+			return nil, err
+		}
+
+		return zones, nil
+	}
 }
 
 func (p *UltraDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
@@ -238,14 +274,14 @@ func (p *UltraDNSProvider) fetchRecords(ctx context.Context, k udnssdk.RRSetKey)
 func (p *UltraDNSProvider) fetchZones(ctx context.Context, zoneKey *udnssdk.ZoneKey) ([]udnssdk.Zone, error) {
 	// Select will list the zone rrsets, paginating through all available results
 	// TODO: Sane Configuration for timeouts / retries
+	offset := 0
+	limit := 1000
 	maxerrs := 5
 	waittime := 5 * time.Second
 
 	zones := []udnssdk.Zone{}
 
 	errcnt := 0
-	offset := 0
-	limit := 1000
 
 	for {
 		reqZones, ri, res, err := p.client.Zone.SelectWithOffsetWithLimit(zoneKey, offset, limit)
@@ -262,13 +298,7 @@ func (p *UltraDNSProvider) fetchZones(ctx context.Context, zoneKey *udnssdk.Zone
 
 		for _, zone := range reqZones {
 
-			if p.domainFilter.IsConfigured() {
-				if p.domainFilter.Match(zone.Properties.Name) {
-					zones = append(zones, zone)
-				}
-			} else {
-				zones = append(zones, zone)
-			}
+			zones = append(zones, zone)
 		}
 		if ri.ReturnedCount+ri.Offset >= ri.TotalCount {
 			return zones, nil
@@ -326,7 +356,7 @@ func (p *UltraDNSProvider) submitChanges(ctx context.Context, changes []*UltraDN
 				Name: change.ResourceRecordSetUltraDNS.OwnerName,
 			}
 			record := udnssdk.RRSet{}
-			if ((change.ResourceRecordSetUltraDNS.RRType == "A" || change.ResourceRecordSetUltraDNS.RRType == "AAAA" ) && (len(change.ResourceRecordSetUltraDNS.RData) >= 2)) {
+			if (change.ResourceRecordSetUltraDNS.RRType == "A" || change.ResourceRecordSetUltraDNS.RRType == "AAAA") && (len(change.ResourceRecordSetUltraDNS.RData) >= 2) {
 				if ultradnsPoolType == "sbpool" && change.ResourceRecordSetUltraDNS.RRType == "A" {
 					sbPoolObject, _ := p.newSBPoolObjectCreation(ctx, change)
 					record = udnssdk.RRSet{
@@ -345,10 +375,10 @@ func (p *UltraDNSProvider) submitChanges(ctx context.Context, changes []*UltraDN
 						TTL:       change.ResourceRecordSetUltraDNS.TTL,
 						Profile:   rdPoolObject.RawProfile(),
 					}
-				}else{
+				} else {
 					return fmt.Errorf("We do not support Multiple target AAAA records in SB Pool please contact to Neustar for further details")
 				}
-			}else {
+			} else {
 				record = udnssdk.RRSet{
 					RRType:    change.ResourceRecordSetUltraDNS.RRType,
 					OwnerName: change.ResourceRecordSetUltraDNS.OwnerName,
