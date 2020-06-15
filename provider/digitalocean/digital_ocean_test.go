@@ -146,10 +146,26 @@ func (m *mockDigitalOceanRecordsFail) Records(ctx context.Context, domain string
 	return []godo.DomainRecord{}, nil, fmt.Errorf("Failed to get records")
 }
 
+func isEmpty(xs interface{}) bool {
+	if xs != nil {
+		objValue := reflect.ValueOf(xs)
+		return objValue.Len() == 0
+	}
+	return true
+}
+
 // This function is an adapted copy of the testify package's ElementsMatch function with the
 // call to ObjectsAreEqual replaced with cmp.Equal which better handles struct's with pointers to
-// other structs.
+// other structs. It also ignores ordering when comparing unlike cmp.Equal.
 func elementsMatch(t *testing.T, listA, listB interface{}, msgAndArgs ...interface{}) (ok bool) {
+	if listA == nil && listB == nil {
+		return true
+	} else if listA == nil {
+		return isEmpty(listB)
+	} else if listB == nil {
+		return isEmpty(listA)
+	}
+
 	aKind := reflect.TypeOf(listA).Kind()
 	bKind := reflect.TypeOf(listB).Kind()
 
@@ -192,6 +208,49 @@ func elementsMatch(t *testing.T, listA, listB interface{}, msgAndArgs ...interfa
 	}
 
 	return true
+}
+
+// Test adapted from test in testify library.
+// https://github.com/stretchr/testify/blob/b8f7d52a4a7c581d5ed42333572e7fb857c687c2/assert/assertions_test.go#L768-L796
+func TestElementsMatch(t *testing.T) {
+	mockT := new(testing.T)
+
+	cases := []struct {
+		expected interface{}
+		actual   interface{}
+		result   bool
+	}{
+		// matching
+		{nil, nil, true},
+
+		{nil, nil, true},
+		{[]int{}, []int{}, true},
+		{[]int{1}, []int{1}, true},
+		{[]int{1, 1}, []int{1, 1}, true},
+		{[]int{1, 2}, []int{1, 2}, true},
+		{[]int{1, 2}, []int{2, 1}, true},
+		{[2]int{1, 2}, [2]int{2, 1}, true},
+		{[]string{"hello", "world"}, []string{"world", "hello"}, true},
+		{[]string{"hello", "hello"}, []string{"hello", "hello"}, true},
+		{[]string{"hello", "hello", "world"}, []string{"hello", "world", "hello"}, true},
+		{[3]string{"hello", "hello", "world"}, [3]string{"hello", "world", "hello"}, true},
+		{[]int{}, nil, true},
+
+		// not matching
+		{[]int{1}, []int{1, 1}, false},
+		{[]int{1, 2}, []int{2, 2}, false},
+		{[]string{"hello", "hello"}, []string{"hello"}, false},
+	}
+
+	for _, c := range cases {
+		t.Run(fmt.Sprintf("ElementsMatch(%#v, %#v)", c.expected, c.actual), func(t *testing.T) {
+			res := elementsMatch(mockT, c.actual, c.expected)
+
+			if res != c.result {
+				t.Errorf("elementsMatch(%#v, %#v) should return %v", c.actual, c.expected, c.result)
+			}
+		})
+	}
 }
 
 func TestDigitalOceanZones(t *testing.T) {
