@@ -18,9 +18,10 @@ package oci
 
 import (
 	"context"
-	"github.com/oracle/oci-go-sdk/common/auth"
 	"io/ioutil"
 	"strings"
+
+	"github.com/oracle/oci-go-sdk/common/auth"
 
 	"github.com/oracle/oci-go-sdk/common"
 	"github.com/oracle/oci-go-sdk/dns"
