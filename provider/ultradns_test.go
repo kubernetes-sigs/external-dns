@@ -27,7 +27,7 @@ import (
 	_ "strings"
 	"testing"
 
-	udnssdk "github.com/ultradns/ultradns-sdk-go"
+	udnssdk "github.com/aliasgharmhowwala/ultradns-sdk-go"
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -107,14 +107,14 @@ func TestNewUltraDNSProvider(t *testing.T) {
 	_ = os.Setenv("ULTRADNS_BASEURL", "")
 	_ = os.Setenv("ULTRADNS_ACCOUNTNAME", "")
 	_, err := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"test-ultradns-provider.com"}), true)
-	assert.Nil(t,err)
+	assert.Nil(t, err)
 
 	_ = os.Unsetenv("ULTRADNS_PASSWORD")
 	_ = os.Unsetenv("ULTRADNS_USERNAME")
 	_ = os.Unsetenv("ULTRADNS_BASEURL")
 	_ = os.Unsetenv("ULTRADNS_ACCOUNTNAME")
 	_, err = NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"test-ultradns-provider.com"}), true)
-	assert.NotNilf(t,err,"Expected to fail %s","formatted")
+	assert.NotNilf(t, err, "Expected to fail %s", "formatted")
 }
 
 //zones function test scenario
@@ -132,10 +132,10 @@ func TestUltraDNSProvider_Zones(t *testing.T) {
 	}
 
 	expected, _, _, err := provider.client.Zone.SelectWithOffsetWithLimit(zoneKey, 0, 1000)
-	assert.Nil(t,err)
+	assert.Nil(t, err)
 	zones, err := provider.Zones(context.Background())
-	assert.Nil(t,err)
-	assert.Equal(t,reflect.DeepEqual(expected, zones),true)
+	assert.Nil(t, err)
+	assert.Equal(t, reflect.DeepEqual(expected, zones), true)
 }
 
 //Records function test case
@@ -152,7 +152,7 @@ func TestUltraDNSProvider_Records(t *testing.T) {
 	rrsetKey := udnssdk.RRSetKey{}
 	expected, _, _, err := provider.client.RRSets.SelectWithOffsetWithLimit(rrsetKey, 0, 1000)
 	records, err := provider.Records(context.Background())
-	assert.Nil(t,err)
+	assert.Nil(t, err)
 	for _, v := range records {
 		assert.Equal(t, fmt.Sprintf("%s.", v.DNSName), expected[0].OwnerName)
 		assert.Equal(t, v.RecordType, expected[0].RRType)
@@ -184,7 +184,7 @@ func TestUltraDNSProvider_ApplyChanges(t *testing.T) {
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "test-ultradns-provider.com", Targets: endpoint.Targets{"1.1.2.2", "1.1.2.3", "1.1.2.4"}, RecordType: "A", RecordTTL: 100}}
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "ttl.test-ultradns-provider.com", Targets: endpoint.Targets{"1.1.1.1"}, RecordType: "A", RecordTTL: 100}}
 	err := provider.ApplyChanges(context.Background(), changes)
-	assert.Nilf(t,err,"Should not fail %s","formatted")
+	assert.Nilf(t, err, "Should not fail %s", "formatted")
 }
 
 // Testing function getSpecificRecord
@@ -205,7 +205,7 @@ func TestUltraDNSProvider_getSpecificRecord(t *testing.T) {
 		Name: "teamrest",
 	}
 	err := provider.getSpecificRecord(context.Background(), recordSetKey)
-	assert.Nil(t,err)
+	assert.Nil(t, err)
 }
 
 //Fail case scenario testing where CNAME and TXT Record name are same
@@ -227,7 +227,7 @@ func TestUltraDNSProvider_ApplyChangesCNAME(t *testing.T) {
 	}
 
 	err := provider.ApplyChanges(context.Background(), changes)
-	assert.NotNil(t,err)
+	assert.NotNil(t, err)
 }
 
 // This will work if you would set the environment variables such as "ULTRADNS_INTEGRATION" and zone should be avaialble "kubernetes-ultradns-provider-test.com"
@@ -247,7 +247,7 @@ func TestUltraDNSProvider_ApplyChanges_Integration(t *testing.T) {
 		}
 
 		err = providerUltradns.ApplyChanges(context.Background(), changes)
-		assert.Nil(t,err)
+		assert.Nil(t, err)
 
 		rrsetKey := udnssdk.RRSetKey{
 			Zone: "kubernetes-ultradns-provider-test.com.",
@@ -272,7 +272,7 @@ func TestUltraDNSProvider_ApplyChanges_Integration(t *testing.T) {
 			{DNSName: "kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"1.1.2.2"}, RecordType: "A", RecordTTL: 100},
 			{DNSName: "ttl.kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"2001:0db8:85a3:0000:0000:8a2e:0370:7335"}, RecordType: "AAAA", RecordTTL: 100}}
 		err = providerUltradns.ApplyChanges(context.Background(), changes)
-		assert.Nil(t,err)
+		assert.Nil(t, err)
 
 		rrsetKey = udnssdk.RRSetKey{
 			Zone: "kubernetes-ultradns-provider-test.com.",
@@ -298,7 +298,7 @@ func TestUltraDNSProvider_ApplyChanges_Integration(t *testing.T) {
 			{DNSName: "kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"1.1.2.2"}, RecordType: "A", RecordTTL: 100}}
 
 		err = providerUltradns.ApplyChanges(context.Background(), changes)
-		assert.Nil(t,err)
+		assert.Nil(t, err)
 
 		resp, _ := providerUltradns.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/AAAA/ttl.kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
 		assert.Equal(t, resp.Status, "404 Not Found")
@@ -324,7 +324,7 @@ func TestUltraDNSProvider_ApplyChanges_MultipleTarget_integeration(t *testing.T)
 			{DNSName: "kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"1.1.1.1", "1.1.2.2"}, RecordType: "A"}}
 
 		err = provider.ApplyChanges(context.Background(), changes)
-		assert.Nil(t,err)
+		assert.Nil(t, err)
 
 		rrsetKey := udnssdk.RRSetKey{
 			Zone: "kubernetes-ultradns-provider-test.com.",
@@ -339,7 +339,7 @@ func TestUltraDNSProvider_ApplyChanges_MultipleTarget_integeration(t *testing.T)
 		changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"1.1.2.2", "192.168.0.24", "1.2.3.4"}, RecordType: "A", RecordTTL: 100}}
 
 		err = provider.ApplyChanges(context.Background(), changes)
-		assert.Nil(t,err)
+		assert.Nil(t, err)
 
 		rrsetKey = udnssdk.RRSetKey{
 			Zone: "kubernetes-ultradns-provider-test.com.",
@@ -355,7 +355,7 @@ func TestUltraDNSProvider_ApplyChanges_MultipleTarget_integeration(t *testing.T)
 
 		err = provider.ApplyChanges(context.Background(), changes)
 
-		assert.Nil(t,err)
+		assert.Nil(t, err)
 
 		rrsetKey = udnssdk.RRSetKey{
 			Zone: "kubernetes-ultradns-provider-test.com.",
@@ -371,7 +371,7 @@ func TestUltraDNSProvider_ApplyChanges_MultipleTarget_integeration(t *testing.T)
 
 		err = provider.ApplyChanges(context.Background(), changes)
 
-		assert.Nil(t,err)
+		assert.Nil(t, err)
 
 		resp, _ := provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/A/kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
 		assert.Equal(t, resp.Status, "404 Not Found")
@@ -437,7 +437,7 @@ func TestUltraDNSProvider_MultipleTargetAAAA(t *testing.T) {
 		log.Printf("Skipping test")
 
 	} else {
-		_ = os.Setenv("ULTRADNS_POOL_TYPE","sbpool")
+		_ = os.Setenv("ULTRADNS_POOL_TYPE", "sbpool")
 
 		provider, _ := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"kubernetes-ultradns-provider-test.com"}), false)
 		changes := &plan.Changes{}
@@ -445,7 +445,7 @@ func TestUltraDNSProvider_MultipleTargetAAAA(t *testing.T) {
 			{DNSName: "ttl.kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"2001:0db8:85a3:0000:0000:8a2e:0370:7334", "2001:0db8:85a3:0000:0000:8a2e:0370:7335"}, RecordType: "AAAA", RecordTTL: 100},
 		}
 		err := provider.ApplyChanges(context.Background(), changes)
-		assert.NotNilf(t,err,"We wanted it to fail since multiple AAAA targets are not allowed %s","formatted")
+		assert.NotNilf(t, err, "We wanted it to fail since multiple AAAA targets are not allowed %s", "formatted")
 
 		resp, _ := provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/AAAA/ttl.kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
 		assert.Equal(t, resp.Status, "404 Not Found")
@@ -460,29 +460,29 @@ func TestUltraDNSProvider_MultipleTargetAAAARDPool(t *testing.T) {
 		log.Printf("Skipping test")
 
 	} else {
-		_ = os.Setenv("ULTRADNS_POOL_TYPE","rdpool")
+		_ = os.Setenv("ULTRADNS_POOL_TYPE", "rdpool")
 		provider, _ := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"kubernetes-ultradns-provider-test.com"}), false)
 		changes := &plan.Changes{}
 		changes.Create = []*endpoint.Endpoint{
 			{DNSName: "ttl.kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"2001:0db8:85a3:0000:0000:8a2e:0370:7334", "2001:0db8:85a3:0000:0000:8a2e:0370:7335"}, RecordType: "AAAA", RecordTTL: 100},
 		}
 		err := provider.ApplyChanges(context.Background(), changes)
-		assert.Nilf(t,err," multiple AAAA targets are allowed when pool is RDPool %s","formatted")
+		assert.Nilf(t, err, " multiple AAAA targets are allowed when pool is RDPool %s", "formatted")
 
 		resp, _ := provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/AAAA/ttl.kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
 		assert.Equal(t, resp.Status, "200 OK")
-		
-	        changes = &plan.Changes{}
-                changes.Delete = []*endpoint.Endpoint{{DNSName: "ttl.kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"2001:0db8:85a3:0000:0000:8a2e:0370:7334", "2001:0db8:85a3:0000:0000:8a2e:0370:7335"}, RecordType: "AAAA"}}
 
-                err = provider.ApplyChanges(context.Background(), changes)
+		changes = &plan.Changes{}
+		changes.Delete = []*endpoint.Endpoint{{DNSName: "ttl.kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"2001:0db8:85a3:0000:0000:8a2e:0370:7334", "2001:0db8:85a3:0000:0000:8a2e:0370:7335"}, RecordType: "AAAA"}}
 
-                assert.Nil(t,err)
+		err = provider.ApplyChanges(context.Background(), changes)
 
-                resp, _ = provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/A/kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
-                assert.Equal(t, resp.Status, "404 Not Found")
+		assert.Nil(t, err)
 
-	}	
+		resp, _ = provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/A/kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
+		assert.Equal(t, resp.Status, "404 Not Found")
+
+	}
 }
 
 // Test case to check multiple CNAME targets.
@@ -500,8 +500,7 @@ func TestUltraDNSProvider_MultipleTargetCNAME(t *testing.T) {
 		}
 		err = provider.ApplyChanges(context.Background(), changes)
 
-		assert.NotNilf(t,err,"We wanted it to fail since multiple CNAME targets are not allowed %s","formatted")
-
+		assert.NotNilf(t, err, "We wanted it to fail since multiple CNAME targets are not allowed %s", "formatted")
 
 		resp, _ := provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/CNAME/kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
 		assert.Equal(t, resp.Status, "404 Not Found")
@@ -549,7 +548,7 @@ func TestNewUltraDNSProvider_FailCases(t *testing.T) {
 	_ = os.Setenv("ULTRADNS_ACCOUNTNAME", "")
 	_ = os.Setenv("ULTRADNS_POOL_TYPE", "xyz")
 	_, err := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"test-ultradns-provider.com"}), true)
-	assert.NotNilf(t,err,"Pool Type other than given type not working %s","formatted")
+	assert.NotNilf(t, err, "Pool Type other than given type not working %s", "formatted")
 
 	_ = os.Setenv("ULTRADNS_USERNAME", "")
 	_ = os.Setenv("ULTRADNS_PASSWORD", "")
@@ -557,7 +556,7 @@ func TestNewUltraDNSProvider_FailCases(t *testing.T) {
 	_ = os.Setenv("ULTRADNS_ACCOUNTNAME", "")
 	_ = os.Setenv("ULTRADNS_ENABLE_PROBING", "adefg")
 	_, err = NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"test-ultradns-provider.com"}), true)
-	assert.NotNilf(t,err,"Probe value other than given values not working  %s","formatted")	
+	assert.NotNilf(t, err, "Probe value other than given values not working  %s", "formatted")
 
 	_ = os.Setenv("ULTRADNS_USERNAME", "")
 	_ = os.Setenv("ULTRADNS_PASSWORD", "")
@@ -565,22 +564,21 @@ func TestNewUltraDNSProvider_FailCases(t *testing.T) {
 	_ = os.Setenv("ULTRADNS_ACCOUNTNAME", "")
 	_ = os.Setenv("ULTRADNS_ENABLE_ACTONPROBE", "adefg")
 	_, err = NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"test-ultradns-provider.com"}), true)
-	assert.NotNilf(t,err,"ActOnProbe value other than given values not working %s","formatted")	
+	assert.NotNilf(t, err, "ActOnProbe value other than given values not working %s", "formatted")
 
 	_ = os.Setenv("ULTRADNS_USERNAME", "")
 	_ = os.Setenv("ULTRADNS_BASEURL", "")
 	_ = os.Unsetenv("ULTRADNS_PASSWORD")
 	_ = os.Setenv("ULTRADNS_ACCOUNTNAME", "")
 	_, err = NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"test-ultradns-provider.com"}), true)
-	assert.NotNilf(t,err,"Expected to give error if password is not set %s","formatted")
+	assert.NotNilf(t, err, "Expected to give error if password is not set %s", "formatted")
 
 	_ = os.Setenv("ULTRADNS_USERNAME", "")
 	_ = os.Setenv("ULTRADNS_PASSWORD", "")
 	_ = os.Unsetenv("ULTRADNS_BASEURL")
 	_ = os.Setenv("ULTRADNS_ACCOUNTNAME", "")
 	_, err = NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"test-ultradns-provider.com"}), true)
-	assert.NotNilf(t,err,"Expected to give error if baseurl is not set %s","formatted")
-	
+	assert.NotNilf(t, err, "Expected to give error if baseurl is not set %s", "formatted")
 
 	_ = os.Setenv("ULTRADNS_USERNAME", "")
 	_ = os.Setenv("ULTRADNS_BASEURL", "")
@@ -590,7 +588,7 @@ func TestNewUltraDNSProvider_FailCases(t *testing.T) {
 	_ = os.Unsetenv("ULTRADNS_ENABLE_PROBING")
 	_ = os.Unsetenv("ULTRADNS_POOL_TYPE")
 	_, accounterr := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"test-ultradns-provider.com"}), true)
-	assert.Nil(t,accounterr)
+	assert.Nil(t, accounterr)
 
 }
 
@@ -602,7 +600,7 @@ func TestNewUltraDNSProvider_NewEnvVariableSuccessCases(t *testing.T) {
 	_ = os.Setenv("ULTRADNS_ACCOUNTNAME", "")
 	_ = os.Setenv("ULTRADNS_POOL_TYPE", "rdpool")
 	_, err := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"test-ultradns-provider.com"}), true)
-	assert.Nilf(t,err,"Pool Type not working in proper scenario %s","formatted")
+	assert.Nilf(t, err, "Pool Type not working in proper scenario %s", "formatted")
 
 	_ = os.Setenv("ULTRADNS_USERNAME", "")
 	_ = os.Setenv("ULTRADNS_PASSWORD", "")
@@ -610,17 +608,16 @@ func TestNewUltraDNSProvider_NewEnvVariableSuccessCases(t *testing.T) {
 	_ = os.Setenv("ULTRADNS_ACCOUNTNAME", "")
 	_ = os.Setenv("ULTRADNS_ENABLE_PROBING", "false")
 	_, err1 := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"test-ultradns-provider.com"}), true)
-	assert.Nilf(t,err1,"Probe given value is  not working %s","formatted")
-	
+	assert.Nilf(t, err1, "Probe given value is  not working %s", "formatted")
+
 	_ = os.Setenv("ULTRADNS_USERNAME", "")
 	_ = os.Setenv("ULTRADNS_PASSWORD", "")
 	_ = os.Setenv("ULTRADNS_BASEURL", "")
 	_ = os.Setenv("ULTRADNS_ACCOUNTNAME", "")
 	_ = os.Setenv("ULTRADNS_ENABLE_ACTONPROBE", "true")
 	_, err2 := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"test-ultradns-provider.com"}), true)
-	assert.Nilf(t,err2,"ActOnProbe given value is not working %s","formatted")
+	assert.Nilf(t, err2, "ActOnProbe given value is not working %s", "formatted")
 
-	
 }
 
 // Base64 Bad string decoding scenario
@@ -632,55 +629,87 @@ func TestNewUltraDNSProvider_Base64DecodeFailcase(t *testing.T) {
 	_ = os.Setenv("ULTRADNS_ACCOUNTNAME", "")
 	_ = os.Setenv("ULTRADNS_ENABLE_ACTONPROBE", "true")
 	_, err := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"test-ultradns-provider.com"}), true)
-	assert.NotNilf(t,err,"Base64 decode should fail in this case %s","formatted")
+	assert.NotNilf(t, err, "Base64 decode should fail in this case %s", "formatted")
 
 }
 
-func TestUltraDNSProvider_PoolConversionCase(t *testing.T){
+func TestUltraDNSProvider_PoolConversionCase(t *testing.T) {
 
-        _, ok := os.LookupEnv("ULTRADNS_INTEGRATION")
-        if !ok {
-                log.Printf("Skipping test")
+	_, ok := os.LookupEnv("ULTRADNS_INTEGRATION")
+	if !ok {
+		log.Printf("Skipping test")
 
-        } else {
+	} else {
 		//Creating SBPool Record
-		_ = os.Setenv("ULTRADNS_POOL_TYPE","sbpool")
-                provider, _ := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"kubernetes-ultradns-provider-test.com"}), false)
-                changes := &plan.Changes{}
-                changes.Create = []*endpoint.Endpoint{{DNSName: "ttl.kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"1.1.1.1", "1.2.3.4"}, RecordType: "A", RecordTTL: 100}}
-                err := provider.ApplyChanges(context.Background(), changes)
-                assert.Nilf(t,err," multiple A record creation with SBPool %s","formatted")
+		_ = os.Setenv("ULTRADNS_POOL_TYPE", "sbpool")
+		provider, _ := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"kubernetes-ultradns-provider-test.com"}), false)
+		changes := &plan.Changes{}
+		changes.Create = []*endpoint.Endpoint{{DNSName: "ttl.kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"1.1.1.1", "1.2.3.4"}, RecordType: "A", RecordTTL: 100}}
+		err := provider.ApplyChanges(context.Background(), changes)
+		assert.Nilf(t, err, " multiple A record creation with SBPool %s", "formatted")
 
-                resp, _ := provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/A/ttl.kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
-                assert.Equal(t, resp.Status, "200 OK")
-	
-		//Coverting to RD Pool	
-		_ = os.Setenv("ULTRADNS_POOL_TYPE","rdpool")
+		resp, _ := provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/A/ttl.kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
+		assert.Equal(t, resp.Status, "200 OK")
+
+		//Coverting to RD Pool
+		_ = os.Setenv("ULTRADNS_POOL_TYPE", "rdpool")
 		provider, _ = NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"kubernetes-ultradns-provider-test.com"}), false)
-                changes = &plan.Changes{}
-                changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "ttl.kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"1.1.1.1","1.2.3.5"}, RecordType: "A"}}
-                err = provider.ApplyChanges(context.Background(), changes)
-                assert.Nil(t,err)
-                resp, _ = provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/A/ttl.kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
-                assert.Equal(t, resp.Status, "200 OK")
-		
+		changes = &plan.Changes{}
+		changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "ttl.kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"1.1.1.1", "1.2.3.5"}, RecordType: "A"}}
+		err = provider.ApplyChanges(context.Background(), changes)
+		assert.Nil(t, err)
+		resp, _ = provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/A/ttl.kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
+		assert.Equal(t, resp.Status, "200 OK")
 
-                //Coverting back to SB Pool
-                _ = os.Setenv("ULTRADNS_POOL_TYPE","sbpool")
-                provider, _ = NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"kubernetes-ultradns-provider-test.com"}), false)
-                changes = &plan.Changes{}
-                changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "ttl.kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"1.1.1.1","1.2.3.4"}, RecordType: "A"}}
-                err = provider.ApplyChanges(context.Background(), changes)
-                assert.Nil(t,err)
-                resp, _ = provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/A/ttl.kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
-                assert.Equal(t, resp.Status, "200 OK")
+		//Coverting back to SB Pool
+		_ = os.Setenv("ULTRADNS_POOL_TYPE", "sbpool")
+		provider, _ = NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"kubernetes-ultradns-provider-test.com"}), false)
+		changes = &plan.Changes{}
+		changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "ttl.kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"1.1.1.1", "1.2.3.4"}, RecordType: "A"}}
+		err = provider.ApplyChanges(context.Background(), changes)
+		assert.Nil(t, err)
+		resp, _ = provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/A/ttl.kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
+		assert.Equal(t, resp.Status, "200 OK")
 
 		//Deleting Record
-                changes = &plan.Changes{}
-                changes.Delete = []*endpoint.Endpoint{{DNSName: "ttl.kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"1.1.1.1","1.2.3.4"}, RecordType: "A"}}
-                err = provider.ApplyChanges(context.Background(), changes)
-                assert.Nil(t,err)
-                resp, _ = provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/A/kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
-                assert.Equal(t, resp.Status, "404 Not Found")
-        }
+		changes = &plan.Changes{}
+		changes.Delete = []*endpoint.Endpoint{{DNSName: "ttl.kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"1.1.1.1", "1.2.3.4"}, RecordType: "A"}}
+		err = provider.ApplyChanges(context.Background(), changes)
+		assert.Nil(t, err)
+		resp, _ = provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/A/kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
+		assert.Equal(t, resp.Status, "404 Not Found")
+	}
+}
+
+func TestUltraDNSProvider_DomainFilter(t *testing.T) {
+
+	_, ok := os.LookupEnv("ULTRADNS_INTEGRATION")
+	if !ok {
+		log.Printf("Skipping test")
+
+	} else {
+		provider, _ := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"kubernetes-ultradns-provider-test.com", "kubernetes-ultradns-provider-test.com"}), true)
+		zones, err := provider.Zones(context.Background())
+		assert.Equal(t, zones[0].Properties.Name, "kubernetes-ultradns-provider-test.com.")
+		assert.Equal(t, zones[1].Properties.Name, "kubernetes-ultradns-provider-test.com.")
+		assert.Nilf(t, err, " Multiple domain filter failed %s", "formatted")
+
+		provider, _ = NewUltraDNSProvider(endpoint.NewDomainFilter([]string{}), true)
+		zones, err = provider.Zones(context.Background())
+		assert.Nilf(t, err, " Multiple domain filter failed %s", "formatted")
+
+	}
+}
+
+func TestUltraDNSProvider_DomainFiltersZonesFailCase(t *testing.T) {
+
+	_, ok := os.LookupEnv("ULTRADNS_INTEGRATION")
+	if !ok {
+		log.Printf("Skipping test")
+
+	} else {
+		provider, _ := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"kubernetes-ultradns-provider-test.com", "kubernetes-uldsvdsvadvvdsvadvstradns-provider-test.com"}), true)
+		_, err := provider.Zones(context.Background())
+		assert.NotNilf(t, err, " Multiple domain filter failed %s", "formatted")
+	}
 }
