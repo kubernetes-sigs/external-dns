@@ -149,8 +149,6 @@ func (m *mockDigitalOceanRecordsFail) Records(ctx context.Context, domain string
 // This function is an adapted copy of the testify package's ElementsMatch function with the
 // call to ObjectsAreEqual replaced with cmp.Equal which better handles struct's with pointers to
 // other structs.
-//
-// TODO: Upstream a change to testify package to allow custom matchers.
 func elementsMatch(t *testing.T, listA, listB interface{}, msgAndArgs ...interface{}) (ok bool) {
 	aKind := reflect.TypeOf(listA).Kind()
 	bKind := reflect.TypeOf(listB).Kind()
