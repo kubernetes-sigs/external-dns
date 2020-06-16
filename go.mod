@@ -51,7 +51,7 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/terra-farm/udnssdk v1.3.5 // indirect
 	github.com/transip/gotransip v5.8.2+incompatible
-	github.com/ultradns/ultradns-sdk-go v0.0.0-20200616162335-c89b197deaf4
+	github.com/ultradns/ultradns-sdk-go v0.0.0-20200616202852-e62052662f60
 	github.com/vinyldns/go-vinyldns v0.0.0-20190611170422-7119fe55ed92
 	github.com/vultr/govultr v0.3.2
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20200401174654-e694b7bb0875

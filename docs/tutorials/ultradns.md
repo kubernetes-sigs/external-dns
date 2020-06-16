@@ -433,7 +433,6 @@ $ kubectl delete -f external-dns.yaml
         app: apple2
       ports:
         - port: 5680 # Default port for image
-      apiVersion: extensions/v1beta1
     ---
     apiVersion: extensions/v1beta1
     kind: Ingress
@@ -562,6 +561,7 @@ $ kubectl delete -f external-dns.yaml
           args:
             - "-text=apple"
     ---
+    apiVersion: extensions/v1beta1
     kind: Service
     apiVersion: v1
     metadata:
