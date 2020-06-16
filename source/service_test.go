@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -1118,7 +1117,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			var res []*endpoint.Endpoint
 
 			// wait up to a few seconds for new resources to appear in informer cache.
-			err = wait.Poll(time.Second, 3*time.Second, func() (bool, error) {
+			err = poll(time.Second, 3*time.Second, func() (bool, error) {
 				res, err = client.Endpoints()
 				if err != nil {
 					// stop waiting if we get an error
@@ -1552,7 +1551,7 @@ func TestNodePortServices(t *testing.T) {
 
 			// Create the nodes
 			for _, node := range tc.nodes {
-				if _, err := kubernetes.Core().Nodes().Create(node); err != nil {
+				if _, err := kubernetes.CoreV1().Nodes().Create(node); err != nil {
 					t.Fatal(err)
 				}
 			}

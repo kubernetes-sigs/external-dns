@@ -109,6 +109,7 @@ type Config struct {
 	Registry                          string
 	TXTOwnerID                        string
 	TXTPrefix                         string
+	TXTSuffix                         string
 	Interval                          time.Duration
 	Once                              bool
 	DryRun                            bool
@@ -139,6 +140,7 @@ type Config struct {
 	NS1IgnoreSSL                      bool
 	TransIPAccountName                string
 	TransIPPrivateKeyFile             string
+	DigitalOceanAPIPageSize           int
 }
 
 var defaultConfig = &Config{
@@ -205,6 +207,7 @@ var defaultConfig = &Config{
 	Registry:                    "txt",
 	TXTOwnerID:                  "default",
 	TXTPrefix:                   "",
+	TXTSuffix:                   "",
 	TXTCacheInterval:            0,
 	Interval:                    time.Minute,
 	Once:                        false,
@@ -235,6 +238,7 @@ var defaultConfig = &Config{
 	NS1IgnoreSSL:                false,
 	TransIPAccountName:          "",
 	TransIPPrivateKeyFile:       "",
+	DigitalOceanAPIPageSize:     50,
 }
 
 // NewConfig returns new Config object
@@ -361,6 +365,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("pdns-tls-enabled", "When using the PowerDNS/PDNS provider, specify whether to use TLS (default: false, requires --tls-ca, optionally specify --tls-client-cert and --tls-client-cert-key)").Default(strconv.FormatBool(defaultConfig.PDNSTLSEnabled)).BoolVar(&cfg.PDNSTLSEnabled)
 	app.Flag("ns1-endpoint", "When using the NS1 provider, specify the URL of the API endpoint to target (default: https://api.nsone.net/v1/)").Default(defaultConfig.NS1Endpoint).StringVar(&cfg.NS1Endpoint)
 	app.Flag("ns1-ignoressl", "When using the NS1 provider, specify whether to verify the SSL certificate (default: false)").Default(strconv.FormatBool(defaultConfig.NS1IgnoreSSL)).BoolVar(&cfg.NS1IgnoreSSL)
+	app.Flag("digitalocean-api-page-size", "Configure the page size used when querying the DigitalOcean API.").Default(strconv.Itoa(defaultConfig.DigitalOceanAPIPageSize)).IntVar(&cfg.DigitalOceanAPIPageSize)
 
 	// Flags related to TLS communication
 	app.Flag("tls-ca", "When using TLS communication, the path to the certificate authority to verify server communications (optionally specify --tls-client-cert for two-way TLS)").Default(defaultConfig.TLSCA).StringVar(&cfg.TLSCA)
@@ -392,7 +397,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	// Flags related to the registry
 	app.Flag("registry", "The registry implementation to use to keep track of DNS record ownership (default: txt, options: txt, noop, aws-sd)").Default(defaultConfig.Registry).EnumVar(&cfg.Registry, "txt", "noop", "aws-sd")
 	app.Flag("txt-owner-id", "When using the TXT registry, a name that identifies this instance of ExternalDNS (default: default)").Default(defaultConfig.TXTOwnerID).StringVar(&cfg.TXTOwnerID)
-	app.Flag("txt-prefix", "When using the TXT registry, a custom string that's prefixed to each ownership DNS record (optional)").Default(defaultConfig.TXTPrefix).StringVar(&cfg.TXTPrefix)
+	app.Flag("txt-prefix", "When using the TXT registry, a custom string that's prefixed to each ownership DNS record (optional). Mutual exclusive with txt-suffix!").Default(defaultConfig.TXTPrefix).StringVar(&cfg.TXTPrefix)
+	app.Flag("txt-suffix", "When using the TXT registry, a custom string that's suffixed to the host portion of each ownership DNS record (optional). Mutual exclusive with txt-prefix!").Default(defaultConfig.TXTSuffix).StringVar(&cfg.TXTSuffix)
 
 	// Flags related to the main control loop
 	app.Flag("txt-cache-interval", "The interval between cache synchronizations in duration format (default: disabled)").Default(defaultConfig.TXTCacheInterval.String()).DurationVar(&cfg.TXTCacheInterval)

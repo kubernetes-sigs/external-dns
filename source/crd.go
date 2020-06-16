@@ -17,10 +17,10 @@ limitations under the License.
 package source
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -92,7 +92,7 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, kube
 
 	config.ContentConfig.GroupVersion = &groupVersion
 	config.APIPath = "/apis"
-	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)}
+	config.NegotiatedSerializer = serializer.WithoutConversionCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)}
 
 	crdClient, err := rest.UnversionedRESTClientFor(config)
 	if err != nil {
@@ -112,7 +112,7 @@ func NewCRDSource(crdClient rest.Interface, namespace, kind string, annotationFi
 	}, nil
 }
 
-func (cs *crdSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+func (cs *crdSource) AddEventHandler(ctx context.Context, handler func()) {
 }
 
 // Endpoints returns endpoint objects.

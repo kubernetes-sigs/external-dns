@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"errors"
 	"net/http"
 	"os"
 	"strings"
@@ -25,12 +24,12 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-community/go-cfclient"
-	contour "github.com/heptio/contour/apis/generated/clientset/versioned"
 	"github.com/linki/instrumented_http"
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	istiocontroller "istio.io/istio/pilot/pkg/config/kube/crd/controller"
-	istiomodel "istio.io/istio/pilot/pkg/model"
+	istioclient "istio.io/client-go/pkg/clientset/versioned"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -68,9 +67,9 @@ type Config struct {
 // ClientGenerator provides clients
 type ClientGenerator interface {
 	KubeClient() (kubernetes.Interface, error)
-	IstioClient() (istiomodel.ConfigStore, error)
+	IstioClient() (istioclient.Interface, error)
 	CloudFoundryClient(cfAPPEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error)
-	ContourClient() (contour.Interface, error)
+	DynamicKubernetesClient() (dynamic.Interface, error)
 	OpenShiftClient() (openshift.Interface, error)
 }
 
@@ -81,9 +80,9 @@ type SingletonClientGenerator struct {
 	KubeMaster      string
 	RequestTimeout  time.Duration
 	kubeClient      kubernetes.Interface
-	istioClient     istiomodel.ConfigStore
+	istioClient     *istioclient.Clientset
 	cfClient        *cfclient.Client
-	contourClient   contour.Interface
+	contourClient   dynamic.Interface
 	openshiftClient openshift.Interface
 	kubeOnce        sync.Once
 	istioOnce       sync.Once
@@ -101,11 +100,11 @@ func (p *SingletonClientGenerator) KubeClient() (kubernetes.Interface, error) {
 	return p.kubeClient, err
 }
 
-// IstioClient generates an istio client if it was not created before
-func (p *SingletonClientGenerator) IstioClient() (istiomodel.ConfigStore, error) {
+// IstioClient generates an istio go client if it was not created before
+func (p *SingletonClientGenerator) IstioClient() (istioclient.Interface, error) {
 	var err error
 	p.istioOnce.Do(func() {
-		p.istioClient, err = NewIstioClient(p.KubeConfig)
+		p.istioClient, err = NewIstioClient(p.KubeConfig, p.KubeMaster)
 	})
 	return p.istioClient, err
 }
@@ -134,11 +133,11 @@ func NewCFClient(cfAPIEndpoint string, cfUsername string, cfPassword string) (*c
 	return client, nil
 }
 
-// ContourClient generates a contour client if it was not created before
-func (p *SingletonClientGenerator) ContourClient() (contour.Interface, error) {
+// DynamicKubernetesClient generates a contour client if it was not created before
+func (p *SingletonClientGenerator) DynamicKubernetesClient() (dynamic.Interface, error) {
 	var err error
 	p.contourOnce.Do(func() {
-		p.contourClient, err = NewContourClient(p.KubeConfig, p.KubeMaster, p.RequestTimeout)
+		p.contourClient, err = NewDynamicKubernetesClient(p.KubeConfig, p.KubeMaster, p.RequestTimeout)
 	})
 	return p.contourClient, err
 }
@@ -208,11 +207,11 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		contourClient, err := p.ContourClient()
+		dynamicClient, err := p.DynamicKubernetesClient()
 		if err != nil {
 			return nil, err
 		}
-		return NewContourIngressRouteSource(kubernetesClient, contourClient, cfg.ContourLoadBalancerService, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+		return NewContourIngressRouteSource(dynamicClient, kubernetesClient, cfg.ContourLoadBalancerService, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
 	case "openshift-route":
 		ocpClient, err := p.OpenShiftClient()
 		if err != nil {
@@ -316,32 +315,30 @@ func NewKubeClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) 
 // wrappers) to the client's config at this level. Furthermore, the Istio client
 // constructor does not expose the ability to override the Kubernetes master,
 // so the Master config attribute has no effect.
-func NewIstioClient(kubeConfig string) (*istiocontroller.Client, error) {
+func NewIstioClient(kubeConfig string, kubeMaster string) (*istioclient.Clientset, error) {
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
 			kubeConfig = clientcmd.RecommendedHomeFile
 		}
 	}
 
-	client, err := istiocontroller.NewClient(
-		kubeConfig,
-		"",
-		istiomodel.ConfigDescriptor{istiomodel.Gateway},
-		"",
-	)
+	restCfg, err := clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Info("Created Istio client")
+	ic, err := istioclient.NewForConfig(restCfg)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create istio client")
+	}
 
-	return client, nil
+	return ic, nil
 }
 
-// NewContourClient returns a new Contour client object. It takes a Config and
+// NewDynamicKubernetesClient returns a new Dynamic Kubernetes client object. It takes a Config and
 // uses KubeMaster and KubeConfig attributes to connect to the cluster. If
 // KubeConfig isn't provided it defaults to using the recommended default.
-func NewContourClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) (*contour.Clientset, error) {
+func NewDynamicKubernetesClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) (dynamic.Interface, error) {
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
 			kubeConfig = clientcmd.RecommendedHomeFile
@@ -364,12 +361,12 @@ func NewContourClient(kubeConfig, kubeMaster string, requestTimeout time.Duratio
 
 	config.Timeout = requestTimeout
 
-	client, err := contour.NewForConfig(config)
+	client, err := dynamic.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Infof("Created Contour client %s", config.Host)
+	log.Infof("Created Dynamic Kubernetes client %s", config.Host)
 
 	return client, nil
 }
