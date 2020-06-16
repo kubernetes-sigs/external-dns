@@ -17,7 +17,7 @@ limitations under the License.
 package source
 
 import (
-	"time"
+	"context"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -43,9 +43,9 @@ func (ms *multiSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return result, nil
 }
 
-func (ms *multiSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+func (ms *multiSource) AddEventHandler(ctx context.Context, handler func()) {
 	for _, s := range ms.children {
-		s.AddEventHandler(handler, stopChan, minInterval)
+		s.AddEventHandler(ctx, handler)
 	}
 }
 

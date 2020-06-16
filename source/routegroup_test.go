@@ -709,7 +709,6 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 		}} {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.fqdnTemplate != "" {
-				println("fqdnTemplate is set")
 				tmpl, err := parseTemplate(tt.fqdnTemplate)
 				if err != nil {
 					t.Fatalf("Failed to parse template: %v", err)

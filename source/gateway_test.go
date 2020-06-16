@@ -17,16 +17,16 @@ limitations under the License.
 package source
 
 import (
-	"strconv"
-	"sync"
 	"testing"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	istionetworking "istio.io/api/networking/v1alpha3"
-	istiomodel "istio.io/istio/pilot/pkg/model"
+	networkingv1alpha3api "istio.io/api/networking/v1alpha3"
+	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
+	istioclient "istio.io/client-go/pkg/clientset/versioned"
+	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -37,13 +37,10 @@ import (
 // This is a compile-time validation that gatewaySource is a Source.
 var _ Source = &gatewaySource{}
 
-var gatewayType = istiomodel.Gateway.Type
-
 type GatewaySuite struct {
 	suite.Suite
 	source     Source
 	lbServices []*v1.Service
-	config     istiomodel.Config
 }
 
 func (suite *GatewaySuite) SetupTest() {
@@ -81,13 +78,6 @@ func (suite *GatewaySuite) SetupTest() {
 		false,
 	)
 	suite.NoError(err, "should initialize gateway source")
-
-	suite.config = (fakeGatewayConfig{
-		name:      "foo-gateway-with-targets",
-		namespace: "default",
-		dnsnames:  [][]string{{"foo"}},
-	}).Config()
-	_, err = fakeIstioClient.Create(suite.config)
 	suite.NoError(err, "should succeed")
 }
 
@@ -316,9 +306,12 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
+			gatewayCfg := ti.config.Config()
 			if source, err := newTestGatewaySource(ti.lbServices); err != nil {
 				require.NoError(t, err)
-			} else if endpoints, err := source.endpointsFromGatewayConfig(ti.config.Config()); err != nil {
+			} else if hostnames, err := source.hostNamesFromGateway(gatewayCfg); err != nil {
+				require.NoError(t, err)
+			} else if endpoints, err := source.endpointsFromGateway(hostnames, gatewayCfg); err != nil {
 				require.NoError(t, err)
 			} else {
 				validateEndpoints(t, endpoints, ti.expected)
@@ -328,7 +321,6 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 }
 
 func testGatewayEndpoints(t *testing.T) {
-	namespace := "testing"
 	for _, ti := range []struct {
 		title                    string
 		targetNamespace          string
@@ -357,12 +349,12 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:      "fake1",
-					namespace: namespace,
+					namespace: "",
 					dnsnames:  [][]string{{"example.org"}},
 				},
 				{
 					name:      "fake2",
-					namespace: namespace,
+					namespace: "",
 					dnsnames:  [][]string{{"new.org"}},
 				},
 			},
@@ -397,12 +389,12 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:      "fake1",
-					namespace: "testing1",
+					namespace: "",
 					dnsnames:  [][]string{{"example.org"}},
 				},
 				{
 					name:      "fake2",
-					namespace: "testing2",
+					namespace: "",
 					dnsnames:  [][]string{{"new.org"}},
 				},
 			},
@@ -441,11 +433,6 @@ func testGatewayEndpoints(t *testing.T) {
 					namespace: "testing1",
 					dnsnames:  [][]string{{"example.org"}},
 				},
-				{
-					name:      "fake2",
-					namespace: "testing2",
-					dnsnames:  [][]string{{"new.org"}},
-				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
@@ -470,7 +457,7 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:      "fake1",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						"kubernetes.io/gateway.class": "nginx",
 					},
@@ -496,7 +483,7 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:      "fake1",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						"kubernetes.io/gateway.class": "tectonic",
 					},
@@ -517,7 +504,7 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:      "fake1",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						"kubernetes.io/gateway.class": "alb",
 					},
@@ -539,7 +526,7 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:      "fake1",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						"kubernetes.io/gateway.class": "nginx",
 					},
@@ -565,7 +552,7 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:      "fake1",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						"kubernetes.io/gateway.class": "alb",
 					},
@@ -585,7 +572,7 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:      "fake1",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						controllerAnnotationKey: controllerAnnotationValue,
 					},
@@ -610,7 +597,7 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:      "fake1",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						controllerAnnotationKey: "some-other-tool",
 					},
@@ -631,7 +618,7 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:      "fake1",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						controllerAnnotationKey: controllerAnnotationValue,
 					},
@@ -661,7 +648,7 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:      "fake1",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						controllerAnnotationKey: "other-controller",
 					},
@@ -682,7 +669,7 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:        "fake1",
-					namespace:   namespace,
+					namespace:   "",
 					annotations: map[string]string{},
 					dnsnames:    [][]string{},
 				},
@@ -712,13 +699,13 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:        "fake1",
-					namespace:   namespace,
+					namespace:   "",
 					annotations: map[string]string{},
 					dnsnames:    [][]string{},
 				},
 				{
 					name:      "fake2",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						targetAnnotationKey: "gateway-target.com",
 					},
@@ -766,7 +753,7 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:      "fake1",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						targetAnnotationKey: "gateway-target.com",
 					},
@@ -774,7 +761,7 @@ func testGatewayEndpoints(t *testing.T) {
 				},
 				{
 					name:      "fake2",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						targetAnnotationKey: "gateway-target.com",
 					},
@@ -782,7 +769,7 @@ func testGatewayEndpoints(t *testing.T) {
 				},
 				{
 					name:      "fake3",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						targetAnnotationKey: "1.2.3.4",
 					},
@@ -818,7 +805,7 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:      "fake1",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						hostnameAnnotationKey: "dns-through-hostname.com",
 					},
@@ -849,7 +836,7 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:      "fake1",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						hostnameAnnotationKey: "dns-through-hostname.com, another-dns-through-hostname.com",
 					},
@@ -885,7 +872,7 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:      "fake1",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						hostnameAnnotationKey: "dns-through-hostname.com",
 						targetAnnotationKey:   "gateway-target.com",
@@ -917,7 +904,7 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:      "fake1",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						targetAnnotationKey: "gateway-target.com",
 						ttlAnnotationKey:    "6",
@@ -926,7 +913,7 @@ func testGatewayEndpoints(t *testing.T) {
 				},
 				{
 					name:      "fake2",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						targetAnnotationKey: "gateway-target.com",
 						ttlAnnotationKey:    "1",
@@ -935,7 +922,7 @@ func testGatewayEndpoints(t *testing.T) {
 				},
 				{
 					name:      "fake3",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						targetAnnotationKey: "gateway-target.com",
 						ttlAnnotationKey:    "10s",
@@ -973,7 +960,7 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:      "fake1",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						targetAnnotationKey: "gateway-target.com",
 					},
@@ -981,7 +968,7 @@ func testGatewayEndpoints(t *testing.T) {
 				},
 				{
 					name:      "fake2",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						targetAnnotationKey: "gateway-target.com",
 					},
@@ -989,7 +976,7 @@ func testGatewayEndpoints(t *testing.T) {
 				},
 				{
 					name:      "fake3",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						targetAnnotationKey: "1.2.3.4",
 					},
@@ -1027,7 +1014,7 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:      "fake1",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						targetAnnotationKey: "",
 					},
@@ -1049,7 +1036,7 @@ func testGatewayEndpoints(t *testing.T) {
 			configItems: []fakeGatewayConfig{
 				{
 					name:      "fake1",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						hostnameAnnotationKey: "ignore.me",
 					},
@@ -1057,7 +1044,7 @@ func testGatewayEndpoints(t *testing.T) {
 				},
 				{
 					name:      "fake2",
-					namespace: namespace,
+					namespace: "",
 					annotations: map[string]string{
 						hostnameAnnotationKey: "ignore.me.too",
 					},
@@ -1086,10 +1073,6 @@ func testGatewayEndpoints(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			configs := make([]istiomodel.Config, 0)
-			for _, item := range ti.configItems {
-				configs = append(configs, item.Config())
-			}
 
 			fakeKubernetesClient := fake.NewSimpleClientset()
 
@@ -1100,8 +1083,9 @@ func testGatewayEndpoints(t *testing.T) {
 			}
 
 			fakeIstioClient := NewFakeConfigStore()
-			for _, config := range configs {
-				_, err := fakeIstioClient.Create(config)
+			for _, config := range ti.configItems {
+				gatewayCfg := config.Config()
+				_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(ti.targetNamespace).Create(&gatewayCfg)
 				require.NoError(t, err)
 			}
 
@@ -1204,137 +1188,31 @@ type fakeGatewayConfig struct {
 	selector    map[string]string
 }
 
-func (c fakeGatewayConfig) Config() istiomodel.Config {
-	gw := &istionetworking.Gateway{
-		Servers: []*istionetworking.Server{},
+func (c fakeGatewayConfig) Config() networkingv1alpha3.Gateway {
+	gw := networkingv1alpha3.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        c.name,
+			Namespace:   c.namespace,
+			Annotations: c.annotations,
+		},
+		Spec: networkingv1alpha3api.Gateway{
+			Servers:  nil,
+			Selector: c.selector,
+		},
 	}
 
+	var servers []*networkingv1alpha3api.Server
 	for _, dnsnames := range c.dnsnames {
-		gw.Servers = append(gw.Servers, &istionetworking.Server{
+		servers = append(servers, &networkingv1alpha3api.Server{
 			Hosts: dnsnames,
 		})
 	}
 
-	gw.Selector = c.selector
+	gw.Spec.Servers = servers
 
-	config := istiomodel.Config{
-		ConfigMeta: istiomodel.ConfigMeta{
-			Namespace:   c.namespace,
-			Name:        c.name,
-			Type:        gatewayType,
-			Annotations: c.annotations,
-		},
-		Spec: gw,
-	}
-
-	return config
+	return gw
 }
 
-type fakeConfigStore struct {
-	descriptor istiomodel.ConfigDescriptor
-	configs    []*istiomodel.Config
-	sync.RWMutex
-}
-
-func NewFakeConfigStore() istiomodel.ConfigStore {
-	return &fakeConfigStore{
-		descriptor: istiomodel.ConfigDescriptor{
-			istiomodel.Gateway,
-		},
-		configs: make([]*istiomodel.Config, 0),
-	}
-}
-
-func (f *fakeConfigStore) ConfigDescriptor() istiomodel.ConfigDescriptor {
-	return f.descriptor
-}
-
-func (f *fakeConfigStore) Get(typ, name, namespace string) (config *istiomodel.Config) {
-	f.RLock()
-	defer f.RUnlock()
-
-	if cfg, _ := f.get(typ, name, namespace); cfg != nil {
-		config = cfg
-	}
-
-	return
-}
-
-func (f *fakeConfigStore) get(typ, name, namespace string) (*istiomodel.Config, int) {
-	for idx, cfg := range f.configs {
-		if cfg.Type == typ && cfg.Name == name && cfg.Namespace == namespace {
-			return cfg, idx
-		}
-	}
-
-	return nil, -1
-}
-
-func (f *fakeConfigStore) List(typ, namespace string) (configs []istiomodel.Config, err error) {
-	f.RLock()
-	defer f.RUnlock()
-
-	if namespace == "" {
-		for _, cfg := range f.configs {
-			configs = append(configs, *cfg)
-		}
-	} else {
-		for _, cfg := range f.configs {
-			if cfg.Type == typ && cfg.Namespace == namespace {
-				configs = append(configs, *cfg)
-			}
-		}
-	}
-
-	return
-}
-
-func (f *fakeConfigStore) Create(config istiomodel.Config) (revision string, err error) {
-	f.Lock()
-	defer f.Unlock()
-
-	if cfg, _ := f.get(config.Type, config.Name, config.Namespace); cfg != nil {
-		err = errors.New("config already exists")
-	} else {
-		revision = "0"
-		cfg := &config
-		cfg.ResourceVersion = revision
-		f.configs = append(f.configs, cfg)
-	}
-
-	return
-}
-
-func (f *fakeConfigStore) Update(config istiomodel.Config) (newRevision string, err error) {
-	f.Lock()
-	defer f.Unlock()
-
-	if oldCfg, idx := f.get(config.Type, config.Name, config.Namespace); oldCfg == nil {
-		err = errors.New("config does not exist")
-	} else if oldRevision, e := strconv.Atoi(oldCfg.ResourceVersion); e != nil {
-		err = e
-	} else {
-		newRevision = strconv.Itoa(oldRevision + 1)
-		cfg := &config
-		cfg.ResourceVersion = newRevision
-		f.configs[idx] = cfg
-	}
-
-	return
-}
-
-func (f *fakeConfigStore) Delete(typ, name, namespace string) error {
-	f.Lock()
-	defer f.Unlock()
-
-	_, idx := f.get(typ, name, namespace)
-	if idx < 0 {
-		return errors.New("config does not exist")
-	}
-
-	copy(f.configs[idx:], f.configs[idx+1:])
-	f.configs[len(f.configs)-1] = nil
-	f.configs = f.configs[:len(f.configs)-1]
-
-	return nil
+func NewFakeConfigStore() istioclient.Interface {
+	return istiofake.NewSimpleClientset()
 }
