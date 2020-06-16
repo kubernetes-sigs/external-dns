@@ -27,8 +27,8 @@ import (
 	_ "strings"
 	"testing"
 
-	udnssdk "github.com/aliasgharmhowwala/ultradns-sdk-go"
 	"github.com/stretchr/testify/assert"
+	udnssdk "github.com/ultradns/ultradns-sdk-go"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -136,6 +136,7 @@ func TestUltraDNSProvider_Zones(t *testing.T) {
 	zones, err := provider.Zones(context.Background())
 	assert.Nil(t, err)
 	assert.Equal(t, reflect.DeepEqual(expected, zones), true)
+
 }
 
 //Records function test case
@@ -712,4 +713,66 @@ func TestUltraDNSProvider_DomainFiltersZonesFailCase(t *testing.T) {
 		_, err := provider.Zones(context.Background())
 		assert.NotNilf(t, err, " Multiple domain filter failed %s", "formatted")
 	}
+}
+
+//zones function with domain filter test scenario
+func TestUltraDNSProvider_DomainFilterZonesMocked(t *testing.T) {
+	mocked := mockUltraDNSZone{}
+	provider := &UltraDNSProvider{
+		client: udnssdk.Client{
+			Zone: &mocked,
+		},
+		domainFilter: endpoint.NewDomainFilter([]string{"test-ultradns-provider.com."}),
+	}
+
+	zoneKey := &udnssdk.ZoneKey{
+		Zone:        "test-ultradns-provider.com.",
+		AccountName: "",
+	}
+
+	// When AccountName not given
+	expected, _, _, err := provider.client.Zone.SelectWithOffsetWithLimit(zoneKey, 0, 1000)
+	assert.Nil(t, err)
+	zones, err := provider.Zones(context.Background())
+	assert.Nil(t, err)
+	assert.Equal(t, reflect.DeepEqual(expected, zones), true)
+
+	// When AccountName is set
+	provider = &UltraDNSProvider{
+		client: udnssdk.Client{
+			Zone: &mocked,
+		},
+		domainFilter: endpoint.NewDomainFilter([]string{"test-ultradns-provider.com."}),
+		AccountName:  "teamrest",
+	}
+
+	zoneKey = &udnssdk.ZoneKey{
+		Zone:        "test-ultradns-provider.com.",
+		AccountName: "teamrest",
+	}
+
+	expected, _, _, err = provider.client.Zone.SelectWithOffsetWithLimit(zoneKey, 0, 1000)
+	assert.Nil(t, err)
+	zones, err = provider.Zones(context.Background())
+	assert.Nil(t, err)
+	assert.Equal(t, reflect.DeepEqual(expected, zones), true)
+
+	//When zone is not given but account is provided
+	provider = &UltraDNSProvider{
+		client: udnssdk.Client{
+			Zone: &mocked,
+		},
+		AccountName: "teamrest",
+	}
+
+	zoneKey = &udnssdk.ZoneKey{
+		AccountName: "teamrest",
+	}
+
+	expected, _, _, err = provider.client.Zone.SelectWithOffsetWithLimit(zoneKey, 0, 1000)
+	assert.Nil(t, err)
+	zones, err = provider.Zones(context.Background())
+	assert.Nil(t, err)
+	assert.Equal(t, reflect.DeepEqual(expected, zones), true)
+
 }

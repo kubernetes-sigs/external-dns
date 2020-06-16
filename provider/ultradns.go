@@ -22,8 +22,8 @@ import (
 	"strings"
 	"time"
 
-	udnssdk "github.com/aliasgharmhowwala/ultradns-sdk-go"
 	log "github.com/sirupsen/logrus"
+	udnssdk "github.com/ultradns/ultradns-sdk-go"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
