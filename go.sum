@@ -73,8 +73,6 @@ github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc h1:cAKDfWh5Vpd
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf h1:qet1QNfXsQxTZqLG4oE62mJzwPIB8+Tee4RNCL9ulrY=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
-github.com/ultradns/ultradns-sdk-go v1.3.7 h1:sGeLtpu5atyi4aXEM18aEz0DpTFyhREhCSfkx4RojfU=
-github.com/ultradns/ultradns-sdk-go v1.3.7/go.mod h1:vCC5SBZUcMRpcfma80Aw0Xk11WxOgbDA071AUban7ws=
 github.com/alicebob/gopher-json v0.0.0-20180125190556-5a6b3ba71ee6/go.mod h1:SGnFV6hVsYE877CKEZ6tDNTjaSXYUk6QqoIK6PrAtcc=
 github.com/alicebob/miniredis v0.0.0-20180201100744-9d52b1fc8da9/go.mod h1:8HZjEj4yU0dwhYHky+DxYx+6BMjkBbe5ONFIF1MXffk=
 github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20180828111155-cad214d7d71f h1:hinXH9rcBjRoIih5tl4f1BCbNjOmPJ2UnZwcYDhEHR0=
@@ -583,6 +581,8 @@ github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UV
 github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJyk=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/technosophos/moniker v0.0.0-20180509230615-a5dbd03a2245/go.mod h1:O1c8HleITsZqzNZDjSNzirUGsMT0oGu9LhHKoJrqO+A=
+github.com/terra-farm/udnssdk v1.3.5 h1:MNR3adfuuEK/l04+jzo8WW/0fnorY+nW515qb3vEr6I=
+github.com/terra-farm/udnssdk v1.3.5/go.mod h1:8RnM56yZTR7mYyUIvrDgXzdRaEyFIzqdEi7+um26Sv8=
 github.com/tinylib/msgp v1.0.2/go.mod h1:+d+yLhGm8mzTaHzB+wgMYrodPfmZrzkirds8fDWklFE=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 h1:LnC5Kc/wtumK+WB441p7ynQJzVuNRJiqddSIE3IlSEQ=
@@ -594,6 +594,8 @@ github.com/uber/jaeger-client-go v0.0.0-20190228190846-ecf2d03a9e80/go.mod h1:WV
 github.com/uber/jaeger-lib v2.0.0+incompatible/go.mod h1:ComeNDZlWwrWnDv8aPp0Ba6+uUTzImX/AauajbLI56U=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
 github.com/ulikunitz/xz v0.5.6/go.mod h1:2bypXElzHzzJZwzH67Y6wb67pO62Rzfn7BSiF4ABRW8=
+github.com/ultradns/ultradns-sdk-go v0.0.0-20200616162335-c89b197deaf4 h1:o4HSecSlhMcumDd5eLFnMblL20+RVpSBeVxelxO875w=
+github.com/ultradns/ultradns-sdk-go v0.0.0-20200616162335-c89b197deaf4/go.mod h1:43vmy6GEvRuVMpGEWfJ/JoEM6RIqUQI1/tb8JqZR1zI=
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
 github.com/urfave/cli v1.21.0/go.mod h1:lxDj6qX9Q6lWQxIrbrT0nwecwUtRnhVZAJjJZrVUZZQ=
 github.com/vinyldns/go-vinyldns v0.0.0-20190611170422-7119fe55ed92 h1:Q76MzqJu++vAfhj0mVf7t0F4xHUbg+V/d/Uk5PBQjRU=

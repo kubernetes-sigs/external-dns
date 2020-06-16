@@ -29,13 +29,12 @@ import (
 )
 
 const (
-	ultradnsDefaultTTL = 198
-	ultradnsCreate     = "CREATE"
-	ultradnsDelete     = "DELETE"
-	ultradnsUpdate     = "UPDATE"
-	sbPoolPriority     = 1
-	sbPoolOrder        = "ROUND_ROBIN"
-	rdPoolOrder        = "ROUND_ROBIN"
+	ultradnsCreate = "CREATE"
+	ultradnsDelete = "DELETE"
+	ultradnsUpdate = "UPDATE"
+	sbPoolPriority = 1
+	sbPoolOrder    = "ROUND_ROBIN"
+	rdPoolOrder    = "ROUND_ROBIN"
 )
 
 // global variables
@@ -140,45 +139,35 @@ func NewUltraDNSProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*Ultr
 func (p *UltraDNSProvider) Zones(ctx context.Context) ([]udnssdk.Zone, error) {
 	zoneKey := &udnssdk.ZoneKey{}
 	zones_appender := []udnssdk.Zone{}
+	zones := []udnssdk.Zone{}
+	var err error
 	if p.domainFilter.IsConfigured() {
 
 		for _, zone := range p.domainFilter.Filters {
 			if p.AccountName != "" {
-				zoneKey = &udnssdk.ZoneKey{
-					Zone:        zone,
-					AccountName: p.AccountName,
-				}
-
-				zones, err := p.fetchZones(ctx, zoneKey)
-				if err != nil {
-					return nil, err
-				}
-
-				zones_appender = append(zones_appender, zones...)
+				zoneKey.Zone = zone
+				zoneKey.AccountName = p.AccountName
+				zones, err = p.fetchZones(ctx, zoneKey)
 
 			} else {
 
-				zoneKey = &udnssdk.ZoneKey{
-					Zone: zone,
-				}
-
-				zones, err := p.fetchZones(ctx, zoneKey)
-				if err != nil {
-					return nil, err
-				}
-
-				zones_appender = append(zones_appender, zones...)
+				zoneKey.Zone = zone
+				zones, err = p.fetchZones(ctx, zoneKey)
 			}
+
+			if err != nil {
+				return nil, err
+			}
+
+			zones_appender = append(zones_appender, zones...)
+
 		}
 
 		return zones_appender, nil
 
 	} else {
 		if p.AccountName != "" {
-			zoneKey = &udnssdk.ZoneKey{
-				Zone:        "",
-				AccountName: p.AccountName,
-			}
+			zoneKey.AccountName = p.AccountName
 		}
 
 		zones, err := p.fetchZones(ctx, zoneKey)
@@ -226,7 +215,7 @@ func (p *UltraDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 						name = zone.Properties.Name
 					}
 
-					endPointTTL := endpoint.NewEndpointWithTTL(name, recordTypeArray[0], endpoint.TTL(r.TTL), r.RData...)
+					endPointTTL := endpoint.NewEndpointWithTTL(name, recordTypeArray[0], endpoint.TTL(r.TTL.(float64)), r.RData...)
 					endpoints = append(endpoints, endPointTTL)
 				}
 			}
@@ -449,7 +438,7 @@ func (p *UltraDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 
 func newUltraDNSChanges(action string, endpoints []*endpoint.Endpoint) []*UltraDNSChanges {
 	changes := make([]*UltraDNSChanges, 0, len(endpoints))
-	ttl := ultradnsDefaultTTL
+	var ttl interface{}
 	for _, e := range endpoints {
 
 		if e.RecordTTL.IsConfigured() {

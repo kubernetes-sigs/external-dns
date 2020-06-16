@@ -207,7 +207,8 @@ Now that we have verified that ExternalDNS will automatically manage your UltraD
 $ kubectl delete service -f nginx.yaml
 $ kubectl delete service -f externaldns.yaml
 ```
-## Creating Multiple A Records Target
+## Example to Manage your Records
+### Creating Multiple A Records Target
 - First, you want to create a service file called 'apple-banana-echo.yaml' 
 ```yaml
 ---
@@ -268,7 +269,7 @@ $ kubectl delete -f apple-banana-echo.yaml
 $ kubectl delete -f expose-apple-banana-app.yaml
 $ kubectl delete -f external-dns.yaml
 ```
-## Creating CNAME Record
+### Creating CNAME Record
 - Please note, that prior to deploying the external-dns service, you will need to add the option –txt-prefix=txt- into external-dns.yaml. If this not provided, your records will not be created.
 -  First, create a service file called 'apple-banana-echo.yaml'
     - _Config File Example – kubernetes cluster is on-premise not on cloud_
@@ -358,7 +359,7 @@ $ kubectl create -f external-dns.yaml
 $ kubectl delete -f apple-banana-echo.yaml
 $ kubectl delete -f external-dns.yaml
 ```
-## Create Multiple Types Of Records
+### Creating Multiple Types Of Records
 - Please note, that prior to deploying the external-dns service, you will need to add the option –txt-prefix=txt- into external-dns.yaml. Since you will also be created a CNAME record, If this not provided, your records will not be created.
 -  First, create a service file called 'apple-banana-echo.yaml'
     - _Config File Example – kubernetes cluster is on-premise not on cloud_
