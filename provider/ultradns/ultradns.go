@@ -26,7 +26,7 @@ import (
 	udnssdk "github.com/ultradns/ultradns-sdk-go"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
-        "sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 const (
@@ -45,20 +45,22 @@ var ultradnsPoolType = "rdpool"
 
 //Setting custom headers for ultradns api calls
 var customHeader = []udnssdk.CustomHeader{
-	udnssdk.CustomHeader{
+	{
 		Key:   "UltraClient",
 		Value: "kube-client",
 	},
 }
 
+// UltraDNSProvider struct
 type UltraDNSProvider struct {
 	provider.BaseProvider
-	client udnssdk.Client
+	client       udnssdk.Client
 	domainFilter endpoint.DomainFilter
 	DryRun       bool
 	AccountName  string
 }
 
+// UltraDNSChanges struct
 type UltraDNSChanges struct {
 	Action string
 
@@ -98,18 +100,16 @@ func NewUltraDNSProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*Ultr
 	if ok {
 		if (probeValue != "true") && (probeValue != "false") {
 			return nil, fmt.Errorf("please set proper probe value, the values can be either true or false")
-		} else {
-			sbPoolRunProbes, _ = strconv.ParseBool(probeValue)
 		}
+		sbPoolRunProbes, _ = strconv.ParseBool(probeValue)
 	}
 
 	actOnProbeValue, ok := os.LookupEnv("ULTRADNS_ENABLE_ACTONPROBE")
 	if ok {
 		if (actOnProbeValue != "true") && (actOnProbeValue != "false") {
 			return nil, fmt.Errorf("please set proper act on probe value, the values can be either true or false")
-		} else {
-			sbPoolActOnProbes, _ = strconv.ParseBool(actOnProbeValue)
 		}
+		sbPoolActOnProbes, _ = strconv.ParseBool(actOnProbeValue)
 	}
 
 	poolValue, ok := os.LookupEnv("ULTRADNS_POOL_TYPE")
@@ -122,8 +122,7 @@ func NewUltraDNSProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*Ultr
 
 	client, err := udnssdk.NewClient(Username, string(Password), BaseURL)
 	if err != nil {
-
-		return nil, fmt.Errorf("Connection cannot be established")
+		return nil, fmt.Errorf("connection cannot be established")
 	}
 
 	provider := &UltraDNSProvider{
@@ -139,35 +138,30 @@ func NewUltraDNSProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*Ultr
 // Zones returns list of hosted zones
 func (p *UltraDNSProvider) Zones(ctx context.Context) ([]udnssdk.Zone, error) {
 	zoneKey := &udnssdk.ZoneKey{}
-	zones_appender := []udnssdk.Zone{}
-	zones := []udnssdk.Zone{}
 	var err error
-	if p.domainFilter.IsConfigured() {
 
+	if p.domainFilter.IsConfigured() {
+		zonesAppender := []udnssdk.Zone{}
 		for _, zone := range p.domainFilter.Filters {
 			zoneKey.Zone = zone
 			zoneKey.AccountName = p.AccountName
-			zones, err = p.fetchZones(ctx, zoneKey)
+			zones, err := p.fetchZones(ctx, zoneKey)
 
 			if err != nil {
 				return nil, err
 			}
 
-			zones_appender = append(zones_appender, zones...)
-
+			zonesAppender = append(zonesAppender, zones...)
 		}
-
-		return zones_appender, nil
-
-	} else {
-		zoneKey.AccountName = p.AccountName
-		zones, err := p.fetchZones(ctx, zoneKey)
-		if err != nil {
-			return nil, err
-		}
-
-		return zones, nil
+		return zonesAppender, nil
 	}
+	zoneKey.AccountName = p.AccountName
+	zones, err := p.fetchZones(ctx, zoneKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return zones, nil
 }
 
 func (p *UltraDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
@@ -198,7 +192,7 @@ func (p *UltraDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 				recordTypeArray := strings.Fields(r.RRType)
 				if provider.SupportedRecordType(recordTypeArray[0]) {
 					log.Infof("owner name %s", r.OwnerName)
-					name := fmt.Sprintf("%s", r.OwnerName)
+					name := r.OwnerName
 
 					// root name is identified by the empty string and should be
 					// translated to zone name for the endpoint entry.
@@ -211,7 +205,6 @@ func (p *UltraDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 				}
 			}
 		}
-
 	}
 	log.Infof("endpoints %v", endpoints)
 	return endpoints, nil
@@ -239,10 +232,8 @@ func (p *UltraDNSProvider) fetchRecords(ctx context.Context, k udnssdk.RRSetKey)
 			}
 			return rrsets, err
 		}
+		rrsets = append(rrsets, reqRrsets...)
 
-		for _, rrset := range reqRrsets {
-			rrsets = append(rrsets, rrset)
-		}
 		if ri.ReturnedCount+ri.Offset >= ri.TotalCount {
 			return rrsets, nil
 		}
@@ -276,10 +267,7 @@ func (p *UltraDNSProvider) fetchZones(ctx context.Context, zoneKey *udnssdk.Zone
 			return zones, err
 		}
 
-		for _, zone := range reqZones {
-
-			zones = append(zones, zone)
-		}
+		zones = append(zones, reqZones...)
 		if ri.ReturnedCount+ri.Offset >= ri.TotalCount {
 			return zones, nil
 		}
@@ -303,9 +291,7 @@ func (p *UltraDNSProvider) submitChanges(ctx context.Context, changes []*UltraDN
 	zoneChanges := seperateChangeByZone(zones, changes)
 
 	for zoneName, changes := range zoneChanges {
-
 		for _, change := range changes {
-
 			if change.ResourceRecordSetUltraDNS.RRType == "CNAME" {
 				cnameownerName = change.ResourceRecordSetUltraDNS.OwnerName
 			} else if change.ResourceRecordSetUltraDNS.RRType == "TXT" {
@@ -322,13 +308,13 @@ func (p *UltraDNSProvider) submitChanges(ctx context.Context, changes []*UltraDN
 				if err != nil {
 					return err
 				}
-				if p.DryRun != true {
+				if !p.DryRun {
 					_, err = p.client.RRSets.Delete(rrsetKey)
 					if err != nil {
 						return err
 					}
 				}
-				return fmt.Errorf("The CNAME and TXT Record name cannot be same please recreate external-dns with - --txt-prefix=")
+				return fmt.Errorf("the 'cname' and 'txt' record name cannot be same please recreate external-dns with - --txt-prefix=")
 			}
 			rrsetKey := udnssdk.RRSetKey{
 				Zone: zoneName,
@@ -356,7 +342,7 @@ func (p *UltraDNSProvider) submitChanges(ctx context.Context, changes []*UltraDN
 						Profile:   rdPoolObject.RawProfile(),
 					}
 				} else {
-					return fmt.Errorf("We do not support Multiple target AAAA records in SB Pool please contact to Neustar for further details")
+					return fmt.Errorf("we do not support Multiple target 'aaaa' records in sb pool please contact to neustar for further details")
 				}
 			} else {
 				record = udnssdk.RRSet{
@@ -378,7 +364,7 @@ func (p *UltraDNSProvider) submitChanges(ctx context.Context, changes []*UltraDN
 
 			switch change.Action {
 			case ultradnsCreate:
-				if p.DryRun != true {
+				if !p.DryRun {
 					res, err := p.client.RRSets.Create(rrsetKey, record)
 					_ = res
 					if err != nil {
@@ -392,7 +378,7 @@ func (p *UltraDNSProvider) submitChanges(ctx context.Context, changes []*UltraDN
 					return err
 				}
 
-				if p.DryRun != true {
+				if !p.DryRun {
 					_, err = p.client.RRSets.Delete(rrsetKey)
 					if err != nil {
 						return err
@@ -404,7 +390,7 @@ func (p *UltraDNSProvider) submitChanges(ctx context.Context, changes []*UltraDN
 					return err
 				}
 
-				if p.DryRun != true {
+				if !p.DryRun {
 					_, err = p.client.RRSets.Update(rrsetKey, record)
 					if err != nil {
 						return err
@@ -431,7 +417,6 @@ func newUltraDNSChanges(action string, endpoints []*endpoint.Endpoint) []*UltraD
 	changes := make([]*UltraDNSChanges, 0, len(endpoints))
 	var ttl int
 	for _, e := range endpoints {
-
 		if e.RecordTTL.IsConfigured() {
 			ttl = int(e.RecordTTL)
 		}
@@ -467,7 +452,6 @@ func seperateChangeByZone(zones []udnssdk.Zone, changes []*UltraDNSChanges) map[
 			continue
 		}
 		change[zone] = append(change[zone], c)
-
 	}
 	return change
 }
@@ -476,17 +460,15 @@ func (p *UltraDNSProvider) getSpecificRecord(ctx context.Context, rrsetKey udnss
 	_, err = p.client.RRSets.Select(rrsetKey)
 	if err != nil {
 		return fmt.Errorf("no record was found for %v", rrsetKey)
-	} else {
-		return nil
 	}
+
+	return nil
 }
 
 // Creation of SBPoolObject
 func (p *UltraDNSProvider) newSBPoolObjectCreation(ctx context.Context, change *UltraDNSChanges) (sbPool udnssdk.SBPoolProfile, err error) {
-
 	sbpoolRDataList := []udnssdk.SBRDataInfo{}
-	for _, _ = range change.ResourceRecordSetUltraDNS.RData {
-
+	for range change.ResourceRecordSetUltraDNS.RData {
 		rrdataInfo := udnssdk.SBRDataInfo{
 			RunProbes: sbPoolRunProbes,
 			Priority:  sbPoolPriority,
@@ -511,7 +493,6 @@ func (p *UltraDNSProvider) newSBPoolObjectCreation(ctx context.Context, change *
 
 //Creation of RDPoolObject
 func (p *UltraDNSProvider) newRDPoolObjectCreation(ctx context.Context, change *UltraDNSChanges) (rdPool udnssdk.RDPoolProfile, err error) {
-
 	rdPoolObject := udnssdk.RDPoolProfile{
 		Context:     udnssdk.RDPoolSchema,
 		Order:       rdPoolOrder,
@@ -519,4 +500,3 @@ func (p *UltraDNSProvider) newRDPoolObjectCreation(ctx context.Context, change *
 	}
 	return rdPoolObject, nil
 }
-
