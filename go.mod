@@ -22,13 +22,14 @@ require (
 	github.com/digitalocean/godo v1.34.0
 	github.com/dnsimple/dnsimple-go v0.60.0
 	github.com/exoscale/egoscale v0.18.1
+	github.com/fatih/structs v1.1.0 // indirect
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
 	github.com/gobs/pretty v0.0.0-20180724170744-09732c25a95b // indirect
 	github.com/golang/sync v0.0.0-20180314180146-1d60e4601c6f
 	github.com/gophercloud/gophercloud v0.1.0
+	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/heptio/contour v0.15.0
-	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/infobloxopen/infoblox-go-client v0.0.0-20180606155407-61dc5f9b0a65
 	github.com/linki/instrumented_http v0.2.0
 	github.com/linode/linodego v0.15.0
@@ -44,17 +45,14 @@ require (
 	github.com/projectcontour/contour v1.4.0
 	github.com/prometheus/client_golang v1.1.0
 	github.com/sanyu/dynectsoap v0.0.0-20181203081243-b83de5edc4e0
+	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/sirupsen/logrus v1.6.0
-	github.com/smartystreets/go-aws-auth v0.0.0-20180515143844-0c1422d1fdb9 // indirect
-	github.com/smartystreets/gunit v1.1.1 // indirect
-	github.com/stretchr/testify v1.4.0
-	github.com/terra-farm/udnssdk v1.3.5 // indirect
-	github.com/satori/go.uuid v1.2.0 // indirect
-	github.com/sirupsen/logrus v1.4.2
+	github.com/smartystreets/assertions v1.0.1 // indirect
 	github.com/smartystreets/go-aws-auth v0.0.0-20180515143844-0c1422d1fdb9 // indirect
 	github.com/smartystreets/gunit v1.3.4 // indirect
 	github.com/stretchr/testify v1.5.1
+	github.com/terra-farm/udnssdk v1.3.5 // indirect
 	github.com/transip/gotransip v5.8.2+incompatible
 	github.com/ultradns/ultradns-sdk-go v0.0.0-20200616202852-e62052662f60
 	github.com/vinyldns/go-vinyldns v0.0.0-20190611170422-7119fe55ed92
