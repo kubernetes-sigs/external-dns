@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package ultradns 
+package ultradns
 
 import (
 	"context"
@@ -31,7 +31,6 @@ import (
 	udnssdk "github.com/ultradns/ultradns-sdk-go"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
-
 )
 
 type mockUltraDNSZone struct {
