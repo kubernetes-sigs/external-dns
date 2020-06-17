@@ -54,7 +54,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/transip"
 	"sigs.k8s.io/external-dns/provider/vinyldns"
 	"sigs.k8s.io/external-dns/provider/vultr"
-
+	"sigs.k8s.io/external-dns/provider/ultradns"
 	"sigs.k8s.io/external-dns/controller"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
@@ -190,9 +190,9 @@ func main() {
 	case "vinyldns":
 		p, err = vinyldns.NewVinylDNSProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "vultr":
-		p, err = provider.NewVultrProvider(domainFilter, cfg.DryRun)
+		p, err = vultr.NewVultrProvider(domainFilter, cfg.DryRun)
 	case "ultradns":
-		p, err = provider.NewUltraDNSProvider(domainFilter, cfg.DryRun )
+		p, err = ultradns.NewUltraDNSProvider(domainFilter, cfg.DryRun )
 	case "cloudflare":
 		p, err = cloudflare.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareZonesPerPage, cfg.CloudflareProxied, cfg.DryRun)
 	case "rcodezero":
