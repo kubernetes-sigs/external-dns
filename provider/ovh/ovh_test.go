@@ -25,6 +25,7 @@ import (
 	"github.com/ovh/go-ovh/ovh"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.uber.org/ratelimit"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -58,8 +59,9 @@ func TestOvhZones(t *testing.T) {
 	assert := assert.New(t)
 	client := new(mockOvhClient)
 	provider := &OVHProvider{
-		client:       client,
-		domainFilter: endpoint.NewDomainFilter([]string{"com"}),
+		client:         client,
+		apiRateLimiter: ratelimit.New(10),
+		domainFilter:   endpoint.NewDomainFilter([]string{"com"}),
 	}
 
 	// Basic zones
@@ -81,7 +83,7 @@ func TestOvhZones(t *testing.T) {
 func TestOvhZoneRecords(t *testing.T) {
 	assert := assert.New(t)
 	client := new(mockOvhClient)
-	provider := &OVHProvider{client: client}
+	provider := &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10)}
 
 	// Basic zones records
 	client.On("Get", "/domain/zone").Return([]string{"example.org"}, nil).Once()
@@ -125,7 +127,7 @@ func TestOvhZoneRecords(t *testing.T) {
 func TestOvhRecords(t *testing.T) {
 	assert := assert.New(t)
 	client := new(mockOvhClient)
-	provider := &OVHProvider{client: client}
+	provider := &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10)}
 
 	// Basic zones records
 	client.On("Get", "/domain/zone").Return([]string{"example.org", "example.net"}, nil).Once()
@@ -158,7 +160,7 @@ func TestOvhRecords(t *testing.T) {
 
 func TestOvhRefresh(t *testing.T) {
 	client := new(mockOvhClient)
-	provider := &OVHProvider{client: client}
+	provider := &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10)}
 
 	// Basic zone refresh
 	client.On("Post", "/domain/zone/example.net/refresh", nil).Return(nil, nil).Once()
@@ -199,7 +201,7 @@ func TestOvhNewChange(t *testing.T) {
 func TestOvhApplyChanges(t *testing.T) {
 	assert := assert.New(t)
 	client := new(mockOvhClient)
-	provider := &OVHProvider{client: client}
+	provider := &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10)}
 	changes := plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{DNSName: ".example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.42"}},
@@ -252,7 +254,7 @@ func TestOvhApplyChanges(t *testing.T) {
 func TestOvhChange(t *testing.T) {
 	assert := assert.New(t)
 	client := new(mockOvhClient)
-	provider := &OVHProvider{client: client}
+	provider := &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10)}
 
 	// Record creation
 	client.On("Post", "/domain/zone/example.net/record", ovhRecordFields{SubDomain: "ovh"}).Return(nil, nil).Once()
