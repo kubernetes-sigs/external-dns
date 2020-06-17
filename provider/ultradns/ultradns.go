@@ -11,7 +11,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package provider
+package ultradns
 
 import (
 	"context"
@@ -26,6 +26,7 @@ import (
 	udnssdk "github.com/ultradns/ultradns-sdk-go"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+        "sigs.k8s.io/external-dns/provider"
 )
 
 const (
@@ -51,8 +52,8 @@ var customHeader = []udnssdk.CustomHeader{
 }
 
 type UltraDNSProvider struct {
+	provider.BaseProvider
 	client udnssdk.Client
-
 	domainFilter endpoint.DomainFilter
 	DryRun       bool
 	AccountName  string
@@ -195,7 +196,7 @@ func (p *UltraDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 
 			for _, r := range records {
 				recordTypeArray := strings.Fields(r.RRType)
-				if supportedRecordType(recordTypeArray[0]) {
+				if provider.SupportedRecordType(recordTypeArray[0]) {
 					log.Infof("owner name %s", r.OwnerName)
 					name := fmt.Sprintf("%s", r.OwnerName)
 
@@ -453,7 +454,7 @@ func newUltraDNSChanges(action string, endpoints []*endpoint.Endpoint) []*UltraD
 
 func seperateChangeByZone(zones []udnssdk.Zone, changes []*UltraDNSChanges) map[string][]*UltraDNSChanges {
 	change := make(map[string][]*UltraDNSChanges)
-	zoneNameID := zoneIDName{}
+	zoneNameID := provider.ZoneIDName{}
 	for _, z := range zones {
 		zoneNameID.Add(z.Properties.Name, z.Properties.Name)
 		change[z.Properties.Name] = []*UltraDNSChanges{}
@@ -518,3 +519,4 @@ func (p *UltraDNSProvider) newRDPoolObjectCreation(ctx context.Context, change *
 	}
 	return rdPoolObject, nil
 }
+
