@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	cloud.google.com/go v0.50.0
+	git.blindage.org/21h/hcloud-dns v0.0.0-20200525170043-def10a4a28e0
 	github.com/Azure/azure-sdk-for-go v36.0.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.9.4
 	github.com/Azure/go-autorest/autorest/adal v0.8.3
@@ -58,6 +59,7 @@ require (
 	github.com/vinyldns/go-vinyldns v0.0.0-20190611170422-7119fe55ed92
 	github.com/vultr/govultr v0.3.2
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20200401174654-e694b7bb0875
+	go.uber.org/ratelimit v0.1.0
 	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	google.golang.org/api v0.15.0
@@ -68,7 +70,6 @@ require (
 	k8s.io/api v0.17.5
 	k8s.io/apimachinery v0.17.5
 	k8s.io/client-go v0.17.5
-	k8s.io/klog v1.0.0
 )
 
 replace (
