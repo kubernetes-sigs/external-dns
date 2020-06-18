@@ -194,7 +194,6 @@ func (p *VultrProvider) submitChanges(ctx context.Context, changes []*VultrChang
 					Name:     change.ResourceRecordSet.Name,
 					Data:     change.ResourceRecordSet.Data,
 					TTL:      change.ResourceRecordSet.TTL,
-					Priority: change.ResourceRecordSet.Priority,
 				}
 
 				err = p.client.DNSRecord.Update(ctx, zoneName, record)
