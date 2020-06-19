@@ -38,17 +38,17 @@ var (
 
 // Config is a project-wide configuration
 type Config struct {
-	APIServerURL                string
-	KubeConfig                  string
-	RequestTimeout              time.Duration
-	IstioIngressGatewayServices []string
-	ContourLoadBalancerService  string
-	SkipperRouteGroupVersion    string
-	Sources                     []string
-	Namespace                   string
-	AnnotationFilter            string
-	FQDNTemplate                string
-	CombineFQDNAndAnnotation    bool
+	APIServerURL                      string
+	KubeConfig                        string
+	RequestTimeout                    time.Duration
+	IstioIngressGatewayServices       []string
+	ContourLoadBalancerService        string
+	SkipperRouteGroupVersion          string
+	Sources                           []string
+	Namespace                         string
+	AnnotationFilter                  string
+	FQDNTemplate                      string
+	CombineFQDNAndAnnotation          bool
 	IgnoreHostnameAnnotation          bool
 	Compatibility                     string
 	PublishInternal                   bool
