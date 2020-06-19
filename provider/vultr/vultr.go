@@ -157,17 +157,17 @@ func (p *VultrProvider) submitChanges(ctx context.Context, changes []*VultrChang
 	for zoneName, changes := range zoneChanges {
 		for _, change := range changes {
 			log.WithFields(log.Fields{
-				"record": change.ResourceRecordSet.Name,
-				"type":   change.ResourceRecordSet.Type,
-				"ttl":    change.ResourceRecordSet.TTL,
+				"record":   change.ResourceRecordSet.Name,
+				"type":     change.ResourceRecordSet.Type,
+				"ttl":      change.ResourceRecordSet.TTL,
 				"priority": change.ResourceRecordSet.Priority,
-				"action": change.Action,
-				"zone":   zoneName,
+				"action":   change.Action,
+				"zone":     zoneName,
 			}).Info("Changing record.")
 
 			switch change.Action {
 			case vultrCreate:
-				priority  := getPriority(change.ResourceRecordSet.Priority)
+				priority := getPriority(change.ResourceRecordSet.Priority)
 				err = p.client.DNSRecord.Create(ctx, zoneName, change.ResourceRecordSet.Type, change.ResourceRecordSet.Name, change.ResourceRecordSet.Data, change.ResourceRecordSet.TTL, priority)
 				if err != nil {
 					return err
@@ -281,7 +281,7 @@ func (p *VultrProvider) getRecordID(ctx context.Context, zone string, record gov
 
 func getPriority(priority *int) int {
 	p := 0
-	if priority != nil{
+	if priority != nil {
 		p = *priority
 	}
 	return p
