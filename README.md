@@ -3,8 +3,8 @@
 </p>
 
 # ExternalDNS
-[![Build Status](https://travis-ci.org/kubernetes-sigs/external-dns.svg?branch=master)](https://travis-ci.org/kubernetes-sigs/external-dns)
-[![Coverage Status](https://coveralls.io/repos/github/kubernetes-sigs/external-dns/badge.svg?branch=master)](https://coveralls.io/github/kubernetes-sigs/external-dns?branch=master)
+[![Build Status](https://travis-ci.org/kubernetes-sigs/external-dns.svg)](https://travis-ci.org/kubernetes-sigs/external-dns)
+[![Coverage Status](https://coveralls.io/repos/github/kubernetes-sigs/external-dns/badge.svg)](https://coveralls.io/github/kubernetes-sigs/external-dns)
 [![GitHub release](https://img.shields.io/github/release/kubernetes-sigs/external-dns.svg)](https://github.com/kubernetes-sigs/external-dns/releases)
 [![go-doc](https://godoc.org/github.com/kubernetes-sigs/external-dns?status.svg)](https://godoc.org/github.com/kubernetes-sigs/external-dns)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes-sigs/external-dns)](https://goreportcard.com/report/github.com/kubernetes-sigs/external-dns)
@@ -176,7 +176,7 @@ Assuming Go has been setup with module support it can be built simply by running
 $ make
 ```
 
-This will create external-dns in the build directory directly from master.
+This will create external-dns in the build directory directly from the default branch.
 
 Next, run an application and expose it via a Kubernetes Service:
 
@@ -276,12 +276,12 @@ Here's a rough outline on what is to come (subject to change):
 
 ### v0.6
 
-- [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller) (This could also directly become `v1.0`)
+- [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/HEAD/dns-controller) (This could also directly become `v1.0`)
 - [x] Support for OVH
 
 ### v1.0
 
-- [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller)
+- [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/HEAD/dns-controller)
 - [x] Ability to replace Zalando's [Mate](https://github.com/linki/mate)
 - [x] Ability to replace Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 
@@ -322,7 +322,7 @@ For an overview on how to write new Sources and Providers check out [Sources and
 
 ExternalDNS is an effort to unify the following similar projects in order to bring the Kubernetes community an easy and predictable way of managing DNS records across cloud providers based on their Kubernetes resources:
 
-* Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller)
+* Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/HEAD/dns-controller)
 * Zalando's [Mate](https://github.com/linki/mate)
 * Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 

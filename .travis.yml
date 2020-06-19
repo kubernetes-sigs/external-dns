@@ -27,7 +27,7 @@ jobs:
     env:
     - GOLANGCI_RELEASE="v1.26.0"
     before_install:
-    - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin ${GOLANGCI_RELEASE}
+    - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin ${GOLANGCI_RELEASE}
     script:
     - make lint
   - name: "Coverage"
