@@ -54,8 +54,8 @@ require (
 	github.com/vultr/govultr v0.3.2
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20200401174654-e694b7bb0875
 	go.uber.org/ratelimit v0.1.0
-	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
-	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
+	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
+	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	google.golang.org/api v0.15.0
 	gopkg.in/ns1/ns1-go.v2 v2.0.0-20190322154155-0dafb5275fd1
 	gopkg.in/yaml.v2 v2.2.8
