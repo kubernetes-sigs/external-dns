@@ -47,7 +47,7 @@ const (
 
 type routeGroupSource struct {
 	cli                      routeGroupListClient
-	master                   string
+	apiServer                string
 	namespace                string
 	apiEndpoint              string
 	annotationFilter         string
@@ -199,7 +199,7 @@ func parseTemplate(fqdnTemplate string) (tmpl *template.Template, err error) {
 }
 
 // NewRouteGroupSource creates a new routeGroupSource with the given config.
-func NewRouteGroupSource(timeout time.Duration, token, tokenPath, master, namespace, annotationFilter, fqdnTemplate, routegroupVersion string, combineFqdnAnnotation, ignoreHostnameAnnotation bool) (Source, error) {
+func NewRouteGroupSource(timeout time.Duration, token, tokenPath, apiServerURL, namespace, annotationFilter, fqdnTemplate, routegroupVersion string, combineFqdnAnnotation, ignoreHostnameAnnotation bool) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -210,7 +210,7 @@ func NewRouteGroupSource(timeout time.Duration, token, tokenPath, master, namesp
 	}
 	cli := newRouteGroupClient(token, tokenPath, timeout)
 
-	u, err := url.Parse(master)
+	u, err := url.Parse(apiServerURL)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +223,7 @@ func NewRouteGroupSource(timeout time.Duration, token, tokenPath, master, namesp
 
 	sc := &routeGroupSource{
 		cli:                      cli,
-		master:                   apiServer,
+		apiServer:                apiServer,
 		namespace:                namespace,
 		apiEndpoint:              apiServer + fmt.Sprintf(routeGroupListResource, routegroupVersion),
 		annotationFilter:         annotationFilter,

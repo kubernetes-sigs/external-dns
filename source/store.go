@@ -53,7 +53,7 @@ type Config struct {
 	CRDSourceAPIVersion            string
 	CRDSourceKind                  string
 	KubeConfig                     string
-	KubeMaster                     string
+	APIServerURL                   string
 	ServiceTypeFilter              []string
 	IstioIngressGatewayServices    []string
 	CFAPIEndpoint                  string
@@ -77,7 +77,7 @@ type ClientGenerator interface {
 // will be generated
 type SingletonClientGenerator struct {
 	KubeConfig      string
-	KubeMaster      string
+	APIServerURL    string
 	RequestTimeout  time.Duration
 	kubeClient      kubernetes.Interface
 	istioClient     *istioclient.Clientset
@@ -95,7 +95,7 @@ type SingletonClientGenerator struct {
 func (p *SingletonClientGenerator) KubeClient() (kubernetes.Interface, error) {
 	var err error
 	p.kubeOnce.Do(func() {
-		p.kubeClient, err = NewKubeClient(p.KubeConfig, p.KubeMaster, p.RequestTimeout)
+		p.kubeClient, err = NewKubeClient(p.KubeConfig, p.APIServerURL, p.RequestTimeout)
 	})
 	return p.kubeClient, err
 }
@@ -104,7 +104,7 @@ func (p *SingletonClientGenerator) KubeClient() (kubernetes.Interface, error) {
 func (p *SingletonClientGenerator) IstioClient() (istioclient.Interface, error) {
 	var err error
 	p.istioOnce.Do(func() {
-		p.istioClient, err = NewIstioClient(p.KubeConfig, p.KubeMaster)
+		p.istioClient, err = NewIstioClient(p.KubeConfig, p.APIServerURL)
 	})
 	return p.istioClient, err
 }
@@ -137,7 +137,7 @@ func NewCFClient(cfAPIEndpoint string, cfUsername string, cfPassword string) (*c
 func (p *SingletonClientGenerator) DynamicKubernetesClient() (dynamic.Interface, error) {
 	var err error
 	p.contourOnce.Do(func() {
-		p.contourClient, err = NewDynamicKubernetesClient(p.KubeConfig, p.KubeMaster, p.RequestTimeout)
+		p.contourClient, err = NewDynamicKubernetesClient(p.KubeConfig, p.APIServerURL, p.RequestTimeout)
 	})
 	return p.contourClient, err
 }
@@ -146,7 +146,7 @@ func (p *SingletonClientGenerator) DynamicKubernetesClient() (dynamic.Interface,
 func (p *SingletonClientGenerator) OpenShiftClient() (openshift.Interface, error) {
 	var err error
 	p.openshiftOnce.Do(func() {
-		p.openshiftClient, err = NewOpenShiftClient(p.KubeConfig, p.KubeMaster, p.RequestTimeout)
+		p.openshiftClient, err = NewOpenShiftClient(p.KubeConfig, p.APIServerURL, p.RequestTimeout)
 	})
 	return p.openshiftClient, err
 }
@@ -227,35 +227,35 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		crdClient, scheme, err := NewCRDClientForAPIVersionKind(client, cfg.KubeConfig, cfg.KubeMaster, cfg.CRDSourceAPIVersion, cfg.CRDSourceKind)
+		crdClient, scheme, err := NewCRDClientForAPIVersionKind(client, cfg.KubeConfig, cfg.APIServerURL, cfg.CRDSourceAPIVersion, cfg.CRDSourceKind)
 		if err != nil {
 			return nil, err
 		}
 		return NewCRDSource(crdClient, cfg.Namespace, cfg.CRDSourceKind, cfg.AnnotationFilter, scheme)
 	case "skipper-routegroup":
-		master := cfg.KubeMaster
+		apiServerURL := cfg.APIServerURL
 		tokenPath := ""
 		token := ""
-		restConfig, err := GetRestConfig(cfg.KubeConfig, cfg.KubeMaster)
+		restConfig, err := GetRestConfig(cfg.KubeConfig, cfg.APIServerURL)
 		if err == nil {
-			master = restConfig.Host
+			apiServerURL = restConfig.Host
 			tokenPath = restConfig.BearerTokenFile
 			token = restConfig.BearerToken
 		}
-		return NewRouteGroupSource(cfg.RequestTimeout, token, tokenPath, master, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.SkipperRouteGroupVersion, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+		return NewRouteGroupSource(cfg.RequestTimeout, token, tokenPath, apiServerURL, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.SkipperRouteGroupVersion, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
 	}
 	return nil, ErrSourceNotFound
 }
 
 // GetRestConfig returns the rest clients config to get automatically
 // data if you run inside a cluster or by passing flags.
-func GetRestConfig(kubeConfig, kubeMaster string) (*rest.Config, error) {
+func GetRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
 			kubeConfig = clientcmd.RecommendedHomeFile
 		}
 	}
-	log.Debugf("kubeMaster: %s", kubeMaster)
+	log.Debugf("apiServerURL: %s", apiServerURL)
 	log.Debugf("kubeConfig: %s", kubeConfig)
 
 	// evaluate whether to use kubeConfig-file or serviceaccount-token
@@ -268,7 +268,7 @@ func GetRestConfig(kubeConfig, kubeMaster string) (*rest.Config, error) {
 		config, err = rest.InClusterConfig()
 	} else {
 		log.Infof("Using kubeConfig")
-		config, err = clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
+		config, err = clientcmd.BuildConfigFromFlags(apiServerURL, kubeConfig)
 	}
 	if err != nil {
 		return nil, err
@@ -278,11 +278,11 @@ func GetRestConfig(kubeConfig, kubeMaster string) (*rest.Config, error) {
 }
 
 // NewKubeClient returns a new Kubernetes client object. It takes a Config and
-// uses KubeMaster and KubeConfig attributes to connect to the cluster. If
+// uses APIServerURL and KubeConfig attributes to connect to the cluster. If
 // KubeConfig isn't provided it defaults to using the recommended default.
-func NewKubeClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) (*kubernetes.Clientset, error) {
+func NewKubeClient(kubeConfig, apiServerURL string, requestTimeout time.Duration) (*kubernetes.Clientset, error) {
 	log.Infof("Instantiating new Kubernetes client")
-	config, err := GetRestConfig(kubeConfig, kubeMaster)
+	config, err := GetRestConfig(kubeConfig, apiServerURL)
 	if err != nil {
 		return nil, err
 	}
@@ -313,16 +313,16 @@ func NewKubeClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) 
 // NB: Istio controls the creation of the underlying Kubernetes client, so we
 // have no ability to tack on transport wrappers (e.g., Prometheus request
 // wrappers) to the client's config at this level. Furthermore, the Istio client
-// constructor does not expose the ability to override the Kubernetes master,
-// so the Master config attribute has no effect.
-func NewIstioClient(kubeConfig string, kubeMaster string) (*istioclient.Clientset, error) {
+// constructor does not expose the ability to override the Kubernetes API server endpoint,
+// so the apiServerURL config attribute has no effect.
+func NewIstioClient(kubeConfig string, apiServerURL string) (*istioclient.Clientset, error) {
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
 			kubeConfig = clientcmd.RecommendedHomeFile
 		}
 	}
 
-	restCfg, err := clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
+	restCfg, err := clientcmd.BuildConfigFromFlags(apiServerURL, kubeConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -336,16 +336,16 @@ func NewIstioClient(kubeConfig string, kubeMaster string) (*istioclient.Clientse
 }
 
 // NewDynamicKubernetesClient returns a new Dynamic Kubernetes client object. It takes a Config and
-// uses KubeMaster and KubeConfig attributes to connect to the cluster. If
+// uses APIServerURL and KubeConfig attributes to connect to the cluster. If
 // KubeConfig isn't provided it defaults to using the recommended default.
-func NewDynamicKubernetesClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) (dynamic.Interface, error) {
+func NewDynamicKubernetesClient(kubeConfig, apiServerURL string, requestTimeout time.Duration) (dynamic.Interface, error) {
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
 			kubeConfig = clientcmd.RecommendedHomeFile
 		}
 	}
 
-	config, err := clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
+	config, err := clientcmd.BuildConfigFromFlags(apiServerURL, kubeConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -372,16 +372,16 @@ func NewDynamicKubernetesClient(kubeConfig, kubeMaster string, requestTimeout ti
 }
 
 // NewOpenShiftClient returns a new Openshift client object. It takes a Config and
-// uses KubeMaster and KubeConfig attributes to connect to the cluster. If
+// uses APIServerURL and KubeConfig attributes to connect to the cluster. If
 // KubeConfig isn't provided it defaults to using the recommended default.
-func NewOpenShiftClient(kubeConfig, kubeMaster string, requestTimeout time.Duration) (*openshift.Clientset, error) {
+func NewOpenShiftClient(kubeConfig, apiServerURL string, requestTimeout time.Duration) (*openshift.Clientset, error) {
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
 			kubeConfig = clientcmd.RecommendedHomeFile
 		}
 	}
 
-	config, err := clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
+	config, err := clientcmd.BuildConfigFromFlags(apiServerURL, kubeConfig)
 	if err != nil {
 		return nil, err
 	}
