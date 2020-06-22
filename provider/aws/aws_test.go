@@ -741,7 +741,13 @@ func TestAWSsubmitChangesError(t *testing.T) {
 		}
 	}
 
-	provider, clientStub := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, []*endpoint.Endpoint{})
+	bad := 	endpoint.NewEndpointWithTTL("fail.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
+	good1 := endpoint.NewEndpointWithTTL("good1.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
+	good2 := endpoint.NewEndpointWithTTL("good2.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
+	good3 := endpoint.NewEndpointWithTTL("good3.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
+
+
+	provider, clientStub := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, []*endpoint.Endpoint{good1})
 
 
 	ctx := context.Background()
@@ -750,19 +756,15 @@ func TestAWSsubmitChangesError(t *testing.T) {
 	records, err := provider.Records(ctx)
 	require.NoError(t, err)
 
-	bad := 	endpoint.NewEndpointWithTTL("fail.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
-	good1 := endpoint.NewEndpointWithTTL("good1.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
-	good2 := endpoint.NewEndpointWithTTL("good2.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
-	good3 := endpoint.NewEndpointWithTTL("good3.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
-
+	//TODO: test 3 endpoints
 	cs := provider.newChanges(route53.ChangeActionCreate, []*endpoint.Endpoint{bad, good1, good2, good3}, records, zones)
-	ds := provider.newChanges(route53.ChangeActionDelete, []*endpoint.Endpoint{good1, good2}, records, zones)
+	ds := provider.newChanges(route53.ChangeActionDelete, []*endpoint.Endpoint{good1}, records, zones)
 
-	first := append(cs, ds...)
+	first := append(ds, cs...)
 
 	seconed := append(
-		provider.newChanges(route53.ChangeActionCreate, []*endpoint.Endpoint{bad, good1}, records, zones),
-		provider.newChanges(route53.ChangeActionDelete, []*endpoint.Endpoint{good1}, records, zones)...)
+		provider.newChanges(route53.ChangeActionDelete, []*endpoint.Endpoint{good1}, records, zones),
+		provider.newChanges(route53.ChangeActionCreate, []*endpoint.Endpoint{bad, good1}, records, zones)...)
 
 	clientStub.MockMethod("ChangeResourceRecordSets", getParams(first)).Return(nil, fmt.Errorf("Mock route53 failure"))
 

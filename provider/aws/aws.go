@@ -436,15 +436,21 @@ func (p *AWSProvider) applyWithBisect(ctx context.Context, changes []*route53.Ch
 
 	for i, b := range batchCs {
 		if p.ChangeZone(ctx, b, z, zoneName) {
-			if len(b) == 1 {
+			changesByName, names := getChangesByName(b)
+
+			if len(names) == 1 {
 				return []error{fmt.Errorf("failed to submit changes: %v", b)}
 			}
 
-			twoBatchs := batchChangeSet(changes, len(b) / 2)
+
+			size := len(names) / 2
+			b1 := getChangesFromNames(changesByName, names[: size])
+			b2 := getChangesFromNames(changesByName, names[size : ])
+
 			time.Sleep(p.batchChangeInterval)
-			res = append(res, p.applyWithBisect(ctx, twoBatchs[0], z, zoneName)...)
+			res = append(res, p.applyWithBisect(ctx, b1, z, zoneName)...)
 			time.Sleep(p.batchChangeInterval)
-			res = append(res, p.applyWithBisect(ctx, twoBatchs[1], z, zoneName)...)
+			res = append(res, p.applyWithBisect(ctx, b2, z, zoneName)...)
 		}
 
 		if i != len(batchCs)-1 {
@@ -452,6 +458,16 @@ func (p *AWSProvider) applyWithBisect(ctx context.Context, changes []*route53.Ch
 		}
 	}
 
+
+	return res
+}
+
+func getChangesFromNames(changesByName map[string][]*route53.Change, names []string) []*route53.Change {
+	res := make([]*route53.Change, 0)
+
+	for _, n := range names {
+		res = append(res, changesByName[n]...)
+	}
 
 	return res
 }
@@ -623,16 +639,7 @@ func batchChangeSet(cs []*route53.Change, batchSize int) [][]*route53.Change {
 
 	batchChanges := make([][]*route53.Change, 0)
 
-	changesByName := make(map[string][]*route53.Change)
-	for _, v := range cs {
-		changesByName[*v.ResourceRecordSet.Name] = append(changesByName[*v.ResourceRecordSet.Name], v)
-	}
-
-	names := make([]string, 0)
-	for v := range changesByName {
-		names = append(names, v)
-	}
-	sort.Strings(names)
+	changesByName, names := getChangesByName(cs)
 
 	for _, name := range names {
 		totalChangesByName := len(changesByName[name])
@@ -661,6 +668,21 @@ func batchChangeSet(cs []*route53.Change, batchSize int) [][]*route53.Change {
 	}
 
 	return batchChanges
+}
+
+func getChangesByName(cs []*route53.Change) (map[string][]*route53.Change, []string) {
+	changesByName := make(map[string][]*route53.Change)
+	for _, v := range cs {
+		name := provider.EnsureTrailingDot(*v.ResourceRecordSet.Name)
+		changesByName[name] = append(changesByName[name], v)
+	}
+
+	names := make([]string, 0)
+	for v := range changesByName {
+		names = append(names, v)
+	}
+	sort.Strings(names)
+	return changesByName, names
 }
 
 func sortChangesByActionNameType(cs []*route53.Change) []*route53.Change {
