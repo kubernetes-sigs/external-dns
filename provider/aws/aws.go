@@ -673,8 +673,7 @@ func batchChangeSet(cs []*route53.Change, batchSize int) [][]*route53.Change {
 func getChangesByName(cs []*route53.Change) (map[string][]*route53.Change, []string) {
 	changesByName := make(map[string][]*route53.Change)
 	for _, v := range cs {
-		name := provider.EnsureTrailingDot(*v.ResourceRecordSet.Name)
-		changesByName[name] = append(changesByName[name], v)
+		changesByName[*v.ResourceRecordSet.Name] = append(changesByName[*v.ResourceRecordSet.Name], v)
 	}
 
 	names := make([]string, 0)
