@@ -413,43 +413,13 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes []*route53.Chan
 		log.Info("All records are already up to date, there are no changes for the matching hosted zones")
 	}
 
-	var failedZones []string
+	failedZones := []string{}
 	for z, cs := range changesByZone {
-		var failedUpdate bool
-
-		batchCs := batchChangeSet(cs, p.batchChangeSize)
-
-		for i, b := range batchCs {
-			for _, c := range b {
-				log.Infof("Desired change: %s %s %s [Id: %s]", *c.Action, *c.ResourceRecordSet.Name, *c.ResourceRecordSet.Type, z)
-			}
-
-			if !p.dryRun {
-				params := &route53.ChangeResourceRecordSetsInput{
-					HostedZoneId: aws.String(z),
-					ChangeBatch: &route53.ChangeBatch{
-						Changes: b,
-					},
-				}
-
-				if _, err := p.client.ChangeResourceRecordSetsWithContext(ctx, params); err != nil {
-					log.Errorf("Failure in zone %s [Id: %s]", aws.StringValue(zones[z].Name), z)
-					log.Error(err) //TODO(ideahitme): consider changing the interface in cases when this error might be a concern for other components
-					failedUpdate = true
-				} else {
-					// z is the R53 Hosted Zone ID already as aws.StringValue
-					log.Infof("%d record(s) in zone %s [Id: %s] were successfully updated", len(b), aws.StringValue(zones[z].Name), z)
-				}
-
-				if i != len(batchCs)-1 {
-					time.Sleep(p.batchChangeInterval)
-				}
-			}
-		}
-
-		if failedUpdate {
-			failedZones = append(failedZones, z)
-		}
+		 errors := p.applyWithBisect(ctx, cs, z, aws.StringValue(zones[z].Name))
+		 if len(errors) > 0 {
+			 log.Info(errors)
+			 failedZones = append(failedZones, errors[0].Error())
+		 }
 	}
 
 	if len(failedZones) > 0 {
@@ -459,8 +429,63 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes []*route53.Chan
 	return nil
 }
 
+func (p *AWSProvider) applyWithBisect(ctx context.Context, changes []*route53.Change, z string, zoneName string) []error {
+	res := []error{}
+
+	batchCs := batchChangeSet(changes, p.batchChangeSize)
+
+	for i, b := range batchCs {
+		if p.ChangeZone(ctx, b, z, zoneName) {
+			if len(b) == 1 {
+				return []error{fmt.Errorf("failed to submit changes: %v", b)}
+			}
+
+			twoBatchs := batchChangeSet(changes, len(b) / 2)
+			time.Sleep(p.batchChangeInterval)
+			res = append(res, p.applyWithBisect(ctx, twoBatchs[0], z, zoneName)...)
+			time.Sleep(p.batchChangeInterval)
+			res = append(res, p.applyWithBisect(ctx, twoBatchs[1], z, zoneName)...)
+		}
+
+		if i != len(batchCs)-1 {
+			time.Sleep(p.batchChangeInterval)
+		}
+	}
+
+
+	return res
+}
+
+func (p *AWSProvider) ChangeZone(ctx context.Context, cs []*route53.Change, z string, zoneName string) bool {
+	var failedUpdate bool
+
+	for _, c := range cs {
+		log.Infof("Desired change: %s %s %s [Id: %s]", *c.Action, *c.ResourceRecordSet.Name, *c.ResourceRecordSet.Type, z)
+	}
+
+	if !p.dryRun {
+		params := &route53.ChangeResourceRecordSetsInput{
+			HostedZoneId: aws.String(z),
+			ChangeBatch: &route53.ChangeBatch{
+				Changes: cs,
+			},
+		}
+
+		if _, err := p.client.ChangeResourceRecordSetsWithContext(ctx, params); err != nil {
+			log.Errorf("Failure in zone %s [Id: %s]", zoneName, z)
+			log.Error(err) //TODO(ideahitme): consider changing the interface in cases when this error might be a concern for other components
+			failedUpdate = true
+		} else {
+			// z is the R53 Hosted Zone ID already as aws.StringValue
+			log.Infof("%d record(s) in zone %s [Id: %s] were successfully updated", len(cs), zoneName, z)
+		}
+	}
+
+	return failedUpdate
+}
+
 // newChanges returns a collection of Changes based on the given records and action.
-func (p *AWSProvider) newChanges(action string, endpoints []*endpoint.Endpoint, recordsCache []*endpoint.Endpoint, zones map[string]*route53.HostedZone) []*route53.Change {
+	func (p *AWSProvider) newChanges(action string, endpoints []*endpoint.Endpoint, recordsCache []*endpoint.Endpoint, zones map[string]*route53.HostedZone) []*route53.Change {
 	changes := make([]*route53.Change, 0, len(endpoints))
 
 	for _, endpoint := range endpoints {

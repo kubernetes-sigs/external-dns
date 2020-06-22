@@ -715,7 +715,7 @@ func TestAWSsubmitChanges(t *testing.T) {
 	validateEndpoints(t, records, endpoints)
 }
 
-func TestAWSsubmitChangesError(t *testing.T) {
+func TestAWSsubmitChangesSingleError(t *testing.T) {
 	provider, clientStub := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, []*endpoint.Endpoint{})
 	clientStub.MockMethod("ChangeResourceRecordSets", mock.Anything).Return(nil, fmt.Errorf("Mock route53 failure"))
 
@@ -729,6 +729,99 @@ func TestAWSsubmitChangesError(t *testing.T) {
 	cs := provider.newChanges(route53.ChangeActionCreate, []*endpoint.Endpoint{ep}, records, zones)
 
 	require.Error(t, provider.submitChanges(ctx, cs, zones))
+}
+
+func TestAWSsubmitChangesError(t *testing.T) {
+	getParams := func(changes []*route53.Change) *route53.ChangeResourceRecordSetsInput {
+		return &route53.ChangeResourceRecordSetsInput{
+			HostedZoneId: aws.String("/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."),
+			ChangeBatch: &route53.ChangeBatch{
+				Changes: changes,
+			},
+		}
+	}
+
+	provider, clientStub := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, []*endpoint.Endpoint{})
+
+
+	ctx := context.Background()
+	zones, err := provider.Zones(ctx)
+	require.NoError(t, err)
+	records, err := provider.Records(ctx)
+	require.NoError(t, err)
+
+	bad := 	endpoint.NewEndpointWithTTL("fail.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
+	good1 := endpoint.NewEndpointWithTTL("good1.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
+	good2 := endpoint.NewEndpointWithTTL("good2.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
+	good3 := endpoint.NewEndpointWithTTL("good3.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
+
+	cs := provider.newChanges(route53.ChangeActionCreate, []*endpoint.Endpoint{bad, good1, good2, good3}, records, zones)
+	ds := provider.newChanges(route53.ChangeActionDelete, []*endpoint.Endpoint{good1, good2}, records, zones)
+
+	first := append(cs, ds...)
+
+	seconed := append(
+		provider.newChanges(route53.ChangeActionCreate, []*endpoint.Endpoint{bad, good1}, records, zones),
+		provider.newChanges(route53.ChangeActionDelete, []*endpoint.Endpoint{good1}, records, zones)...)
+
+	clientStub.MockMethod("ChangeResourceRecordSets", getParams(first)).Return(nil, fmt.Errorf("Mock route53 failure"))
+
+	clientStub.MockMethod("ChangeResourceRecordSets", getParams(seconed)).Return(nil, fmt.Errorf("Mock route53 failure"))
+
+	clientStub.MockMethod("ChangeResourceRecordSets", getParams(provider.newChanges(route53.ChangeActionCreate, []*endpoint.Endpoint{bad}, records, zones))).Return(nil, fmt.Errorf("Mock route53 failure"))
+
+
+	got := provider.submitChanges(ctx, first, zones)
+	require.Error(t, got)
+
+	records, err = provider.Records(ctx)
+	require.NoError(t, err)
+
+	validateEndpoints(t, records, []*endpoint.Endpoint{good1, good2, good3})
+
+}
+
+func TestAWSsubmitChangesError2(t *testing.T) {
+	getParams := func(changes []*route53.Change) *route53.ChangeResourceRecordSetsInput {
+		return &route53.ChangeResourceRecordSetsInput{
+			HostedZoneId: aws.String("/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."),
+			ChangeBatch: &route53.ChangeBatch{
+				Changes: changes,
+			},
+		}
+	}
+
+	provider, clientStub := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, []*endpoint.Endpoint{})
+
+
+	ctx := context.Background()
+	zones, err := provider.Zones(ctx)
+	require.NoError(t, err)
+	records, err := provider.Records(ctx)
+	require.NoError(t, err)
+
+	bad := 	endpoint.NewEndpointWithTTL("fail.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
+	good1 := endpoint.NewEndpointWithTTL("good1.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
+	good2 := endpoint.NewEndpointWithTTL("good2.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
+	good3 := endpoint.NewEndpointWithTTL("good3.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
+
+	cs := provider.newChanges(route53.ChangeActionCreate, []*endpoint.Endpoint{bad, good1, good2, good3}, records, zones)
+
+	clientStub.MockMethod("ChangeResourceRecordSets", getParams(cs)).Return(nil, fmt.Errorf("Mock route53 failure"))
+
+	clientStub.MockMethod("ChangeResourceRecordSets", getParams(provider.newChanges(route53.ChangeActionCreate, []*endpoint.Endpoint{bad,good1}, records, zones))).Return(nil, fmt.Errorf("Mock route53 failure"))
+
+	clientStub.MockMethod("ChangeResourceRecordSets", getParams(provider.newChanges(route53.ChangeActionCreate, []*endpoint.Endpoint{bad}, records, zones))).Return(nil, fmt.Errorf("Mock route53 failure"))
+
+
+	got := provider.submitChanges(ctx, cs, zones)
+	require.Error(t, got)
+
+	records, err = provider.Records(ctx)
+	require.NoError(t, err)
+
+	validateEndpoints(t, records, []*endpoint.Endpoint{good1, good2, good3})
+
 }
 
 func TestAWSBatchChangeSet(t *testing.T) {
