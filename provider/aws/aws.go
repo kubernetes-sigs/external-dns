@@ -413,13 +413,12 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes []*route53.Chan
 		log.Info("All records are already up to date, there are no changes for the matching hosted zones")
 	}
 
-	failedZones := []string{}
+	var failedZones []string
 	for z, cs := range changesByZone {
-		 errors := p.applyWithBisect(ctx, cs, z, aws.StringValue(zones[z].Name))
-		 if len(errors) > 0 {
-			 log.Info(errors)
-			 failedZones = append(failedZones, errors[0].Error())
-		 }
+		errors := p.applyWithBisect(ctx, cs, z, aws.StringValue(zones[z].Name))
+		if len(errors) > 0 {
+			failedZones = append(failedZones, z)
+		}
 	}
 
 	if len(failedZones) > 0 {
@@ -442,10 +441,9 @@ func (p *AWSProvider) applyWithBisect(ctx context.Context, changes []*route53.Ch
 				return []error{fmt.Errorf("failed to submit changes: %v", b)}
 			}
 
-
 			size := len(names) / 2
-			b1 := getChangesFromNames(changesByName, names[: size])
-			b2 := getChangesFromNames(changesByName, names[size : ])
+			b1 := getChangesFromNames(changesByName, names[:size])
+			b2 := getChangesFromNames(changesByName, names[size:])
 
 			time.Sleep(p.batchChangeInterval)
 			res = append(res, p.applyWithBisect(ctx, b1, z, zoneName)...)
@@ -457,7 +455,6 @@ func (p *AWSProvider) applyWithBisect(ctx context.Context, changes []*route53.Ch
 			time.Sleep(p.batchChangeInterval)
 		}
 	}
-
 
 	return res
 }
@@ -501,7 +498,7 @@ func (p *AWSProvider) ChangeZone(ctx context.Context, cs []*route53.Change, z st
 }
 
 // newChanges returns a collection of Changes based on the given records and action.
-	func (p *AWSProvider) newChanges(action string, endpoints []*endpoint.Endpoint, recordsCache []*endpoint.Endpoint, zones map[string]*route53.HostedZone) []*route53.Change {
+func (p *AWSProvider) newChanges(action string, endpoints []*endpoint.Endpoint, recordsCache []*endpoint.Endpoint, zones map[string]*route53.HostedZone) []*route53.Change {
 	changes := make([]*route53.Change, 0, len(endpoints))
 
 	for _, endpoint := range endpoints {
