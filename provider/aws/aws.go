@@ -670,7 +670,7 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Ch
 		changes[aws.StringValue(z.Id)] = []*route53.Change{}
 	}
 	for _, c := range changeSet {
-		hostname := ensureTrailingDot(aws.StringValue(c.ResourceRecordSet.Name))
+		hostname := provider.EnsureTrailingDot(aws.StringValue(c.ResourceRecordSet.Name))
 		var thisZones []*route53.HostedZone
 		if awsUseBestZoneMatch {
 			thisZones = findBestZone(hostname, zones)
