@@ -112,7 +112,6 @@ func main() {
 		KubeConfig:                     cfg.KubeConfig,
 		KubeMaster:                     cfg.Master,
 		ServiceTypeFilter:              cfg.ServiceTypeFilter,
-		IstioIngressGatewayServices:    cfg.IstioIngressGatewayServices,
 		CFAPIEndpoint:                  cfg.CFAPIEndpoint,
 		CFUsername:                     cfg.CFUsername,
 		CFPassword:                     cfg.CFPassword,
