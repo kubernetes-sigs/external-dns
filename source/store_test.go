@@ -155,6 +155,5 @@ func TestByNames(t *testing.T) {
 }
 
 var minimalConfig = &Config{
-	IstioIngressGatewayServices: []string{"istio-system/istio-ingressgateway"},
 	ContourLoadBalancerService:  "heptio-contour/contour",
 }
