@@ -491,6 +491,7 @@ func testTXTRegistryApplyChangesWithSuffix(t *testing.T) {
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwnerResource("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", "", "", "ingress/default/my-ingress"),
 			newEndpointWithOwnerResource("multiple.test-zone.example.org", "lb3.loadbalancer.com", "", "", "ingress/default/my-ingress").WithSetIdentifier("test-set-3"),
+			newEndpointWithOwnerResource("*.wildcard.test-zone.example.org", "new-loadbalancer-1.lb.com", "", "", "ingress/default/my-ingress"),
 		},
 		Delete: []*endpoint.Endpoint{
 			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
@@ -511,6 +512,8 @@ func testTXTRegistryApplyChangesWithSuffix(t *testing.T) {
 			newEndpointWithOwner("new-record-1-txt.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner,external-dns/resource=ingress/default/my-ingress\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwnerResource("multiple.test-zone.example.org", "lb3.loadbalancer.com", "", "owner", "ingress/default/my-ingress").WithSetIdentifier("test-set-3"),
 			newEndpointWithOwner("multiple-txt.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner,external-dns/resource=ingress/default/my-ingress\"", endpoint.RecordTypeTXT, "").WithSetIdentifier("test-set-3"),
+			newEndpointWithOwnerResource("*.wildcard.test-zone.example.org", "new-loadbalancer-1.lb.com", "", "owner", "ingress/default/my-ingress"),
+			newEndpointWithOwner("wildcard-txt.wildcard.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner,external-dns/resource=ingress/default/my-ingress\"", endpoint.RecordTypeTXT, ""),
 		},
 		Delete: []*endpoint.Endpoint{
 			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),

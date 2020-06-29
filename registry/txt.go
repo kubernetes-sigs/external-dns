@@ -238,6 +238,9 @@ func (pr affixNameMapper) toEndpointName(txtDNSName string) string {
 
 func (pr affixNameMapper) toTXTName(endpointDNSName string) string {
 	DNSName := strings.SplitN(endpointDNSName, ".", 2)
+	if DNSName[0] == "*" {
+		DNSName[0] = "wildcard"
+	}
 	return pr.prefix + DNSName[0] + pr.suffix + "." + DNSName[1]
 }
 
