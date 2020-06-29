@@ -9,7 +9,7 @@ To build the Go code for external-dns.
 To build a docker image for external-dns.
 
 ```
-export IMAGE=<image-prefix>/external-dns/external-dns>
+export IMAGE=<image-prefix>/external-dns/external-dns
 export VERSION=v0.7.1
 make build.docker
 ```
