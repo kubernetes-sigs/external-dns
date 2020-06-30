@@ -233,7 +233,7 @@ func (pr affixNameMapper) toEndpointName(txtDNSName string) string {
 			return strings.TrimSuffix(DNSName[0], pr.suffix) + "." + DNSName[1]
 		}
 	}
-	return ""
+	return lowerDNSName
 }
 
 func (pr affixNameMapper) toTXTName(endpointDNSName string) string {

@@ -148,7 +148,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 			Targets:    endpoint.Targets{"foobar.loadbalancer.com"},
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "",
+				endpoint.OwnerLabelKey: "owner",
 			},
 		},
 		{
@@ -157,7 +157,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 			SetIdentifier: "test-set-1",
 			RecordType:    endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "",
+				endpoint.OwnerLabelKey: "owner",
 			},
 		},
 		{
@@ -166,7 +166,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 			SetIdentifier: "test-set-2",
 			RecordType:    endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "",
+				endpoint.OwnerLabelKey: "owner",
 			},
 		},
 	}
@@ -253,7 +253,7 @@ func testTXTRegistryRecordsSuffixed(t *testing.T) {
 			Targets:    endpoint.Targets{"foobar.loadbalancer.com"},
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "",
+				endpoint.OwnerLabelKey: "owner",
 			},
 		},
 		{
@@ -262,7 +262,7 @@ func testTXTRegistryRecordsSuffixed(t *testing.T) {
 			SetIdentifier: "test-set-1",
 			RecordType:    endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "",
+				endpoint.OwnerLabelKey: "owner",
 			},
 		},
 		{
@@ -271,7 +271,7 @@ func testTXTRegistryRecordsSuffixed(t *testing.T) {
 			SetIdentifier: "test-set-2",
 			RecordType:    endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "",
+				endpoint.OwnerLabelKey: "owner",
 			},
 		},
 	}
