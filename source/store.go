@@ -55,7 +55,6 @@ type Config struct {
 	KubeConfig                     string
 	KubeMaster                     string
 	ServiceTypeFilter              []string
-	IstioIngressGatewayServices    []string
 	CFAPIEndpoint                  string
 	CFUsername                     string
 	CFPassword                     string

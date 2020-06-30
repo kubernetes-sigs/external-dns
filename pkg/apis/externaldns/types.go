@@ -41,7 +41,6 @@ type Config struct {
 	Master                            string
 	KubeConfig                        string
 	RequestTimeout                    time.Duration
-	IstioIngressGatewayServices       []string
 	ContourLoadBalancerService        string
 	SkipperRouteGroupVersion          string
 	Sources                           []string
@@ -148,7 +147,6 @@ var defaultConfig = &Config{
 	Master:                      "",
 	KubeConfig:                  "",
 	RequestTimeout:              time.Second * 30,
-	IstioIngressGatewayServices: []string{"istio-system/istio-ingressgateway"},
 	ContourLoadBalancerService:  "heptio-contour/contour",
 	SkipperRouteGroupVersion:    "zalando.org/v1",
 	Sources:                     nil,
