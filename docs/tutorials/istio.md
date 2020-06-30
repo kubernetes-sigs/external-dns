@@ -139,12 +139,12 @@ The following are relevant snippets from that tutorial.
 #### Install a sample service
 With automatic sidecar injection:
 ```bash
-$ kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/httpbin/httpbin.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.6/samples/httpbin/httpbin.yaml
 ```
 
 Otherwise:
 ```bash
-$ kubectl apply -f <(istioctl kube-inject -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/httpbin/httpbin.yaml)
+$ kubectl apply -f <(istioctl kube-inject -f https://raw.githubusercontent.com/istio/istio/release-1.6/samples/httpbin/httpbin.yaml)
 ```
 
 #### Create an Istio Gateway:
