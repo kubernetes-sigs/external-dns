@@ -43,7 +43,7 @@ type TXTRegistry struct {
 }
 
 // NewTXTRegistry returns new TXTRegistry object
-func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration) (*TXTRegistry, error) {
+func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -52,13 +52,13 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		return nil, errors.New("txt-prefix and txt-suffix are mutual exclusive")
 	}
 
-	mapper := newaffixNameMapper(txtPrefix, txtSuffix)
+	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement)
 
 	return &TXTRegistry{
-		provider:      provider,
-		ownerID:       ownerID,
-		mapper:        mapper,
-		cacheInterval: cacheInterval,
+		provider:            provider,
+		ownerID:             ownerID,
+		mapper:              mapper,
+		cacheInterval:       cacheInterval,
 	}, nil
 }
 
@@ -211,14 +211,15 @@ type nameMapper interface {
 }
 
 type affixNameMapper struct {
-	prefix string
-	suffix string
+	prefix              string
+	suffix              string
+	wildcardReplacement string
 }
 
 var _ nameMapper = affixNameMapper{}
 
-func newaffixNameMapper(prefix string, suffix string) affixNameMapper {
-	return affixNameMapper{prefix: strings.ToLower(prefix), suffix: strings.ToLower(suffix)}
+func newaffixNameMapper(prefix string, suffix string, wildcardReplacement string) affixNameMapper {
+	return affixNameMapper{prefix: strings.ToLower(prefix), suffix: strings.ToLower(suffix), wildcardReplacement: wildcardReplacement}
 }
 
 func (pr affixNameMapper) toEndpointName(txtDNSName string) string {
@@ -238,8 +239,9 @@ func (pr affixNameMapper) toEndpointName(txtDNSName string) string {
 
 func (pr affixNameMapper) toTXTName(endpointDNSName string) string {
 	DNSName := strings.SplitN(endpointDNSName, ".", 2)
-	if DNSName[0] == "*" {
-		DNSName[0] = "wildcard"
+	// If specified, replace a leading asterisk in the generated txt record name with some other string
+	if pr.wildcardReplacement != "" && DNSName[0] == "*" {
+		DNSName[0] = pr.wildcardReplacement
 	}
 	return pr.prefix + DNSName[0] + pr.suffix + "." + DNSName[1]
 }
