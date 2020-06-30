@@ -55,10 +55,10 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement)
 
 	return &TXTRegistry{
-		provider:            provider,
-		ownerID:             ownerID,
-		mapper:              mapper,
-		cacheInterval:       cacheInterval,
+		provider:      provider,
+		ownerID:       ownerID,
+		mapper:        mapper,
+		cacheInterval: cacheInterval,
 	}, nil
 }
 
