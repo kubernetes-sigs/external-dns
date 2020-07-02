@@ -41,7 +41,6 @@ type Config struct {
 	Master                            string
 	KubeConfig                        string
 	RequestTimeout                    time.Duration
-	IstioIngressGatewayServices       []string
 	ContourLoadBalancerService        string
 	SkipperRouteGroupVersion          string
 	Sources                           []string
@@ -99,6 +98,7 @@ type Config struct {
 	OCIConfigFile                     string
 	InMemoryZones                     []string
 	OVHEndpoint                       string
+	OVHApiRateLimit                   int
 	PDNSServer                        string
 	PDNSAPIKey                        string `secure:"yes"`
 	PDNSTLSEnabled                    bool
@@ -147,7 +147,6 @@ var defaultConfig = &Config{
 	Master:                      "",
 	KubeConfig:                  "",
 	RequestTimeout:              time.Second * 30,
-	IstioIngressGatewayServices: []string{"istio-system/istio-ingressgateway"},
 	ContourLoadBalancerService:  "heptio-contour/contour",
 	SkipperRouteGroupVersion:    "zalando.org/v1",
 	Sources:                     nil,
@@ -197,6 +196,7 @@ var defaultConfig = &Config{
 	OCIConfigFile:               "/etc/kubernetes/oci.yaml",
 	InMemoryZones:               []string{},
 	OVHEndpoint:                 "ovh-eu",
+	OVHApiRateLimit:             20,
 	PDNSServer:                  "http://localhost:8081",
 	PDNSAPIKey:                  "",
 	PDNSTLSEnabled:              false,
@@ -299,7 +299,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("skipper-routegroup-groupversion", "The resource version for skipper routegroup").Default(source.DefaultRoutegroupVersion).StringVar(&cfg.SkipperRouteGroupVersion)
 
 	// Flags related to processing sources
-	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, fake, connector, istio-gateway, cloudfoundry, contour-ingressroute, crd, empty, skipper-routegroup,openshift-route)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "istio-gateway", "cloudfoundry", "contour-ingressroute", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route")
+	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, fake, connector, istio-gateway, istio-virtualservice, cloudfoundry, contour-ingressroute, crd, empty, skipper-routegroup,openshift-route)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-ingressroute", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route")
 
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
 	app.Flag("annotation-filter", "Filter sources managed by external-dns via annotation using label selector semantics (default: all sources)").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
@@ -316,7 +316,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("service-type-filter", "The service types to take care about (default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)").StringsVar(&cfg.ServiceTypeFilter)
 
 	// Flags related to providers
-	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, google, azure, azure-dns, azure-private-dns, cloudflare, rcodezero, digitalocean, dnsimple, akamai, infoblox, dyn, designate, coredns, skydns, inmemory, ovh, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns, vultr)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "akamai", "infoblox", "dyn", "designate", "coredns", "skydns", "inmemory", "ovh", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns", "vultr")
+	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, google, azure, azure-dns, azure-private-dns, cloudflare, rcodezero, digitalocean, hetzner, dnsimple, akamai, infoblox, dyn, designate, coredns, skydns, inmemory, ovh, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns, vultr)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "hetzner", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "akamai", "infoblox", "dyn", "designate", "coredns", "skydns", "inmemory", "ovh", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns", "vultr")
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("exclude-domains", "Exclude subdomains (optional)").Default("").StringsVar(&cfg.ExcludeDomains)
 	app.Flag("zone-id-filter", "Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.ZoneIDFilter)
@@ -360,6 +360,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("rcodezero-txt-encrypt", "When using the Rcodezero provider with txt registry option, set if TXT rrs are encrypted (default: false)").Default(strconv.FormatBool(defaultConfig.RcodezeroTXTEncrypt)).BoolVar(&cfg.RcodezeroTXTEncrypt)
 	app.Flag("inmemory-zone", "Provide a list of pre-configured zones for the inmemory provider; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.InMemoryZones)
 	app.Flag("ovh-endpoint", "When using the OVH provider, specify the endpoint (default: ovh-eu)").Default(defaultConfig.OVHEndpoint).StringVar(&cfg.OVHEndpoint)
+	app.Flag("ovh-api-rate-limit", "When using the OVH provider, specify the API request rate limit, X operations by seconds (default: 20)").Default(strconv.Itoa(defaultConfig.OVHApiRateLimit)).IntVar(&cfg.OVHApiRateLimit)
 	app.Flag("pdns-server", "When using the PowerDNS/PDNS provider, specify the URL to the pdns server (required when --provider=pdns)").Default(defaultConfig.PDNSServer).StringVar(&cfg.PDNSServer)
 	app.Flag("pdns-api-key", "When using the PowerDNS/PDNS provider, specify the API key to use to authorize requests (required when --provider=pdns)").Default(defaultConfig.PDNSAPIKey).StringVar(&cfg.PDNSAPIKey)
 	app.Flag("pdns-tls-enabled", "When using the PowerDNS/PDNS provider, specify whether to use TLS (default: false, requires --tls-ca, optionally specify --tls-client-cert and --tls-client-cert-key)").Default(strconv.FormatBool(defaultConfig.PDNSTLSEnabled)).BoolVar(&cfg.PDNSTLSEnabled)

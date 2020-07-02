@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	cloud.google.com/go v0.50.0
+	git.blindage.org/21h/hcloud-dns v0.0.0-20200525170043-def10a4a28e0
 	github.com/Azure/azure-sdk-for-go v36.0.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.9.4
 	github.com/Azure/go-autorest/autorest/adal v0.8.3
@@ -19,12 +20,13 @@ require (
 	github.com/cloudflare/cloudflare-go v0.10.1
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/denverdino/aliyungo v0.0.0-20190125010748-a747050bb1ba
-	github.com/digitalocean/godo v1.34.0
+	github.com/digitalocean/godo v1.36.0
 	github.com/dnsimple/dnsimple-go v0.60.0
 	github.com/exoscale/egoscale v0.18.1
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
 	github.com/gobs/pretty v0.0.0-20180724170744-09732c25a95b // indirect
 	github.com/golang/sync v0.0.0-20180314180146-1d60e4601c6f
+	github.com/google/go-cmp v0.4.1
 	github.com/gophercloud/gophercloud v0.1.0
 	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/infobloxopen/infoblox-go-client v0.0.0-20180606155407-61dc5f9b0a65
@@ -49,10 +51,11 @@ require (
 	github.com/stretchr/testify v1.5.1
 	github.com/transip/gotransip v5.8.2+incompatible
 	github.com/vinyldns/go-vinyldns v0.0.0-20190611170422-7119fe55ed92
-	github.com/vultr/govultr v0.3.2
+	github.com/vultr/govultr v0.4.2
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20200401174654-e694b7bb0875
-	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
-	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
+	go.uber.org/ratelimit v0.1.0
+	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
+	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	google.golang.org/api v0.15.0
 	gopkg.in/ns1/ns1-go.v2 v2.0.0-20190322154155-0dafb5275fd1
 	gopkg.in/yaml.v2 v2.2.8
@@ -61,7 +64,6 @@ require (
 	k8s.io/api v0.17.5
 	k8s.io/apimachinery v0.17.5
 	k8s.io/client-go v0.17.5
-	k8s.io/klog v1.0.0
 )
 
 replace (

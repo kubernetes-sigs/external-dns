@@ -55,7 +55,6 @@ type Config struct {
 	KubeConfig                     string
 	KubeMaster                     string
 	ServiceTypeFilter              []string
-	IstioIngressGatewayServices    []string
 	CFAPIEndpoint                  string
 	CFUsername                     string
 	CFPassword                     string
@@ -196,6 +195,16 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 			return nil, err
 		}
 		return NewIstioGatewaySource(kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+	case "istio-virtualservice":
+		kubernetesClient, err := p.KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		istioClient, err := p.IstioClient()
+		if err != nil {
+			return nil, err
+		}
+		return NewIstioVirtualServiceSource(kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
 	case "cloudfoundry":
 		cfClient, err := p.CloudFoundryClient(cfg.CFAPIEndpoint, cfg.CFUsername, cfg.CFPassword)
 		if err != nil {
