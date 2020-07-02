@@ -38,17 +38,17 @@ var (
 
 // Config is a project-wide configuration
 type Config struct {
-	APIServerURL                      string
-	KubeConfig                        string
-	RequestTimeout                    time.Duration
-	IstioIngressGatewayServices       []string
-	ContourLoadBalancerService        string
-	SkipperRouteGroupVersion          string
-	Sources                           []string
-	Namespace                         string
-	AnnotationFilter                  string
-	FQDNTemplate                      string
-	CombineFQDNAndAnnotation          bool
+	APIServerURL                string
+	KubeConfig                  string
+	RequestTimeout              time.Duration
+	IstioIngressGatewayServices []string
+	ContourLoadBalancerService  string
+	SkipperRouteGroupVersion    string
+	Sources                     []string
+	Namespace                   string
+	AnnotationFilter            string
+	FQDNTemplate                string
+	CombineFQDNAndAnnotation    bool
 	IgnoreHostnameAnnotation          bool
 	Compatibility                     string
 	PublishInternal                   bool
@@ -285,7 +285,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.DefaultEnvars()
 
 	// Flags related to Kubernetes
-	app.Flag("apiserver", "The Kubernetes API server to connect to (default: auto-detect)").Default(defaultConfig.APIServerURL).StringVar(&cfg.APIServerURL)
+	app.Flag("server", "The Kubernetes API server to connect to (default: auto-detect)").Default(defaultConfig.APIServerURL).StringVar(&cfg.APIServerURL)
 	app.Flag("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)").Default(defaultConfig.KubeConfig).StringVar(&cfg.KubeConfig)
 	app.Flag("request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout").Default(defaultConfig.RequestTimeout.String()).DurationVar(&cfg.RequestTimeout)
 

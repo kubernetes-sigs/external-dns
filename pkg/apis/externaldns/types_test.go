@@ -203,7 +203,7 @@ func TestParseFlags(t *testing.T) {
 		{
 			title: "override everything via flags",
 			args: []string{
-				"--apiserver=http://127.0.0.1:8080",
+				"--server=http://127.0.0.1:8080",
 				"--kubeconfig=/some/path",
 				"--request-timeout=77s",
 				"--contour-load-balancer=heptio-contour-other/contour-other",
@@ -294,7 +294,7 @@ func TestParseFlags(t *testing.T) {
 			title: "override everything via environment variables",
 			args:  []string{},
 			envVars: map[string]string{
-				"EXTERNAL_DNS_APISERVER":                          "http://127.0.0.1:8080",
+				"EXTERNAL_DNS_SERVER":                          "http://127.0.0.1:8080",
 				"EXTERNAL_DNS_KUBECONFIG":                      "/some/path",
 				"EXTERNAL_DNS_REQUEST_TIMEOUT":                 "77s",
 				"EXTERNAL_DNS_CONTOUR_LOAD_BALANCER":           "heptio-contour-other/contour-other",
