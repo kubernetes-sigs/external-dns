@@ -39,6 +39,7 @@ Providers
 - [ ] Azure
 - [ ] Cloudflare
 - [x] DigitalOcean
+- [x] DNSimple
 - [x] Google
 - [ ] InMemory
 - [x] Linode
@@ -59,6 +60,9 @@ This value is a constant in the provider code.
 ### DigitalOcean Provider
 The DigitalOcean Provider overrides the value to 300s when the TTL is 0.
 This value is a constant in the provider code.
+
+### DNSimple Provider
+The DNSimple Provider default TTL is used when the TTL is 0. The default TTL is 3600s.
 
 ### Google Provider
 Previously with the Google Provider, TTL's were hard-coded to 300s.
