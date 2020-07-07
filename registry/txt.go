@@ -40,6 +40,9 @@ type TXTRegistry struct {
 	recordsCache            []*endpoint.Endpoint
 	recordsCacheRefreshTime time.Time
 	cacheInterval           time.Duration
+
+	// optional string to use to replace the asterisk in wildcard entries
+	wildcardReplacement string
 }
 
 // NewTXTRegistry returns new TXTRegistry object
@@ -55,10 +58,11 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement)
 
 	return &TXTRegistry{
-		provider:      provider,
-		ownerID:       ownerID,
-		mapper:        mapper,
-		cacheInterval: cacheInterval,
+		provider:            provider,
+		ownerID:             ownerID,
+		mapper:              mapper,
+		cacheInterval:       cacheInterval,
+		wildcardReplacement: txtWildcardReplacement,
 	}, nil
 }
 
@@ -107,7 +111,13 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		if ep.Labels == nil {
 			ep.Labels = endpoint.NewLabels()
 		}
-		key := fmt.Sprintf("%s::%s", ep.DNSName, ep.SetIdentifier)
+		dnsNameSplit := strings.Split(ep.DNSName, ".")
+		// If specified, replace a leading asterisk in the generated txt record name with some other string
+		if im.wildcardReplacement != "" && dnsNameSplit[0] == "*" {
+			dnsNameSplit[0] = im.wildcardReplacement
+		}
+		dnsName := strings.Join(dnsNameSplit, ".")
+		key := fmt.Sprintf("%s::%s", dnsName, ep.SetIdentifier)
 		if labels, ok := labelMap[key]; ok {
 			for k, v := range labels {
 				ep.Labels[k] = v
