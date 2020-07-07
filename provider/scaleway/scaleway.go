@@ -19,7 +19,6 @@ package scaleway
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -29,6 +28,8 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
 const (
@@ -54,27 +55,24 @@ type ScalewayChange struct {
 
 // NewScalewayProvider initializes a new Scaleway DNS provider
 func NewScalewayProvider(ctx context.Context, domainFilter endpoint.DomainFilter, dryRun bool) (*ScalewayProvider, error) {
-	accessKey, ok := os.LookupEnv(scw.ScwAccessKeyEnv)
-	if !ok {
-		return nil, fmt.Errorf("environment variable %s not found", scw.ScwAccessKeyEnv)
-	}
-	secretKey, ok := os.LookupEnv(scw.ScwSecretKeyEnv)
-	if !ok {
-		return nil, fmt.Errorf("environment variable %s not found", scw.ScwSecretKeyEnv)
-	}
-	organizationID, ok := os.LookupEnv(scw.ScwDefaultOrganizationIDEnv)
-	if !ok {
-		return nil, fmt.Errorf("environment variable %s not found", scw.ScwDefaultOrganizationIDEnv)
-	}
-
 	scwClient, err := scw.NewClient(
 		scw.WithEnv(),
-		scw.WithAuth(accessKey, secretKey),
-		scw.WithDefaultOrganizationID(organizationID),
-		scw.WithUserAgent("ExternalDNS"),
+		scw.WithUserAgent("ExternalDNS/"+externaldns.Version),
 	)
 	if err != nil {
 		return nil, err
+	}
+
+	if _, ok := scwClient.GetDefaultOrganizationID(); !ok {
+		return nil, fmt.Errorf("default organization is not set")
+	}
+
+	if _, ok := scwClient.GetAccessKey(); !ok {
+		return nil, fmt.Errorf("access key no set")
+	}
+
+	if _, ok := scwClient.GetSecretKey(); !ok {
+		return nil, fmt.Errorf("secret key no set")
 	}
 
 	domainAPI := domain.NewAPI(scwClient)
@@ -122,9 +120,7 @@ func (p *ScalewayProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 
 		for _, record := range recordsResp.Records {
 			name := record.Name + "."
-			if record.Name == "" {
-				name = ""
-			}
+
 			// trim any leading or ending dot
 			fullRecordName := strings.Trim(name+getCompleteZoneName(zone), ".")
 
