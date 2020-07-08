@@ -26,9 +26,11 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 type inMemoryProvider struct {
+	provider.BaseProvider
 	endpoints      []*endpoint.Endpoint
 	onApplyChanges func(changes *plan.Changes)
 }

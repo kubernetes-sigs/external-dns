@@ -15,7 +15,7 @@ this is not required.
 For help setting up the Kubernetes Ingress AWS Controller, that can
 create ALBs and NLBs, follow the [Setup Guide][2].
 
-[2]: https://github.com/zalando-incubator/kube-ingress-aws-controller/tree/master/deploy
+[2]: https://github.com/zalando-incubator/kube-ingress-aws-controller/tree/HEAD/deploy
 
 
 ### Optional RouteGroup
@@ -26,7 +26,7 @@ create ALBs and NLBs, follow the [Setup Guide][2].
 First, you have to apply the RouteGroup CRD to your cluster:
 
 ```
-kubectl apply -f https://github.com/zalando/skipper/blob/master/dataclients/kubernetes/deploy/apply/routegroups_crd.yaml
+kubectl apply -f https://github.com/zalando/skipper/blob/HEAD/dataclients/kubernetes/deploy/apply/routegroups_crd.yaml
 ```
 
 You have to grant all controllers: [Skipper][4],

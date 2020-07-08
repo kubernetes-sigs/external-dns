@@ -21,6 +21,7 @@ Note: currently only supports IP targets (A records), not hostname targets
 package source
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"net"
@@ -54,11 +55,11 @@ func NewFakeSource(fqdnTemplate string) (Source, error) {
 	}, nil
 }
 
-func (sc *fakeSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+func (sc *fakeSource) AddEventHandler(ctx context.Context, handler func()) {
 }
 
 // Endpoints returns endpoint objects.
-func (sc *fakeSource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (sc *fakeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := make([]*endpoint.Endpoint, 10)
 
 	for i := 0; i < 10; i++ {

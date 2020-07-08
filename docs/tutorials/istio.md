@@ -1,4 +1,4 @@
-# Configuring ExternalDNS to use the Istio Gateway Source
+# Configuring ExternalDNS to use the Istio Gateway and/or Istio Virtual Service Source
 This tutorial describes how to configure ExternalDNS to use the Istio Gateway source.
 It is meant to supplement the other provider-specific setup tutorials.
 
@@ -6,7 +6,7 @@ It is meant to supplement the other provider-specific setup tutorials.
 
 * Manifest (for clusters without RBAC enabled)
 * Manifest (for clusters with RBAC enabled)
-* Update existing Existing DNS Deployment
+* Update existing ExternalDNS Deployment
 
 ### Manifest (for clusters without RBAC enabled)
 
@@ -32,7 +32,8 @@ spec:
         args:
         - --source=service
         - --source=ingress
-        - --source=istio-gateway
+        - --source=istio-gateway        # choose one
+        - --source=istio-virtualservice # or both
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
@@ -48,7 +49,7 @@ kind: ServiceAccount
 metadata:
   name: external-dns
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: external-dns
@@ -63,10 +64,10 @@ rules:
   resources: ["nodes"]
   verbs: ["list"]
 - apiGroups: ["networking.istio.io"]
-  resources: ["gateways"]
+  resources: ["gateways", "virtualservices"]
   verbs: ["get","watch","list"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: external-dns-viewer
@@ -102,6 +103,7 @@ spec:
         - --source=service
         - --source=ingress
         - --source=istio-gateway
+        - --source=istio-virtualservice
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
@@ -110,7 +112,7 @@ spec:
         - --txt-owner-id=my-identifier
 ```
 
-### Update existing Existing DNS Deployment
+### Update existing ExternalDNS Deployment
 
 * For clusters with running `external-dns`, you can just update the deployment.
 * With access to the `kube-system` namespace, update the existing `external-dns` deployment.
@@ -130,7 +132,7 @@ kubectl patch clusterrole external-dns --type='json' \
   -p='[{"op": "add", "path": "/rules/4", "value": { "apiGroups": [ "networking.istio.io"], "resources": ["gateways"],"verbs": ["get", "watch", "list" ]} }]'
 ```
 
-### Verify External DNS works (Gateway example)
+### Verify that Istio Gateway/VirtualService Source works
 
 Follow the [Istio ingress traffic tutorial](https://istio.io/docs/tasks/traffic-management/ingress/) 
 to deploy a sample service that will be exposed outside of the service mesh.
@@ -139,15 +141,16 @@ The following are relevant snippets from that tutorial.
 #### Install a sample service
 With automatic sidecar injection:
 ```bash
-$ kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/httpbin/httpbin.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.6/samples/httpbin/httpbin.yaml
 ```
 
 Otherwise:
 ```bash
-$ kubectl apply -f <(istioctl kube-inject -f https://raw.githubusercontent.com/istio/istio/release-1.0/samples/httpbin/httpbin.yaml)
+$ kubectl apply -f <(istioctl kube-inject -f https://raw.githubusercontent.com/istio/istio/release-1.6/samples/httpbin/httpbin.yaml)
 ```
 
-#### Create an Istio Gateway:
+#### Using a Gateway as a source
+##### Create an Istio Gateway:
 ```bash
 $ cat <<EOF | kubectl apply -f -
 apiVersion: networking.istio.io/v1alpha3
@@ -163,11 +166,11 @@ spec:
       name: http
       protocol: HTTP
     hosts:
-    - "httpbin.example.com"
+    - "httpbin.example.com" # this is used by external-dns to extract DNS names
 EOF
 ```
 
-#### Configure routes for traffic entering via the Gateway:
+##### Configure routes for traffic entering via the Gateway:
 ```bash
 $ cat <<EOF | kubectl apply -f -
 apiVersion: networking.istio.io/v1alpha3
@@ -178,7 +181,56 @@ spec:
   hosts:
   - "httpbin.example.com"
   gateways:
-  - httpbin-gateway
+  - istio-system/httpbin-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /status
+    - uri:
+        prefix: /delay
+    route:
+    - destination:
+        port:
+          number: 8000
+        host: httpbin
+EOF
+```
+
+#### Using a VirtualService as a source
+
+##### Create an Istio Gateway:
+```bash
+$ cat <<EOF | kubectl apply -f -
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: httpbin-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway # use Istio default gateway implementation
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+EOF
+```
+
+##### Configure routes for traffic entering via the Gateway:
+```bash
+$ cat <<EOF | kubectl apply -f -
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: httpbin
+spec:
+  hosts:
+  - "httpbin.example.com" # this is used by external-dns to extract DNS names
+  gateways:
+  - istio-system/httpbin-gateway
   http:
   - match:
     - uri:
@@ -217,7 +269,7 @@ transfer-encoding: chunked
 
 **Note:** The `-H` flag in the original Istio tutorial is no longer necessary in the `curl` commands.
 
-### Debug External-DNS
+### Debug ExternalDNS
 
 * Look for the deployment pod to see the status
 
@@ -239,8 +291,8 @@ At this point, you can `create` or `update` any `Istio Gateway` object with `hos
 
 ```console
 time="2020-01-17T06:08:08Z" level=info msg="Desired change: CREATE httpbin.example.com A"
-time="2020-01-17T06:08:08Z" level=info msg="Desired change: CREATE httpbin.example.comm TXT"
-time="2020-01-17T06:08:08Z" level=info msg="2 record(s) in zone example.comm. were successfully updated"
+time="2020-01-17T06:08:08Z" level=info msg="Desired change: CREATE httpbin.example.com TXT"
+time="2020-01-17T06:08:08Z" level=info msg="2 record(s) in zone example.com. were successfully updated"
 time="2020-01-17T06:09:08Z" level=info msg="All records are already up to date, there are no changes for the matching hosted zones"
 ```
 

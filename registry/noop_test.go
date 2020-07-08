@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
-	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider/inmemory"
 )
 
 var _ Registry = &NoopRegistry{}
@@ -38,7 +38,7 @@ func TestNoopRegistry(t *testing.T) {
 }
 
 func testNoopInit(t *testing.T) {
-	p := provider.NewInMemoryProvider()
+	p := inmemory.NewInMemoryProvider()
 	r, err := NewNoopRegistry(p)
 	require.NoError(t, err)
 	assert.Equal(t, p, r.provider)
@@ -46,9 +46,9 @@ func testNoopInit(t *testing.T) {
 
 func testNoopRecords(t *testing.T) {
 	ctx := context.Background()
-	p := provider.NewInMemoryProvider()
+	p := inmemory.NewInMemoryProvider()
 	p.CreateZone("org")
-	providerRecords := []*endpoint.Endpoint{
+	inmemoryRecords := []*endpoint.Endpoint{
 		{
 			DNSName:    "example.org",
 			Targets:    endpoint.Targets{"example-lb.com"},
@@ -56,21 +56,21 @@ func testNoopRecords(t *testing.T) {
 		},
 	}
 	p.ApplyChanges(ctx, &plan.Changes{
-		Create: providerRecords,
+		Create: inmemoryRecords,
 	})
 
 	r, _ := NewNoopRegistry(p)
 
 	eps, err := r.Records(ctx)
 	require.NoError(t, err)
-	assert.True(t, testutils.SameEndpoints(eps, providerRecords))
+	assert.True(t, testutils.SameEndpoints(eps, inmemoryRecords))
 }
 
 func testNoopApplyChanges(t *testing.T) {
 	// do some prep
-	p := provider.NewInMemoryProvider()
+	p := inmemory.NewInMemoryProvider()
 	p.CreateZone("org")
-	providerRecords := []*endpoint.Endpoint{
+	inmemoryRecords := []*endpoint.Endpoint{
 		{
 			DNSName:    "example.org",
 			Targets:    endpoint.Targets{"old-lb.com"},
@@ -92,7 +92,7 @@ func testNoopApplyChanges(t *testing.T) {
 
 	ctx := context.Background()
 	p.ApplyChanges(ctx, &plan.Changes{
-		Create: providerRecords,
+		Create: inmemoryRecords,
 	})
 
 	// wrong changes
@@ -106,7 +106,7 @@ func testNoopApplyChanges(t *testing.T) {
 			},
 		},
 	})
-	assert.EqualError(t, err, provider.ErrRecordAlreadyExists.Error())
+	assert.EqualError(t, err, inmemory.ErrRecordAlreadyExists.Error())
 
 	//correct changes
 	require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{

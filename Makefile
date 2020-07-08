@@ -31,14 +31,14 @@ cover-html: cover
 
 # Run all the linters
 lint:
-	golangci-lint run --timeout=5m ./...
+	golangci-lint run --timeout=15m ./...
 
 
 # The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: verify test
 
 test:
-	go test -v -race $(shell go list ./... | grep -v /vendor/)
+	go test -race ./...
 
 # The build targets allow to build the binary and docker image
 .PHONY: build build.docker build.mini

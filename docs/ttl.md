@@ -39,17 +39,19 @@ Providers
 - [ ] Azure
 - [ ] Cloudflare
 - [x] DigitalOcean
+- [x] DNSimple
 - [x] Google
 - [ ] InMemory
 - [x] Linode
 - [x] TransIP
 - [x] RFC2136
+- [x] Vultr
 
 PRs welcome!
 
 Notes
 =====
-When the `external-dns.alpha.kubernetes.io/ttl` annotation is not provided, the TTL will default to 0 seconds and `enpoint.TTL.isConfigured()` will be false.
+When the `external-dns.alpha.kubernetes.io/ttl` annotation is not provided, the TTL will default to 0 seconds and `endpoint.TTL.isConfigured()` will be false.
 
 ### AWS Provider
 The AWS Provider overrides the value to 300s when the TTL is 0.
@@ -58,6 +60,9 @@ This value is a constant in the provider code.
 ### DigitalOcean Provider
 The DigitalOcean Provider overrides the value to 300s when the TTL is 0.
 This value is a constant in the provider code.
+
+### DNSimple Provider
+The DNSimple Provider default TTL is used when the TTL is 0. The default TTL is 3600s.
 
 ### Google Provider
 Previously with the Google Provider, TTL's were hard-coded to 300s.
@@ -72,3 +77,6 @@ The Linode Provider default TTL is used when the TTL is 0. The default is 24 hou
 
 ### TransIP Provider
 The TransIP Provider minimal TTL is used when the TTL is 0. The minimal TTL is 60s.
+
+### Vultr Provider
+The Vultr provider minimal TTL is used when the TTL is 0. The default is 1 hour.

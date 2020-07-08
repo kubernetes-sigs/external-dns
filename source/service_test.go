@@ -17,6 +17,7 @@ limitations under the License.
 package source
 
 import (
+	"context"
 	"net"
 	"testing"
 	"time"
@@ -26,7 +27,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -76,13 +76,13 @@ func (suite *ServiceSuite) SetupTest() {
 
 	suite.NoError(err, "should initialize service source")
 
-	_, err = fakeClient.CoreV1().Services(suite.fooWithTargets.Namespace).Create(suite.fooWithTargets)
+	_, err = fakeClient.CoreV1().Services(suite.fooWithTargets.Namespace).Create(context.Background(), suite.fooWithTargets, metav1.CreateOptions{})
 	suite.NoError(err, "should successfully create service")
 
 }
 
 func (suite *ServiceSuite) TestResourceLabelIsSet() {
-	endpoints, _ := suite.sc.Endpoints()
+	endpoints, _ := suite.sc.Endpoints(context.Background())
 	for _, ep := range endpoints {
 		suite.Equal("service/default/foo-with-targets", ep.Labels[endpoint.ResourceLabelKey], "should set correct resource label")
 	}
@@ -1167,7 +1167,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				},
 			}
 
-			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
@@ -1189,8 +1189,8 @@ func testServiceSourceEndpoints(t *testing.T) {
 			var res []*endpoint.Endpoint
 
 			// wait up to a few seconds for new resources to appear in informer cache.
-			err = wait.Poll(time.Second, 3*time.Second, func() (bool, error) {
-				res, err = client.Endpoints()
+			err = poll(time.Second, 3*time.Second, func() (bool, error) {
+				res, err = client.Endpoints(context.Background())
 				if err != nil {
 					// stop waiting if we get an error
 					return true, err
@@ -1372,7 +1372,7 @@ func TestClusterIpServices(t *testing.T) {
 				},
 			}
 
-			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
@@ -1391,7 +1391,7 @@ func TestClusterIpServices(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			endpoints, err := client.Endpoints()
+			endpoints, err := client.Endpoints(context.Background())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -1652,7 +1652,7 @@ func TestNodePortServices(t *testing.T) {
 					},
 				},
 			}},
-			[]string{"master-0"},
+			[]string{"pod-0"},
 			[]int{1},
 			[]v1.PodPhase{v1.PodRunning},
 		},
@@ -1715,7 +1715,7 @@ func TestNodePortServices(t *testing.T) {
 
 			// Create the nodes
 			for _, node := range tc.nodes {
-				if _, err := kubernetes.Core().Nodes().Create(node); err != nil {
+				if _, err := kubernetes.CoreV1().Nodes().Create(context.Background(), node, metav1.CreateOptions{}); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -1739,7 +1739,7 @@ func TestNodePortServices(t *testing.T) {
 					},
 				}
 
-				_, err := kubernetes.CoreV1().Pods(tc.svcNamespace).Create(pod)
+				_, err := kubernetes.CoreV1().Pods(tc.svcNamespace).Create(context.Background(), pod, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
@@ -1758,7 +1758,7 @@ func TestNodePortServices(t *testing.T) {
 				},
 			}
 
-			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
@@ -1777,7 +1777,7 @@ func TestNodePortServices(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			endpoints, err := client.Endpoints()
+			endpoints, err := client.Endpoints(context.Background())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -2096,7 +2096,7 @@ func TestHeadlessServices(t *testing.T) {
 				},
 				Status: v1.ServiceStatus{},
 			}
-			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			var addresses, notReadyAddresses []v1.EndpointAddress
@@ -2117,7 +2117,7 @@ func TestHeadlessServices(t *testing.T) {
 					},
 				}
 
-				_, err = kubernetes.CoreV1().Pods(tc.svcNamespace).Create(pod)
+				_, err = kubernetes.CoreV1().Pods(tc.svcNamespace).Create(context.Background(), pod, metav1.CreateOptions{})
 				require.NoError(t, err)
 
 				address := v1.EndpointAddress{
@@ -2147,7 +2147,7 @@ func TestHeadlessServices(t *testing.T) {
 					},
 				},
 			}
-			_, err = kubernetes.CoreV1().Endpoints(tc.svcNamespace).Create(endpointsObject)
+			_, err = kubernetes.CoreV1().Endpoints(tc.svcNamespace).Create(context.Background(), endpointsObject, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
@@ -2166,7 +2166,7 @@ func TestHeadlessServices(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			endpoints, err := client.Endpoints()
+			endpoints, err := client.Endpoints(context.Background())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -2456,7 +2456,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				},
 				Status: v1.ServiceStatus{},
 			}
-			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			var addresses []v1.EndpointAddress
@@ -2478,7 +2478,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 					},
 				}
 
-				_, err = kubernetes.CoreV1().Pods(tc.svcNamespace).Create(pod)
+				_, err = kubernetes.CoreV1().Pods(tc.svcNamespace).Create(context.Background(), pod, metav1.CreateOptions{})
 				require.NoError(t, err)
 
 				address := v1.EndpointAddress{
@@ -2508,7 +2508,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 					},
 				},
 			}
-			_, err = kubernetes.CoreV1().Endpoints(tc.svcNamespace).Create(endpointsObject)
+			_, err = kubernetes.CoreV1().Endpoints(tc.svcNamespace).Create(context.Background(), endpointsObject, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
@@ -2527,7 +2527,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			endpoints, err := client.Endpoints()
+			endpoints, err := client.Endpoints(context.Background())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -2613,7 +2613,7 @@ func TestExternalServices(t *testing.T) {
 				},
 				Status: v1.ServiceStatus{},
 			}
-			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
@@ -2632,7 +2632,7 @@ func TestExternalServices(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			endpoints, err := client.Endpoints()
+			endpoints, err := client.Endpoints(context.Background())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -2666,14 +2666,14 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		},
 	}
 
-	_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
+	_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
 	require.NoError(b, err)
 
 	client, err := NewServiceSource(kubernetes, v1.NamespaceAll, "", "", false, "", false, false, false, []string{}, false)
 	require.NoError(b, err)
 
 	for i := 0; i < b.N; i++ {
-		_, err := client.Endpoints()
+		_, err := client.Endpoints(context.Background())
 		require.NoError(b, err)
 	}
 }
