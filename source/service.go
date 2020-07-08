@@ -157,7 +157,7 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 }
 
 // Endpoints returns endpoint objects for each service that should be processed.
-func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	services, err := sc.serviceInformer.Lister().Services(sc.namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err

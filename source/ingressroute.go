@@ -132,7 +132,7 @@ func NewContourIngressRouteSource(
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all ingressroute resources in the source's namespace(s).
-func (sc *ingressRouteSource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (sc *ingressRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	irs, err := sc.ingressRouteInformer.Lister().ByNamespace(sc.namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
@@ -173,14 +173,14 @@ func (sc *ingressRouteSource) Endpoints() ([]*endpoint.Endpoint, error) {
 			continue
 		}
 
-		irEndpoints, err := sc.endpointsFromIngressRoute(ir)
+		irEndpoints, err := sc.endpointsFromIngressRoute(ctx, ir)
 		if err != nil {
 			return nil, err
 		}
 
 		// apply template if fqdn is missing on ingressroute
 		if (sc.combineFQDNAnnotation || len(irEndpoints) == 0) && sc.fqdnTemplate != nil {
-			tmplEndpoints, err := sc.endpointsFromTemplate(ir)
+			tmplEndpoints, err := sc.endpointsFromTemplate(ctx, ir)
 			if err != nil {
 				return nil, err
 			}
@@ -209,7 +209,7 @@ func (sc *ingressRouteSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
-func (sc *ingressRouteSource) endpointsFromTemplate(ingressRoute *contourapi.IngressRoute) ([]*endpoint.Endpoint, error) {
+func (sc *ingressRouteSource) endpointsFromTemplate(ctx context.Context, ingressRoute *contourapi.IngressRoute) ([]*endpoint.Endpoint, error) {
 	// Process the whole template string
 	var buf bytes.Buffer
 	err := sc.fqdnTemplate.Execute(&buf, ingressRoute)
@@ -227,7 +227,7 @@ func (sc *ingressRouteSource) endpointsFromTemplate(ingressRoute *contourapi.Ing
 	targets := getTargetsFromTargetAnnotation(ingressRoute.Annotations)
 
 	if len(targets) == 0 {
-		targets, err = sc.targetsFromContourLoadBalancer()
+		targets, err = sc.targetsFromContourLoadBalancer(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -282,12 +282,12 @@ func (sc *ingressRouteSource) setResourceLabel(ingressRoute *contourapi.IngressR
 	}
 }
 
-func (sc *ingressRouteSource) targetsFromContourLoadBalancer() (targets endpoint.Targets, err error) {
+func (sc *ingressRouteSource) targetsFromContourLoadBalancer(ctx context.Context) (targets endpoint.Targets, err error) {
 	lbNamespace, lbName, err := parseContourLoadBalancerService(sc.contourLoadBalancerService)
 	if err != nil {
 		return nil, err
 	}
-	if svc, err := sc.kubeClient.CoreV1().Services(lbNamespace).Get(lbName, metav1.GetOptions{}); err != nil {
+	if svc, err := sc.kubeClient.CoreV1().Services(lbNamespace).Get(ctx, lbName, metav1.GetOptions{}); err != nil {
 		log.Warn(err)
 	} else {
 		for _, lb := range svc.Status.LoadBalancer.Ingress {
@@ -304,7 +304,7 @@ func (sc *ingressRouteSource) targetsFromContourLoadBalancer() (targets endpoint
 }
 
 // endpointsFromIngressRouteConfig extracts the endpoints from a Contour IngressRoute object
-func (sc *ingressRouteSource) endpointsFromIngressRoute(ingressRoute *contourapi.IngressRoute) ([]*endpoint.Endpoint, error) {
+func (sc *ingressRouteSource) endpointsFromIngressRoute(ctx context.Context, ingressRoute *contourapi.IngressRoute) ([]*endpoint.Endpoint, error) {
 	if ingressRoute.CurrentStatus != "valid" {
 		log.Warn(errors.Errorf("cannot generate endpoints for ingressroute with status %s", ingressRoute.CurrentStatus))
 		return nil, nil
@@ -320,7 +320,7 @@ func (sc *ingressRouteSource) endpointsFromIngressRoute(ingressRoute *contourapi
 	targets := getTargetsFromTargetAnnotation(ingressRoute.Annotations)
 
 	if len(targets) == 0 {
-		targets, err = sc.targetsFromContourLoadBalancer()
+		targets, err = sc.targetsFromContourLoadBalancer(ctx)
 		if err != nil {
 			return nil, err
 		}
