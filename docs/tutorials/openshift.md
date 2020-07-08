@@ -105,7 +105,7 @@ spec:
 
 ### Verify External DNS works (OpenShift Route example)
 The following instructions are based on the 
-[Hello Openshift](https://github.com/openshift/origin/tree/master/examples/hello-openshift).
+[Hello Openshift](https://github.com/openshift/origin/tree/HEAD/examples/hello-openshift).
 
 #### Install a sample service and expose it
 ```bash

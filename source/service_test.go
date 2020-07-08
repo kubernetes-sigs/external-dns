@@ -1541,7 +1541,7 @@ func TestNodePortServices(t *testing.T) {
 					},
 				},
 			}},
-			[]string{"master-0"},
+			[]string{"pod-0"},
 			[]int{1},
 			[]v1.PodPhase{v1.PodRunning},
 		},

@@ -55,14 +55,14 @@ func addKnownTypes(scheme *runtime.Scheme, groupVersion schema.GroupVersion) err
 }
 
 // NewCRDClientForAPIVersionKind return rest client for the given apiVersion and kind of the CRD
-func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, kubeMaster, apiVersion, kind string) (*rest.RESTClient, *runtime.Scheme, error) {
+func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiServerURL, apiVersion, kind string) (*rest.RESTClient, *runtime.Scheme, error) {
 	if kubeConfig == "" {
 		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
 			kubeConfig = clientcmd.RecommendedHomeFile
 		}
 	}
 
-	config, err := clientcmd.BuildConfigFromFlags(kubeMaster, kubeConfig)
+	config, err := clientcmd.BuildConfigFromFlags(apiServerURL, kubeConfig)
 	if err != nil {
 		return nil, nil, err
 	}
