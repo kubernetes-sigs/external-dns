@@ -31,7 +31,7 @@ type MockSource struct {
 }
 
 // Endpoints returns the desired mock endpoints.
-func (m *MockSource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (m *MockSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	args := m.Called()
 
 	endpoints := args.Get(0)

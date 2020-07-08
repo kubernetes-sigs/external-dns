@@ -29,7 +29,7 @@ func (e *emptySource) AddEventHandler(ctx context.Context, handler func()) {
 }
 
 // Endpoints collects endpoints of all nested Sources and returns them in a single slice.
-func (e *emptySource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (e *emptySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return []*endpoint.Endpoint{}, nil
 }
 
