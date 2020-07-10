@@ -116,8 +116,8 @@ func NewIstioGatewaySource(
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all gateway resources in the source's namespace(s).
-func (sc *gatewaySource) Endpoints() ([]*endpoint.Endpoint, error) {
-	gwList, err := sc.istioClient.NetworkingV1alpha3().Gateways(sc.namespace).List(metav1.ListOptions{})
+func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	gwList, err := sc.istioClient.NetworkingV1alpha3().Gateways(sc.namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -180,10 +180,12 @@ func (sc *gatewaySource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
+// TODO(tariq1890): Implement this once we have evaluated and tested GatewayInformers
+// AddEventHandler adds an event handler that should be triggered if the watched Istio Gateway changes.
 func (sc *gatewaySource) AddEventHandler(ctx context.Context, handler func()) {
 }
 
-// filterByAnnotations2 filters a list of configs by a given annotation selector.
+// filterByAnnotations filters a list of configs by a given annotation selector.
 func (sc *gatewaySource) filterByAnnotations(gateways []networkingv1alpha3.Gateway) ([]networkingv1alpha3.Gateway, error) {
 	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
 	if err != nil {
@@ -220,23 +222,23 @@ func (sc *gatewaySource) setResourceLabel(gateway networkingv1alpha3.Gateway, en
 	}
 }
 
-func (sc *gatewaySource) targetsFromGatewayConfig(gateway networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {
-	labelSelector, err := metav1.ParseToLabelSelector(labels.Set(gateway.Spec.Selector).String())
-	if err != nil {
-		return nil, err
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
-	if err != nil {
-		return nil, err
+func (sc *gatewaySource) targetsFromGateway(gateway networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {
+	targets = getTargetsFromTargetAnnotation(gateway.Annotations)
+	if len(targets) > 0 {
+		return
 	}
 
-	services, err := sc.serviceInformer.Lister().Services(sc.namespace).List(selector)
+	services, err := sc.serviceInformer.Lister().Services(sc.namespace).List(labels.Everything())
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
 	for _, service := range services {
+		if !gatewaySelectorMatchesServiceSelector(gateway.Spec.Selector, service.Spec.Selector) {
+			continue
+		}
+
 		for _, lb := range service.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
 				targets = append(targets, lb.IP)
@@ -262,7 +264,7 @@ func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway networ
 	targets := getTargetsFromTargetAnnotation(annotations)
 
 	if len(targets) == 0 {
-		targets, err = sc.targetsFromGatewayConfig(gateway)
+		targets, err = sc.targetsFromGateway(gateway)
 		if err != nil {
 			return nil, err
 		}
@@ -314,4 +316,13 @@ func (sc *gatewaySource) hostNamesFromTemplate(gateway networkingv1alpha3.Gatewa
 
 	hostnames := strings.Split(strings.Replace(buf.String(), " ", "", -1), ",")
 	return hostnames, nil
+}
+
+func gatewaySelectorMatchesServiceSelector(gwSelector, svcSelector map[string]string) bool {
+	for k, v := range gwSelector {
+		if lbl, ok := svcSelector[k]; !ok || lbl != v {
+			return false
+		}
+	}
+	return true
 }

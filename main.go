@@ -110,7 +110,7 @@ func main() {
 		CRDSourceAPIVersion:            cfg.CRDSourceAPIVersion,
 		CRDSourceKind:                  cfg.CRDSourceKind,
 		KubeConfig:                     cfg.KubeConfig,
-		KubeMaster:                     cfg.Master,
+		APIServerURL:                   cfg.APIServerURL,
 		ServiceTypeFilter:              cfg.ServiceTypeFilter,
 		CFAPIEndpoint:                  cfg.CFAPIEndpoint,
 		CFUsername:                     cfg.CFUsername,
@@ -122,8 +122,8 @@ func main() {
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
 	sources, err := source.ByNames(&source.SingletonClientGenerator{
-		KubeConfig: cfg.KubeConfig,
-		KubeMaster: cfg.Master,
+		KubeConfig:   cfg.KubeConfig,
+		APIServerURL: cfg.APIServerURL,
 		// If update events are enabled, disable timeout.
 		RequestTimeout: func() time.Duration {
 			if cfg.UpdateEvents {
