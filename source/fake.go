@@ -59,7 +59,7 @@ func (sc *fakeSource) AddEventHandler(ctx context.Context, handler func()) {
 }
 
 // Endpoints returns endpoint objects.
-func (sc *fakeSource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (sc *fakeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := make([]*endpoint.Endpoint, 10)
 
 	for i := 0; i < 10; i++ {

@@ -94,7 +94,7 @@ func NewNodeSource(kubeClient kubernetes.Interface, annotationFilter, fqdnTempla
 }
 
 // Endpoints returns endpoint objects for each service that should be processed.
-func (ns *nodeSource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	nodes, err := ns.nodeInformer.Lister().List(labels.Everything())
 	if err != nil {
 		return nil, err
