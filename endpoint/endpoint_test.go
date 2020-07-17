@@ -79,7 +79,7 @@ func TestSameFailures(t *testing.T) {
 	}
 }
 
-func TestDigitalOceanMergeRecordsByNameType(t *testing.T) {
+func TestMergeRecordsByNameType(t *testing.T) {
 	xs := []*Endpoint{
 		NewEndpoint("foo.example.com", "A", "1.2.3.4"),
 		NewEndpoint("bar.example.com", "A", "1.2.3.4"),
