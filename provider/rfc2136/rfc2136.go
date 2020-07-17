@@ -158,6 +158,8 @@ OuterLoop:
 		eps = append(eps, ep)
 	}
 
+	eps = endpoint.MergeEndpointsByNameType(eps)
+
 	return eps, nil
 }
 

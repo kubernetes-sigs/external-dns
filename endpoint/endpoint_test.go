@@ -17,7 +17,10 @@ limitations under the License.
 package endpoint
 
 import (
+	"sort"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewEndpoint(t *testing.T) {
@@ -74,4 +77,37 @@ func TestSameFailures(t *testing.T) {
 			t.Errorf("%#v should not equal %#v", d.a, d.b)
 		}
 	}
+}
+
+func TestDigitalOceanMergeRecordsByNameType(t *testing.T) {
+	xs := []*Endpoint{
+		NewEndpoint("foo.example.com", "A", "1.2.3.4"),
+		NewEndpoint("bar.example.com", "A", "1.2.3.4"),
+		NewEndpoint("foo.example.com", "A", "5.6.7.8"),
+		NewEndpoint("foo.example.com", "CNAME", "somewhere.out.there.com"),
+	}
+
+	merged := MergeEndpointsByNameType(xs)
+
+	assert.Equal(t, 3, len(merged))
+	sort.SliceStable(merged, func(i, j int) bool {
+		if merged[i].DNSName != merged[j].DNSName {
+			return merged[i].DNSName < merged[j].DNSName
+		}
+		return merged[i].RecordType < merged[j].RecordType
+	})
+	assert.Equal(t, "bar.example.com", merged[0].DNSName)
+	assert.Equal(t, "A", merged[0].RecordType)
+	assert.Equal(t, 1, len(merged[0].Targets))
+	assert.Equal(t, "1.2.3.4", merged[0].Targets[0])
+
+	assert.Equal(t, "foo.example.com", merged[1].DNSName)
+	assert.Equal(t, "A", merged[1].RecordType)
+	assert.Equal(t, 2, len(merged[1].Targets))
+	assert.ElementsMatch(t, []string{"1.2.3.4", "5.6.7.8"}, merged[1].Targets)
+
+	assert.Equal(t, "foo.example.com", merged[2].DNSName)
+	assert.Equal(t, "CNAME", merged[2].RecordType)
+	assert.Equal(t, 1, len(merged[2].Targets))
+	assert.Equal(t, "somewhere.out.there.com", merged[2].Targets[0])
 }

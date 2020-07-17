@@ -227,3 +227,36 @@ type DNSEndpointList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []DNSEndpoint `json:"items"`
 }
+
+// Given a slice of Endpoint, merge those Endpoints with the same Name and Type into a single Endpoint
+// with multiple Targets. Returns a slice of Endpoint with the merged Endpoints.
+func MergeEndpointsByNameType(endpoints []*Endpoint) []*Endpoint {
+	endpointsByNameType := map[string][]*Endpoint{}
+
+	for _, e := range endpoints {
+		key := fmt.Sprintf("%s-%s", e.DNSName, e.RecordType)
+		endpointsByNameType[key] = append(endpointsByNameType[key], e)
+	}
+
+	// If no merge occurred, just return the existing endpoints.
+	if len(endpointsByNameType) == len(endpoints) {
+		return endpoints
+	}
+
+	// Otherwise, construct a new list of endpoints with the endpoints merged.
+	var result []*Endpoint
+	for _, endpoints := range endpointsByNameType {
+		dnsName := endpoints[0].DNSName
+		recordType := endpoints[0].RecordType
+
+		var targets Targets
+		for _, e := range endpoints {
+			targets = append(targets, e.Targets...)
+		}
+
+		e := NewEndpoint(dnsName, recordType, targets...)
+		result = append(result, e)
+	}
+
+	return result
+}
