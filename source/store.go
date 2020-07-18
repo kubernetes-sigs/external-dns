@@ -45,7 +45,6 @@ type Config struct {
 	FQDNTemplate                    string
 	CombineFQDNAndAnnotation        bool
 	IgnoreHostnameAnnotation        bool
-	PreferIngressHostnameAnnotation bool
 	Compatibility                   string
 	PublishInternal                 bool
 	PublishHostIP                   bool
@@ -185,7 +184,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewIngressSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.PreferIngressHostnameAnnotation)
+		return NewIngressSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
 	case "istio-gateway":
 		kubernetesClient, err := p.KubeClient()
 		if err != nil {
