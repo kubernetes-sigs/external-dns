@@ -40,27 +40,27 @@ var ErrSourceNotFound = errors.New("source not found")
 
 // Config holds shared configuration options for all Sources.
 type Config struct {
-	Namespace                       string
-	AnnotationFilter                string
-	FQDNTemplate                    string
-	CombineFQDNAndAnnotation        bool
-	IgnoreHostnameAnnotation        bool
-	Compatibility                   string
-	PublishInternal                 bool
-	PublishHostIP                   bool
-	AlwaysPublishNotReadyAddresses  bool
-	ConnectorServer                 string
-	CRDSourceAPIVersion             string
-	CRDSourceKind                   string
-	KubeConfig                      string
-	KubeMaster                      string
-	ServiceTypeFilter               []string
-	CFAPIEndpoint                   string
-	CFUsername                      string
-	CFPassword                      string
-	ContourLoadBalancerService      string
-	SkipperRouteGroupVersion        string
-	RequestTimeout                  time.Duration
+	Namespace                      string
+	AnnotationFilter               string
+	FQDNTemplate                   string
+	CombineFQDNAndAnnotation       bool
+	IgnoreHostnameAnnotation       bool
+	Compatibility                  string
+	PublishInternal                bool
+	PublishHostIP                  bool
+	AlwaysPublishNotReadyAddresses bool
+	ConnectorServer                string
+	CRDSourceAPIVersion            string
+	CRDSourceKind                  string
+	KubeConfig                     string
+	KubeMaster                     string
+	ServiceTypeFilter              []string
+	CFAPIEndpoint                  string
+	CFUsername                     string
+	CFPassword                     string
+	ContourLoadBalancerService     string
+	SkipperRouteGroupVersion       string
+	RequestTimeout                 time.Duration
 }
 
 // ClientGenerator provides clients
