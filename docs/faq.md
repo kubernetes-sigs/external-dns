@@ -75,13 +75,13 @@ Regarding Ingress, we'll support:
 * Google's Ingress Controller on GKE that integrates with their Layer 7 load balancers (GLBC)
 * nginx-ingress-controller v0.9.x with a fronting Service
 * Zalando's [AWS Ingress controller](https://github.com/zalando-incubator/kube-ingress-aws-controller), based on AWS ALBs and [Skipper](https://github.com/zalando/skipper)
-* [Traefik](https://github.com/containous/traefik) 1.7 and above, when [`kubernetes.ingressEndpoint`](https://docs.traefik.io/v1.7/configuration/backends/kubernetes/#ingressendpoint) is configured (`kubernetes.ingressEndpoint.useDefaultPublishedService` in the [Helm chart](https://github.com/helm/charts/tree/master/stable/traefik#configuration))
+* [Traefik](https://github.com/containous/traefik) 1.7 and above, when [`kubernetes.ingressEndpoint`](https://docs.traefik.io/v1.7/configuration/backends/kubernetes/#ingressendpoint) is configured (`kubernetes.ingressEndpoint.useDefaultPublishedService` in the [Helm chart](https://github.com/helm/charts/tree/HEAD/stable/traefik#configuration))
 
 ### Are other Ingress Controllers supported?
 
 For Ingress objects, ExternalDNS will attempt to discover the target hostname of the relevant Ingress Controller automatically. If you are using an Ingress Controller that is not listed above you may have issues with ExternalDNS not discovering Endpoints and consequently not creating any DNS records. As a workaround, it is possible to force create an Endpoint by manually specifying a target host/IP for the records to be created by setting the annotation `external-dns.alpha.kubernetes.io/target` in the Ingress object.
 
-Another reason you may want to override the ingress hostname or IP address is if you have an external mechanism for handling failover across ingress endpoints. Possible scenarios for this would include using [keepalived-vip](https://github.com/kubernetes/contrib/tree/master/keepalived-vip) to manage failover faster than DNS TTLs might expire.
+Another reason you may want to override the ingress hostname or IP address is if you have an external mechanism for handling failover across ingress endpoints. Possible scenarios for this would include using [keepalived-vip](https://github.com/kubernetes/contrib/tree/HEAD/keepalived-vip) to manage failover faster than DNS TTLs might expire.
 
 Note that if you set the target to a hostname, then a CNAME record will be created. In this case, the hostname specified in the Ingress object's annotation must already exist. (i.e. you have a Service resource for your Ingress Controller with the `external-dns.alpha.kubernetes.io/hostname` annotation set to the same value.)
 
@@ -89,7 +89,7 @@ Note that if you set the target to a hostname, then a CNAME record will be creat
 
 ExternalDNS is a joint effort to unify different projects accomplishing the same goals, namely:
 
-* Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller)
+* Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/HEAD/dns-controller)
 * Zalando's [Mate](https://github.com/linki/mate)
 * Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 
@@ -205,7 +205,7 @@ $ docker run \
   -e EXTERNAL_DNS_PROVIDER=google \
   -e EXTERNAL_DNS_DOMAIN_FILTER=$'foo.com\nbar.com' \
   registry.opensource.zalan.do/teapot/external-dns:latest
-time="2017-08-08T14:10:26Z" level=info msg="config: &{Master: KubeConfig: Sources:[service ingress] Namespace: ...
+time="2017-08-08T14:10:26Z" level=info msg="config: &{APIServerURL: KubeConfig: Sources:[service ingress] Namespace: ...
 ```
 
 Locally:
@@ -213,12 +213,12 @@ Locally:
 ```console
 $ export EXTERNAL_DNS_SOURCE=$'service\ningress'
 $ external-dns --provider=google
-INFO[0000] config: &{Master: KubeConfig: Sources:[service ingress] Namespace: ...
+INFO[0000] config: &{APIServerURL: KubeConfig: Sources:[service ingress] Namespace: ...
 ```
 
 ```
 $ EXTERNAL_DNS_SOURCE=$'service\ningress' external-dns --provider=google
-INFO[0000] config: &{Master: KubeConfig: Sources:[service ingress] Namespace: ...
+INFO[0000] config: &{APIServerURL: KubeConfig: Sources:[service ingress] Namespace: ...
 ```
 
 In a Kubernetes manifest:

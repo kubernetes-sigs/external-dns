@@ -131,7 +131,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 
 	ctx = context.WithValue(ctx, provider.RecordsContextKey, records)
 
-	endpoints, err := c.Source.Endpoints()
+	endpoints, err := c.Source.Endpoints(ctx)
 	if err != nil {
 		sourceErrorsTotal.Inc()
 		deprecatedSourceErrors.Inc()

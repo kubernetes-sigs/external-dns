@@ -17,6 +17,7 @@ limitations under the License.
 package source
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -62,19 +63,19 @@ func (suite *IngressSuite) SetupTest() {
 		hostnames:   []string{"v1"},
 		annotations: map[string]string{ALBDualstackAnnotationKey: ALBDualstackAnnotationValue},
 	}).Ingress()
-	_, err = fakeClient.ExtensionsV1beta1().Ingresses(suite.fooWithTargets.Namespace).Create(suite.fooWithTargets)
+	_, err = fakeClient.ExtensionsV1beta1().Ingresses(suite.fooWithTargets.Namespace).Create(context.Background(), suite.fooWithTargets, metav1.CreateOptions{})
 	suite.NoError(err, "should succeed")
 }
 
 func (suite *IngressSuite) TestResourceLabelIsSet() {
-	endpoints, _ := suite.sc.Endpoints()
+	endpoints, _ := suite.sc.Endpoints(context.Background())
 	for _, ep := range endpoints {
 		suite.Equal("ingress/default/foo-with-targets", ep.Labels[endpoint.ResourceLabelKey], "should set correct resource label")
 	}
 }
 
 func (suite *IngressSuite) TestDualstackLabelIsSet() {
-	endpoints, _ := suite.sc.Endpoints()
+	endpoints, _ := suite.sc.Endpoints(context.Background())
 	for _, ep := range endpoints {
 		suite.Equal("true", ep.Labels[endpoint.DualstackLabelKey], "should set dualstack label to true")
 	}
@@ -1102,7 +1103,7 @@ func testIngressEndpoints(t *testing.T) {
 				ti.ignoreHostnameAnnotation,
 			)
 			for _, ingress := range ingresses {
-				_, err := fakeClient.ExtensionsV1beta1().Ingresses(ingress.Namespace).Create(ingress)
+				_, err := fakeClient.ExtensionsV1beta1().Ingresses(ingress.Namespace).Create(context.Background(), ingress, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
@@ -1131,7 +1132,7 @@ func testIngressEndpoints(t *testing.T) {
 			require.NoError(t, err)
 
 			// Informer cache has all of the ingresses. Retrieve and validate their endpoints.
-			res, err := source.Endpoints()
+			res, err := source.Endpoints(context.Background())
 			if ti.expectError {
 				require.Error(t, err)
 			} else {

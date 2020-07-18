@@ -58,7 +58,7 @@ curl -XPOST -H "X-Ovh-Application: <ApplicationKey>" -H "Content-type: applicati
       "path": "/domain/zone/*/refresh"
     }
   ],
-  "redirection":"https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/ovh.md#creating-ovh-credentials"
+  "redirection":"https://github.com/kubernetes-sigs/external-dns/blob/HEAD/docs/tutorials/ovh.md#creating-ovh-credentials"
 }'
 ```
 

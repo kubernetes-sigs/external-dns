@@ -40,7 +40,7 @@ func (rs *cloudfoundrySource) AddEventHandler(ctx context.Context, handler func(
 }
 
 // Endpoints returns endpoint objects
-func (rs *cloudfoundrySource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (rs *cloudfoundrySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	u, err := url.Parse(rs.client.Config.ApiAddress)
