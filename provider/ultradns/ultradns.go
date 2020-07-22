@@ -42,7 +42,7 @@ const (
 var sbPoolRunProbes = true
 var sbPoolActOnProbes = true
 var ultradnsPoolType = "rdpool"
-var AccountName string
+var accountName string
 
 //Setting custom headers for ultradns api calls
 var customHeader = []udnssdk.CustomHeader{
@@ -57,7 +57,7 @@ type UltraDNSProvider struct {
 	provider.BaseProvider
 	client       udnssdk.Client
 	domainFilter endpoint.DomainFilter
-	DryRun       bool
+	dryRun       bool
 }
 
 // UltraDNSChanges struct
@@ -90,9 +90,9 @@ func NewUltraDNSProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*Ultr
 	if !ok {
 		return nil, fmt.Errorf("no baseurl found")
 	}
-	AccountName, ok = os.LookupEnv("ULTRADNS_ACCOUNTNAME")
+	accountName, ok = os.LookupEnv("ULTRADNS_ACCOUNTNAME")
 	if !ok {
-		AccountName = ""
+		accountName = ""
 	}
 
 	probeValue, ok := os.LookupEnv("ULTRADNS_ENABLE_PROBING")
@@ -127,7 +127,7 @@ func NewUltraDNSProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*Ultr
 	provider := &UltraDNSProvider{
 		client:       *client,
 		domainFilter: domainFilter,
-		DryRun:       dryRun,
+		dryRun:       dryRun,
 	}
 
 	return provider, nil
@@ -142,7 +142,7 @@ func (p *UltraDNSProvider) Zones(ctx context.Context) ([]udnssdk.Zone, error) {
 		zonesAppender := []udnssdk.Zone{}
 		for _, zone := range p.domainFilter.Filters {
 			zoneKey.Zone = zone
-			zoneKey.AccountName = AccountName
+			zoneKey.AccountName = accountName
 			zones, err := p.fetchZones(ctx, zoneKey)
 
 			if err != nil {
@@ -153,7 +153,7 @@ func (p *UltraDNSProvider) Zones(ctx context.Context) ([]udnssdk.Zone, error) {
 		}
 		return zonesAppender, nil
 	}
-	zoneKey.AccountName = AccountName
+	zoneKey.AccountName = accountName
 	zones, err := p.fetchZones(ctx, zoneKey)
 	if err != nil {
 		return nil, err
@@ -305,7 +305,7 @@ func (p *UltraDNSProvider) submitChanges(ctx context.Context, changes []*UltraDN
 				if err != nil {
 					return err
 				}
-				if !p.DryRun {
+				if !p.dryRun {
 					_, err = p.client.RRSets.Delete(rrsetKey)
 					if err != nil {
 						return err
@@ -361,7 +361,7 @@ func (p *UltraDNSProvider) submitChanges(ctx context.Context, changes []*UltraDN
 
 			switch change.Action {
 			case ultradnsCreate:
-				if !p.DryRun {
+				if !p.dryRun {
 					res, err := p.client.RRSets.Create(rrsetKey, record)
 					_ = res
 					if err != nil {
@@ -375,7 +375,7 @@ func (p *UltraDNSProvider) submitChanges(ctx context.Context, changes []*UltraDN
 					return err
 				}
 
-				if !p.DryRun {
+				if !p.dryRun {
 					_, err = p.client.RRSets.Delete(rrsetKey)
 					if err != nil {
 						return err
@@ -387,7 +387,7 @@ func (p *UltraDNSProvider) submitChanges(ctx context.Context, changes []*UltraDN
 					return err
 				}
 
-				if !p.DryRun {
+				if !p.dryRun {
 					_, err = p.client.RRSets.Update(rrsetKey, record)
 					if err != nil {
 						return err
