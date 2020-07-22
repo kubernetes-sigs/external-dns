@@ -83,7 +83,7 @@ rules:
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
-  verbs: ["list"]
+  verbs: ["list","watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
@@ -215,12 +215,12 @@ $ kubectl delete service -f externaldns.yaml
 kind: Pod
 apiVersion: v1
 metadata:
-  name: apple-app
+  name: example-app
   labels:
     app: apple
 spec:
   containers:
-    - name: apple-app
+    - name: example-app
       image: hashicorp/http-echo
       args:
         - "-text=apple"
@@ -228,7 +228,7 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  name: apple-service
+  name: exapmle-service
 spec:
   selector:
     app: apple
@@ -252,7 +252,7 @@ spec:
       paths:
         - path: /apple
           backend:
-            serviceName: apple-service
+            serviceName: exapmle-service
             servicePort: 5678
 ```
 - Then, create the deployment and service:
@@ -278,12 +278,12 @@ $ kubectl delete -f external-dns.yaml
     kind: Pod
     apiVersion: v1
     metadata:
-      name: apple-app
+      name: example-app
       labels:
         app: apple
     spec:
       containers:
-        - name: apple-app
+        - name: example-app
           image: hashicorp/http-echo
           args:
             - "-text=apple"
@@ -291,7 +291,7 @@ $ kubectl delete -f external-dns.yaml
     kind: Service
     apiVersion: v1
     metadata:
-      name: apple-service
+      name: exapmle-service
     spec:
       selector:
         app: apple
@@ -313,7 +313,7 @@ $ kubectl delete -f external-dns.yaml
           paths:
             - path: /apple
               backend:
-                serviceName: apple-service
+                serviceName: exapmle-service
                 servicePort: 5678
     ```
     - _Config File Example – Kubernetes cluster service from different cloud vendors_
@@ -322,12 +322,12 @@ $ kubectl delete -f external-dns.yaml
     kind: Pod
     apiVersion: v1
     metadata:
-      name: apple-app
+      name: example-app
       labels:
         app: apple
     spec:
       containers:
-        - name: apple-app
+        - name: example-app
           image: hashicorp/http-echo
           args:
             - "-text=apple"
@@ -335,7 +335,7 @@ $ kubectl delete -f external-dns.yaml
     kind: Service
     apiVersion: v1
     metadata:
-      name: apple-service
+      name: exapmle-service
       annotations:
         external-dns.alpha.kubernetes.io/hostname: my-app.example.com.
     spec:
@@ -368,12 +368,12 @@ $ kubectl delete -f external-dns.yaml
     kind: Pod
     apiVersion: v1
     metadata:
-      name: apple-app
+      name: example-app
       labels:
         app: apple
     spec:
       containers:
-        - name: apple-app
+        - name: example-app
           image: hashicorp/http-echo
           args:
             - "-text=apple"
@@ -381,7 +381,7 @@ $ kubectl delete -f external-dns.yaml
     kind: Service
     apiVersion: v1
     metadata:
-      name: apple-service
+      name: exapmle-service
     spec:
       selector:
         app: apple
@@ -391,12 +391,12 @@ $ kubectl delete -f external-dns.yaml
     kind: Pod
     apiVersion: v1
     metadata:
-      name: apple-app1
+      name: example-app1
       labels:
         app: apple1
     spec:
       containers:
-        - name: apple-app1
+        - name: example-app1
           image: hashicorp/http-echo
           args:
             - "-text=apple"
@@ -404,7 +404,7 @@ $ kubectl delete -f external-dns.yaml
     kind: Service
     apiVersion: v1
     metadata:
-      name: apple-service1
+      name: exapmle-service1
     spec:
       selector:
         app: apple1
@@ -414,12 +414,12 @@ $ kubectl delete -f external-dns.yaml
     kind: Pod
     apiVersion: v1
     metadata:
-      name: apple-app2
+      name: example-app2
       labels:
         app: apple2
     spec:
       containers:
-        - name: apple-app2
+        - name: example-app2
           image: hashicorp/http-echo
           args:
             - "-text=apple"
@@ -427,7 +427,7 @@ $ kubectl delete -f external-dns.yaml
     kind: Service
     apiVersion: v1
     metadata:
-      name: apple-service2
+      name: exapmle-service2
     spec:
       selector:
         app: apple2
@@ -449,7 +449,7 @@ $ kubectl delete -f external-dns.yaml
           paths:
             - path: /apple
               backend:
-                serviceName: apple-service
+                serviceName: exapmle-service
                 servicePort: 5678
     ---
     apiVersion: extensions/v1beta1
@@ -467,7 +467,7 @@ $ kubectl delete -f external-dns.yaml
           paths:
             - path: /apple
               backend:
-                serviceName: apple-service1
+                serviceName: exapmle-service1
                 servicePort: 5679
     ---
     apiVersion: extensions/v1beta1
@@ -485,7 +485,7 @@ $ kubectl delete -f external-dns.yaml
           paths:
             - path: /apple
               backend:
-                serviceName: apple-service2
+                serviceName: exapmle-service2
                 servicePort: 5680
     ```
     - _Config File Example – Kubernetes cluster service from different cloud vendors_
@@ -528,12 +528,12 @@ $ kubectl delete -f external-dns.yaml
     kind: Pod
     apiVersion: v1
     metadata:
-      name: apple-app
+      name: example-app
       labels:
         app: apple
     spec:
       containers:
-        - name: apple-app
+        - name: example-app
           image: hashicorp/http-echo
           args:
             - "-text=apple"
@@ -541,7 +541,7 @@ $ kubectl delete -f external-dns.yaml
     kind: Service
     apiVersion: v1
     metadata:
-      name: apple-service
+      name: exapmle-service
     spec:
       selector:
         app: apple
@@ -551,12 +551,12 @@ $ kubectl delete -f external-dns.yaml
     kind: Pod
     apiVersion: v1
     metadata:
-      name: apple-app1
+      name: example-app1
       labels:
         app: apple1
     spec:
       containers:
-        - name: apple-app1
+        - name: example-app1
           image: hashicorp/http-echo
           args:
             - "-text=apple"
@@ -565,7 +565,7 @@ $ kubectl delete -f external-dns.yaml
     kind: Service
     apiVersion: v1
     metadata:
-      name: apple-service1
+      name: exapmle-service1
     spec:
       selector:
         app: apple1
@@ -586,7 +586,7 @@ $ kubectl delete -f external-dns.yaml
           paths:
             - path: /apple
               backend:
-                serviceName: apple-service
+                serviceName: exapmle-service
                 servicePort: 5678
     ---
     apiVersion: extensions/v1beta1
@@ -604,7 +604,7 @@ $ kubectl delete -f external-dns.yaml
           paths:
             - path: /apple
               backend:
-                serviceName: apple-service1
+                serviceName: exapmle-service1
                 servicePort: 5679
     ```
 - Then, create the deployment and service:
