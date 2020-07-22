@@ -736,7 +736,7 @@ func TestUltraDNSProvider_DomainFilterZonesMocked(t *testing.T) {
 	zones, err := provider.Zones(context.Background())
 	assert.Nil(t, err)
 	assert.Equal(t, reflect.DeepEqual(expected, zones), true)
-	AccountName = "teamrest"
+	accountName = "teamrest"
 	// When AccountName is set
 	provider = &UltraDNSProvider{
 		client: udnssdk.Client{
