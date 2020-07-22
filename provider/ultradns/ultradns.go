@@ -42,6 +42,7 @@ const (
 var sbPoolRunProbes = true
 var sbPoolActOnProbes = true
 var ultradnsPoolType = "rdpool"
+var AccountName string
 
 //Setting custom headers for ultradns api calls
 var customHeader = []udnssdk.CustomHeader{
@@ -57,41 +58,39 @@ type UltraDNSProvider struct {
 	client       udnssdk.Client
 	domainFilter endpoint.DomainFilter
 	DryRun       bool
-	AccountName  string
 }
 
 // UltraDNSChanges struct
 type UltraDNSChanges struct {
-	Action string
-
+	Action                    string
 	ResourceRecordSetUltraDNS udnssdk.RRSet
 }
 
 // NewUltraDNSProvider initializes a new UltraDNS DNS based provider
 func NewUltraDNSProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*UltraDNSProvider, error) {
-	Username, ok := os.LookupEnv("ULTRADNS_USERNAME")
+	username, ok := os.LookupEnv("ULTRADNS_USERNAME")
 	udnssdk.SetCustomHeader = customHeader
 	if !ok {
 		return nil, fmt.Errorf("no username found")
 	}
 
-	Base64Password, ok := os.LookupEnv("ULTRADNS_PASSWORD")
+	base64password, ok := os.LookupEnv("ULTRADNS_PASSWORD")
 	if !ok {
 		return nil, fmt.Errorf("no password found")
 	}
 
 	// Base64 Standard Decoding
-	Password, err := base64.StdEncoding.DecodeString(Base64Password)
+	password, err := base64.StdEncoding.DecodeString(base64password)
 	if err != nil {
 		fmt.Printf("Error decoding string: %s ", err.Error())
 		return nil, err
 	}
 
-	BaseURL, ok := os.LookupEnv("ULTRADNS_BASEURL")
+	baseURL, ok := os.LookupEnv("ULTRADNS_BASEURL")
 	if !ok {
 		return nil, fmt.Errorf("no baseurl found")
 	}
-	AccountName, ok := os.LookupEnv("ULTRADNS_ACCOUNTNAME")
+	AccountName, ok = os.LookupEnv("ULTRADNS_ACCOUNTNAME")
 	if !ok {
 		AccountName = ""
 	}
@@ -120,7 +119,7 @@ func NewUltraDNSProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*Ultr
 		ultradnsPoolType = poolValue
 	}
 
-	client, err := udnssdk.NewClient(Username, string(Password), BaseURL)
+	client, err := udnssdk.NewClient(username, string(password), baseURL)
 	if err != nil {
 		return nil, fmt.Errorf("connection cannot be established")
 	}
@@ -129,7 +128,6 @@ func NewUltraDNSProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*Ultr
 		client:       *client,
 		domainFilter: domainFilter,
 		DryRun:       dryRun,
-		AccountName:  AccountName,
 	}
 
 	return provider, nil
@@ -144,7 +142,7 @@ func (p *UltraDNSProvider) Zones(ctx context.Context) ([]udnssdk.Zone, error) {
 		zonesAppender := []udnssdk.Zone{}
 		for _, zone := range p.domainFilter.Filters {
 			zoneKey.Zone = zone
-			zoneKey.AccountName = p.AccountName
+			zoneKey.AccountName = AccountName
 			zones, err := p.fetchZones(ctx, zoneKey)
 
 			if err != nil {
@@ -155,7 +153,7 @@ func (p *UltraDNSProvider) Zones(ctx context.Context) ([]udnssdk.Zone, error) {
 		}
 		return zonesAppender, nil
 	}
-	zoneKey.AccountName = p.AccountName
+	zoneKey.AccountName = AccountName
 	zones, err := p.fetchZones(ctx, zoneKey)
 	if err != nil {
 		return nil, err
@@ -174,8 +172,8 @@ func (p *UltraDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 
 	for _, zone := range zones {
 		log.Infof("zones : %v", zone)
-		rrsetType := ""
-		ownerName := ""
+		var rrsetType string
+		var ownerName string
 		rrsetKey := udnssdk.RRSetKey{
 			Zone: zone.Properties.Name,
 			Type: rrsetType,
@@ -211,7 +209,7 @@ func (p *UltraDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 }
 
 func (p *UltraDNSProvider) fetchRecords(ctx context.Context, k udnssdk.RRSetKey) ([]udnssdk.RRSet, error) {
-	// TODO: Sane Configuration for timeouts / retries
+	// Logic to paginate through all available results
 	maxerrs := 5
 	waittime := 5 * time.Second
 
@@ -243,8 +241,7 @@ func (p *UltraDNSProvider) fetchRecords(ctx context.Context, k udnssdk.RRSetKey)
 }
 
 func (p *UltraDNSProvider) fetchZones(ctx context.Context, zoneKey *udnssdk.ZoneKey) ([]udnssdk.Zone, error) {
-	// Select will list the zone rrsets, paginating through all available results
-	// TODO: Sane Configuration for timeouts / retries
+	// Logic to paginate through all available results
 	offset := 0
 	limit := 1000
 	maxerrs := 5
