@@ -62,7 +62,7 @@ type UltraDNSProvider struct {
 
 // UltraDNSChanges struct
 type UltraDNSChanges struct {
-	Action string
+	Action                    string
 	ResourceRecordSetUltraDNS udnssdk.RRSet
 }
 
