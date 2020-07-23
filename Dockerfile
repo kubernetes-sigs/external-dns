@@ -16,9 +16,8 @@
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 # builder image
-<<<<<<< HEAD
 ARG ARCH
-FROM container-registry.oracle.com/os/oraclelinux:7.8 as builder
+FROM container-registry.oracle.com/os/oraclelinux:7.8@sha256:46fc083cf0250ed5260fa6fe822d7d4c139ca1f7fc38e4a17ba662464bd1df4a as builder
 ARG ARCH
 
 # Install golang via Oracle's yum servers
@@ -47,7 +46,7 @@ COPY . .
 RUN make test build.$ARCH
 
 # final image
-FROM container-registry.oracle.com/os/oraclelinux:7-slim
+FROM container-registry.oracle.com/os/oraclelinux:7-slim@sha256:9b86d1332a883ee8f68dd44ba42133de518b2e0ec1cc70257e59fb4da86b1ad3
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /bin/external-dns
