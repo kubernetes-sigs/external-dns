@@ -123,6 +123,9 @@ kind: Deployment
 metadata:
   name: external-dns
 spec:
+  selector:
+    matchLabels:
+      app: external-dns
   strategy:
     type: Recreate
   template:

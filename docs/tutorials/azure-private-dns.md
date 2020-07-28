@@ -155,6 +155,9 @@ kind: Deployment
 metadata:
   name: externaldns
 spec:
+  selector:
+    matchLabels:
+      app: externaldns
   strategy:
     type: Recreate
   template:
@@ -221,6 +224,9 @@ kind: Deployment
 metadata:
   name: externaldns
 spec:
+  selector:
+    matchLabels:
+      app: externaldns
   strategy:
     type: Recreate
   template:
@@ -288,6 +294,9 @@ kind: Deployment
 metadata:
   name: externaldns
 spec:
+  selector:
+    matchLabels:
+      app: externaldns
   strategy:
     type: Recreate
   template:
@@ -331,6 +340,9 @@ kind: Deployment
 metadata:
   name: nginx
 spec:
+  selector:
+    matchLabels:
+      app: nginx
   template:
     metadata:
       labels:
