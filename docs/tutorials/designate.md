@@ -98,7 +98,7 @@ rules:
 - apiGroups: [""]
   resources: ["pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions"] 
+- apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"] 
   verbs: ["get","watch","list"]
 - apiGroups: [""]
@@ -118,7 +118,7 @@ subjects:
   name: external-dns
   namespace: default
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: external-dns

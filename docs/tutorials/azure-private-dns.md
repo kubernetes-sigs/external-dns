@@ -150,7 +150,7 @@ The credentials of the service principal are provided to ExternalDNS as environm
 
 ### Manifest (for clusters without RBAC enabled)
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: externaldns
@@ -196,7 +196,7 @@ rules:
 - apiGroups: [""]
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions"] 
+- apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"] 
   verbs: ["get","watch","list"]
 - apiGroups: [""]
@@ -216,7 +216,7 @@ subjects:
   name: externaldns
   namespace: default
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: externaldns
@@ -267,7 +267,7 @@ rules:
 - apiGroups: [""]
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions"]
+- apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
   verbs: ["get","watch","list"]
 ---
@@ -283,7 +283,7 @@ subjects:
 - kind: ServiceAccount
   name: externaldns
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: externaldns
@@ -326,7 +326,7 @@ $ kubectl create -f externaldns.yaml
 Create a service file called 'nginx.yaml' with the following contents:
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx
@@ -356,7 +356,7 @@ spec:
   type: ClusterIP
   
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: nginx
