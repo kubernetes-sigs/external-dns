@@ -194,11 +194,6 @@ func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint)
 	}
 	if current.ProviderSpecific != nil {
 		for _, c := range current.ProviderSpecific {
-			// don't consider target health when detecting changes
-			// see: https://github.com/kubernetes-sigs/external-dns/issues/869#issuecomment-458576954
-			if c.Name == "aws/evaluate-target-health" {
-				continue
-			}
 
 			if d, ok := desiredProperties[c.Name]; ok {
 				if p.PropertyComparator != nil {
