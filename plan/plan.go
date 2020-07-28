@@ -194,7 +194,6 @@ func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint)
 	}
 	if current.ProviderSpecific != nil {
 		for _, c := range current.ProviderSpecific {
-
 			if d, ok := desiredProperties[c.Name]; ok {
 				if p.PropertyComparator != nil {
 					if !p.PropertyComparator(c.Name, c.Value, d.Value) {
