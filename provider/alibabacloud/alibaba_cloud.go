@@ -29,7 +29,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
 	"github.com/denverdino/aliyungo/metadata"
 	log "github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -344,7 +344,7 @@ func (p *AlibabaCloudProvider) recordsForDNS() (endpoints []*endpoint.Endpoint, 
 	return endpoints, nil
 }
 
-func getNextPageNumber(pageNumber, pageSize, totalCount int) int {
+func getNextPageNumber(pageNumber, pageSize, totalCount int64) int64 {
 	if pageNumber*pageSize >= totalCount {
 		return 0
 	}
@@ -423,7 +423,7 @@ func (p *AlibabaCloudProvider) getDomainList() ([]string, error) {
 		if nextPage == 0 {
 			break
 		} else {
-			request.PageNumber = requests.NewInteger(nextPage)
+			request.PageNumber = requests.NewInteger64(nextPage)
 		}
 	}
 	return domainNames, nil
@@ -460,7 +460,7 @@ func (p *AlibabaCloudProvider) getDomainRecords(domainName string) ([]alidns.Rec
 		if nextPage == 0 {
 			break
 		} else {
-			request.PageNumber = requests.NewInteger(nextPage)
+			request.PageNumber = requests.NewInteger64(nextPage)
 		}
 	}
 
@@ -605,7 +605,7 @@ func (p *AlibabaCloudProvider) equals(record alidns.Record, endpoint *endpoint.E
 		ttl1 = 0
 	}
 
-	ttl2 := int(endpoint.RecordTTL)
+	ttl2 := int64(endpoint.RecordTTL)
 	if ttl2 == defaultAlibabaCloudRecordTTL {
 		ttl2 = 0
 	}
@@ -743,11 +743,11 @@ func (p *AlibabaCloudProvider) privateZones() ([]pvtz.Zone, error) {
 			}
 			zones = append(zones, zone)
 		}
-		nextPage := getNextPageNumber(response.PageNumber, defaultAlibabaCloudPageSize, response.TotalItems)
+		nextPage := getNextPageNumber(int64(response.PageNumber), defaultAlibabaCloudPageSize, int64(response.TotalItems))
 		if nextPage == 0 {
 			break
 		} else {
-			request.PageNumber = requests.NewInteger(nextPage)
+			request.PageNumber = requests.NewInteger64(nextPage)
 		}
 	}
 	return zones, nil
@@ -796,11 +796,11 @@ func (p *AlibabaCloudProvider) getPrivateZones() (map[string]*alibabaPrivateZone
 				//TODO filter Locked
 				records = append(records, record)
 			}
-			nextPage := getNextPageNumber(response.PageNumber, defaultAlibabaCloudPageSize, response.TotalItems)
+			nextPage := getNextPageNumber(int64(response.PageNumber), defaultAlibabaCloudPageSize, int64(response.TotalItems))
 			if nextPage == 0 {
 				break
 			} else {
-				request.PageNumber = requests.NewInteger(nextPage)
+				request.PageNumber = requests.NewInteger64(nextPage)
 			}
 		}
 
@@ -909,13 +909,13 @@ func (p *AlibabaCloudProvider) createPrivateZoneRecords(zones map[string]*alibab
 	return nil
 }
 
-func (p *AlibabaCloudProvider) deletePrivateZoneRecord(recordID int) error {
+func (p *AlibabaCloudProvider) deletePrivateZoneRecord(recordID int64) error {
 	if p.dryRun {
 		log.Infof("Dry run: Delete record id '%d' in Alibaba Cloud Private Zone", recordID)
 	}
 
 	request := pvtz.CreateDeleteZoneRecordRequest()
-	request.RecordId = requests.NewInteger(recordID)
+	request.RecordId = requests.NewInteger64(recordID)
 	request.Domain = pVTZDoamin
 
 	response, err := p.getPvtzClient().DeleteZoneRecord(request)
@@ -984,7 +984,7 @@ func (p *AlibabaCloudProvider) applyChangesForPrivateZone(changes *plan.Changes)
 
 func (p *AlibabaCloudProvider) updatePrivateZoneRecord(record pvtz.Record, endpoint *endpoint.Endpoint) error {
 	request := pvtz.CreateUpdateZoneRecordRequest()
-	request.RecordId = requests.NewInteger(record.RecordId)
+	request.RecordId = requests.NewInteger64(record.RecordId)
 	request.Rr = record.Rr
 	request.Type = record.Type
 	request.Value = record.Value
