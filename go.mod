@@ -63,9 +63,9 @@ require (
 	gopkg.in/yaml.v2 v2.2.8
 	istio.io/api v0.0.0-20200529165953-72dad51d4ffc
 	istio.io/client-go v0.0.0-20200529172309-31c16ea3f751
-	k8s.io/api v0.18.3
-	k8s.io/apimachinery v0.18.3
-	k8s.io/client-go v0.18.3
+	k8s.io/api v0.18.6
+	k8s.io/apimachinery v0.18.6
+	k8s.io/client-go v0.18.6
 )
 
 replace (
