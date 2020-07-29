@@ -2,6 +2,7 @@
 
 - Fix: add serviceaccount name in kustomize deployment (#1689) @jmthvt
 - Updates Oracle OCI SDK to latest (#1687) @ericrrath
+- UltraDNS Provider (#1635) @kbhandari
 
 ## v0.7.2 - 2020-06-03
 
