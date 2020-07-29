@@ -40,27 +40,28 @@ var ErrSourceNotFound = errors.New("source not found")
 
 // Config holds shared configuration options for all Sources.
 type Config struct {
-	Namespace                      string
-	AnnotationFilter               string
-	FQDNTemplate                   string
-	CombineFQDNAndAnnotation       bool
-	IgnoreHostnameAnnotation       bool
-	Compatibility                  string
-	PublishInternal                bool
-	PublishHostIP                  bool
-	AlwaysPublishNotReadyAddresses bool
-	ConnectorServer                string
-	CRDSourceAPIVersion            string
-	CRDSourceKind                  string
-	KubeConfig                     string
-	APIServerURL                   string
-	ServiceTypeFilter              []string
-	CFAPIEndpoint                  string
-	CFUsername                     string
-	CFPassword                     string
-	ContourLoadBalancerService     string
-	SkipperRouteGroupVersion       string
-	RequestTimeout                 time.Duration
+	Namespace                       string
+	AnnotationFilter                string
+	FQDNTemplate                    string
+	CombineFQDNAndAnnotation        bool
+	IgnoreHostnameAnnotation        bool
+	PreferIngressHostnameAnnotation bool
+	Compatibility                   string
+	PublishInternal                 bool
+	PublishHostIP                   bool
+	AlwaysPublishNotReadyAddresses  bool
+	ConnectorServer                 string
+	CRDSourceAPIVersion             string
+	CRDSourceKind                   string
+	KubeConfig                      string
+	APIServerURL                    string
+	ServiceTypeFilter               []string
+	CFAPIEndpoint                   string
+	CFUsername                      string
+	CFPassword                      string
+	ContourLoadBalancerService      string
+	SkipperRouteGroupVersion        string
+	RequestTimeout                  time.Duration
 }
 
 // ClientGenerator provides clients
@@ -184,7 +185,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewIngressSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+		return NewIngressSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.PreferIngressHostnameAnnotation)
 	case "istio-gateway":
 		kubernetesClient, err := p.KubeClient()
 		if err != nil {
