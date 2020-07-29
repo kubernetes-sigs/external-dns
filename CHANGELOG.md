@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Fix: add serviceaccount name in kustomize deployment (#1689) @jmthvt
+- Updates Oracle OCI SDK to latest (#1687) @ericrrath
+
 ## v0.7.2 - 2020-06-03
 
 - Update blogpost in README (#1610) @vanhumbeecka
