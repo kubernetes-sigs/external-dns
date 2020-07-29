@@ -41,7 +41,9 @@ type TXTRegistry struct {
 	recordsCacheRefreshTime time.Time
 	cacheInterval           time.Duration
 
-	// optional string to use to replace the asterisk in wildcard entries
+	// optional string to use to replace the asterisk in wildcard entries - without using this,
+	// registry TXT records corresponding to wildcard records will be invalid (and rejected by most providers), due to
+	// having a '*' appear (not as the first character) - see https://tools.ietf.org/html/rfc1034#section-4.3.3
 	wildcardReplacement string
 }
 
