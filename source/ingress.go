@@ -55,11 +55,12 @@ type ingressSource struct {
 	fqdnTemplate             *template.Template
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
+	preferHostnameAnnotation bool
 	ingressInformer          extinformers.IngressInformer
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool) (Source, error) {
+func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, preferHostnameAnnotation bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -104,6 +105,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		fqdnTemplate:             tmpl,
 		combineFQDNAnnotation:    combineFqdnAnnotation,
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
+		preferHostnameAnnotation: preferHostnameAnnotation,
 		ingressInformer:          ingressInformer,
 	}
 	return sc, nil
@@ -132,7 +134,7 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			continue
 		}
 
-		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation)
+		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.preferHostnameAnnotation)
 
 		// apply template if host is missing on ingress
 		if (sc.combineFQDNAnnotation || len(ingEndpoints) == 0) && sc.fqdnTemplate != nil {
@@ -240,7 +242,7 @@ func (sc *ingressSource) setDualstackLabel(ingress *v1beta1.Ingress, endpoints [
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object
-func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool) []*endpoint.Endpoint {
+func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool, preferHostnameAnnotation bool) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	ttl, err := getTTLFromAnnotations(ing.Annotations)
@@ -272,10 +274,18 @@ func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool) [
 		}
 	}
 
+	annotationHostnameList := getHostnamesFromAnnotations(ing.Annotations)
+
 	// Skip endpoints if we do not want entries from annotations
 	if !ignoreHostnameAnnotation {
-		hostnameList := getHostnamesFromAnnotations(ing.Annotations)
-		for _, hostname := range hostnameList {
+		for _, hostname := range annotationHostnameList {
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+		}
+	}
+	// If specified, only take annotation hostnames
+	if preferHostnameAnnotation && len(annotationHostnameList) > 0 {
+		endpoints = []*endpoint.Endpoint{}
+		for _, hostname := range annotationHostnameList {
 			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 		}
 	}
