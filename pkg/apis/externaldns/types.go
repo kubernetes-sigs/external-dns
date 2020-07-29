@@ -45,6 +45,7 @@ type Config struct {
 	KubeConfig                        string
 	RequestTimeout                    time.Duration
 	ContourLoadBalancerService        string
+	GlooNamespace                     string
 	SkipperRouteGroupVersion          string
 	Sources                           []string
 	Namespace                         string
@@ -167,6 +168,7 @@ var defaultConfig = &Config{
 	KubeConfig:                  "",
 	RequestTimeout:              time.Second * 30,
 	ContourLoadBalancerService:  "heptio-contour/contour",
+	GlooNamespace:               "gloo-system",
 	SkipperRouteGroupVersion:    "zalando.org/v1",
 	Sources:                     nil,
 	Namespace:                   "",
@@ -328,12 +330,14 @@ func (cfg *Config) ParseFlags(args []string) error {
 	// Flags related to Contour
 	app.Flag("contour-load-balancer", "The fully-qualified name of the Contour load balancer service. (default: heptio-contour/contour)").Default("heptio-contour/contour").StringVar(&cfg.ContourLoadBalancerService)
 
+	// Flags related to Gloo
+	app.Flag("gloo-namespace", "Gloo namespace. (default: gloo-system)").Default("gloo-system").StringVar(&cfg.GlooNamespace)
+
 	// Flags related to Skipper RouteGroup
 	app.Flag("skipper-routegroup-groupversion", "The resource version for skipper routegroup").Default(source.DefaultRoutegroupVersion).StringVar(&cfg.SkipperRouteGroupVersion)
 
 	// Flags related to processing sources
-	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, fake, connector, istio-gateway, istio-virtualservice, cloudfoundry, contour-ingressroute, contour-httpproxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-ingressroute", "contour-httpproxy", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route", "ambassador-host")
-
+	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, fake, connector, istio-gateway, istio-virtualservice, cloudfoundry, contour-ingressroute, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-ingressroute", "contour-httpproxy", "gloo-proxy", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route", "ambassador-host")
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
 	app.Flag("annotation-filter", "Filter sources managed by external-dns via annotation using label selector semantics (default: all sources)").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
 	app.Flag("label-filter", "Filter sources managed by external-dns via label selector when listing all resources; currently only supported by source CRD").Default(defaultConfig.LabelFilter).StringVar(&cfg.LabelFilter)
