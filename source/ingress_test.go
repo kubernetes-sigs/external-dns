@@ -52,7 +52,6 @@ func (suite *IngressSuite) SetupTest() {
 		"{{.Name}}",
 		false,
 		false,
-		false,
 	)
 	suite.NoError(err, "should initialize ingress source")
 
@@ -85,7 +84,7 @@ func (suite *IngressSuite) TestDualstackLabelIsSet() {
 func TestIngress(t *testing.T) {
 	suite.Run(t, new(IngressSuite))
 	t.Run("endpointsFromIngress", testEndpointsFromIngress)
-	t.Run("endpointsFromIngressPreferHostnameAnnotations", testEndpointsFromIngressPreferHostnameAnnotations)
+	t.Run("endpointsFromIngressHostnameSourceAnnotation", testEndpointsFromIngressHostnameSourceAnnotation)
 	t.Run("Endpoints", testIngressEndpoints)
 }
 
@@ -135,7 +134,6 @@ func TestNewIngressSource(t *testing.T) {
 				ti.annotationFilter,
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
-				false,
 				false,
 			)
 			if ti.expectError {
@@ -224,20 +222,20 @@ func testEndpointsFromIngress(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, false, false), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, false), ti.expected)
 		})
 	}
 }
 
-func testEndpointsFromIngressPreferHostnameAnnotations(t *testing.T) {
-	// Host names and host name annotation provided, without preferHostnameAnnotation specified
+func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
+	// Host names and host name annotation provided, with various values of the ingress-hostname-source annotation
 	for _, ti := range []struct {
 		title    string
 		ingress  fakeIngress
 		expected []*endpoint.Endpoint
 	}{
 		{
-			title: "one rule.host, one annotation host",
+			title: "No ingress-hostname-source annotation, one rule.host, one annotation host",
 			ingress: fakeIngress{
 				dnsnames:    []string{"foo.bar"},
 				annotations: map[string]string{hostnameAnnotationKey: "foo.baz"},
@@ -255,10 +253,9 @@ func testEndpointsFromIngressPreferHostnameAnnotations(t *testing.T) {
 			},
 		},
 		{
-			title: "one rule.host no annotation host",
+			title: "No ingress-hostname-source annotation, one rule.host",
 			ingress: fakeIngress{
 				dnsnames:    []string{"foo.bar"},
-				annotations: map[string]string{},
 				hostnames:   []string{"lb.com"},
 			},
 			expected: []*endpoint.Endpoint{
@@ -268,23 +265,43 @@ func testEndpointsFromIngressPreferHostnameAnnotations(t *testing.T) {
 				},
 			},
 		},
-	} {
-		t.Run(ti.title, func(t *testing.T) {
-			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, false, false), ti.expected)
-		})
-	}
-	// Host names and host name annotation provided, with preferHostnameAnnotation specified
-	for _, ti := range []struct {
-		title    string
-		ingress  fakeIngress
-		expected []*endpoint.Endpoint
-	}{
 		{
-			title: "one rule.host, one annotation host",
+			title: "Ingress-hostname-source=all, one rule.host, one annotation host",
 			ingress: fakeIngress{
 				dnsnames:    []string{"foo.bar"},
-				annotations: map[string]string{hostnameAnnotationKey: "foo.baz"},
+				annotations: map[string]string{hostnameAnnotationKey: "foo.baz", ingressHostnameSourceKey: "all"},
+				hostnames:   []string{"lb.com"},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "foo.bar",
+					Targets: endpoint.Targets{"lb.com"},
+				},
+				{
+					DNSName: "foo.baz",
+					Targets: endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title: "Ingress-hostname-source=defined-hosts-only, one rule.host, one annotation host",
+			ingress: fakeIngress{
+				dnsnames:    []string{"foo.bar"},
+				annotations: map[string]string{hostnameAnnotationKey: "foo.baz", ingressHostnameSourceKey: "defined-hosts-only"},
+				hostnames:   []string{"lb.com"},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "foo.bar",
+					Targets: endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title: "Ingress-hostname-source=annotation-only, one rule.host, one annotation host",
+			ingress: fakeIngress{
+				dnsnames:    []string{"foo.bar"},
+				annotations: map[string]string{hostnameAnnotationKey: "foo.baz", ingressHostnameSourceKey: "annotation-only"},
 				hostnames:   []string{"lb.com"},
 			},
 			expected: []*endpoint.Endpoint{
@@ -294,24 +311,10 @@ func testEndpointsFromIngressPreferHostnameAnnotations(t *testing.T) {
 				},
 			},
 		},
-		{
-			title: "one rule.host no annotation host",
-			ingress: fakeIngress{
-				dnsnames:    []string{"foo.bar"},
-				annotations: map[string]string{},
-				hostnames:   []string{"lb.com"},
-			},
-			expected: []*endpoint.Endpoint{
-				{
-					DNSName: "foo.bar",
-					Targets: endpoint.Targets{"lb.com"},
-				},
-			},
-		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, false, true), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, false), ti.expected)
 		})
 	}
 }
@@ -1098,7 +1101,6 @@ func testIngressEndpoints(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				ti.ignoreHostnameAnnotation,
-				false,
 			)
 			for _, ingress := range ingresses {
 				_, err := fakeClient.ExtensionsV1beta1().Ingresses(ingress.Namespace).Create(context.Background(), ingress, metav1.CreateOptions{})
