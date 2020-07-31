@@ -276,7 +276,7 @@ func main() {
 		// OCI config file, and provide a config that uses instance principal authentication.
 		if cfg.OCIAuthInstancePrincipal {
 			if len(cfg.OCICompartmentOCID) == 0 {
-				err = fmt.Errorf("OCI IAM instance principal authentication requested, but no compartment OCID provided!")
+				err = fmt.Errorf("instance principal authentication requested, but no compartment OCID provided")
 			} else {
 				authConfig := oci.OCIAuthConfig{UseInstancePrincipal: true}
 				config = &oci.OCIConfig{Auth: authConfig, CompartmentID: cfg.OCICompartmentOCID}
