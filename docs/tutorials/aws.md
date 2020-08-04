@@ -420,3 +420,10 @@ Give ExternalDNS some time to clean up the DNS records for you. Then delete the 
 ```console
 $ aws route53 delete-hosted-zone --id /hostedzone/ZEWFWZ4R16P7IB
 ```
+
+## Throttling
+
+Route53 has a [5 API requests per second per account hard quota](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DNSLimitations.html#limits-api-requests-route-53).
+Running several fast polling ExternalDNS instances in a given account can easily hit that limit. Some ways to circumvent that issue includes:
+* Augment the synchronization interval (`--interval`), at the cost of slower changes propagation.
+* If the ExternalDNS managed zones list doesn't change frequently, set `--aws-zones-cache-duration` (zones list cache time-to-live) to a larger value. Note that zones list cache can be disabled with `--aws-zones-cache-duration=0s`.
