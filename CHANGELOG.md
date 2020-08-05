@@ -1,9 +1,37 @@
 ## Unreleased
 
+
+## v0.7.3 - 2020-08-05
+
 - Fix: add serviceaccount name in kustomize deployment (#1689) @jmthvt
 - Updates Oracle OCI SDK to latest (#1687) @ericrrath
 - UltraDNS Provider (#1635) @kbhandari
 - Update apiVersions in docs (#1690) @ddgenome
+- use the github actions build status badge (#1702) @tariq1890 
+- Upgrade Oracle OCI SDK (#1688) @ericrrath 
+- update dependencies and minor dep tree cleanup (#1692) @tariq1890 
+- Update link for linode cloud manager (#1661) @phillc 
+- Remove occurrences of "master" from the project (#1636) @Raffo 
+- Create pull_request_template (#1662) @njuettner 
+- dependencies: Upgrade all k8s client-go dependent sources to v1.18.X (#1627) @josephglanville
+- add GitHub Actions (#1657) @Raffo 
+- add new source for istio virtual services (#1607) @tariq1890 
+- use latest Alpine version in ExternalDNS dockerfile (#1655) @tariq1890 
+- Update TTL docs to confirm DNSimple support (#1547) @weppos 
+- rm unused flag param istio-ingressgateways (#1649) @tariq1890 
+- Upgrade istio httpbin from 1.0 to 1.6 version (#1640) @ikovnatskymiacar
+- Add endpoints to kustomize base (#1638) @Raffo 
+- DigitalOcean: support multiple targets per endpoint (#1595) @tdyas 
+- Vultr : Version bump + changes (#1637) @ddymko
+- Hetzner DNS service support (#1570) @21h
+- Add OVH API rate limiting option (Fix #1546) (#1619) @Hugome
+- Add kustomize base (#1631) @Raffo 
+- increase test timeout to fix intermittent failures of ingress tests (#1612) @tdyas
+- AWS: change the order of the actions, DELETE before CREATE fixes #1411 (#1555) @OmerKahani
+- Fix handling of DNS updates for RFC2136 provider. (#1613) @dmayle
+- digitalocean: increase API page size (#1611) @tdyas 
+- improve linter quality for external-dns (#1618) @njuettner 
+- fix convert int to string bug (#1620) @tariq1890 
 
 ## v0.7.2 - 2020-06-03
 
