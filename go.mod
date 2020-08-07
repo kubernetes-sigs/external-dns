@@ -4,12 +4,12 @@ go 1.14
 
 require (
 	cloud.google.com/go v0.50.0
-	git.blindage.org/21h/hcloud-dns v0.0.0-20200525170043-def10a4a28e0
-	github.com/Azure/azure-sdk-for-go v45.1.0+incompatible
-	github.com/Azure/go-autorest/autorest v0.11.4
-	github.com/Azure/go-autorest/autorest/adal v0.9.2
-	github.com/Azure/go-autorest/autorest/azure/auth v0.5.1
-	github.com/Azure/go-autorest/autorest/to v0.4.0
+	git.blindage.org/21h/hcloud-dns v0.0.0-20200807003420-f768ffe03f8d
+	github.com/Azure/azure-sdk-for-go v36.0.0+incompatible
+	github.com/Azure/go-autorest/autorest v0.9.4
+	github.com/Azure/go-autorest/autorest/adal v0.8.3
+	github.com/Azure/go-autorest/autorest/azure/auth v0.0.0-00010101000000-000000000000
+	github.com/Azure/go-autorest/autorest/to v0.3.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v0.9.11
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38 // indirect
 	github.com/alecthomas/colour v0.1.0 // indirect
@@ -46,6 +46,9 @@ require (
 	github.com/sanyu/dynectsoap v0.0.0-20181203081243-b83de5edc4e0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.6.0.20200623155123-84df6c4b5301
 	github.com/sirupsen/logrus v1.6.0
+	github.com/smartystreets/assertions v1.0.1 // indirect
+	github.com/smartystreets/go-aws-auth v0.0.0-20180515143844-0c1422d1fdb9 // indirect
+	github.com/smartystreets/gunit v1.3.4 // indirect
 	github.com/stretchr/testify v1.5.1
 	github.com/terra-farm/udnssdk v1.3.5 // indirect
 	github.com/transip/gotransip v5.8.2+incompatible
