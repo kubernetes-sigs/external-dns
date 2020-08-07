@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -112,6 +113,10 @@ type Controller struct {
 	Interval time.Duration
 	// The DomainFilter defines which DNS records to keep or exclude
 	DomainFilter endpoint.DomainFilter
+	// The nextRunAt used for throttling and batching reconciliation
+	nextRunAt time.Time
+	// The nextRunAtMux is for atomic updating of nextRunAt
+	nextRunAtMux sync.Mutex
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -126,7 +131,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 
 	ctx = context.WithValue(ctx, provider.RecordsContextKey, records)
 
-	endpoints, err := c.Source.Endpoints()
+	endpoints, err := c.Source.Endpoints(ctx)
 	if err != nil {
 		sourceErrorsTotal.Inc()
 		deprecatedSourceErrors.Inc()
@@ -135,10 +140,11 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	sourceEndpointsTotal.Set(float64(len(endpoints)))
 
 	plan := &plan.Plan{
-		Policies:     []plan.Policy{c.Policy},
-		Current:      records,
-		Desired:      endpoints,
-		DomainFilter: c.DomainFilter,
+		Policies:           []plan.Policy{c.Policy},
+		Current:            records,
+		Desired:            endpoints,
+		DomainFilter:       c.DomainFilter,
+		PropertyComparator: c.Registry.PropertyValuesEqual,
 	}
 
 	plan = plan.Calculate()
@@ -154,18 +160,39 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	return nil
 }
 
-// Run runs RunOnce in a loop with a delay until stopChan receives a value.
-func (c *Controller) Run(ctx context.Context, stopChan <-chan struct{}) {
-	ticker := time.NewTicker(c.Interval)
+// MinInterval is used as window for batching events
+const MinInterval = 5 * time.Second
+
+// RunOnceThrottled makes sure execution happens at most once per interval.
+func (c *Controller) ScheduleRunOnce(now time.Time) {
+	c.nextRunAtMux.Lock()
+	defer c.nextRunAtMux.Unlock()
+	c.nextRunAt = now.Add(MinInterval)
+}
+
+func (c *Controller) ShouldRunOnce(now time.Time) bool {
+	c.nextRunAtMux.Lock()
+	defer c.nextRunAtMux.Unlock()
+	if now.Before(c.nextRunAt) {
+		return false
+	}
+	c.nextRunAt = now.Add(c.Interval)
+	return true
+}
+
+// Run runs RunOnce in a loop with a delay until context is canceled
+func (c *Controller) Run(ctx context.Context) {
+	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	for {
-		err := c.RunOnce(ctx)
-		if err != nil {
-			log.Error(err)
+		if c.ShouldRunOnce(time.Now()) {
+			if err := c.RunOnce(ctx); err != nil {
+				log.Error(err)
+			}
 		}
 		select {
 		case <-ticker.C:
-		case <-stopChan:
+		case <-ctx.Done():
 			log.Info("Terminating main controller loop")
 			return
 		}

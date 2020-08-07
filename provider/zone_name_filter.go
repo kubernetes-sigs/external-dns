@@ -20,7 +20,7 @@ import "strings"
 
 // ZoneNameFilter holds a list of zone names to filter by
 type ZoneNameFilter struct {
-	zoneNames []string
+	ZoneNames []string
 }
 
 // NewZoneNameFilter returns a new ZoneNameFilter given a list of zone names
@@ -36,11 +36,11 @@ func NewZoneNameFilter(zoneNames []string) ZoneNameFilter {
 // Match checks whether a zone matches one of the provided zone names
 func (f ZoneNameFilter) Match(zoneName string) bool {
 	// An empty filter includes all names.
-	if len(f.zoneNames) == 0 {
+	if len(f.ZoneNames) == 0 {
 		return true
 	}
 
-	for _, name := range f.zoneNames {
+	for _, name := range f.ZoneNames {
 		if strings.EqualFold(strings.TrimSuffix(strings.TrimSpace(zoneName), "."), name) {
 			return true
 		}
@@ -51,8 +51,8 @@ func (f ZoneNameFilter) Match(zoneName string) bool {
 
 // IsConfigured returns true if ZoneNameFilter is configured, false otherwise
 func (f ZoneNameFilter) IsConfigured() bool {
-	if len(f.zoneNames) == 1 {
-		return f.zoneNames[0] != ""
+	if len(f.ZoneNames) == 1 {
+		return f.ZoneNames[0] != ""
 	}
-	return len(f.zoneNames) > 0
+	return len(f.ZoneNames) > 0
 }
