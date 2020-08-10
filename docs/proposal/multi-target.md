@@ -68,7 +68,7 @@ Brief summary of open PRs and what they are trying to address:
 
 ### PRs 
 
-1. https://github.com/kubernetes-sigs/external-dns/pull/243 - first attempt to add support for multiple targets. It is lagging far behind from master tip
+1. https://github.com/kubernetes-sigs/external-dns/pull/243 - first attempt to add support for multiple targets. It is lagging far behind from tip
     
     *what it does*: unfinished attempt to extend `Endpoint` struct, for it to allow multiple targets (essentially `target string -> targets []string`)
     
@@ -78,15 +78,15 @@ Brief summary of open PRs and what they are trying to address:
     
     *what it does* : attempts to fix issues with `plan` described in `Current Behaviour` section above. Included tests reveal the current problem with `plan`
     
-    *action*: rebase on master and make necessary changes to satisfy requirements listed in this document including back-reference to owning record
+    *action*: rebase on default branch and make necessary changes to satisfy requirements listed in this document including back-reference to owning record
     
 3. https://github.com/kubernetes-sigs/external-dns/pull/326 - attempt to add multiple target support. 
     
     *what it does*: for each pair `DNS Name` + `Record Type` it aggregates **all** targets from the cluster and passes them to Provider. It adds basic support
-    for DO, Azura, Cloudflare, AWS, GCP, however those are not tested (?). (DNSSimple and Infoblox providers were not updated)
+    for DO, Azure, Cloudflare, AWS, GCP, however those are not tested (?). (DNSSimple and Infoblox providers were not updated)
     
     *action*: the `plan` logic will probably needs to be reworked, however the rest concerning support in Providers and extending `Endpoint` struct can be reused. 
-    Rebase on master and add missing pieces. Depends on `2`. 
+    Rebase on default branch and add missing pieces. Depends on `2`.
     
  Related PRs: https://github.com/kubernetes-sigs/external-dns/pull/331/files,  https://github.com/kubernetes-sigs/external-dns/pull/347/files - aiming at AWS Route53 weighted records.
 These PRs should be considered after common agreement about the way to address multi-target support is achieved. Related discussion:  https://github.com/kubernetes-sigs/external-dns/issues/196

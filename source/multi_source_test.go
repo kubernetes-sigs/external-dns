@@ -17,6 +17,7 @@ limitations under the License.
 package source
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -85,7 +86,7 @@ func testMultiSourceEndpoints(t *testing.T) {
 			source := NewMultiSource(sources)
 
 			// Get endpoints from the source.
-			endpoints, err := source.Endpoints()
+			endpoints, err := source.Endpoints(context.Background())
 			require.NoError(t, err)
 
 			// Validate returned endpoints against desired endpoints.
@@ -112,7 +113,7 @@ func testMultiSourceEndpointsWithError(t *testing.T) {
 	source := NewMultiSource([]Source{src})
 
 	// Get endpoints from our source.
-	_, err := source.Endpoints()
+	_, err := source.Endpoints(context.Background())
 	assert.EqualError(t, err, "some error")
 
 	// Validate that the nested source was called.

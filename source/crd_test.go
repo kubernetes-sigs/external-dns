@@ -18,6 +18,7 @@ package source
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -56,7 +57,7 @@ func objBody(codec runtime.Encoder, obj runtime.Object) io.ReadCloser {
 	return ioutil.NopCloser(bytes.NewReader([]byte(runtime.EncodeOrDie(codec, obj))))
 }
 
-func startCRDServerToServeTargets(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace, name string, t *testing.T) rest.Interface {
+func startCRDServerToServeTargets(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace, name string, annotations map[string]string, t *testing.T) rest.Interface {
 	groupVersion, _ := schema.ParseGroupVersion(apiVersion)
 	scheme := runtime.NewScheme()
 	addKnownTypes(scheme, groupVersion)
@@ -68,16 +69,17 @@ func startCRDServerToServeTargets(endpoints []*endpoint.Endpoint, apiVersion, ki
 			Kind:       kind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:       name,
-			Namespace:  namespace,
-			Generation: 1,
+			Name:        name,
+			Namespace:   namespace,
+			Annotations: annotations,
+			Generation:  1,
 		},
 		Spec: endpoint.DNSEndpointSpec{
 			Endpoints: endpoints,
 		},
 	}
 
-	codecFactory := serializer.DirectCodecFactory{
+	codecFactory := serializer.WithoutConversionCodecFactory{
 		CodecFactory: serializer.NewCodecFactory(scheme),
 	}
 
@@ -136,6 +138,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 		endpoints            []*endpoint.Endpoint
 		expectEndpoints      bool
 		expectError          bool
+		annotationFilter     string
+		annotations          map[string]string
 	}{
 		{
 			title:                "invalid crd api version",
@@ -264,18 +268,58 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectEndpoints: true,
 			expectError:     false,
 		},
+		{
+			title:                "valid crd gvk with annotation and non matching annotation filter",
+			registeredAPIVersion: "test.k8s.io/v1alpha1",
+			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredKind:       "DNSEndpoint",
+			kind:                 "DNSEndpoint",
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			annotations:          map[string]string{"test": "that"},
+			annotationFilter:     "test=filter_something_else",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "abc.example.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: false,
+			expectError:     false,
+		},
+		{
+			title:                "valid crd gvk with annotation and matching annotation filter",
+			registeredAPIVersion: "test.k8s.io/v1alpha1",
+			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredKind:       "DNSEndpoint",
+			kind:                 "DNSEndpoint",
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			annotations:          map[string]string{"test": "that"},
+			annotationFilter:     "test=that",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "abc.example.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: true,
+			expectError:     false,
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			restClient := startCRDServerToServeTargets(ti.endpoints, ti.registeredAPIVersion, ti.registeredKind, ti.registeredNamespace, "test", t)
+			restClient := startCRDServerToServeTargets(ti.endpoints, ti.registeredAPIVersion, ti.registeredKind, ti.registeredNamespace, "test", ti.annotations, t)
 			groupVersion, err := schema.ParseGroupVersion(ti.apiVersion)
 			require.NoError(t, err)
 
 			scheme := runtime.NewScheme()
 			addKnownTypes(scheme, groupVersion)
 
-			cs, _ := NewCRDSource(restClient, ti.namespace, ti.kind, scheme)
+			cs, _ := NewCRDSource(restClient, ti.namespace, ti.kind, ti.annotationFilter, scheme)
 
-			receivedEndpoints, err := cs.Endpoints()
+			receivedEndpoints, err := cs.Endpoints(context.Background())
 			if ti.expectError {
 				require.Errorf(t, err, "Received err %v", err)
 			} else {
@@ -298,7 +342,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 
 func validateCRDResource(t *testing.T, src Source, expectError bool) {
 	cs := src.(*crdSource)
-	result, err := cs.List(&metav1.ListOptions{})
+	result, err := cs.List(context.Background(), &metav1.ListOptions{})
 	if expectError {
 		require.Errorf(t, err, "Received err %v", err)
 	} else {

@@ -4,12 +4,12 @@ CRD source provides a generic mechanism to manage DNS records in your favourite 
 
 ### Details
 
-CRD source watches for a user specified CRD to extract [Endpoints](https://github.com/kubernetes-sigs/external-dns/blob/master/endpoint/endpoint.go) from its `Spec`.
+CRD source watches for a user specified CRD to extract [Endpoints](https://github.com/kubernetes-sigs/external-dns/blob/HEAD/endpoint/endpoint.go) from its `Spec`.
 So users need to create such a CRD and register it to the kubernetes cluster and then create new object(s) of the CRD specifying the Endpoints.
 
 ### Registering CRD
 
-Here is typical example of [CRD API type](https://github.com/kubernetes-sigs/external-dns/blob/master/endpoint/endpoint.go) which provides Endpoints to `CRD source`:
+Here is typical example of [CRD API type](https://github.com/kubernetes-sigs/external-dns/blob/HEAD/endpoint/endpoint.go) which provides Endpoints to `CRD source`:
 
 ```go
 type TTL int64
@@ -100,7 +100,6 @@ Run external-dns in dry-mode to see whether external-dns picks up the DNS record
 
 ```
 $ build/external-dns --source crd --crd-source-apiversion externaldns.k8s.io/v1alpha1  --crd-source-kind DNSEndpoint --provider inmemory --once --dry-run
-INFO[0000] config: {Master: KubeConfig: Sources:[crd] Namespace: AnnotationFilter: FQDNTemplate: CombineFQDNAndAnnotation:false Compatibility: PublishInternal:false PublishHostIP:false ConnectorSourceServer:localhost:8080 Provider:inmemory GoogleProject: DomainFilter:[] ZoneIDFilter:[] AWSZoneType: AWSAssumeRole: AWSMaxChangeCount:4000 AWSEvaluateTargetHealth:true AzureConfigFile:/etc/kubernetes/azure.json AzureResourceGroup: CloudflareProxied:false InfobloxGridHost: InfobloxWapiPort:443 InfobloxWapiUsername:admin InfobloxWapiPassword: InfobloxWapiVersion:2.3.1 InfobloxSSLVerify:true DynCustomerName: DynUsername: DynPassword: DynMinTTLSeconds:0 OCIConfigFile:/etc/kubernetes/oci.yaml InMemoryZones:[] PDNSServer:http://localhost:8081 PDNSAPIKey: PDNSTLSEnabled:false TLSCA: TLSClientCert: TLSClientCertKey: Policy:sync Registry:txt TXTOwnerID:default TXTPrefix: Interval:1m0s Once:true DryRun:true LogFormat:text MetricsAddress::7979 LogLevel:info TXTCacheInterval:0s ExoscaleEndpoint:https://community.exoscale.com/documentation/dns/api/ ExoscaleAPIKey: ExoscaleAPISecret: CRDSourceAPIVersion:externaldns.k8s.io/v1alpha1 CRDSourceKind:DNSEndpoint}
 INFO[0000] running in dry-run mode. No changes to DNS records will be made.
 INFO[0000] Connected to cluster at https://192.168.99.100:8443
 INFO[0000] CREATE: foo.bar.com 180 IN A 192.168.99.216

@@ -3,8 +3,8 @@
 </p>
 
 # ExternalDNS
-[![Build Status](https://travis-ci.org/kubernetes-sigs/external-dns.svg?branch=master)](https://travis-ci.org/kubernetes-sigs/external-dns)
-[![Coverage Status](https://coveralls.io/repos/github/kubernetes-sigs/external-dns/badge.svg?branch=master)](https://coveralls.io/github/kubernetes-sigs/external-dns?branch=master)
+[![Build Status](https://github.com/kubernetes-sigs/external-dns/workflows/Go/badge.svg)](https://github.com/kubernetes-sigs/external-dns/actions)
+[![Coverage Status](https://coveralls.io/repos/github/kubernetes-sigs/external-dns/badge.svg)](https://coveralls.io/github/kubernetes-sigs/external-dns)
 [![GitHub release](https://img.shields.io/github/release/kubernetes-sigs/external-dns.svg)](https://github.com/kubernetes-sigs/external-dns/releases)
 [![go-doc](https://godoc.org/github.com/kubernetes-sigs/external-dns?status.svg)](https://godoc.org/github.com/kubernetes-sigs/external-dns)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes-sigs/external-dns)](https://goreportcard.com/report/github.com/kubernetes-sigs/external-dns)
@@ -19,11 +19,11 @@ In a broader sense, ExternalDNS allows you to control DNS records dynamically vi
 
 The [FAQ](docs/faq.md) contains additional information and addresses several questions about key concepts of ExternalDNS.
 
-To see ExternalDNS in action, have a look at this [video](https://www.youtube.com/watch?v=9HQ2XgL9YVI) or read this [blogpost](https://medium.com/wearetheledger/deploying-test-environments-with-azure-devops-eks-and-externaldns-67abe647e4e).
+To see ExternalDNS in action, have a look at this [video](https://www.youtube.com/watch?v=9HQ2XgL9YVI) or read this [blogpost](https://codemine.be/posts/20190125-devops-eks-externaldns/).
 
-## The Latest Release: v0.6
+## The Latest Release: v0.7
 
-ExternalDNS' current release is `v0.6`. This version allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
+ExternalDNS' current release is `v0.7`. This version allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
 * [Google Cloud DNS](https://cloud.google.com/dns/docs/)
 * [AWS Route 53](https://aws.amazon.com/route53/)
 * [AWS Cloud Map](https://docs.aws.amazon.com/cloud-map/)
@@ -31,6 +31,7 @@ ExternalDNS' current release is `v0.6`. This version allows you to keep selected
 * [CloudFlare](https://www.cloudflare.com/dns)
 * [RcodeZero](https://www.rcodezero.at/)
 * [DigitalOcean](https://www.digitalocean.com/products/networking)
+* [Hetzner](https://hetzner.com/)
 * [DNSimple](https://dnsimple.com/)
 * [Infoblox](https://www.infoblox.com/products/dns/)
 * [Dyn](https://dyn.com/dns/)
@@ -79,6 +80,7 @@ The following table clarifies the current status of the providers according to t
 | CloudFlare | Beta | |
 | RcodeZero | Alpha | |
 | DigitalOcean | Alpha | |
+| Hetzner | Alpha | @21h |
 | DNSimple | Alpha | |
 | Infoblox | Alpha | @saileshgiri |
 | Dyn | Alpha | |
@@ -95,6 +97,8 @@ The following table clarifies the current status of the providers according to t
 | RancherDNS | Alpha | |
 | Akamai FastDNS | Alpha | |
 | OVH | Alpha | |
+| Vultr | Alpha | |
+| UltraDNS | Alpha | |
 
 ## Running ExternalDNS:
 
@@ -119,6 +123,7 @@ The following tutorials are provided:
 * [Cloudflare](docs/tutorials/cloudflare.md)
 * [CoreDNS](docs/tutorials/coredns.md)
 * [DigitalOcean](docs/tutorials/digitalocean.md)
+* [Hetzner](docs/tutorials/hetzner.md)
 * [DNSimple](docs/tutorials/dnsimple.md)
 * [Dyn](docs/tutorials/dyn.md)
 * [Exoscale](docs/tutorials/exoscale.md)
@@ -142,13 +147,15 @@ The following tutorials are provided:
 * [TransIP](docs/tutorials/transip.md)
 * [VinylDNS](docs/tutorials/vinyldns.md)
 * [OVH](docs/tutorials/ovh.md)
+* [Vultr](docs/tutorials/vultr.md)
+* [UltraDNS](docs/tutorials/ultradns.md)
 
 ### Running Locally
 
 #### Technical Requirements
 
 Make sure you have the following prerequisites:
-* A local Go 1.7+ development environment.
+* A local Go 1.11+ development environment.
 * Access to a Google/AWS account with the DNS API enabled.
 * Access to a Kubernetes cluster that supports exposing Services, e.g. GKE.
 
@@ -171,7 +178,7 @@ Assuming Go has been setup with module support it can be built simply by running
 $ make
 ```
 
-This will create external-dns in the build directory directly from master.
+This will create external-dns in the build directory directly from the default branch.
 
 Next, run an application and expose it via a Kubernetes Service:
 
@@ -271,12 +278,12 @@ Here's a rough outline on what is to come (subject to change):
 
 ### v0.6
 
-- [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller) (This could also directly become `v1.0`)
+- [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/HEAD/dns-controller) (This could also directly become `v1.0`)
 - [x] Support for OVH
 
 ### v1.0
 
-- [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller)
+- [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/HEAD/dns-controller)
 - [x] Ability to replace Zalando's [Mate](https://github.com/linki/mate)
 - [x] Ability to replace Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 
@@ -317,7 +324,7 @@ For an overview on how to write new Sources and Providers check out [Sources and
 
 ExternalDNS is an effort to unify the following similar projects in order to bring the Kubernetes community an easy and predictable way of managing DNS records across cloud providers based on their Kubernetes resources:
 
-* Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/master/dns-controller)
+* Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/HEAD/dns-controller)
 * Zalando's [Mate](https://github.com/linki/mate)
 * Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 
