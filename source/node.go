@@ -18,6 +18,7 @@ package source
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
 	"text/template"
@@ -77,7 +78,7 @@ func NewNodeSource(kubeClient kubernetes.Interface, annotationFilter, fqdnTempla
 	informerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
+	err = poll(time.Second, 60*time.Second, func() (bool, error) {
 		return nodeInformer.Informer().HasSynced(), nil
 	})
 	if err != nil {
@@ -93,7 +94,7 @@ func NewNodeSource(kubeClient kubernetes.Interface, annotationFilter, fqdnTempla
 }
 
 // Endpoints returns endpoint objects for each service that should be processed.
-func (ns *nodeSource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	nodes, err := ns.nodeInformer.Lister().List(labels.Everything())
 	if err != nil {
 		return nil, err
@@ -167,7 +168,7 @@ func (ns *nodeSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpointsSlice, nil
 }
 
-func (ns *nodeSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+func (ns *nodeSource) AddEventHandler(ctx context.Context, handler func()) {
 }
 
 // nodeAddress returns node's externalIP and if that's not found, node's internalIP

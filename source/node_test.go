@@ -1,6 +1,7 @@
 package source
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -306,7 +307,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				},
 			}
 
-			_, err := kubernetes.CoreV1().Nodes().Create(node)
+			_, err := kubernetes.CoreV1().Nodes().Create(context.Background(), node, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
@@ -317,7 +318,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			endpoints, err := client.Endpoints()
+			endpoints, err := client.Endpoints(context.Background())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {

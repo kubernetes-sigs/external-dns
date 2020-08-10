@@ -13,9 +13,7 @@
 # limitations under the License.
 
 # builder image
-FROM golang:1.13 as builder
-
-ARG VERSION
+FROM golang:1.14 as builder
 
 WORKDIR /sigs.k8s.io/external-dns
 
@@ -25,10 +23,10 @@ RUN go mod vendor && \
     make build
 
 # final image
-FROM alpine:3.11.5
+FROM alpine:3.12
 LABEL maintainer="Team Teapot @ Zalando SE <team-teapot@zalando.de>"
 
-RUN apk add --no-cache ca-certificates && \
+RUN apk add --update --no-cache ca-certificates && \
     update-ca-certificates
 
 COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /bin/external-dns
