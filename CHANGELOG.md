@@ -32,6 +32,7 @@
 - digitalocean: increase API page size (#1611) @tdyas 
 - improve linter quality for external-dns (#1618) @njuettner 
 - fix convert int to string bug (#1620) @tariq1890 
+- Add regex domain filters (#1504) @offzale
 
 ## v0.7.2 - 2020-06-03
 
