@@ -58,6 +58,15 @@ var ExampleDomain = []cloudflare.DNSRecord{
 		Proxied: false,
 	},
 	{
+		ID:      "2345678901",
+		ZoneID:  "001",
+		Name:    "foobar.bar.com",
+		Type:    endpoint.RecordTypeA,
+		TTL:     120,
+		Content: "3.4.5.6",
+		Proxied: false,
+	},
+	{
 		ID:      "1231231233",
 		ZoneID:  "002",
 		Name:    "bar.foo.com",
@@ -205,6 +214,19 @@ func (m *mockCloudFlareClient) ListZonesContext(ctx context.Context, opts ...clo
 			TotalPages: 1,
 		},
 	}, nil
+}
+
+func (m *mockCloudFlareClient) ZoneDetails(zoneID string) (cloudflare.Zone, error) {
+	for id, zoneName := range m.Zones {
+		if zoneID == id {
+			return cloudflare.Zone{
+				ID:   zoneID,
+				Name: zoneName,
+			}, nil
+		}
+	}
+
+	return cloudflare.Zone{}, errors.New("Unknown zoneID: " + zoneID)
 }
 
 func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endpoint.Endpoint, actions []MockAction, args ...interface{}) {
@@ -523,6 +545,25 @@ func TestCloudflareZones(t *testing.T) {
 	assert.Equal(t, "bar.com", zones[0].Name)
 }
 
+func TestCloudFlareZonesWithIDFilter(t *testing.T) {
+	client := NewMockCloudFlareClient()
+	client.listZonesError = errors.New("shouldn't need to list zones when ZoneIDFilter in use")
+	provider := &CloudFlareProvider{
+		Client:       client,
+		domainFilter: endpoint.NewDomainFilter([]string{"bar.com", "foo.com"}),
+		zoneIDFilter: provider.NewZoneIDFilter([]string{"001"}),
+	}
+
+	zones, err := provider.Zones(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// foo.com should *not* be returned as it doesn't match ZoneID filter
+	assert.Equal(t, 1, len(zones))
+	assert.Equal(t, "bar.com", zones[0].Name)
+}
+
 func TestCloudflareRecords(t *testing.T) {
 	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
 		"001": ExampleDomain,
@@ -656,29 +697,51 @@ func TestCloudflareGetRecordID(t *testing.T) {
 	p := &CloudFlareProvider{}
 	records := []cloudflare.DNSRecord{
 		{
-			Name: "foo.com",
-			Type: endpoint.RecordTypeCNAME,
-			ID:   "1",
+			Name:    "foo.com",
+			Type:    endpoint.RecordTypeCNAME,
+			Content: "foobar",
+			ID:      "1",
 		},
 		{
 			Name: "bar.de",
 			Type: endpoint.RecordTypeA,
 			ID:   "2",
 		},
+		{
+			Name:    "bar.de",
+			Type:    endpoint.RecordTypeA,
+			Content: "1.2.3.4",
+			ID:      "2",
+		},
 	}
 
-	assert.Len(t, p.getRecordIDs(records, cloudflare.DNSRecord{
-		Name: "foo.com",
-		Type: endpoint.RecordTypeA,
-	}), 0)
-	assert.Len(t, p.getRecordIDs(records, cloudflare.DNSRecord{
-		Name: "bar.de",
-		Type: endpoint.RecordTypeA,
-	}), 1)
-	assert.Equal(t, "2", p.getRecordIDs(records, cloudflare.DNSRecord{
-		Name: "bar.de",
-		Type: endpoint.RecordTypeA,
-	})[0])
+	assert.Equal(t, "", p.getRecordID(records, cloudflare.DNSRecord{
+		Name:    "foo.com",
+		Type:    endpoint.RecordTypeA,
+		Content: "foobar",
+	}))
+
+	assert.Equal(t, "", p.getRecordID(records, cloudflare.DNSRecord{
+		Name:    "foo.com",
+		Type:    endpoint.RecordTypeCNAME,
+		Content: "fizfuz",
+	}))
+
+	assert.Equal(t, "1", p.getRecordID(records, cloudflare.DNSRecord{
+		Name:    "foo.com",
+		Type:    endpoint.RecordTypeCNAME,
+		Content: "foobar",
+	}))
+	assert.Equal(t, "", p.getRecordID(records, cloudflare.DNSRecord{
+		Name:    "bar.de",
+		Type:    endpoint.RecordTypeA,
+		Content: "2.3.4.5",
+	}))
+	assert.Equal(t, "2", p.getRecordID(records, cloudflare.DNSRecord{
+		Name:    "bar.de",
+		Type:    endpoint.RecordTypeA,
+		Content: "1.2.3.4",
+	}))
 }
 
 func TestCloudflareGroupByNameAndType(t *testing.T) {
@@ -903,6 +966,98 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 	}
 }
 
+func TestProviderPropertiesIdempotency(t *testing.T) {
+	testCases := []struct {
+		ProviderProxiedByDefault bool
+		RecordsAreProxied        bool
+		ShouldBeUpdated          bool
+	}{
+		{
+			ProviderProxiedByDefault: false,
+			RecordsAreProxied:        false,
+			ShouldBeUpdated:          false,
+		},
+		{
+			ProviderProxiedByDefault: true,
+			RecordsAreProxied:        true,
+			ShouldBeUpdated:          false,
+		},
+		{
+			ProviderProxiedByDefault: true,
+			RecordsAreProxied:        false,
+			ShouldBeUpdated:          true,
+		},
+		{
+			ProviderProxiedByDefault: false,
+			RecordsAreProxied:        true,
+			ShouldBeUpdated:          true,
+		},
+	}
+
+	for _, test := range testCases {
+		client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
+			"001": {
+				{
+					ID:      "1234567890",
+					ZoneID:  "001",
+					Name:    "foobar.bar.com",
+					Type:    endpoint.RecordTypeA,
+					TTL:     120,
+					Content: "1.2.3.4",
+					Proxied: test.RecordsAreProxied,
+				},
+			},
+		})
+
+		provider := &CloudFlareProvider{
+			Client:           client,
+			proxiedByDefault: test.ProviderProxiedByDefault,
+		}
+		ctx := context.Background()
+
+		current, err := provider.Records(ctx)
+		if err != nil {
+			t.Errorf("should not fail, %s", err)
+		}
+		assert.Equal(t, 1, len(current))
+
+		desired := []*endpoint.Endpoint{}
+		for _, c := range current {
+			// Copy all except ProviderSpecific fields
+			desired = append(desired, &endpoint.Endpoint{
+				DNSName:       c.DNSName,
+				Targets:       c.Targets,
+				RecordType:    c.RecordType,
+				SetIdentifier: c.SetIdentifier,
+				RecordTTL:     c.RecordTTL,
+				Labels:        c.Labels,
+			})
+		}
+
+		plan := plan.Plan{
+			Current:            current,
+			Desired:            desired,
+			PropertyComparator: provider.PropertyValuesEqual,
+		}
+
+		plan = *plan.Calculate()
+		assert.NotNil(t, plan.Changes, "should have plan")
+		if plan.Changes == nil {
+			return
+		}
+		assert.Equal(t, 0, len(plan.Changes.Create), "should not have creates")
+		assert.Equal(t, 0, len(plan.Changes.Delete), "should not have deletes")
+
+		if test.ShouldBeUpdated {
+			assert.Equal(t, 1, len(plan.Changes.UpdateNew), "should not have new updates")
+			assert.Equal(t, 1, len(plan.Changes.UpdateOld), "should not have old updates")
+		} else {
+			assert.Equal(t, 0, len(plan.Changes.UpdateNew), "should not have new updates")
+			assert.Equal(t, 0, len(plan.Changes.UpdateOld), "should not have old updates")
+		}
+	}
+}
+
 func TestCloudflareComplexUpdate(t *testing.T) {
 	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
 		"001": ExampleDomain,
@@ -948,23 +1103,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 	}
 
 	td.CmpDeeply(t, client.Actions, []MockAction{
-		{
-			Name:     "Delete",
-			ZoneId:   "001",
-			RecordId: "1234567890",
-		},
-		{
-			Name:   "Create",
-			ZoneId: "001",
-			RecordData: cloudflare.DNSRecord{
-				Name:    "foobar.bar.com",
-				Type:    "A",
-				Content: "1.2.3.4",
-				TTL:     1,
-				Proxied: true,
-			},
-		},
-		{
+		MockAction{
 			Name:   "Create",
 			ZoneId: "001",
 			RecordData: cloudflare.DNSRecord{
@@ -974,6 +1113,23 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 				TTL:     1,
 				Proxied: true,
 			},
+		},
+		MockAction{
+			Name:     "Update",
+			ZoneId:   "001",
+			RecordId: "1234567890",
+			RecordData: cloudflare.DNSRecord{
+				Name:    "foobar.bar.com",
+				Type:    "A",
+				Content: "1.2.3.4",
+				TTL:     1,
+				Proxied: true,
+			},
+		},
+		MockAction{
+			Name:     "Delete",
+			ZoneId:   "001",
+			RecordId: "2345678901",
 		},
 	})
 }

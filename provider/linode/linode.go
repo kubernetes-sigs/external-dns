@@ -35,8 +35,8 @@ import (
 
 // LinodeDomainClient interface to ease testing
 type LinodeDomainClient interface {
-	ListDomainRecords(ctx context.Context, domainID int, opts *linodego.ListOptions) ([]*linodego.DomainRecord, error)
-	ListDomains(ctx context.Context, opts *linodego.ListOptions) ([]*linodego.Domain, error)
+	ListDomainRecords(ctx context.Context, domainID int, opts *linodego.ListOptions) ([]linodego.DomainRecord, error)
+	ListDomains(ctx context.Context, opts *linodego.ListOptions) ([]linodego.Domain, error)
 	CreateDomainRecord(ctx context.Context, domainID int, domainrecord linodego.DomainRecordCreateOptions) (*linodego.DomainRecord, error)
 	DeleteDomainRecord(ctx context.Context, domainID int, id int) error
 	UpdateDomainRecord(ctx context.Context, domainID int, id int, domainrecord linodego.DomainRecordUpdateOptions) (*linodego.DomainRecord, error)
@@ -44,6 +44,7 @@ type LinodeDomainClient interface {
 
 // LinodeProvider is an implementation of Provider for Digital Ocean's DNS.
 type LinodeProvider struct {
+	provider.BaseProvider
 	Client       LinodeDomainClient
 	domainFilter endpoint.DomainFilter
 	DryRun       bool
@@ -51,28 +52,28 @@ type LinodeProvider struct {
 
 // LinodeChanges All API calls calculated from the plan
 type LinodeChanges struct {
-	Creates []*LinodeChangeCreate
-	Deletes []*LinodeChangeDelete
-	Updates []*LinodeChangeUpdate
+	Creates []LinodeChangeCreate
+	Deletes []LinodeChangeDelete
+	Updates []LinodeChangeUpdate
 }
 
 // LinodeChangeCreate Linode Domain Record Creates
 type LinodeChangeCreate struct {
-	Domain  *linodego.Domain
+	Domain  linodego.Domain
 	Options linodego.DomainRecordCreateOptions
 }
 
 // LinodeChangeUpdate Linode Domain Record Updates
 type LinodeChangeUpdate struct {
-	Domain       *linodego.Domain
-	DomainRecord *linodego.DomainRecord
+	Domain       linodego.Domain
+	DomainRecord linodego.DomainRecord
 	Options      linodego.DomainRecordUpdateOptions
 }
 
 // LinodeChangeDelete Linode Domain Record Deletes
 type LinodeChangeDelete struct {
-	Domain       *linodego.Domain
-	DomainRecord *linodego.DomainRecord
+	Domain       linodego.Domain
+	DomainRecord linodego.DomainRecord
 }
 
 // NewLinodeProvider initializes a new Linode DNS based Provider.
@@ -102,7 +103,7 @@ func NewLinodeProvider(domainFilter endpoint.DomainFilter, dryRun bool, appVersi
 }
 
 // Zones returns the list of hosted zones.
-func (p *LinodeProvider) Zones(ctx context.Context) ([]*linodego.Domain, error) {
+func (p *LinodeProvider) Zones(ctx context.Context) ([]linodego.Domain, error) {
 	zones, err := p.fetchZones(ctx)
 	if err != nil {
 		return nil, err
@@ -144,7 +145,7 @@ func (p *LinodeProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 	return endpoints, nil
 }
 
-func (p *LinodeProvider) fetchRecords(ctx context.Context, domainID int) ([]*linodego.DomainRecord, error) {
+func (p *LinodeProvider) fetchRecords(ctx context.Context, domainID int) ([]linodego.DomainRecord, error) {
 	records, err := p.Client.ListDomainRecords(ctx, domainID, nil)
 	if err != nil {
 		return nil, err
@@ -153,8 +154,8 @@ func (p *LinodeProvider) fetchRecords(ctx context.Context, domainID int) ([]*lin
 	return records, nil
 }
 
-func (p *LinodeProvider) fetchZones(ctx context.Context) ([]*linodego.Domain, error) {
-	var zones []*linodego.Domain
+func (p *LinodeProvider) fetchZones(ctx context.Context) ([]linodego.Domain, error) {
+	var zones []linodego.Domain
 
 	allZones, err := p.Client.ListDomains(ctx, linodego.NewListOptions(0, ""))
 
@@ -258,7 +259,7 @@ func getPriority() *int {
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	recordsByZoneID := make(map[string][]*linodego.DomainRecord)
+	recordsByZoneID := make(map[string][]linodego.DomainRecord)
 
 	zones, err := p.fetchZones(ctx)
 
@@ -266,7 +267,7 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		return err
 	}
 
-	zonesByID := make(map[string]*linodego.Domain)
+	zonesByID := make(map[string]linodego.Domain)
 
 	zoneNameIDMapper := provider.ZoneIDName{}
 
@@ -290,9 +291,9 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	updatesByZone := endpointsByZone(zoneNameIDMapper, changes.UpdateNew)
 	deletesByZone := endpointsByZone(zoneNameIDMapper, changes.Delete)
 
-	var linodeCreates []*LinodeChangeCreate
-	var linodeUpdates []*LinodeChangeUpdate
-	var linodeDeletes []*LinodeChangeDelete
+	var linodeCreates []LinodeChangeCreate
+	var linodeUpdates []LinodeChangeUpdate
+	var linodeDeletes []LinodeChangeDelete
 
 	// Generate Creates
 	for zoneID, creates := range createsByZone {
@@ -327,7 +328,7 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			}
 
 			for _, target := range ep.Targets {
-				linodeCreates = append(linodeCreates, &LinodeChangeCreate{
+				linodeCreates = append(linodeCreates, LinodeChangeCreate{
 					Domain: zone,
 					Options: linodego.DomainRecordCreateOptions{
 						Target:   target,
@@ -375,7 +376,7 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				return err
 			}
 
-			matchedRecordsByTarget := make(map[string]*linodego.DomainRecord)
+			matchedRecordsByTarget := make(map[string]linodego.DomainRecord)
 
 			for _, record := range matchedRecords {
 				matchedRecordsByTarget[record.Target] = record
@@ -391,7 +392,7 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 						"target":     target,
 					}).Warn("Updating Existing Target")
 
-					linodeUpdates = append(linodeUpdates, &LinodeChangeUpdate{
+					linodeUpdates = append(linodeUpdates, LinodeChangeUpdate{
 						Domain:       zone,
 						DomainRecord: record,
 						Options: linodego.DomainRecordUpdateOptions{
@@ -416,7 +417,7 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 						"target":     target,
 					}).Warn("Creating New Target")
 
-					linodeCreates = append(linodeCreates, &LinodeChangeCreate{
+					linodeCreates = append(linodeCreates, LinodeChangeCreate{
 						Domain: zone,
 						Options: linodego.DomainRecordCreateOptions{
 							Target:   target,
@@ -441,12 +442,11 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 					"target":     record.Target,
 				}).Warn("Deleting Target")
 
-				linodeDeletes = append(linodeDeletes, &LinodeChangeDelete{
+				linodeDeletes = append(linodeDeletes, LinodeChangeDelete{
 					Domain:       zone,
 					DomainRecord: record,
 				})
 			}
-
 		}
 	}
 
@@ -477,7 +477,7 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			}
 
 			for _, record := range matchedRecords {
-				linodeDeletes = append(linodeDeletes, &LinodeChangeDelete{
+				linodeDeletes = append(linodeDeletes, LinodeChangeDelete{
 					Domain:       zone,
 					DomainRecord: record,
 				})
@@ -492,8 +492,8 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	})
 }
 
-func endpointsByZone(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) map[string][]*endpoint.Endpoint {
-	endpointsByZone := make(map[string][]*endpoint.Endpoint)
+func endpointsByZone(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) map[string][]endpoint.Endpoint {
+	endpointsByZone := make(map[string][]endpoint.Endpoint)
 
 	for _, ep := range endpoints {
 		zoneID, _ := zoneNameIDMapper.FindZone(ep.DNSName)
@@ -501,7 +501,7 @@ func endpointsByZone(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint
 			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", ep.DNSName)
 			continue
 		}
-		endpointsByZone[zoneID] = append(endpointsByZone[zoneID], ep)
+		endpointsByZone[zoneID] = append(endpointsByZone[zoneID], *ep)
 	}
 
 	return endpointsByZone
@@ -524,7 +524,7 @@ func convertRecordType(recordType string) (linodego.DomainRecordType, error) {
 	}
 }
 
-func getStrippedRecordName(zone *linodego.Domain, ep *endpoint.Endpoint) string {
+func getStrippedRecordName(zone linodego.Domain, ep endpoint.Endpoint) string {
 	// Handle root
 	if ep.DNSName == zone.Domain {
 		return ""
@@ -533,8 +533,8 @@ func getStrippedRecordName(zone *linodego.Domain, ep *endpoint.Endpoint) string 
 	return strings.TrimSuffix(ep.DNSName, "."+zone.Domain)
 }
 
-func getRecordID(records []*linodego.DomainRecord, zone *linodego.Domain, ep *endpoint.Endpoint) []*linodego.DomainRecord {
-	var matchedRecords []*linodego.DomainRecord
+func getRecordID(records []linodego.DomainRecord, zone linodego.Domain, ep endpoint.Endpoint) []linodego.DomainRecord {
+	var matchedRecords []linodego.DomainRecord
 
 	for _, record := range records {
 		if record.Name == getStrippedRecordName(zone, ep) && string(record.Type) == ep.RecordType {

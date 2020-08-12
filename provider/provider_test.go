@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
@@ -43,4 +44,22 @@ func TestEnsureTrailingDot(t *testing.T) {
 			t.Errorf("expected %s, got %s", tc.expected, output)
 		}
 	}
+}
+
+func TestDifference(t *testing.T) {
+	current := []string{"foo", "bar"}
+	desired := []string{"bar", "baz"}
+	add, remove, leave := Difference(current, desired)
+	assert.Equal(t, add, []string{"baz"})
+	assert.Equal(t, remove, []string{"foo"})
+	assert.Equal(t, leave, []string{"bar"})
+}
+
+func TestBaseProviderPropertyEquality(t *testing.T) {
+	p := BaseProvider{}
+	assert.True(t, p.PropertyValuesEqual("some.property", "", ""), "Both properties not present")
+	assert.False(t, p.PropertyValuesEqual("some.property", "", "Foo"), "First property missing")
+	assert.False(t, p.PropertyValuesEqual("some.property", "Foo", ""), "Second property missing")
+	assert.True(t, p.PropertyValuesEqual("some.property", "Foo", "Foo"), "Properties the same")
+	assert.False(t, p.PropertyValuesEqual("some.property", "Foo", "Bar"), "Attributes differ")
 }

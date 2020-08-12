@@ -39,7 +39,6 @@ func (b byAllFields) Less(i, j int) bool {
 			return b[i].RecordType <= b[j].RecordType
 		}
 		return b[i].Targets.String() <= b[j].Targets.String()
-
 	}
 	return false
 }

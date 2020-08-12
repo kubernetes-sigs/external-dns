@@ -57,6 +57,7 @@ type coreDNSClient interface {
 }
 
 type coreDNSProvider struct {
+	provider.BaseProvider
 	dryRun        bool
 	coreDNSPrefix string
 	domainFilter  endpoint.DomainFilter
@@ -85,7 +86,7 @@ type Service struct {
 	// answer.
 	Group string `json:"group,omitempty"`
 
-	// Etcd key where we found this service and ignored from json un-/marshalling
+	// Etcd key where we found this service and ignored from json un-/marshaling
 	Key string `json:"-"`
 }
 
@@ -396,7 +397,6 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 					}
 				}
 			}
-
 		}
 		index := 0
 		for _, ep := range group {

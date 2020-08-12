@@ -28,6 +28,12 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"sigs.k8s.io/external-dns/controller"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
+	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/akamai"
 	"sigs.k8s.io/external-dns/provider/alibabacloud"
 	"sigs.k8s.io/external-dns/provider/aws"
@@ -41,6 +47,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/dyn"
 	"sigs.k8s.io/external-dns/provider/exoscale"
 	"sigs.k8s.io/external-dns/provider/google"
+	"sigs.k8s.io/external-dns/provider/hetzner"
 	"sigs.k8s.io/external-dns/provider/infoblox"
 	"sigs.k8s.io/external-dns/provider/inmemory"
 	"sigs.k8s.io/external-dns/provider/linode"
@@ -52,15 +59,9 @@ import (
 	"sigs.k8s.io/external-dns/provider/rdns"
 	"sigs.k8s.io/external-dns/provider/rfc2136"
 	"sigs.k8s.io/external-dns/provider/transip"
+	"sigs.k8s.io/external-dns/provider/ultradns"
 	"sigs.k8s.io/external-dns/provider/vinyldns"
 	"sigs.k8s.io/external-dns/provider/vultr"
-
-	"sigs.k8s.io/external-dns/controller"
-	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
-	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
-	"sigs.k8s.io/external-dns/plan"
-	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/source"
 )
@@ -89,12 +90,10 @@ func main() {
 	}
 	log.SetLevel(ll)
 
-	ctx := context.Background()
-
-	stopChan := make(chan struct{}, 1)
+	ctx, cancel := context.WithCancel(context.Background())
 
 	go serveMetrics(cfg.MetricsAddress)
-	go handleSigterm(stopChan)
+	go handleSigterm(cancel)
 
 	// Create a source.Config from the flags passed by the user.
 	sourceCfg := &source.Config{
@@ -111,9 +110,8 @@ func main() {
 		CRDSourceAPIVersion:            cfg.CRDSourceAPIVersion,
 		CRDSourceKind:                  cfg.CRDSourceKind,
 		KubeConfig:                     cfg.KubeConfig,
-		KubeMaster:                     cfg.Master,
+		APIServerURL:                   cfg.APIServerURL,
 		ServiceTypeFilter:              cfg.ServiceTypeFilter,
-		IstioIngressGatewayServices:    cfg.IstioIngressGatewayServices,
 		CFAPIEndpoint:                  cfg.CFAPIEndpoint,
 		CFUsername:                     cfg.CFUsername,
 		CFPassword:                     cfg.CFPassword,
@@ -124,8 +122,8 @@ func main() {
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
 	sources, err := source.ByNames(&source.SingletonClientGenerator{
-		KubeConfig: cfg.KubeConfig,
-		KubeMaster: cfg.Master,
+		KubeConfig:   cfg.KubeConfig,
+		APIServerURL: cfg.APIServerURL,
 		// If update events are enabled, disable timeout.
 		RequestTimeout: func() time.Duration {
 			if cfg.UpdateEvents {
@@ -193,6 +191,8 @@ func main() {
 		p, err = vinyldns.NewVinylDNSProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "vultr":
 		p, err = vultr.NewVultrProvider(domainFilter, cfg.DryRun)
+	case "ultradns":
+		p, err = ultradns.NewUltraDNSProvider(domainFilter, cfg.DryRun)
 	case "cloudflare":
 		p, err = cloudflare.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareZonesPerPage, cfg.CloudflareProxied, cfg.DryRun)
 	case "rcodezero":
@@ -200,9 +200,11 @@ func main() {
 	case "google":
 		p, err = google.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.DryRun)
 	case "digitalocean":
-		p, err = digitalocean.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun)
+		p, err = digitalocean.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun, cfg.DigitalOceanAPIPageSize)
+	case "hetzner":
+		p, err = hetzner.NewHetznerProvider(ctx, domainFilter, cfg.DryRun)
 	case "ovh":
-		p, err = ovh.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.DryRun)
+		p, err = ovh.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.DryRun)
 	case "linode":
 		p, err = linode.NewLinodeProvider(domainFilter, cfg.DryRun, externaldns.Version)
 	case "dnsimple":
@@ -300,7 +302,7 @@ func main() {
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":
-		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTOwnerID, cfg.TXTCacheInterval)
+		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval)
 	case "aws-sd":
 		r, err = registry.NewAWSSDRegistry(p.(*awssd.AWSSDProvider), cfg.TXTOwnerID)
 	default:
@@ -324,13 +326,6 @@ func main() {
 		DomainFilter: domainFilter,
 	}
 
-	if cfg.UpdateEvents {
-		// Add RunOnce as the handler function that will be called when ingress/service sources have changed.
-		// Note that k8s Informers will perform an initial list operation, which results in the handler
-		// function initially being called for every Service/Ingress that exists limted by minInterval.
-		ctrl.Source.AddEventHandler(func() error { return ctrl.RunOnce(ctx) }, stopChan, 1*time.Minute)
-	}
-
 	if cfg.Once {
 		err := ctrl.RunOnce(ctx)
 		if err != nil {
@@ -339,15 +334,24 @@ func main() {
 
 		os.Exit(0)
 	}
-	ctrl.Run(ctx, stopChan)
+
+	if cfg.UpdateEvents {
+		// Add RunOnce as the handler function that will be called when ingress/service sources have changed.
+		// Note that k8s Informers will perform an initial list operation, which results in the handler
+		// function initially being called for every Service/Ingress that exists
+		ctrl.Source.AddEventHandler(ctx, func() { ctrl.ScheduleRunOnce(time.Now()) })
+	}
+
+	ctrl.ScheduleRunOnce(time.Now())
+	ctrl.Run(ctx)
 }
 
-func handleSigterm(stopChan chan struct{}) {
+func handleSigterm(cancel func()) {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGTERM)
 	<-signals
 	log.Info("Received SIGTERM. Terminating...")
-	close(stopChan)
+	cancel()
 }
 
 func serveMetrics(address string) {

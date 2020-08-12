@@ -29,6 +29,14 @@ import (
 type Provider interface {
 	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 	ApplyChanges(ctx context.Context, changes *plan.Changes) error
+	PropertyValuesEqual(name string, previous string, current string) bool
+}
+
+type BaseProvider struct {
+}
+
+func (b BaseProvider) PropertyValuesEqual(name, previous, current string) bool {
+	return previous == current
 }
 
 type contextKey struct {
@@ -49,4 +57,27 @@ func EnsureTrailingDot(hostname string) string {
 	}
 
 	return strings.TrimSuffix(hostname, ".") + "."
+}
+
+// Difference tells which entries need to be respectively
+// added, removed, or left untouched for "current" to be transformed to "desired"
+func Difference(current, desired []string) ([]string, []string, []string) {
+	add, remove, leave := []string{}, []string{}, []string{}
+	index := make(map[string]struct{}, len(current))
+	for _, x := range current {
+		index[x] = struct{}{}
+	}
+	for _, x := range desired {
+		if _, found := index[x]; found {
+			leave = append(leave, x)
+			delete(index, x)
+		} else {
+			add = append(add, x)
+			delete(index, x)
+		}
+	}
+	for x := range index {
+		remove = append(remove, x)
+	}
+	return add, remove, leave
 }

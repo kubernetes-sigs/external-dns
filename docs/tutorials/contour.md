@@ -50,7 +50,7 @@ rules:
 - apiGroups: [""]
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions"] 
+- apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"] 
   verbs: ["get","watch","list"]
 - apiGroups: [""]
@@ -107,7 +107,7 @@ spec:
 
 ### Verify External DNS works (IngressRoute example)
 The following instructions are based on the 
-[Contour example workload](https://github.com/heptio/contour/blob/master/examples/example-workload/kuard-ingressroute.yaml).
+[Contour example workload](https://github.com/heptio/contour/blob/HEAD/examples/example-workload/kuard-ingressroute.yaml).
 
 #### Install a sample service
 ```bash

@@ -18,6 +18,7 @@ package source
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -35,7 +36,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/pkg/k8sutils/async"
 )
 
 const (
@@ -65,7 +65,6 @@ type serviceSource struct {
 	podInformer                    coreinformers.PodInformer
 	nodeInformer                   coreinformers.NodeInformer
 	serviceTypeFilter              map[string]struct{}
-	runner                         *async.BoundedFrequencyRunner
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
@@ -121,8 +120,11 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	informerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
-		return serviceInformer.Informer().HasSynced(), nil
+	err = poll(time.Second, 60*time.Second, func() (bool, error) {
+		return serviceInformer.Informer().HasSynced() &&
+			endpointsInformer.Informer().HasSynced() &&
+			podInformer.Informer().HasSynced() &&
+			nodeInformer.Informer().HasSynced(), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to sync cache: %v", err)
@@ -155,7 +157,7 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 }
 
 // Endpoints returns endpoint objects for each service that should be processed.
-func (sc *serviceSource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	services, err := sc.serviceInformer.Lister().Services(sc.namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
@@ -593,30 +595,21 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, nodeTargets e
 	return endpoints
 }
 
-func (sc *serviceSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
-	// Add custom resource event handler
-	log.Debug("Adding (bounded) event handler for service")
+func (sc *serviceSource) AddEventHandler(ctx context.Context, handler func()) {
+	log.Debug("Adding event handler for service")
 
-	maxInterval := 24 * time.Hour // handler will be called if it has not run in 24 hours
-	burst := 2                    // allow up to two handler burst calls
-	log.Debugf("Adding handler to BoundedFrequencyRunner with minInterval: %v, syncPeriod: %v, bursts: %d",
-		minInterval, maxInterval, burst)
-	sc.runner = async.NewBoundedFrequencyRunner("service-handler", func() {
-		_ = handler()
-	}, minInterval, maxInterval, burst)
-	go sc.runner.Loop(stopChan)
-
-	// run the handler function as soon as the BoundedFrequencyRunner will allow when an update occurs
+	// Right now there is no way to remove event handler from informer, see:
+	// https://github.com/kubernetes/kubernetes/issues/79610
 	sc.serviceInformer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				sc.runner.Run()
+				handler()
 			},
 			UpdateFunc: func(old interface{}, new interface{}) {
-				sc.runner.Run()
+				handler()
 			},
 			DeleteFunc: func(obj interface{}) {
-				sc.runner.Run()
+				handler()
 			},
 		},
 	)

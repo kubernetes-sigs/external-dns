@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 const (
@@ -59,7 +60,7 @@ var (
 )
 
 // AWSSDClient is the subset of the AWS Cloud Map API that we actually use. Add methods as required.
-// Signatures must match exactly. Taken from https://github.com/aws/aws-sdk-go/blob/master/service/servicediscovery/api.go
+// Signatures must match exactly. Taken from https://github.com/aws/aws-sdk-go/blob/HEAD/service/servicediscovery/api.go
 type AWSSDClient interface {
 	CreateService(input *sd.CreateServiceInput) (*sd.CreateServiceOutput, error)
 	DeregisterInstance(input *sd.DeregisterInstanceInput) (*sd.DeregisterInstanceOutput, error)
@@ -73,6 +74,7 @@ type AWSSDClient interface {
 
 // AWSSDProvider is an implementation of Provider for AWS Cloud Map.
 type AWSSDProvider struct {
+	provider.BaseProvider
 	client AWSSDClient
 	dryRun bool
 	// only consider namespaces ending in this suffix

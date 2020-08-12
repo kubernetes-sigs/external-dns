@@ -34,14 +34,14 @@ type MockDomainClient struct {
 	mock.Mock
 }
 
-func (m *MockDomainClient) ListDomainRecords(ctx context.Context, domainID int, opts *linodego.ListOptions) ([]*linodego.DomainRecord, error) {
+func (m *MockDomainClient) ListDomainRecords(ctx context.Context, domainID int, opts *linodego.ListOptions) ([]linodego.DomainRecord, error) {
 	args := m.Called(ctx, domainID, opts)
-	return args.Get(0).([]*linodego.DomainRecord), args.Error(1)
+	return args.Get(0).([]linodego.DomainRecord), args.Error(1)
 }
 
-func (m *MockDomainClient) ListDomains(ctx context.Context, opts *linodego.ListOptions) ([]*linodego.Domain, error) {
+func (m *MockDomainClient) ListDomains(ctx context.Context, opts *linodego.ListOptions) ([]linodego.Domain, error) {
 	args := m.Called(ctx, opts)
-	return args.Get(0).([]*linodego.Domain), args.Error(1)
+	return args.Get(0).([]linodego.Domain), args.Error(1)
 }
 func (m *MockDomainClient) CreateDomainRecord(ctx context.Context, domainID int, opts linodego.DomainRecordCreateOptions) (*linodego.DomainRecord, error) {
 	args := m.Called(ctx, domainID, opts)
@@ -56,16 +56,16 @@ func (m *MockDomainClient) UpdateDomainRecord(ctx context.Context, domainID int,
 	return args.Get(0).(*linodego.DomainRecord), args.Error(1)
 }
 
-func createZones() []*linodego.Domain {
-	return []*linodego.Domain{
+func createZones() []linodego.Domain {
+	return []linodego.Domain{
 		{ID: 1, Domain: "foo.com"},
 		{ID: 2, Domain: "bar.io"},
 		{ID: 3, Domain: "baz.com"},
 	}
 }
 
-func createFooRecords() []*linodego.DomainRecord {
-	return []*linodego.DomainRecord{{
+func createFooRecords() []linodego.DomainRecord {
+	return []linodego.DomainRecord{{
 		ID:     11,
 		Type:   linodego.RecordTypeA,
 		Name:   "",
@@ -83,12 +83,12 @@ func createFooRecords() []*linodego.DomainRecord {
 	}}
 }
 
-func createBarRecords() []*linodego.DomainRecord {
-	return []*linodego.DomainRecord{}
+func createBarRecords() []linodego.DomainRecord {
+	return []linodego.DomainRecord{}
 }
 
-func createBazRecords() []*linodego.DomainRecord {
-	return []*linodego.DomainRecord{{
+func createBazRecords() []linodego.DomainRecord {
+	return []linodego.DomainRecord{{
 		ID:     31,
 		Type:   linodego.RecordTypeA,
 		Name:   "",
@@ -147,15 +147,15 @@ func TestNewLinodeProvider(t *testing.T) {
 }
 
 func TestLinodeStripRecordName(t *testing.T) {
-	assert.Equal(t, "api", getStrippedRecordName(&linodego.Domain{
+	assert.Equal(t, "api", getStrippedRecordName(linodego.Domain{
 		Domain: "example.com",
-	}, &endpoint.Endpoint{
+	}, endpoint.Endpoint{
 		DNSName: "api.example.com",
 	}))
 
-	assert.Equal(t, "", getStrippedRecordName(&linodego.Domain{
+	assert.Equal(t, "", getStrippedRecordName(linodego.Domain{
 		Domain: "example.com",
-	}, &endpoint.Endpoint{
+	}, endpoint.Endpoint{
 		DNSName: "example.com",
 	}))
 }
@@ -198,7 +198,7 @@ func TestLinodeFetchZonesWithFilter(t *testing.T) {
 		mock.Anything,
 	).Return(createZones(), nil).Once()
 
-	expected := []*linodego.Domain{
+	expected := []linodego.Domain{
 		{ID: 1, Domain: "foo.com"},
 		{ID: 3, Domain: "baz.com"},
 	}
@@ -210,15 +210,15 @@ func TestLinodeFetchZonesWithFilter(t *testing.T) {
 }
 
 func TestLinodeGetStrippedRecordName(t *testing.T) {
-	assert.Equal(t, "", getStrippedRecordName(&linodego.Domain{
+	assert.Equal(t, "", getStrippedRecordName(linodego.Domain{
 		Domain: "foo.com",
-	}, &endpoint.Endpoint{
+	}, endpoint.Endpoint{
 		DNSName: "foo.com",
 	}))
 
-	assert.Equal(t, "api", getStrippedRecordName(&linodego.Domain{
+	assert.Equal(t, "api", getStrippedRecordName(linodego.Domain{
 		Domain: "foo.com",
-	}, &endpoint.Endpoint{
+	}, endpoint.Endpoint{
 		DNSName: "api.foo.com",
 	}))
 }
@@ -398,14 +398,14 @@ func TestLinodeApplyChangesTargetAdded(t *testing.T) {
 		"ListDomains",
 		mock.Anything,
 		mock.Anything,
-	).Return([]*linodego.Domain{{Domain: "example.com", ID: 1}}, nil).Once()
+	).Return([]linodego.Domain{{Domain: "example.com", ID: 1}}, nil).Once()
 
 	mockDomainClient.On(
 		"ListDomainRecords",
 		mock.Anything,
 		1,
 		mock.Anything,
-	).Return([]*linodego.DomainRecord{{ID: 11, Name: "", Type: "A", Target: "targetA"}}, nil).Once()
+	).Return([]linodego.DomainRecord{{ID: 11, Name: "", Type: "A", Target: "targetA"}}, nil).Once()
 
 	// Apply Actions
 	mockDomainClient.On(
@@ -457,14 +457,14 @@ func TestLinodeApplyChangesTargetRemoved(t *testing.T) {
 		"ListDomains",
 		mock.Anything,
 		mock.Anything,
-	).Return([]*linodego.Domain{{Domain: "example.com", ID: 1}}, nil).Once()
+	).Return([]linodego.Domain{{Domain: "example.com", ID: 1}}, nil).Once()
 
 	mockDomainClient.On(
 		"ListDomainRecords",
 		mock.Anything,
 		1,
 		mock.Anything,
-	).Return([]*linodego.DomainRecord{{ID: 11, Name: "", Type: "A", Target: "targetA"}, {ID: 12, Type: "A", Name: "", Target: "targetB"}}, nil).Once()
+	).Return([]linodego.DomainRecord{{ID: 11, Name: "", Type: "A", Target: "targetA"}, {ID: 12, Type: "A", Name: "", Target: "targetB"}}, nil).Once()
 
 	// Apply Actions
 	mockDomainClient.On(
@@ -513,14 +513,14 @@ func TestLinodeApplyChangesNoChanges(t *testing.T) {
 		"ListDomains",
 		mock.Anything,
 		mock.Anything,
-	).Return([]*linodego.Domain{{Domain: "example.com", ID: 1}}, nil).Once()
+	).Return([]linodego.Domain{{Domain: "example.com", ID: 1}}, nil).Once()
 
 	mockDomainClient.On(
 		"ListDomainRecords",
 		mock.Anything,
 		1,
 		mock.Anything,
-	).Return([]*linodego.DomainRecord{{ID: 11, Name: "", Type: "A", Target: "targetA"}}, nil).Once()
+	).Return([]linodego.DomainRecord{{ID: 11, Name: "", Type: "A", Target: "targetA"}}, nil).Once()
 
 	err := provider.ApplyChanges(context.Background(), &plan.Changes{})
 	require.NoError(t, err)
