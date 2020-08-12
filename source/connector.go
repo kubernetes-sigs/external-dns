@@ -17,6 +17,7 @@ limitations under the License.
 package source
 
 import (
+	"context"
 	"encoding/gob"
 	"net"
 	"time"
@@ -44,7 +45,7 @@ func NewConnectorSource(remoteServer string) (Source, error) {
 }
 
 // Endpoints returns endpoint objects.
-func (cs *connectorSource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (cs *connectorSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	conn, err := net.DialTimeout("tcp", cs.remoteServer, dialTimeout)
@@ -65,5 +66,5 @@ func (cs *connectorSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return endpoints, nil
 }
 
-func (cs *connectorSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+func (cs *connectorSource) AddEventHandler(ctx context.Context, handler func()) {
 }

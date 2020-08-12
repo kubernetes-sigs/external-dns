@@ -52,8 +52,7 @@ const (
 )
 
 var (
-	// see: https://docs.aws.amazon.com/general/latest/gr/rande.html#elb_region
-	// and: https://docs.aws.amazon.com/govcloud-us/latest/UserGuide/using-govcloud-endpoints.html
+	// see: https://docs.aws.amazon.com/general/latest/gr/elb.html
 	canonicalHostedZones = map[string]string{
 		// Application Load Balancers and Classic Load Balancers
 		"us-east-2.elb.amazonaws.com":         "Z3AADJGX6KTTL2",
@@ -74,9 +73,10 @@ var (
 		"eu-west-3.elb.amazonaws.com":         "Z3Q77PNBQS71R4",
 		"eu-north-1.elb.amazonaws.com":        "Z23TAZ6LKFMNIO",
 		"sa-east-1.elb.amazonaws.com":         "Z2P70J7HTTTPLU",
-		"cn-north-1.elb.amazonaws.com.cn":     "Z3BX2TMKNYI13Y",
-		"cn-northwest-1.elb.amazonaws.com.cn": "Z3BX2TMKNYI13Y",
-		"us-gov-west-1.amazonaws.com":         "Z1K6XKP9SAGWDV",
+		"cn-north-1.elb.amazonaws.com.cn":     "Z1GDH35T77C1KE",
+		"cn-northwest-1.elb.amazonaws.com.cn": "ZM7IZAIOVVDZF",
+		"us-gov-west-1.elb.amazonaws.com":     "Z33AYJ8TM3BH4J",
+		"us-gov-east-1.elb.amazonaws.com":     "Z166TLBEWOO7G0",
 		"me-south-1.elb.amazonaws.com":        "ZS929ML54UICD",
 		// Network Load Balancers
 		"elb.us-east-2.amazonaws.com":         "ZLMOA37VPKANP",
@@ -98,6 +98,8 @@ var (
 		"elb.sa-east-1.amazonaws.com":         "ZTK26PT1VY4CU",
 		"elb.cn-north-1.amazonaws.com.cn":     "Z3QFB96KMJ7ED6",
 		"elb.cn-northwest-1.amazonaws.com.cn": "ZQEIKTCZ8352D",
+		"elb.us-gov-west-1.amazonaws.com":     "ZMG1MZ2THAWF1",
+		"elb.us-gov-east-1.amazonaws.com":     "Z1ZSMQQ6Q24QQ8",
 		"elb.me-south-1.amazonaws.com":        "Z3QSRYVP46NYYV",
 	}
 )
@@ -114,6 +116,7 @@ type Route53API interface {
 
 // AWSProvider is an implementation of Provider for AWS Route53.
 type AWSProvider struct {
+	provider.BaseProvider
 	client               Route53API
 	dryRun               bool
 	batchChangeSize      int
@@ -450,7 +453,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes []*route53.Chan
 	}
 
 	if len(failedZones) > 0 {
-		return fmt.Errorf("Failed to submit all changes for the following zones: %v", failedZones)
+		return fmt.Errorf("failed to submit all changes for the following zones: %v", failedZones)
 	}
 
 	return nil
@@ -589,7 +592,8 @@ func (p *AWSProvider) tagsForZone(ctx context.Context, zoneID string) (map[strin
 
 func batchChangeSet(cs []*route53.Change, batchSize int) [][]*route53.Change {
 	if len(cs) <= batchSize {
-		return [][]*route53.Change{cs}
+		res := sortChangesByActionNameType(cs)
+		return [][]*route53.Change{res}
 	}
 
 	batchChanges := make([][]*route53.Change, 0)
@@ -636,10 +640,10 @@ func batchChangeSet(cs []*route53.Change, batchSize int) [][]*route53.Change {
 
 func sortChangesByActionNameType(cs []*route53.Change) []*route53.Change {
 	sort.SliceStable(cs, func(i, j int) bool {
-		if *cs[i].Action < *cs[j].Action {
+		if *cs[i].Action > *cs[j].Action {
 			return true
 		}
-		if *cs[i].Action > *cs[j].Action {
+		if *cs[i].Action < *cs[j].Action {
 			return false
 		}
 		if *cs[i].ResourceRecordSet.Name < *cs[j].ResourceRecordSet.Name {
@@ -734,7 +738,6 @@ func isAWSAlias(ep *endpoint.Endpoint, addrs []*endpoint.Endpoint) string {
 				if hostedZone := canonicalHostedZone(addr.Targets[0]); hostedZone != "" {
 					return hostedZone
 				}
-
 			}
 		}
 	}

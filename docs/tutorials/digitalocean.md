@@ -68,7 +68,7 @@ rules:
 - apiGroups: [""]
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions"] 
+- apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"] 
   verbs: ["get","watch","list"]
 - apiGroups: [""]
@@ -189,3 +189,13 @@ Now that we have verified that ExternalDNS will automatically manage DigitalOcea
 $ kubectl delete service -f nginx.yaml
 $ kubectl delete service -f externaldns.yaml
 ```
+
+## Advanced Usage
+
+### API Page Size
+
+If you have a large number of domains and/or records within a domain, you may encounter API
+rate limiting because of the number of API calls that external-dns must make to the DigitalOcean API to retrieve
+the current DNS configuration during every reconciliation loop. If this is the case, use the 
+`--digitalocean-api-page-size` option to increase the size of the pages used when querying the DigitalOcean API.
+(Note: external-dns uses a default of 50.)

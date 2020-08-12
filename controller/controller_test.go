@@ -35,6 +35,7 @@ import (
 
 // mockProvider returns mock endpoints and validates changes.
 type mockProvider struct {
+	provider.BaseProvider
 	RecordsStore  []*endpoint.Endpoint
 	ExpectChanges *plan.Changes
 }
@@ -153,43 +154,41 @@ func TestRunOnce(t *testing.T) {
 	source.AssertExpectations(t)
 }
 
-// TestSourceEventHandler tests that the Controller can use a Source's registered handler as a callback.
-func TestSourceEventHandler(t *testing.T) {
-	source := new(testutils.MockSource)
+func TestShouldRunOnce(t *testing.T) {
+	ctrl := &Controller{Interval: 10 * time.Minute}
 
-	handlerCh := make(chan bool)
-	timeoutCh := make(chan bool, 1)
-	stopChan := make(chan struct{}, 1)
+	now := time.Now()
 
-	ctrl := &Controller{
-		Source:   source,
-		Registry: nil,
-		Policy:   &plan.SyncPolicy{},
-	}
+	// First run of Run loop should execute RunOnce
+	assert.True(t, ctrl.ShouldRunOnce(now))
 
-	// Define and register a simple handler that sends a message to a channel to show it was called.
-	handler := func() error {
-		handlerCh <- true
-		return nil
-	}
-	// Example of preventing handler from being called more than once every 5 seconds.
-	ctrl.Source.AddEventHandler(handler, stopChan, 5*time.Second)
+	// Second run should not
+	assert.False(t, ctrl.ShouldRunOnce(now))
 
-	// Send timeout message after 10 seconds to fail test if handler is not called.
-	go func() {
-		time.Sleep(10 * time.Second)
-		timeoutCh <- true
-	}()
+	now = now.Add(10 * time.Second)
+	// Changes happen in ingresses or services
+	ctrl.ScheduleRunOnce(now)
+	ctrl.ScheduleRunOnce(now)
 
-	// Wait until we either receive a message from handlerCh or timeoutCh channel after 10 seconds.
-	select {
-	case msg := <-handlerCh:
-		assert.True(t, msg)
-	case <-timeoutCh:
-		assert.Fail(t, "timed out waiting for event handler to be called")
-	}
+	// Because we batch changes, ShouldRunOnce returns False at first
+	assert.False(t, ctrl.ShouldRunOnce(now))
+	assert.False(t, ctrl.ShouldRunOnce(now.Add(100*time.Microsecond)))
 
-	close(stopChan)
-	close(handlerCh)
-	close(timeoutCh)
+	// But after MinInterval we should run reconciliation
+	now = now.Add(MinInterval)
+	assert.True(t, ctrl.ShouldRunOnce(now))
+
+	// But just one time
+	assert.False(t, ctrl.ShouldRunOnce(now))
+
+	// We should wait maximum possible time after last reconciliation started
+	now = now.Add(10*time.Minute - time.Second)
+	assert.False(t, ctrl.ShouldRunOnce(now))
+
+	// After exactly Interval it's OK again to reconcile
+	now = now.Add(time.Second)
+	assert.True(t, ctrl.ShouldRunOnce(now))
+
+	// But not two times
+	assert.False(t, ctrl.ShouldRunOnce(now))
 }

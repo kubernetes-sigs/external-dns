@@ -60,7 +60,7 @@ kiam or kube2iam.
 ### kiam
 
 If you're using [kiam](https://github.com/uswitch/kiam), follow the
-[instructions](https://github.com/uswitch/kiam/blob/master/docs/IAM.md) for
+[instructions](https://github.com/uswitch/kiam/blob/HEAD/docs/IAM.md) for
 creating the IAM role.
 
 ### kube2iam
@@ -174,7 +174,7 @@ rules:
 - apiGroups: [""]
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions"]
+- apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]

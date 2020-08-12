@@ -29,6 +29,8 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+
+	"go.uber.org/ratelimit"
 )
 
 const (
@@ -46,7 +48,11 @@ var (
 
 // OVHProvider is an implementation of Provider for OVH DNS.
 type OVHProvider struct {
+	provider.BaseProvider
+
 	client ovhClient
+
+	apiRateLimiter ratelimit.Limiter
 
 	domainFilter endpoint.DomainFilter
 	DryRun       bool
@@ -77,7 +83,7 @@ type ovhChange struct {
 }
 
 // NewOVHProvider initializes a new OVH DNS based Provider.
-func NewOVHProvider(ctx context.Context, domainFilter endpoint.DomainFilter, endpoint string, dryRun bool) (*OVHProvider, error) {
+func NewOVHProvider(ctx context.Context, domainFilter endpoint.DomainFilter, endpoint string, apiRateLimit int, dryRun bool) (*OVHProvider, error) {
 	client, err := ovh.NewEndpointClient(endpoint)
 	if err != nil {
 		return nil, err
@@ -87,15 +93,15 @@ func NewOVHProvider(ctx context.Context, domainFilter endpoint.DomainFilter, end
 		return nil, ErrNoDryRun
 	}
 	return &OVHProvider{
-		client:       client,
-		domainFilter: domainFilter,
-		DryRun:       dryRun,
+		client:         client,
+		domainFilter:   domainFilter,
+		apiRateLimiter: ratelimit.New(apiRateLimit),
+		DryRun:         dryRun,
 	}, nil
 }
 
 // Records returns the list of records in all relevant zones.
 func (p *OVHProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-
 	_, records, err := p.zonesRecords(ctx)
 	if err != nil {
 		return nil, err
@@ -148,10 +154,14 @@ func (p *OVHProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 
 func (p *OVHProvider) refresh(zone string) error {
 	log.Debugf("OVH: Refresh %s zone", zone)
+
+	p.apiRateLimiter.Take()
 	return p.client.Post(fmt.Sprintf("/domain/zone/%s/refresh", zone), nil, nil)
 }
 
 func (p *OVHProvider) change(change ovhChange) error {
+	p.apiRateLimiter.Take()
+
 	switch change.Action {
 	case ovhCreate:
 		log.Debugf("OVH: Add an entry to %s", change.String())
@@ -193,6 +203,7 @@ func (p *OVHProvider) zones() ([]string, error) {
 	zones := []string{}
 	filteredZones := []string{}
 
+	p.apiRateLimiter.Take()
 	if err := p.client.Get("/domain/zone", &zones); err != nil {
 		return nil, err
 	}
@@ -212,6 +223,8 @@ func (p *OVHProvider) records(ctx *context.Context, zone *string, records chan<-
 	eg, _ := errgroup.WithContext(*ctx)
 
 	log.Debugf("OVH: Getting records for %s", *zone)
+
+	p.apiRateLimiter.Take()
 	if err := p.client.Get(fmt.Sprintf("/domain/zone/%s/record", *zone), &recordsIds); err != nil {
 		return err
 	}
@@ -235,6 +248,8 @@ func (p *OVHProvider) record(zone *string, id uint64, records chan<- ovhRecord) 
 	record := ovhRecord{}
 
 	log.Debugf("OVH: Getting record %d for %s", id, *zone)
+
+	p.apiRateLimiter.Take()
 	if err := p.client.Get(fmt.Sprintf("/domain/zone/%s/record/%d", *zone, id), &record); err != nil {
 		return err
 	}

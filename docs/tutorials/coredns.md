@@ -24,13 +24,13 @@ helm install stable/etcd-operator --name my-etcd-op
 ```
 etcd cluster is installed with example yaml from etcd operator website.
 ```
-kubectl  apply -f https://raw.githubusercontent.com/coreos/etcd-operator/master/example/example-etcd-cluster.yaml
+kubectl  apply -f https://raw.githubusercontent.com/coreos/etcd-operator/HEAD/example/example-etcd-cluster.yaml
 ```
 
 ### Installing CoreDNS
 In order to make CoreDNS work with etcd backend, values.yaml of the chart should be changed with corresponding configurations.
 ```
-wget https://raw.githubusercontent.com/helm/charts/master/stable/coredns/values.yaml
+wget https://raw.githubusercontent.com/helm/charts/HEAD/stable/coredns/values.yaml
 ```
 
 You need to edit/patch the file with below diff
@@ -130,7 +130,7 @@ rules:
 - apiGroups: [""]
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions"]
+- apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]

@@ -1,5 +1,5 @@
 # See the OWNERS file documentation:
-#  https://github.com/kubernetes/community/blob/master/contributors/guide/owners.md
+#  https://github.com/kubernetes/community/blob/HEAD/contributors/guide/owners.md
 
 approvers:
   - hjacobs

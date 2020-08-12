@@ -33,6 +33,7 @@ import (
 
 // RcodeZeroProvider implements the DNS provider for RcodeZero Anycast DNS.
 type RcodeZeroProvider struct {
+	provider.BaseProvider
 	Client *rc0.Client
 
 	DomainFilter endpoint.DomainFilter
@@ -45,7 +46,6 @@ type RcodeZeroProvider struct {
 //
 // Returns the provider or an error if a provider could not be created.
 func NewRcodeZeroProvider(domainFilter endpoint.DomainFilter, dryRun bool, txtEnc bool) (*RcodeZeroProvider, error) {
-
 	client, err := rc0.NewClient(os.Getenv("RC0_API_KEY"))
 
 	if err != nil {
@@ -77,7 +77,6 @@ func NewRcodeZeroProvider(domainFilter endpoint.DomainFilter, dryRun bool, txtEn
 
 // Zones returns filtered zones if filter is set
 func (p *RcodeZeroProvider) Zones() ([]*rc0.Zone, error) {
-
 	var result []*rc0.Zone
 
 	zones, err := p.fetchZones()
@@ -98,7 +97,6 @@ func (p *RcodeZeroProvider) Zones() ([]*rc0.Zone, error) {
 //
 // Decrypts TXT records if TXT-Encrypt flag is set and key is provided
 func (p *RcodeZeroProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-
 	zones, err := p.Zones()
 	if err != nil {
 		return nil, err
@@ -107,7 +105,6 @@ func (p *RcodeZeroProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 	var endpoints []*endpoint.Endpoint
 
 	for _, zone := range zones {
-
 		rrset, err := p.fetchRecords(zone.Domain)
 
 		if err != nil {
@@ -115,25 +112,19 @@ func (p *RcodeZeroProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 		}
 
 		for _, r := range rrset {
-
 			if provider.SupportedRecordType(r.Type) {
-
 				if p.TXTEncrypt && (p.Key != nil) && strings.EqualFold(r.Type, "TXT") {
 					p.Client.RRSet.DecryptTXT(p.Key, r)
 				}
-
 				if len(r.Records) > 1 {
-
 					for _, _r := range r.Records {
 						if !_r.Disabled {
 							endpoints = append(endpoints, endpoint.NewEndpointWithTTL(r.Name, r.Type, endpoint.TTL(r.TTL), _r.Content))
 						}
 					}
-
 				} else if !r.Records[0].Disabled {
 					endpoints = append(endpoints, endpoint.NewEndpointWithTTL(r.Name, r.Type, endpoint.TTL(r.TTL), r.Records[0].Content))
 				}
-
 			}
 		}
 	}
@@ -143,7 +134,6 @@ func (p *RcodeZeroProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *RcodeZeroProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-
 	combinedChanges := make([]*rc0.RRSetChange, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
 
 	combinedChanges = append(combinedChanges, p.NewRcodezeroChanges(rc0.ChangeTypeADD, changes.Create)...)
@@ -155,7 +145,6 @@ func (p *RcodeZeroProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 
 // Helper function
 func rcodezeroChangesByZone(zones []*rc0.Zone, changeSet []*rc0.RRSetChange) map[string][]*rc0.RRSetChange {
-
 	changes := make(map[string][]*rc0.RRSetChange)
 	zoneNameIDMapper := provider.ZoneIDName{}
 	for _, z := range zones {
@@ -177,7 +166,6 @@ func rcodezeroChangesByZone(zones []*rc0.Zone, changeSet []*rc0.RRSetChange) map
 
 // Helper function
 func (p *RcodeZeroProvider) fetchRecords(zoneName string) ([]*rc0.RRType, error) {
-
 	var allRecords []*rc0.RRType
 
 	listOptions := rc0.NewListOptions()
@@ -203,7 +191,6 @@ func (p *RcodeZeroProvider) fetchRecords(zoneName string) ([]*rc0.RRType, error)
 
 // Helper function
 func (p *RcodeZeroProvider) fetchZones() ([]*rc0.Zone, error) {
-
 	var allZones []*rc0.Zone
 
 	listOptions := rc0.NewListOptions()
@@ -229,7 +216,6 @@ func (p *RcodeZeroProvider) fetchZones() ([]*rc0.Zone, error) {
 //
 // Changes are submitted by change type.
 func (p *RcodeZeroProvider) submitChanges(changes []*rc0.RRSetChange) error {
-
 	if len(changes) == 0 {
 		return nil
 	}
@@ -241,11 +227,8 @@ func (p *RcodeZeroProvider) submitChanges(changes []*rc0.RRSetChange) error {
 
 	// separate into per-zone change sets to be passed to the API.
 	changesByZone := rcodezeroChangesByZone(zones, changes)
-
 	for zoneName, changes := range changesByZone {
-
 		for _, change := range changes {
-
 			logFields := log.Fields{
 				"record":  change.Name,
 				"content": change.Records[0].Content,
@@ -307,7 +290,6 @@ func (p *RcodeZeroProvider) submitChanges(changes []*rc0.RRSetChange) error {
 
 // NewRcodezeroChanges returns a RcodeZero specific array with rrset change objects.
 func (p *RcodeZeroProvider) NewRcodezeroChanges(action string, endpoints []*endpoint.Endpoint) []*rc0.RRSetChange {
-
 	changes := make([]*rc0.RRSetChange, 0, len(endpoints))
 
 	for _, _endpoint := range endpoints {
@@ -319,7 +301,6 @@ func (p *RcodeZeroProvider) NewRcodezeroChanges(action string, endpoints []*endp
 
 // NewRcodezeroChange returns a RcodeZero specific rrset change object.
 func (p *RcodeZeroProvider) NewRcodezeroChange(action string, endpoint *endpoint.Endpoint) *rc0.RRSetChange {
-
 	change := &rc0.RRSetChange{
 		Type:       endpoint.RecordType,
 		ChangeType: action,

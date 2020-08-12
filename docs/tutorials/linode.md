@@ -67,7 +67,7 @@ rules:
 - apiGroups: [""]
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions"]
+- apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
@@ -171,7 +171,7 @@ Once the service has an external IP assigned, ExternalDNS will notice the new se
 
 ## Verifying Linode DNS records
 
-Check your [Linode UI](https://manager.linode.com/dns) to view the records for your Linode DNS zone.
+Check your [Linode UI](https://cloud.linode.com/domains) to view the records for your Linode DNS zone.
 
 Click on the zone for the one created above if a different domain was used.
 

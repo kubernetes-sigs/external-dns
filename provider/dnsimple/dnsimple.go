@@ -77,6 +77,7 @@ func (z dnsimpleZoneService) UpdateRecord(ctx context.Context, accountID string,
 }
 
 type dnsimpleProvider struct {
+	provider.BaseProvider
 	client       dnsimpleZoneServiceInterface
 	identity     dnsimpleIdentityService
 	accountID    string
@@ -100,7 +101,7 @@ const (
 func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (provider.Provider, error) {
 	oauthToken := os.Getenv("DNSIMPLE_OAUTH")
 	if len(oauthToken) == 0 {
-		return nil, fmt.Errorf("No dnsimple oauth token provided")
+		return nil, fmt.Errorf("no dnsimple oauth token provided")
 	}
 
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: oauthToken})
@@ -318,7 +319,7 @@ func (p *dnsimpleProvider) GetRecordID(ctx context.Context, zone string, recordN
 			break
 		}
 	}
-	return 0, fmt.Errorf("No record id found")
+	return 0, fmt.Errorf("no record id found")
 }
 
 // dnsimpleSuitableZone returns the most suitable zone for a given hostname and a set of zones.

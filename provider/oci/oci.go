@@ -53,6 +53,7 @@ type OCIConfig struct {
 // OCIProvider is an implementation of Provider for Oracle Cloud Infrastructure
 // (OCI) DNS.
 type OCIProvider struct {
+	provider.BaseProvider
 	client ociDNSClient
 	cfg    OCIConfig
 
@@ -83,7 +84,7 @@ func LoadOCIConfig(path string) (*OCIConfig, error) {
 	return &cfg, nil
 }
 
-// NewOCIProvider initialises a new OCI DNS based Provider.
+// NewOCIProvider initializes a new OCI DNS based Provider.
 func NewOCIProvider(cfg OCIConfig, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (*OCIProvider, error) {
 	var client ociDNSClient
 	client, err := dns.NewDnsClientWithConfigurationProvider(common.NewRawConfigurationProvider(
@@ -95,7 +96,7 @@ func NewOCIProvider(cfg OCIConfig, domainFilter endpoint.DomainFilter, zoneIDFil
 		&cfg.Auth.Passphrase,
 	))
 	if err != nil {
-		return nil, errors.Wrap(err, "initialising OCI DNS API client")
+		return nil, errors.Wrap(err, "initializing OCI DNS API client")
 	}
 
 	return &OCIProvider{
