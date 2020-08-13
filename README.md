@@ -73,32 +73,33 @@ The following table clarifies the current status of the providers according to t
 
 | Provider | Status | Maintainers | 
 | -------- | ------ | ----------- |
-| Google Cloud DNS | Stable | |
-| AWS Route 53 | Stable | |
+| Akamai FastDNS | Alpha | |
 | AWS Cloud Map | Beta | |
+| AWS Route 53 | Stable | |
 | AzureDNS | Beta | |
 | CloudFlare | Beta | |
-| RcodeZero | Alpha | |
-| DigitalOcean | Alpha | |
-| Hetzner | Alpha | @21h |
-| DNSimple | Alpha | |
-| Infoblox | Alpha | @saileshgiri |
-| Dyn | Alpha | |
-| OpenStack Designate | Alpha | |
-| PowerDNS | Alpha | |
 | CoreDNS | Alpha | |
+| DigitalOcean | Alpha | |
+| DNSimple | Alpha | |
+| Dyn | Alpha | |
 | Exoscale | Alpha | |
-| Oracle Cloud Infrastructure DNS | Alpha | |
+| Google Cloud DNS | Stable | |
+| Hetzner | Alpha | @21h |
+| Infoblox | Alpha | @saileshgiri |
+| Istio | Alpha | @tariq1890|
 | Linode DNS | Alpha | |
-| RFC2136 | Alpha | |
 | NS1 | Alpha | |
-| TransIP | Alpha | |
-| VinylDNS | Alpha | |
-| RancherDNS | Alpha | |
-| Akamai FastDNS | Alpha | |
+| OpenStack Designate | Alpha | |
+| Oracle Cloud Infrastructure DNS | Alpha | |
 | OVH | Alpha | |
-| Vultr | Alpha | |
+| PowerDNS | Alpha | |
+| RancherDNS | Alpha | |
+| RcodeZero | Alpha | |
+| RFC2136 | Alpha | |
+| TransIP | Alpha | |
 | UltraDNS | Alpha | |
+| VinylDNS | Alpha | |
+| Vultr | Alpha | |
 
 ## Running ExternalDNS:
 
