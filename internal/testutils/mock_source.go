@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/mock"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -30,7 +31,7 @@ type MockSource struct {
 }
 
 // Endpoints returns the desired mock endpoints.
-func (m *MockSource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (m *MockSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	args := m.Called()
 
 	endpoints := args.Get(0)
@@ -44,7 +45,7 @@ func (m *MockSource) Endpoints() ([]*endpoint.Endpoint, error) {
 // AddEventHandler adds an event handler that should be triggered if something in source changes
 func (m *MockSource) AddEventHandler(ctx context.Context, handler func()) {
 	go func() {
-		ticker := time.NewTicker(time.Second)
+		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
 		for {

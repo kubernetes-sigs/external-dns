@@ -39,12 +39,14 @@ Providers
 - [ ] Azure
 - [ ] Cloudflare
 - [x] DigitalOcean
+- [x] DNSimple
 - [x] Google
 - [ ] InMemory
 - [x] Linode
 - [x] TransIP
 - [x] RFC2136
 - [x] Vultr
+- [x] UltraDNS
 
 PRs welcome!
 
@@ -59,6 +61,9 @@ This value is a constant in the provider code.
 ### DigitalOcean Provider
 The DigitalOcean Provider overrides the value to 300s when the TTL is 0.
 This value is a constant in the provider code.
+
+### DNSimple Provider
+The DNSimple Provider default TTL is used when the TTL is 0. The default TTL is 3600s.
 
 ### Google Provider
 Previously with the Google Provider, TTL's were hard-coded to 300s.
@@ -76,3 +81,6 @@ The TransIP Provider minimal TTL is used when the TTL is 0. The minimal TTL is 6
 
 ### Vultr Provider
 The Vultr provider minimal TTL is used when the TTL is 0. The default is 1 hour.
+
+### UltraDNS 
+The UltraDNS provider minimal TTL is used when the TTL is not provided. The default TTL is account level default TTL, if defined, otherwise 24 hours.

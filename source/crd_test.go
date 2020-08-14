@@ -18,6 +18,7 @@ package source
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -318,7 +319,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 
 			cs, _ := NewCRDSource(restClient, ti.namespace, ti.kind, ti.annotationFilter, scheme)
 
-			receivedEndpoints, err := cs.Endpoints()
+			receivedEndpoints, err := cs.Endpoints(context.Background())
 			if ti.expectError {
 				require.Errorf(t, err, "Received err %v", err)
 			} else {
@@ -341,7 +342,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 
 func validateCRDResource(t *testing.T, src Source, expectError bool) {
 	cs := src.(*crdSource)
-	result, err := cs.List(&metav1.ListOptions{})
+	result, err := cs.List(context.Background(), &metav1.ListOptions{})
 	if expectError {
 		require.Errorf(t, err, "Received err %v", err)
 	} else {

@@ -58,7 +58,7 @@ func (suite *IngressRouteSuite) SetupTest() {
 		name:      "contour",
 	}).Service()
 
-	_, err = fakeKubernetesClient.CoreV1().Services(suite.loadBalancer.Namespace).Create(suite.loadBalancer)
+	_, err = fakeKubernetesClient.CoreV1().Services(suite.loadBalancer.Namespace).Create(context.Background(), suite.loadBalancer, metav1.CreateOptions{})
 	suite.NoError(err, "should succeed")
 
 	suite.source, err = NewContourIngressRouteSource(
@@ -85,12 +85,12 @@ func (suite *IngressRouteSuite) SetupTest() {
 		suite.Error(err)
 	}
 
-	_, err = fakeDynamicClient.Resource(contour.IngressRouteGVR).Namespace(suite.ingressRoute.Namespace).Create(unstructuredIngressRoute, metav1.CreateOptions{})
+	_, err = fakeDynamicClient.Resource(contour.IngressRouteGVR).Namespace(suite.ingressRoute.Namespace).Create(context.Background(), unstructuredIngressRoute, metav1.CreateOptions{})
 	suite.NoError(err, "should succeed")
 }
 
 func (suite *IngressRouteSuite) TestResourceLabelIsSet() {
-	endpoints, _ := suite.source.Endpoints()
+	endpoints, _ := suite.source.Endpoints(context.Background())
 	for _, ep := range endpoints {
 		suite.Equal("ingressroute/default/foo-ingressroute-with-targets", ep.Labels[endpoint.ResourceLabelKey], "should set correct resource label")
 	}
@@ -104,7 +104,7 @@ func newDynamicKubernetesClient() (*fakeDynamic.FakeDynamicClient, *runtime.Sche
 
 func convertToUnstructured(ir *contour.IngressRoute, s *runtime.Scheme) (*unstructured.Unstructured, error) {
 	unstructuredIngressRoute := &unstructured.Unstructured{}
-	if err := s.Convert(ir, unstructuredIngressRoute, context.TODO()); err != nil {
+	if err := s.Convert(ir, unstructuredIngressRoute, context.Background()); err != nil {
 		return nil, err
 	}
 	return unstructuredIngressRoute, nil
@@ -275,7 +275,7 @@ func testEndpointsFromIngressRoute(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			if source, err := newTestIngressRouteSource(ti.loadBalancer); err != nil {
 				require.NoError(t, err)
-			} else if endpoints, err := source.endpointsFromIngressRoute(ti.ingressRoute.IngressRoute()); err != nil {
+			} else if endpoints, err := source.endpointsFromIngressRoute(context.Background(), ti.ingressRoute.IngressRoute()); err != nil {
 				require.NoError(t, err)
 			} else {
 				validateEndpoints(t, endpoints, ti.expected)
@@ -1006,7 +1006,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 			fakeKubernetesClient := fakeKube.NewSimpleClientset()
 
 			lbService := ti.loadBalancer.Service()
-			_, err := fakeKubernetesClient.CoreV1().Services(lbService.Namespace).Create(lbService)
+			_, err := fakeKubernetesClient.CoreV1().Services(lbService.Namespace).Create(context.Background(), lbService, metav1.CreateOptions{})
 			if err != nil {
 				require.NoError(t, err)
 			}
@@ -1015,7 +1015,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 			for _, ingressRoute := range ingressRoutes {
 				converted, err := convertToUnstructured(ingressRoute, scheme)
 				require.NoError(t, err)
-				_, err = fakeDynamicClient.Resource(contour.IngressRouteGVR).Namespace(ingressRoute.Namespace).Create(converted, metav1.CreateOptions{})
+				_, err = fakeDynamicClient.Resource(contour.IngressRouteGVR).Namespace(ingressRoute.Namespace).Create(context.Background(), converted, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
@@ -1031,7 +1031,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			res, err := ingressRouteSource.Endpoints()
+			res, err := ingressRouteSource.Endpoints(context.Background())
 			if ti.expectError {
 				assert.Error(t, err)
 			} else {
@@ -1049,7 +1049,7 @@ func newTestIngressRouteSource(loadBalancer fakeLoadBalancerService) (*ingressRo
 	fakeDynamicClient, _ := newDynamicKubernetesClient()
 
 	lbService := loadBalancer.Service()
-	_, err := fakeKubernetesClient.CoreV1().Services(lbService.Namespace).Create(lbService)
+	_, err := fakeKubernetesClient.CoreV1().Services(lbService.Namespace).Create(context.Background(), lbService, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -1133,7 +1133,7 @@ func (ir fakeIngressRoute) IngressRoute() *contour.IngressRoute {
 		spec = contour.IngressRouteSpec{}
 	} else {
 		spec = contour.IngressRouteSpec{
-			VirtualHost: &projectcontour.VirtualHost{
+			VirtualHost: &contour.VirtualHost{
 				Fqdn: ir.host,
 			},
 		}

@@ -38,7 +38,7 @@ var (
 
 // Config is a project-wide configuration
 type Config struct {
-	Master                            string
+	APIServerURL                      string
 	KubeConfig                        string
 	RequestTimeout                    time.Duration
 	IstioIngressGatewayServices       []string
@@ -148,10 +148,9 @@ type Config struct {
 }
 
 var defaultConfig = &Config{
-	Master:                      "",
+	APIServerURL:                "",
 	KubeConfig:                  "",
 	RequestTimeout:              time.Second * 30,
-	IstioIngressGatewayServices: []string{"istio-system/istio-ingressgateway"},
 	ContourLoadBalancerService:  "heptio-contour/contour",
 	SkipperRouteGroupVersion:    "zalando.org/v1",
 	Sources:                     nil,
@@ -291,7 +290,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.DefaultEnvars()
 
 	// Flags related to Kubernetes
-	app.Flag("master", "The Kubernetes API server to connect to (default: auto-detect)").Default(defaultConfig.Master).StringVar(&cfg.Master)
+	app.Flag("server", "The Kubernetes API server to connect to (default: auto-detect)").Default(defaultConfig.APIServerURL).StringVar(&cfg.APIServerURL)
 	app.Flag("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)").Default(defaultConfig.KubeConfig).StringVar(&cfg.KubeConfig)
 	app.Flag("request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout").Default(defaultConfig.RequestTimeout.String()).DurationVar(&cfg.RequestTimeout)
 
@@ -307,7 +306,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("skipper-routegroup-groupversion", "The resource version for skipper routegroup").Default(source.DefaultRoutegroupVersion).StringVar(&cfg.SkipperRouteGroupVersion)
 
 	// Flags related to processing sources
-	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, fake, connector, istio-gateway, cloudfoundry, contour-ingressroute, crd, empty, skipper-routegroup,openshift-route)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "istio-gateway", "cloudfoundry", "contour-ingressroute", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route")
+	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, fake, connector, istio-gateway, istio-virtualservice, cloudfoundry, contour-ingressroute, crd, empty, skipper-routegroup,openshift-route)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-ingressroute", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route")
 
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
 	app.Flag("annotation-filter", "Filter sources managed by external-dns via annotation using label selector semantics (default: all sources)").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
@@ -324,7 +323,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("service-type-filter", "The service types to take care about (default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)").StringsVar(&cfg.ServiceTypeFilter)
 
 	// Flags related to providers
-	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, google, azure, azure-dns, azure-private-dns, cloudflare, rcodezero, digitalocean, hetzner, dnsimple, akamai, infoblox, dyn, designate, coredns, skydns, inmemory, ovh, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns, vultr)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "hetzner", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "akamai", "infoblox", "dyn", "designate", "coredns", "skydns", "inmemory", "ovh", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns", "vultr")
+	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, google, azure, azure-dns, azure-private-dns, cloudflare, rcodezero, digitalocean, hetzner, dnsimple, akamai, infoblox, dyn, designate, coredns, skydns, inmemory, ovh, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns, vultr, ultradns)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "hetzner", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "akamai", "infoblox", "dyn", "designate", "coredns", "skydns", "inmemory", "ovh", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns", "vultr", "ultradns")
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("exclude-domains", "Exclude subdomains (optional)").Default("").StringsVar(&cfg.ExcludeDomains)
 	app.Flag("zone-id-filter", "Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.ZoneIDFilter)
