@@ -2,12 +2,14 @@
 This tutorial describes how to configure ExternalDNS to use the OpenShift Route source.
 It is meant to supplement the other provider-specific setup tutorials.
 
-### Prepare ROUTER_CANONICAL_HOSTNAME in default/router deployment
+### For OCP v3.x, Prepare ROUTER_CANONICAL_HOSTNAME in default/router deployment
 Read and go through [Finding the Host Name of the Router](https://docs.openshift.com/container-platform/3.11/install_config/router/default_haproxy_router.html#finding-router-hostname).
 If no ROUTER_CANONICAL_HOSTNAME is set, you must annotate each route with external-dns.alpha.kubernetes.io/target!
 
+**NOTE:** This is only required for OCP v3.x as this workflow is automated in OCP v4.x
+
 ### Manifest (for clusters without RBAC enabled)
-```yaml
+```yaml 
 apiVersion: apps/v1
 kind: Deployment
 metadata:

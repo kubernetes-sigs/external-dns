@@ -431,7 +431,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 
 	switch svc.Spec.Type {
 	case v1.ServiceTypeLoadBalancer:
-		targets = append(targets, extractLoadBalancerTargets(svc)...)
+		targets = append(targets, ExtractLoadBalancerTargets(svc)...)
 	case v1.ServiceTypeClusterIP:
 		if sc.publishInternal {
 			targets = append(targets, extractServiceIps(svc)...)
@@ -485,7 +485,7 @@ func extractServiceExternalName(svc *v1.Service) endpoint.Targets {
 	return endpoint.Targets{svc.Spec.ExternalName}
 }
 
-func extractLoadBalancerTargets(svc *v1.Service) endpoint.Targets {
+func ExtractLoadBalancerTargets(svc *v1.Service) endpoint.Targets {
 	var (
 		targets     endpoint.Targets
 		externalIPs endpoint.Targets
