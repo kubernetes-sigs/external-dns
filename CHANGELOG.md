@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Improve errors context for AWS provider
 
 ## v0.7.3 - 2020-08-05
 
