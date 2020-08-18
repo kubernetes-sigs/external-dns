@@ -71,7 +71,7 @@ We define the following stability levels for providers:
 
 The following table clarifies the current status of the providers according to the aforementioned stability levels:
 
-| Provider | Status | Maintainers | 
+| Provider | Status | Maintainers |
 | -------- | ------ | ----------- |
 | Google Cloud DNS | Stable | |
 | AWS Route 53 | Stable | |
@@ -265,7 +265,7 @@ Here's a rough outline on what is to come (subject to change):
 - [x] Support for DigitalOcean
 - [x] Multiple DNS names per Service
 
-### v0.5 - _current version_
+### v0.5
 
 - [x] Support for creating DNS records to multiple targets (for Google and AWS)
 - [x] Support for OpenStack Designate
