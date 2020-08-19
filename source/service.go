@@ -40,7 +40,7 @@ import (
 
 const (
 	defaultTargetsCapacity = 10
-	nodeRoleLabelKey       = "kubernetes.io/role"
+	nodeRoleLabelKey       = "node-role.kubernetes.io"
 )
 
 // serviceSource is an implementation of Source for Kubernetes service objects.
@@ -596,7 +596,7 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 	default:
 		nodeSelector := labels.Set{nodeRoleLabelKey: sc.nodePortNodeRole}
 		// Ensure we filter out the master from the list of nodes by only selecting
-		// nodes labeled with the "node" role, not the "master" role
+		// nodes labeled with the "worker" role, not the "master" role
 		nodes, err = sc.nodeInformer.Lister().List(labels.SelectorFromSet(nodeSelector))
 		if err != nil {
 			return nil, err

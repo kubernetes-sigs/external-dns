@@ -57,7 +57,7 @@ func (suite *ServiceSuite) SetupTest() {
 		[]string{},
 		false,
 		true,
-		"node",
+		"worker",
 	)
 
 	suite.fooWithTargets = &v1.Service{
@@ -154,7 +154,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 				ti.serviceTypesFilter,
 				false,
 				true,
-				"node",
+				"worker",
 			)
 
 			if ti.expectError {
@@ -1186,7 +1186,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				tc.serviceTypesFilter,
 				tc.ignoreHostnameAnnotation,
 				true,
-				"node",
+				"worker",
 			)
 			require.NoError(t, err)
 
@@ -1544,7 +1544,7 @@ func TestClusterIpServices(t *testing.T) {
 				[]string{},
 				tc.ignoreHostnameAnnotation,
 				true,
-				"node",
+				"worker",
 			)
 			require.NoError(t, err)
 
@@ -1608,7 +1608,7 @@ func TestNodePortServices(t *testing.T) {
 			[]*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "node1",
-					Labels: map[string]string{"kubernetes.io/role": "node"},
+					Labels: map[string]string{"node-role.kubernetes.io": "worker"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -1619,7 +1619,7 @@ func TestNodePortServices(t *testing.T) {
 			}, {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "node2",
-					Labels: map[string]string{"kubernetes.io/role": "node"},
+					Labels: map[string]string{"node-role.kubernetes.io": "worker"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -1630,7 +1630,7 @@ func TestNodePortServices(t *testing.T) {
 			}, {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "node3",
-					Labels: map[string]string{"kubernetes.io/role": "master"},
+					Labels: map[string]string{"node-role.kubernetes.io": "master"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -1664,7 +1664,7 @@ func TestNodePortServices(t *testing.T) {
 			[]*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "node1",
-					Labels: map[string]string{"kubernetes.io/role": "node"},
+					Labels: map[string]string{"node-role.kubernetes.io": "worker"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -1675,7 +1675,7 @@ func TestNodePortServices(t *testing.T) {
 			}, {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "node2",
-					Labels: map[string]string{"kubernetes.io/role": "node"},
+					Labels: map[string]string{"node-role.kubernetes.io": "worker"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -1686,7 +1686,7 @@ func TestNodePortServices(t *testing.T) {
 			}, {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "node3",
-					Labels: map[string]string{"kubernetes.io/role": "master"},
+					Labels: map[string]string{"node-role.kubernetes.io": "master"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -1721,7 +1721,7 @@ func TestNodePortServices(t *testing.T) {
 			[]*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "node1",
-					Labels: map[string]string{"kubernetes.io/role": "node"},
+					Labels: map[string]string{"node-role.kubernetes.io": "worker"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -1732,7 +1732,7 @@ func TestNodePortServices(t *testing.T) {
 			}, {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "node2",
-					Labels: map[string]string{"kubernetes.io/role": "node"},
+					Labels: map[string]string{"node-role.kubernetes.io": "worker"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -1743,7 +1743,7 @@ func TestNodePortServices(t *testing.T) {
 			}, {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "node3",
-					Labels: map[string]string{"kubernetes.io/role": "master"},
+					Labels: map[string]string{"node-role.kubernetes.io": "master"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -1780,7 +1780,7 @@ func TestNodePortServices(t *testing.T) {
 			[]*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "node1",
-					Labels: map[string]string{"kubernetes.io/role": "node"},
+					Labels: map[string]string{"node-role.kubernetes.io": "worker"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -1790,7 +1790,7 @@ func TestNodePortServices(t *testing.T) {
 			}, {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "node2",
-					Labels: map[string]string{"kubernetes.io/role": "node"},
+					Labels: map[string]string{"node-role.kubernetes.io": "worker"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -1800,7 +1800,7 @@ func TestNodePortServices(t *testing.T) {
 			}, {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "node3",
-					Labels: map[string]string{"kubernetes.io/role": "master"},
+					Labels: map[string]string{"node-role.kubernetes.io": "master"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -1837,7 +1837,7 @@ func TestNodePortServices(t *testing.T) {
 			[]*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "node1",
-					Labels: map[string]string{"kubernetes.io/role": "node"},
+					Labels: map[string]string{"node-role.kubernetes.io": "worker"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -1848,7 +1848,7 @@ func TestNodePortServices(t *testing.T) {
 			}, {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "node2",
-					Labels: map[string]string{"kubernetes.io/role": "node"},
+					Labels: map[string]string{"node-role.kubernetes.io": "worker"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -1859,7 +1859,7 @@ func TestNodePortServices(t *testing.T) {
 			}, {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "node3",
-					Labels: map[string]string{"kubernetes.io/role": "master"},
+					Labels: map[string]string{"node-role.kubernetes.io": "master"},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -2083,7 +2083,7 @@ func TestNodePortServices(t *testing.T) {
 				[]string{},
 				tc.ignoreHostnameAnnotation,
 				true,
-				"node",
+				"worker",
 			)
 			require.NoError(t, err)
 
@@ -2414,7 +2414,7 @@ func TestHeadlessServices(t *testing.T) {
 				[]string{},
 				tc.ignoreHostnameAnnotation,
 				true,
-				"node",
+				"worker",
 			)
 			require.NoError(t, err)
 
@@ -2718,7 +2718,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				[]string{},
 				tc.ignoreHostnameAnnotation,
 				true,
-				"node",
+				"worker",
 			)
 			require.NoError(t, err)
 
@@ -2825,7 +2825,7 @@ func TestExternalServices(t *testing.T) {
 				[]string{},
 				tc.ignoreHostnameAnnotation,
 				true,
-				"node",
+				"worker",
 			)
 			require.NoError(t, err)
 
@@ -2866,7 +2866,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
 	require.NoError(b, err)
 
-	client, err := NewServiceSource(kubernetes, v1.NamespaceAll, "", "", false, "", false, false, false, []string{}, false, true, "node")
+	client, err := NewServiceSource(kubernetes, v1.NamespaceAll, "", "", false, "", false, false, false, []string{}, false, true, "worker")
 	require.NoError(b, err)
 
 	for i := 0; i < b.N; i++ {
