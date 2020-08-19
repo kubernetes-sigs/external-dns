@@ -26,6 +26,8 @@ auth:
     -----BEGIN RSA PRIVATE KEY-----
     -----END RSA PRIVATE KEY-----
   fingerprint: af:81:71:8e...
+  # Omit if there is not a password for the key
+  passphrase: Tx1jRk...
 compartment: ocid1.compartment.oc1...
 ```
 
@@ -53,7 +55,7 @@ rules:
 - apiGroups: [""]
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions"]
+- apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]

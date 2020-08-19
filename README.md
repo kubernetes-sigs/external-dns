@@ -3,7 +3,7 @@
 </p>
 
 # ExternalDNS
-[![Build Status](https://travis-ci.org/kubernetes-sigs/external-dns.svg)](https://travis-ci.org/kubernetes-sigs/external-dns)
+[![Build Status](https://github.com/kubernetes-sigs/external-dns/workflows/Go/badge.svg)](https://github.com/kubernetes-sigs/external-dns/actions)
 [![Coverage Status](https://coveralls.io/repos/github/kubernetes-sigs/external-dns/badge.svg)](https://coveralls.io/github/kubernetes-sigs/external-dns)
 [![GitHub release](https://img.shields.io/github/release/kubernetes-sigs/external-dns.svg)](https://github.com/kubernetes-sigs/external-dns/releases)
 [![go-doc](https://godoc.org/github.com/kubernetes-sigs/external-dns?status.svg)](https://godoc.org/github.com/kubernetes-sigs/external-dns)
@@ -98,6 +98,7 @@ The following table clarifies the current status of the providers according to t
 | Akamai FastDNS | Alpha | |
 | OVH | Alpha | |
 | Vultr | Alpha | |
+| UltraDNS | Alpha | |
 
 ## Running ExternalDNS:
 
@@ -147,6 +148,7 @@ The following tutorials are provided:
 * [VinylDNS](docs/tutorials/vinyldns.md)
 * [OVH](docs/tutorials/ovh.md)
 * [Vultr](docs/tutorials/vultr.md)
+* [UltraDNS](docs/tutorials/ultradns.md)
 
 ### Running Locally
 
