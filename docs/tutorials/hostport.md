@@ -2,7 +2,7 @@
 
 This tutorial describes how to setup ExternalDNS for usage in conjunction with a Headless service.
 
-## Usecases
+## Use cases
 The main use cases that inspired this feature is the necessity for fixed addressable hostnames with services, such as Kafka when trying to access them from outside the cluster. In this scenario, quite often, only the Node IP addresses are actually routable and as in systems like Kafka more direct connections are preferable.
 
 ## Setup

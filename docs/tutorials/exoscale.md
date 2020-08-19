@@ -7,7 +7,7 @@ Exoscale provider support was added via [this PR](https://github.com/kubernetes-
 The Exoscale provider expects that your Exoscale zones, you wish to add records to, already exists
 and are configured correctly. It does not add, remove or configure new zones in anyway.
 
-To do this pease refer to the [Exoscale DNS documentation](https://community.exoscale.com/documentation/dns/).
+To do this please refer to the [Exoscale DNS documentation](https://community.exoscale.com/documentation/dns/).
 
 Additionally you will have to provide the Exoscale...:
 
