@@ -60,7 +60,7 @@ type serviceSource struct {
 	ignoreHostnameAnnotation       bool
 	publishInternal                bool
 	publishHostIP                  bool
-	createNodePortSRV              bool
+	nodePortEnabled                bool
 	nodePortNodeRole               string
 	alwaysPublishNotReadyAddresses bool
 	serviceInformer                coreinformers.ServiceInformer
@@ -71,7 +71,7 @@ type serviceSource struct {
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation, createNodePortSRV bool, nodePortNodeRole string) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation, nodePortEnabled bool, nodePortNodeRole string) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -150,7 +150,7 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		ignoreHostnameAnnotation:       ignoreHostnameAnnotation,
 		publishInternal:                publishInternal,
 		publishHostIP:                  publishHostIP,
-		createNodePortSRV:              createNodePortSRV,
+		nodePortEnabled:                nodePortEnabled,
 		nodePortNodeRole:               nodePortNodeRole,
 		alwaysPublishNotReadyAddresses: alwaysPublishNotReadyAddresses,
 		serviceInformer:                serviceInformer,
@@ -481,7 +481,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 			return endpoints
 		}
 		// If the user wants an SRV record as well, extract that here
-		if sc.createNodePortSRV {
+		if sc.nodePortEnabled {
 			endpoints = append(endpoints, sc.extractNodePortSRVEndpoints(svc, targets, hostname, ttl)...)
 		}
 	case v1.ServiceTypeExternalName:
