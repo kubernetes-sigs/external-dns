@@ -116,7 +116,7 @@ spec:
           value: "YOU_VULTR_API_KEY"
 ```
 
-## Deploying an Nginx Service
+## Deploying a Nginx Service
 
 Create a service file called 'nginx.yaml' with the following contents:
 
