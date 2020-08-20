@@ -19,6 +19,7 @@ package source
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -40,7 +41,6 @@ import (
 
 const (
 	defaultTargetsCapacity = 10
-	nodeRoleLabelKey       = "node-role.kubernetes.io"
 )
 
 // serviceSource is an implementation of Source for Kubernetes service objects.
@@ -594,7 +594,12 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 			}
 		}
 	default:
-		nodeSelector := labels.Set{nodeRoleLabelKey: sc.nodePortNodeRole}
+		nodeSelectorKV := strings.Split(sc.nodePortNodeRole, "=")
+		if len(nodeSelectorKV) != 2 {
+			log.Errorf("Invalid role label format for NodePort selector (should be label=value): %s", sc.nodePortNodeRole)
+			return nil, errors.New("Invalid role label format for NodePort selector")
+		}
+		nodeSelector := labels.Set{nodeSelectorKV[0]: nodeSelectorKV[1]}
 		// Ensure we filter out the master from the list of nodes by only selecting
 		// nodes labeled with the "worker" role, not the "master" role
 		nodes, err = sc.nodeInformer.Lister().List(labels.SelectorFromSet(nodeSelector))
