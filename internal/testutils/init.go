@@ -2,11 +2,11 @@ package testutils
 
 import (
 	"io/ioutil"
+	"log"
 	"os"
 
-	"log"
-
 	"github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/external-dns/internal/config"
 )
 
