@@ -101,6 +101,8 @@ var (
 		"elb.us-gov-west-1.amazonaws.com":     "ZMG1MZ2THAWF1",
 		"elb.us-gov-east-1.amazonaws.com":     "Z1ZSMQQ6Q24QQ8",
 		"elb.me-south-1.amazonaws.com":        "Z3QSRYVP46NYYV",
+		// Global Accelerator
+		"awsglobalaccelerator.com": "Z2BJ6XQ5FK7U4H",
 	}
 )
 
