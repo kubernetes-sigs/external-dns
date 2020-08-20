@@ -26,8 +26,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
-
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
 	"sigs.k8s.io/external-dns/controller"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
