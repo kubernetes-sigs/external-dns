@@ -25,12 +25,10 @@ require (
 	github.com/exoscale/egoscale v0.18.1
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
-	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
 	github.com/golang/sync v0.0.0-20180314180146-1d60e4601c6f
 	github.com/google/go-cmp v0.4.1
 	github.com/gophercloud/gophercloud v0.1.0
 	github.com/gorilla/mux v1.7.4 // indirect
-	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/infobloxopen/infoblox-go-client v0.0.0-20180606155407-61dc5f9b0a65
 	github.com/linki/instrumented_http v0.2.0
 	github.com/linode/linodego v0.19.0
@@ -48,7 +46,6 @@ require (
 	github.com/sanyu/dynectsoap v0.0.0-20181203081243-b83de5edc4e0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.6.0.20200623155123-84df6c4b5301
 	github.com/sirupsen/logrus v1.6.0
-	github.com/smartystreets/gunit v1.3.4 // indirect
 	github.com/stretchr/testify v1.5.1
 	github.com/terra-farm/udnssdk v1.3.5 // indirect
 	github.com/transip/gotransip v5.8.2+incompatible
@@ -64,9 +61,9 @@ require (
 	gopkg.in/yaml.v2 v2.2.8
 	istio.io/api v0.0.0-20200529165953-72dad51d4ffc
 	istio.io/client-go v0.0.0-20200529172309-31c16ea3f751
-	k8s.io/api v0.18.3
-	k8s.io/apimachinery v0.18.3
-	k8s.io/client-go v0.18.3
+	k8s.io/api v0.18.8
+	k8s.io/apimachinery v0.18.8
+	k8s.io/client-go v0.18.8
 )
 
 replace (
