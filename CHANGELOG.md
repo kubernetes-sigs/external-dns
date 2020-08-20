@@ -1,6 +1,9 @@
 ## Unreleased
 
 - Oracle OCI provider: add support for instance principal authentication (#1700) @ericrrath
+- Improve errors context for AWS provider
+- Scaleway Provider (#1643) @Sh4d1
+- Fix typos in documentation @ddymko
 
 ## v0.7.3 - 2020-08-05
 

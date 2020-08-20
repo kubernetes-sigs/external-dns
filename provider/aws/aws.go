@@ -101,6 +101,8 @@ var (
 		"elb.us-gov-west-1.amazonaws.com":     "ZMG1MZ2THAWF1",
 		"elb.us-gov-east-1.amazonaws.com":     "Z1ZSMQQ6Q24QQ8",
 		"elb.me-south-1.amazonaws.com":        "Z3QSRYVP46NYYV",
+		// Global Accelerator
+		"awsglobalaccelerator.com": "Z2BJ6XQ5FK7U4H",
 	}
 )
 
@@ -166,7 +168,7 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 		SharedConfigState: session.SharedConfigEnable,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to instantiate AWS session: %w", err)
 	}
 
 	if awsConfig.AssumeRole != "" {
@@ -229,10 +231,10 @@ func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53.HostedZone
 
 	err := p.client.ListHostedZonesPagesWithContext(ctx, &route53.ListHostedZonesInput{}, f)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list hosted zones: %w", err)
 	}
 	if tagErr != nil {
-		return nil, tagErr
+		return nil, fmt.Errorf("failed to list zones tags: %w", tagErr)
 	}
 
 	for _, zone := range zones {
@@ -255,7 +257,7 @@ func wildcardUnescape(s string) string {
 func (p *AWSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.Zones(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("records retrieval failed: %w", err)
 	}
 
 	return p.records(ctx, zones)
@@ -339,7 +341,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 		}
 
 		if err := p.client.ListResourceRecordSetsPagesWithContext(ctx, params, f); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to list resource records sets for zone %s: %w", *z.Id, err)
 		}
 	}
 
@@ -364,12 +366,12 @@ func (p *AWSProvider) DeleteRecords(ctx context.Context, endpoints []*endpoint.E
 func (p *AWSProvider) doRecords(ctx context.Context, action string, endpoints []*endpoint.Endpoint) error {
 	zones, err := p.Zones(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to list zones, aborting %s doRecords action: %w", action, err)
 	}
 
 	records, err := p.records(ctx, zones)
 	if err != nil {
-		log.Errorf("getting records failed: %v", err)
+		log.Errorf("failed to list records while preparing %s doRecords action: %s", action, err)
 	}
 	return p.submitChanges(ctx, p.newChanges(action, endpoints, records, zones), zones)
 }
@@ -378,7 +380,7 @@ func (p *AWSProvider) doRecords(ctx context.Context, action string, endpoints []
 func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	zones, err := p.Zones(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to list zones, not applying changes: %w", err)
 	}
 
 	records, ok := ctx.Value(provider.RecordsContextKey).([]*endpoint.Endpoint)
@@ -386,7 +388,7 @@ func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 		var err error
 		records, err = p.records(ctx, zones)
 		if err != nil {
-			log.Errorf("getting records failed: %v", err)
+			log.Errorf("failed to get records while preparing to applying changes: %s", err)
 		}
 	}
 
@@ -581,7 +583,7 @@ func (p *AWSProvider) tagsForZone(ctx context.Context, zoneID string) (map[strin
 		ResourceId:   aws.String(zoneID),
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list tags for zone %s: %w", zoneID, err)
 	}
 	tagMap := map[string]string{}
 	for _, tag := range response.ResourceTagSet.Tags {

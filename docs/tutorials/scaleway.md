@@ -1,40 +1,51 @@
-# Setting up ExternalDNS for Services on Vultr
+# Setting up ExternalDNS for Services on Scaleway
 
-This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using Vultr DNS.
+This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using Scaleway DNS.
 
-Make sure to use **>=0.6** version of ExternalDNS for this tutorial.
+Make sure to use **>=0.7.3** version of ExternalDNS for this tutorial.
 
-## Managing DNS with Vultr
+**Warning**: Scaleway DNS is currently in Public Beta and may not be suited for production usage.
 
-If you want to read up on vultr DNS service you can read the following tutorial: 
-[Introduction to Vultr DNS](https://www.vultr.com/docs/introduction-to-vultr-dns)
+## Importing a Domain into Scaleway DNS
 
-Create a new DNS Zone where you want to create your records in. For the examples we will be using `example.com`
+In order to use your domain, you need to import it into Scaleway DNS. If it's not already done, you can follow [this documentation](https://www.scaleway.com/en/docs/scaleway-dns/)
 
-## Creating Vultr Credentials
+Once the domain is imported you can either use the root zone, or create a subzone to use. 
 
-You will need to create a new API Key which can be found on the [Vultr Dashboard](https://my.vultr.com/settings/#settingsapi).
+In this example we will use `example.com` as an example.
 
-The environment variable `VULTR_API_KEY` will be needed to run ExternalDNS with Vultr.
+## Creating Scaleway Credentials
+
+To use ExternalDNS with Scaleway DNS, you need to create an API token (composed of the Access Key and the Secret Key). 
+You can either use existing ones or you can create a new token, as explained in [How to generate an API token](https://www.scaleway.com/en/docs/generate-an-api-token/) or directly by going to the [credentials page](https://console.scaleway.com/account/organization/credentials).
+
+Note that you will also need to the Organization ID, which can be retrieve on the same page.
+
+Three environment variables are needed to run ExternalDNS with Scaleway DNS:
+- `SCW_ACCESS_KEY` which is the Access Key.
+- `SCW_SECRET_KEY` which is the Secret Key.
+- `SCW_DEFAULT_ORGANIZATION_ID` which is your Organization ID.
 
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
 Then apply one of the following manifests file to deploy ExternalDNS.
 
-### Manifest (for clusters without RBAC enabled)
+The following example are suited for development. For a production usage, prefer secrets over environment, and use a [tagged release](https://github.com/kubernetes-sigs/external-dns/releases).
 
+### Manifest (for clusters without RBAC enabled)
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: external-dns
 spec:
-  strategy:
-    type: Recreate
+  replicas: 1
   selector:
     matchLabels:
       app: external-dns
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
@@ -46,14 +57,17 @@ spec:
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
-        - --provider=vultr
+        - --provider=scaleway
         env:
-        - name: VULTR_API_KEY
-          value: "YOU_VULTR_API_KEY"
+        - name: SCW_ACCESS_KEY
+          value: "<your access key>"
+        - name: SCW_SECRET_KEY
+          value: "<your secret key>"
+        - name: SCW_DEFAULT_ORGANIZATION_ID
+          value: "<your organization ID>"
 ```
 
 ### Manifest (for clusters with RBAC enabled)
-
 ```yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -68,12 +82,12 @@ rules:
 - apiGroups: [""]
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"]
+- apiGroups: ["extensions"] 
+  resources: ["ingresses"] 
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
-  verbs: ["list"]
+  verbs: ["list","watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
@@ -93,11 +107,12 @@ kind: Deployment
 metadata:
   name: external-dns
 spec:
-  strategy:
-    type: Recreate
+  replicas: 1
   selector:
     matchLabels:
       app: external-dns
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
@@ -110,13 +125,18 @@ spec:
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
-        - --provider=vultr
+        - --provider=scaleway
         env:
-        - name: VULTR_API_KEY
-          value: "YOU_VULTR_API_KEY"
+        - name: SCW_ACCESS_KEY
+          value: "<your access key>"
+        - name: SCW_SECRET_KEY
+          value: "<your secret key>"
+        - name: SCW_DEFAULT_ORGANIZATION_ID
+          value: "<your organization ID>"
 ```
 
-## Deploying a Nginx Service
+
+## Deploying an Nginx Service
 
 Create a service file called 'nginx.yaml' with the following contents:
 
@@ -126,6 +146,7 @@ kind: Deployment
 metadata:
   name: nginx
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: nginx
@@ -156,7 +177,7 @@ spec:
       targetPort: 80
 ```
 
-Note the annotation on the service; use the same hostname as the Vultr DNS zone created above.
+Note the annotation on the service; use the same hostname as the Scaleway DNS zone created above.
 
 ExternalDNS uses this annotation to determine what services should be registered with DNS. Removing the annotation will cause ExternalDNS to remove the corresponding DNS records.
 
@@ -168,11 +189,11 @@ $ kubectl create -f nginx.yaml
 
 Depending where you run your service it can take a little while for your cloud provider to create an external IP for the service.
 
-Once the service has an external IP assigned, ExternalDNS will notice the new service IP address and synchronize the Vultr DNS records.
+Once the service has an external IP assigned, ExternalDNS will notice the new service IP address and synchronize the Scaleway DNS records.
 
-## Verifying Vultr DNS records
+## Verifying Scaleway DNS records
 
-Check your [Vultr UI](https://my.vultr.com/dns/) to view the records for your Vultr DNS zone.
+Check your [Scaleway DNS UI](https://console.scaleway.com/domains/external) to view the records for your Scaleway DNS zone.
 
 Click on the zone for the one created above if a different domain was used.
 
@@ -180,7 +201,7 @@ This should show the external IP address of the service as the A record for your
 
 ## Cleanup
 
-Now that we have verified that ExternalDNS will automatically manage Vultr DNS records, we can delete the tutorial's example:
+Now that we have verified that ExternalDNS will automatically manage Scaleway DNS records, we can delete the tutorial's example:
 
 ```
 $ kubectl delete service -f nginx.yaml
