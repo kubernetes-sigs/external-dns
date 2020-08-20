@@ -98,7 +98,7 @@ spec:
         - --source=service
         - --source=ingress
         - --provider=oci
-        - --policy=upsert-only # prevent ExternalDNSfrom deleting any records, omit to enable full synchronization
+        - --policy=upsert-only # prevent ExternalDNS from deleting any records, omit to enable full synchronization
         - --txt-owner-id=my-identifier
         volumeMounts:
           - name: config
