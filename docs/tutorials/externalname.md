@@ -2,7 +2,7 @@
 
 This tutorial describes how to setup ExternalDNS for usage in conjunction with an ExternalName service.
 
-## Usecases
+## Use cases
 
 The main use cases that inspired this feature is the necessity for having a subdomain pointing to an external domain. In this scenario, it makes sense for the subdomain to have a CNAME record pointing to the external domain.
 
