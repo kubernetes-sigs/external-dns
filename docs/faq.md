@@ -204,9 +204,10 @@ $ docker run \
   -e EXTERNAL_DNS_SOURCE=$'service\ningress' \
   -e EXTERNAL_DNS_PROVIDER=google \
   -e EXTERNAL_DNS_DOMAIN_FILTER=$'foo.com\nbar.com' \
-  registry.opensource.zalan.do/teapot/external-dns:latest
+  k8s.gcr.io/external-dns/external-dns:v0.7.3
 time="2017-08-08T14:10:26Z" level=info msg="config: &{APIServerURL: KubeConfig: Sources:[service ingress] Namespace: ...
 ```
+
 
 Locally:
 
@@ -272,17 +273,16 @@ Separate them by `,`.
 
 ### Are there official Docker images provided?
 
-When we tag a new release, we push a Docker image on Zalando's public Docker registry with the following name: 
+When we tag a new release, we push a container image to the Kubernetes projects official container registry with the following name:
 
 ```
-registry.opensource.zalan.do/teapot/external-dns
+k8s.gcr.io/external-dns/external-dns
 ```
 
-As tags, you can use your version of choice or use `latest` that always resolves to the latest tag.
+As tags, you use the external-dns release of choice(i.e. `v0.7.3`). A `latest` tag is not provided in the container registry.
 
 If you wish to build your own image, you can use the provided [Dockerfile](../Dockerfile) as a starting point.
 
-We are currently working with the Kubernetes community to provide official images for the project similarly to what is done with the other official Kubernetes projects, but we don't have an ETA on when those images will be available.
 
 ### Why am I seeing time out errors even though I have connectivity to my cluster?
 
