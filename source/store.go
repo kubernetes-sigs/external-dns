@@ -51,7 +51,7 @@ type Config struct {
 	PublishInternal                bool
 	PublishHostIP                  bool
 	NodePortEnabled                bool
-	NodePortNodeRole               string
+	NodePortSelector               string
 	AlwaysPublishNotReadyAddresses bool
 	ConnectorServer                string
 	CRDSourceAPIVersion            string
@@ -182,7 +182,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewServiceSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.AlwaysPublishNotReadyAddresses, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation, cfg.NodePortEnabled, cfg.NodePortNodeRole)
+		return NewServiceSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.AlwaysPublishNotReadyAddresses, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation, cfg.NodePortEnabled, cfg.NodePortSelector)
 	case "ingress":
 		client, err := p.KubeClient()
 		if err != nil {
