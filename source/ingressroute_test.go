@@ -18,9 +18,9 @@ package source
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
-	"github.com/pkg/errors"
 	contour "github.com/projectcontour/contour/apis/contour/v1beta1"
 	projectcontour "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"github.com/stretchr/testify/assert"
@@ -1070,7 +1070,7 @@ func newTestIngressRouteSource(loadBalancer fakeLoadBalancerService) (*ingressRo
 
 	irsrc, ok := src.(*ingressRouteSource)
 	if !ok {
-		return nil, errors.New("underlying source type was not ingressroute")
+		return nil, fmt.Errorf("underlying source type was not ingressroute")
 	}
 
 	return irsrc, nil

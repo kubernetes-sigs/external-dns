@@ -17,6 +17,7 @@ limitations under the License.
 package source
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -26,7 +27,6 @@ import (
 	"github.com/cloudfoundry-community/go-cfclient"
 	"github.com/linki/instrumented_http"
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	"k8s.io/client-go/dynamic"
@@ -34,9 +34,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
-
-// ErrSourceNotFound is returned when a requested source doesn't exist.
-var ErrSourceNotFound = errors.New("source not found")
 
 // Config holds shared configuration options for all Sources.
 type Config struct {
@@ -253,7 +250,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		}
 		return NewRouteGroupSource(cfg.RequestTimeout, token, tokenPath, apiServerURL, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.SkipperRouteGroupVersion, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
 	}
-	return nil, ErrSourceNotFound
+	return nil, fmt.Errorf("source not found")
 }
 
 // GetRestConfig returns the rest clients config to get automatically
@@ -338,7 +335,7 @@ func NewIstioClient(kubeConfig string, apiServerURL string) (*istioclient.Client
 
 	ic, err := istioclient.NewForConfig(restCfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create istio client")
+		return nil, fmt.Errorf("failed to create istio client: %w", err)
 	}
 
 	return ic, nil

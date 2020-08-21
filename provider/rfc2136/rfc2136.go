@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -75,7 +74,7 @@ type rfc2136Actions interface {
 func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter endpoint.DomainFilter, dryRun bool, minTTL time.Duration, actions rfc2136Actions) (provider.Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok && !insecure {
-		return nil, errors.Errorf("%s is not supported TSIG algorithm", secretAlg)
+		return nil, fmt.Errorf("%s is not supported TSIG algorithm", secretAlg)
 	}
 
 	r := &rfc2136Provider{

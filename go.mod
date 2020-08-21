@@ -40,7 +40,6 @@ require (
 	github.com/openshift/client-go v0.0.0-20200608144219-584632b8fc73
 	github.com/oracle/oci-go-sdk v21.4.0+incompatible
 	github.com/ovh/go-ovh v0.0.0-20181109152953-ba5adb4cf014
-	github.com/pkg/errors v0.9.1
 	github.com/projectcontour/contour v1.5.0
 	github.com/prometheus/client_golang v1.7.1
 	github.com/sanyu/dynectsoap v0.0.0-20181203081243-b83de5edc4e0

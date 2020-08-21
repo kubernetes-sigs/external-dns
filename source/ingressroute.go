@@ -25,7 +25,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/pkg/errors"
 	contourapi "github.com/projectcontour/contour/apis/contour/v1beta1"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -143,7 +142,7 @@ func (sc *ingressRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoi
 	for _, ir := range irs {
 		unstrucuredIR, ok := ir.(*unstructured.Unstructured)
 		if !ok {
-			return nil, errors.New("could not convert")
+			return nil, fmt.Errorf("could not convert")
 		}
 
 		irConverted := &contourapi.IngressRoute{}
@@ -306,7 +305,7 @@ func (sc *ingressRouteSource) targetsFromContourLoadBalancer(ctx context.Context
 // endpointsFromIngressRouteConfig extracts the endpoints from a Contour IngressRoute object
 func (sc *ingressRouteSource) endpointsFromIngressRoute(ctx context.Context, ingressRoute *contourapi.IngressRoute) ([]*endpoint.Endpoint, error) {
 	if ingressRoute.CurrentStatus != "valid" {
-		log.Warn(errors.Errorf("cannot generate endpoints for ingressroute with status %s", ingressRoute.CurrentStatus))
+		log.Warn(fmt.Errorf("cannot generate endpoints for ingressroute with status %s", ingressRoute.CurrentStatus))
 		return nil, nil
 	}
 

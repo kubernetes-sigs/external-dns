@@ -18,11 +18,11 @@ package source
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -1518,7 +1518,7 @@ func newTestVirtualServiceSource(loadBalancerList []fakeIngressGatewayService, g
 
 	vssrc, ok := src.(*virtualServiceSource)
 	if !ok {
-		return nil, errors.New("underlying source type was not virtualservice")
+		return nil, fmt.Errorf("underlying source type was not virtualservice")
 	}
 
 	return vssrc, nil

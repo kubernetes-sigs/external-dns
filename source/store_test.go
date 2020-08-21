@@ -116,7 +116,7 @@ func (suite *ByNamesTestSuite) TestSourceNotFound() {
 	mockClientGenerator.On("KubeClient").Return(fakeKube.NewSimpleClientset(), nil)
 
 	sources, err := ByNames(mockClientGenerator, []string{"foo"}, minimalConfig)
-	suite.Equal(err, ErrSourceNotFound, "should return source not found")
+	suite.Error(err, "should return source not found")
 	suite.Len(sources, 0, "should not returns any source")
 }
 
@@ -155,5 +155,5 @@ func TestByNames(t *testing.T) {
 }
 
 var minimalConfig = &Config{
-	ContourLoadBalancerService:  "heptio-contour/contour",
+	ContourLoadBalancerService: "heptio-contour/contour",
 }

@@ -18,9 +18,9 @@ package source
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -1200,7 +1200,7 @@ func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService) (*gatewa
 
 	gwsrc, ok := src.(*gatewaySource)
 	if !ok {
-		return nil, errors.New("underlying source type was not gateway")
+		return nil, fmt.Errorf("underlying source type was not gateway")
 	}
 
 	return gwsrc, nil

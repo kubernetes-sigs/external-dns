@@ -18,12 +18,12 @@ package oci
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"testing"
 
 	"github.com/oracle/oci-go-sdk/common"
 	"github.com/oracle/oci-go-sdk/dns"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -177,7 +177,7 @@ hKRtDhmSdWBo3tJK12RrAe4t7CUe8gMgTvU7ExlcA3xQkseFPx9K
 `,
 				},
 			},
-			err: errors.New("initializing OCI DNS API client: can not create client, bad configuration: PEM data was not found in buffer"),
+			err: fmt.Errorf("failed to initialize OCI DNS API client: can not create client, bad configuration: PEM data was not found in buffer"),
 		},
 	}
 	for name, tc := range testCases {
@@ -491,13 +491,13 @@ func (c *mutableMockOCIDNSClient) ListZones(ctx context.Context, request dns.Lis
 
 func (c *mutableMockOCIDNSClient) GetZoneRecords(ctx context.Context, request dns.GetZoneRecordsRequest) (response dns.GetZoneRecordsResponse, err error) {
 	if request.ZoneNameOrId == nil {
-		err = errors.New("no name or id")
+		err = fmt.Errorf("name or id")
 		return
 	}
 
 	records, ok := c.records[*request.ZoneNameOrId]
 	if !ok {
-		err = errors.New("zone not found")
+		err = fmt.Errorf("zone not found")
 		return
 	}
 
@@ -516,13 +516,13 @@ func ociRecordKey(rType, domain string) string {
 
 func (c *mutableMockOCIDNSClient) PatchZoneRecords(ctx context.Context, request dns.PatchZoneRecordsRequest) (response dns.PatchZoneRecordsResponse, err error) {
 	if request.ZoneNameOrId == nil {
-		err = errors.New("no name or id")
+		err = fmt.Errorf("no name or id")
 		return
 	}
 
 	records, ok := c.records[*request.ZoneNameOrId]
 	if !ok {
-		err = errors.New("zone not found")
+		err = fmt.Errorf("zone not found")
 		return
 	}
 
@@ -544,7 +544,7 @@ func (c *mutableMockOCIDNSClient) PatchZoneRecords(ctx context.Context, request 
 		case dns.RecordOperationOperationRemove:
 			delete(records, k)
 		default:
-			err = errors.Errorf("unsupported operation %q", op.Operation)
+			err = fmt.Errorf("unsupported operation: %q", op.Operation)
 			return
 		}
 	}

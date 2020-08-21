@@ -29,7 +29,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"go.etcd.io/etcd/clientv3"
 
@@ -104,7 +103,7 @@ func NewRDNSProvider(config RDNSConfig) (*RDNSProvider, error) {
 	}
 	domain := os.Getenv("RDNS_ROOT_DOMAIN")
 	if domain == "" {
-		return nil, errors.New("needed root domain environment")
+		return nil, fmt.Errorf("needed root domain environment")
 	}
 	return &RDNSProvider{
 		client:       client,
@@ -290,7 +289,7 @@ func newEtcdv3Client() (RDNSClient, error) {
 		isInsecure := insecure == "true" || insecure == "yes" || insecure == "1"
 
 		if ca != "" && key == "" || cert == "" && key != "" {
-			return nil, errors.New("either both cert and key or none must be provided")
+			return nil, fmt.Errorf("either both cert and key or none must be provided")
 		}
 
 		if cert != "" {
@@ -323,7 +322,7 @@ func newEtcdv3Client() (RDNSClient, error) {
 		cfg.Endpoints = urls
 		cfg.TLS = config
 	default:
-		return nil, errors.New("etcdv3 URLs must start with either http:// or https://")
+		return nil, fmt.Errorf("etcdv3 URLs must start with either http:// or https://")
 	}
 
 	c, err := clientv3.New(*cfg)

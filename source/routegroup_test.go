@@ -18,9 +18,9 @@ package source
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -230,7 +230,7 @@ type fakeRouteGroupClient struct {
 
 func (f *fakeRouteGroupClient) getRouteGroupList(string) (*routeGroupList, error) {
 	if f.returnErr {
-		return nil, errors.New("Fake route group list error")
+		return nil, fmt.Errorf("Fake route group list error")
 	}
 	return f.rg, nil
 }
