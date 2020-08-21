@@ -56,9 +56,9 @@ rules:
 - apiGroups: [""]
   resources: ["nodes"]
   verbs: ["list"]
-- apiGroups: ["contour.heptio.com"]
-  resources: ["ingressroutes"]
-  verbs: ["get","watch","list"]
+- apiGroups: ["contour.heptio.com", "projectcontour.io"]
+  resources: ["ingressroutes", "httpproxies"]
+  verbs: ["*"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
