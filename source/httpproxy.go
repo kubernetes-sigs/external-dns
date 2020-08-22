@@ -97,12 +97,12 @@ func NewContourHTTPProxySource(
 		return httpProxyInformer.Informer().HasSynced(), nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+		return nil, errors.Wrap(err, "failed to sync cache")
 	}
 
 	uc, err := NewUnstructuredConverter()
 	if err != nil {
-		return nil, fmt.Errorf("failed to setup Unstructured Converter: %v", err)
+		return nil, errors.Wrap(err, "failed to setup Unstructured Converter")
 	}
 
 	return &httpProxySource{
@@ -136,14 +136,14 @@ func (sc *httpProxySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 		hpConverted := &projectcontour.HTTPProxy{}
 		err := sc.unstructuredConverter.scheme.Convert(unstrucuredHP, hpConverted, nil)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to convert to HTTPProxy")
 		}
 		httpProxies = append(httpProxies, hpConverted)
 	}
 
 	httpProxies, err = sc.filterByAnnotations(httpProxies)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to filter HTTPProxies")
 	}
 
 	endpoints := []*endpoint.Endpoint{}
@@ -162,14 +162,14 @@ func (sc *httpProxySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 
 		hpEndpoints, err := sc.endpointsFromHTTPProxy(hp)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to get endpoints from HTTPProxy")
 		}
 
 		// apply template if fqdn is missing on HTTPProxy
 		if (sc.combineFQDNAnnotation || len(hpEndpoints) == 0) && sc.fqdnTemplate != nil {
 			tmplEndpoints, err := sc.endpointsFromTemplate(hp)
 			if err != nil {
-				return nil, err
+				return nil, errors.Wrap(err, "failed to get endpoints from template")
 			}
 
 			if sc.combineFQDNAnnotation {
@@ -201,7 +201,7 @@ func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPP
 	var buf bytes.Buffer
 	err := sc.fqdnTemplate.Execute(&buf, httpProxy)
 	if err != nil {
-		return nil, fmt.Errorf("failed to apply template on HTTPProxy %s/%s: %v", httpProxy.Namespace, httpProxy.Name, err)
+		return nil, errors.Wrapf(err, "failed to apply template on HTTPProxy %s/%s", httpProxy.Namespace, httpProxy.Name)
 	}
 
 	hostnames := buf.String()
