@@ -3,7 +3,7 @@
 - Improve errors context for AWS provider
 - Scaleway Provider (#1643) @Sh4d1
 - Fix typos in documentation @ddymko
-- Fix NodPort with externaltrafficpolicy targets duplication
+- Fix NodPort with externaltrafficpolicy targets duplication @codearky
 
 ## v0.7.3 - 2020-08-05
 
