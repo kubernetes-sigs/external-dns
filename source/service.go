@@ -511,6 +511,7 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 
 	switch svc.Spec.ExternalTrafficPolicy {
 	case v1.ServiceExternalTrafficPolicyTypeLocal:
+		nodesMap := map[*v1.Node]struct{}{}
 		labelSelector, err := metav1.ParseToLabelSelector(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
 		if err != nil {
 			return nil, err
@@ -531,7 +532,10 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 					log.Debugf("Unable to find node where Pod %s is running", v.Spec.Hostname)
 					continue
 				}
-				nodes = append(nodes, node)
+				if _, ok := nodesMap[node]; !ok {
+					nodesMap[node] = *new(struct{})
+					nodes = append(nodes, node)
+				}
 			}
 		}
 	default:
@@ -539,15 +543,14 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	for _, node := range nodes {
-		for _, address := range node.Status.Addresses {
-			switch address.Type {
-			case v1.NodeExternalIP:
-				externalIPs = append(externalIPs, address.Address)
-			case v1.NodeInternalIP:
-				internalIPs = append(internalIPs, address.Address)
+		for _, node := range nodes {
+			for _, address := range node.Status.Addresses {
+				switch address.Type {
+				case v1.NodeExternalIP:
+					externalIPs = append(externalIPs, address.Address)
+				case v1.NodeInternalIP:
+					internalIPs = append(internalIPs, address.Address)
+				}
 			}
 		}
 	}
