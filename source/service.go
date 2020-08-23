@@ -543,14 +543,14 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 		if err != nil {
 			return nil, err
 		}
-		for _, node := range nodes {
-			for _, address := range node.Status.Addresses {
-				switch address.Type {
-				case v1.NodeExternalIP:
-					externalIPs = append(externalIPs, address.Address)
-				case v1.NodeInternalIP:
-					internalIPs = append(internalIPs, address.Address)
-				}
+	}
+	for _, node := range nodes {
+		for _, address := range node.Status.Addresses {
+			switch address.Type {
+			case v1.NodeExternalIP:
+				externalIPs = append(externalIPs, address.Address)
+			case v1.NodeInternalIP:
+				internalIPs = append(internalIPs, address.Address)
 			}
 		}
 	}
