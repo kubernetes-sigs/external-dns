@@ -544,6 +544,7 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 			return nil, err
 		}
 	}
+
 	for _, node := range nodes {
 		for _, address := range node.Status.Addresses {
 			switch address.Type {
