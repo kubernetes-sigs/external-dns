@@ -30,6 +30,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/linki/instrumented_http"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -168,7 +169,7 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 		SharedConfigState: session.SharedConfigEnable,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate AWS session: %w", err)
+		return nil, errors.Wrap(err, "failed to instantiate AWS session")
 	}
 
 	if awsConfig.AssumeRole != "" {
@@ -231,10 +232,10 @@ func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53.HostedZone
 
 	err := p.client.ListHostedZonesPagesWithContext(ctx, &route53.ListHostedZonesInput{}, f)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list hosted zones: %w", err)
+		return nil, errors.Wrap(err, "failed to list hosted zones")
 	}
 	if tagErr != nil {
-		return nil, fmt.Errorf("failed to list zones tags: %w", tagErr)
+		return nil, errors.Wrap(tagErr, "failed to list zones tags")
 	}
 
 	for _, zone := range zones {
@@ -257,7 +258,7 @@ func wildcardUnescape(s string) string {
 func (p *AWSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.Zones(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("records retrieval failed: %w", err)
+		return nil, errors.Wrap(err, "records retrieval failed")
 	}
 
 	return p.records(ctx, zones)
@@ -341,7 +342,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 		}
 
 		if err := p.client.ListResourceRecordSetsPagesWithContext(ctx, params, f); err != nil {
-			return nil, fmt.Errorf("failed to list resource records sets for zone %s: %w", *z.Id, err)
+			return nil, errors.Wrapf(err, "failed to list resource records sets for zone %s", *z.Id)
 		}
 	}
 
@@ -366,7 +367,7 @@ func (p *AWSProvider) DeleteRecords(ctx context.Context, endpoints []*endpoint.E
 func (p *AWSProvider) doRecords(ctx context.Context, action string, endpoints []*endpoint.Endpoint) error {
 	zones, err := p.Zones(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to list zones, aborting %s doRecords action: %w", action, err)
+		return errors.Wrapf(err, "failed to list zones, aborting %s doRecords action", action)
 	}
 
 	records, err := p.records(ctx, zones)
@@ -380,7 +381,7 @@ func (p *AWSProvider) doRecords(ctx context.Context, action string, endpoints []
 func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	zones, err := p.Zones(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to list zones, not applying changes: %w", err)
+		return errors.Wrap(err, "failed to list zones, not applying changes")
 	}
 
 	records, ok := ctx.Value(provider.RecordsContextKey).([]*endpoint.Endpoint)
@@ -455,7 +456,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes []*route53.Chan
 	}
 
 	if len(failedZones) > 0 {
-		return fmt.Errorf("failed to submit all changes for the following zones: %v", failedZones)
+		return errors.Errorf("failed to submit all changes for the following zones: %v", failedZones)
 	}
 
 	return nil
@@ -583,7 +584,7 @@ func (p *AWSProvider) tagsForZone(ctx context.Context, zoneID string) (map[strin
 		ResourceId:   aws.String(zoneID),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to list tags for zone %s: %w", zoneID, err)
+		return nil, errors.Wrapf(err, "failed to list tags for zone %s", zoneID)
 	}
 	tagMap := map[string]string{}
 	for _, tag := range response.ResourceTagSet.Tags {
