@@ -84,7 +84,7 @@ type AWSSDProvider struct {
 }
 
 // NewAWSSDProvider initializes a new AWS Cloud Map based Provider.
-func NewAWSSDProvider(domainFilter endpoint.DomainFilter, namespaceType string, assumeRole string, dryRun bool) (*AWSSDProvider, error) {
+func NewAWSSDProvider(domainFilter endpoint.DomainFilter, namespaceType string, assumeRole string, externalId string, dryRun bool) (*AWSSDProvider, error) {
 	config := aws.NewConfig()
 
 	config = config.WithHTTPClient(
@@ -106,7 +106,15 @@ func NewAWSSDProvider(domainFilter endpoint.DomainFilter, namespaceType string, 
 
 	if assumeRole != "" {
 		log.Infof("Assuming role: %s", assumeRole)
-		sess.Config.WithCredentials(stscreds.NewCredentials(sess, assumeRole))
+
+		if externalId != "" {
+			sess.Config.WithCredentials(stscreds.NewCredentials(sess, assumeRole, func(p *stscreds.AssumeRoleProvider) {
+				p.ExternalID = externalId
+			}))
+		}
+		else {
+			sess.Config.WithCredentials(stscreds.NewCredentials(sess, assumeRole))
+		}
 	}
 
 	sess.Handlers.Build.PushBack(request.MakeAddToUserAgentHandler("ExternalDNS", externaldns.Version))
