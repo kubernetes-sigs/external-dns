@@ -110,8 +110,7 @@ func getHostnamesFromAnnotations(annotations map[string]string) []string {
 }
 
 func getAccessFromAnnotations(annotations map[string]string) string {
-	accessAnnotation := annotations[accessAnnotationKey]
-	return accessAnnotation
+	return annotations[accessAnnotationKey]
 }
 
 func getAliasFromAnnotations(annotations map[string]string) bool {
