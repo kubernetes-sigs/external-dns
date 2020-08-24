@@ -3,6 +3,7 @@
 - Improve errors context for AWS provider
 - Scaleway Provider (#1643) @Sh4d1
 - Fix typos in documentation @ddymko
+- Support ExternalID in AWS Provider when assuming a role.
 
 ## v0.7.3 - 2020-08-05
 
