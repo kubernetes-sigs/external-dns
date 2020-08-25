@@ -326,10 +326,6 @@ func (p *AlibabaCloudProvider) recordsForDNS() (endpoints []*endpoint.Endpoint, 
 		recordType := recordList[0].Type
 		ttl := recordList[0].TTL
 
-		if ttl == defaultAlibabaCloudRecordTTL {
-			ttl = 0
-		}
-
 		var targets []string
 		for _, record := range recordList {
 			target := record.Value
