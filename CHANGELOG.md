@@ -3,6 +3,7 @@
 - Improve errors context for AWS provider
 - Scaleway Provider (#1643) @Sh4d1
 - Fix typos in documentation @ddymko
+- Add Cloudflare documentation on use of `--zone-id-filter` (#1751) @loozhengyuan
 
 ## v0.7.3 - 2020-08-05
 
