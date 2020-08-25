@@ -2,6 +2,7 @@
 
 - Improve errors context for AWS provider
 - Scaleway Provider (#1643) @Sh4d1
+- Enable azure_private_dns to work with non "AzurePublicCloud" clouds (#1578) @daddonpa
 - Fix typos in documentation @ddymko
 
 ## v0.7.3 - 2020-08-05
