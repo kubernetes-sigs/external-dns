@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Enhance pull request template @seanmalloy
 - Improve errors context for AWS provider
 - Scaleway Provider (#1643) @Sh4d1
 - Fix typos in documentation @ddymko
