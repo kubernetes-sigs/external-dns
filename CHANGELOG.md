@@ -3,6 +3,7 @@
 - Improve errors context for AWS provider
 - Scaleway Provider (#1643) @Sh4d1
 - Fix typos in documentation @ddymko
+- Fix: alibaba cloud keeping create record (#1682) @LXM
 - Update all container registry references to use k8s.gcr.io @seanmalloy
 
 ## v0.7.3 - 2020-08-05
