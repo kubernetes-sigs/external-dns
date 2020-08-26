@@ -189,6 +189,16 @@ In case of an increased error count, you could correlate them with the `http_req
 
 You can use the host label in the metric to figure out if the request was against the Kubernetes API server (Source errors) or the DNS provider API (Registry/Provider errors).
 
+Here is the full list of available metrics provided by ExternalDNS:
+
+| Name                                                | Description                                             | Type    |
+|-----------------------------------------------------|---------------------------------------------------------|---------|
+| external_dns_controller_last_sync_timestamp_seconds | Timestamp of last successful sync with the DNS provider | Gauge   |
+| external_dns_registry_endpoints_total               | Number of Endpoints in all sources                      | Gauge   |
+| external_dns_registry_errors_total                  | Number of Registry errors                               | Counter |
+| external_dns_source_endpoints_total                 | Number of Endpoints in the registry                     | Gauge   |
+| external_dns_source_errors_total                    | Number of Source errors                                 | Counter |
+
 ### How can I run ExternalDNS under a specific GCP Service Account, e.g. to access DNS records in other projects?
 
 Have a look at https://github.com/linki/mate/blob/v0.6.2/examples/google/README.md#permissions
