@@ -158,7 +158,7 @@ The following tutorials are provided:
 #### Technical Requirements
 
 Make sure you have the following prerequisites:
-* A local Go 1.11+ development environment.
+* A local Go 1.15+ development environment.
 * Access to a Google/AWS account with the DNS API enabled.
 * Access to a Kubernetes cluster that supports exposing Services, e.g. GKE.
 
