@@ -3,7 +3,7 @@
 </p>
 
 # ExternalDNS
-[![Build Status](https://travis-ci.org/kubernetes-sigs/external-dns.svg)](https://travis-ci.org/kubernetes-sigs/external-dns)
+[![Build Status](https://github.com/kubernetes-sigs/external-dns/workflows/Go/badge.svg)](https://github.com/kubernetes-sigs/external-dns/actions)
 [![Coverage Status](https://coveralls.io/repos/github/kubernetes-sigs/external-dns/badge.svg)](https://coveralls.io/github/kubernetes-sigs/external-dns)
 [![GitHub release](https://img.shields.io/github/release/kubernetes-sigs/external-dns.svg)](https://github.com/kubernetes-sigs/external-dns/releases)
 [![go-doc](https://godoc.org/github.com/kubernetes-sigs/external-dns?status.svg)](https://godoc.org/github.com/kubernetes-sigs/external-dns)
@@ -46,6 +46,7 @@ ExternalDNS' current release is `v0.7`. This version allows you to keep selected
 * [TransIP](https://www.transip.eu/domain-name/)
 * [VinylDNS](https://www.vinyldns.io)
 * [OVH](https://www.ovh.com)
+* [Scaleway](https://www.scaleway.com)
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` (or greater) with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -71,7 +72,7 @@ We define the following stability levels for providers:
 
 The following table clarifies the current status of the providers according to the aforementioned stability levels:
 
-| Provider | Status | Maintainers | 
+| Provider | Status | Maintainers |
 | -------- | ------ | ----------- |
 | Google Cloud DNS | Stable | |
 | AWS Route 53 | Stable | |
@@ -97,7 +98,9 @@ The following table clarifies the current status of the providers according to t
 | RancherDNS | Alpha | |
 | Akamai FastDNS | Alpha | |
 | OVH | Alpha | |
+| Scaleway DNS | Alpha | @Sh4d1 |
 | Vultr | Alpha | |
+| UltraDNS | Alpha | |
 
 ## Running ExternalDNS:
 
@@ -146,7 +149,9 @@ The following tutorials are provided:
 * [TransIP](docs/tutorials/transip.md)
 * [VinylDNS](docs/tutorials/vinyldns.md)
 * [OVH](docs/tutorials/ovh.md)
+* [Scaleway](docs/tutorials/scaleway.md)
 * [Vultr](docs/tutorials/vultr.md)
+* [UltraDNS](docs/tutorials/ultradns.md)
 
 ### Running Locally
 
@@ -263,7 +268,7 @@ Here's a rough outline on what is to come (subject to change):
 - [x] Support for DigitalOcean
 - [x] Multiple DNS names per Service
 
-### v0.5 - _current version_
+### v0.5
 
 - [x] Support for creating DNS records to multiple targets (for Google and AWS)
 - [x] Support for OpenStack Designate
