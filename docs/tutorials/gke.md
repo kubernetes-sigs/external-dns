@@ -91,7 +91,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
         args:
         - --source=service
         - --source=ingress
@@ -100,6 +100,7 @@ spec:
 #        - --google-project=zalando-external-dns-test # Use this to specify a project different from the one external-dns is running inside
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
         - --registry=txt
+        - --txt-prefix=extdns # when using `registry=txt` option, make sure to also use the `txt-prefix` and `txt-owner-id` options as well. If you try to create a `TXT` record without a prefix, it will try to create a `TXT` record with the same name as your actual DNS record and fail (creating a stranded record `external-dns` cannot manage).
         - --txt-owner-id=my-identifier
 ```
 
@@ -118,7 +119,7 @@ rules:
 - apiGroups: [""]
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions"] 
+- apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"] 
   verbs: ["get","watch","list"]
 - apiGroups: [""]
@@ -156,7 +157,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
         args:
         - --source=service
         - --source=ingress

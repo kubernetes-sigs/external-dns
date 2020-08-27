@@ -276,6 +276,12 @@ func TestAlibabaCloudProvider_Records(t *testing.T) {
 
 func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 	p := newTestAlibabaCloudProvider(false)
+	defaultTtlPlan := &endpoint.Endpoint{
+		DNSName:    "ttl.container-service.top",
+		RecordType: "A",
+		RecordTTL:  defaultAlibabaCloudRecordTTL,
+		Targets:    endpoint.NewTargets("4.3.2.1"),
+	}
 	changes := plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{
@@ -284,6 +290,7 @@ func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 				RecordTTL:  300,
 				Targets:    endpoint.NewTargets("4.3.2.1"),
 			},
+			defaultTtlPlan,
 		},
 		UpdateNew: []*endpoint.Endpoint{
 			{
@@ -308,11 +315,18 @@ func TestAlibabaCloudProvider_ApplyChanges(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to get records: %v", err)
 	} else {
-		if len(endpoints) != 2 {
+		if len(endpoints) != 3 {
 			t.Errorf("Incorrect number of records: %d", len(endpoints))
 		}
 		for _, endpoint := range endpoints {
 			t.Logf("Endpoint for %++v", *endpoint)
+		}
+	}
+	for _, ep := range endpoints {
+		if ep.DNSName == defaultTtlPlan.DNSName {
+			if ep.RecordTTL != defaultTtlPlan.RecordTTL {
+				t.Error("default ttl execute error")
+			}
 		}
 	}
 }

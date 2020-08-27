@@ -28,6 +28,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
+	istioinformers "istio.io/client-go/pkg/informers/externalversions"
+	networkingv1alpha3informer "istio.io/client-go/pkg/informers/externalversions/networking/v1alpha3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -51,6 +53,7 @@ type gatewaySource struct {
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
 	serviceInformer          coreinformers.ServiceInformer
+	gatewayInformer          networkingv1alpha3informer.GatewayInformer
 }
 
 // NewIstioGatewaySource creates a new gatewaySource with the given config.
@@ -81,6 +84,8 @@ func NewIstioGatewaySource(
 	// Set resync period to 0, to prevent processing when nothing has changed
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	serviceInformer := informerFactory.Core().V1().Services()
+	istioInformerFactory := istioinformers.NewSharedInformerFactory(istioClient, 0)
+	gatewayInformer := istioInformerFactory.Networking().V1alpha3().Gateways()
 
 	// Add default resource event handlers to properly initialize informer.
 	serviceInformer.Informer().AddEventHandler(
@@ -91,12 +96,29 @@ func NewIstioGatewaySource(
 		},
 	)
 
+	gatewayInformer.Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				log.Debug("gateway added")
+			},
+		},
+	)
+
 	// TODO informer is not explicitly stopped since controller is not passing in its channel.
 	informerFactory.Start(wait.NeverStop)
+	istioInformerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
 	err = poll(time.Second, 60*time.Second, func() (bool, error) {
 		return serviceInformer.Informer().HasSynced(), nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	}
+
+	// wait for the local cache to be populated.
+	err = poll(time.Second, 60*time.Second, func() (bool, error) {
+		return gatewayInformer.Informer().HasSynced(), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to sync cache: %v", err)
@@ -111,6 +133,7 @@ func NewIstioGatewaySource(
 		combineFQDNAnnotation:    combineFQDNAnnotation,
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
 		serviceInformer:          serviceInformer,
+		gatewayInformer:          gatewayInformer,
 	}, nil
 }
 
@@ -180,9 +203,23 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 	return endpoints, nil
 }
 
-// TODO(tariq1890): Implement this once we have evaluated and tested GatewayInformers
 // AddEventHandler adds an event handler that should be triggered if the watched Istio Gateway changes.
 func (sc *gatewaySource) AddEventHandler(ctx context.Context, handler func()) {
+	log.Debug("Adding event handler for Istio Gateway")
+
+	sc.gatewayInformer.Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				handler()
+			},
+			UpdateFunc: func(old interface{}, new interface{}) {
+				handler()
+			},
+			DeleteFunc: func(obj interface{}) {
+				handler()
+			},
+		},
+	)
 }
 
 // filterByAnnotations filters a list of configs by a given annotation selector.
@@ -272,11 +309,6 @@ func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway networ
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(annotations)
 
-	// Skip endpoints if we do not want entries from annotations
-	if !sc.ignoreHostnameAnnotation {
-		hostnames = append(hostnames, getHostnamesFromAnnotations(annotations)...)
-	}
-
 	for _, host := range hostnames {
 		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
 	}
@@ -300,9 +332,16 @@ func (sc *gatewaySource) hostNamesFromGateway(gateway networkingv1alpha3.Gateway
 				host = parts[1]
 			}
 
-			hostnames = append(hostnames, host)
+			if host != "*" {
+				hostnames = append(hostnames, host)
+			}
 		}
 	}
+
+	if !sc.ignoreHostnameAnnotation {
+		hostnames = append(hostnames, getHostnamesFromAnnotations(gateway.Annotations)...)
+	}
+
 	return hostnames, nil
 }
 
