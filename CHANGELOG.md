@@ -1,9 +1,13 @@
 ## Unreleased
 
-- Oracle OCI provider: add support for instance principal authentication (#1700) @ericrrath
+- Enhance pull request template @seanmalloy
 - Improve errors context for AWS provider
 - Scaleway Provider (#1643) @Sh4d1
 - Fix typos in documentation @ddymko
+- Fix: alibaba cloud keeping create record (#1682) @LXM
+- Update all container registry references to use k8s.gcr.io @seanmalloy
+- Provide available prometheus metrics in documentation @vinny-sabatini
+- Oracle OCI provider: add support for instance principal authentication (#1700) @ericrrath
 
 ## v0.7.3 - 2020-08-05
 
