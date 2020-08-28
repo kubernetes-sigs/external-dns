@@ -7,6 +7,7 @@
 - Fix: alibaba cloud keeping create record (#1682) @LXM
 - Update all container registry references to use k8s.gcr.io @seanmalloy
 - Provide available prometheus metrics in documentation @vinny-sabatini
+- Fixes test coverage with coveralls (#1755) @jgrumboe
 
 ## v0.7.3 - 2020-08-05
 
