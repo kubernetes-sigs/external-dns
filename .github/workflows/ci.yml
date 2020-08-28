@@ -35,10 +35,10 @@ jobs:
         curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.30.0
         make lint
   
-    - name: Coverage
-      uses: shogo82148/actions-goveralls@v1
-    
     - name: Test
-      run: make test
+      run: go test -race -coverprofile=profile.cov ./...
 
-
+    - name: Send coverage
+      uses: shogo82148/actions-goveralls@v1
+      with:
+        path-to-profile: profile.cov
