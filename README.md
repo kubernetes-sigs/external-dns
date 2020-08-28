@@ -280,23 +280,25 @@ Have a look at [the milestones](https://github.com/kubernetes-sigs/external-dns/
 
 ## Contributing
 
-We encourage you to get involved with ExternalDNS, as users, contributors or as new maintainers that can take over some parts like different providers and help with code reviews.
+Are you interested in contributing to external-dns? We, the maintainers and community, would love your
+suggestions, contributions, and help! Also, the maintainers can be contacted at any time to learn more
+about how to get involved.
 
-Providers which currently need maintainers:
+We also encourage ALL active community participants to act as if they are maintainers, even if you don't have
+"official" write permissions. This is a community effort, we are here to serve the Kubernetes community. If you
+have an active interest and you want to get involved, you have real power! Don't assume that the only people who
+can get things done around here are the "maintainers". We also would love to add more "official" maintainers, so
+show us what you can do!
 
-* Azure
-* Cloudflare
-* Digital Ocean
-* Google Cloud Platform
+The external-dns project is currently in need of maintainers for specific DNS providers. Ideally each provider
+would have at least two maintainers. It would be nice if the maintainers run the provider in production, but it
+is not strictly required. Provider listed [here](https://github.com/kubernetes-sigs/external-dns#status-of-providers)
+that do not have a maintainer listed are in need of assistance.
 
-Any provider should have at least one maintainer. It would be nice if you run it in production, but it is not required.
-You should check changes and make sure your provider is working correctly.
-
-It would be also great to have an automated end-to-end test for different cloud providers, so help from Kubernetes maintainers and their idea on how this can be done would be valuable.
+The external-dns project is also in need of automated end-to-end tests for different DNS providers. Any help from the
+Kubernetes community and ideas on how this can be accomplished would be valuable.
 
 Read the [contributing guidelines](CONTRIBUTING.md) and have a look at [the contributing docs](docs/contributing/getting-started.md) to learn about building the project, the project structure, and the purpose of each package.
-
-If you are interested please reach out to us on the [Kubernetes slack](http://slack.k8s.io) in the #external-dns channel.
 
 For an overview on how to write new Sources and Providers check out [Sources and Providers](docs/contributing/sources-and-providers.md).
 
@@ -312,7 +314,3 @@ ExternalDNS is an effort to unify the following similar projects in order to bri
 
 * A full demo on GKE Kubernetes. See [How-to Kubernetes with DNS management (ssl-manager pre-req)](https://medium.com/@jpantjsoha/how-to-kubernetes-with-dns-management-for-gitops-31239ea75d8d)
 * Run external-dns on GKE with workload identity. See [Kubernetes, ingress-nginx, cert-manager & external-dns](https://blog.atomist.com/kubernetes-ingress-nginx-cert-manager-external-dns/)
-
-### Code of conduct
-
-Participation in the Kubernetes community is governed by the [Kubernetes Code of Conduct](code-of-conduct.md).
