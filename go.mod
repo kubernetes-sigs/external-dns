@@ -17,7 +17,6 @@ require (
 	github.com/alecthomas/repr v0.0.0-20200325044227-4184120f674c // indirect
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.357
 	github.com/aws/aws-sdk-go v1.31.4
-	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cloudflare/cloudflare-go v0.10.1
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/denverdino/aliyungo v0.0.0-20190125010748-a747050bb1ba
@@ -32,7 +31,6 @@ require (
 	github.com/gophercloud/gophercloud v0.1.0
 	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
-	github.com/heptio/contour v0.15.0
 	github.com/infobloxopen/infoblox-go-client v0.0.0-20180606155407-61dc5f9b0a65
 	github.com/linki/instrumented_http v0.2.0
 	github.com/linode/linodego v0.19.0
@@ -48,11 +46,7 @@ require (
 	github.com/projectcontour/contour v1.5.0
 	github.com/prometheus/client_golang v1.7.1
 	github.com/sanyu/dynectsoap v0.0.0-20181203081243-b83de5edc4e0
-	github.com/satori/go.uuid v1.2.0 // indirect
-	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/sirupsen/logrus v1.6.0
-	github.com/smartystreets/assertions v1.0.1 // indirect
-	github.com/smartystreets/go-aws-auth v0.0.0-20180515143844-0c1422d1fdb9 // indirect
 	github.com/smartystreets/gunit v1.3.4 // indirect
 	github.com/stretchr/testify v1.5.1
 	github.com/terra-farm/udnssdk v1.3.5 // indirect
