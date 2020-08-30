@@ -6,9 +6,9 @@ require (
 	cloud.google.com/go v0.50.0
 	git.blindage.org/21h/hcloud-dns v0.0.0-20200807003420-f768ffe03f8d
 	github.com/Azure/azure-sdk-for-go v36.0.0+incompatible
-	github.com/Azure/go-autorest/autorest v0.9.4
-	github.com/Azure/go-autorest/autorest/adal v0.8.3
-	github.com/Azure/go-autorest/autorest/azure/auth v0.0.0-00010101000000-000000000000
+	github.com/Azure/go-autorest/autorest v0.11.0
+	github.com/Azure/go-autorest/autorest/adal v0.9.2
+	github.com/Azure/go-autorest/autorest/azure/auth v0.5.1
 	github.com/Azure/go-autorest/autorest/to v0.3.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v0.9.11
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38 // indirect
@@ -45,6 +45,7 @@ require (
 	github.com/projectcontour/contour v1.5.0
 	github.com/prometheus/client_golang v1.7.1
 	github.com/sanyu/dynectsoap v0.0.0-20181203081243-b83de5edc4e0
+	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.6
 	github.com/sirupsen/logrus v1.6.0
 	github.com/smartystreets/gunit v1.3.4 // indirect
 	github.com/stretchr/testify v1.5.1
