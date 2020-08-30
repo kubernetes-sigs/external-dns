@@ -3,6 +3,7 @@
 - Enhance pull request template @seanmalloy
 - Improve errors context for AWS provider
 - Scaleway Provider (#1643) @Sh4d1
+- Enable azure_private_dns to work with non "AzurePublicCloud" clouds (#1578) @daddonpa
 - Fix typos in documentation @ddymko
 - Add Cloudflare documentation on use of `--zone-id-filter` (#1751) @loozhengyuan
 - Fix: alibaba cloud keeping create record (#1682) @LXM
