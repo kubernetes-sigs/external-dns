@@ -17,8 +17,8 @@ limitations under the License.
 package source
 
 import (
+	"context"
 	"net/url"
-	"time"
 
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
 
@@ -36,11 +36,11 @@ func NewCloudFoundrySource(cfClient *cfclient.Client) (Source, error) {
 	}, nil
 }
 
-func (rs *cloudfoundrySource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+func (rs *cloudfoundrySource) AddEventHandler(ctx context.Context, handler func()) {
 }
 
 // Endpoints returns endpoint objects
-func (rs *cloudfoundrySource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (rs *cloudfoundrySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
 	u, err := url.Parse(rs.client.Config.ApiAddress)

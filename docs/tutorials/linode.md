@@ -41,7 +41,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -67,7 +67,7 @@ rules:
 - apiGroups: [""]
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions"]
+- apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
@@ -105,7 +105,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -171,7 +171,7 @@ Once the service has an external IP assigned, ExternalDNS will notice the new se
 
 ## Verifying Linode DNS records
 
-Check your [Linode UI](https://manager.linode.com/dns) to view the records for your Linode DNS zone.
+Check your [Linode UI](https://cloud.linode.com/domains) to view the records for your Linode DNS zone.
 
 Click on the zone for the one created above if a different domain was used.
 

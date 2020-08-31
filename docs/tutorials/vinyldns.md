@@ -66,7 +66,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
         args:
         - --provider=vinyldns
         - --source=service
@@ -99,7 +99,7 @@ rules:
 - apiGroups: [""]
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions"]
+- apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
@@ -137,7 +137,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
         args:
         - --provider=vinyldns
         - --source=service

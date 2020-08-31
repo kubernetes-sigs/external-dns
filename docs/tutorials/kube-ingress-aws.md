@@ -15,7 +15,7 @@ this is not required.
 For help setting up the Kubernetes Ingress AWS Controller, that can
 create ALBs and NLBs, follow the [Setup Guide][2].
 
-[2]: https://github.com/zalando-incubator/kube-ingress-aws-controller/tree/master/deploy
+[2]: https://github.com/zalando-incubator/kube-ingress-aws-controller/tree/HEAD/deploy
 
 
 ### Optional RouteGroup
@@ -26,7 +26,7 @@ create ALBs and NLBs, follow the [Setup Guide][2].
 First, you have to apply the RouteGroup CRD to your cluster:
 
 ```
-kubectl apply -f https://github.com/zalando/skipper/blob/master/dataclients/kubernetes/deploy/apply/routegroups_crd.yaml
+kubectl apply -f https://github.com/zalando/skipper/blob/HEAD/dataclients/kubernetes/deploy/apply/routegroups_crd.yaml
 ```
 
 You have to grant all controllers: [Skipper][4],
@@ -43,6 +43,7 @@ metadata:
 rules:
 - apiGroups:
   - extensions
+  - networking.k8s.io
   resources:
   - ingresses
   verbs:
@@ -51,6 +52,7 @@ rules:
   - watch
 - apiGroups:
   - extensions
+  - networking.k8s.io
   resources:
   - ingresses/status
   verbs:
@@ -170,7 +172,7 @@ this Ingress object will only be fronting one backend Service, we might instead
 create the following:
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   annotations:
@@ -203,7 +205,7 @@ and one AAAA record) for each hostname associated with the Ingress object.
 Example:
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   annotations:
@@ -237,7 +239,7 @@ set to `nlb` then ExternalDNS will create an NLB instead of an ALB.
 Example:
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   annotations:

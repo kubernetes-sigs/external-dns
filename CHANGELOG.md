@@ -1,3 +1,101 @@
+## Unreleased
+
+- Enhance pull request template @seanmalloy
+- Improve errors context for AWS provider
+- Scaleway Provider (#1643) @Sh4d1
+- Enable azure_private_dns to work with non "AzurePublicCloud" clouds (#1578) @daddonpa
+- Fix typos in documentation @ddymko
+- Add Cloudflare documentation on use of `--zone-id-filter` (#1751) @loozhengyuan
+- Fix: alibaba cloud keeping create record (#1682) @LXM
+- Update all container registry references to use k8s.gcr.io @seanmalloy
+- Provide available prometheus metrics in documentation @vinny-sabatini
+- Fix index out of range when hostname has no dots (#1756) @chemasan
+
+## v0.7.3 - 2020-08-05
+
+- Fix: add serviceaccount name in kustomize deployment (#1689) @jmthvt
+- Updates Oracle OCI SDK to latest (#1687) @ericrrath
+- UltraDNS Provider (#1635) @kbhandari
+- Update apiVersions in docs (#1690) @ddgenome
+- use the github actions build status badge (#1702) @tariq1890 
+- Upgrade Oracle OCI SDK (#1688) @ericrrath 
+- update dependencies and minor dep tree cleanup (#1692) @tariq1890 
+- Update link for linode cloud manager (#1661) @phillc 
+- Remove occurrences of "master" from the project (#1636) @Raffo 
+- Create pull_request_template (#1662) @njuettner 
+- dependencies: Upgrade all k8s client-go dependent sources to v1.18.X (#1627) @josephglanville
+- add GitHub Actions (#1657) @Raffo 
+- add new source for istio virtual services (#1607) @tariq1890 
+- use latest Alpine version in ExternalDNS dockerfile (#1655) @tariq1890 
+- Update TTL docs to confirm DNSimple support (#1547) @weppos 
+- rm unused flag param istio-ingressgateways (#1649) @tariq1890 
+- Upgrade istio httpbin from 1.0 to 1.6 version (#1640) @ikovnatskymiacar
+- Add endpoints to kustomize base (#1638) @Raffo 
+- DigitalOcean: support multiple targets per endpoint (#1595) @tdyas 
+- Vultr : Version bump + changes (#1637) @ddymko
+- Hetzner DNS service support (#1570) @21h
+- Add OVH API rate limiting option (Fix #1546) (#1619) @Hugome
+- Add kustomize base (#1631) @Raffo 
+- increase test timeout to fix intermittent failures of ingress tests (#1612) @tdyas
+- AWS: change the order of the actions, DELETE before CREATE fixes #1411 (#1555) @OmerKahani
+- Fix handling of DNS updates for RFC2136 provider. (#1613) @dmayle
+- digitalocean: increase API page size (#1611) @tdyas 
+- improve linter quality for external-dns (#1618) @njuettner 
+- fix convert int to string bug (#1620) @tariq1890 
+
+## v0.7.2 - 2020-06-03
+
+- Update blogpost in README (#1610) @vanhumbeecka
+- Support for AWS Route53 in China (#1603) @greenu
+- Update Govcloud provider hosted zones (#1592) @clhuang
+- Fix issue with too large DNS messages (#1590) @dmayle
+- use the latest linode go version (#1587) @tariq1890
+- use istio client-go and clean up k8s deps (#1584) @tariq1890
+- Add owners for cloudflare and coredns providers (#1582) @Raffo
+- remove some code duplication in gateway source (#1575) @tariq1890
+- update Contour IngressRoute deps (#1569) @stevesloka
+- Make tests faster (#1568) @sheerun
+- Fix scheduling of reconciliation (#1567) @sheerun
+- fix minor typos in istio gateway source docs (#1566) @tariq1890
+- Provider structure refactor (#1565) @Raffo
+- Fix typo in ttl.md (#1564) @rtnpro
+- Fix goreportcard warnings (#1561) @squat
+- Use consistent headless service name in example (#1559) @lowkeyliesmyth
+- Update go versions to 1.14.x that were missed in commit 99cebfcf from PR #1476 (#1554) @stealthybox
+- Remove duplicate selector from DigitalOcean manifest (#1553) @ggordan
+- Upgrade DNSimple client and add support for contexts (#1551) @weppos
+- Upgrade github.com/miekg/dns to v1.1.25 (#1545) @davidcollom
+- Fix updates in CloudFlare provider (#1542) @sheerun
+- update readme for latest version (#1539) @elsesiy
+- Improve Cloudflare tests in preparation to fix other issues (#1537) @sheerun
+- Allow for custom property comparators (#1536) @sheerun
+- fix typo (#1535) @tmatias
+- Bump github.com/pkg/errors from 0.8.1 to 0.9.1 (#1531) @njuettner
+- Bump github.com/digitalocean/godo from 1.19.0 to 1.34.0 (#1530) @njuettner
+- Bump github.com/prometheus/client_golang from 1.0.0 to 1.5.1 (#1529) @njuettner
+- Bump github.com/akamai/AkamaiOPEN-edgegrid-golang from 0.9.10 to 0.9.11 (#1528) @njuettner
+- Fix RFC2316 Windows Documentation (#1516) @scottd018
+- remove dependency on kubernetes/kubernetes (#1513) @tariq1890
+- update akamai openapi dependency (#1511) @tariq1890
+- Vultr Provider (#1509) @ddymko
+- Add AWS region ap-east-1(HK) (#1497) @lovemai073
+- Fix: file coredns.go is not `goimports`-ed (#1496) @njuettner
+- Allow ZoneIDFilter for Cloudflare (#1494) @james-callahan
+- update etcd dependency to latest version (#1485) @tariq1890
+- Support for openshift routes (#1484) @jgrumboe
+- add --txt-suffix feature (#1483) @jgrumboe
+- update to go 1.14 (#1476) @jochen42
+- Multiple A records support for the same FQDN (#1475) @ytsarev
+- Implement annotation filter for CRD source (#1399) @ytsarev
+
+## v0.7.1 - 2020-04-01
+
+  - Prometheus metric: timestamp of last successful sync with the DNS provider (#1480) @njuettner
+  - Bump alpine base image to 3.11.5 (#1477) @Annegies
+  - Docs: Add first maintainers in list (#1472) @Raffo
+  - Fix DomainFilter type in OVH provider (#1469) @ytsarev
+  - New provider: OVH (#1439) @Hugome
+
 ## v0.7.0 - 2020-03-10
 
   - New source: Add support for Skipper's RouteGroup CRD (#1444) @szuecs

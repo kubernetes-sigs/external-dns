@@ -23,12 +23,12 @@ import (
 )
 
 func TestZoneIDName(t *testing.T) {
-	z := zoneIDName{}
+	z := ZoneIDName{}
 	z.Add("123456", "foo.bar")
 	z.Add("123456", "qux.baz")
 	z.Add("654321", "foo.qux.baz")
 
-	assert.Equal(t, zoneIDName{
+	assert.Equal(t, ZoneIDName{
 		"123456": "qux.baz",
 		"654321": "foo.qux.baz",
 	}, z)
