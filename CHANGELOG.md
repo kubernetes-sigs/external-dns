@@ -10,6 +10,7 @@
 - Update all container registry references to use k8s.gcr.io @seanmalloy
 - Provide available prometheus metrics in documentation @vinny-sabatini
 - Fix index out of range when hostname has no dots (#1756) @chemasan
+- Add tutorial for GKE with workload identity (#1765) @ddgenome
 
 ## v0.7.3 - 2020-08-05
 
