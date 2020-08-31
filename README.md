@@ -155,33 +155,10 @@ The following tutorials are provided:
 
 ### Running Locally
 
-#### Technical Requirements
-
-Make sure you have the following prerequisites:
-* A local Go 1.11+ development environment.
-* Access to a Google/AWS account with the DNS API enabled.
-* Access to a Kubernetes cluster that supports exposing Services, e.g. GKE.
+See the [contributor guide](docs/contributing/getting-started.md) for details on compiling
+from source.
 
 #### Setup Steps
-
-First, get ExternalDNS:
-
-```console
-$ git clone https://github.com/kubernetes-sigs/external-dns.git && cd external-dns
-```
-
-**This project uses [Go modules](https://github.com/golang/go/wiki/Modules) as
-introduced in Go 1.11 therefore you need Go >=1.11 installed in order to build.**
-If using Go 1.11 you also need to [activate Module
-support](https://github.com/golang/go/wiki/Modules#installing-and-activating-module-support).
-
-Assuming Go has been setup with module support it can be built simply by running:
-
-```console
-$ make
-```
-
-This will create external-dns in the build directory directly from the default branch.
 
 Next, run an application and expose it via a Kubernetes Service:
 
