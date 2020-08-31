@@ -7,7 +7,7 @@ Akamai FastDNS provider support was added via [this PR](https://github.com/kuber
 The Akamai FastDNS provider expects that your zones, you wish to add records to, already exists
 and are configured correctly. It does not add, remove or configure new zones in anyway.
 
-To do this pease refer to the [FastDNS documentation](https://learn.akamai.com/en-us/products/web_performance/fast_dns.html).
+To do this please refer to the [FastDNS documentation](https://learn.akamai.com/en-us/products/web_performance/fast_dns.html).
 
 Additional data you will have to provide:
 
@@ -18,7 +18,7 @@ Additional data you will have to provide:
 
 Make these available to external DNS somehow. In the following example a secret is used by referencing the secret and its keys in the env section of the deployment.
 
-If you happen to have questions regarding authentification, please refer to the [API Client Authentication documentation](https://developer.akamai.com/legacy/introduction/Client_Auth.html)
+If you happen to have questions regarding authentication, please refer to the [API Client Authentication documentation](https://developer.akamai.com/legacy/introduction/Client_Auth.html)
 
 ## Deployment
 
@@ -49,7 +49,7 @@ spec:
       # serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: eu.gcr.io/k8s-artifacts-prod/external-dns/external-dns:v0.6.0
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
         args:
         - --source=ingress # or service or both
         - --provider=akamai
@@ -97,7 +97,7 @@ rules:
 - apiGroups: [""]
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions"]
+- apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]

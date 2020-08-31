@@ -17,7 +17,7 @@ limitations under the License.
 package source
 
 import (
-	"time"
+	"context"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -25,11 +25,11 @@ import (
 // emptySource is a Source that returns no endpoints.
 type emptySource struct{}
 
-func (e *emptySource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
+func (e *emptySource) AddEventHandler(ctx context.Context, handler func()) {
 }
 
 // Endpoints collects endpoints of all nested Sources and returns them in a single slice.
-func (e *emptySource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (e *emptySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return []*endpoint.Endpoint{}, nil
 }
 

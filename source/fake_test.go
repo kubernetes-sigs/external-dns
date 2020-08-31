@@ -17,6 +17,7 @@ limitations under the License.
 package source
 
 import (
+	"context"
 	"net"
 	"regexp"
 	"testing"
@@ -27,7 +28,7 @@ import (
 func generateTestEndpoints() []*endpoint.Endpoint {
 	sc, _ := NewFakeSource("")
 
-	endpoints, _ := sc.Endpoints()
+	endpoints, _ := sc.Endpoints(context.Background())
 
 	return endpoints
 }

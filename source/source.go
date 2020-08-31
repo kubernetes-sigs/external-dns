@@ -17,6 +17,7 @@ limitations under the License.
 package source
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"net"
@@ -26,7 +27,10 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/config"
 )
 
 const (
@@ -59,10 +63,9 @@ const (
 
 // Source defines the interface Endpoint sources should implement.
 type Source interface {
-	Endpoints() ([]*endpoint.Endpoint, error)
-	// AddEventHandler adds an event handler function that's called when (supported) sources have changed.
-	// The handler should not be called more than than once per time.Duration and not again after stop channel is closed.
-	AddEventHandler(func() error, <-chan struct{}, time.Duration)
+	Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error)
+	// AddEventHandler adds an event handler that should be triggered if something in source changes
+	AddEventHandler(context.Context, func())
 }
 
 func getTTLFromAnnotations(annotations map[string]string) (endpoint.TTL, error) {
@@ -133,6 +136,12 @@ func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.Pro
 			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/aws-")
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 				Name:  fmt.Sprintf("aws/%s", attr),
+				Value: v,
+			})
+		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/scw-") {
+			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/scw-")
+			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+				Name:  fmt.Sprintf("scw/%s", attr),
 				Value: v,
 			})
 		}
@@ -223,4 +232,25 @@ func getLabelSelector(annotationFilter string) (labels.Selector, error) {
 func matchLabelSelector(selector labels.Selector, srcAnnotations map[string]string) bool {
 	annotations := labels.Set(srcAnnotations)
 	return selector.Matches(annotations)
+}
+
+func poll(interval time.Duration, timeout time.Duration, condition wait.ConditionFunc) error {
+	if config.FastPoll {
+		time.Sleep(5 * time.Millisecond)
+
+		ok, err := condition()
+
+		if err != nil {
+			return err
+		}
+
+		if ok {
+			return nil
+		}
+
+		interval = 50 * time.Millisecond
+		timeout = 10 * time.Second
+	}
+
+	return wait.Poll(interval, timeout, condition)
 }

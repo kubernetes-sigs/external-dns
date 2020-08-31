@@ -17,7 +17,7 @@ limitations under the License.
 package source
 
 import (
-	"time"
+	"context"
 
 	log "github.com/sirupsen/logrus"
 
@@ -35,11 +35,11 @@ func NewDedupSource(source Source) Source {
 }
 
 // Endpoints collects endpoints from its wrapped source and returns them without duplicates.
-func (ms *dedupSource) Endpoints() ([]*endpoint.Endpoint, error) {
+func (ms *dedupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	result := []*endpoint.Endpoint{}
 	collected := map[string]bool{}
 
-	endpoints, err := ms.source.Endpoints()
+	endpoints, err := ms.source.Endpoints(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -59,6 +59,6 @@ func (ms *dedupSource) Endpoints() ([]*endpoint.Endpoint, error) {
 	return result, nil
 }
 
-func (ms *dedupSource) AddEventHandler(handler func() error, stopChan <-chan struct{}, minInterval time.Duration) {
-	ms.source.AddEventHandler(handler, stopChan, minInterval)
+func (ms *dedupSource) AddEventHandler(ctx context.Context, handler func()) {
+	ms.source.AddEventHandler(ctx, handler)
 }

@@ -29,7 +29,7 @@ When the project was proposed (see the [original discussion](https://github.com/
 
 * Mate - [https://github.com/linki/mate](https://github.com/linki/mate)
 
-* DNS-controller from kops - [https://github.com/kubernetes/kops/tree/master/dns-controller](https://github.com/kubernetes/kops/tree/master/dns-controller)
+* DNS-controller from kops - [https://github.com/kubernetes/kops/tree/HEAD/dns-controller](https://github.com/kubernetes/kops/tree/HEAD/dns-controller)
 
 * Route53-kubernetes - [https://github.com/wearemolecule/route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 
@@ -135,7 +135,7 @@ The docker registry service is provided as best effort with no sort of SLA and t
 
 Providing a vanity URL for the docker images was consider a non goal till now, but the community seems to be wanting official images from a GCR domain, similarly to what is available for other parts of official Kubernetes projects.
 
-ExternalDNS does not follow a specific release cycle. Releases are made often when there are major contributions (i.e. new providers) or important bug fixes. That said, the master is considered stable and can be used as well to build images.
+ExternalDNS does not follow a specific release cycle. Releases are made often when there are major contributions (i.e. new providers) or important bug fixes. That said, the default branch is considered stable and can be used as well to build images.
 
 ### Risks and Mitigations
 

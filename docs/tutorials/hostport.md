@@ -2,14 +2,14 @@
 
 This tutorial describes how to setup ExternalDNS for usage in conjunction with a Headless service.
 
-## Usecases
+## Use cases
 The main use cases that inspired this feature is the necessity for fixed addressable hostnames with services, such as Kafka when trying to access them from outside the cluster. In this scenario, quite often, only the Node IP addresses are actually routable and as in systems like Kafka more direct connections are preferable.
 
 ## Setup
 
 We will go through a small example of deploying a simple Kafka with use of a headless service.
 
-### Exernal DNS
+### External DNS
 
 A simple deploy could look like this:
 ### Manifest (for clusters without RBAC enabled)
@@ -17,7 +17,7 @@ A simple deploy could look like this:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: exeternal-dns
+  name: external-dns
 spec:
   strategy:
     type: Recreate
@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
         args:
         - --log-level=debug
         - --source=service
@@ -58,7 +58,7 @@ rules:
 - apiGroups: [""]
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions"] 
+- apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"] 
   verbs: ["get","watch","list"]
 - apiGroups: [""]
@@ -81,7 +81,7 @@ subjects:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: exeternal-dns
+  name: external-dns
 spec:
   strategy:
     type: Recreate
@@ -96,7 +96,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
         args:
         - --log-level=debug
         - --source=service
@@ -111,7 +111,7 @@ spec:
 
 ### Kafka Stateful Set
 
-First lets deploy a Kafka Stateful set, a simple example(a lot of stuff is missing) with a headless service called `kafka-hsvc`
+First lets deploy a Kafka Stateful set, a simple example(a lot of stuff is missing) with a headless service called `ksvc`
 
 ```yaml
 apiVersion: apps/v1beta1
@@ -155,7 +155,7 @@ spec:
         requests:
           storage:  500Gi
 ```
-Very important here, is to set the `hostport`(only works if the PodSecurityPolicy allows it)! and in case your app requires an actual hostname inside the container, unlike Kafka, which can advertise on another address, you have to set the hostname yourself.
+Very important here, is to set the `hostPort`(only works if the PodSecurityPolicy allows it)! and in case your app requires an actual hostname inside the container, unlike Kafka, which can advertise on another address, you have to set the hostname yourself.
 
 ### Headless Service
 
