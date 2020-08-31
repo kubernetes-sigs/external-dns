@@ -526,6 +526,8 @@ github.com/sanyu/dynectsoap v0.0.0-20181203081243-b83de5edc4e0 h1:vOcHdR1nu7DO4B
 github.com/sanyu/dynectsoap v0.0.0-20181203081243-b83de5edc4e0/go.mod h1:FeplEtXXejBYC4NPAFTrs5L7KuK+5RL9bf5nB2vZe9o=
 github.com/scaleway/scaleway-sdk-go v1.0.0-beta.6 h1:C1/pvkxkGN/H03mDxLzItaceYJDBk1HdClgR15suAzI=
 github.com/scaleway/scaleway-sdk-go v1.0.0-beta.6/go.mod h1:CJJ5VAbozOl0yEw7nHB9+7BXTJbIn6h7W+f6Gau5IP8=
+github.com/scaleway/scaleway-sdk-go v1.0.0-beta.6.0.20200623155123-84df6c4b5301 h1:qj0du14RIOnmePII/eTlw1aHKDYL6zxDIk/Dq7Tef9k=
+github.com/scaleway/scaleway-sdk-go v1.0.0-beta.6.0.20200623155123-84df6c4b5301/go.mod h1:CJJ5VAbozOl0yEw7nHB9+7BXTJbIn6h7W+f6Gau5IP8=
 github.com/sergi/go-diff v1.0.0/go.mod h1:0CfEIISq7TuYL3j771MWULgwwjU+GofnZX9QAmXWZgo=
 github.com/sergi/go-diff v1.1.0 h1:we8PVUC3FE2uYfodKH/nBHMSetSfHDR6scGdBi+erh0=
 github.com/sergi/go-diff v1.1.0/go.mod h1:STckp+ISIX8hZLjrqAeVduY0gWCT9IjLuqbuNXdaHfM=
