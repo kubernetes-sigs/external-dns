@@ -36,7 +36,7 @@ jobs:
         make lint
   
     - name: Test
-      run: go test -race -coverprofile=profile.cov ./...
+      run: make test
 
     - name: Send coverage
       uses: shogo82148/actions-goveralls@v1
