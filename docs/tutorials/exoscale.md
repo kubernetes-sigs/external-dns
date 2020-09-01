@@ -7,7 +7,7 @@ Exoscale provider support was added via [this PR](https://github.com/kubernetes-
 The Exoscale provider expects that your Exoscale zones, you wish to add records to, already exists
 and are configured correctly. It does not add, remove or configure new zones in anyway.
 
-To do this pease refer to the [Exoscale DNS documentation](https://community.exoscale.com/documentation/dns/).
+To do this please refer to the [Exoscale DNS documentation](https://community.exoscale.com/documentation/dns/).
 
 Additionally you will have to provide the Exoscale...:
 
@@ -41,7 +41,7 @@ spec:
       # serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: eu.gcr.io/k8s-artifacts-prod/external-dns/external-dns:v0.6.0
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
         args:
         - --source=ingress # or service or both
         - --provider=exoscale
@@ -74,7 +74,7 @@ rules:
 - apiGroups: [""]
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions"]
+- apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]

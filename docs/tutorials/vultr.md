@@ -42,7 +42,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -68,7 +68,7 @@ rules:
 - apiGroups: [""]
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions"]
+- apiGroups: ["extensions","networking.k8s.io"]
   resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
@@ -106,7 +106,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -116,7 +116,7 @@ spec:
           value: "YOU_VULTR_API_KEY"
 ```
 
-## Deploying an Nginx Service
+## Deploying a Nginx Service
 
 Create a service file called 'nginx.yaml' with the following contents:
 
