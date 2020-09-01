@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Add quick start section to contributing docs (#1766) @seanmalloy
 - Enhance pull request template @seanmalloy
 - Improve errors context for AWS provider
 - Scaleway Provider (#1643) @Sh4d1
