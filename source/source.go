@@ -28,6 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/config"
 )
@@ -135,6 +136,12 @@ func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.Pro
 			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/aws-")
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 				Name:  fmt.Sprintf("aws/%s", attr),
+				Value: v,
+			})
+		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/scw-") {
+			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/scw-")
+			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+				Name:  fmt.Sprintf("scw/%s", attr),
 				Value: v,
 			})
 		}

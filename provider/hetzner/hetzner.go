@@ -21,6 +21,7 @@ import (
 
 	hclouddns "git.blindage.org/21h/hcloud-dns"
 	log "github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"

@@ -251,9 +251,14 @@ func (pr affixNameMapper) toEndpointName(txtDNSName string) string {
 
 func (pr affixNameMapper) toTXTName(endpointDNSName string) string {
 	DNSName := strings.SplitN(endpointDNSName, ".", 2)
+
 	// If specified, replace a leading asterisk in the generated txt record name with some other string
 	if pr.wildcardReplacement != "" && DNSName[0] == "*" {
 		DNSName[0] = pr.wildcardReplacement
+	}
+
+	if len(DNSName) < 2 {
+		return pr.prefix + DNSName[0] + pr.suffix
 	}
 	return pr.prefix + DNSName[0] + pr.suffix + "." + DNSName[1]
 }

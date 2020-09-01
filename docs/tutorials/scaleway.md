@@ -1,27 +1,37 @@
-# Setting up ExternalDNS for Services on DigitalOcean
+# Setting up ExternalDNS for Services on Scaleway
 
-This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using DigitalOcean DNS.
+This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using Scaleway DNS.
 
-Make sure to use **>=0.4.2** version of ExternalDNS for this tutorial.
+Make sure to use **>=0.7.3** version of ExternalDNS for this tutorial.
 
-## Creating a DigitalOcean DNS zone
+**Warning**: Scaleway DNS is currently in Public Beta and may not be suited for production usage.
 
-If you want to learn about how to use DigitalOcean's DNS service read the following tutorial series:
+## Importing a Domain into Scaleway DNS
 
-[An Introduction to Managing DNS](https://www.digitalocean.com/community/tutorial_series/an-introduction-to-managing-dns), and specifically [How To Set Up a Host Name with DigitalOcean DNS](https://www.digitalocean.com/community/tutorials/how-to-set-up-a-host-name-with-digitalocean)
+In order to use your domain, you need to import it into Scaleway DNS. If it's not already done, you can follow [this documentation](https://www.scaleway.com/en/docs/scaleway-dns/)
 
-Create a new DNS zone where you want to create your records in. Let's use `example.com` as an example here.
+Once the domain is imported you can either use the root zone, or create a subzone to use. 
 
-## Creating DigitalOcean Credentials
+In this example we will use `example.com` as an example.
 
-Generate a new personal token by going to [the API settings](https://cloud.digitalocean.com/settings/api/tokens) or follow [How To Use the DigitalOcean API v2](https://www.digitalocean.com/community/tutorials/how-to-use-the-digitalocean-api-v2) if you need more information. Give the token a name and choose read and write access. The token needs to be passed to ExternalDNS so make a note of it for later use.
+## Creating Scaleway Credentials
 
-The environment variable `DO_TOKEN` will be needed to run ExternalDNS with DigitalOcean.
+To use ExternalDNS with Scaleway DNS, you need to create an API token (composed of the Access Key and the Secret Key). 
+You can either use existing ones or you can create a new token, as explained in [How to generate an API token](https://www.scaleway.com/en/docs/generate-an-api-token/) or directly by going to the [credentials page](https://console.scaleway.com/account/organization/credentials).
+
+Note that you will also need to the Organization ID, which can be retrieve on the same page.
+
+Three environment variables are needed to run ExternalDNS with Scaleway DNS:
+- `SCW_ACCESS_KEY` which is the Access Key.
+- `SCW_SECRET_KEY` which is the Secret Key.
+- `SCW_DEFAULT_ORGANIZATION_ID` which is your Organization ID.
 
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
 Then apply one of the following manifests file to deploy ExternalDNS.
+
+The following example are suited for development. For a production usage, prefer secrets over environment, and use a [tagged release](https://github.com/kubernetes-sigs/external-dns/releases).
 
 ### Manifest (for clusters without RBAC enabled)
 ```yaml
@@ -47,10 +57,14 @@ spec:
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
-        - --provider=digitalocean
+        - --provider=scaleway
         env:
-        - name: DO_TOKEN
-          value: "YOUR_DIGITALOCEAN_API_KEY"
+        - name: SCW_ACCESS_KEY
+          value: "<your access key>"
+        - name: SCW_SECRET_KEY
+          value: "<your secret key>"
+        - name: SCW_DEFAULT_ORGANIZATION_ID
+          value: "<your organization ID>"
 ```
 
 ### Manifest (for clusters with RBAC enabled)
@@ -68,12 +82,12 @@ rules:
 - apiGroups: [""]
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions","networking.k8s.io"]
+- apiGroups: ["extensions"] 
   resources: ["ingresses"] 
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
-  verbs: ["list"]
+  verbs: ["list","watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
@@ -111,10 +125,14 @@ spec:
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
-        - --provider=digitalocean
+        - --provider=scaleway
         env:
-        - name: DO_TOKEN
-          value: "YOUR_DIGITALOCEAN_API_KEY"
+        - name: SCW_ACCESS_KEY
+          value: "<your access key>"
+        - name: SCW_SECRET_KEY
+          value: "<your secret key>"
+        - name: SCW_DEFAULT_ORGANIZATION_ID
+          value: "<your organization ID>"
 ```
 
 
@@ -159,7 +177,7 @@ spec:
       targetPort: 80
 ```
 
-Note the annotation on the service; use the same hostname as the DigitalOcean DNS zone created above.
+Note the annotation on the service; use the same hostname as the Scaleway DNS zone created above.
 
 ExternalDNS uses this annotation to determine what services should be registered with DNS. Removing the annotation will cause ExternalDNS to remove the corresponding DNS records.
 
@@ -171,11 +189,11 @@ $ kubectl create -f nginx.yaml
 
 Depending where you run your service it can take a little while for your cloud provider to create an external IP for the service.
 
-Once the service has an external IP assigned, ExternalDNS will notice the new service IP address and synchronize the DigitalOcean DNS records.
+Once the service has an external IP assigned, ExternalDNS will notice the new service IP address and synchronize the Scaleway DNS records.
 
-## Verifying DigitalOcean DNS records
+## Verifying Scaleway DNS records
 
-Check your [DigitalOcean UI](https://cloud.digitalocean.com/networking/domains) to view the records for your DigitalOcean DNS zone.
+Check your [Scaleway DNS UI](https://console.scaleway.com/domains/external) to view the records for your Scaleway DNS zone.
 
 Click on the zone for the one created above if a different domain was used.
 
@@ -183,19 +201,9 @@ This should show the external IP address of the service as the A record for your
 
 ## Cleanup
 
-Now that we have verified that ExternalDNS will automatically manage DigitalOcean DNS records, we can delete the tutorial's example:
+Now that we have verified that ExternalDNS will automatically manage Scaleway DNS records, we can delete the tutorial's example:
 
 ```
 $ kubectl delete service -f nginx.yaml
 $ kubectl delete service -f externaldns.yaml
 ```
-
-## Advanced Usage
-
-### API Page Size
-
-If you have a large number of domains and/or records within a domain, you may encounter API
-rate limiting because of the number of API calls that external-dns must make to the DigitalOcean API to retrieve
-the current DNS configuration during every reconciliation loop. If this is the case, use the 
-`--digitalocean-api-page-size` option to increase the size of the pages used when querying the DigitalOcean API.
-(Note: external-dns uses a default of 50.)
