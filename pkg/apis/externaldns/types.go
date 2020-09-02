@@ -139,6 +139,7 @@ type Config struct {
 	RFC2136MinTTL                     time.Duration
 	NS1Endpoint                       string
 	NS1IgnoreSSL                      bool
+	NS1MinTTLSeconds                  int
 	TransIPAccountName                string
 	TransIPPrivateKeyFile             string
 	DigitalOceanAPIPageSize           int
@@ -367,6 +368,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("pdns-tls-enabled", "When using the PowerDNS/PDNS provider, specify whether to use TLS (default: false, requires --tls-ca, optionally specify --tls-client-cert and --tls-client-cert-key)").Default(strconv.FormatBool(defaultConfig.PDNSTLSEnabled)).BoolVar(&cfg.PDNSTLSEnabled)
 	app.Flag("ns1-endpoint", "When using the NS1 provider, specify the URL of the API endpoint to target (default: https://api.nsone.net/v1/)").Default(defaultConfig.NS1Endpoint).StringVar(&cfg.NS1Endpoint)
 	app.Flag("ns1-ignoressl", "When using the NS1 provider, specify whether to verify the SSL certificate (default: false)").Default(strconv.FormatBool(defaultConfig.NS1IgnoreSSL)).BoolVar(&cfg.NS1IgnoreSSL)
+	app.Flag("ns1-min-ttl", "Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.").IntVar(&cfg.NS1MinTTLSeconds)
 	app.Flag("digitalocean-api-page-size", "Configure the page size used when querying the DigitalOcean API.").Default(strconv.Itoa(defaultConfig.DigitalOceanAPIPageSize)).IntVar(&cfg.DigitalOceanAPIPageSize)
 
 	// Flags related to TLS communication
