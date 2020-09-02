@@ -1545,6 +1545,52 @@ func TestNodePortServices(t *testing.T) {
 			[]int{1},
 			[]v1.PodPhase{v1.PodRunning},
 		},
+		{
+			"annotated NodePort services with ExternalTrafficPolicy=Local and multiple pods on a single node return an endpoint with unique IP addresses of the cluster's nodes where pods is running only",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeNodePort,
+			v1.ServiceExternalTrafficPolicyTypeLocal,
+			"",
+			"",
+			false,
+			map[string]string{},
+			map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+			},
+			nil,
+			[]*endpoint.Endpoint{
+				{DNSName: "_30192._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			[]*v1.Node{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node1",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node2",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+					},
+				},
+			}},
+			[]string{"pod-0", "pod-1"},
+			[]int{1, 1},
+			[]v1.PodPhase{v1.PodRunning, v1.PodRunning},
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			// Create a Kubernetes testing client
