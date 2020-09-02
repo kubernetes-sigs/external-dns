@@ -18,10 +18,12 @@ package registry
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 
 	log "github.com/sirupsen/logrus"
 
@@ -52,7 +54,29 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		return nil, errors.New("txt-prefix and txt-suffix are mutual exclusive")
 	}
 
+	txtPrefix = strings.ToLower(txtPrefix)
+	txtSuffix = strings.ToLower(txtSuffix)
 	mapper := newaffixNameMapper(txtPrefix, txtSuffix)
+
+	if txtPrefix != "" {
+		matched, err := regexp.MatchString(`^[a-z0-9-.]+$`, txtPrefix)
+		if err != nil {
+			return nil, err
+		}
+		if !matched {
+			return nil, errors.Errorf(`invalid TXT prefix provided, expected "[a-z0-9-.]+" got "%s"`, txtPrefix)
+		}
+	}
+
+	if txtSuffix != "" {
+		matched, err := regexp.MatchString(`^[a-z0-9-.]+$`, txtSuffix)
+		if err != nil {
+			return nil, err
+		}
+		if !matched {
+			return nil, errors.Errorf(`invalid TXT suffix provided, expected "[a-z0-9-.]+" got "%s"`, txtSuffix)
+		}
+	}
 
 	return &TXTRegistry{
 		provider:      provider,
@@ -218,7 +242,7 @@ type affixNameMapper struct {
 var _ nameMapper = affixNameMapper{}
 
 func newaffixNameMapper(prefix string, suffix string) affixNameMapper {
-	return affixNameMapper{prefix: strings.ToLower(prefix), suffix: strings.ToLower(suffix)}
+	return affixNameMapper{prefix: prefix, suffix: suffix}
 }
 
 func (pr affixNameMapper) toEndpointName(txtDNSName string) string {

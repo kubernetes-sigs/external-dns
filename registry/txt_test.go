@@ -60,6 +60,26 @@ func testTXTRegistryNew(t *testing.T) {
 	_, err = NewTXTRegistry(p, "txt", "txt", "owner", time.Hour)
 	require.Error(t, err)
 
+	_, err = NewTXTRegistry(p, "@invalid#", "", "owner", time.Hour)
+	require.Error(t, err, `invalid TXT prefix provided, expected "[a-z0-9-.]+" got "@invalid#"`)
+	_, err = NewTXTRegistry(p, "", "@invalid#", "owner", time.Hour)
+	require.Error(t, err, `invalid TXT suffix provided, expected "[a-z0-9-.]+" got "@invalid#"`)
+
+	_, err = NewTXTRegistry(p, "txt", "", "owner", time.Hour)
+	require.NoError(t, err)
+	_, err = NewTXTRegistry(p, "", "txt", "owner", time.Hour)
+	require.NoError(t, err)
+
+	_, err = NewTXTRegistry(p, "TxT", "", "owner", time.Hour)
+	require.NoError(t, err)
+	_, err = NewTXTRegistry(p, "", "TxT", "owner", time.Hour)
+	require.NoError(t, err)
+
+	r, err = NewTXTRegistry(p, "-sub-.", "", "owner", time.Hour)
+	require.NoError(t, err)
+	r, err = NewTXTRegistry(p, "", "-sub-.", "owner", time.Hour)
+	require.NoError(t, err)
+
 	_, ok := r.mapper.(affixNameMapper)
 	require.True(t, ok)
 	assert.Equal(t, "owner", r.ownerID)
