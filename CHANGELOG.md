@@ -6,7 +6,6 @@
 - Scaleway Provider (#1643) @Sh4d1
 - Enable azure_private_dns to work with non "AzurePublicCloud" clouds (#1578) @daddonpa
 - Fix typos in documentation @ddymko
-<<<<<<< HEAD
 - Add Cloudflare documentation on use of `--zone-id-filter` (#1751) @loozhengyuan
 - Fix: alibaba cloud keeping create record (#1682) @LXM
 - Update all container registry references to use k8s.gcr.io @seanmalloy
@@ -14,9 +13,7 @@
 - Fix index out of range when hostname has no dots (#1756) @chemasan
 - Fixes test coverage with coveralls (#1755) @jgrumboe
 - Add tutorial for GKE with workload identity (#1765) @ddgenome
-=======
 - Fix NodePort with externaltrafficpolicy targets duplication @codearky
->>>>>>> Remove duplication of target ips for NodePort services with ExternalTrafficPolicy=Local
 
 ## v0.7.3 - 2020-08-05
 
