@@ -13,6 +13,7 @@
 - Fix index out of range when hostname has no dots (#1756) @chemasan
 - Fixes test coverage with coveralls (#1755) @jgrumboe
 - Add tutorial for GKE with workload identity (#1765) @ddgenome
+- Fix NodePort with externaltrafficpolicy targets duplication @codearky
 
 ## v0.7.3 - 2020-08-05
 
