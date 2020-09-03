@@ -2,7 +2,7 @@
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using Scaleway DNS.
 
-Make sure to use **>=0.7.3** version of ExternalDNS for this tutorial.
+Make sure to use **>=0.7.4** version of ExternalDNS for this tutorial.
 
 **Warning**: Scaleway DNS is currently in Public Beta and may not be suited for production usage.
 
