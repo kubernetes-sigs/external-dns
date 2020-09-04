@@ -294,11 +294,12 @@ func main() {
 	case "ns1":
 		p, err = ns1.NewNS1Provider(
 			ns1.NS1Config{
-				DomainFilter: domainFilter,
-				ZoneIDFilter: zoneIDFilter,
-				NS1Endpoint:  cfg.NS1Endpoint,
-				NS1IgnoreSSL: cfg.NS1IgnoreSSL,
-				DryRun:       cfg.DryRun,
+				DomainFilter:  domainFilter,
+				ZoneIDFilter:  zoneIDFilter,
+				NS1Endpoint:   cfg.NS1Endpoint,
+				NS1IgnoreSSL:  cfg.NS1IgnoreSSL,
+				DryRun:        cfg.DryRun,
+				MinTTLSeconds: cfg.NS1MinTTLSeconds,
 			},
 		)
 	case "transip":

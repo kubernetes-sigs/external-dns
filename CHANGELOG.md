@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Add quick start section to contributing docs (#1766) @seanmalloy
 - Enhance pull request template @seanmalloy
 - Improve errors context for AWS provider
 - Scaleway Provider (#1643) @Sh4d1
@@ -10,6 +11,10 @@
 - Update all container registry references to use k8s.gcr.io @seanmalloy
 - Provide available prometheus metrics in documentation @vinny-sabatini
 - Fix index out of range when hostname has no dots (#1756) @chemasan
+- Fixes test coverage with coveralls (#1755) @jgrumboe
+- Add tutorial for GKE with workload identity (#1765) @ddgenome
+- Fix NodePort with externaltrafficpolicy targets duplication @codearky
+- Update contributing section in README (#1760) @seanmalloy
 - Oracle OCI provider: add support for instance principal authentication (#1700) @ericrrath
 
 ## v0.7.3 - 2020-08-05
