@@ -1,8 +1,13 @@
-# Configuring ExternalDNS to use the Contour IngressRoute Source
-This tutorial describes how to configure ExternalDNS to use the Contour IngressRoute source.
-It is meant to supplement the other provider-specific setup tutorials.
+# Setting up External DNS with Contour
 
-### Manifest (for clusters without RBAC enabled)
+This tutorial describes how to configure External DNS to use either the Contour `IngressRoute` or `HTTPProxy` source.
+The `IngressRoute` CRD is deprecated but still in-use in many clusters however it's recommended that you migrate to the `HTTPProxy` resource.
+Using the `HTTPProxy` resource with External DNS requires Contour version 1.5 or greater.
+
+### Example manifests for External DNS
+#### Without RBAC
+Note that you don't need to enable both of the sources and if you don't enable `contour-ingressroute` you also don't need to configure the `contour-load-balancer` setting.
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -25,8 +30,9 @@ spec:
         args:
         - --source=service
         - --source=ingress
-        - --source=contour-ingressroute
-        - --contour-load-balancer=custom-contour-namespace/custom-contour-lb # load balancer service to be used. Omit to use the default (heptio-contour/contour)
+        - --source=contour-ingressroute # To enable IngressRoute support
+        - --source=contour-httpproxy # To enable HTTPProxy support
+        - --contour-load-balancer=custom-contour-namespace/custom-contour-lb # For IngressRoute ONLY: load balancer service to be used. Omit to use the default (heptio-contour/contour) 
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
@@ -35,7 +41,7 @@ spec:
         - --txt-owner-id=my-identifier
 ```
 
-### Manifest (for clusters with RBAC enabled)
+#### With RBAC
 ```yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -56,8 +62,13 @@ rules:
 - apiGroups: [""]
   resources: ["nodes"]
   verbs: ["list"]
+# This section is only for IngressRoute
 - apiGroups: ["contour.heptio.com"]
   resources: ["ingressroutes"]
+  verbs: ["get","watch","list"]
+# This section is only for HTTPProxy
+- apiGroups: ["projectcontour.io"]
+  resources: ["httpproxies"]
   verbs: ["get","watch","list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -95,8 +106,9 @@ spec:
         args:
         - --source=service
         - --source=ingress
-        - --source=contour-ingressroute
-        - --contour-load-balancer=custom-contour-namespace/custom-contour-lb # load balancer service to be used. Omit to use the default (heptio-contour/contour)
+        - --source=contour-ingressroute # To enable IngressRoute support
+        - --source=contour-httpproxy # To enable HTTPProxy support
+        - --contour-load-balancer=custom-contour-namespace/custom-contour-lb # For IngressRoute ONLY: load balancer service to be used. Omit to use the default (heptio-contour/contour) 
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=aws
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
@@ -105,9 +117,9 @@ spec:
         - --txt-owner-id=my-identifier
 ```
 
-### Verify External DNS works (IngressRoute example)
+### Verify External DNS works
 The following instructions are based on the 
-[Contour example workload](https://github.com/heptio/contour/blob/HEAD/examples/example-workload/kuard-ingressroute.yaml).
+[Contour example workload](https://github.com/projectcontour/contour/tree/master/examples/example-workload/httpproxy).
 
 #### Install a sample service
 ```bash
@@ -147,7 +159,36 @@ spec:
     app: kuard
   sessionAffinity: None
   type: ClusterIP
----
+EOF
+```
+
+Then create either a `HTTPProxy` or an `IngressRoute`
+
+#### HTTPProxy
+```
+$ kubectl apply -f - <<EOF
+apiVersion: projectcontour.io/v1
+kind: HTTPProxy
+metadata:
+  labels:
+    app: kuard
+  name: kuard
+  namespace: default
+spec:
+  virtualhost:
+    fqdn: kuard.example.com
+  routes:
+    - conditions:
+      - prefix: /
+      services:
+        - name: kuard
+          port: 80
+EOF
+```
+
+#### IngressRoute
+```
+$ kubectl apply -f - <<EOF
 apiVersion: contour.heptio.com/v1beta1
 kind: IngressRoute
 metadata: 
