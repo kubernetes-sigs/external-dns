@@ -210,7 +210,7 @@ func (p *AzureProvider) Records(ctx context.Context) (endpoints []*endpoint.Endp
 
 			if len(p.zoneNameFilter.Filters) > 0 && !p.domainFilter.Match(name) {
 				log.Debugf("Skipping return of record %s because it was filtered out by the specified --domain-filter", name)
-				return false
+				return true
 			}
 			targets := extractAzureTargets(&recordSet)
 			if len(targets) == 0 {
