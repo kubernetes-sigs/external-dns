@@ -15,6 +15,7 @@
 - Add tutorial for GKE with workload identity (#1765) @ddgenome
 - Fix NodePort with externaltrafficpolicy targets duplication @codearky
 - Update contributing section in README (#1760) @seanmalloy
+- Option to cache AWS zones list @bpineau
 
 ## v0.7.3 - 2020-08-05
 
