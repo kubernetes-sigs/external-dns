@@ -48,20 +48,20 @@ type CivoChanges struct {
 // CivoChangeCreate Civo Domain Record Creates
 type CivoChangeCreate struct {
 	Domain  civogo.DNSDomain
-	Options *civogo.DNSRecordConfig
+	Options civogo.DNSRecordConfig
 }
 
 // CivoChangeUpdate Civo Domain Record Updates
 type CivoChangeUpdate struct {
 	Domain       civogo.DNSDomain
-	DomainRecord *civogo.DNSRecord
-	Options      *civogo.DNSRecordConfig
+	DomainRecord civogo.DNSRecord
+	Options      civogo.DNSRecordConfig
 }
 
 // CivoChangeDelete Civo Domain Record Deletes
 type CivoChangeDelete struct {
 	Domain       civogo.DNSDomain
-	DomainRecord *civogo.DNSRecord
+	DomainRecord civogo.DNSRecord
 }
 
 // NewCivoProvider initializes a new Civo DNS based Provider.
@@ -109,7 +109,8 @@ func (p *CivoProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		}
 
 		for _, r := range records {
-			if provider.SupportedRecordType(string(r.Type)) {
+			toUpper := strings.ToUpper(string(r.Type))
+			if provider.SupportedRecordType(toUpper) {
 				name := fmt.Sprintf("%s.%s", r.Name, zone.Name)
 
 				// root name is identified by the empty string and should be
@@ -118,7 +119,7 @@ func (p *CivoProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 					name = zone.Name
 				}
 
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(name, string(r.Type), endpoint.TTL(r.TTL), r.Value))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(name, toUpper, endpoint.TTL(r.TTL), r.Value))
 			}
 		}
 	}
@@ -127,6 +128,7 @@ func (p *CivoProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 }
 
 func (p *CivoProvider) fetchRecords(ctx context.Context, domainID string) ([]civogo.DNSRecord, error) {
+
 	records, err := p.Client.ListDNSRecords(domainID)
 	if err != nil {
 		return nil, err
@@ -170,7 +172,7 @@ func (p *CivoProvider) submitChanges(ctx context.Context, changes CivoChanges) e
 
 		if p.DryRun {
 			log.WithFields(logFields).Info("Would create record.")
-		} else if _, err := p.Client.CreateDNSRecord(change.Domain.ID, change.Options); err != nil {
+		} else if _, err := p.Client.CreateDNSRecord(change.Domain.ID, &change.Options); err != nil {
 			log.WithFields(logFields).Errorf(
 				"Failed to Create record: %v",
 				err,
@@ -192,7 +194,7 @@ func (p *CivoProvider) submitChanges(ctx context.Context, changes CivoChanges) e
 
 		if p.DryRun {
 			log.WithFields(logFields).Info("Would delete record.")
-		} else if _, err := p.Client.DeleteDNSRecord(change.DomainRecord); err != nil {
+		} else if _, err := p.Client.DeleteDNSRecord(&change.DomainRecord); err != nil {
 			log.WithFields(logFields).Errorf(
 				"Failed to Delete record: %v",
 				err,
@@ -214,7 +216,7 @@ func (p *CivoProvider) submitChanges(ctx context.Context, changes CivoChanges) e
 
 		if p.DryRun {
 			log.WithFields(logFields).Info("Would update record.")
-		} else if _, err := p.Client.UpdateDNSRecord(change.DomainRecord, change.Options); err != nil {
+		} else if _, err := p.Client.UpdateDNSRecord(&change.DomainRecord, &change.Options); err != nil {
 			log.WithFields(logFields).Errorf(
 				"Failed to Update record: %v",
 				err,
@@ -282,6 +284,7 @@ func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 		records := recordsByZoneID[zoneID]
 
+		// Generate Create
 		for _, ep := range creates {
 			matchedRecords := getRecordID(records, zone, ep)
 
@@ -294,6 +297,7 @@ func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 				}).Warn("Records found which should not exist")
 			}
 
+			// if len(matchedRecords) == 0 {
 			recordType, err := convertRecordType(ep.RecordType)
 			if err != nil {
 				return err
@@ -302,7 +306,7 @@ func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 			for _, target := range ep.Targets {
 				civoCreates = append(civoCreates, CivoChangeCreate{
 					Domain: zone,
-					Options: &civogo.DNSRecordConfig{
+					Options: civogo.DNSRecordConfig{
 						Value:    target,
 						Name:     getStrippedRecordName(zone, ep),
 						Type:     recordType,
@@ -311,6 +315,7 @@ func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 					},
 				})
 			}
+			// }
 		}
 	}
 
@@ -364,8 +369,8 @@ func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 					civoUpdates = append(civoUpdates, CivoChangeUpdate{
 						Domain:       zone,
-						DomainRecord: &record,
-						Options: &civogo.DNSRecordConfig{
+						DomainRecord: record,
+						Options: civogo.DNSRecordConfig{
 							Value:    target,
 							Name:     getStrippedRecordName(zone, ep),
 							Type:     recordType,
@@ -387,7 +392,7 @@ func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 					civoCreates = append(civoCreates, CivoChangeCreate{
 						Domain: zone,
-						Options: &civogo.DNSRecordConfig{
+						Options: civogo.DNSRecordConfig{
 							Value:    target,
 							Name:     getStrippedRecordName(zone, ep),
 							Type:     recordType,
@@ -410,7 +415,7 @@ func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 				civoDeletes = append(civoDeletes, CivoChangeDelete{
 					Domain:       zone,
-					DomainRecord: &record,
+					DomainRecord: record,
 				})
 			}
 		}
@@ -445,7 +450,7 @@ func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 			for _, record := range matchedRecords {
 				civoDeletes = append(civoDeletes, CivoChangeDelete{
 					Domain:       zone,
-					DomainRecord: &record,
+					DomainRecord: record,
 				})
 			}
 		}
@@ -477,14 +482,12 @@ func convertRecordType(recordType string) (civogo.DNSRecordType, error) {
 	switch recordType {
 	case "A":
 		return civogo.DNSRecordTypeA, nil
-	// case "AAAA":
-	// 	return civogo.DNS, nil
 	case "CNAME":
 		return civogo.DNSRecordTypeCName, nil
 	case "TXT":
 		return civogo.DNSRecordTypeTXT, nil
-	// case "SRV":
-	// 	return civogo.DNSRE, nil
+	case "SRV":
+		return civogo.DNSRecordTypeSRV, nil
 	default:
 		return "", fmt.Errorf("invalid Record Type: %s", recordType)
 	}
@@ -503,7 +506,9 @@ func getRecordID(records []civogo.DNSRecord, zone civogo.DNSDomain, ep endpoint.
 	var matchedRecords []civogo.DNSRecord
 
 	for _, record := range records {
-		if record.Name == getStrippedRecordName(zone, ep) && string(record.Type) == ep.RecordType {
+		stripedName := getStrippedRecordName(zone, ep)
+		toUpper := strings.ToUpper(string(record.Type))
+		if record.Name == stripedName && toUpper == ep.RecordType {
 			matchedRecords = append(matchedRecords, record)
 		}
 	}
