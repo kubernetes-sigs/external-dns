@@ -60,6 +60,7 @@ require (
 	google.golang.org/api v0.15.0
 	gopkg.in/ns1/ns1-go.v2 v2.0.0-20190322154155-0dafb5275fd1
 	gopkg.in/yaml.v2 v2.2.8
+	gotest.tools v2.2.0+incompatible
 	istio.io/api v0.0.0-20200529165953-72dad51d4ffc
 	istio.io/client-go v0.0.0-20200529172309-31c16ea3f751
 	k8s.io/api v0.18.8
