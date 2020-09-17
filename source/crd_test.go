@@ -72,7 +72,7 @@ func startCRDServerToServeTargets(endpoints []*endpoint.Endpoint, apiVersion, ki
 			Name:        name,
 			Namespace:   namespace,
 			Annotations: annotations,
-			Labels:     labels,
+			Labels:      labels,
 			Generation:  1,
 		},
 		Spec: endpoint.DNSEndpointSpec{
