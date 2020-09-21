@@ -128,7 +128,6 @@ func (p *CivoProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 }
 
 func (p *CivoProvider) fetchRecords(ctx context.Context, domainID string) ([]civogo.DNSRecord, error) {
-
 	records, err := p.Client.ListDNSRecords(domainID)
 	if err != nil {
 		return nil, err
