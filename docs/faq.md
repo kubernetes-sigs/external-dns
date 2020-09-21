@@ -275,6 +275,16 @@ and one with `--annotation-filter=kubernetes.io/ingress.class=nginx-external`.
 Beware when using multiple sources, e.g. `--source=service --source=ingress`, `--annotation-filter` will filter every given source objects.
 If you need to filter only one specific source you have to run a separated external dns service containing only the wanted `--source`  and `--annotation-filter`.
 
+### How do I specify that I want the DNS record to point to either the Node's public or private IP when it has both?
+
+If your Nodes have both public and private IP addresses, you might want to write DNS records with one or the other.  
+For example, you may want to write a DNS record in a private zone that resolves to your Nodes' private IPs so that traffic never leaves your private network.
+
+To accomplish this, set this annotation on your service: `external-dns.alpha.kubernetes.io/access=private`  
+Conversely, to force the public IP: `external-dns.alpha.kubernetes.io/access=public`  
+
+If this annotation is not set, and the node has both public and private IP addresses, then the public IP will be used by default.
+
 ### Can external-dns manage(add/remove) records in a hosted zone which is setup in different AWS account?
 
 Yes, give it the correct cross-account/assume-role permissions and use the `--aws-assume-role` flag https://github.com/kubernetes-sigs/external-dns/pull/524#issue-181256561
