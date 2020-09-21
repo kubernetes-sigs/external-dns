@@ -88,11 +88,14 @@ func TestCivoProviderRecords(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for k, v := range records {
-		assert.Equal(t, strings.TrimSuffix(v.DNSName, ".example.com"), expected[k].Name)
-		assert.Equal(t, v.RecordType, string(expected[0].Type))
-		assert.Equal(t, int(v.RecordTTL), expected[0].TTL)
-	}
+	assert.Equal(t, strings.TrimSuffix(records[0].DNSName, ".example.com"), expected[0].Name)
+	assert.Equal(t, records[0].RecordType, string(expected[0].Type))
+	assert.Equal(t, int(records[0].RecordTTL), expected[0].TTL)
+
+	assert.Equal(t, strings.TrimSuffix(records[1].DNSName, ".example.com"), expected[1].Name)
+	assert.Equal(t, records[1].RecordType, string(expected[1].Type))
+	assert.Equal(t, int(records[1].RecordTTL), expected[1].TTL)
+
 }
 
 func TestCivoProviderApplyChanges(t *testing.T) {
