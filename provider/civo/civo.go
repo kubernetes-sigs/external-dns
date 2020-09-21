@@ -493,7 +493,6 @@ func convertRecordType(recordType string) (civogo.DNSRecordType, error) {
 }
 
 func getStrippedRecordName(zone civogo.DNSDomain, ep endpoint.Endpoint) string {
-	// Handle root
 	if ep.DNSName == zone.Name {
 		return ""
 	}
