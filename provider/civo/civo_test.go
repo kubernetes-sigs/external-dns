@@ -209,3 +209,60 @@ func TestCivoGetStrippedRecordName(t *testing.T) {
 		DNSName: "api.foo.com",
 	}))
 }
+
+func TestCivoConvertRecordType(t *testing.T) {
+	record, err := convertRecordType("A")
+	recordA := civogo.DNSRecordType(civogo.DNSRecordTypeA)
+	require.NoError(t, err)
+	assert.Equal(t, recordA, record)
+
+	record, err = convertRecordType("CNAME")
+	recordCName := civogo.DNSRecordType(civogo.DNSRecordTypeCName)
+	require.NoError(t, err)
+	assert.Equal(t, recordCName, record)
+
+	record, err = convertRecordType("TXT")
+	recordTXT := civogo.DNSRecordType(civogo.DNSRecordTypeTXT)
+	require.NoError(t, err)
+	assert.Equal(t, recordTXT, record)
+
+	record, err = convertRecordType("SRV")
+	recordSRV := civogo.DNSRecordType(civogo.DNSRecordTypeSRV)
+	require.NoError(t, err)
+	assert.Equal(t, recordSRV, record)
+
+	_, err = convertRecordType("INVALID")
+	require.Error(t, err)
+}
+
+func TestCivoProvider_getRecordID(t *testing.T) {
+	zone := civogo.DNSDomain{
+		ID:   "12345",
+		Name: "test.com",
+	}
+
+	record := []civogo.DNSRecord{{
+		ID:          "1",
+		Type:        "A",
+		Name:        "www",
+		Value:       "10.0.0.0",
+		DNSDomainID: "12345",
+		TTL:         600,
+	}, {
+		ID:          "2",
+		Type:        "A",
+		Name:        "api",
+		Value:       "10.0.0.1",
+		DNSDomainID: "12345",
+		TTL:         600,
+	}}
+
+	endPoint := endpoint.Endpoint{DNSName: "www.test.com", Targets: endpoint.Targets{"10.0.0.0"}, RecordType: "A"}
+	id := getRecordID(record, zone, endPoint)
+
+	t.Log(record)
+	t.Log(endPoint)
+	t.Log(id)
+
+	assert.Equal(t, id[0].ID, record[0].ID)
+}

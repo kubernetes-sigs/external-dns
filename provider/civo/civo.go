@@ -226,11 +226,6 @@ func (p *CivoProvider) submitChanges(ctx context.Context, changes CivoChanges) e
 	return nil
 }
 
-func getPriority() int {
-	priority := 0
-	return priority
-}
-
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	recordsByZoneID := make(map[string][]civogo.DNSRecord)
@@ -296,7 +291,6 @@ func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 				}).Warn("Records found which should not exist")
 			}
 
-			// if len(matchedRecords) == 0 {
 			recordType, err := convertRecordType(ep.RecordType)
 			if err != nil {
 				return err
@@ -309,12 +303,11 @@ func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 						Value:    target,
 						Name:     getStrippedRecordName(zone, ep),
 						Type:     recordType,
-						Priority: getPriority(),
+						Priority: 0,
 						TTL:      int(ep.RecordTTL),
 					},
 				})
 			}
-			// }
 		}
 	}
 
@@ -373,7 +366,7 @@ func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 							Value:    target,
 							Name:     getStrippedRecordName(zone, ep),
 							Type:     recordType,
-							Priority: getPriority(),
+							Priority: 0,
 							TTL:      int(ep.RecordTTL),
 						},
 					})
@@ -395,27 +388,11 @@ func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 							Value:    target,
 							Name:     getStrippedRecordName(zone, ep),
 							Type:     recordType,
-							Priority: getPriority(),
+							Priority: 0,
 							TTL:      int(ep.RecordTTL),
 						},
 					})
 				}
-			}
-
-			// Any remaining records have been removed, delete them
-			for _, record := range matchedRecordsByTarget {
-				log.WithFields(log.Fields{
-					"zoneID":     zoneID,
-					"dnsName":    ep.DNSName,
-					"zoneName":   zone.Name,
-					"recordType": ep.RecordType,
-					"target":     record.Value,
-				}).Warn("Deleting Target")
-
-				civoDeletes = append(civoDeletes, CivoChangeDelete{
-					Domain:       zone,
-					DomainRecord: record,
-				})
 			}
 		}
 	}
