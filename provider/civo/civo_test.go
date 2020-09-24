@@ -260,9 +260,5 @@ func TestCivoProvider_getRecordID(t *testing.T) {
 	endPoint := endpoint.Endpoint{DNSName: "www.test.com", Targets: endpoint.Targets{"10.0.0.0"}, RecordType: "A"}
 	id := getRecordID(record, zone, endPoint)
 
-	t.Log(record)
-	t.Log(endPoint)
-	t.Log(id)
-
 	assert.Equal(t, id[0].ID, record[0].ID)
 }
