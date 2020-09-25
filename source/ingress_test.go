@@ -316,7 +316,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, false), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, false, false), ti.expected)
 		})
 	}
 }
