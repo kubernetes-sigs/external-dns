@@ -2,7 +2,9 @@
 #  https://github.com/kubernetes/community/blob/HEAD/contributors/guide/owners.md
 
 approvers:
-  - hjacobs
   - raffo
-  - linki
   - njuettner
+
+emeritus_approvers:
+  - hjacobs
+  - linki

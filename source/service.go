@@ -486,7 +486,10 @@ func extractServiceExternalName(svc *v1.Service) endpoint.Targets {
 }
 
 func extractLoadBalancerTargets(svc *v1.Service) endpoint.Targets {
-	var targets endpoint.Targets
+	var (
+		targets     endpoint.Targets
+		externalIPs endpoint.Targets
+	)
 
 	// Create a corresponding endpoint for each configured external entrypoint.
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
@@ -496,6 +499,16 @@ func extractLoadBalancerTargets(svc *v1.Service) endpoint.Targets {
 		if lb.Hostname != "" {
 			targets = append(targets, lb.Hostname)
 		}
+	}
+
+	if svc.Spec.ExternalIPs != nil {
+		for _, ext := range svc.Spec.ExternalIPs {
+			externalIPs = append(externalIPs, ext)
+		}
+	}
+
+	if len(externalIPs) > 0 {
+		return externalIPs
 	}
 
 	return targets
@@ -511,6 +524,7 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 
 	switch svc.Spec.ExternalTrafficPolicy {
 	case v1.ServiceExternalTrafficPolicyTypeLocal:
+		nodesMap := map[*v1.Node]struct{}{}
 		labelSelector, err := metav1.ParseToLabelSelector(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
 		if err != nil {
 			return nil, err
@@ -531,7 +545,10 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 					log.Debugf("Unable to find node where Pod %s is running", v.Spec.Hostname)
 					continue
 				}
-				nodes = append(nodes, node)
+				if _, ok := nodesMap[node]; !ok {
+					nodesMap[node] = *new(struct{})
+					nodes = append(nodes, node)
+				}
 			}
 		}
 	default:
@@ -552,10 +569,16 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 		}
 	}
 
+	access := getAccessFromAnnotations(svc.Annotations)
+	if access == "public" {
+		return externalIPs, nil
+	}
+	if access == "private" {
+		return internalIPs, nil
+	}
 	if len(externalIPs) > 0 {
 		return externalIPs, nil
 	}
-
 	return internalIPs, nil
 }
 

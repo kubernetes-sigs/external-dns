@@ -1,10 +1,33 @@
-# Project structure
+# Quick Start
 
-### Building
+- [Git](https://git-scm.com/downloads)
+- [Go 1.14+](https://golang.org/dl/)
+- [Go modules](https://github.com/golang/go/wiki/Modules)
+- [golangci-lint](https://github.com/golangci/golangci-lint)
+- [Docker](https://docs.docker.com/install/)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl)
 
-You can build ExternalDNS for your platform with `make build`, you may have to install the necessary dependencies with `make dep`. The binary will land at `build/external-dns`.
+Compile and run locally against a remote k8s cluster.
+```
+git clone https://github.com/kubernetes-sigs/external-dns.git && cd external-dns
+make build
+# login to remote k8s cluster
+./build/external-dns --source=service --provider=inmemory --once
+```
 
-### Design
+Run linting, unit tests, and coverage report.
+```
+make lint
+make test
+make cover-html
+```
+
+Build container image.
+```
+make build.docker
+```
+
+# Design
 
 ExternalDNS's sources of DNS records live in package [source](../../source). They implement the `Source` interface that has a single method `Endpoints` which returns the represented source's objects converted to `Endpoints`. Endpoints are just a tuple of DNS name and target where target can be an IP or another hostname.
 
@@ -20,7 +43,7 @@ The orchestration between the different components is controlled by the [control
 
 You can pick which `Source` and `Provider` to use at runtime via the `--source` and `--provider` flags, respectively.
 
-### Adding a DNS provider
+# Adding a DNS Provider
 
 A typical way to start on, e.g. a CoreDNS provider, would be to add a `coredns.go` to the providers package and implement the interface methods. Then you would have to register your provider under a name in `main.go`, e.g. `coredns`, and would be able to trigger it's functions via setting `--provider=coredns`.
 

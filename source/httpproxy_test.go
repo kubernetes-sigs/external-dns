@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,106 +18,81 @@ package source
 
 import (
 	"context"
+	v1 "k8s.io/api/core/v1"
 	"testing"
 
 	"github.com/pkg/errors"
-	contour "github.com/projectcontour/contour/apis/contour/v1beta1"
 	projectcontour "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	fakeDynamic "k8s.io/client-go/dynamic/fake"
-	fakeKube "k8s.io/client-go/kubernetes/fake"
-
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-// This is a compile-time validation that ingressRouteSource is a Source.
-var _ Source = &ingressRouteSource{}
+// This is a compile-time validation that httpProxySource is a Source.
+var _ Source = &httpProxySource{}
 
-type IngressRouteSuite struct {
+type HTTPProxySuite struct {
 	suite.Suite
-	source       Source
-	loadBalancer *v1.Service
-	ingressRoute *contour.IngressRoute
+	source    Source
+	httpProxy *projectcontour.HTTPProxy
 }
 
-func (suite *IngressRouteSuite) SetupTest() {
-	fakeKubernetesClient := fakeKube.NewSimpleClientset()
+func (suite *HTTPProxySuite) SetupTest() {
 	fakeDynamicClient, s := newDynamicKubernetesClient()
 	var err error
 
-	suite.loadBalancer = (fakeLoadBalancerService{
-		ips:       []string{"8.8.8.8"},
-		hostnames: []string{"v1"},
-		namespace: "heptio-contour/contour",
-		name:      "contour",
-	}).Service()
-
-	_, err = fakeKubernetesClient.CoreV1().Services(suite.loadBalancer.Namespace).Create(context.Background(), suite.loadBalancer, metav1.CreateOptions{})
-	suite.NoError(err, "should succeed")
-
-	suite.source, err = NewContourIngressRouteSource(
+	suite.source, err = NewContourHTTPProxySource(
 		fakeDynamicClient,
-		fakeKubernetesClient,
-		"heptio-contour/contour",
 		"default",
 		"",
 		"{{.Name}}",
 		false,
 		false,
 	)
-	suite.NoError(err, "should initialize ingressroute source")
+	suite.NoError(err, "should initialize httpproxy source")
 
-	suite.ingressRoute = (fakeIngressRoute{
-		name:      "foo-ingressroute-with-targets",
+	suite.httpProxy = (fakeHTTPProxy{
+		name:      "foo-httpproxy-with-targets",
 		namespace: "default",
 		host:      "example.com",
-	}).IngressRoute()
+	}).HTTPProxy()
 
 	// Convert to unstructured
-	unstructuredIngressRoute, err := convertIngressRouteToUnstructured(suite.ingressRoute, s)
+	unstructuredHTTPProxy, err := convertHTTPProxyToUnstructured(suite.httpProxy, s)
 	if err != nil {
 		suite.Error(err)
 	}
 
-	_, err = fakeDynamicClient.Resource(contour.IngressRouteGVR).Namespace(suite.ingressRoute.Namespace).Create(context.Background(), unstructuredIngressRoute, metav1.CreateOptions{})
+	_, err = fakeDynamicClient.Resource(projectcontour.HTTPProxyGVR).Namespace(suite.httpProxy.Namespace).Create(context.Background(), unstructuredHTTPProxy, metav1.CreateOptions{})
 	suite.NoError(err, "should succeed")
 }
 
-func (suite *IngressRouteSuite) TestResourceLabelIsSet() {
+func (suite *HTTPProxySuite) TestResourceLabelIsSet() {
 	endpoints, _ := suite.source.Endpoints(context.Background())
 	for _, ep := range endpoints {
-		suite.Equal("ingressroute/default/foo-ingressroute-with-targets", ep.Labels[endpoint.ResourceLabelKey], "should set correct resource label")
+		suite.Equal("httpproxy/default/foo-httpproxy-with-targets", ep.Labels[endpoint.ResourceLabelKey], "should set correct resource label")
 	}
 }
 
-func newDynamicKubernetesClient() (*fakeDynamic.FakeDynamicClient, *runtime.Scheme) {
-	s := runtime.NewScheme()
-	_ = contour.AddToScheme(s)
-	_ = projectcontour.AddToScheme(s)
-	return fakeDynamic.NewSimpleDynamicClient(s), s
-}
-
-func convertIngressRouteToUnstructured(ir *contour.IngressRoute, s *runtime.Scheme) (*unstructured.Unstructured, error) {
-	unstructuredIngressRoute := &unstructured.Unstructured{}
-	if err := s.Convert(ir, unstructuredIngressRoute, context.Background()); err != nil {
+func convertHTTPProxyToUnstructured(hp *projectcontour.HTTPProxy, s *runtime.Scheme) (*unstructured.Unstructured, error) {
+	unstructuredHTTPProxy := &unstructured.Unstructured{}
+	if err := s.Convert(hp, unstructuredHTTPProxy, context.Background()); err != nil {
 		return nil, err
 	}
-	return unstructuredIngressRoute, nil
+	return unstructuredHTTPProxy, nil
 }
 
-func TestIngressRoute(t *testing.T) {
-	suite.Run(t, new(IngressRouteSuite))
-	t.Run("endpointsFromIngressRoute", testEndpointsFromIngressRoute)
-	t.Run("Endpoints", testIngressRouteEndpoints)
+func TestHTTPProxy(t *testing.T) {
+	suite.Run(t, new(HTTPProxySuite))
+	t.Run("endpointsFromHTTPProxy", testEndpointsFromHTTPProxy)
+	t.Run("Endpoints", testHTTPProxyEndpoints)
 }
 
-func TestNewContourIngressRouteSource(t *testing.T) {
+func TestNewContourHTTPProxySource(t *testing.T) {
 	for _, ti := range []struct {
 		title                    string
 		annotationFilter         string
@@ -159,10 +134,8 @@ func TestNewContourIngressRouteSource(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			fakeDynamicClient, _ := newDynamicKubernetesClient()
 
-			_, err := NewContourIngressRouteSource(
+			_, err := NewContourHTTPProxySource(
 				fakeDynamicClient,
-				fakeKube.NewSimpleClientset(),
-				"heptio-contour/contour",
 				"",
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -178,20 +151,19 @@ func TestNewContourIngressRouteSource(t *testing.T) {
 	}
 }
 
-func testEndpointsFromIngressRoute(t *testing.T) {
+func testEndpointsFromHTTPProxy(t *testing.T) {
 	for _, ti := range []struct {
-		title        string
-		loadBalancer fakeLoadBalancerService
-		ingressRoute fakeIngressRoute
-		expected     []*endpoint.Endpoint
+		title     string
+		httpProxy fakeHTTPProxy
+		expected  []*endpoint.Endpoint
 	}{
 		{
 			title: "one rule.host one lb.hostname",
-			loadBalancer: fakeLoadBalancerService{
-				hostnames: []string{"lb.com"}, // Kubernetes omits the trailing dot
-			},
-			ingressRoute: fakeIngressRoute{
+			httpProxy: fakeHTTPProxy{
 				host: "foo.bar", // Kubernetes requires removal of trailing dot
+				loadBalancer: fakeLoadBalancerService{
+					hostnames: []string{"lb.com"}, // Kubernetes omits the trailing dot
+				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
@@ -202,11 +174,11 @@ func testEndpointsFromIngressRoute(t *testing.T) {
 		},
 		{
 			title: "one rule.host one lb.IP",
-			loadBalancer: fakeLoadBalancerService{
-				ips: []string{"8.8.8.8"},
-			},
-			ingressRoute: fakeIngressRoute{
+			httpProxy: fakeHTTPProxy{
 				host: "foo.bar",
+				loadBalancer: fakeLoadBalancerService{
+					ips: []string{"8.8.8.8"},
+				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
@@ -217,12 +189,12 @@ func testEndpointsFromIngressRoute(t *testing.T) {
 		},
 		{
 			title: "one rule.host two lb.IP and two lb.Hostname",
-			loadBalancer: fakeLoadBalancerService{
-				ips:       []string{"8.8.8.8", "127.0.0.1"},
-				hostnames: []string{"elb.com", "alb.com"},
-			},
-			ingressRoute: fakeIngressRoute{
+			httpProxy: fakeHTTPProxy{
 				host: "foo.bar",
+				loadBalancer: fakeLoadBalancerService{
+					ips:       []string{"8.8.8.8", "127.0.0.1"},
+					hostnames: []string{"elb.com", "alb.com"},
+				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
@@ -236,47 +208,35 @@ func testEndpointsFromIngressRoute(t *testing.T) {
 			},
 		},
 		{
-			title: "no rule.host",
-			loadBalancer: fakeLoadBalancerService{
-				ips:       []string{"8.8.8.8", "127.0.0.1"},
-				hostnames: []string{"elb.com", "alb.com"},
-			},
-			ingressRoute: fakeIngressRoute{},
-			expected:     []*endpoint.Endpoint{},
+			title:     "no rule.host",
+			httpProxy: fakeHTTPProxy{},
+			expected:  []*endpoint.Endpoint{},
 		},
 		{
-			title: "one rule.host invalid ingressroute",
-			loadBalancer: fakeLoadBalancerService{
-				ips:       []string{"8.8.8.8", "127.0.0.1"},
-				hostnames: []string{"elb.com", "alb.com"},
-			},
-			ingressRoute: fakeIngressRoute{
+			title: "one rule.host invalid httpproxy",
+			httpProxy: fakeHTTPProxy{
 				host:    "foo.bar",
 				invalid: true,
 			},
 			expected: []*endpoint.Endpoint{},
 		},
 		{
-			title:        "no targets",
-			loadBalancer: fakeLoadBalancerService{},
-			ingressRoute: fakeIngressRoute{},
-			expected:     []*endpoint.Endpoint{},
+			title:     "no targets",
+			httpProxy: fakeHTTPProxy{},
+			expected:  []*endpoint.Endpoint{},
 		},
 		{
-			title: "delegate ingressroute",
-			loadBalancer: fakeLoadBalancerService{
-				hostnames: []string{"lb.com"},
-			},
-			ingressRoute: fakeIngressRoute{
+			title: "delegate httpproxy",
+			httpProxy: fakeHTTPProxy{
 				delegate: true,
 			},
 			expected: []*endpoint.Endpoint{},
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			if source, err := newTestIngressRouteSource(ti.loadBalancer); err != nil {
+			if source, err := newTestHTTPProxySource(); err != nil {
 				require.NoError(t, err)
-			} else if endpoints, err := source.endpointsFromIngressRoute(context.Background(), ti.ingressRoute.IngressRoute()); err != nil {
+			} else if endpoints, err := source.endpointsFromHTTPProxy(ti.httpProxy.HTTPProxy()); err != nil {
 				require.NoError(t, err)
 			} else {
 				validateEndpoints(t, endpoints, ti.expected)
@@ -285,14 +245,14 @@ func testEndpointsFromIngressRoute(t *testing.T) {
 	}
 }
 
-func testIngressRouteEndpoints(t *testing.T) {
+func testHTTPProxyEndpoints(t *testing.T) {
 	namespace := "testing"
 	for _, ti := range []struct {
 		title                    string
 		targetNamespace          string
 		annotationFilter         string
 		loadBalancer             fakeLoadBalancerService
-		ingressRouteItems        []fakeIngressRoute
+		httpProxyItems           []fakeHTTPProxy
 		expected                 []*endpoint.Endpoint
 		expectError              bool
 		fqdnTemplate             string
@@ -300,17 +260,17 @@ func testIngressRouteEndpoints(t *testing.T) {
 		ignoreHostnameAnnotation bool
 	}{
 		{
-			title:           "no ingressroute",
+			title:           "no httpproxy",
 			targetNamespace: "",
 		},
 		{
-			title:           "two simple ingressroutes",
+			title:           "two simple httpproxys",
 			targetNamespace: "",
 			loadBalancer: fakeLoadBalancerService{
 				ips:       []string{"8.8.8.8"},
 				hostnames: []string{"lb.com"},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -342,13 +302,13 @@ func testIngressRouteEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:           "two simple ingressroutes on different namespaces",
+			title:           "two simple httpproxys on different namespaces",
 			targetNamespace: "",
 			loadBalancer: fakeLoadBalancerService{
 				ips:       []string{"8.8.8.8"},
 				hostnames: []string{"lb.com"},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:      "fake1",
 					namespace: "testing1",
@@ -380,13 +340,13 @@ func testIngressRouteEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:           "two simple ingressroutes on different namespaces and a target namespace",
+			title:           "two simple httpproxys on different namespaces and a target namespace",
 			targetNamespace: "testing1",
 			loadBalancer: fakeLoadBalancerService{
 				ips:       []string{"8.8.8.8"},
 				hostnames: []string{"lb.com"},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:      "fake1",
 					namespace: "testing1",
@@ -416,7 +376,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 			loadBalancer: fakeLoadBalancerService{
 				ips: []string{"8.8.8.8"},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -440,7 +400,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 			loadBalancer: fakeLoadBalancerService{
 				ips: []string{"8.8.8.8"},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -459,7 +419,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 			loadBalancer: fakeLoadBalancerService{
 				ips: []string{"8.8.8.8"},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -479,7 +439,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 			loadBalancer: fakeLoadBalancerService{
 				ips: []string{"8.8.8.8"},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -503,7 +463,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 			loadBalancer: fakeLoadBalancerService{
 				ips: []string{"8.8.8.8"},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -521,7 +481,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 			loadBalancer: fakeLoadBalancerService{
 				ips: []string{"8.8.8.8"},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -544,7 +504,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 			loadBalancer: fakeLoadBalancerService{
 				ips: []string{"8.8.8.8"},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -557,13 +517,13 @@ func testIngressRouteEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{},
 		},
 		{
-			title:           "template for ingressroute if host is missing",
+			title:           "template for httpproxy if host is missing",
 			targetNamespace: "",
 			loadBalancer: fakeLoadBalancerService{
 				ips:       []string{"8.8.8.8"},
 				hostnames: []string{"elb.com"},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -591,7 +551,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 			loadBalancer: fakeLoadBalancerService{
 				ips: []string{"8.8.8.8"},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -610,7 +570,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 			loadBalancer: fakeLoadBalancerService{
 				ips: []string{"8.8.8.8"},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:        "fake1",
 					namespace:   namespace,
@@ -638,7 +598,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 			loadBalancer: fakeLoadBalancerService{
 				ips: []string{"8.8.8.8"},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:        "fake1",
 					namespace:   namespace,
@@ -649,7 +609,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingressroute-target.com",
+						targetAnnotationKey: "httpproxy-target.com",
 					},
 					host: "example.org",
 				},
@@ -667,17 +627,17 @@ func testIngressRouteEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"ingressroute-target.com"},
+					Targets:    endpoint.Targets{"httpproxy-target.com"},
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "fake2.ext-dns.test.com",
-					Targets:    endpoint.Targets{"ingressroute-target.com"},
+					Targets:    endpoint.Targets{"httpproxy-target.com"},
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "fake2.ext-dna.test.com",
-					Targets:    endpoint.Targets{"ingressroute-target.com"},
+					Targets:    endpoint.Targets{"httpproxy-target.com"},
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 			},
@@ -685,17 +645,17 @@ func testIngressRouteEndpoints(t *testing.T) {
 			combineFQDNAndAnnotation: true,
 		},
 		{
-			title:           "ingressroute rules with annotation",
+			title:           "httpproxy rules with annotation",
 			targetNamespace: "",
 			loadBalancer: fakeLoadBalancerService{
 				ips: []string{"8.8.8.8"},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingressroute-target.com",
+						targetAnnotationKey: "httpproxy-target.com",
 					},
 					host: "example.org",
 				},
@@ -703,7 +663,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingressroute-target.com",
+						targetAnnotationKey: "httpproxy-target.com",
 					},
 					host: "example2.org",
 				},
@@ -719,12 +679,12 @@ func testIngressRouteEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"ingressroute-target.com"},
+					Targets:    endpoint.Targets{"httpproxy-target.com"},
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "example2.org",
-					Targets:    endpoint.Targets{"ingressroute-target.com"},
+					Targets:    endpoint.Targets{"httpproxy-target.com"},
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
@@ -735,12 +695,12 @@ func testIngressRouteEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:           "ingressroute rules with hostname annotation",
+			title:           "httpproxy rules with hostname annotation",
 			targetNamespace: "",
 			loadBalancer: fakeLoadBalancerService{
 				ips: []string{"1.2.3.4"},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -764,12 +724,12 @@ func testIngressRouteEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:           "ingressroute rules with hostname annotation having multiple hostnames",
+			title:           "httpproxy rules with hostname annotation having multiple hostnames",
 			targetNamespace: "",
 			loadBalancer: fakeLoadBalancerService{
 				ips: []string{"1.2.3.4"},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -798,18 +758,18 @@ func testIngressRouteEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:           "ingressroute rules with hostname and target annotation",
+			title:           "httpproxy rules with hostname and target annotation",
 			targetNamespace: "",
 			loadBalancer: fakeLoadBalancerService{
 				ips: []string{},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
 						hostnameAnnotationKey: "dns-through-hostname.com",
-						targetAnnotationKey:   "ingressroute-target.com",
+						targetAnnotationKey:   "httpproxy-target.com",
 					},
 					host: "example.org",
 				},
@@ -817,28 +777,28 @@ func testIngressRouteEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"ingressroute-target.com"},
+					Targets:    endpoint.Targets{"httpproxy-target.com"},
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "dns-through-hostname.com",
-					Targets:    endpoint.Targets{"ingressroute-target.com"},
+					Targets:    endpoint.Targets{"httpproxy-target.com"},
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 			},
 		},
 		{
-			title:           "ingressroute rules with annotation and custom TTL",
+			title:           "httpproxy rules with annotation and custom TTL",
 			targetNamespace: "",
 			loadBalancer: fakeLoadBalancerService{
 				ips: []string{"8.8.8.8"},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingressroute-target.com",
+						targetAnnotationKey: "httpproxy-target.com",
 						ttlAnnotationKey:    "6",
 					},
 					host: "example.org",
@@ -847,7 +807,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingressroute-target.com",
+						targetAnnotationKey: "httpproxy-target.com",
 						ttlAnnotationKey:    "1",
 					},
 					host: "example2.org",
@@ -856,7 +816,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 					name:      "fake3",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingressroute-target.com",
+						targetAnnotationKey: "httpproxy-target.com",
 						ttlAnnotationKey:    "10s",
 					},
 					host: "example3.org",
@@ -865,34 +825,34 @@ func testIngressRouteEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:   "example.org",
-					Targets:   endpoint.Targets{"ingressroute-target.com"},
+					Targets:   endpoint.Targets{"httpproxy-target.com"},
 					RecordTTL: endpoint.TTL(6),
 				},
 				{
 					DNSName:   "example2.org",
-					Targets:   endpoint.Targets{"ingressroute-target.com"},
+					Targets:   endpoint.Targets{"httpproxy-target.com"},
 					RecordTTL: endpoint.TTL(1),
 				},
 				{
 					DNSName:   "example3.org",
-					Targets:   endpoint.Targets{"ingressroute-target.com"},
+					Targets:   endpoint.Targets{"httpproxy-target.com"},
 					RecordTTL: endpoint.TTL(10),
 				},
 			},
 		},
 		{
-			title:           "template for ingressroute with annotation",
+			title:           "template for httpproxy with annotation",
 			targetNamespace: "",
 			loadBalancer: fakeLoadBalancerService{
 				ips:       []string{},
 				hostnames: []string{},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:      "fake1",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingressroute-target.com",
+						targetAnnotationKey: "httpproxy-target.com",
 					},
 					host: "",
 				},
@@ -900,7 +860,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 					name:      "fake2",
 					namespace: namespace,
 					annotations: map[string]string{
-						targetAnnotationKey: "ingressroute-target.com",
+						targetAnnotationKey: "httpproxy-target.com",
 					},
 					host: "",
 				},
@@ -916,12 +876,12 @@ func testIngressRouteEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "fake1.ext-dns.test.com",
-					Targets:    endpoint.Targets{"ingressroute-target.com"},
+					Targets:    endpoint.Targets{"httpproxy-target.com"},
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "fake2.ext-dns.test.com",
-					Targets:    endpoint.Targets{"ingressroute-target.com"},
+					Targets:    endpoint.Targets{"httpproxy-target.com"},
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
@@ -933,13 +893,13 @@ func testIngressRouteEndpoints(t *testing.T) {
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
 		},
 		{
-			title:           "ingressroute with empty annotation",
+			title:           "httpproxy with empty annotation",
 			targetNamespace: "",
 			loadBalancer: fakeLoadBalancerService{
 				ips:       []string{},
 				hostnames: []string{},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -959,7 +919,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 				ips:       []string{"8.8.8.8"},
 				hostnames: []string{"lb.com"},
 			},
-			ingressRouteItems: []fakeIngressRoute{
+			httpProxyItems: []fakeHTTPProxy{
 				{
 					name:      "fake1",
 					namespace: namespace,
@@ -999,31 +959,22 @@ func testIngressRouteEndpoints(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			ingressRoutes := make([]*contour.IngressRoute, 0)
-			for _, item := range ti.ingressRouteItems {
-				ingressRoutes = append(ingressRoutes, item.IngressRoute())
-			}
-
-			fakeKubernetesClient := fakeKube.NewSimpleClientset()
-
-			lbService := ti.loadBalancer.Service()
-			_, err := fakeKubernetesClient.CoreV1().Services(lbService.Namespace).Create(context.Background(), lbService, metav1.CreateOptions{})
-			if err != nil {
-				require.NoError(t, err)
+			httpProxies := make([]*projectcontour.HTTPProxy, 0)
+			for _, item := range ti.httpProxyItems {
+				item.loadBalancer = ti.loadBalancer
+				httpProxies = append(httpProxies, item.HTTPProxy())
 			}
 
 			fakeDynamicClient, scheme := newDynamicKubernetesClient()
-			for _, ingressRoute := range ingressRoutes {
-				converted, err := convertIngressRouteToUnstructured(ingressRoute, scheme)
+			for _, httpProxy := range httpProxies {
+				converted, err := convertHTTPProxyToUnstructured(httpProxy, scheme)
 				require.NoError(t, err)
-				_, err = fakeDynamicClient.Resource(contour.IngressRouteGVR).Namespace(ingressRoute.Namespace).Create(context.Background(), converted, metav1.CreateOptions{})
+				_, err = fakeDynamicClient.Resource(projectcontour.HTTPProxyGVR).Namespace(httpProxy.Namespace).Create(context.Background(), converted, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
-			ingressRouteSource, err := NewContourIngressRouteSource(
+			httpProxySource, err := NewContourHTTPProxySource(
 				fakeDynamicClient,
-				fakeKubernetesClient,
-				lbService.Namespace+"/"+lbService.Name,
 				ti.targetNamespace,
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -1032,7 +983,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			res, err := ingressRouteSource.Endpoints(context.Background())
+			res, err := httpProxySource.Endpoints(context.Background())
 			if ti.expectError {
 				assert.Error(t, err)
 			} else {
@@ -1044,21 +995,12 @@ func testIngressRouteEndpoints(t *testing.T) {
 	}
 }
 
-// ingressroute specific helper functions
-func newTestIngressRouteSource(loadBalancer fakeLoadBalancerService) (*ingressRouteSource, error) {
-	fakeKubernetesClient := fakeKube.NewSimpleClientset()
+// httpproxy specific helper functions
+func newTestHTTPProxySource() (*httpProxySource, error) {
 	fakeDynamicClient, _ := newDynamicKubernetesClient()
 
-	lbService := loadBalancer.Service()
-	_, err := fakeKubernetesClient.CoreV1().Services(lbService.Namespace).Create(context.Background(), lbService, metav1.CreateOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	src, err := NewContourIngressRouteSource(
+	src, err := NewContourHTTPProxySource(
 		fakeDynamicClient,
-		fakeKubernetesClient,
-		lbService.Namespace+"/"+lbService.Name,
 		"default",
 		"",
 		"{{.Name}}",
@@ -1069,59 +1011,26 @@ func newTestIngressRouteSource(loadBalancer fakeLoadBalancerService) (*ingressRo
 		return nil, err
 	}
 
-	irsrc, ok := src.(*ingressRouteSource)
+	irsrc, ok := src.(*httpProxySource)
 	if !ok {
-		return nil, errors.New("underlying source type was not ingressroute")
+		return nil, errors.New("underlying source type was not httpproxy")
 	}
 
 	return irsrc, nil
 }
 
-type fakeLoadBalancerService struct {
-	ips       []string
-	hostnames []string
-	namespace string
-	name      string
-}
-
-func (ig fakeLoadBalancerService) Service() *v1.Service {
-	svc := &v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: ig.namespace,
-			Name:      ig.name,
-		},
-		Status: v1.ServiceStatus{
-			LoadBalancer: v1.LoadBalancerStatus{
-				Ingress: []v1.LoadBalancerIngress{},
-			},
-		},
-	}
-
-	for _, ip := range ig.ips {
-		svc.Status.LoadBalancer.Ingress = append(svc.Status.LoadBalancer.Ingress, v1.LoadBalancerIngress{
-			IP: ip,
-		})
-	}
-	for _, hostname := range ig.hostnames {
-		svc.Status.LoadBalancer.Ingress = append(svc.Status.LoadBalancer.Ingress, v1.LoadBalancerIngress{
-			Hostname: hostname,
-		})
-	}
-
-	return svc
-}
-
-type fakeIngressRoute struct {
+type fakeHTTPProxy struct {
 	namespace   string
 	name        string
 	annotations map[string]string
 
-	host     string
-	invalid  bool
-	delegate bool
+	host         string
+	invalid      bool
+	delegate     bool
+	loadBalancer fakeLoadBalancerService
 }
 
-func (ir fakeIngressRoute) IngressRoute() *contour.IngressRoute {
+func (ir fakeHTTPProxy) HTTPProxy() *projectcontour.HTTPProxy {
 	var status string
 	if ir.invalid {
 		status = "invalid"
@@ -1129,18 +1038,33 @@ func (ir fakeIngressRoute) IngressRoute() *contour.IngressRoute {
 		status = "valid"
 	}
 
-	var spec contour.IngressRouteSpec
+	var spec projectcontour.HTTPProxySpec
 	if ir.delegate {
-		spec = contour.IngressRouteSpec{}
+		spec = projectcontour.HTTPProxySpec{}
 	} else {
-		spec = contour.IngressRouteSpec{
-			VirtualHost: &contour.VirtualHost{
+		spec = projectcontour.HTTPProxySpec{
+			VirtualHost: &projectcontour.VirtualHost{
 				Fqdn: ir.host,
 			},
 		}
 	}
 
-	ingressRoute := &contour.IngressRoute{
+	lb := v1.LoadBalancerStatus{
+		Ingress: []v1.LoadBalancerIngress{},
+	}
+
+	for _, ip := range ir.loadBalancer.ips {
+		lb.Ingress = append(lb.Ingress, v1.LoadBalancerIngress{
+			IP: ip,
+		})
+	}
+	for _, hostname := range ir.loadBalancer.hostnames {
+		lb.Ingress = append(lb.Ingress, v1.LoadBalancerIngress{
+			Hostname: hostname,
+		})
+	}
+
+	httpProxy := &projectcontour.HTTPProxy{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:   ir.namespace,
 			Name:        ir.name,
@@ -1149,8 +1073,9 @@ func (ir fakeIngressRoute) IngressRoute() *contour.IngressRoute {
 		Spec: spec,
 		Status: projectcontour.Status{
 			CurrentStatus: status,
+			LoadBalancer:  lb,
 		},
 	}
 
-	return ingressRoute
+	return httpProxy
 }

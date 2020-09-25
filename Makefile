@@ -56,7 +56,7 @@ lint: licensecheck go-lint
 .PHONY: verify test
 
 test:
-	go test -race ./...
+	go test -race -coverprofile=profile.cov ./...
 
 # The build targets allow to build the binary and docker image
 .PHONY: build build.docker build.mini

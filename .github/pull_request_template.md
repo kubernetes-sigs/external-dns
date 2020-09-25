@@ -14,4 +14,3 @@ Fixes #ISSUE
 
 - [ ] Unit tests updated
 - [ ] End user documentation updated
-- [ ] CHANGELOG.md updated, use section "Unreleased"
