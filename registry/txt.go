@@ -231,7 +231,7 @@ type affixNameMapper struct {
 var _ nameMapper = affixNameMapper{}
 
 func newaffixNameMapper(prefix string, suffix string, wildcardReplacement string) affixNameMapper {
-	return affixNameMapper{prefix: strings.ToLower(prefix), suffix: strings.ToLower(suffix), wildcardReplacement: wildcardReplacement}
+	return affixNameMapper{prefix: strings.ToLower(prefix), suffix: strings.ToLower(suffix), wildcardReplacement: strings.ToLower(wildcardReplacement)}
 }
 
 func (pr affixNameMapper) toEndpointName(txtDNSName string) string {
