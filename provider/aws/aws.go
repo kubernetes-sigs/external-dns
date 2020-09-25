@@ -117,6 +117,12 @@ type Route53API interface {
 	ListTagsForResourceWithContext(ctx context.Context, input *route53.ListTagsForResourceInput, opts ...request.Option) (*route53.ListTagsForResourceOutput, error)
 }
 
+type zonesListCache struct {
+	age      time.Time
+	duration time.Duration
+	zones    map[string]*route53.HostedZone
+}
+
 // AWSProvider is an implementation of Provider for AWS Route53.
 type AWSProvider struct {
 	provider.BaseProvider
@@ -134,6 +140,7 @@ type AWSProvider struct {
 	// filter hosted zones by tags
 	zoneTagFilter provider.ZoneTagFilter
 	preferCNAME   bool
+	zonesCache    *zonesListCache
 }
 
 // AWSConfig contains configuration to create a new AWS provider.
@@ -149,6 +156,7 @@ type AWSConfig struct {
 	APIRetries           int
 	PreferCNAME          bool
 	DryRun               bool
+	ZoneCacheDuration    time.Duration
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
@@ -188,6 +196,7 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 		evaluateTargetHealth: awsConfig.EvaluateTargetHealth,
 		preferCNAME:          awsConfig.PreferCNAME,
 		dryRun:               awsConfig.DryRun,
+		zonesCache:           &zonesListCache{duration: awsConfig.ZoneCacheDuration},
 	}
 
 	return provider, nil
@@ -195,6 +204,12 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 
 // Zones returns the list of hosted zones.
 func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53.HostedZone, error) {
+	if p.zonesCache.zones != nil && time.Since(p.zonesCache.age) < p.zonesCache.duration {
+		log.Debug("Using cached zones list")
+		return p.zonesCache.zones, nil
+	}
+	log.Debug("Refreshing zones list cache")
+
 	zones := make(map[string]*route53.HostedZone)
 
 	var tagErr error
@@ -240,6 +255,11 @@ func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53.HostedZone
 
 	for _, zone := range zones {
 		log.Debugf("Considering zone: %s (domain: %s)", aws.StringValue(zone.Id), aws.StringValue(zone.Name))
+	}
+
+	if p.zonesCache.duration > time.Duration(0) {
+		p.zonesCache.zones = zones
+		p.zonesCache.age = time.Now()
 	}
 
 	return zones, nil

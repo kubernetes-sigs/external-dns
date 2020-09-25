@@ -7,6 +7,6 @@ roleRef:
   kind: ClusterRole
   name: external-dns
 subjects:
-- kind: ServiceAccount
-  name: external-dns
-  namespace: default
+  - kind: ServiceAccount
+    name: external-dns
+    namespace: default

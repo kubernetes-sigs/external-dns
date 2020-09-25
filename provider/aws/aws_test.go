@@ -500,6 +500,7 @@ func TestAWSApplyChanges(t *testing.T) {
 
 		ctx := tt.setup(provider)
 
+		provider.zonesCache = &zonesListCache{duration: 0 * time.Minute}
 		counter := NewRoute53APICounter(provider.client)
 		provider.client = counter
 		require.NoError(t, provider.ApplyChanges(ctx, changes))
@@ -1200,6 +1201,7 @@ func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilte
 		zoneTypeFilter:       zoneTypeFilter,
 		zoneTagFilter:        zoneTagFilter,
 		dryRun:               false,
+		zonesCache:           &zonesListCache{duration: 1 * time.Minute},
 	}
 
 	createAWSZone(t, provider, &route53.HostedZone{
