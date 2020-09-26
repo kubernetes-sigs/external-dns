@@ -68,7 +68,7 @@ IMAGE         ?= us.gcr.io/k8s-artifacts-prod/external-dns/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty)
 BUILD_FLAGS   ?= -v
 LDFLAGS       ?= -X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s
-ARCHS         = amd64 arm
+ARCHS         = arm
 
 build: build/$(BINARY)
 
@@ -77,7 +77,7 @@ build/$(BINARY): $(SOURCES)
 
 build/multiarch:
 	for arch in $(ARCHS); do \
-		echo $${arch}; CGO_ENABLED=0 GOARCH=$${arch} go build -o build/$(BINARY)-$${arch} $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" . ;\
+		echo $${arch}; CGO_ENABLED=0 GOARCH=$${arch} go build -o build/$${arch}/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" . ;\
 	done \
 
 build.push: build.docker
