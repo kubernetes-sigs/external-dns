@@ -599,10 +599,10 @@ func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint, recordsCac
 		if useGeolocation {
 			change.ResourceRecordSet.GeoLocation = geolocation
 		}
+	}
 
-		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificHealthCheckID); ok {
-			change.ResourceRecordSet.HealthCheckId = aws.String(prop.Value)
-		}
+	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificHealthCheckID); ok {
+		change.ResourceRecordSet.HealthCheckId = aws.String(prop.Value)
 	}
 
 	return change, dualstack
