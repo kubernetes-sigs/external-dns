@@ -95,6 +95,8 @@ github.com/cespare/xxhash/v2 v2.1.1 h1:6MnRN8NT7+YBpUIWxHtefFZOKTAPgGjpQSxqLNn0+
 github.com/cespare/xxhash/v2 v2.1.1/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/civo/civogo v0.2.17 h1:qdXexj/2b9FT6eXmBfemNFJ6dPIbvykIeDCC+kcwYdw=
 github.com/civo/civogo v0.2.17/go.mod h1:SR0ZOhABfQHjgNQE3UyfX4gaYsrfslkPFRFMx5P29rg=
+github.com/civo/civogo v0.2.19 h1:WojOXLpuN/jFLffe8qyp5VR68wx/RWlYybDW3ddVdNk=
+github.com/civo/civogo v0.2.19/go.mod h1:SR0ZOhABfQHjgNQE3UyfX4gaYsrfslkPFRFMx5P29rg=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cloudflare/cloudflare-go v0.10.1 h1:d2CL6F9k2O0Ux0w27LgogJ5UOzZRj6a/hDPFqPP68d8=
 github.com/cloudflare/cloudflare-go v0.10.1/go.mod h1:C0Y6eWnTJPMK2ceuOxx2pjh78UUHihcXeTTHb8r7QjU=

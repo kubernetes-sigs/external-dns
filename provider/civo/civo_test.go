@@ -125,6 +125,7 @@ func TestCivoProviderApplyChanges(t *testing.T) {
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
+	require.NoError(t, err)
 }
 
 func TestCivoProviderFetchZones(t *testing.T) {
@@ -235,7 +236,7 @@ func TestCivoConvertRecordType(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestCivoProvider_getRecordID(t *testing.T) {
+func TestCivoProviderGetRecordID(t *testing.T) {
 	zone := civogo.DNSDomain{
 		ID:   "12345",
 		Name: "test.com",
