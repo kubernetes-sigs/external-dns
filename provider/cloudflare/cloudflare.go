@@ -227,7 +227,9 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 
 	for _, endpoint := range changes.Create {
 		for _, target := range endpoint.Targets {
-			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareCreate, endpoint, target))
+			singleEndpoint := endpoint
+			singleEndpoint.Targets = []string{target}
+			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareCreate, singleEndpoint, target))
 		}
 	}
 
