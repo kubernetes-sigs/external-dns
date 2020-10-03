@@ -344,6 +344,7 @@ func TestInfobloxRecords(t *testing.T) {
 	client := mockIBConnector{
 		mockInfobloxZones: &[]ibclient.ZoneAuth{
 			createMockInfobloxZone("example.com"),
+			createMockInfobloxZone("other.com"),
 		},
 		mockInfobloxObjects: &[]ibclient.IBObject{
 			createMockInfobloxObject("example.com", endpoint.RecordTypeA, "123.123.123.122"),
