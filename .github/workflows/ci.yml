@@ -30,6 +30,29 @@ jobs:
             dep ensure
         fi
 
+    - name: Get modified files
+      id: modified-files
+      uses: jitterbit/get-changed-files@v1        
+
+    - name: Generate cmdline argument documentation
+      run: |
+        make
+        echo -e "# Commandline arguments\n\nThis document is auto-generated from \`external-dns --help\`.\n\n" > docs/cmdline-args.md
+        echo -e "## Output\n\n\`\`\`" >> docs/cmdline-args.md
+        build/external-dns --help >> docs/cmdline-args.md 2>&1
+        echo "\`\`\`" >> docs/cmdline-args.md
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add docs/cmdline-args.md
+        git commit -m "Add new cmdline argument docs"
+      if: contains(steps.modified-files.all,'pkg/apis/externaldns/types.go')
+
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+      if: contains(steps.modified-files.all,'pkg/apis/externaldns/types.go') && github.actor != 'nektos/act'
+
     - name: Lint
       run: |
         curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.30.0
