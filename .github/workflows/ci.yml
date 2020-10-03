@@ -32,7 +32,8 @@ jobs:
 
     - name: Get modified files
       id: modified-files
-      uses: jitterbit/get-changed-files@v1        
+      uses: jitterbit/get-changed-files@v1
+      if: startsWith(github.ref,'refs/pull/')        
 
     - name: Generate cmdline argument documentation
       run: |
