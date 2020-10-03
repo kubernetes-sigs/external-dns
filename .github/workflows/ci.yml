@@ -34,7 +34,7 @@ jobs:
       run: |
             apt update
             apt install -y make gcc libc-dev git
-      if: github.actor == "nektos/act"
+      if: github.actor == 'nektos/act'
 
     - name: Lint
       run: |
@@ -48,4 +48,4 @@ jobs:
       uses: shogo82148/actions-goveralls@v1
       with:
         path-to-profile: profile.cov
-      if: github.actor != "nektos/act"
+      if: github.actor != 'nektos/act'
