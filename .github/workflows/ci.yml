@@ -45,13 +45,13 @@ jobs:
         git config --local user.name "GitHub Action"
         git add docs/cmdline-args.md
         git commit -m "Add new cmdline argument docs"
-      if: contains(steps.modified-files.all,'pkg/apis/externaldns/types.go')
+      if: contains(steps.modified-files.outputs.all,'pkg/apis/externaldns/types.go')
 
     - name: Push changes
       uses: ad-m/github-push-action@master
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-      if: contains(steps.modified-files.all,'pkg/apis/externaldns/types.go') && github.actor != 'nektos/act'
+      if: contains(steps.modified-files.outputs.all,'pkg/apis/externaldns/types.go') && github.actor != 'nektos/act'
 
     - name: Lint
       run: |
