@@ -51,6 +51,7 @@ jobs:
       uses: ad-m/github-push-action@master
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.ref }}
       if: contains(steps.modified-files.outputs.all,'pkg/apis/externaldns/types.go') && github.actor != 'nektos/act'
 
     - name: Lint
