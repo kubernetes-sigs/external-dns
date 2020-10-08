@@ -22,13 +22,14 @@ function generate_changelog {
     done
 }
 
-function replace_kustomize_version {
-  sed -i -e "s/newTag: */newTag: $1/g" kustomization.yaml
-  git commit -sam "updates kustomize with newly released version"
+function create_release {
+  generate_changelog | gh release create "$1" -t "$1" -F -
 }
 
-function create_pr {
-  generate_changelog
-}
+if [ $# -ne 1 ]; then
+    echo "$0: usage: releaser [release number]"
+    echo "example: /releaser.sh v0.7.5"
+    exit 1
+fi
 
-create_pr
+create_release "$1"
