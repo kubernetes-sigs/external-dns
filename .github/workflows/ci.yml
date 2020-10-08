@@ -30,6 +30,12 @@ jobs:
             dep ensure
         fi
 
+    - name: Install additional CI for nektos/act
+      run: |
+            apt update
+            apt install -y make gcc libc-dev git
+      if: github.actor == 'nektos/act'
+
     - name: Lint
       run: |
         curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.30.0
@@ -42,3 +48,4 @@ jobs:
       uses: shogo82148/actions-goveralls@v1
       with:
         path-to-profile: profile.cov
+      if: github.actor != 'nektos/act'

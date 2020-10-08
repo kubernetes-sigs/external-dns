@@ -2,7 +2,7 @@
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using Scaleway DNS.
 
-Make sure to use **>=0.7.3** version of ExternalDNS for this tutorial.
+Make sure to use **>=0.7.4** version of ExternalDNS for this tutorial.
 
 **Warning**: Scaleway DNS is currently in Public Beta and may not be suited for production usage.
 
@@ -10,13 +10,13 @@ Make sure to use **>=0.7.3** version of ExternalDNS for this tutorial.
 
 In order to use your domain, you need to import it into Scaleway DNS. If it's not already done, you can follow [this documentation](https://www.scaleway.com/en/docs/scaleway-dns/)
 
-Once the domain is imported you can either use the root zone, or create a subzone to use. 
+Once the domain is imported you can either use the root zone, or create a subzone to use.
 
 In this example we will use `example.com` as an example.
 
 ## Creating Scaleway Credentials
 
-To use ExternalDNS with Scaleway DNS, you need to create an API token (composed of the Access Key and the Secret Key). 
+To use ExternalDNS with Scaleway DNS, you need to create an API token (composed of the Access Key and the Secret Key).
 You can either use existing ones or you can create a new token, as explained in [How to generate an API token](https://www.scaleway.com/en/docs/generate-an-api-token/) or directly by going to the [credentials page](https://console.scaleway.com/account/organization/credentials).
 
 Note that you will also need to the Organization ID, which can be retrieve on the same page.
@@ -53,7 +53,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.4
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -82,8 +82,8 @@ rules:
 - apiGroups: [""]
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions"] 
-  resources: ["ingresses"] 
+- apiGroups: ["extensions"]
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
@@ -121,7 +121,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.4
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
