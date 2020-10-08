@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -471,6 +472,34 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 				},
 			},
 		}, nil
+	case dns.SRV:
+		srvRecords := make([]dns.SrvRecord, len(endpoint.Targets))
+		numErrors := 0
+		for i, target := range endpoint.Targets {
+			priority, weight, port, target, err := extractSrvFields(&target)
+			if err != nil {
+				log.Errorf("Failed to add target %v as a SRV record to the list of targets': %v", target, err)
+				numErrors++
+				continue
+			}
+
+			srvRecords[i-numErrors] = dns.SrvRecord{
+				Priority: priority,
+				Weight:   weight,
+				Port:     port,
+				Target:   target,
+			}
+		}
+
+		if numErrors > 0 {
+			srvRecords = srvRecords[0 : len(srvRecords)-numErrors]
+		}
+		return dns.RecordSet{
+			RecordSetProperties: &dns.RecordSetProperties{
+				TTL:        to.Int64Ptr(ttl),
+				SrvRecords: &srvRecords,
+			},
+		}, nil
 	case dns.TXT:
 		return dns.RecordSet{
 			RecordSetProperties: &dns.RecordSetProperties{
@@ -496,7 +525,7 @@ func formatAzureDNSName(recordName, zoneName string) string {
 	return fmt.Sprintf("%s.%s", recordName, zoneName)
 }
 
-// Helper function (shared with text code)
+// Helper function (shared with test code)
 func extractAzureTargets(recordSet *dns.RecordSet) []string {
 	properties := recordSet.RecordSetProperties
 	if properties == nil {
@@ -519,6 +548,16 @@ func extractAzureTargets(recordSet *dns.RecordSet) []string {
 		return []string{*cnameRecord.Cname}
 	}
 
+	// Check for SRV records
+	srvRecords := properties.SrvRecords
+	if srvRecords != nil && len(*srvRecords) > 0 && (*srvRecords)[0].Target != nil {
+		targets := make([]string, len(*srvRecords))
+		for i, srvRecord := range *srvRecords {
+			targets[i] = fmt.Sprintf("%d %d %d %s", *srvRecord.Priority, *srvRecord.Weight, *srvRecord.Port, *srvRecord.Target)
+		}
+		return targets
+	}
+
 	// Check for TXT records
 	txtRecords := properties.TxtRecords
 	if txtRecords != nil && len(*txtRecords) > 0 && (*txtRecords)[0].Value != nil {
@@ -528,4 +567,37 @@ func extractAzureTargets(recordSet *dns.RecordSet) []string {
 		}
 	}
 	return []string{}
+}
+
+// Helper function (shared with test code)
+func extractSrvFields(s *string) (*int32, *int32, *int32, *string, error) {
+	strSplit := strings.Split(*s, " ")
+	var priority, weight, port int
+	var err error
+
+	if len(strSplit) == 4 {
+		priority, err = strconv.Atoi(strSplit[0])
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+
+		weight, err = strconv.Atoi(strSplit[1])
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+
+		port, err = strconv.Atoi(strSplit[2])
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+	} else if len(strSplit) == 1 {
+		priority = 0
+		weight = 1
+		port = 0
+	} else {
+		return nil, nil, nil, nil, fmt.Errorf("unable to process %s as a SRV record. Expected 4 values, got %d", *s, len(strSplit))
+	}
+
+	priority32, weight32, port32 := int32(priority), int32(weight), int32(port)
+	return &priority32, &weight32, &port32, &strSplit[len(strSplit)-1], nil
 }

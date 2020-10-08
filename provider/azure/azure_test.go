@@ -124,6 +124,27 @@ func cNameRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetPr
 	}
 }
 
+func srvRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
+	srvRecords := make([]dns.SrvRecord, len(values))
+	for i, value := range values {
+		priority, weight, port, target, err := extractSrvFields(&value)
+
+		if err == nil {
+			srvRecords[i] = dns.SrvRecord{
+				Priority: priority,
+				Weight:   weight,
+				Port:     port,
+				Target:   target,
+			}
+		}
+	}
+
+	return &dns.RecordSetProperties{
+		TTL: to.Int64Ptr(ttl),
+		SrvRecords: &srvRecords,
+	}
+}
+
 func txtRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
 	return &dns.RecordSetProperties{
 		TTL: to.Int64Ptr(ttl),
@@ -154,6 +175,8 @@ func createMockRecordSetMultiWithTTL(name, recordType string, ttl int64, values 
 		getterFunc = aRecordSetPropertiesGetter
 	case endpoint.RecordTypeCNAME:
 		getterFunc = cNameRecordSetPropertiesGetter
+	case endpoint.RecordTypeSRV:
+		getterFunc = srvRecordSetPropertiesGetter
 	case endpoint.RecordTypeTXT:
 		getterFunc = txtRecordSetPropertiesGetter
 	default:
@@ -268,6 +291,7 @@ func TestAzureRecord(t *testing.T) {
 			createMockRecordSet("@", endpoint.RecordTypeA, "123.123.123.122"),
 			createMockRecordSet("@", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
 			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
+			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeSRV, "1 10 443 123.123.123.123", 3600),
 			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 		})
@@ -286,6 +310,7 @@ func TestAzureRecord(t *testing.T) {
 		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "123.123.123.122"),
 		endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
 		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123"),
+		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeSRV, 3600, "1 10 443 123.123.123.123"),
 		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeTXT, recordTTL, "heritage=external-dns,external-dns/owner=default"),
 		endpoint.NewEndpointWithTTL("hack.example.com", endpoint.RecordTypeCNAME, 10, "hack.azurewebsites.net"),
 	}
@@ -305,6 +330,7 @@ func TestAzureMultiRecord(t *testing.T) {
 			createMockRecordSet("@", endpoint.RecordTypeA, "123.123.123.122", "234.234.234.233"),
 			createMockRecordSet("@", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
 			createMockRecordSetMultiWithTTL("nginx", endpoint.RecordTypeA, 3600, "123.123.123.123", "234.234.234.234"),
+			createMockRecordSetMultiWithTTL("nginx", endpoint.RecordTypeSRV, 3600, "123.123.123.123", "234.234.234.234"),
 			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 		})
@@ -323,6 +349,7 @@ func TestAzureMultiRecord(t *testing.T) {
 		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "123.123.123.122", "234.234.234.233"),
 		endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
 		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123", "234.234.234.234"),
+		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeSRV, 3600, "0 1 0 123.123.123.123", "0 1 0 234.234.234.234"),
 		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeTXT, recordTTL, "heritage=external-dns,external-dns/owner=default"),
 		endpoint.NewEndpointWithTTL("hack.example.com", endpoint.RecordTypeCNAME, 10, "hack.azurewebsites.net"),
 	}
