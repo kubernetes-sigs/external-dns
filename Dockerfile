@@ -15,6 +15,7 @@
 # builder image
 ARG ARCH
 FROM golang:1.14 as builder
+ARG ARCH
 
 WORKDIR /sigs.k8s.io/external-dns
 
@@ -23,7 +24,6 @@ RUN make build.$ARCH
 
 # final image
 FROM $ARCH/alpine:3.12
-ARG ARCH
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /bin/external-dns
