@@ -24,7 +24,6 @@ RUN go mod vendor && \
 
 # final image
 FROM alpine:3.12
-LABEL maintainer="Team Teapot @ Zalando SE <team-teapot@zalando.de>"
 
 RUN apk add --update --no-cache ca-certificates && \
     update-ca-certificates

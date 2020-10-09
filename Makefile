@@ -69,16 +69,23 @@ VERSION       ?= $(shell git describe --tags --always --dirty)
 BUILD_FLAGS   ?= -v
 LDFLAGS       ?= -X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s
 ARCHS         = amd64 arm
+SHELL := /bin/bash
 
 build: build/$(BINARY)
 
 build/$(BINARY): $(SOURCES)
 	CGO_ENABLED=0 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
 
-build/multiarch:
+build.push/multiarch:
+	arch_specific_tags=()
 	for arch in $(ARCHS); do \
-		echo $${arch}; CGO_ENABLED=0 GOARCH=$${arch} go build -o build/$${arch}/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" . ;\
-	done \
+		image="$(IMAGE):$(VERSION)-$${arch}" ;\
+		# CGO_ENABLED=0 GOARCH=$${arch} go build -o build/$${arch}/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" . ;\
+		docker build --rm --tag $${image} --build-arg VERSION="$(VERSION)" --build-arg ARCH="$${arch}" . ;\
+		# docker push $${image} ;\
+		arch_specific_tags+=( "--amend $${image}" ) ;\
+	done ;\
+	docker manifest create "$(IMAGE):$(VERSION)" "${arch_specific_tags[@]}" ;\
 
 build.push: build.docker
 	docker push "$(IMAGE):$(VERSION)"
