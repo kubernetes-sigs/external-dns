@@ -14,17 +14,17 @@
 
 # builder image
 FROM golang:1.14 as builder
+ARG ARCH
 
 WORKDIR /sigs.k8s.io/external-dns
 
-COPY . .
-RUN go mod vendor && \
-    make test && \
-    make build
+#COPY . .
+#RUN make build.$ARCH
 
 # final image
-ARG ARCH=
-FROM ${ARCH}alpine:3.12
+RUN echo $ARCH
+FROM $ARCH/alpine:3.12
+ARG ARCH
 
 RUN apk add --update --no-cache ca-certificates && \
     update-ca-certificates
