@@ -13,16 +13,15 @@
 # limitations under the License.
 
 # builder image
-FROM golang:1.14 as builder
 ARG ARCH
+FROM golang:1.14 as builder
 
 WORKDIR /sigs.k8s.io/external-dns
 
-#COPY . .
-#RUN make build.$ARCH
+COPY . .
+RUN make build.$ARCH
 
 # final image
-RUN echo $ARCH
 FROM $ARCH/alpine:3.12
 ARG ARCH
 
