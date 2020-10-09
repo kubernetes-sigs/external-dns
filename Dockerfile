@@ -25,9 +25,7 @@ RUN make build.$ARCH
 FROM $ARCH/alpine:3.12
 ARG ARCH
 
-RUN apk add --update --no-cache ca-certificates && \
-    update-ca-certificates
-
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /bin/external-dns
 
 # Run as UID for nobody since k8s pod securityContext runAsNonRoot can't resolve the user ID:
