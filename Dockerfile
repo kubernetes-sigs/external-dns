@@ -23,7 +23,8 @@ RUN go mod vendor && \
     make build
 
 # final image
-FROM alpine:3.12
+ARG ARCH=
+FROM ${ARCH}alpine:3.12
 
 RUN apk add --update --no-cache ca-certificates && \
     update-ca-certificates
