@@ -28,7 +28,7 @@ function create_release {
 
 if [ $# -ne 1 ]; then
     echo "$0: usage: releaser [release number]"
-    echo "example: /releaser.sh v0.7.5"
+    echo "example: ./releaser.sh v0.7.5"
     exit 1
 fi
 
