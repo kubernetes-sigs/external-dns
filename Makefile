@@ -64,8 +64,7 @@ test:
 BINARY        ?= external-dns
 SOURCES        = $(shell find . -name '*.go')
 IMAGE_STAGING  = gcr.io/k8s-staging-external-dns/$(BINARY)
-#IMAGE         ?= us.gcr.io/k8s-artifacts-prod/external-dns/$(BINARY)
-IMAGE         ?= x0rg/$(BINARY)
+IMAGE         ?= us.gcr.io/k8s-artifacts-prod/external-dns/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty)
 BUILD_FLAGS   ?= -v
 LDFLAGS       ?= -X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s
@@ -82,12 +81,10 @@ build.push/multiarch:
 	arch_specific_tags=()
 	for arch in $(ARCHS); do \
 		image="$(IMAGE):$(VERSION)-$${arch}" ;\
-		echo $${image} ;\
 		DOCKER_BUILDKIT=1 docker build --rm --tag $${image} --build-arg VERSION="$(VERSION)" --build-arg ARCH="$${arch}" . ;\
 		docker push $${image} ;\
 		arch_specific_tags+=( "--amend $${image}" ) ;\
 	done ;\
-	echo $${arch_specific_tags[@]} ;\
 	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest create "$(IMAGE):$(VERSION)" $${arch_specific_tags[@]} ;\
 	for arch in $(ARCHS); do \
 		DOCKER_CLI_EXPERIMENTAL=enabled docker manifest annotate --arch $${arch} "$(IMAGE):$(VERSION)" "$(IMAGE):$(VERSION)-$${arch}" ; \
@@ -104,7 +101,7 @@ build.amd64:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
 
 build.docker:
-	docker build --rm --tag "$(IMAGE):$(VERSION)" --build-arg VERSION="$(VERSION)" .
+	docker build --rm --tag "$(IMAGE):$(VERSION)" --build-arg VERSION="$(VERSION)" --build-arg ARCH="amd64" .
 
 build.mini:
 	docker build --rm --tag "$(IMAGE):$(VERSION)-mini" --build-arg VERSION="$(VERSION)" -f Dockerfile.mini .
@@ -116,7 +113,7 @@ clean:
 .PHONY: release.staging
 
 release.staging:
-	IMAGE=$(IMAGE_STAGING) $(MAKE) build.docker build.push
+	IMAGE=$(IMAGE_STAGING) $(MAKE) build.push/multiarch
 
 release.prod:
-	$(MAKE) build.docker build.push
+	$(MAKE) build.push/multiarch
