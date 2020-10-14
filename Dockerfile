@@ -20,7 +20,7 @@ ARG ARCH
 WORKDIR /sigs.k8s.io/external-dns
 
 COPY . .
-RUN make build.$ARCH
+RUN make test && make build.$ARCH
 
 # final image
 FROM $ARCH/alpine:3.12
