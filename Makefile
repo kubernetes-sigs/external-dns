@@ -69,7 +69,7 @@ VERSION       ?= $(shell git describe --tags --always --dirty)
 BUILD_FLAGS   ?= -v
 LDFLAGS       ?= -X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s
 ARCHS         = arm64v8 amd64
-SHELL := /bin/bash
+SHELL         = /bin/bash
 
 
 build: build/$(BINARY)
