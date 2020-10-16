@@ -108,11 +108,12 @@ type CloudFlareProvider struct {
 	provider.BaseProvider
 	Client cloudFlareDNS
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter      endpoint.DomainFilter
-	zoneIDFilter      provider.ZoneIDFilter
-	proxiedByDefault  bool
-	DryRun            bool
-	PaginationOptions cloudflare.PaginationOptions
+	domainFilter                  endpoint.DomainFilter
+	zoneIDFilter                  provider.ZoneIDFilter
+	filterByRegisteredDomainsOnly bool
+	proxiedByDefault              bool
+	DryRun                        bool
+	PaginationOptions             cloudflare.PaginationOptions
 }
 
 // cloudFlareChange differentiates between ChangActions
@@ -122,7 +123,7 @@ type cloudFlareChange struct {
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zonesPerPage int, proxiedByDefault bool, dryRun bool) (*CloudFlareProvider, error) {
+func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zonesPerPage int, proxiedByDefault bool, dryRun bool, filterByRegisteredDomainsOnly bool) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
 	var (
 		config *cloudflare.API
@@ -138,11 +139,12 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 	}
 	provider := &CloudFlareProvider{
 		//Client: config,
-		Client:           zoneService{config},
-		domainFilter:     domainFilter,
-		zoneIDFilter:     zoneIDFilter,
-		proxiedByDefault: proxiedByDefault,
-		DryRun:           dryRun,
+		Client:                        zoneService{config},
+		domainFilter:                  domainFilter,
+		filterByRegisteredDomainsOnly: filterByRegisteredDomainsOnly,
+		zoneIDFilter:                  zoneIDFilter,
+		proxiedByDefault:              proxiedByDefault,
+		DryRun:                        dryRun,
 		PaginationOptions: cloudflare.PaginationOptions{
 			PerPage: zonesPerPage,
 			Page:    1,
@@ -176,7 +178,22 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 		return result, nil
 	}
 
+	var registeredDomains []string
+	if p.filterByRegisteredDomainsOnly {
+		var ctxEndpointValue = ctx.Value(provider.EndpointsContextKey)
+
+		if ctxEndpointValue != nil {
+			for _, Endpoint := range ctxEndpointValue.([]*endpoint.Endpoint) {
+				registeredDomains = append(registeredDomains, Endpoint.DNSName)
+			}
+		}
+	}
+
 	log.Debugln("no zoneIDFilter configured, looking at all zones")
+	if p.filterByRegisteredDomainsOnly {
+		log.Debugln("filterByRegisteredDomainsOnly enabled, filter by only registered domains")
+	}
+
 	for {
 		zonesResponse, err := p.Client.ListZonesContext(ctx, cloudflare.WithPagination(p.PaginationOptions))
 		if err != nil {
@@ -184,10 +201,26 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 		}
 
 		for _, zone := range zonesResponse.Result {
+			if p.filterByRegisteredDomainsOnly {
+				skipZone := true
+
+				for _, domainDNSName := range registeredDomains {
+					if strings.Contains(domainDNSName, zone.Name) {
+						skipZone = false
+					}
+				}
+
+				if skipZone {
+					continue
+				}
+			}
+
 			if !p.domainFilter.Match(zone.Name) {
 				log.Debugf("zone %s not in domain filter", zone.Name)
 				continue
 			}
+
+			log.Debugf("Keep zone: %s (%s)", zone.Name, zone.ID)
 			result = append(result, zone)
 		}
 		if p.PaginationOptions.Page == zonesResponse.ResultInfo.TotalPages {
