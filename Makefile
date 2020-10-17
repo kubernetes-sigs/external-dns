@@ -81,6 +81,8 @@ build.push/multiarch:
 	arch_specific_tags=()
 	for arch in $(ARCHS); do \
 		image="$(IMAGE):$(VERSION)-$${arch}" ;\
+		# pre-pull due to https://github.com/kubernetes-sigs/cluster-addons/pull/84/files ;\
+		docker pull $${arch}/alpine:3.12 ;\
 		DOCKER_BUILDKIT=1 docker build --rm --tag $${image} --build-arg VERSION="$(VERSION)" --build-arg ARCH="$${arch}" . ;\
 		docker push $${image} ;\
 		arch_specific_tags+=( "--amend $${image}" ) ;\
