@@ -266,6 +266,15 @@ func (p *CloudFlareProvider) PropertyValuesEqual(name string, previous string, c
 	return p.BaseProvider.PropertyValuesEqual(name, previous, current)
 }
 
+func (p *CloudFlareProvider) ShouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
+	proxied := shouldBeProxied(desired, p.proxiedByDefault)
+	if proxied {
+		return false
+	}
+
+	return p.BaseProvider.ShouldUpdateTTL(desired, current)
+}
+
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
 func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloudFlareChange) error {
 	// return early if there is nothing to change

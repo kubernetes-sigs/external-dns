@@ -205,9 +205,10 @@ func (suite *PlanTestSuite) TestSyncFirstRound() {
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  current,
-		Desired:  desired,
+		Policies:              []Policy{&SyncPolicy{}},
+		Current:               current,
+		Desired:               desired,
+		EndpointTTLComparator: endpointTTLComparator,
 	}
 
 	changes := p.Calculate().Changes
@@ -226,9 +227,10 @@ func (suite *PlanTestSuite) TestSyncSecondRound() {
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  current,
-		Desired:  desired,
+		Policies:              []Policy{&SyncPolicy{}},
+		Current:               current,
+		Desired:               desired,
+		EndpointTTLComparator: endpointTTLComparator,
 	}
 
 	changes := p.Calculate().Changes
@@ -247,9 +249,10 @@ func (suite *PlanTestSuite) TestSyncSecondRoundMigration() {
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  current,
-		Desired:  desired,
+		Policies:              []Policy{&SyncPolicy{}},
+		Current:               current,
+		Desired:               desired,
+		EndpointTTLComparator: endpointTTLComparator,
 	}
 
 	changes := p.Calculate().Changes
@@ -268,9 +271,10 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithTTLChange() {
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  current,
-		Desired:  desired,
+		Policies:              []Policy{&SyncPolicy{}},
+		Current:               current,
+		Desired:               desired,
+		EndpointTTLComparator: endpointTTLComparator,
 	}
 
 	changes := p.Calculate().Changes
@@ -289,9 +293,10 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificChange() {
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  current,
-		Desired:  desired,
+		Policies:              []Policy{&SyncPolicy{}},
+		Current:               current,
+		Desired:               desired,
+		EndpointTTLComparator: endpointTTLComparator,
 	}
 
 	changes := p.Calculate().Changes
@@ -316,6 +321,7 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificDefaultFalse(
 		PropertyComparator: func(name, previous, current string) bool {
 			return CompareBoolean(false, name, previous, current)
 		},
+		EndpointTTLComparator: endpointTTLComparator,
 	}
 
 	changes := p.Calculate().Changes
@@ -340,6 +346,7 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificDefualtTrue()
 		PropertyComparator: func(name, previous, current string) bool {
 			return CompareBoolean(true, name, previous, current)
 		},
+		EndpointTTLComparator: endpointTTLComparator,
 	}
 
 	changes := p.Calculate().Changes
@@ -368,9 +375,10 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithOwnerInherited() {
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  current,
-		Desired:  desired,
+		Policies:              []Policy{&SyncPolicy{}},
+		Current:               current,
+		Desired:               desired,
+		EndpointTTLComparator: endpointTTLComparator,
 	}
 
 	changes := p.Calculate().Changes
@@ -389,9 +397,10 @@ func (suite *PlanTestSuite) TestIdempotency() {
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  current,
-		Desired:  desired,
+		Policies:              []Policy{&SyncPolicy{}},
+		Current:               current,
+		Desired:               desired,
+		EndpointTTLComparator: endpointTTLComparator,
 	}
 
 	changes := p.Calculate().Changes
@@ -410,9 +419,10 @@ func (suite *PlanTestSuite) TestDifferentTypes() {
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  current,
-		Desired:  desired,
+		Policies:              []Policy{&SyncPolicy{}},
+		Current:               current,
+		Desired:               desired,
+		EndpointTTLComparator: endpointTTLComparator,
 	}
 
 	changes := p.Calculate().Changes
@@ -431,9 +441,10 @@ func (suite *PlanTestSuite) TestIgnoreTXT() {
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  current,
-		Desired:  desired,
+		Policies:              []Policy{&SyncPolicy{}},
+		Current:               current,
+		Desired:               desired,
+		EndpointTTLComparator: endpointTTLComparator,
 	}
 
 	changes := p.Calculate().Changes
@@ -452,9 +463,10 @@ func (suite *PlanTestSuite) TestRemoveEndpoint() {
 	expectedDelete := []*endpoint.Endpoint{suite.bar192A}
 
 	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  current,
-		Desired:  desired,
+		Policies:              []Policy{&SyncPolicy{}},
+		Current:               current,
+		Desired:               desired,
+		EndpointTTLComparator: endpointTTLComparator,
 	}
 
 	changes := p.Calculate().Changes
@@ -473,9 +485,10 @@ func (suite *PlanTestSuite) TestRemoveEndpointWithUpsert() {
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
-		Policies: []Policy{&UpsertOnlyPolicy{}},
-		Current:  current,
-		Desired:  desired,
+		Policies:              []Policy{&UpsertOnlyPolicy{}},
+		Current:               current,
+		Desired:               desired,
+		EndpointTTLComparator: endpointTTLComparator,
 	}
 
 	changes := p.Calculate().Changes
@@ -495,9 +508,10 @@ func (suite *PlanTestSuite) TestDuplicatedEndpointsForSameResourceReplace() {
 	expectedDelete := []*endpoint.Endpoint{suite.bar192A}
 
 	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  current,
-		Desired:  desired,
+		Policies:              []Policy{&SyncPolicy{}},
+		Current:               current,
+		Desired:               desired,
+		EndpointTTLComparator: endpointTTLComparator,
 	}
 
 	changes := p.Calculate().Changes
@@ -518,9 +532,10 @@ func (suite *PlanTestSuite) TestDuplicatedEndpointsForSameResourceRetain() {
 	expectedDelete := []*endpoint.Endpoint{suite.bar192A}
 
 	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  current,
-		Desired:  desired,
+		Policies:              []Policy{&SyncPolicy{}},
+		Current:               current,
+		Desired:               desired,
+		EndpointTTLComparator: endpointTTLComparator,
 	}
 
 	changes := p.Calculate().Changes
@@ -540,9 +555,10 @@ func (suite *PlanTestSuite) TestMultipleRecordsSameNameDifferentSetIdentifier() 
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  current,
-		Desired:  desired,
+		Policies:              []Policy{&SyncPolicy{}},
+		Current:               current,
+		Desired:               desired,
+		EndpointTTLComparator: endpointTTLComparator,
 	}
 
 	changes := p.Calculate().Changes
@@ -562,9 +578,10 @@ func (suite *PlanTestSuite) TestSetIdentifierUpdateCreatesAndDeletes() {
 	expectedDelete := []*endpoint.Endpoint{suite.multiple2}
 
 	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  current,
-		Desired:  desired,
+		Policies:              []Policy{&SyncPolicy{}},
+		Current:               current,
+		Desired:               desired,
+		EndpointTTLComparator: endpointTTLComparator,
 	}
 
 	changes := p.Calculate().Changes
@@ -584,10 +601,11 @@ func (suite *PlanTestSuite) TestDomainFiltersInitial() {
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
-		Policies:     []Policy{&SyncPolicy{}},
-		Current:      current,
-		Desired:      desired,
-		DomainFilter: endpoint.NewDomainFilterWithExclusions([]string{"domain.tld"}, []string{"ex.domain.tld"}),
+		Policies:              []Policy{&SyncPolicy{}},
+		Current:               current,
+		Desired:               desired,
+		DomainFilter:          endpoint.NewDomainFilterWithExclusions([]string{"domain.tld"}, []string{"ex.domain.tld"}),
+		EndpointTTLComparator: endpointTTLComparator,
 	}
 
 	changes := p.Calculate().Changes
@@ -607,10 +625,11 @@ func (suite *PlanTestSuite) TestDomainFiltersUpdate() {
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
-		Policies:     []Policy{&SyncPolicy{}},
-		Current:      current,
-		Desired:      desired,
-		DomainFilter: endpoint.NewDomainFilterWithExclusions([]string{"domain.tld"}, []string{"ex.domain.tld"}),
+		Policies:              []Policy{&SyncPolicy{}},
+		Current:               current,
+		Desired:               desired,
+		DomainFilter:          endpoint.NewDomainFilterWithExclusions([]string{"domain.tld"}, []string{"ex.domain.tld"}),
+		EndpointTTLComparator: endpointTTLComparator,
 	}
 
 	changes := p.Calculate().Changes
@@ -685,4 +704,11 @@ func TestNormalizeDNSName(t *testing.T) {
 		gotName := normalizeDNSName(r.dnsName)
 		assert.Equal(t, r.expect, gotName)
 	}
+}
+
+func endpointTTLComparator(desired, current *endpoint.Endpoint) bool {
+	if !desired.RecordTTL.IsConfigured() {
+		return false
+	}
+	return desired.RecordTTL != current.RecordTTL
 }

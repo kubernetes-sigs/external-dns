@@ -140,11 +140,12 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	sourceEndpointsTotal.Set(float64(len(endpoints)))
 
 	plan := &plan.Plan{
-		Policies:           []plan.Policy{c.Policy},
-		Current:            records,
-		Desired:            endpoints,
-		DomainFilter:       c.DomainFilter,
-		PropertyComparator: c.Registry.PropertyValuesEqual,
+		Policies:              []plan.Policy{c.Policy},
+		Current:               records,
+		Desired:               endpoints,
+		DomainFilter:          c.DomainFilter,
+		PropertyComparator:    c.Registry.PropertyValuesEqual,
+		EndpointTTLComparator: c.Registry.ShouldUpdateTTL,
 	}
 
 	plan = plan.Calculate()

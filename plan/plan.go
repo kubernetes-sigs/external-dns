@@ -26,6 +26,7 @@ import (
 
 // PropertyComparator is used in Plan for comparing the previous and current custom annotations.
 type PropertyComparator func(name string, previous string, current string) bool
+type EndpointTTLComparator func(desired, current *endpoint.Endpoint) bool
 
 // Plan can convert a list of desired and current records to a series of create,
 // update and delete actions.
@@ -43,6 +44,8 @@ type Plan struct {
 	DomainFilter endpoint.DomainFilter
 	// Property comparator compares custom properties of providers
 	PropertyComparator PropertyComparator
+	// Endpoint TTL comparator compares provider-custom logic for endpoints ttl
+	EndpointTTLComparator EndpointTTLComparator
 }
 
 // Changes holds lists of actions to be executed by dns providers
@@ -141,7 +144,7 @@ func (p *Plan) Calculate() *Plan {
 			if row.current != nil && len(row.candidates) > 0 { //dns name is taken
 				update := t.resolver.ResolveUpdate(row.current, row.candidates)
 				// compare "update" to "current" to figure out if actual update is required
-				if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || p.shouldUpdateProviderSpecific(update, row.current) {
+				if p.EndpointTTLComparator(update, row.current) || targetChanged(update, row.current) || p.shouldUpdateProviderSpecific(update, row.current) {
 					inheritOwner(row.current, update)
 					changes.UpdateNew = append(changes.UpdateNew, update)
 					changes.UpdateOld = append(changes.UpdateOld, row.current)
@@ -175,13 +178,6 @@ func inheritOwner(from, to *endpoint.Endpoint) {
 
 func targetChanged(desired, current *endpoint.Endpoint) bool {
 	return !desired.Targets.Same(current.Targets)
-}
-
-func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
-	if !desired.RecordTTL.IsConfigured() {
-		return false
-	}
-	return desired.RecordTTL != current.RecordTTL
 }
 
 func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
