@@ -244,6 +244,7 @@ func main() {
 				MaxResults:   cfg.InfobloxMaxResults,
 				DryRun:       cfg.DryRun,
 				FQDNRexEx:    cfg.InfobloxFQDNRegEx,
+				CreatePTR:    cfg.InfobloxCreatePTR,
 			},
 		)
 	case "dyn":
