@@ -151,6 +151,7 @@ docker: ## Build docker image
 		--build-arg SEMVER=$(SEMVER) \
 		--build-arg CI_COMMIT_SHORT_SHA=$(CI_COMMIT_SHORT_SHA) \
 		--build-arg CI_COMMIT_SHA=$(CI_COMMIT_SHA) \
+		--build-arg ARCH="amd64" \
 		$(addprefix --label ,$(DOCKER_BUILD_LABELS)) \
 		-t $(CI_PROJECT_PATH):$(CI_COMMIT_SHORT_SHA) . \
 	&& docker inspect $(CI_PROJECT_PATH):$(CI_COMMIT_SHORT_SHA)
