@@ -1,0 +1,227 @@
+# Copy and drop into place in your project.
+# Contact Alexey, Loyal, or Maxim if you have any questions.
+# Version: 1.1.2
+
+# export all env variables to sub-proc
+.EXPORT_ALL_VARIABLES:
+
+# CI variables
+ifeq ($(CI),true)
+$(info == Running in CI environment ===============)
+else
+$(info == Running in local environment ============)
+CI_COMMIT_SHORT_SHA  ?= $(shell git rev-parse --short HEAD)
+CI_COMMIT_SHA		 ?= $(shell git rev-parse HEAD)
+CI_PROJECT_PATH		 ?= f5aas/$(shell cat PROJECT)
+CI_PROJECT_NAME		 ?= $(shell cat PROJECT)
+CI_COMMIT_REF_SLUG	 ?= develop
+endif
+
+VERSION				 ?= $(shell cat VERSION)
+SEMVER 				 ?= $(VERSION)$(if $(PRERELEASE),-$(PRERELEASE),)$(if $(BUILD_META),+$(BUILD_META),)
+SEMVERSION_CLI		 = scripts/semver
+BIN_DIR				 = bin
+TEST_DIR			 = test
+OUT_DIR				 = $(BIN_DIR)/linux_amd64
+MAIN				 = main.go
+GO111MODULE			 = on
+GOBIN				 = $(GOPATH)/bin
+GOFLAGS				 ?=-mod=vendor
+GOLDFLAGS			 :="-X main.version=$(SEMVER) -X main.commitShort=$(CI_COMMIT_SHORT_SHA) -X main.commitLong=$(CI_COMMIT_SHA)"
+
+# Build labels to add to docker images
+DOCKER_REGISTRY 	   ?= 330787392602.dkr.ecr.us-east-1.amazonaws.com
+DOCKER_REPOSITORY_URI  ?= $(DOCKER_REGISTRY)/$(CI_PROJECT_PATH)
+DOCKER_BUILD_LABELS:="com.f5aas.version=$(SEMVER)" \
+"com.f5aas.package=$(CI_PROJECT_NAME)" \
+"com.f5aas.commit_sha=$(CI_COMMIT_SHA)" \
+"com.f5aas.commit_sha_short=$(CI_COMMIT_SHORT_SHA)"
+
+$(info == BUILD VARS ==============================)
+$(info PRERELEASE=$(PRERELEASE))
+$(info BUILD_META=$(BUILD_META))
+$(info VERSION=$(VERSION))
+$(info SEMVER=$(SEMVER))
+$(info CI_COMMIT_SHA=$(CI_COMMIT_SHA))
+$(info CI_COMMIT_SHORT_SHA=$(CI_COMMIT_SHORT_SHA))
+$(info )
+$(info CI_PROJECT_PATH=$(CI_PROJECT_PATH))
+$(info DOCKER_REGISTRY=$(DOCKER_REGISTRY))
+$(info DOCKER_BUILD_LABELS=$(DOCKER_BUILD_LABELS))
+$(info DOCKER_REPOSITORY_URI=$(DOCKER_REPOSITORY_URI))
+$(info )
+$(info GOLDFLAGS=$(GOLDFLAGS))
+$(info GOGOPATH=$(GOPATH))
+$(info GO111MODULE=$(GO111MODULE))
+$(info GOFLAGS=$(GOFLAGS))
+$(info ============================================)
+
+all: proto build test lint
+
+.PHONY: clean
+clean: clean_bin clean_helm
+
+.PHONY: clean_bin
+clean_bin:
+	$(ECHO) rm -fr $(BIN_DIR)/*
+
+.PHONY: clean_helm
+clean_helm:
+	$(ECHO) rm -fr dist
+
+.PHONY: info
+info:
+	@true
+
+save-semver: ## save full semantic veresion into SEMVER file
+	echo $(SEMVER) >SEMVER
+
+.PHONY: helm
+helm: clean_helm ## build helm package
+	$(ECHO) mkdir -p dist \
+	&& helm --debug lint helm/$(CI_PROJECT_NAME) \
+	&& helm --debug package --version "$(SEMVER)" --app-version="$(SEMVER)" -d dist helm/$(CI_PROJECT_NAME)
+
+.PHONY: go
+go: ## go checks module packages
+	$(ECHO) go list -mod=readonly -u -m all
+	$(ECHO) go mod verify
+	$(ECHO) go mod tidy
+	$(ECHO) go mod vendor
+
+.PHONY: proto
+proto:  ## Compile proto
+	for proto in $$(find pkg -type f -name '*.proto' -maxdepth 4); do \
+		echo compiling $$proto... && \
+		protoc --proto_path=. \
+			--proto_path=$$(dirname $$proto)/ \
+			--proto_path=$(GOPATH)/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
+			--proto_path=$(GOPATH)/src/github.com/grpc-ecosystem/grpc-gateway \
+			--go_out=plugins=grpc:. \
+			--grpc-gateway_out=logtostderr=true:. \
+			--swagger_out=logtostderr=true:. \
+			$$proto; \
+		done;
+
+.PHONY: vet
+vet: ## vet source code
+	$(ECHO) go vet $$(go list ./...)
+
+.PHONY: build
+build: clean_bin ## build service
+	$(ECHO) CGO_ENABLED=0 GO111MODULE=$(GO111MODULE) go build \
+		-o $(OUT_DIR)/$(CI_PROJECT_NAME) \
+		-ldflags=$(GOLDFLAGS) $(MAIN)
+
+.PHONY: run
+run:  ## start service
+	$(ECHO) go run $(MAIN) serve --insecure
+
+.PHONY: test
+test: install_bin ## Run unittests
+	$(ECHO) rm -fv $(TEST_DIR)/{code.cov,test.out,report.xml} && mkdir -p $(TEST_DIR)
+	$(ECHO) echo "============ Tests         ============"
+	$(ECHO) go test -vet=off \
+		-v -timeout 900s \
+		-cover -covermode=count \
+		-coverprofile=$(TEST_DIR)/code.cov ./... -count=1 2>&1 | tee $(TEST_DIR)/test.out
+	$(ECHO) cat $(TEST_DIR)/test.out | go-junit-report --package-name=golang.test.unit --set-exit-code > $(TEST_DIR)/report.xml
+
+.PHONY: cover
+cover: test ## Generate global code coverage report
+	echo "============ Coverage      ============"
+	$(ECHO) go tool cover -func=$(TEST_DIR)/code.cov
+	echo "============ Coverage HTML ============"
+	$(ECHO) go tool cover -html=$(TEST_DIR)/code.cov  -o $(TEST_DIR)/coverage.html
+
+.PHONY: lint
+lint:  ## Lint go code
+	$(ECHO) golangci-lint --version \
+	&& golangci-lint --verbose run \
+	--config=golangcli-lint.yml \
+	--tests=false \
+	--disable-all \
+	--enable=errcheck \
+	--enable=gosec \
+	--enable=govet
+
+.PHONY: docker
+docker: ## Build docker image
+	$(ECHO) docker build --no-cache \
+		--build-arg SEMVER=$(SEMVER) \
+		--build-arg CI_COMMIT_SHORT_SHA=$(CI_COMMIT_SHORT_SHA) \
+		--build-arg CI_COMMIT_SHA=$(CI_COMMIT_SHA) \
+		$(addprefix --label ,$(DOCKER_BUILD_LABELS)) \
+		-t $(CI_PROJECT_PATH):$(CI_COMMIT_SHORT_SHA) . \
+	&& docker inspect $(CI_PROJECT_PATH):$(CI_COMMIT_SHORT_SHA)
+
+.PHONY: docker-push
+docker-push: ## Push docker image into Docker registry ECR
+	docker tag $(CI_PROJECT_PATH):$(CI_COMMIT_SHORT_SHA) $(DOCKER_REPOSITORY_URI):$(CI_COMMIT_SHORT_SHA)
+	docker tag $(CI_PROJECT_PATH):$(CI_COMMIT_SHORT_SHA) $(DOCKER_REPOSITORY_URI):$(SEMVER)
+	docker tag $(CI_PROJECT_PATH):$(CI_COMMIT_SHORT_SHA) $(DOCKER_REPOSITORY_URI):latest
+	docker tag $(CI_PROJECT_PATH):$(CI_COMMIT_SHORT_SHA) $(DOCKER_REPOSITORY_URI):$(CI_COMMIT_REF_SLUG)
+	docker push $(DOCKER_REPOSITORY_URI):$(CI_COMMIT_SHORT_SHA)
+	docker push $(DOCKER_REPOSITORY_URI):$(SEMVER)
+	docker push $(DOCKER_REPOSITORY_URI):latest
+	docker push $(DOCKER_REPOSITORY_URI):$(CI_COMMIT_REF_SLUG)
+
+.PHONY: docker-run
+docker-run: docker
+	docker run ${CI_PROJECT_PATH}:${CI_COMMIT_SHORT_SHA}
+
+.PHONY: install_bin
+install_bin: ## install semver and other golang binaries
+	$(ECHO) for package in github.com/jstemmer/go-junit-report \
+    ;do \
+        if [ ! -e $$GOBIN/$$(basename $$package) ]; then \
+            echo $$package is installing.; \
+            env GO111MODULE=off go get -u $$package; \
+        else \
+            echo $$package is already installed.; \
+        fi; \
+    done;
+
+.PHONY: bump_patch
+bump_patch: install_bin ## Bump the patch version
+	$(ECHO) $(SEMVERSION_CLI) bump patch $$(cat VERSION) > VERSION
+	git commit -m "New patch version $$(cat VERSION)" VERSION
+	git tag -m "release of $$(cat VERSION) $$(date)" v$$(cat VERSION)
+	git push --tags
+
+.PHONY: bump_minor
+bump_minor: install_bin ## Bump the minor version
+	$(ECHO) $(SEMVERSION_CLI) bump minor $$(cat VERSION) > VERSION
+	git commit -m "New minor version $$(cat VERSION)" VERSION
+	git tag -m "release of $$(cat VERSION) $$(date)" v$$(cat VERSION)
+	git push --tags
+
+.PHONY: bump_major
+bump_major: install_bin ## Bump the major version
+	$(ECHO) $(SEMVERSION_CLI) bump major $$(cat VERSION) > VERSION
+	git commit -m "New major version $$(cat VERSION)" VERSION
+	git tag -m "release of $$(cat VERSION) $$(date)" v$$(cat VERSION)
+	git push --tags
+
+.PHONY: release
+release: bump_patch ## Bumps the patch version, commits changes, pushes tags, and pushes changes.
+
+.PHONY: rego
+rego:
+	## NOTE: Only build Rego if the directory is there.
+	if [ -d "./rego" ]; then opa check ./rego && opa test ./rego -v; else echo "No Rego"; fi
+
+.PHONY: help
+help: ## Display this help screen
+	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+.PHONY: redoc
+redoc: ## Build the API HTML documentation.
+	## NOTE: If there is to be a Gateway, then we'll release the documentation. For they they are coupled.
+	rm -fv $(CI_PROJECT_NAME).openapi3.final.json $(CI_PROJECT_NAME).swagger.json $(CI_PROJECT_NAME).html
+	echo "Building API Dox"; \
+	if ! which swagger2openapi; then npm -g install swagger2openapi; fi; \
+	if ! which redoc-cli; then npm -g install redoc-cli; fi; \
+	cd pkg/proto \
+	&& swagger2openapi --outfile $(CI_PROJECT_NAME).openapi3.final.json $(CI_PROJECT_NAME).swagger.json \
+	&& redoc-cli bundle $(CI_PROJECT_NAME).openapi3.final.json -o $(CI_PROJECT_NAME).html;

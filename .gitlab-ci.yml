@@ -1,0 +1,88 @@
+variables:
+  DOCKER_REGISTRY: quay.pdsea.f5net.com
+  DOCKER_IMAGE_NAME: f5aas/external-dns-f5
+  ARTIFACTORY_HELM_REPO: f5aas-helm-dev
+  BUILD_IMAGE: quay.pdsea.f5net.com/f5aas/go-build:0.0.20
+  PUBLISH_IMAGE: quay.pdsea.f5net.com/f5aas/publish:0.6.2
+  REDOC_IMAGE: quay.pdsea.f5net.com/f5aas/redoc:0.2.7
+  TRIGGER_IMAGE: quay.pdsea.f5net.com/f5aas/pipeline-trigger:0.1.3
+
+stages:
+  - test
+  - package
+
+.set_version_before_script_tmpl: &set_version_before_script
+  before_script:
+    - if [ $CI_COMMIT_REF_NAME == "master" ]; then export VERSION=$(cat VERSION); else export VERSION=$(cat VERSION)-$CI_COMMIT_SHORT_SHA; fi
+
+.package_template: &package_stage
+  tags:
+    - f5aas-executor
+  image: $PUBLISH_IMAGE
+  stage: package
+  except:
+    - tags
+
+.test_template: &test_job
+  tags:
+    - f5aas-executor
+  image: quay.pdsea.f5net.com/f5aas/test_runner:$TEST_RUNNER_TAG
+  except:
+    - tags
+
+build_docker:
+  <<: *package_stage
+  <<: *set_version_before_script
+  script:
+    - source /etc/f5aas_devops.sh
+    - repo_login $(pwd)/repo_env.sh
+    - source $(pwd)/repo_env.sh
+    - ecr_image_does_not_exist $DOCKER_IMAGE_NAME $VERSION
+    - make -f Makefile.f5cs docker
+    - make -f Makefile.f5cs docker-push DOCKER_REPOSITORY_URI=$REPOSITORY_URI
+    - make -f Makefile.f5cs docker-push DOCKER_REPOSITORY_URI=$DOCKER_REGISTRY/$DOCKER_IMAGE_NAME
+
+.golang_template: &golang_stage
+  # Tag the job to use shared Gitlab runners
+  tags:
+    - f5aas-executor
+  image: golang:1.13
+  before_script:
+    # Gitlab copies the source code into the WORKDIR,
+    # which is not the correct location for building binaries
+    - export GO_PROJECT_DIR=$GOPATH/src/$(echo $CI_REPOSITORY_URL | sed -e 's/^.*@//' -e 's/\.git$//')
+    - export BUILD_META=$(get_build_meta)
+    - export PRERELEASE=$(get_prerelease)
+    - 'mkdir -p $(dirname $GO_PROJECT_DIR)'
+    - 'ln -s $(pwd) $GO_PROJECT_DIR'
+    - 'cd $GO_PROJECT_DIR'
+
+# build_binary:
+#   <<: *golang_stage
+#   stage: build
+#   script:
+#     - 'make build'
+#   artifacts:
+#     expire_in: 2 days
+#     paths:
+#     - BUILD/go/src/gitswarm.f5net.com/f5aas/${CI_PROJECT_NAME}/*
+
+unit_test:
+  tags:
+    - f5aas-executor
+  image: golang:1.13
+  <<: *set_version_before_script
+  stage: test
+  script:
+    - GOPRIVATE=gitswarm.f5net.com/f5aas/*
+    - make -f Makefile.f5cs test
+
+f5cs_unit_test:
+  tags:
+    - f5aas-executor
+  image: golang:1.13
+  <<: *set_version_before_script
+  stage: test
+  script:
+    - GOPRIVATE=gitswarm.f5net.com/f5aas/*
+    - API="true" make -f Makefile.f5cs test

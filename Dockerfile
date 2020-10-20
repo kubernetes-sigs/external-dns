@@ -20,13 +20,14 @@ ARG ARCH
 WORKDIR /sigs.k8s.io/external-dns
 
 COPY . .
-RUN make test && make build.$ARCH
+RUN go mod vendor && \
+    make -f Makefile.f5cs build
 
 # final image
 FROM $ARCH/alpine:3.12
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /bin/external-dns
+COPY --from=builder /sigs.k8s.io/external-dns/bin/linux_amd64/external-dns-f5 /bin/external-dns
 
 # Run as UID for nobody since k8s pod securityContext runAsNonRoot can't resolve the user ID:
 # https://github.com/kubernetes/kubernetes/issues/40958
