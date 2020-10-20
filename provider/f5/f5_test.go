@@ -15,7 +15,6 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
 	"testing"
-	"time"
 )
 
 // Stub API for Unit testing
@@ -132,7 +131,7 @@ func (f5 *F5DNSSubscriptionAPIStub) CreateSubscription(ctx context.Context, requ
 
 func (f5 *F5DNSAuthenticationAPIStub) Login(ctx context.Context, request authenticationApi.AuthenticationServiceLoginRequest) (authenticationApi.AuthenticationServiceLoginReply, *http.Response, error) {
 	accessToken := RandomString(10)
-	expiresAt := "10"
+	expiresAt := "1"
 	if request.Username == "failbatchretiretest" {
 		accessToken = "failbatchretiretest"
 	} else if request.Username == "failbatchactivatetest" {
@@ -605,9 +604,6 @@ func TestF5DNSRecords(t *testing.T) {
 	})
 	newTok := prdr.GetF5Client().AccessToken
 	assert.Equal(t, tok, newTok)
-	// Sleep to ensure token expires
-	time.Sleep(15 * time.Second)
-	// Check that external-dns managed records are still 2.
 	rec, err = prdr.Records(context.Background())
 	newTok = prdr.GetF5Client().AccessToken
 	assert.NoError(t, err)
