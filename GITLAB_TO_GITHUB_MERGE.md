@@ -34,11 +34,13 @@ All enhancements and bugfixes should be done in branch pulled off gitlab branch.
 
 We do not want to push F5 specific files to github. So we have to follow a specific merge process to release changes to github.
 1. Merge gitlab branch into github branch - This prevents the specific files to be skipped from the merge
+    ```console
     Checkout github branch and do a git pull
     git merge --no-commit --no-ff gitlab
     git reset HEAD -- Makefile.f5cs .gitlab-ci.yml Dockerfile PROJECT Makefile VERSION
-    git commit -m "Merge gitlab branch into github"
+    git commit -m "Merge $VERSION into github"
     git push -u origin github
+    ```
 
 2. Merge github branch to release branch. The mirroring is already setup on release branch only to push the changes to github.com/F5Netowkrs/external-dns repo.
 
