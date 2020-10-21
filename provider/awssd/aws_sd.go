@@ -185,7 +185,7 @@ func (p *AWSSDProvider) instancesToEndpoint(ns *sd.NamespaceSummary, srv *sd.Ser
 	for _, inst := range instances {
 		// Ignore any instances that don't match our expected owner label
 		if inst.Attributes[endpoint.OwnerLabelKey] == nil || *inst.Attributes[endpoint.OwnerLabelKey] != *srv.Description {
-			log.Debugf("Skipping instance \"%v\" found in service \"%v\", not under management", inst, srv.Name)
+			log.Debugf("Skipping instance \"%v\" found in service \"%v\", not under management", *inst.Id, *srv.Name)
 			continue
 		}
 
