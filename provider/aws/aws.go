@@ -80,6 +80,7 @@ var (
 		"us-gov-west-1.elb.amazonaws.com":     "Z33AYJ8TM3BH4J",
 		"us-gov-east-1.elb.amazonaws.com":     "Z166TLBEWOO7G0",
 		"me-south-1.elb.amazonaws.com":        "ZS929ML54UICD",
+		"af-south-1.elb.amazonaws.com":        "Z268VQBMOI5EKX",
 		// Network Load Balancers
 		"elb.us-east-2.amazonaws.com":         "ZLMOA37VPKANP",
 		"elb.us-east-1.amazonaws.com":         "Z26RNL4JYFTOTI",
@@ -103,6 +104,7 @@ var (
 		"elb.us-gov-west-1.amazonaws.com":     "ZMG1MZ2THAWF1",
 		"elb.us-gov-east-1.amazonaws.com":     "Z1ZSMQQ6Q24QQ8",
 		"elb.me-south-1.amazonaws.com":        "Z3QSRYVP46NYYV",
+		"elb.af-south-1.amazonaws.com":        "Z203XCE67M25HM",
 		// Global Accelerator
 		"awsglobalaccelerator.com": "Z2BJ6XQ5FK7U4H",
 	}

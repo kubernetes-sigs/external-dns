@@ -1031,6 +1031,7 @@ func TestAWSCanonicalHostedZone(t *testing.T) {
 		{"foo.sa-east-1.elb.amazonaws.com", "Z2P70J7HTTTPLU"},
 		{"foo.cn-north-1.elb.amazonaws.com.cn", "Z1GDH35T77C1KE"},
 		{"foo.cn-northwest-1.elb.amazonaws.com.cn", "ZM7IZAIOVVDZF"},
+		{"foo.af-south-1.elb.amazonaws.com", "Z268VQBMOI5EKX"},
 		// Network Load Balancers
 		{"foo.elb.us-east-2.amazonaws.com", "ZLMOA37VPKANP"},
 		{"foo.elb.us-east-1.amazonaws.com", "Z26RNL4JYFTOTI"},
@@ -1050,6 +1051,7 @@ func TestAWSCanonicalHostedZone(t *testing.T) {
 		{"foo.elb.sa-east-1.amazonaws.com", "ZTK26PT1VY4CU"},
 		{"foo.elb.cn-north-1.amazonaws.com.cn", "Z3QFB96KMJ7ED6"},
 		{"foo.elb.cn-northwest-1.amazonaws.com.cn", "ZQEIKTCZ8352D"},
+		{"foo.elb.af-south-1.amazonaws.com", "Z203XCE67M25HM"},
 		// No Load Balancer
 		{"foo.example.org", ""},
 	} {
