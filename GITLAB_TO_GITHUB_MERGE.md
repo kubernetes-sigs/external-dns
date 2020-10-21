@@ -37,7 +37,7 @@ We do not want to push F5 specific files to github. So we have to follow a speci
     ```console
     Checkout github branch and do a git pull
     git merge --no-commit --no-ff gitlab
-    git reset HEAD -- Makefile.f5cs .gitlab-ci.yml Dockerfile PROJECT Makefile VERSION
+    git reset HEAD -- Makefile.f5cs .gitlab-ci.yml Dockerfile PROJECT Makefile VERSION GITLAB_TO_GITHUB_MERGE.md
     git commit -m "Merge $VERSION into github"
     git push -u origin github
     ```
