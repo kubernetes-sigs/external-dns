@@ -18,7 +18,7 @@ The Branching structure for the external-dns project is as follows
  ## Branch structure in gitlab
 
  Following branches are created in gitlab 
- * release - To push changes from gitlab to github
+ * release - To push changes from [gitswarm.f5net.com/f5aas/external-dns](https://gitswarm.f5net.com/f5aas/external-dns) to [github.com/F5Networks/external-dns](https://github.com/F5Networks/external-dns)
  * github (child of release) - Intermediary branch between release and gitlab branch
  * gitlab (child of github) - All F5 DNS external-dns development should be merged in this branch. This forms the parent for any feature/bugfixes.
 
