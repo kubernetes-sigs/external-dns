@@ -351,6 +351,26 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectEndpoints: true,
 			expectError:     false,
 		},
+		{
+			title:                "Create NS record",
+			registeredAPIVersion: "test.k8s.io/v1alpha1",
+			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredKind:       "DNSEndpoint",
+			kind:                 "DNSEndpoint",
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			labels:               map[string]string{"test": "that"},
+			labelFilter:          "test=that",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "abc.example.org",
+					Targets:    endpoint.Targets{"ns1.k8s.io", "ns2.k8s.io"},
+					RecordType: endpoint.RecordTypeNS,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: true,
+			expectError:     false,
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			restClient := startCRDServerToServeTargets(ti.endpoints, ti.registeredAPIVersion, ti.registeredKind, ti.registeredNamespace, "test", ti.annotations, ti.labels, t)
