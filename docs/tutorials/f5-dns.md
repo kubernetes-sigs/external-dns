@@ -15,7 +15,7 @@ export F5_ACCOUNT="a-aavtexcy"
 
 The F5 DNS provider for ExternalDNS will create DNS records for the domain-filters configured on external-dns. For each domain-filter, if a k8s service/ingress is found with an annotation which is a subdomain of the domain-filter, the DNS provider will create DNS records in F5 DNS service.
 
-For example, if you have multiple k8s services like "hr.example.com", "dev.example.com", then you can set the domain-filter configuration on external-dns to "example.com". F5 DNS Provider will take care of creating DNS Records rather Load-balanced Records for each service which uses the external-dns hostname annotation. You can create multiple sub-domains corresponding to your service if you want them to be managed by ExternalDNS.
+For example, if you have multiple k8s services like "hr.example.com", "dev.example.com", then you can set the domain-filter configuration on external-dns to "example.com". F5 DNS Provider will take care of creating DNS Records and Load-balanced Records for each service which uses the external-dns hostname annotation. You can create multiple sub-domains corresponding to your service if you want them to be managed by ExternalDNS.
 
 ## Creating a F5 Configuration Secret
 
@@ -213,7 +213,7 @@ Once the service has an external IP assigned, ExternalDNS will notice the new se
 
 ## Verifying F5 DNS records
 
-Check the F5 DNS Service portal or use the REST API to check the Load balanced records.
+Check the F5 DNS Service portal or use the REST API to find the DNS Records and Load balanced records.
 
 This should show the external IP address of the service as the A record for your domain ('@' indicates the record is for the zone itself).
 
