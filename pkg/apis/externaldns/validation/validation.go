@@ -98,13 +98,13 @@ func ValidateConfig(cfg *externaldns.Config) error {
 
 	if cfg.Provider == "f5" {
 		if cfg.F5DNSAccountID == "" {
-			return errors.New("No F5 AccountID specified")
+			return errors.New("f5-dns-account-id not specified")
 		}
 		if cfg.F5DNSUsername == "" {
-			return errors.New("No F5 Username specified")
+			return errors.New("f5-dns-username not specified")
 		}
 		if cfg.F5DNSPassword == "" {
-			return errors.New("No F5 Password specified")
+			return errors.New("f5-dns-password not specified")
 		}
 	}
 

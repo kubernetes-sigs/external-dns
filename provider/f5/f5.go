@@ -20,19 +20,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
 	factory "github.com/F5Networks/f5cs-sdk/dnsfactory"
 	authenticationApi "github.com/F5Networks/f5cs-sdk/generated/authentication"
 	subscriptionApi "github.com/F5Networks/f5cs-sdk/generated/subscription"
 	"github.com/antihax/optional"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"net/http"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const (
@@ -73,8 +75,8 @@ type F5DNSAuthenticationAPI interface {
 
 // F5Client using F5 SDK
 type F5Client struct {
-	authClientApi   F5DNSAuthenticationAPI
-	subClientApi    F5DNSSubscriptionAPI
+	authClientAPI   F5DNSAuthenticationAPI
+	subClientAPI    F5DNSSubscriptionAPI
 	f               factory.Factory
 	AccessToken     string
 	TokenExpiryTime time.Time
@@ -102,8 +104,8 @@ func NewF5DNSProvider(cfg *F5DNSConfig, zoneFilter string) (*F5DNSProvider, erro
 	return &F5DNSProvider{
 		config: cfg,
 		client: &F5Client{
-			authClientApi: authClient.AuthenticationServiceApi,
-			subClientApi:  subClient.SubscriptionServiceApi,
+			authClientAPI: authClient.AuthenticationServiceApi,
+			subClientAPI:  subClient.SubscriptionServiceApi,
 			f:             factory.NewFactory(),
 		},
 	}, nil
@@ -152,7 +154,7 @@ func (p *F5DNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 	for _, subscription := range subsMap.edit {
 		if len(subscription.Configuration.GslbService.GetLoadBalancedRecords()) == 0 {
 			if !p.config.DryRun {
-				_, _, err = p.client.subClientApi.RetireSubscription(authCtx, subscription.SubscriptionId)
+				_, _, err = p.client.subClientAPI.RetireSubscription(authCtx, subscription.SubscriptionId)
 				if err != nil {
 					log.Errorf("Failed to retire subscription: %v. Error %s", subscription.SubscriptionId, err)
 					failedRetireSubscriptions = append(failedRetireSubscriptions, subscription.SubscriptionId)
@@ -163,7 +165,7 @@ func (p *F5DNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 			}
 		} else {
 			if !p.config.DryRun {
-				apiJson, err := json.Marshal(subscription)
+				apiJSON, err := json.Marshal(subscription)
 				if err != nil {
 					log.Errorf("Failed to marshal JSON for update subscription %s. Error %s", subscription.SubscriptionId, err)
 					failedUpdateSubscriptions = append(failedUpdateSubscriptions, subscription.SubscriptionId)
@@ -172,18 +174,18 @@ func (p *F5DNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 				// UpdateSubscriptions first
 				// Updates will be automatically activated.
 				updateRequest := subscriptionApi.V1UpdateSubscriptionRequest{}
-				err = json.Unmarshal(apiJson, &updateRequest)
+				err = json.Unmarshal(apiJSON, &updateRequest)
 				if err != nil {
 					log.Errorf("Failed to unmarshal for update subscription %s. Error %s", subscription.SubscriptionId, err)
 					continue
 				}
-				_, _, err = p.client.subClientApi.UpdateSubscription(authCtx, subscription.SubscriptionId, updateRequest)
+				_, _, err = p.client.subClientAPI.UpdateSubscription(authCtx, subscription.SubscriptionId, updateRequest)
 				if err != nil {
 					errDetails := ""
 					if _, ok := err.(subscriptionApi.GenericOpenAPIError); ok {
 						errDetails = string(err.(subscriptionApi.GenericOpenAPIError).Body())
 					}
-					log.Errorf("Failed to update subscription %s. Error %s, Error Details %s, Body %s", subscription.SubscriptionId, err, errDetails, apiJson)
+					log.Errorf("Failed to update subscription %s. Error %s, Error Details %s, Body %s", subscription.SubscriptionId, err, errDetails, apiJSON)
 					failedUpdateSubscriptions = append(failedUpdateSubscriptions, subscription.SubscriptionId)
 					continue
 				}
@@ -195,29 +197,29 @@ func (p *F5DNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 
 	if !p.config.DryRun {
 		for _, subscription := range subsMap.create {
-			apiJson, err := json.Marshal(subscription)
+			apiJSON, err := json.Marshal(subscription)
 			if err != nil {
 				log.Errorf("Failed to marshal JSON subscription with zone %s. Error %s", subscription.Configuration.GslbService.GetZone(), err)
 				failedZonesCreateSubscription = append(failedZonesCreateSubscription, subscription.Configuration.GslbService.GetZone())
 				continue
 			}
 			createRequest := subscriptionApi.V1CreateSubscriptionRequest{}
-			err = json.Unmarshal(apiJson, &createRequest)
+			err = json.Unmarshal(apiJSON, &createRequest)
 			if err != nil {
 				log.Errorf("Failed to unmarshal create subscription with zone %s. Error %s", subscription.Configuration.GslbService.GetZone(), err)
 			}
 			// CreateSubscriptions
-			createdSub, _, err := p.client.subClientApi.CreateSubscription(authCtx, createRequest)
+			createdSub, _, err := p.client.subClientAPI.CreateSubscription(authCtx, createRequest)
 			if err != nil {
 				errDetails := ""
 				if _, ok := err.(subscriptionApi.GenericOpenAPIError); ok {
 					errDetails = string(err.(subscriptionApi.GenericOpenAPIError).Body())
 				}
-				log.Errorf("Failed to create subscription for zone %s. Error %s, Error Details %s, Body %s", subscription.Configuration.GslbService.GetZone(), err, errDetails, apiJson)
+				log.Errorf("Failed to create subscription for zone %s. Error %s, Error Details %s, Body %s", subscription.Configuration.GslbService.GetZone(), err, errDetails, apiJSON)
 				failedZonesCreateSubscription = append(failedZonesCreateSubscription, subscription.Configuration.GslbService.GetZone())
 				continue
 			}
-			_, _, err = p.client.subClientApi.ActivateSubscription(authCtx, createdSub.SubscriptionId)
+			_, _, err = p.client.subClientAPI.ActivateSubscription(authCtx, createdSub.SubscriptionId)
 			if err != nil {
 				errDetails := ""
 				if _, ok := err.(subscriptionApi.GenericOpenAPIError); ok {
@@ -316,7 +318,7 @@ func (p *F5DNSProvider) CreateLBRPoolVS(endPt *endpoint.Endpoint, subscription *
 		RRType:      p.client.f.NewStringPointer(rrType),
 		Aliases:     []string{alias},
 		Persistence: p.client.f.NewBoolPointer(false),
-		ProximityRules: []factory.ProximityRule{factory.ProximityRule{
+		ProximityRules: []factory.ProximityRule{{
 			Region: p.client.f.NewStringPointer("global"),
 			Pool:   p.client.f.NewStringPointer(getPoolKey(alias)),
 			Score:  p.client.f.NewIntPointer(100),
@@ -558,11 +560,11 @@ func (p *F5DNSProvider) TransformToEndpointRecords(subscriptions map[string]fact
 
 // Login will set the accesstoken from auth response
 func (p *F5DNSProvider) Login() error {
-	if p.client.AccessToken != "" && !p.client.TokenExpiryTime.IsZero() && p.client.TokenExpiryTime.Sub(time.Now()).Seconds() > 10 {
+	if p.client.AccessToken != "" && !p.client.TokenExpiryTime.IsZero() && time.Until(p.client.TokenExpiryTime).Seconds() > 10 {
 		// Token has not expired. Reuse it.
 		return nil
 	}
-	login, _, err := p.client.authClientApi.Login(context.Background(), authenticationApi.AuthenticationServiceLoginRequest{
+	login, _, err := p.client.authClientAPI.Login(context.Background(), authenticationApi.AuthenticationServiceLoginRequest{
 		Username: p.config.Auth.Username,
 		Password: p.config.Auth.Password,
 	})
@@ -592,7 +594,7 @@ func (p *F5DNSProvider) GetSubscriptions(accountID string) (*factory.ServiceRequ
 	}
 	authCtx := context.WithValue(context.Background(), subscriptionApi.ContextAccessToken, p.client.AccessToken)
 	for {
-		subs, _, err := p.client.subClientApi.ListSubscriptions(authCtx, p.config.AccountID, opts)
+		subs, _, err := p.client.subClientAPI.ListSubscriptions(authCtx, p.config.AccountID, opts)
 		if err != nil {
 			return nil, err
 		}

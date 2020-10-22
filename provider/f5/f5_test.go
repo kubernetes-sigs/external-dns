@@ -545,8 +545,8 @@ func newMockF5Provider(cfg *F5DNSConfig, zones map[string]*factory.ServiceReques
 	return &F5DNSProvider{
 		config: cfg,
 		client: &F5Client{
-			subClientApi:  NewF5DNSSubscriptionAPISub(zones, activated),
-			authClientApi: &F5DNSAuthenticationAPIStub{},
+			subClientAPI:  NewF5DNSSubscriptionAPISub(zones, activated),
+			authClientAPI: &F5DNSAuthenticationAPIStub{},
 			f:             factory.NewFactory(),
 			AccessToken:   "test",
 		},
@@ -599,7 +599,7 @@ func TestF5DNSRecords(t *testing.T) {
 		RRType:      f.NewStringPointer("CNAME"),
 		Aliases:     []string{"newunmanagedlbr"},
 		Persistence: f.NewBoolPointer(false),
-		ProximityRules: []factory.ProximityRule{factory.ProximityRule{
+		ProximityRules: []factory.ProximityRule{{
 			Region: f.NewStringPointer("global"),
 			Pool:   f.NewStringPointer("newunmanagedlbrpool"),
 			Score:  f.NewIntPointer(100),
@@ -612,7 +612,7 @@ func TestF5DNSRecords(t *testing.T) {
 		Enable:      f.NewBoolPointer(true),
 		TTL:         f.NewIntPointer(60),
 		Members: []factory.Member{
-			factory.Member{
+			{
 				Domain: f.NewStringPointer("elb4.aws.com"),
 				Final:  f.NewBoolPointer(true),
 			},
