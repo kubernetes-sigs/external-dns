@@ -306,6 +306,13 @@ As tags, you use the external-dns release of choice(i.e. `v0.7.3`). A `latest` t
 
 If you wish to build your own image, you can use the provided [Dockerfile](../Dockerfile) as a starting point.
 
+### Which architectures are supported?
+
+From `v0.7.5` on we support `amd64`, `arm32v7` and `arm64v8`. This means that you can run ExternalDNS on a Kubernetes cluster backed by Rasperry Pis or on ARM instances in the cloud as well as more traditional machines backed by `amd64` compatible CPUs.
+
+### Which operating systems are supported?
+
+At the time of writing we only support GNU/linux and we have no plans of supporting Windows or other operating systems.
 
 ### Why am I seeing time out errors even though I have connectivity to my cluster?
 
