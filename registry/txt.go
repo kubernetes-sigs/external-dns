@@ -196,8 +196,8 @@ func (im *TXTRegistry) PropertyValuesEqual(name string, previous string, current
 	return im.provider.PropertyValuesEqual(name, previous, current)
 }
 
-func (im *TXTRegistry) ShouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
-	return im.provider.ShouldUpdateTTL(desired, current)
+func (im *TXTRegistry) ShouldUpdateTTL(previous, current *endpoint.Endpoint) bool {
+	return im.provider.ShouldUpdateTTL(previous, current)
 }
 
 /**

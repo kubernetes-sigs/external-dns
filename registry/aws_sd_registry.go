@@ -92,6 +92,6 @@ func (sdr *AWSSDRegistry) PropertyValuesEqual(name string, previous string, curr
 	return sdr.provider.PropertyValuesEqual(name, previous, current)
 }
 
-func (sdr *AWSSDRegistry) ShouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
-	return sdr.provider.ShouldUpdateTTL(desired, current)
+func (sdr *AWSSDRegistry) ShouldUpdateTTL(previous, current *endpoint.Endpoint) bool {
+	return sdr.provider.ShouldUpdateTTL(previous, current)
 }

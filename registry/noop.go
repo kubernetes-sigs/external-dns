@@ -51,6 +51,6 @@ func (im *NoopRegistry) PropertyValuesEqual(attribute string, previous string, c
 	return im.provider.PropertyValuesEqual(attribute, previous, current)
 }
 
-func (im *NoopRegistry) ShouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
-	return im.provider.ShouldUpdateTTL(desired, current)
+func (im *NoopRegistry) ShouldUpdateTTL(previous, current *endpoint.Endpoint) bool {
+	return im.provider.ShouldUpdateTTL(previous, current)
 }

@@ -30,7 +30,7 @@ type Provider interface {
 	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 	ApplyChanges(ctx context.Context, changes *plan.Changes) error
 	PropertyValuesEqual(name string, previous string, current string) bool
-	ShouldUpdateTTL(desired, current *endpoint.Endpoint) bool
+	ShouldUpdateTTL(previous, current *endpoint.Endpoint) bool
 }
 
 type BaseProvider struct {
@@ -40,11 +40,11 @@ func (b BaseProvider) PropertyValuesEqual(name, previous, current string) bool {
 	return previous == current
 }
 
-func (b BaseProvider) ShouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
-	if !desired.RecordTTL.IsConfigured() {
+func (b BaseProvider) ShouldUpdateTTL(previous, current *endpoint.Endpoint) bool {
+	if !previous.RecordTTL.IsConfigured() {
 		return false
 	}
-	return desired.RecordTTL != current.RecordTTL
+	return previous.RecordTTL != current.RecordTTL
 }
 
 type contextKey struct {
