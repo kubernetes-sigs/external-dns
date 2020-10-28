@@ -1,14 +1,14 @@
 module sigs.k8s.io/external-dns
 
-go 1.14
+go 1.15
 
 require (
 	cloud.google.com/go v0.50.0
 	git.blindage.org/21h/hcloud-dns v0.0.0-20200807003420-f768ffe03f8d
 	github.com/Azure/azure-sdk-for-go v45.1.0+incompatible
-	github.com/Azure/go-autorest/autorest v0.11.4
-	github.com/Azure/go-autorest/autorest/adal v0.9.2
-	github.com/Azure/go-autorest/autorest/azure/auth v0.5.1
+	github.com/Azure/go-autorest/autorest v0.11.10
+	github.com/Azure/go-autorest/autorest/adal v0.9.5
+	github.com/Azure/go-autorest/autorest/azure/auth v0.5.3
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/F5Networks/f5cs-sdk v0.1.7
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v0.9.11

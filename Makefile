@@ -68,7 +68,7 @@ IMAGE         ?= us.gcr.io/k8s-artifacts-prod/external-dns/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty)
 BUILD_FLAGS   ?= -v
 LDFLAGS       ?= -X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s
-ARCHS         = arm64v8 amd64
+ARCHS         = amd64 arm64v8 arm32v7
 SHELL         = /bin/bash
 
 
@@ -81,6 +81,8 @@ build.push/multiarch:
 	arch_specific_tags=()
 	for arch in $(ARCHS); do \
 		image="$(IMAGE):$(VERSION)-$${arch}" ;\
+		# pre-pull due to https://github.com/kubernetes-sigs/cluster-addons/pull/84/files ;\
+		docker pull $${arch}/alpine:3.12 ;\
 		DOCKER_BUILDKIT=1 docker build --rm --tag $${image} --build-arg VERSION="$(VERSION)" --build-arg ARCH="$${arch}" . ;\
 		docker push $${image} ;\
 		arch_specific_tags+=( "--amend $${image}" ) ;\
@@ -99,6 +101,9 @@ build.arm64v8:
 
 build.amd64:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
+
+build.arm32v7:
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
 
 build.docker:
 	docker build --rm --tag "$(IMAGE):$(VERSION)" --build-arg VERSION="$(VERSION)" --build-arg ARCH="amd64" .
