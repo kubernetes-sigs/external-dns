@@ -191,9 +191,9 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	return im.provider.ApplyChanges(ctx, filteredChanges)
 }
 
-// PropertyValuesEqual compares two attribute values for equality
-func (im *TXTRegistry) PropertyValuesEqual(name string, previous string, current string) bool {
-	return im.provider.PropertyValuesEqual(name, previous, current)
+// NormalizeDesiredEndpoint normalizes desired endpoint (e.g. applies defaults)
+func (im *TXTRegistry) NormalizeDesiredEndpoint(endpoint *endpoint.Endpoint) {
+	im.provider.NormalizeDesiredEndpoint(endpoint)
 }
 
 /**

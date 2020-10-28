@@ -88,6 +88,7 @@ func (sdr *AWSSDRegistry) updateLabels(endpoints []*endpoint.Endpoint) {
 	}
 }
 
-func (sdr *AWSSDRegistry) PropertyValuesEqual(name string, previous string, current string) bool {
-	return sdr.provider.PropertyValuesEqual(name, previous, current)
+// NormalizeDesiredEndpoint normalizes desired endpoint (e.g. applies defaults)
+func (sdr *AWSSDRegistry) NormalizeDesiredEndpoint(endpoint *endpoint.Endpoint) {
+	sdr.provider.NormalizeDesiredEndpoint(endpoint)
 }

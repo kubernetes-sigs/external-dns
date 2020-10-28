@@ -250,9 +250,10 @@ func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endp
 	}
 
 	plan := &plan.Plan{
-		Current:      records,
-		Desired:      endpoints,
-		DomainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
+		Current:                  records,
+		Desired:                  endpoints,
+		DomainFilter:             endpoint.NewDomainFilter([]string{"bar.com"}),
+		NormalizeDesiredEndpoint: provider.NormalizeDesiredEndpoint,
 	}
 
 	changes := plan.Calculate().Changes
@@ -1035,9 +1036,9 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 		}
 
 		plan := plan.Plan{
-			Current:            current,
-			Desired:            desired,
-			PropertyComparator: provider.PropertyValuesEqual,
+			Current:                  current,
+			Desired:                  desired,
+			NormalizeDesiredEndpoint: provider.NormalizeDesiredEndpoint,
 		}
 
 		plan = *plan.Calculate()
@@ -1091,7 +1092,8 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 				},
 			},
 		},
-		DomainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
+		DomainFilter:             endpoint.NewDomainFilter([]string{"bar.com"}),
+		NormalizeDesiredEndpoint: provider.NormalizeDesiredEndpoint,
 	}
 
 	planned := plan.Calculate()
@@ -1132,4 +1134,58 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 			RecordId: "2345678901",
 		},
 	})
+}
+
+func TestCustomTTLWithEnabeledProxyNotChanged(t *testing.T) {
+	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
+		"001": []cloudflare.DNSRecord{
+			{
+				ID:      "1234567890",
+				ZoneID:  "001",
+				Name:    "foobar.bar.com",
+				Type:    endpoint.RecordTypeA,
+				TTL:     1,
+				Content: "1.2.3.4",
+				Proxied: true,
+			},
+		},
+	})
+
+	provider := &CloudFlareProvider{
+		Client: client,
+	}
+
+	records, err := provider.Records(context.Background())
+
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
+
+	plan := &plan.Plan{
+		Current: records,
+		Desired: []*endpoint.Endpoint{
+			{
+				DNSName:    "foobar.bar.com",
+				Targets:    endpoint.Targets{"1.2.3.4"},
+				RecordType: endpoint.RecordTypeA,
+				RecordTTL:  300,
+				Labels:     endpoint.Labels{},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					{
+						Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+						Value: "true",
+					},
+				},
+			},
+		},
+		DomainFilter:             endpoint.NewDomainFilter([]string{"bar.com"}),
+		NormalizeDesiredEndpoint: provider.NormalizeDesiredEndpoint,
+	}
+
+	planned := plan.Calculate()
+
+	assert.Equal(t, 0, len(planned.Changes.Create), "no new changes should be here")
+	assert.Equal(t, 0, len(planned.Changes.UpdateNew), "no new changes should be here")
+	assert.Equal(t, 0, len(planned.Changes.UpdateOld), "no new changes should be here")
+	assert.Equal(t, 0, len(planned.Changes.Delete), "no new changes should be here")
 }

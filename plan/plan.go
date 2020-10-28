@@ -18,14 +18,10 @@ package plan
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
-
-// PropertyComparator is used in Plan for comparing the previous and current custom annotations.
-type PropertyComparator func(name string, previous string, current string) bool
 
 // Plan can convert a list of desired and current records to a series of create,
 // update and delete actions.
@@ -41,8 +37,8 @@ type Plan struct {
 	Changes *Changes
 	// DomainFilter matches DNS names
 	DomainFilter endpoint.DomainFilter
-	// Property comparator compares custom properties of providers
-	PropertyComparator PropertyComparator
+	// Function normalizing desired endpoint (e.g. applying defaults)
+	NormalizeDesiredEndpoint func(endpoint *endpoint.Endpoint)
 }
 
 // Changes holds lists of actions to be executed by dns providers
@@ -71,12 +67,13 @@ bar.com |                | [->191.1.1.1, ->190.1.1.1]  |  = create (bar.com -> 1
 "=", i.e. result of calculation relies on supplied ConflictResolver
 */
 type planTable struct {
+	plan     *Plan
 	rows     map[string]map[string]*planTableRow
 	resolver ConflictResolver
 }
 
-func newPlanTable() planTable { //TODO: make resolver configurable
-	return planTable{map[string]map[string]*planTableRow{}, PerResource{}}
+func newPlanTable(p *Plan) planTable { //TODO: make resolver configurable
+	return planTable{p, map[string]map[string]*planTableRow{}, PerResource{}}
 }
 
 // planTableRow
@@ -102,8 +99,11 @@ func (t planTable) addCurrent(e *endpoint.Endpoint) {
 	t.rows[dnsName][e.SetIdentifier].current = e
 }
 
-func (t planTable) addCandidate(e *endpoint.Endpoint) {
+func (t planTable) addDesired(e *endpoint.Endpoint) {
 	dnsName := normalizeDNSName(e.DNSName)
+	if t.plan.NormalizeDesiredEndpoint != nil {
+		t.plan.NormalizeDesiredEndpoint(e)
+	}
 	if _, ok := t.rows[dnsName]; !ok {
 		t.rows[dnsName] = make(map[string]*planTableRow)
 	}
@@ -117,13 +117,13 @@ func (t planTable) addCandidate(e *endpoint.Endpoint) {
 // state. It then passes those changes to the current policy for further
 // processing. It returns a copy of Plan with the changes populated.
 func (p *Plan) Calculate() *Plan {
-	t := newPlanTable()
+	t := newPlanTable(p)
 
 	for _, current := range filterRecordsForPlan(p.Current, p.DomainFilter) {
 		t.addCurrent(current)
 	}
 	for _, desired := range filterRecordsForPlan(p.Desired, p.DomainFilter) {
-		t.addCandidate(desired)
+		t.addDesired(desired)
 	}
 
 	changes := &Changes{}
@@ -201,19 +201,11 @@ func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint)
 			}
 
 			if d, ok := desiredProperties[c.Name]; ok {
-				if p.PropertyComparator != nil {
-					if !p.PropertyComparator(c.Name, c.Value, d.Value) {
-						return true
-					}
-				} else if c.Value != d.Value {
+				if c.Value != d.Value {
 					return true
 				}
 			} else {
-				if p.PropertyComparator != nil {
-					if !p.PropertyComparator(c.Name, c.Value, "") {
-						return true
-					}
-				} else if c.Value != "" {
+				if c.Value != "" {
 					return true
 				}
 			}
@@ -260,29 +252,4 @@ func normalizeDNSName(dnsName string) string {
 		s += "."
 	}
 	return s
-}
-
-// CompareBoolean is an implementation of PropertyComparator for comparing boolean-line values
-// For example external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
-// If value doesn't parse as boolean, the defaultValue is used
-func CompareBoolean(defaultValue bool, name, current, previous string) bool {
-	var err error
-
-	v1, v2 := defaultValue, defaultValue
-
-	if previous != "" {
-		v1, err = strconv.ParseBool(previous)
-		if err != nil {
-			v1 = defaultValue
-		}
-	}
-
-	if current != "" {
-		v2, err = strconv.ParseBool(current)
-		if err != nil {
-			v2 = defaultValue
-		}
-	}
-
-	return v1 == v2
 }

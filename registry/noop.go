@@ -46,7 +46,7 @@ func (im *NoopRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes)
 	return im.provider.ApplyChanges(ctx, changes)
 }
 
-// PropertyValuesEqual compares two property values for equality
-func (im *NoopRegistry) PropertyValuesEqual(attribute string, previous string, current string) bool {
-	return im.provider.PropertyValuesEqual(attribute, previous, current)
+// NormalizeDesiredEndpoint normalizes desired endpoint (e.g. applies defaults)
+func (im *NoopRegistry) NormalizeDesiredEndpoint(endpoint *endpoint.Endpoint) {
+	im.provider.NormalizeDesiredEndpoint(endpoint)
 }

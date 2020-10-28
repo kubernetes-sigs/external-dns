@@ -313,8 +313,12 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificDefaultFalse(
 		Policies: []Policy{&SyncPolicy{}},
 		Current:  current,
 		Desired:  desired,
-		PropertyComparator: func(name, previous, current string) bool {
-			return CompareBoolean(false, name, previous, current)
+		NormalizeDesiredEndpoint: func(e *endpoint.Endpoint) {
+			e.NormalizeProviderSpecific(endpoint.NormalizeProviderSpecificConfig{
+				"external-dns.alpha.kubernetes.io/cloudflare-proxied": func(value string) string {
+					return endpoint.NormalizeBoolean(value, false)
+				},
+			})
 		},
 	}
 
@@ -337,8 +341,12 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificDefualtTrue()
 		Policies: []Policy{&SyncPolicy{}},
 		Current:  current,
 		Desired:  desired,
-		PropertyComparator: func(name, previous, current string) bool {
-			return CompareBoolean(true, name, previous, current)
+		NormalizeDesiredEndpoint: func(e *endpoint.Endpoint) {
+			e.NormalizeProviderSpecific(endpoint.NormalizeProviderSpecificConfig{
+				"external-dns.alpha.kubernetes.io/cloudflare-proxied": func(value string) string {
+					return endpoint.NormalizeBoolean(value, true)
+				},
+			})
 		},
 	}
 

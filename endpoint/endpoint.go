@@ -19,6 +19,7 @@ package endpoint
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -191,8 +192,50 @@ func (e *Endpoint) GetProviderSpecificProperty(key string) (ProviderSpecificProp
 	return ProviderSpecificProperty{}, false
 }
 
+type NormalizeProviderSpecificConfig map[string]func(string) string
+
+// Selects and normalizes fields specified by config
+func (e *Endpoint) NormalizeProviderSpecific(config NormalizeProviderSpecificConfig) {
+	normalized := ProviderSpecific{}
+
+	for name, normalize := range config {
+		if property, ok := e.GetProviderSpecificProperty(name); ok {
+			normalized = append(normalized, ProviderSpecificProperty{
+				Name:  name,
+				Value: normalize(property.Value),
+			})
+		} else {
+			normalized = append(normalized, ProviderSpecificProperty{
+				Name:  name,
+				Value: normalize(""),
+			})
+		}
+	}
+
+	e.ProviderSpecific = normalized
+}
+
 func (e *Endpoint) String() string {
 	return fmt.Sprintf("%s %d IN %s %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.SetIdentifier, e.Targets, e.ProviderSpecific)
+}
+
+// Normalizes boolean value of custom property
+func NormalizeBoolean(value string, defaultValue bool) string {
+	val, err := strconv.ParseBool(value)
+
+	if err != nil {
+		if defaultValue {
+			return "true"
+		} else {
+			return "false"
+		}
+	}
+
+	if val {
+		return "true"
+	}
+
+	return "false"
 }
 
 // DNSEndpointSpec defines the desired state of DNSEndpoint
