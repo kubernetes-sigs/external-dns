@@ -327,6 +327,18 @@ func createMockInfobloxObject(name, recordType, value string) ibclient.IBObject 
 				Text: value,
 			},
 		)
+	case "HOST":
+		return ibclient.NewHostRecord(
+			ibclient.HostRecord{
+				Ref:  ref,
+				Name: name,
+				Ipv4Addrs: []ibclient.HostRecordIpv4Addr{
+					{
+						Ipv4Addr: value,
+					},
+				},
+			},
+		)
 	}
 	return nil
 }
@@ -353,8 +365,13 @@ func TestInfobloxRecords(t *testing.T) {
 			createMockInfobloxObject("whitespace.example.com", endpoint.RecordTypeA, "123.123.123.124"),
 			createMockInfobloxObject("whitespace.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=white space"),
 			createMockInfobloxObject("hack.example.com", endpoint.RecordTypeCNAME, "cerberus.infoblox.com"),
-			createMockInfobloxObject("multiple.example.com", endpoint.RecordTypeA, "123.123.123.122,123.123.123.121"),
+			createMockInfobloxObject("multiple.example.com", endpoint.RecordTypeA, "123.123.123.122"),
+			createMockInfobloxObject("multiple.example.com", endpoint.RecordTypeA, "123.123.123.121"),
 			createMockInfobloxObject("multiple.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
+			createMockInfobloxObject("existing.example.com", endpoint.RecordTypeA, "124.1.1.1"),
+			createMockInfobloxObject("existing.example.com", endpoint.RecordTypeA, "124.1.1.2"),
+			createMockInfobloxObject("existing.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=existing"),
+			createMockInfobloxObject("host.example.com", "HOST", "125.1.1.1"),
 		},
 	}
 
@@ -372,8 +389,11 @@ func TestInfobloxRecords(t *testing.T) {
 		endpoint.NewEndpoint("whitespace.example.com", endpoint.RecordTypeA, "123.123.123.124"),
 		endpoint.NewEndpoint("whitespace.example.com", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=white space\""),
 		endpoint.NewEndpoint("hack.example.com", endpoint.RecordTypeCNAME, "cerberus.infoblox.com"),
-		endpoint.NewEndpoint("multiple.example.com", endpoint.RecordTypeA, "123.123.123.122,123.123.123.121"),
+		endpoint.NewEndpoint("multiple.example.com", endpoint.RecordTypeA, "123.123.123.122", "123.123.123.121"),
 		endpoint.NewEndpoint("multiple.example.com", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=default\""),
+		endpoint.NewEndpoint("existing.example.com", endpoint.RecordTypeA, "124.1.1.1", "124.1.1.2"),
+		endpoint.NewEndpoint("existing.example.com", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=existing\""),
+		endpoint.NewEndpoint("host.example.com", endpoint.RecordTypeA, "125.1.1.1"),
 	}
 	validateEndpoints(t, actual, expected)
 }
@@ -402,6 +422,7 @@ func TestInfobloxApplyChanges(t *testing.T) {
 		endpoint.NewEndpoint("old.example.com", endpoint.RecordTypeA, ""),
 		endpoint.NewEndpoint("oldcname.example.com", endpoint.RecordTypeCNAME, ""),
 		endpoint.NewEndpoint("deleted.example.com", endpoint.RecordTypeA, ""),
+		endpoint.NewEndpoint("deleted.example.com", endpoint.RecordTypeTXT, ""),
 		endpoint.NewEndpoint("deletedcname.example.com", endpoint.RecordTypeCNAME, ""),
 	})
 
@@ -429,6 +450,7 @@ func testInfobloxApplyChangesInternal(t *testing.T, dryRun bool, client ibclient
 	}
 	client.(*mockIBConnector).mockInfobloxObjects = &[]ibclient.IBObject{
 		createMockInfobloxObject("deleted.example.com", endpoint.RecordTypeA, "121.212.121.212"),
+		createMockInfobloxObject("deleted.example.com", endpoint.RecordTypeTXT, "test-deleting-txt"),
 		createMockInfobloxObject("deletedcname.example.com", endpoint.RecordTypeCNAME, "other.com"),
 		createMockInfobloxObject("old.example.com", endpoint.RecordTypeA, "121.212.121.212"),
 		createMockInfobloxObject("oldcname.example.com", endpoint.RecordTypeCNAME, "other.com"),
@@ -470,6 +492,7 @@ func testInfobloxApplyChangesInternal(t *testing.T, dryRun bool, client ibclient
 
 	deleteRecords := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("deleted.example.com", endpoint.RecordTypeA, "121.212.121.212"),
+		endpoint.NewEndpoint("deleted.example.com", endpoint.RecordTypeTXT, "test-deleting-txt"),
 		endpoint.NewEndpoint("deletedcname.example.com", endpoint.RecordTypeCNAME, "other.com"),
 		endpoint.NewEndpoint("deleted.nope.com", endpoint.RecordTypeA, "222.111.222.111"),
 	}
