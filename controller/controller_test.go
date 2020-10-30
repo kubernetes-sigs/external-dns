@@ -45,7 +45,7 @@ func (p *mockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	return p.RecordsStore, nil
 }
 
-// ApplyChanges validates that the passed in changes satisfy the assumtions.
+// ApplyChanges validates that the passed in changes satisfy the assumptions.
 func (p *mockProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	if len(changes.Create) != len(p.ExpectChanges.Create) {
 		return errors.New("number of created records is wrong")
