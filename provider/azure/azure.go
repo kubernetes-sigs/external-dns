@@ -69,6 +69,7 @@ type RecordSetsClient interface {
 type AzureProvider struct {
 	provider.BaseProvider
 	domainFilter                 endpoint.DomainFilter
+	zoneNameFilter               endpoint.DomainFilter
 	zoneIDFilter                 provider.ZoneIDFilter
 	dryRun                       bool
 	resourceGroup                string
@@ -80,7 +81,7 @@ type AzureProvider struct {
 // NewAzureProvider creates a new Azure provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, resourceGroup string, userAssignedIdentityClientID string, dryRun bool) (*AzureProvider, error) {
+func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zoneNameFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, resourceGroup string, userAssignedIdentityClientID string, dryRun bool) (*AzureProvider, error) {
 	contents, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
@@ -122,6 +123,7 @@ func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zon
 
 	provider := &AzureProvider{
 		domainFilter:                 domainFilter,
+		zoneNameFilter:               zoneNameFilter,
 		zoneIDFilter:                 zoneIDFilter,
 		dryRun:                       dryRun,
 		resourceGroup:                cfg.ResourceGroup,
@@ -205,6 +207,11 @@ func (p *AzureProvider) Records(ctx context.Context) (endpoints []*endpoint.Endp
 				return true
 			}
 			name := formatAzureDNSName(*recordSet.Name, *zone.Name)
+
+			if len(p.zoneNameFilter.Filters) > 0 && !p.domainFilter.Match(name) {
+				log.Debugf("Skipping return of record %s because it was filtered out by the specified --domain-filter", name)
+				return true
+			}
 			targets := extractAzureTargets(&recordSet)
 			if len(targets) == 0 {
 				log.Errorf("Failed to extract targets for '%s' with type '%s'.", name, recordType)
@@ -261,6 +268,9 @@ func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
 		zone := zonesIterator.Value()
 
 		if zone.Name != nil && p.domainFilter.Match(*zone.Name) && p.zoneIDFilter.Match(*zone.ID) {
+			zones = append(zones, zone)
+		} else if zone.Name != nil && len(p.zoneNameFilter.Filters) > 0 && p.zoneNameFilter.Match(*zone.Name) {
+			// Handle zoneNameFilter
 			zones = append(zones, zone)
 		}
 
@@ -344,6 +354,10 @@ func (p *AzureProvider) deleteRecords(ctx context.Context, deleted azureChangeMa
 	for zone, endpoints := range deleted {
 		for _, endpoint := range endpoints {
 			name := p.recordSetNameForZone(zone, endpoint)
+			if !p.domainFilter.Match(endpoint.DNSName) {
+				log.Debugf("Skipping deletion of record %s because it was filtered out by the specified --domain-filter", endpoint.DNSName)
+				continue
+			}
 			if p.dryRun {
 				log.Infof("Would delete %s record named '%s' for Azure DNS zone '%s'.", endpoint.RecordType, name, zone)
 			} else {
@@ -366,6 +380,10 @@ func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMa
 	for zone, endpoints := range updated {
 		for _, endpoint := range endpoints {
 			name := p.recordSetNameForZone(zone, endpoint)
+			if !p.domainFilter.Match(endpoint.DNSName) {
+				log.Debugf("Skipping update of record %s because it was filtered out by the specified --domain-filter", endpoint.DNSName)
+				continue
+			}
 			if p.dryRun {
 				log.Infof(
 					"Would update %s record named '%s' to '%s' for Azure DNS zone '%s'.",

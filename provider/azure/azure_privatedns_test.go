@@ -18,12 +18,15 @@ package azure
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
-
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/stretchr/testify/assert"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -250,6 +253,36 @@ func newAzurePrivateDNSProvider(domainFilter endpoint.DomainFilter, zoneIDFilter
 		zonesClient:      privateZonesClient,
 		recordSetsClient: privateRecordsClient,
 	}
+}
+
+func validateAzurePrivateDNSClientsResourceManager(t *testing.T, environmentName string, expectedResourceManagerEndpoint string) {
+	err := os.Setenv(auth.EnvironmentName, environmentName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	azurePrivateDNSProvider, err := NewAzurePrivateDNSProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), "k8s", "sub", true)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	zonesClientBaseURI := azurePrivateDNSProvider.zonesClient.(privatedns.PrivateZonesClient).BaseURI
+	recordSetsClientBaseURI := azurePrivateDNSProvider.recordSetsClient.(privatedns.RecordSetsClient).BaseURI
+
+	assert.Equal(t, zonesClientBaseURI, expectedResourceManagerEndpoint, "expected and actual resource manager endpoints don't match. expected: %s, got: %s", expectedResourceManagerEndpoint, zonesClientBaseURI)
+	assert.Equal(t, recordSetsClientBaseURI, expectedResourceManagerEndpoint, "expected and actual resource manager endpoints don't match. expected: %s, got: %s", expectedResourceManagerEndpoint, recordSetsClientBaseURI)
+}
+
+func TestNewAzurePrivateDNSProvider(t *testing.T) {
+	// make sure to reset the environment variables at the end again
+	originalEnv := os.Getenv(auth.EnvironmentName)
+	defer os.Setenv(auth.EnvironmentName, originalEnv)
+
+	validateAzurePrivateDNSClientsResourceManager(t, "", azure.PublicCloud.ResourceManagerEndpoint)
+	validateAzurePrivateDNSClientsResourceManager(t, "AZURECHINACLOUD", azure.ChinaCloud.ResourceManagerEndpoint)
+	validateAzurePrivateDNSClientsResourceManager(t, "AZUREGERMANCLOUD", azure.GermanCloud.ResourceManagerEndpoint)
+	validateAzurePrivateDNSClientsResourceManager(t, "AZUREUSGOVERNMENTCLOUD", azure.USGovernmentCloud.ResourceManagerEndpoint)
 }
 
 func TestAzurePrivateDNSRecord(t *testing.T) {

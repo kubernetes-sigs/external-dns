@@ -326,6 +326,8 @@ func TestAWSRecords(t *testing.T) {
 		endpoint.NewEndpointWithTTL("multi-value-answer-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4").WithSetIdentifier("test-set").WithProviderSpecific(providerSpecificMultiValueAnswer, ""),
 		endpoint.NewEndpointWithTTL("geolocation-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeolocationContinentCode, "EU"),
 		endpoint.NewEndpointWithTTL("geolocation-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "4.3.2.1").WithSetIdentifier("test-set-2").WithProviderSpecific(providerSpecificGeolocationCountryCode, "DE"),
+		endpoint.NewEndpoint("healthcheck-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.example.com").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificWeight, "10").WithProviderSpecific(providerSpecificHealthCheckID, "foo-bar-healthcheck-id"),
+		endpoint.NewEndpointWithTTL("healthcheck-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "4.3.2.1").WithSetIdentifier("test-set-2").WithProviderSpecific(providerSpecificWeight, "20").WithProviderSpecific(providerSpecificHealthCheckID, "abc-def-healthcheck-id"),
 	})
 
 	records, err := provider.Records(context.Background())
@@ -347,6 +349,8 @@ func TestAWSRecords(t *testing.T) {
 		endpoint.NewEndpointWithTTL("multi-value-answer-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4").WithSetIdentifier("test-set").WithProviderSpecific(providerSpecificMultiValueAnswer, ""),
 		endpoint.NewEndpointWithTTL("geolocation-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeolocationContinentCode, "EU"),
 		endpoint.NewEndpointWithTTL("geolocation-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "4.3.2.1").WithSetIdentifier("test-set-2").WithProviderSpecific(providerSpecificGeolocationCountryCode, "DE"),
+		endpoint.NewEndpointWithTTL("healthcheck-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "foo.example.com").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificWeight, "10").WithProviderSpecific(providerSpecificHealthCheckID, "foo-bar-healthcheck-id"),
+		endpoint.NewEndpointWithTTL("healthcheck-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "4.3.2.1").WithSetIdentifier("test-set-2").WithProviderSpecific(providerSpecificWeight, "20").WithProviderSpecific(providerSpecificHealthCheckID, "abc-def-healthcheck-id"),
 	})
 }
 
@@ -500,6 +504,7 @@ func TestAWSApplyChanges(t *testing.T) {
 
 		ctx := tt.setup(provider)
 
+		provider.zonesCache = &zonesListCache{duration: 0 * time.Minute}
 		counter := NewRoute53APICounter(provider.client)
 		provider.client = counter
 		require.NoError(t, provider.ApplyChanges(ctx, changes))
@@ -1026,6 +1031,7 @@ func TestAWSCanonicalHostedZone(t *testing.T) {
 		{"foo.sa-east-1.elb.amazonaws.com", "Z2P70J7HTTTPLU"},
 		{"foo.cn-north-1.elb.amazonaws.com.cn", "Z1GDH35T77C1KE"},
 		{"foo.cn-northwest-1.elb.amazonaws.com.cn", "ZM7IZAIOVVDZF"},
+		{"foo.af-south-1.elb.amazonaws.com", "Z268VQBMOI5EKX"},
 		// Network Load Balancers
 		{"foo.elb.us-east-2.amazonaws.com", "ZLMOA37VPKANP"},
 		{"foo.elb.us-east-1.amazonaws.com", "Z26RNL4JYFTOTI"},
@@ -1045,6 +1051,7 @@ func TestAWSCanonicalHostedZone(t *testing.T) {
 		{"foo.elb.sa-east-1.amazonaws.com", "ZTK26PT1VY4CU"},
 		{"foo.elb.cn-north-1.amazonaws.com.cn", "Z3QFB96KMJ7ED6"},
 		{"foo.elb.cn-northwest-1.amazonaws.com.cn", "ZQEIKTCZ8352D"},
+		{"foo.elb.af-south-1.amazonaws.com", "Z203XCE67M25HM"},
 		// No Load Balancer
 		{"foo.example.org", ""},
 	} {
@@ -1200,6 +1207,7 @@ func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilte
 		zoneTypeFilter:       zoneTypeFilter,
 		zoneTagFilter:        zoneTagFilter,
 		dryRun:               false,
+		zonesCache:           &zonesListCache{duration: 1 * time.Minute},
 	}
 
 	createAWSZone(t, provider, &route53.HostedZone{

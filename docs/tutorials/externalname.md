@@ -2,7 +2,7 @@
 
 This tutorial describes how to setup ExternalDNS for usage in conjunction with an ExternalName service.
 
-## Usecases
+## Use cases
 
 The main use cases that inspired this feature is the necessity for having a subdomain pointing to an external domain. In this scenario, it makes sense for the subdomain to have a CNAME record pointing to the external domain.
 
@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
         args:
         - --log-level=debug
         - --source=service

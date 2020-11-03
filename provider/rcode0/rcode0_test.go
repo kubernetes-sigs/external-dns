@@ -71,7 +71,7 @@ func TestRcodeZeroProvider_Records(t *testing.T) {
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
-	require.Equal(t, 6, len(endpoints))
+	require.Equal(t, 10, len(endpoints))
 
 	mockRRSetService.TestErrorReturned = true
 

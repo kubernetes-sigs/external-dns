@@ -34,6 +34,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 

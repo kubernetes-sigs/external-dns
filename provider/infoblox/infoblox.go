@@ -232,7 +232,11 @@ func (p *InfobloxProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 
 func (p *InfobloxProvider) zones() ([]ibclient.ZoneAuth, error) {
 	var res, result []ibclient.ZoneAuth
-	obj := ibclient.NewZoneAuth(ibclient.ZoneAuth{})
+	obj := ibclient.NewZoneAuth(
+		ibclient.ZoneAuth{
+			View: p.view,
+		},
+	)
 	err := p.client.GetObject(obj, "", &res)
 
 	if err != nil {
