@@ -24,6 +24,7 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/external-dns/source"
 )
 
@@ -41,15 +42,16 @@ type Config struct {
 	APIServerURL                      string
 	KubeConfig                        string
 	RequestTimeout                    time.Duration
-	IstioIngressGatewayServices       []string
 	ContourLoadBalancerService        string
 	SkipperRouteGroupVersion          string
 	Sources                           []string
 	Namespace                         string
 	AnnotationFilter                  string
+	LabelFilter                       string
 	FQDNTemplate                      string
 	CombineFQDNAndAnnotation          bool
 	IgnoreHostnameAnnotation          bool
+	IgnoreIngressTLSSpec              bool
 	Compatibility                     string
 	PublishInternal                   bool
 	PublishHostIP                     bool
@@ -63,6 +65,7 @@ type Config struct {
 	ExcludeDomains                    []string
 	RegexDomainFilter                 string
 	RegexDomainExclusion              string
+	ZoneNameFilter                    []string
 	ZoneIDFilter                      []string
 	AlibabaCloudConfigFile            string
 	AlibabaCloudZoneType              string
@@ -74,6 +77,7 @@ type Config struct {
 	AWSEvaluateTargetHealth           bool
 	AWSAPIRetries                     int
 	AWSPreferCNAME                    bool
+	AWSZoneCacheDuration              time.Duration
 	AzureConfigFile                   string
 	AzureResourceGroup                string
 	AzureSubscriptionID               string
@@ -141,6 +145,7 @@ type Config struct {
 	RFC2136MinTTL                     time.Duration
 	NS1Endpoint                       string
 	NS1IgnoreSSL                      bool
+	NS1MinTTLSeconds                  int
 	TransIPAccountName                string
 	TransIPPrivateKeyFile             string
 	DigitalOceanAPIPageSize           int
@@ -155,9 +160,11 @@ var defaultConfig = &Config{
 	Sources:                     nil,
 	Namespace:                   "",
 	AnnotationFilter:            "",
+	LabelFilter:                 "",
 	FQDNTemplate:                "",
 	CombineFQDNAndAnnotation:    false,
 	IgnoreHostnameAnnotation:    false,
+	IgnoreIngressTLSSpec:        false,
 	Compatibility:               "",
 	PublishInternal:             false,
 	PublishHostIP:               false,
@@ -179,6 +186,7 @@ var defaultConfig = &Config{
 	AWSEvaluateTargetHealth:     true,
 	AWSAPIRetries:               3,
 	AWSPreferCNAME:              false,
+	AWSZoneCacheDuration:        0 * time.Second,
 	AzureConfigFile:             "/etc/kubernetes/azure.json",
 	AzureResourceGroup:          "",
 	AzureSubscriptionID:         "",
@@ -304,13 +312,15 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("skipper-routegroup-groupversion", "The resource version for skipper routegroup").Default(source.DefaultRoutegroupVersion).StringVar(&cfg.SkipperRouteGroupVersion)
 
 	// Flags related to processing sources
-	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, fake, connector, istio-gateway, istio-virtualservice, cloudfoundry, contour-ingressroute, crd, empty, skipper-routegroup,openshift-route)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-ingressroute", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route")
+	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, fake, connector, istio-gateway, istio-virtualservice, cloudfoundry, contour-ingressroute, contour-httpproxy, crd, empty, skipper-routegroup,openshift-route)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-ingressroute", "contour-httpproxy", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route")
 
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
 	app.Flag("annotation-filter", "Filter sources managed by external-dns via annotation using label selector semantics (default: all sources)").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
+	app.Flag("label-filter", "Filter sources managed by external-dns via label selector when listing all resources; currently only supported by source CRD").Default(defaultConfig.LabelFilter).StringVar(&cfg.LabelFilter)
 	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
 	app.Flag("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting").BoolVar(&cfg.CombineFQDNAndAnnotation)
 	app.Flag("ignore-hostname-annotation", "Ignore hostname annotation when generating DNS names, valid only when using fqdn-template is set (optional, default: false)").BoolVar(&cfg.IgnoreHostnameAnnotation)
+	app.Flag("ignore-ingress-tls-spec", "Ignore tls spec section in ingresses resources, applicable only for ingress sources (optional, default: false)").BoolVar(&cfg.IgnoreIngressTLSSpec)
 	app.Flag("compatibility", "Process annotation semantics from legacy implementations (optional, options: mate, molecule)").Default(defaultConfig.Compatibility).EnumVar(&cfg.Compatibility, "", "mate", "molecule")
 	app.Flag("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)").BoolVar(&cfg.PublishInternal)
 	app.Flag("publish-host-ip", "Allow external-dns to publish host-ip for headless services (optional)").BoolVar(&cfg.PublishHostIP)
@@ -321,11 +331,15 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("service-type-filter", "The service types to take care about (default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)").StringsVar(&cfg.ServiceTypeFilter)
 
 	// Flags related to providers
-	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, google, azure, azure-dns, azure-private-dns, cloudflare, rcodezero, digitalocean, hetzner, dnsimple, akamai, infoblox, dyn, designate, coredns, skydns, inmemory, ovh, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns, vultr, ultradns)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "hetzner", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "akamai", "infoblox", "dyn", "designate", "coredns", "skydns", "inmemory", "ovh", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns", "vultr", "ultradns")
+	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, google, azure, azure-dns, azure-private-dns, cloudflare, rcodezero, digitalocean, hetzner, dnsimple, akamai, infoblox, dyn, designate, coredns, skydns, inmemory, ovh, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns, scaleway, vultr, ultradns)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "hetzner", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "akamai", "infoblox", "dyn", "designate", "coredns", "skydns", "inmemory", "ovh", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns", "scaleway", "vultr", "ultradns")
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("exclude-domains", "Exclude subdomains (optional)").Default("").StringsVar(&cfg.ExcludeDomains)
+<<<<<<< HEAD
 	app.Flag("regex-domain-filter", "Limit possible domains and target zones by a Regex filter; Overrides domain-filter (optional)").Default("").StringVar(&cfg.RegexDomainFilter)
 	app.Flag("regex-domain-exclusion", "Regex filter that excludes domains and target zones matched by regex-domain-filter (optional)").Default("").StringVar(&cfg.RegexDomainExclusion)
+=======
+	app.Flag("zone-name-filter", "Filter target zones by zone domain (For now, only AzureDNS provider is using this flag); specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.ZoneNameFilter)
+>>>>>>> upstream/master
 	app.Flag("zone-id-filter", "Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.ZoneIDFilter)
 	app.Flag("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
 	app.Flag("google-batch-change-size", "When using the Google provider, set the maximum number of changes that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.GoogleBatchChangeSize)).IntVar(&cfg.GoogleBatchChangeSize)
@@ -340,6 +354,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("aws-evaluate-target-health", "When using the AWS provider, set whether to evaluate the health of a DNS target (default: enabled, disable with --no-aws-evaluate-target-health)").Default(strconv.FormatBool(defaultConfig.AWSEvaluateTargetHealth)).BoolVar(&cfg.AWSEvaluateTargetHealth)
 	app.Flag("aws-api-retries", "When using the AWS provider, set the maximum number of retries for API calls before giving up.").Default(strconv.Itoa(defaultConfig.AWSAPIRetries)).IntVar(&cfg.AWSAPIRetries)
 	app.Flag("aws-prefer-cname", "When using the AWS provider, prefer using CNAME instead of ALIAS (default: disabled)").BoolVar(&cfg.AWSPreferCNAME)
+	app.Flag("aws-zones-cache-duration", "When using the AWS provider, set the zones list cache TTL (0s to disable).").Default(defaultConfig.AWSZoneCacheDuration.String()).DurationVar(&cfg.AWSZoneCacheDuration)
 	app.Flag("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure").Default(defaultConfig.AzureConfigFile).StringVar(&cfg.AzureConfigFile)
 	app.Flag("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (required when --provider=azure-private-dns)").Default(defaultConfig.AzureResourceGroup).StringVar(&cfg.AzureResourceGroup)
 	app.Flag("azure-subscription-id", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure-private-dns)").Default(defaultConfig.AzureSubscriptionID).StringVar(&cfg.AzureSubscriptionID)
@@ -373,6 +388,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("pdns-tls-enabled", "When using the PowerDNS/PDNS provider, specify whether to use TLS (default: false, requires --tls-ca, optionally specify --tls-client-cert and --tls-client-cert-key)").Default(strconv.FormatBool(defaultConfig.PDNSTLSEnabled)).BoolVar(&cfg.PDNSTLSEnabled)
 	app.Flag("ns1-endpoint", "When using the NS1 provider, specify the URL of the API endpoint to target (default: https://api.nsone.net/v1/)").Default(defaultConfig.NS1Endpoint).StringVar(&cfg.NS1Endpoint)
 	app.Flag("ns1-ignoressl", "When using the NS1 provider, specify whether to verify the SSL certificate (default: false)").Default(strconv.FormatBool(defaultConfig.NS1IgnoreSSL)).BoolVar(&cfg.NS1IgnoreSSL)
+	app.Flag("ns1-min-ttl", "Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.").IntVar(&cfg.NS1MinTTLSeconds)
 	app.Flag("digitalocean-api-page-size", "Configure the page size used when querying the DigitalOcean API.").Default(strconv.Itoa(defaultConfig.DigitalOceanAPIPageSize)).IntVar(&cfg.DigitalOceanAPIPageSize)
 
 	// Flags related to TLS communication

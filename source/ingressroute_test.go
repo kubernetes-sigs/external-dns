@@ -80,7 +80,7 @@ func (suite *IngressRouteSuite) SetupTest() {
 	}).IngressRoute()
 
 	// Convert to unstructured
-	unstructuredIngressRoute, err := convertToUnstructured(suite.ingressRoute, s)
+	unstructuredIngressRoute, err := convertIngressRouteToUnstructured(suite.ingressRoute, s)
 	if err != nil {
 		suite.Error(err)
 	}
@@ -98,11 +98,12 @@ func (suite *IngressRouteSuite) TestResourceLabelIsSet() {
 
 func newDynamicKubernetesClient() (*fakeDynamic.FakeDynamicClient, *runtime.Scheme) {
 	s := runtime.NewScheme()
-	contour.AddKnownTypes(s)
+	_ = contour.AddToScheme(s)
+	_ = projectcontour.AddToScheme(s)
 	return fakeDynamic.NewSimpleDynamicClient(s), s
 }
 
-func convertToUnstructured(ir *contour.IngressRoute, s *runtime.Scheme) (*unstructured.Unstructured, error) {
+func convertIngressRouteToUnstructured(ir *contour.IngressRoute, s *runtime.Scheme) (*unstructured.Unstructured, error) {
 	unstructuredIngressRoute := &unstructured.Unstructured{}
 	if err := s.Convert(ir, unstructuredIngressRoute, context.Background()); err != nil {
 		return nil, err
@@ -1013,7 +1014,7 @@ func testIngressRouteEndpoints(t *testing.T) {
 
 			fakeDynamicClient, scheme := newDynamicKubernetesClient()
 			for _, ingressRoute := range ingressRoutes {
-				converted, err := convertToUnstructured(ingressRoute, scheme)
+				converted, err := convertIngressRouteToUnstructured(ingressRoute, scheme)
 				require.NoError(t, err)
 				_, err = fakeDynamicClient.Resource(contour.IngressRouteGVR).Namespace(ingressRoute.Namespace).Create(context.Background(), converted, metav1.CreateOptions{})
 				require.NoError(t, err)

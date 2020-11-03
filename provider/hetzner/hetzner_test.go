@@ -36,6 +36,7 @@ type mockHCloudClientAdapter interface {
 	ImportZoneString(zoneID string, zonePlainText string) (hclouddns.HCloudAnswerGetZone, error)
 	ExportZoneToString(zoneID string) (hclouddns.HCloudAnswerGetZonePlainText, error)
 	ValidateZoneString(zonePlainText string) (hclouddns.HCloudAnswerZoneValidate, error)
+	GetRecord(ID string) (hclouddns.HCloudAnswerGetRecord, error)
 	GetRecords(params hclouddns.HCloudGetRecordsParams) (hclouddns.HCloudAnswerGetRecords, error)
 	UpdateRecord(record hclouddns.HCloudRecord) (hclouddns.HCloudAnswerGetRecord, error)
 	DeleteRecord(ID string) (hclouddns.HCloudAnswerDeleteRecord, error)
@@ -95,6 +96,11 @@ func (m *mockHCloudClient) ValidateZoneString(zonePlainText string) (hclouddns.H
 }
 
 // records
+
+func (m *mockHCloudClient) GetRecord(ID string) (hclouddns.HCloudAnswerGetRecord, error) {
+	return hclouddns.HCloudAnswerGetRecord{}, nil
+}
+
 func (m *mockHCloudClient) GetRecords(params hclouddns.HCloudGetRecordsParams) (hclouddns.HCloudAnswerGetRecords, error) {
 	return hclouddns.HCloudAnswerGetRecords{
 		Records: []hclouddns.HCloudRecord{

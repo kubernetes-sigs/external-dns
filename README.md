@@ -46,6 +46,7 @@ ExternalDNS' current release is `v0.7`. This version allows you to keep selected
 * [TransIP](https://www.transip.eu/domain-name/)
 * [VinylDNS](https://www.vinyldns.io)
 * [OVH](https://www.ovh.com)
+* [Scaleway](https://www.scaleway.com)
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` (or greater) with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -71,7 +72,7 @@ We define the following stability levels for providers:
 
 The following table clarifies the current status of the providers according to the aforementioned stability levels:
 
-| Provider | Status | Maintainers | 
+| Provider | Status | Maintainers |
 | -------- | ------ | ----------- |
 | Google Cloud DNS | Stable | |
 | AWS Route 53 | Stable | |
@@ -97,6 +98,7 @@ The following table clarifies the current status of the providers according to t
 | RancherDNS | Alpha | |
 | Akamai FastDNS | Alpha | |
 | OVH | Alpha | |
+| Scaleway DNS | Alpha | @Sh4d1 |
 | Vultr | Alpha | |
 | UltraDNS | Alpha | |
 
@@ -138,6 +140,7 @@ The following tutorials are provided:
 * [Linode](docs/tutorials/linode.md)
 * [Nginx Ingress Controller](docs/tutorials/nginx-ingress.md)
 * [NS1](docs/tutorials/ns1.md)
+* [NS Record Creation with CRD Source](docs/tutorials/ns-record.md)
 * [OpenStack Designate](docs/tutorials/designate.md)
 * [Oracle Cloud Infrastructure (OCI) DNS](docs/tutorials/oracle.md)
 * [PowerDNS](docs/tutorials/pdns.md)
@@ -147,38 +150,16 @@ The following tutorials are provided:
 * [TransIP](docs/tutorials/transip.md)
 * [VinylDNS](docs/tutorials/vinyldns.md)
 * [OVH](docs/tutorials/ovh.md)
+* [Scaleway](docs/tutorials/scaleway.md)
 * [Vultr](docs/tutorials/vultr.md)
 * [UltraDNS](docs/tutorials/ultradns.md)
 
 ### Running Locally
 
-#### Technical Requirements
-
-Make sure you have the following prerequisites:
-* A local Go 1.11+ development environment.
-* Access to a Google/AWS account with the DNS API enabled.
-* Access to a Kubernetes cluster that supports exposing Services, e.g. GKE.
+See the [contributor guide](docs/contributing/getting-started.md) for details on compiling
+from source.
 
 #### Setup Steps
-
-First, get ExternalDNS:
-
-```console
-$ git clone https://github.com/kubernetes-sigs/external-dns.git && cd external-dns
-```
-
-**This project uses [Go modules](https://github.com/golang/go/wiki/Modules) as
-introduced in Go 1.11 therefore you need Go >=1.11 installed in order to build.**
-If using Go 1.11 you also need to [activate Module
-support](https://github.com/golang/go/wiki/Modules#installing-and-activating-module-support).
-
-Assuming Go has been setup with module support it can be built simply by running:
-
-```console
-$ make
-```
-
-This will create external-dns in the build directory directly from the default branch.
 
 Next, run an application and expose it via a Kubernetes Service:
 
@@ -236,6 +217,8 @@ The [tutorials](docs/tutorials) section contains examples, including Ingress res
 
 If using a txt registry and attempting to use a CNAME the `--txt-prefix` must be set to avoid conflicts.  Changing `--txt-prefix` will result in lost ownership over previously created records.
 
+If `externalIPs` list is defined for a `LoadBalancer` service, this list will be used instead of an assigned load balancer IP to create a DNS record. It's useful when you run bare metal Kubernetes clusters behind NAT or in a similar setup, where a load balancer IP differs from a public IP (e.g. with [MetalLB](https://metallb.universe.tf)).
+
 # Roadmap
 
 ExternalDNS was built with extensibility in mind. Adding and experimenting with new DNS providers and sources of desired DNS records should be as easy as possible. It should also be possible to modify how ExternalDNS behaves—e.g. whether it should add records but never delete them.
@@ -265,7 +248,7 @@ Here's a rough outline on what is to come (subject to change):
 - [x] Support for DigitalOcean
 - [x] Multiple DNS names per Service
 
-### v0.5 - _current version_
+### v0.5
 
 - [x] Support for creating DNS records to multiple targets (for Google and AWS)
 - [x] Support for OpenStack Designate
@@ -300,23 +283,22 @@ Have a look at [the milestones](https://github.com/kubernetes-sigs/external-dns/
 
 ## Contributing
 
-We encourage you to get involved with ExternalDNS, as users, contributors or as new maintainers that can take over some parts like different providers and help with code reviews.
+Are you interested in contributing to external-dns? We, the maintainers and community, would love your
+suggestions, contributions, and help! Also, the maintainers can be contacted at any time to learn more
+about how to get involved.
 
-Providers which currently need maintainers:
+We also encourage ALL active community participants to act as if they are maintainers, even if you don't have
+"official" write permissions. This is a community effort, we are here to serve the Kubernetes community. If you
+have an active interest and you want to get involved, you have real power! Don't assume that the only people who
+can get things done around here are the "maintainers". We also would love to add more "official" maintainers, so
+show us what you can do!
 
-* Azure
-* Cloudflare
-* Digital Ocean
-* Google Cloud Platform
-
-Any provider should have at least one maintainer. It would be nice if you run it in production, but it is not required.
-You should check changes and make sure your provider is working correctly.
-
-It would be also great to have an automated end-to-end test for different cloud providers, so help from Kubernetes maintainers and their idea on how this can be done would be valuable.
+The external-dns project is currently in need of maintainers for specific DNS providers. Ideally each provider
+would have at least two maintainers. It would be nice if the maintainers run the provider in production, but it
+is not strictly required. Provider listed [here](https://github.com/kubernetes-sigs/external-dns#status-of-providers)
+that do not have a maintainer listed are in need of assistance.
 
 Read the [contributing guidelines](CONTRIBUTING.md) and have a look at [the contributing docs](docs/contributing/getting-started.md) to learn about building the project, the project structure, and the purpose of each package.
-
-If you are interested please reach out to us on the [Kubernetes slack](http://slack.k8s.io) in the #external-dns channel.
 
 For an overview on how to write new Sources and Providers check out [Sources and Providers](docs/contributing/sources-and-providers.md).
 
@@ -329,8 +311,6 @@ ExternalDNS is an effort to unify the following similar projects in order to bri
 * Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 
 ### User Demo How-To Blogs and Examples
+
 * A full demo on GKE Kubernetes. See [How-to Kubernetes with DNS management (ssl-manager pre-req)](https://medium.com/@jpantjsoha/how-to-kubernetes-with-dns-management-for-gitops-31239ea75d8d)
-
-### Code of conduct
-
-Participation in the Kubernetes community is governed by the [Kubernetes Code of Conduct](code-of-conduct.md).
+* Run external-dns on GKE with workload identity. See [Kubernetes, ingress-nginx, cert-manager & external-dns](https://blog.atomist.com/kubernetes-ingress-nginx-cert-manager-external-dns/)

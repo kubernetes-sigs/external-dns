@@ -103,7 +103,7 @@ func init() {
 // * Ask the DNS provider for current list of endpoints.
 // * Ask the Source for the desired list of endpoints.
 // * Take both lists and calculate a Plan to move current towards desired state.
-// * Tell the DNS provider to apply the changes calucated by the Plan.
+// * Tell the DNS provider to apply the changes calculated by the Plan.
 type Controller struct {
 	Source   source.Source
 	Registry registry.Registry

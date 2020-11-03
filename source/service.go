@@ -214,6 +214,35 @@ func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		endpoints = append(endpoints, svcEndpoints...)
 	}
 
+	// this sorting is required to make merging work.
+	// after we merge endpoints that have same DNS, we want to ensure that we end up with the same service being an "owner"
+	// of all those records, as otherwise each time we update, we will end up with a different service that gets data merged in
+	// and that will cause external-dns to recreate dns record due to different service owner in TXT record.
+	// if new service is added or old one removed, that might cause existing record to get re-created due to potentially new
+	// owner being selected. Which is fine, since it shouldn't happen often and shouldn't cause any disruption.
+	if len(endpoints) > 1 {
+		sort.Slice(endpoints, func(i, j int) bool {
+			return endpoints[i].Labels[endpoint.ResourceLabelKey] < endpoints[j].Labels[endpoint.ResourceLabelKey]
+		})
+		// Use stable sort to not disrupt the order of services
+		sort.SliceStable(endpoints, func(i, j int) bool {
+			return endpoints[i].DNSName < endpoints[j].DNSName
+		})
+		mergedEndpoints := []*endpoint.Endpoint{}
+		mergedEndpoints = append(mergedEndpoints, endpoints[0])
+		for i := 1; i < len(endpoints); i++ {
+			lastMergedEndpoint := len(mergedEndpoints) - 1
+			if mergedEndpoints[lastMergedEndpoint].DNSName == endpoints[i].DNSName &&
+				mergedEndpoints[lastMergedEndpoint].RecordType == endpoints[i].RecordType &&
+				mergedEndpoints[lastMergedEndpoint].RecordTTL == endpoints[i].RecordTTL {
+				mergedEndpoints[lastMergedEndpoint].Targets = append(mergedEndpoints[lastMergedEndpoint].Targets, endpoints[i].Targets[0])
+			} else {
+				mergedEndpoints = append(mergedEndpoints, endpoints[i])
+			}
+		}
+		endpoints = mergedEndpoints
+	}
+
 	for _, ep := range endpoints {
 		sort.Sort(ep.Targets)
 	}
@@ -486,7 +515,10 @@ func extractServiceExternalName(svc *v1.Service) endpoint.Targets {
 }
 
 func extractLoadBalancerTargets(svc *v1.Service) endpoint.Targets {
-	var targets endpoint.Targets
+	var (
+		targets     endpoint.Targets
+		externalIPs endpoint.Targets
+	)
 
 	// Create a corresponding endpoint for each configured external entrypoint.
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
@@ -496,6 +528,16 @@ func extractLoadBalancerTargets(svc *v1.Service) endpoint.Targets {
 		if lb.Hostname != "" {
 			targets = append(targets, lb.Hostname)
 		}
+	}
+
+	if svc.Spec.ExternalIPs != nil {
+		for _, ext := range svc.Spec.ExternalIPs {
+			externalIPs = append(externalIPs, ext)
+		}
+	}
+
+	if len(externalIPs) > 0 {
+		return externalIPs
 	}
 
 	return targets
@@ -511,6 +553,7 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 
 	switch svc.Spec.ExternalTrafficPolicy {
 	case v1.ServiceExternalTrafficPolicyTypeLocal:
+		nodesMap := map[*v1.Node]struct{}{}
 		labelSelector, err := metav1.ParseToLabelSelector(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
 		if err != nil {
 			return nil, err
@@ -531,7 +574,10 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 					log.Debugf("Unable to find node where Pod %s is running", v.Spec.Hostname)
 					continue
 				}
-				nodes = append(nodes, node)
+				if _, ok := nodesMap[node]; !ok {
+					nodesMap[node] = *new(struct{})
+					nodes = append(nodes, node)
+				}
 			}
 		}
 	default:
@@ -552,10 +598,16 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 		}
 	}
 
+	access := getAccessFromAnnotations(svc.Annotations)
+	if access == "public" {
+		return externalIPs, nil
+	}
+	if access == "private" {
+		return internalIPs, nil
+	}
 	if len(externalIPs) > 0 {
 		return externalIPs, nil
 	}
-
 	return internalIPs, nil
 }
 

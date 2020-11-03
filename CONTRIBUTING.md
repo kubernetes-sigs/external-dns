@@ -1,22 +1,22 @@
-# Contributing guidelines
+# Contributing Guidelines
 
-## How to become a contributor and submit your own code
+Welcome to Kubernetes. We are excited about the prospect of you joining our [community](https://git.k8s.io/community)! The Kubernetes community abides by the CNCF [code of conduct](code-of-conduct.md). Here is an excerpt:
 
-### Contributor License Agreements
+_As contributors and maintainers of this project, and in the interest of fostering an open and welcoming community, we pledge to respect all people who contribute through reporting issues, posting feature requests, updating documentation, submitting pull requests or patches, and other activities._
 
-We'd love to accept your patches! Before we can take them, we have to jump a couple of legal hurdles.
+## Getting Started
 
-Please fill out either the individual or corporate Contributor License Agreement (CLA).
+We have full documentation on how to get started contributing here:
 
-  * If you are an individual writing original source code and you're sure you own the intellectual property, then you'll need to sign an individual CLA.
-  * If you work for a company that wants to allow you to contribute your work, then you'll need to sign a corporate CLA.
+- [Contributor License Agreement](https://git.k8s.io/community/CLA.md) Kubernetes projects require that you sign a Contributor License Agreement (CLA) before we can accept your pull requests
+- [Kubernetes Contributor Guide](https://git.k8s.io/community/contributors/guide) - Main contributor documentation, or you can just jump directly to the [contributing section](https://git.k8s.io/community/contributors/guide#contributing)
+- [Contributor Cheat Sheet](https://git.k8s.io/community/contributors/guide/contributor-cheatsheet) - Common resources for existing developers
 
-To sign and submit a CLA, see the [CLA doc](https://git.k8s.io/community/CLA.md).
+## Mentorship
 
-### Contributing A Patch
+- [Mentoring Initiatives](https://git.k8s.io/community/mentoring) - We have a diverse set of mentorship programs available that are always looking for volunteers!
 
-1. Submit an issue describing your proposed change to the repo in question.
-1. The [repo owners](OWNERS) will respond to your issue promptly.
-1. If your proposed change is accepted, and you haven't already done so, sign a Contributor License Agreement (see details above).
-1. Fork the desired repo, develop and test your code changes.
-1. Submit a pull request.
+## Contact Information
+
+- [Slack channel](https://kubernetes.slack.com/messages/external-dns)
+- [Mailing list](https://groups.google.com/forum/#!forum/kubernetes-sig-network)

@@ -43,7 +43,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
         args:
         - --source=ingress
         - --txt-prefix=_d
@@ -130,7 +130,7 @@ spec:
 As the DNS name `test-ingress.example.com` matches the filter, external-dns will create two records:
 a CNAME for test-ingress.example.com and TXT for _dtest-ingress.example.com. 
 
-Create the Igress:
+Create the Ingress:
 
 ```
 $ kubectl create -f test-ingress.yaml
