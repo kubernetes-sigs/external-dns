@@ -25,7 +25,7 @@ All sources live in package `source`.
 * `ContourIngressRouteSource`: collects all Contour IngressRoutes and returns them as Endpoint objects. The desired DNS name corresponds to the `virtualhost.fqdn` listed within the spec of each IngressRoute object.
 * `FakeSource`: returns a random list of Endpoints for the purpose of testing providers without having access to a Kubernetes cluster.
 * `ConnectorSource`: returns a list of Endpoint objects which are served by a tcp server configured through `connector-source-server` flag.
-* `CRDSource`: returns a list of Endpoint objects sourced from the spec of CRD objects. For more details refer to [CRD source](../crd-source.md) documentation.
+* `CRDSource`: returns a list of Endpoint objects sourced from the spec of CRD objects. For more details refer to [CRD source](crd-source.md) documentation.
 * `EmptySource`: returns an empty list of Endpoint objects for the purpose of testing and cleaning out entries.
 
 ### Providers
