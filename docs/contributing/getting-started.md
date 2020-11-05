@@ -51,7 +51,7 @@ Note, how your provider doesn't need to know anything about where the DNS record
 
 # Running Github Actions locally
 
-You can also extend the CI workflow which is currently implemented as Github Action within the [workflow](../../.github/workflow) folder.
+You can also extend the CI workflow which is currently implemented as Github Action within the [workflow](https://github.com/kubernetes-sigs/external-dns/tree/HEAD/.github/workflows) folder.
 In order to test your changes before commiting you can leverage [act](https://github.com/nektos/act) to run the Github Action locally.
 
 Follow the installation instructions in the nektos/act [README.md](https://github.com/nektos/act/blob/master/README.md).
