@@ -1100,6 +1100,50 @@ func TestAWSSuitableZones(t *testing.T) {
 	}
 }
 
+func TestAWSHealthTargetAnnotation(tt *testing.T) {
+	comparator := func (name, previous, current string) bool {
+		return previous == current
+	}
+	for _, test := range []struct {
+		name string
+		current *endpoint.Endpoint
+		desired *endpoint.Endpoint
+		propertyComparator func(name, previous, current string) bool
+		shouldUpdate bool
+	}{
+		{
+			name: "skip AWS target health",
+			current: &endpoint.Endpoint{
+				RecordType: "A",
+				DNSName: "foo.com",
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: "aws/evaluate-target-health", Value: "true"},
+				},
+			},
+			desired: &endpoint.Endpoint{
+				DNSName: "foo.com",
+				RecordType: "A",
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: "aws/evaluate-target-health", Value: "false"},
+				},
+			},
+			propertyComparator: comparator,
+			shouldUpdate: false,
+		},
+	} {
+		tt.Run(test.name, func(t *testing.T) {
+			provider := &AWSProvider{}
+			plan := &plan.Plan{
+				Current:  []*endpoint.Endpoint{test.current},
+				Desired:  []*endpoint.Endpoint{test.desired},
+				PropertyComparator: provider.PropertyValuesEqual,
+			}
+			plan = plan.Calculate()
+			assert.Equal(t, test.shouldUpdate, len(plan.Changes.UpdateNew) == 1)
+		})
+	}
+}
+
 func createAWSZone(t *testing.T, provider *AWSProvider, zone *route53.HostedZone) {
 	params := &route53.CreateHostedZoneInput{
 		CallerReference:  aws.String("external-dns.alpha.kubernetes.io/test-zone"),

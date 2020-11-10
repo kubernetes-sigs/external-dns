@@ -205,6 +205,14 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 	return provider, nil
 }
 
+
+func (p *AWSProvider) PropertyValuesEqual(name string, previous string, current string) bool {
+	if name == "aws/evaluate-target-health" {
+		return true
+	}
+	return p.BaseProvider.PropertyValuesEqual(name, previous, current)
+}
+
 // Zones returns the list of hosted zones.
 func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53.HostedZone, error) {
 	if p.zonesCache.zones != nil && time.Since(p.zonesCache.age) < p.zonesCache.duration {
