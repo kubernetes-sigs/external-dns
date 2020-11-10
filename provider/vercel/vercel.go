@@ -95,7 +95,7 @@ func (p *VercelProvider) getRecordID(records []VercelRecord, ep *endpoint.Endpoi
 			return vercelRecord.ID, nil
 		}
 	}
-	return "", fmt.Errorf("couldn't find a matching record when trying to find the id: %v", ep)
+	return "", fmt.Errorf("couldn't find a matching record when trying to find the id for: %v", ep)
 }
 
 type VercelRecord struct {
@@ -120,6 +120,9 @@ func (p *VercelProvider) getVercelRecords(ctx context.Context, domain string) ([
 
 	if err != nil {
 		return nil, err
+	}
+	if resp.StatusCode != 200 {
+		return nil, errors.New("something went wrong talking to Vercel")
 	}
 
 	defer resp.Body.Close()
@@ -159,6 +162,10 @@ func (p *VercelProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 				name = ""
 			} else {
 				name = r.Name + "." + domain
+			}
+			// Treat aliases as cname, see create record
+			if r.Type == "ALIAS" {
+				r.Type = "CNAME"
 			}
 
 			ep := endpoint.NewEndpointWithTTL(name, r.Type, ttl, r.Value)
@@ -222,9 +229,18 @@ func parseDNSName(name string) (string, string) {
 func (p *VercelProvider) createRecord(ctx context.Context, ep *endpoint.Endpoint) error {
 	domain, subdomain := parseDNSName(ep.DNSName)
 
+	var recordType string
+	// Because we can't have CNAMEs on apex domains, transparently
+	// make an ALIAS instead
+	if subdomain == "" {
+		recordType = "ALIAS"
+	} else {
+		recordType = ep.RecordType
+	}
+
 	params := map[string]interface{}{
 		"name":  subdomain,
-		"type":  ep.RecordType,
+		"type":  recordType,
 		"value": ep.Targets[0],
 	}
 	if ep.RecordTTL.IsConfigured() {
@@ -269,7 +285,7 @@ func (p *VercelProvider) deleteRecord(ctx context.Context, domain string, id str
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return errors.New("Couldn't delete the record " + id)
+		return errors.New("couldn't delete the record " + id)
 	}
 
 	return nil
