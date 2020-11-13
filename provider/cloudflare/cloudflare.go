@@ -215,7 +215,13 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 		// As CloudFlare does not support "sets" of targets, but instead returns
 		// a single entry for each name/type/target, we have to group by name
 		// and record to allow the planner to calculate the correct plan. See #992.
-		endpoints = append(endpoints, groupByNameAndType(records)...)
+		eps := groupByNameAndType(records)
+		for _, endpoint := range eps {
+			if shouldBeProxied(endpoint, p.proxiedByDefault) {
+				endpoint.RecordTTL = 0
+			}
+			endpoints = append(endpoints, endpoint)
+		}
 	}
 
 	return endpoints, nil
