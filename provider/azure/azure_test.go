@@ -124,6 +124,19 @@ func cNameRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetPr
 	}
 }
 
+func nsRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
+	nsRecords := make([]dns.NsRecord, len(values))
+	for i, value := range values {
+		nsRecords[i] = dns.NsRecord{
+			Nsdname: to.StringPtr(value),
+		}
+	}
+	return &dns.RecordSetProperties{
+		TTL:       to.Int64Ptr(ttl),
+		NsRecords: &nsRecords,
+	}
+}
+
 func srvRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
 	srvRecords := make([]dns.SrvRecord, len(values))
 	for i, value := range values {
@@ -140,7 +153,7 @@ func srvRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProp
 	}
 
 	return &dns.RecordSetProperties{
-		TTL: to.Int64Ptr(ttl),
+		TTL:        to.Int64Ptr(ttl),
 		SrvRecords: &srvRecords,
 	}
 }
@@ -175,6 +188,8 @@ func createMockRecordSetMultiWithTTL(name, recordType string, ttl int64, values 
 		getterFunc = aRecordSetPropertiesGetter
 	case endpoint.RecordTypeCNAME:
 		getterFunc = cNameRecordSetPropertiesGetter
+	case endpoint.RecordTypeNS:
+		getterFunc = nsRecordSetPropertiesGetter
 	case endpoint.RecordTypeSRV:
 		getterFunc = srvRecordSetPropertiesGetter
 	case endpoint.RecordTypeTXT:
@@ -287,6 +302,7 @@ func TestAzureRecord(t *testing.T) {
 		},
 		&[]dns.RecordSet{
 			createMockRecordSet("@", "NS", "ns1-03.azure-dns.com."),
+			createMockRecordSet("ingress", "NS", "ns1-04.azure-dns.com."),
 			createMockRecordSet("@", "SOA", "Email: azuredns-hostmaster.microsoft.com"),
 			createMockRecordSet("@", endpoint.RecordTypeA, "123.123.123.122"),
 			createMockRecordSet("@", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
@@ -307,6 +323,8 @@ func TestAzureRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("example.com", endpoint.RecordTypeNS, "ns1-03.azure-dns.com."),
+		endpoint.NewEndpoint("ingress.example.com", endpoint.RecordTypeNS, "ns1-04.azure-dns.com."),
 		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "123.123.123.122"),
 		endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
 		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123"),
@@ -326,6 +344,7 @@ func TestAzureMultiRecord(t *testing.T) {
 		},
 		&[]dns.RecordSet{
 			createMockRecordSet("@", "NS", "ns1-03.azure-dns.com."),
+			createMockRecordSet("ingress", endpoint.RecordTypeNS, "ns1-04.azure-dns.com."),
 			createMockRecordSet("@", "SOA", "Email: azuredns-hostmaster.microsoft.com"),
 			createMockRecordSet("@", endpoint.RecordTypeA, "123.123.123.122", "234.234.234.233"),
 			createMockRecordSet("@", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
@@ -346,6 +365,8 @@ func TestAzureMultiRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("example.com", endpoint.RecordTypeNS, "ns1-03.azure-dns.com."),
+		endpoint.NewEndpoint("ingress.example.com", endpoint.RecordTypeNS, "ns1-04.azure-dns.com."),
 		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "123.123.123.122", "234.234.234.233"),
 		endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
 		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123", "234.234.234.234"),

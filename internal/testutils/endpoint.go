@@ -27,21 +27,9 @@ import (
 
 type byAllFields []*endpoint.Endpoint
 
-func (b byAllFields) Len() int      { return len(b) }
-func (b byAllFields) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
-func (b byAllFields) Less(i, j int) bool {
-	if b[i].DNSName < b[j].DNSName {
-		return true
-	}
-	if b[i].DNSName == b[j].DNSName {
-		// This rather bad, we need a more complex comparison for Targets, which considers all elements
-		if b[i].Targets.Same(b[j].Targets) {
-			return b[i].RecordType <= b[j].RecordType
-		}
-		return b[i].Targets.String() <= b[j].Targets.String()
-	}
-	return false
-}
+func (b byAllFields) Len() int           { return len(b) }
+func (b byAllFields) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
+func (b byAllFields) Less(i, j int) bool { return b[i].String() < b[j].String() }
 
 // SameEndpoint returns true if two endpoints are same
 // considers example.org. and example.org DNSName/Target as different endpoints
