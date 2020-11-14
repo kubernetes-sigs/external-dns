@@ -254,6 +254,16 @@ func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname string, ttl endpoint.TTL) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
+	// If service has the target annotation then we honor it
+	targets := getTargetsFromTargetAnnotation(svc.Annotations)
+
+	if len(targets) > 0 {
+		providerSpecific, setIdentifier := getProviderSpecificAnnotations(svc.Annotations)
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+
+		return endpoints
+	}
+
 	labelSelector, err := metav1.ParseToLabelSelector(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
 	if err != nil {
 		return nil

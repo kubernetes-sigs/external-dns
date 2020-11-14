@@ -2551,6 +2551,35 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			},
 			false,
 		},
+		{
+			"annotated Headless services return endpoint specified in target annotation",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			false,
+			map[string]string{"component": "foo"},
+			map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+				targetAnnotationKey:   "this.is.a.test",
+			},
+			v1.ClusterIPNone,
+			[]string{"1.1.1.1", "1.1.1.2"},
+			map[string]string{
+				"component": "foo",
+			},
+			[]string{},
+			[]string{"foo-0", "foo-1"},
+			[]string{"foo-0", "foo-1"},
+			[]bool{true, true},
+			false,
+			[]*endpoint.Endpoint{
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"this.is.a.test"}},
+			},
+			false,
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			// Create a Kubernetes testing client
