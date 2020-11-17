@@ -382,11 +382,6 @@ func (p *AWSProvider) CreateRecords(ctx context.Context, endpoints []*endpoint.E
 	return p.doRecords(ctx, route53.ChangeActionCreate, endpoints)
 }
 
-// UpdateRecords updates a given set of old records to a new set of records in a given hosted zone.
-func (p *AWSProvider) UpdateRecords(ctx context.Context, endpoints, _ []*endpoint.Endpoint) error {
-	return p.doRecords(ctx, route53.ChangeActionUpsert, endpoints)
-}
-
 // DeleteRecords deletes a given set of DNS records in a given zone.
 func (p *AWSProvider) DeleteRecords(ctx context.Context, endpoints []*endpoint.Endpoint) error {
 	return p.doRecords(ctx, route53.ChangeActionDelete, endpoints)
@@ -405,6 +400,47 @@ func (p *AWSProvider) doRecords(ctx context.Context, action string, endpoints []
 	return p.submitChanges(ctx, p.newChanges(action, endpoints, records, zones), zones)
 }
 
+// UpdateRecords updates a given set of old records to a new set of records in a given hosted zone.
+func (p *AWSProvider) UpdateRecords(ctx context.Context, updates, current []*endpoint.Endpoint) error {
+	zones, err := p.Zones(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "failed to list zones, aborting UpdateRecords")
+	}
+
+	records, err := p.records(ctx, zones)
+	if err != nil {
+		log.Errorf("failed to list records while preparing UpdateRecords: %s", err)
+	}
+
+	return p.submitChanges(ctx, p.createUpdateChanges(updates, current, records, zones), zones)
+}
+
+func (p *AWSProvider) createUpdateChanges(newEndpoints, oldEndpoints []*endpoint.Endpoint, recordsCache []*endpoint.Endpoint, zones map[string]*route53.HostedZone) []*route53.Change {
+	var deletes []*endpoint.Endpoint
+	var creates []*endpoint.Endpoint
+	var updates []*endpoint.Endpoint
+
+	for i, new := range newEndpoints {
+		old := oldEndpoints[i]
+		if new.RecordType != old.RecordType ||
+			// Handle the case where an AWS ALIAS record is changing to/from a CNAME.
+			(old.RecordType == endpoint.RecordTypeCNAME && useAlias(old, p.preferCNAME) != useAlias(new, p.preferCNAME)) {
+			// The record type changed, so UPSERT will fail. Instead perform a DELETE followed by a CREATE.
+			deletes = append(deletes, old)
+			creates = append(creates, new)
+		} else {
+			// Safe to perform an UPSERT.
+			updates = append(updates, new)
+		}
+	}
+
+	combined := make([]*route53.Change, 0, len(deletes)+len(creates)+len(updates))
+	combined = append(combined, p.newChanges(route53.ChangeActionCreate, creates, recordsCache, zones)...)
+	combined = append(combined, p.newChanges(route53.ChangeActionUpsert, updates, recordsCache, zones)...)
+	combined = append(combined, p.newChanges(route53.ChangeActionDelete, deletes, recordsCache, zones)...)
+	return combined
+}
+
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	zones, err := p.Zones(ctx)
@@ -421,11 +457,12 @@ func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 		}
 	}
 
-	combinedChanges := make([]*route53.Change, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
+	updateChanges := p.createUpdateChanges(changes.UpdateNew, changes.UpdateOld, records, zones)
 
+	combinedChanges := make([]*route53.Change, 0, len(changes.Delete)+len(changes.Create)+len(updateChanges))
 	combinedChanges = append(combinedChanges, p.newChanges(route53.ChangeActionCreate, changes.Create, records, zones)...)
-	combinedChanges = append(combinedChanges, p.newChanges(route53.ChangeActionUpsert, changes.UpdateNew, records, zones)...)
 	combinedChanges = append(combinedChanges, p.newChanges(route53.ChangeActionDelete, changes.Delete, records, zones)...)
+	combinedChanges = append(combinedChanges, updateChanges...)
 
 	return p.submitChanges(ctx, combinedChanges, zones)
 }
