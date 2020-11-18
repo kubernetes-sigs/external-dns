@@ -19,11 +19,14 @@ package azure
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"strings"
+
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/privatedns/mgmt/privatedns"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 	log "github.com/sirupsen/logrus"
 
@@ -47,42 +50,68 @@ type PrivateRecordSetsClient interface {
 // AzurePrivateDNSProvider implements the DNS provider for Microsoft's Azure Private DNS service
 type AzurePrivateDNSProvider struct {
 	provider.BaseProvider
-	domainFilter     endpoint.DomainFilter
-	zoneIDFilter     provider.ZoneIDFilter
-	dryRun           bool
-	subscriptionID   string
-	resourceGroup    string
-	zonesClient      PrivateZonesClient
-	recordSetsClient PrivateRecordSetsClient
+	domainFilter                 endpoint.DomainFilter
+	zoneNameFilter               endpoint.DomainFilter
+	zoneIDFilter                 provider.ZoneIDFilter
+	dryRun                       bool
+	resourceGroup                string
+	userAssignedIdentityClientID string
+	zonesClient                  PrivateZonesClient
+	recordSetsClient             PrivateRecordSetsClient
 }
 
 // NewAzurePrivateDNSProvider creates a new Azure Private DNS provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAzurePrivateDNSProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, resourceGroup string, subscriptionID string, dryRun bool) (*AzurePrivateDNSProvider, error) {
-	authorizer, err := auth.NewAuthorizerFromEnvironment()
+func NewAzurePrivateDNSProvider(configFile string, domainFilter endpoint.DomainFilter, zoneNameFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, resourceGroup string, userAssignedIdentityClientID string, dryRun bool) (*AzurePrivateDNSProvider, error) {
+	contents, err := ioutil.ReadFile(configFile)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
+	}
+	cfg := config{}
+	err = yaml.Unmarshal(contents, &cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
 	}
 
-	settings, err := auth.GetSettingsFromEnvironment()
-	if err != nil {
-		return nil, err
+	// If a resource group was given, override what was present in the config file
+	if resourceGroup != "" {
+		cfg.ResourceGroup = resourceGroup
+	}
+	// If userAssignedIdentityClientID is provided explicitly, override existing one in config file
+	if userAssignedIdentityClientID != "" {
+		cfg.UserAssignedIdentityID = userAssignedIdentityClientID
 	}
 
-	zonesClient := privatedns.NewPrivateZonesClientWithBaseURI(settings.Environment.ResourceManagerEndpoint, subscriptionID)
-	zonesClient.Authorizer = authorizer
-	recordSetsClient := privatedns.NewRecordSetsClientWithBaseURI(settings.Environment.ResourceManagerEndpoint, subscriptionID)
-	recordSetsClient.Authorizer = authorizer
+	var environment azure.Environment
+	if cfg.Cloud == "" {
+		environment = azure.PublicCloud
+	} else {
+		environment, err = azure.EnvironmentFromName(cfg.Cloud)
+		if err != nil {
+			return nil, fmt.Errorf("invalid cloud value '%s': %v", cfg.Cloud, err)
+		}
+	}
+
+	token, err := getAccessToken(cfg, environment)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get token: %v", err)
+	}
+
+	zonesClient := privatedns.NewPrivateZonesClientWithBaseURI(environment.ResourceManagerEndpoint, cfg.SubscriptionID)
+	zonesClient.Authorizer = autorest.NewBearerAuthorizer(token)
+	recordSetsClient := privatedns.NewRecordSetsClientWithBaseURI(environment.ResourceManagerEndpoint, cfg.SubscriptionID)
+	recordSetsClient.Authorizer = autorest.NewBearerAuthorizer(token)
 
 	provider := &AzurePrivateDNSProvider{
-		domainFilter:     domainFilter,
-		zoneIDFilter:     zoneIDFilter,
-		dryRun:           dryRun,
-		subscriptionID:   subscriptionID,
-		resourceGroup:    resourceGroup,
-		zonesClient:      zonesClient,
-		recordSetsClient: recordSetsClient,
+		domainFilter:                 domainFilter,
+		zoneNameFilter:               zoneNameFilter,
+		zoneIDFilter:                 zoneIDFilter,
+		dryRun:                       dryRun,
+		resourceGroup:                cfg.ResourceGroup,
+		userAssignedIdentityClientID: cfg.UserAssignedIdentityID,
+		zonesClient:                  zonesClient,
+		recordSetsClient:             recordSetsClient,
 	}
 	return provider, nil
 }

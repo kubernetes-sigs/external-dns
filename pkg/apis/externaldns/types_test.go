@@ -226,8 +226,6 @@ func TestParseFlags(t *testing.T) {
 				"--google-batch-change-size=100",
 				"--google-batch-change-interval=2s",
 				"--azure-config-file=azure.json",
-				"--azure-resource-group=arg",
-				"--azure-subscription-id=arg",
 				"--cloudflare-proxied",
 				"--cloudflare-zones-per-page=20",
 				"--coredns-prefix=/coredns/",

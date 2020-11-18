@@ -40,7 +40,7 @@ External-DNS needs permissions to make changes in the Azure DNS server. These pe
 The Azure DNS provider expects, by default, that the configuration file is at `/etc/kubernetes/azure.json`.  This can be overridden with the `--azure-config-file` option when starting ExternalDNS.
 
 ### Creating configuration file
-The preferred way to inject the configuration file is by using a Kubernetes secret. The secret should contain an object named azure.json with content similar to this: 
+The preferred way to inject the configuration file is by using a Kubernetes secret. The secret should contain an object named azure.json with content similar to this:
 
 ```json
 {
@@ -56,12 +56,12 @@ You can find the `tenantId` by running `az account show --query "tenantId"` or b
 
 You can find the `subscriptionId` by running `az account show --query "id"` or by selecting Subscriptions in the Azure Portal.
 
-The `resourceGroup` is the Resource Group created in a previous step. 
+The `resourceGroup` is the Resource Group created in a previous step.
 
 The `aadClientID` and `aaClientSecret` are associated with the Service Principal, that you need to create next.
 
 ### Creating service principal
-A Service Principal with a minimum access level of `contributor` to the DNS zone(s) and `reader` to the resource group containing the Azure DNS zone(s) is necessary for ExternalDNS to be able to edit DNS records. However, other more permissive access levels will work too (e.g. `contributor` to the resource group or the whole subscription). 
+A Service Principal with a minimum access level of `contributor` to the DNS zone(s) and `reader` to the resource group containing the Azure DNS zone(s) is necessary for ExternalDNS to be able to edit DNS records. However, other more permissive access levels will work too (e.g. `contributor` to the resource group or the whole subscription).
 
 This is an Azure CLI example on how to query the Azure API for the information required for the Resource Group and DNS zone you would have already created in previous steps.
 
@@ -121,10 +121,10 @@ Assign the rights for the service principal
 # assign the rights to the created service principal, using the resource ids from previous step
 
 # 1. as a reader to the resource group
-> az role assignment create --role "Reader" --assignee <appId GUID> --scope <resource group resource id>  
+> az role assignment create --role "Reader" --assignee <appId GUID> --scope <resource group resource id>
 
 # 2. as a contributor to DNS Zone itself
-> az role assignment create --role "Contributor" --assignee <appId GUID> --scope <dns zone resource id>  
+> az role assignment create --role "Contributor" --assignee <appId GUID> --scope <dns zone resource id>
 
 ```
 
@@ -224,7 +224,7 @@ rules:
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"] 
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
@@ -417,7 +417,7 @@ Create the deployment, service and ingress object:
 $ kubectl create -f nginx.yaml
 ```
 
-Since your external IP would have already been assigned to the nginx-ingress service, the DNS records pointing to the IP of the nginx-ingress service should be created within a minute. 
+Since your external IP would have already been assigned to the nginx-ingress service, the DNS records pointing to the IP of the nginx-ingress service should be created within a minute.
 
 ## Verifying Azure DNS records
 

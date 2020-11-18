@@ -18,6 +18,7 @@ package azure
 
 import (
 	"context"
+	"io/ioutil"
 	"os"
 	"testing"
 
@@ -261,7 +262,18 @@ func validateAzurePrivateDNSClientsResourceManager(t *testing.T, environmentName
 		t.Fatal(err)
 	}
 
-	azurePrivateDNSProvider, err := NewAzurePrivateDNSProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), "k8s", "sub", true)
+	tmpfile, err := ioutil.TempFile("", "example")
+	defer os.Remove(tmpfile.Name())
+
+	azurePrivateDNSProvider, err := NewAzurePrivateDNSProvider(
+		tmpfile.Name(),
+		endpoint.NewDomainFilter([]string{"example.com"}),
+		endpoint.NewDomainFilter([]string{"example.com"}),
+		provider.NewZoneIDFilter([]string{""}),
+		"rg",
+		"identity",
+		true,
+	)
 
 	if err != nil {
 		t.Fatal(err)

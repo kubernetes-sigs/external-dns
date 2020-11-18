@@ -1,23 +1,23 @@
 # Set up ExternalDNS for Azure Private DNS
 
-This tutorial describes how to set up ExternalDNS for managing records in Azure Private DNS.  
+This tutorial describes how to set up ExternalDNS for managing records in Azure Private DNS.
 
 It comprises of the following steps:
-1) Install NGINX Ingress Controller 
+1) Install NGINX Ingress Controller
 2) Provision Azure Private DNS
 3) Configure service principal for managing the zone
-4) Deploy ExternalDNS  
+4) Deploy ExternalDNS
 
-Everything will be deployed on Kubernetes.   
+Everything will be deployed on Kubernetes.
 Therefore, please see the subsequent prerequisites.
 
 ## Prerequisites
 - Azure Kubernetes Service is deployed and ready
-- [Azure CLI 2.0](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) and `kubectl` installed on the box to execute the subsequent steps 
+- [Azure CLI 2.0](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) and `kubectl` installed on the box to execute the subsequent steps
 
-## Install NGINX Ingress Controller 
+## Install NGINX Ingress Controller
 
-Helm is used to deploy the ingress controller. 
+Helm is used to deploy the ingress controller.
 
 We employ the popular chart [stable/nginx-ingress](https://github.com/helm/charts/tree/HEAD/stable/nginx-ingress).
 
@@ -26,11 +26,11 @@ $ helm install stable/nginx-ingress \
      --name nginx-ingress \
      --set controller.publishService.enabled=true
 ```
-  
-The parameter `controller.publishService.enabled` needs to be set to `true.`  
 
-It will make the ingress controller update the endpoint records of ingress-resources to contain the external-ip of the loadbalancer serving the ingress-controller. 
-This is crucial as ExternalDNS reads those endpoints records when creating DNS-Records from ingress-resources.  
+The parameter `controller.publishService.enabled` needs to be set to `true.`
+
+It will make the ingress controller update the endpoint records of ingress-resources to contain the external-ip of the loadbalancer serving the ingress-controller.
+This is crucial as ExternalDNS reads those endpoints records when creating DNS-Records from ingress-resources.
 In the subsequent parameter we will make use of this. If you don't want to work with ingress-resources in your later use, you can leave the parameter out.
 
 Verify the correct propagation of the loadbalancer's ip by listing the ingresses.
@@ -54,7 +54,7 @@ flags:
 
 example:
 ./nginx-ingress-controller --publish-service=default/nginx-ingress-controller
-``` 
+```
 
 ## Provision Azure Private DNS
 
@@ -69,7 +69,7 @@ $ az group create -n externaldns -l westeurope
 
 Substitute a more suitable location for the resource group if desired.
 
-As a prerequisite for Azure Private DNS to resolve records is to define links with VNETs.  
+As a prerequisite for Azure Private DNS to resolve records is to define links with VNETs.
 Thus, first create a VNET.
 
 ```
@@ -98,11 +98,11 @@ $ az network private-dns link vnet create -g externaldns -n mylink \
 ```
 
 ## Configure service principal for managing the zone
-ExternalDNS needs permissions to make changes in Azure Private DNS.  
+ExternalDNS needs permissions to make changes in Azure Private DNS.
 These permissions are roles assigned to the service principal used by ExternalDNS.
 
 A service principal with a minimum access level of `Private DNS Zone Contributor` to the Private DNS zone(s) and `Reader` to the resource group containing the Azure Private DNS zone(s) is necessary.
-More powerful role-assignments like `Owner` or assignments on subscription-level work too. 
+More powerful role-assignments like `Owner` or assignments on subscription-level work too.
 
 Start off by **creating the service principal** without role-assignments.
 ```
@@ -117,7 +117,7 @@ $ az ad sp create-for-rbac --skip-assignment -n http://externaldns-sp
 > Note: Alternatively, you can issue `az account show --query "tenantId"` to retrieve the id of your AAD Tenant too.
 
 
-Next, assign the roles to the service principal.  
+Next, assign the roles to the service principal.
 But first **retrieve the ID's** of the objects to assign roles on.
 
 ```
@@ -131,18 +131,21 @@ $ az network private-dns zone show --name example.com -g externaldns --query id 
 Now, **create role assignments**.
 ```
 # 1. as a reader to the resource group
-$ az role assignment create --role "Reader" --assignee <appId GUID> --scope <resource group resource id>  
+$ az role assignment create --role "Reader" --assignee <appId GUID> --scope <resource group resource id>
 
 # 2. as a contributor to DNS Zone itself
-$ az role assignment create --role "Private DNS Zone Contributor" --assignee <appId GUID> --scope <dns zone resource id>  
+$ az role assignment create --role "Private DNS Zone Contributor" --assignee <appId GUID> --scope <dns zone resource id>
 ```
 
 ## Deploy ExternalDNS
-Configure `kubectl` to be able to communicate and authenticate with your cluster.   
+
+Configure `kubectl` to be able to communicate and authenticate with your cluster.
 This is per default done through the file `~/.kube/config`.
 
-For general background information on this see [kubernetes-docs](https://kubernetes.io/docs/tasks/access-application-cluster/access-cluster/).  
+For general background information on this see [kubernetes-docs](https://kubernetes.io/docs/tasks/access-application-cluster/access-cluster/).
 Azure-CLI features functionality for automatically maintaining this file for AKS-Clusters. See [Azure-Docs](https://docs.microsoft.com/de-de/cli/azure/aks?view=azure-cli-latest#az-aks-get-credentials).
+
+First [create a configuration file as you would for azure-dns provider](./azure.md#creating-configuration-file).
 
 Then apply one of the following manifests depending on whether you use RBAC or not.
 
@@ -173,15 +176,14 @@ spec:
         - --source=ingress
         - --domain-filter=example.com
         - --provider=azure-private-dns
-        - --azure-resource-group=externaldns
-        - --azure-subscription-id=<use the id of your subscription>
-        env:
-        - name: AZURE_TENANT_ID
-          value: "<use the tenantId discovered during creation of service principal>"
-        - name: AZURE_CLIENT_ID
-          value: "<use the aadClientId discovered during creation of service principal>"
-        - name: AZURE_CLIENT_SECRET
-          value: "<use the aadClientSecret discovered during creation of service principal>"
+        volumeMounts:
+        - name: azure-config-file
+          mountPath: /etc/kubernetes
+          readOnly: true
+      volumes:
+      - name: azure-config-file
+        secret:
+          secretName: azure-config-file
 ```
 
 ### Manifest (for clusters with RBAC enabled, cluster access)
@@ -200,7 +202,7 @@ rules:
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"] 
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
@@ -243,15 +245,14 @@ spec:
         - --source=ingress
         - --domain-filter=example.com
         - --provider=azure-private-dns
-        - --azure-resource-group=externaldns
-        - --azure-subscription-id=<use the id of your subscription>
-        env:
-        - name: AZURE_TENANT_ID
-          value: "<use the tenantId discovered during creation of service principal>"
-        - name: AZURE_CLIENT_ID
-          value: "<use the aadClientId discovered during creation of service principal>"
-        - name: AZURE_CLIENT_SECRET
-          value: "<use the aadClientSecret discovered during creation of service principal>"
+        volumeMounts:
+        - name: azure-config-file
+          mountPath: /etc/kubernetes
+          readOnly: true
+      volumes:
+      - name: azure-config-file
+        secret:
+          secretName: azure-config-file
 ```
 
 ### Manifest (for clusters with RBAC enabled, namespace access)
@@ -313,15 +314,14 @@ spec:
         - --source=ingress
         - --domain-filter=example.com
         - --provider=azure-private-dns
-        - --azure-resource-group=externaldns
-        - --azure-subscription-id=<use the id of your subscription>
-        env:
-        - name: AZURE_TENANT_ID
-          value: "<use the tenantId discovered during creation of service principal>"
-        - name: AZURE_CLIENT_ID
-          value: "<use the aadClientId discovered during creation of service principal>"
-        - name: AZURE_CLIENT_SECRET
-          value: "<use the aadClientSecret discovered during creation of service principal>"
+        volumeMounts:
+        - name: azure-config-file
+          mountPath: /etc/kubernetes
+          readOnly: true
+      volumes:
+      - name: azure-config-file
+        secret:
+          secretName: azure-config-file
 ```
 
 Create the deployment for ExternalDNS:
@@ -366,7 +366,7 @@ spec:
   selector:
     app: nginx
   type: ClusterIP
-  
+
 ---
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
@@ -393,7 +393,7 @@ Create the deployment, service and ingress object:
 $ kubectl create -f nginx.yaml
 ```
 
-Since your external IP would have already been assigned to the nginx-ingress service, the DNS records pointing to the IP of the nginx-ingress service should be created within a minute. 
+Since your external IP would have already been assigned to the nginx-ingress service, the DNS records pointing to the IP of the nginx-ingress service should be created within a minute.
 
 ## Verify created records
 
