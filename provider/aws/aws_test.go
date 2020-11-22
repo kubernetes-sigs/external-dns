@@ -1101,41 +1101,41 @@ func TestAWSSuitableZones(t *testing.T) {
 }
 
 func TestAWSHealthTargetAnnotation(tt *testing.T) {
-	comparator := func (name, previous, current string) bool {
+	comparator := func(name, previous, current string) bool {
 		return previous == current
 	}
 	for _, test := range []struct {
-		name string
-		current *endpoint.Endpoint
-		desired *endpoint.Endpoint
+		name               string
+		current            *endpoint.Endpoint
+		desired            *endpoint.Endpoint
 		propertyComparator func(name, previous, current string) bool
-		shouldUpdate bool
+		shouldUpdate       bool
 	}{
 		{
 			name: "skip AWS target health",
 			current: &endpoint.Endpoint{
 				RecordType: "A",
-				DNSName: "foo.com",
+				DNSName:    "foo.com",
 				ProviderSpecific: []endpoint.ProviderSpecificProperty{
 					{Name: "aws/evaluate-target-health", Value: "true"},
 				},
 			},
 			desired: &endpoint.Endpoint{
-				DNSName: "foo.com",
+				DNSName:    "foo.com",
 				RecordType: "A",
 				ProviderSpecific: []endpoint.ProviderSpecificProperty{
 					{Name: "aws/evaluate-target-health", Value: "false"},
 				},
 			},
 			propertyComparator: comparator,
-			shouldUpdate: false,
+			shouldUpdate:       false,
 		},
 	} {
 		tt.Run(test.name, func(t *testing.T) {
 			provider := &AWSProvider{}
 			plan := &plan.Plan{
-				Current:  []*endpoint.Endpoint{test.current},
-				Desired:  []*endpoint.Endpoint{test.desired},
+				Current:            []*endpoint.Endpoint{test.current},
+				Desired:            []*endpoint.Endpoint{test.desired},
 				PropertyComparator: provider.PropertyValuesEqual,
 			}
 			plan = plan.Calculate()

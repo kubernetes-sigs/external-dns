@@ -205,7 +205,6 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 	return provider, nil
 }
 
-
 func (p *AWSProvider) PropertyValuesEqual(name string, previous string, current string) bool {
 	if name == "aws/evaluate-target-health" {
 		return true
