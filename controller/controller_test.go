@@ -146,6 +146,7 @@ func TestRunOnce(t *testing.T) {
 		Source:   source,
 		Registry: r,
 		Policy:   &plan.SyncPolicy{},
+		Provider: provider,
 	}
 
 	assert.NoError(t, ctrl.RunOnce(context.Background()))
