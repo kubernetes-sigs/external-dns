@@ -1159,24 +1159,28 @@ func TestCustomTTLWithEnabeledProxyNotChanged(t *testing.T) {
 		t.Errorf("should not fail, %s", err)
 	}
 
-	plan := &plan.Plan{
-		Current: records,
-		Desired: []*endpoint.Endpoint{
-			{
-				DNSName:    "foobar.bar.com",
-				Targets:    endpoint.Targets{"1.2.3.4"},
-				RecordType: endpoint.RecordTypeA,
-				RecordTTL:  300,
-				Labels:     endpoint.Labels{},
-				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-						Value: "true",
-					},
+	endpoints := []*endpoint.Endpoint{
+		{
+			DNSName:    "foobar.bar.com",
+			Targets:    endpoint.Targets{"1.2.3.4"},
+			RecordType: endpoint.RecordTypeA,
+			RecordTTL:  300,
+			Labels:     endpoint.Labels{},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+					Value: "true",
 				},
 			},
 		},
-		DomainFilter:             endpoint.NewDomainFilter([]string{"bar.com"}),
+	}
+
+	provider.AdjustEndpoints(endpoints)
+
+	plan := &plan.Plan{
+		Current:      records,
+		Desired:      endpoints,
+		DomainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
 	}
 
 	planned := plan.Calculate()

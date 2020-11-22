@@ -117,6 +117,8 @@ type Controller struct {
 	nextRunAt time.Time
 	// The nextRunAtMux is for atomic updating of nextRunAt
 	nextRunAtMux sync.Mutex
+	// The provider that is used
+	Provider provider.Provider
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -138,6 +140,8 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		return err
 	}
 	sourceEndpointsTotal.Set(float64(len(endpoints)))
+
+	endpoints = c.Provider.AdjustEndpoints(endpoints)
 
 	plan := &plan.Plan{
 		Policies:           []plan.Policy{c.Policy},

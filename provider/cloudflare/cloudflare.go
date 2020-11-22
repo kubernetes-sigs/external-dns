@@ -337,6 +337,14 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 	return nil
 }
 
+func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) {
+	for _, e := range endpoints {
+		if shouldBeProxied(e, p.proxiedByDefault) {
+			e.RecordTTL = 0
+		}
+	}
+}
+
 // changesByZone separates a multi-zone change into a single change per zone.
 func (p *CloudFlareProvider) changesByZone(zones []cloudflare.Zone, changeSet []*cloudFlareChange) map[string][]*cloudFlareChange {
 	changes := make(map[string][]*cloudFlareChange)
