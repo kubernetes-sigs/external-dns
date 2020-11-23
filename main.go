@@ -331,7 +331,6 @@ func main() {
 		Policy:       policy,
 		Interval:     cfg.Interval,
 		DomainFilter: domainFilter,
-		Provider:     p,
 	}
 
 	if cfg.Once {
