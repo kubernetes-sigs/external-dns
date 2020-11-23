@@ -93,6 +93,6 @@ func (sdr *AWSSDRegistry) PropertyValuesEqual(name string, previous string, curr
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
-func (im *AWSSDRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) {
-	im.provider.AdjustEndpoints(endpoints)
+func (sdr *AWSSDRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) {
+	sdr.provider.AdjustEndpoints(endpoints)
 }
