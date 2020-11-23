@@ -88,6 +88,8 @@ type Config struct {
 	AkamaiClientToken                 string
 	AkamaiClientSecret                string
 	AkamaiAccessToken                 string
+	AkamaiEdgercPath                  string
+	AkamaiEdgercSection               string
 	InfobloxGridHost                  string
 	InfobloxWapiPort                  int
 	InfobloxWapiUsername              string
@@ -194,6 +196,8 @@ var defaultConfig = &Config{
 	AkamaiClientToken:           "",
 	AkamaiClientSecret:          "",
 	AkamaiAccessToken:           "",
+	AkamaiEdgercSection:         "",
+	AkamaiEdgercPath:            "",
 	InfobloxGridHost:            "",
 	InfobloxWapiPort:            443,
 	InfobloxWapiUsername:        "admin",
@@ -353,10 +357,12 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.CloudflareProxied)
 	app.Flag("cloudflare-zones-per-page", "When using the Cloudflare provider, specify how many zones per page listed, max. possible 50 (default: 50)").Default(strconv.Itoa(defaultConfig.CloudflareZonesPerPage)).IntVar(&cfg.CloudflareZonesPerPage)
 	app.Flag("coredns-prefix", "When using the CoreDNS provider, specify the prefix name").Default(defaultConfig.CoreDNSPrefix).StringVar(&cfg.CoreDNSPrefix)
-	app.Flag("akamai-serviceconsumerdomain", "When using the Akamai provider, specify the base URL (required when --provider=akamai)").Default(defaultConfig.AkamaiServiceConsumerDomain).StringVar(&cfg.AkamaiServiceConsumerDomain)
-	app.Flag("akamai-client-token", "When using the Akamai provider, specify the client token (required when --provider=akamai)").Default(defaultConfig.AkamaiClientToken).StringVar(&cfg.AkamaiClientToken)
-	app.Flag("akamai-client-secret", "When using the Akamai provider, specify the client secret (required when --provider=akamai)").Default(defaultConfig.AkamaiClientSecret).StringVar(&cfg.AkamaiClientSecret)
-	app.Flag("akamai-access-token", "When using the Akamai provider, specify the access token (required when --provider=akamai)").Default(defaultConfig.AkamaiAccessToken).StringVar(&cfg.AkamaiAccessToken)
+	app.Flag("akamai-serviceconsumerdomain", "When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiServiceConsumerDomain).StringVar(&cfg.AkamaiServiceConsumerDomain)
+	app.Flag("akamai-client-token", "When using the Akamai provider, specify the client token (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiClientToken).StringVar(&cfg.AkamaiClientToken)
+	app.Flag("akamai-client-secret", "When using the Akamai provider, specify the client secret (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiClientSecret).StringVar(&cfg.AkamaiClientSecret)
+	app.Flag("akamai-access-token", "When using the Akamai provider, specify the access token (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiAccessToken).StringVar(&cfg.AkamaiAccessToken)
+	app.Flag("akamai-edgerc-path", "When using the Akamai provider, specify the .edgerc file path. Path must be reachable form invocation environment. (required when --provider=akamai and *-token, secret serviceconsumerdomain not specified)").Default(defaultConfig.AkamaiEdgercPath).StringVar(&cfg.AkamaiEdgercPath)
+	app.Flag("akamai-edgerc-section", "When using the Akamai provider, specify the .edgerc file path (Optional when edgerc-path is specified)").Default(defaultConfig.AkamaiEdgercSection).StringVar(&cfg.AkamaiEdgercSection)
 	app.Flag("infoblox-grid-host", "When using the Infoblox provider, specify the Grid Manager host (required when --provider=infoblox)").Default(defaultConfig.InfobloxGridHost).StringVar(&cfg.InfobloxGridHost)
 	app.Flag("infoblox-wapi-port", "When using the Infoblox provider, specify the WAPI port (default: 443)").Default(strconv.Itoa(defaultConfig.InfobloxWapiPort)).IntVar(&cfg.InfobloxWapiPort)
 	app.Flag("infoblox-wapi-username", "When using the Infoblox provider, specify the WAPI username (default: admin)").Default(defaultConfig.InfobloxWapiUsername).StringVar(&cfg.InfobloxWapiUsername)
