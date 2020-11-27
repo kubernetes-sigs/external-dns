@@ -197,8 +197,8 @@ func (im *TXTRegistry) PropertyValuesEqual(name string, previous string, current
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
-func (im *TXTRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) {
-	im.provider.AdjustEndpoints(endpoints)
+func (im *TXTRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	return im.provider.AdjustEndpoints(endpoints)
 }
 
 /**

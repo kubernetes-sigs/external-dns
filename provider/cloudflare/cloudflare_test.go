@@ -1134,7 +1134,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 	})
 }
 
-func TestCustomTTLWithEnabeledProxyNotChanged(t *testing.T) {
+func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
 		"001": []cloudflare.DNSRecord{
 			{

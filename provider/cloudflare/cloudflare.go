@@ -337,12 +337,15 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 	return nil
 }
 
-func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) {
+func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	adjustedEndpoints := []*endpoint.Endpoint{}
 	for _, e := range endpoints {
 		if shouldBeProxied(e, p.proxiedByDefault) {
 			e.RecordTTL = 0
 		}
+		adjustedEndpoints = append(adjustedEndpoints, e)
 	}
+	return adjustedEndpoints
 }
 
 // changesByZone separates a multi-zone change into a single change per zone.

@@ -52,6 +52,6 @@ func (im *NoopRegistry) PropertyValuesEqual(attribute string, previous string, c
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
-func (im *NoopRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) {
-	im.provider.AdjustEndpoints(endpoints)
+func (im *NoopRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	return im.provider.AdjustEndpoints(endpoints)
 }
