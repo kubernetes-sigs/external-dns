@@ -139,7 +139,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	}
 	sourceEndpointsTotal.Set(float64(len(endpoints)))
 
-	c.Registry.AdjustEndpoints(endpoints)
+	endpoints = c.Registry.AdjustEndpoints(endpoints)
 
 	plan := &plan.Plan{
 		Policies:           []plan.Policy{c.Policy},
