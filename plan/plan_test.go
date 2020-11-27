@@ -789,7 +789,7 @@ func TestShouldUpdateProviderSpecific(tt *testing.T) {
 			shouldUpdate: true,
 		},
 		{
-			name: "desired has same different key from current but not comparator is set",
+			name: "desired has different key from current but not comparator is set",
 			current: &endpoint.Endpoint{
 				ProviderSpecific: []endpoint.ProviderSpecificProperty{
 					{Name: "custom/property", Value: "true"},
