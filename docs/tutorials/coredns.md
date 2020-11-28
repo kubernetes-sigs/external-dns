@@ -34,7 +34,7 @@ wget https://raw.githubusercontent.com/helm/charts/HEAD/stable/coredns/values.ya
 ```
 
 You need to edit/patch the file with below diff
-```
+```diff
 diff --git a/values.yaml b/values.yaml
 index 964e72b..e2fa934 100644
 --- a/values.yaml
