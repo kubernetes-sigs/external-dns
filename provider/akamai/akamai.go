@@ -186,14 +186,13 @@ func (p AkamaiProvider) UpdateRecord(record *dns.RecordBody, zone string, recLoc
 
 // Fetch zones using Edgegrid DNS v2 API
 func (p AkamaiProvider) fetchZones() (akamaiZones, error) {
-	log.Debugf("Fetching Akamai Edge DNS zones")
 	filteredZones := akamaiZones{Zones: make([]akamaiZone, 0)}
 	queryArgs := dns.ZoneListQueryArgs{Types: "primary", ShowAll: true}
 	// filter based on contractIds
 	if len(p.zoneIDFilter.ZoneIDs) > 0 {
 		queryArgs.ContractIds = strings.Join(p.zoneIDFilter.ZoneIDs, ",")
 	}
-	resp, err := p.client.ListZones(queryArgs) // don't worry about paged results
+	resp, err := p.client.ListZones(queryArgs) // retrieve all primary zones filtered by contract ids
 
 	if err != nil {
 		log.Errorf("Failed to fetch zones from Akamai")
@@ -201,7 +200,6 @@ func (p AkamaiProvider) fetchZones() (akamaiZones, error) {
 	}
 
 	for _, zone := range resp.Zones {
-		//log.Debugf("Evaluating zone: %s", zone.Zone)
 		if p.domainFilter.Match(zone.Zone) || !p.domainFilter.IsConfigured() {
 			filteredZones.Zones = append(filteredZones.Zones, akamaiZone{ContractID: zone.ContractId, Zone: zone.Zone})
 			log.Debugf("Fetched zone: '%s' (ZoneID: %s)", zone.Zone, zone.ContractId)
@@ -219,12 +217,6 @@ func (p AkamaiProvider) fetchZones() (akamaiZones, error) {
 
 //Records returns the list of records in a given zone.
 func (p AkamaiProvider) Records(context.Context) (endpoints []*endpoint.Endpoint, err error) {
-	log.Debugf("Entering Records function")
-	if p.config == nil {
-		log.Errorf("Akamai provider failed initialization!")
-		return endpoints, fmt.Errorf("edge dns provider is not initialized")
-	}
-
 	zones, err := p.fetchZones() // returns a filtered set of zones
 	if err != nil {
 		log.Warnf("Failed to identify target zones! Error: %s", err.Error())
@@ -250,7 +242,7 @@ func (p AkamaiProvider) Records(context.Context) (endpoints []*endpoint.Endpoint
 				continue
 			}
 			var temp interface{} = int64(recordset.TTL)
-			var ttl endpoint.TTL = endpoint.TTL(temp.(int64)) //endpoint.TTL)
+			var ttl endpoint.TTL = endpoint.TTL(temp.(int64))
 			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(recordset.Name,
 				recordset.Type,
 				ttl,
@@ -271,13 +263,6 @@ func (p AkamaiProvider) Records(context.Context) (endpoints []*endpoint.Endpoint
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (p AkamaiProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	log.Debugf("Entering ApplyChanges")
-
-	if p.config == nil {
-		log.Errorf("Akamai provider failed initialization!")
-		return fmt.Errorf("edge dns provider failed initialization")
-	}
-
 	zoneNameIDMapper := provider.ZoneIDName{}
 	zones, err := p.fetchZones()
 	if err != nil {
@@ -290,7 +275,7 @@ func (p AkamaiProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 	}
 	log.Debugf("Processing zones: [%v]", zoneNameIDMapper)
 
-	// Create recodsets
+	// Create recordsets
 	log.Debugf("Create Changes requested [%v]", changes.Create)
 	if err := p.createRecordsets(zoneNameIDMapper, changes.Create); err != nil {
 		return err
@@ -337,7 +322,6 @@ func newAkamaiRecordset(dnsName, recordType string, ttl int, targets []string) d
 // cleanTargets preps recordset rdata if necessary for EdgeDNS
 func cleanTargets(rtype string, targets ...string) []string {
 	log.Debugf("Targets to clean: [%v]", targets)
-	//var targets []string = tgts
 	if rtype == "CNAME" || rtype == "SRV" {
 		for idx, target := range targets {
 			targets[idx] = strings.TrimSuffix(target, ".")
@@ -363,7 +347,6 @@ func cleanTargets(rtype string, targets ...string) []string {
 func trimTxtRdata(rdata []string, rtype string) []string {
 	if rtype == "TXT" {
 		for idx, d := range rdata {
-			//rdata[idx] = strings.Trim(d, "\"")
 			if strings.Contains(d, "`") {
 				rdata[idx] = strings.ReplaceAll(d, "`", "\"")
 			}
@@ -377,7 +360,7 @@ func trimTxtRdata(rdata []string, rtype string) []string {
 func ttlAsInt(src endpoint.TTL) int {
 	var temp interface{} = int64(src)
 	var temp64 = temp.(int64)
-	var ttl int = edgeDNSRecordTTL // int
+	var ttl int = edgeDNSRecordTTL
 	if temp64 > 0 && temp64 <= int64(maxInt) {
 		ttl = int(temp64)
 	}
@@ -443,7 +426,6 @@ func (p AkamaiProvider) deleteRecordsets(zoneNameIDMapper provider.ZoneIDName, e
 		recName := strings.TrimSuffix(endpoint.DNSName, ".")
 		rec, err := p.client.GetRecord(zoneName, recName, endpoint.RecordType)
 		if err != nil {
-			// error not found?
 			if _, ok := err.(*dns.RecordError); !ok {
 				return fmt.Errorf("endpoint deletion. record validation failed. error: %s", err.Error())
 			}

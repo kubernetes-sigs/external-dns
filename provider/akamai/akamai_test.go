@@ -125,7 +125,6 @@ func (r *edgednsStub) GetRecordsets(zone string, queryArgs dns.RecordsetQueryArg
 
 	log.Debugf("Entering GetRecordsets")
 	// Ignore Metadata`
-
 	resp := &dns.RecordSetResponse{}
 	sets := make([]dns.Recordset, 0)
 	for _, rec := range r.stubData["recordset"].output {
@@ -176,7 +175,6 @@ func TestFetchZonesZoneIDFilter(t *testing.T) {
 	}
 }
 
-//
 func TestFetchZonesEmpty(t *testing.T) {
 
 	stub := newStub()
@@ -230,7 +228,6 @@ func TestAkamaiRecords(t *testing.T) {
 	}
 }
 
-//
 func TestAkamaiRecordsEmpty(t *testing.T) {
 
 	stub := newStub()
@@ -246,7 +243,6 @@ func TestAkamaiRecordsEmpty(t *testing.T) {
 	assert.Nil(t, x)
 }
 
-//
 func TestAkamaiRecordsFilters(t *testing.T) {
 
 	stub := newStub()
