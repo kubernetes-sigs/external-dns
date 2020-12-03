@@ -45,6 +45,7 @@ ExternalDNS' current release is `v0.7`. This version allows you to keep selected
 * [NS1](https://ns1.com/)
 * [TransIP](https://www.transip.eu/domain-name/)
 * [VinylDNS](https://www.vinyldns.io)
+* [Vultr](https://www.vultr.com)
 * [OVH](https://www.ovh.com)
 * [Scaleway](https://www.scaleway.com)
 
