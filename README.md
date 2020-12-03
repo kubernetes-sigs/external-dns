@@ -101,6 +101,7 @@ The following table clarifies the current status of the providers according to t
 | Scaleway DNS | Alpha | @Sh4d1 |
 | Vultr | Alpha | |
 | UltraDNS | Alpha | |
+| F5 DNS Load Balancer Cloud Service | Beta | @swapmat-f5 |
 
 ## Running ExternalDNS:
 
@@ -130,6 +131,7 @@ The following tutorials are provided:
 * [Dyn](docs/tutorials/dyn.md)
 * [Exoscale](docs/tutorials/exoscale.md)
 * [ExternalName Services](docs/tutorials/externalname.md)
+* [F5 DNS Load Balancer Cloud Service](docs/tutorials/f5-dns.md)
 * Google Container Engine
 	* [Using Google's Default Ingress Controller](docs/tutorials/gke.md)
 	* [Using the Nginx Ingress Controller](docs/tutorials/nginx-ingress.md)
