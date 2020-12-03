@@ -230,3 +230,35 @@ dnstools# dig @10.100.4.143 nginx.example.org +short
 10.0.2.15
 dnstools#
 ```
+
+## Customize prefix name in etcd
+`CoreDNS` provider supports an option to specify the prefix name.
+The prefix name is used as a part of key name in `etcd` for a DNS record.
+```
+$ external-dns --help
+...
+  --coredns-prefix=/skydns/    When using the CoreDNS provider, specify the prefix name
+...
+```
+
+To customize the prefix, you should change configurations in 2 places.
+
+For example, `/myprefix/` is used as the new prefix name instead of `/skydns/`.
+You should specify `--coredns-prefix` for `external-dns` command line to `/myprefix/`
+```
+      containers:
+      - name: external-dns
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        args:
+        - --source=ingress
+        - --coredns-prefix=/myprefix/
+```
+You should also update `values.yaml` in `CoreDNS` chart for configuratin of `etcd`.
+```
+  - name: etcd
+    parameters: example.org
+    configBlock: |-
+      stubzones
+      path /myprefix/
+      endpoint http://10.105.68.165:2379
+```
