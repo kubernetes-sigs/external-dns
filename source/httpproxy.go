@@ -128,13 +128,13 @@ func (sc *httpProxySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 	// Convert to []*projectcontour.HTTPProxy
 	var httpProxies []*projectcontour.HTTPProxy
 	for _, hp := range hps {
-		unstrucuredHP, ok := hp.(*unstructured.Unstructured)
+		unstructuredHP, ok := hp.(*unstructured.Unstructured)
 		if !ok {
 			return nil, errors.New("could not convert")
 		}
 
 		hpConverted := &projectcontour.HTTPProxy{}
-		err := sc.unstructuredConverter.scheme.Convert(unstrucuredHP, hpConverted, nil)
+		err := sc.unstructuredConverter.scheme.Convert(unstructuredHP, hpConverted, nil)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to convert to HTTPProxy")
 		}

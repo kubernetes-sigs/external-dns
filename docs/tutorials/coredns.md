@@ -1,5 +1,5 @@
 # Setting up ExternalDNS for CoreDNS with minikube
-This tutorial describes how to setup ExternalDNS for usage within a [minikube](https://github.com/kubernetes/minikube) cluster that makes use of [CoreDNS](https://github.com/coredns/coredns) and [nginx ingress controller](https://github.com/kubernetes/ingress-nginx).  
+This tutorial describes how to setup ExternalDNS for usage within a [minikube](https://github.com/kubernetes/minikube) cluster that makes use of [CoreDNS](https://github.com/coredns/coredns) and [nginx ingress controller](https://github.com/kubernetes/ingress-nginx).
 You need to:
 * install CoreDNS with [etcd](https://github.com/etcd-io/etcd) enabled
 * install external-dns with coredns as a provider
@@ -24,7 +24,7 @@ helm install stable/etcd-operator --name my-etcd-op
 ```
 etcd cluster is installed with example yaml from etcd operator website.
 ```
-kubectl  apply -f https://raw.githubusercontent.com/coreos/etcd-operator/HEAD/example/example-etcd-cluster.yaml
+kubectl apply -f https://raw.githubusercontent.com/coreos/etcd-operator/HEAD/example/example-etcd-cluster.yaml
 ```
 
 ### Installing CoreDNS
@@ -34,7 +34,7 @@ wget https://raw.githubusercontent.com/helm/charts/HEAD/stable/coredns/values.ya
 ```
 
 You need to edit/patch the file with below diff
-```
+```diff
 diff --git a/values.yaml b/values.yaml
 index 964e72b..e2fa934 100644
 --- a/values.yaml
@@ -68,7 +68,7 @@ index 964e72b..e2fa934 100644
  # Complete example with all the options:
  # - zones:                 # the `zones` block can be left out entirely, defaults to "."
 ```
-**Note**:  
+**Note**:
 * IP address of etcd's endpoint should be get from etcd client service. It should be "example-etcd-cluster-client" in this example. This IP address is used through this document for etcd endpoint configuration.
 ```
 $ kubectl get svc example-etcd-cluster-client
@@ -228,5 +228,5 @@ $ kubectl run -it --rm --restart=Never --image=infoblox/dnstools:latest dnstools
 If you don't see a command prompt, try pressing enter.
 dnstools# dig @10.100.4.143 nginx.example.org +short
 10.0.2.15
-dnstools#  
+dnstools#
 ```

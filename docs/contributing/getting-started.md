@@ -1,7 +1,7 @@
 # Quick Start
 
 - [Git](https://git-scm.com/downloads)
-- [Go 1.14+](https://golang.org/dl/)
+- [Go 1.15+](https://golang.org/dl/)
 - [Go modules](https://github.com/golang/go/wiki/Modules)
 - [golangci-lint](https://github.com/golangci/golangci-lint)
 - [Docker](https://docs.docker.com/install/)
@@ -48,3 +48,13 @@ You can pick which `Source` and `Provider` to use at runtime via the `--source` 
 A typical way to start on, e.g. a CoreDNS provider, would be to add a `coredns.go` to the providers package and implement the interface methods. Then you would have to register your provider under a name in `main.go`, e.g. `coredns`, and would be able to trigger it's functions via setting `--provider=coredns`.
 
 Note, how your provider doesn't need to know anything about where the DNS records come from, nor does it have to figure out the difference between the current and the desired state, it merely executes the actions calculated by the plan.
+
+# Running Github Actions locally
+
+You can also extend the CI workflow which is currently implemented as Github Action within the [workflow](https://github.com/kubernetes-sigs/external-dns/tree/HEAD/.github/workflows) folder.
+In order to test your changes before committing you can leverage [act](https://github.com/nektos/act) to run the Github Action locally.
+
+Follow the installation instructions in the nektos/act [README.md](https://github.com/nektos/act/blob/master/README.md).
+Afterwards just run `act` within the root folder of the project.
+
+For further usage of `act` refer to its documentation.

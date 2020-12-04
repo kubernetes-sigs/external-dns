@@ -269,7 +269,7 @@ status:
 ```
 
 ExternalDNS will create a A-records `echoserver.example.org`, that
-use AWS ALIAS record to automatically maintain IP adresses of the NLB.
+use AWS ALIAS record to automatically maintain IP addresses of the NLB.
 
 ## RouteGroup (optional)
 

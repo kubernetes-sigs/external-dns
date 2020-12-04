@@ -50,6 +50,7 @@ const (
 	providerSpecificGeolocationCountryCode     = "aws/geolocation-country-code"
 	providerSpecificGeolocationSubdivisionCode = "aws/geolocation-subdivision-code"
 	providerSpecificMultiValueAnswer           = "aws/multi-value-answer"
+	providerSpecificHealthCheckID              = "aws/health-check-id"
 )
 
 var (
@@ -79,6 +80,7 @@ var (
 		"us-gov-west-1.elb.amazonaws.com":     "Z33AYJ8TM3BH4J",
 		"us-gov-east-1.elb.amazonaws.com":     "Z166TLBEWOO7G0",
 		"me-south-1.elb.amazonaws.com":        "ZS929ML54UICD",
+		"af-south-1.elb.amazonaws.com":        "Z268VQBMOI5EKX",
 		// Network Load Balancers
 		"elb.us-east-2.amazonaws.com":         "ZLMOA37VPKANP",
 		"elb.us-east-1.amazonaws.com":         "Z26RNL4JYFTOTI",
@@ -102,6 +104,7 @@ var (
 		"elb.us-gov-west-1.amazonaws.com":     "ZMG1MZ2THAWF1",
 		"elb.us-gov-east-1.amazonaws.com":     "Z1ZSMQQ6Q24QQ8",
 		"elb.me-south-1.amazonaws.com":        "Z3QSRYVP46NYYV",
+		"elb.af-south-1.amazonaws.com":        "Z203XCE67M25HM",
 		// Global Accelerator
 		"awsglobalaccelerator.com": "Z2BJ6XQ5FK7U4H",
 	}
@@ -349,6 +352,11 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 						// one of the above needs to be set, otherwise SetIdentifier doesn't make sense
 					}
 				}
+
+				if r.HealthCheckId != nil {
+					ep.WithProviderSpecific(providerSpecificHealthCheckID, aws.StringValue(r.HealthCheckId))
+				}
+
 				endpoints = append(endpoints, ep)
 			}
 		}
@@ -593,6 +601,10 @@ func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint, recordsCac
 		if useGeolocation {
 			change.ResourceRecordSet.GeoLocation = geolocation
 		}
+	}
+
+	if prop, ok := ep.GetProviderSpecificProperty(providerSpecificHealthCheckID); ok {
+		change.ResourceRecordSet.HealthCheckId = aws.String(prop.Value)
 	}
 
 	return change, dualstack
