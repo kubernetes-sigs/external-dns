@@ -283,19 +283,24 @@ func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool, i
 
 	// Gather endpoints defined on annotations in the ingress
 	var annotationEndpoints []*endpoint.Endpoint
-	for _, hostname := range getHostnamesFromAnnotations(ing.Annotations) {
-		annotationEndpoints = append(annotationEndpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+	if !ignoreHostnameAnnotation {
+		for _, hostname := range getHostnamesFromAnnotations(ing.Annotations) {
+			annotationEndpoints = append(annotationEndpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+		}
 	}
 
 	// Determine which hostnames to consider in our final list
+	hostnameSourceAnnotation, hostnameSourceAnnotationExists := ing.Annotations[ingressHostnameSourceKey]
+	if !hostnameSourceAnnotationExists {
+		return append(definedHostsEndpoints, annotationEndpoints...)
+	}
+
+	// Include endpoints according to the hostname source annotation in our final list
 	var endpoints []*endpoint.Endpoint
-	hostnameSourceAnnotation, exists := ing.Annotations[ingressHostnameSourceKey]
-	useDefinedHosts := !exists || strings.ToLower(hostnameSourceAnnotation) != IngressHostnameSourceAnnotationOnlyValue
-	useAnnotationHosts := !exists || strings.ToLower(hostnameSourceAnnotation) != IngressHostnameSourceDefinedHostsOnlyValue
-	if useDefinedHosts {
+	if strings.ToLower(hostnameSourceAnnotation) != IngressHostnameSourceAnnotationOnlyValue {
 		endpoints = append(endpoints, definedHostsEndpoints...)
 	}
-	if !ignoreHostnameAnnotation && useAnnotationHosts {
+	if strings.ToLower(hostnameSourceAnnotation) != IngressHostnameSourceDefinedHostsOnlyValue {
 		endpoints = append(endpoints, annotationEndpoints...)
 	}
 	return endpoints
