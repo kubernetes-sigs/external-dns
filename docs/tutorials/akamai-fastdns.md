@@ -7,7 +7,7 @@ Akamai FastDNS provider support was added via [this PR](https://github.com/kuber
 The Akamai FastDNS provider expects that your zones, you wish to add records to, already exists
 and are configured correctly. It does not add, remove or configure new zones in anyway.
 
-To do this please refer to the [FastDNS documentation](https://learn.akamai.com/en-us/products/web_performance/fast_dns.html).
+To do this please refer to the [FastDNS documentation](https://developer.akamai.com/legacy/cli/packages/fast-dns.html).
 
 Additional data you will have to provide:
 

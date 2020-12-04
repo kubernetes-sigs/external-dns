@@ -2,10 +2,22 @@
 
 ## Release cycle
 
-Currently we don't release regularly. Whenever we think it makes sense to release a new version we do it. You might want to ask in our Slack channel [external-dns](https://kubernetes.slack.com/archives/C771MKDKQ) when the next release will come out.
+Currently we don't release regularly. Whenever we think it makes sense to release a new version we do it, but we aim to do a new release every month. You might want to ask in our Slack channel [external-dns](https://kubernetes.slack.com/archives/C771MKDKQ) when the next release will come out.
 
 ## How to release a new image
 
-When releasing a new version of external-dns, we tag the branch by using **vX.Y.Z** as tag name. To prepare the release, a PR is created to update the **CHANGELOG.md** with the latest commits since last tag, as well as the [kustomization configuration](../kustomization/external-dns-deployment.yaml) to utilize the new tag. As soon as PR is merged into the default branch, the Kubernetes based CI/CD system [Prow](https://prow.k8s.io/?repo=kubernetes-sigs%2Fexternal-dns) will trigger a job to push the image. We're using the Google Container Registry for our Docker images.
+### Prerequisite
 
-The job itself looks at external-dns `cloudbuild.yaml` and executes the given steps. Inside it runs `make release.staging` which is basically only a `docker build` and `docker push`. The docker image is pushed `gcr.io/k8s-staging-external-dns/external-dns`, which is only a staging image and shouldn't be used. Promoting the official image we need to create another PR in [k8s.io](https://github.com/kubernetes/k8s.io), e.g. https://github.com/kubernetes/k8s.io/pull/540 by taking the current staging image using sha256.
+We use https://github.com/cli/cli to automate the release process. Please install it according to the [official documentation](https://github.com/cli/cli#installation).
+
+You must be an official maintainer of the project to be able to do a release.
+
+### Steps
+
+- Run `scripts/releaser.sh` to create a new GitHub release.
+- The step above will trigger the Kubernetes based CI/CD system [Prow](https://prow.k8s.io/?repo=kubernetes-sigs%2Fexternal-dns). Verify that a new image was built and uploaded to `gcr.io/k8s-staging-external-dns/external-dns`.
+- Create a PR in the [k8s.io repo](https://github.com/kubernetes/k8s.io) (see https://github.com/kubernetes/k8s.io/pull/540 for reference) by taking the current staging image using the sha256 digest. Once the PR is merged, the image will be live with the corresponding tag specified in the PR.
+- Verify that the image is pullable with the given tag (i.e. `v0.7.5`).
+- Branch out from the default branch and run `scripts/kustomize-version-udapter.sh` to update the image tag used in the kustomization.yaml.
+- Create a PR with the kustomize change.
+- Once the PR is merged, all is done :-)

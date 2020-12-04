@@ -93,7 +93,7 @@ func TestOvhZoneRecords(t *testing.T) {
 	zones, records, err := provider.zonesRecords(context.TODO())
 	assert.NoError(err)
 	assert.ElementsMatch(zones, []string{"example.org"})
-	assert.ElementsMatch(records, []ovhRecord{{ID: 42, Zone: "example.org", ovhRecordFields: ovhRecordFields{SubDomain: "ovh", FieldType: "A", TTL: 10, Target: "203.0.113.42"}}})
+	assert.ElementsMatch(records, []ovhRecord{{ID: 42, Zone: "example.org", ovhRecordFields: ovhRecordFields{SubDomain: "ovh", FieldType: "A", TTL: 10, Target: "203.0.113.42"}}, {ID: 24, Zone: "example.org", ovhRecordFields: ovhRecordFields{SubDomain: "ovh", FieldType: "NS", TTL: 10, Target: "203.0.113.42"}}})
 	client.AssertExpectations(t)
 
 	// Error on getting zones list

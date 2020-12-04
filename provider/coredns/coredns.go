@@ -158,7 +158,7 @@ func (c etcdClient) DeleteService(key string) error {
 	return err
 }
 
-// loads TLS artifacts and builds tls.Clonfig object
+// loads TLS artifacts and builds tls.Config object
 func newTLSConfig(certPath, keyPath, caPath, serverName string, insecure bool) (*tls.Config, error) {
 	if certPath != "" && keyPath == "" || certPath == "" && keyPath != "" {
 		return nil, errors.New("either both cert and key or none must be provided")

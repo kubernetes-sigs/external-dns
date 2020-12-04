@@ -407,6 +407,13 @@ For any given DNS name, only **one** of the following routing policies can be us
   * `external-dns.alpha.kubernetes.io/aws-geolocation-subdivision-code`
 * Multi-value answer:`external-dns.alpha.kubernetes.io/aws-multi-value-answer`
 
+## Associating DNS records with healthchecks
+
+You can configure Route53 to associate DNS records with healthchecks for automated DNS failover using 
+`external-dns.alpha.kubernetes.io/health-check-id: <health-check-id>` annotation.
+
+Note: ExternalDNS does not support creating healthchecks, and assumes that `<health-check-id>` already exists.
+
 ## Clean up
 
 Make sure to delete all Service objects before terminating the cluster so all load balancers get cleaned up correctly.
