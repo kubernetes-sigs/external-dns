@@ -287,7 +287,7 @@ func (sc *routeGroupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint
 			continue
 		}
 
-		log.Debugf("Endpoints generated from ingress: %s/%s: %v", rg.Metadata.Namespace, rg.Metadata.Name, eps)
+		log.Infof("Endpoints generated from ingress: %s/%s: %v", rg.Metadata.Namespace, rg.Metadata.Name, eps)
 		sc.setRouteGroupResourceLabel(rg, eps)
 		sc.setRouteGroupDualstackLabel(rg, eps)
 		endpoints = append(endpoints, eps...)
