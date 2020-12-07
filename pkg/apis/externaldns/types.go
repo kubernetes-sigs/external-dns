@@ -77,8 +77,6 @@ type Config struct {
 	AWSPreferCNAME                    bool
 	AWSZoneCacheDuration              time.Duration
 	AzureConfigFile                   string
-	AzureResourceGroup                string
-	AzureSubscriptionID               string
 	AzureUserAssignedIdentityClientID string
 	CloudflareProxied                 bool
 	CloudflareZonesPerPage            int
@@ -184,8 +182,6 @@ var defaultConfig = &Config{
 	AWSPreferCNAME:              false,
 	AWSZoneCacheDuration:        0 * time.Second,
 	AzureConfigFile:             "/etc/kubernetes/azure.json",
-	AzureResourceGroup:          "",
-	AzureSubscriptionID:         "",
 	CloudflareProxied:           false,
 	CloudflareZonesPerPage:      50,
 	CoreDNSPrefix:               "/skydns/",

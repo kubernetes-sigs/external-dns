@@ -63,7 +63,7 @@ type AzurePrivateDNSProvider struct {
 // NewAzurePrivateDNSProvider creates a new Azure Private DNS provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAzurePrivateDNSProvider(configFile string, domainFilter endpoint.DomainFilter, zoneNameFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, resourceGroup string, userAssignedIdentityClientID string, dryRun bool) (*AzurePrivateDNSProvider, error) {
+func NewAzurePrivateDNSProvider(configFile string, domainFilter endpoint.DomainFilter, zoneNameFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, userAssignedIdentityClientID string, dryRun bool) (*AzurePrivateDNSProvider, error) {
 	contents, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
@@ -74,10 +74,6 @@ func NewAzurePrivateDNSProvider(configFile string, domainFilter endpoint.DomainF
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
 	}
 
-	// If a resource group was given, override what was present in the config file
-	if resourceGroup != "" {
-		cfg.ResourceGroup = resourceGroup
-	}
 	// If userAssignedIdentityClientID is provided explicitly, override existing one in config file
 	if userAssignedIdentityClientID != "" {
 		cfg.UserAssignedIdentityID = userAssignedIdentityClientID

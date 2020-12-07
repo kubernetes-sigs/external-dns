@@ -81,7 +81,7 @@ type AzureProvider struct {
 // NewAzureProvider creates a new Azure provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zoneNameFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, resourceGroup string, userAssignedIdentityClientID string, dryRun bool) (*AzureProvider, error) {
+func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zoneNameFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, userAssignedIdentityClientID string, dryRun bool) (*AzureProvider, error) {
 	contents, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
@@ -92,10 +92,6 @@ func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zon
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
 	}
 
-	// If a resource group was given, override what was present in the config file
-	if resourceGroup != "" {
-		cfg.ResourceGroup = resourceGroup
-	}
 	// If userAssignedIdentityClientID is provided explicitly, override existing one in config file
 	if userAssignedIdentityClientID != "" {
 		cfg.UserAssignedIdentityID = userAssignedIdentityClientID
