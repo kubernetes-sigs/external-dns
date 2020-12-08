@@ -164,8 +164,8 @@ from source.
 Next, run an application and expose it via a Kubernetes Service:
 
 ```console
-$ kubectl run nginx --image=nginx --replicas=1 --port=80
-$ kubectl expose deployment nginx --port=80 --target-port=80 --type=LoadBalancer
+$ kubectl run nginx --image=nginx --port=80
+$ kubectl expose pod nginx --port=80 --target-port=80 --type=LoadBalancer
 ```
 
 Annotate the Service with your desired external DNS name. Make sure to change `example.org` to your domain.
