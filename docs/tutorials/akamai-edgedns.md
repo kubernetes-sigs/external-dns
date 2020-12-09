@@ -28,7 +28,7 @@ In addition to specifying auth credentials individually, the credentials may be 
 | akamai-edgerc-path | EXTERNAL_DNS_AKAMAI_EDGERC_PATH | Accessible path to Edgegrid credentials file, e.g /home/test/.edgerc |
 | akamai-edgerc-section | EXTERNAL_DNS_AKAMAI_EDGERC_SECTION | Section in Edgegrid credentials file containing credentials |
 
-Note: akamai-edgerc-path and akamai-edgerc-section are present in External-DNS versions after v0.7.4
+Note: akamai-edgerc-path and akamai-edgerc-section are present in External-DNS versions after v0.7.5
 
 [Akamai API Authentication](https://developer.akamai.com/getting-started/edgegrid) provides an overview and further information pertaining to the generation of auth credentials for API base applications and tools.
 
@@ -61,7 +61,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.4
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.5
         args:
         - --source=service  # or ingress or both
         - --provider=akamai
@@ -145,7 +145,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.4
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.5
         args:
         - --source=service  # or ingress or both
         - --provider=akamai
