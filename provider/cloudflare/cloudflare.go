@@ -331,6 +331,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 	return nil
 }
 
+// AdjustEndpoints modifies the endpoints as needed by the specific provider
 func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	adjustedEndpoints := []*endpoint.Endpoint{}
 	for _, e := range endpoints {
