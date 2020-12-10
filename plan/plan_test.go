@@ -439,12 +439,12 @@ func (suite *PlanTestSuite) TestDifferentTypes() {
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
-func (suite *PlanTestSuite) TestIgnoreTXT() {
+func (suite *PlanTestSuite) TestUpdateTXTToCNAME() {
 	current := []*endpoint.Endpoint{suite.fooV2TXT}
 	desired := []*endpoint.Endpoint{suite.fooV2Cname}
-	expectedCreate := []*endpoint.Endpoint{suite.fooV2Cname}
-	expectedUpdateOld := []*endpoint.Endpoint{}
-	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedCreate := []*endpoint.Endpoint{}
+	expectedUpdateOld := []*endpoint.Endpoint{suite.fooV2TXT}
+	expectedUpdateNew := []*endpoint.Endpoint{suite.fooV2Cname}
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
