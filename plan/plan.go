@@ -233,7 +233,7 @@ func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.Do
 			continue
 		}
 
-		if endpoint.IsRecordTypeSupported(record.RecordType) {
+		if endpoint.SupportedRecordType(record.RecordType) {
 			filtered = append(filtered, record)
 		} else {
 			continue

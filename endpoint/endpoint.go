@@ -37,15 +37,6 @@ const (
 	RecordTypeNS = "NS"
 )
 
-func IsRecordTypeSupported(t string) bool {
-	switch t {
-	case RecordTypeA, RecordTypeCNAME, RecordTypeTXT, RecordTypeSRV, RecordTypeNS:
-		return true
-	default:
-		return true
-	}
-}
-
 // TTL is a structure defining the TTL of a DNS record
 type TTL int64
 
