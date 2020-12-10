@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package provider
+package endpoint
 
 // SupportedRecordType returns true only for supported record types.
 // Currently A, CNAME, SRV, TXT and NS record types are supported.

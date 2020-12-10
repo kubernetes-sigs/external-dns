@@ -250,7 +250,7 @@ func (p *TransIPProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 	// go over all zones and their DNS entries and create endpoints for them
 	for _, zone := range zones {
 		for _, r := range zone.DNSEntries {
-			if !provider.SupportedRecordType(string(r.Type)) {
+			if !endpoint.SupportedRecordType(string(r.Type)) {
 				continue
 			}
 
