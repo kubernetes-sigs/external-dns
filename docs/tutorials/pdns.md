@@ -155,7 +155,7 @@ $ kubectl get services echo
 $ kubectl get endpoints echo
 ```
 
-Make sure everything looks correct, i.e the service is defined and recieves a
+Make sure everything looks correct, i.e the service is defined and receives a
 public IP, and that the endpoint also has a pod IP.
 
 Once that's done, wait about 30s-1m (interval for external-dns to kick in), then do:

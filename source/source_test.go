@@ -75,7 +75,7 @@ func TestGetTTLFromAnnotations(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			title:       "TTL annotation value is set correcly using duration (fractional)",
+			title:       "TTL annotation value is set correctly using duration (fractional)",
 			annotations: map[string]string{ttlAnnotationKey: "20.5s"},
 			expectedTTL: endpoint.TTL(20),
 			expectedErr: nil,

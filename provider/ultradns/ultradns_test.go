@@ -231,7 +231,7 @@ func TestUltraDNSProvider_ApplyChangesCNAME(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-// This will work if you would set the environment variables such as "ULTRADNS_INTEGRATION" and zone should be avaialble "kubernetes-ultradns-provider-test.com"
+// This will work if you would set the environment variables such as "ULTRADNS_INTEGRATION" and zone should be available "kubernetes-ultradns-provider-test.com"
 func TestUltraDNSProvider_ApplyChanges_Integration(t *testing.T) {
 
 	_, ok := os.LookupEnv("ULTRADNS_INTEGRATION")
@@ -311,7 +311,7 @@ func TestUltraDNSProvider_ApplyChanges_Integration(t *testing.T) {
 
 }
 
-// This will work if you would set the environment variables such as "ULTRADNS_INTEGRATION" and zone should be avaialble "kubernetes-ultradns-provider-test.com" for multiple target
+// This will work if you would set the environment variables such as "ULTRADNS_INTEGRATION" and zone should be available "kubernetes-ultradns-provider-test.com" for multiple target
 func TestUltraDNSProvider_ApplyChanges_MultipleTarget_integeration(t *testing.T) {
 	_, ok := os.LookupEnv("ULTRADNS_INTEGRATION")
 	if !ok {
@@ -652,7 +652,7 @@ func TestUltraDNSProvider_PoolConversionCase(t *testing.T) {
 		resp, _ := provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/A/ttl.kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
 		assert.Equal(t, resp.Status, "200 OK")
 
-		//Coverting to RD Pool
+		//Converting to RD Pool
 		_ = os.Setenv("ULTRADNS_POOL_TYPE", "rdpool")
 		provider, _ = NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"kubernetes-ultradns-provider-test.com"}), false)
 		changes = &plan.Changes{}
@@ -662,7 +662,7 @@ func TestUltraDNSProvider_PoolConversionCase(t *testing.T) {
 		resp, _ = provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/A/ttl.kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
 		assert.Equal(t, resp.Status, "200 OK")
 
-		//Coverting back to SB Pool
+		//Converting back to SB Pool
 		_ = os.Setenv("ULTRADNS_POOL_TYPE", "sbpool")
 		provider, _ = NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"kubernetes-ultradns-provider-test.com"}), false)
 		changes = &plan.Changes{}
