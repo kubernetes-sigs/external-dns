@@ -263,7 +263,7 @@ func (p *TransIPProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 }
 
 // endpointNameForRecord returns "www.example.org" for DNSEntry with Name "www" and
-// Doman with Name "example.org"
+// Domain with Name "example.org"
 func (p *TransIPProvider) endpointNameForRecord(r transip.DNSEntry, d transip.Domain) string {
 	// root name is identified by "@" and should be translated to domain name for
 	// the endpoint entry.
