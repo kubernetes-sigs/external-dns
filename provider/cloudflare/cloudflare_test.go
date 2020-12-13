@@ -258,10 +258,9 @@ func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endp
 
 	changes := plan.Calculate().Changes
 
-	// Records other than A, CNAME and NS are not supported by planner, just create them
-	for _, endpoint := range endpoints {
-		if endpoint.RecordType != "A" && endpoint.RecordType != "CNAME" && endpoint.RecordType != "NS" {
-			changes.Create = append(changes.Create, endpoint)
+	for _, ep := range endpoints {
+		if !endpoint.SupportedRecordType(ep.RecordType) {
+			changes.Create = append(changes.Create, ep)
 		}
 	}
 
