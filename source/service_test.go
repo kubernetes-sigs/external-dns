@@ -1146,6 +1146,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				internalHostnameAnnotationKey: "foo.internal.example.org.",
 			},
 			"1.1.1.1",
+			[]string{},
 			[]string{"1.2.3.4"},
 			[]string{},
 			[]*endpoint.Endpoint{
@@ -1170,6 +1171,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				internalHostnameAnnotationKey: "foo.internal.example.org.",
 			},
 			"1.1.1.1",
+			[]string{},
 			[]string{"1.2.3.4"},
 			[]string{},
 			[]*endpoint.Endpoint{
