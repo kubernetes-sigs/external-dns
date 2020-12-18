@@ -43,8 +43,6 @@ var (
 	ErrRecordNotFound = errors.New("record not found")
 	// ErrDuplicateRecordFound when record is repeated in create/update/delete
 	ErrDuplicateRecordFound = errors.New("invalid batch request")
-
-	ibmSession *session.Session
 )
 
 // IbmDnsProvider - dns provider for IBM Cloud
@@ -347,20 +345,6 @@ func (f *filter) EndpointIBMDnsID(endpoint *endpoint.Endpoint, zones map[string]
 	return matchCRN, matchZoneName, matchZoneID, matchDnsID
 }
 
-func convertToIbmDnsRecord(endpoints []*endpoint.Endpoint) []*ibmDnsRecord {
-	records := []*ibmDnsRecord{}
-	for _, ep := range endpoints {
-		records = append(records, &ibmDnsRecord{
-			Type:          ep.RecordType,
-			Name:          ep.DNSName,
-			Target:        ep.Targets[0],
-			SetIdentifier: ep.SetIdentifier,
-			Labels:        ep.Labels,
-		})
-	}
-	return records
-}
-
 type filter struct {
-	domain string
+	//	domain string
 }
