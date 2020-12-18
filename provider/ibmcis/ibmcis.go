@@ -45,7 +45,7 @@ var (
 	ErrDuplicateRecordFound = errors.New("invalid batch request")
 )
 
-// IbmDnsProvider - dns provider for IBM Cloud
+// IbmCisProvider - dns provider for IBM Cloud
 // using Cloud Internet Services API and services
 type IbmCisProvider struct {
 	provider.BaseProvider
@@ -54,26 +54,26 @@ type IbmCisProvider struct {
 	ibmCisAPI   cis.CisServiceAPI
 	dryrun      bool
 	icCisCrn    string
-	ibmdnszones ibmDnsZones
+	ibmdnszones ibmDNSZones
 }
 
 // ibmDnsZones - dns zones map for IBM Cloud
 // using Cloud Internet Services API and services
 // Primary reason for this is to be able to lookup CRN and IDs for zones and DNS records
-type ibmDnsZones struct {
-	zones map[string]*ibmDnsZone
+type ibmDNSZones struct {
+	zones map[string]*ibmDNSZone
 }
 
 // ibmDnsZone - dns zone mapper for IBM Cloud
 // using Cloud Internet Services API and services
-type ibmDnsZone struct {
+type ibmDNSZone struct {
 	ID         string
 	Name       string
 	CisCRN     string
-	dnsRecords map[string]*ibmDnsRecord
+	dnsRecords map[string]*ibmDNSRecord
 }
 
-type ibmDnsRecord struct {
+type ibmDNSRecord struct {
 	Type          string
 	SetIdentifier string
 	Name          string
@@ -82,7 +82,7 @@ type ibmDnsRecord struct {
 	ID            string
 }
 
-// NewIbmDnsProvider - the method used by external-dns to create the provider instance
+// NewIbmCisProvider - the method used by external-dns to create the provider instance
 // inspiration: https://github.com/IBM-Cloud/bluemix-go/blob/master/examples/cis/cisv1/dns/main.go
 func NewIbmCisProvider(domainfilter endpoint.DomainFilter, dryrun bool) *IbmCisProvider {
 	log.Info("ibmcis provider activated.")
@@ -119,27 +119,23 @@ func NewIbmCisProvider(domainfilter endpoint.DomainFilter, dryrun bool) *IbmCisP
 			icCisCrn:  icCisCrn,
 		}
 		return im
-
-	} else {
-		im := &IbmCisProvider{
-			filter:    &filter{},
-			domain:    endpoint.NewDomainFilter([]string{""}),
-			ibmCisAPI: nil,
-			dryrun:    dryrun,
-			icCisCrn:  icCisCrn,
-		}
-		return im
 	}
-
+	im := &IbmCisProvider{
+		filter:    &filter{},
+		domain:    endpoint.NewDomainFilter([]string{""}),
+		ibmCisAPI: nil,
+		dryrun:    dryrun,
+		icCisCrn:  icCisCrn,
+	}
+	return im
 }
 
 // Records returns the list of endpoints
 func (im *IbmCisProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-
 	log.Debug("Running on Records (ibmdns)")
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	ibmdnszones := make(map[string]*ibmDnsZone, 0)
+	ibmdnszones := make(map[string]*ibmDNSZone)
 
 	if im.dryrun {
 		log.Debug("Records run in dryrun mode")
@@ -170,23 +166,23 @@ func (im *IbmCisProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 				continue
 			}
 
-			ibmdnszones[z.Name] = &ibmDnsZone{
+			ibmdnszones[z.Name] = &ibmDNSZone{
 				ID:         z.Id,
 				Name:       z.Name,
 				CisCRN:     crn,
-				dnsRecords: make(map[string]*ibmDnsRecord, 0),
+				dnsRecords: make(map[string]*ibmDNSRecord),
 			}
 
-			myDns, ibmErr := dnsAPI.ListDns(crn, z.Id)
+			myDNS, ibmErr := dnsAPI.ListDns(crn, z.Id)
 
 			if ibmErr != nil {
 				log.Fatal(ibmErr)
 			}
 
-			for i, dnsRec := range myDns {
+			for i, dnsRec := range myDNS {
 				log.Debugf(" Found DNS record (%d - %s) '%s' type '%s' content '%s'", i, dnsRec.Id, dnsRec.Name, dnsRec.DnsType, dnsRec.Content)
 
-				ibmDnsRecord := &ibmDnsRecord{
+				ibmDNSRecord := &ibmDNSRecord{
 					Type:          dnsRec.DnsType,
 					Name:          dnsRec.Name,
 					Target:        dnsRec.Content,
@@ -199,7 +195,7 @@ func (im *IbmCisProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 				// As ## is not allowed in neither name or type this should be a safe way to make it unique
 				dnsKey := dnsRec.Name + "##" + dnsRec.DnsType
 				if _, ok := ibmdnszones[z.Name].dnsRecords[dnsKey]; !ok {
-					ibmdnszones[z.Name].dnsRecords[dnsKey] = ibmDnsRecord
+					ibmdnszones[z.Name].dnsRecords[dnsKey] = ibmDNSRecord
 				} else {
 					log.Debugf("record exists - it will be ignored: %s", dnsKey)
 				}
@@ -229,7 +225,6 @@ func (im *IbmCisProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 // update/delete record - record should exist
 // create/update/delete lists should not have overlapping records
 func (im *IbmCisProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-
 	log.Debug("Running on ApplyChanges (ibmdns)")
 
 	if im.dryrun {
@@ -289,10 +284,8 @@ func (im *IbmCisProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 		// if ibmErr != nil {
 		// 	log.Error(ibmErr)
 		// }
-
 	}
 	for _, ep := range changes.Delete {
-
 		log.Infof("ApplyChange - DeleteDns(%s)", ep)
 
 		zoneciscrn, _, zoneid, dnsid := im.filter.EndpointIBMDnsID(ep, zones)
@@ -313,7 +306,7 @@ func (im *IbmCisProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 	return nil
 }
 
-func (f *filter) EndpointIBMZoneID(endpoint *endpoint.Endpoint, zones map[string]*ibmDnsZone) (zonecrn, zonename, zoneid string) {
+func (f *filter) EndpointIBMZoneID(endpoint *endpoint.Endpoint, zones map[string]*ibmDNSZone) (zonecrn, zonename, zoneid string) {
 	var matchCRN, matchZoneID, matchZoneName string
 	for zonename, zone := range zones {
 		if strings.HasSuffix(endpoint.DNSName, zone.Name) && len(zone.Name) > len(matchZoneName) {
@@ -325,8 +318,8 @@ func (f *filter) EndpointIBMZoneID(endpoint *endpoint.Endpoint, zones map[string
 	return matchCRN, matchZoneName, matchZoneID
 }
 
-func (f *filter) EndpointIBMDnsID(endpoint *endpoint.Endpoint, zones map[string]*ibmDnsZone) (zonecrn, zonename, zoneid, dnsid string) {
-	var matchCRN, matchZoneID, matchZoneName, matchDnsID string
+func (f *filter) EndpointIBMDnsID(endpoint *endpoint.Endpoint, zones map[string]*ibmDNSZone) (zonecrn, zonename, zoneid, dnsid string) {
+	var matchCRN, matchZoneID, matchZoneName, matchDNSID string
 	for zonename, zone := range zones {
 		if strings.HasSuffix(endpoint.DNSName, zone.Name) && len(zone.Name) > len(matchZoneName) {
 			matchZoneName = zonename
@@ -336,13 +329,13 @@ func (f *filter) EndpointIBMDnsID(endpoint *endpoint.Endpoint, zones map[string]
 			for _, dns := range zone.dnsRecords {
 				if (endpoint.DNSName == dns.Name) && (endpoint.RecordType == dns.Type) {
 					log.Debugf("EndpointIBMDnsID found record id %s for ep (%s) matching (%s)", dns.ID, endpoint, dns)
-					matchDnsID = dns.ID
+					matchDNSID = dns.ID
 				}
 			}
 		}
 	}
 
-	return matchCRN, matchZoneName, matchZoneID, matchDnsID
+	return matchCRN, matchZoneName, matchZoneID, matchDNSID
 }
 
 type filter struct {
