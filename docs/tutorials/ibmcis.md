@@ -12,7 +12,7 @@ What you need to provide in order for getting the external-dns running with the 
 * Create an API-key that grants manager access to the ibmcis instance(s). You will need to make this available via an environment varible named `IC_API_KEY` for the external-dns pod.
 * Extract the CRN(s) for the ibmcis instance(s).You will need to make this available via an environment variable named `IC_CIS_INSTANCE_CRN` for the external-dns pod.
 
-### IC_API_KEY
+### Creating API-key -- IC_API_KEY
 Assuming you want to take the "long road" and create the API-key via a dediciated service id these are the steps you can use for inspiration. Notice the example is a command line example and requires IBM Cloud CLI. If you need help on getting that in place take a look at [Getting started with the IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-getting-started).
 
 1. Generate a service id.
@@ -65,7 +65,7 @@ kubectl create secret generic external-dns -n external-dns \
 ```
 
 
-### IC_CIS_INSTANCE_CRN
+### Extracting instance ID(s) - IC_CIS_INSTANCE_CRN
 To find the CRN or resource id consider using `ibmcloud resource service-instances` command. What you should be looking for is CRNs containing `crn:v1:bluemix:public:internet-svcs:global:`. An example could be to do it like this:
 ```bash
 ibmcloud resource service-instances --all-resource-groups --long
