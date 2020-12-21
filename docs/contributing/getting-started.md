@@ -8,7 +8,7 @@
 - [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl)
 
 Compile and run locally against a remote k8s cluster.
-```
+```shell
 git clone https://github.com/kubernetes-sigs/external-dns.git && cd external-dns
 make build
 # login to remote k8s cluster
@@ -16,14 +16,14 @@ make build
 ```
 
 Run linting, unit tests, and coverage report.
-```
+```shell
 make lint
 make test
 make cover-html
 ```
 
 Build container image.
-```
+```shell
 make build.docker
 ```
 
@@ -49,10 +49,10 @@ A typical way to start on, e.g. a CoreDNS provider, would be to add a `coredns.g
 
 Note, how your provider doesn't need to know anything about where the DNS records come from, nor does it have to figure out the difference between the current and the desired state, it merely executes the actions calculated by the plan.
 
-# Running Github Actions locally
+# Running GitHub Actions locally
 
-You can also extend the CI workflow which is currently implemented as Github Action within the [workflow](https://github.com/kubernetes-sigs/external-dns/tree/HEAD/.github/workflows) folder.
-In order to test your changes before committing you can leverage [act](https://github.com/nektos/act) to run the Github Action locally.
+You can also extend the CI workflow which is currently implemented as GitHub Action within the [workflow](https://github.com/kubernetes-sigs/external-dns/tree/HEAD/.github/workflows) folder.
+In order to test your changes before committing you can leverage [act](https://github.com/nektos/act) to run the GitHub Action locally.
 
 Follow the installation instructions in the nektos/act [README.md](https://github.com/nektos/act/blob/master/README.md).
 Afterwards just run `act` within the root folder of the project.

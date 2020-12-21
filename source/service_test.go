@@ -315,7 +315,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			false,
 		},
 		{
-			"FQDN template with multiple hostnames return an endpoint with target IP when ignoreing annotations",
+			"FQDN template with multiple hostnames return an endpoint with target IP when ignoring annotations",
 			"",
 			"",
 			"testing",

@@ -140,8 +140,8 @@ func TestOvhRecords(t *testing.T) {
 	endpoints, err := provider.Records(context.TODO())
 	assert.NoError(err)
 	// Little fix for multi targets endpoint
-	for _, endoint := range endpoints {
-		sort.Strings(endoint.Targets)
+	for _, endpoint := range endpoints {
+		sort.Strings(endpoint.Targets)
 	}
 	assert.ElementsMatch(endpoints, []*endpoint.Endpoint{
 		{DNSName: "example.org", RecordType: "A", RecordTTL: 10, Labels: endpoint.NewLabels(), Targets: []string{"203.0.113.42"}},
