@@ -157,7 +157,7 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 	p.PaginationOptions.Page = 1
 
 	// if there is a zoneIDfilter configured
-	// && if the filter isnt just a blank string (used in tests)
+	// && if the filter isn't just a blank string (used in tests)
 	if len(p.zoneIDFilter.ZoneIDs) > 0 && p.zoneIDFilter.ZoneIDs[0] != "" {
 		log.Debugln("zoneIDFilter configured. only looking up zone IDs defined")
 		for _, zoneID := range p.zoneIDFilter.ZoneIDs {
