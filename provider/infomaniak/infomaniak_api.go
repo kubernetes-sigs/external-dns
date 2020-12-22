@@ -129,7 +129,7 @@ type InfomaniakDNSDomain struct {
 	ServiceID           uint64           `json:"service_id,omitempty"`
 	ServiceName         string           `json:"service_name,omitempty"`
 	CustomerName        string           `json:"customer_name,omitempty"`
-	InternalName        string           `json:"internal_name,omitempty,omitempty"`
+	InternalName        string           `json:"internal_name,omitempty"`
 	CreatedAt           uint64           `json:"created_at,omitempty"`
 	ExpiredAt           uint64           `json:"expired_at,omitempty"`
 	Version             uint64           `json:"version,omitempty"`
@@ -155,7 +155,7 @@ type InfomaniakDNSRecord struct {
 	Target     string `json:"target,omitempty"`
 	TargetIdn  string `json:"target_idn,omitempty"`
 	UpdatedAt  uint64 `json:"updated_at,omitempty"`
-	DyndnsID   string `json:"dyndns_id,omitempty,omitempty"`
+	DyndnsID   string `json:"dyndns_id,omitempty"`
 	Priority   uint64 `json:"priority,omitempty"`
 	IsEditable bool   `json:"is_editable,omitempty"`
 }
