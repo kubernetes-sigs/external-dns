@@ -69,14 +69,14 @@ func (p *InfomaniakProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 		}
 
 		for _, r := range *records {
-			if provider.SupportedRecordType(string(r.Type)) {
+			if provider.SupportedRecordType(r.Type) {
 				name := r.Source + "." + zone.CustomerName
 
 				if r.Source == "." {
 					name = zone.CustomerName
 				}
 
-				endpoints = append(endpoints, endpoint.NewEndpoint(name, string(r.Type), r.Target))
+				endpoints = append(endpoints, endpoint.NewEndpoint(name, r.Type, r.Target))
 			}
 		}
 	}
