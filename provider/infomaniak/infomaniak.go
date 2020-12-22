@@ -80,51 +80,19 @@ func (p *InfomaniakProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 		}
 	}
 
-	for i, endpoint := range(endpoints) {
+	for i, endpoint := range endpoints {
 		log.Infof("Endpoint %d: %s / %s / %s", i, endpoint.DNSName, endpoint.RecordType, endpoint.Targets)
 	}
 	return endpoints, nil
 }
 
-/*
-type Changes struct {
-	// Records that need to be created
-	Create []*endpoint.Endpoint
-	// Records that need to be updated (current data)
-	UpdateOld []*endpoint.Endpoint
-	// Records that need to be updated (desired data)
-	UpdateNew []*endpoint.Endpoint
-	// Records that need to be deleted
-	Delete []*endpoint.Endpoint
-}
-
-// Endpoint is a high-level way of a connection between a service and an IP
-type Endpoint struct {
-	// The hostname of the DNS record
-	DNSName string `json:"dnsName,omitempty"`
-	// The targets the DNS record points to
-	Targets Targets `json:"targets,omitempty"`
-	// RecordType type of record, e.g. CNAME, A, SRV, TXT etc
-	RecordType string `json:"recordType,omitempty"`
-	// Identifier to distinguish multiple records with the same name and type (e.g. Route53 records with routing policies other than 'simple')
-	SetIdentifier string `json:"setIdentifier,omitempty"`
-	// TTL for the record
-	RecordTTL TTL `json:"recordTTL,omitempty"`
-	// Labels stores labels defined for the Endpoint
-	// +optional
-	Labels Labels `json:"labels,omitempty"`
-	// ProviderSpecific stores provider specific config
-	// +optional
-	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
-}
-*/
-
+// findMatchingZone find longest matching domain from list
 func findMatchingZone(pdomains *[]InfomaniakDNSDomain, record string) (*InfomaniakDNSDomain, string, error) {
 	domains := *pdomains
-	sort.Slice(domains, func (i, j int) bool { return len(domains[i].CustomerName) > len(domains[j].CustomerName)})
-	for _, domain := range(domains) {
+	sort.Slice(domains, func(i, j int) bool { return len(domains[i].CustomerName) > len(domains[j].CustomerName) })
+	for _, domain := range domains {
 		if strings.HasSuffix(record, domain.CustomerName) {
-			return &domain, strings.TrimSuffix(record, "." + domain.CustomerName), nil
+			return &domain, strings.TrimSuffix(record, "."+domain.CustomerName), nil
 		}
 	}
 	return nil, "", errors.New("not found")
