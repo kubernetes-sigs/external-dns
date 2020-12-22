@@ -107,11 +107,11 @@ func (p *InfomaniakProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 
 	var zones []InfomaniakDNSDomain
 
-	all_zones, err := p.Api.ListDomains()
+	allZones, err := p.Api.ListDomains()
 	if err != nil {
 		return err
 	}
-	for _, zone := range *all_zones {
+	for _, zone := range *allZones {
 		if p.domainFilter.Match(zone.CustomerName) {
 			zones = append(zones, zone)
 		}
