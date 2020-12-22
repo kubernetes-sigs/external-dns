@@ -162,7 +162,7 @@ func (p *InfomaniakProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 		for i, target := range endpoint.Targets {
 			newTarget := newEndpoint.Targets[i]
 			if target == newTarget && endpoint.RecordTTL == newEndpoint.RecordTTL {
-				log.Infof("\t[skip] - %d : %s", i, target, endpoint.RecordTTL)
+				log.Infof("\t[skip] - %s (%d)", target, endpoint.RecordTTL)
 				continue
 			}
 			err := p.Api.ModifyDNSRecord(zone, source, target, newTarget, endpoint.RecordType, uint64(newEndpoint.RecordTTL))
