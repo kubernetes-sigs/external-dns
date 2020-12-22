@@ -31,7 +31,7 @@ const APITokenVariable = "INFOMANIAK_API_TOKEN"
 
 type InfomaniakProvider struct {
 	provider.BaseProvider
-	API          *InfomaniakAPI
+	API          InfomaniakAPIAdapter
 	domainFilter endpoint.DomainFilter
 	DryRun       bool
 }
@@ -42,7 +42,7 @@ func NewInfomaniakProvider(ctx context.Context, domainFilter endpoint.DomainFilt
 		return nil, errors.New("environment variable " + APITokenVariable + " missing")
 	}
 
-	api := NewInfomaniakAPI(token)
+	var api InfomaniakAPIAdapter = NewInfomaniakAPI(token)
 
 	provider := &InfomaniakProvider{
 		API:          api,
@@ -87,6 +87,8 @@ func (p *InfomaniakProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 	return endpoints, nil
 }
 
+var errorNotFound = errors.New("not found")
+
 // findMatchingZone find longest matching domain from list
 func findMatchingZone(pdomains *[]InfomaniakDNSDomain, record string) (*InfomaniakDNSDomain, string, error) {
 	domains := *pdomains
@@ -96,7 +98,7 @@ func findMatchingZone(pdomains *[]InfomaniakDNSDomain, record string) (*Infomani
 			return &domain, strings.TrimSuffix(record, "."+domain.CustomerName), nil
 		}
 	}
-	return nil, "", errors.New("not found")
+	return nil, "", errorNotFound
 }
 
 func (p *InfomaniakProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
@@ -125,7 +127,7 @@ func (p *InfomaniakProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 		}
 		log.Infof("(%s) %s IN %s:", zone.CustomerName, source, endpoint.RecordType)
 		for i, target := range endpoint.Targets {
-			log.Infof("\t - %d : %s", i, target)
+			log.Infof("  - %d : %s", i, target)
 			target = strings.Trim(target, "\"")
 			err := p.API.EnsureDNSRecord(zone, source, target, endpoint.RecordType, uint64(endpoint.RecordTTL))
 			if err != nil {
@@ -142,7 +144,7 @@ func (p *InfomaniakProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 		}
 		log.Infof("(%s) %s IN %s:", zone.CustomerName, source, endpoint.RecordType)
 		for i, target := range endpoint.Targets {
-			log.Infof("\t - %d : %s", i, target)
+			log.Infof("  - %d : %s", i, target)
 			target = strings.Trim(target, "\"")
 			err := p.API.RemoveDNSRecord(zone, source, target, endpoint.RecordType)
 			if err != nil {
@@ -162,7 +164,7 @@ func (p *InfomaniakProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 		for i, target := range endpoint.Targets {
 			newTarget := newEndpoint.Targets[i]
 			if target == newTarget && endpoint.RecordTTL == newEndpoint.RecordTTL {
-				log.Infof("\t[skip] - %s (%d)", target, endpoint.RecordTTL)
+				log.Infof("  [skip] - %s (%d)", target, endpoint.RecordTTL)
 				continue
 			}
 			err := p.API.ModifyDNSRecord(zone, source, target, newTarget, endpoint.RecordType, uint64(newEndpoint.RecordTTL))

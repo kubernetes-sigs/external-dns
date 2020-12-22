@@ -32,6 +32,14 @@ const (
 
 // InfomaniakAPI is a basic implementation of an API client to api.infomaniak.com
 // It implements only the methods required for the ACME Challenge
+type InfomaniakAPIAdapter interface {
+	ListDomains() (*[]InfomaniakDNSDomain, error)
+	GetRecords(*InfomaniakDNSDomain) (*[]InfomaniakDNSRecord, error)
+	EnsureDNSRecord(*InfomaniakDNSDomain, string, string, string, uint64) error
+	RemoveDNSRecord(*InfomaniakDNSDomain, string, string, string) error
+	ModifyDNSRecord(*InfomaniakDNSDomain, string, string, string, string, uint64) error
+}
+
 type InfomaniakAPI struct {
 	apiToken string
 }
