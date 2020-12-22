@@ -160,7 +160,6 @@ type InfomaniakDNSRecord struct {
 	IsEditable bool   `json:"is_editable,omitempty"`
 }
 
-// ErrDomainNotFound
 var ErrDomainNotFound = errors.New("domain not found")
 
 // GetDomainByName gather a Domain object from its name
