@@ -1,0 +1,194 @@
+package infomaniak
+
+import (
+	"context"
+	"errors"
+	"os"
+	"sort"
+	"strings"
+
+	log "github.com/sirupsen/logrus"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
+)
+
+const API_TOKEN_VARIABLE = "INFOMANIAK_API_TOKEN"
+
+type InfomaniakProvider struct {
+	provider.BaseProvider
+	Api          *InfomaniakAPI
+	domainFilter endpoint.DomainFilter
+	DryRun       bool
+}
+
+func NewInfomaniakProvider(ctx context.Context, domainFilter endpoint.DomainFilter, dryRun bool) (*InfomaniakProvider, error) {
+	token, ok := os.LookupEnv(API_TOKEN_VARIABLE)
+	if !ok {
+		return nil, errors.New("environment variable " + API_TOKEN_VARIABLE + " missing")
+	}
+
+	api := NewInfomaniakAPI(token)
+
+	provider := &InfomaniakProvider{
+		Api:          api,
+		domainFilter: domainFilter,
+		DryRun:       dryRun,
+	}
+	return provider, nil
+}
+
+func (p *InfomaniakProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	zones, err := p.Api.ListDomains()
+	if err != nil {
+		return nil, err
+	}
+	endpoints := []*endpoint.Endpoint{}
+	for _, zone := range *zones {
+		if !p.domainFilter.Match(zone.CustomerName) {
+			continue
+		}
+
+		records, err := p.Api.GetRecords(&zone)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, r := range *records {
+			if provider.SupportedRecordType(string(r.Type)) {
+				name := r.Source + "." + zone.CustomerName
+
+				if r.Source == "." {
+					name = zone.CustomerName
+				}
+
+				endpoints = append(endpoints, endpoint.NewEndpoint(name, string(r.Type), r.Target))
+			}
+		}
+	}
+
+	for i, endpoint := range(endpoints) {
+		log.Infof("Endpoint %d: %s / %s / %s", i, endpoint.DNSName, endpoint.RecordType, endpoint.Targets)
+	}
+	return endpoints, nil
+}
+
+/*
+type Changes struct {
+	// Records that need to be created
+	Create []*endpoint.Endpoint
+	// Records that need to be updated (current data)
+	UpdateOld []*endpoint.Endpoint
+	// Records that need to be updated (desired data)
+	UpdateNew []*endpoint.Endpoint
+	// Records that need to be deleted
+	Delete []*endpoint.Endpoint
+}
+
+// Endpoint is a high-level way of a connection between a service and an IP
+type Endpoint struct {
+	// The hostname of the DNS record
+	DNSName string `json:"dnsName,omitempty"`
+	// The targets the DNS record points to
+	Targets Targets `json:"targets,omitempty"`
+	// RecordType type of record, e.g. CNAME, A, SRV, TXT etc
+	RecordType string `json:"recordType,omitempty"`
+	// Identifier to distinguish multiple records with the same name and type (e.g. Route53 records with routing policies other than 'simple')
+	SetIdentifier string `json:"setIdentifier,omitempty"`
+	// TTL for the record
+	RecordTTL TTL `json:"recordTTL,omitempty"`
+	// Labels stores labels defined for the Endpoint
+	// +optional
+	Labels Labels `json:"labels,omitempty"`
+	// ProviderSpecific stores provider specific config
+	// +optional
+	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
+}
+*/
+
+func findMatchingZone(pdomains *[]InfomaniakDNSDomain, record string) (*InfomaniakDNSDomain, string, error) {
+	domains := *pdomains
+	sort.Slice(domains, func (i, j int) bool { return len(domains[i].CustomerName) > len(domains[j].CustomerName)})
+	for _, domain := range(domains) {
+		if strings.HasSuffix(record, domain.CustomerName) {
+			return &domain, strings.TrimSuffix(record, "." + domain.CustomerName), nil
+		}
+	}
+	return nil, "", errors.New("not found")
+}
+
+func (p *InfomaniakProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	if len(changes.Create) == 0 && len(changes.UpdateNew) == 0 && len(changes.Delete) == 0 {
+		log.Infof("All records are already up to date")
+		return nil
+	}
+
+	var zones []InfomaniakDNSDomain
+
+	all_zones, err := p.Api.ListDomains()
+	if err != nil {
+		return err
+	}
+	for _, zone := range *all_zones {
+		if p.domainFilter.Match(zone.CustomerName) {
+			zones = append(zones, zone)
+		}
+	}
+
+	log.Infof("Records to create:")
+	for _, endpoint := range changes.Create {
+		zone, source, err := findMatchingZone(&zones, endpoint.DNSName)
+		if err != nil {
+			return err
+		}
+		log.Infof("(%s) %s IN %s:", zone.CustomerName, source, endpoint.RecordType)
+		for i, target := range endpoint.Targets {
+			log.Infof("\t - %d : %s", i, target)
+			target = strings.Trim(target, "\"")
+			err := p.Api.EnsureDNSRecord(zone, source, target, endpoint.RecordType, uint64(endpoint.RecordTTL))
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	log.Infof("Records to delete:")
+	for _, endpoint := range changes.Delete {
+		zone, source, err := findMatchingZone(&zones, endpoint.DNSName)
+		if err != nil {
+			return err
+		}
+		log.Infof("(%s) %s IN %s:", zone.CustomerName, source, endpoint.RecordType)
+		for i, target := range endpoint.Targets {
+			log.Infof("\t - %d : %s", i, target)
+			target = strings.Trim(target, "\"")
+			err := p.Api.RemoveDNSRecord(zone, source, target, endpoint.RecordType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	log.Infof("Records to update:")
+	for iz, endpoint := range changes.UpdateOld {
+		zone, source, err := findMatchingZone(&zones, endpoint.DNSName)
+		if err != nil {
+			return err
+		}
+		newEndpoint := changes.UpdateNew[iz]
+		log.Infof("(%s) %s IN %s:", zone.CustomerName, source, endpoint.RecordType)
+		for i, target := range endpoint.Targets {
+			newTarget := newEndpoint.Targets[i]
+			if target == newTarget && endpoint.RecordTTL == newEndpoint.RecordTTL {
+				log.Infof("\t[skip] - %d : %s", i, target, endpoint.RecordTTL)
+				continue
+			}
+			err := p.Api.ModifyDNSRecord(zone, source, target, newTarget, endpoint.RecordType, uint64(newEndpoint.RecordTTL))
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
