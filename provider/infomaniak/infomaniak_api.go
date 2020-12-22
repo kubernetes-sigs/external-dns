@@ -332,7 +332,6 @@ func (ik *InfomaniakAPI) ModifyDNSRecord(domain *InfomaniakDNSDomain, source, ol
 	log.Infof("Updating record domain=%d (source=%s rtype=%s target=%s ttl=%d)", domain.ID, source, rtype, newTarget, ttl)
 	_, err = ik.put(fmt.Sprintf("/1/domain/%d/dns/record/%s", domain.ID, *recordID), bytes.NewBuffer(rawJSON))
 	return err
-
 }
 
 // RemoveDNSRecord ensures a record is absent

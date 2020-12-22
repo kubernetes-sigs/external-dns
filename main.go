@@ -52,6 +52,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/google"
 	"sigs.k8s.io/external-dns/provider/hetzner"
 	"sigs.k8s.io/external-dns/provider/infoblox"
+	"sigs.k8s.io/external-dns/provider/infomaniak"
 	"sigs.k8s.io/external-dns/provider/inmemory"
 	"sigs.k8s.io/external-dns/provider/linode"
 	"sigs.k8s.io/external-dns/provider/ns1"
@@ -66,7 +67,6 @@ import (
 	"sigs.k8s.io/external-dns/provider/ultradns"
 	"sigs.k8s.io/external-dns/provider/vinyldns"
 	"sigs.k8s.io/external-dns/provider/vultr"
-	"sigs.k8s.io/external-dns/provider/infomaniak"
 	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/source"
 )
