@@ -75,8 +75,7 @@ func (p *InfomaniakProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 				if r.Source == "." {
 					name = zone.CustomerName
 				}
-
-				endpoints = append(endpoints, endpoint.NewEndpoint(name, r.Type, r.Target))
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(name, r.Type, endpoint.TTL(r.TTL), r.Target))
 			}
 		}
 	}
@@ -128,7 +127,7 @@ func (p *InfomaniakProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 		log.Infof("(%s) %s IN %s:", zone.CustomerName, source, endpoint.RecordType)
 		for i, target := range endpoint.Targets {
 			log.Infof("  - %d : %s", i, target)
-			target = strings.Trim(target, "\"")
+			// target = strings.Trim(target, "\"")
 			err := p.API.EnsureDNSRecord(zone, source, target, endpoint.RecordType, uint64(endpoint.RecordTTL))
 			if err != nil {
 				return err
