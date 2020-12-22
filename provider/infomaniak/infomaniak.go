@@ -27,25 +27,25 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const API_TOKEN_VARIABLE = "INFOMANIAK_API_TOKEN"
+const APITokenVariable = "INFOMANIAK_API_TOKEN"
 
 type InfomaniakProvider struct {
 	provider.BaseProvider
-	Api          *InfomaniakAPI
+	API          *InfomaniakAPI
 	domainFilter endpoint.DomainFilter
 	DryRun       bool
 }
 
 func NewInfomaniakProvider(ctx context.Context, domainFilter endpoint.DomainFilter, dryRun bool) (*InfomaniakProvider, error) {
-	token, ok := os.LookupEnv(API_TOKEN_VARIABLE)
+	token, ok := os.LookupEnv(APITokenVariable)
 	if !ok {
-		return nil, errors.New("environment variable " + API_TOKEN_VARIABLE + " missing")
+		return nil, errors.New("environment variable " + APITokenVariable + " missing")
 	}
 
 	api := NewInfomaniakAPI(token)
 
 	provider := &InfomaniakProvider{
-		Api:          api,
+		API:          api,
 		domainFilter: domainFilter,
 		DryRun:       dryRun,
 	}
@@ -53,7 +53,7 @@ func NewInfomaniakProvider(ctx context.Context, domainFilter endpoint.DomainFilt
 }
 
 func (p *InfomaniakProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	zones, err := p.Api.ListDomains()
+	zones, err := p.API.ListDomains()
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func (p *InfomaniakProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 			continue
 		}
 
-		records, err := p.Api.GetRecords(&zone)
+		records, err := p.API.GetRecords(&zone)
 		if err != nil {
 			return nil, err
 		}
@@ -107,7 +107,7 @@ func (p *InfomaniakProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 
 	var zones []InfomaniakDNSDomain
 
-	allZones, err := p.Api.ListDomains()
+	allZones, err := p.API.ListDomains()
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func (p *InfomaniakProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 		for i, target := range endpoint.Targets {
 			log.Infof("\t - %d : %s", i, target)
 			target = strings.Trim(target, "\"")
-			err := p.Api.EnsureDNSRecord(zone, source, target, endpoint.RecordType, uint64(endpoint.RecordTTL))
+			err := p.API.EnsureDNSRecord(zone, source, target, endpoint.RecordType, uint64(endpoint.RecordTTL))
 			if err != nil {
 				return err
 			}
@@ -144,7 +144,7 @@ func (p *InfomaniakProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 		for i, target := range endpoint.Targets {
 			log.Infof("\t - %d : %s", i, target)
 			target = strings.Trim(target, "\"")
-			err := p.Api.RemoveDNSRecord(zone, source, target, endpoint.RecordType)
+			err := p.API.RemoveDNSRecord(zone, source, target, endpoint.RecordType)
 			if err != nil {
 				return err
 			}
@@ -165,7 +165,7 @@ func (p *InfomaniakProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 				log.Infof("\t[skip] - %s (%d)", target, endpoint.RecordTTL)
 				continue
 			}
-			err := p.Api.ModifyDNSRecord(zone, source, target, newTarget, endpoint.RecordType, uint64(newEndpoint.RecordTTL))
+			err := p.API.ModifyDNSRecord(zone, source, target, newTarget, endpoint.RecordType, uint64(newEndpoint.RecordTTL))
 			if err != nil {
 				return err
 			}
