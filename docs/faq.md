@@ -59,8 +59,8 @@ There are three sources of information for ExternalDNS to decide on DNS name. Ex
 
 1. For ingress objects ExternalDNS will create a DNS record based on the hosts specified for the ingress object, as well as the `external-dns.alpha.kubernetes.io/hostname` annotation. For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the loadbalancer IP, it also will look for the annotation `external-dns.alpha.kubernetes.io/internal-hostname` on the service and use the service IP.
     - For ingresses, you can optionally force ExternalDNS to create records based on _either_ the hosts specified or the `external-dns.alpha.kubernetes.io/hostname` annotation. This behavior is controlled by
-      setting the `external-dns.alpha.kubernetes.io/ingress-hostname-source` annotation on that ingress to either `defined-hosts-only` or `annotation-only`. 
-      
+      setting the `external-dns.alpha.kubernetes.io/ingress-hostname-source` annotation on that ingress to either `defined-hosts-only` or `annotation-only`.
+
 2. If compatibility mode is enabled (e.g. `--compatibility={mate,molecule}` flag), External DNS will parse annotations used by Zalando/Mate, wearemolecule/route53-kubernetes. Compatibility mode with Kops DNS Controller is planned to be added in the future.
 
 3. If `--fqdn-template` flag is specified, e.g. `--fqdn-template={{.Name}}.my-org.com`, ExternalDNS will use service/ingress specifications for the provided template to generate DNS name.
