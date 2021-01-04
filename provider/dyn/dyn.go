@@ -195,7 +195,7 @@ func fixMissingTTL(ttl endpoint.TTL, minTTLSeconds int) string {
 	return strconv.Itoa(i)
 }
 
-// merge produces a singe list of records that can be used as a replacement.
+// merge produces a single list of records that can be used as a replacement.
 // Dyn allows to replace all records with a single call
 // Invariant: the result contains only elements from the updateNew parameter
 func merge(updateOld, updateNew []*endpoint.Endpoint) []*endpoint.Endpoint {
@@ -625,7 +625,7 @@ func (d *dynProviderState) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 // this method does C + 2*Z requests: C=total number of changes, Z = number of
 // affected zones (1 login + 1 commit)
 func (d *dynProviderState) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	log.Debugf("Processing chages: %+v", changes)
+	log.Debugf("Processing changes: %+v", changes)
 
 	if d.DryRun {
 		log.Infof("Will NOT delete these records: %+v", changes.Delete)

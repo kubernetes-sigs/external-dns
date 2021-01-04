@@ -17,7 +17,7 @@
 
 ## Summary
 
-[ExternalDNS](https://github.com/kubernetes-sigs/external-dns) is a project that synchronizes Kubernetes’ Services, Ingresses and other Kubernetes resources to DNS backends for several DNS providers.
+[ExternalDNS](https://github.com/kubernetes-sigs/external-dns) is a project that synchronizes Kubernetes' Services, Ingresses and other Kubernetes resources to DNS backends for several DNS providers.
 
 The projects was started as a Kubernetes Incubator project in February 2017 and being the Kubernetes incubation initiative officially over, the maintainers want to propose the project to be moved to the kubernetes GitHub organization or to kubernetes-sigs, under the sponsorship of sig-network.
 
@@ -33,7 +33,7 @@ When the project was proposed (see the [original discussion](https://github.com/
 
 * Route53-kubernetes - [https://github.com/wearemolecule/route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
 
-ExternalDNS’ goal from the beginning was to provide an officially supported solution to those problems.
+ExternalDNS' goal from the beginning was to provide an officially supported solution to those problems.
 
 After two years of development, the project is still in the kubernetes-sigs.
 
@@ -74,7 +74,7 @@ Moving the ExternalDNS project outside of Kubernetes projects would cause:
 
 * Problems (re-)establishing user trust which could eventually lead to fragmentation and duplication.
 
-* It would be hard to establish in which organization the project should be moved to. The most natural would be Zalando’s organization, being the company that put most of the work on the project. While it is possible to assume Zalando’s commitment to open-source, that would be a strategic mistake for the project community and for the Kubernetes ecosystem due to the obvious lack of neutrality.
+* It would be hard to establish in which organization the project should be moved to. The most natural would be Zalando's organization, being the company that put most of the work on the project. While it is possible to assume Zalando's commitment to open-source, that would be a strategic mistake for the project community and for the Kubernetes ecosystem due to the obvious lack of neutrality.
 
 * Lack of resources to test, lack of issue management via automation.
 
@@ -91,7 +91,7 @@ We have evidence that many companies are using ExternalDNS in production, but it
 
 The project was quoted by a number of tutorials on the web, including the [official tutorials from AWS](https://aws.amazon.com/blogs/opensource/unified-service-discovery-ecs-kubernetes/).
 
-ExternalDNS can’t be consider to be "done": while the core functionality has been implemented, there is lack of integration testing and structural changes that are needed.
+ExternalDNS can't be consider to be "done": while the core functionality has been implemented, there is lack of integration testing and structural changes that are needed.
 
 Those are identified in the project roadmap, which is roughly made of the following items:
 
@@ -129,7 +129,7 @@ The high number of providers contributed to the project pose a maintainability c
 
 The project uses the free quota of TravisCI to run tests for the project.
 
-The release pipeline for the project is currently fully owned by Zalando. It runs on the internal system of the company (closed source) which external maintainers/users can’t access and that pushes images to the publicly accessible docker registry available at the URL `registry.opensource.zalan.do`.
+The release pipeline for the project is currently fully owned by Zalando. It runs on the internal system of the company (closed source) which external maintainers/users can't access and that pushes images to the publicly accessible docker registry available at the URL `registry.opensource.zalan.do`.
 
 The docker registry service is provided as best effort with no sort of SLA and the maintainers team openly suggests the users to build and maintain their own docker image based on the provided Dockerfiles.
 
@@ -149,8 +149,8 @@ The following are risks that were identified:
 
 We think that the following actions will constitute appropriate mitigations:
 
-* Decoupling the providers via an API will allow us to resolve the problem of the providers. Being the project already more than 2 years old and given that there are 18 providers implemented, we possess enough informations to define an API that we can be stable in a short timeframe. Once this is stable, the problem of testing the providers can be deferred to be a provider’s responsibility. This will also reduce the scope of External DNS core code, which means that there will be no need for a further increase of the maintaining team.
+* Decoupling the providers via an API will allow us to resolve the problem of the providers. Being the project already more than 2 years old and given that there are 18 providers implemented, we possess enough information to define an API that we can be stable in a short timeframe. Once this is stable, the problem of testing the providers can be deferred to be a provider's responsibility. This will also reduce the scope of External DNS core code, which means that there will be no need for a further increase of the maintaining team.
 
 * We added integration testing for the main cloud providers to the roadmap for the 1.0 release to make sure that we cover the mostly used ones. We believe that this item should be tackled independently from the decoupling of providers as it would be capable of generating value independently from the result of the decoupling efforts.
 
-* With the move to the Kubernetes incubation, we hope that we will be able to access the testing resources of the Kubernetes project. In this way, we hope to decouple the project from the dependency on Zalando’s internal CI tool. This will help open up the possibility to increase the visibility on the project from external contributors, which currently would be blocked by the lack of access to the software used for the whole release pipeline.
+* With the move to the Kubernetes incubation, we hope that we will be able to access the testing resources of the Kubernetes project. In this way, we hope to decouple the project from the dependency on Zalando's internal CI tool. This will help open up the possibility to increase the visibility on the project from external contributors, which currently would be blocked by the lack of access to the software used for the whole release pipeline.

@@ -51,6 +51,8 @@ const (
 	// The value of the controller annotation so that we feel responsible
 	// The value of the controller annotation so that we feel responsible
 	controllerAnnotationValue = "dns-controller"
+	// The annotation used for defining the desired hostname
+	internalHostnameAnnotationKey = "external-dns.alpha.kubernetes.io/internal-hostname"
 )
 
 // Provider-specific annotations
@@ -114,6 +116,14 @@ func getHostnamesFromAnnotations(annotations map[string]string) []string {
 
 func getAccessFromAnnotations(annotations map[string]string) string {
 	return annotations[accessAnnotationKey]
+}
+
+func getInternalHostnamesFromAnnotations(annotations map[string]string) []string {
+	internalHostnameAnnotation, exists := annotations[internalHostnameAnnotationKey]
+	if !exists {
+		return nil
+	}
+	return strings.Split(strings.Replace(internalHostnameAnnotation, " ", "", -1), ",")
 }
 
 func getAliasFromAnnotations(annotations map[string]string) bool {

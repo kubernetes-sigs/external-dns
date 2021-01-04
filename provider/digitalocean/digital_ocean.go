@@ -27,6 +27,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -83,7 +84,10 @@ func NewDigitalOceanProvider(ctx context.Context, domainFilter endpoint.DomainFi
 	oauthClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(&oauth2.Token{
 		AccessToken: token,
 	}))
-	client := godo.NewClient(oauthClient)
+	client, err := godo.New(oauthClient, godo.SetUserAgent("ExternalDNS/"+externaldns.Version))
+	if err != nil {
+		return nil, err
+	}
 
 	p := &DigitalOceanProvider{
 		Client:       client.Domains,
