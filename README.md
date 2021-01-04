@@ -45,6 +45,7 @@ ExternalDNS' current release is `v0.7`. This version allows you to keep selected
 * [NS1](https://ns1.com/)
 * [TransIP](https://www.transip.eu/domain-name/)
 * [VinylDNS](https://www.vinyldns.io)
+* [Vultr](https://www.vultr.com)
 * [OVH](https://www.ovh.com)
 * [Scaleway](https://www.scaleway.com)
 * [Akamai Edge DNS](https://learn.akamai.com/en-us/products/cloud_security/edge_dns.html)
@@ -165,8 +166,8 @@ from source.
 Next, run an application and expose it via a Kubernetes Service:
 
 ```console
-$ kubectl run nginx --image=nginx --replicas=1 --port=80
-$ kubectl expose deployment nginx --port=80 --target-port=80 --type=LoadBalancer
+$ kubectl run nginx --image=nginx --port=80
+$ kubectl expose pod nginx --port=80 --target-port=80 --type=LoadBalancer
 ```
 
 Annotate the Service with your desired external DNS name. Make sure to change `example.org` to your domain.
@@ -182,6 +183,14 @@ $ kubectl annotate service nginx "external-dns.alpha.kubernetes.io/ttl=10"
 ```
 
 For more details on configuring TTL, see [here](docs/ttl.md).
+
+Use the internal-hostname annotation to create DNS records with ClusterIP as the target.
+
+```console
+$ kubectl annotate service nginx "external-dns.alpha.kubernetes.io/internal-hostname=nginx.internal.example.org."
+```
+
+If the service is not of type Loadbalancer you need the --publish-internal-services flag.
 
 Locally run a single sync loop of ExternalDNS.
 

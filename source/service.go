@@ -362,7 +362,7 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(svc.Annotations)
 	hostnameList := strings.Split(strings.Replace(buf.String(), " ", "", -1), ",")
 	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier)...)
+		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, false)...)
 	}
 
 	return endpoints, nil
@@ -374,9 +374,17 @@ func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 	// Skip endpoints if we do not want entries from annotations
 	if !sc.ignoreHostnameAnnotation {
 		providerSpecific, setIdentifier := getProviderSpecificAnnotations(svc.Annotations)
-		hostnameList := getHostnamesFromAnnotations(svc.Annotations)
+		var hostnameList []string
+		var internalHostnameList []string
+
+		hostnameList = getHostnamesFromAnnotations(svc.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier)...)
+			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, false)...)
+		}
+
+		internalHostnameList = getInternalHostnamesFromAnnotations(svc.Annotations)
+		for _, hostname := range internalHostnameList {
+			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, true)...)
 		}
 	}
 	return endpoints
@@ -432,7 +440,7 @@ func (sc *serviceSource) setResourceLabel(service *v1.Service, endpoints []*endp
 	}
 }
 
-func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string) []*endpoint.Endpoint {
+func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string, useClusterIP bool) []*endpoint.Endpoint {
 	hostname = strings.TrimSuffix(hostname, ".")
 	ttl, err := getTTLFromAnnotations(svc.Annotations)
 	if err != nil {
@@ -460,7 +468,11 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 
 	switch svc.Spec.Type {
 	case v1.ServiceTypeLoadBalancer:
-		targets = append(targets, extractLoadBalancerTargets(svc)...)
+		if useClusterIP {
+			targets = append(targets, extractServiceIps(svc)...)
+		} else {
+			targets = append(targets, extractLoadBalancerTargets(svc)...)
+		}
 	case v1.ServiceTypeClusterIP:
 		if sc.publishInternal {
 			targets = append(targets, extractServiceIps(svc)...)

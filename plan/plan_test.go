@@ -686,3 +686,132 @@ func TestNormalizeDNSName(t *testing.T) {
 		assert.Equal(t, r.expect, gotName)
 	}
 }
+
+func TestShouldUpdateProviderSpecific(tt *testing.T) {
+	comparator := func(name, previous, current string) bool {
+		return previous == current
+	}
+	for _, test := range []struct {
+		name               string
+		current            *endpoint.Endpoint
+		desired            *endpoint.Endpoint
+		propertyComparator func(name, previous, current string) bool
+		shouldUpdate       bool
+	}{
+		{
+			name: "skip AWS target health",
+			current: &endpoint.Endpoint{
+				DNSName: "foo.com",
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: "aws/evaluate-target-health", Value: "true"},
+				},
+			},
+			desired: &endpoint.Endpoint{
+				DNSName: "bar.com",
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: "aws/evaluate-target-health", Value: "true"},
+				},
+			},
+			propertyComparator: comparator,
+			shouldUpdate:       false,
+		},
+		{
+			name: "custom property unchanged",
+			current: &endpoint.Endpoint{
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: "custom/property", Value: "true"},
+				},
+			},
+			desired: &endpoint.Endpoint{
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: "custom/property", Value: "true"},
+				},
+			},
+			propertyComparator: comparator,
+			shouldUpdate:       false,
+		},
+		{
+			name: "custom property value changed",
+			current: &endpoint.Endpoint{
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: "custom/property", Value: "true"},
+				},
+			},
+			desired: &endpoint.Endpoint{
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: "custom/property", Value: "false"},
+				},
+			},
+			propertyComparator: comparator,
+			shouldUpdate:       true,
+		},
+		{
+			name: "custom property key changed",
+			current: &endpoint.Endpoint{
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: "custom/property", Value: "true"},
+				},
+			},
+			desired: &endpoint.Endpoint{
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: "new/property", Value: "true"},
+				},
+			},
+			propertyComparator: comparator,
+			shouldUpdate:       true,
+		},
+		{
+			name: "desired has same key and value as current but not comparator is set",
+			current: &endpoint.Endpoint{
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: "custom/property", Value: "true"},
+				},
+			},
+			desired: &endpoint.Endpoint{
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: "custom/property", Value: "true"},
+				},
+			},
+			shouldUpdate: false,
+		},
+		{
+			name: "desired has same key and different value as current but not comparator is set",
+			current: &endpoint.Endpoint{
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: "custom/property", Value: "true"},
+				},
+			},
+			desired: &endpoint.Endpoint{
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: "custom/property", Value: "false"},
+				},
+			},
+			shouldUpdate: true,
+		},
+		{
+			name: "desired has different key from current but not comparator is set",
+			current: &endpoint.Endpoint{
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: "custom/property", Value: "true"},
+				},
+			},
+			desired: &endpoint.Endpoint{
+				ProviderSpecific: []endpoint.ProviderSpecificProperty{
+					{Name: "new/property", Value: "true"},
+				},
+			},
+			shouldUpdate: true,
+		},
+	} {
+		tt.Run(test.name, func(t *testing.T) {
+			plan := &Plan{
+				Current:            []*endpoint.Endpoint{test.current},
+				Desired:            []*endpoint.Endpoint{test.desired},
+				PropertyComparator: test.propertyComparator,
+			}
+			b := plan.shouldUpdateProviderSpecific(test.desired, test.current)
+			assert.Equal(t, test.shouldUpdate, b)
+
+		})
+	}
+}

@@ -997,31 +997,31 @@ func testIngressEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:                    "ignore tls section",
-			targetNamespace:          "",
-			ignoreIngressTLSSpec:     true,
+			title:                "ignore tls section",
+			targetNamespace:      "",
+			ignoreIngressTLSSpec: true,
 			ingressItems: []fakeIngress{
 				{
-					name:      "fake1",
-					namespace: namespace,
+					name:        "fake1",
+					namespace:   namespace,
 					tlsdnsnames: [][]string{{"example.org"}},
 					ips:         []string{"1.2.3.4"},
 				},
-		  },
+			},
 			expected: []*endpoint.Endpoint{},
 		},
 		{
-			title:                    "reading tls section",
-			targetNamespace:          "",
-			ignoreIngressTLSSpec:     false,
+			title:                "reading tls section",
+			targetNamespace:      "",
+			ignoreIngressTLSSpec: false,
 			ingressItems: []fakeIngress{
 				{
-					name:      "fake1",
-					namespace: namespace,
+					name:        "fake1",
+					namespace:   namespace,
 					tlsdnsnames: [][]string{{"example.org"}},
 					ips:         []string{"1.2.3.4"},
 				},
-		  },
+			},
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "example.org",

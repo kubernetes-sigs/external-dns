@@ -30,9 +30,14 @@ type Provider interface {
 	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 	ApplyChanges(ctx context.Context, changes *plan.Changes) error
 	PropertyValuesEqual(name string, previous string, current string) bool
+	AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint
 }
 
 type BaseProvider struct {
+}
+
+func (b BaseProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	return endpoints
 }
 
 func (b BaseProvider) PropertyValuesEqual(name, previous, current string) bool {
