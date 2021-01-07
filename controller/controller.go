@@ -165,7 +165,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 // MinInterval is used as window for batching events
 const MinInterval = 5 * time.Second
 
-// RunOnceThrottled makes sure execution happens at most once per interval.
+// ScheduleRunOnce makes sure execution happens at most once per interval.
 func (c *Controller) ScheduleRunOnce(now time.Time) {
 	c.nextRunAtMux.Lock()
 	defer c.nextRunAtMux.Unlock()
