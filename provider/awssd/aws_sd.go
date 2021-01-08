@@ -66,7 +66,7 @@ var (
 
 	// matches IP plus original SRV target: "IP_priority_weight_port_hostname". This is a provider-specific format,
 	// IP-based targets are needed for SRV records (host-based targets are not supported by awssd).
-	sdSrvIpTargetRegex = regexp.MustCompile(`^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}_[0-9]{1,5}_[0-9]{1,5}_[0-9]{1,5}_[^\s]+$`)
+	sdSrvIPTargetRegex = regexp.MustCompile(`^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}_[0-9]{1,5}_[0-9]{1,5}_[0-9]{1,5}_[^\s]+$`)
 )
 
 // AWSSDClient is the subset of the AWS Cloud Map API that we actually use. Add methods as required.
@@ -93,7 +93,7 @@ type AWSSDProvider struct {
 	namespaceTypeFilter *sd.NamespaceFilter
 }
 
-type srvEpHostnameToIp func(*endpoint.Endpoint, map[string]*sd.Service) error
+type srvEpHostnameToIP func(*endpoint.Endpoint, map[string]*sd.Service) error
 
 // NewAWSSDProvider initializes a new AWS Cloud Map based Provider.
 func NewAWSSDProvider(domainFilter endpoint.DomainFilter, namespaceType string, assumeRole string, dryRun bool) (*AWSSDProvider, error) {
@@ -176,7 +176,7 @@ func (p *AWSSDProvider) Records(ctx context.Context) (endpoints []*endpoint.Endp
 				nsEndpoints = append(nsEndpoints, ep)
 			}
 		}
-		err = p.srvEndpointsIpToHost(&nsEndpoints)
+		err = p.srvEndpointsIPToHost(&nsEndpoints)
 		if err != nil {
 			return nil, err
 		}
@@ -214,7 +214,7 @@ func (p *AWSSDProvider) instancesToEndpoint(ns *sd.NamespaceSummary, srv *sd.Ser
 			// SRV
 		} else if inst.Attributes[sdInstanceAttrOriginalSrv] != nil && aws.StringValue(srv.DnsConfig.DnsRecords[0].Type) == sd.RecordTypeSrv {
 			newEndpoint.RecordType = endpoint.RecordTypeSRV
-			newEndpoint.Targets = append(newEndpoint.Targets, p.srvIpTargetCombine(
+			newEndpoint.Targets = append(newEndpoint.Targets, p.srvIPTargetCombine(
 				aws.StringValue(inst.Attributes[sdInstanceAttrIPV4]), aws.StringValue(inst.Attributes[sdInstanceAttrOriginalSrv])))
 
 			// IP-based target
@@ -234,8 +234,7 @@ func (p *AWSSDProvider) instancesToEndpoint(ns *sd.NamespaceSummary, srv *sd.Ser
 // (2) IP targets of SRV endpoint have the same: "priority weight port host" (as originally sourced by externaldns to ApplyChanges)
 // this is needed because awssd supports IP-based target but not host-based target when record type is SRV.
 // https://docs.aws.amazon.com/cloud-map/latest/api/API_RegisterInstance.html#cloudmap-RegisterInstance-request-Attributes
-func (p *AWSSDProvider) srvEndpointsIpToHost(endpoints *[]*endpoint.Endpoint) error {
-
+func (p *AWSSDProvider) srvEndpointsIPToHost(endpoints *[]*endpoint.Endpoint) error {
 	// new map of A records by DNS name
 	aEpMap := map[string]*endpoint.Endpoint{}
 	for _, e := range *endpoints {
@@ -253,7 +252,7 @@ func (p *AWSSDProvider) srvEndpointsIpToHost(endpoints *[]*endpoint.Endpoint) er
 		// new map of IP-based records by "priority weight port host"
 		srvTgMap := map[string]endpoint.Targets{}
 		for _, tgt := range e.Targets {
-			_, origTgt, err := p.srvIpTargetUncombine(tgt)
+			_, origTgt, err := p.srvIPTargetUncombine(tgt)
 			if err != nil {
 				return err
 			}
@@ -267,7 +266,7 @@ func (p *AWSSDProvider) srvEndpointsIpToHost(endpoints *[]*endpoint.Endpoint) er
 
 		// loop "priority weight port host" (i.e. originally sourced targets)
 		for origTgt, targets := range srvTgMap {
-			allignedToA := true
+			alignedToA := true
 			var err error
 			_, host, _, _, err := p.srvHostTargetSplit(origTgt)
 			if err != nil {
@@ -276,33 +275,30 @@ func (p *AWSSDProvider) srvEndpointsIpToHost(endpoints *[]*endpoint.Endpoint) er
 			aSrv, ok := aEpMap[host]
 			// if no corresponding A record is found, or SRV targets count is different than A targets count, then skip this targets group...
 			if !ok || len(targets) != len(aSrv.Targets) {
-				allignedToA = false
+				alignedToA = false
 			} else {
-
 				for _, target := range targets {
-					ip, _, err := p.srvIpTargetUncombine(target)
+					ip, _, err := p.srvIPTargetUncombine(target)
 					if err != nil {
 						return err
 					}
 					// if target IPs in SRV endpoint are different than those in A endpoint, then skip this targets group...
 					if !p.sliceContainsString(aSrv.Targets, ip) {
-						allignedToA = false
+						alignedToA = false
 						break
 					}
 				}
 			}
 
-			if allignedToA {
+			if alignedToA {
 				//convert n IP-based targets to 1 host-based target
 				convertedTargets = append(convertedTargets, origTgt)
 			} else {
-				//keep n IP-based targets (as these targets are not alligned with those of a corresponding A record)
+				//keep n IP-based targets (as these targets are not aligned with those of a corresponding A record)
 				convertedTargets = append(convertedTargets, targets...)
 			}
-
 		}
 		e.Targets = convertedTargets
-
 	}
 
 	return nil
@@ -310,7 +306,6 @@ func (p *AWSSDProvider) srvEndpointsIpToHost(endpoints *[]*endpoint.Endpoint) er
 
 // ApplyChanges applies Kubernetes changes in endpoints to AWS API.
 func (p *AWSSDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-
 	// return early if there is nothing to change
 	if len(changes.Create) == 0 && len(changes.Delete) == 0 && len(changes.UpdateNew) == 0 {
 		log.Info("All records are already up to date")
@@ -348,9 +343,9 @@ func (p *AWSSDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 
 	// Convert hostname-based targets (as passed to ApplyChanges in some cases for SRV records)
 	// to IP-based targets (as supported by AWS servicediscovery for SRV records).
-	// srvChangesHostnameToIp must be invoked after submitDeletes and submitCreates of NotSrv records,
+	// srvChangesHostnameToIP must be invoked after submitDeletes and submitCreates of NotSrv records,
 	// so that host-based target is converted to IP-based target using the latest IPs from the corresponding A instances.
-	err = p.srvChangesHostnameToIp(namespaces, changesSrv)
+	err = p.srvChangesHostnameToIP(namespaces, changesSrv)
 	if err != nil {
 		return err
 	}
@@ -382,7 +377,6 @@ func (p *AWSSDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 // because ApplyChanges receives a host-based target,
 // but aws servicediscovery only supports IP-based targets for services of type SRV.
 func (p *AWSSDProvider) splitChangesAndSrvChanges(changesAll *plan.Changes) (*plan.Changes, *plan.Changes) {
-
 	changesSrv := &plan.Changes{}
 	changesNotSrv := &plan.Changes{}
 
@@ -428,7 +422,7 @@ func (p *AWSSDProvider) updatesToCreates(changes *plan.Changes) (creates []*endp
 // DedupDeletesAndCreates removes targets that appear identically as both deletes and creates.
 // These targets are redundant and result in overlapping API calls. Without deduplication, RegisterInstance could be
 // invoked while DeregisterInstance is still in progress in AWS, resulting in failure to register the instance, and
-// therefore in service disruption. Redundant targets may have been introduced by updatesToCreates or srvChangesHostnameToIp.
+// therefore in service disruption. Redundant targets may have been introduced by updatesToCreates or srvChangesHostnameToIP.
 func (p *AWSSDProvider) DedupDeletesAndCreates(creates []*endpoint.Endpoint, deletes []*endpoint.Endpoint) ([]*endpoint.Endpoint, []*endpoint.Endpoint, error) {
 	// contains all targets appearing in "deletes", mapped by the DNS name of the respective endpoint
 	targetsByDeleteEp := map[string]map[string]bool{}
@@ -562,14 +556,13 @@ func (p *AWSSDProvider) submitDeletes(namespaces []*sd.NamespaceSummary, changes
 	return nil
 }
 
-// srvChangesHostnameToIp, for each endpoint of type SRV, converts a single host-based target
+// srvChangesHostnameToIP, for each endpoint of type SRV, converts a single host-based target
 // (as passed to ApplyChanges in some cases for SRV records)
 // to multiple IP-based targets (as supported by AWS servicediscovery for SRV records).
 // This is needed because awssd supports IP-based target but not canonical host-based target when service is an SRV record.
 // https://docs.aws.amazon.com/cloud-map/latest/api/API_RegisterInstance.html#cloudmap-RegisterInstance-request-Attributes
-func (p *AWSSDProvider) srvChangesHostnameToIp(namespaces []*sd.NamespaceSummary, changes *plan.Changes) error {
-
-	applyConversion := func(changes []*endpoint.Endpoint, convertFn srvEpHostnameToIp) error {
+func (p *AWSSDProvider) srvChangesHostnameToIP(namespaces []*sd.NamespaceSummary, changes *plan.Changes) error {
+	applyConversion := func(changes []*endpoint.Endpoint, convertFn srvEpHostnameToIP) error {
 		chByNsID := p.changesByNamespaceID(namespaces, changes)
 		for nsID, changeList := range chByNsID {
 			services, err := p.ListServicesByNamespaceID(aws.String(nsID))
@@ -586,36 +579,33 @@ func (p *AWSSDProvider) srvChangesHostnameToIp(namespaces []*sd.NamespaceSummary
 		return nil
 	}
 
-	err := applyConversion(changes.Create, p.srvNewEpHostnameToIp)
+	err := applyConversion(changes.Create, p.srvNewEpHostnameToIP)
 	if err != nil {
 		return err
 	}
-	err = applyConversion(changes.UpdateNew, p.srvNewEpHostnameToIp)
+	err = applyConversion(changes.UpdateNew, p.srvNewEpHostnameToIP)
 	if err != nil {
 		return err
 	}
-	err = applyConversion(changes.UpdateOld, p.srvOldEpHostnameToIp)
+	err = applyConversion(changes.UpdateOld, p.srvOldEpHostnameToIP)
 	if err != nil {
 		return err
 	}
-	err = applyConversion(changes.Delete, p.srvOldEpHostnameToIp)
+	err = applyConversion(changes.Delete, p.srvOldEpHostnameToIP)
 	if err != nil {
 		return err
 	}
-
 	return nil
-
 }
 
-// srvNewEpHostnameToIp converts endpoint targets from host-based to ip-based.
+// srvNewEpHostnameToIP converts endpoint targets from host-based to ip-based.
 // Applies to new endpoints (i.e. Changes.Create & Changes.UpdateNew).
-func (p *AWSSDProvider) srvNewEpHostnameToIp(ep *endpoint.Endpoint, services map[string]*sd.Service) error {
-
+func (p *AWSSDProvider) srvNewEpHostnameToIP(ep *endpoint.Endpoint, services map[string]*sd.Service) error {
 	convertedTargets := make(endpoint.Targets, 0)
 
 	for _, hostTarget := range ep.Targets {
 		// keep a target if it's already IP-based
-		if p.isSrvIpTarget(hostTarget) {
+		if p.isSrvIPTarget(hostTarget) {
 			convertedTargets = append(convertedTargets, hostTarget)
 			continue
 		}
@@ -628,7 +618,7 @@ func (p *AWSSDProvider) srvNewEpHostnameToIp(ep *endpoint.Endpoint, services map
 		_, aServiceName := p.parseHostname(host, endpoint.RecordTypeA)
 		aService, ok := services[aServiceName]
 		if !ok || aws.StringValue(aService.DnsConfig.DnsRecords[0].Type) != sd.RecordTypeA {
-			return fmt.Errorf("Error registering SRV record. The corresponding record (%s) is not an A record", aServiceName)
+			return fmt.Errorf("error registering SRV record. The corresponding record (%s) is not an A record", aServiceName)
 		}
 		aInstances, err := p.ListInstancesByServiceID(aService.Id)
 		if err != nil {
@@ -636,7 +626,7 @@ func (p *AWSSDProvider) srvNewEpHostnameToIp(ep *endpoint.Endpoint, services map
 		}
 
 		for _, instance := range aInstances {
-			tgt := p.srvIpTargetCombine(aws.StringValue(instance.Attributes[sdInstanceAttrIPV4]), hostTarget)
+			tgt := p.srvIPTargetCombine(aws.StringValue(instance.Attributes[sdInstanceAttrIPV4]), hostTarget)
 			convertedTargets = append(convertedTargets, tgt)
 		}
 	}
@@ -646,14 +636,13 @@ func (p *AWSSDProvider) srvNewEpHostnameToIp(ep *endpoint.Endpoint, services map
 	return nil
 }
 
-// srvOldEpHostnameToIp converts endpoint targets from host-based to ip-based.
+// srvOldEpHostnameToIP converts endpoint targets from host-based to ip-based.
 // Applies to new endpoints (i.e. Changes.UpdateOld & Changes.Delete).
-func (p *AWSSDProvider) srvOldEpHostnameToIp(ep *endpoint.Endpoint, services map[string]*sd.Service) error {
-
+func (p *AWSSDProvider) srvOldEpHostnameToIP(ep *endpoint.Endpoint, services map[string]*sd.Service) error {
 	_, srvName := p.parseHostname(ep.DNSName, ep.RecordType)
 	srvService, exists := services[srvName]
 	if !exists || aws.StringValue(srvService.DnsConfig.DnsRecords[0].Type) != sd.RecordTypeSrv {
-		return fmt.Errorf("Error deregistering SRV record. The corresponding record (%s) is not an SRV record", srvName)
+		return fmt.Errorf("error deregistering SRV record. The corresponding record (%s) is not an SRV record", srvName)
 	}
 	srvInstances, err := p.ListInstancesByServiceID(srvService.Id)
 	if err != nil {
@@ -664,24 +653,22 @@ func (p *AWSSDProvider) srvOldEpHostnameToIp(ep *endpoint.Endpoint, services map
 
 	for _, hostTarget := range ep.Targets {
 		// keep a target if it's already an IP-based
-		if p.isSrvIpTarget(hostTarget) {
+		if p.isSrvIPTarget(hostTarget) {
 			convertedTargets = append(convertedTargets, hostTarget)
 			continue
 		}
 		if !p.isSrvHostTarget(hostTarget) {
-			return fmt.Errorf("Error deregistering SRV record. The target (%s) is not a valid SRV target", hostTarget)
+			return fmt.Errorf("error deregistering SRV record. The target (%s) is not a valid SRV target", hostTarget)
 		}
 
 		for _, instance := range srvInstances {
-			instIp := aws.StringValue(instance.Attributes[sdInstanceAttrIPV4])
+			instIP := aws.StringValue(instance.Attributes[sdInstanceAttrIPV4])
 			instOrigSrv := aws.StringValue(instance.Attributes[sdInstanceAttrOriginalSrv])
 			if hostTarget == instOrigSrv {
-				convertedTargets = append(convertedTargets, p.srvIpTargetCombine(instIp, instOrigSrv))
+				convertedTargets = append(convertedTargets, p.srvIPTargetCombine(instIP, instOrigSrv))
 			}
 		}
-
 	}
-
 	ep.Targets = convertedTargets
 	return nil
 }
@@ -861,11 +848,11 @@ func (p *AWSSDProvider) RegisterInstance(service *sd.Service, ep *endpoint.Endpo
 		} else if ep.RecordType == endpoint.RecordTypeA {
 			attr[sdInstanceAttrIPV4] = aws.String(target)
 		} else if ep.RecordType == endpoint.RecordTypeSRV {
-			ip, port, _, _, _, err := p.srvIpTargetSplit(target)
+			ip, port, _, _, _, err := p.srvIPTargetSplit(target)
 			if err != nil {
 				return err
 			}
-			_, origSrvTgt, err := p.srvIpTargetUncombine(target)
+			_, origSrvTgt, err := p.srvIPTargetUncombine(target)
 			if err != nil {
 				return err
 			}
@@ -1061,13 +1048,13 @@ func (p *AWSSDProvider) isAWSLoadBalancer(hostname string) bool {
 	return matchElb || matchNlb
 }
 
-func (p *AWSSDProvider) srvIpTargetCombine(ip string, srvTarget string) string {
+func (p *AWSSDProvider) srvIPTargetCombine(ip string, srvTarget string) string {
 	srvTarget = strings.Replace(srvTarget, " ", "_", -1)
 	return fmt.Sprintf("%s_%s", ip, srvTarget)
 }
 
-func (p *AWSSDProvider) srvIpTargetUncombine(target string) (ip string, srvTarget string, err error) {
-	if !p.isSrvIpTarget(target) {
+func (p *AWSSDProvider) srvIPTargetUncombine(target string) (ip string, srvTarget string, err error) {
+	if !p.isSrvIPTarget(target) {
 		err = fmt.Errorf("endpoint target %s is not an IP-based SRV target", target)
 		return
 	}
@@ -1077,8 +1064,8 @@ func (p *AWSSDProvider) srvIpTargetUncombine(target string) (ip string, srvTarge
 	return
 }
 
-func (p *AWSSDProvider) srvIpTargetSplit(target string) (ip string, port string, host string, prio string, weight string, err error) {
-	if !p.isSrvIpTarget(target) {
+func (p *AWSSDProvider) srvIPTargetSplit(target string) (ip string, port string, host string, prio string, weight string, err error) {
+	if !p.isSrvIPTarget(target) {
 		err = fmt.Errorf("endpoint target %s is not an IP-based SRV target", target)
 		return
 	}
@@ -1104,8 +1091,8 @@ func (p *AWSSDProvider) srvHostTargetSplit(target string) (port string, host str
 	return
 }
 
-func (p *AWSSDProvider) isSrvIpTarget(target string) bool {
-	return sdSrvIpTargetRegex.MatchString(target)
+func (p *AWSSDProvider) isSrvIPTarget(target string) bool {
+	return sdSrvIPTargetRegex.MatchString(target)
 }
 
 func (p *AWSSDProvider) isSrvHostTarget(target string) bool {
