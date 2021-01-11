@@ -275,7 +275,7 @@ func (p *GDProvider) change(change gdChange) error {
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *GDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	zones, records, err := p.zonesRecords(ctx)
-	zonesChangeUniques := map[string]bool{}
+
 	if err != nil {
 		return err
 	}
@@ -290,17 +290,10 @@ func (p *GDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) er
 
 	log.Infof("GoDaddy: %d changes will be done", len(allChanges))
 
-	eg, _ := errgroup.WithContext(ctx)
-
 	for _, change := range allChanges {
-		change := change
-		zonesChangeUniques[*change.zone] = true
-
-		eg.Go(func() error { return p.change(change) })
-	}
-
-	if err := eg.Wait(); err != nil {
-		return err
+		if err = p.change(change); err != nil {
+			return err
+		}
 	}
 
 	return nil
