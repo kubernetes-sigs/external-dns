@@ -595,20 +595,6 @@ func TestGoDaddyChange(t *testing.T) {
 	}))
 
 	client.AssertExpectations(t)
-
-	// Record deletion error
-	assert.Error(provider.change(gdChange{
-		Action: gdDelete,
-		gdRecord: gdRecord{
-			zone: &zoneNameExampleNet,
-			gdRecordField: gdRecordField{
-				Name: "godaddy",
-				Type: "A",
-			},
-		},
-	}))
-
-	client.AssertExpectations(t)
 }
 
 func TestOGoDaddyCountTargets(t *testing.T) {
