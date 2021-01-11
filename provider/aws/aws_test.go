@@ -1152,7 +1152,7 @@ func TestAWSHealthTargetAnnotation(tt *testing.T) {
 				Current:            []*endpoint.Endpoint{test.current},
 				Desired:            []*endpoint.Endpoint{test.desired},
 				PropertyComparator: provider.PropertyValuesEqual,
-				ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+				ManagedRecords:     []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 			}
 			plan = plan.Calculate()
 			assert.Equal(t, test.shouldUpdate, len(plan.Changes.UpdateNew) == 1)

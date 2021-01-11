@@ -157,9 +157,9 @@ func (p *Plan) Calculate() *Plan {
 	}
 
 	plan := &Plan{
-		Current: p.Current,
-		Desired: p.Desired,
-		Changes: changes,
+		Current:        p.Current,
+		Desired:        p.Desired,
+		Changes:        changes,
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 

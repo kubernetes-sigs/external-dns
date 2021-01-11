@@ -250,9 +250,9 @@ func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endp
 	}
 
 	plan := &plan.Plan{
-		Current:      records,
-		Desired:      endpoints,
-		DomainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
+		Current:        records,
+		Desired:        endpoints,
+		DomainFilter:   endpoint.NewDomainFilter([]string{"bar.com"}),
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
@@ -1039,7 +1039,7 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 			Current:            current,
 			Desired:            desired,
 			PropertyComparator: provider.PropertyValuesEqual,
-			ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+			ManagedRecords:     []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 		}
 
 		plan = *plan.Calculate()
@@ -1093,7 +1093,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 				},
 			},
 		},
-		DomainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
+		DomainFilter:   endpoint.NewDomainFilter([]string{"bar.com"}),
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
@@ -1181,9 +1181,9 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 	provider.AdjustEndpoints(endpoints)
 
 	plan := &plan.Plan{
-		Current:      records,
-		Desired:      endpoints,
-		DomainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
+		Current:        records,
+		Desired:        endpoints,
+		DomainFilter:   endpoint.NewDomainFilter([]string{"bar.com"}),
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
