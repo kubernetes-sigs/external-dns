@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/ovh/go-ovh/ovh"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"sigs.k8s.io/external-dns/endpoint"
@@ -31,6 +32,13 @@ import (
 
 type mockGoDaddyClient struct {
 	mock.Mock
+	currentTest *testing.T
+}
+
+func newMockGoDaddyClient(t *testing.T) *mockGoDaddyClient {
+	return &mockGoDaddyClient{
+		currentTest: t,
+	}
 }
 
 var (
@@ -39,6 +47,7 @@ var (
 )
 
 func (c *mockGoDaddyClient) Post(endpoint string, input interface{}, output interface{}) error {
+	log.Infof("POST: %s - %v", endpoint, input)
 	stub := c.Called(endpoint, input)
 	data, _ := json.Marshal(stub.Get(0))
 	json.Unmarshal(data, output)
@@ -46,6 +55,7 @@ func (c *mockGoDaddyClient) Post(endpoint string, input interface{}, output inte
 }
 
 func (c *mockGoDaddyClient) Patch(endpoint string, input interface{}, output interface{}) error {
+	log.Infof("PATCH: %s - %v", endpoint, input)
 	stub := c.Called(endpoint, input)
 	data, _ := json.Marshal(stub.Get(0))
 	json.Unmarshal(data, output)
@@ -53,6 +63,7 @@ func (c *mockGoDaddyClient) Patch(endpoint string, input interface{}, output int
 }
 
 func (c *mockGoDaddyClient) Put(endpoint string, input interface{}, output interface{}) error {
+	log.Infof("PUT: %s - %v", endpoint, input)
 	stub := c.Called(endpoint, input)
 	data, _ := json.Marshal(stub.Get(0))
 	json.Unmarshal(data, output)
@@ -60,6 +71,7 @@ func (c *mockGoDaddyClient) Put(endpoint string, input interface{}, output inter
 }
 
 func (c *mockGoDaddyClient) Get(endpoint string, output interface{}) error {
+	log.Infof("GET: %s", endpoint)
 	stub := c.Called(endpoint)
 	data, _ := json.Marshal(stub.Get(0))
 	json.Unmarshal(data, output)
@@ -67,6 +79,7 @@ func (c *mockGoDaddyClient) Get(endpoint string, output interface{}) error {
 }
 
 func (c *mockGoDaddyClient) Delete(endpoint string, output interface{}) error {
+	log.Infof("DELETE: %s", endpoint)
 	stub := c.Called(endpoint)
 	data, _ := json.Marshal(stub.Get(0))
 	json.Unmarshal(data, output)
@@ -75,7 +88,7 @@ func (c *mockGoDaddyClient) Delete(endpoint string, output interface{}) error {
 
 func TestGoDaddyZones(t *testing.T) {
 	assert := assert.New(t)
-	client := new(mockGoDaddyClient)
+	client := newMockGoDaddyClient(t)
 	provider := &GDProvider{
 		client:       client,
 		domainFilter: endpoint.NewDomainFilter([]string{"com"}),
@@ -109,7 +122,7 @@ func TestGoDaddyZones(t *testing.T) {
 
 func TestGoDaddyZoneRecords(t *testing.T) {
 	assert := assert.New(t)
-	client := new(mockGoDaddyClient)
+	client := newMockGoDaddyClient(t)
 	provider := &GDProvider{
 		client: client,
 	}
@@ -215,7 +228,7 @@ func TestGoDaddyZoneRecords(t *testing.T) {
 
 func TestGoDaddyRecords(t *testing.T) {
 	assert := assert.New(t)
-	client := new(mockGoDaddyClient)
+	client := newMockGoDaddyClient(t)
 	provider := &GDProvider{
 		client: client,
 	}
@@ -359,7 +372,7 @@ func TestGoDaddyNewChange(t *testing.T) {
 			gdRecord: gdRecord{
 				zone: &zoneNameExampleNet,
 				gdRecordField: gdRecordField{
-					Name: "",
+					Name: "@",
 					Type: "A",
 					TTL:  10,
 					Data: "203.0.113.42",
@@ -435,7 +448,7 @@ func TestGoDaddyNewChange(t *testing.T) {
 
 func TestGoDaddyApplyChanges(t *testing.T) {
 	assert := assert.New(t)
-	client := new(mockGoDaddyClient)
+	client := newMockGoDaddyClient(t)
 
 	provider := &GDProvider{
 		client: client,
@@ -462,7 +475,6 @@ func TestGoDaddyApplyChanges(t *testing.T) {
 			},
 		},
 	}
-
 	client.On("Get", "/v1/domains?statuses=ACTIVE").Return([]gdZone{
 		{
 			Domain: zoneNameExampleNet,
@@ -470,18 +482,6 @@ func TestGoDaddyApplyChanges(t *testing.T) {
 	}, nil).Once()
 
 	client.On("Get", "/v1/domains/example.net/records").Return([]gdRecord{
-		{
-			zone: &zoneNameExampleNet,
-			gdRecordField: gdRecordField{
-				Name: "godaddy",
-				Type: "A",
-				TTL:  10,
-				Data: "203.0.113.43",
-			},
-		},
-	}, nil).Once()
-
-	client.On("Get", "/v1/domains/example.net/records/A/goddady").Return([]gdRecord{
 		{
 			zone: &zoneNameExampleNet,
 			gdRecordField: gdRecordField{
@@ -502,7 +502,7 @@ func TestGoDaddyApplyChanges(t *testing.T) {
 		},
 	}).Return(nil, nil).Once()
 
-	client.On("Delete", "/v1/domains/example.net/records/A/@").Return(nil, nil).Once()
+	client.On("Delete", "/v1/domains/example.net/records/A/godaddy").Return(nil, nil).Once()
 
 	// Basic changes
 	assert.NoError(provider.ApplyChanges(context.TODO(), &changes))
@@ -523,9 +523,9 @@ func TestGoDaddyApplyChanges(t *testing.T) {
 
 	client.On("Get", "/v1/domains/example.net/records").Return([]gdRecord{}, nil).Once()
 
-	client.On("Patch", "/v1/domains/example.net/records/A/godaddy", []gdRecordField{
+	client.On("Patch", "/v1/domains/example.net/records", []gdRecordField{
 		{
-			Name: "",
+			Name: "@",
 			Type: "A",
 			TTL:  10,
 			Data: "203.0.113.42",
@@ -550,7 +550,7 @@ func TestGoDaddyApplyChanges(t *testing.T) {
 
 func TestGoDaddyChange(t *testing.T) {
 	assert := assert.New(t)
-	client := new(mockGoDaddyClient)
+	client := newMockGoDaddyClient(t)
 	provider := &GDProvider{
 		client: client,
 	}
