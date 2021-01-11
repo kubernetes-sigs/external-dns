@@ -282,6 +282,16 @@ func TestGoDaddyRecords(t *testing.T) {
 
 	assert.ElementsMatch(endpoints, []*endpoint.Endpoint{
 		{
+			DNSName:    "godaddy.example.net",
+			RecordType: "A",
+			RecordTTL:  10,
+			Labels:     endpoint.NewLabels(),
+			Targets: []string{
+				"203.0.113.42",
+				"203.0.113.43",
+			},
+		},
+		{
 			DNSName:    "example.org",
 			RecordType: "A",
 			RecordTTL:  10,
@@ -297,16 +307,6 @@ func TestGoDaddyRecords(t *testing.T) {
 			Labels:     endpoint.NewLabels(),
 			Targets: []string{
 				"example.org",
-			},
-		},
-		{
-			DNSName:    "godaddy.example.net",
-			RecordType: "A",
-			RecordTTL:  10,
-			Labels:     endpoint.NewLabels(),
-			Targets: []string{
-				"203.0.113.42",
-				"203.0.113.43",
 			},
 		},
 	})
