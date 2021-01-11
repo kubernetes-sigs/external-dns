@@ -149,7 +149,7 @@ type Config struct {
 	TransIPAccountName                string
 	TransIPPrivateKeyFile             string
 	DigitalOceanAPIPageSize           int
-	ManagedDNSRecordTypes []string
+	ManagedDNSRecordTypes             []string
 }
 
 var defaultConfig = &Config{
@@ -252,7 +252,7 @@ var defaultConfig = &Config{
 	TransIPAccountName:          "",
 	TransIPPrivateKeyFile:       "",
 	DigitalOceanAPIPageSize:     50,
-	ManagedDNSRecordTypes: []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeA},
+	ManagedDNSRecordTypes:       []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeA},
 }
 
 // NewConfig returns new Config object

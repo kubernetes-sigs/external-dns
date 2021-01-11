@@ -277,7 +277,7 @@ func CompareBoolean(defaultValue bool, name, current, previous string) bool {
 	return v1 == v2
 }
 
-func isManagedRecord(record string, managedRecords []string) bool{
+func isManagedRecord(record string, managedRecords []string) bool {
 	for _, r := range managedRecords {
 		if record == r {
 			return true

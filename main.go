@@ -326,11 +326,11 @@ func main() {
 	}
 
 	ctrl := controller.Controller{
-		Source:       endpointsSource,
-		Registry:     r,
-		Policy:       policy,
-		Interval:     cfg.Interval,
-		DomainFilter: domainFilter,
+		Source:             endpointsSource,
+		Registry:           r,
+		Policy:             policy,
+		Interval:           cfg.Interval,
+		DomainFilter:       domainFilter,
 		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
 	}
 
