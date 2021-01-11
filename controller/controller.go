@@ -117,6 +117,8 @@ type Controller struct {
 	nextRunAt time.Time
 	// The nextRunAtMux is for atomic updating of nextRunAt
 	nextRunAtMux sync.Mutex
+	// DNS record types that will be considered for management
+	ManagedRecordTypes []string
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.

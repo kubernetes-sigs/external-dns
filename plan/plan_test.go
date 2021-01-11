@@ -208,6 +208,7 @@ func (suite *PlanTestSuite) TestSyncFirstRound() {
 		Policies: []Policy{&SyncPolicy{}},
 		Current:  current,
 		Desired:  desired,
+		ManagedRecords: []string{endpoint.RecordTypeA,endpoint.RecordTypeCNAME},
 	}
 
 	changes := p.Calculate().Changes
@@ -229,6 +230,7 @@ func (suite *PlanTestSuite) TestSyncSecondRound() {
 		Policies: []Policy{&SyncPolicy{}},
 		Current:  current,
 		Desired:  desired,
+		ManagedRecords: []string{endpoint.RecordTypeA,endpoint.RecordTypeCNAME},
 	}
 
 	changes := p.Calculate().Changes
@@ -250,6 +252,7 @@ func (suite *PlanTestSuite) TestSyncSecondRoundMigration() {
 		Policies: []Policy{&SyncPolicy{}},
 		Current:  current,
 		Desired:  desired,
+		ManagedRecords: []string{endpoint.RecordTypeA,endpoint.RecordTypeCNAME},
 	}
 
 	changes := p.Calculate().Changes
@@ -271,6 +274,7 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithTTLChange() {
 		Policies: []Policy{&SyncPolicy{}},
 		Current:  current,
 		Desired:  desired,
+		ManagedRecords: []string{endpoint.RecordTypeA,endpoint.RecordTypeCNAME},
 	}
 
 	changes := p.Calculate().Changes
@@ -292,6 +296,7 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificChange() {
 		Policies: []Policy{&SyncPolicy{}},
 		Current:  current,
 		Desired:  desired,
+		ManagedRecords: []string{endpoint.RecordTypeA,endpoint.RecordTypeCNAME},
 	}
 
 	changes := p.Calculate().Changes
@@ -316,6 +321,7 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificDefaultFalse(
 		PropertyComparator: func(name, previous, current string) bool {
 			return CompareBoolean(false, name, previous, current)
 		},
+		ManagedRecords: []string{endpoint.RecordTypeA,endpoint.RecordTypeCNAME},
 	}
 
 	changes := p.Calculate().Changes
@@ -413,6 +419,7 @@ func (suite *PlanTestSuite) TestDifferentTypes() {
 		Policies: []Policy{&SyncPolicy{}},
 		Current:  current,
 		Desired:  desired,
+		ManagedRecords: []string{endpoint.RecordTypeA,endpoint.RecordTypeCNAME},
 	}
 
 	changes := p.Calculate().Changes
@@ -434,6 +441,7 @@ func (suite *PlanTestSuite) TestIgnoreTXT() {
 		Policies: []Policy{&SyncPolicy{}},
 		Current:  current,
 		Desired:  desired,
+		ManagedRecords: []string{endpoint.RecordTypeA,endpoint.RecordTypeCNAME},
 	}
 
 	changes := p.Calculate().Changes
@@ -455,6 +463,7 @@ func (suite *PlanTestSuite) TestRemoveEndpoint() {
 		Policies: []Policy{&SyncPolicy{}},
 		Current:  current,
 		Desired:  desired,
+		ManagedRecords: []string{endpoint.RecordTypeA,endpoint.RecordTypeCNAME},
 	}
 
 	changes := p.Calculate().Changes
@@ -476,6 +485,7 @@ func (suite *PlanTestSuite) TestRemoveEndpointWithUpsert() {
 		Policies: []Policy{&UpsertOnlyPolicy{}},
 		Current:  current,
 		Desired:  desired,
+		ManagedRecords: []string{endpoint.RecordTypeA,endpoint.RecordTypeCNAME},
 	}
 
 	changes := p.Calculate().Changes
@@ -498,6 +508,7 @@ func (suite *PlanTestSuite) TestDuplicatedEndpointsForSameResourceReplace() {
 		Policies: []Policy{&SyncPolicy{}},
 		Current:  current,
 		Desired:  desired,
+		ManagedRecords: []string{endpoint.RecordTypeA,endpoint.RecordTypeCNAME},
 	}
 
 	changes := p.Calculate().Changes
@@ -521,6 +532,7 @@ func (suite *PlanTestSuite) TestDuplicatedEndpointsForSameResourceRetain() {
 		Policies: []Policy{&SyncPolicy{}},
 		Current:  current,
 		Desired:  desired,
+		ManagedRecords: []string{endpoint.RecordTypeA,endpoint.RecordTypeCNAME},
 	}
 
 	changes := p.Calculate().Changes
@@ -543,6 +555,7 @@ func (suite *PlanTestSuite) TestMultipleRecordsSameNameDifferentSetIdentifier() 
 		Policies: []Policy{&SyncPolicy{}},
 		Current:  current,
 		Desired:  desired,
+		ManagedRecords: []string{endpoint.RecordTypeA,endpoint.RecordTypeCNAME},
 	}
 
 	changes := p.Calculate().Changes
@@ -565,6 +578,7 @@ func (suite *PlanTestSuite) TestSetIdentifierUpdateCreatesAndDeletes() {
 		Policies: []Policy{&SyncPolicy{}},
 		Current:  current,
 		Desired:  desired,
+		ManagedRecords: []string{endpoint.RecordTypeA,endpoint.RecordTypeCNAME},
 	}
 
 	changes := p.Calculate().Changes
@@ -588,6 +602,7 @@ func (suite *PlanTestSuite) TestDomainFiltersInitial() {
 		Current:      current,
 		Desired:      desired,
 		DomainFilter: endpoint.NewDomainFilterWithExclusions([]string{"domain.tld"}, []string{"ex.domain.tld"}),
+		ManagedRecords: []string{endpoint.RecordTypeA,endpoint.RecordTypeCNAME},
 	}
 
 	changes := p.Calculate().Changes
@@ -611,6 +626,7 @@ func (suite *PlanTestSuite) TestDomainFiltersUpdate() {
 		Current:      current,
 		Desired:      desired,
 		DomainFilter: endpoint.NewDomainFilterWithExclusions([]string{"domain.tld"}, []string{"ex.domain.tld"}),
+		ManagedRecords: []string{endpoint.RecordTypeA,endpoint.RecordTypeCNAME},
 	}
 
 	changes := p.Calculate().Changes

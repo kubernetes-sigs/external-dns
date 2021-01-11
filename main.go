@@ -331,6 +331,7 @@ func main() {
 		Policy:       policy,
 		Interval:     cfg.Interval,
 		DomainFilter: domainFilter,
+		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
 	}
 
 	if cfg.Once {
