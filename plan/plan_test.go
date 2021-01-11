@@ -374,9 +374,10 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithOwnerInherited() {
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
-		Policies: []Policy{&SyncPolicy{}},
-		Current:  current,
-		Desired:  desired,
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
 	changes := p.Calculate().Changes
@@ -824,6 +825,7 @@ func TestShouldUpdateProviderSpecific(tt *testing.T) {
 				Current:            []*endpoint.Endpoint{test.current},
 				Desired:            []*endpoint.Endpoint{test.desired},
 				PropertyComparator: test.propertyComparator,
+				ManagedRecords:     []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 			}
 			b := plan.shouldUpdateProviderSpecific(test.desired, test.current)
 			assert.Equal(t, test.shouldUpdate, b)

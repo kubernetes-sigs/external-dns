@@ -345,7 +345,7 @@ func TestCloudflareCname(t *testing.T) {
 			},
 		},
 	},
-	[]string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		[]string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	)
 }
 
@@ -463,7 +463,7 @@ func TestCloudflareProxiedOverrideFalse(t *testing.T) {
 		},
 	},
 		[]string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
-		)
+	)
 }
 
 func TestCloudflareProxiedOverrideIllegal(t *testing.T) {
@@ -494,7 +494,7 @@ func TestCloudflareProxiedOverrideIllegal(t *testing.T) {
 			},
 		},
 	},
-	[]string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		[]string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	)
 }
 
@@ -541,7 +541,7 @@ func TestCloudflareSetProxied(t *testing.T) {
 					Proxied: testCase.proxiable,
 				},
 			},
-		},[]string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS}, testCase.recordType+" record on "+testCase.domain)
+		}, []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS}, testCase.recordType+" record on "+testCase.domain)
 	}
 }
 

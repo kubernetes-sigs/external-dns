@@ -189,6 +189,7 @@ var (
 		TransIPAccountName:          "transip",
 		TransIPPrivateKeyFile:       "/path/to/transip.key",
 		DigitalOceanAPIPageSize:     100,
+		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeA},
 	}
 )
 
