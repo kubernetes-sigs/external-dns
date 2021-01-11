@@ -221,8 +221,16 @@ func (p *GDProvider) groupByNameAndType(records []gdRecord) []*endpoint.Endpoint
 			targets = append(targets, record.Data)
 		}
 
+		var recordName string
+
+		if records[0].Name == "*" || records[0].Name == "@" {
+			recordName = strings.TrimPrefix(*records[0].zone, ".")
+		} else {
+			recordName = strings.TrimPrefix(fmt.Sprintf("%s.%s", records[0].Name, *records[0].zone), ".")
+		}
+
 		endpoint := endpoint.NewEndpointWithTTL(
-			strings.TrimPrefix(fmt.Sprintf("%s.%s", records[0].Name, *records[0].zone), "."),
+			recordName,
 			records[0].Type,
 			endpoint.TTL(records[0].TTL),
 			targets...,
