@@ -19,9 +19,10 @@ package externaldns
 import (
 	"fmt"
 	"reflect"
-	"sigs.k8s.io/external-dns/endpoint"
 	"strconv"
 	"time"
+
+	"sigs.k8s.io/external-dns/endpoint"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/sirupsen/logrus"
