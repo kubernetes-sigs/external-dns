@@ -223,7 +223,7 @@ func (p *GDProvider) groupByNameAndType(records []gdRecord) []*endpoint.Endpoint
 
 		var recordName string
 
-		if records[0].Name == "*" || records[0].Name == "@" {
+		if records[0].Name == "@" {
 			recordName = strings.TrimPrefix(*records[0].zone, ".")
 		} else {
 			recordName = strings.TrimPrefix(fmt.Sprintf("%s.%s", records[0].Name, *records[0].zone), ".")
@@ -332,9 +332,18 @@ func newGoDaddyChange(action int, endpoints []*endpoint.Endpoint, zones []string
 			continue
 		}
 
+		dnsName := strings.TrimSuffix(e.DNSName, "."+zone)
+
+		if e.RecordType == endpoint.RecordTypeA && (len(dnsName) == 0) {
+			dnsName = "@"
+		}
+
 		for _, target := range e.Targets {
+
 			if e.RecordType == endpoint.RecordTypeCNAME {
 				target = target + "."
+			} else if e.RecordType == endpoint.RecordTypeA && (len(dnsName) == 0 || dnsName == ".") {
+				dnsName = "@"
 			}
 
 			change := gdChange{
@@ -343,7 +352,7 @@ func newGoDaddyChange(action int, endpoints []*endpoint.Endpoint, zones []string
 					zone: &zone,
 					gdRecordField: gdRecordField{
 						Type: e.RecordType,
-						Name: strings.TrimSuffix(e.DNSName, "."+zone),
+						Name: dnsName,
 						TTL:  gdDefaultTTL,
 						Data: target,
 					},
