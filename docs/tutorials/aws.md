@@ -434,7 +434,7 @@ args:
 - --txt-prefix={{ YOUR_PREFIX }}
 ```
 
-* Route 53 in Govcloud does not support public zones.  There are also no cross account IAM whatsoever between Govcloud and Commerical AWS accounts.  If services and ingresses need to make Route 53 entries to an public zone in a commerical account, you will have set env variables of AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY with a key and secret to the commerical account that has the sufficient rights.
+* The 1st two changes are needed if you use Route 53 in Govcloud, which only supports private zones. There are also no cross account IAM whatsoever between Govcloud and Commerical AWS accounts.  If services and ingresses need to make Route 53 entries to an public zone in a commerical account, you will have set env variables of AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY with a key and secret to the commerical account that has the sufficient rights.
 
 ```yaml
 env:
