@@ -54,8 +54,105 @@ you've configured your Kubernetes cluster:
 If your EKS-managed cluster is >= 1.13 and was created after 2019-09-04, refer
 to the [Amazon EKS
 documentation](https://docs.aws.amazon.com/eks/latest/userguide/create-service-account-iam-policy-and-role.html)
-for instructions on how to create the IAM Role. Otherwise, you will need to use
+for detailed instructions on how to create the external-dns `ServiceAccount` IAM Role. Otherwise, you will need to use
 kiam or kube2iam.
+
+Setup this way can be summarized as follows:
+1. Retrieve the AWS account ID (`aws sts get-caller-identity`).
+2. Retrieve the EKS clusters `cluster.identity.oidc.issuer` value (`aws eks describe-cluster --name <cluster_name> --region <region> --query "cluster.identity.oidc.issuer" --output text | sed -e "s/^https:\/\///"`).
+3. Create the role based on the two above values and attach it to the policy created above (example below in terraform shows how to do this).
+4. Set the `ServiceAccount` (below) to the role ARN created in the above step.
+
+#### Creation via terraform
+`main.tf`:
+
+```hcl
+data "aws_caller_identity" "current" {}
+
+resource "aws_eks_cluster" "cluster" {
+  ...
+}
+
+variable "name" {
+  default = "my-eks-cluster"
+}
+
+resource "aws_iam_policy" "ExternalDNSPolicy" {
+  name   = "${var.name}-ExternalDNSPolicy"
+  policy = templatefile("${path.module}/templates/external-dns-policy.json", {})
+}
+
+resource "aws_iam_role" "externalDNSRole" {
+  name               = "${var.name}-ExternalDNSRole"
+  assume_role_policy = templatefile("${path.module}/templates/external-dns-role.json", {
+    account_id  = data.aws_caller_identity.current.account_id
+    oidc        = replace(aws_eks_cluster.cluster.identity[0].oidc[0].issuer, "https://", "")
+    environment = "dev"
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "externalDNSPolicyAttach" {
+  policy_arn = aws_iam_policy.ExternalDNSPolicy.arn
+  role       = aws_iam_role.externalDNSRole.name
+}
+```
+
+`templates/external-dns-policy.json`:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "route53:ChangeResourceRecordSets"
+      ],
+      "Resource": [
+        "arn:aws:route53:::hostedzone/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "route53:ListHostedZones",
+        "route53:ListResourceRecordSets"
+      ],
+      "Resource": [
+        "*"
+      ]
+    }
+  ]
+}
+```
+
+`templates/external-dns-role.json`:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::${account_id}:oidc-provider/${oidc}"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "${oidc}:sub": "system:serviceaccount:default:${environment}-external-dns"
+        }
+      }
+    }
+  ]
+}
+```
+
+Note that the `external-dns-role.json` makes some assumptions about the account:
+- It'll operate within the `default` namespace
+- The name of the account is `dev-external-dns`.
+
+The external-dns `ServiceAccount` must be named `dev-external-dns` and must be in the `default` namespace. Adjust accordingly or you'll receive `AccessDenied: Not authorized to perform sts:AssumeRoleWithWebIdentity`
 
 ### kiam
 
