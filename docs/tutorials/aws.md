@@ -416,7 +416,7 @@ Note: ExternalDNS does not support creating healthchecks, and assumes that `<hea
 
 ## Govcloud caveats
 
-Due to the special nature with how Route 53 runs in Govcloud, there are a few tweaks in the deployments settings that needs to be applied.
+Due to the special nature with how Route 53 runs in Govcloud, there are a few tweaks in the deployment settings.
 
 * An Environment variable with name of AWS_REGION set to either us-gov-west-1 or us-gov-east-1 is required.  Otherwise it tries to lookup a region that does not exist in govcloud and it errors out.
 
@@ -431,7 +431,7 @@ env:
 ```yaml
 args:
 - --aws-prefer-cname
-- --txt-prefix={YOUR_PREFIX}
+- --txt-prefix={{ YOUR_PREFIX }}
 ```
 
 * Route 53 in Govcloud does not support public zones.  There are also no cross account IAM whatsoever between Govcloud and Commerical AWS accounts.  If services and ingresses need to make Route 53 entries to an public zone in a commerical account, you will have set env variables of AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY with a key and secret to the commerical account that has the sufficient rights.
@@ -443,8 +443,8 @@ env:
 - name: AWS_SECRET_ACCESS_KEY
   valueFrom:
     secretKeyRef:
-      name: {YOUR_SECRET_NAME}
-      key: {YOUR_SECRET_KEY}
+      name: {{ YOUR_SECRET_NAME }}
+      key: {{ YOUR_SECRET_KEY }}
 ```
 
 ## Clean up
