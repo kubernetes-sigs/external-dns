@@ -416,7 +416,7 @@ Note: ExternalDNS does not support creating healthchecks, and assumes that `<hea
 
 ## Govcloud caveats
 
-Due to the special nature with how Route53 runs in Govcloud, there are a few tweaks in the deployments settings that needs to be applied.
+Due to the special nature with how Route 53 runs in Govcloud, there are a few tweaks in the deployments settings that needs to be applied.
 
 * An Environment variable with name of AWS_REGION set to either us-gov-west-1 or us-gov-east-1 is required.  Otherwise it tries to lookup a region that does not exist in govcloud and it errors out.
 
