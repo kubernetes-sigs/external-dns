@@ -104,7 +104,7 @@ var (
 		TransIPAccountName:          "",
 		TransIPPrivateKeyFile:       "",
 		DigitalOceanAPIPageSize:     50,
-		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeA},
+		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
 	overriddenConfig = &Config{
@@ -189,7 +189,7 @@ var (
 		TransIPAccountName:          "transip",
 		TransIPPrivateKeyFile:       "/path/to/transip.key",
 		DigitalOceanAPIPageSize:     100,
-		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeA},
+		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 )
 
