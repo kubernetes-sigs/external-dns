@@ -60,6 +60,8 @@ github.com/agnivade/levenshtein v1.0.1/go.mod h1:CURSv5d9Uaml+FovSIICkLbAUZ9S4Rq
 github.com/ahmetb/gen-crd-api-reference-docs v0.1.5/go.mod h1:P/XzJ+c2+khJKNKABcm2biRwk2QAuwbLf8DlXuaL7WM=
 github.com/akamai/AkamaiOPEN-edgegrid-golang v0.9.11 h1:QGjNHMwoPYxE5NpOAc8kpd2KTY293/oFk5BWdjkza+k=
 github.com/akamai/AkamaiOPEN-edgegrid-golang v0.9.11/go.mod h1:L+HB2uBoDgi3+r1pJEJcbGwyyHhd2QXaGsKLbDwtm8Q=
+github.com/akamai/AkamaiOPEN-edgegrid-golang v1.0.0 h1:FJF58TWBaQnGqTIcziIP5/z3TTqWUn8fh26z03oZE2c=
+github.com/akamai/AkamaiOPEN-edgegrid-golang v1.0.0/go.mod h1:kX6YddBkXqqywAe8c9LyvgTCyFuZCTMF4cRPQhc3Fy8=
 github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38 h1:smF2tmSOzy2Mm+0dGI2AIUHY+w0BUc+4tn40djz7+6U=
 github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38/go.mod h1:r7bzyVFMNntcxPZXK3/+KdruV1H5KSlyVY0gc+NgInI=
 github.com/alecthomas/colour v0.1.0 h1:nOE9rJm6dsZ66RGWYSFrXw461ZIt9A6+nHgL7FRrDUk=
