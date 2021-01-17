@@ -34,7 +34,7 @@ const DefaultTimeout = 180 * time.Second
 
 // Errors
 var (
-	ErrAPIDown = errors.New("go-vh: the GoDaddy API is down, it does't respond to /time anymore")
+	ErrAPIDown = errors.New("godaddy: the GoDaddy API is down")
 )
 
 // APIError error
