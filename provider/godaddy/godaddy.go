@@ -109,16 +109,6 @@ func (z gdZoneIDName) add(zoneID string, zoneRecord *gdRecords) {
 	z[zoneID] = zoneRecord
 }
 
-func (z gdZoneIDName) values() []*gdRecords {
-	values := make([]*gdRecords, 0, len(z))
-
-	for _, v := range z {
-		values = append(values, v)
-	}
-
-	return values
-}
-
 func (z gdZoneIDName) findZoneRecord(hostname string) (suitableZoneID string, suitableZoneRecord *gdRecords) {
 	for zoneID, zoneRecord := range z {
 		if hostname == zoneRecord.zone || strings.HasSuffix(hostname, "."+zoneRecord.zone) {
@@ -372,7 +362,6 @@ func (p *GDProvider) changeAllRecords(patch bool, endpoints []gdEndpoint, zoneRe
 			}
 
 			for _, target := range e.endpoint.Targets {
-
 				change := gdRecordField{
 					Type: e.endpoint.RecordType,
 					Name: dnsName,
@@ -394,7 +383,6 @@ func (p *GDProvider) changeAllRecords(patch bool, endpoints []gdEndpoint, zoneRe
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *GDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-
 	if countTargets(changes) == 0 {
 		return nil
 	}
