@@ -20,6 +20,14 @@ function generate_changelog {
       pr_author="$(gh pr view "$pr_num" | grep author | awk '{ print $2 }' | tr $'\n' ' ')"
       printf "* %s (%s) @%s\n\n" "$pr_desc" "$pr_num" "$pr_author"
     done
+
+  git log "$previous_tag".. --reverse --oneline --grep='(#' | \
+    while read -r sha title; do
+      pr_num="$(grep -o '#[[:digit:]]\+' <<<"$title")"
+      pr_desc="$(git show -s --format=%s "$sha")"
+      pr_author="$(gh pr view "$pr_num" | grep author | awk '{ print $2 }' | tr $'\n' ' ')"
+      printf "* %s (%s) @%s\n\n" "$pr_desc" "$pr_num" "$pr_author"
+    done
 }
 
 function create_release {

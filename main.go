@@ -151,7 +151,7 @@ func main() {
 	var p provider.Provider
 	switch cfg.Provider {
 	case "akamai":
-		p = akamai.NewAkamaiProvider(
+		p, err = akamai.NewAkamaiProvider(
 			akamai.AkamaiConfig{
 				DomainFilter:          domainFilter,
 				ZoneIDFilter:          zoneIDFilter,
@@ -159,9 +159,10 @@ func main() {
 				ClientToken:           cfg.AkamaiClientToken,
 				ClientSecret:          cfg.AkamaiClientSecret,
 				AccessToken:           cfg.AkamaiAccessToken,
+				EdgercPath:            cfg.AkamaiEdgercPath,
+				EdgercSection:         cfg.AkamaiEdgercSection,
 				DryRun:                cfg.DryRun,
-			},
-		)
+			}, nil)
 	case "alibabacloud":
 		p, err = alibabacloud.NewAlibabaCloudProvider(cfg.AlibabaCloudConfigFile, domainFilter, zoneIDFilter, cfg.AlibabaCloudZoneType, cfg.DryRun)
 	case "aws":
@@ -326,11 +327,12 @@ func main() {
 	}
 
 	ctrl := controller.Controller{
-		Source:       endpointsSource,
-		Registry:     r,
-		Policy:       policy,
-		Interval:     cfg.Interval,
-		DomainFilter: domainFilter,
+		Source:             endpointsSource,
+		Registry:           r,
+		Policy:             policy,
+		Interval:           cfg.Interval,
+		DomainFilter:       domainFilter,
+		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
 	}
 
 	if cfg.Once {

@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"sigs.k8s.io/external-dns/endpoint"
+
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -66,6 +68,8 @@ var (
 		AkamaiClientToken:           "",
 		AkamaiClientSecret:          "",
 		AkamaiAccessToken:           "",
+		AkamaiEdgercPath:            "",
+		AkamaiEdgercSection:         "",
 		InfobloxGridHost:            "",
 		InfobloxWapiPort:            443,
 		InfobloxWapiUsername:        "admin",
@@ -102,6 +106,7 @@ var (
 		TransIPAccountName:          "",
 		TransIPPrivateKeyFile:       "",
 		DigitalOceanAPIPageSize:     50,
+		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
 	overriddenConfig = &Config{
@@ -144,6 +149,8 @@ var (
 		AkamaiClientToken:           "o184671d5307a388180fbf7f11dbdf46",
 		AkamaiClientSecret:          "o184671d5307a388180fbf7f11dbdf46",
 		AkamaiAccessToken:           "o184671d5307a388180fbf7f11dbdf46",
+	        AkamaiEdgercPath:            "/home/test/.edgerc",
+        	AkamaiEdgercSection:         "default",
 		InfobloxGridHost:            "127.0.0.1",
 		InfobloxWapiPort:            8443,
 		InfobloxWapiUsername:        "infoblox",
@@ -186,6 +193,7 @@ var (
 		TransIPAccountName:          "transip",
 		TransIPPrivateKeyFile:       "/path/to/transip.key",
 		DigitalOceanAPIPageSize:     100,
+		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 )
 
@@ -235,6 +243,8 @@ func TestParseFlags(t *testing.T) {
 				"--akamai-client-token=o184671d5307a388180fbf7f11dbdf46",
 				"--akamai-client-secret=o184671d5307a388180fbf7f11dbdf46",
 				"--akamai-access-token=o184671d5307a388180fbf7f11dbdf46",
+				"--akamai-edgerc-path=/home/test/.edgerc",
+				"--akamai-edgerc-section=default",
 				"--infoblox-grid-host=127.0.0.1",
 				"--infoblox-wapi-port=8443",
 				"--infoblox-wapi-username=infoblox",
@@ -328,6 +338,8 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_AKAMAI_CLIENT_TOKEN":             "o184671d5307a388180fbf7f11dbdf46",
 				"EXTERNAL_DNS_AKAMAI_CLIENT_SECRET":            "o184671d5307a388180fbf7f11dbdf46",
 				"EXTERNAL_DNS_AKAMAI_ACCESS_TOKEN":             "o184671d5307a388180fbf7f11dbdf46",
+				"EXTERNAL_DNS_AKAMAI_EDGERC_PATH":              "/home/test/.edgerc",
+				"EXTERNAL_DNS_AKAMAI_EDGERC_SECTION":           "default",
 				"EXTERNAL_DNS_INFOBLOX_GRID_HOST":              "127.0.0.1",
 				"EXTERNAL_DNS_INFOBLOX_WAPI_PORT":              "8443",
 				"EXTERNAL_DNS_INFOBLOX_WAPI_USERNAME":          "infoblox",
