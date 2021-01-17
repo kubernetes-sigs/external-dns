@@ -148,9 +148,10 @@ type Config struct {
 	TransIPAccountName                string
 	TransIPPrivateKeyFile             string
 	DigitalOceanAPIPageSize           int
-	GoDaddyAPIKey                     string
+	GoDaddyAPIKey                     string `secure:"yes"`
 	GoDaddySecretKey                  string `secure:"yes"`
-	GoDaddyProduction                 bool
+	GoDaddyTTL                        int64
+	GoDaddyOTE                        bool
 }
 
 var defaultConfig = &Config{
@@ -255,7 +256,8 @@ var defaultConfig = &Config{
 	DigitalOceanAPIPageSize:     50,
 	GoDaddyAPIKey:               "",
 	GoDaddySecretKey:            "",
-	GoDaddyProduction:           true,
+	GoDaddyTTL:                  600,
+	GoDaddyOTE:                  false,
 }
 
 // NewConfig returns new Config object
@@ -393,7 +395,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	// GoDaddy flags
 	app.Flag("godaddy-api-key", "When using the GoDaddy provider, specify the API Key (required when --provider=godaddy)").Default(defaultConfig.GoDaddyAPIKey).StringVar(&cfg.GoDaddyAPIKey)
 	app.Flag("godaddy-api-secret", "When using the GoDaddy provider, specify the API secret (required when --provider=godaddy)").Default(defaultConfig.GoDaddySecretKey).StringVar(&cfg.GoDaddySecretKey)
-	app.Flag("godaddy-api-production", "When using the GoDaddy provider, specify if production or OTE use (required when --provider=godaddy)").Default(strconv.FormatBool(defaultConfig.GoDaddyProduction)).BoolVar(&cfg.GoDaddyProduction)
+	app.Flag("godaddy-api-ttl", "TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is not provided.").Int64Var(&cfg.GoDaddyTTL)
+	app.Flag("godaddy-api-ote", "When using the GoDaddy provider, use OTE api (optional, default: false, when --provider=godaddy)").BoolVar(&cfg.GoDaddyOTE)
 
 	// Flags related to TLS communication
 	app.Flag("tls-ca", "When using TLS communication, the path to the certificate authority to verify server communications (optionally specify --tls-client-cert for two-way TLS)").Default(defaultConfig.TLSCA).StringVar(&cfg.TLSCA)
