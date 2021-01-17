@@ -300,7 +300,7 @@ func main() {
 		p, err = scaleway.NewScalewayProvider(ctx, domainFilter, cfg.DryRun)
 
 	case "godaddy":
-		p, err = godaddy.NewGoDaddyProvider(ctx, domainFilter, cfg.GoDaddyAPIKey, cfg.GoDaddySecretKey, cfg.GoDaddyProduction, cfg.DryRun)
+		p, err = godaddy.NewGoDaddyProvider(ctx, domainFilter, cfg.GoDaddyTTL, cfg.GoDaddyAPIKey, cfg.GoDaddySecretKey, cfg.GoDaddyOTE, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
