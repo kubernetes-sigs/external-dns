@@ -77,13 +77,13 @@ type Client struct {
 }
 
 // NewClient represents a new client to call the API
-func NewClient(production bool, apiKey, apiSecret string) (*Client, error) {
+func NewClient(useOTE bool, apiKey, apiSecret string) (*Client, error) {
 	var endpoint string
 
-	if production {
-		endpoint = "https://api.godaddy.com"
-	} else {
+	if useOTE {
 		endpoint = " https://api.ote-godaddy.com"
+	} else {
+		endpoint = "https://api.godaddy.com"
 	}
 
 	client := Client{
