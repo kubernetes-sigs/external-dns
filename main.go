@@ -299,7 +299,6 @@ func main() {
 		p, err = transip.NewTransIPProvider(cfg.TransIPAccountName, cfg.TransIPPrivateKeyFile, domainFilter, cfg.DryRun)
 	case "scaleway":
 		p, err = scaleway.NewScalewayProvider(ctx, domainFilter, cfg.DryRun)
-
 	case "godaddy":
 		p, err = godaddy.NewGoDaddyProvider(ctx, domainFilter, cfg.GoDaddyTTL, cfg.GoDaddyAPIKey, cfg.GoDaddySecretKey, cfg.GoDaddyOTE, cfg.DryRun)
 	default:
