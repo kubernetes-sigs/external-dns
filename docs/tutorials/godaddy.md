@@ -79,7 +79,7 @@ rules:
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
-  verbs: ["list"]
+  verbs: ["list","watch"]
 - apiGroups: [""]
   resources: ["endpoints"]
   verbs: ["get","watch","list"]
