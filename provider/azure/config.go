@@ -27,7 +27,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// Config represents common config items for Azure DNS and Azure Private DNS
+// config represents common config items for Azure DNS and Azure Private DNS
 type config struct {
 	Cloud                       string            `json:"cloud" yaml:"cloud"`
 	Environment                 azure.Environment `json:"-" yaml:"-"`
