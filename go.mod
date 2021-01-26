@@ -18,6 +18,10 @@ require (
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.357
 	github.com/aws/aws-sdk-go v1.31.4
 	github.com/bodgit/tsig v0.0.0-20200217090835-f646ed0b19cd
+<<<<<<< HEAD
+=======
+	github.com/cenkalti/backoff v2.2.1+incompatible
+>>>>>>> d60ef6004bb6325b2f82f211d8e647ee16990b09
 	github.com/cloudflare/cloudflare-go v0.10.1
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/denverdino/aliyungo v0.0.0-20190125010748-a747050bb1ba
@@ -45,8 +49,14 @@ require (
 	github.com/projectcontour/contour v1.5.0
 	github.com/prometheus/client_golang v1.7.1
 	github.com/sanyu/dynectsoap v0.0.0-20181203081243-b83de5edc4e0
+<<<<<<< HEAD
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.6.0.20200623155123-84df6c4b5301
 	github.com/sirupsen/logrus v1.6.0
+=======
+	github.com/satori/go.uuid v1.2.0 // indirect
+	github.com/sirupsen/logrus v1.6.0
+	github.com/smartystreets/gunit v1.3.4 // indirect
+>>>>>>> d60ef6004bb6325b2f82f211d8e647ee16990b09
 	github.com/stretchr/testify v1.5.1
 	github.com/terra-farm/udnssdk v1.3.5 // indirect
 	github.com/transip/gotransip v5.8.2+incompatible
