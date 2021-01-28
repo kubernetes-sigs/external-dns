@@ -2,7 +2,7 @@
 
 This tutorial describes how to use ExternalDNS with the [aws-alb-ingress-controller][1].
 
-[1]: https://kubernetes-sigs.github.io/aws-alb-ingress-controller/
+[1]: https://kubernetes-sigs.github.io/aws-load-balancer-controller
 
 ## Setting up ExternalDNS and aws-alb-ingress-controller
 
@@ -14,12 +14,12 @@ this is not required.
 
 For help setting up the ALB Ingress Controller, follow the [Setup Guide][2].
 
-[2]: https://kubernetes-sigs.github.io/aws-alb-ingress-controller/guide/controller/setup/
+[2]: https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/deploy/installation/
 
 Note that the ALB ingress controller uses the same tags for [subnet auto-discovery][3]
 as Kubernetes does with the AWS cloud provider.
 
-[3]: https://kubernetes-sigs.github.io/aws-alb-ingress-controller/guide/controller/config/#subnet-auto-discovery
+[3]: https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/deploy/subnet_discovery/
 
 In the examples that follow, it is assumed that you configured the ALB Ingress
 Controller with the `ingress-class=alb` argument (not to be confused with the
