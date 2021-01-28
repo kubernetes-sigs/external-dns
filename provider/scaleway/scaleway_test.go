@@ -93,7 +93,7 @@ func (m *mockScalewayDomain) ListDNSZoneRecords(req *domain.ListDNSZoneRecordsRe
 				Type:     domain.RecordTypeA,
 			},
 			{
-				Data:     "test.example.com",
+				Data:     "test.example.com.",
 				Name:     "two",
 				TTL:      600,
 				Priority: 30,
@@ -330,7 +330,7 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 					Add: &domain.RecordChangeAdd{
 						Records: []*domain.Record{
 							{
-								Data:     "example.com",
+								Data:     "example.com.",
 								Name:     "",
 								TTL:      600,
 								Type:     domain.RecordTypeCNAME,
