@@ -269,8 +269,13 @@ func endpointToScalewayRecords(zoneName string, ep *endpoint.Endpoint) []*domain
 	records := []*domain.Record{}
 
 	for _, target := range ep.Targets {
+		finalTargetName := target
+		if domain.RecordType(ep.RecordType) == domain.RecordTypeCNAME {
+			finalTargetName = provider.EnsureTrailingDot(target)
+		}
+
 		records = append(records, &domain.Record{
-			Data:     target,
+			Data:     finalTargetName,
 			Name:     strings.Trim(strings.TrimSuffix(ep.DNSName, zoneName), ". "),
 			Priority: priority,
 			TTL:      ttl,
@@ -285,9 +290,14 @@ func endpointToScalewayRecordsChangeDelete(zoneName string, ep *endpoint.Endpoin
 	records := []*domain.RecordChange{}
 
 	for _, target := range ep.Targets {
+		finalTargetName := target
+		if domain.RecordType(ep.RecordType) == domain.RecordTypeCNAME {
+			finalTargetName = provider.EnsureTrailingDot(target)
+		}
+
 		records = append(records, &domain.RecordChange{
 			Delete: &domain.RecordChangeDelete{
-				Data: target,
+				Data: finalTargetName,
 				Name: strings.Trim(strings.TrimSuffix(ep.DNSName, zoneName), ". "),
 				Type: domain.RecordType(ep.RecordType),
 			},
