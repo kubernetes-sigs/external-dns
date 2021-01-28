@@ -17,7 +17,7 @@ limitations under the License.
 package scaleway
 
 import (
-	domain "github.com/scaleway/scaleway-sdk-go/api/domain/v2alpha2"
+	domain "github.com/scaleway/scaleway-sdk-go/api/domain/v2beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 )
 

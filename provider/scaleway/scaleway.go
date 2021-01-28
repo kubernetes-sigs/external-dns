@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"strings"
 
-	domain "github.com/scaleway/scaleway-sdk-go/api/domain/v2alpha2"
+	domain "github.com/scaleway/scaleway-sdk-go/api/domain/v2beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 	log "github.com/sirupsen/logrus"
 
@@ -297,9 +297,11 @@ func endpointToScalewayRecordsChangeDelete(zoneName string, ep *endpoint.Endpoin
 
 		records = append(records, &domain.RecordChange{
 			Delete: &domain.RecordChangeDelete{
-				Data: finalTargetName,
-				Name: strings.Trim(strings.TrimSuffix(ep.DNSName, zoneName), ". "),
-				Type: domain.RecordType(ep.RecordType),
+				IDFields: &domain.RecordIdentifier{
+					Data: &finalTargetName,
+					Name: strings.Trim(strings.TrimSuffix(ep.DNSName, zoneName), ". "),
+					Type: domain.RecordType(ep.RecordType),
+				},
 			},
 		})
 	}
@@ -330,15 +332,15 @@ func logChanges(req *domain.UpdateDNSZoneRecordsRequest) {
 				log.WithFields(logFields).Info("Adding record")
 			}
 		} else if change.Delete != nil {
-			name := change.Delete.Name + "."
-			if change.Delete.Name == "" {
+			name := change.Delete.IDFields.Name + "."
+			if change.Delete.IDFields.Name == "" {
 				name = ""
 			}
 
 			logFields := log.Fields{
 				"record": name + req.DNSZone,
-				"type":   change.Delete.Type.String(),
-				"data":   change.Delete.Data,
+				"type":   change.Delete.IDFields.Type.String(),
+				"data":   *change.Delete.IDFields.Data,
 			}
 
 			log.WithFields(logFields).Info("Deleting record")
