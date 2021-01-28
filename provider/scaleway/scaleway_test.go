@@ -158,6 +158,90 @@ func TestScalewayProvider_NewScalewayProvider(t *testing.T) {
 	}
 }
 
+func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
+	provider := &ScalewayProvider{}
+
+	before := []*endpoint.Endpoint{
+		{
+			DNSName:    "one.example.com",
+			RecordTTL:  300,
+			RecordType: "A",
+			Targets:    []string{"1.1.1.1"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  scalewayPriorityKey,
+					Value: "0",
+				},
+			},
+		},
+		{
+			DNSName:    "two.example.com",
+			RecordTTL:  0,
+			RecordType: "A",
+			Targets:    []string{"1.1.1.1"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  scalewayPriorityKey,
+					Value: "10",
+				},
+			},
+		},
+		{
+			DNSName:          "three.example.com",
+			RecordTTL:        600,
+			RecordType:       "A",
+			Targets:          []string{"1.1.1.1"},
+			ProviderSpecific: endpoint.ProviderSpecific{},
+		},
+	}
+
+	expected := []*endpoint.Endpoint{
+		{
+			DNSName:    "one.example.com",
+			RecordTTL:  300,
+			RecordType: "A",
+			Targets:    []string{"1.1.1.1"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  scalewayPriorityKey,
+					Value: "0",
+				},
+			},
+		},
+		{
+			DNSName:    "two.example.com",
+			RecordTTL:  300,
+			RecordType: "A",
+			Targets:    []string{"1.1.1.1"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  scalewayPriorityKey,
+					Value: "10",
+				},
+			},
+		},
+		{
+			DNSName:    "three.example.com",
+			RecordTTL:  600,
+			RecordType: "A",
+			Targets:    []string{"1.1.1.1"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  scalewayPriorityKey,
+					Value: "0",
+				},
+			},
+		},
+	}
+
+	after := provider.AdjustEndpoints(before)
+	for i := range after {
+		if !checkRecordEquality(after[i], expected[i]) {
+			t.Errorf("got record %s instead of %s", after[i], expected[i])
+		}
+	}
+}
+
 func TestScalewayProvider_Zones(t *testing.T) {
 	mocked := mockScalewayDomain{nil}
 	provider := &ScalewayProvider{

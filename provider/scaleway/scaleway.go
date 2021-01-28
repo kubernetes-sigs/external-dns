@@ -84,6 +84,21 @@ func NewScalewayProvider(ctx context.Context, domainFilter endpoint.DomainFilter
 	}, nil
 }
 
+// AdjustEndpoints is used to normalize the endoints
+func (p *ScalewayProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	eps := make([]*endpoint.Endpoint, len(endpoints))
+	for i := range endpoints {
+		eps[i] = endpoints[i]
+		if !eps[i].RecordTTL.IsConfigured() {
+			eps[i].RecordTTL = endpoint.TTL(scalewyRecordTTL)
+		}
+		if _, ok := eps[i].GetProviderSpecificProperty(scalewayPriorityKey); !ok {
+			eps[i] = eps[i].WithProviderSpecific(scalewayPriorityKey, fmt.Sprintf("%d", scalewayDefaultPriority))
+		}
+	}
+	return eps
+}
+
 // Zones returns the list of hosted zones.
 func (p *ScalewayProvider) Zones(ctx context.Context) ([]*domain.DNSZone, error) {
 	res := []*domain.DNSZone{}
@@ -192,6 +207,7 @@ func (p *ScalewayProvider) generateApplyRequests(ctx context.Context, changes *p
 		recordsToDelete[zoneName] = []*domain.RecordChange{}
 	}
 
+	log.Debugf("Following records present in updateOld")
 	for _, c := range changes.UpdateOld {
 		zone, _ := zoneNameMapper.FindZone(c.DNSName)
 		if zone == "" {
@@ -199,8 +215,10 @@ func (p *ScalewayProvider) generateApplyRequests(ctx context.Context, changes *p
 			continue
 		}
 		recordsToDelete[zone] = append(recordsToDelete[zone], endpointToScalewayRecordsChangeDelete(zone, c)...)
+		log.Debugf("%s", c.String())
 	}
 
+	log.Debugf("Following records present in delete")
 	for _, c := range changes.Delete {
 		zone, _ := zoneNameMapper.FindZone(c.DNSName)
 		if zone == "" {
@@ -208,8 +226,10 @@ func (p *ScalewayProvider) generateApplyRequests(ctx context.Context, changes *p
 			continue
 		}
 		recordsToDelete[zone] = append(recordsToDelete[zone], endpointToScalewayRecordsChangeDelete(zone, c)...)
+		log.Debugf("%s", c.String())
 	}
 
+	log.Debugf("Following records present in create")
 	for _, c := range changes.Create {
 		zone, _ := zoneNameMapper.FindZone(c.DNSName)
 		if zone == "" {
@@ -217,7 +237,10 @@ func (p *ScalewayProvider) generateApplyRequests(ctx context.Context, changes *p
 			continue
 		}
 		recordsToAdd[zone].Records = append(recordsToAdd[zone].Records, endpointToScalewayRecords(zone, c)...)
+		log.Debugf("%s", c.String())
 	}
+
+	log.Debugf("Following records present in updateNew")
 	for _, c := range changes.UpdateNew {
 		zone, _ := zoneNameMapper.FindZone(c.DNSName)
 		if zone == "" {
@@ -225,6 +248,7 @@ func (p *ScalewayProvider) generateApplyRequests(ctx context.Context, changes *p
 			continue
 		}
 		recordsToAdd[zone].Records = append(recordsToAdd[zone].Records, endpointToScalewayRecords(zone, c)...)
+		log.Debugf("%s", c.String())
 	}
 
 	for _, zone := range dnsZones {
@@ -310,10 +334,10 @@ func endpointToScalewayRecordsChangeDelete(zoneName string, ep *endpoint.Endpoin
 }
 
 func logChanges(req *domain.UpdateDNSZoneRecordsRequest) {
-	log.Infof("Updating zone %s", req.DNSZone)
 	if !log.IsLevelEnabled(log.InfoLevel) {
 		return
 	}
+	log.Infof("Updating zone %s", req.DNSZone)
 	for _, change := range req.Changes {
 		if change.Add != nil {
 			for _, add := range change.Add.Records {
