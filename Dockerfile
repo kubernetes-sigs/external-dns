@@ -21,7 +21,6 @@ WORKDIR /sigs.k8s.io/external-dns
 
 COPY . .
 RUN go mod vendor && \
-    make test && \
     make build
 
 # final image
