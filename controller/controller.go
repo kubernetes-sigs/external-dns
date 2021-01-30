@@ -103,7 +103,7 @@ func init() {
 // * Ask the DNS provider for current list of endpoints.
 // * Ask the Source for the desired list of endpoints.
 // * Take both lists and calculate a Plan to move current towards desired state.
-// * Tell the DNS provider to apply the changes calucated by the Plan.
+// * Tell the DNS provider to apply the changes calculated by the Plan.
 type Controller struct {
 	Source   source.Source
 	Registry registry.Registry
@@ -117,6 +117,8 @@ type Controller struct {
 	nextRunAt time.Time
 	// The nextRunAtMux is for atomic updating of nextRunAt
 	nextRunAtMux sync.Mutex
+	// DNS record types that will be considered for management
+	ManagedRecordTypes []string
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -139,12 +141,15 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	}
 	sourceEndpointsTotal.Set(float64(len(endpoints)))
 
+	endpoints = c.Registry.AdjustEndpoints(endpoints)
+
 	plan := &plan.Plan{
 		Policies:           []plan.Policy{c.Policy},
 		Current:            records,
 		Desired:            endpoints,
 		DomainFilter:       c.DomainFilter,
 		PropertyComparator: c.Registry.PropertyValuesEqual,
+		ManagedRecords:     []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
 	plan = plan.Calculate()
@@ -163,7 +168,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 // MinInterval is used as window for batching events
 const MinInterval = 5 * time.Second
 
-// RunOnceThrottled makes sure execution happens at most once per interval.
+// ScheduleRunOnce makes sure execution happens at most once per interval.
 func (c *Controller) ScheduleRunOnce(now time.Time) {
 	c.nextRunAtMux.Lock()
 	defer c.nextRunAtMux.Unlock()

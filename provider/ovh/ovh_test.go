@@ -93,7 +93,7 @@ func TestOvhZoneRecords(t *testing.T) {
 	zones, records, err := provider.zonesRecords(context.TODO())
 	assert.NoError(err)
 	assert.ElementsMatch(zones, []string{"example.org"})
-	assert.ElementsMatch(records, []ovhRecord{{ID: 42, Zone: "example.org", ovhRecordFields: ovhRecordFields{SubDomain: "ovh", FieldType: "A", TTL: 10, Target: "203.0.113.42"}}})
+	assert.ElementsMatch(records, []ovhRecord{{ID: 42, Zone: "example.org", ovhRecordFields: ovhRecordFields{SubDomain: "ovh", FieldType: "A", TTL: 10, Target: "203.0.113.42"}}, {ID: 24, Zone: "example.org", ovhRecordFields: ovhRecordFields{SubDomain: "ovh", FieldType: "NS", TTL: 10, Target: "203.0.113.42"}}})
 	client.AssertExpectations(t)
 
 	// Error on getting zones list
@@ -140,8 +140,8 @@ func TestOvhRecords(t *testing.T) {
 	endpoints, err := provider.Records(context.TODO())
 	assert.NoError(err)
 	// Little fix for multi targets endpoint
-	for _, endoint := range endpoints {
-		sort.Strings(endoint.Targets)
+	for _, endpoint := range endpoints {
+		sort.Strings(endpoint.Targets)
 	}
 	assert.ElementsMatch(endpoints, []*endpoint.Endpoint{
 		{DNSName: "example.org", RecordType: "A", RecordTTL: 10, Labels: endpoint.NewLabels(), Targets: []string{"203.0.113.42"}},

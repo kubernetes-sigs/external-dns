@@ -43,6 +43,8 @@ type Plan struct {
 	DomainFilter endpoint.DomainFilter
 	// Property comparator compares custom properties of providers
 	PropertyComparator PropertyComparator
+	// DNS record types that will be considered for management
+	ManagedRecords []string
 }
 
 // Changes holds lists of actions to be executed by dns providers
@@ -119,10 +121,10 @@ func (t planTable) addCandidate(e *endpoint.Endpoint) {
 func (p *Plan) Calculate() *Plan {
 	t := newPlanTable()
 
-	for _, current := range filterRecordsForPlan(p.Current, p.DomainFilter) {
+	for _, current := range filterRecordsForPlan(p.Current, p.DomainFilter, p.ManagedRecords) {
 		t.addCurrent(current)
 	}
-	for _, desired := range filterRecordsForPlan(p.Desired, p.DomainFilter) {
+	for _, desired := range filterRecordsForPlan(p.Desired, p.DomainFilter, p.ManagedRecords) {
 		t.addCandidate(desired)
 	}
 
@@ -155,9 +157,10 @@ func (p *Plan) Calculate() *Plan {
 	}
 
 	plan := &Plan{
-		Current: p.Current,
-		Desired: p.Desired,
-		Changes: changes,
+		Current:        p.Current,
+		Desired:        p.Desired,
+		Changes:        changes,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
 	return plan
@@ -194,12 +197,6 @@ func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint)
 	}
 	if current.ProviderSpecific != nil {
 		for _, c := range current.ProviderSpecific {
-			// don't consider target health when detecting changes
-			// see: https://github.com/kubernetes-sigs/external-dns/issues/869#issuecomment-458576954
-			if c.Name == "aws/evaluate-target-health" {
-				continue
-			}
-
 			if d, ok := desiredProperties[c.Name]; ok {
 				if p.PropertyComparator != nil {
 					if !p.PropertyComparator(c.Name, c.Value, d.Value) {
@@ -230,7 +227,7 @@ func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint)
 // Per RFC 1034, CNAME records conflict with all other records - it is the
 // only record with this property. The behavior of the planner may need to be
 // made more sophisticated to codify this.
-func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.DomainFilter) []*endpoint.Endpoint {
+func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.DomainFilter, managedRecords []string) []*endpoint.Endpoint {
 	filtered := []*endpoint.Endpoint{}
 
 	for _, record := range records {
@@ -238,14 +235,8 @@ func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.Do
 		if !domainFilter.Match(record.DNSName) {
 			continue
 		}
-
-		// Explicitly specify which records we want to use for planning.
-		// TODO: Add AAAA records as well when they are supported.
-		switch record.RecordType {
-		case endpoint.RecordTypeA, endpoint.RecordTypeCNAME:
+		if isManagedRecord(record.RecordType, managedRecords) {
 			filtered = append(filtered, record)
-		default:
-			continue
 		}
 	}
 
@@ -285,4 +276,13 @@ func CompareBoolean(defaultValue bool, name, current, previous string) bool {
 	}
 
 	return v1 == v2
+}
+
+func isManagedRecord(record string, managedRecords []string) bool {
+	for _, r := range managedRecords {
+		if record == r {
+			return true
+		}
+	}
+	return false
 }
