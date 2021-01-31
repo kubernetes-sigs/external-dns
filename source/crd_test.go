@@ -57,7 +57,7 @@ func objBody(codec runtime.Encoder, obj runtime.Object) io.ReadCloser {
 	return ioutil.NopCloser(bytes.NewReader([]byte(runtime.EncodeOrDie(codec, obj))))
 }
 
-func startCRDServerToServeTargets(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace, name string, annotations map[string]string, t *testing.T) rest.Interface {
+func startCRDServerToServeTargets(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace, name string, annotations map[string]string, labels map[string]string, t *testing.T) rest.Interface {
 	groupVersion, _ := schema.ParseGroupVersion(apiVersion)
 	scheme := runtime.NewScheme()
 	addKnownTypes(scheme, groupVersion)
@@ -72,6 +72,7 @@ func startCRDServerToServeTargets(endpoints []*endpoint.Endpoint, apiVersion, ki
 			Name:        name,
 			Namespace:   namespace,
 			Annotations: annotations,
+			Labels:      labels,
 			Generation:  1,
 		},
 		Spec: endpoint.DNSEndpointSpec{
@@ -139,7 +140,9 @@ func testCRDSourceEndpoints(t *testing.T) {
 		expectEndpoints      bool
 		expectError          bool
 		annotationFilter     string
+		labelFilter          string
 		annotations          map[string]string
+		labels               map[string]string
 	}{
 		{
 			title:                "invalid crd api version",
@@ -308,16 +311,76 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectEndpoints: true,
 			expectError:     false,
 		},
+		{
+			title:                "valid crd gvk with label and non matching label filter",
+			registeredAPIVersion: "test.k8s.io/v1alpha1",
+			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredKind:       "DNSEndpoint",
+			kind:                 "DNSEndpoint",
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			labels:               map[string]string{"test": "that"},
+			labelFilter:          "test=filter_something_else",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "abc.example.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: false,
+			expectError:     false,
+		},
+		{
+			title:                "valid crd gvk with label and matching label filter",
+			registeredAPIVersion: "test.k8s.io/v1alpha1",
+			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredKind:       "DNSEndpoint",
+			kind:                 "DNSEndpoint",
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			labels:               map[string]string{"test": "that"},
+			labelFilter:          "test=that",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "abc.example.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: true,
+			expectError:     false,
+		},
+		{
+			title:                "Create NS record",
+			registeredAPIVersion: "test.k8s.io/v1alpha1",
+			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredKind:       "DNSEndpoint",
+			kind:                 "DNSEndpoint",
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			labels:               map[string]string{"test": "that"},
+			labelFilter:          "test=that",
+			endpoints: []*endpoint.Endpoint{
+				{DNSName: "abc.example.org",
+					Targets:    endpoint.Targets{"ns1.k8s.io", "ns2.k8s.io"},
+					RecordType: endpoint.RecordTypeNS,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: true,
+			expectError:     false,
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			restClient := startCRDServerToServeTargets(ti.endpoints, ti.registeredAPIVersion, ti.registeredKind, ti.registeredNamespace, "test", ti.annotations, t)
+			restClient := startCRDServerToServeTargets(ti.endpoints, ti.registeredAPIVersion, ti.registeredKind, ti.registeredNamespace, "test", ti.annotations, ti.labels, t)
 			groupVersion, err := schema.ParseGroupVersion(ti.apiVersion)
 			require.NoError(t, err)
 
 			scheme := runtime.NewScheme()
 			addKnownTypes(scheme, groupVersion)
 
-			cs, _ := NewCRDSource(restClient, ti.namespace, ti.kind, ti.annotationFilter, scheme)
+			cs, _ := NewCRDSource(restClient, ti.namespace, ti.kind, ti.annotationFilter, ti.labelFilter, scheme)
 
 			receivedEndpoints, err := cs.Endpoints(context.Background())
 			if ti.expectError {

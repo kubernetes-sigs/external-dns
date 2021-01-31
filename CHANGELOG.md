@@ -17,6 +17,8 @@
 - Update contributing section in README (#1760) @seanmalloy
 - Option to cache AWS zones list @bpineau
 - Oracle OCI provider: add support for instance principal authentication (#1700) @ericrrath
+- Refactor, enhance and test Akamai provider and documentation (#1846) @edglynes
+- Fix: only use absolute CNAMEs in Scaleway provider (#1859) @Sh4d1
 
 ## v0.7.3 - 2020-08-05
 

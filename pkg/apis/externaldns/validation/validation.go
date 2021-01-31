@@ -45,16 +45,16 @@ func ValidateConfig(cfg *externaldns.Config) error {
 
 	// Akamai provider specific validations
 	if cfg.Provider == "akamai" {
-		if cfg.AkamaiServiceConsumerDomain == "" {
+		if cfg.AkamaiServiceConsumerDomain == "" && cfg.AkamaiEdgercPath != "" {
 			return errors.New("no Akamai ServiceConsumerDomain specified")
 		}
-		if cfg.AkamaiClientToken == "" {
+		if cfg.AkamaiClientToken == "" && cfg.AkamaiEdgercPath != "" {
 			return errors.New("no Akamai client token specified")
 		}
-		if cfg.AkamaiClientSecret == "" {
+		if cfg.AkamaiClientSecret == "" && cfg.AkamaiEdgercPath != "" {
 			return errors.New("no Akamai client secret specified")
 		}
-		if cfg.AkamaiAccessToken == "" {
+		if cfg.AkamaiAccessToken == "" && cfg.AkamaiEdgercPath != "" {
 			return errors.New("no Akamai access token specified")
 		}
 	}

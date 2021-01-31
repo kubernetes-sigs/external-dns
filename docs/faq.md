@@ -57,7 +57,7 @@ Services exposed via `type=LoadBalancer`, `type=ExternalName` and for the hostna
 
 There are three sources of information for ExternalDNS to decide on DNS name. ExternalDNS will pick one in order as listed below:
 
-1. For ingress objects ExternalDNS will create a DNS record based on the host specified for the ingress object. For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the corresponding value.
+1. For ingress objects ExternalDNS will create a DNS record based on the host specified for the ingress object. For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the loadbalancer IP, it also will look for the annotation `external-dns.alpha.kubernetes.io/internal-hostname` on the service and use the service IP.
 
 2. If compatibility mode is enabled (e.g. `--compatibility={mate,molecule}` flag), External DNS will parse annotations used by Zalando/Mate, wearemolecule/route53-kubernetes. Compatibility mode with Kops DNS Controller is planned to be added in the future.
 
@@ -275,6 +275,16 @@ and one with `--annotation-filter=kubernetes.io/ingress.class=nginx-external`.
 Beware when using multiple sources, e.g. `--source=service --source=ingress`, `--annotation-filter` will filter every given source objects.
 If you need to filter only one specific source you have to run a separated external dns service containing only the wanted `--source`  and `--annotation-filter`.
 
+### How do I specify that I want the DNS record to point to either the Node's public or private IP when it has both?
+
+If your Nodes have both public and private IP addresses, you might want to write DNS records with one or the other.  
+For example, you may want to write a DNS record in a private zone that resolves to your Nodes' private IPs so that traffic never leaves your private network.
+
+To accomplish this, set this annotation on your service: `external-dns.alpha.kubernetes.io/access=private`  
+Conversely, to force the public IP: `external-dns.alpha.kubernetes.io/access=public`  
+
+If this annotation is not set, and the node has both public and private IP addresses, then the public IP will be used by default.
+
 ### Can external-dns manage(add/remove) records in a hosted zone which is setup in different AWS account?
 
 Yes, give it the correct cross-account/assume-role permissions and use the `--aws-assume-role` flag https://github.com/kubernetes-sigs/external-dns/pull/524#issue-181256561
@@ -296,6 +306,13 @@ As tags, you use the external-dns release of choice(i.e. `v0.7.3`). A `latest` t
 
 If you wish to build your own image, you can use the provided [Dockerfile](../Dockerfile) as a starting point.
 
+### Which architectures are supported?
+
+From `v0.7.5` on we support `amd64`, `arm32v7` and `arm64v8`. This means that you can run ExternalDNS on a Kubernetes cluster backed by Rasperry Pis or on ARM instances in the cloud as well as more traditional machines backed by `amd64` compatible CPUs.
+
+### Which operating systems are supported?
+
+At the time of writing we only support GNU/linux and we have no plans of supporting Windows or other operating systems.
 
 ### Why am I seeing time out errors even though I have connectivity to my cluster?
 

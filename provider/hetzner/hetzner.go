@@ -117,14 +117,40 @@ func (p *HetznerProvider) submitChanges(ctx context.Context, changes []*HetznerC
 
 	for _, changes := range zoneChanges {
 		for _, change := range changes {
+			// Prepare record name
+			recordName := strings.TrimSuffix(change.ResourceRecordSet.Name, "."+change.ZoneName)
+			if recordName == change.ZoneName {
+				recordName = "@"
+			}
+			if change.ResourceRecordSet.RecordType == hclouddns.CNAME && !strings.HasSuffix(change.ResourceRecordSet.Value, ".") {
+				change.ResourceRecordSet.Value += "."
+			}
+			change.ResourceRecordSet.Name = recordName
+
+			// Get ID of record if not create operation
+			if change.Action != hetznerCreate {
+				allRecords, err := p.Client.GetRecords(hclouddns.HCloudGetRecordsParams{ZoneID: change.ZoneID})
+				if err != nil {
+					return err
+				}
+				for _, record := range allRecords.Records {
+					if record.Name == change.ResourceRecordSet.Name && record.RecordType == change.ResourceRecordSet.RecordType {
+						change.ResourceRecordSet.ID = record.ID
+						break
+					}
+				}
+			}
+
 			log.WithFields(log.Fields{
+				"id":      change.ResourceRecordSet.ID,
 				"record":  change.ResourceRecordSet.Name,
 				"type":    change.ResourceRecordSet.RecordType,
+				"value":   change.ResourceRecordSet.Value,
 				"ttl":     change.ResourceRecordSet.TTL,
 				"action":  change.Action,
 				"zone":    change.ZoneName,
 				"zone_id": change.ZoneID,
-			}).Info("Changing record.")
+			}).Info("Changing record")
 
 			change.ResourceRecordSet.Name = strings.TrimSuffix(change.ResourceRecordSet.Name, "."+change.ZoneName)
 			if change.ResourceRecordSet.Name == change.ZoneName {
@@ -143,13 +169,24 @@ func (p *HetznerProvider) submitChanges(ctx context.Context, changes []*HetznerC
 					Value:      change.ResourceRecordSet.Value,
 					TTL:        change.ResourceRecordSet.TTL,
 				}
-				_, err := p.Client.CreateRecord(record)
+				answer, err := p.Client.CreateRecord(record)
 				if err != nil {
+					log.WithFields(log.Fields{
+						"Code":         answer.Error.Code,
+						"Message":      answer.Error.Message,
+						"Record name":  answer.Record.Name,
+						"Record type":  answer.Record.RecordType,
+						"Record value": answer.Record.Value,
+					}).Warning("Create problem")
 					return err
 				}
 			case hetznerDelete:
-				_, err := p.Client.DeleteRecord(change.ResourceRecordSet.ID)
+				answer, err := p.Client.DeleteRecord(change.ResourceRecordSet.ID)
 				if err != nil {
+					log.WithFields(log.Fields{
+						"Code":    answer.Error.Code,
+						"Message": answer.Error.Message,
+					}).Warning("Delete problem")
 					return err
 				}
 			case hetznerUpdate:
@@ -159,9 +196,17 @@ func (p *HetznerProvider) submitChanges(ctx context.Context, changes []*HetznerC
 					Name:       change.ResourceRecordSet.Name,
 					Value:      change.ResourceRecordSet.Value,
 					TTL:        change.ResourceRecordSet.TTL,
+					ID:         change.ResourceRecordSet.ID,
 				}
-				_, err := p.Client.UpdateRecord(record)
+				answer, err := p.Client.UpdateRecord(record)
 				if err != nil {
+					log.WithFields(log.Fields{
+						"Code":         answer.Error.Code,
+						"Message":      answer.Error.Message,
+						"Record name":  answer.Record.Name,
+						"Record type":  answer.Record.RecordType,
+						"Record value": answer.Record.Value,
+					}).Warning("Update problem")
 					return err
 				}
 			}

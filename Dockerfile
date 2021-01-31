@@ -13,22 +13,19 @@
 # limitations under the License.
 
 # builder image
-FROM golang:1.14 as builder
+ARG ARCH
+FROM golang:1.15 as builder
+ARG ARCH
 
 WORKDIR /sigs.k8s.io/external-dns
 
 COPY . .
-RUN go mod vendor && \
-    make test && \
-    make build
+RUN make test && make build.$ARCH
 
 # final image
-FROM alpine:3.12
-LABEL maintainer="Team Teapot @ Zalando SE <team-teapot@zalando.de>"
+FROM $ARCH/alpine:3.12
 
-RUN apk add --update --no-cache ca-certificates && \
-    update-ca-certificates
-
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /bin/external-dns
 
 # Run as UID for nobody since k8s pod securityContext runAsNonRoot can't resolve the user ID:

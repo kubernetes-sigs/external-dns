@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"sigs.k8s.io/external-dns/endpoint"
+
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -44,6 +46,7 @@ var (
 		GoogleBatchChangeInterval:   time.Second,
 		DomainFilter:                []string{""},
 		ExcludeDomains:              []string{""},
+		ZoneNameFilter:              []string{""},
 		ZoneIDFilter:                []string{""},
 		AlibabaCloudConfigFile:      "/etc/kubernetes/alibaba-cloud.json",
 		AWSZoneType:                 "",
@@ -65,6 +68,8 @@ var (
 		AkamaiClientToken:           "",
 		AkamaiClientSecret:          "",
 		AkamaiAccessToken:           "",
+		AkamaiEdgercPath:            "",
+		AkamaiEdgercSection:         "",
 		InfobloxGridHost:            "",
 		InfobloxWapiPort:            443,
 		InfobloxWapiUsername:        "admin",
@@ -101,6 +106,7 @@ var (
 		TransIPAccountName:          "",
 		TransIPPrivateKeyFile:       "",
 		DigitalOceanAPIPageSize:     50,
+		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
 	overriddenConfig = &Config{
@@ -112,6 +118,7 @@ var (
 		Sources:                     []string{"service", "ingress", "connector"},
 		Namespace:                   "namespace",
 		IgnoreHostnameAnnotation:    true,
+		IgnoreIngressTLSSpec:        true,
 		FQDNTemplate:                "{{.Name}}.service.example.com",
 		Compatibility:               "mate",
 		Provider:                    "google",
@@ -120,6 +127,7 @@ var (
 		GoogleBatchChangeInterval:   time.Second * 2,
 		DomainFilter:                []string{"example.org", "company.com"},
 		ExcludeDomains:              []string{"xapi.example.org", "xapi.company.com"},
+		ZoneNameFilter:              []string{"yapi.example.org", "yapi.company.com"},
 		ZoneIDFilter:                []string{"/hostedzone/ZTST1", "/hostedzone/ZTST2"},
 		AlibabaCloudConfigFile:      "/etc/kubernetes/alibaba-cloud.json",
 		AWSZoneType:                 "private",
@@ -141,6 +149,8 @@ var (
 		AkamaiClientToken:           "o184671d5307a388180fbf7f11dbdf46",
 		AkamaiClientSecret:          "o184671d5307a388180fbf7f11dbdf46",
 		AkamaiAccessToken:           "o184671d5307a388180fbf7f11dbdf46",
+	        AkamaiEdgercPath:            "/home/test/.edgerc",
+        	AkamaiEdgercSection:         "default",
 		InfobloxGridHost:            "127.0.0.1",
 		InfobloxWapiPort:            8443,
 		InfobloxWapiUsername:        "infoblox",
@@ -183,6 +193,7 @@ var (
 		TransIPAccountName:          "transip",
 		TransIPPrivateKeyFile:       "/path/to/transip.key",
 		DigitalOceanAPIPageSize:     100,
+		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 )
 
@@ -216,6 +227,7 @@ func TestParseFlags(t *testing.T) {
 				"--namespace=namespace",
 				"--fqdn-template={{.Name}}.service.example.com",
 				"--ignore-hostname-annotation",
+				"--ignore-ingress-tls-spec",
 				"--compatibility=mate",
 				"--provider=google",
 				"--google-project=project",
@@ -231,6 +243,8 @@ func TestParseFlags(t *testing.T) {
 				"--akamai-client-token=o184671d5307a388180fbf7f11dbdf46",
 				"--akamai-client-secret=o184671d5307a388180fbf7f11dbdf46",
 				"--akamai-access-token=o184671d5307a388180fbf7f11dbdf46",
+				"--akamai-edgerc-path=/home/test/.edgerc",
+				"--akamai-edgerc-section=default",
 				"--infoblox-grid-host=127.0.0.1",
 				"--infoblox-wapi-port=8443",
 				"--infoblox-wapi-username=infoblox",
@@ -254,6 +268,8 @@ func TestParseFlags(t *testing.T) {
 				"--domain-filter=company.com",
 				"--exclude-domains=xapi.example.org",
 				"--exclude-domains=xapi.company.com",
+				"--zone-name-filter=yapi.example.org",
+				"--zone-name-filter=yapi.company.com",
 				"--zone-id-filter=/hostedzone/ZTST1",
 				"--zone-id-filter=/hostedzone/ZTST2",
 				"--aws-zone-type=private",
@@ -306,6 +322,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_NAMESPACE":                       "namespace",
 				"EXTERNAL_DNS_FQDN_TEMPLATE":                   "{{.Name}}.service.example.com",
 				"EXTERNAL_DNS_IGNORE_HOSTNAME_ANNOTATION":      "1",
+				"EXTERNAL_DNS_IGNORE_INGRESS_TLS_SPEC":         "1",
 				"EXTERNAL_DNS_COMPATIBILITY":                   "mate",
 				"EXTERNAL_DNS_PROVIDER":                        "google",
 				"EXTERNAL_DNS_GOOGLE_PROJECT":                  "project",
@@ -321,6 +338,8 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_AKAMAI_CLIENT_TOKEN":             "o184671d5307a388180fbf7f11dbdf46",
 				"EXTERNAL_DNS_AKAMAI_CLIENT_SECRET":            "o184671d5307a388180fbf7f11dbdf46",
 				"EXTERNAL_DNS_AKAMAI_ACCESS_TOKEN":             "o184671d5307a388180fbf7f11dbdf46",
+				"EXTERNAL_DNS_AKAMAI_EDGERC_PATH":              "/home/test/.edgerc",
+				"EXTERNAL_DNS_AKAMAI_EDGERC_SECTION":           "default",
 				"EXTERNAL_DNS_INFOBLOX_GRID_HOST":              "127.0.0.1",
 				"EXTERNAL_DNS_INFOBLOX_WAPI_PORT":              "8443",
 				"EXTERNAL_DNS_INFOBLOX_WAPI_USERNAME":          "infoblox",
@@ -342,6 +361,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_TLS_CA":                          "/path/to/ca.crt",
 				"EXTERNAL_DNS_TLS_CLIENT_CERT":                 "/path/to/cert.pem",
 				"EXTERNAL_DNS_TLS_CLIENT_CERT_KEY":             "/path/to/key.pem",
+				"EXTERNAL_DNS_ZONE_NAME_FILTER":                "yapi.example.org\nyapi.company.com",
 				"EXTERNAL_DNS_ZONE_ID_FILTER":                  "/hostedzone/ZTST1\n/hostedzone/ZTST2",
 				"EXTERNAL_DNS_AWS_ZONE_TYPE":                   "private",
 				"EXTERNAL_DNS_AWS_ZONE_TAGS":                   "tag=foo",
