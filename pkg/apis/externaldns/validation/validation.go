@@ -86,6 +86,16 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		if cfg.RFC2136MinTTL < 0 {
 			return errors.New("TTL specified for rfc2136 is negative")
 		}
+
+		if cfg.RFC2136Insecure && cfg.RFC2136GSSTSIG {
+			return errors.New("--rfc2136-insecure and --rfc2136-gss-tsig are mutually exclusive arguments")
+		}
+
+		if cfg.RFC2136GSSTSIG {
+			if cfg.RFC2136KerberosPassword == "" || cfg.RFC2136KerberosUsername == "" {
+				return errors.New("--rfc2136-kerberos-username and --rfc2136-kerberos-password both required when specifying --rfc2136-gss-tsig option")
+			}
+		}
 	}
 
 	if cfg.IgnoreHostnameAnnotation && cfg.FQDNTemplate == "" {

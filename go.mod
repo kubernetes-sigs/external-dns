@@ -16,6 +16,7 @@ require (
 	github.com/alecthomas/repr v0.0.0-20200325044227-4184120f674c // indirect
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.357
 	github.com/aws/aws-sdk-go v1.31.4
+	github.com/bodgit/tsig v0.0.2
 	github.com/cloudflare/cloudflare-go v0.10.1
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.6.0
@@ -33,7 +34,7 @@ require (
 	github.com/linki/instrumented_http v0.2.0
 	github.com/linode/linodego v0.19.0
 	github.com/maxatome/go-testdeep v1.4.0
-	github.com/miekg/dns v1.1.30
+	github.com/miekg/dns v1.1.36-0.20210109083720-731b191cabd1
 	github.com/nesv/go-dynect v0.6.0
 	github.com/nic-at/rc0go v1.1.1
 	github.com/openshift/api v0.0.0-20200605231317-fb2a6ca106ae
@@ -55,7 +56,7 @@ require (
 	github.com/vultr/govultr v0.4.2
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20200401174654-e694b7bb0875
 	go.uber.org/ratelimit v0.1.0
-	golang.org/x/net v0.0.0-20200625001655-4c5254603344
+	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/tools v0.0.0-20200708003708-134513de8882 // indirect
 	google.golang.org/api v0.15.0
