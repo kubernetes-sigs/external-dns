@@ -265,7 +265,7 @@ written by [kube-ingress-aws-controller][1]:
 status:
   loadBalancer:
     ingress:
-    - hostname: kube-ing-lb-atedkrlml7iu-1681027139.$region.elb.amazonaws.com
+    - hostname: kube-ing-lb-atedkrlml7iu-16810.7.69.$region.elb.amazonaws.com
 ```
 
 ExternalDNS will create a A-records `echoserver.example.org`, that
