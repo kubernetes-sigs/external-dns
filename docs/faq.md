@@ -214,7 +214,7 @@ $ docker run \
   -e EXTERNAL_DNS_SOURCE=$'service\ningress' \
   -e EXTERNAL_DNS_PROVIDER=google \
   -e EXTERNAL_DNS_DOMAIN_FILTER=$'foo.com\nbar.com' \
-  k8s.gcr.io/external-dns/external-dns:v0.7.3
+  k8s.gcr.io/external-dns/external-dns:v0.7.6
 time="2017-08-08T14:10:26Z" level=info msg="config: &{APIServerURL: KubeConfig: Sources:[service ingress] Namespace: ...
 ```
 
@@ -302,7 +302,7 @@ When we tag a new release, we push a container image to the Kubernetes projects 
 k8s.gcr.io/external-dns/external-dns
 ```
 
-As tags, you use the external-dns release of choice(i.e. `v0.7.3`). A `latest` tag is not provided in the container registry.
+As tags, you use the external-dns release of choice(i.e. `v0.7.6`). A `latest` tag is not provided in the container registry.
 
 If you wish to build your own image, you can use the provided [Dockerfile](../Dockerfile) as a starting point.
 
