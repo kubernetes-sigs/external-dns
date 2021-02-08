@@ -2898,7 +2898,7 @@ func TestHeadlessServicesExternalHostIP(t *testing.T) {
 				},
 				Status: v1.ServiceStatus{},
 			}
-			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(service)
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.TODO(), service, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			var addresses []v1.EndpointAddress
@@ -2913,7 +2913,7 @@ func TestHeadlessServicesExternalHostIP(t *testing.T) {
 						Addresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: tc.hostIPs[i]}},
 					},
 				}
-				_, err = kubernetes.CoreV1().Nodes().Create(node)
+				_, err = kubernetes.CoreV1().Nodes().Create(context.TODO(), node, metav1.CreateOptions{})
 				require.NoError(t, err)
 
 				pod := &v1.Pod{
@@ -2933,7 +2933,7 @@ func TestHeadlessServicesExternalHostIP(t *testing.T) {
 					},
 				}
 
-				_, err = kubernetes.CoreV1().Pods(tc.svcNamespace).Create(pod)
+				_, err = kubernetes.CoreV1().Pods(tc.svcNamespace).Create(context.TODO(), pod, metav1.CreateOptions{})
 				require.NoError(t, err)
 
 				address := v1.EndpointAddress{
@@ -2963,7 +2963,7 @@ func TestHeadlessServicesExternalHostIP(t *testing.T) {
 					},
 				},
 			}
-			_, err = kubernetes.CoreV1().Endpoints(tc.svcNamespace).Create(endpointsObject)
+			_, err = kubernetes.CoreV1().Endpoints(tc.svcNamespace).Create(context.TODO(), endpointsObject, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
@@ -2982,7 +2982,7 @@ func TestHeadlessServicesExternalHostIP(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			endpoints, err := client.Endpoints()
+			endpoints, err := client.Endpoints(context.TODO())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
