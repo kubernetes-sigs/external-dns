@@ -144,7 +144,7 @@ func main() {
 
 	// RegexDomainFilter overrides DomainFilter
 	var domainFilter endpoint.DomainFilter
-	if cfg.RegexDomainFilter != "" {
+	if cfg.RegexDomainFilter.String() != "" {
 		domainFilter = endpoint.NewRegexDomainFilter(cfg.RegexDomainFilter, cfg.RegexDomainExclusion)
 	} else {
 		domainFilter = endpoint.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
