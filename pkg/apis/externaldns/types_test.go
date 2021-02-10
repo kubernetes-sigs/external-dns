@@ -18,6 +18,7 @@ package externaldns
 
 import (
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -44,8 +45,8 @@ var (
 		GoogleBatchChangeInterval:   time.Second,
 		DomainFilter:                []string{""},
 		ExcludeDomains:              []string{""},
-		RegexDomainFilter:           "",
-		RegexDomainExclusion:        "",
+		RegexDomainFilter:           regexp.MustCompile(""),
+		RegexDomainExclusion:        regexp.MustCompile(""),
 		ZoneNameFilter:              []string{""},
 		ZoneIDFilter:                []string{""},
 		AlibabaCloudConfigFile:      "/etc/kubernetes/alibaba-cloud.json",
@@ -124,8 +125,8 @@ var (
 		GoogleBatchChangeInterval:   time.Second * 2,
 		DomainFilter:                []string{"example.org", "company.com"},
 		ExcludeDomains:              []string{"xapi.example.org", "xapi.company.com"},
-		RegexDomainFilter:           "(example\\.org|company\\.com)$",
-		RegexDomainExclusion:        "xapi\\.(example\\.org|company\\.com)$",
+		RegexDomainFilter:           regexp.MustCompile("(example\\.org|company\\.com)$"),
+		RegexDomainExclusion:        regexp.MustCompile("xapi\\.(example\\.org|company\\.com)$"),
 		ZoneNameFilter:              []string{"yapi.example.org", "yapi.company.com"},
 		ZoneIDFilter:                []string{"/hostedzone/ZTST1", "/hostedzone/ZTST2"},
 		AlibabaCloudConfigFile:      "/etc/kubernetes/alibaba-cloud.json",
