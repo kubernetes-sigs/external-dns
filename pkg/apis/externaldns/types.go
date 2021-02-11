@@ -59,6 +59,7 @@ type Config struct {
 	PublishHostIP                     bool
 	AlwaysPublishNotReadyAddresses    bool
 	ConnectorSourceServer             string
+	HTTPClientSourceURL               string
 	Provider                          string
 	GoogleProject                     string
 	GoogleBatchChangeSize             int
@@ -173,6 +174,7 @@ var defaultConfig = &Config{
 	PublishInternal:             false,
 	PublishHostIP:               false,
 	ConnectorSourceServer:       "localhost:8080",
+	HTTPClientSourceURL:         "http://localhost:8080",
 	Provider:                    "",
 	GoogleProject:               "",
 	GoogleBatchChangeSize:       1000,
@@ -318,7 +320,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("skipper-routegroup-groupversion", "The resource version for skipper routegroup").Default(source.DefaultRoutegroupVersion).StringVar(&cfg.SkipperRouteGroupVersion)
 
 	// Flags related to processing sources
-	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, fake, connector, istio-gateway, istio-virtualservice, cloudfoundry, contour-ingressroute, contour-httpproxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-ingressroute", "contour-httpproxy", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route", "ambassador-host")
+	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, fake, connector, http-client, istio-gateway, istio-virtualservice, cloudfoundry, contour-ingressroute, contour-httpproxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-ingressroute", "contour-httpproxy", "fake", "connector", "http-client", "crd", "empty", "skipper-routegroup", "openshift-route", "ambassador-host")
 
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
 	app.Flag("annotation-filter", "Filter sources managed by external-dns via annotation using label selector semantics (default: all sources)").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
@@ -332,6 +334,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("publish-host-ip", "Allow external-dns to publish host-ip for headless services (optional)").BoolVar(&cfg.PublishHostIP)
 	app.Flag("always-publish-not-ready-addresses", "Always publish also not ready addresses for headless services (optional)").BoolVar(&cfg.AlwaysPublishNotReadyAddresses)
 	app.Flag("connector-source-server", "The server to connect for connector source, valid only when using connector source").Default(defaultConfig.ConnectorSourceServer).StringVar(&cfg.ConnectorSourceServer)
+	app.Flag("http-client-source-url", "The URL to connect for HTTP Client source, valid only when using HTTP Client source").Default(defaultConfig.HTTPClientSourceURL).StringVar(&cfg.HTTPClientSourceURL)
 	app.Flag("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source").Default(defaultConfig.CRDSourceAPIVersion).StringVar(&cfg.CRDSourceAPIVersion)
 	app.Flag("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion").Default(defaultConfig.CRDSourceKind).StringVar(&cfg.CRDSourceKind)
 	app.Flag("service-type-filter", "The service types to take care about (default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)").StringsVar(&cfg.ServiceTypeFilter)

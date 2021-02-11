@@ -52,6 +52,7 @@ type Config struct {
 	PublishHostIP                  bool
 	AlwaysPublishNotReadyAddresses bool
 	ConnectorServer                string
+	HTTPClientURL                  string
 	CRDSourceAPIVersion            string
 	CRDSourceKind                  string
 	KubeConfig                     string
@@ -249,6 +250,8 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		return NewFakeSource(cfg.FQDNTemplate)
 	case "connector":
 		return NewConnectorSource(cfg.ConnectorServer)
+	case "http-client":
+		return NewHTTPClientSource(cfg.HTTPClientURL)
 	case "crd":
 		client, err := p.KubeClient()
 		if err != nil {

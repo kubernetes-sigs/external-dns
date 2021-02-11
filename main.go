@@ -110,6 +110,7 @@ func main() {
 		PublishHostIP:                  cfg.PublishHostIP,
 		AlwaysPublishNotReadyAddresses: cfg.AlwaysPublishNotReadyAddresses,
 		ConnectorServer:                cfg.ConnectorSourceServer,
+		HTTPClientURL:                  cfg.HTTPClientSourceURL,
 		CRDSourceAPIVersion:            cfg.CRDSourceAPIVersion,
 		CRDSourceKind:                  cfg.CRDSourceKind,
 		KubeConfig:                     cfg.KubeConfig,
