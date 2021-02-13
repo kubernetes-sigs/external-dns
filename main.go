@@ -55,6 +55,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/ibmcloud"
 	"sigs.k8s.io/external-dns/provider/infoblox"
 	"sigs.k8s.io/external-dns/provider/inmemory"
+	"sigs.k8s.io/external-dns/provider/inwx"
 	"sigs.k8s.io/external-dns/provider/linode"
 	"sigs.k8s.io/external-dns/provider/ns1"
 	"sigs.k8s.io/external-dns/provider/oci"
@@ -263,6 +264,16 @@ func main() {
 				FQDNRexEx:     cfg.InfobloxFQDNRegEx,
 				CreatePTR:     cfg.InfobloxCreatePTR,
 				CacheDuration: cfg.InfobloxCacheDuration,
+			},
+		)
+	case "inwx":
+		p, err = inwx.NewInwxProvider(
+			inwx.InwxConfig{
+				Username:     cfg.InwxUsername,
+				Password:     cfg.InwxPassword,
+				Sandbox:      cfg.InwxSandbox,
+				DryRun:       cfg.DryRun,
+				DomainFilter: domainFilter,
 			},
 		)
 	case "dyn":
