@@ -172,9 +172,9 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 			},
 		},
 		{
-			DNSName:       "*.wildcard.test-zone.example.org",
-			Targets:       endpoint.Targets{"foo.loadbalancer.com"},
-			RecordType:    endpoint.RecordTypeCNAME,
+			DNSName:    "*.wildcard.test-zone.example.org",
+			Targets:    endpoint.Targets{"foo.loadbalancer.com"},
+			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
 			},
