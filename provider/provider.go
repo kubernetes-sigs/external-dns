@@ -73,9 +73,9 @@ func Difference(current, desired []string) ([]string, []string, []string) {
 		index[x] = struct{}{}
 	}
 	for _, x := range desired {
-		if _, found := index[strings.ToLower(x)]; found {
+		if _, found := index[x]; found {
 			leave = append(leave, x)
-			delete(index, strings.ToLower(x))
+			delete(index, x)
 		} else {
 			add = append(add, x)
 			delete(index, x)

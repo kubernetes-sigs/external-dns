@@ -709,52 +709,6 @@ func TestCloudflareApplyChanges(t *testing.T) {
 	}
 }
 
-func TestCloudflareApplyChangesUpsertOnly(t *testing.T) {
-	changes := &plan.Changes{}
-	client := NewMockCloudFlareClient()
-	provider := &CloudFlareProvider{
-		Client: client,
-	}
-	changes.Create = []*endpoint.Endpoint{}
-	changes.Delete = []*endpoint.Endpoint{}
-	changes.UpdateOld = []*endpoint.Endpoint{{
-		DNSName: "foobar.bar.com",
-		Targets: endpoint.Targets{"target-foo"},
-	}}
-	changes.UpdateNew = []*endpoint.Endpoint{{
-		DNSName: "new.bar.com",
-		Targets: endpoint.Targets{"target-new"},
-	}}
-	err := provider.ApplyChanges(context.Background(), changes)
-
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-
-	td.Cmp(t, client.Actions, []MockAction{
-		{
-			Name:   "Create",
-			ZoneId: "001",
-			RecordData: cloudflare.DNSRecord{
-				Name:    "new.bar.com",
-				Content: "target-new",
-				TTL:     1,
-			},
-		},
-	})
-
-	// empty changes
-	changes.Create = []*endpoint.Endpoint{}
-	changes.Delete = []*endpoint.Endpoint{}
-	changes.UpdateOld = []*endpoint.Endpoint{}
-	changes.UpdateNew = []*endpoint.Endpoint{}
-
-	err = provider.ApplyChanges(context.Background(), changes)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-}
-
 func TestCloudflareGetRecordID(t *testing.T) {
 	p := &CloudFlareProvider{}
 	records := []cloudflare.DNSRecord{

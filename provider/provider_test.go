@@ -55,15 +55,6 @@ func TestDifference(t *testing.T) {
 	assert.Equal(t, leave, []string{"bar"})
 }
 
-func TestDifferenceCaseInsensitivity(t *testing.T) {
-	current := []string{"foo", "bar"}
-	desired := []string{"BAR", "baz"}
-	add, remove, leave := Difference(current, desired)
-	assert.Equal(t, []string{"baz"}, add)
-	assert.Equal(t, []string{"foo"}, remove)
-	assert.Equal(t, []string{"BAR"}, leave)
-}
-
 func TestBaseProviderPropertyEquality(t *testing.T) {
 	p := BaseProvider{}
 	assert.True(t, p.PropertyValuesEqual("some.property", "", ""), "Both properties not present")
