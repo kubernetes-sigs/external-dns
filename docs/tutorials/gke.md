@@ -116,7 +116,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         args:
         - --source=service
         - --source=ingress
@@ -439,7 +439,7 @@ spec:
             - --google-project=zalando-external-dns-test
             - --registry=txt
             - --txt-owner-id=my-identifier
-          image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+          image: k8s.gcr.io/external-dns/external-dns:v0.7.6
           name: external-dns
       securityContext:
         fsGroup: 65534
