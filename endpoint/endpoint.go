@@ -71,7 +71,7 @@ func (t Targets) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-// Same compares to Targets and returns true if they are completely identical
+// Same compares to Targets and returns true if they are identical (case-insensitive)
 func (t Targets) Same(o Targets) bool {
 	if len(t) != len(o) {
 		return false
@@ -80,7 +80,7 @@ func (t Targets) Same(o Targets) bool {
 	sort.Stable(o)
 
 	for i, e := range t {
-		if e != o[i] {
+		if !strings.EqualFold(e, o[i]) {
 			return false
 		}
 	}
