@@ -317,7 +317,8 @@ func (sc *virtualServiceSource) setResourceLabel(virtualservice networkingv1alph
 	}
 }
 
-func appendIfMissing(targets []string, target string) []string {
+// append a target to the list of targets unless it's already in the list
+func appendUnique(targets []string, target string) []string {
 	for _, element := range targets {
 		if element == target {
 			return targets
@@ -342,7 +343,7 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 			return targets, err
 		}
 		for _, target := range tgs {
-			targets = appendIfMissing(targets, target)
+			targets = appendUnique(targets, target)
 		}
 	}
 
