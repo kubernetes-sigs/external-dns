@@ -302,7 +302,7 @@ func main() {
 		p, err = scaleway.NewScalewayProvider(ctx, domainFilter, cfg.DryRun)
 	case "godaddy":
 		p, err = godaddy.NewGoDaddyProvider(ctx, domainFilter, cfg.GoDaddyTTL, cfg.GoDaddyAPIKey, cfg.GoDaddySecretKey, cfg.GoDaddyOTE, cfg.DryRun)
-  case "f5":
+	case "f5":
 		p, err = f5.NewF5DNSProvider(
 			&f5.F5DNSConfig{
 				DryRun:       cfg.DryRun,
