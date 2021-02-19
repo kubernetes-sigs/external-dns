@@ -160,7 +160,7 @@ type Config struct {
 	GoDaddySecretKey                  string `secure:"yes"`
 	GoDaddyTTL                        int64
 	GoDaddyOTE                        bool
-  F5DNSAccountID                    string
+        F5DNSAccountID                    string
 	F5DNSUsername                     string
 	F5DNSPassword                     string `secure:"yes"`
 }
@@ -275,7 +275,7 @@ var defaultConfig = &Config{
 	GoDaddySecretKey:            "",
 	GoDaddyTTL:                  600,
 	GoDaddyOTE:                  false,
-  F5DNSAccountID:              "",
+        F5DNSAccountID:              "",
 	F5DNSUsername:               "",
 	F5DNSPassword:               "",
 }
