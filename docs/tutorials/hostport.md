@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         args:
         - --log-level=debug
         - --source=service
@@ -96,7 +96,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         args:
         - --log-level=debug
         - --source=service
@@ -188,7 +188,7 @@ kafka-1.example.org
 kafka-2.example.org
 ```
 
-If you set `--fqdn-template={{name}}.example.org` you can ommit the annotation.
+If you set `--fqdn-template={{name}}.example.org` you can omit the annotation.
 Generally it is a better approach to use  `--fqdn-template={{name}}.example.org`, because then
 you would get the service name inside the generated A records:
 

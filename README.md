@@ -45,8 +45,11 @@ ExternalDNS' current release is `v0.7`. This version allows you to keep selected
 * [NS1](https://ns1.com/)
 * [TransIP](https://www.transip.eu/domain-name/)
 * [VinylDNS](https://www.vinyldns.io)
+* [Vultr](https://www.vultr.com)
 * [OVH](https://www.ovh.com)
 * [Scaleway](https://www.scaleway.com)
+* [Akamai Edge DNS](https://learn.akamai.com/en-us/products/cloud_security/edge_dns.html)
+* [GoDaddy](https://www.godaddy.com)
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` (or greater) with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -77,6 +80,7 @@ The following table clarifies the current status of the providers according to t
 | Google Cloud DNS | Stable | |
 | AWS Route 53 | Stable | |
 | AWS Cloud Map | Beta | |
+| Akamai Edge DNS | Beta | |
 | AzureDNS | Beta | |
 | CloudFlare | Beta | |
 | RcodeZero | Alpha | |
@@ -96,11 +100,11 @@ The following table clarifies the current status of the providers according to t
 | TransIP | Alpha | |
 | VinylDNS | Alpha | |
 | RancherDNS | Alpha | |
-| Akamai FastDNS | Alpha | |
 | OVH | Alpha | |
 | Scaleway DNS | Alpha | @Sh4d1 |
 | Vultr | Alpha | |
 | UltraDNS | Alpha | |
+| GoDaddy | Alpha | |
 | F5 DNS Load Balancer Cloud Service | Beta | @swapmat-f5 |
 
 ## Running ExternalDNS:
@@ -155,6 +159,7 @@ The following tutorials are provided:
 * [Scaleway](docs/tutorials/scaleway.md)
 * [Vultr](docs/tutorials/vultr.md)
 * [UltraDNS](docs/tutorials/ultradns.md)
+* [GoDaddy](docs/tutorials/godaddy.md)
 
 ### Running Locally
 
@@ -166,8 +171,8 @@ from source.
 Next, run an application and expose it via a Kubernetes Service:
 
 ```console
-$ kubectl run nginx --image=nginx --replicas=1 --port=80
-$ kubectl expose deployment nginx --port=80 --target-port=80 --type=LoadBalancer
+$ kubectl run nginx --image=nginx --port=80
+$ kubectl expose pod nginx --port=80 --target-port=80 --type=LoadBalancer
 ```
 
 Annotate the Service with your desired external DNS name. Make sure to change `example.org` to your domain.
@@ -183,6 +188,14 @@ $ kubectl annotate service nginx "external-dns.alpha.kubernetes.io/ttl=10"
 ```
 
 For more details on configuring TTL, see [here](docs/ttl.md).
+
+Use the internal-hostname annotation to create DNS records with ClusterIP as the target.
+
+```console
+$ kubectl annotate service nginx "external-dns.alpha.kubernetes.io/internal-hostname=nginx.internal.example.org."
+```
+
+If the service is not of type Loadbalancer you need the --publish-internal-services flag.
 
 Locally run a single sync loop of ExternalDNS.
 

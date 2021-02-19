@@ -50,3 +50,8 @@ func (im *NoopRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes)
 func (im *NoopRegistry) PropertyValuesEqual(attribute string, previous string, current string) bool {
 	return im.provider.PropertyValuesEqual(attribute, previous, current)
 }
+
+// AdjustEndpoints modifies the endpoints as needed by the specific provider
+func (im *NoopRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	return im.provider.AdjustEndpoints(endpoints)
+}
