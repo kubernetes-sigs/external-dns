@@ -46,6 +46,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/dnsimple"
 	"sigs.k8s.io/external-dns/provider/dyn"
 	"sigs.k8s.io/external-dns/provider/exoscale"
+	"sigs.k8s.io/external-dns/provider/f5bigip"
 	"sigs.k8s.io/external-dns/provider/google"
 	"sigs.k8s.io/external-dns/provider/hetzner"
 	"sigs.k8s.io/external-dns/provider/infoblox"
@@ -249,6 +250,13 @@ func main() {
 	case "rdns":
 		p, err = rdns.NewRDNSProvider(
 			rdns.RDNSConfig{
+				DomainFilter: domainFilter,
+				DryRun:       cfg.DryRun,
+			},
+		)
+	case "f5bigip":
+		p, err = f5bigip.NewF5bigipProvider(
+			f5bigip.F5BigipDNSConfig{
 				DomainFilter: domainFilter,
 				DryRun:       cfg.DryRun,
 			},
