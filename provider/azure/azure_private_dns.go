@@ -19,14 +19,10 @@ package azure
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"strings"
 
-	yaml "gopkg.in/yaml.v2"
-
-	"github.com/Azure/azure-sdk-for-go/profiles/latest/privatedns/mgmt/privatedns"
+	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 	log "github.com/sirupsen/logrus"
 
@@ -64,42 +60,22 @@ type AzurePrivateDNSProvider struct {
 //
 // Returns the provider or an error if a provider could not be created.
 func NewAzurePrivateDNSProvider(configFile string, domainFilter endpoint.DomainFilter, zoneNameFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, userAssignedIdentityClientID string, dryRun bool) (*AzurePrivateDNSProvider, error) {
-	contents, err := ioutil.ReadFile(configFile)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
-	}
-	cfg := config{}
-	err = yaml.Unmarshal(contents, &cfg)
+	cfg, err := getConfig(configFile, userAssignedIdentityClientID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
 	}
 
-	// If userAssignedIdentityClientID is provided explicitly, override existing one in config file
-	if userAssignedIdentityClientID != "" {
-		cfg.UserAssignedIdentityID = userAssignedIdentityClientID
-	}
-
-	var environment azure.Environment
-	if cfg.Cloud == "" {
-		environment = azure.PublicCloud
-	} else {
-		environment, err = azure.EnvironmentFromName(cfg.Cloud)
-		if err != nil {
-			return nil, fmt.Errorf("invalid cloud value '%s': %v", cfg.Cloud, err)
-		}
-	}
-
-	token, err := getAccessToken(cfg, environment)
+	token, err := getAccessToken(*cfg, cfg.Environment)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token: %v", err)
 	}
 
-	zonesClient := privatedns.NewPrivateZonesClientWithBaseURI(environment.ResourceManagerEndpoint, cfg.SubscriptionID)
+	zonesClient := privatedns.NewPrivateZonesClientWithBaseURI(cfg.Environment.ResourceManagerEndpoint, cfg.SubscriptionID)
 	zonesClient.Authorizer = autorest.NewBearerAuthorizer(token)
-	recordSetsClient := privatedns.NewRecordSetsClientWithBaseURI(environment.ResourceManagerEndpoint, cfg.SubscriptionID)
+	recordSetsClient := privatedns.NewRecordSetsClientWithBaseURI(cfg.Environment.ResourceManagerEndpoint, cfg.SubscriptionID)
 	recordSetsClient.Authorizer = autorest.NewBearerAuthorizer(token)
 
-	provider := &AzurePrivateDNSProvider{
+	return &AzurePrivateDNSProvider{
 		domainFilter:                 domainFilter,
 		zoneNameFilter:               zoneNameFilter,
 		zoneIDFilter:                 zoneIDFilter,
@@ -108,8 +84,7 @@ func NewAzurePrivateDNSProvider(configFile string, domainFilter endpoint.DomainF
 		userAssignedIdentityClientID: cfg.UserAssignedIdentityID,
 		zonesClient:                  zonesClient,
 		recordSetsClient:             recordSetsClient,
-	}
-	return provider, nil
+	}, nil
 }
 
 // Records gets the current records.
@@ -281,16 +256,16 @@ func (p *AzurePrivateDNSProvider) deleteRecords(ctx context.Context, deleted azu
 	log.Debugf("Records to be deleted: %d", len(deleted))
 	// Delete records first
 	for zone, endpoints := range deleted {
-		for _, endpoint := range endpoints {
-			name := p.recordSetNameForZone(zone, endpoint)
+		for _, ep := range endpoints {
+			name := p.recordSetNameForZone(zone, ep)
 			if p.dryRun {
-				log.Infof("Would delete %s record named '%s' for Azure Private DNS zone '%s'.", endpoint.RecordType, name, zone)
+				log.Infof("Would delete %s record named '%s' for Azure Private DNS zone '%s'.", ep.RecordType, name, zone)
 			} else {
-				log.Infof("Deleting %s record named '%s' for Azure Private DNS zone '%s'.", endpoint.RecordType, name, zone)
-				if _, err := p.recordSetsClient.Delete(ctx, p.resourceGroup, zone, privatedns.RecordType(endpoint.RecordType), name, ""); err != nil {
+				log.Infof("Deleting %s record named '%s' for Azure Private DNS zone '%s'.", ep.RecordType, name, zone)
+				if _, err := p.recordSetsClient.Delete(ctx, p.resourceGroup, zone, privatedns.RecordType(ep.RecordType), name, ""); err != nil {
 					log.Errorf(
 						"Failed to delete %s record named '%s' for Azure Private DNS zone '%s': %v",
-						endpoint.RecordType,
+						ep.RecordType,
 						name,
 						zone,
 						err,
@@ -304,14 +279,14 @@ func (p *AzurePrivateDNSProvider) deleteRecords(ctx context.Context, deleted azu
 func (p *AzurePrivateDNSProvider) updateRecords(ctx context.Context, updated azurePrivateDNSChangeMap) {
 	log.Debugf("Records to be updated: %d", len(updated))
 	for zone, endpoints := range updated {
-		for _, endpoint := range endpoints {
-			name := p.recordSetNameForZone(zone, endpoint)
+		for _, ep := range endpoints {
+			name := p.recordSetNameForZone(zone, ep)
 			if p.dryRun {
 				log.Infof(
 					"Would update %s record named '%s' to '%s' for Azure Private DNS zone '%s'.",
-					endpoint.RecordType,
+					ep.RecordType,
 					name,
-					endpoint.Targets,
+					ep.Targets,
 					zone,
 				)
 				continue
@@ -319,19 +294,19 @@ func (p *AzurePrivateDNSProvider) updateRecords(ctx context.Context, updated azu
 
 			log.Infof(
 				"Updating %s record named '%s' to '%s' for Azure Private DNS zone '%s'.",
-				endpoint.RecordType,
+				ep.RecordType,
 				name,
-				endpoint.Targets,
+				ep.Targets,
 				zone,
 			)
 
-			recordSet, err := p.newRecordSet(endpoint)
+			recordSet, err := p.newRecordSet(ep)
 			if err == nil {
 				_, err = p.recordSetsClient.CreateOrUpdate(
 					ctx,
 					p.resourceGroup,
 					zone,
-					privatedns.RecordType(endpoint.RecordType),
+					privatedns.RecordType(ep.RecordType),
 					name,
 					recordSet,
 					"",
@@ -341,9 +316,9 @@ func (p *AzurePrivateDNSProvider) updateRecords(ctx context.Context, updated azu
 			if err != nil {
 				log.Errorf(
 					"Failed to update %s record named '%s' to '%s' for Azure Private DNS zone '%s': %v",
-					endpoint.RecordType,
+					ep.RecordType,
 					name,
-					endpoint.Targets,
+					ep.Targets,
 					zone,
 					err,
 				)

@@ -136,7 +136,7 @@ func (p *ScalewayProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 			// In this case, we juste take the first one.
 			if existingEndpoint, ok := endpoints[record.Type.String()+"/"+fullRecordName]; ok {
 				existingEndpoint.Targets = append(existingEndpoint.Targets, record.Data)
-				log.Infof("Appending target %s to record %s, using TTL and priotiry of target %s", record.Data, fullRecordName, existingEndpoint.Targets[0])
+				log.Infof("Appending target %s to record %s, using TTL and priority of target %s", record.Data, fullRecordName, existingEndpoint.Targets[0])
 			} else {
 				ep := endpoint.NewEndpointWithTTL(fullRecordName, record.Type.String(), endpoint.TTL(record.TTL), record.Data)
 				ep = ep.WithProviderSpecific(scalewayPriorityKey, fmt.Sprintf("%d", record.Priority))
@@ -269,8 +269,13 @@ func endpointToScalewayRecords(zoneName string, ep *endpoint.Endpoint) []*domain
 	records := []*domain.Record{}
 
 	for _, target := range ep.Targets {
+		finalTargetName := target
+		if domain.RecordType(ep.RecordType) == domain.RecordTypeCNAME {
+			finalTargetName = provider.EnsureTrailingDot(target)
+		}
+
 		records = append(records, &domain.Record{
-			Data:     target,
+			Data:     finalTargetName,
 			Name:     strings.Trim(strings.TrimSuffix(ep.DNSName, zoneName), ". "),
 			Priority: priority,
 			TTL:      ttl,
@@ -285,9 +290,14 @@ func endpointToScalewayRecordsChangeDelete(zoneName string, ep *endpoint.Endpoin
 	records := []*domain.RecordChange{}
 
 	for _, target := range ep.Targets {
+		finalTargetName := target
+		if domain.RecordType(ep.RecordType) == domain.RecordTypeCNAME {
+			finalTargetName = provider.EnsureTrailingDot(target)
+		}
+
 		records = append(records, &domain.RecordChange{
 			Delete: &domain.RecordChangeDelete{
-				Data: target,
+				Data: finalTargetName,
 				Name: strings.Trim(strings.TrimSuffix(ep.DNSName, zoneName), ". "),
 				Type: domain.RecordType(ep.RecordType),
 			},

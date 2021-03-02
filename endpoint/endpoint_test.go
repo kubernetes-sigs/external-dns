@@ -40,6 +40,7 @@ func TestTargetsSame(t *testing.T) {
 		{""},
 		{"1.2.3.4"},
 		{"8.8.8.8", "8.8.4.4"},
+		{"example.org", "EXAMPLE.ORG"},
 	}
 
 	for _, d := range tests {

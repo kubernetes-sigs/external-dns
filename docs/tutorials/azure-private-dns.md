@@ -34,16 +34,18 @@ This is crucial as ExternalDNS reads those endpoints records when creating DNS-R
 In the subsequent parameter we will make use of this. If you don't want to work with ingress-resources in your later use, you can leave the parameter out.
 
 Verify the correct propagation of the loadbalancer's ip by listing the ingresses.
+
 ```
 $ kubectl get ingress
 ```
+
 The address column should contain the ip for each ingress. ExternalDNS will pick up exactly this piece of information.
+
 ```
 NAME     HOSTS             ADDRESS          PORTS   AGE
 nginx1   sample1.aks.com   52.167.195.110   80      6d22h
 nginx2   sample2.aks.com   52.167.195.110   80      6d21h
 ```
-
 
 If you do not want to deploy the ingress controller with Helm, ensure to pass the following cmdline-flags to it through the mechanism of your choice:
 
@@ -145,7 +147,7 @@ This is per default done through the file `~/.kube/config`.
 For general background information on this see [kubernetes-docs](https://kubernetes.io/docs/tasks/access-application-cluster/access-cluster/).
 Azure-CLI features functionality for automatically maintaining this file for AKS-Clusters. See [Azure-Docs](https://docs.microsoft.com/de-de/cli/azure/aks?view=azure-cli-latest#az-aks-get-credentials).
 
-First [create a configuration file as you would for azure-dns provider](./azure.md#creating-configuration-file).
+Follow the steps for [azure-dns provider](./azure.md#creating-configuration-file) to create a configuration file.
 
 Then apply one of the following manifests depending on whether you use RBAC or not.
 
@@ -170,7 +172,7 @@ spec:
     spec:
       containers:
       - name: externaldns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         args:
         - --source=service
         - --source=ingress
@@ -239,7 +241,7 @@ spec:
       serviceAccountName: externaldns
       containers:
       - name: externaldns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         args:
         - --source=service
         - --source=ingress
@@ -308,7 +310,7 @@ spec:
       serviceAccountName: externaldns
       containers:
       - name: externaldns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         args:
         - --source=service
         - --source=ingress

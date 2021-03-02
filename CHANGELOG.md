@@ -16,6 +16,8 @@
 - Fix NodePort with externaltrafficpolicy targets duplication @codearky
 - Update contributing section in README (#1760) @seanmalloy
 - Option to cache AWS zones list @bpineau
+- Refactor, enhance and test Akamai provider and documentation (#1846) @edglynes
+- Fix: only use absolute CNAMEs in Scaleway provider (#1859) @Sh4d1
 
 ## v0.7.3 - 2020-08-05
 
