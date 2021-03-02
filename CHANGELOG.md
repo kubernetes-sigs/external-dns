@@ -18,6 +18,7 @@
 - Option to cache AWS zones list @bpineau
 - Refactor, enhance and test Akamai provider and documentation (#1846) @edglynes
 - Fix: only use absolute CNAMEs in Scaleway provider (#1859) @Sh4d1
+- Change Scaleway DNS API version from v2alpha2 to v2beta1 (#1938) @Sh4d1
 
 ## v0.7.3 - 2020-08-05
 
