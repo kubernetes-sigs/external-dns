@@ -619,6 +619,41 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title: "one virtualservice with two gateways, one ingressgateway loadbalancer service",
+			lbServices: []fakeIngressGatewayService{
+				{
+					namespace: namespace,
+					ips:       []string{"8.8.8.8"},
+				},
+			},
+			gwConfigs: []fakeGatewayConfig{
+				{
+					name:      "gw1",
+					namespace: namespace,
+					dnsnames:  [][]string{{"*"}},
+				},
+				{
+					name:      "gw2",
+					namespace: namespace,
+					dnsnames:  [][]string{{"*"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs",
+					namespace: namespace,
+					gateways:  []string{"gw1", "gw2"},
+					dnsnames:  []string{"example.org"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "example.org",
+					Targets: endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
 			title: "two simple virtualservices on different namespaces with the same target gateway, one ingressgateway loadbalancer service",
 			lbServices: []fakeIngressGatewayService{
 				{

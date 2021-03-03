@@ -203,7 +203,7 @@ func (p *OCIProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 
 // ApplyChanges applies a given set of changes to a given zone.
 func (p *OCIProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	log.Debugf("Processing chages: %+v", changes)
+	log.Debugf("Processing changes: %+v", changes)
 
 	ops := []dns.RecordOperation{}
 	ops = append(ops, p.newFilteredRecordOperations(changes.Create, dns.RecordOperationOperationAdd)...)

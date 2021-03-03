@@ -96,9 +96,9 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 	mockClientGenerator.On("IstioClient").Return(NewFakeConfigStore(), nil)
 	mockClientGenerator.On("DynamicKubernetesClient").Return(fakeDynamic, nil)
 
-	sources, err := ByNames(mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-ingressroute", "fake"}, minimalConfig)
+	sources, err := ByNames(mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-ingressroute", "contour-httpproxy", "fake"}, minimalConfig)
 	suite.NoError(err, "should not generate errors")
-	suite.Len(sources, 5, "should generate all five sources")
+	suite.Len(sources, 6, "should generate all six sources")
 }
 
 func (suite *ByNamesTestSuite) TestOnlyFake() {
@@ -148,6 +148,8 @@ func (suite *ByNamesTestSuite) TestIstioClientFails() {
 
 	_, err = ByNames(mockClientGenerator, []string{"contour-ingressroute"}, minimalConfig)
 	suite.Error(err, "should return an error if contour client cannot be created")
+	_, err = ByNames(mockClientGenerator, []string{"contour-httpproxy"}, minimalConfig)
+	suite.Error(err, "should return an error if contour client cannot be created")
 }
 
 func TestByNames(t *testing.T) {
@@ -155,5 +157,5 @@ func TestByNames(t *testing.T) {
 }
 
 var minimalConfig = &Config{
-	ContourLoadBalancerService:  "heptio-contour/contour",
+	ContourLoadBalancerService: "heptio-contour/contour",
 }

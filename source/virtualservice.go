@@ -29,6 +29,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
+	istioinformers "istio.io/client-go/pkg/informers/externalversions"
+	networkingv1alpha3informer "istio.io/client-go/pkg/informers/externalversions/networking/v1alpha3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -55,6 +57,7 @@ type virtualServiceSource struct {
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
 	serviceInformer          coreinformers.ServiceInformer
+	virtualserviceInformer   networkingv1alpha3informer.VirtualServiceInformer
 }
 
 // NewIstioVirtualServiceSource creates a new virtualServiceSource with the given config.
@@ -85,6 +88,8 @@ func NewIstioVirtualServiceSource(
 	// Set resync period to 0, to prevent processing when nothing has changed
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	serviceInformer := informerFactory.Core().V1().Services()
+	istioInformerFactory := istioinformers.NewSharedInformerFactory(istioClient, 0)
+	virtualServiceInformer := istioInformerFactory.Networking().V1alpha3().VirtualServices()
 
 	// Add default resource event handlers to properly initialize informer.
 	serviceInformer.Informer().AddEventHandler(
@@ -95,12 +100,28 @@ func NewIstioVirtualServiceSource(
 		},
 	)
 
+	virtualServiceInformer.Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				log.Debug("virtual service added")
+			},
+		},
+	)
+
 	// TODO informer is not explicitly stopped since controller is not passing in its channel.
 	informerFactory.Start(wait.NeverStop)
+	istioInformerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
 	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
 		return serviceInformer.Informer().HasSynced(), nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	}
+
+	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
+		return virtualServiceInformer.Informer().HasSynced(), nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to sync cache: %v", err)
@@ -115,6 +136,7 @@ func NewIstioVirtualServiceSource(
 		combineFQDNAnnotation:    combineFQDNAnnotation,
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
 		serviceInformer:          serviceInformer,
+		virtualserviceInformer:   virtualServiceInformer,
 	}, nil
 }
 
@@ -179,9 +201,23 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 	return endpoints, nil
 }
 
-// TODO(tariq1890): Implement this once we have evaluated and tested VirtualServiceInformers
 // AddEventHandler adds an event handler that should be triggered if the watched Istio VirtualService changes.
 func (sc *virtualServiceSource) AddEventHandler(ctx context.Context, handler func()) {
+	log.Debug("Adding event handler for Istio VirtualService")
+
+	sc.virtualserviceInformer.Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				handler()
+			},
+			UpdateFunc: func(old interface{}, new interface{}) {
+				handler()
+			},
+			DeleteFunc: func(obj interface{}) {
+				handler()
+			},
+		},
+	)
 }
 
 func (sc *virtualServiceSource) getGateway(ctx context.Context, gatewayStr string, virtualService networkingv1alpha3.VirtualService) *networkingv1alpha3.Gateway {
@@ -281,6 +317,16 @@ func (sc *virtualServiceSource) setResourceLabel(virtualservice networkingv1alph
 	}
 }
 
+// append a target to the list of targets unless it's already in the list
+func appendUnique(targets []string, target string) []string {
+	for _, element := range targets {
+		if element == target {
+			return targets
+		}
+	}
+	return append(targets, target)
+}
+
 func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, virtualService networkingv1alpha3.VirtualService, vsHost string) ([]string, error) {
 	var targets []string
 	// for each host we need to iterate through the gateways because each host might match for only one of the gateways
@@ -296,7 +342,9 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 		if err != nil {
 			return targets, err
 		}
-		targets = append(targets, tgs...)
+		for _, target := range tgs {
+			targets = appendUnique(targets, target)
+		}
 	}
 
 	return targets, nil

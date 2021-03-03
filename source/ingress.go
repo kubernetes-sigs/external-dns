@@ -56,10 +56,11 @@ type ingressSource struct {
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
 	ingressInformer          extinformers.IngressInformer
+	ignoreIngressTLSSpec     bool
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool) (Source, error) {
+func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -105,6 +106,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		combineFQDNAnnotation:    combineFqdnAnnotation,
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
 		ingressInformer:          ingressInformer,
+		ignoreIngressTLSSpec:     ignoreIngressTLSSpec,
 	}
 	return sc, nil
 }
@@ -132,7 +134,7 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			continue
 		}
 
-		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation)
+		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec)
 
 		// apply template if host is missing on ingress
 		if (sc.combineFQDNAnnotation || len(ingEndpoints) == 0) && sc.fqdnTemplate != nil {
@@ -240,7 +242,7 @@ func (sc *ingressSource) setDualstackLabel(ingress *v1beta1.Ingress, endpoints [
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object
-func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool) []*endpoint.Endpoint {
+func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	ttl, err := getTTLFromAnnotations(ing.Annotations)
@@ -263,12 +265,15 @@ func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool) [
 		endpoints = append(endpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 
-	for _, tls := range ing.Spec.TLS {
-		for _, host := range tls.Hosts {
-			if host == "" {
-				continue
+	// Skip endpoints if we do not want entries from tls spec section
+	if !ignoreIngressTLSSpec {
+		for _, tls := range ing.Spec.TLS {
+			for _, host := range tls.Hosts {
+				if host == "" {
+					continue
+				}
+				endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
 			}
-			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
 		}
 	}
 

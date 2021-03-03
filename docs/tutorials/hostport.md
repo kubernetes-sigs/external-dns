@@ -2,7 +2,7 @@
 
 This tutorial describes how to setup ExternalDNS for usage in conjunction with a Headless service.
 
-## Usecases
+## Use cases
 The main use cases that inspired this feature is the necessity for fixed addressable hostnames with services, such as Kafka when trying to access them from outside the cluster. In this scenario, quite often, only the Node IP addresses are actually routable and as in systems like Kafka more direct connections are preferable.
 
 ## Setup
@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         args:
         - --log-level=debug
         - --source=service
@@ -96,7 +96,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         args:
         - --log-level=debug
         - --source=service
@@ -188,7 +188,7 @@ kafka-1.example.org
 kafka-2.example.org
 ```
 
-If you set `--fqdn-template={{name}}.example.org` you can ommit the annotation.
+If you set `--fqdn-template={{name}}.example.org` you can omit the annotation.
 Generally it is a better approach to use  `--fqdn-template={{name}}.example.org`, because then
 you would get the service name inside the generated A records:
 

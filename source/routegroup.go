@@ -34,6 +34,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -216,7 +217,7 @@ func NewRouteGroupSource(timeout time.Duration, token, tokenPath, apiServerURL, 
 	}
 
 	apiServer := u.String()
-	// strip port if well known port, because of TLS certifcate match
+	// strip port if well known port, because of TLS certificate match
 	if u.Scheme == "https" && u.Port() == "443" {
 		apiServer = "https://" + u.Hostname()
 	}

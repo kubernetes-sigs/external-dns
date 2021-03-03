@@ -214,6 +214,35 @@ func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		endpoints = append(endpoints, svcEndpoints...)
 	}
 
+	// this sorting is required to make merging work.
+	// after we merge endpoints that have same DNS, we want to ensure that we end up with the same service being an "owner"
+	// of all those records, as otherwise each time we update, we will end up with a different service that gets data merged in
+	// and that will cause external-dns to recreate dns record due to different service owner in TXT record.
+	// if new service is added or old one removed, that might cause existing record to get re-created due to potentially new
+	// owner being selected. Which is fine, since it shouldn't happen often and shouldn't cause any disruption.
+	if len(endpoints) > 1 {
+		sort.Slice(endpoints, func(i, j int) bool {
+			return endpoints[i].Labels[endpoint.ResourceLabelKey] < endpoints[j].Labels[endpoint.ResourceLabelKey]
+		})
+		// Use stable sort to not disrupt the order of services
+		sort.SliceStable(endpoints, func(i, j int) bool {
+			return endpoints[i].DNSName < endpoints[j].DNSName
+		})
+		mergedEndpoints := []*endpoint.Endpoint{}
+		mergedEndpoints = append(mergedEndpoints, endpoints[0])
+		for i := 1; i < len(endpoints); i++ {
+			lastMergedEndpoint := len(mergedEndpoints) - 1
+			if mergedEndpoints[lastMergedEndpoint].DNSName == endpoints[i].DNSName &&
+				mergedEndpoints[lastMergedEndpoint].RecordType == endpoints[i].RecordType &&
+				mergedEndpoints[lastMergedEndpoint].RecordTTL == endpoints[i].RecordTTL {
+				mergedEndpoints[lastMergedEndpoint].Targets = append(mergedEndpoints[lastMergedEndpoint].Targets, endpoints[i].Targets[0])
+			} else {
+				mergedEndpoints = append(mergedEndpoints, endpoints[i])
+			}
+		}
+		endpoints = mergedEndpoints
+	}
+
 	for _, ep := range endpoints {
 		sort.Sort(ep.Targets)
 	}
@@ -333,7 +362,7 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(svc.Annotations)
 	hostnameList := strings.Split(strings.Replace(buf.String(), " ", "", -1), ",")
 	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier)...)
+		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, false)...)
 	}
 
 	return endpoints, nil
@@ -345,9 +374,17 @@ func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 	// Skip endpoints if we do not want entries from annotations
 	if !sc.ignoreHostnameAnnotation {
 		providerSpecific, setIdentifier := getProviderSpecificAnnotations(svc.Annotations)
-		hostnameList := getHostnamesFromAnnotations(svc.Annotations)
+		var hostnameList []string
+		var internalHostnameList []string
+
+		hostnameList = getHostnamesFromAnnotations(svc.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier)...)
+			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, false)...)
+		}
+
+		internalHostnameList = getInternalHostnamesFromAnnotations(svc.Annotations)
+		for _, hostname := range internalHostnameList {
+			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, true)...)
 		}
 	}
 	return endpoints
@@ -403,7 +440,7 @@ func (sc *serviceSource) setResourceLabel(service *v1.Service, endpoints []*endp
 	}
 }
 
-func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string) []*endpoint.Endpoint {
+func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string, useClusterIP bool) []*endpoint.Endpoint {
 	hostname = strings.TrimSuffix(hostname, ".")
 	ttl, err := getTTLFromAnnotations(svc.Annotations)
 	if err != nil {
@@ -431,7 +468,11 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 
 	switch svc.Spec.Type {
 	case v1.ServiceTypeLoadBalancer:
-		targets = append(targets, extractLoadBalancerTargets(svc)...)
+		if useClusterIP {
+			targets = append(targets, extractServiceIps(svc)...)
+		} else {
+			targets = append(targets, extractLoadBalancerTargets(svc)...)
+		}
 	case v1.ServiceTypeClusterIP:
 		if sc.publishInternal {
 			targets = append(targets, extractServiceIps(svc)...)
@@ -486,7 +527,10 @@ func extractServiceExternalName(svc *v1.Service) endpoint.Targets {
 }
 
 func extractLoadBalancerTargets(svc *v1.Service) endpoint.Targets {
-	var targets endpoint.Targets
+	var (
+		targets     endpoint.Targets
+		externalIPs endpoint.Targets
+	)
 
 	// Create a corresponding endpoint for each configured external entrypoint.
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
@@ -496,6 +540,16 @@ func extractLoadBalancerTargets(svc *v1.Service) endpoint.Targets {
 		if lb.Hostname != "" {
 			targets = append(targets, lb.Hostname)
 		}
+	}
+
+	if svc.Spec.ExternalIPs != nil {
+		for _, ext := range svc.Spec.ExternalIPs {
+			externalIPs = append(externalIPs, ext)
+		}
+	}
+
+	if len(externalIPs) > 0 {
+		return externalIPs
 	}
 
 	return targets
@@ -511,6 +565,7 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 
 	switch svc.Spec.ExternalTrafficPolicy {
 	case v1.ServiceExternalTrafficPolicyTypeLocal:
+		nodesMap := map[*v1.Node]struct{}{}
 		labelSelector, err := metav1.ParseToLabelSelector(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
 		if err != nil {
 			return nil, err
@@ -531,7 +586,10 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 					log.Debugf("Unable to find node where Pod %s is running", v.Spec.Hostname)
 					continue
 				}
-				nodes = append(nodes, node)
+				if _, ok := nodesMap[node]; !ok {
+					nodesMap[node] = *new(struct{})
+					nodes = append(nodes, node)
+				}
 			}
 		}
 	default:
@@ -552,10 +610,16 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 		}
 	}
 
+	access := getAccessFromAnnotations(svc.Annotations)
+	if access == "public" {
+		return externalIPs, nil
+	}
+	if access == "private" {
+		return internalIPs, nil
+	}
 	if len(externalIPs) > 0 {
 		return externalIPs, nil
 	}
-
 	return internalIPs, nil
 }
 
@@ -564,14 +628,17 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, nodeTargets e
 
 	for _, port := range svc.Spec.Ports {
 		if port.NodePort > 0 {
+			// following the RFC 2782, SRV record must have a following format
+			// _service._proto.name. TTL class SRV priority weight port
+			// see https://en.wikipedia.org/wiki/SRV_record
+
 			// build a target with a priority of 0, weight of 0, and pointing the given port on the given host
 			target := fmt.Sprintf("0 50 %d %s", port.NodePort, hostname)
 
-			// figure out the portname
-			portName := port.Name
-			if portName == "" {
-				portName = fmt.Sprintf("%d", port.NodePort)
-			}
+			// take the service name from the K8s Service object
+			// it is safe to use since it is DNS compatible
+			// see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
+			serviceName := svc.ObjectMeta.Name
 
 			// figure out the protocol
 			protocol := strings.ToLower(string(port.Protocol))
@@ -579,7 +646,7 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, nodeTargets e
 				protocol = "tcp"
 			}
 
-			recordName := fmt.Sprintf("_%s._%s.%s", portName, protocol, hostname)
+			recordName := fmt.Sprintf("_%s._%s.%s", serviceName, protocol, hostname)
 
 			var ep *endpoint.Endpoint
 			if ttl.IsConfigured() {

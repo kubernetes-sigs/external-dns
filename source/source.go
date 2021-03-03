@@ -28,6 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/config"
 )
@@ -37,6 +38,8 @@ const (
 	controllerAnnotationKey = "external-dns.alpha.kubernetes.io/controller"
 	// The annotation used for defining the desired hostname
 	hostnameAnnotationKey = "external-dns.alpha.kubernetes.io/hostname"
+	// The annotation used for specifying whether the public or private interface address is used
+	accessAnnotationKey = "external-dns.alpha.kubernetes.io/access"
 	// The annotation used for defining the desired ingress target
 	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
 	// The annotation used for defining the desired DNS record TTL
@@ -45,6 +48,8 @@ const (
 	aliasAnnotationKey = "external-dns.alpha.kubernetes.io/alias"
 	// The value of the controller annotation so that we feel responsible
 	controllerAnnotationValue = "dns-controller"
+	// The annotation used for defining the desired hostname
+	internalHostnameAnnotationKey = "external-dns.alpha.kubernetes.io/internal-hostname"
 )
 
 // Provider-specific annotations
@@ -106,6 +111,18 @@ func getHostnamesFromAnnotations(annotations map[string]string) []string {
 	return strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
 }
 
+func getAccessFromAnnotations(annotations map[string]string) string {
+	return annotations[accessAnnotationKey]
+}
+
+func getInternalHostnamesFromAnnotations(annotations map[string]string) []string {
+	internalHostnameAnnotation, exists := annotations[internalHostnameAnnotationKey]
+	if !exists {
+		return nil
+	}
+	return strings.Split(strings.Replace(internalHostnameAnnotation, " ", "", -1), ",")
+}
+
 func getAliasFromAnnotations(annotations map[string]string) bool {
 	aliasAnnotation, exists := annotations[aliasAnnotationKey]
 	return exists && aliasAnnotation == "true"
@@ -135,6 +152,12 @@ func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.Pro
 			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/aws-")
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 				Name:  fmt.Sprintf("aws/%s", attr),
+				Value: v,
+			})
+		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/scw-") {
+			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/scw-")
+			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+				Name:  fmt.Sprintf("scw/%s", attr),
 				Value: v,
 			})
 		}

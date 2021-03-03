@@ -26,8 +26,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
-
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
 	"sigs.k8s.io/external-dns/controller"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
@@ -46,6 +46,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/dnsimple"
 	"sigs.k8s.io/external-dns/provider/dyn"
 	"sigs.k8s.io/external-dns/provider/exoscale"
+	"sigs.k8s.io/external-dns/provider/godaddy"
 	"sigs.k8s.io/external-dns/provider/google"
 	"sigs.k8s.io/external-dns/provider/hetzner"
 	"sigs.k8s.io/external-dns/provider/infoblox"
@@ -58,6 +59,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/rcode0"
 	"sigs.k8s.io/external-dns/provider/rdns"
 	"sigs.k8s.io/external-dns/provider/rfc2136"
+	"sigs.k8s.io/external-dns/provider/scaleway"
 	"sigs.k8s.io/external-dns/provider/transip"
 	"sigs.k8s.io/external-dns/provider/ultradns"
 	"sigs.k8s.io/external-dns/provider/vinyldns"
@@ -99,9 +101,11 @@ func main() {
 	sourceCfg := &source.Config{
 		Namespace:                      cfg.Namespace,
 		AnnotationFilter:               cfg.AnnotationFilter,
+		LabelFilter:                    cfg.LabelFilter,
 		FQDNTemplate:                   cfg.FQDNTemplate,
 		CombineFQDNAndAnnotation:       cfg.CombineFQDNAndAnnotation,
 		IgnoreHostnameAnnotation:       cfg.IgnoreHostnameAnnotation,
+		IgnoreIngressTLSSpec:           cfg.IgnoreIngressTLSSpec,
 		Compatibility:                  cfg.Compatibility,
 		PublishInternal:                cfg.PublishInternal,
 		PublishHostIP:                  cfg.PublishHostIP,
@@ -140,6 +144,7 @@ func main() {
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
 
 	domainFilter := endpoint.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
+	zoneNameFilter := endpoint.NewDomainFilter(cfg.ZoneNameFilter)
 	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
 	zoneNameFilter := provider.NewZoneNameFilter(cfg.ZoneNameFilter)
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
@@ -148,7 +153,7 @@ func main() {
 	var p provider.Provider
 	switch cfg.Provider {
 	case "akamai":
-		p = akamai.NewAkamaiProvider(
+		p, err = akamai.NewAkamaiProvider(
 			akamai.AkamaiConfig{
 				DomainFilter:          domainFilter,
 				ZoneIDFilter:          zoneIDFilter,
@@ -156,9 +161,10 @@ func main() {
 				ClientToken:           cfg.AkamaiClientToken,
 				ClientSecret:          cfg.AkamaiClientSecret,
 				AccessToken:           cfg.AkamaiAccessToken,
+				EdgercPath:            cfg.AkamaiEdgercPath,
+				EdgercSection:         cfg.AkamaiEdgercSection,
 				DryRun:                cfg.DryRun,
-			},
-		)
+			}, nil)
 	case "alibabacloud":
 		p, err = alibabacloud.NewAlibabaCloudProvider(cfg.AlibabaCloudConfigFile, domainFilter, zoneIDFilter, cfg.AlibabaCloudZoneType, cfg.DryRun)
 	case "aws":
@@ -176,6 +182,7 @@ func main() {
 				APIRetries:           cfg.AWSAPIRetries,
 				PreferCNAME:          cfg.AWSPreferCNAME,
 				DryRun:               cfg.DryRun,
+				ZoneCacheDuration:    cfg.AWSZoneCacheDuration,
 			},
 		)
 	case "aws-sd":
@@ -186,9 +193,9 @@ func main() {
 		}
 		p, err = awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.AWSAssumeRole, cfg.DryRun)
 	case "azure-dns", "azure":
-		p, err = azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
+		p, err = azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
 	case "azure-private-dns":
-		p, err = azure.NewAzurePrivateDNSProvider(domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureSubscriptionID, cfg.DryRun)
+		p, err = azure.NewAzurePrivateDNSProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
 	case "vinyldns":
 		p, err = vinyldns.NewVinylDNSProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "vultr":
@@ -278,19 +285,24 @@ func main() {
 			p, err = oci.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.DryRun)
 		}
 	case "rfc2136":
-		p, err = rfc2136.NewRfc2136Provider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, nil)
+		p, err = rfc2136.NewRfc2136Provider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, nil)
 	case "ns1":
 		p, err = ns1.NewNS1Provider(
 			ns1.NS1Config{
-				DomainFilter: domainFilter,
-				ZoneIDFilter: zoneIDFilter,
-				NS1Endpoint:  cfg.NS1Endpoint,
-				NS1IgnoreSSL: cfg.NS1IgnoreSSL,
-				DryRun:       cfg.DryRun,
+				DomainFilter:  domainFilter,
+				ZoneIDFilter:  zoneIDFilter,
+				NS1Endpoint:   cfg.NS1Endpoint,
+				NS1IgnoreSSL:  cfg.NS1IgnoreSSL,
+				DryRun:        cfg.DryRun,
+				MinTTLSeconds: cfg.NS1MinTTLSeconds,
 			},
 		)
 	case "transip":
 		p, err = transip.NewTransIPProvider(cfg.TransIPAccountName, cfg.TransIPPrivateKeyFile, domainFilter, cfg.DryRun)
+	case "scaleway":
+		p, err = scaleway.NewScalewayProvider(ctx, domainFilter, cfg.DryRun)
+	case "godaddy":
+		p, err = godaddy.NewGoDaddyProvider(ctx, domainFilter, cfg.GoDaddyTTL, cfg.GoDaddyAPIKey, cfg.GoDaddySecretKey, cfg.GoDaddyOTE, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
@@ -303,7 +315,7 @@ func main() {
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":
-		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval)
+		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement)
 	case "aws-sd":
 		r, err = registry.NewAWSSDRegistry(p.(*awssd.AWSSDProvider), cfg.TXTOwnerID)
 	default:
@@ -320,11 +332,12 @@ func main() {
 	}
 
 	ctrl := controller.Controller{
-		Source:       endpointsSource,
-		Registry:     r,
-		Policy:       policy,
-		Interval:     cfg.Interval,
-		DomainFilter: domainFilter,
+		Source:             endpointsSource,
+		Registry:           r,
+		Policy:             policy,
+		Interval:           cfg.Interval,
+		DomainFilter:       domainFilter,
+		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
 	}
 
 	if cfg.Once {

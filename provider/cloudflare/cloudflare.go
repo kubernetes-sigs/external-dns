@@ -157,7 +157,7 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 	p.PaginationOptions.Page = 1
 
 	// if there is a zoneIDfilter configured
-	// && if the filter isnt just a blank string (used in tests)
+	// && if the filter isn't just a blank string (used in tests)
 	if len(p.zoneIDFilter.ZoneIDs) > 0 && p.zoneIDFilter.ZoneIDs[0] != "" {
 		log.Debugln("zoneIDFilter configured. only looking up zone IDs defined")
 		for _, zoneID := range p.zoneIDFilter.ZoneIDs {
@@ -329,6 +329,18 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 		}
 	}
 	return nil
+}
+
+// AdjustEndpoints modifies the endpoints as needed by the specific provider
+func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	adjustedEndpoints := []*endpoint.Endpoint{}
+	for _, e := range endpoints {
+		if shouldBeProxied(e, p.proxiedByDefault) {
+			e.RecordTTL = 0
+		}
+		adjustedEndpoints = append(adjustedEndpoints, e)
+	}
+	return adjustedEndpoints
 }
 
 // changesByZone separates a multi-zone change into a single change per zone.

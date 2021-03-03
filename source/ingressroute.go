@@ -26,18 +26,16 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	contourapi "github.com/projectcontour/contour/apis/contour/v1beta1"
+	contour "github.com/projectcontour/contour/apis/contour/v1beta1"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -90,7 +88,7 @@ func NewContourIngressRouteSource(
 	// Use shared informer to listen for add/update/delete of ingressroutes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
-	ingressRouteInformer := informerFactory.ForResource(contourapi.IngressRouteGVR)
+	ingressRouteInformer := informerFactory.ForResource(contour.IngressRouteGVR)
 
 	// Add default resource event handlers to properly initialize informer.
 	ingressRouteInformer.Informer().AddEventHandler(
@@ -138,15 +136,15 @@ func (sc *ingressRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoi
 		return nil, err
 	}
 
-	// Convert to []*contourapi.IngressRoute
-	var ingressRoutes []*contourapi.IngressRoute
+	// Convert to []*contour.IngressRoute
+	var ingressRoutes []*contour.IngressRoute
 	for _, ir := range irs {
 		unstrucuredIR, ok := ir.(*unstructured.Unstructured)
 		if !ok {
 			return nil, errors.New("could not convert")
 		}
 
-		irConverted := &contourapi.IngressRoute{}
+		irConverted := &contour.IngressRoute{}
 		err := sc.unstructuredConverter.scheme.Convert(unstrucuredIR, irConverted, nil)
 		if err != nil {
 			return nil, err
@@ -209,7 +207,7 @@ func (sc *ingressRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoi
 	return endpoints, nil
 }
 
-func (sc *ingressRouteSource) endpointsFromTemplate(ctx context.Context, ingressRoute *contourapi.IngressRoute) ([]*endpoint.Endpoint, error) {
+func (sc *ingressRouteSource) endpointsFromTemplate(ctx context.Context, ingressRoute *contour.IngressRoute) ([]*endpoint.Endpoint, error) {
 	// Process the whole template string
 	var buf bytes.Buffer
 	err := sc.fqdnTemplate.Execute(&buf, ingressRoute)
@@ -246,7 +244,7 @@ func (sc *ingressRouteSource) endpointsFromTemplate(ctx context.Context, ingress
 }
 
 // filterByAnnotations filters a list of configs by a given annotation selector.
-func (sc *ingressRouteSource) filterByAnnotations(ingressRoutes []*contourapi.IngressRoute) ([]*contourapi.IngressRoute, error) {
+func (sc *ingressRouteSource) filterByAnnotations(ingressRoutes []*contour.IngressRoute) ([]*contour.IngressRoute, error) {
 	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
 	if err != nil {
 		return nil, err
@@ -261,7 +259,7 @@ func (sc *ingressRouteSource) filterByAnnotations(ingressRoutes []*contourapi.In
 		return ingressRoutes, nil
 	}
 
-	filteredList := []*contourapi.IngressRoute{}
+	filteredList := []*contour.IngressRoute{}
 
 	for _, ingressRoute := range ingressRoutes {
 		// convert the ingressroute's annotations to an equivalent label selector
@@ -276,7 +274,7 @@ func (sc *ingressRouteSource) filterByAnnotations(ingressRoutes []*contourapi.In
 	return filteredList, nil
 }
 
-func (sc *ingressRouteSource) setResourceLabel(ingressRoute *contourapi.IngressRoute, endpoints []*endpoint.Endpoint) {
+func (sc *ingressRouteSource) setResourceLabel(ingressRoute *contour.IngressRoute, endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
 		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("ingressroute/%s/%s", ingressRoute.Namespace, ingressRoute.Name)
 	}
@@ -304,7 +302,7 @@ func (sc *ingressRouteSource) targetsFromContourLoadBalancer(ctx context.Context
 }
 
 // endpointsFromIngressRouteConfig extracts the endpoints from a Contour IngressRoute object
-func (sc *ingressRouteSource) endpointsFromIngressRoute(ctx context.Context, ingressRoute *contourapi.IngressRoute) ([]*endpoint.Endpoint, error) {
+func (sc *ingressRouteSource) endpointsFromIngressRoute(ctx context.Context, ingressRoute *contour.IngressRoute) ([]*endpoint.Endpoint, error) {
 	if ingressRoute.CurrentStatus != "valid" {
 		log.Warn(errors.Errorf("cannot generate endpoints for ingressroute with status %s", ingressRoute.CurrentStatus))
 		return nil, nil
@@ -357,27 +355,4 @@ func parseContourLoadBalancerService(service string) (namespace, name string, er
 }
 
 func (sc *ingressRouteSource) AddEventHandler(ctx context.Context, handler func()) {
-}
-
-// UnstructuredConverter handles conversions between unstructured.Unstructured and Contour types
-type UnstructuredConverter struct {
-	// scheme holds an initializer for converting Unstructured to a type
-	scheme *runtime.Scheme
-}
-
-// NewUnstructuredConverter returns a new UnstructuredConverter initialized
-func NewUnstructuredConverter() (*UnstructuredConverter, error) {
-	uc := &UnstructuredConverter{
-		scheme: runtime.NewScheme(),
-	}
-
-	// Setup converter to understand custom CRD types
-	contourapi.AddKnownTypes(uc.scheme)
-
-	// Add the core types we need
-	if err := scheme.AddToScheme(uc.scheme); err != nil {
-		return nil, err
-	}
-
-	return uc, nil
 }

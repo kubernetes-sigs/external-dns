@@ -2,7 +2,7 @@
 
 ## Background
 
-[Project proposal](https://groups.google.com/forum/#!searchin/kubernetes-dev/external$20dns%7Csort:relevance/kubernetes-dev/2wGQUB0fUuE/9OXz01i2BgAJ)
+[Project proposal](https://groups.google.com/forum/#!searching/kubernetes-dev/external$20dns%7Csort:relevance/kubernetes-dev/2wGQUB0fUuE/9OXz01i2BgAJ)
 
 [Initial discussion](https://docs.google.com/document/d/1ML_q3OppUtQKXan6Q42xIq2jelSoIivuXI8zExbc6ec/edit#heading=h.1pgkuagjhm4p)
 

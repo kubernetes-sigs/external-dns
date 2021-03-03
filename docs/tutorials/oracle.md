@@ -26,6 +26,8 @@ auth:
     -----BEGIN RSA PRIVATE KEY-----
     -----END RSA PRIVATE KEY-----
   fingerprint: af:81:71:8e...
+  # Omit if there is not a password for the key
+  passphrase: Tx1jRk...
 compartment: ocid1.compartment.oc1...
 ```
 
@@ -91,12 +93,12 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:latest
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         args:
         - --source=service
         - --source=ingress
         - --provider=oci
-        - --policy=upsert-only # prevent ExternalDNSfrom deleting any records, omit to enable full synchronization
+        - --policy=upsert-only # prevent ExternalDNS from deleting any records, omit to enable full synchronization
         - --txt-owner-id=my-identifier
         volumeMounts:
           - name: config
