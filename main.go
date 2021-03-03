@@ -144,9 +144,8 @@ func main() {
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
 
 	domainFilter := endpoint.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
-	zoneNameFilter := endpoint.NewDomainFilter(cfg.ZoneNameFilter)
-	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
 	zoneNameFilter := provider.NewZoneNameFilter(cfg.ZoneNameFilter)
+	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
 
