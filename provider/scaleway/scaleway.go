@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"strings"
 
-	domain "github.com/scaleway/scaleway-sdk-go/api/domain/v2alpha2"
+	domain "github.com/scaleway/scaleway-sdk-go/api/domain/v2beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 	log "github.com/sirupsen/logrus"
 
@@ -84,6 +84,21 @@ func NewScalewayProvider(ctx context.Context, domainFilter endpoint.DomainFilter
 	}, nil
 }
 
+// AdjustEndpoints is used to normalize the endoints
+func (p *ScalewayProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	eps := make([]*endpoint.Endpoint, len(endpoints))
+	for i := range endpoints {
+		eps[i] = endpoints[i]
+		if !eps[i].RecordTTL.IsConfigured() {
+			eps[i].RecordTTL = endpoint.TTL(scalewyRecordTTL)
+		}
+		if _, ok := eps[i].GetProviderSpecificProperty(scalewayPriorityKey); !ok {
+			eps[i] = eps[i].WithProviderSpecific(scalewayPriorityKey, fmt.Sprintf("%d", scalewayDefaultPriority))
+		}
+	}
+	return eps
+}
+
 // Zones returns the list of hosted zones.
 func (p *ScalewayProvider) Zones(ctx context.Context) ([]*domain.DNSZone, error) {
 	res := []*domain.DNSZone{}
@@ -136,7 +151,7 @@ func (p *ScalewayProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 			// In this case, we juste take the first one.
 			if existingEndpoint, ok := endpoints[record.Type.String()+"/"+fullRecordName]; ok {
 				existingEndpoint.Targets = append(existingEndpoint.Targets, record.Data)
-				log.Infof("Appending target %s to record %s, using TTL and priotiry of target %s", record.Data, fullRecordName, existingEndpoint.Targets[0])
+				log.Infof("Appending target %s to record %s, using TTL and priority of target %s", record.Data, fullRecordName, existingEndpoint.Targets[0])
 			} else {
 				ep := endpoint.NewEndpointWithTTL(fullRecordName, record.Type.String(), endpoint.TTL(record.TTL), record.Data)
 				ep = ep.WithProviderSpecific(scalewayPriorityKey, fmt.Sprintf("%d", record.Priority))
@@ -192,6 +207,7 @@ func (p *ScalewayProvider) generateApplyRequests(ctx context.Context, changes *p
 		recordsToDelete[zoneName] = []*domain.RecordChange{}
 	}
 
+	log.Debugf("Following records present in updateOld")
 	for _, c := range changes.UpdateOld {
 		zone, _ := zoneNameMapper.FindZone(c.DNSName)
 		if zone == "" {
@@ -199,8 +215,10 @@ func (p *ScalewayProvider) generateApplyRequests(ctx context.Context, changes *p
 			continue
 		}
 		recordsToDelete[zone] = append(recordsToDelete[zone], endpointToScalewayRecordsChangeDelete(zone, c)...)
+		log.Debugf("%s", c.String())
 	}
 
+	log.Debugf("Following records present in delete")
 	for _, c := range changes.Delete {
 		zone, _ := zoneNameMapper.FindZone(c.DNSName)
 		if zone == "" {
@@ -208,8 +226,10 @@ func (p *ScalewayProvider) generateApplyRequests(ctx context.Context, changes *p
 			continue
 		}
 		recordsToDelete[zone] = append(recordsToDelete[zone], endpointToScalewayRecordsChangeDelete(zone, c)...)
+		log.Debugf("%s", c.String())
 	}
 
+	log.Debugf("Following records present in create")
 	for _, c := range changes.Create {
 		zone, _ := zoneNameMapper.FindZone(c.DNSName)
 		if zone == "" {
@@ -217,7 +237,10 @@ func (p *ScalewayProvider) generateApplyRequests(ctx context.Context, changes *p
 			continue
 		}
 		recordsToAdd[zone].Records = append(recordsToAdd[zone].Records, endpointToScalewayRecords(zone, c)...)
+		log.Debugf("%s", c.String())
 	}
+
+	log.Debugf("Following records present in updateNew")
 	for _, c := range changes.UpdateNew {
 		zone, _ := zoneNameMapper.FindZone(c.DNSName)
 		if zone == "" {
@@ -225,6 +248,7 @@ func (p *ScalewayProvider) generateApplyRequests(ctx context.Context, changes *p
 			continue
 		}
 		recordsToAdd[zone].Records = append(recordsToAdd[zone].Records, endpointToScalewayRecords(zone, c)...)
+		log.Debugf("%s", c.String())
 	}
 
 	for _, zone := range dnsZones {
@@ -269,8 +293,13 @@ func endpointToScalewayRecords(zoneName string, ep *endpoint.Endpoint) []*domain
 	records := []*domain.Record{}
 
 	for _, target := range ep.Targets {
+		finalTargetName := target
+		if domain.RecordType(ep.RecordType) == domain.RecordTypeCNAME {
+			finalTargetName = provider.EnsureTrailingDot(target)
+		}
+
 		records = append(records, &domain.Record{
-			Data:     target,
+			Data:     finalTargetName,
 			Name:     strings.Trim(strings.TrimSuffix(ep.DNSName, zoneName), ". "),
 			Priority: priority,
 			TTL:      ttl,
@@ -285,11 +314,18 @@ func endpointToScalewayRecordsChangeDelete(zoneName string, ep *endpoint.Endpoin
 	records := []*domain.RecordChange{}
 
 	for _, target := range ep.Targets {
+		finalTargetName := target
+		if domain.RecordType(ep.RecordType) == domain.RecordTypeCNAME {
+			finalTargetName = provider.EnsureTrailingDot(target)
+		}
+
 		records = append(records, &domain.RecordChange{
 			Delete: &domain.RecordChangeDelete{
-				Data: target,
-				Name: strings.Trim(strings.TrimSuffix(ep.DNSName, zoneName), ". "),
-				Type: domain.RecordType(ep.RecordType),
+				IDFields: &domain.RecordIdentifier{
+					Data: &finalTargetName,
+					Name: strings.Trim(strings.TrimSuffix(ep.DNSName, zoneName), ". "),
+					Type: domain.RecordType(ep.RecordType),
+				},
 			},
 		})
 	}
@@ -298,10 +334,10 @@ func endpointToScalewayRecordsChangeDelete(zoneName string, ep *endpoint.Endpoin
 }
 
 func logChanges(req *domain.UpdateDNSZoneRecordsRequest) {
-	log.Infof("Updating zone %s", req.DNSZone)
 	if !log.IsLevelEnabled(log.InfoLevel) {
 		return
 	}
+	log.Infof("Updating zone %s", req.DNSZone)
 	for _, change := range req.Changes {
 		if change.Add != nil {
 			for _, add := range change.Add.Records {
@@ -320,15 +356,15 @@ func logChanges(req *domain.UpdateDNSZoneRecordsRequest) {
 				log.WithFields(logFields).Info("Adding record")
 			}
 		} else if change.Delete != nil {
-			name := change.Delete.Name + "."
-			if change.Delete.Name == "" {
+			name := change.Delete.IDFields.Name + "."
+			if change.Delete.IDFields.Name == "" {
 				name = ""
 			}
 
 			logFields := log.Fields{
 				"record": name + req.DNSZone,
-				"type":   change.Delete.Type.String(),
-				"data":   change.Delete.Data,
+				"type":   change.Delete.IDFields.Type.String(),
+				"data":   *change.Delete.IDFields.Data,
 			}
 
 			log.WithFields(logFields).Info("Deleting record")

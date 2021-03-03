@@ -57,7 +57,7 @@ Services exposed via `type=LoadBalancer`, `type=ExternalName` and for the hostna
 
 There are three sources of information for ExternalDNS to decide on DNS name. ExternalDNS will pick one in order as listed below:
 
-1. For ingress objects ExternalDNS will create a DNS record based on the host specified for the ingress object. For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the corresponding value.
+1. For ingress objects ExternalDNS will create a DNS record based on the host specified for the ingress object. For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the loadbalancer IP, it also will look for the annotation `external-dns.alpha.kubernetes.io/internal-hostname` on the service and use the service IP.
 
 2. If compatibility mode is enabled (e.g. `--compatibility={mate,molecule}` flag), External DNS will parse annotations used by Zalando/Mate, wearemolecule/route53-kubernetes. Compatibility mode with Kops DNS Controller is planned to be added in the future.
 
@@ -75,7 +75,9 @@ Regarding Ingress, we'll support:
 * Google's Ingress Controller on GKE that integrates with their Layer 7 load balancers (GLBC)
 * nginx-ingress-controller v0.9.x with a fronting Service
 * Zalando's [AWS Ingress controller](https://github.com/zalando-incubator/kube-ingress-aws-controller), based on AWS ALBs and [Skipper](https://github.com/zalando/skipper)
-* [Traefik](https://github.com/containous/traefik) 1.7 and above, when [`kubernetes.ingressEndpoint`](https://docs.traefik.io/v1.7/configuration/backends/kubernetes/#ingressendpoint) is configured (`kubernetes.ingressEndpoint.useDefaultPublishedService` in the [Helm chart](https://github.com/helm/charts/tree/HEAD/stable/traefik#configuration))
+* [Traefik](https://github.com/containous/traefik)
+  * version 1.7, when [`kubernetes.ingressEndpoint`](https://docs.traefik.io/v1.7/configuration/backends/kubernetes/#ingressendpoint) is configured (`kubernetes.ingressEndpoint.useDefaultPublishedService` in the [Helm chart](https://github.com/helm/charts/tree/HEAD/stable/traefik#configuration))
+  * versions \>=2.0, when [`providers.kubernetesIngress.ingressEndpoint`](https://doc.traefik.io/traefik/providers/kubernetes-ingress/#ingressendpoint) is configured (`providers.kubernetesIngress.publishedService.enabled` is set to `true` in the [new Helm chart](https://github.com/traefik/traefik-helm-chart))
 
 ### Are other Ingress Controllers supported?
 
@@ -192,7 +194,7 @@ You can use the host label in the metric to figure out if the request was agains
 Here is the full list of available metrics provided by ExternalDNS:
 
 | Name                                                | Description                                             | Type    |
-|-----------------------------------------------------|---------------------------------------------------------|---------|
+| --------------------------------------------------- | ------------------------------------------------------- | ------- |
 | external_dns_controller_last_sync_timestamp_seconds | Timestamp of last successful sync with the DNS provider | Gauge   |
 | external_dns_registry_endpoints_total               | Number of Endpoints in all sources                      | Gauge   |
 | external_dns_registry_errors_total                  | Number of Registry errors                               | Counter |
@@ -214,7 +216,7 @@ $ docker run \
   -e EXTERNAL_DNS_SOURCE=$'service\ningress' \
   -e EXTERNAL_DNS_PROVIDER=google \
   -e EXTERNAL_DNS_DOMAIN_FILTER=$'foo.com\nbar.com' \
-  k8s.gcr.io/external-dns/external-dns:v0.7.3
+  k8s.gcr.io/external-dns/external-dns:v0.7.6
 time="2017-08-08T14:10:26Z" level=info msg="config: &{APIServerURL: KubeConfig: Sources:[service ingress] Namespace: ...
 ```
 
@@ -302,7 +304,7 @@ When we tag a new release, we push a container image to the Kubernetes projects 
 k8s.gcr.io/external-dns/external-dns
 ```
 
-As tags, you use the external-dns release of choice(i.e. `v0.7.3`). A `latest` tag is not provided in the container registry.
+As tags, you use the external-dns release of choice(i.e. `v0.7.6`). A `latest` tag is not provided in the container registry.
 
 If you wish to build your own image, you can use the provided [Dockerfile](../Dockerfile) as a starting point.
 
