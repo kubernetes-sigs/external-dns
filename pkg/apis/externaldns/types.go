@@ -144,6 +144,7 @@ type Config struct {
 	RFC2136GSSTSIG                    bool
 	RFC2136KerberosUsername           string
 	RFC2136KerberosPassword           string
+	RFC2136KerberosRealm              string
 	RFC2136TSIGKeyName                string
 	RFC2136TSIGSecret                 string `secure:"yes"`
 	RFC2136TSIGSecretAlg              string
@@ -436,6 +437,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("rfc2136-gss-tsig", "When using the RFC2136 provider, specify whether to use secure updates with GSS-TSIG using Kerberos (default: false, requires --rfc2136-kerberos-username and rfc2136-kerberos-password)").Default(strconv.FormatBool(defaultConfig.RFC2136GSSTSIG)).BoolVar(&cfg.RFC2136GSSTSIG)
 	app.Flag("rfc2136-kerberos-username", "When using the RFC2136 provider with GSS-TSIG, specify the username of the user with permissions to update DNS records (required when --rfc2136-gss-tsig=true)").Default(defaultConfig.RFC2136KerberosUsername).StringVar(&cfg.RFC2136KerberosUsername)
 	app.Flag("rfc2136-kerberos-password", "When using the RFC2136 provider with GSS-TSIG, specify the password of the user with permissions to update DNS records (required when --rfc2136-gss-tsig=true)").Default(defaultConfig.RFC2136KerberosPassword).StringVar(&cfg.RFC2136KerberosPassword)
+	app.Flag("rfc2136-kerberos-realm", "When using the RFC2136 provider with GSS-TSIG, specify the realm of the user with permissions to update DNS records (required when --rfc2136-gss-tsig=true)").Default(defaultConfig.RFC2136KerberosRealm).StringVar(&cfg.RFC2136KerberosRealm)
 
 	// Flags related to TransIP provider
 	app.Flag("transip-account", "When using the TransIP provider, specify the account name (required when --provider=transip)").Default(defaultConfig.TransIPAccountName).StringVar(&cfg.TransIPAccountName)
