@@ -141,7 +141,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         args:
         - --source=service
         - --source=ingress
@@ -216,7 +216,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         args:
         - --source=service
         - --source=ingress
@@ -410,9 +410,42 @@ For any given DNS name, only **one** of the following routing policies can be us
 ## Associating DNS records with healthchecks
 
 You can configure Route53 to associate DNS records with healthchecks for automated DNS failover using 
-`external-dns.alpha.kubernetes.io/health-check-id: <health-check-id>` annotation.
+`external-dns.alpha.kubernetes.io/aws-health-check-id: <health-check-id>` annotation.
 
 Note: ExternalDNS does not support creating healthchecks, and assumes that `<health-check-id>` already exists.
+
+## Govcloud caveats
+
+Due to the special nature with how Route53 runs in Govcloud, there are a few tweaks in the deployment settings.
+
+* An Environment variable with name of AWS_REGION set to either us-gov-west-1 or us-gov-east-1 is required. Otherwise it tries to lookup a region that does not exist in Govcloud and it errors out.
+
+```yaml
+env:
+- name: AWS_REGION
+  value: us-gov-west-1
+```
+
+* Route53 in Govcloud does not allow aliases. Therefore, container args must be set so that it uses CNAMES and a txt-prefix must be set to something. Otherwise, it will try to create a TXT record with the same value than the CNAME itself, which is not allowed.
+
+```yaml
+args:
+- --aws-prefer-cname
+- --txt-prefix={{ YOUR_PREFIX }}
+```
+
+* The first two changes are needed if you use Route53 in Govcloud, which only supports private zones. There are also no cross account IAM whatsoever between Govcloud and commerical AWS accounts. If services and ingresses need to make Route 53 entries to an public zone in a commerical account, you will have set env variables of AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY with a key and secret to the commerical account that has the sufficient rights.
+
+```yaml
+env:
+- name: AWS_ACCESS_KEY_ID
+  value: XXXXXXXXX
+- name: AWS_SECRET_ACCESS_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ YOUR_SECRET_NAME }}
+      key: {{ YOUR_SECRET_KEY }}
+```
 
 ## Clean up
 

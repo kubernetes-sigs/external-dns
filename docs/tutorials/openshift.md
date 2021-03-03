@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         args:
         - --source=openshift-route
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
@@ -92,7 +92,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         args:
         - --source=openshift-route
         - --domain-filter=external-dns-test.my-org.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones

@@ -317,6 +317,16 @@ func (sc *virtualServiceSource) setResourceLabel(virtualservice networkingv1alph
 	}
 }
 
+// append a target to the list of targets unless it's already in the list
+func appendUnique(targets []string, target string) []string {
+	for _, element := range targets {
+		if element == target {
+			return targets
+		}
+	}
+	return append(targets, target)
+}
+
 func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, virtualService networkingv1alpha3.VirtualService, vsHost string) ([]string, error) {
 	var targets []string
 	// for each host we need to iterate through the gateways because each host might match for only one of the gateways
@@ -332,7 +342,9 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 		if err != nil {
 			return targets, err
 		}
-		targets = append(targets, tgs...)
+		for _, target := range tgs {
+			targets = appendUnique(targets, target)
+		}
 	}
 
 	return targets, nil
