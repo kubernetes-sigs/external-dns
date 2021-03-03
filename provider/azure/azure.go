@@ -174,8 +174,9 @@ func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
 
 		if zone.Name != nil && p.domainFilter.Match(*zone.Name) && p.zoneIDFilter.Match(*zone.ID) {
 			zones = append(zones, zone)
-		} else if zone.Name != nil && len(p.zoneNameFilter.ZoneNames) > 0 && p.zoneNameFilter.Match(*zone.Name) {
-			// Handle zoneNameFilter
+		} else if zone.Name != nil && p.zoneNameFilter.IsConfigured() && p.zoneNameFilter.Match(*zone.Name) {
+			zones = append(zones, zone)
+		} else if zone.Name != nil && len(p.domainFilter.Filters) > 0 && p.domainFilter.Match(*zone.Name) {
 			zones = append(zones, zone)
 		}
 
