@@ -61,11 +61,12 @@ type WideIPs struct {
 
 // BigIp wideIP
 type WideIP struct {
-	Name        string        `json:"name"`
-	Partition   string        `json:"partition"`
-	Description string        `json:"description"`
-	Enabled     bool          `json:"enabled"`
-	PoolAs      []WideIPPoolA `json:"pools"`
+	Name           string        `json:"name"`
+	Partition      string        `json:"partition"`
+	Description    string        `json:"description"`
+	Enabled        bool          `json:"enabled"`
+	LastResortPool string        `json:"lastResortPool"`
+	PoolAs         []WideIPPoolA `json:"pools"`
 }
 
 // BigIp wideIP Pool A
@@ -509,7 +510,6 @@ func (p F5BigipProvider) deleteServer(endpoint *endpoint.Endpoint) error {
 			}
 		}
 
-		log.Infof("vsName: %v", vsName)
 		if len(vsName) > 0 {
 			err = p.deleteVirtualServers(vsName)
 			if err != nil {
@@ -545,7 +545,6 @@ func (p F5BigipProvider) deleteVirtualServers(vsName []string) error {
 	}
 	if len(serverVRecords.Items) > 0 {
 		for _, vs := range serverVRecords.Items {
-			log.Infof("vsNamesitem: %s", vs.Name)
 			if !isContainVsname(vsName, vs.Name) {
 				vsRecords = append(vsRecords, vs)
 			}
@@ -726,6 +725,8 @@ func (p F5BigipProvider) updateWideIP(endpoint *endpoint.Endpoint) error {
 		}
 	}
 	wideIP.Description = description
+	wideIP.LastResortPool = "none"
+	log.Infof("wideIP update: %v", wideIP)
 	reqBody, err := json.Marshal(wideIP)
 	if err != nil {
 		return err
@@ -763,6 +764,7 @@ func (p F5BigipProvider) createWideIP(endpoint *endpoint.Endpoint) error {
 		partition,
 		description,
 		true,
+		"none",
 		wideIpPoolAs,
 	}
 	reqBody, err := json.Marshal(createWideIp)
