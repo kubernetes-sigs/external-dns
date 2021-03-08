@@ -72,7 +72,7 @@ lint: licensecheck go-lint
 
 # generates CRD using controller-gen
 crd: controller-gen
-	${CONTROLLER_GEN} crd:crdVersions=v1beta1  paths="./endpoint/..." output:crd:stdout > docs/contributing/crd-source/crd-manifest.yaml
+	${CONTROLLER_GEN} crd:crdVersions=v1 paths="./endpoint/..." output:crd:stdout > docs/contributing/crd-source/crd-manifest.yaml
 
 # The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: verify test
