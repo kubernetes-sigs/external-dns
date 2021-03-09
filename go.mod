@@ -41,10 +41,10 @@ require (
 	github.com/openshift/client-go v0.0.0-20200608144219-584632b8fc73
 	github.com/oracle/oci-go-sdk v21.4.0+incompatible
 	github.com/ovh/go-ovh v0.0.0-20181109152953-ba5adb4cf014
+	github.com/pg2000/dynsoap v0.0.0-20210302131910-d513cf169ae8
 	github.com/pkg/errors v0.9.1
 	github.com/projectcontour/contour v1.5.0
 	github.com/prometheus/client_golang v1.7.1
-	github.com/sanyu/dynectsoap v0.0.0-20181203081243-b83de5edc4e0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.7.0.20210127161313-bd30bebeac4f
 	github.com/sirupsen/logrus v1.6.0
 	github.com/smartystreets/gunit v1.3.4 // indirect
