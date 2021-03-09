@@ -64,8 +64,8 @@ require (
 	gopkg.in/ns1/ns1-go.v2 v2.0.0-20190322154155-0dafb5275fd1
 	gopkg.in/yaml.v2 v2.3.0
 	honnef.co/go/tools v0.0.1-2020.1.4 // indirect
-	istio.io/api v0.0.0-20200529165953-72dad51d4ffc
-	istio.io/client-go v0.0.0-20200529172309-31c16ea3f751
+	istio.io/api v0.0.0-20210128181506-0c4b8e54850f
+	istio.io/client-go v0.0.0-20210128182905-ee2edd059e02
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8
 	k8s.io/client-go v0.18.8
