@@ -92,8 +92,8 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		}
 
 		if cfg.RFC2136GSSTSIG {
-			if cfg.RFC2136KerberosPassword == "" || cfg.RFC2136KerberosUsername == "" {
-				return errors.New("--rfc2136-kerberos-username and --rfc2136-kerberos-password both required when specifying --rfc2136-gss-tsig option")
+			if cfg.RFC2136KerberosPassword == "" || cfg.RFC2136KerberosUsername == "" || cfg.RFC2136KerberosRealm == "" {
+				return errors.New("--rfc2136-kerberos-realm, --rfc2136-kerberos-username, and --rfc2136-kerberos-password are required when specifying --rfc2136-gss-tsig option")
 			}
 		}
 	}
