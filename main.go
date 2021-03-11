@@ -336,6 +336,7 @@ func main() {
 		Interval:           cfg.Interval,
 		DomainFilter:       domainFilter,
 		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
+		MinInterval:        cfg.MinInterval,
 	}
 
 	if cfg.Once {

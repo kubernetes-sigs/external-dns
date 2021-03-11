@@ -120,6 +120,7 @@ type Config struct {
 	TXTPrefix                         string
 	TXTSuffix                         string
 	Interval                          time.Duration
+	MinInterval                       time.Duration
 	Once                              bool
 	DryRun                            bool
 	UpdateEvents                      bool
@@ -234,6 +235,7 @@ var defaultConfig = &Config{
 	TXTSuffix:                   "",
 	TXTCacheInterval:            0,
 	TXTWildcardReplacement:      "",
+	MinInterval:                 5 * time.Second,
 	Interval:                    time.Minute,
 	Once:                        false,
 	DryRun:                      false,
@@ -454,6 +456,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	// Flags related to the main control loop
 	app.Flag("txt-cache-interval", "The interval between cache synchronizations in duration format (default: disabled)").Default(defaultConfig.TXTCacheInterval.String()).DurationVar(&cfg.TXTCacheInterval)
 	app.Flag("interval", "The interval between two consecutive synchronizations in duration format (default: 1m)").Default(defaultConfig.Interval.String()).DurationVar(&cfg.Interval)
+	app.Flag("min-interval", "The minimum interval between two consecutive synchronizations triggered from kubernetes events in duration format (default: 5s)").Default(defaultConfig.MinInterval.String()).DurationVar(&cfg.MinInterval)
 	app.Flag("once", "When enabled, exits the synchronization loop after the first iteration (default: disabled)").BoolVar(&cfg.Once)
 	app.Flag("dry-run", "When enabled, prints DNS record changes rather than actually performing them (default: disabled)").BoolVar(&cfg.DryRun)
 	app.Flag("events", "When enabled, in addition to running every interval, the reconciliation loop will get triggered when supported sources change (default: disabled)").BoolVar(&cfg.UpdateEvents)
