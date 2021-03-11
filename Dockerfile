@@ -14,7 +14,7 @@
 
 # builder image
 ARG ARCH
-FROM golang:1.16 as builder
+FROM golang:1.16.1 as builder
 ARG ARCH
 
 WORKDIR /sigs.k8s.io/external-dns
