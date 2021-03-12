@@ -24,8 +24,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pg2000/dynsoap/pkg/dynsoap"
-
 	log "github.com/sirupsen/logrus"
 
 	"github.com/nesv/go-dynect/dynect"
@@ -33,6 +31,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	dynsoap "sigs.k8s.io/external-dns/provider/dyn/soap"
 )
 
 const (
