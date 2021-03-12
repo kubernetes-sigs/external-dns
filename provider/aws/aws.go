@@ -465,6 +465,21 @@ func (p *AWSProvider) createUpdateChanges(newEndpoints, oldEndpoints []*endpoint
 	return combined
 }
 
+// GetDomainFilter generates a filter to exclude any domain that is not controlled by the provider
+func (p *AWSProvider) GetDomainFilter() endpoint.DomainFilterInterface {
+	zones, err := p.Zones(context.Background())
+	if err != nil {
+		log.Errorf("failed to list zones: %v", err)
+		return &endpoint.DomainFilter{}
+	}
+	zoneNames := []string(nil)
+	for _, z := range zones {
+		zoneNames = append(zoneNames, aws.StringValue(z.Name), "."+aws.StringValue(z.Name))
+	}
+	log.Infof("Applying provider record filter for domains: %v", zoneNames)
+	return endpoint.NewDomainFilter(zoneNames)
+}
+
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	zones, err := p.Zones(ctx)
