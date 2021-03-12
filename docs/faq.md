@@ -28,24 +28,7 @@ ExternalDNS can solve this for you as well.
 
 ### Which DNS providers are supported?
 
-Currently, the following providers are supported:
-
-- Google Cloud DNS
-- AWS Route 53
-- AzureDNS
-- CloudFlare
-- DigitalOcean
-- DNSimple
-- Infoblox
-- Dyn
-- OpenStack Designate
-- PowerDNS
-- CoreDNS
-- Exoscale
-- Oracle Cloud Infrastructure DNS
-- Linode DNS
-- RFC2136
-- TransIP
+Please check the [provider status table](https://github.com/kubernetes-sigs/external-dns#status-of-providers) for the list of supported providers and their status.
 
 As stated in the README, we are currently looking for stable maintainers for those providers, to ensure that bugfixes and new features will be available for all of those.
 
@@ -279,11 +262,11 @@ If you need to filter only one specific source you have to run a separated exter
 
 ### How do I specify that I want the DNS record to point to either the Node's public or private IP when it has both?
 
-If your Nodes have both public and private IP addresses, you might want to write DNS records with one or the other.  
+If your Nodes have both public and private IP addresses, you might want to write DNS records with one or the other.
 For example, you may want to write a DNS record in a private zone that resolves to your Nodes' private IPs so that traffic never leaves your private network.
 
-To accomplish this, set this annotation on your service: `external-dns.alpha.kubernetes.io/access=private`  
-Conversely, to force the public IP: `external-dns.alpha.kubernetes.io/access=public`  
+To accomplish this, set this annotation on your service: `external-dns.alpha.kubernetes.io/access=private`
+Conversely, to force the public IP: `external-dns.alpha.kubernetes.io/access=public`
 
 If this annotation is not set, and the node has both public and private IP addresses, then the public IP will be used by default.
 
