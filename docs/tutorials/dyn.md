@@ -111,7 +111,7 @@ Having `--dry-run=true` and `--log-level=debug` is a great way to see _exactly_ 
 Create a file called 'test-ingress.yaml' with the following contents:
 
 ```yaml
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:  
   name: test-ingress
