@@ -147,7 +147,6 @@ type Config struct {
 	RFC2136KerberosRealm              string
 	RFC2136KerberosUsername           string
 	RFC2136KerberosPassword           string
-	RFC2136KerberosRealm              string
 	RFC2136TSIGKeyName                string
 	RFC2136TSIGSecret                 string `secure:"yes"`
 	RFC2136TSIGSecretAlg              string
