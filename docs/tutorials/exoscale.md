@@ -104,7 +104,7 @@ subjects:
 Spin up a simple nginx HTTP server with the following spec (`kubectl apply -f`):
 
 ```yaml
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: nginx

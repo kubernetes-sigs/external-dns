@@ -138,7 +138,7 @@ spec:
 ## Testing ingress example
 ```
 $ cat ingress.yaml
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: nginx

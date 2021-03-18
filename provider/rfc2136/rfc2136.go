@@ -91,6 +91,10 @@ func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, k
 		return nil, errors.Errorf("%s is not supported TSIG algorithm", secretAlg)
 	}
 
+	if krb5Realm == "" {
+		krb5Realm = strings.ToUpper(zoneName)
+	}
+
 	r := &rfc2136Provider{
 		nameserver:   net.JoinHostPort(host, strconv.Itoa(port)),
 		zoneName:     dns.Fqdn(zoneName),
