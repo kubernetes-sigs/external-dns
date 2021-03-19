@@ -241,7 +241,7 @@ spec:
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=external-dns
-        - --annotation-filter=kubernetes.io/ingress.class=external-ingress
+        - --annotation-filter=kubernetes.io/ingress.class in (external-ingress)
         - --aws-zone-type=public
         image: registry.opensource.zalan.do/teapot/external-dns:latest
         name: external-dns-public
@@ -279,7 +279,7 @@ spec:
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=dev.k8s.nexus
-        - --annotation-filter=kubernetes.io/ingress.class=internal-ingress
+        - --annotation-filter=kubernetes.io/ingress.class in (internal-ingress)
         - --aws-zone-type=private
         image: registry.opensource.zalan.do/teapot/external-dns:latest
         name: external-dns-private
