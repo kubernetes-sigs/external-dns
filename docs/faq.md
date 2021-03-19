@@ -258,8 +258,8 @@ one to expose DNS to the internet.
 
 To do this with ExternalDNS you can use the `--annotation-filter` to specifically tie an instance of ExternalDNS to
 an instance of a ingress controller. Let's assume you have two ingress controllers `nginx-internal` and `nginx-external`
-then you can start two ExternalDNS providers one with `--annotation-filter=kubernetes.io/ingress.class=nginx-internal`
-and one with `--annotation-filter=kubernetes.io/ingress.class=nginx-external`.
+then you can start two ExternalDNS providers one with `--annotation-filter=kubernetes.io/ingress.class in (nginx-internal)`
+and one with `--annotation-filter=kubernetes.io/ingress.class in (nginx-external)`.
 
 ### Can external-dns manage(add/remove) records in a hosted zone which is setup in different AWS account?
 
