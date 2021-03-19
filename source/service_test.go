@@ -2627,10 +2627,23 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			var addresses []v1.EndpointAddress
 			var notReadyAddresses []v1.EndpointAddress
 			for i, podname := range tc.podnames {
+				node := &v1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node-" + podname,
+					},
+					Spec: v1.NodeSpec{},
+					Status: v1.NodeStatus{
+						Addresses: []v1.NodeAddress{},
+					},
+				}
+				_, err = kubernetes.CoreV1().Nodes().Create(context.TODO(), node, metav1.CreateOptions{})
+				require.NoError(t, err)
+
 				pod := &v1.Pod{
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{},
 						Hostname:   tc.hostnames[i],
+						NodeName:   node.Name,
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace:   tc.svcNamespace,
@@ -2740,8 +2753,8 @@ func TestHeadlessServicesExternalHostIP(t *testing.T) {
 			false,
 			map[string]string{"component": "foo"},
 			map[string]string{
-				externalIPAnnotationKey: "",
-				hostnameAnnotationKey:   "service.example.org",
+				accessAnnotationKey:   "public",
+				hostnameAnnotationKey: "service.example.org",
 			},
 			v1.ClusterIPNone,
 			[]string{"1.1.1.1", "1.1.1.2"},
@@ -2771,8 +2784,8 @@ func TestHeadlessServicesExternalHostIP(t *testing.T) {
 			true,
 			map[string]string{"component": "foo"},
 			map[string]string{
-				externalIPAnnotationKey: "",
-				hostnameAnnotationKey:   "service.example.org",
+				accessAnnotationKey:   "public",
+				hostnameAnnotationKey: "service.example.org",
 			},
 			v1.ClusterIPNone,
 			[]string{"1.1.1.1", "1.1.1.2"},
@@ -2798,9 +2811,9 @@ func TestHeadlessServicesExternalHostIP(t *testing.T) {
 			false,
 			map[string]string{"component": "foo"},
 			map[string]string{
-				externalIPAnnotationKey: "",
-				hostnameAnnotationKey:   "service.example.org",
-				ttlAnnotationKey:        "1",
+				accessAnnotationKey:   "public",
+				hostnameAnnotationKey: "service.example.org",
+				ttlAnnotationKey:      "1",
 			},
 			v1.ClusterIPNone,
 			[]string{"1.1.1.1", "1.1.1.2"},
@@ -2830,8 +2843,8 @@ func TestHeadlessServicesExternalHostIP(t *testing.T) {
 			false,
 			map[string]string{"component": "foo"},
 			map[string]string{
-				externalIPAnnotationKey: "",
-				hostnameAnnotationKey:   "service.example.org",
+				accessAnnotationKey:   "public",
+				hostnameAnnotationKey: "service.example.org",
 			},
 			v1.ClusterIPNone,
 			[]string{"1.1.1.1", "1.1.1.2"},
@@ -2860,8 +2873,8 @@ func TestHeadlessServicesExternalHostIP(t *testing.T) {
 			false,
 			map[string]string{"component": "foo"},
 			map[string]string{
-				externalIPAnnotationKey: "",
-				hostnameAnnotationKey:   "service.example.org",
+				accessAnnotationKey:   "public",
+				hostnameAnnotationKey: "service.example.org",
 			},
 			v1.ClusterIPNone,
 			[]string{"1.1.1.1", "1.1.1.2"},
