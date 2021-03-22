@@ -119,7 +119,7 @@ func (p *AzureProvider) Records(ctx context.Context) (endpoints []*endpoint.Endp
 			}
 			targets := extractAzureTargets(&recordSet)
 			if len(targets) == 0 {
-				log.Errorf("Failed to extract targets for '%s' with type '%s'.", name, recordType)
+				log.Debugf("Failed to extract targets for '%s' with type '%s'.", name, recordType)
 				return true
 			}
 			var ttl endpoint.TTL
