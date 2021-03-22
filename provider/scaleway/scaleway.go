@@ -63,10 +63,6 @@ func NewScalewayProvider(ctx context.Context, domainFilter endpoint.DomainFilter
 		return nil, err
 	}
 
-	if _, ok := scwClient.GetDefaultOrganizationID(); !ok {
-		return nil, fmt.Errorf("default organization is not set")
-	}
-
 	if _, ok := scwClient.GetAccessKey(); !ok {
 		return nil, fmt.Errorf("access key no set")
 	}
