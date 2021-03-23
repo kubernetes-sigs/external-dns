@@ -50,7 +50,7 @@ require (
 	github.com/smartystreets/gunit v1.3.4 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/terra-farm/udnssdk v1.3.5 // indirect
-	github.com/transip/gotransip v5.8.2+incompatible
+	github.com/transip/gotransip/v6 v6.6.0
 	github.com/ultradns/ultradns-sdk-go v0.0.0-20200616202852-e62052662f60
 	github.com/vinyldns/go-vinyldns v0.0.0-20200211145900-fe8a3d82e556
 	github.com/vultr/govultr v0.4.2
