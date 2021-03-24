@@ -155,7 +155,7 @@ func TestRunOnce(t *testing.T) {
 }
 
 func TestShouldRunOnce(t *testing.T) {
-	ctrl := &Controller{Interval: 10 * time.Minute, MinInterval: 5 * time.Second}
+	ctrl := &Controller{Interval: 10 * time.Minute, MinEventSyncInterval: 5 * time.Second}
 
 	now := time.Now()
 
