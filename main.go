@@ -330,13 +330,13 @@ func main() {
 	}
 
 	ctrl := controller.Controller{
-		Source:             endpointsSource,
-		Registry:           r,
-		Policy:             policy,
-		Interval:           cfg.Interval,
-		DomainFilter:       domainFilter,
-		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
-		MinInterval:        cfg.MinInterval,
+		Source:               endpointsSource,
+		Registry:             r,
+		Policy:               policy,
+		Interval:             cfg.Interval,
+		DomainFilter:         domainFilter,
+		ManagedRecordTypes:   cfg.ManagedDNSRecordTypes,
+		MinEventSyncInterval: cfg.MinEventSyncInterval,
 	}
 
 	if cfg.Once {

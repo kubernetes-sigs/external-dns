@@ -119,8 +119,8 @@ type Controller struct {
 	nextRunAtMux sync.Mutex
 	// DNS record types that will be considered for management
 	ManagedRecordTypes []string
-	// MinInterval is used as window for batching events
-	MinInterval time.Duration
+	// MinEventSyncInterval is used as window for batching events
+	MinEventSyncInterval time.Duration
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -171,7 +171,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 func (c *Controller) ScheduleRunOnce(now time.Time) {
 	c.nextRunAtMux.Lock()
 	defer c.nextRunAtMux.Unlock()
-	c.nextRunAt = now.Add(c.MinInterval)
+	c.nextRunAt = now.Add(c.MinEventSyncInterval)
 }
 
 func (c *Controller) ShouldRunOnce(now time.Time) bool {
