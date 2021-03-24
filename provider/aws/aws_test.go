@@ -80,7 +80,7 @@ func NewRoute53APIStub(t *testing.T) *Route53APIStub {
 func (r *Route53APIStub) ListResourceRecordSetsPagesWithContext(ctx context.Context, input *route53.ListResourceRecordSetsInput, fn func(p *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool), opts ...request.Option) error {
 	output := route53.ListResourceRecordSetsOutput{} // TODO: Support optional input args.
 	require.NotNil(r.t, input.MaxItems)
-	assert.EqualValues(r.t, "1000", *input.MaxItems)
+	assert.EqualValues(r.t, route53PageSize, *input.MaxItems)
 	if len(r.recordSets) == 0 {
 		output.ResourceRecordSets = []*route53.ResourceRecordSet{}
 	} else if _, ok := r.recordSets[aws.StringValue(input.HostedZoneId)]; !ok {
@@ -1202,7 +1202,7 @@ func listAWSRecords(t *testing.T, client Route53API, zone string) []*route53.Res
 	recordSets := []*route53.ResourceRecordSet{}
 	require.NoError(t, client.ListResourceRecordSetsPagesWithContext(context.Background(), &route53.ListResourceRecordSetsInput{
 		HostedZoneId: aws.String(zone),
-		MaxItems:     aws.String("1000"),
+		MaxItems:     aws.String(route53PageSize),
 	}, func(resp *route53.ListResourceRecordSetsOutput, _ bool) bool {
 		recordSets = append(recordSets, resp.ResourceRecordSets...)
 		return true
