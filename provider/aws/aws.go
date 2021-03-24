@@ -40,6 +40,13 @@ import (
 
 const (
 	recordTTL = 300
+	// From the experiments, it seems that the default MaxItems applied is 100,
+	// and that, on the server side, there is a hard limit of 300 elements per page.
+	// After a discussion with AWS representants, clients should accept
+	// when less items are returned, and still paginate accordingly.
+	// As we are using the standard AWS client, this should already be compliant.
+	// Hence, ifever AWS decides to raise this limit, we will automatically reduce the pressure on rate limits
+	route53PageSize = "300"
 	// provider specific key that designates whether an AWS ALIAS record has the EvaluateTargetHealth
 	// field set to true.
 	providerSpecificEvaluateTargetHealth       = "aws/evaluate-target-health"
@@ -376,13 +383,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 	for _, z := range zones {
 		params := &route53.ListResourceRecordSetsInput{
 			HostedZoneId: z.Id,
-			// From the experiments, it seems that the default MaxItems applied is 100,
-			// and that, on the server side, there is a hard limit of 300 elements per page.
-			// After a discussion with AWS representants, clients should accept
-			// when less items are returned, and still paginate accordingly.
-			// As we are using the standard AWS client, this should already be compliant.
-			// Hence, ifever AWS decides to raise this limit, we will automatically reduce the pressure on rate limits
-			MaxItems: aws.String("1000"),
+			MaxItems:     aws.String(route53PageSize),
 		}
 
 		if err := p.client.ListResourceRecordSetsPagesWithContext(ctx, params, f); err != nil {
