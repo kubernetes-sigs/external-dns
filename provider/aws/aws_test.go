@@ -56,6 +56,7 @@ type Route53APIStub struct {
 	recordSets map[string]map[string][]*route53.ResourceRecordSet
 	zoneTags   map[string][]*route53.Tag
 	m          dynamicMock
+	t          *testing.T
 }
 
 // MockMethod starts a description of an expectation of the specified method
@@ -67,16 +68,19 @@ func (r *Route53APIStub) MockMethod(method string, args ...interface{}) *mock.Ca
 }
 
 // NewRoute53APIStub returns an initialized Route53APIStub
-func NewRoute53APIStub() *Route53APIStub {
+func NewRoute53APIStub(t *testing.T) *Route53APIStub {
 	return &Route53APIStub{
 		zones:      make(map[string]*route53.HostedZone),
 		recordSets: make(map[string]map[string][]*route53.ResourceRecordSet),
 		zoneTags:   make(map[string][]*route53.Tag),
+		t:          t,
 	}
 }
 
 func (r *Route53APIStub) ListResourceRecordSetsPagesWithContext(ctx context.Context, input *route53.ListResourceRecordSetsInput, fn func(p *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool), opts ...request.Option) error {
 	output := route53.ListResourceRecordSetsOutput{} // TODO: Support optional input args.
+	require.NotNil(r.t, input.MaxItems)
+	assert.EqualValues(r.t, route53PageSize, *input.MaxItems)
 	if len(r.recordSets) == 0 {
 		output.ResourceRecordSets = []*route53.ResourceRecordSet{}
 	} else if _, ok := r.recordSets[aws.StringValue(input.HostedZoneId)]; !ok {
@@ -1198,6 +1202,7 @@ func listAWSRecords(t *testing.T, client Route53API, zone string) []*route53.Res
 	recordSets := []*route53.ResourceRecordSet{}
 	require.NoError(t, client.ListResourceRecordSetsPagesWithContext(context.Background(), &route53.ListResourceRecordSetsInput{
 		HostedZoneId: aws.String(zone),
+		MaxItems:     aws.String(route53PageSize),
 	}, func(resp *route53.ListResourceRecordSetsOutput, _ bool) bool {
 		recordSets = append(recordSets, resp.ResourceRecordSets...)
 		return true
@@ -1255,7 +1260,7 @@ func newAWSProvider(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilt
 }
 
 func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, zoneTagFilter provider.ZoneTagFilter, evaluateTargetHealth, dryRun bool, records []*endpoint.Endpoint) (*AWSProvider, *Route53APIStub) {
-	client := NewRoute53APIStub()
+	client := NewRoute53APIStub(t)
 
 	provider := &AWSProvider{
 		client:               client,
