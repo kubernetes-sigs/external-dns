@@ -155,7 +155,7 @@ func TestRunOnce(t *testing.T) {
 }
 
 func TestShouldRunOnce(t *testing.T) {
-	ctrl := &Controller{Interval: 10 * time.Minute}
+	ctrl := &Controller{Interval: 10 * time.Minute, MinEventSyncInterval: 5 * time.Second}
 
 	now := time.Now()
 
@@ -175,7 +175,7 @@ func TestShouldRunOnce(t *testing.T) {
 	assert.False(t, ctrl.ShouldRunOnce(now.Add(100*time.Microsecond)))
 
 	// But after MinInterval we should run reconciliation
-	now = now.Add(MinInterval)
+	now = now.Add(5 * time.Second)
 	assert.True(t, ctrl.ShouldRunOnce(now))
 
 	// But just one time
