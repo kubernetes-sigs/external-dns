@@ -188,6 +188,12 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 			return nil, err
 		}
 		return NewIngressSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.IgnoreIngressTLSSpec)
+	case "pod":
+		client, err := p.KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		return NewPodSource(client, cfg.Namespace)
 	case "istio-gateway":
 		kubernetesClient, err := p.KubeClient()
 		if err != nil {
