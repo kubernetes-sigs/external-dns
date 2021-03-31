@@ -26,6 +26,7 @@ require (
 	github.com/exoscale/egoscale v0.18.1
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
+	github.com/go-gandi/go-gandi v0.0.0-20200921091836-0d8a64b9cc09
 	github.com/golang/sync v0.0.0-20180314180146-1d60e4601c6f
 	github.com/google/go-cmp v0.4.1
 	github.com/gophercloud/gophercloud v0.1.0
