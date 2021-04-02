@@ -32,6 +32,7 @@ func TestPodSource(t *testing.T) {
 	for _, tc := range []struct {
 		title           string
 		targetNamespace string
+		compatibility   string
 		expected        []*endpoint.Endpoint
 		expectError     bool
 		nodes           []*corev1.Node
@@ -39,6 +40,7 @@ func TestPodSource(t *testing.T) {
 	}{
 		{
 			"create records based on pod's external and internal IPs",
+			"",
 			"",
 			[]*endpoint.Endpoint{
 				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
@@ -107,7 +109,78 @@ func TestPodSource(t *testing.T) {
 			},
 		},
 		{
+			"create records based on pod's external and internal IPs using DNS Controller annotations",
+			"",
+			"dns-controller",
+			[]*endpoint.Endpoint{
+				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			[]*corev1.Node{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-node1",
+					},
+					Status: corev1.NodeStatus{
+						Addresses: []corev1.NodeAddress{
+							{Type: corev1.NodeExternalIP, Address: "54.10.11.1"},
+							{Type: corev1.NodeInternalIP, Address: "10.0.1.1"},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-node2",
+					},
+					Status: corev1.NodeStatus{
+						Addresses: []corev1.NodeAddress{
+							{Type: corev1.NodeExternalIP, Address: "54.10.11.2"},
+							{Type: corev1.NodeInternalIP, Address: "10.0.1.2"},
+						},
+					},
+				},
+			},
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							dnsControllerInternalHostnameAnnotationKey: "internal.a.foo.example.org",
+							dnsControllerHostnameAnnotationKey:         "a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.1",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod2",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							dnsControllerInternalHostnameAnnotationKey: "internal.a.foo.example.org",
+							dnsControllerHostnameAnnotationKey:         "a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node2",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.2",
+					},
+				},
+			},
+		},
+		{
 			"create multiple records",
+			"",
 			"",
 			[]*endpoint.Endpoint{
 				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
@@ -175,6 +248,7 @@ func TestPodSource(t *testing.T) {
 		},
 		{
 			"pods with hostNetwore=false should be ignored",
+			"",
 			"",
 			[]*endpoint.Endpoint{
 				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
@@ -245,6 +319,7 @@ func TestPodSource(t *testing.T) {
 		{
 			"only watch a given namespace",
 			"kube-system",
+			"",
 			[]*endpoint.Endpoint{
 				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
 				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA},
@@ -332,7 +407,7 @@ func TestPodSource(t *testing.T) {
 				}
 			}
 
-			client, err := NewPodSource(kubernetes, tc.targetNamespace)
+			client, err := NewPodSource(kubernetes, tc.targetNamespace, tc.compatibility)
 			require.NoError(t, err)
 
 			endpoints, err := client.Endpoints(ctx)
