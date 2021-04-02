@@ -284,7 +284,7 @@ Here's a rough outline on what is to come (subject to change):
 
 - [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/HEAD/dns-controller)
 	- [x] Add support for pod source
-	- [ ] Add support for DNS Controller annotations for pod, ingress, and service sources
+	- [x] Add support for DNS Controller annotations for pod and service sources
 	- [ ] Add support for kOps gossip provider
 - [x] Ability to replace Zalando's [Mate](https://github.com/linki/mate)
 - [x] Ability to replace Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
