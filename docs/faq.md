@@ -254,8 +254,8 @@ one to expose DNS to the internet.
 
 To do this with ExternalDNS you can use the `--annotation-filter` to specifically tie an instance of ExternalDNS to
 an instance of a ingress controller. Let's assume you have two ingress controllers `nginx-internal` and `nginx-external`
-then you can start two ExternalDNS providers one with `--annotation-filter=kubernetes.io/ingress.class=nginx-internal`
-and one with `--annotation-filter=kubernetes.io/ingress.class=nginx-external`.
+then you can start two ExternalDNS providers one with `--annotation-filter=kubernetes.io/ingress.class in (nginx-internal)`
+and one with `--annotation-filter=kubernetes.io/ingress.class in (nginx-external)`.
 
 Beware when using multiple sources, e.g. `--source=service --source=ingress`, `--annotation-filter` will filter every given source objects.
 If you need to filter only one specific source you have to run a separated external dns service containing only the wanted `--source`  and `--annotation-filter`.
