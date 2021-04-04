@@ -250,9 +250,9 @@ func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endp
 	}
 
 	plan := &plan.Plan{
-		Current:        records,
-		Desired:        endpoints,
-		DomainFilter:   endpoint.NewDomainFilter([]string{"bar.com"}),
+		Current:      records,
+		Desired:      endpoints,
+		DomainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
 	}
 
 	changes := plan.Calculate().Changes
@@ -1105,7 +1105,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 				},
 			},
 		},
-		DomainFilter:   endpoint.NewDomainFilter([]string{"bar.com"}),
+		DomainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
 	}
 
 	planned := plan.Calculate()
@@ -1192,9 +1192,9 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 	provider.AdjustEndpoints(endpoints)
 
 	plan := &plan.Plan{
-		Current:        records,
-		Desired:        endpoints,
-		DomainFilter:   endpoint.NewDomainFilter([]string{"bar.com"}),
+		Current:      records,
+		Desired:      endpoints,
+		DomainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
 	}
 
 	planned := plan.Calculate()
