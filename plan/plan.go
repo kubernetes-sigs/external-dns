@@ -235,8 +235,11 @@ func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.Do
 		if !domainFilter.Match(record.DNSName) {
 			continue
 		}
-		if isManagedRecord(record.RecordType, managedRecords) {
+
+		if endpoint.SupportedRecordType(record.RecordType) {
 			filtered = append(filtered, record)
+		} else {
+			continue
 		}
 	}
 
