@@ -402,8 +402,6 @@ func (p *AWSProvider) DeleteRecords(ctx context.Context, endpoints []*endpoint.E
 
 func (p *AWSProvider) doRecords(ctx context.Context, action string, endpoints []*endpoint.Endpoint) error {
 	zones, err := p.Zones(ctx)
-	p.AdjustEndpoints(endpoints)
-
 	if err != nil {
 		return errors.Wrapf(err, "failed to list zones, aborting %s doRecords action", action)
 	}
@@ -412,6 +410,9 @@ func (p *AWSProvider) doRecords(ctx context.Context, action string, endpoints []
 	if err != nil {
 		log.Errorf("failed to list records while preparing %s doRecords action: %s", action, err)
 	}
+
+	p.AdjustEndpoints(endpoints)
+
 	return p.submitChanges(ctx, p.newChanges(action, endpoints, records, zones), zones)
 }
 
@@ -561,11 +562,16 @@ func (p *AWSProvider) newChanges(action string, endpoints []*endpoint.Endpoint, 
 	return changes
 }
 
+// AdjustEndpoints modifies the provided endpoints (coming from various sources) to match
+// the endpoints that the provider returns in `Records` so that the change plan will not have
+// unneeded (potentially failing) changes.
+// Example: CNAME endpoints pointing to ELBs will have a `alias` provider-specific property
+// added to match the endpoints generated from existing alias records in Route53.
 func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	for _, ep := range endpoints {
 		alias := false
-		if _, ok := ep.GetProviderSpecificProperty(providerSpecificAlias); ok {
-			alias = true
+		if aliasString, ok := ep.GetProviderSpecificProperty(providerSpecificAlias); ok {
+			alias = aliasString.Value == "true"
 		} else if useAlias(ep, p.preferCNAME) {
 			alias = true
 			log.Debugf("Modifying endpoint: %v, setting %s=true", ep, providerSpecificAlias)
@@ -843,7 +849,8 @@ func useAlias(ep *endpoint.Endpoint, preferCNAME bool) bool {
 	return false
 }
 
-// isAWSAlias determines if a given hostname is an AWS Alias record
+// isAWSAlias determines if a given endpoint is supposed to create an AWS Alias record
+// and (if so) returns the target hosted zone ID
 func isAWSAlias(ep *endpoint.Endpoint) string {
 	prop, exists := ep.GetProviderSpecificProperty(providerSpecificAlias)
 	if exists && prop.Value == "true" && ep.RecordType == endpoint.RecordTypeCNAME && len(ep.Targets) > 0 {
