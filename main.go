@@ -145,7 +145,13 @@ func main() {
 	// Combine multiple sources into a single, deduplicated source.
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
 
-	domainFilter := endpoint.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
+	// RegexDomainFilter overrides DomainFilter
+	var domainFilter endpoint.DomainFilter
+	if cfg.RegexDomainFilter.String() != "" {
+		domainFilter = endpoint.NewRegexDomainFilter(cfg.RegexDomainFilter, cfg.RegexDomainExclusion)
+	} else {
+		domainFilter = endpoint.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
+	}
 	zoneNameFilter := endpoint.NewDomainFilter(cfg.ZoneNameFilter)
 	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
