@@ -18,6 +18,7 @@ package externaldns
 
 import (
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -47,6 +48,8 @@ var (
 		GoogleBatchChangeInterval:   time.Second,
 		DomainFilter:                []string{""},
 		ExcludeDomains:              []string{""},
+		RegexDomainFilter:           regexp.MustCompile(""),
+		RegexDomainExclusion:        regexp.MustCompile(""),
 		ZoneNameFilter:              []string{""},
 		ZoneIDFilter:                []string{""},
 		AlibabaCloudConfigFile:      "/etc/kubernetes/alibaba-cloud.json",
@@ -131,6 +134,8 @@ var (
 		GoogleBatchChangeInterval:   time.Second * 2,
 		DomainFilter:                []string{"example.org", "company.com"},
 		ExcludeDomains:              []string{"xapi.example.org", "xapi.company.com"},
+		RegexDomainFilter:           regexp.MustCompile("(example\\.org|company\\.com)$"),
+		RegexDomainExclusion:        regexp.MustCompile("xapi\\.(example\\.org|company\\.com)$"),
 		ZoneNameFilter:              []string{"yapi.example.org", "yapi.company.com"},
 		ZoneIDFilter:                []string{"/hostedzone/ZTST1", "/hostedzone/ZTST2"},
 		AlibabaCloudConfigFile:      "/etc/kubernetes/alibaba-cloud.json",
@@ -276,6 +281,8 @@ func TestParseFlags(t *testing.T) {
 				"--domain-filter=company.com",
 				"--exclude-domains=xapi.example.org",
 				"--exclude-domains=xapi.company.com",
+				"--regex-domain-filter=(example\\.org|company\\.com)$",
+				"--regex-domain-exclusion=xapi\\.(example\\.org|company\\.com)$",
 				"--zone-name-filter=yapi.example.org",
 				"--zone-name-filter=yapi.company.com",
 				"--zone-id-filter=/hostedzone/ZTST1",
@@ -365,6 +372,8 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_OVH_API_RATE_LIMIT":              "42",
 				"EXTERNAL_DNS_DOMAIN_FILTER":                   "example.org\ncompany.com",
 				"EXTERNAL_DNS_EXCLUDE_DOMAINS":                 "xapi.example.org\nxapi.company.com",
+				"EXTERNAL_DNS_REGEX_DOMAIN_FILTER":             "(example\\.org|company\\.com)$",
+				"EXTERNAL_DNS_REGEX_DOMAIN_EXCLUSION":          "xapi\\.(example\\.org|company\\.com)$",
 				"EXTERNAL_DNS_PDNS_SERVER":                     "http://ns.example.com:8081",
 				"EXTERNAL_DNS_PDNS_API_KEY":                    "some-secret-key",
 				"EXTERNAL_DNS_PDNS_TLS_ENABLED":                "1",

@@ -19,6 +19,7 @@ package externaldns
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -66,6 +67,8 @@ type Config struct {
 	GoogleBatchChangeInterval         time.Duration
 	DomainFilter                      []string
 	ExcludeDomains                    []string
+	RegexDomainFilter                 *regexp.Regexp
+	RegexDomainExclusion              *regexp.Regexp
 	ZoneNameFilter                    []string
 	ZoneIDFilter                      []string
 	AlibabaCloudConfigFile            string
@@ -191,6 +194,8 @@ var defaultConfig = &Config{
 	GoogleBatchChangeInterval:   time.Second,
 	DomainFilter:                []string{},
 	ExcludeDomains:              []string{},
+	RegexDomainFilter:           regexp.MustCompile(""),
+	RegexDomainExclusion:        regexp.MustCompile(""),
 	AlibabaCloudConfigFile:      "/etc/kubernetes/alibaba-cloud.json",
 	AWSZoneType:                 "",
 	AWSZoneTagFilter:            []string{},
@@ -362,10 +367,12 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("managed-record-types", "Comma separated list of record types to manage (default: A, CNAME) (supported records: CNAME, A, NS").Default("A", "CNAME").StringsVar(&cfg.ManagedDNSRecordTypes)
 
 	// Flags related to providers
-	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, godaddy, google, azure, azure-dns, azure-private-dns, bluecat, cloudflare, rcodezero, digitalocean, hetzner, dnsimple, akamai, infoblox, dyn, designate, coredns, skydns, inmemory, ovh, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns, scaleway, vultr, ultradns)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "hetzner", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "akamai", "infoblox", "dyn", "designate", "coredns", "skydns", "inmemory", "ovh", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns", "scaleway", "vultr", "ultradns", "godaddy")
+	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, godaddy, google, azure, azure-dns, azure-private-dns, bluecat, cloudflare, rcodezero, digitalocean, hetzner, dnsimple, akamai, infoblox, dyn, designate, coredns, skydns, inmemory, ovh, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns, scaleway, vultr, ultradns)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "hetzner", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "akamai", "infoblox", "dyn", "designate", "coredns", "skydns", "inmemory", "ovh", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns", "scaleway", "vultr", "ultradns", "godaddy", "bluecat")
 	app.Flag("domain-filter", "Limit possible domains and target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("exclude-domains", "Exclude subdomains (optional)").Default("").StringsVar(&cfg.ExcludeDomains)
-	app.Flag("zone-name-filter", "Filter target zones by name; specify multiple times for multiple zones; Overrides domain-filter for target zones (optional)").Default("").StringsVar(&cfg.ZoneNameFilter)
+	app.Flag("regex-domain-filter", "Limit possible domains and target zones by a Regex filter; Overrides domain-filter (optional)").Default(defaultConfig.RegexDomainFilter.String()).RegexpVar(&cfg.RegexDomainFilter)
+	app.Flag("regex-domain-exclusion", "Regex filter that excludes domains and target zones matched by regex-domain-filter (optional)").Default(defaultConfig.RegexDomainExclusion.String()).RegexpVar(&cfg.RegexDomainExclusion)
+	app.Flag("zone-name-filter", "Filter target zones by name (only available for AWS and Azure providers); specify multiple times for multiple zones; Overrides domain-filter for target zones (optional)").Default("").StringsVar(&cfg.ZoneNameFilter)
 	app.Flag("zone-id-filter", "Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.ZoneIDFilter)
 	app.Flag("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
 	app.Flag("google-batch-change-size", "When using the Google provider, set the maximum number of changes that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.GoogleBatchChangeSize)).IntVar(&cfg.GoogleBatchChangeSize)
