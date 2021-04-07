@@ -6,7 +6,7 @@ Currently we don't release regularly. Whenever we think it makes sense to releas
 
 ## Versioning convention
 
-Those are the conventions that we will be using for releases following `0.7.6`:
+These are the conventions that we will be using for releases following `0.7.6`:
 
 - **Patch** version should be updated if we need to merge bugfixes, e.g. provider a does need a fix in order make updates working again. I would see updating or improving documentation here.
 
