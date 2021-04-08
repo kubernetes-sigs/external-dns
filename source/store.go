@@ -18,13 +18,13 @@ package source
 
 import (
 	"context"
+	"github.com/cloudfoundry-community/go-cfclient"
 	"net/http"
 	"os"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/cloudfoundry-community/go-cfclient"
 	"github.com/linki/instrumented_http"
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
 	"github.com/pkg/errors"
@@ -234,7 +234,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		if err != nil {
 			return nil, err
 		}
-		return NewAmbassadorHostSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace)
+		return NewAmbassadorHostSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter)
 	case "contour-httpproxy":
 		dynamicClient, err := p.DynamicKubernetesClient()
 		if err != nil {
