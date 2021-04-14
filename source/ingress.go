@@ -297,10 +297,10 @@ func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool, i
 
 	// Include endpoints according to the hostname source annotation in our final list
 	var endpoints []*endpoint.Endpoint
-	if strings.ToLower(hostnameSourceAnnotation) != IngressHostnameSourceAnnotationOnlyValue {
+	if strings.ToLower(hostnameSourceAnnotation) == IngressHostnameSourceDefinedHostsOnlyValue {
 		endpoints = append(endpoints, definedHostsEndpoints...)
 	}
-	if strings.ToLower(hostnameSourceAnnotation) != IngressHostnameSourceDefinedHostsOnlyValue {
+	if strings.ToLower(hostnameSourceAnnotation) == IngressHostnameSourceAnnotationOnlyValue {
 		endpoints = append(endpoints, annotationEndpoints...)
 	}
 	return endpoints

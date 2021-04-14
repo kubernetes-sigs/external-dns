@@ -49,7 +49,6 @@ const (
 	// The annotation used to determine the source of hostnames for ingresses
 	ingressHostnameSourceKey = "external-dns.alpha.kubernetes.io/ingress-hostname-source"
 	// The value of the controller annotation so that we feel responsible
-	// The value of the controller annotation so that we feel responsible
 	controllerAnnotationValue = "dns-controller"
 	// The annotation used for defining the desired hostname
 	internalHostnameAnnotationKey = "external-dns.alpha.kubernetes.io/internal-hostname"
