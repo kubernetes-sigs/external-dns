@@ -37,6 +37,10 @@ import (
 
 const (
 	defaultTargetsCapacity = 10
+	// NLBDualstackAnnotationKey is the annotation used for determining if an NLB LoadBalancer is dualstack
+	NLBDualstackAnnotationKey = "service.beta.kubernetes.io/aws-load-balancer-ip-address-type"
+	// NLBDualstackAnnotationValue is the value of the NLB dualstack annotation that indicates it is dualstack
+	NLBDualstackAnnotationValue = "dualstack"
 )
 
 // serviceSource is an implementation of Source for Kubernetes service objects.
@@ -198,6 +202,7 @@ func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 
 		log.Debugf("Endpoints generated from service: %s/%s: %v", svc.Namespace, svc.Name, svcEndpoints)
 		sc.setResourceLabel(svc, svcEndpoints)
+		sc.setDualstackNLBLabel(svc, svcEndpoints)
 		endpoints = append(endpoints, svcEndpoints...)
 	}
 
@@ -682,4 +687,14 @@ func (sc *serviceSource) AddEventHandler(ctx context.Context, handler func()) {
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
 	sc.serviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+}
+
+func (sc *serviceSource) setDualstackNLBLabel(svc *v1.Service, endpoints []*endpoint.Endpoint) {
+	val, ok := svc.Annotations[NLBDualstackAnnotationKey]
+	if ok && val == NLBDualstackAnnotationValue {
+		log.Debugf("Adding dualstack label to ingress %s/%s.", svc.Namespace, svc.Name)
+		for _, ep := range endpoints {
+			ep.Labels[endpoint.DualstackLabelKey] = "true"
+		}
+	}
 }
