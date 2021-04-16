@@ -3,6 +3,20 @@
 ## Prerequisites
 Install the BlueCat Gateway product and deploy the [community gateway workflows](https://github.com/bluecatlabs/gateway-workflows).
 
+## Configuration Options
+
+The options for configuring the Bluecat Provider are available through the json file provided to External-DNS via the flag `--bluecat-config-file`.
+
+| Key               | Required           |
+| ----------------- | ------------------ |
+| gatewayHost       | Yes                |
+| gatewayUsername   | Yes                |
+| gatewayPassword   | Yes                |
+| dnsConfiguration  | Yes                |
+| dnsView           | Yes                |
+| rootZone          | Yes                |
+| skipTLSVerify     | No (default false) |
+
 ## Deploy
 Setup configuration file as k8s `Secret`.
 ```
@@ -10,10 +24,11 @@ cat << EOF > ~/bluecat.json
 {
   "gatewayHost": "https://bluecatgw.example.com",
   "gatewayUsername": "user",
-  "GatewayPassword": "pass",
+  "gatewayPassword": "pass",
   "dnsConfiguration": "Example",
   "dnsView": "Internal",
-  "rootZone": "example.com"
+  "rootZone": "example.com",
+  "skipTLSVerify": false
 }
 EOF
 kubectl create secret generic bluecatconfig --from-file ~/bluecat.json -n bluecat-example
