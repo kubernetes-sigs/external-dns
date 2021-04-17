@@ -95,7 +95,7 @@ func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, a string) (env chan *dns.Envelo
 }
 
 func createRfc2136StubProvider(stub *rfc2136Stub) (provider.Provider, error) {
-	return NewRfc2136Provider("", 0, "", false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, stub)
+	return NewRfc2136Provider("", 0, "", false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", stub)
 }
 
 func extractAuthoritySectionFromMessage(msg fmt.Stringer) []string {

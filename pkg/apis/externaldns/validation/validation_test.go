@@ -150,3 +150,108 @@ func TestValidateGoodRfc2136Config(t *testing.T) {
 
 	assert.Nil(t, err)
 }
+
+func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
+	var invalidRfc2136GssTsigConfigs = []*externaldns.Config{
+		{
+			LogFormat:               "json",
+			Sources:                 []string{"test-source"},
+			Provider:                "rfc2136",
+			RFC2136GSSTSIG:          true,
+			RFC2136KerberosRealm:    "test-realm",
+			RFC2136KerberosUsername: "test-user",
+			RFC2136KerberosPassword: "",
+			RFC2136MinTTL:           3600,
+		},
+		{
+			LogFormat:               "json",
+			Sources:                 []string{"test-source"},
+			Provider:                "rfc2136",
+			RFC2136GSSTSIG:          true,
+			RFC2136KerberosRealm:    "test-realm",
+			RFC2136KerberosUsername: "",
+			RFC2136KerberosPassword: "test-pass",
+			RFC2136MinTTL:           3600,
+		},
+		{
+			LogFormat:               "json",
+			Sources:                 []string{"test-source"},
+			Provider:                "rfc2136",
+			RFC2136GSSTSIG:          true,
+			RFC2136Insecure:         true,
+			RFC2136KerberosRealm:    "test-realm",
+			RFC2136KerberosUsername: "test-user",
+			RFC2136KerberosPassword: "test-pass",
+			RFC2136MinTTL:           3600,
+		},
+		{
+			LogFormat:               "json",
+			Sources:                 []string{"test-source"},
+			Provider:                "rfc2136",
+			RFC2136GSSTSIG:          true,
+			RFC2136KerberosRealm:    "",
+			RFC2136KerberosUsername: "test-user",
+			RFC2136KerberosPassword: "",
+			RFC2136MinTTL:           3600,
+		},
+		{
+			LogFormat:               "json",
+			Sources:                 []string{"test-source"},
+			Provider:                "rfc2136",
+			RFC2136GSSTSIG:          true,
+			RFC2136KerberosRealm:    "",
+			RFC2136KerberosUsername: "",
+			RFC2136KerberosPassword: "test-pass",
+			RFC2136MinTTL:           3600,
+		},
+		{
+			LogFormat:               "json",
+			Sources:                 []string{"test-source"},
+			Provider:                "rfc2136",
+			RFC2136GSSTSIG:          true,
+			RFC2136Insecure:         true,
+			RFC2136KerberosRealm:    "",
+			RFC2136KerberosUsername: "test-user",
+			RFC2136KerberosPassword: "test-pass",
+			RFC2136MinTTL:           3600,
+		},
+		{
+			LogFormat:               "json",
+			Sources:                 []string{"test-source"},
+			Provider:                "rfc2136",
+			RFC2136GSSTSIG:          true,
+			RFC2136KerberosRealm:    "",
+			RFC2136KerberosUsername: "test-user",
+			RFC2136KerberosPassword: "test-pass",
+			RFC2136MinTTL:           3600,
+		},
+	}
+
+	for _, cfg := range invalidRfc2136GssTsigConfigs {
+		err := ValidateConfig(cfg)
+
+		assert.NotNil(t, err)
+	}
+}
+
+func TestValidateGoodRfc2136GssTsigConfig(t *testing.T) {
+	var validRfc2136GssTsigConfigs = []*externaldns.Config{
+		{
+			LogFormat:               "json",
+			Sources:                 []string{"test-source"},
+			Provider:                "rfc2136",
+			RFC2136GSSTSIG:          true,
+			RFC2136Insecure:         false,
+			RFC2136KerberosRealm:    "test-realm",
+			RFC2136KerberosUsername: "test-user",
+			RFC2136KerberosPassword: "test-pass",
+			RFC2136MinTTL:           3600,
+		},
+	}
+
+	for _, cfg := range validRfc2136GssTsigConfigs {
+		err := ValidateConfig(cfg)
+
+		assert.Nil(t, err)
+	}
+}

@@ -284,7 +284,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 
 		for _, address := range addresses {
 			// find pod for this address
-			if address.TargetRef.APIVersion != "" || address.TargetRef.Kind != "Pod" {
+			if address.TargetRef == nil || address.TargetRef.APIVersion != "" || address.TargetRef.Kind != "Pod" {
 				log.Debugf("Skipping address because its target is not a pod: %v", address)
 				continue
 			}
@@ -628,14 +628,17 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, nodeTargets e
 
 	for _, port := range svc.Spec.Ports {
 		if port.NodePort > 0 {
+			// following the RFC 2782, SRV record must have a following format
+			// _service._proto.name. TTL class SRV priority weight port
+			// see https://en.wikipedia.org/wiki/SRV_record
+
 			// build a target with a priority of 0, weight of 0, and pointing the given port on the given host
 			target := fmt.Sprintf("0 50 %d %s", port.NodePort, hostname)
 
-			// figure out the portname
-			portName := port.Name
-			if portName == "" {
-				portName = fmt.Sprintf("%d", port.NodePort)
-			}
+			// take the service name from the K8s Service object
+			// it is safe to use since it is DNS compatible
+			// see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
+			serviceName := svc.ObjectMeta.Name
 
 			// figure out the protocol
 			protocol := strings.ToLower(string(port.Protocol))
@@ -643,7 +646,7 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, nodeTargets e
 				protocol = "tcp"
 			}
 
-			recordName := fmt.Sprintf("_%s._%s.%s", portName, protocol, hostname)
+			recordName := fmt.Sprintf("_%s._%s.%s", serviceName, protocol, hostname)
 
 			var ep *endpoint.Endpoint
 			if ttl.IsConfigured() {

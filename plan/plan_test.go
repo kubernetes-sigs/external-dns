@@ -30,6 +30,7 @@ type PlanTestSuite struct {
 	suite.Suite
 	fooV1Cname                       *endpoint.Endpoint
 	fooV2Cname                       *endpoint.Endpoint
+	fooV2CnameUppercase              *endpoint.Endpoint
 	fooV2TXT                         *endpoint.Endpoint
 	fooV2CnameNoLabel                *endpoint.Endpoint
 	fooV3CnameSameResource           *endpoint.Endpoint
@@ -72,6 +73,14 @@ func (suite *PlanTestSuite) SetupTest() {
 	suite.fooV2Cname = &endpoint.Endpoint{
 		DNSName:    "foo",
 		Targets:    endpoint.Targets{"v2"},
+		RecordType: "CNAME",
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "ingress/default/foo-v2",
+		},
+	}
+	suite.fooV2CnameUppercase = &endpoint.Endpoint{
+		DNSName:    "foo",
+		Targets:    endpoint.Targets{"V2"},
 		RecordType: "CNAME",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/foo-v2",
@@ -443,6 +452,27 @@ func (suite *PlanTestSuite) TestIgnoreTXT() {
 		Current:        current,
 		Desired:        desired,
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
+func (suite *PlanTestSuite) TestIgnoreTargetCase() {
+	current := []*endpoint.Endpoint{suite.fooV2Cname}
+	desired := []*endpoint.Endpoint{suite.fooV2CnameUppercase}
+	expectedCreate := []*endpoint.Endpoint{}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies: []Policy{&SyncPolicy{}},
+		Current:  current,
+		Desired:  desired,
 	}
 
 	changes := p.Calculate().Changes

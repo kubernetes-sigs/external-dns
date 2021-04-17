@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/aws"
 	"sigs.k8s.io/external-dns/provider/awssd"
 	"sigs.k8s.io/external-dns/provider/azure"
+	"sigs.k8s.io/external-dns/provider/bluecat"
 	"sigs.k8s.io/external-dns/provider/cloudflare"
 	"sigs.k8s.io/external-dns/provider/coredns"
 	"sigs.k8s.io/external-dns/provider/designate"
@@ -46,6 +47,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/dnsimple"
 	"sigs.k8s.io/external-dns/provider/dyn"
 	"sigs.k8s.io/external-dns/provider/exoscale"
+	"sigs.k8s.io/external-dns/provider/godaddy"
 	"sigs.k8s.io/external-dns/provider/google"
 	"sigs.k8s.io/external-dns/provider/hetzner"
 	"sigs.k8s.io/external-dns/provider/infoblox"
@@ -119,6 +121,7 @@ func main() {
 		CFUsername:                     cfg.CFUsername,
 		CFPassword:                     cfg.CFPassword,
 		ContourLoadBalancerService:     cfg.ContourLoadBalancerService,
+		GlooNamespace:                  cfg.GlooNamespace,
 		SkipperRouteGroupVersion:       cfg.SkipperRouteGroupVersion,
 		RequestTimeout:                 cfg.RequestTimeout,
 	}
@@ -142,7 +145,13 @@ func main() {
 	// Combine multiple sources into a single, deduplicated source.
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
 
-	domainFilter := endpoint.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
+	// RegexDomainFilter overrides DomainFilter
+	var domainFilter endpoint.DomainFilter
+	if cfg.RegexDomainFilter.String() != "" {
+		domainFilter = endpoint.NewRegexDomainFilter(cfg.RegexDomainFilter, cfg.RegexDomainExclusion)
+	} else {
+		domainFilter = endpoint.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
+	}
 	zoneNameFilter := endpoint.NewDomainFilter(cfg.ZoneNameFilter)
 	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
@@ -192,7 +201,9 @@ func main() {
 	case "azure-dns", "azure":
 		p, err = azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
 	case "azure-private-dns":
-		p, err = azure.NewAzurePrivateDNSProvider(domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureSubscriptionID, cfg.DryRun)
+		p, err = azure.NewAzurePrivateDNSProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
+	case "bluecat":
+		p, err = bluecat.NewBluecatProvider(cfg.BluecatConfigFile, domainFilter, zoneIDFilter, cfg.DryRun)
 	case "vinyldns":
 		p, err = vinyldns.NewVinylDNSProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "vultr":
@@ -282,7 +293,7 @@ func main() {
 			p, err = oci.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.DryRun)
 		}
 	case "rfc2136":
-		p, err = rfc2136.NewRfc2136Provider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, nil)
+		p, err = rfc2136.NewRfc2136Provider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, nil)
 	case "ns1":
 		p, err = ns1.NewNS1Provider(
 			ns1.NS1Config{
@@ -298,6 +309,8 @@ func main() {
 		p, err = transip.NewTransIPProvider(cfg.TransIPAccountName, cfg.TransIPPrivateKeyFile, domainFilter, cfg.DryRun)
 	case "scaleway":
 		p, err = scaleway.NewScalewayProvider(ctx, domainFilter, cfg.DryRun)
+	case "godaddy":
+		p, err = godaddy.NewGoDaddyProvider(ctx, domainFilter, cfg.GoDaddyTTL, cfg.GoDaddyAPIKey, cfg.GoDaddySecretKey, cfg.GoDaddyOTE, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
@@ -327,12 +340,13 @@ func main() {
 	}
 
 	ctrl := controller.Controller{
-		Source:             endpointsSource,
-		Registry:           r,
-		Policy:             policy,
-		Interval:           cfg.Interval,
-		DomainFilter:       domainFilter,
-		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
+		Source:               endpointsSource,
+		Registry:             r,
+		Policy:               policy,
+		Interval:             cfg.Interval,
+		DomainFilter:         domainFilter,
+		ManagedRecordTypes:   cfg.ManagedDNSRecordTypes,
+		MinEventSyncInterval: cfg.MinEventSyncInterval,
 	}
 
 	if cfg.Once {
