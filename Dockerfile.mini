@@ -12,17 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.15 as builder
+FROM golang:1.16 as builder
 
 WORKDIR /sigs.k8s.io/external-dns
 
+RUN apt-get update \
+    && apt-get install \
+        ca-certificates \
+    && update-ca-certificates
+
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+
 COPY . .
-RUN apt-get update && \
-    apt-get install ca-certificates && \
-    update-ca-certificates && \
-    go mod vendor && \
-    make test && \
-    make build
+RUN make test build
 
 FROM gcr.io/distroless/static
 

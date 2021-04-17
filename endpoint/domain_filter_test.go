@@ -17,6 +17,7 @@ limitations under the License.
 package endpoint
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,6 +28,13 @@ type domainFilterTest struct {
 	exclusions   []string
 	domains      []string
 	expected     bool
+}
+
+type regexDomainFilterTest struct {
+	regex          *regexp.Regexp
+	regexExclusion *regexp.Regexp
+	domains        []string
+	expected       bool
 }
 
 var domainFilterTests = []domainFilterTest{
@@ -212,6 +220,45 @@ var domainFilterTests = []domainFilterTest{
 	},
 }
 
+var regexDomainFilterTests = []regexDomainFilterTest{
+	{
+		regexp.MustCompile("\\.org$"),
+		regexp.MustCompile(""),
+		[]string{"foo.org", "bar.org", "foo.bar.org"},
+		true,
+	},
+	{
+		regexp.MustCompile("\\.bar\\.org$"),
+		regexp.MustCompile(""),
+		[]string{"foo.org", "bar.org", "example.com"},
+		false,
+	},
+	{
+		regexp.MustCompile("(?:foo|bar)\\.org$"),
+		regexp.MustCompile(""),
+		[]string{"foo.org", "bar.org", "example.foo.org", "example.bar.org", "a.example.foo.org", "a.example.bar.org"},
+		true,
+	},
+	{
+		regexp.MustCompile("(?:foo|bar)\\.org$"),
+		regexp.MustCompile("^example\\.(?:foo|bar)\\.org$"),
+		[]string{"foo.org", "bar.org", "a.example.foo.org", "a.example.bar.org"},
+		true,
+	},
+	{
+		regexp.MustCompile("(?:foo|bar)\\.org$"),
+		regexp.MustCompile("^example\\.(?:foo|bar)\\.org$"),
+		[]string{"example.foo.org", "example.bar.org"},
+		false,
+	},
+	{
+		regexp.MustCompile("(?:foo|bar)\\.org$"),
+		regexp.MustCompile("^example\\.(?:foo|bar)\\.org$"),
+		[]string{"foo.org", "bar.org", "a.example.foo.org", "a.example.bar.org"},
+		true,
+	},
+}
+
 func TestDomainFilterMatch(t *testing.T) {
 	for i, tt := range domainFilterTests {
 		if len(tt.exclusions) > 0 {
@@ -241,6 +288,16 @@ func TestDomainFilterMatchWithEmptyFilter(t *testing.T) {
 		for i, domain := range tt.domains {
 			assert.True(t, domainFilter.Match(domain), "should not fail: %v in test-case #%v", domain, i)
 			assert.True(t, domainFilter.Match(domain+"."), "should not fail: %v in test-case #%v", domain+".", i)
+		}
+	}
+}
+
+func TestRegexDomainFilter(t *testing.T) {
+	for i, tt := range regexDomainFilterTests {
+		domainFilter := NewRegexDomainFilter(tt.regex, tt.regexExclusion)
+		for _, domain := range tt.domains {
+			assert.Equal(t, tt.expected, domainFilter.Match(domain), "should not fail: %v in test-case #%v", domain, i)
+			assert.Equal(t, tt.expected, domainFilter.Match(domain+"."), "should not fail: %v in test-case #%v", domain+".", i)
 		}
 	}
 }

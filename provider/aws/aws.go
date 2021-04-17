@@ -40,8 +40,17 @@ import (
 
 const (
 	recordTTL = 300
+	// From the experiments, it seems that the default MaxItems applied is 100,
+	// and that, on the server side, there is a hard limit of 300 elements per page.
+	// After a discussion with AWS representants, clients should accept
+	// when less items are returned, and still paginate accordingly.
+	// As we are using the standard AWS client, this should already be compliant.
+	// Hence, ifever AWS decides to raise this limit, we will automatically reduce the pressure on rate limits
+	route53PageSize = "300"
 	// provider specific key that designates whether an AWS ALIAS record has the EvaluateTargetHealth
 	// field set to true.
+	providerSpecificAlias                      = "alias"
+	providerSpecificTargetHostedZone           = "aws/target-hosted-zone"
 	providerSpecificEvaluateTargetHealth       = "aws/evaluate-target-health"
 	providerSpecificWeight                     = "aws/weight"
 	providerSpecificRegion                     = "aws/region"
@@ -51,6 +60,7 @@ const (
 	providerSpecificGeolocationSubdivisionCode = "aws/geolocation-subdivision-code"
 	providerSpecificMultiValueAnswer           = "aws/multi-value-answer"
 	providerSpecificHealthCheckID              = "aws/health-check-id"
+	sameZoneAlias                              = "same-zone"
 )
 
 var (
@@ -74,6 +84,7 @@ var (
 		"eu-west-2.elb.amazonaws.com":         "ZHURV8PSTC4K8",
 		"eu-west-3.elb.amazonaws.com":         "Z3Q77PNBQS71R4",
 		"eu-north-1.elb.amazonaws.com":        "Z23TAZ6LKFMNIO",
+		"eu-south-1.elb.amazonaws.com":        "Z3ULH7SSC9OV64",
 		"sa-east-1.elb.amazonaws.com":         "Z2P70J7HTTTPLU",
 		"cn-north-1.elb.amazonaws.com.cn":     "Z1GDH35T77C1KE",
 		"cn-northwest-1.elb.amazonaws.com.cn": "ZM7IZAIOVVDZF",
@@ -98,6 +109,7 @@ var (
 		"elb.eu-west-2.amazonaws.com":         "ZD4D7Y8KGAS4G",
 		"elb.eu-west-3.amazonaws.com":         "Z1CMS0P5QUZ6D5",
 		"elb.eu-north-1.amazonaws.com":        "Z1UDT6IFJ4EJM",
+		"elb.eu-south-1.amazonaws.com":        "Z23146JA1KNAFP",
 		"elb.sa-east-1.amazonaws.com":         "ZTK26PT1VY4CU",
 		"elb.cn-north-1.amazonaws.com.cn":     "Z3QFB96KMJ7ED6",
 		"elb.cn-northwest-1.amazonaws.com.cn": "ZQEIKTCZ8352D",
@@ -328,7 +340,8 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 				}
 				ep := endpoint.
 					NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), endpoint.RecordTypeCNAME, ttl, aws.StringValue(r.AliasTarget.DNSName)).
-					WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", aws.BoolValue(r.AliasTarget.EvaluateTargetHealth)))
+					WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", aws.BoolValue(r.AliasTarget.EvaluateTargetHealth))).
+					WithProviderSpecific(providerSpecificAlias, "true")
 				newEndpoints = append(newEndpoints, ep)
 			}
 
@@ -374,6 +387,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 	for _, z := range zones {
 		params := &route53.ListResourceRecordSetsInput{
 			HostedZoneId: z.Id,
+			MaxItems:     aws.String(route53PageSize),
 		}
 
 		if err := p.client.ListResourceRecordSetsPagesWithContext(ctx, params, f); err != nil {
@@ -404,6 +418,9 @@ func (p *AWSProvider) doRecords(ctx context.Context, action string, endpoints []
 	if err != nil {
 		log.Errorf("failed to list records while preparing %s doRecords action: %s", action, err)
 	}
+
+	p.AdjustEndpoints(endpoints)
+
 	return p.submitChanges(ctx, p.newChanges(action, endpoints, records, zones), zones)
 }
 
@@ -553,6 +570,36 @@ func (p *AWSProvider) newChanges(action string, endpoints []*endpoint.Endpoint, 
 	return changes
 }
 
+// AdjustEndpoints modifies the provided endpoints (coming from various sources) to match
+// the endpoints that the provider returns in `Records` so that the change plan will not have
+// unneeded (potentially failing) changes.
+// Example: CNAME endpoints pointing to ELBs will have a `alias` provider-specific property
+// added to match the endpoints generated from existing alias records in Route53.
+func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	for _, ep := range endpoints {
+		alias := false
+		if aliasString, ok := ep.GetProviderSpecificProperty(providerSpecificAlias); ok {
+			alias = aliasString.Value == "true"
+		} else if useAlias(ep, p.preferCNAME) {
+			alias = true
+			log.Debugf("Modifying endpoint: %v, setting %s=true", ep, providerSpecificAlias)
+			ep.ProviderSpecific = append(ep.ProviderSpecific, endpoint.ProviderSpecificProperty{
+				Name:  providerSpecificAlias,
+				Value: "true",
+			})
+		}
+
+		if _, ok := ep.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); alias && !ok {
+			log.Debugf("Modifying endpoint: %v, setting %s=%t", ep, providerSpecificEvaluateTargetHealth, p.evaluateTargetHealth)
+			ep.ProviderSpecific = append(ep.ProviderSpecific, endpoint.ProviderSpecificProperty{
+				Name:  providerSpecificEvaluateTargetHealth,
+				Value: fmt.Sprintf("%t", p.evaluateTargetHealth),
+			})
+		}
+	}
+	return endpoints
+}
+
 // newChange returns a route53 Change and a boolean indicating if there should also be a change to a AAAA record
 // returned Change is based on the given record by the given action, e.g.
 // action=ChangeActionCreate returns a change for creation of the record and
@@ -565,8 +612,7 @@ func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint, recordsCac
 		},
 	}
 	dualstack := false
-
-	if useAlias(ep, p.preferCNAME) {
+	if targetHostedZone := isAWSAlias(ep); targetHostedZone != "" {
 		evalTargetHealth := p.evaluateTargetHealth
 		if prop, ok := ep.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); ok {
 			evalTargetHealth = prop.Value == "true"
@@ -575,21 +621,11 @@ func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint, recordsCac
 		if val, ok := ep.Labels[endpoint.DualstackLabelKey]; ok {
 			dualstack = val == "true"
 		}
-
 		change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
 		change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
 			DNSName:              aws.String(ep.Targets[0]),
-			HostedZoneId:         aws.String(canonicalHostedZone(ep.Targets[0])),
+			HostedZoneId:         aws.String(cleanZoneID(targetHostedZone)),
 			EvaluateTargetHealth: aws.Bool(evalTargetHealth),
-		}
-	} else if hostedZone := isAWSAlias(ep, recordsCache); hostedZone != "" {
-		for _, zone := range zones {
-			change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
-			change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
-				DNSName:              aws.String(ep.Targets[0]),
-				HostedZoneId:         aws.String(cleanZoneID(*zone.Id)),
-				EvaluateTargetHealth: aws.Bool(p.evaluateTargetHealth),
-			}
 		}
 	} else {
 		change.ResourceRecordSet.Type = aws.String(ep.RecordType)
@@ -754,6 +790,18 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Ch
 			continue
 		}
 		for _, z := range zones {
+			if c.ResourceRecordSet.AliasTarget != nil && aws.StringValue(c.ResourceRecordSet.AliasTarget.HostedZoneId) == sameZoneAlias {
+				// alias record is to be created; target needs to be in the same zone as endpoint
+				// if it's not, this will fail
+				rrset := *c.ResourceRecordSet
+				aliasTarget := *rrset.AliasTarget
+				aliasTarget.HostedZoneId = aws.String(cleanZoneID(aws.StringValue(z.Id)))
+				rrset.AliasTarget = &aliasTarget
+				c = &route53.Change{
+					Action:            c.Action,
+					ResourceRecordSet: &rrset,
+				}
+			}
 			changes[aws.StringValue(z.Id)] = append(changes[aws.StringValue(z.Id)], c)
 			log.Debugf("Adding %s to zone %s [Id: %s]", hostname, aws.StringValue(z.Name), aws.StringValue(z.Id))
 		}
@@ -809,16 +857,25 @@ func useAlias(ep *endpoint.Endpoint, preferCNAME bool) bool {
 	return false
 }
 
-// isAWSAlias determines if a given hostname belongs to an AWS Alias record by doing an reverse lookup.
-func isAWSAlias(ep *endpoint.Endpoint, addrs []*endpoint.Endpoint) string {
-	if prop, exists := ep.GetProviderSpecificProperty("alias"); ep.RecordType == endpoint.RecordTypeCNAME && exists && prop.Value == "true" {
-		for _, addr := range addrs {
-			if len(ep.Targets) > 0 && addr.DNSName == ep.Targets[0] {
-				if hostedZone := canonicalHostedZone(addr.Targets[0]); hostedZone != "" {
-					return hostedZone
-				}
-			}
+// isAWSAlias determines if a given endpoint is supposed to create an AWS Alias record
+// and (if so) returns the target hosted zone ID
+func isAWSAlias(ep *endpoint.Endpoint) string {
+	prop, exists := ep.GetProviderSpecificProperty(providerSpecificAlias)
+	if exists && prop.Value == "true" && ep.RecordType == endpoint.RecordTypeCNAME && len(ep.Targets) > 0 {
+		// alias records can only point to canonical hosted zones (e.g. to ELBs) or other records in the same zone
+
+		if hostedZoneID, ok := ep.GetProviderSpecificProperty(providerSpecificTargetHostedZone); ok {
+			// existing Endpoint where we got the target hosted zone from the Route53 data
+			return hostedZoneID.Value
 		}
+
+		// check if the target is in a canonical hosted zone
+		if canonicalHostedZone := canonicalHostedZone(ep.Targets[0]); canonicalHostedZone != "" {
+			return canonicalHostedZone
+		}
+
+		// if not, target needs to be in the same zone
+		return sameZoneAlias
 	}
 	return ""
 }

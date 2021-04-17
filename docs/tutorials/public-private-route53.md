@@ -241,9 +241,9 @@ spec:
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=external-dns
-        - --annotation-filter=kubernetes.io/ingress.class=external-ingress
+        - --annotation-filter=kubernetes.io/ingress.class in (external-ingress)
         - --aws-zone-type=public
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         name: external-dns-public
 ```
 
@@ -279,9 +279,9 @@ spec:
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=dev.k8s.nexus
-        - --annotation-filter=kubernetes.io/ingress.class=internal-ingress
+        - --annotation-filter=kubernetes.io/ingress.class in (internal-ingress)
         - --aws-zone-type=private
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         name: external-dns-private
 ```
 
@@ -292,7 +292,7 @@ For this setup to work, you've to create two Service definitions for your applic
 At first, create public Service definition:
 
 ```yaml
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
@@ -313,7 +313,7 @@ spec:
 Then create private Service definition:
 
 ```yaml
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
@@ -334,7 +334,7 @@ spec:
 Additionally, you may leverage [cert-manager](https://github.com/jetstack/cert-manager) to automatically issue SSL certificates from [Let's Encrypt](https://letsencrypt.org/). To do that, request a certificate in public service definition:
 
 ```yaml
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
@@ -363,7 +363,7 @@ spec:
 And reuse the requested certificate in private Service definition:
 
 ```yaml
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:

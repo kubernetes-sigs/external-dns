@@ -1,6 +1,6 @@
 module sigs.k8s.io/external-dns
 
-go 1.15
+go 1.16
 
 require (
 	cloud.google.com/go v0.50.0
@@ -16,6 +16,7 @@ require (
 	github.com/alecthomas/repr v0.0.0-20200325044227-4184120f674c // indirect
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.357
 	github.com/aws/aws-sdk-go v1.31.4
+	github.com/bodgit/tsig v0.0.2
 	github.com/cloudflare/cloudflare-go v0.10.1
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.6.0
@@ -33,7 +34,7 @@ require (
 	github.com/linki/instrumented_http v0.2.0
 	github.com/linode/linodego v0.19.0
 	github.com/maxatome/go-testdeep v1.4.0
-	github.com/miekg/dns v1.1.30
+	github.com/miekg/dns v1.1.36-0.20210109083720-731b191cabd1
 	github.com/nesv/go-dynect v0.6.0
 	github.com/nic-at/rc0go v1.1.1
 	github.com/openshift/api v0.0.0-20200605231317-fb2a6ca106ae
@@ -44,7 +45,7 @@ require (
 	github.com/projectcontour/contour v1.5.0
 	github.com/prometheus/client_golang v1.7.1
 	github.com/sanyu/dynectsoap v0.0.0-20181203081243-b83de5edc4e0
-	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.6.0.20200623155123-84df6c4b5301
+	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.7.0.20210127161313-bd30bebeac4f
 	github.com/sirupsen/logrus v1.6.0
 	github.com/smartystreets/gunit v1.3.4 // indirect
 	github.com/stretchr/testify v1.6.1
@@ -55,7 +56,7 @@ require (
 	github.com/vultr/govultr v0.4.2
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20200401174654-e694b7bb0875
 	go.uber.org/ratelimit v0.1.0
-	golang.org/x/net v0.0.0-20200625001655-4c5254603344
+	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	golang.org/x/tools v0.0.0-20200708003708-134513de8882 // indirect
@@ -63,8 +64,8 @@ require (
 	gopkg.in/ns1/ns1-go.v2 v2.0.0-20190322154155-0dafb5275fd1
 	gopkg.in/yaml.v2 v2.3.0
 	honnef.co/go/tools v0.0.1-2020.1.4 // indirect
-	istio.io/api v0.0.0-20200529165953-72dad51d4ffc
-	istio.io/client-go v0.0.0-20200529172309-31c16ea3f751
+	istio.io/api v0.0.0-20210128181506-0c4b8e54850f
+	istio.io/client-go v0.0.0-20210128182905-ee2edd059e02
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8
 	k8s.io/client-go v0.18.8
