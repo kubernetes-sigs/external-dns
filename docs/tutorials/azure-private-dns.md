@@ -171,7 +171,7 @@ spec:
     spec:
       containers:
       - name: externaldns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         args:
         - --source=service
         - --source=ingress
@@ -242,7 +242,7 @@ spec:
       serviceAccountName: externaldns
       containers:
       - name: externaldns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         args:
         - --source=service
         - --source=ingress
@@ -313,7 +313,7 @@ spec:
       serviceAccountName: externaldns
       containers:
       - name: externaldns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         args:
         - --source=service
         - --source=ingress
@@ -375,7 +375,7 @@ spec:
   type: ClusterIP
   
 ---
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: nginx

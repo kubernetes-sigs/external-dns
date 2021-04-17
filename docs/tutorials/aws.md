@@ -141,7 +141,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         args:
         - --source=service
         - --source=ingress
@@ -216,7 +216,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         args:
         - --source=service
         - --source=ingress
@@ -253,7 +253,7 @@ Create an ingress resource manifest file.
 > For ingress objects ExternalDNS will create a DNS record based on the host specified for the ingress object.
 
 ```yaml
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: foo
