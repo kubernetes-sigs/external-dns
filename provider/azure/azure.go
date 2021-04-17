@@ -19,17 +19,12 @@ package azure
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
 
-	yaml "gopkg.in/yaml.v2"
-
 	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2018-05-01/dns"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/adal"
-	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -40,18 +35,6 @@ import (
 const (
 	azureRecordTTL = 300
 )
-
-type config struct {
-	Cloud                       string `json:"cloud" yaml:"cloud"`
-	TenantID                    string `json:"tenantId" yaml:"tenantId"`
-	SubscriptionID              string `json:"subscriptionId" yaml:"subscriptionId"`
-	ResourceGroup               string `json:"resourceGroup" yaml:"resourceGroup"`
-	Location                    string `json:"location" yaml:"location"`
-	ClientID                    string `json:"aadClientId" yaml:"aadClientId"`
-	ClientSecret                string `json:"aadClientSecret" yaml:"aadClientSecret"`
-	UseManagedIdentityExtension bool   `json:"useManagedIdentityExtension" yaml:"useManagedIdentityExtension"`
-	UserAssignedIdentityID      string `json:"userAssignedIdentityID" yaml:"userAssignedIdentityID"`
-}
 
 // ZonesClient is an interface of dns.ZoneClient that can be stubbed for testing.
 type ZonesClient interface {
@@ -82,46 +65,22 @@ type AzureProvider struct {
 //
 // Returns the provider or an error if a provider could not be created.
 func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zoneNameFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, resourceGroup string, userAssignedIdentityClientID string, dryRun bool) (*AzureProvider, error) {
-	contents, err := ioutil.ReadFile(configFile)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
-	}
-	cfg := config{}
-	err = yaml.Unmarshal(contents, &cfg)
+	cfg, err := getConfig(configFile, resourceGroup, userAssignedIdentityClientID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
 	}
 
-	// If a resource group was given, override what was present in the config file
-	if resourceGroup != "" {
-		cfg.ResourceGroup = resourceGroup
-	}
-	// If userAssignedIdentityClientID is provided explicitly, override existing one in config file
-	if userAssignedIdentityClientID != "" {
-		cfg.UserAssignedIdentityID = userAssignedIdentityClientID
-	}
-
-	var environment azure.Environment
-	if cfg.Cloud == "" {
-		environment = azure.PublicCloud
-	} else {
-		environment, err = azure.EnvironmentFromName(cfg.Cloud)
-		if err != nil {
-			return nil, fmt.Errorf("invalid cloud value '%s': %v", cfg.Cloud, err)
-		}
-	}
-
-	token, err := getAccessToken(cfg, environment)
+	token, err := getAccessToken(*cfg, cfg.Environment)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token: %v", err)
 	}
 
-	zonesClient := dns.NewZonesClientWithBaseURI(environment.ResourceManagerEndpoint, cfg.SubscriptionID)
+	zonesClient := dns.NewZonesClientWithBaseURI(cfg.Environment.ResourceManagerEndpoint, cfg.SubscriptionID)
 	zonesClient.Authorizer = autorest.NewBearerAuthorizer(token)
-	recordSetsClient := dns.NewRecordSetsClientWithBaseURI(environment.ResourceManagerEndpoint, cfg.SubscriptionID)
+	recordSetsClient := dns.NewRecordSetsClientWithBaseURI(cfg.Environment.ResourceManagerEndpoint, cfg.SubscriptionID)
 	recordSetsClient.Authorizer = autorest.NewBearerAuthorizer(token)
 
-	provider := &AzureProvider{
+	return &AzureProvider{
 		domainFilter:                 domainFilter,
 		zoneNameFilter:               zoneNameFilter,
 		zoneIDFilter:                 zoneIDFilter,
@@ -130,61 +89,7 @@ func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zon
 		userAssignedIdentityClientID: cfg.UserAssignedIdentityID,
 		zonesClient:                  zonesClient,
 		recordSetsClient:             recordSetsClient,
-	}
-	return provider, nil
-}
-
-// getAccessToken retrieves Azure API access token.
-func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePrincipalToken, error) {
-	// Try to retrieve token with service principal credentials.
-	// Try to use service principal first, some AKS clusters are in an intermediate state that `UseManagedIdentityExtension` is `true`
-	// and service principal exists. In this case, we still want to use service principal to authenticate.
-	if len(cfg.ClientID) > 0 &&
-		len(cfg.ClientSecret) > 0 &&
-		// due to some historical reason, for pure MSI cluster,
-		// they will use "msi" as placeholder in azure.json.
-		// In this case, we shouldn't try to use SPN to authenticate.
-		!strings.EqualFold(cfg.ClientID, "msi") &&
-		!strings.EqualFold(cfg.ClientSecret, "msi") {
-		log.Info("Using client_id+client_secret to retrieve access token for Azure API.")
-		oauthConfig, err := adal.NewOAuthConfig(environment.ActiveDirectoryEndpoint, cfg.TenantID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to retrieve OAuth config: %v", err)
-		}
-
-		token, err := adal.NewServicePrincipalToken(*oauthConfig, cfg.ClientID, cfg.ClientSecret, environment.ResourceManagerEndpoint)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create service principal token: %v", err)
-		}
-		return token, nil
-	}
-
-	// Try to retrieve token with MSI.
-	if cfg.UseManagedIdentityExtension {
-		log.Info("Using managed identity extension to retrieve access token for Azure API.")
-		msiEndpoint, err := adal.GetMSIVMEndpoint()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get the managed service identity endpoint: %v", err)
-		}
-
-		if cfg.UserAssignedIdentityID != "" {
-			log.Infof("Resolving to user assigned identity, client id is %s.", cfg.UserAssignedIdentityID)
-			token, err := adal.NewServicePrincipalTokenFromMSIWithUserAssignedID(msiEndpoint, environment.ServiceManagementEndpoint, cfg.UserAssignedIdentityID)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
-			}
-			return token, nil
-		}
-
-		log.Info("Resolving to system assigned identity.")
-		token, err := adal.NewServicePrincipalTokenFromMSI(msiEndpoint, environment.ServiceManagementEndpoint)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
-		}
-		return token, nil
-	}
-
-	return nil, fmt.Errorf("no credentials provided for Azure API")
+	}, nil
 }
 
 // Records gets the current records.
@@ -214,7 +119,7 @@ func (p *AzureProvider) Records(ctx context.Context) (endpoints []*endpoint.Endp
 			}
 			targets := extractAzureTargets(&recordSet)
 			if len(targets) == 0 {
-				log.Errorf("Failed to extract targets for '%s' with type '%s'.", name, recordType)
+				log.Debugf("Failed to extract targets for '%s' with type '%s'.", name, recordType)
 				return true
 			}
 			var ttl endpoint.TTL
@@ -352,20 +257,20 @@ func (p *AzureProvider) mapChanges(zones []dns.Zone, changes *plan.Changes) (azu
 func (p *AzureProvider) deleteRecords(ctx context.Context, deleted azureChangeMap) {
 	// Delete records first
 	for zone, endpoints := range deleted {
-		for _, endpoint := range endpoints {
-			name := p.recordSetNameForZone(zone, endpoint)
-			if !p.domainFilter.Match(endpoint.DNSName) {
-				log.Debugf("Skipping deletion of record %s because it was filtered out by the specified --domain-filter", endpoint.DNSName)
+		for _, ep := range endpoints {
+			name := p.recordSetNameForZone(zone, ep)
+			if !p.domainFilter.Match(ep.DNSName) {
+				log.Debugf("Skipping deletion of record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
 				continue
 			}
 			if p.dryRun {
-				log.Infof("Would delete %s record named '%s' for Azure DNS zone '%s'.", endpoint.RecordType, name, zone)
+				log.Infof("Would delete %s record named '%s' for Azure DNS zone '%s'.", ep.RecordType, name, zone)
 			} else {
-				log.Infof("Deleting %s record named '%s' for Azure DNS zone '%s'.", endpoint.RecordType, name, zone)
-				if _, err := p.recordSetsClient.Delete(ctx, p.resourceGroup, zone, name, dns.RecordType(endpoint.RecordType), ""); err != nil {
+				log.Infof("Deleting %s record named '%s' for Azure DNS zone '%s'.", ep.RecordType, name, zone)
+				if _, err := p.recordSetsClient.Delete(ctx, p.resourceGroup, zone, name, dns.RecordType(ep.RecordType), ""); err != nil {
 					log.Errorf(
 						"Failed to delete %s record named '%s' for Azure DNS zone '%s': %v",
-						endpoint.RecordType,
+						ep.RecordType,
 						name,
 						zone,
 						err,
@@ -378,18 +283,18 @@ func (p *AzureProvider) deleteRecords(ctx context.Context, deleted azureChangeMa
 
 func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMap) {
 	for zone, endpoints := range updated {
-		for _, endpoint := range endpoints {
-			name := p.recordSetNameForZone(zone, endpoint)
-			if !p.domainFilter.Match(endpoint.DNSName) {
-				log.Debugf("Skipping update of record %s because it was filtered out by the specified --domain-filter", endpoint.DNSName)
+		for _, ep := range endpoints {
+			name := p.recordSetNameForZone(zone, ep)
+			if !p.domainFilter.Match(ep.DNSName) {
+				log.Debugf("Skipping update of record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
 				continue
 			}
 			if p.dryRun {
 				log.Infof(
 					"Would update %s record named '%s' to '%s' for Azure DNS zone '%s'.",
-					endpoint.RecordType,
+					ep.RecordType,
 					name,
-					endpoint.Targets,
+					ep.Targets,
 					zone,
 				)
 				continue
@@ -397,20 +302,20 @@ func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMa
 
 			log.Infof(
 				"Updating %s record named '%s' to '%s' for Azure DNS zone '%s'.",
-				endpoint.RecordType,
+				ep.RecordType,
 				name,
-				endpoint.Targets,
+				ep.Targets,
 				zone,
 			)
 
-			recordSet, err := p.newRecordSet(endpoint)
+			recordSet, err := p.newRecordSet(ep)
 			if err == nil {
 				_, err = p.recordSetsClient.CreateOrUpdate(
 					ctx,
 					p.resourceGroup,
 					zone,
 					name,
-					dns.RecordType(endpoint.RecordType),
+					dns.RecordType(ep.RecordType),
 					recordSet,
 					"",
 					"",
@@ -419,9 +324,9 @@ func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMa
 			if err != nil {
 				log.Errorf(
 					"Failed to update %s record named '%s' to '%s' for DNS zone '%s': %v",
-					endpoint.RecordType,
+					ep.RecordType,
 					name,
-					endpoint.Targets,
+					ep.Targets,
 					zone,
 					err,
 				)

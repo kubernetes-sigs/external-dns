@@ -1642,7 +1642,7 @@ func TestNodePortServices(t *testing.T) {
 			},
 			nil,
 			[]*endpoint.Endpoint{
-				{DNSName: "_30192._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
@@ -1729,7 +1729,7 @@ func TestNodePortServices(t *testing.T) {
 			map[string]string{},
 			nil,
 			[]*endpoint.Endpoint{
-				{DNSName: "_30192._tcp.foo.bar.example.com", Targets: endpoint.Targets{"0 50 30192 foo.bar.example.com"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_foo._tcp.foo.bar.example.com", Targets: endpoint.Targets{"0 50 30192 foo.bar.example.com"}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.bar.example.com", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
@@ -1775,7 +1775,7 @@ func TestNodePortServices(t *testing.T) {
 			},
 			nil,
 			[]*endpoint.Endpoint{
-				{DNSName: "_30192._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
@@ -1819,7 +1819,7 @@ func TestNodePortServices(t *testing.T) {
 			},
 			nil,
 			[]*endpoint.Endpoint{
-				{DNSName: "_30192._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
@@ -1865,7 +1865,7 @@ func TestNodePortServices(t *testing.T) {
 			},
 			nil,
 			[]*endpoint.Endpoint{
-				{DNSName: "_30192._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
@@ -1912,7 +1912,7 @@ func TestNodePortServices(t *testing.T) {
 			},
 			nil,
 			[]*endpoint.Endpoint{
-				{DNSName: "_30192._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
@@ -1959,7 +1959,7 @@ func TestNodePortServices(t *testing.T) {
 			},
 			nil,
 			[]*endpoint.Endpoint{
-				{DNSName: "_30192._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
@@ -2423,6 +2423,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 		podnames                 []string
 		hostnames                []string
 		podsReady                []bool
+		targetRefs               []*v1.ObjectReference
 		publishNotReadyAddresses bool
 		expected                 []*endpoint.Endpoint
 		expectError              bool
@@ -2449,6 +2450,10 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			[]string{"foo-0", "foo-1"},
 			[]string{"foo-0", "foo-1"},
 			[]bool{true, true},
+			[]*v1.ObjectReference{
+				{APIVersion: "", Kind: "Pod", Name: "foo-0"},
+				{APIVersion: "", Kind: "Pod", Name: "foo-1"},
+			},
 			false,
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
@@ -2479,6 +2484,10 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			[]string{"foo-0", "foo-1"},
 			[]string{"foo-0", "foo-1"},
 			[]bool{true, true},
+			[]*v1.ObjectReference{
+				{APIVersion: "", Kind: "Pod", Name: "foo-0"},
+				{APIVersion: "", Kind: "Pod", Name: "foo-1"},
+			},
 			false,
 			[]*endpoint.Endpoint{},
 			false,
@@ -2506,6 +2515,10 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			[]string{"foo-0", "foo-1"},
 			[]string{"foo-0", "foo-1"},
 			[]bool{true, true},
+			[]*v1.ObjectReference{
+				{APIVersion: "", Kind: "Pod", Name: "foo-0"},
+				{APIVersion: "", Kind: "Pod", Name: "foo-1"},
+			},
 			false,
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}, RecordTTL: endpoint.TTL(1)},
@@ -2536,6 +2549,10 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			[]string{"foo-0", "foo-1"},
 			[]string{"foo-0", "foo-1"},
 			[]bool{true, false},
+			[]*v1.ObjectReference{
+				{APIVersion: "", Kind: "Pod", Name: "foo-0"},
+				{APIVersion: "", Kind: "Pod", Name: "foo-1"},
+			},
 			false,
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
@@ -2565,6 +2582,10 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			[]string{"foo-0", "foo-1"},
 			[]string{"foo-0", "foo-1"},
 			[]bool{true, false},
+			[]*v1.ObjectReference{
+				{APIVersion: "", Kind: "Pod", Name: "foo-0"},
+				{APIVersion: "", Kind: "Pod", Name: "foo-1"},
+			},
 			true,
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
@@ -2595,10 +2616,41 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			[]string{"foo-0", "foo-1"},
 			[]string{"", ""},
 			[]bool{true, true},
+			[]*v1.ObjectReference{
+				{APIVersion: "", Kind: "Pod", Name: "foo-0"},
+				{APIVersion: "", Kind: "Pod", Name: "foo-1"},
+			},
 			false,
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1", "1.1.1.2"}},
 			},
+			false,
+		},
+		{
+			"annotated Headless services without a targetRef has no endpoints",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			false,
+			map[string]string{"component": "foo"},
+			map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+			},
+			v1.ClusterIPNone,
+			[]string{"1.1.1.1"},
+			map[string]string{
+				"component": "foo",
+			},
+			[]string{},
+			[]string{"foo-0"},
+			[]string{"foo-0"},
+			[]bool{true, true},
+			[]*v1.ObjectReference{nil},
+			false,
+			[]*endpoint.Endpoint{},
 			false,
 		},
 	} {
@@ -2648,11 +2700,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 
 				address := v1.EndpointAddress{
 					IP: "4.3.2.1",
-					TargetRef: &v1.ObjectReference{
-						APIVersion: "",
-						Kind:       "Pod",
-						Name:       podname,
-					},
+					TargetRef: tc.targetRefs[i],
 				}
 				if tc.podsReady[i] {
 					addresses = append(addresses, address)

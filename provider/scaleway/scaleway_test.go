@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"testing"
 
-	domain "github.com/scaleway/scaleway-sdk-go/api/domain/v2alpha2"
+	domain "github.com/scaleway/scaleway-sdk-go/api/domain/v2beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -93,7 +93,7 @@ func (m *mockScalewayDomain) ListDNSZoneRecords(req *domain.ListDNSZoneRecordsRe
 				Type:     domain.RecordTypeA,
 			},
 			{
-				Data:     "test.example.com",
+				Data:     "test.example.com.",
 				Name:     "two",
 				TTL:      600,
 				Priority: 30,
@@ -113,26 +113,12 @@ func (m *mockScalewayDomain) UpdateDNSZoneRecords(req *domain.UpdateDNSZoneRecor
 func TestScalewayProvider_NewScalewayProvider(t *testing.T) {
 	_ = os.Setenv(scw.ScwAccessKeyEnv, "SCWXXXXXXXXXXXXXXXXX")
 	_ = os.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
-	_ = os.Setenv(scw.ScwDefaultOrganizationIDEnv, "11111111-1111-1111-1111-111111111111")
 	_, err := NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
 
-	_ = os.Unsetenv(scw.ScwDefaultOrganizationIDEnv)
-	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter([]string{"example.com"}), true)
-	if err == nil {
-		t.Errorf("expected to fail")
-	}
-
-	_ = os.Setenv(scw.ScwDefaultOrganizationIDEnv, "dummy")
-	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter([]string{"example.com"}), true)
-	if err == nil {
-		t.Errorf("expected to fail")
-	}
-
 	_ = os.Unsetenv(scw.ScwSecretKeyEnv)
-	_ = os.Setenv(scw.ScwDefaultOrganizationIDEnv, "11111111-1111-1111-1111-111111111111")
 	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err == nil {
 		t.Errorf("expected to fail")
@@ -155,6 +141,90 @@ func TestScalewayProvider_NewScalewayProvider(t *testing.T) {
 	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err == nil {
 		t.Errorf("expected to fail")
+	}
+}
+
+func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
+	provider := &ScalewayProvider{}
+
+	before := []*endpoint.Endpoint{
+		{
+			DNSName:    "one.example.com",
+			RecordTTL:  300,
+			RecordType: "A",
+			Targets:    []string{"1.1.1.1"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  scalewayPriorityKey,
+					Value: "0",
+				},
+			},
+		},
+		{
+			DNSName:    "two.example.com",
+			RecordTTL:  0,
+			RecordType: "A",
+			Targets:    []string{"1.1.1.1"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  scalewayPriorityKey,
+					Value: "10",
+				},
+			},
+		},
+		{
+			DNSName:          "three.example.com",
+			RecordTTL:        600,
+			RecordType:       "A",
+			Targets:          []string{"1.1.1.1"},
+			ProviderSpecific: endpoint.ProviderSpecific{},
+		},
+	}
+
+	expected := []*endpoint.Endpoint{
+		{
+			DNSName:    "one.example.com",
+			RecordTTL:  300,
+			RecordType: "A",
+			Targets:    []string{"1.1.1.1"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  scalewayPriorityKey,
+					Value: "0",
+				},
+			},
+		},
+		{
+			DNSName:    "two.example.com",
+			RecordTTL:  300,
+			RecordType: "A",
+			Targets:    []string{"1.1.1.1"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  scalewayPriorityKey,
+					Value: "10",
+				},
+			},
+		},
+		{
+			DNSName:    "three.example.com",
+			RecordTTL:  600,
+			RecordType: "A",
+			Targets:    []string{"1.1.1.1"},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  scalewayPriorityKey,
+					Value: "0",
+				},
+			},
+		},
+	}
+
+	after := provider.AdjustEndpoints(before)
+	for i := range after {
+		if !checkRecordEquality(after[i], expected[i]) {
+			t.Errorf("got record %s instead of %s", after[i], expected[i])
+		}
 	}
 }
 
@@ -302,23 +372,29 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 				},
 				{
 					Delete: &domain.RecordChangeDelete{
-						Data: "3.3.3.3",
-						Name: "me",
-						Type: domain.RecordTypeA,
+						IDFields: &domain.RecordIdentifier{
+							Data: scw.StringPtr("3.3.3.3"),
+							Name: "me",
+							Type: domain.RecordTypeA,
+						},
 					},
 				},
 				{
 					Delete: &domain.RecordChangeDelete{
-						Data: "1.1.1.1",
-						Name: "here",
-						Type: domain.RecordTypeA,
+						IDFields: &domain.RecordIdentifier{
+							Data: scw.StringPtr("1.1.1.1"),
+							Name: "here",
+							Type: domain.RecordTypeA,
+						},
 					},
 				},
 				{
 					Delete: &domain.RecordChangeDelete{
-						Data: "1.1.1.2",
-						Name: "here",
-						Type: domain.RecordTypeA,
+						IDFields: &domain.RecordIdentifier{
+							Data: scw.StringPtr("1.1.1.2"),
+							Name: "here",
+							Type: domain.RecordTypeA,
+						},
 					},
 				},
 			},
@@ -330,7 +406,7 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 					Add: &domain.RecordChangeAdd{
 						Records: []*domain.Record{
 							{
-								Data:     "example.com",
+								Data:     "example.com.",
 								Name:     "",
 								TTL:      600,
 								Type:     domain.RecordTypeCNAME,
@@ -355,23 +431,29 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 				},
 				{
 					Delete: &domain.RecordChangeDelete{
-						Data: "1.1.1.1",
-						Name: "here.is.my",
-						Type: domain.RecordTypeA,
+						IDFields: &domain.RecordIdentifier{
+							Data: scw.StringPtr("1.1.1.1"),
+							Name: "here.is.my",
+							Type: domain.RecordTypeA,
+						},
 					},
 				},
 				{
 					Delete: &domain.RecordChangeDelete{
-						Data: "4.4.4.4",
-						Name: "my",
-						Type: domain.RecordTypeA,
+						IDFields: &domain.RecordIdentifier{
+							Data: scw.StringPtr("4.4.4.4"),
+							Name: "my",
+							Type: domain.RecordTypeA,
+						},
 					},
 				},
 				{
 					Delete: &domain.RecordChangeDelete{
-						Data: "5.5.5.5",
-						Name: "my",
-						Type: domain.RecordTypeA,
+						IDFields: &domain.RecordIdentifier{
+							Data: scw.StringPtr("5.5.5.5"),
+							Name: "my",
+							Type: domain.RecordTypeA,
+						},
 					},
 				},
 			},
@@ -488,7 +570,7 @@ func checkScalewayReqChanges(r1, r2 *domain.UpdateDNSZoneRecordsRequest) bool {
 			if c1.Add != nil && c2.Add != nil && checkScalewayRecords(c1.Add.Records, c2.Add.Records) {
 				total--
 			} else if c1.Delete != nil && c2.Delete != nil {
-				if c1.Delete.Data == c2.Delete.Data && c1.Delete.Name == c2.Delete.Name && c1.Delete.Type == c2.Delete.Type {
+				if *c1.Delete.IDFields.Data == *c2.Delete.IDFields.Data && c1.Delete.IDFields.Name == c2.Delete.IDFields.Name && c1.Delete.IDFields.Type == c2.Delete.IDFields.Type {
 					total--
 				}
 			}

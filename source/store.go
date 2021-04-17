@@ -61,6 +61,7 @@ type Config struct {
 	CFUsername                     string
 	CFPassword                     string
 	ContourLoadBalancerService     string
+	GlooNamespace                  string
 	SkipperRouteGroupVersion       string
 	RequestTimeout                 time.Duration
 }
@@ -83,12 +84,12 @@ type SingletonClientGenerator struct {
 	kubeClient      kubernetes.Interface
 	istioClient     *istioclient.Clientset
 	cfClient        *cfclient.Client
-	contourClient   dynamic.Interface
+	dynKubeClient   dynamic.Interface
 	openshiftClient openshift.Interface
 	kubeOnce        sync.Once
 	istioOnce       sync.Once
 	cfOnce          sync.Once
-	contourOnce     sync.Once
+	dynCliOnce      sync.Once
 	openshiftOnce   sync.Once
 }
 
@@ -134,13 +135,13 @@ func NewCFClient(cfAPIEndpoint string, cfUsername string, cfPassword string) (*c
 	return client, nil
 }
 
-// DynamicKubernetesClient generates a contour client if it was not created before
+// DynamicKubernetesClient generates a dynamic client if it was not created before
 func (p *SingletonClientGenerator) DynamicKubernetesClient() (dynamic.Interface, error) {
 	var err error
-	p.contourOnce.Do(func() {
-		p.contourClient, err = NewDynamicKubernetesClient(p.KubeConfig, p.APIServerURL, p.RequestTimeout)
+	p.dynCliOnce.Do(func() {
+		p.dynKubeClient, err = NewDynamicKubernetesClient(p.KubeConfig, p.APIServerURL, p.RequestTimeout)
 	})
-	return p.contourClient, err
+	return p.dynKubeClient, err
 }
 
 // OpenShiftClient generates an openshift client if it was not created before
@@ -187,6 +188,12 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 			return nil, err
 		}
 		return NewIngressSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.IgnoreIngressTLSSpec)
+	case "pod":
+		client, err := p.KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		return NewPodSource(client, cfg.Namespace)
 	case "istio-gateway":
 		kubernetesClient, err := p.KubeClient()
 		if err != nil {
@@ -213,6 +220,16 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 			return nil, err
 		}
 		return NewCloudFoundrySource(cfClient)
+	case "ambassador-host":
+		kubernetesClient, err := p.KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		dynamicClient, err := p.DynamicKubernetesClient()
+		if err != nil {
+			return nil, err
+		}
+		return NewAmbassadorHostSource(dynamicClient, kubernetesClient, cfg.Namespace)
 	case "contour-ingressroute":
 		kubernetesClient, err := p.KubeClient()
 		if err != nil {
@@ -229,6 +246,16 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 			return nil, err
 		}
 		return NewContourHTTPProxySource(dynamicClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+	case "gloo-proxy":
+		kubernetesClient, err := p.KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		dynamicClient, err := p.DynamicKubernetesClient()
+		if err != nil {
+			return nil, err
+		}
+		return NewGlooSource(dynamicClient, kubernetesClient, cfg.GlooNamespace)
 	case "openshift-route":
 		ocpClient, err := p.OpenShiftClient()
 		if err != nil {
