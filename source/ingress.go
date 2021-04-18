@@ -54,6 +54,7 @@ type ingressSource struct {
 	client                   kubernetes.Interface
 	namespace                string
 	annotationFilter         string
+	ingressClassNameFilter   []string
 	fqdnTemplate             *template.Template
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
@@ -63,7 +64,7 @@ type ingressSource struct {
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) (Source, error) {
+func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool, ingressClassNameFilter []string) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -94,6 +95,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		client:                   kubeClient,
 		namespace:                namespace,
 		annotationFilter:         annotationFilter,
+		ingressClassNameFilter:   ingressClassNameFilter,
 		fqdnTemplate:             tmpl,
 		combineFQDNAnnotation:    combineFqdnAnnotation,
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
@@ -112,6 +114,11 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		return nil, err
 	}
 	ingresses, err = sc.filterByAnnotations(ingresses)
+	if err != nil {
+		return nil, err
+	}
+
+        ingresses, err = sc.filterByIngressClass(ingresses)
 	if err != nil {
 		return nil, err
 	}
@@ -204,6 +211,29 @@ func (sc *ingressSource) filterByAnnotations(ingresses []*networkv1.Ingress) ([]
 		// include ingress if its annotations match the selector
 		if matchLabelSelector(selector, ingress.Annotations) {
 			filteredList = append(filteredList, ingress)
+		}
+	}
+
+	return filteredList, nil
+}
+
+// filterByIngressClass filters a list of ingresses based on a required ingress
+// class
+func (sc *ingressSource) filterByIngressClass(ingresses []*v1beta1.Ingress) ([]*v1beta1.Ingress, error) {
+	// if no class is specified then there's nothing to do
+	if sc.ingressClassNameFilter == nil {
+		return ingresses, nil
+	}
+
+	filteredList := []*v1beta1.Ingress{}
+
+	for _, ingress := range ingresses {
+		for _, nameFilter := range sc.ingressClassNameFilter {
+			// include ingress if its annotations match the selector
+			if ingress.Spec.IngressClassName != nil && nameFilter == *ingress.Spec.IngressClassName {
+				filteredList = append(filteredList, ingress)
+				break
+			}
 		}
 	}
 
