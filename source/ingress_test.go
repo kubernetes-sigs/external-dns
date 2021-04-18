@@ -63,6 +63,7 @@ func (suite *IngressSuite) SetupTest() {
 		false,
 		false,
 		false,
+		[]string{},
 	)
 	suite.NoError(err, "should initialize ingress source")
 }
@@ -144,6 +145,7 @@ func TestNewIngressSource(t *testing.T) {
 				false,
 				false,
 				false,
+				[]string{},
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -358,6 +360,7 @@ func testIngressEndpoints(t *testing.T) {
 		ignoreHostnameAnnotation bool
 		ignoreIngressTLSSpec     bool
 		ignoreIngressRulesSpec   bool
+		ingressClassNameFilter   []string
 	}{
 		{
 			title:           "no ingress",
@@ -1169,6 +1172,33 @@ func testIngressEndpoints(t *testing.T) {
 				},
 			},
 		},
+		{
+			title:                  "ingressClassName filtering",
+			targetNamespace:        "",
+			ingressClassNameFilter: []string{"public"},
+			ingressItems: []fakeIngress{
+				{
+					name:             "fake-public",
+					namespace:        namespace,
+					tlsdnsnames:      [][]string{{"example.org"}},
+					ips:              []string{"1.2.3.4"},
+					ingressClassName: "public",
+				},
+				{
+					name:             "fake-internal",
+					namespace:        namespace,
+					tlsdnsnames:      [][]string{{"int.example.org"}},
+					ips:              []string{"2.3.4.5"},
+					ingressClassName: "internal",
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "example.org",
+					Targets: endpoint.Targets{"1.2.3.4"},
+				},
+			},
+		},
 	} {
 		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
@@ -1189,6 +1219,7 @@ func testIngressEndpoints(t *testing.T) {
 				ti.ignoreHostnameAnnotation,
 				ti.ignoreIngressTLSSpec,
 				ti.ignoreIngressRulesSpec,
+				ti.ingressClassNameFilter,
 			)
 			// Informer cache has all of the ingresses. Retrieve and validate their endpoints.
 			res, err := source.Endpoints(context.Background())
@@ -1204,13 +1235,14 @@ func testIngressEndpoints(t *testing.T) {
 
 // ingress specific helper functions
 type fakeIngress struct {
-	dnsnames    []string
-	tlsdnsnames [][]string
-	ips         []string
-	hostnames   []string
-	namespace   string
-	name        string
-	annotations map[string]string
+	dnsnames         []string
+	tlsdnsnames      [][]string
+	ips              []string
+	hostnames        []string
+	namespace        string
+	name             string
+	annotations      map[string]string
+	ingressClassName string
 }
 
 func (ing fakeIngress) Ingress() *networkv1.Ingress {
@@ -1222,6 +1254,7 @@ func (ing fakeIngress) Ingress() *networkv1.Ingress {
 		},
 		Spec: networkv1.IngressSpec{
 			Rules: []networkv1.IngressRule{},
+			IngressClassName: &ing.ingressClassName,
 		},
 		Status: networkv1.IngressStatus{
 			LoadBalancer: v1.LoadBalancerStatus{
