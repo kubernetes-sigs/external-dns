@@ -23,7 +23,7 @@ import (
 	"github.com/hooklift/gowsdl/soap"
 )
 
-// Returns a Dynect Client with a configured http.Client
+// NewDynectClient returns a client with a configured http.Client
 // The default settings for the http.client are a timeout of
 // 10 seconds and reading proxy variables from http.ProxyFromEnvironment
 func NewDynectClient(url string) Dynect {
@@ -37,7 +37,7 @@ func NewDynectClient(url string) Dynect {
 	return NewDynect(soapClient)
 }
 
-// Returns a Dynect Client without a configured http.Client
+// NewCustomDynectClient returns a client without a configured http.Client
 func NewCustomDynectClient(url string, client http.Client) Dynect {
 	soapClient := soap.NewClient(url, soap.WithHTTPClient(&client))
 	return NewDynect(soapClient)
