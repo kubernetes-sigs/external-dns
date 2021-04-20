@@ -210,9 +210,21 @@ func (p *BluecatProvider) Records(ctx context.Context) (endpoints []*endpoint.En
 		for _, rec := range resH {
 			propMap := splitProperties(rec.Properties)
 			ips := strings.Split(propMap["addresses"], ",")
-			for _, ip := range ips {
-				ep := endpoint.NewEndpoint(propMap["absoluteName"], endpoint.RecordTypeA, ip)
-				endpoints = append(endpoints, ep)
+			if _, ok := propMap["ttl"]; ok {
+				ttl, err := strconv.Atoi(propMap["ttl"])
+				if err != nil {
+					return nil, errors.Wrapf(err, "could not parse ttl '%d' as int for host record %v", ttl, rec.Name)
+				}
+
+				for _, ip := range ips {
+					ep := endpoint.NewEndpointWithTTL(propMap["absoluteName"], endpoint.RecordTypeA, endpoint.TTL(ttl), ip)
+					endpoints = append(endpoints, ep)
+				}
+			} else {
+				for _, ip := range ips {
+					ep := endpoint.NewEndpoint(propMap["absoluteName"], endpoint.RecordTypeA, ip)
+					endpoints = append(endpoints, ep)
+				}
 			}
 		}
 
@@ -223,7 +235,15 @@ func (p *BluecatProvider) Records(ctx context.Context) (endpoints []*endpoint.En
 		}
 		for _, rec := range resC {
 			propMap := splitProperties(rec.Properties)
-			endpoints = append(endpoints, endpoint.NewEndpoint(propMap["absoluteName"], endpoint.RecordTypeCNAME, propMap["linkedRecordName"]))
+			if _, ok := propMap["ttl"]; ok {
+				ttl, err := strconv.Atoi(propMap["ttl"])
+				if err != nil {
+					return nil, errors.Wrapf(err, "could not parse ttl '%d' as int for CNAME record %v", ttl, rec.Name)
+				}
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(propMap["absoluteName"], endpoint.RecordTypeCNAME, endpoint.TTL(ttl), propMap["linkedRecordName"]))
+			} else {
+				endpoints = append(endpoints, endpoint.NewEndpoint(propMap["absoluteName"], endpoint.RecordTypeCNAME, propMap["linkedRecordName"]))
+			}
 		}
 
 		var resT []BluecatTXTRecord
@@ -455,11 +475,10 @@ func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (reco
 	switch ep.RecordType {
 	case endpoint.RecordTypeA:
 		var res []BluecatHostRecord
-		// TODO Allow configurable properties/ttl
 		obj := bluecatCreateHostRecordRequest{
 			AbsoluteName: ep.DNSName,
 			IP4Address:   ep.Targets[0],
-			TTL:          0,
+			TTL:          int(ep.RecordTTL),
 			Properties:   "",
 		}
 		if getObject {
@@ -479,7 +498,7 @@ func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (reco
 		obj := bluecatCreateCNAMERecordRequest{
 			AbsoluteName: ep.DNSName,
 			LinkedRecord: ep.Targets[0],
-			TTL:          0,
+			TTL:          int(ep.RecordTTL),
 			Properties:   "",
 		}
 		if getObject {
@@ -496,6 +515,8 @@ func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (reco
 		}
 	case endpoint.RecordTypeTXT:
 		var res []BluecatTXTRecord
+		// TODO: Allow setting TTL
+		// This is not implemented in the Bluecat Gateway
 		obj := bluecatCreateTXTRecordRequest{
 			AbsoluteName: ep.DNSName,
 			Text:         ep.Targets[0],
