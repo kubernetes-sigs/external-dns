@@ -44,6 +44,8 @@ const (
 	hostnameAnnotationKey = "external-dns.alpha.kubernetes.io/hostname"
 	// The annotation used for specifying whether the public or private interface address is used
 	accessAnnotationKey = "external-dns.alpha.kubernetes.io/access"
+	// The annotation used for specifying the type of endpoints to use for headless services
+	endpointsTypeAnnotationKey = "external-dns.alpha.kubernetes.io/endpoints-type"
 	// The annotation used for defining the desired ingress target
 	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
 	// The annotation used for defining the desired DNS record TTL
@@ -57,6 +59,11 @@ const (
 	controllerAnnotationValue = "dns-controller"
 	// The annotation used for defining the desired hostname
 	internalHostnameAnnotationKey = "external-dns.alpha.kubernetes.io/internal-hostname"
+)
+
+const (
+	EndpointsTypeNodeExternalIP = "NodeExternalIP"
+	EndpointsTypeHostIP         = "HostIP"
 )
 
 // Provider-specific annotations
@@ -149,6 +156,10 @@ func getHostnamesFromAnnotations(annotations map[string]string) []string {
 
 func getAccessFromAnnotations(annotations map[string]string) string {
 	return annotations[accessAnnotationKey]
+}
+
+func getEndpointsTypeFromAnnotations(annotations map[string]string) string {
+	return annotations[endpointsTypeAnnotationKey]
 }
 
 func getInternalHostnamesFromAnnotations(annotations map[string]string) []string {
