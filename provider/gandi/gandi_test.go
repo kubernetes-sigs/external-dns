@@ -62,27 +62,31 @@ func mockGandiClientNewWithFailure(functionToFail string) *mockGandiClient {
 	}
 }
 
+const domainUriPrefix = "https://api.gandi.net/v5/domain/domains/"
+const exampleDotComUri = domainUriPrefix + "example.com"
+const exampleDotNetUri = domainUriPrefix + "example.net"
+
 func testRecords() []livedns.DomainRecord {
 	return []livedns.DomainRecord{
 		{
 			RrsetType:   endpoint.RecordTypeCNAME,
 			RrsetTTL:    600,
 			RrsetName:   "@",
-			RrsetHref:   "https://api.gandi.net/v5/domain/domains/example.com/records/%40/A",
+			RrsetHref:   exampleDotComUri + "/records/%40/A",
 			RrsetValues: []string{"192.168.0.1"},
 		},
 		{
 			RrsetType:   endpoint.RecordTypeCNAME,
 			RrsetTTL:    600,
 			RrsetName:   "www",
-			RrsetHref:   "https://api.gandi.net/v5/domain/domains/example.com/records/www/CNAME",
+			RrsetHref:   exampleDotComUri + "/records/www/CNAME",
 			RrsetValues: []string{"lb.example.com"},
 		},
 		{
 			RrsetType:   endpoint.RecordTypeA,
 			RrsetTTL:    600,
 			RrsetName:   "test",
-			RrsetHref:   "https://api.gandi.net/v5/domain/domains/example.com/records/test/A",
+			RrsetHref:   exampleDotComUri + "/records/test/A",
 			RrsetValues: []string{"192.168.0.2"},
 		},
 	}
@@ -169,7 +173,7 @@ func (m *mockGandiClient) ListDomains() (domains []domain.ListResponse, err erro
 		{
 			FQDN:        "example.com",
 			FQDNUnicode: "example.com",
-			Href:        "https://api.gandi.net/v5/domain/domains/example.com",
+			Href:        exampleDotComUri,
 			ID:          "b3e9c271-1c29-4441-97d9-bc021a7ac7c3",
 			NameServer: &domain.NameServerConfig{
 				Current: gandiLiveDNSProvider,
@@ -179,7 +183,7 @@ func (m *mockGandiClient) ListDomains() (domains []domain.ListResponse, err erro
 		{
 			FQDN:        "example.net",
 			FQDNUnicode: "example.net",
-			Href:        "https://api.gandi.net/v5/domain/domains/example.net",
+			Href:        exampleDotNetUri,
 			ID:          "dc78c1d8-6143-4edb-93bc-3a20d8bc3570",
 			NameServer: &domain.NameServerConfig{
 				Current: "other",
@@ -221,7 +225,7 @@ func TestGandiProvider_TestData(t *testing.T) {
 		{
 			FQDN:        "example.com",
 			FQDNUnicode: "example.com",
-			Href:        "https://api.gandi.net/v5/domain/domains/example.com",
+			Href:        exampleDotComUri,
 			ID:          "b3e9c271-1c29-4441-97d9-bc021a7ac7c3",
 			NameServer: &domain.NameServerConfig{
 				Current: gandiLiveDNSProvider,
@@ -231,7 +235,7 @@ func TestGandiProvider_TestData(t *testing.T) {
 		{
 			FQDN:        "example.net",
 			FQDNUnicode: "example.net",
-			Href:        "https://api.gandi.net/v5/domain/domains/example.net",
+			Href:        exampleDotNetUri,
 			ID:          "dc78c1d8-6143-4edb-93bc-3a20d8bc3570",
 			NameServer: &domain.NameServerConfig{
 				Current: "other",
@@ -255,21 +259,21 @@ func TestGandiProvider_TestData(t *testing.T) {
 			RrsetType:   endpoint.RecordTypeCNAME,
 			RrsetTTL:    600,
 			RrsetName:   "@",
-			RrsetHref:   "https://api.gandi.net/v5/domain/domains/example.com/records/%40/A",
+			RrsetHref:   exampleDotComUri + "/records/%40/A",
 			RrsetValues: []string{"192.168.0.1"},
 		},
 		{
 			RrsetType:   endpoint.RecordTypeCNAME,
 			RrsetTTL:    600,
 			RrsetName:   "www",
-			RrsetHref:   "https://api.gandi.net/v5/domain/domains/example.com/records/www/CNAME",
+			RrsetHref:   exampleDotComUri + "/records/www/CNAME",
 			RrsetValues: []string{"lb.example.com"},
 		},
 		{
 			RrsetType:   endpoint.RecordTypeA,
 			RrsetTTL:    600,
 			RrsetName:   "test",
-			RrsetHref:   "https://api.gandi.net/v5/domain/domains/example.com/records/test/A",
+			RrsetHref:   exampleDotComUri + "/records/test/A",
 			RrsetValues: []string{"192.168.0.2"},
 		},
 	}
