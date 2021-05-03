@@ -182,7 +182,7 @@ func (p *HetznerProvider) submitChanges(ctx context.Context, changes []*HetznerC
 					if err != nil {
 						return err
 					}
-					return fmt.Errorf("could not create record %s", change.ResourceRecordSet.Name)
+					return fmt.Errorf("could not create record %s (%d)", change.ResourceRecordSet.Name, answer.Error.Code)
 				}
 			case hetznerDelete:
 				answer, err := p.Client.DeleteRecord(change.ResourceRecordSet.ID)
@@ -194,7 +194,7 @@ func (p *HetznerProvider) submitChanges(ctx context.Context, changes []*HetznerC
 					if err != nil {
 						return err
 					}
-					return fmt.Errorf("could not delete record %s", change.ResourceRecordSet.ID)
+					return fmt.Errorf("could not delete record %s (%d)", change.ResourceRecordSet.ID, answer.Error.Code)
 				}
 			case hetznerUpdate:
 				record := hclouddns.HCloudRecord{
@@ -217,7 +217,7 @@ func (p *HetznerProvider) submitChanges(ctx context.Context, changes []*HetznerC
 					if err != nil {
 						return err
 					}
-					return fmt.Errorf("could not update record %s", change.ResourceRecordSet.Name)
+					return fmt.Errorf("could not update record %s (%d)", change.ResourceRecordSet.Name, answer.Error.Code)
 				}
 			}
 		}
