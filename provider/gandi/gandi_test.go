@@ -102,7 +102,7 @@ func (m *mockGandiClient) GetDomainRecords(fqdn string) (records []livedns.Domai
 	return m.RecordsToReturn, err
 }
 
-func (m *mockGandiClient) CreateDomainRecord(fqdn, name, recordtype string, ttl int, values []string) (response StandardResponse, err error) {
+func (m *mockGandiClient) CreateDomainRecord(fqdn, name, recordtype string, ttl int, values []string) (response standardResponse, err error) {
 	m.Actions = append(m.Actions, MockAction{
 		Name: "CreateDomainRecord",
 		FQDN: fqdn,
@@ -114,10 +114,10 @@ func (m *mockGandiClient) CreateDomainRecord(fqdn, name, recordtype string, ttl 
 		},
 	})
 	if m.FunctionToFail == "CreateDomainRecord" {
-		return StandardResponse{}, fmt.Errorf("injected error")
+		return standardResponse{}, fmt.Errorf("injected error")
 	}
 
-	return StandardResponse{}, nil
+	return standardResponse{}, nil
 }
 
 func (m *mockGandiClient) DeleteDomainRecord(fqdn, name, recordtype string) (err error) {
@@ -137,7 +137,7 @@ func (m *mockGandiClient) DeleteDomainRecord(fqdn, name, recordtype string) (err
 	return nil
 }
 
-func (m *mockGandiClient) UpdateDomainRecordByNameAndType(fqdn, name, recordtype string, ttl int, values []string) (response StandardResponse, err error) {
+func (m *mockGandiClient) UpdateDomainRecordByNameAndType(fqdn, name, recordtype string, ttl int, values []string) (response standardResponse, err error) {
 	m.Actions = append(m.Actions, MockAction{
 		Name: "UpdateDomainRecordByNameAndType",
 		FQDN: fqdn,
@@ -150,10 +150,10 @@ func (m *mockGandiClient) UpdateDomainRecordByNameAndType(fqdn, name, recordtype
 	})
 
 	if m.FunctionToFail == "UpdateDomainRecordByNameAndType" {
-		return StandardResponse{}, fmt.Errorf("injected error")
+		return standardResponse{}, fmt.Errorf("injected error")
 	}
 
-	return StandardResponse{}, nil
+	return standardResponse{}, nil
 }
 
 func (m *mockGandiClient) ListDomains() (domains []domain.ListResponse, err error) {
