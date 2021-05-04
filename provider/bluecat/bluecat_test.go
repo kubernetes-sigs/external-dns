@@ -127,8 +127,8 @@ func createMockBluecatZone(fqdn string) BluecatZone {
 	}
 }
 
-func createMockBluecatHostRecord(fqdn, target string) BluecatHostRecord {
-	props := "absoluteName=" + fqdn + "|addresses=" + target + "|"
+func createMockBluecatHostRecord(fqdn, target string, ttl int) BluecatHostRecord {
+	props := "absoluteName=" + fqdn + "|addresses=" + target + "|ttl=" + fmt.Sprint(ttl) + "|"
 	nameParts := strings.Split(fqdn, ".")
 	return BluecatHostRecord{
 		Name:       nameParts[0],
@@ -137,8 +137,8 @@ func createMockBluecatHostRecord(fqdn, target string) BluecatHostRecord {
 	}
 }
 
-func createMockBluecatCNAME(alias, target string) BluecatCNAMERecord {
-	props := "absoluteName=" + alias + "|linkedRecordName=" + target + "|"
+func createMockBluecatCNAME(alias, target string, ttl int) BluecatCNAMERecord {
+	props := "absoluteName=" + alias + "|linkedRecordName=" + target + "|ttl=" + fmt.Sprint(ttl) + "|"
 	nameParts := strings.Split(alias, ".")
 	return BluecatCNAMERecord{
 		Name:       nameParts[0],
@@ -175,21 +175,25 @@ var tests = bluecatTestData{
 				DNSName:    "example.com",
 				RecordType: endpoint.RecordTypeA,
 				Targets:    endpoint.Targets{"123.123.123.122"},
+				RecordTTL:  endpoint.TTL(30),
 			},
 			{
 				DNSName:    "nginx.example.com",
 				RecordType: endpoint.RecordTypeA,
 				Targets:    endpoint.Targets{"123.123.123.123"},
+				RecordTTL:  endpoint.TTL(30),
 			},
 			{
 				DNSName:    "whitespace.example.com",
 				RecordType: endpoint.RecordTypeA,
 				Targets:    endpoint.Targets{"123.123.123.124"},
+				RecordTTL:  endpoint.TTL(30),
 			},
 			{
 				DNSName:    "hack.example.com",
 				RecordType: endpoint.RecordTypeCNAME,
 				Targets:    endpoint.Targets{"bluecatnetworks.com"},
+				RecordTTL:  endpoint.TTL(30),
 			},
 			{
 				DNSName:    "abc.example.com",
@@ -206,12 +210,12 @@ func TestBluecatRecords(t *testing.T) {
 			createMockBluecatZone("example.com"),
 		},
 		mockBluecatHosts: &[]BluecatHostRecord{
-			createMockBluecatHostRecord("example.com", "123.123.123.122"),
-			createMockBluecatHostRecord("nginx.example.com", "123.123.123.123"),
-			createMockBluecatHostRecord("whitespace.example.com", "123.123.123.124"),
+			createMockBluecatHostRecord("example.com", "123.123.123.122", 30),
+			createMockBluecatHostRecord("nginx.example.com", "123.123.123.123", 30),
+			createMockBluecatHostRecord("whitespace.example.com", "123.123.123.124", 30),
 		},
 		mockBluecatCNAMEs: &[]BluecatCNAMERecord{
-			createMockBluecatCNAME("hack.example.com", "bluecatnetworks.com"),
+			createMockBluecatCNAME("hack.example.com", "bluecatnetworks.com", 30),
 		},
 		mockBluecatTXTs: &[]BluecatTXTRecord{
 			createMockBluecatTXT("abc.example.com", "hello"),
@@ -264,12 +268,12 @@ func TestBluecatApplyChangesDelete(t *testing.T) {
 			createMockBluecatZone("example.com"),
 		},
 		mockBluecatHosts: &[]BluecatHostRecord{
-			createMockBluecatHostRecord("example.com", "123.123.123.122"),
-			createMockBluecatHostRecord("nginx.example.com", "123.123.123.123"),
-			createMockBluecatHostRecord("whitespace.example.com", "123.123.123.124"),
+			createMockBluecatHostRecord("example.com", "123.123.123.122", 30),
+			createMockBluecatHostRecord("nginx.example.com", "123.123.123.123", 30),
+			createMockBluecatHostRecord("whitespace.example.com", "123.123.123.124", 30),
 		},
 		mockBluecatCNAMEs: &[]BluecatCNAMERecord{
-			createMockBluecatCNAME("hack.example.com", "bluecatnetworks.com"),
+			createMockBluecatCNAME("hack.example.com", "bluecatnetworks.com", 30),
 		},
 		mockBluecatTXTs: &[]BluecatTXTRecord{
 			createMockBluecatTXT("abc.example.com", "hello"),
@@ -308,12 +312,12 @@ func TestBluecatRecordset(t *testing.T) {
 			createMockBluecatZone("example.com"),
 		},
 		mockBluecatHosts: &[]BluecatHostRecord{
-			createMockBluecatHostRecord("example.com", "123.123.123.122"),
-			createMockBluecatHostRecord("nginx.example.com", "123.123.123.123"),
-			createMockBluecatHostRecord("whitespace.example.com", "123.123.123.124"),
+			createMockBluecatHostRecord("example.com", "123.123.123.122", 30),
+			createMockBluecatHostRecord("nginx.example.com", "123.123.123.123", 30),
+			createMockBluecatHostRecord("whitespace.example.com", "123.123.123.124", 30),
 		},
 		mockBluecatCNAMEs: &[]BluecatCNAMERecord{
-			createMockBluecatCNAME("hack.example.com", "bluecatnetworks.com"),
+			createMockBluecatCNAME("hack.example.com", "bluecatnetworks.com", 30),
 		},
 		mockBluecatTXTs: &[]BluecatTXTRecord{
 			createMockBluecatTXT("abc.example.com", "hello"),
@@ -351,7 +355,7 @@ func TestBluecatRecordset(t *testing.T) {
 		IP4Address:   testHostEndpoint.Targets[0],
 	}
 	hostRecords := []BluecatHostRecord{
-		createMockBluecatHostRecord("whitespace.example.com", "123.123.123.124"),
+		createMockBluecatHostRecord("whitespace.example.com", "123.123.123.124", 30),
 	}
 	hostExpected := bluecatRecordSet{
 		obj: &hostObj,
@@ -371,7 +375,7 @@ func TestBluecatRecordset(t *testing.T) {
 		LinkedRecord: testCnameEndpoint.Targets[0],
 	}
 	cnameRecords := []BluecatCNAMERecord{
-		createMockBluecatCNAME("hack.example.com", "bluecatnetworks.com"),
+		createMockBluecatCNAME("hack.example.com", "bluecatnetworks.com", 30),
 	}
 	cnameExpected := bluecatRecordSet{
 		obj: &cnameObj,

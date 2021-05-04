@@ -5,6 +5,11 @@ approvers:
   - raffo
   - njuettner
 
+reviewers:
+  - njuettner
+  - raffo
+  - seanmalloy
+
 emeritus_approvers:
   - hjacobs
   - linki

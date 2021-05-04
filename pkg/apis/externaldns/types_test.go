@@ -18,6 +18,7 @@ package externaldns
 
 import (
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -47,6 +48,8 @@ var (
 		GoogleBatchChangeInterval:   time.Second,
 		DomainFilter:                []string{""},
 		ExcludeDomains:              []string{""},
+		RegexDomainFilter:           regexp.MustCompile(""),
+		RegexDomainExclusion:        regexp.MustCompile(""),
 		ZoneNameFilter:              []string{""},
 		ZoneIDFilter:                []string{""},
 		AlibabaCloudConfigFile:      "/etc/kubernetes/alibaba-cloud.json",
@@ -92,6 +95,7 @@ var (
 		TXTPrefix:                   "",
 		TXTCacheInterval:            0,
 		Interval:                    time.Minute,
+		MinEventSyncInterval:        5 * time.Second,
 		Once:                        false,
 		DryRun:                      false,
 		UpdateEvents:                false,
@@ -130,6 +134,8 @@ var (
 		GoogleBatchChangeInterval:   time.Second * 2,
 		DomainFilter:                []string{"example.org", "company.com"},
 		ExcludeDomains:              []string{"xapi.example.org", "xapi.company.com"},
+		RegexDomainFilter:           regexp.MustCompile("(example\\.org|company\\.com)$"),
+		RegexDomainExclusion:        regexp.MustCompile("xapi\\.(example\\.org|company\\.com)$"),
 		ZoneNameFilter:              []string{"yapi.example.org", "yapi.company.com"},
 		ZoneIDFilter:                []string{"/hostedzone/ZTST1", "/hostedzone/ZTST2"},
 		AlibabaCloudConfigFile:      "/etc/kubernetes/alibaba-cloud.json",
@@ -153,8 +159,8 @@ var (
 		AkamaiClientToken:           "o184671d5307a388180fbf7f11dbdf46",
 		AkamaiClientSecret:          "o184671d5307a388180fbf7f11dbdf46",
 		AkamaiAccessToken:           "o184671d5307a388180fbf7f11dbdf46",
-	        AkamaiEdgercPath:            "/home/test/.edgerc",
-        	AkamaiEdgercSection:         "default",
+		AkamaiEdgercPath:            "/home/test/.edgerc",
+		AkamaiEdgercSection:         "default",
 		InfobloxGridHost:            "127.0.0.1",
 		InfobloxWapiPort:            8443,
 		InfobloxWapiUsername:        "infoblox",
@@ -179,6 +185,7 @@ var (
 		TXTPrefix:                   "associated-txt-record",
 		TXTCacheInterval:            12 * time.Hour,
 		Interval:                    10 * time.Minute,
+		MinEventSyncInterval:        50 * time.Second,
 		Once:                        true,
 		DryRun:                      true,
 		UpdateEvents:                true,
@@ -274,6 +281,8 @@ func TestParseFlags(t *testing.T) {
 				"--domain-filter=company.com",
 				"--exclude-domains=xapi.example.org",
 				"--exclude-domains=xapi.company.com",
+				"--regex-domain-filter=(example\\.org|company\\.com)$",
+				"--regex-domain-exclusion=xapi\\.(example\\.org|company\\.com)$",
 				"--zone-name-filter=yapi.example.org",
 				"--zone-name-filter=yapi.company.com",
 				"--zone-id-filter=/hostedzone/ZTST1",
@@ -293,6 +302,7 @@ func TestParseFlags(t *testing.T) {
 				"--txt-prefix=associated-txt-record",
 				"--txt-cache-interval=12h",
 				"--interval=10m",
+				"--min-event-sync-interval=50s",
 				"--once",
 				"--dry-run",
 				"--events",
@@ -362,6 +372,8 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_OVH_API_RATE_LIMIT":              "42",
 				"EXTERNAL_DNS_DOMAIN_FILTER":                   "example.org\ncompany.com",
 				"EXTERNAL_DNS_EXCLUDE_DOMAINS":                 "xapi.example.org\nxapi.company.com",
+				"EXTERNAL_DNS_REGEX_DOMAIN_FILTER":             "(example\\.org|company\\.com)$",
+				"EXTERNAL_DNS_REGEX_DOMAIN_EXCLUSION":          "xapi\\.(example\\.org|company\\.com)$",
 				"EXTERNAL_DNS_PDNS_SERVER":                     "http://ns.example.com:8081",
 				"EXTERNAL_DNS_PDNS_API_KEY":                    "some-secret-key",
 				"EXTERNAL_DNS_PDNS_TLS_ENABLED":                "1",
@@ -386,6 +398,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_TXT_PREFIX":                      "associated-txt-record",
 				"EXTERNAL_DNS_TXT_CACHE_INTERVAL":              "12h",
 				"EXTERNAL_DNS_INTERVAL":                        "10m",
+				"EXTERNAL_DNS_MIN_EVENT_SYNC_INTERVAL":         "50s",
 				"EXTERNAL_DNS_ONCE":                            "1",
 				"EXTERNAL_DNS_DRY_RUN":                         "1",
 				"EXTERNAL_DNS_EVENTS":                          "1",

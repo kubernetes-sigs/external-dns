@@ -48,3 +48,6 @@ external-dns
 vendor/
 
 profile.cov
+
+# github codespaces
+.venv/

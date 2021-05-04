@@ -19,6 +19,7 @@ package externaldns
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -66,6 +67,8 @@ type Config struct {
 	GoogleBatchChangeInterval         time.Duration
 	DomainFilter                      []string
 	ExcludeDomains                    []string
+	RegexDomainFilter                 *regexp.Regexp
+	RegexDomainExclusion              *regexp.Regexp
 	ZoneNameFilter                    []string
 	ZoneIDFilter                      []string
 	AlibabaCloudConfigFile            string
@@ -123,6 +126,7 @@ type Config struct {
 	TXTPrefix                         string
 	TXTSuffix                         string
 	Interval                          time.Duration
+	MinEventSyncInterval              time.Duration
 	Once                              bool
 	DryRun                            bool
 	UpdateEvents                      bool
@@ -191,6 +195,8 @@ var defaultConfig = &Config{
 	GoogleBatchChangeInterval:   time.Second,
 	DomainFilter:                []string{},
 	ExcludeDomains:              []string{},
+	RegexDomainFilter:           regexp.MustCompile(""),
+	RegexDomainExclusion:        regexp.MustCompile(""),
 	AlibabaCloudConfigFile:      "/etc/kubernetes/alibaba-cloud.json",
 	AWSZoneType:                 "",
 	AWSZoneTagFilter:            []string{},
@@ -241,6 +247,7 @@ var defaultConfig = &Config{
 	TXTSuffix:                   "",
 	TXTCacheInterval:            0,
 	TXTWildcardReplacement:      "",
+	MinEventSyncInterval:        5 * time.Second,
 	Interval:                    time.Minute,
 	Once:                        false,
 	DryRun:                      false,
@@ -343,7 +350,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("skipper-routegroup-groupversion", "The resource version for skipper routegroup").Default(source.DefaultRoutegroupVersion).StringVar(&cfg.SkipperRouteGroupVersion)
 
 	// Flags related to processing sources
-	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, fake, connector, istio-gateway, istio-virtualservice, cloudfoundry, contour-ingressroute, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-ingressroute", "contour-httpproxy", "gloo-proxy", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route", "ambassador-host")
+	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, fake, connector, istio-gateway, istio-virtualservice, cloudfoundry, contour-ingressroute, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "pod", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-ingressroute", "contour-httpproxy", "gloo-proxy", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route", "ambassador-host")
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
 	app.Flag("annotation-filter", "Filter sources managed by external-dns via annotation using label selector semantics (default: all sources)").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
 	app.Flag("label-filter", "Filter sources managed by external-dns via label selector when listing all resources; currently only supported by source CRD").Default(defaultConfig.LabelFilter).StringVar(&cfg.LabelFilter)
@@ -362,9 +369,11 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("managed-record-types", "Comma separated list of record types to manage (default: A, CNAME) (supported records: CNAME, A, NS").Default("A", "CNAME").StringsVar(&cfg.ManagedDNSRecordTypes)
 
 	// Flags related to providers
-	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, godaddy, google, azure, azure-dns, azure-private-dns, bluecat, cloudflare, rcodezero, digitalocean, hetzner, dnsimple, akamai, infoblox, dyn, designate, coredns, skydns, inmemory, ovh, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns, scaleway, vultr, ultradns)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "hetzner", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "akamai", "infoblox", "dyn", "designate", "coredns", "skydns", "inmemory", "ovh", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns", "scaleway", "vultr", "ultradns", "godaddy")
+	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, godaddy, google, azure, azure-dns, azure-private-dns, bluecat, cloudflare, rcodezero, digitalocean, hetzner, dnsimple, akamai, infoblox, dyn, designate, coredns, skydns, inmemory, ovh, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns, scaleway, vultr, ultradns)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "hetzner", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "akamai", "infoblox", "dyn", "designate", "coredns", "skydns", "inmemory", "ovh", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns", "scaleway", "vultr", "ultradns", "godaddy", "bluecat")
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("exclude-domains", "Exclude subdomains (optional)").Default("").StringsVar(&cfg.ExcludeDomains)
+	app.Flag("regex-domain-filter", "Limit possible domains and target zones by a Regex filter; Overrides domain-filter (optional)").Default(defaultConfig.RegexDomainFilter.String()).RegexpVar(&cfg.RegexDomainFilter)
+	app.Flag("regex-domain-exclusion", "Regex filter that excludes domains and target zones matched by regex-domain-filter (optional)").Default(defaultConfig.RegexDomainExclusion.String()).RegexpVar(&cfg.RegexDomainExclusion)
 	app.Flag("zone-name-filter", "Filter target zones by zone domain (For now, only AzureDNS provider is using this flag); specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.ZoneNameFilter)
 	app.Flag("zone-id-filter", "Filter target zones by hosted zone id; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.ZoneIDFilter)
 	app.Flag("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
@@ -445,10 +454,10 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("rfc2136-tsig-secret-alg", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)").Default(defaultConfig.RFC2136TSIGSecretAlg).StringVar(&cfg.RFC2136TSIGSecretAlg)
 	app.Flag("rfc2136-tsig-axfr", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)").BoolVar(&cfg.RFC2136TAXFR)
 	app.Flag("rfc2136-min-ttl", "When using the RFC2136 provider, specify minimal TTL (in duration format) for records. This value will be used if the provided TTL for a service/ingress is lower than this").Default(defaultConfig.RFC2136MinTTL.String()).DurationVar(&cfg.RFC2136MinTTL)
-	app.Flag("rfc2136-gss-tsig", "When using the RFC2136 provider, specify whether to use secure updates with GSS-TSIG using Kerberos (default: false, requires --rfc2136-kerberos-username and rfc2136-kerberos-password)").Default(strconv.FormatBool(defaultConfig.RFC2136GSSTSIG)).BoolVar(&cfg.RFC2136GSSTSIG)
-	app.Flag("rfc2136-kerberos-realm", "When using the RFC2136 provider with GSS-TSIG, specify the Kerberos realm used for authentication (default: the value of --rfc2316-zone converted to uppercase)").Default(defaultConfig.RFC2136KerberosRealm).StringVar(&cfg.RFC2136KerberosRealm)
+	app.Flag("rfc2136-gss-tsig", "When using the RFC2136 provider, specify whether to use secure updates with GSS-TSIG using Kerberos (default: false, requires --rfc2136-kerberos-realm, --rfc2136-kerberos-username, and rfc2136-kerberos-password)").Default(strconv.FormatBool(defaultConfig.RFC2136GSSTSIG)).BoolVar(&cfg.RFC2136GSSTSIG)
 	app.Flag("rfc2136-kerberos-username", "When using the RFC2136 provider with GSS-TSIG, specify the username of the user with permissions to update DNS records (required when --rfc2136-gss-tsig=true)").Default(defaultConfig.RFC2136KerberosUsername).StringVar(&cfg.RFC2136KerberosUsername)
 	app.Flag("rfc2136-kerberos-password", "When using the RFC2136 provider with GSS-TSIG, specify the password of the user with permissions to update DNS records (required when --rfc2136-gss-tsig=true)").Default(defaultConfig.RFC2136KerberosPassword).StringVar(&cfg.RFC2136KerberosPassword)
+	app.Flag("rfc2136-kerberos-realm", "When using the RFC2136 provider with GSS-TSIG, specify the realm of the user with permissions to update DNS records (required when --rfc2136-gss-tsig=true)").Default(defaultConfig.RFC2136KerberosRealm).StringVar(&cfg.RFC2136KerberosRealm)
 
 	// Flags related to TransIP provider
 	app.Flag("transip-account", "When using the TransIP provider, specify the account name (required when --provider=transip)").Default(defaultConfig.TransIPAccountName).StringVar(&cfg.TransIPAccountName)
@@ -467,6 +476,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	// Flags related to the main control loop
 	app.Flag("txt-cache-interval", "The interval between cache synchronizations in duration format (default: disabled)").Default(defaultConfig.TXTCacheInterval.String()).DurationVar(&cfg.TXTCacheInterval)
 	app.Flag("interval", "The interval between two consecutive synchronizations in duration format (default: 1m)").Default(defaultConfig.Interval.String()).DurationVar(&cfg.Interval)
+	app.Flag("min-event-sync-interval", "The minimum interval between two consecutive synchronizations triggered from kubernetes events in duration format (default: 5s)").Default(defaultConfig.MinEventSyncInterval.String()).DurationVar(&cfg.MinEventSyncInterval)
 	app.Flag("once", "When enabled, exits the synchronization loop after the first iteration (default: disabled)").BoolVar(&cfg.Once)
 	app.Flag("dry-run", "When enabled, prints DNS record changes rather than actually performing them (default: disabled)").BoolVar(&cfg.DryRun)
 	app.Flag("events", "When enabled, in addition to running every interval, the reconciliation loop will get triggered when supported sources change (default: disabled)").BoolVar(&cfg.UpdateEvents)

@@ -1,6 +1,6 @@
 module sigs.k8s.io/external-dns
 
-go 1.15
+go 1.16
 
 require (
 	cloud.google.com/go v0.50.0
@@ -44,7 +44,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/projectcontour/contour v1.5.0
 	github.com/prometheus/client_golang v1.7.1
-	github.com/sanyu/dynectsoap v0.0.0-20181203081243-b83de5edc4e0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.7.0.20210127161313-bd30bebeac4f
 	github.com/sirupsen/logrus v1.6.0
 	github.com/smartystreets/gunit v1.3.4 // indirect
