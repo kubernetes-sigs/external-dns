@@ -44,6 +44,7 @@ type bluecatConfig struct {
 	DNSConfiguration string `json:"dnsConfiguration"`
 	View             string `json:"dnsView"`
 	RootZone         string `json:"rootZone"`
+	SkipTLSVerify    bool   `json:"skipTLSVerify"`
 }
 
 // BluecatProvider implements the DNS provider for Bluecat DNS
@@ -83,6 +84,7 @@ type GatewayClientConfig struct {
 	DNSConfiguration string
 	View             string
 	RootZone         string
+	SkipTLSVerify    bool
 }
 
 // BluecatZone defines a zone to hold records
@@ -159,7 +161,7 @@ func NewBluecatProvider(configFile string, domainFilter endpoint.DomainFilter, z
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get API token from Bluecat Gateway")
 	}
-	gatewayClient := NewGatewayClient(cookie, token, cfg.GatewayHost, cfg.DNSConfiguration, cfg.View, cfg.RootZone)
+	gatewayClient := NewGatewayClient(cookie, token, cfg.GatewayHost, cfg.DNSConfiguration, cfg.View, cfg.RootZone, cfg.SkipTLSVerify)
 
 	provider := &BluecatProvider{
 		domainFilter:     domainFilter,
@@ -174,7 +176,7 @@ func NewBluecatProvider(configFile string, domainFilter endpoint.DomainFilter, z
 }
 
 // NewGatewayClient creates and returns a new Bluecat gateway client
-func NewGatewayClient(cookie http.Cookie, token, gatewayHost, dnsConfiguration, view, rootZone string) GatewayClientConfig {
+func NewGatewayClient(cookie http.Cookie, token, gatewayHost, dnsConfiguration, view, rootZone string, skipTLSVerify bool) GatewayClientConfig {
 	// Right now the Bluecat gateway doesn't seem to have a way to get the root zone from the API. If the user
 	// doesn't provide one via the config file we'll assume it's 'com'
 	if rootZone == "" {
@@ -187,6 +189,7 @@ func NewGatewayClient(cookie http.Cookie, token, gatewayHost, dnsConfiguration, 
 		DNSConfiguration: dnsConfiguration,
 		View:             view,
 		RootZone:         rootZone,
+		SkipTLSVerify:    skipTLSVerify,
 	}
 }
 
@@ -207,9 +210,21 @@ func (p *BluecatProvider) Records(ctx context.Context) (endpoints []*endpoint.En
 		for _, rec := range resH {
 			propMap := splitProperties(rec.Properties)
 			ips := strings.Split(propMap["addresses"], ",")
-			for _, ip := range ips {
-				ep := endpoint.NewEndpoint(propMap["absoluteName"], endpoint.RecordTypeA, ip)
-				endpoints = append(endpoints, ep)
+			if _, ok := propMap["ttl"]; ok {
+				ttl, err := strconv.Atoi(propMap["ttl"])
+				if err != nil {
+					return nil, errors.Wrapf(err, "could not parse ttl '%d' as int for host record %v", ttl, rec.Name)
+				}
+
+				for _, ip := range ips {
+					ep := endpoint.NewEndpointWithTTL(propMap["absoluteName"], endpoint.RecordTypeA, endpoint.TTL(ttl), ip)
+					endpoints = append(endpoints, ep)
+				}
+			} else {
+				for _, ip := range ips {
+					ep := endpoint.NewEndpoint(propMap["absoluteName"], endpoint.RecordTypeA, ip)
+					endpoints = append(endpoints, ep)
+				}
 			}
 		}
 
@@ -220,7 +235,15 @@ func (p *BluecatProvider) Records(ctx context.Context) (endpoints []*endpoint.En
 		}
 		for _, rec := range resC {
 			propMap := splitProperties(rec.Properties)
-			endpoints = append(endpoints, endpoint.NewEndpoint(propMap["absoluteName"], endpoint.RecordTypeCNAME, propMap["linkedRecordName"]))
+			if _, ok := propMap["ttl"]; ok {
+				ttl, err := strconv.Atoi(propMap["ttl"])
+				if err != nil {
+					return nil, errors.Wrapf(err, "could not parse ttl '%d' as int for CNAME record %v", ttl, rec.Name)
+				}
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(propMap["absoluteName"], endpoint.RecordTypeCNAME, endpoint.TTL(ttl), propMap["linkedRecordName"]))
+			} else {
+				endpoints = append(endpoints, endpoint.NewEndpoint(propMap["absoluteName"], endpoint.RecordTypeCNAME, propMap["linkedRecordName"]))
+			}
 		}
 
 		var resT []BluecatTXTRecord
@@ -452,11 +475,10 @@ func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (reco
 	switch ep.RecordType {
 	case endpoint.RecordTypeA:
 		var res []BluecatHostRecord
-		// TODO Allow configurable properties/ttl
 		obj := bluecatCreateHostRecordRequest{
 			AbsoluteName: ep.DNSName,
 			IP4Address:   ep.Targets[0],
-			TTL:          0,
+			TTL:          int(ep.RecordTTL),
 			Properties:   "",
 		}
 		if getObject {
@@ -476,7 +498,7 @@ func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (reco
 		obj := bluecatCreateCNAMERecordRequest{
 			AbsoluteName: ep.DNSName,
 			LinkedRecord: ep.Targets[0],
-			TTL:          0,
+			TTL:          int(ep.RecordTTL),
 			Properties:   "",
 		}
 		if getObject {
@@ -493,6 +515,8 @@ func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (reco
 		}
 	case endpoint.RecordTypeTXT:
 		var res []BluecatTXTRecord
+		// TODO: Allow setting TTL
+		// This is not implemented in the Bluecat Gateway
 		obj := bluecatCreateTXTRecordRequest{
 			AbsoluteName: ep.DNSName,
 			Text:         ep.Targets[0],
@@ -525,7 +549,7 @@ func getBluecatGatewayToken(cfg bluecatConfig) (string, http.Cookie, error) {
 
 	c := &http.Client{
 		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore self-signed SSL cert check
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: cfg.SkipTLSVerify},
 		}}
 
 	resp, err := c.Post(cfg.GatewayHost+"/rest_login", "application/json", bytes.NewBuffer(body))
@@ -559,7 +583,7 @@ func getBluecatGatewayToken(cfg bluecatConfig) (string, http.Cookie, error) {
 
 func (c GatewayClientConfig) getBluecatZones(zoneName string) ([]BluecatZone, error) {
 	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
 	}
 	client := &http.Client{
 		Transport: transportCfg,
@@ -597,7 +621,7 @@ func (c GatewayClientConfig) getBluecatZones(zoneName string) ([]BluecatZone, er
 
 func (c GatewayClientConfig) getHostRecords(zone string, records *[]BluecatHostRecord) error {
 	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
 	}
 	client := &http.Client{
 		Transport: transportCfg,
@@ -629,7 +653,7 @@ func (c GatewayClientConfig) getHostRecords(zone string, records *[]BluecatHostR
 
 func (c GatewayClientConfig) getCNAMERecords(zone string, records *[]BluecatCNAMERecord) error {
 	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
 	}
 	client := &http.Client{
 		Transport: transportCfg,
@@ -661,7 +685,7 @@ func (c GatewayClientConfig) getCNAMERecords(zone string, records *[]BluecatCNAM
 
 func (c GatewayClientConfig) getTXTRecords(zone string, records *[]BluecatTXTRecord) error {
 	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
 	}
 	client := &http.Client{
 		Transport: transportCfg,
@@ -695,7 +719,7 @@ func (c GatewayClientConfig) getTXTRecords(zone string, records *[]BluecatTXTRec
 
 func (c GatewayClientConfig) getHostRecord(name string, record *BluecatHostRecord) error {
 	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
 	}
 	client := &http.Client{
 		Transport: transportCfg,
@@ -723,7 +747,7 @@ func (c GatewayClientConfig) getHostRecord(name string, record *BluecatHostRecor
 
 func (c GatewayClientConfig) getCNAMERecord(name string, record *BluecatCNAMERecord) error {
 	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
 	}
 	client := &http.Client{
 		Transport: transportCfg,
@@ -751,7 +775,7 @@ func (c GatewayClientConfig) getCNAMERecord(name string, record *BluecatCNAMERec
 
 func (c GatewayClientConfig) getTXTRecord(name string, record *BluecatTXTRecord) error {
 	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
 	}
 	client := &http.Client{
 		Transport: transportCfg,
@@ -780,7 +804,7 @@ func (c GatewayClientConfig) getTXTRecord(name string, record *BluecatTXTRecord)
 
 func (c GatewayClientConfig) createHostRecord(zone string, req *bluecatCreateHostRecordRequest) (res interface{}, err error) {
 	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
 	}
 	client := &http.Client{
 		Transport: transportCfg,
@@ -804,7 +828,7 @@ func (c GatewayClientConfig) createHostRecord(zone string, req *bluecatCreateHos
 
 func (c GatewayClientConfig) createCNAMERecord(zone string, req *bluecatCreateCNAMERecordRequest) (res interface{}, err error) {
 	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
 	}
 	client := &http.Client{
 		Transport: transportCfg,
@@ -830,7 +854,7 @@ func (c GatewayClientConfig) createCNAMERecord(zone string, req *bluecatCreateCN
 
 func (c GatewayClientConfig) createTXTRecord(zone string, req *bluecatCreateTXTRecordRequest) (interface{}, error) {
 	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
 	}
 	client := &http.Client{
 		Transport: transportCfg,
@@ -855,7 +879,7 @@ func (c GatewayClientConfig) createTXTRecord(zone string, req *bluecatCreateTXTR
 
 func (c GatewayClientConfig) deleteHostRecord(name string) (err error) {
 	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
 	}
 	client := &http.Client{
 		Transport: transportCfg,
@@ -879,7 +903,7 @@ func (c GatewayClientConfig) deleteHostRecord(name string) (err error) {
 
 func (c GatewayClientConfig) deleteCNAMERecord(name string) (err error) {
 	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
 	}
 	client := &http.Client{
 		Transport: transportCfg,
@@ -903,7 +927,7 @@ func (c GatewayClientConfig) deleteCNAMERecord(name string) (err error) {
 
 func (c GatewayClientConfig) deleteTXTRecord(name string) error {
 	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //ignore self-signed SSL cert check
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
 	}
 	client := &http.Client{
 		Transport: transportCfg,

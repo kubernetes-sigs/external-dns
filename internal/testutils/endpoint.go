@@ -25,6 +25,12 @@ import (
 
 /** test utility functions for endpoints verifications */
 
+type byNames endpoint.ProviderSpecific
+
+func (p byNames) Len() int           { return len(p) }
+func (p byNames) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+func (p byNames) Less(i, j int) bool { return p[i].Name < p[j].Name }
+
 type byAllFields []*endpoint.Endpoint
 
 func (b byAllFields) Len() int      { return len(b) }
@@ -102,5 +108,9 @@ func SamePlanChanges(a, b map[string][]*endpoint.Endpoint) bool {
 
 // SameProviderSpecific verifies that two maps contain the same string/string key/value pairs
 func SameProviderSpecific(a, b endpoint.ProviderSpecific) bool {
-	return reflect.DeepEqual(a, b)
+	sa := a
+	sb := b
+	sort.Sort(byNames(sa))
+	sort.Sort(byNames(sb))
+	return reflect.DeepEqual(sa, sb)
 }
