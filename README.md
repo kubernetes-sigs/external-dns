@@ -129,6 +129,7 @@ The following tutorials are provided:
 * [Azure DNS](docs/tutorials/azure.md)
 * [Azure Private DNS](docs/tutorials/azure-private-dns.md)
 * [Cloudflare](docs/tutorials/cloudflare.md)
+* [BlueCat](docs/tutorials/bluecat.md)
 * [CoreDNS](docs/tutorials/coredns.md)
 * [DigitalOcean](docs/tutorials/digitalocean.md)
 * [Hetzner](docs/tutorials/hetzner.md)
