@@ -151,7 +151,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		Desired:            endpoints,
 		DomainFilter:       c.DomainFilter,
 		PropertyComparator: c.Registry.PropertyValuesEqual,
-		ManagedRecords:     []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		ManagedRecords:     c.ManagedRecordTypes,
 	}
 
 	plan = plan.Calculate()
