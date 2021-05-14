@@ -268,6 +268,7 @@ spec:
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=azure
         - --azure-resource-group=externaldns # (optional) use the DNS zones from the tutorial's resource group
+        - --txt-prefix=externaldns-
         volumeMounts:
         - name: azure-config-file
           mountPath: /etc/kubernetes
