@@ -27,11 +27,11 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/nesv/go-dynect/dynect"
-	"github.com/sanyu/dynectsoap/dynectsoap"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	dynsoap "sigs.k8s.io/external-dns/provider/dyn/soap"
 )
 
 const (
@@ -250,7 +250,7 @@ func apiRetryLoop(f func() error) error {
 	return err
 }
 
-func (d *dynProviderState) allRecordsToEndpoints(records *dynectsoap.GetAllRecordsResponseType) []*endpoint.Endpoint {
+func (d *dynProviderState) allRecordsToEndpoints(records *dynsoap.GetAllRecordsResponseType) []*endpoint.Endpoint {
 	result := []*endpoint.Endpoint{}
 	//Convert each record to an endpoint
 
@@ -330,20 +330,23 @@ func (d *dynProviderState) fetchZoneSerial(client *dynect.Client, zone string) (
 }
 
 //Use SOAP to fetch all records with a single call
-func (d *dynProviderState) fetchAllRecordsInZone(zone string) (*dynectsoap.GetAllRecordsResponseType, error) {
+func (d *dynProviderState) fetchAllRecordsInZone(zone string) (*dynsoap.GetAllRecordsResponseType, error) {
 	var err error
-	client := dynectsoap.NewClient("https://api2.dynect.net/SOAP/")
-	service := dynectsoap.NewDynect(client)
 
-	sessionRequest := dynectsoap.SessionLoginRequestType{
+	service := dynsoap.NewDynectClient("https://api2.dynect.net/SOAP/")
+
+	sessionRequest := dynsoap.SessionLoginRequestType{
 		Customer_name:  d.CustomerName,
 		User_name:      d.Username,
 		Password:       d.Password,
 		Fault_incompat: 0,
 	}
-	resp := dynectsoap.SessionLoginResponseType{}
+
+	var resp *dynsoap.SessionLoginResponseType
+
 	err = apiRetryLoop(func() error {
-		return service.Do(&sessionRequest, &resp)
+		resp, err = service.SessionLogin(&sessionRequest)
+		return err
 	})
 
 	if err != nil {
@@ -352,46 +355,56 @@ func (d *dynProviderState) fetchAllRecordsInZone(zone string) (*dynectsoap.GetAl
 
 	token := resp.Data.Token
 
-	logoutRequest := dynectsoap.SessionLogoutRequestType{
+	logoutRequest := &dynsoap.SessionLogoutRequestType{
 		Token:          token,
 		Fault_incompat: 0,
 	}
-	logoutResponse := dynectsoap.SessionLogoutResponseType{}
-	defer service.Do(&logoutRequest, &logoutResponse)
 
-	req := dynectsoap.GetAllRecordsRequestType{
+	defer service.SessionLogout(logoutRequest)
+
+	req := dynsoap.GetAllRecordsRequestType{
 		Token:          token,
 		Zone:           zone,
 		Fault_incompat: 0,
 	}
-	records := dynectsoap.GetAllRecordsResponseType{}
+
+	var records = &dynsoap.GetAllRecordsResponseType{}
+
 	err = apiRetryLoop(func() error {
-		return service.Do(&req, &records)
+		records, err = service.GetAllRecords(&req)
+		return err
 	})
 
 	if err != nil {
 		return nil, err
 	}
+
 	log.Debugf("Got all Records, status is %s", records.Status)
 
 	if strings.ToLower(records.Status) == "incomplete" {
-		jobRequest := dynectsoap.GetJobRequestType{
+		jobRequest := dynsoap.GetJobRequestType{
 			Token:          token,
 			Job_id:         records.Job_id,
 			Fault_incompat: 0,
 		}
 
-		jobResults := dynectsoap.GetJobResponseType{}
+		var jobResults = dynsoap.GetJobResponseType{}
 		err = apiRetryLoop(func() error {
-			return service.GetJobRetry(&jobRequest, &jobResults)
+			jobResults, err := service.GetJob(&jobRequest)
+			if strings.ToLower(jobResults.Status) == "incomplete" {
+				return fmt.Errorf("job is incomplete")
+			}
+			return err
 		})
+
 		if err != nil {
 			return nil, err
 		}
-		return jobResults.Data.(*dynectsoap.GetAllRecordsResponseType), nil
+
+		return jobResults.Data.(*dynsoap.GetAllRecordsResponseType), nil
 	}
 
-	return &records, nil
+	return records, nil
 }
 
 // buildLinkToRecord build a resource link. The symmetry of the dyn API is used to save

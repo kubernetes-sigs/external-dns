@@ -23,8 +23,8 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/transip/gotransip"
-	transip "github.com/transip/gotransip/domain"
+	"github.com/transip/gotransip/v6"
+	"github.com/transip/gotransip/v6/domain"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -40,9 +40,11 @@ const (
 // TransIPProvider is an implementation of Provider for TransIP.
 type TransIPProvider struct {
 	provider.BaseProvider
-	client       gotransip.SOAPClient
+	domainRepo   domain.Repository
 	domainFilter endpoint.DomainFilter
 	dryRun       bool
+
+	zoneMap provider.ZoneIDName
 }
 
 // NewTransIPProvider initializes a new TransIP Provider.
@@ -64,7 +66,7 @@ func NewTransIPProvider(accountName, privateKeyFile string, domainFilter endpoin
 	}
 
 	// create new TransIP API client
-	c, err := gotransip.NewSOAPClient(gotransip.ClientConfig{
+	client, err := gotransip.NewClient(gotransip.ClientConfiguration{
 		AccountName:    accountName,
 		PrivateKeyPath: privateKeyFile,
 		Mode:           apiMode,
@@ -73,233 +75,280 @@ func NewTransIPProvider(accountName, privateKeyFile string, domainFilter endpoin
 		return nil, fmt.Errorf("could not setup TransIP API client: %s", err.Error())
 	}
 
-	// return tipCloud struct
+	// return TransIPProvider struct
 	return &TransIPProvider{
-		client:       c,
+		domainRepo:   domain.Repository{Client: client},
 		domainFilter: domainFilter,
 		dryRun:       dryRun,
+		zoneMap:      provider.ZoneIDName{},
 	}, nil
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *TransIPProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	// build zonefinder with all our zones so we can use FindZone
-	// and a mapping of zones and their domain name
-	zones, err := p.fetchZones()
+	// fetch all zones we currently have
+	// this does NOT include any DNS entries, so we'll have to fetch these for
+	// each zone that gets updated
+	zones, err := p.domainRepo.GetAll()
 	if err != nil {
 		return err
 	}
 
-	zoneNameMapper := provider.ZoneIDName{}
-	zonesByName := make(map[string]transip.Domain)
-	updatedZones := make(map[string]bool)
+	// refresh zone mapping
+	zoneMap := provider.ZoneIDName{}
 	for _, zone := range zones {
 		// TransIP API doesn't expose a unique identifier for zones, other than than
 		// the domain name itself
-		zoneNameMapper.Add(zone.Name, zone.Name)
-		zonesByName[zone.Name] = zone
+		zoneMap.Add(zone.Name, zone.Name)
 	}
+	p.zoneMap = zoneMap
 
-	// first see if we need to delete anything
+	// first remove obsolete DNS records
 	for _, ep := range changes.Delete {
-		log.WithFields(log.Fields{"record": ep.DNSName, "type": ep.RecordType}).Info("endpoint has to go")
+		epLog := log.WithFields(log.Fields{
+			"record": ep.DNSName,
+			"type":   ep.RecordType,
+		})
+		epLog.Info("endpoint has to go")
 
-		zone, err := p.zoneForZoneName(ep.DNSName, zoneNameMapper, zonesByName)
+		zoneName, entries, err := p.entriesForEndpoint(ep)
 		if err != nil {
-			log.Errorf("could not find zone for %s: %s", ep.DNSName, err.Error())
-			continue
+			epLog.WithError(err).Error("could not get DNS entries")
+			return err
 		}
 
-		log.Debugf("removing records for %s", zone.Name)
+		epLog = epLog.WithField("zone", zoneName)
 
-		// remove current records from DNS entry set
-		entries := p.removeEndpointFromEntries(ep, zone)
-
-		// update zone in zone map
-		zone.DNSEntries = entries
-		zonesByName[zone.Name] = zone
-		// flag zone for updating
-		updatedZones[zone.Name] = true
-	}
-
-	for _, ep := range changes.Create {
-		log.WithFields(log.Fields{"record": ep.DNSName, "type": ep.RecordType}).Info("endpoint is missing")
-
-		zone, err := p.zoneForZoneName(ep.DNSName, zoneNameMapper, zonesByName)
-		if err != nil {
-			log.Errorf("could not find zone for %s: %s", ep.DNSName, err.Error())
-			continue
-		}
-
-		log.Debugf("creating records for %s", zone.Name)
-
-		// add new entries to set
-		zone.DNSEntries = p.addEndpointToEntries(ep, zone, zone.DNSEntries)
-
-		// update zone in zone map
-		zonesByName[zone.Name] = zone
-		// flag zone for updating
-		updatedZones[zone.Name] = true
-		log.WithFields(log.Fields{"zone": zone.Name}).Debug("flagging for update")
-	}
-
-	for _, ep := range changes.UpdateNew {
-		log.WithFields(log.Fields{"record": ep.DNSName, "type": ep.RecordType}).Debug("needs updating")
-
-		zone, err := p.zoneForZoneName(ep.DNSName, zoneNameMapper, zonesByName)
-		if err != nil {
-			log.WithFields(log.Fields{"record": ep.DNSName}).Warn(err.Error())
-			continue
-		}
-
-		// updating the records is basically finding all matching records according
-		// to the name and the type, removing them from the set and add the new
-		// records
-		log.WithFields(log.Fields{
-			"zone":       zone.Name,
-			"dnsname":    ep.DNSName,
-			"recordtype": ep.RecordType,
-		}).Debug("removing matching entries")
-
-		// remove current records from DNS entry set
-		entries := p.removeEndpointFromEntries(ep, zone)
-
-		// add new entries to set
-		entries = p.addEndpointToEntries(ep, zone, entries)
-
-		// check to see if actually anything changed in the DNSEntry set
-		if p.dnsEntriesAreEqual(entries, zone.DNSEntries) {
-			log.WithFields(log.Fields{"zone": zone.Name}).Debug("not updating identical entries")
-			continue
-		}
-
-		// update zone in zone map
-		zone.DNSEntries = entries
-		zonesByName[zone.Name] = zone
-		// flag zone for updating
-		updatedZones[zone.Name] = true
-
-		log.WithFields(log.Fields{"zone": zone.Name}).Debug("flagging for update")
-	}
-
-	// go over all updated zones and set new DNSEntry set
-	for uz := range updatedZones {
-		zone, ok := zonesByName[uz]
-		if !ok {
-			log.WithFields(log.Fields{"zone": uz}).Debug("updated zone no longer found")
+		if len(entries) == 0 {
+			epLog.Info("no matching entries found")
 			continue
 		}
 
 		if p.dryRun {
-			log.WithFields(log.Fields{"zone": zone.Name}).Info("not updating in dry-run mode")
+			epLog.Info("not removing DNS entries in dry-run mode")
 			continue
 		}
 
-		log.WithFields(log.Fields{"zone": zone.Name}).Info("updating DNS entries")
-		if err := transip.SetDNSEntries(p.client, zone.Name, zone.DNSEntries); err != nil {
-			log.WithFields(log.Fields{"zone": zone.Name, "error": err.Error()}).Warn("failed to update")
+		for _, entry := range entries {
+			log.WithFields(log.Fields{
+				"domain":  zoneName,
+				"name":    entry.Name,
+				"type":    entry.Type,
+				"content": entry.Content,
+				"ttl":     entry.Expire,
+			}).Info("removing DNS entry")
+
+			err = p.domainRepo.RemoveDNSEntry(zoneName, entry)
+			if err != nil {
+				epLog.WithError(err).Error("could not remove DNS entry")
+				return err
+			}
+		}
+	}
+
+	// then create new DNS records
+	for _, ep := range changes.Create {
+		epLog := log.WithFields(log.Fields{
+			"record": ep.DNSName,
+			"type":   ep.RecordType,
+		})
+		epLog.Info("endpoint should be created")
+
+		zoneName, err := p.zoneNameForDNSName(ep.DNSName)
+		if err != nil {
+			epLog.WithError(err).Warn("could not find zone for endpoint")
+			continue
+		}
+
+		epLog = epLog.WithField("zone", zoneName)
+
+		if p.dryRun {
+			epLog.Info("not adding DNS entries in dry-run mode")
+			continue
+		}
+
+		for _, entry := range dnsEntriesForEndpoint(ep, zoneName) {
+			log.WithFields(log.Fields{
+				"domain":  zoneName,
+				"name":    entry.Name,
+				"type":    entry.Type,
+				"content": entry.Content,
+				"ttl":     entry.Expire,
+			}).Info("creating DNS entry")
+
+			err = p.domainRepo.AddDNSEntry(zoneName, entry)
+			if err != nil {
+				epLog.WithError(err).Error("could not add DNS entry")
+				return err
+			}
+		}
+	}
+
+	// then update existing DNS records
+	for _, ep := range changes.UpdateNew {
+		epLog := log.WithFields(log.Fields{
+			"record": ep.DNSName,
+			"type":   ep.RecordType,
+		})
+		epLog.Debug("endpoint needs updating")
+
+		zoneName, entries, err := p.entriesForEndpoint(ep)
+		if err != nil {
+			epLog.WithError(err).Error("could not get DNS entries")
+			return err
+		}
+
+		epLog = epLog.WithField("zone", zoneName)
+
+		if len(entries) == 0 {
+			epLog.Info("no matching entries found")
+			continue
+		}
+
+		newEntries := dnsEntriesForEndpoint(ep, zoneName)
+
+		// check to see if actually anything changed in the DNSEntry set
+		if dnsEntriesAreEqual(newEntries, entries) {
+			epLog.Debug("not updating identical DNS entries")
+			continue
+		}
+
+		if p.dryRun {
+			epLog.Info("not updating DNS entries in dry-run mode")
+			continue
+		}
+
+		// TransIP API client does have an UpdateDNSEntry call but that does only
+		// allow you to update the content of a DNSEntry, not the TTL
+		// to work around this, remove the old entry first and add the new entry
+		for _, entry := range entries {
+			log.WithFields(log.Fields{
+				"domain":  zoneName,
+				"name":    entry.Name,
+				"type":    entry.Type,
+				"content": entry.Content,
+				"ttl":     entry.Expire,
+			}).Info("removing DNS entry")
+
+			err = p.domainRepo.RemoveDNSEntry(zoneName, entry)
+			if err != nil {
+				epLog.WithError(err).Error("could not remove DNS entry")
+				return err
+			}
+		}
+
+		for _, entry := range newEntries {
+			log.WithFields(log.Fields{
+				"domain":  zoneName,
+				"name":    entry.Name,
+				"type":    entry.Type,
+				"content": entry.Content,
+				"ttl":     entry.Expire,
+			}).Info("adding DNS entry")
+
+			err = p.domainRepo.AddDNSEntry(zoneName, entry)
+			if err != nil {
+				epLog.WithError(err).Error("could not add DNS entry")
+				return err
+			}
 		}
 	}
 
 	return nil
 }
 
-// fetchZones returns a list of all domains within the account
-func (p *TransIPProvider) fetchZones() ([]transip.Domain, error) {
-	domainNames, err := transip.GetDomainNames(p.client)
-	if err != nil {
-		return nil, err
-	}
-
-	domains, err := transip.BatchGetInfo(p.client, domainNames)
-	if err != nil {
-		return nil, err
-	}
-
-	var zones []transip.Domain
-	for _, d := range domains {
-		if !p.domainFilter.Match(d.Name) {
-			continue
-		}
-
-		zones = append(zones, d)
-	}
-
-	return zones, nil
-}
-
-// Zones returns the list of hosted zones.
-func (p *TransIPProvider) Zones() ([]transip.Domain, error) {
-	zones, err := p.fetchZones()
-	if err != nil {
-		return nil, err
-	}
-
-	return zones, nil
-}
-
-// Records returns the list of records in a given zone.
+// Records returns the list of records in all zones
 func (p *TransIPProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	zones, err := p.Zones()
+	zones, err := p.domainRepo.GetAll()
 	if err != nil {
 		return nil, err
 	}
 
 	var endpoints []*endpoint.Endpoint
-	var name string
 	// go over all zones and their DNS entries and create endpoints for them
 	for _, zone := range zones {
-		for _, r := range zone.DNSEntries {
-			if !provider.SupportedRecordType(string(r.Type)) {
+		entries, err := p.domainRepo.GetDNSEntries(zone.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, r := range entries {
+			if !provider.SupportedRecordType(r.Type) {
 				continue
 			}
 
-			name = p.endpointNameForRecord(r, zone)
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(name, string(r.Type), endpoint.TTL(r.TTL), r.Content))
+			name := endpointNameForRecord(r, zone.Name)
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(name, r.Type, endpoint.TTL(r.Expire), r.Content))
 		}
 	}
 
 	return endpoints, nil
 }
 
+func (p *TransIPProvider) entriesForEndpoint(ep *endpoint.Endpoint) (string, []domain.DNSEntry, error) {
+	zoneName, err := p.zoneNameForDNSName(ep.DNSName)
+	if err != nil {
+		return "", nil, err
+	}
+
+	epName := recordNameForEndpoint(ep, zoneName)
+	dnsEntries, err := p.domainRepo.GetDNSEntries(zoneName)
+	if err != nil {
+		return zoneName, nil, err
+	}
+
+	matches := []domain.DNSEntry{}
+	for _, entry := range dnsEntries {
+		if ep.RecordType != entry.Type {
+			continue
+		}
+
+		if entry.Name == epName {
+			matches = append(matches, entry)
+		}
+	}
+
+	return zoneName, matches, nil
+}
+
 // endpointNameForRecord returns "www.example.org" for DNSEntry with Name "www" and
 // Domain with Name "example.org"
-func (p *TransIPProvider) endpointNameForRecord(r transip.DNSEntry, d transip.Domain) string {
+func endpointNameForRecord(r domain.DNSEntry, zoneName string) string {
 	// root name is identified by "@" and should be translated to domain name for
 	// the endpoint entry.
 	if r.Name == "@" {
-		return d.Name
+		return zoneName
 	}
 
-	return fmt.Sprintf("%s.%s", r.Name, d.Name)
+	return fmt.Sprintf("%s.%s", r.Name, zoneName)
 }
 
 // recordNameForEndpoint returns "www" for Endpoint with DNSName "www.example.org"
 // and Domain with Name "example.org"
-func (p *TransIPProvider) recordNameForEndpoint(ep *endpoint.Endpoint, d transip.Domain) string {
+func recordNameForEndpoint(ep *endpoint.Endpoint, zoneName string) string {
 	// root name is identified by "@" and should be translated to domain name for
 	// the endpoint entry.
-	if ep.DNSName == d.Name {
+	if ep.DNSName == zoneName {
 		return "@"
 	}
 
-	return strings.TrimSuffix(ep.DNSName, "."+d.Name)
+	return strings.TrimSuffix(ep.DNSName, "."+zoneName)
 }
 
 // getMinimalValidTTL returns max between given Endpoint's RecordTTL and
 // transipMinimalValidTTL
-func (p *TransIPProvider) getMinimalValidTTL(ep *endpoint.Endpoint) int64 {
+func getMinimalValidTTL(ep *endpoint.Endpoint) int {
 	// TTL cannot be lower than transipMinimalValidTTL
 	if ep.RecordTTL < transipMinimalValidTTL {
 		return transipMinimalValidTTL
 	}
 
-	return int64(ep.RecordTTL)
+	return int(ep.RecordTTL)
 }
 
 // dnsEntriesAreEqual compares the entries in 2 sets and returns true if the
 // content of the entries is equal
-func (p *TransIPProvider) dnsEntriesAreEqual(a, b transip.DNSEntries) bool {
+func dnsEntriesAreEqual(a, b []domain.DNSEntry) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -315,7 +364,7 @@ func (p *TransIPProvider) dnsEntriesAreEqual(a, b transip.DNSEntries) bool {
 				continue
 			}
 
-			if aa.TTL != bb.TTL {
+			if aa.Expire != bb.Expire {
 				continue
 			}
 
@@ -330,45 +379,22 @@ func (p *TransIPProvider) dnsEntriesAreEqual(a, b transip.DNSEntries) bool {
 	return (len(a) == match)
 }
 
-// removeEndpointFromEntries removes DNS entries from zone's set that match the
-// type and name from given endpoint and returns the resulting DNS entry set
-func (p *TransIPProvider) removeEndpointFromEntries(ep *endpoint.Endpoint, zone transip.Domain) transip.DNSEntries {
-	// create new entry set
-	entries := transip.DNSEntries{}
-	// go over each DNS entry to see if it is a match
-	for _, e := range zone.DNSEntries {
-		// if we have match, don't copy it to the new entry set
-		if p.endpointNameForRecord(e, zone) == ep.DNSName && string(e.Type) == ep.RecordType {
-			log.WithFields(log.Fields{
-				"name":    e.Name,
-				"content": e.Content,
-				"type":    e.Type,
-			}).Debug("found match")
-			continue
+// dnsEntriesForEndpoint creates DNS entries for given endpoint and returns
+// resulting DNS entry set
+func dnsEntriesForEndpoint(ep *endpoint.Endpoint, zoneName string) []domain.DNSEntry {
+	ttl := getMinimalValidTTL(ep)
+
+	entries := []domain.DNSEntry{}
+	for _, target := range ep.Targets {
+		// external hostnames require a trailing dot in TransIP API
+		if ep.RecordType == "CNAME" {
+			target = provider.EnsureTrailingDot(target)
 		}
 
-		entries = append(entries, e)
-	}
-
-	return entries
-}
-
-// addEndpointToEntries creates DNS entries for given endpoint and returns
-// resulting DNS entry set
-func (p *TransIPProvider) addEndpointToEntries(ep *endpoint.Endpoint, zone transip.Domain, entries transip.DNSEntries) transip.DNSEntries {
-	ttl := p.getMinimalValidTTL(ep)
-	for _, target := range ep.Targets {
-		log.WithFields(log.Fields{
-			"zone":       zone.Name,
-			"dnsname":    ep.DNSName,
-			"recordtype": ep.RecordType,
-			"ttl":        ttl,
-			"target":     target,
-		}).Debugf("adding new record")
-		entries = append(entries, transip.DNSEntry{
-			Name:    p.recordNameForEndpoint(ep, zone),
-			TTL:     ttl,
-			Type:    transip.DNSEntryType(ep.RecordType),
+		entries = append(entries, domain.DNSEntry{
+			Name:    recordNameForEndpoint(ep, zoneName),
+			Expire:  ttl,
+			Type:    ep.RecordType,
 			Content: target,
 		})
 	}
@@ -378,16 +404,11 @@ func (p *TransIPProvider) addEndpointToEntries(ep *endpoint.Endpoint, zone trans
 
 // zoneForZoneName returns the zone mapped to given name or error if zone could
 // not be found
-func (p *TransIPProvider) zoneForZoneName(name string, m provider.ZoneIDName, z map[string]transip.Domain) (transip.Domain, error) {
-	_, zoneName := m.FindZone(name)
+func (p *TransIPProvider) zoneNameForDNSName(name string) (string, error) {
+	_, zoneName := p.zoneMap.FindZone(name)
 	if zoneName == "" {
-		return transip.Domain{}, fmt.Errorf("could not find zoneName for %s", name)
+		return "", fmt.Errorf("could not find zoneName for %s", name)
 	}
 
-	zone, ok := z[zoneName]
-	if !ok {
-		return zone, fmt.Errorf("could not find zone for %s", zoneName)
-	}
-
-	return zone, nil
+	return zoneName, nil
 }
