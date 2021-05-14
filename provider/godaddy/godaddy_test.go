@@ -19,6 +19,7 @@ package godaddy
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"sort"
 	"testing"
 
@@ -360,8 +361,8 @@ func TestGoDaddyChange(t *testing.T) {
 		},
 	}, nil).Once()
 
-	// Update domain
-	client.On("Put", "/v1/domains/example.net/records", []gdRecordField{
+	// Add entry
+	client.On("Patch", "/v1/domains/example.net/records", []gdRecordField{
 		{
 			Name: "@",
 			Type: "A",
@@ -370,7 +371,86 @@ func TestGoDaddyChange(t *testing.T) {
 		},
 	}).Return(nil, nil).Once()
 
+	// Delete entry
+	client.On("Delete", "/v1/domains/example.net/records/A/godaddy").Return(nil, nil).Once()
+
 	assert.NoError(provider.ApplyChanges(context.TODO(), &changes))
+
+	client.AssertExpectations(t)
+}
+
+var (
+	status404 string = "404"
+	notfound  string = "Record not found"
+)
+
+func TestGoDaddyErrorResponse(t *testing.T) {
+	assert := assert.New(t)
+	client := newMockGoDaddyClient(t)
+	provider := &GDProvider{
+		client: client,
+	}
+
+	changes := plan.Changes{
+		Create: []*endpoint.Endpoint{
+			{
+				DNSName:    ".example.net",
+				RecordType: "A",
+				RecordTTL:  gdMinimalTTL,
+				Targets: []string{
+					"203.0.113.42",
+				},
+			},
+		},
+		Delete: []*endpoint.Endpoint{
+			{
+				DNSName:    "godaddy.example.net",
+				RecordType: "A",
+				Targets: []string{
+					"203.0.113.43",
+				},
+			},
+		},
+	}
+
+	// Fetch domains
+	client.On("Get", "/v1/domains?statuses=ACTIVE").Return([]gdZone{
+		{
+			Domain: zoneNameExampleNet,
+		},
+	}, nil).Once()
+
+	// Fetch record
+	client.On("Get", "/v1/domains/example.net/records").Return([]gdRecordField{
+		{
+			Name: "godaddy",
+			Type: "A",
+			TTL:  gdMinimalTTL,
+			Data: "203.0.113.43",
+		},
+	}, nil).Once()
+
+	// Add entry
+	client.On("Patch", "/v1/domains/example.net/records", []gdRecordField{
+		{
+			Name: "@",
+			Type: "A",
+			TTL:  gdMinimalTTL,
+			Data: "203.0.113.42",
+		},
+	}).Return(nil, nil).Once()
+
+	// Delete entry
+	client.On("Delete", "/v1/domains/example.net/records/A/godaddy").Return(GDErrorResponse{
+		Code:    status404,
+		Message: notfound,
+		Fields: []GDErrorField{{
+			Code:    &status404,
+			Message: &notfound,
+		}},
+	}, errors.New(notfound)).Once()
+
+	assert.Error(provider.ApplyChanges(context.TODO(), &changes))
 
 	client.AssertExpectations(t)
 }
