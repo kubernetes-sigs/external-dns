@@ -40,8 +40,6 @@ const (
 var (
 	// ErrRecordToMutateNotFound when ApplyChange has to update/delete and didn't found the record in the existing zone (Change with no record ID)
 	ErrRecordToMutateNotFound = errors.New("record to mutate not found in current zone")
-	// ErrNoDryRun No dry run support for the moment
-	ErrNoDryRun = errors.New("dry run not supported")
 )
 
 type gdClient interface {
@@ -128,11 +126,6 @@ func NewGoDaddyProvider(ctx context.Context, domainFilter endpoint.DomainFilter,
 
 	if err != nil {
 		return nil, err
-	}
-
-	// TODO: Add Dry Run support
-	if dryRun {
-		return nil, ErrNoDryRun
 	}
 
 	return &GDProvider{
