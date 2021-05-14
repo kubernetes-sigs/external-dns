@@ -17,116 +17,123 @@ limitations under the License.
 package transip
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	transip "github.com/transip/gotransip/domain"
+	"github.com/stretchr/testify/require"
+	"github.com/transip/gotransip/v6/domain"
+	"github.com/transip/gotransip/v6/rest"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/provider"
 )
 
+func newProvider() *TransIPProvider {
+	return &TransIPProvider{
+		zoneMap: provider.ZoneIDName{},
+	}
+}
+
 func TestTransIPDnsEntriesAreEqual(t *testing.T) {
-	p := TransIPProvider{}
 	// test with equal set
-	a := transip.DNSEntries{
-		transip.DNSEntry{
+	a := []domain.DNSEntry{
+		{
 			Name:    "www.example.org",
-			Type:    transip.DNSEntryTypeCNAME,
-			TTL:     3600,
+			Type:    "CNAME",
+			Expire:  3600,
 			Content: "www.example.com",
 		},
-		transip.DNSEntry{
+		{
 			Name:    "www.example.com",
-			Type:    transip.DNSEntryTypeA,
-			TTL:     3600,
+			Type:    "A",
+			Expire:  3600,
 			Content: "192.168.0.1",
 		},
 	}
 
-	b := transip.DNSEntries{
-		transip.DNSEntry{
+	b := []domain.DNSEntry{
+		{
 			Name:    "www.example.com",
-			Type:    transip.DNSEntryTypeA,
-			TTL:     3600,
+			Type:    "A",
+			Expire:  3600,
 			Content: "192.168.0.1",
 		},
-		transip.DNSEntry{
+		{
 			Name:    "www.example.org",
-			Type:    transip.DNSEntryTypeCNAME,
-			TTL:     3600,
+			Type:    "CNAME",
+			Expire:  3600,
 			Content: "www.example.com",
 		},
 	}
 
-	assert.Equal(t, true, p.dnsEntriesAreEqual(a, b))
+	assert.Equal(t, true, dnsEntriesAreEqual(a, b))
 
 	// change type on one of b's records
-	b[1].Type = transip.DNSEntryTypeNS
-	assert.Equal(t, false, p.dnsEntriesAreEqual(a, b))
-	b[1].Type = transip.DNSEntryTypeCNAME
+	b[1].Type = "NS"
+	assert.Equal(t, false, dnsEntriesAreEqual(a, b))
+	b[1].Type = "CNAME"
 
 	// change ttl on one of b's records
-	b[1].TTL = 1800
-	assert.Equal(t, false, p.dnsEntriesAreEqual(a, b))
-	b[1].TTL = 3600
+	b[1].Expire = 1800
+	assert.Equal(t, false, dnsEntriesAreEqual(a, b))
+	b[1].Expire = 3600
 
 	// change name on one of b's records
 	b[1].Name = "example.org"
-	assert.Equal(t, false, p.dnsEntriesAreEqual(a, b))
+	assert.Equal(t, false, dnsEntriesAreEqual(a, b))
 
 	// remove last entry of b
 	b = b[:1]
-	assert.Equal(t, false, p.dnsEntriesAreEqual(a, b))
+	assert.Equal(t, false, dnsEntriesAreEqual(a, b))
 }
 
 func TestTransIPGetMinimalValidTTL(t *testing.T) {
-	p := TransIPProvider{}
 	// test with 'unconfigured' TTL
 	ep := &endpoint.Endpoint{}
-	assert.Equal(t, int64(transipMinimalValidTTL), p.getMinimalValidTTL(ep))
+	assert.EqualValues(t, transipMinimalValidTTL, getMinimalValidTTL(ep))
 
 	// test with lower than minimal ttl
 	ep.RecordTTL = (transipMinimalValidTTL - 1)
-	assert.Equal(t, int64(transipMinimalValidTTL), p.getMinimalValidTTL(ep))
+	assert.EqualValues(t, transipMinimalValidTTL, getMinimalValidTTL(ep))
 
 	// test with higher than minimal ttl
 	ep.RecordTTL = (transipMinimalValidTTL + 1)
-	assert.Equal(t, int64(transipMinimalValidTTL+1), p.getMinimalValidTTL(ep))
+	assert.EqualValues(t, transipMinimalValidTTL+1, getMinimalValidTTL(ep))
 }
 
 func TestTransIPRecordNameForEndpoint(t *testing.T) {
-	p := TransIPProvider{}
 	ep := &endpoint.Endpoint{
 		DNSName: "example.org",
 	}
-	d := transip.Domain{
+	d := domain.Domain{
 		Name: "example.org",
 	}
 
-	assert.Equal(t, "@", p.recordNameForEndpoint(ep, d))
+	assert.Equal(t, "@", recordNameForEndpoint(ep, d.Name))
 
 	ep.DNSName = "www.example.org"
-	assert.Equal(t, "www", p.recordNameForEndpoint(ep, d))
+	assert.Equal(t, "www", recordNameForEndpoint(ep, d.Name))
 }
 
 func TestTransIPEndpointNameForRecord(t *testing.T) {
-	p := TransIPProvider{}
-	r := transip.DNSEntry{
+	r := domain.DNSEntry{
 		Name: "@",
 	}
-	d := transip.Domain{
+	d := domain.Domain{
 		Name: "example.org",
 	}
 
-	assert.Equal(t, d.Name, p.endpointNameForRecord(r, d))
+	assert.Equal(t, d.Name, endpointNameForRecord(r, d.Name))
 
 	r.Name = "www"
-	assert.Equal(t, "www.example.org", p.endpointNameForRecord(r, d))
+	assert.Equal(t, "www.example.org", endpointNameForRecord(r, d.Name))
 }
 
 func TestTransIPAddEndpointToEntries(t *testing.T) {
-	p := TransIPProvider{}
-
 	// prepare endpoint
 	ep := &endpoint.Endpoint{
 		DNSName:    "www.example.org",
@@ -139,94 +146,193 @@ func TestTransIPAddEndpointToEntries(t *testing.T) {
 	}
 
 	// prepare zone with DNS entry set
-	zone := transip.Domain{
+	zone := domain.Domain{
 		Name: "example.org",
-		// 2 matching A records
-		DNSEntries: transip.DNSEntries{
-			// 1 non-matching A record
-			transip.DNSEntry{
-				Name:    "mail",
-				Type:    transip.DNSEntryTypeA,
-				Content: "192.168.0.1",
-				TTL:     3600,
-			},
-			// 1 non-matching MX record
-			transip.DNSEntry{
-				Name:    "@",
-				Type:    transip.DNSEntryTypeMX,
-				Content: "mail.example.org",
-				TTL:     3600,
-			},
-		},
 	}
 
 	// add endpoint to zone's entries
-	result := p.addEndpointToEntries(ep, zone, zone.DNSEntries)
+	result := dnsEntriesForEndpoint(ep, zone.Name)
 
-	assert.Equal(t, 4, len(result))
-	assert.Equal(t, "mail", result[0].Name)
-	assert.Equal(t, transip.DNSEntryTypeA, result[0].Type)
-	assert.Equal(t, "@", result[1].Name)
-	assert.Equal(t, transip.DNSEntryTypeMX, result[1].Type)
-	assert.Equal(t, "www", result[2].Name)
-	assert.Equal(t, transip.DNSEntryTypeA, result[2].Type)
-	assert.Equal(t, "192.168.0.1", result[2].Content)
-	assert.Equal(t, int64(1800), result[2].TTL)
-	assert.Equal(t, "www", result[3].Name)
-	assert.Equal(t, transip.DNSEntryTypeA, result[3].Type)
-	assert.Equal(t, "192.168.0.2", result[3].Content)
-	assert.Equal(t, int64(1800), result[3].TTL)
+	if assert.Equal(t, 2, len(result)) {
+		assert.Equal(t, "www", result[0].Name)
+		assert.Equal(t, "A", result[0].Type)
+		assert.Equal(t, "192.168.0.1", result[0].Content)
+		assert.EqualValues(t, 1800, result[0].Expire)
+		assert.Equal(t, "www", result[1].Name)
+		assert.Equal(t, "A", result[1].Type)
+		assert.Equal(t, "192.168.0.2", result[1].Content)
+		assert.EqualValues(t, 1800, result[1].Expire)
+	}
+
+	// try again with CNAME
+	ep.RecordType = "CNAME"
+	ep.Targets = []string{"foo.bar"}
+	result = dnsEntriesForEndpoint(ep, zone.Name)
+	if assert.Equal(t, 1, len(result)) {
+		assert.Equal(t, "CNAME", result[0].Type)
+		assert.Equal(t, "foo.bar.", result[0].Content)
+	}
 }
 
-func TestTransIPRemoveEndpointFromEntries(t *testing.T) {
-	p := TransIPProvider{}
+func TestZoneNameForDNSName(t *testing.T) {
+	p := newProvider()
+	p.zoneMap.Add("example.com", "example.com")
 
-	// prepare endpoint
-	ep := &endpoint.Endpoint{
-		DNSName:    "www.example.org",
-		RecordType: "A",
+	zoneName, err := p.zoneNameForDNSName("www.example.com")
+	if assert.NoError(t, err) {
+		assert.Equal(t, "example.com", zoneName)
 	}
 
-	// prepare zone with DNS entry set
-	zone := transip.Domain{
-		Name: "example.org",
-		// 2 matching A records
-		DNSEntries: transip.DNSEntries{
-			transip.DNSEntry{
-				Name:    "www",
-				Type:    transip.DNSEntryTypeA,
-				Content: "192.168.0.1",
-				TTL:     3600,
-			},
-			transip.DNSEntry{
-				Name:    "www",
-				Type:    transip.DNSEntryTypeA,
-				Content: "192.168.0.2",
-				TTL:     3600,
-			},
-			// 1 non-matching A record
-			transip.DNSEntry{
-				Name:    "mail",
-				Type:    transip.DNSEntryTypeA,
-				Content: "192.168.0.1",
-				TTL:     3600,
-			},
-			// 1 non-matching MX record
-			transip.DNSEntry{
-				Name:    "@",
-				Type:    transip.DNSEntryTypeMX,
-				Content: "mail.example.org",
-				TTL:     3600,
-			},
+	_, err = p.zoneNameForDNSName("www.example.org")
+	if assert.Error(t, err) {
+		assert.Equal(t, "could not find zoneName for www.example.org", err.Error())
+	}
+}
+
+// fakeClient mocks the REST API client
+type fakeClient struct {
+	getFunc func(rest.Request, interface{}) error
+}
+
+func (f *fakeClient) Get(request rest.Request, dest interface{}) error {
+	if f.getFunc == nil {
+		return errors.New("GET not defined")
+	}
+
+	return f.getFunc(request, dest)
+}
+
+func (f fakeClient) Put(request rest.Request) error {
+	return errors.New("PUT not implemented")
+}
+
+func (f fakeClient) Post(request rest.Request) error {
+	return errors.New("POST not implemented")
+}
+
+func (f fakeClient) Delete(request rest.Request) error {
+	return errors.New("DELETE not implemented")
+}
+
+func (f fakeClient) Patch(request rest.Request) error {
+	return errors.New("PATCH not implemented")
+}
+
+func TestProviderRecords(t *testing.T) {
+	// set up the fake REST client
+	client := &fakeClient{}
+	client.getFunc = func(req rest.Request, dest interface{}) error {
+		var data []byte
+		switch {
+		case req.Endpoint == "/domains":
+			// return list of some domain names
+			// names only, other fields are not used
+			data = []byte(`{"domains":[{"name":"example.org"}, {"name":"example.com"}]}`)
+		case strings.HasSuffix(req.Endpoint, "/dns"):
+			// return list of DNS entries
+			// also some unsupported types
+			data = []byte(`{"dnsEntries":[{"name":"www", "expire":1234, "type":"CNAME", "content":"@"},{"type":"MX"},{"type":"AAAA"}]}`)
+		}
+
+		// unmarshal the prepared return data into the given destination type
+		return json.Unmarshal(data, &dest)
+	}
+
+	// set up provider
+	p := newProvider()
+	p.domainRepo = domain.Repository{Client: client}
+
+	endpoints, err := p.Records(context.TODO())
+	if assert.NoError(t, err) {
+		if assert.Equal(t, 2, len(endpoints)) {
+			assert.Equal(t, "www.example.org", endpoints[0].DNSName)
+			assert.EqualValues(t, "@", endpoints[0].Targets[0])
+			assert.Equal(t, "CNAME", endpoints[0].RecordType)
+			assert.Equal(t, 0, len(endpoints[0].Labels))
+			assert.EqualValues(t, 1234, endpoints[0].RecordTTL)
+		}
+	}
+}
+
+func TestProviderEntriesForEndpoint(t *testing.T) {
+	// set up fake REST client
+	client := &fakeClient{}
+
+	// set up provider
+	p := newProvider()
+	p.domainRepo = domain.Repository{Client: client}
+	p.zoneMap.Add("example.com", "example.com")
+
+	// get entries for endpoint with unknown zone
+	_, _, err := p.entriesForEndpoint(&endpoint.Endpoint{
+		DNSName: "www.example.org",
+	})
+	if assert.Error(t, err) {
+		assert.Equal(t, "could not find zoneName for www.example.org", err.Error())
+	}
+
+	// get entries for endpoint with known zone but client returns error
+	// we leave GET functions undefined so we know which error to expect
+	zoneName, _, err := p.entriesForEndpoint(&endpoint.Endpoint{
+		DNSName: "www.example.com",
+	})
+	if assert.Error(t, err) {
+		assert.Equal(t, "GET not defined", err.Error())
+	}
+	assert.Equal(t, "example.com", zoneName)
+
+	// to be able to return a valid set of DNS entries through the API, we define
+	// some first, then JSON encode them and have the fake API client's Get function
+	// return that
+	// in this set are some entries that do and others that don't match the given
+	// endpoint
+	dnsEntries := []domain.DNSEntry{
+		{
+			Name:    "www",
+			Type:    "A",
+			Expire:  3600,
+			Content: "1.2.3.4",
+		},
+		{
+			Name:    "ftp",
+			Type:    "A",
+			Expire:  86400,
+			Content: "3.4.5.6",
+		},
+		{
+			Name:    "www",
+			Type:    "A",
+			Expire:  3600,
+			Content: "2.3.4.5",
+		},
+		{
+			Name:    "www",
+			Type:    "CNAME",
+			Expire:  3600,
+			Content: "@",
 		},
 	}
+	var v struct {
+		DNSEntries []domain.DNSEntry `json:"dnsEntries"`
+	}
+	v.DNSEntries = dnsEntries
+	returnData, err := json.Marshal(&v)
+	require.NoError(t, err)
 
-	// remove endpoint from zone's entries
-	result := p.removeEndpointFromEntries(ep, zone)
-
-	assert.Equal(t, 2, len(result))
-	assert.Equal(t, "mail", result[0].Name)
-	assert.Equal(t, transip.DNSEntryTypeA, result[0].Type)
-	assert.Equal(t, "@", result[1].Name)
-	assert.Equal(t, transip.DNSEntryTypeMX, result[1].Type)
+	// define GET function
+	client.getFunc = func(unused rest.Request, dest interface{}) error {
+		// unmarshal the prepared return data into the given dnsEntriesWrapper
+		return json.Unmarshal(returnData, &dest)
+	}
+	_, entries, err := p.entriesForEndpoint(&endpoint.Endpoint{
+		DNSName:    "www.example.com",
+		RecordType: "A",
+	})
+	if assert.NoError(t, err) {
+		if assert.Equal(t, 2, len(entries)) {
+			// only first and third entry should be returned
+			assert.Equal(t, dnsEntries[0], entries[0])
+			assert.Equal(t, dnsEntries[2], entries[1])
+		}
+	}
 }
