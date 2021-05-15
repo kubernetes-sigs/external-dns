@@ -406,10 +406,10 @@ func (p *GDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) er
 
 	allChanges := make([]gdEndpoint, 0, countTargets(changes))
 
-	allChanges = p.appendChange(gdCreate, changes.Create, allChanges)
-	allChanges = p.appendChange(gdCreate, changes.UpdateNew, allChanges)
-	allChanges = p.appendChange(gdDelete, changes.UpdateOld, allChanges)
 	allChanges = p.appendChange(gdDelete, changes.Delete, allChanges)
+	allChanges = p.appendChange(gdDelete, changes.UpdateOld, allChanges)
+	allChanges = p.appendChange(gdCreate, changes.UpdateNew, allChanges)
+	allChanges = p.appendChange(gdCreate, changes.Create, allChanges)
 
 	log.Infof("GoDaddy: %d changes will be done", len(allChanges))
 

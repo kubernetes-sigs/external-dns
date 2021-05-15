@@ -430,16 +430,6 @@ func TestGoDaddyErrorResponse(t *testing.T) {
 		},
 	}, nil).Once()
 
-	// Add entry
-	client.On("Patch", "/v1/domains/example.net/records", []gdRecordField{
-		{
-			Name: "@",
-			Type: "A",
-			TTL:  gdMinimalTTL,
-			Data: "203.0.113.42",
-		},
-	}).Return(nil, nil).Once()
-
 	// Delete entry
 	client.On("Delete", "/v1/domains/example.net/records/A/godaddy").Return(GDErrorResponse{
 		Code:    status404,
