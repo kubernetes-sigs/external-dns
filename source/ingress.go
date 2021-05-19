@@ -65,7 +65,7 @@ type ingressSource struct {
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool) (Source, error) {
+func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -112,6 +112,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
 		ingressInformer:          ingressInformer,
 		ignoreIngressTLSSpec:     ignoreIngressTLSSpec,
+		ignoreIngressRulesSpec:   ignoreIngressRulesSpec,
 	}
 	return sc, nil
 }

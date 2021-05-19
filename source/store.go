@@ -47,6 +47,7 @@ type Config struct {
 	CombineFQDNAndAnnotation       bool
 	IgnoreHostnameAnnotation       bool
 	IgnoreIngressTLSSpec           bool
+	IgnoreIngressRulesSpec         bool
 	Compatibility                  string
 	PublishInternal                bool
 	PublishHostIP                  bool
@@ -188,7 +189,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewIngressSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.IgnoreIngressTLSSpec)
+		return NewIngressSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.IgnoreIngressTLSSpec, cfg.IgnoreIngressRulesSpec)
 	case "pod":
 		client, err := p.KubeClient()
 		if err != nil {
