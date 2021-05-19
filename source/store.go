@@ -64,6 +64,7 @@ type Config struct {
 	GlooNamespace                  string
 	SkipperRouteGroupVersion       string
 	RequestTimeout                 time.Duration
+	DefaultTargets                 []string
 }
 
 // ClientGenerator provides clients
