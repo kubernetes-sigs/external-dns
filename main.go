@@ -108,6 +108,7 @@ func main() {
 		CombineFQDNAndAnnotation:       cfg.CombineFQDNAndAnnotation,
 		IgnoreHostnameAnnotation:       cfg.IgnoreHostnameAnnotation,
 		IgnoreIngressTLSSpec:           cfg.IgnoreIngressTLSSpec,
+		IgnoreIngressRulesSpec:         cfg.IgnoreIngressRulesSpec,
 		Compatibility:                  cfg.Compatibility,
 		PublishInternal:                cfg.PublishInternal,
 		PublishHostIP:                  cfg.PublishHostIP,
