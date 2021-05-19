@@ -149,9 +149,12 @@ func TestNewIngressSource(t *testing.T) {
 
 func testEndpointsFromIngress(t *testing.T) {
 	for _, ti := range []struct {
-		title    string
-		ingress  fakeIngress
-		expected []*endpoint.Endpoint
+		title                    string
+		ingress                  fakeIngress
+		ignoreHostnameAnnotation bool
+		ignoreIngressTLSSpec     bool
+		ignoreIngressRulesSpec   bool
+		expected                 []*endpoint.Endpoint
 	}{
 		{
 			title: "one rule.host one lb.hostname",
@@ -221,10 +224,19 @@ func testEndpointsFromIngress(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{},
 		},
+		{
+			title: "ignore rules with one rule.host one lb.hostname",
+			ingress: fakeIngress{
+				dnsnames:  []string{"test"},   // Kubernetes requires removal of trailing dot
+				hostnames: []string{"lb.com"}, // Kubernetes omits the trailing dot
+			},
+			expected:               []*endpoint.Endpoint{},
+			ignoreIngressRulesSpec: true,
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, false, false), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, ti.ignoreHostnameAnnotation, ti.ignoreIngressTLSSpec, ti.ignoreIngressRulesSpec), ti.expected)
 		})
 	}
 }
