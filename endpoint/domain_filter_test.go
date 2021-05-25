@@ -262,7 +262,8 @@ var regexDomainFilterTests = []regexDomainFilterTest{
 func TestDomainFilterMatch(t *testing.T) {
 	for i, tt := range domainFilterTests {
 		if len(tt.exclusions) > 0 {
-			t.Skip("NewDomainFilter() doesn't support exclusions")
+			t.Logf("NewDomainFilter() doesn't support exclusions - skipping test %+v", tt)
+			continue
 		}
 		domainFilter := NewDomainFilter(tt.domainFilter)
 		for _, domain := range tt.domains {
