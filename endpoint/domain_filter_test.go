@@ -275,6 +275,9 @@ func TestDomainFilterMatch(t *testing.T) {
 
 func TestDomainFilterWithExclusions(t *testing.T) {
 	for i, tt := range domainFilterTests {
+		if len(tt.exclusions) == 0 {
+			tt.exclusions = append(tt.exclusions, "")
+		}
 		domainFilter := NewDomainFilterWithExclusions(tt.domainFilter, tt.exclusions)
 		for _, domain := range tt.domains {
 			assert.Equal(t, tt.expected, domainFilter.Match(domain), "should not fail: %v in test-case #%v", domain, i)
@@ -308,6 +311,10 @@ func TestPrepareFiltersStripsWhitespaceAndDotSuffix(t *testing.T) {
 		input  []string
 		output []string
 	}{
+		{
+			[]string{},
+			[]string{},
+		},
 		{
 			[]string{""},
 			[]string{""},
