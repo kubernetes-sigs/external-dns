@@ -46,6 +46,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/digitalocean"
 	"sigs.k8s.io/external-dns/provider/dnsimple"
 	"sigs.k8s.io/external-dns/provider/dyn"
+	"sigs.k8s.io/external-dns/provider/evented"
 	"sigs.k8s.io/external-dns/provider/exoscale"
 	"sigs.k8s.io/external-dns/provider/godaddy"
 	"sigs.k8s.io/external-dns/provider/google"
@@ -126,8 +127,7 @@ func main() {
 		RequestTimeout:                 cfg.RequestTimeout,
 	}
 
-	// Lookup all the selected sources by names and pass them the desired configuration.
-	sources, err := source.ByNames(&source.SingletonClientGenerator{
+	clientGenerator := &source.SingletonClientGenerator{
 		KubeConfig:   cfg.KubeConfig,
 		APIServerURL: cfg.APIServerURL,
 		// If update events are enabled, disable timeout.
@@ -137,7 +137,10 @@ func main() {
 			}
 			return cfg.RequestTimeout
 		}(),
-	}, cfg.Sources, sourceCfg)
+	}
+
+	// Lookup all the selected sources by names and pass them the desired configuration.
+	sources, err := source.ByNames(clientGenerator, cfg.Sources, sourceCfg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -314,6 +317,11 @@ func main() {
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	p, err = evented.NewEventedProvider(p, clientGenerator)
 	if err != nil {
 		log.Fatal(err)
 	}
