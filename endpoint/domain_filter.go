@@ -106,6 +106,31 @@ func matchRegex(regex *regexp.Regexp, negativeRegex *regexp.Regexp, domain strin
 	return regex.MatchString(strippedDomain)
 }
 
+// MatchParent checks wether DomainFilter matches a given parent domain.
+func (df DomainFilter) MatchParent(domain string) bool {
+	if !df.IsConfigured() {
+		return true
+	}
+
+	for _, filter := range df.Filters {
+		if strings.HasPrefix(filter, ".") {
+			// We don't check parents if the filter is prefixed with "."
+			continue
+		}
+
+		if filter == "" {
+			return true
+		}
+
+		strippedDomain := strings.ToLower(strings.TrimSuffix(domain, "."))
+		if strings.HasSuffix(filter, "."+strippedDomain) && !matchFilter(df.exclude, domain, false) {
+			return true
+		}
+	}
+
+	return false
+}
+
 // IsConfigured returns true if DomainFilter is configured, false otherwise
 func (df DomainFilter) IsConfigured() bool {
 	if df.regex != nil && df.regex.String() != "" {
