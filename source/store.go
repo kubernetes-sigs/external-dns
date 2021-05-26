@@ -287,6 +287,16 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 			token = restConfig.BearerToken
 		}
 		return NewRouteGroupSource(cfg.RequestTimeout, token, tokenPath, apiServerURL, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.SkipperRouteGroupVersion, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+	case "kong-tcpingress":
+		kubernetesClient, err := p.KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		dynamicClient, err := p.DynamicKubernetesClient()
+		if err != nil {
+			return nil, err
+		}
+		return NewKongTCPIngressSource(dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter)
 	}
 	return nil, ErrSourceNotFound
 }
