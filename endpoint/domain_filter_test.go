@@ -296,6 +296,72 @@ func TestDomainFilterMatchWithEmptyFilter(t *testing.T) {
 	}
 }
 
+func TestDomainFilterMatchParent(t *testing.T) {
+	parentMatchTests := []domainFilterTest{
+		{
+			[]string{"a.example.com."},
+			[]string{},
+			[]string{"example.com"},
+			true,
+		},
+		{
+			[]string{" a.example.com "},
+			[]string{},
+			[]string{"example.com"},
+			true,
+		},
+		{
+			[]string{""},
+			[]string{},
+			[]string{"example.com"},
+			true,
+		},
+		{
+			[]string{".a.example.com."},
+			[]string{},
+			[]string{"example.com"},
+			false,
+		},
+		{
+			[]string{"a.example.com.", "b.example.com"},
+			[]string{},
+			[]string{"example.com"},
+			true,
+		},
+		{
+			[]string{"a.example.com"},
+			[]string{},
+			[]string{"b.example.com"},
+			false,
+		},
+		{
+			[]string{"example.com"},
+			[]string{},
+			[]string{"example.com"},
+			false,
+		},
+		{
+			[]string{"example.com"},
+			[]string{},
+			[]string{"anexample.com"},
+			false,
+		},
+		{
+			[]string{""},
+			[]string{},
+			[]string{""},
+			true,
+		},
+	}
+	for i, tt := range parentMatchTests {
+		domainFilter := NewDomainFilterWithExclusions(tt.domainFilter, tt.exclusions)
+		for _, domain := range tt.domains {
+			assert.Equal(t, tt.expected, domainFilter.MatchParent(domain), "should not fail: %v in test-case #%v", domain, i)
+			assert.Equal(t, tt.expected, domainFilter.MatchParent(domain+"."), "should not fail: %v in test-case #%v", domain+".", i)
+		}
+	}
+}
+
 func TestRegexDomainFilter(t *testing.T) {
 	for i, tt := range regexDomainFilterTests {
 		domainFilter := NewRegexDomainFilter(tt.regex, tt.regexExclusion)
