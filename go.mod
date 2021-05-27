@@ -1,6 +1,6 @@
 module sigs.k8s.io/external-dns
 
-go 1.15
+go 1.16
 
 require (
 	cloud.google.com/go v0.50.0
@@ -30,6 +30,7 @@ require (
 	github.com/google/go-cmp v0.4.1
 	github.com/gophercloud/gophercloud v0.1.0
 	github.com/gorilla/mux v1.7.4 // indirect
+	github.com/hooklift/gowsdl v0.4.0
 	github.com/infobloxopen/infoblox-go-client v0.0.0-20180606155407-61dc5f9b0a65
 	github.com/linki/instrumented_http v0.2.0
 	github.com/linode/linodego v0.19.0
@@ -44,8 +45,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/projectcontour/contour v1.5.0
 	github.com/prometheus/client_golang v1.7.1
-	github.com/sanyu/dynectsoap v0.0.0-20181203081243-b83de5edc4e0
-	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.6.0.20200623155123-84df6c4b5301
+	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.7.0.20210127161313-bd30bebeac4f
 	github.com/sirupsen/logrus v1.6.0
 	github.com/smartystreets/gunit v1.3.4 // indirect
 	github.com/stretchr/testify v1.6.1
@@ -64,8 +64,8 @@ require (
 	gopkg.in/ns1/ns1-go.v2 v2.0.0-20190322154155-0dafb5275fd1
 	gopkg.in/yaml.v2 v2.3.0
 	honnef.co/go/tools v0.0.1-2020.1.4 // indirect
-	istio.io/api v0.0.0-20200529165953-72dad51d4ffc
-	istio.io/client-go v0.0.0-20200529172309-31c16ea3f751
+	istio.io/api v0.0.0-20210128181506-0c4b8e54850f
+	istio.io/client-go v0.0.0-20210128182905-ee2edd059e02
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8
 	k8s.io/client-go v0.18.8
