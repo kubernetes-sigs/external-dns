@@ -548,7 +548,7 @@ func maxOf(vars ...int64) int64 {
 }
 
 func toString(obj interface{}) string {
-	b, e := json.MarshalIndent(obj, "", "	")
+	b, err := json.MarshalIndent(obj, "", "	")
 
 	if e != nil {
 		return fmt.Sprintf("<%v>", e)
