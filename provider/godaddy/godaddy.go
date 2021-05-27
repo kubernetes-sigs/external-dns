@@ -551,7 +551,7 @@ func toString(obj interface{}) string {
 	b, err := json.MarshalIndent(obj, "", "	")
 
 	if err != nil {
-		return fmt.Sprintf("<%v>", e)
+		return fmt.Sprintf("<%v>", err)
 	}
 
 	return string(b)
