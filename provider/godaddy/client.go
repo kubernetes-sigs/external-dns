@@ -77,6 +77,29 @@ type Client struct {
 	Timeout time.Duration
 }
 
+// GDErrorField describe the error reason
+type GDErrorField struct {
+	Code        string `json:"code,omitempty"`
+	Message     string `json:"message,omitempty"`
+	Path        string `json:"path,omitempty"`
+	PathRelated string `json:"pathRelated,omitempty"`
+}
+
+// GDErrorResponse is the body response when an API call fails
+type GDErrorResponse struct {
+	Code    string         `json:"code"`
+	Fields  []GDErrorField `json:"fields,omitempty"`
+	Message string         `json:"message,omitempty"`
+}
+
+func (r GDErrorResponse) String() string {
+	if b, err := json.Marshal(r); err == nil {
+		return string(b)
+	}
+
+	return "<error>"
+}
+
 // NewClient represents a new client to call the API
 func NewClient(useOTE bool, apiKey, apiSecret string) (*Client, error) {
 	var endpoint string
