@@ -379,9 +379,11 @@ func TestGoDaddyChange(t *testing.T) {
 	client.AssertExpectations(t)
 }
 
-var (
-	status404 string = "404"
-	notfound  string = "Record not found"
+const (
+	operationFailedTestErrCode = "GD500"
+	operationFailedTestReason  = "Could not apply request"
+	recordNotFoundErrCode      = "GD404"
+	recordNotFoundReason       = "The requested record is not found in DNS zone"
 )
 
 func TestGoDaddyErrorResponse(t *testing.T) {
@@ -432,13 +434,13 @@ func TestGoDaddyErrorResponse(t *testing.T) {
 
 	// Delete entry
 	client.On("Delete", "/v1/domains/example.net/records/A/godaddy").Return(GDErrorResponse{
-		Code:    status404,
-		Message: notfound,
+		Code:    operationFailedTestErrCode,
+		Message: operationFailedTestReason,
 		Fields: []GDErrorField{{
-			Code:    &status404,
-			Message: &notfound,
+			Code:    recordNotFoundErrCode,
+			Message: recordNotFoundReason,
 		}},
-	}, errors.New(notfound)).Once()
+	}, errors.New(operationFailedTestReason)).Once()
 
 	assert.Error(provider.ApplyChanges(context.TODO(), &changes))
 
