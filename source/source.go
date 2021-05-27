@@ -65,6 +65,10 @@ const (
 	CloudflareProxiedKey = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
 
 	SetIdentifierKey = "external-dns.alpha.kubernetes.io/set-identifier"
+
+	// This annotation is used to distinguish NodePort services that will create load balancers
+	// via aws-load-balancer-controller-v2
+	AwsLoadBalancerTypeAnnotation = "service.beta.kubernetes.io/aws-load-balancer-type"
 )
 
 const (
@@ -174,6 +178,15 @@ func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.Pro
 			Value: v,
 		})
 	}
+
+	// aws-load-balancer-v2 NodePort Service Annotation
+	if v, exists := annotations[AwsLoadBalancerTypeAnnotation]; exists {
+		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+			Name:  AwsLoadBalancerTypeAnnotation,
+			Value: v,
+		})
+	}
+
 	if getAliasFromAnnotations(annotations) {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  "alias",
