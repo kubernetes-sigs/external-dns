@@ -79,10 +79,10 @@ type Client struct {
 
 // GDErrorField describe the error reason
 type GDErrorField struct {
-	Code        *string `json:"code,omitempty"`
-	Message     *string `json:"message,omitempty"`
-	Path        *string `json:"path,omitempty"`
-	PathRelated *string `json:"pathRelated,omitempty"`
+	Code        string `json:"code,omitempty"`
+	Message     string `json:"message,omitempty"`
+	Path        string `json:"path,omitempty"`
+	PathRelated string `json:"pathRelated,omitempty"`
 }
 
 // GDErrorResponse is the body response when an API call fails
