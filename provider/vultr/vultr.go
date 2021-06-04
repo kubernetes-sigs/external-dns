@@ -20,11 +20,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/vultr/govultr"
+	"github.com/vultr/govultr/v2"
+	"golang.org/x/oauth2"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -51,30 +51,33 @@ type VultrProvider struct {
 type VultrChanges struct {
 	Action string
 
-	ResourceRecordSet govultr.DNSRecord
+	ResourceRecordSet *govultr.DomainRecordReq
 }
 
 // NewVultrProvider initializes a new Vultr BNS based provider
-func NewVultrProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*VultrProvider, error) {
+func NewVultrProvider(ctx context.Context, domainFilter endpoint.DomainFilter, dryRun bool) (*VultrProvider, error) {
 	apiKey, ok := os.LookupEnv("VULTR_API_KEY")
 	if !ok {
 		return nil, fmt.Errorf("no token found")
 	}
 
-	client := govultr.NewClient(nil, apiKey)
+	oauthClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(&oauth2.Token{
+		AccessToken: apiKey,
+	}))
+	client := govultr.NewClient(oauthClient)
 	client.SetUserAgent(fmt.Sprintf("ExternalDNS/%s", client.UserAgent))
 
-	provider := &VultrProvider{
+	p := &VultrProvider{
 		client:       *client,
 		domainFilter: domainFilter,
 		DryRun:       dryRun,
 	}
 
-	return provider, nil
+	return p, nil
 }
 
 // Zones returns list of hosted zones
-func (p *VultrProvider) Zones(ctx context.Context) ([]govultr.DNSDomain, error) {
+func (p *VultrProvider) Zones(ctx context.Context) ([]govultr.Domain, error) {
 	zones, err := p.fetchZones(ctx)
 	if err != nil {
 		return nil, err
@@ -108,34 +111,58 @@ func (p *VultrProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 					name = zone.Domain
 				}
 
-				endPointTTL := endpoint.NewEndpointWithTTL(name, r.Type, endpoint.TTL(r.TTL), r.Data)
-				endpoints = append(endpoints, endPointTTL)
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(name, r.Type, endpoint.TTL(r.TTL), r.Data))
 			}
 		}
 	}
+
 	return endpoints, nil
 }
 
-func (p *VultrProvider) fetchRecords(ctx context.Context, domain string) ([]govultr.DNSRecord, error) {
-	records, err := p.client.DNSRecord.List(ctx, domain)
-	if err != nil {
-		return nil, err
+func (p *VultrProvider) fetchRecords(ctx context.Context, domain string) ([]govultr.DomainRecord, error) {
+	var allRecords []govultr.DomainRecord
+	listOptions := &govultr.ListOptions{}
+
+	for {
+		records, meta, err := p.client.DomainRecord.List(ctx, domain, listOptions)
+		if err != nil {
+			return nil, err
+		}
+
+		allRecords = append(allRecords, records...)
+
+		if meta.Links.Next == "" {
+			break
+		} else {
+			listOptions.Cursor = meta.Links.Next
+			continue
+		}
 	}
 
-	return records, nil
+	return allRecords, nil
 }
 
-func (p *VultrProvider) fetchZones(ctx context.Context) ([]govultr.DNSDomain, error) {
-	var zones []govultr.DNSDomain
+func (p *VultrProvider) fetchZones(ctx context.Context) ([]govultr.Domain, error) {
+	var zones []govultr.Domain
+	listOptions := &govultr.ListOptions{}
 
-	allZones, err := p.client.DNSDomain.List(ctx)
-	if err != nil {
-		return nil, err
-	}
+	for {
+		allZones, meta, err := p.client.Domain.List(ctx, listOptions)
+		if err != nil {
+			return nil, err
+		}
 
-	for _, zone := range allZones {
-		if p.domainFilter.Match(zone.Domain) {
-			zones = append(zones, zone)
+		for _, zone := range allZones {
+			if p.domainFilter.Match(zone.Domain) {
+				zones = append(zones, zone)
+			}
+		}
+
+		if meta.Links.Next == "" {
+			break
+		} else {
+			listOptions.Cursor = meta.Links.Next
+			continue
 		}
 	}
 
@@ -153,24 +180,21 @@ func (p *VultrProvider) submitChanges(ctx context.Context, changes []*VultrChang
 		return err
 	}
 
-	zoneChanges := seperateChangesByZone(zones, changes)
+	zoneChanges := separateChangesByZone(zones, changes)
 
 	for zoneName, changes := range zoneChanges {
 		for _, change := range changes {
 			log.WithFields(log.Fields{
-				"record":   change.ResourceRecordSet.Name,
-				"type":     change.ResourceRecordSet.Type,
-				"ttl":      change.ResourceRecordSet.TTL,
-				"priority": change.ResourceRecordSet.Priority,
-				"action":   change.Action,
-				"zone":     zoneName,
+				"record": change.ResourceRecordSet.Name,
+				"type":   change.ResourceRecordSet.Type,
+				"ttl":    change.ResourceRecordSet.TTL,
+				"action": change.Action,
+				"zone":   zoneName,
 			}).Info("Changing record.")
 
 			switch change.Action {
 			case vultrCreate:
-				priority := getPriority(change.ResourceRecordSet.Priority)
-				err = p.client.DNSRecord.Create(ctx, zoneName, change.ResourceRecordSet.Type, change.ResourceRecordSet.Name, change.ResourceRecordSet.Data, change.ResourceRecordSet.TTL, priority)
-				if err != nil {
+				if _, err := p.client.DomainRecord.Create(ctx, zoneName, change.ResourceRecordSet); err != nil {
 					return err
 				}
 			case vultrDelete:
@@ -179,8 +203,7 @@ func (p *VultrProvider) submitChanges(ctx context.Context, changes []*VultrChang
 					return err
 				}
 
-				err = p.client.DNSRecord.Delete(ctx, zoneName, strconv.Itoa(id))
-				if err != nil {
+				if err := p.client.DomainRecord.Delete(ctx, zoneName, id); err != nil {
 					return err
 				}
 			case vultrUpdate:
@@ -188,17 +211,7 @@ func (p *VultrProvider) submitChanges(ctx context.Context, changes []*VultrChang
 				if err != nil {
 					return err
 				}
-
-				record := &govultr.DNSRecord{
-					RecordID: id,
-					Type:     change.ResourceRecordSet.Type,
-					Name:     change.ResourceRecordSet.Name,
-					Data:     change.ResourceRecordSet.Data,
-					TTL:      change.ResourceRecordSet.TTL,
-				}
-
-				err = p.client.DNSRecord.Update(ctx, zoneName, record)
-				if err != nil {
+				if err := p.client.DomainRecord.Update(ctx, zoneName, id, change.ResourceRecordSet); err != nil {
 					return err
 				}
 			}
@@ -228,19 +241,20 @@ func newVultrChanges(action string, endpoints []*endpoint.Endpoint) []*VultrChan
 
 		change := &VultrChanges{
 			Action: action,
-			ResourceRecordSet: govultr.DNSRecord{
+			ResourceRecordSet: &govultr.DomainRecordReq{
 				Type: e.RecordType,
 				Name: e.DNSName,
 				Data: e.Targets[0],
 				TTL:  ttl,
 			},
 		}
+
 		changes = append(changes, change)
 	}
 	return changes
 }
 
-func seperateChangesByZone(zones []govultr.DNSDomain, changes []*VultrChanges) map[string][]*VultrChanges {
+func separateChangesByZone(zones []govultr.Domain, changes []*VultrChanges) map[string][]*VultrChanges {
 	change := make(map[string][]*VultrChanges)
 	zoneNameID := provider.ZoneIDName{}
 
@@ -260,30 +274,31 @@ func seperateChangesByZone(zones []govultr.DNSDomain, changes []*VultrChanges) m
 	return change
 }
 
-func (p *VultrProvider) getRecordID(ctx context.Context, zone string, record govultr.DNSRecord) (recordID int, err error) {
-	records, err := p.client.DNSRecord.List(ctx, zone)
-	if err != nil {
-		return 0, err
-	}
-
-	for _, r := range records {
-		strippedName := strings.TrimSuffix(record.Name, "."+zone)
-		if record.Name == zone {
-			strippedName = ""
+func (p *VultrProvider) getRecordID(ctx context.Context, zone string, record *govultr.DomainRecordReq) (recordID string, err error) {
+	listOptions := &govultr.ListOptions{}
+	for {
+		records, meta, err := p.client.DomainRecord.List(ctx, zone, listOptions)
+		if err != nil {
+			return "0", err
 		}
 
-		if r.Name == strippedName && r.Type == record.Type {
-			return r.RecordID, nil
+		for _, r := range records {
+			strippedName := strings.TrimSuffix(record.Name, "."+zone)
+			if record.Name == zone {
+				strippedName = ""
+			}
+
+			if r.Name == strippedName && r.Type == record.Type {
+				return r.ID, nil
+			}
+		}
+		if meta.Links.Next == "" {
+			break
+		} else {
+			listOptions.Cursor = meta.Links.Next
+			continue
 		}
 	}
 
-	return 0, fmt.Errorf("no record was found")
-}
-
-func getPriority(priority *int) int {
-	p := 0
-	if priority != nil {
-		p = *priority
-	}
-	return p
+	return "", fmt.Errorf("no record was found")
 }

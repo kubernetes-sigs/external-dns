@@ -24,7 +24,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/vultr/govultr"
+	"github.com/vultr/govultr/v2"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -33,63 +34,84 @@ type mockVultrDomain struct {
 	client *govultr.Client
 }
 
-func (m *mockVultrDomain) Create(ctx context.Context, domain, InstanceIP string) error {
-	return nil
-}
-
-func (m *mockVultrDomain) Delete(ctx context.Context, domain string) error {
-	return nil
-}
-
-func (m *mockVultrDomain) ToggleDNSSec(ctx context.Context, domain string, enabled bool) error {
-	return nil
-}
-
-func (m *mockVultrDomain) DNSSecInfo(ctx context.Context, domain string) ([]string, error) {
+func (m mockVultrDomain) Create(ctx context.Context, domainReq *govultr.DomainReq) (*govultr.Domain, error) {
 	return nil, nil
 }
 
-func (m *mockVultrDomain) List(ctx context.Context) ([]govultr.DNSDomain, error) {
-	return []govultr.DNSDomain{{Domain: "test.com"}}, nil
-}
-
-func (m *mockVultrDomain) GetSoa(ctx context.Context, domain string) (*govultr.Soa, error) {
+func (m mockVultrDomain) Get(ctx context.Context, domain string) (*govultr.Domain, error) {
 	return nil, nil
 }
 
-func (m *mockVultrDomain) UpdateSoa(ctx context.Context, domain, nsPrimary, email string) error {
+func (m mockVultrDomain) Update(ctx context.Context, domain, dnsSec string) error {
 	return nil
 }
+
+func (m mockVultrDomain) Delete(ctx context.Context, domain string) error {
+	return nil
+}
+
+func (m mockVultrDomain) List(ctx context.Context, options *govultr.ListOptions) ([]govultr.Domain, *govultr.Meta, error) {
+	return []govultr.Domain{{Domain: "test.com", DateCreated: "1234"}}, &govultr.Meta{
+		Total: 1,
+		Links: &govultr.Links{
+			Next: "",
+			Prev: "",
+		},
+	}, nil
+}
+
+func (m mockVultrDomain) GetSoa(ctx context.Context, domain string) (*govultr.Soa, error) {
+	return nil, nil
+}
+
+func (m mockVultrDomain) UpdateSoa(ctx context.Context, domain string, soaReq *govultr.Soa) error {
+	return nil
+}
+
+func (m mockVultrDomain) GetDNSSec(ctx context.Context, domain string) ([]string, error) {
+	return nil, nil
+}
+
 
 type mockVultrRecord struct {
 	client *govultr.Client
 }
 
-func (m *mockVultrRecord) Create(ctx context.Context, domain, recordType, name, data string, ttl, priority int) error {
+func (m mockVultrRecord) Create(ctx context.Context, domain string, domainRecordReq *govultr.DomainRecordReq) (*govultr.DomainRecord, error) {
+	return nil, nil
+}
+
+func (m mockVultrRecord) Get(ctx context.Context, domain, recordID string) (*govultr.DomainRecord, error) {
+	return nil, nil
+}
+
+func (m mockVultrRecord) Update(ctx context.Context, domain, recordID string, domainRecordReq *govultr.DomainRecordReq) error {
 	return nil
 }
 
-func (m *mockVultrRecord) Delete(ctx context.Context, domain, recordID string) error {
+func (m mockVultrRecord) Delete(ctx context.Context, domain, recordID string) error {
 	return nil
 }
 
-func (m *mockVultrRecord) List(ctx context.Context, domain string) ([]govultr.DNSRecord, error) {
-	return []govultr.DNSRecord{{RecordID: 123, Type: "A", Name: "test", Data: "192.168.1.1", TTL: 300}}, nil
-}
-
-func (m *mockVultrRecord) Update(ctx context.Context, domain string, dnsRecord *govultr.DNSRecord) error {
-	return nil
+func (m mockVultrRecord) List(ctx context.Context, domain string, options *govultr.ListOptions) ([]govultr.DomainRecord, *govultr.Meta, error) {
+	return []govultr.DomainRecord{{ID: "123", Type: "A", Name: "test", Data: "192.168.1.1", TTL: 300}}, &govultr.Meta{
+		Total: 1,
+		Links: &govultr.Links{
+			Next: "",
+			Prev: "",
+		},
+	}, nil
 }
 
 func TestNewVultrProvider(t *testing.T) {
 	_ = os.Setenv("VULTR_API_KEY", "")
-	_, err := NewVultrProvider(endpoint.NewDomainFilter([]string{"test.vultr.com"}), true)
+	_, err := NewVultrProvider(context.Background(), endpoint.NewDomainFilter([]string{"test.vultr.com"}), true)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
 
 	_ = os.Unsetenv("VULTR_API_KEY")
-	_, err = NewVultrProvider(endpoint.NewDomainFilter([]string{"test.vultr.com"}), true)
+	_, err = NewVultrProvider(context.Background(), endpoint.NewDomainFilter([]string{"test.vultr.com"}), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
@@ -99,18 +121,21 @@ func TestVultrProvider_Zones(t *testing.T) {
 	mocked := mockVultrDomain{nil}
 	provider := &VultrProvider{
 		client: govultr.Client{
-			DNSDomain: &mocked,
+			Domain: &mocked,
 		},
 	}
 
-	expected, err := provider.client.DNSDomain.List(context.Background())
+	expected, _, err := provider.client.Domain.List(context.Background(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	provider.Zones(context.Background())
 	zones, err := provider.Zones(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !reflect.DeepEqual(expected, zones) {
 		t.Fatal(err)
 	}
@@ -122,12 +147,12 @@ func TestVultrProvider_Records(t *testing.T) {
 
 	provider := &VultrProvider{
 		client: govultr.Client{
-			DNSRecord: &mocked,
-			DNSDomain: &mockedDomain,
+			DomainRecord: &mocked,
+			Domain:       &mockedDomain,
 		},
 	}
 
-	expected, _ := provider.client.DNSRecord.List(context.Background(), "test.com")
+	expected, _, _ := provider.client.DomainRecord.List(context.Background(), "test.com", nil)
 	records, err := provider.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -138,7 +163,6 @@ func TestVultrProvider_Records(t *testing.T) {
 		assert.Equal(t, v.RecordType, expected[0].Type)
 		assert.Equal(t, int(v.RecordTTL), expected[0].TTL)
 	}
-
 }
 
 func TestVultrProvider_ApplyChanges(t *testing.T) {
@@ -148,8 +172,8 @@ func TestVultrProvider_ApplyChanges(t *testing.T) {
 
 	provider := &VultrProvider{
 		client: govultr.Client{
-			DNSRecord: &mocked,
-			DNSDomain: &mockedDomain,
+			DomainRecord: &mocked,
+			Domain:       &mockedDomain,
 		},
 	}
 
@@ -172,20 +196,19 @@ func TestVultrProvider_getRecordID(t *testing.T) {
 
 	provider := &VultrProvider{
 		client: govultr.Client{
-			DNSRecord: &mocked,
-			DNSDomain: &mockedDomain,
+			DomainRecord: &mocked,
+			Domain:       &mockedDomain,
 		},
 	}
 
-	record := govultr.DNSRecord{
-		RecordID: 123,
-		Type:     "A",
-		Name:     "test.test.com",
+	record := &govultr.DomainRecordReq{
+		Type: "A",
+		Name: "test.test.com",
 	}
 	id, err := provider.getRecordID(context.Background(), "test.com", record)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, id, record.RecordID)
+	assert.Equal(t, id, "123")
 }
