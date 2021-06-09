@@ -196,7 +196,7 @@ kind: ServiceAccount
 metadata:
   name: externaldns
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: externaldns
@@ -211,7 +211,7 @@ rules:
   resources: ["nodes"]
   verbs: ["get", "watch", "list"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: externaldns-viewer
@@ -271,7 +271,7 @@ kind: ServiceAccount
 metadata:
   name: externaldns
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: externaldns
@@ -283,7 +283,7 @@ rules:
   resources: ["ingresses"]
   verbs: ["get","watch","list"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: externaldns
