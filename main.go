@@ -207,7 +207,7 @@ func main() {
 	case "vinyldns":
 		p, err = vinyldns.NewVinylDNSProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "vultr":
-		p, err = vultr.NewVultrProvider(domainFilter, cfg.DryRun)
+		p, err = vultr.NewVultrProvider(ctx, domainFilter, cfg.DryRun)
 	case "ultradns":
 		p, err = ultradns.NewUltraDNSProvider(domainFilter, cfg.DryRun)
 	case "cloudflare":
