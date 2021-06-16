@@ -2,18 +2,20 @@ approvers:
   - knobunc
   - Miciah
   - frobware
+  - danehans
+  - sgreene570
   - candita
   - rfredette
   - alebedev87
   - miheer
-  - gcs278
 reviewers:
   - knobunc
   - Miciah
   - frobware
+  - danehans
+  - sgreene570
   - candita
   - rfredette
   - alebedev87
   - miheer
-  - gcs278
 component: DNS
