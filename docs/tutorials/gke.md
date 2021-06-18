@@ -439,7 +439,7 @@ spec:
             - --google-project=zalando-external-dns-test
             - --registry=txt
             - --txt-owner-id=my-identifier
-          image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+          image: k8s.gcr.io/external-dns/external-dns:v0.8.0
           name: external-dns
       securityContext:
         fsGroup: 65534
