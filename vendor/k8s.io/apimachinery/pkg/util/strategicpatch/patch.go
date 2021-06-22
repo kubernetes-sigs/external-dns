@@ -987,6 +987,7 @@ func validatePatchWithSetOrderList(patchList, setOrderList interface{}, mergeKey
 		return nil
 	}
 
+<<<<<<< HEAD
 	var nonDeleteList []interface{}
 	var err error
 	if len(mergeKey) > 0 {
@@ -1321,6 +1322,346 @@ func mergeMap(original, patch map[string]interface{}, schema LookupPatchMeta, me
 		// delete to the API server.
 		if patchV == nil {
 			delete(original, k)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	var nonDeleteList, toDeleteList []interface{}
+	var err error
+	if len(mergeKey) > 0 {
+		nonDeleteList, toDeleteList, err = extractToDeleteItems(typedPatchList)
+		if err != nil {
+			return err
+		}
+	} else {
+		nonDeleteList = typedPatchList
+	}
+
+	patchIndex, setOrderIndex := 0, 0
+	for patchIndex < len(nonDeleteList) && setOrderIndex < len(typedSetOrderList) {
+		if containsDirectiveMarker(nonDeleteList[patchIndex]) {
+			patchIndex++
+			continue
+		}
+		mergeKeyEqual, err := mergeKeyValueEqual(nonDeleteList[patchIndex], typedSetOrderList[setOrderIndex], mergeKey)
+		if err != nil {
+			return err
+		}
+		if mergeKeyEqual {
+			patchIndex++
+		}
+		setOrderIndex++
+	}
+	// If patchIndex is inbound but setOrderIndex if out of bound mean there are items mismatching between the patch list and setElementOrder list.
+	// the second check is a sanity check, and should always be true if the first is true.
+	if patchIndex < len(nonDeleteList) && setOrderIndex >= len(typedSetOrderList) {
+		return fmt.Errorf("The order in patch list:\n%v\n doesn't match %s list:\n%v\n", typedPatchList, setElementOrderDirectivePrefix, setOrderList)
+	}
+	typedPatchList = append(nonDeleteList, toDeleteList...)
+	return nil
+}
+
+// preprocessDeletionListForMerging preprocesses the deletion list.
+// it returns shouldContinue, isDeletionList, noPrefixKey
+func preprocessDeletionListForMerging(key string, original map[string]interface{},
+	patchVal interface{}, mergeDeletionList bool) (bool, bool, string, error) {
+	// If found a parallel list for deletion and we are going to merge the list,
+	// overwrite the key to the original key and set flag isDeleteList
+	foundParallelListPrefix := strings.HasPrefix(key, deleteFromPrimitiveListDirectivePrefix)
+	if foundParallelListPrefix {
+		if !mergeDeletionList {
+			original[key] = patchVal
+			return true, false, "", nil
+		}
+		originalKey, err := extractKey(key, deleteFromPrimitiveListDirectivePrefix)
+		return false, true, originalKey, err
+	}
+	return false, false, "", nil
+}
+
+// applyRetainKeysDirective looks for a retainKeys directive and applies to original
+// - if no directive exists do nothing
+// - if directive is found, clear keys in original missing from the directive list
+// - validate that all keys present in the patch are present in the retainKeys directive
+// note: original may be another patch request, e.g. applying the add+modified patch to the deletions patch. In this case it may have directives
+func applyRetainKeysDirective(original, patch map[string]interface{}, options MergeOptions) error {
+	retainKeysInPatch, foundInPatch := patch[retainKeysDirective]
+	if !foundInPatch {
+		return nil
+	}
+	// cleanup the directive
+	delete(patch, retainKeysDirective)
+
+	if !options.MergeParallelList {
+		// If original is actually a patch, make sure the retainKeys directives are the same in both patches if present in both.
+		// If not present in the original patch, copy from the modified patch.
+		retainKeysInOriginal, foundInOriginal := original[retainKeysDirective]
+		if foundInOriginal {
+			if !reflect.DeepEqual(retainKeysInOriginal, retainKeysInPatch) {
+				// This error actually should never happen.
+				return fmt.Errorf("%v and %v are not deep equal: this may happen when calculating the 3-way diff patch", retainKeysInOriginal, retainKeysInPatch)
+			}
+		} else {
+			original[retainKeysDirective] = retainKeysInPatch
+		}
+		return nil
+	}
+
+	retainKeysList, ok := retainKeysInPatch.([]interface{})
+	if !ok {
+		return mergepatch.ErrBadPatchFormatForRetainKeys
+	}
+
+	// validate patch to make sure all fields in the patch are present in the retainKeysList.
+	// The map is used only as a set, the value is never referenced
+	m := map[interface{}]struct{}{}
+	for _, v := range retainKeysList {
+		m[v] = struct{}{}
+	}
+	for k, v := range patch {
+		if v == nil || strings.HasPrefix(k, deleteFromPrimitiveListDirectivePrefix) ||
+			strings.HasPrefix(k, setElementOrderDirectivePrefix) {
+			continue
+		}
+		// If there is an item present in the patch but not in the retainKeys list,
+		// the patch is invalid.
+		if _, found := m[k]; !found {
+			return mergepatch.ErrBadPatchFormatForRetainKeys
+		}
+	}
+
+	// clear not present fields
+	for k := range original {
+		if _, found := m[k]; !found {
+			delete(original, k)
+		}
+	}
+	return nil
+}
+
+// mergePatchIntoOriginal processes $setElementOrder list.
+// When not merging the directive, it will make sure $setElementOrder list exist only in original.
+// When merging the directive, it will try to find the $setElementOrder list and
+// its corresponding patch list, validate it and merge it.
+// Then, sort them by the relative order in setElementOrder, patch list and live list.
+// The precedence is $setElementOrder > order in patch list > order in live list.
+// This function will delete the item after merging it to prevent process it again in the future.
+// Ref: https://git.k8s.io/community/contributors/design-proposals/cli/preserve-order-in-strategic-merge-patch.md
+func mergePatchIntoOriginal(original, patch map[string]interface{}, schema LookupPatchMeta, mergeOptions MergeOptions) error {
+	for key, patchV := range patch {
+		// Do nothing if there is no ordering directive
+		if !strings.HasPrefix(key, setElementOrderDirectivePrefix) {
+			continue
+		}
+
+		setElementOrderInPatch := patchV
+		// Copies directive from the second patch (`patch`) to the first patch (`original`)
+		// and checks they are equal and delete the directive in the second patch
+		if !mergeOptions.MergeParallelList {
+			setElementOrderListInOriginal, ok := original[key]
+			if ok {
+				// check if the setElementOrder list in original and the one in patch matches
+				if !reflect.DeepEqual(setElementOrderListInOriginal, setElementOrderInPatch) {
+					return mergepatch.ErrBadPatchFormatForSetElementOrderList
+				}
+			} else {
+				// move the setElementOrder list from patch to original
+				original[key] = setElementOrderInPatch
+			}
+		}
+		delete(patch, key)
+
+		var (
+			ok                                          bool
+			originalFieldValue, patchFieldValue, merged []interface{}
+			patchStrategy                               string
+			patchMeta                                   PatchMeta
+			subschema                                   LookupPatchMeta
+		)
+		typedSetElementOrderList, ok := setElementOrderInPatch.([]interface{})
+		if !ok {
+			return mergepatch.ErrBadArgType(typedSetElementOrderList, setElementOrderInPatch)
+		}
+		// Trim the setElementOrderDirectivePrefix to get the key of the list field in original.
+		originalKey, err := extractKey(key, setElementOrderDirectivePrefix)
+		if err != nil {
+			return err
+		}
+		// try to find the list with `originalKey` in `original` and `modified` and merge them.
+		originalList, foundOriginal := original[originalKey]
+		patchList, foundPatch := patch[originalKey]
+		if foundOriginal {
+			originalFieldValue, ok = originalList.([]interface{})
+			if !ok {
+				return mergepatch.ErrBadArgType(originalFieldValue, originalList)
+			}
+		}
+		if foundPatch {
+			patchFieldValue, ok = patchList.([]interface{})
+			if !ok {
+				return mergepatch.ErrBadArgType(patchFieldValue, patchList)
+			}
+		}
+		subschema, patchMeta, err = schema.LookupPatchMetadataForSlice(originalKey)
+		if err != nil {
+			return err
+		}
+		_, patchStrategy, err = extractRetainKeysPatchStrategy(patchMeta.GetPatchStrategies())
+		if err != nil {
+			return err
+		}
+		// Check for consistency between the element order list and the field it applies to
+		err = validatePatchWithSetOrderList(patchFieldValue, typedSetElementOrderList, patchMeta.GetPatchMergeKey())
+		if err != nil {
+			return err
+		}
+
+		switch {
+		case foundOriginal && !foundPatch:
+			// no change to list contents
+			merged = originalFieldValue
+		case !foundOriginal && foundPatch:
+			// list was added
+			merged = patchFieldValue
+		case foundOriginal && foundPatch:
+			merged, err = mergeSliceHandler(originalList, patchList, subschema,
+				patchStrategy, patchMeta.GetPatchMergeKey(), false, mergeOptions)
+			if err != nil {
+				return err
+			}
+		case !foundOriginal && !foundPatch:
+			continue
+		}
+
+		// Split all items into patch items and server-only items and then enforce the order.
+		var patchItems, serverOnlyItems []interface{}
+		if len(patchMeta.GetPatchMergeKey()) == 0 {
+			// Primitives doesn't need merge key to do partitioning.
+			patchItems, serverOnlyItems = partitionPrimitivesByPresentInList(merged, typedSetElementOrderList)
+
+		} else {
+			// Maps need merge key to do partitioning.
+			patchItems, serverOnlyItems, err = partitionMapsByPresentInList(merged, typedSetElementOrderList, patchMeta.GetPatchMergeKey())
+			if err != nil {
+				return err
+			}
+		}
+
+		elementType, err := sliceElementType(originalFieldValue, patchFieldValue)
+		if err != nil {
+			return err
+		}
+		kind := elementType.Kind()
+		// normalize merged list
+		// typedSetElementOrderList contains all the relative order in typedPatchList,
+		// so don't need to use typedPatchList
+		both, err := normalizeElementOrder(patchItems, serverOnlyItems, typedSetElementOrderList, originalFieldValue, patchMeta.GetPatchMergeKey(), kind)
+		if err != nil {
+			return err
+		}
+		original[originalKey] = both
+		// delete patch list from patch to prevent process again in the future
+		delete(patch, originalKey)
+	}
+	return nil
+}
+
+// partitionPrimitivesByPresentInList partitions elements into 2 slices, the first containing items present in partitionBy, the other not.
+func partitionPrimitivesByPresentInList(original, partitionBy []interface{}) ([]interface{}, []interface{}) {
+	patch := make([]interface{}, 0, len(original))
+	serverOnly := make([]interface{}, 0, len(original))
+	inPatch := map[interface{}]bool{}
+	for _, v := range partitionBy {
+		inPatch[v] = true
+	}
+	for _, v := range original {
+		if !inPatch[v] {
+			serverOnly = append(serverOnly, v)
+		} else {
+			patch = append(patch, v)
+		}
+	}
+	return patch, serverOnly
+}
+
+// partitionMapsByPresentInList partitions elements into 2 slices, the first containing items present in partitionBy, the other not.
+func partitionMapsByPresentInList(original, partitionBy []interface{}, mergeKey string) ([]interface{}, []interface{}, error) {
+	patch := make([]interface{}, 0, len(original))
+	serverOnly := make([]interface{}, 0, len(original))
+	for _, v := range original {
+		typedV, ok := v.(map[string]interface{})
+		if !ok {
+			return nil, nil, mergepatch.ErrBadArgType(typedV, v)
+		}
+		mergeKeyValue, foundMergeKey := typedV[mergeKey]
+		if !foundMergeKey {
+			return nil, nil, mergepatch.ErrNoMergeKey(typedV, mergeKey)
+		}
+		_, _, found, err := findMapInSliceBasedOnKeyValue(partitionBy, mergeKey, mergeKeyValue)
+		if err != nil {
+			return nil, nil, err
+		}
+		if !found {
+			serverOnly = append(serverOnly, v)
+		} else {
+			patch = append(patch, v)
+		}
+	}
+	return patch, serverOnly, nil
+}
+
+// Merge fields from a patch map into the original map. Note: This may modify
+// both the original map and the patch because getting a deep copy of a map in
+// golang is highly non-trivial.
+// flag mergeOptions.MergeParallelList controls if using the parallel list to delete or keeping the list.
+// If patch contains any null field (e.g. field_1: null) that is not
+// present in original, then to propagate it to the end result use
+// mergeOptions.IgnoreUnmatchedNulls == false.
+func mergeMap(original, patch map[string]interface{}, schema LookupPatchMeta, mergeOptions MergeOptions) (map[string]interface{}, error) {
+	if v, ok := patch[directiveMarker]; ok {
+		return handleDirectiveInMergeMap(v, patch)
+	}
+
+	// nil is an accepted value for original to simplify logic in other places.
+	// If original is nil, replace it with an empty map and then apply the patch.
+	if original == nil {
+		original = map[string]interface{}{}
+	}
+
+	err := applyRetainKeysDirective(original, patch, mergeOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	// Process $setElementOrder list and other lists sharing the same key.
+	// When not merging the directive, it will make sure $setElementOrder list exist only in original.
+	// When merging the directive, it will process $setElementOrder and its patch list together.
+	// This function will delete the merged elements from patch so they will not be reprocessed
+	err = mergePatchIntoOriginal(original, patch, schema, mergeOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	// Start merging the patch into the original.
+	for k, patchV := range patch {
+		skipProcessing, isDeleteList, noPrefixKey, err := preprocessDeletionListForMerging(k, original, patchV, mergeOptions.MergeParallelList)
+		if err != nil {
+			return nil, err
+		}
+		if skipProcessing {
+			continue
+		}
+		if len(noPrefixKey) > 0 {
+			k = noPrefixKey
+		}
+
+		// If the value of this key is null, delete the key if it exists in the
+		// original. Otherwise, check if we want to preserve it or skip it.
+		// Preserving the null value is useful when we want to send an explicit
+		// delete to the API server.
+		if patchV == nil {
+			if _, ok := original[k]; ok {
+				delete(original, k)
+			}
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			if mergeOptions.IgnoreUnmatchedNulls {
 				continue
 			}

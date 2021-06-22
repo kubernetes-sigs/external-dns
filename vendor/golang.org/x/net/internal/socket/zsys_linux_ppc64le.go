@@ -32,7 +32,32 @@ type cmsghdr struct {
 	Type  int32
 }
 
+<<<<<<< HEAD
 const (
 	sizeofIovec  = 0x10
 	sizeofMsghdr = 0x38
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type sockaddrInet struct {
+	Family uint16
+	Port   uint16
+	Addr   [4]byte /* in_addr */
+	X__pad [8]uint8
+}
+
+type sockaddrInet6 struct {
+	Family   uint16
+	Port     uint16
+	Flowinfo uint32
+	Addr     [16]byte /* in6_addr */
+	Scope_id uint32
+}
+
+const (
+	sizeofIovec  = 0x10
+	sizeofMsghdr = 0x38
+
+	sizeofSockaddrInet  = 0x10
+	sizeofSockaddrInet6 = 0x1c
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )

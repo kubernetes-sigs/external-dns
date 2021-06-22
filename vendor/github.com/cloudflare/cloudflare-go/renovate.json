@@ -1,11 +1,15 @@
 {
   "extends": [
     "config:base"
+<<<<<<< HEAD
   ],
   "packageRules": [
     {
       "packageNames": ["golang.org/x/net"],
       "extends": ["schedule:weekly"]
     }
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
   ]
 }

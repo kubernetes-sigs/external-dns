@@ -57,7 +57,12 @@ type Encoder interface {
 	// Identifiers of two different encoders should be equal if and only if for every input
 	// object it will be encoded to the same representation by both of them.
 	//
+<<<<<<< HEAD
 	// Identifier is intended for use with CacheableObject#CacheEncode method. In order to
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// Identifier is inteted for use with CacheableObject#CacheEncode method. In order to
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	// correctly handle CacheableObject, Encode() method should look similar to below, where
 	// doEncode() is the encoding logic of implemented encoder:
 	//   func (e *MyEncoder) Encode(obj Object, w io.Writer) error {

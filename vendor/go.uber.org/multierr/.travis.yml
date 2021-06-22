@@ -4,11 +4,26 @@ go_import_path: go.uber.org/multierr
 
 env:
   global:
+<<<<<<< HEAD
     - GO111MODULE=on
 
 go:
   - oldstable
   - stable
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+    - GO15VENDOREXPERIMENT=1
+    - GO111MODULE=on
+
+go:
+  - 1.11.x
+  - 1.12.x
+  - 1.13.x
+
+cache:
+  directories:
+    - vendor
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 before_install:
 - go version

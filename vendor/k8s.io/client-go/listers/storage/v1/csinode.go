@@ -26,6 +26,7 @@ import (
 )
 
 // CSINodeLister helps list CSINodes.
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type CSINodeLister interface {
 	// List lists all CSINodes in the indexer.
@@ -33,6 +34,13 @@ type CSINodeLister interface {
 	List(selector labels.Selector) (ret []*v1.CSINode, err error)
 	// Get retrieves the CSINode from the index for a given name.
 	// Objects returned here must be treated as read-only.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type CSINodeLister interface {
+	// List lists all CSINodes in the indexer.
+	List(selector labels.Selector) (ret []*v1.CSINode, err error)
+	// Get retrieves the CSINode from the index for a given name.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.CSINode, error)
 	CSINodeListerExpansion
 }

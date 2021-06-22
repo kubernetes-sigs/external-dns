@@ -51,6 +51,7 @@ const (
 	FlowSchemaMaxMatchingPrecedence int32 = 10000
 )
 
+<<<<<<< HEAD
 // Constants for apiserver response headers.
 const (
 	ResponseHeaderMatchedPriorityLevelConfigurationUID = "X-Kubernetes-PF-PriorityLevel-UID"
@@ -375,6 +376,309 @@ type PriorityLevelConfigurationList struct {
 	// +optional
 	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 	// `items` is a list of request-priorities.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// +genclient
+// +genclient:nonNamespaced
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// FlowSchema defines the schema of a group of flows. Note that a flow is made up of a set of inbound API requests with
+// similar attributes and is identified by a pair of strings: the name of the FlowSchema and a "flow distinguisher".
+type FlowSchema struct {
+	metav1.TypeMeta `json:",inline"`
+	// `metadata` is the standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	// `spec` is the specification of the desired behavior of a FlowSchema.
+	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status
+	// +optional
+	Spec FlowSchemaSpec `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	// `status` is the current status of a FlowSchema.
+	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status
+	// +optional
+	Status FlowSchemaStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// FlowSchemaList is a list of FlowSchema objects.
+type FlowSchemaList struct {
+	metav1.TypeMeta `json:",inline"`
+	// `metadata` is the standard list metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
+	// +optional
+	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	// `items` is a list of FlowSchemas.
+	// +listType=atomic
+	Items []FlowSchema `json:"items" protobuf:"bytes,2,rep,name=items"`
+}
+
+// FlowSchemaSpec describes how the FlowSchema's specification looks like.
+type FlowSchemaSpec struct {
+	// `priorityLevelConfiguration` should reference a PriorityLevelConfiguration in the cluster. If the reference cannot
+	// be resolved, the FlowSchema will be ignored and marked as invalid in its status.
+	// Required.
+	PriorityLevelConfiguration PriorityLevelConfigurationReference `json:"priorityLevelConfiguration" protobuf:"bytes,1,opt,name=priorityLevelConfiguration"`
+	// `matchingPrecedence` is used to choose among the FlowSchemas that match a given request. The chosen
+	// FlowSchema is among those with the numerically lowest (which we take to be logically highest)
+	// MatchingPrecedence.  Each MatchingPrecedence value must be ranged in [1,10000].
+	// Note that if the precedence is not specified, it will be set to 1000 as default.
+	// +optional
+	MatchingPrecedence int32 `json:"matchingPrecedence" protobuf:"varint,2,opt,name=matchingPrecedence"`
+	// `distinguisherMethod` defines how to compute the flow distinguisher for requests that match this schema.
+	// `nil` specifies that the distinguisher is disabled and thus will always be the empty string.
+	// +optional
+	DistinguisherMethod *FlowDistinguisherMethod `json:"distinguisherMethod,omitempty" protobuf:"bytes,3,opt,name=distinguisherMethod"`
+	// `rules` describes which requests will match this flow schema. This FlowSchema matches a request if and only if
+	// at least one member of rules matches the request.
+	// if it is an empty slice, there will be no requests matching the FlowSchema.
+	// +listType=atomic
+	// +optional
+	Rules []PolicyRulesWithSubjects `json:"rules,omitempty" protobuf:"bytes,4,rep,name=rules"`
+}
+
+// FlowDistinguisherMethodType is the type of flow distinguisher method
+type FlowDistinguisherMethodType string
+
+// These are valid flow-distinguisher methods.
+const (
+	// FlowDistinguisherMethodByUserType specifies that the flow distinguisher is the username in the request.
+	// This type is used to provide some insulation between users.
+	FlowDistinguisherMethodByUserType FlowDistinguisherMethodType = "ByUser"
+
+	// FlowDistinguisherMethodByNamespaceType specifies that the flow distinguisher is the namespace of the
+	// object that the request acts upon. If the object is not namespaced, or if the request is a non-resource
+	// request, then the distinguisher will be the empty string. An example usage of this type is to provide
+	// some insulation between tenants in a situation where there are multiple tenants and each namespace
+	// is dedicated to a tenant.
+	FlowDistinguisherMethodByNamespaceType FlowDistinguisherMethodType = "ByNamespace"
+)
+
+// FlowDistinguisherMethod specifies the method of a flow distinguisher.
+type FlowDistinguisherMethod struct {
+	// `type` is the type of flow distinguisher method
+	// The supported types are "ByUser" and "ByNamespace".
+	// Required.
+	Type FlowDistinguisherMethodType `json:"type" protobuf:"bytes,1,opt,name=type"`
+}
+
+// PriorityLevelConfigurationReference contains information that points to the "request-priority" being used.
+type PriorityLevelConfigurationReference struct {
+	// `name` is the name of the priority level configuration being referenced
+	// Required.
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+}
+
+// PolicyRulesWithSubjects prescribes a test that applies to a request to an apiserver. The test considers the subject
+// making the request, the verb being requested, and the resource to be acted upon. This PolicyRulesWithSubjects matches
+// a request if and only if both (a) at least one member of subjects matches the request and (b) at least one member
+// of resourceRules or nonResourceRules matches the request.
+type PolicyRulesWithSubjects struct {
+	// subjects is the list of normal user, serviceaccount, or group that this rule cares about.
+	// There must be at least one member in this slice.
+	// A slice that includes both the system:authenticated and system:unauthenticated user groups matches every request.
+	// +listType=atomic
+	// Required.
+	Subjects []Subject `json:"subjects" protobuf:"bytes,1,rep,name=subjects"`
+	// `resourceRules` is a slice of ResourcePolicyRules that identify matching requests according to their verb and the
+	// target resource.
+	// At least one of `resourceRules` and `nonResourceRules` has to be non-empty.
+	// +listType=atomic
+	// +optional
+	ResourceRules []ResourcePolicyRule `json:"resourceRules,omitempty" protobuf:"bytes,2,opt,name=resourceRules"`
+	// `nonResourceRules` is a list of NonResourcePolicyRules that identify matching requests according to their verb
+	// and the target non-resource URL.
+	// +listType=atomic
+	// +optional
+	NonResourceRules []NonResourcePolicyRule `json:"nonResourceRules,omitempty" protobuf:"bytes,3,opt,name=nonResourceRules"`
+}
+
+// Subject matches the originator of a request, as identified by the request authentication system. There are three
+// ways of matching an originator; by user, group, or service account.
+// +union
+type Subject struct {
+	// Required
+	// +unionDiscriminator
+	Kind SubjectKind `json:"kind" protobuf:"bytes,1,opt,name=kind"`
+	// +optional
+	User *UserSubject `json:"user,omitempty" protobuf:"bytes,2,opt,name=user"`
+	// +optional
+	Group *GroupSubject `json:"group,omitempty" protobuf:"bytes,3,opt,name=group"`
+	// +optional
+	ServiceAccount *ServiceAccountSubject `json:"serviceAccount,omitempty" protobuf:"bytes,4,opt,name=serviceAccount"`
+}
+
+// SubjectKind is the kind of subject.
+type SubjectKind string
+
+// Supported subject's kinds.
+const (
+	SubjectKindUser           SubjectKind = "User"
+	SubjectKindGroup          SubjectKind = "Group"
+	SubjectKindServiceAccount SubjectKind = "ServiceAccount"
+)
+
+// UserSubject holds detailed information for user-kind subject.
+type UserSubject struct {
+	// `name` is the username that matches, or "*" to match all usernames.
+	// Required.
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+}
+
+// GroupSubject holds detailed information for group-kind subject.
+type GroupSubject struct {
+	// name is the user group that matches, or "*" to match all user groups.
+	// See https://github.com/kubernetes/apiserver/blob/master/pkg/authentication/user/user.go for some
+	// well-known group names.
+	// Required.
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+}
+
+// ServiceAccountSubject holds detailed information for service-account-kind subject.
+type ServiceAccountSubject struct {
+	// `namespace` is the namespace of matching ServiceAccount objects.
+	// Required.
+	Namespace string `json:"namespace" protobuf:"bytes,1,opt,name=namespace"`
+	// `name` is the name of matching ServiceAccount objects, or "*" to match regardless of name.
+	// Required.
+	Name string `json:"name" protobuf:"bytes,2,opt,name=name"`
+}
+
+// ResourcePolicyRule is a predicate that matches some resource
+// requests, testing the request's verb and the target resource. A
+// ResourcePolicyRule matches a resource request if and only if: (a)
+// at least one member of verbs matches the request, (b) at least one
+// member of apiGroups matches the request, (c) at least one member of
+// resources matches the request, and (d) least one member of
+// namespaces matches the request.
+type ResourcePolicyRule struct {
+	// `verbs` is a list of matching verbs and may not be empty.
+	// "*" matches all verbs and, if present, must be the only entry.
+	// +listType=set
+	// Required.
+	Verbs []string `json:"verbs" protobuf:"bytes,1,rep,name=verbs"`
+
+	// `apiGroups` is a list of matching API groups and may not be empty.
+	// "*" matches all API groups and, if present, must be the only entry.
+	// +listType=set
+	// Required.
+	APIGroups []string `json:"apiGroups" protobuf:"bytes,2,rep,name=apiGroups"`
+
+	// `resources` is a list of matching resources (i.e., lowercase
+	// and plural) with, if desired, subresource.  For example, [
+	// "services", "nodes/status" ].  This list may not be empty.
+	// "*" matches all resources and, if present, must be the only entry.
+	// Required.
+	// +listType=set
+	Resources []string `json:"resources" protobuf:"bytes,3,rep,name=resources"`
+
+	// `clusterScope` indicates whether to match requests that do not
+	// specify a namespace (which happens either because the resource
+	// is not namespaced or the request targets all namespaces).
+	// If this field is omitted or false then the `namespaces` field
+	// must contain a non-empty list.
+	// +optional
+	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
+
+	// `namespaces` is a list of target namespaces that restricts
+	// matches.  A request that specifies a target namespace matches
+	// only if either (a) this list contains that target namespace or
+	// (b) this list contains "*".  Note that "*" matches any
+	// specified namespace but does not match a request that _does
+	// not specify_ a namespace (see the `clusterScope` field for
+	// that).
+	// This list may be empty, but only if `clusterScope` is true.
+	// +optional
+	// +listType=set
+	Namespaces []string `json:"namespaces" protobuf:"bytes,5,rep,name=namespaces"`
+}
+
+// NonResourcePolicyRule is a predicate that matches non-resource requests according to their verb and the
+// target non-resource URL. A NonResourcePolicyRule matches a request if and only if both (a) at least one member
+// of verbs matches the request and (b) at least one member of nonResourceURLs matches the request.
+type NonResourcePolicyRule struct {
+	// `verbs` is a list of matching verbs and may not be empty.
+	// "*" matches all verbs. If it is present, it must be the only entry.
+	// +listType=set
+	// Required.
+	Verbs []string `json:"verbs" protobuf:"bytes,1,rep,name=verbs"`
+	// `nonResourceURLs` is a set of url prefixes that a user should have access to and may not be empty.
+	// For example:
+	//   - "/healthz" is legal
+	//   - "/hea*" is illegal
+	//   - "/hea" is legal but matches nothing
+	//   - "/hea/*" also matches nothing
+	//   - "/healthz/*" matches all per-component health checks.
+	// "*" matches all non-resource urls. if it is present, it must be the only entry.
+	// +listType=set
+	// Required.
+	NonResourceURLs []string `json:"nonResourceURLs" protobuf:"bytes,6,rep,name=nonResourceURLs"`
+}
+
+// FlowSchemaStatus represents the current state of a FlowSchema.
+type FlowSchemaStatus struct {
+	// `conditions` is a list of the current states of FlowSchema.
+	// +listType=map
+	// +listMapKey=type
+	// +optional
+	Conditions []FlowSchemaCondition `json:"conditions,omitempty" protobuf:"bytes,1,rep,name=conditions"`
+}
+
+// FlowSchemaCondition describes conditions for a FlowSchema.
+type FlowSchemaCondition struct {
+	// `type` is the type of the condition.
+	// Required.
+	Type FlowSchemaConditionType `json:"type,omitempty" protobuf:"bytes,1,opt,name=type"`
+	// `status` is the status of the condition.
+	// Can be True, False, Unknown.
+	// Required.
+	Status ConditionStatus `json:"status,omitempty" protobuf:"bytes,2,opt,name=status"`
+	// `lastTransitionTime` is the last time the condition transitioned from one status to another.
+	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty" protobuf:"bytes,3,opt,name=lastTransitionTime"`
+	// `reason` is a unique, one-word, CamelCase reason for the condition's last transition.
+	Reason string `json:"reason,omitempty" protobuf:"bytes,4,opt,name=reason"`
+	// `message` is a human-readable message indicating details about last transition.
+	Message string `json:"message,omitempty" protobuf:"bytes,5,opt,name=message"`
+}
+
+// FlowSchemaConditionType is a valid value for FlowSchemaStatusCondition.Type
+type FlowSchemaConditionType string
+
+// +genclient
+// +genclient:nonNamespaced
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// PriorityLevelConfiguration represents the configuration of a priority level.
+type PriorityLevelConfiguration struct {
+	metav1.TypeMeta `json:",inline"`
+	// `metadata` is the standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	// `spec` is the specification of the desired behavior of a "request-priority".
+	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status
+	// +optional
+	Spec PriorityLevelConfigurationSpec `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	// `status` is the current status of a "request-priority".
+	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status
+	// +optional
+	Status PriorityLevelConfigurationStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// PriorityLevelConfigurationList is a list of PriorityLevelConfiguration objects.
+type PriorityLevelConfigurationList struct {
+	metav1.TypeMeta `json:",inline"`
+	// `metadata` is the standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
+	// +optional
+	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	// `items` is a list of request-priorities.
+	// +listType=atomic
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Items []PriorityLevelConfiguration `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 

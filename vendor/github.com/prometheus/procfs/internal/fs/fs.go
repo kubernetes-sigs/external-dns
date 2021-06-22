@@ -39,10 +39,18 @@ type FS string
 func NewFS(mountPoint string) (FS, error) {
 	info, err := os.Stat(mountPoint)
 	if err != nil {
+<<<<<<< HEAD
 		return "", fmt.Errorf("could not read %q: %w", mountPoint, err)
 	}
 	if !info.IsDir() {
 		return "", fmt.Errorf("mount point %q is not a directory", mountPoint)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		return "", fmt.Errorf("could not read %s: %s", mountPoint, err)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("mount point %s is not a directory", mountPoint)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 
 	return FS(mountPoint), nil

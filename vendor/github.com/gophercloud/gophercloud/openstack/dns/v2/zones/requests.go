@@ -55,6 +55,7 @@ func List(client *gophercloud.ServiceClient, opts ListOptsBuilder) pagination.Pa
 
 // Get returns information about a zone, given its ID.
 func Get(client *gophercloud.ServiceClient, zoneID string) (r GetResult) {
+<<<<<<< HEAD
 	resp, err := client.Get(zoneURL(client, zoneID), &r.Body, nil)
 	_, r.Header, r.Err = gophercloud.ParseResponse(resp, err)
 	return
@@ -174,5 +175,123 @@ func Delete(client *gophercloud.ServiceClient, zoneID string) (r DeleteResult) {
 		JSONResponse: &r.Body,
 	})
 	_, r.Header, r.Err = gophercloud.ParseResponse(resp, err)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	_, r.Err = client.Get(zoneURL(client, zoneID), &r.Body, nil)
+	return
+}
+
+// CreateOptsBuilder allows extensions to add additional attributes to the
+// Create request.
+type CreateOptsBuilder interface {
+	ToZoneCreateMap() (map[string]interface{}, error)
+}
+
+// CreateOpts specifies the attributes used to create a zone.
+type CreateOpts struct {
+	// Attributes are settings that supply hints and filters for the zone.
+	Attributes map[string]string `json:"attributes,omitempty"`
+
+	// Email contact of the zone.
+	Email string `json:"email,omitempty"`
+
+	// Description of the zone.
+	Description string `json:"description,omitempty"`
+
+	// Name of the zone.
+	Name string `json:"name" required:"true"`
+
+	// Masters specifies zone masters if this is a secondary zone.
+	Masters []string `json:"masters,omitempty"`
+
+	// TTL is the time to live of the zone.
+	TTL int `json:"-"`
+
+	// Type specifies if this is a primary or secondary zone.
+	Type string `json:"type,omitempty"`
+}
+
+// ToZoneCreateMap formats an CreateOpts structure into a request body.
+func (opts CreateOpts) ToZoneCreateMap() (map[string]interface{}, error) {
+	b, err := gophercloud.BuildRequestBody(opts, "")
+	if err != nil {
+		return nil, err
+	}
+
+	if opts.TTL > 0 {
+		b["ttl"] = opts.TTL
+	}
+
+	return b, nil
+}
+
+// Create implements a zone create request.
+func Create(client *gophercloud.ServiceClient, opts CreateOptsBuilder) (r CreateResult) {
+	b, err := opts.ToZoneCreateMap()
+	if err != nil {
+		r.Err = err
+		return
+	}
+	_, r.Err = client.Post(baseURL(client), &b, &r.Body, &gophercloud.RequestOpts{
+		OkCodes: []int{201, 202},
+	})
+	return
+}
+
+// UpdateOptsBuilder allows extensions to add additional attributes to the
+// Update request.
+type UpdateOptsBuilder interface {
+	ToZoneUpdateMap() (map[string]interface{}, error)
+}
+
+// UpdateOpts specifies the attributes to update a zone.
+type UpdateOpts struct {
+	// Email contact of the zone.
+	Email string `json:"email,omitempty"`
+
+	// TTL is the time to live of the zone.
+	TTL int `json:"-"`
+
+	// Masters specifies zone masters if this is a secondary zone.
+	Masters []string `json:"masters,omitempty"`
+
+	// Description of the zone.
+	Description *string `json:"description,omitempty"`
+}
+
+// ToZoneUpdateMap formats an UpdateOpts structure into a request body.
+func (opts UpdateOpts) ToZoneUpdateMap() (map[string]interface{}, error) {
+	b, err := gophercloud.BuildRequestBody(opts, "")
+	if err != nil {
+		return nil, err
+	}
+
+	if opts.TTL > 0 {
+		b["ttl"] = opts.TTL
+	}
+
+	return b, nil
+}
+
+// Update implements a zone update request.
+func Update(client *gophercloud.ServiceClient, zoneID string, opts UpdateOptsBuilder) (r UpdateResult) {
+	b, err := opts.ToZoneUpdateMap()
+	if err != nil {
+		r.Err = err
+		return
+	}
+	_, r.Err = client.Patch(zoneURL(client, zoneID), &b, &r.Body, &gophercloud.RequestOpts{
+		OkCodes: []int{200, 202},
+	})
+	return
+}
+
+// Delete implements a zone delete request.
+func Delete(client *gophercloud.ServiceClient, zoneID string) (r DeleteResult) {
+	_, r.Err = client.Delete(zoneURL(client, zoneID), &gophercloud.RequestOpts{
+		OkCodes:      []int{202},
+		JSONResponse: &r.Body,
+	})
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }

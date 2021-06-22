@@ -22,6 +22,7 @@ package zapcore
 
 import (
 	"fmt"
+<<<<<<< HEAD
 	"reflect"
 	"sync"
 )
@@ -81,6 +82,56 @@ type errorGroup interface {
 	// Provides read-only access to the underlying list of errors, preferably
 	// without causing any allocs.
 	Errors() []error
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"sync"
+)
+
+// Encodes the given error into fields of an object. A field with the given
+// name is added for the error message.
+//
+// If the error implements fmt.Formatter, a field with the name ${key}Verbose
+// is also added with the full verbose error message.
+//
+// Finally, if the error implements errorGroup (from go.uber.org/multierr) or
+// causer (from github.com/pkg/errors), a ${key}Causes field is added with an
+// array of objects containing the errors this error was comprised of.
+//
+//  {
+//    "error": err.Error(),
+//    "errorVerbose": fmt.Sprintf("%+v", err),
+//    "errorCauses": [
+//      ...
+//    ],
+//  }
+func encodeError(key string, err error, enc ObjectEncoder) error {
+	basic := err.Error()
+	enc.AddString(key, basic)
+
+	switch e := err.(type) {
+	case errorGroup:
+		return enc.AddArray(key+"Causes", errArray(e.Errors()))
+	case fmt.Formatter:
+		verbose := fmt.Sprintf("%+v", e)
+		if verbose != basic {
+			// This is a rich error type, like those produced by
+			// github.com/pkg/errors.
+			enc.AddString(key+"Verbose", verbose)
+		}
+	}
+	return nil
+}
+
+type errorGroup interface {
+	// Provides read-only access to the underlying list of errors, preferably
+	// without causing any allocs.
+	Errors() []error
+}
+
+type causer interface {
+	// Provides access to the error that caused this error.
+	Cause() error
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // Note that errArry and errArrayElem are very similar to the version

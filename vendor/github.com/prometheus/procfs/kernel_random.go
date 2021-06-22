@@ -25,7 +25,12 @@ import (
 type KernelRandom struct {
 	// EntropyAvaliable gives the available entropy, in bits.
 	EntropyAvaliable *uint64
+<<<<<<< HEAD
 	// PoolSize gives the size of the entropy pool, in bits.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// PoolSize gives the size of the entropy pool, in bytes.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	PoolSize *uint64
 	// URandomMinReseedSeconds is the number of seconds after which the DRNG will be reseeded.
 	URandomMinReseedSeconds *uint64

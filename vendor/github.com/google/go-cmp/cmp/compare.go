@@ -1,5 +1,6 @@
 // Copyright 2017, The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
+<<<<<<< HEAD
 // license that can be found in the LICENSE file.
 
 // Package cmp determines equality of values.
@@ -102,6 +103,111 @@ func Equal(x, y interface{}, opts ...Option) bool {
 // The output is displayed as a literal in pseudo-Go syntax.
 // At the start of each line, a "-" prefix indicates an element removed from x,
 // a "+" prefix to indicates an element added from y, and the lack of a prefix
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// license that can be found in the LICENSE.md file.
+
+// Package cmp determines equality of values.
+//
+// This package is intended to be a more powerful and safer alternative to
+// reflect.DeepEqual for comparing whether two values are semantically equal.
+// It is intended to only be used in tests, as performance is not a goal and
+// it may panic if it cannot compare the values. Its propensity towards
+// panicking means that its unsuitable for production environments where a
+// spurious panic may be fatal.
+//
+// The primary features of cmp are:
+//
+// • When the default behavior of equality does not suit the needs of the test,
+// custom equality functions can override the equality operation.
+// For example, an equality function may report floats as equal so long as they
+// are within some tolerance of each other.
+//
+// • Types that have an Equal method may use that method to determine equality.
+// This allows package authors to determine the equality operation for the types
+// that they define.
+//
+// • If no custom equality functions are used and no Equal method is defined,
+// equality is determined by recursively comparing the primitive kinds on both
+// values, much like reflect.DeepEqual. Unlike reflect.DeepEqual, unexported
+// fields are not compared by default; they result in panics unless suppressed
+// by using an Ignore option (see cmpopts.IgnoreUnexported) or explicitly
+// compared using the Exporter option.
+package cmp
+
+import (
+	"fmt"
+	"reflect"
+	"strings"
+
+	"github.com/google/go-cmp/cmp/internal/diff"
+	"github.com/google/go-cmp/cmp/internal/flags"
+	"github.com/google/go-cmp/cmp/internal/function"
+	"github.com/google/go-cmp/cmp/internal/value"
+)
+
+// Equal reports whether x and y are equal by recursively applying the
+// following rules in the given order to x and y and all of their sub-values:
+//
+// • Let S be the set of all Ignore, Transformer, and Comparer options that
+// remain after applying all path filters, value filters, and type filters.
+// If at least one Ignore exists in S, then the comparison is ignored.
+// If the number of Transformer and Comparer options in S is greater than one,
+// then Equal panics because it is ambiguous which option to use.
+// If S contains a single Transformer, then use that to transform the current
+// values and recursively call Equal on the output values.
+// If S contains a single Comparer, then use that to compare the current values.
+// Otherwise, evaluation proceeds to the next rule.
+//
+// • If the values have an Equal method of the form "(T) Equal(T) bool" or
+// "(T) Equal(I) bool" where T is assignable to I, then use the result of
+// x.Equal(y) even if x or y is nil. Otherwise, no such method exists and
+// evaluation proceeds to the next rule.
+//
+// • Lastly, try to compare x and y based on their basic kinds.
+// Simple kinds like booleans, integers, floats, complex numbers, strings, and
+// channels are compared using the equivalent of the == operator in Go.
+// Functions are only equal if they are both nil, otherwise they are unequal.
+//
+// Structs are equal if recursively calling Equal on all fields report equal.
+// If a struct contains unexported fields, Equal panics unless an Ignore option
+// (e.g., cmpopts.IgnoreUnexported) ignores that field or the Exporter option
+// explicitly permits comparing the unexported field.
+//
+// Slices are equal if they are both nil or both non-nil, where recursively
+// calling Equal on all non-ignored slice or array elements report equal.
+// Empty non-nil slices and nil slices are not equal; to equate empty slices,
+// consider using cmpopts.EquateEmpty.
+//
+// Maps are equal if they are both nil or both non-nil, where recursively
+// calling Equal on all non-ignored map entries report equal.
+// Map keys are equal according to the == operator.
+// To use custom comparisons for map keys, consider using cmpopts.SortMaps.
+// Empty non-nil maps and nil maps are not equal; to equate empty maps,
+// consider using cmpopts.EquateEmpty.
+//
+// Pointers and interfaces are equal if they are both nil or both non-nil,
+// where they have the same underlying concrete type and recursively
+// calling Equal on the underlying values reports equal.
+//
+// Before recursing into a pointer, slice element, or map, the current path
+// is checked to detect whether the address has already been visited.
+// If there is a cycle, then the pointed at values are considered equal
+// only if both addresses were previously visited in the same path step.
+func Equal(x, y interface{}, opts ...Option) bool {
+	s := newState(opts)
+	s.compareAny(rootStep(x, y))
+	return s.result.Equal()
+}
+
+// Diff returns a human-readable report of the differences between two values:
+// y - x. It returns an empty string if and only if Equal returns true for the
+// same input values and options.
+//
+// The output is displayed as a literal in pseudo-Go syntax.
+// At the start of each line, a "-" prefix indicates an element removed from y,
+// a "+" prefix to indicates an element added to y, and the lack of a prefix
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // indicates an element common to both x and y. If possible, the output
 // uses fmt.Stringer.String or error.Error methods to produce more humanly
 // readable outputs. In such cases, the string is prefixed with either an

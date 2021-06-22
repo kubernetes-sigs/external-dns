@@ -26,6 +26,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/cespare/xxhash/v2"
+<<<<<<< HEAD
 	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
 	"github.com/golang/protobuf/proto"
 	"github.com/prometheus/common/expfmt"
@@ -217,6 +218,198 @@ type MultiError []error
 
 // Error formats the contained errors as a bullet point list, preceded by the
 // total number of errors. Note that this results in a multi-line string.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
+	"github.com/golang/protobuf/proto"
+	"github.com/prometheus/common/expfmt"
+
+	dto "github.com/prometheus/client_model/go"
+
+	"github.com/prometheus/client_golang/prometheus/internal"
+)
+
+const (
+	// Capacity for the channel to collect metrics and descriptors.
+	capMetricChan = 1000
+	capDescChan   = 10
+)
+
+// DefaultRegisterer and DefaultGatherer are the implementations of the
+// Registerer and Gatherer interface a number of convenience functions in this
+// package act on. Initially, both variables point to the same Registry, which
+// has a process collector (currently on Linux only, see NewProcessCollector)
+// and a Go collector (see NewGoCollector, in particular the note about
+// stop-the-world implication with Go versions older than 1.9) already
+// registered. This approach to keep default instances as global state mirrors
+// the approach of other packages in the Go standard library. Note that there
+// are caveats. Change the variables with caution and only if you understand the
+// consequences. Users who want to avoid global state altogether should not use
+// the convenience functions and act on custom instances instead.
+var (
+	defaultRegistry              = NewRegistry()
+	DefaultRegisterer Registerer = defaultRegistry
+	DefaultGatherer   Gatherer   = defaultRegistry
+)
+
+func init() {
+	MustRegister(NewProcessCollector(ProcessCollectorOpts{}))
+	MustRegister(NewGoCollector())
+}
+
+// NewRegistry creates a new vanilla Registry without any Collectors
+// pre-registered.
+func NewRegistry() *Registry {
+	return &Registry{
+		collectorsByID:  map[uint64]Collector{},
+		descIDs:         map[uint64]struct{}{},
+		dimHashesByName: map[string]uint64{},
+	}
+}
+
+// NewPedanticRegistry returns a registry that checks during collection if each
+// collected Metric is consistent with its reported Desc, and if the Desc has
+// actually been registered with the registry. Unchecked Collectors (those whose
+// Describe method does not yield any descriptors) are excluded from the check.
+//
+// Usually, a Registry will be happy as long as the union of all collected
+// Metrics is consistent and valid even if some metrics are not consistent with
+// their own Desc or a Desc provided by their registered Collector. Well-behaved
+// Collectors and Metrics will only provide consistent Descs. This Registry is
+// useful to test the implementation of Collectors and Metrics.
+func NewPedanticRegistry() *Registry {
+	r := NewRegistry()
+	r.pedanticChecksEnabled = true
+	return r
+}
+
+// Registerer is the interface for the part of a registry in charge of
+// registering and unregistering. Users of custom registries should use
+// Registerer as type for registration purposes (rather than the Registry type
+// directly). In that way, they are free to use custom Registerer implementation
+// (e.g. for testing purposes).
+type Registerer interface {
+	// Register registers a new Collector to be included in metrics
+	// collection. It returns an error if the descriptors provided by the
+	// Collector are invalid or if they — in combination with descriptors of
+	// already registered Collectors — do not fulfill the consistency and
+	// uniqueness criteria described in the documentation of metric.Desc.
+	//
+	// If the provided Collector is equal to a Collector already registered
+	// (which includes the case of re-registering the same Collector), the
+	// returned error is an instance of AlreadyRegisteredError, which
+	// contains the previously registered Collector.
+	//
+	// A Collector whose Describe method does not yield any Desc is treated
+	// as unchecked. Registration will always succeed. No check for
+	// re-registering (see previous paragraph) is performed. Thus, the
+	// caller is responsible for not double-registering the same unchecked
+	// Collector, and for providing a Collector that will not cause
+	// inconsistent metrics on collection. (This would lead to scrape
+	// errors.)
+	Register(Collector) error
+	// MustRegister works like Register but registers any number of
+	// Collectors and panics upon the first registration that causes an
+	// error.
+	MustRegister(...Collector)
+	// Unregister unregisters the Collector that equals the Collector passed
+	// in as an argument.  (Two Collectors are considered equal if their
+	// Describe method yields the same set of descriptors.) The function
+	// returns whether a Collector was unregistered. Note that an unchecked
+	// Collector cannot be unregistered (as its Describe method does not
+	// yield any descriptor).
+	//
+	// Note that even after unregistering, it will not be possible to
+	// register a new Collector that is inconsistent with the unregistered
+	// Collector, e.g. a Collector collecting metrics with the same name but
+	// a different help string. The rationale here is that the same registry
+	// instance must only collect consistent metrics throughout its
+	// lifetime.
+	Unregister(Collector) bool
+}
+
+// Gatherer is the interface for the part of a registry in charge of gathering
+// the collected metrics into a number of MetricFamilies. The Gatherer interface
+// comes with the same general implication as described for the Registerer
+// interface.
+type Gatherer interface {
+	// Gather calls the Collect method of the registered Collectors and then
+	// gathers the collected metrics into a lexicographically sorted slice
+	// of uniquely named MetricFamily protobufs. Gather ensures that the
+	// returned slice is valid and self-consistent so that it can be used
+	// for valid exposition. As an exception to the strict consistency
+	// requirements described for metric.Desc, Gather will tolerate
+	// different sets of label names for metrics of the same metric family.
+	//
+	// Even if an error occurs, Gather attempts to gather as many metrics as
+	// possible. Hence, if a non-nil error is returned, the returned
+	// MetricFamily slice could be nil (in case of a fatal error that
+	// prevented any meaningful metric collection) or contain a number of
+	// MetricFamily protobufs, some of which might be incomplete, and some
+	// might be missing altogether. The returned error (which might be a
+	// MultiError) explains the details. Note that this is mostly useful for
+	// debugging purposes. If the gathered protobufs are to be used for
+	// exposition in actual monitoring, it is almost always better to not
+	// expose an incomplete result and instead disregard the returned
+	// MetricFamily protobufs in case the returned error is non-nil.
+	Gather() ([]*dto.MetricFamily, error)
+}
+
+// Register registers the provided Collector with the DefaultRegisterer.
+//
+// Register is a shortcut for DefaultRegisterer.Register(c). See there for more
+// details.
+func Register(c Collector) error {
+	return DefaultRegisterer.Register(c)
+}
+
+// MustRegister registers the provided Collectors with the DefaultRegisterer and
+// panics if any error occurs.
+//
+// MustRegister is a shortcut for DefaultRegisterer.MustRegister(cs...). See
+// there for more details.
+func MustRegister(cs ...Collector) {
+	DefaultRegisterer.MustRegister(cs...)
+}
+
+// Unregister removes the registration of the provided Collector from the
+// DefaultRegisterer.
+//
+// Unregister is a shortcut for DefaultRegisterer.Unregister(c). See there for
+// more details.
+func Unregister(c Collector) bool {
+	return DefaultRegisterer.Unregister(c)
+}
+
+// GathererFunc turns a function into a Gatherer.
+type GathererFunc func() ([]*dto.MetricFamily, error)
+
+// Gather implements Gatherer.
+func (gf GathererFunc) Gather() ([]*dto.MetricFamily, error) {
+	return gf()
+}
+
+// AlreadyRegisteredError is returned by the Register method if the Collector to
+// be registered has already been registered before, or a different Collector
+// that collects the same metrics has been registered before. Registration fails
+// in that case, but you can detect from the kind of error what has
+// happened. The error contains fields for the existing Collector and the
+// (rejected) new Collector that equals the existing one. This can be used to
+// find out if an equal Collector has been registered before and switch over to
+// using the old one, as demonstrated in the example.
+type AlreadyRegisteredError struct {
+	ExistingCollector, NewCollector Collector
+}
+
+func (err AlreadyRegisteredError) Error() string {
+	return "duplicate metrics collector registration attempted"
+}
+
+// MultiError is a slice of errors implementing the error interface. It is used
+// by a Gatherer to report multiple errors during MetricFamily gathering.
+type MultiError []error
+
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func (errs MultiError) Error() string {
 	if len(errs) == 0 {
 		return ""

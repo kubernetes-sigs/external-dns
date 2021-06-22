@@ -43,6 +43,7 @@ func InstrumentHandlerInFlight(g prometheus.Gauge, next http.Handler) http.Handl
 
 // InstrumentHandlerDuration is a middleware that wraps the provided
 // http.Handler to observe the request duration with the provided ObserverVec.
+<<<<<<< HEAD
 // The ObserverVec must have valid metric and label names and must have zero,
 // one, or two non-const non-curried labels. For those, the only allowed label
 // names are "code" and "method". The function panics otherwise. The Observe
@@ -235,6 +236,190 @@ func checkLabels(c prometheus.Collector) (code bool, method bool) {
 	// Make sure the Collector has a valid Desc by registering it with a
 	// temporary registry.
 	prometheus.NewRegistry().MustRegister(c)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// The ObserverVec must have zero, one, or two non-const non-curried labels. For
+// those, the only allowed label names are "code" and "method". The function
+// panics otherwise. The Observe method of the Observer in the ObserverVec is
+// called with the request duration in seconds. Partitioning happens by HTTP
+// status code and/or HTTP method if the respective instance label names are
+// present in the ObserverVec. For unpartitioned observations, use an
+// ObserverVec with zero labels. Note that partitioning of Histograms is
+// expensive and should be used judiciously.
+//
+// If the wrapped Handler does not set a status code, a status code of 200 is assumed.
+//
+// If the wrapped Handler panics, no values are reported.
+//
+// Note that this method is only guaranteed to never observe negative durations
+// if used with Go1.9+.
+func InstrumentHandlerDuration(obs prometheus.ObserverVec, next http.Handler) http.HandlerFunc {
+	code, method := checkLabels(obs)
+
+	if code {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			now := time.Now()
+			d := newDelegator(w, nil)
+			next.ServeHTTP(d, r)
+
+			obs.With(labels(code, method, r.Method, d.Status())).Observe(time.Since(now).Seconds())
+		})
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		now := time.Now()
+		next.ServeHTTP(w, r)
+		obs.With(labels(code, method, r.Method, 0)).Observe(time.Since(now).Seconds())
+	})
+}
+
+// InstrumentHandlerCounter is a middleware that wraps the provided http.Handler
+// to observe the request result with the provided CounterVec.  The CounterVec
+// must have zero, one, or two non-const non-curried labels. For those, the only
+// allowed label names are "code" and "method". The function panics
+// otherwise. Partitioning of the CounterVec happens by HTTP status code and/or
+// HTTP method if the respective instance label names are present in the
+// CounterVec. For unpartitioned counting, use a CounterVec with zero labels.
+//
+// If the wrapped Handler does not set a status code, a status code of 200 is assumed.
+//
+// If the wrapped Handler panics, the Counter is not incremented.
+//
+// See the example for InstrumentHandlerDuration for example usage.
+func InstrumentHandlerCounter(counter *prometheus.CounterVec, next http.Handler) http.HandlerFunc {
+	code, method := checkLabels(counter)
+
+	if code {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			d := newDelegator(w, nil)
+			next.ServeHTTP(d, r)
+			counter.With(labels(code, method, r.Method, d.Status())).Inc()
+		})
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r)
+		counter.With(labels(code, method, r.Method, 0)).Inc()
+	})
+}
+
+// InstrumentHandlerTimeToWriteHeader is a middleware that wraps the provided
+// http.Handler to observe with the provided ObserverVec the request duration
+// until the response headers are written. The ObserverVec must have zero, one,
+// or two non-const non-curried labels. For those, the only allowed label names
+// are "code" and "method". The function panics otherwise. The Observe method of
+// the Observer in the ObserverVec is called with the request duration in
+// seconds. Partitioning happens by HTTP status code and/or HTTP method if the
+// respective instance label names are present in the ObserverVec. For
+// unpartitioned observations, use an ObserverVec with zero labels. Note that
+// partitioning of Histograms is expensive and should be used judiciously.
+//
+// If the wrapped Handler panics before calling WriteHeader, no value is
+// reported.
+//
+// Note that this method is only guaranteed to never observe negative durations
+// if used with Go1.9+.
+//
+// See the example for InstrumentHandlerDuration for example usage.
+func InstrumentHandlerTimeToWriteHeader(obs prometheus.ObserverVec, next http.Handler) http.HandlerFunc {
+	code, method := checkLabels(obs)
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		now := time.Now()
+		d := newDelegator(w, func(status int) {
+			obs.With(labels(code, method, r.Method, status)).Observe(time.Since(now).Seconds())
+		})
+		next.ServeHTTP(d, r)
+	})
+}
+
+// InstrumentHandlerRequestSize is a middleware that wraps the provided
+// http.Handler to observe the request size with the provided ObserverVec.  The
+// ObserverVec must have zero, one, or two non-const non-curried labels. For
+// those, the only allowed label names are "code" and "method". The function
+// panics otherwise. The Observe method of the Observer in the ObserverVec is
+// called with the request size in bytes. Partitioning happens by HTTP status
+// code and/or HTTP method if the respective instance label names are present in
+// the ObserverVec. For unpartitioned observations, use an ObserverVec with zero
+// labels. Note that partitioning of Histograms is expensive and should be used
+// judiciously.
+//
+// If the wrapped Handler does not set a status code, a status code of 200 is assumed.
+//
+// If the wrapped Handler panics, no values are reported.
+//
+// See the example for InstrumentHandlerDuration for example usage.
+func InstrumentHandlerRequestSize(obs prometheus.ObserverVec, next http.Handler) http.HandlerFunc {
+	code, method := checkLabels(obs)
+
+	if code {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			d := newDelegator(w, nil)
+			next.ServeHTTP(d, r)
+			size := computeApproximateRequestSize(r)
+			obs.With(labels(code, method, r.Method, d.Status())).Observe(float64(size))
+		})
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r)
+		size := computeApproximateRequestSize(r)
+		obs.With(labels(code, method, r.Method, 0)).Observe(float64(size))
+	})
+}
+
+// InstrumentHandlerResponseSize is a middleware that wraps the provided
+// http.Handler to observe the response size with the provided ObserverVec.  The
+// ObserverVec must have zero, one, or two non-const non-curried labels. For
+// those, the only allowed label names are "code" and "method". The function
+// panics otherwise. The Observe method of the Observer in the ObserverVec is
+// called with the response size in bytes. Partitioning happens by HTTP status
+// code and/or HTTP method if the respective instance label names are present in
+// the ObserverVec. For unpartitioned observations, use an ObserverVec with zero
+// labels. Note that partitioning of Histograms is expensive and should be used
+// judiciously.
+//
+// If the wrapped Handler does not set a status code, a status code of 200 is assumed.
+//
+// If the wrapped Handler panics, no values are reported.
+//
+// See the example for InstrumentHandlerDuration for example usage.
+func InstrumentHandlerResponseSize(obs prometheus.ObserverVec, next http.Handler) http.Handler {
+	code, method := checkLabels(obs)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		d := newDelegator(w, nil)
+		next.ServeHTTP(d, r)
+		obs.With(labels(code, method, r.Method, d.Status())).Observe(float64(d.Written()))
+	})
+}
+
+func checkLabels(c prometheus.Collector) (code bool, method bool) {
+	// TODO(beorn7): Remove this hacky way to check for instance labels
+	// once Descriptors can have their dimensionality queried.
+	var (
+		desc *prometheus.Desc
+		m    prometheus.Metric
+		pm   dto.Metric
+		lvs  []string
+	)
+
+	// Get the Desc from the Collector.
+	descc := make(chan *prometheus.Desc, 1)
+	c.Describe(descc)
+
+	select {
+	case desc = <-descc:
+	default:
+		panic("no description provided by collector")
+	}
+	select {
+	case <-descc:
+		panic("more than one description provided by collector")
+	default:
+	}
+
+	close(descc)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 	// Create a ConstMetric with the Desc. Since we don't know how many
 	// variable labels there are, try for as long as it needs.

@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+<<<<<<< HEAD
 //go:build !aix && !darwin && !dragonfly && !freebsd && !linux && !netbsd && !openbsd && !solaris && !windows && !zos
 // +build !aix,!darwin,!dragonfly,!freebsd,!linux,!netbsd,!openbsd,!solaris,!windows,!zos
 
@@ -18,6 +19,21 @@ const (
 
 	sizeofSockaddrInet4 = 0x10
 	sizeofSockaddrInet6 = 0x1c
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// +build !aix,!darwin,!dragonfly,!freebsd,!linux,!netbsd,!openbsd,!solaris,!windows,!zos
+
+package socket
+
+import "net"
+
+const (
+	sysAF_UNSPEC = 0x0
+	sysAF_INET   = 0x2
+	sysAF_INET6  = 0xa
+
+	sysSOCK_RAW = 0x3
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )
 
 func marshalInetAddr(ip net.IP, port int, zone string) []byte {

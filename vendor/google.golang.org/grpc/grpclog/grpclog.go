@@ -26,6 +26,7 @@
 // verbosity level can be set by GRPC_GO_LOG_VERBOSITY_LEVEL.
 package grpclog // import "google.golang.org/grpc/grpclog"
 
+<<<<<<< HEAD
 import (
 	"os"
 
@@ -129,4 +130,104 @@ func Printf(format string, args ...interface{}) {
 // Deprecated: use Infoln.
 func Println(args ...interface{}) {
 	grpclog.Logger.Infoln(args...)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+import "os"
+
+var logger = newLoggerV2()
+
+// V reports whether verbosity level l is at least the requested verbose level.
+func V(l int) bool {
+	return logger.V(l)
+}
+
+// Info logs to the INFO log.
+func Info(args ...interface{}) {
+	logger.Info(args...)
+}
+
+// Infof logs to the INFO log. Arguments are handled in the manner of fmt.Printf.
+func Infof(format string, args ...interface{}) {
+	logger.Infof(format, args...)
+}
+
+// Infoln logs to the INFO log. Arguments are handled in the manner of fmt.Println.
+func Infoln(args ...interface{}) {
+	logger.Infoln(args...)
+}
+
+// Warning logs to the WARNING log.
+func Warning(args ...interface{}) {
+	logger.Warning(args...)
+}
+
+// Warningf logs to the WARNING log. Arguments are handled in the manner of fmt.Printf.
+func Warningf(format string, args ...interface{}) {
+	logger.Warningf(format, args...)
+}
+
+// Warningln logs to the WARNING log. Arguments are handled in the manner of fmt.Println.
+func Warningln(args ...interface{}) {
+	logger.Warningln(args...)
+}
+
+// Error logs to the ERROR log.
+func Error(args ...interface{}) {
+	logger.Error(args...)
+}
+
+// Errorf logs to the ERROR log. Arguments are handled in the manner of fmt.Printf.
+func Errorf(format string, args ...interface{}) {
+	logger.Errorf(format, args...)
+}
+
+// Errorln logs to the ERROR log. Arguments are handled in the manner of fmt.Println.
+func Errorln(args ...interface{}) {
+	logger.Errorln(args...)
+}
+
+// Fatal logs to the FATAL log. Arguments are handled in the manner of fmt.Print.
+// It calls os.Exit() with exit code 1.
+func Fatal(args ...interface{}) {
+	logger.Fatal(args...)
+	// Make sure fatal logs will exit.
+	os.Exit(1)
+}
+
+// Fatalf logs to the FATAL log. Arguments are handled in the manner of fmt.Printf.
+// It calls os.Exit() with exit code 1.
+func Fatalf(format string, args ...interface{}) {
+	logger.Fatalf(format, args...)
+	// Make sure fatal logs will exit.
+	os.Exit(1)
+}
+
+// Fatalln logs to the FATAL log. Arguments are handled in the manner of fmt.Println.
+// It calle os.Exit()) with exit code 1.
+func Fatalln(args ...interface{}) {
+	logger.Fatalln(args...)
+	// Make sure fatal logs will exit.
+	os.Exit(1)
+}
+
+// Print prints to the logger. Arguments are handled in the manner of fmt.Print.
+//
+// Deprecated: use Info.
+func Print(args ...interface{}) {
+	logger.Info(args...)
+}
+
+// Printf prints to the logger. Arguments are handled in the manner of fmt.Printf.
+//
+// Deprecated: use Infof.
+func Printf(format string, args ...interface{}) {
+	logger.Infof(format, args...)
+}
+
+// Println prints to the logger. Arguments are handled in the manner of fmt.Println.
+//
+// Deprecated: use Infoln.
+func Println(args ...interface{}) {
+	logger.Infoln(args...)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

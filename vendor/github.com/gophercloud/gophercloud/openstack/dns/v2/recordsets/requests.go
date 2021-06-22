@@ -57,6 +57,7 @@ func ListByZone(client *gophercloud.ServiceClient, zoneID string, opts ListOptsB
 
 // Get implements the recordset Get request.
 func Get(client *gophercloud.ServiceClient, zoneID string, rrsetID string) (r GetResult) {
+<<<<<<< HEAD
 	resp, err := client.Get(rrsetURL(client, zoneID, rrsetID), &r.Body, nil)
 	_, r.Header, r.Err = gophercloud.ParseResponse(resp, err)
 	return
@@ -173,5 +174,120 @@ func Delete(client *gophercloud.ServiceClient, zoneID string, rrsetID string) (r
 		OkCodes: []int{202},
 	})
 	_, r.Header, r.Err = gophercloud.ParseResponse(resp, err)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	_, r.Err = client.Get(rrsetURL(client, zoneID, rrsetID), &r.Body, nil)
+	return
+}
+
+// CreateOptsBuilder allows extensions to add additional attributes to the
+// Create request.
+type CreateOptsBuilder interface {
+	ToRecordSetCreateMap() (map[string]interface{}, error)
+}
+
+// CreateOpts specifies the base attributes that may be used to create a
+// RecordSet.
+type CreateOpts struct {
+	// Name is the name of the RecordSet.
+	Name string `json:"name" required:"true"`
+
+	// Description is a description of the RecordSet.
+	Description string `json:"description,omitempty"`
+
+	// Records are the DNS records of the RecordSet.
+	Records []string `json:"records,omitempty"`
+
+	// TTL is the time to live of the RecordSet.
+	TTL int `json:"ttl,omitempty"`
+
+	// Type is the RRTYPE of the RecordSet.
+	Type string `json:"type,omitempty"`
+}
+
+// ToRecordSetCreateMap formats an CreateOpts structure into a request body.
+func (opts CreateOpts) ToRecordSetCreateMap() (map[string]interface{}, error) {
+	b, err := gophercloud.BuildRequestBody(opts, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
+// Create creates a recordset in a given zone.
+func Create(client *gophercloud.ServiceClient, zoneID string, opts CreateOptsBuilder) (r CreateResult) {
+	b, err := opts.ToRecordSetCreateMap()
+	if err != nil {
+		r.Err = err
+		return
+	}
+	_, r.Err = client.Post(baseURL(client, zoneID), &b, &r.Body, &gophercloud.RequestOpts{
+		OkCodes: []int{201, 202},
+	})
+	return
+}
+
+// UpdateOptsBuilder allows extensions to add additional attributes to the
+// Update request.
+type UpdateOptsBuilder interface {
+	ToRecordSetUpdateMap() (map[string]interface{}, error)
+}
+
+// UpdateOpts specifies the base attributes that may be updated on an existing
+// RecordSet.
+type UpdateOpts struct {
+	// Description is a description of the RecordSet.
+	Description *string `json:"description,omitempty"`
+
+	// TTL is the time to live of the RecordSet.
+	TTL *int `json:"ttl,omitempty"`
+
+	// Records are the DNS records of the RecordSet.
+	Records []string `json:"records,omitempty"`
+}
+
+// ToRecordSetUpdateMap formats an UpdateOpts structure into a request body.
+func (opts UpdateOpts) ToRecordSetUpdateMap() (map[string]interface{}, error) {
+	b, err := gophercloud.BuildRequestBody(opts, "")
+	if err != nil {
+		return nil, err
+	}
+
+	// If opts.TTL was actually set, use 0 as a special value to send "null",
+	// even though the result from the API is 0.
+	//
+	// Otherwise, don't send the TTL field.
+	if opts.TTL != nil {
+		ttl := *(opts.TTL)
+		if ttl > 0 {
+			b["ttl"] = ttl
+		} else {
+			b["ttl"] = nil
+		}
+	}
+
+	return b, nil
+}
+
+// Update updates a recordset in a given zone
+func Update(client *gophercloud.ServiceClient, zoneID string, rrsetID string, opts UpdateOptsBuilder) (r UpdateResult) {
+	b, err := opts.ToRecordSetUpdateMap()
+	if err != nil {
+		r.Err = err
+		return
+	}
+	_, r.Err = client.Put(rrsetURL(client, zoneID, rrsetID), &b, &r.Body, &gophercloud.RequestOpts{
+		OkCodes: []int{200, 202},
+	})
+	return
+}
+
+// Delete removes an existing RecordSet.
+func Delete(client *gophercloud.ServiceClient, zoneID string, rrsetID string) (r DeleteResult) {
+	_, r.Err = client.Delete(rrsetURL(client, zoneID, rrsetID), &gophercloud.RequestOpts{
+		OkCodes: []int{202},
+	})
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }

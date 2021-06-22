@@ -45,6 +45,7 @@ const (
 	// scrape a target.
 	MetricsPathLabel = "__metrics_path__"
 
+<<<<<<< HEAD
 	// ScrapeIntervalLabel is the name of the label that holds the scrape interval
 	// used to scrape a target.
 	ScrapeIntervalLabel = "__scrape_interval__"
@@ -53,6 +54,9 @@ const (
 	// timeout used to scrape a target.
 	ScrapeTimeoutLabel = "__scrape_timeout__"
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	// ReservedLabelPrefix is a prefix which is not legal in user-supplied
 	// label names.
 	ReservedLabelPrefix = "__"

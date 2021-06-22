@@ -29,6 +29,7 @@ var _ TestDeep = &tdDelay{}
 // the time it is used for the first time. Most of the time, it is
 // used with helpers. See the example for a very simple use case.
 func Delay(delayed func() TestDeep) TestDeep {
+<<<<<<< HEAD
 	d := tdDelay{
 		base:    newBase(3),
 		delayed: delayed,
@@ -61,6 +62,29 @@ func (d *tdDelay) TypeBehind() reflect.Type {
 	if d.err != nil {
 		return nil
 	}
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if delayed == nil {
+		panic("delayed param must be non-nil")
+	}
+	return &tdDelay{
+		base:    newBase(3),
+		delayed: delayed,
+	}
+}
+
+func (d *tdDelay) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	op := d.getOperator()
+	ctx.CurOperator = op // to have correct location
+	return op.Match(ctx, got)
+}
+
+func (d *tdDelay) String() string {
+	return d.getOperator().String()
+}
+
+func (d *tdDelay) TypeBehind() reflect.Type {
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return d.getOperator().TypeBehind()
 }
 

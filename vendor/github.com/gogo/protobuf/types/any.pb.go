@@ -592,7 +592,15 @@ func (m *Any) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+<<<<<<< HEAD
 			if (skippy < 0) || (iNdEx+skippy) < 0 {
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+			if skippy < 0 {
+				return ErrInvalidLengthAny
+			}
+			if (iNdEx + skippy) < 0 {
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 				return ErrInvalidLengthAny
 			}
 			if (iNdEx + skippy) > l {

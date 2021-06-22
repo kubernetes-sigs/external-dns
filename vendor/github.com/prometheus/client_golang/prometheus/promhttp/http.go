@@ -99,6 +99,7 @@ func HandlerFor(reg prometheus.Gatherer, opts HandlerOpts) http.Handler {
 		inFlightSem = make(chan struct{}, opts.MaxRequestsInFlight)
 	}
 	if opts.Registry != nil {
+<<<<<<< HEAD
 		// Initialize all possibilities that can occur below.
 		errCnt.WithLabelValues("gathering")
 		errCnt.WithLabelValues("encoding")
@@ -309,6 +310,215 @@ type HandlerOpts struct {
 	// formats into a multi-line error string. If you want to avoid the
 	// latter, create a Logger implementation that detects a
 	// prometheus.MultiError and formats the contained errors into one line.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		// Initialize all possibilites that can occur below.
+		errCnt.WithLabelValues("gathering")
+		errCnt.WithLabelValues("encoding")
+		if err := opts.Registry.Register(errCnt); err != nil {
+			if are, ok := err.(prometheus.AlreadyRegisteredError); ok {
+				errCnt = are.ExistingCollector.(*prometheus.CounterVec)
+			} else {
+				panic(err)
+			}
+		}
+	}
+
+	h := http.HandlerFunc(func(rsp http.ResponseWriter, req *http.Request) {
+		if inFlightSem != nil {
+			select {
+			case inFlightSem <- struct{}{}: // All good, carry on.
+				defer func() { <-inFlightSem }()
+			default:
+				http.Error(rsp, fmt.Sprintf(
+					"Limit of concurrent requests reached (%d), try again later.", opts.MaxRequestsInFlight,
+				), http.StatusServiceUnavailable)
+				return
+			}
+		}
+		mfs, err := reg.Gather()
+		if err != nil {
+			if opts.ErrorLog != nil {
+				opts.ErrorLog.Println("error gathering metrics:", err)
+			}
+			errCnt.WithLabelValues("gathering").Inc()
+			switch opts.ErrorHandling {
+			case PanicOnError:
+				panic(err)
+			case ContinueOnError:
+				if len(mfs) == 0 {
+					// Still report the error if no metrics have been gathered.
+					httpError(rsp, err)
+					return
+				}
+			case HTTPErrorOnError:
+				httpError(rsp, err)
+				return
+			}
+		}
+
+		var contentType expfmt.Format
+		if opts.EnableOpenMetrics {
+			contentType = expfmt.NegotiateIncludingOpenMetrics(req.Header)
+		} else {
+			contentType = expfmt.Negotiate(req.Header)
+		}
+		header := rsp.Header()
+		header.Set(contentTypeHeader, string(contentType))
+
+		w := io.Writer(rsp)
+		if !opts.DisableCompression && gzipAccepted(req.Header) {
+			header.Set(contentEncodingHeader, "gzip")
+			gz := gzipPool.Get().(*gzip.Writer)
+			defer gzipPool.Put(gz)
+
+			gz.Reset(w)
+			defer gz.Close()
+
+			w = gz
+		}
+
+		enc := expfmt.NewEncoder(w, contentType)
+
+		// handleError handles the error according to opts.ErrorHandling
+		// and returns true if we have to abort after the handling.
+		handleError := func(err error) bool {
+			if err == nil {
+				return false
+			}
+			if opts.ErrorLog != nil {
+				opts.ErrorLog.Println("error encoding and sending metric family:", err)
+			}
+			errCnt.WithLabelValues("encoding").Inc()
+			switch opts.ErrorHandling {
+			case PanicOnError:
+				panic(err)
+			case HTTPErrorOnError:
+				// We cannot really send an HTTP error at this
+				// point because we most likely have written
+				// something to rsp already. But at least we can
+				// stop sending.
+				return true
+			}
+			// Do nothing in all other cases, including ContinueOnError.
+			return false
+		}
+
+		for _, mf := range mfs {
+			if handleError(enc.Encode(mf)) {
+				return
+			}
+		}
+		if closer, ok := enc.(expfmt.Closer); ok {
+			// This in particular takes care of the final "# EOF\n" line for OpenMetrics.
+			if handleError(closer.Close()) {
+				return
+			}
+		}
+	})
+
+	if opts.Timeout <= 0 {
+		return h
+	}
+	return http.TimeoutHandler(h, opts.Timeout, fmt.Sprintf(
+		"Exceeded configured timeout of %v.\n",
+		opts.Timeout,
+	))
+}
+
+// InstrumentMetricHandler is usually used with an http.Handler returned by the
+// HandlerFor function. It instruments the provided http.Handler with two
+// metrics: A counter vector "promhttp_metric_handler_requests_total" to count
+// scrapes partitioned by HTTP status code, and a gauge
+// "promhttp_metric_handler_requests_in_flight" to track the number of
+// simultaneous scrapes. This function idempotently registers collectors for
+// both metrics with the provided Registerer. It panics if the registration
+// fails. The provided metrics are useful to see how many scrapes hit the
+// monitored target (which could be from different Prometheus servers or other
+// scrapers), and how often they overlap (which would result in more than one
+// scrape in flight at the same time). Note that the scrapes-in-flight gauge
+// will contain the scrape by which it is exposed, while the scrape counter will
+// only get incremented after the scrape is complete (as only then the status
+// code is known). For tracking scrape durations, use the
+// "scrape_duration_seconds" gauge created by the Prometheus server upon each
+// scrape.
+func InstrumentMetricHandler(reg prometheus.Registerer, handler http.Handler) http.Handler {
+	cnt := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "promhttp_metric_handler_requests_total",
+			Help: "Total number of scrapes by HTTP status code.",
+		},
+		[]string{"code"},
+	)
+	// Initialize the most likely HTTP status codes.
+	cnt.WithLabelValues("200")
+	cnt.WithLabelValues("500")
+	cnt.WithLabelValues("503")
+	if err := reg.Register(cnt); err != nil {
+		if are, ok := err.(prometheus.AlreadyRegisteredError); ok {
+			cnt = are.ExistingCollector.(*prometheus.CounterVec)
+		} else {
+			panic(err)
+		}
+	}
+
+	gge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "promhttp_metric_handler_requests_in_flight",
+		Help: "Current number of scrapes being served.",
+	})
+	if err := reg.Register(gge); err != nil {
+		if are, ok := err.(prometheus.AlreadyRegisteredError); ok {
+			gge = are.ExistingCollector.(prometheus.Gauge)
+		} else {
+			panic(err)
+		}
+	}
+
+	return InstrumentHandlerCounter(cnt, InstrumentHandlerInFlight(gge, handler))
+}
+
+// HandlerErrorHandling defines how a Handler serving metrics will handle
+// errors.
+type HandlerErrorHandling int
+
+// These constants cause handlers serving metrics to behave as described if
+// errors are encountered.
+const (
+	// Serve an HTTP status code 500 upon the first error
+	// encountered. Report the error message in the body. Note that HTTP
+	// errors cannot be served anymore once the beginning of a regular
+	// payload has been sent. Thus, in the (unlikely) case that encoding the
+	// payload into the negotiated wire format fails, serving the response
+	// will simply be aborted. Set an ErrorLog in HandlerOpts to detect
+	// those errors.
+	HTTPErrorOnError HandlerErrorHandling = iota
+	// Ignore errors and try to serve as many metrics as possible.  However,
+	// if no metrics can be served, serve an HTTP status code 500 and the
+	// last error message in the body. Only use this in deliberate "best
+	// effort" metrics collection scenarios. In this case, it is highly
+	// recommended to provide other means of detecting errors: By setting an
+	// ErrorLog in HandlerOpts, the errors are logged. By providing a
+	// Registry in HandlerOpts, the exposed metrics include an error counter
+	// "promhttp_metric_handler_errors_total", which can be used for
+	// alerts.
+	ContinueOnError
+	// Panic upon the first error encountered (useful for "crash only" apps).
+	PanicOnError
+)
+
+// Logger is the minimal interface HandlerOpts needs for logging. Note that
+// log.Logger from the standard library implements this interface, and it is
+// easy to implement by custom loggers, if they don't do so already anyway.
+type Logger interface {
+	Println(v ...interface{})
+}
+
+// HandlerOpts specifies options how to serve metrics via an http.Handler. The
+// zero value of HandlerOpts is a reasonable default.
+type HandlerOpts struct {
+	// ErrorLog specifies an optional logger for errors collecting and
+	// serving metrics. If nil, errors are not logged at all.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	ErrorLog Logger
 	// ErrorHandling defines how errors are handled. Note that errors are
 	// logged regardless of the configured ErrorHandling provided ErrorLog

@@ -156,9 +156,14 @@ func (meta *ObjectMeta) GetDeletionTimestamp() *Time { return meta.DeletionTimes
 func (meta *ObjectMeta) SetDeletionTimestamp(deletionTimestamp *Time) {
 	meta.DeletionTimestamp = deletionTimestamp
 }
+<<<<<<< HEAD
 func (meta *ObjectMeta) GetDeletionGracePeriodSeconds() *int64 {
 	return meta.DeletionGracePeriodSeconds
 }
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func (meta *ObjectMeta) GetDeletionGracePeriodSeconds() *int64 { return meta.DeletionGracePeriodSeconds }
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func (meta *ObjectMeta) SetDeletionGracePeriodSeconds(deletionGracePeriodSeconds *int64) {
 	meta.DeletionGracePeriodSeconds = deletionGracePeriodSeconds
 }

@@ -59,7 +59,12 @@ type PSIStats struct {
 func (fs FS) PSIStatsForResource(resource string) (PSIStats, error) {
 	data, err := util.ReadFileNoStat(fs.proc.Path(fmt.Sprintf("%s/%s", "pressure", resource)))
 	if err != nil {
+<<<<<<< HEAD
 		return PSIStats{}, fmt.Errorf("psi_stats: unavailable for %q: %w", resource, err)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		return PSIStats{}, fmt.Errorf("psi_stats: unavailable for %s", resource)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 
 	return parsePSIStats(resource, bytes.NewReader(data))

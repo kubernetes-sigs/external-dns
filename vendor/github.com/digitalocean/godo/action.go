@@ -17,7 +17,12 @@ const (
 )
 
 // ActionsService handles communction with action related methods of the
+<<<<<<< HEAD
 // DigitalOcean API: https://docs.digitalocean.com/reference/api/api-reference/#tag/Actions
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// DigitalOcean API: https://developers.digitalocean.com/documentation/v2#actions
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type ActionsService interface {
 	List(context.Context, *ListOptions) ([]Action, *Response, error)
 	Get(context.Context, int) (*Action, *Response, error)

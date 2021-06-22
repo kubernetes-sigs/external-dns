@@ -28,10 +28,14 @@ type FakeBatchV1 struct {
 	*testing.Fake
 }
 
+<<<<<<< HEAD
 func (c *FakeBatchV1) CronJobs(namespace string) v1.CronJobInterface {
 	return &FakeCronJobs{c, namespace}
 }
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func (c *FakeBatchV1) Jobs(namespace string) v1.JobInterface {
 	return &FakeJobs{c, namespace}
 }

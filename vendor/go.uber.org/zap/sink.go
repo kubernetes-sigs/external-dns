@@ -136,7 +136,12 @@ func newFileSink(u *url.URL) (Sink, error) {
 	case "stderr":
 		return nopCloserSink{os.Stderr}, nil
 	}
+<<<<<<< HEAD
 	return os.OpenFile(u.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	return os.OpenFile(u.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func normalizeScheme(s string) (string, error) {

@@ -15,6 +15,7 @@ import (
 	"reflect"
 
 	"github.com/maxatome/go-testdeep/helpers/tdutil"
+<<<<<<< HEAD
 	"github.com/maxatome/go-testdeep/internal/color"
 	"github.com/maxatome/go-testdeep/internal/ctxerr"
 	"github.com/maxatome/go-testdeep/internal/dark"
@@ -325,6 +326,290 @@ func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxer
 				continue
 			}
 			err = deepValueEqual(ctx.AddField(field.Name),
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"github.com/maxatome/go-testdeep/internal/ctxerr"
+	"github.com/maxatome/go-testdeep/internal/dark"
+	"github.com/maxatome/go-testdeep/internal/types"
+)
+
+func isNilStr(isNil bool) types.RawString {
+	if isNil {
+		return "nil"
+	}
+	return "not nil"
+}
+
+func deepValueEqualFinal(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxerr.Error) {
+	err = deepValueEqual(ctx, got, expected)
+	if err == nil {
+		// Try to merge pending errors
+		errMerge := ctx.MergeErrors()
+		if errMerge != nil {
+			return errMerge
+		}
+	}
+	return
+}
+
+// nilHandler is called when one of got or expected is nil (but never
+// both, it is caller responsibility).
+func nilHandler(ctx ctxerr.Context, got, expected reflect.Value) *ctxerr.Error {
+	err := ctxerr.Error{}
+
+	if expected.IsValid() { // here: !got.IsValid()
+		if expected.Type().Implements(testDeeper) {
+			curOperator := expected.Interface().(TestDeep)
+			ctx.CurOperator = curOperator
+			if curOperator.HandleInvalid() {
+				return curOperator.Match(ctx, got)
+			}
+			if ctx.BooleanError {
+				return ctxerr.BooleanError
+			}
+
+			// Special case if "expected" is a TestDeep operator which
+			// does not handle invalid values: the operator is not called,
+			// but for the user the error comes from it
+		} else if ctx.BooleanError {
+			return ctxerr.BooleanError
+		}
+
+		err.Expected = expected
+	} else { // here: !expected.IsValid() && got.IsValid()
+		switch got.Kind() {
+		// Special case: "got" is a nil interface, so consider as equal
+		// to "expected" nil.
+		case reflect.Interface:
+			if got.IsNil() {
+				return nil
+			}
+		case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.Slice:
+			// If BeLax, it is OK: we consider typed nil is equal to (untyped) nil
+			if ctx.BeLax && got.IsNil() {
+				return nil
+			}
+		}
+
+		if ctx.BooleanError {
+			return ctxerr.BooleanError
+		}
+
+		err.Got = got
+	}
+
+	err.Message = "values differ"
+	return ctx.CollectError(&err)
+}
+
+func isCustomEqual(a, b reflect.Value) (bool, bool) {
+	aType, bType := a.Type(), b.Type()
+
+	equal, ok := aType.MethodByName("Equal")
+	if ok {
+		ft := equal.Type
+		if !ft.IsVariadic() &&
+			ft.NumIn() == 2 &&
+			ft.NumOut() == 1 &&
+			ft.In(0).AssignableTo(ft.In(1)) &&
+			ft.Out(0) == boolType &&
+			bType.AssignableTo(ft.In(1)) {
+			return true, equal.Func.Call([]reflect.Value{a, b})[0].Bool()
+		}
+	}
+	return false, false
+}
+
+func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxerr.Error) {
+	if !got.IsValid() || !expected.IsValid() {
+		if got.IsValid() == expected.IsValid() {
+			return
+		}
+		return nilHandler(ctx, got, expected)
+	}
+
+	// "got" must not implement testDeeper
+	if got.Type().Implements(testDeeper) {
+		panic("Found a TestDeep operator in got param, " +
+			"can only use it in expected one!")
+	}
+
+	if ctx.UseEqual {
+		hasEqual, isEqual := isCustomEqual(got, expected)
+		if hasEqual {
+			if isEqual {
+				return
+			}
+			if ctx.BooleanError {
+				return ctxerr.BooleanError
+			}
+			return ctx.CollectError(&ctxerr.Error{
+				Message:  "got.Equal(expected) failed",
+				Got:      got,
+				Expected: expected,
+			})
+		}
+	}
+
+	if got.Type() != expected.Type() {
+		if expected.Type().Implements(testDeeper) {
+			curOperator := expected.Interface().(TestDeep)
+
+			// Resolve interface
+			if got.Kind() == reflect.Interface {
+				got = got.Elem()
+
+				if !got.IsValid() {
+					return nilHandler(ctx, got, expected)
+				}
+			}
+
+			ctx.CurOperator = curOperator
+			return curOperator.Match(ctx, got)
+		}
+
+		// "expected" is not a TestDeep operator
+
+		if ctx.BeLax && expected.Type().ConvertibleTo(got.Type()) {
+			return deepValueEqual(ctx, got, expected.Convert(got.Type()))
+		}
+
+		// If "got" is an interface, try to see what is behind before failing
+		// Used by Set/Bag Match method in such cases:
+		//     []interface{}{123, "foo"}  →  Bag("foo", 123)
+		//    Interface kind -^-----^   but String-^ and ^- Int kinds
+		if got.Kind() == reflect.Interface {
+			return deepValueEqual(ctx, got.Elem(), expected)
+		}
+
+		if ctx.BooleanError {
+			return ctxerr.BooleanError
+		}
+		return ctx.CollectError(&ctxerr.Error{
+			Message:  "type mismatch",
+			Got:      types.RawString(got.Type().String()),
+			Expected: types.RawString(expected.Type().String()),
+		})
+	}
+
+	// if ctx.Depth > 10 { panic("deepValueEqual") } // for debugging
+
+	// Avoid looping forever on cyclic references
+	if ctx.Visited.Record(got, expected) {
+		return
+	}
+
+	// Try to see if a TestDeep operator is anchored in expected
+	if op, ok := ctx.Anchors.ResolveAnchor(expected); ok {
+		return deepValueEqual(ctx, got, op)
+	}
+
+	switch got.Kind() {
+	case reflect.Array:
+		for i, l := 0, got.Len(); i < l; i++ {
+			err = deepValueEqual(ctx.AddArrayIndex(i),
+				got.Index(i), expected.Index(i))
+			if err != nil {
+				return
+			}
+		}
+		return
+
+	case reflect.Slice:
+		if got.IsNil() != expected.IsNil() {
+			if ctx.BooleanError {
+				return ctxerr.BooleanError
+			}
+			return ctx.CollectError(&ctxerr.Error{
+				Message:  "nil slice",
+				Got:      isNilStr(got.IsNil()),
+				Expected: isNilStr(expected.IsNil()),
+			})
+		}
+
+		var (
+			gotLen      = got.Len()
+			expectedLen = expected.Len()
+		)
+
+		if gotLen != expectedLen {
+			// Shortcut in boolean context
+			if ctx.BooleanError {
+				return ctxerr.BooleanError
+			}
+		} else {
+			if got.Pointer() == expected.Pointer() {
+				return
+			}
+		}
+
+		var maxLen int
+		if gotLen >= expectedLen {
+			maxLen = expectedLen
+		} else {
+			maxLen = gotLen
+		}
+
+		for i := 0; i < maxLen; i++ {
+			err = deepValueEqual(ctx.AddArrayIndex(i),
+				got.Index(i), expected.Index(i))
+			if err != nil {
+				return
+			}
+		}
+
+		if gotLen != expectedLen {
+			res := tdSetResult{
+				Kind: itemsSetResult,
+				// do not sort Extra/Mising here
+			}
+
+			if gotLen > expectedLen {
+				res.Extra = make([]reflect.Value, gotLen-expectedLen)
+				for i := expectedLen; i < gotLen; i++ {
+					res.Extra[i-expectedLen] = got.Index(i)
+				}
+			} else {
+				res.Missing = make([]reflect.Value, expectedLen-gotLen)
+				for i := gotLen; i < expectedLen; i++ {
+					res.Missing[i-gotLen] = expected.Index(i)
+				}
+			}
+
+			return ctx.CollectError(&ctxerr.Error{
+				Message: fmt.Sprintf("comparing slices, from index #%d", maxLen),
+				Summary: res.Summary(),
+			})
+		}
+		return
+
+	case reflect.Interface:
+		if got.IsNil() || expected.IsNil() {
+			if got.IsNil() == expected.IsNil() {
+				return
+			}
+			if ctx.BooleanError {
+				return ctxerr.BooleanError
+			}
+			return ctx.CollectError(&ctxerr.Error{
+				Message:  "nil interface",
+				Got:      isNilStr(got.IsNil()),
+				Expected: isNilStr(expected.IsNil()),
+			})
+		}
+		return deepValueEqual(ctx, got.Elem(), expected.Elem())
+
+	case reflect.Ptr:
+		if got.Pointer() == expected.Pointer() {
+			return
+		}
+		return deepValueEqual(ctx.AddPtr(1), got.Elem(), expected.Elem())
+
+	case reflect.Struct:
+		sType := got.Type()
+		for i, n := 0, got.NumField(); i < n; i++ {
+			err = deepValueEqual(ctx.AddField(sType.Field(i).Name),
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 				got.Field(i), expected.Field(i))
 			if err != nil {
 				return

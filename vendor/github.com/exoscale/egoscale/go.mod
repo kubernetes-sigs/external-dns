@@ -1,5 +1,6 @@
 module github.com/exoscale/egoscale
 
+<<<<<<< HEAD
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deepmap/oapi-codegen v1.6.1
@@ -14,3 +15,7 @@ require (
 go 1.16
 
 retract v1.19.0 // Published accidentally.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+require github.com/gofrs/uuid v3.2.0+incompatible
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

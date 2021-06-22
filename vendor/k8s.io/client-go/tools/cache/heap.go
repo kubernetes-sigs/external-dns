@@ -304,7 +304,15 @@ func (h *Heap) GetByKey(key string) (interface{}, bool, error) {
 func (h *Heap) IsClosed() bool {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
+<<<<<<< HEAD
 	return h.closed
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if h.closed {
+		return true
+	}
+	return false
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // NewHeap returns a Heap which can be used to queue up items to process.

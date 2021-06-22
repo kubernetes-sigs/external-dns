@@ -81,6 +81,7 @@ func (c *tdContainsKey) doesNotContainKey(ctx ctxerr.Context, got reflect.Value)
 // getExpectedValue returns the expected value handling the
 // Contains(nil) case: in this case it returns a typed nil (same type
 // as the keys of got).
+<<<<<<< HEAD
 // got is a map (it's the caller responsibility to check).
 func (c *tdContainsKey) getExpectedValue(got reflect.Value) reflect.Value {
 	// If the expectValue is non-typed nil
@@ -104,6 +105,32 @@ func (c *tdContainsKey) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Err
 		if c.isTestDeeper || ctx.BeLax {
 			for _, k := range got.MapKeys() {
 				if deepValueEqualFinalOK(ctx, k, expectedValue) {
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// got is a map (it's the caller responsibility to check)
+func (c *tdContainsKey) getExpectedValue(got reflect.Value) reflect.Value {
+	// If the expectValue is non-typed nil
+	if !c.expectedValue.IsValid() {
+		// AND the kind of items in got is...
+		switch got.Type().Key().Kind() {
+		case reflect.Chan, reflect.Func, reflect.Interface,
+			reflect.Map, reflect.Ptr, reflect.Slice:
+			// returns a typed nil
+			return reflect.Zero(got.Type().Key())
+		}
+	}
+	return c.expectedValue
+}
+
+func (c *tdContainsKey) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if got.Kind() == reflect.Map {
+		expectedValue := c.getExpectedValue(got)
+
+		// If expected value is a TestDeep operator, check each key
+		if c.isTestDeeper {
+			for _, k := range got.MapKeys() {
+				if deepValueEqualOK(k, expectedValue) {
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 					return nil
 				}
 			}

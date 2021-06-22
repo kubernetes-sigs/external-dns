@@ -109,6 +109,11 @@ func (c *Client) UpdateProfile(ctx context.Context, updateOpts ProfileUpdateOpti
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
+<<<<<<< HEAD
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

@@ -91,7 +91,13 @@ func NewMultiWriteSyncer(ws ...WriteSyncer) WriteSyncer {
 	if len(ws) == 1 {
 		return ws[0]
 	}
+<<<<<<< HEAD
 	return multiWriteSyncer(ws)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// Copy to protect against https://github.com/golang/go/issues/7809
+	return multiWriteSyncer(append([]WriteSyncer(nil), ws...))
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // See https://golang.org/src/io/multi.go

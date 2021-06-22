@@ -3,8 +3,12 @@
 // license that can be found in the LICENSE file.
 
 // Package ptypes provides functionality for interacting with well-known types.
+<<<<<<< HEAD
 //
 // Deprecated: Well-known types have specialized functionality directly
 // injected into the generated packages for each message type.
 // See the deprecation notice for each function for the suggested alternative.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 package ptypes

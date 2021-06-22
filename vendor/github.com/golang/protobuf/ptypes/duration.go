@@ -21,6 +21,7 @@ const (
 
 // Duration converts a durationpb.Duration to a time.Duration.
 // Duration returns an error if dur is invalid or overflows a time.Duration.
+<<<<<<< HEAD
 //
 // Deprecated: Call the dur.AsDuration and dur.CheckValid methods instead.
 func Duration(dur *durationpb.Duration) (time.Duration, error) {
@@ -43,6 +44,27 @@ func Duration(dur *durationpb.Duration) (time.Duration, error) {
 // DurationProto converts a time.Duration to a durationpb.Duration.
 //
 // Deprecated: Call the durationpb.New function instead.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func Duration(dur *durationpb.Duration) (time.Duration, error) {
+	if err := validateDuration(dur); err != nil {
+		return 0, err
+	}
+	d := time.Duration(dur.Seconds) * time.Second
+	if int64(d/time.Second) != dur.Seconds {
+		return 0, fmt.Errorf("duration: %v is out of range for time.Duration", dur)
+	}
+	if dur.Nanos != 0 {
+		d += time.Duration(dur.Nanos) * time.Nanosecond
+		if (d < 0) != (dur.Nanos < 0) {
+			return 0, fmt.Errorf("duration: %v is out of range for time.Duration", dur)
+		}
+	}
+	return d, nil
+}
+
+// DurationProto converts a time.Duration to a durationpb.Duration.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func DurationProto(d time.Duration) *durationpb.Duration {
 	nanos := d.Nanoseconds()
 	secs := nanos / 1e9

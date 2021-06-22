@@ -44,6 +44,7 @@ type ListOptions struct {
 	// If the feature gate WatchBookmarks is not enabled in apiserver,
 	// this field is ignored.
 	AllowWatchBookmarks bool
+<<<<<<< HEAD
 	// resourceVersion sets a constraint on what resource versions a request may be served from.
 	// See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for
 	// details.
@@ -55,6 +56,16 @@ type ListOptions struct {
 	// details.
 	ResourceVersionMatch metav1.ResourceVersionMatch
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// When specified with a watch call, shows changes that occur after that particular version of a resource.
+	// Defaults to changes from the beginning of history.
+	// When specified for list:
+	// - if unset, then the result is returned from remote storage based on quorum-read flag;
+	// - if it's 0, then we simply return what we currently have in cache, no guarantee;
+	// - if set to non zero, then the result is at least as fresh as given rv.
+	ResourceVersion string
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	// Timeout for the list/watch call.
 	TimeoutSeconds *int64
 	// Limit specifies the maximum number of results to return from the server. The server may

@@ -1,6 +1,7 @@
 Changelog
 =========
 
+<<<<<<< HEAD
 0.73.2
 ------
 
@@ -501,6 +502,9 @@ Changelog
 - feature: add field `Description` on type `IPAddress` (#413)
 - change: add Json tag `omitempty` on field  `TemplateFilter` in type `ListTemplates` (#412)
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 0.18.1
 ------
 

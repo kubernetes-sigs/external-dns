@@ -1,6 +1,12 @@
+<<<<<<< HEAD
 /bin
 /vendor
 cover.html
 cover.out
 
 *.swp
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+/vendor
+/cover.out
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

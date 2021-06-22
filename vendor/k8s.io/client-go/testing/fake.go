@@ -106,6 +106,7 @@ func (c *Fake) PrependReactor(verb, resource string, reaction ReactionFunc) {
 
 // AddWatchReactor appends a reactor to the end of the chain.
 func (c *Fake) AddWatchReactor(resource string, reaction WatchReactionFunc) {
+<<<<<<< HEAD
 	c.Lock()
 	defer c.Unlock()
 	c.WatchReactionChain = append(c.WatchReactionChain, &SimpleWatchReactor{resource, reaction})
@@ -115,6 +116,14 @@ func (c *Fake) AddWatchReactor(resource string, reaction WatchReactionFunc) {
 func (c *Fake) PrependWatchReactor(resource string, reaction WatchReactionFunc) {
 	c.Lock()
 	defer c.Unlock()
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	c.WatchReactionChain = append(c.WatchReactionChain, &SimpleWatchReactor{resource, reaction})
+}
+
+// PrependWatchReactor adds a reactor to the beginning of the chain.
+func (c *Fake) PrependWatchReactor(resource string, reaction WatchReactionFunc) {
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	c.WatchReactionChain = append([]WatchReactor{&SimpleWatchReactor{resource, reaction}}, c.WatchReactionChain...)
 }
 

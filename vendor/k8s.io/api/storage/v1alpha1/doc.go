@@ -18,6 +18,10 @@ limitations under the License.
 // +k8s:protobuf-gen=package
 // +groupName=storage.k8s.io
 // +k8s:openapi-gen=true
+<<<<<<< HEAD
 // +k8s:prerelease-lifecycle-gen=true
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 package v1alpha1 // import "k8s.io/api/storage/v1alpha1"

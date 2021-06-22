@@ -6,9 +6,13 @@ import (
 	"unsafe"
 )
 
+<<<<<<< HEAD
 //go:linkname resolveTypeOff reflect.resolveTypeOff
 func resolveTypeOff(rtype unsafe.Pointer, off int32) unsafe.Pointer
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 //go:linkname makemap reflect.makemap
 func makemap(rtype unsafe.Pointer, cap int) (m unsafe.Pointer)
 

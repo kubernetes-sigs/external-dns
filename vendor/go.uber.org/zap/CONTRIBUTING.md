@@ -25,6 +25,16 @@ git remote add upstream https://github.com/uber-go/zap.git
 git fetch upstream
 ```
 
+<<<<<<< HEAD
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+Install zap's dependencies:
+
+```
+make dependencies
+```
+
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 Make sure that the tests and the linters pass:
 
 ```

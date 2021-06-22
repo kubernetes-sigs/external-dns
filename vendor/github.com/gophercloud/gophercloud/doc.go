@@ -106,6 +106,7 @@ intermediary processing on each page, you can use the AllPages method:
 This top-level package contains utility functions and data types that are used
 throughout the provider and service packages. Of particular note for end users
 are the AuthOptions and EndpointOpts structs.
+<<<<<<< HEAD
 
 An example retry backoff function, which respects the 429 HTTP response code and a "Retry-After" header:
 
@@ -145,5 +146,8 @@ An example retry backoff function, which respects the 429 HTTP response code and
 		return nil
 	}
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 */
 package gophercloud

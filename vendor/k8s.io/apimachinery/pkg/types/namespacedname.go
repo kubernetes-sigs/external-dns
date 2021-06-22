@@ -16,6 +16,7 @@ limitations under the License.
 
 package types
 
+<<<<<<< HEAD
 // NamespacedName comprises a resource name, with a mandatory namespace,
 // rendered as "<namespace>/<name>".  Being a type captures intent and
 // helps make sure that UIDs, namespaced names and non-namespaced names
@@ -36,4 +37,31 @@ const (
 // String returns the general purpose string representation
 func (n NamespacedName) String() string {
 	return n.Namespace + string(Separator) + n.Name
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+import (
+	"fmt"
+)
+
+// NamespacedName comprises a resource name, with a mandatory namespace,
+// rendered as "<namespace>/<name>".  Being a type captures intent and
+// helps make sure that UIDs, namespaced names and non-namespaced names
+// do not get conflated in code.  For most use cases, namespace and name
+// will already have been format validated at the API entry point, so we
+// don't do that here.  Where that's not the case (e.g. in testing),
+// consider using NamespacedNameOrDie() in testing.go in this package.
+
+type NamespacedName struct {
+	Namespace string
+	Name      string
+}
+
+const (
+	Separator = '/'
+)
+
+// String returns the general purpose string representation
+func (n NamespacedName) String() string {
+	return fmt.Sprintf("%s%c%s", n.Namespace, Separator, n.Name)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ## unreleased
 
 * Fix regression where `*time.Time` value would be set to empty and not be sent 
@@ -50,6 +51,9 @@
 * Fix panic that can occur in when decoding a map into a nil slice of structs
 * Improved package documentation for godoc
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 ## 1.1.2
 
 * Fix error when decode hook decodes interface implementation into interface

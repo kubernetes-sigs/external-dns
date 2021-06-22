@@ -32,6 +32,7 @@ var Error error
 func init() {
 	Error = errors.Error
 }
+<<<<<<< HEAD
 
 // MessageName returns the full name of m.
 // If m is nil, it returns an empty string.
@@ -41,3 +42,6 @@ func MessageName(m Message) protoreflect.FullName {
 	}
 	return m.ProtoReflect().Descriptor().FullName()
 }
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

@@ -79,6 +79,7 @@ func (mi *MessageInfo) sizePointerSlow(p pointer, opts marshalOptions) (size int
 		size += f.funcs.size(fptr, f, opts)
 	}
 	if mi.unknownOffset.IsValid() {
+<<<<<<< HEAD
 		if u := mi.getUnknownBytes(p); u != nil {
 			size += len(*u)
 		}
@@ -145,6 +146,73 @@ func (mi *MessageInfo) marshalAppendPointer(b []byte, p pointer, opts marshalOpt
 		if u := mi.getUnknownBytes(p); u != nil {
 			b = append(b, (*u)...)
 		}
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		u := *p.Apply(mi.unknownOffset).Bytes()
+		size += len(u)
+	}
+	if mi.sizecacheOffset.IsValid() {
+		if size > math.MaxInt32 {
+			// The size is too large for the int32 sizecache field.
+			// We will need to recompute the size when encoding;
+			// unfortunately expensive, but better than invalid output.
+			atomic.StoreInt32(p.Apply(mi.sizecacheOffset).Int32(), -1)
+		} else {
+			atomic.StoreInt32(p.Apply(mi.sizecacheOffset).Int32(), int32(size))
+		}
+	}
+	return size
+}
+
+// marshal is protoreflect.Methods.Marshal.
+func (mi *MessageInfo) marshal(in piface.MarshalInput) (out piface.MarshalOutput, err error) {
+	var p pointer
+	if ms, ok := in.Message.(*messageState); ok {
+		p = ms.pointer()
+	} else {
+		p = in.Message.(*messageReflectWrapper).pointer()
+	}
+	b, err := mi.marshalAppendPointer(in.Buf, p, marshalOptions{
+		flags: in.Flags,
+	})
+	return piface.MarshalOutput{Buf: b}, err
+}
+
+func (mi *MessageInfo) marshalAppendPointer(b []byte, p pointer, opts marshalOptions) ([]byte, error) {
+	mi.init()
+	if p.IsNil() {
+		return b, nil
+	}
+	if flags.ProtoLegacy && mi.isMessageSet {
+		return marshalMessageSet(mi, b, p, opts)
+	}
+	var err error
+	// The old marshaler encodes extensions at beginning.
+	if mi.extensionOffset.IsValid() {
+		e := p.Apply(mi.extensionOffset).Extensions()
+		// TODO: Special handling for MessageSet?
+		b, err = mi.appendExtensions(b, e, opts)
+		if err != nil {
+			return b, err
+		}
+	}
+	for _, f := range mi.orderedCoderFields {
+		if f.funcs.marshal == nil {
+			continue
+		}
+		fptr := p.Apply(f.offset)
+		if f.isPointer && fptr.Elem().IsNil() {
+			continue
+		}
+		b, err = f.funcs.marshal(b, fptr, f, opts)
+		if err != nil {
+			return b, err
+		}
+	}
+	if mi.unknownOffset.IsValid() && !mi.isMessageSet {
+		u := *p.Apply(mi.unknownOffset).Bytes()
+		b = append(b, u...)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 	return b, nil
 }

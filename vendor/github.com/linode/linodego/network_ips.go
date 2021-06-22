@@ -82,6 +82,11 @@ func (c *Client) UpdateIPAddress(ctx context.Context, id string, updateOpts IPAd
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
+<<<<<<< HEAD
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

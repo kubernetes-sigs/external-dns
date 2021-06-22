@@ -23,6 +23,7 @@
 // package's zero-allocation formatters.
 package buffer // import "go.uber.org/zap/buffer"
 
+<<<<<<< HEAD
 import (
 	"strconv"
 	"time"
@@ -55,6 +56,33 @@ func (b *Buffer) AppendInt(i int64) {
 // AppendTime appends the time formatted using the specified layout.
 func (b *Buffer) AppendTime(t time.Time, layout string) {
 	b.bs = t.AppendFormat(b.bs, layout)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+import "strconv"
+
+const _size = 1024 // by default, create 1 KiB buffers
+
+// Buffer is a thin wrapper around a byte slice. It's intended to be pooled, so
+// the only way to construct one is via a Pool.
+type Buffer struct {
+	bs   []byte
+	pool Pool
+}
+
+// AppendByte writes a single byte to the Buffer.
+func (b *Buffer) AppendByte(v byte) {
+	b.bs = append(b.bs, v)
+}
+
+// AppendString writes a string to the Buffer.
+func (b *Buffer) AppendString(s string) {
+	b.bs = append(b.bs, s...)
+}
+
+// AppendInt appends an integer to the underlying buffer (assuming base 10).
+func (b *Buffer) AppendInt(i int64) {
+	b.bs = strconv.AppendInt(b.bs, i, 10)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // AppendUint appends an unsigned integer to the underlying buffer (assuming

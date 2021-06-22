@@ -69,6 +69,7 @@ func (api *API) CreateDNSRecord(zoneID string, rr DNSRecord) (*DNSRecordResponse
 func (api *API) DNSRecords(zoneID string, rr DNSRecord) ([]DNSRecord, error) {
 	// Construct a query string
 	v := url.Values{}
+<<<<<<< HEAD
 	// Request as many records as possible per page - API max is 100
 	v.Set("per_page", "100")
 	if rr.Name != "" {
@@ -144,6 +145,82 @@ func (api *API) UpdateDNSRecord(zoneID, recordID string, rr DNSRecord) error {
 	if rr.Type == "" {
 		rr.Type = rec.Type
 	}
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// Request as many records as possible per page - API max is 50
+	v.Set("per_page", "50")
+	if rr.Name != "" {
+		v.Set("name", rr.Name)
+	}
+	if rr.Type != "" {
+		v.Set("type", rr.Type)
+	}
+	if rr.Content != "" {
+		v.Set("content", rr.Content)
+	}
+
+	var query string
+	var records []DNSRecord
+	page := 1
+
+	// Loop over makeRequest until what we've fetched all records
+	for {
+		v.Set("page", strconv.Itoa(page))
+		query = "?" + v.Encode()
+		uri := "/zones/" + zoneID + "/dns_records" + query
+		res, err := api.makeRequest("GET", uri, nil)
+		if err != nil {
+			return []DNSRecord{}, errors.Wrap(err, errMakeRequestError)
+		}
+		var r DNSListResponse
+		err = json.Unmarshal(res, &r)
+		if err != nil {
+			return []DNSRecord{}, errors.Wrap(err, errUnmarshalError)
+		}
+		records = append(records, r.Result...)
+		if r.ResultInfo.Page >= r.ResultInfo.TotalPages {
+			break
+		}
+		// Loop around and fetch the next page
+		page++
+	}
+	return records, nil
+}
+
+// DNSRecord returns a single DNS record for the given zone & record
+// identifiers.
+//
+// API reference: https://api.cloudflare.com/#dns-records-for-a-zone-dns-record-details
+func (api *API) DNSRecord(zoneID, recordID string) (DNSRecord, error) {
+	uri := "/zones/" + zoneID + "/dns_records/" + recordID
+	res, err := api.makeRequest("GET", uri, nil)
+	if err != nil {
+		return DNSRecord{}, errors.Wrap(err, errMakeRequestError)
+	}
+	var r DNSRecordResponse
+	err = json.Unmarshal(res, &r)
+	if err != nil {
+		return DNSRecord{}, errors.Wrap(err, errUnmarshalError)
+	}
+	return r.Result, nil
+}
+
+// UpdateDNSRecord updates a single DNS record for the given zone & record
+// identifiers.
+//
+// API reference: https://api.cloudflare.com/#dns-records-for-a-zone-update-dns-record
+func (api *API) UpdateDNSRecord(zoneID, recordID string, rr DNSRecord) error {
+	rec, err := api.DNSRecord(zoneID, recordID)
+	if err != nil {
+		return err
+	}
+	// Populate the record name from the existing one if the update didn't
+	// specify it.
+	if rr.Name == "" {
+		rr.Name = rec.Name
+	}
+	rr.Type = rec.Type
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	uri := "/zones/" + zoneID + "/dns_records/" + recordID
 	res, err := api.makeRequest("PATCH", uri, rr)
 	if err != nil {

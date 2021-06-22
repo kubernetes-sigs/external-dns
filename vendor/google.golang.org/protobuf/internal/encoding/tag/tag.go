@@ -104,7 +104,12 @@ func Unmarshal(tag string, goType reflect.Type, evs pref.EnumValueDescriptors) p
 		case strings.HasPrefix(s, "json="):
 			jsonName := s[len("json="):]
 			if jsonName != strs.JSONCamelCase(string(f.L0.FullName.Name())) {
+<<<<<<< HEAD
 				f.L1.StringName.InitJSON(jsonName)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+				f.L1.JSONName.Init(jsonName)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			}
 		case s == "packed":
 			f.L1.HasPacked = true

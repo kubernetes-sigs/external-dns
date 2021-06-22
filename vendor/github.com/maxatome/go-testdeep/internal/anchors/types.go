@@ -12,6 +12,7 @@ import (
 	"math"
 	"reflect"
 	"time"
+<<<<<<< HEAD
 
 	"github.com/maxatome/go-testdeep/internal/types"
 )
@@ -64,6 +65,61 @@ func AddAnchorableStructType(fn interface{}) error {
 		if !fnType.IsVariadic() &&
 			fnType.NumIn() == 1 && fnType.NumOut() == 1 &&
 			fnType.In(0) == types.Int &&
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+)
+
+var intType = reflect.TypeOf(42)
+
+type anchorableType struct {
+	typ     reflect.Type
+	builder reflect.Value
+}
+
+// AnchorableTypes contains all non-native types that can be
+// anchorable. See AddAnchorableStructType to add a new type to it.
+var AnchorableTypes []anchorableType
+
+func init() {
+	AddAnchorableStructType(func(nextAnchor int) time.Time { //nolint: errcheck
+		return time.Unix(math.MaxInt64-1000424443-int64(nextAnchor), 42)
+	})
+}
+
+// AddAnchorableStructType declares a struct type as anchorable. "fn"
+// is a function allowing to return a unique and identifiable instance
+// of the struct type.
+//
+// "fn" has to have the following signature:
+//
+//   func (nextAnchor int) TYPE
+//
+// TYPE is the struct type to make anchorable and "nextAnchor" is an
+// index to allow to differentiate several instances of the same type.
+//
+// For example, the time.Time type which is anchrorable by default,
+// is declared as:
+//
+//   AddAnchorableStructType(func (nextAnchor int) time.Time {
+//     return time.Unix(math.MaxInt64-1000424443-int64(nextAnchor), 42)
+//   })
+//
+// Just as a note, the 1000424443 constant allows to avoid to flirt
+// with the math.MaxInt64 extreme limit and so avoid possible
+// collision with real world values.
+//
+// It returns an error if the provided "fn" is not a function or if it
+// has not the expected signature (see above).
+func AddAnchorableStructType(fn interface{}) error {
+	vfn := reflect.ValueOf(fn)
+
+	if vfn.Kind() == reflect.Func {
+		fnType := vfn.Type()
+
+		if !fnType.IsVariadic() &&
+			fnType.NumIn() == 1 && fnType.NumOut() == 1 &&
+			fnType.In(0) == intType &&
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			fnType.Out(0).Kind() == reflect.Struct {
 			typ := fnType.Out(0)
 			if !typ.Comparable() {

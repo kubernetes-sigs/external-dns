@@ -19,7 +19,12 @@ package fake
 import (
 	"fmt"
 
+<<<<<<< HEAD
 	openapi_v2 "github.com/googleapis/gnostic/openapiv2"
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"github.com/googleapis/gnostic/OpenAPIv2"
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"

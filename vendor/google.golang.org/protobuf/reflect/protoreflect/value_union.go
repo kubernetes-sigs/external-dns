@@ -85,8 +85,12 @@ func ValueOf(v interface{}) Value {
 		return ValueOfEnum(v)
 	case Message, List, Map:
 		return valueOfIface(v)
+<<<<<<< HEAD
 	case ProtoMessage:
 		panic(fmt.Sprintf("invalid proto.Message(%T) type, expected a protoreflect.Message type", v))
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	default:
 		panic(fmt.Sprintf("invalid type: %T", v))
 	}

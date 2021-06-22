@@ -181,7 +181,12 @@ func Invalid(field *Path, value interface{}, detail string) *Error {
 // valid values).
 func NotSupported(field *Path, value interface{}, validValues []string) *Error {
 	detail := ""
+<<<<<<< HEAD
 	if len(validValues) > 0 {
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if validValues != nil && len(validValues) > 0 {
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		quotedValues := make([]string, len(validValues))
 		for i, v := range validValues {
 			quotedValues[i] = strconv.Quote(v)

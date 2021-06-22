@@ -22,7 +22,12 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/flowcontrol"
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"k8s.io/klog"
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )
 
 // Set of resp. Codes that we backoff for.

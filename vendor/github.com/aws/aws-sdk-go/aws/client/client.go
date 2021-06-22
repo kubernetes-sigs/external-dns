@@ -88,6 +88,14 @@ func (c *Client) NewRequest(operation *request.Operation, params interface{}, da
 // AddDebugHandlers injects debug logging handlers into the service to log request
 // debug information.
 func (c *Client) AddDebugHandlers() {
+<<<<<<< HEAD
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if !c.Config.LogLevel.AtLeast(aws.LogDebug) {
+		return
+	}
+
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	c.Handlers.Send.PushFrontNamed(LogHTTPRequestHandler)
 	c.Handlers.Send.PushBackNamed(LogHTTPResponseHandler)
 }

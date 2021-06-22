@@ -57,6 +57,7 @@ type Selector interface {
 
 type nothingSelector struct{}
 
+<<<<<<< HEAD
 func (n nothingSelector) Matches(_ Fields) bool      { return false }
 func (n nothingSelector) Empty() bool                { return false }
 func (n nothingSelector) String() string             { return "" }
@@ -66,6 +67,16 @@ func (n nothingSelector) RequiresExactMatch(field string) (value string, found b
 	return "", false
 }
 func (n nothingSelector) Transform(fn TransformFunc) (Selector, error) { return n, nil }
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func (n nothingSelector) Matches(_ Fields) bool                                      { return false }
+func (n nothingSelector) Empty() bool                                                { return false }
+func (n nothingSelector) String() string                                             { return "" }
+func (n nothingSelector) Requirements() Requirements                                 { return nil }
+func (n nothingSelector) DeepCopySelector() Selector                                 { return n }
+func (n nothingSelector) RequiresExactMatch(field string) (value string, found bool) { return "", false }
+func (n nothingSelector) Transform(fn TransformFunc) (Selector, error)               { return n, nil }
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 // Nothing returns a selector that matches no fields
 func Nothing() Selector {

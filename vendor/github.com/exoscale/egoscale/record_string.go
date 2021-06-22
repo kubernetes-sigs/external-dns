@@ -4,6 +4,7 @@ package egoscale
 
 import "strconv"
 
+<<<<<<< HEAD
 func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
@@ -24,6 +25,9 @@ func _() {
 	_ = x[URL-13]
 }
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 const _Record_name = "AAAAAALIASCNAMEHINFOMXNAPTRNSPOOLSPFSRVSSHFPTXTURL"
 
 var _Record_index = [...]uint8{0, 1, 5, 10, 15, 20, 22, 27, 29, 33, 36, 39, 44, 47, 50}

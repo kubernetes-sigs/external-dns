@@ -9,4 +9,13 @@ reviewers:
 - mikedanese
 - saad-ali
 - janetkuo
+<<<<<<< HEAD
 - xiang90
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+- tallclair
+- eparis
+- xiang90
+- mbohlool
+- david-mcmahon
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

@@ -104,6 +104,7 @@ func (c *Client) ListFirewalls(ctx context.Context, opts *ListOptions) ([]Firewa
 	response := FirewallsPagedResponse{}
 
 	err := c.listHelper(ctx, &response, opts)
+<<<<<<< HEAD
 	if err != nil {
 		return nil, err
 	}
@@ -130,6 +131,37 @@ func (c *Client) CreateFirewall(ctx context.Context, createOpts FirewallCreateOp
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+	if err != nil {
+		return nil, err
+	}
+
+	return response.Data, nil
+}
+
+// CreateFirewall creates a single Firewall with at least one set of inbound or outbound rules
+func (c *Client) CreateFirewall(ctx context.Context, createOpts FirewallCreateOptions) (*Firewall, error) {
+	var body string
+	e, err := c.Firewalls.Endpoint()
+	if err != nil {
+		return nil, err
+	}
+
+	req := c.R(ctx).SetResult(&Firewall{})
+
+	if bodyData, err := json.Marshal(createOpts); err == nil {
+		body = string(bodyData)
+	} else {
+		return nil, NewError(err)
+	}
+
+	r, err := coupleAPIErrors(req.
+		SetBody(body).
+		Post(e))
+
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

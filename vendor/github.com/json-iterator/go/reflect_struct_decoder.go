@@ -1075,11 +1075,15 @@ type stringModeNumberDecoder struct {
 }
 
 func (decoder *stringModeNumberDecoder) Decode(ptr unsafe.Pointer, iter *Iterator) {
+<<<<<<< HEAD
 	if iter.WhatIsNext() == NilValue {
 		decoder.elemDecoder.Decode(ptr, iter)
 		return
 	}
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	c := iter.nextToken()
 	if c != '"' {
 		iter.ReportError("stringModeNumberDecoder", `expect ", but found `+string([]byte{c}))

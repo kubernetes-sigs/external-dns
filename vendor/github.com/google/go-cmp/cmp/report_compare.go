@@ -1,5 +1,6 @@
 // Copyright 2019, The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
+<<<<<<< HEAD
 // license that can be found in the LICENSE file.
 
 package cmp
@@ -101,6 +102,110 @@ func (opts formatOptions) FormatDiff(v *valueNode, ptrs *pointerReferences) (out
 	if opts.DiffMode == diffIdentical {
 		opts = opts.WithVerbosity(1)
 	} else if opts.verbosity() < 3 {
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// license that can be found in the LICENSE.md file.
+
+package cmp
+
+import (
+	"fmt"
+	"reflect"
+
+	"github.com/google/go-cmp/cmp/internal/value"
+)
+
+// numContextRecords is the number of surrounding equal records to print.
+const numContextRecords = 2
+
+type diffMode byte
+
+const (
+	diffUnknown   diffMode = 0
+	diffIdentical diffMode = ' '
+	diffRemoved   diffMode = '-'
+	diffInserted  diffMode = '+'
+)
+
+type typeMode int
+
+const (
+	// emitType always prints the type.
+	emitType typeMode = iota
+	// elideType never prints the type.
+	elideType
+	// autoType prints the type only for composite kinds
+	// (i.e., structs, slices, arrays, and maps).
+	autoType
+)
+
+type formatOptions struct {
+	// DiffMode controls the output mode of FormatDiff.
+	//
+	// If diffUnknown,   then produce a diff of the x and y values.
+	// If diffIdentical, then emit values as if they were equal.
+	// If diffRemoved,   then only emit x values (ignoring y values).
+	// If diffInserted,  then only emit y values (ignoring x values).
+	DiffMode diffMode
+
+	// TypeMode controls whether to print the type for the current node.
+	//
+	// As a general rule of thumb, we always print the type of the next node
+	// after an interface, and always elide the type of the next node after
+	// a slice or map node.
+	TypeMode typeMode
+
+	// formatValueOptions are options specific to printing reflect.Values.
+	formatValueOptions
+}
+
+func (opts formatOptions) WithDiffMode(d diffMode) formatOptions {
+	opts.DiffMode = d
+	return opts
+}
+func (opts formatOptions) WithTypeMode(t typeMode) formatOptions {
+	opts.TypeMode = t
+	return opts
+}
+func (opts formatOptions) WithVerbosity(level int) formatOptions {
+	opts.VerbosityLevel = level
+	opts.LimitVerbosity = true
+	return opts
+}
+func (opts formatOptions) verbosity() uint {
+	switch {
+	case opts.VerbosityLevel < 0:
+		return 0
+	case opts.VerbosityLevel > 16:
+		return 16 // some reasonable maximum to avoid shift overflow
+	default:
+		return uint(opts.VerbosityLevel)
+	}
+}
+
+const maxVerbosityPreset = 3
+
+// verbosityPreset modifies the verbosity settings given an index
+// between 0 and maxVerbosityPreset, inclusive.
+func verbosityPreset(opts formatOptions, i int) formatOptions {
+	opts.VerbosityLevel = int(opts.verbosity()) + 2*i
+	if i > 0 {
+		opts.AvoidStringer = true
+	}
+	if i >= maxVerbosityPreset {
+		opts.PrintAddresses = true
+		opts.QualifiedNames = true
+	}
+	return opts
+}
+
+// FormatDiff converts a valueNode tree into a textNode tree, where the later
+// is a textual representation of the differences detected in the former.
+func (opts formatOptions) FormatDiff(v *valueNode, ptrs *pointerReferences) (out textNode) {
+	if opts.DiffMode == diffIdentical {
+		opts = opts.WithVerbosity(1)
+	} else {
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		opts = opts.WithVerbosity(3)
 	}
 

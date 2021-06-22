@@ -232,6 +232,7 @@ type MessageDescriptor interface {
 type isMessageDescriptor interface{ ProtoType(MessageDescriptor) }
 
 // MessageType encapsulates a MessageDescriptor with a concrete Go implementation.
+<<<<<<< HEAD
 // It is recommended that implementations of this interface also implement the
 // MessageFieldTypes interface.
 type MessageType interface {
@@ -405,6 +406,148 @@ type FieldDescriptors interface {
 	// ByTextName returns the FieldDescriptor for a field with s as the text name.
 	// It returns nil if not found.
 	ByTextName(s string) FieldDescriptor
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type MessageType interface {
+	// New returns a newly allocated empty message.
+	New() Message
+
+	// Zero returns an empty, read-only message.
+	Zero() Message
+
+	// Descriptor returns the message descriptor.
+	//
+	// Invariant: t.Descriptor() == t.New().Descriptor()
+	Descriptor() MessageDescriptor
+}
+
+// MessageDescriptors is a list of message declarations.
+type MessageDescriptors interface {
+	// Len reports the number of messages.
+	Len() int
+	// Get returns the ith MessageDescriptor. It panics if out of bounds.
+	Get(i int) MessageDescriptor
+	// ByName returns the MessageDescriptor for a message named s.
+	// It returns nil if not found.
+	ByName(s Name) MessageDescriptor
+
+	doNotImplement
+}
+
+// FieldDescriptor describes a field within a message and
+// corresponds with the google.protobuf.FieldDescriptorProto message.
+//
+// It is used for both normal fields defined within the parent message
+// (e.g., MessageDescriptor.Fields) and fields that extend some remote message
+// (e.g., FileDescriptor.Extensions or MessageDescriptor.Extensions).
+type FieldDescriptor interface {
+	Descriptor
+
+	// Number reports the unique number for this field.
+	Number() FieldNumber
+	// Cardinality reports the cardinality for this field.
+	Cardinality() Cardinality
+	// Kind reports the basic kind for this field.
+	Kind() Kind
+
+	// HasJSONName reports whether this field has an explicitly set JSON name.
+	HasJSONName() bool
+
+	// JSONName reports the name used for JSON serialization.
+	// It is usually the camel-cased form of the field name.
+	JSONName() string
+
+	// HasPresence reports whether the field distinguishes between unpopulated
+	// and default values.
+	HasPresence() bool
+
+	// IsExtension reports whether this is an extension field. If false,
+	// then Parent and ContainingMessage refer to the same message.
+	// Otherwise, ContainingMessage and Parent likely differ.
+	IsExtension() bool
+
+	// HasOptionalKeyword reports whether the "optional" keyword was explicitly
+	// specified in the source .proto file.
+	HasOptionalKeyword() bool
+
+	// IsWeak reports whether this is a weak field, which does not impose a
+	// direct dependency on the target type.
+	// If true, then Message returns a placeholder type.
+	IsWeak() bool
+
+	// IsPacked reports whether repeated primitive numeric kinds should be
+	// serialized using a packed encoding.
+	// If true, then it implies Cardinality is Repeated.
+	IsPacked() bool
+
+	// IsList reports whether this field represents a list,
+	// where the value type for the associated field is a List.
+	// It is equivalent to checking whether Cardinality is Repeated and
+	// that IsMap reports false.
+	IsList() bool
+
+	// IsMap reports whether this field represents a map,
+	// where the value type for the associated field is a Map.
+	// It is equivalent to checking whether Cardinality is Repeated,
+	// that the Kind is MessageKind, and that Message.IsMapEntry reports true.
+	IsMap() bool
+
+	// MapKey returns the field descriptor for the key in the map entry.
+	// It returns nil if IsMap reports false.
+	MapKey() FieldDescriptor
+
+	// MapValue returns the field descriptor for the value in the map entry.
+	// It returns nil if IsMap reports false.
+	MapValue() FieldDescriptor
+
+	// HasDefault reports whether this field has a default value.
+	HasDefault() bool
+
+	// Default returns the default value for scalar fields.
+	// For proto2, it is the default value as specified in the proto file,
+	// or the zero value if unspecified.
+	// For proto3, it is always the zero value of the scalar.
+	// The Value type is determined by the Kind.
+	Default() Value
+
+	// DefaultEnumValue returns the enum value descriptor for the default value
+	// of an enum field, and is nil for any other kind of field.
+	DefaultEnumValue() EnumValueDescriptor
+
+	// ContainingOneof is the containing oneof that this field belongs to,
+	// and is nil if this field is not part of a oneof.
+	ContainingOneof() OneofDescriptor
+
+	// ContainingMessage is the containing message that this field belongs to.
+	// For extension fields, this may not necessarily be the parent message
+	// that the field is declared within.
+	ContainingMessage() MessageDescriptor
+
+	// Enum is the enum descriptor if Kind is EnumKind.
+	// It returns nil for any other Kind.
+	Enum() EnumDescriptor
+
+	// Message is the message descriptor if Kind is
+	// MessageKind or GroupKind. It returns nil for any other Kind.
+	Message() MessageDescriptor
+
+	isFieldDescriptor
+}
+type isFieldDescriptor interface{ ProtoType(FieldDescriptor) }
+
+// FieldDescriptors is a list of field declarations.
+type FieldDescriptors interface {
+	// Len reports the number of fields.
+	Len() int
+	// Get returns the ith FieldDescriptor. It panics if out of bounds.
+	Get(i int) FieldDescriptor
+	// ByName returns the FieldDescriptor for a field named s.
+	// It returns nil if not found.
+	ByName(s Name) FieldDescriptor
+	// ByJSONName returns the FieldDescriptor for a field with s as the JSON name.
+	// It returns nil if not found.
+	ByJSONName(s string) FieldDescriptor
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	// ByNumber returns the FieldDescriptor for a field numbered n.
 	// It returns nil if not found.
 	ByNumber(n FieldNumber) FieldDescriptor

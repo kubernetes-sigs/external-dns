@@ -1,4 +1,5 @@
 # instrumented_http
+<<<<<<< HEAD
 
 A Go `http.RoundTripper` that exports request statistics via [Prometheus](https://prometheus.io/).
 
@@ -26,3 +27,7 @@ Browse the [examples](examples) directory to see how `instrumented_http` works w
 * [Resty](https://github.com/go-resty/resty): [examples/resty](examples/resty)
 * [Sling](https://github.com/dghubble/sling): [examples/sling](examples/sling)
 * [Gentleman](https://github.com/h2non/gentleman): [examples/gentleman](examples/gentleman)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+A Go http.RoundTripper that exports request statistics via Prometheus.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

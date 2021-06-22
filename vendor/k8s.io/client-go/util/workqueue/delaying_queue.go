@@ -38,6 +38,7 @@ func NewDelayingQueue() DelayingInterface {
 	return NewDelayingQueueWithCustomClock(clock.RealClock{}, "")
 }
 
+<<<<<<< HEAD
 // NewDelayingQueueWithCustomQueue constructs a new workqueue with ability to
 // inject custom queue Interface instead of the default one
 func NewDelayingQueueWithCustomQueue(q Interface, name string) DelayingInterface {
@@ -66,6 +67,28 @@ func newDelayingQueue(clock clock.Clock, q Interface, name string) *delayingType
 	}
 
 	go ret.waitingLoop()
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// NewNamedDelayingQueue constructs a new named workqueue with delayed queuing ability
+func NewNamedDelayingQueue(name string) DelayingInterface {
+	return NewDelayingQueueWithCustomClock(clock.RealClock{}, name)
+}
+
+// NewDelayingQueueWithCustomClock constructs a new named workqueue
+// with ability to inject real or fake clock for testing purposes
+func NewDelayingQueueWithCustomClock(clock clock.Clock, name string) DelayingInterface {
+	ret := &delayingType{
+		Interface:       NewNamed(name),
+		clock:           clock,
+		heartbeat:       clock.NewTicker(maxWait),
+		stopCh:          make(chan struct{}),
+		waitingForAddCh: make(chan *waitFor, 1000),
+		metrics:         newRetryMetrics(name),
+	}
+
+	go ret.waitingLoop()
+
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return ret
 }
 

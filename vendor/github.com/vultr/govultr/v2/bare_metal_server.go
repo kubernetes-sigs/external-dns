@@ -66,6 +66,7 @@ type BareMetalServer struct {
 	Tag             string   `json:"tag"`
 	OsID            int      `json:"os_id"`
 	AppID           int      `json:"app_id"`
+<<<<<<< HEAD
 	ImageID         string   `json:"image_id"`
 	Features        []string `json:"features"`
 }
@@ -97,6 +98,36 @@ type BareMetalUpdate struct {
 	Label      string `json:"label,omitempty"`
 	AppID      int    `json:"app_id,omitempty"`
 	ImageID    string `json:"image_id,omitempty"`
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	Features        []string `json:"features"`
+}
+
+// BareMetalCreate represents the optional parameters that can be set when creating a Bare Metal server
+type BareMetalCreate struct {
+	Region          string   `json:"region,omitempty"`
+	Plan            string   `json:"plan,omitempty"`
+	OsID            int      `json:"os_id,omitempty"`
+	StartupScriptID string   `json:"script_id,omitempty"`
+	SnapshotID      string   `json:"snapshot_id,omitempty"`
+	EnableIPv6      *bool    `json:"enable_ipv6,omitempty"`
+	Label           string   `json:"label,omitempty"`
+	SSHKeyIDs       []string `json:"sshkey_id,omitempty"`
+	AppID           int      `json:"app_id,omitempty"`
+	UserData        string   `json:"user_data,omitempty"`
+	ActivationEmail *bool    `json:"activation_email,omitempty"`
+	Hostname        string   `json:"hostname,omitempty"`
+	Tag             string   `json:"tag,omitempty"`
+	ReservedIPv4    string   `json:"reserved_ipv4,omitempty"`
+}
+
+// BareMetalUpdate represents the optional parameters that can be set when updating a Bare Metal server
+type BareMetalUpdate struct {
+	OsID       int    `json:"os_id,omitempty"`
+	EnableIPv6 *bool  `json:"enable_ipv6,omitempty"`
+	Label      string `json:"label,omitempty"`
+	AppID      int    `json:"app_id,omitempty"`
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	UserData   string `json:"user_data,omitempty"`
 	Tag        string `json:"tag,omitempty"`
 }

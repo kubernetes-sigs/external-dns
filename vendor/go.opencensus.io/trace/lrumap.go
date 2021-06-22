@@ -44,7 +44,12 @@ func (lm lruMap) len() int {
 }
 
 func (lm lruMap) keys() []interface{} {
+<<<<<<< HEAD
 	keys := make([]interface{}, len(lm.cacheKeys))
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	keys := []interface{}{}
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	for k := range lm.cacheKeys {
 		keys = append(keys, k)
 	}

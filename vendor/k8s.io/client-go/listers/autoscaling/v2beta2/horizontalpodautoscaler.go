@@ -26,6 +26,7 @@ import (
 )
 
 // HorizontalPodAutoscalerLister helps list HorizontalPodAutoscalers.
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type HorizontalPodAutoscalerLister interface {
 	// List lists all HorizontalPodAutoscalers in the indexer.
@@ -67,6 +68,45 @@ type HorizontalPodAutoscalerNamespaceLister interface {
 	List(selector labels.Selector) (ret []*v2beta2.HorizontalPodAutoscaler, err error)
 	// Get retrieves the HorizontalPodAutoscaler from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type HorizontalPodAutoscalerLister interface {
+	// List lists all HorizontalPodAutoscalers in the indexer.
+	List(selector labels.Selector) (ret []*v2beta2.HorizontalPodAutoscaler, err error)
+	// HorizontalPodAutoscalers returns an object that can list and get HorizontalPodAutoscalers.
+	HorizontalPodAutoscalers(namespace string) HorizontalPodAutoscalerNamespaceLister
+	HorizontalPodAutoscalerListerExpansion
+}
+
+// horizontalPodAutoscalerLister implements the HorizontalPodAutoscalerLister interface.
+type horizontalPodAutoscalerLister struct {
+	indexer cache.Indexer
+}
+
+// NewHorizontalPodAutoscalerLister returns a new HorizontalPodAutoscalerLister.
+func NewHorizontalPodAutoscalerLister(indexer cache.Indexer) HorizontalPodAutoscalerLister {
+	return &horizontalPodAutoscalerLister{indexer: indexer}
+}
+
+// List lists all HorizontalPodAutoscalers in the indexer.
+func (s *horizontalPodAutoscalerLister) List(selector labels.Selector) (ret []*v2beta2.HorizontalPodAutoscaler, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v2beta2.HorizontalPodAutoscaler))
+	})
+	return ret, err
+}
+
+// HorizontalPodAutoscalers returns an object that can list and get HorizontalPodAutoscalers.
+func (s *horizontalPodAutoscalerLister) HorizontalPodAutoscalers(namespace string) HorizontalPodAutoscalerNamespaceLister {
+	return horizontalPodAutoscalerNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// HorizontalPodAutoscalerNamespaceLister helps list and get HorizontalPodAutoscalers.
+type HorizontalPodAutoscalerNamespaceLister interface {
+	// List lists all HorizontalPodAutoscalers in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v2beta2.HorizontalPodAutoscaler, err error)
+	// Get retrieves the HorizontalPodAutoscaler from the indexer for a given namespace and name.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v2beta2.HorizontalPodAutoscaler, error)
 	HorizontalPodAutoscalerNamespaceListerExpansion
 }

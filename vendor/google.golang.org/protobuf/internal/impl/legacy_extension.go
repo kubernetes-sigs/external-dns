@@ -154,8 +154,13 @@ func (x placeholderExtension) Number() pref.FieldNumber                   { retu
 func (x placeholderExtension) Cardinality() pref.Cardinality              { return 0 }
 func (x placeholderExtension) Kind() pref.Kind                            { return 0 }
 func (x placeholderExtension) HasJSONName() bool                          { return false }
+<<<<<<< HEAD
 func (x placeholderExtension) JSONName() string                           { return "[" + string(x.name) + "]" }
 func (x placeholderExtension) TextName() string                           { return "[" + string(x.name) + "]" }
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func (x placeholderExtension) JSONName() string                           { return "" }
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func (x placeholderExtension) HasPresence() bool                          { return false }
 func (x placeholderExtension) HasOptionalKeyword() bool                   { return false }
 func (x placeholderExtension) IsExtension() bool                          { return true }

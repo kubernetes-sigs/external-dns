@@ -11,7 +11,11 @@ type LinodeKernel struct {
 	Label        string `json:"label"`
 	Version      string `json:"version"`
 	Architecture string `json:"architecture"`
+<<<<<<< HEAD
 	Deprecated   bool   `json:"deprecated"`
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	KVM          bool   `json:"kvm"`
 	XEN          bool   `json:"xen"`
 	PVOPS        bool   `json:"pvops"`

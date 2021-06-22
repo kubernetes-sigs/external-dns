@@ -28,6 +28,7 @@ package v1beta1
 
 // AUTO-GENERATED FUNCTIONS START HERE. DO NOT EDIT.
 var map_LocalSubjectAccessReview = map[string]string{
+<<<<<<< HEAD
 	"":         "LocalSubjectAccessReview checks whether or not a user or group can perform an action in a given namespace. Having a namespace scoped resource makes it much easier to grant namespace scoped policy that includes permissions checking.",
 	"metadata": "Standard list metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata",
 	"spec":     "Spec holds information about the request being evaluated.  spec.namespace must be equal to the namespace you made the request against.  If empty, it is defaulted.",
@@ -131,6 +132,107 @@ var map_SubjectAccessReview = map[string]string{
 	"metadata": "Standard list metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata",
 	"spec":     "Spec holds information about the request being evaluated",
 	"status":   "Status is filled in by the server and indicates whether the request is allowed or not",
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"":       "LocalSubjectAccessReview checks whether or not a user or group can perform an action in a given namespace. Having a namespace scoped resource makes it much easier to grant namespace scoped policy that includes permissions checking.",
+	"spec":   "Spec holds information about the request being evaluated.  spec.namespace must be equal to the namespace you made the request against.  If empty, it is defaulted.",
+	"status": "Status is filled in by the server and indicates whether the request is allowed or not",
+}
+
+func (LocalSubjectAccessReview) SwaggerDoc() map[string]string {
+	return map_LocalSubjectAccessReview
+}
+
+var map_NonResourceAttributes = map[string]string{
+	"":     "NonResourceAttributes includes the authorization attributes available for non-resource requests to the Authorizer interface",
+	"path": "Path is the URL path of the request",
+	"verb": "Verb is the standard HTTP verb",
+}
+
+func (NonResourceAttributes) SwaggerDoc() map[string]string {
+	return map_NonResourceAttributes
+}
+
+var map_NonResourceRule = map[string]string{
+	"":                "NonResourceRule holds information that describes a rule for the non-resource",
+	"verbs":           "Verb is a list of kubernetes non-resource API verbs, like: get, post, put, delete, patch, head, options.  \"*\" means all.",
+	"nonResourceURLs": "NonResourceURLs is a set of partial urls that a user should have access to.  *s are allowed, but only as the full, final step in the path.  \"*\" means all.",
+}
+
+func (NonResourceRule) SwaggerDoc() map[string]string {
+	return map_NonResourceRule
+}
+
+var map_ResourceAttributes = map[string]string{
+	"":            "ResourceAttributes includes the authorization attributes available for resource requests to the Authorizer interface",
+	"namespace":   "Namespace is the namespace of the action being requested.  Currently, there is no distinction between no namespace and all namespaces \"\" (empty) is defaulted for LocalSubjectAccessReviews \"\" (empty) is empty for cluster-scoped resources \"\" (empty) means \"all\" for namespace scoped resources from a SubjectAccessReview or SelfSubjectAccessReview",
+	"verb":        "Verb is a kubernetes resource API verb, like: get, list, watch, create, update, delete, proxy.  \"*\" means all.",
+	"group":       "Group is the API Group of the Resource.  \"*\" means all.",
+	"version":     "Version is the API Version of the Resource.  \"*\" means all.",
+	"resource":    "Resource is one of the existing resource types.  \"*\" means all.",
+	"subresource": "Subresource is one of the existing resource types.  \"\" means none.",
+	"name":        "Name is the name of the resource being requested for a \"get\" or deleted for a \"delete\". \"\" (empty) means all.",
+}
+
+func (ResourceAttributes) SwaggerDoc() map[string]string {
+	return map_ResourceAttributes
+}
+
+var map_ResourceRule = map[string]string{
+	"":              "ResourceRule is the list of actions the subject is allowed to perform on resources. The list ordering isn't significant, may contain duplicates, and possibly be incomplete.",
+	"verbs":         "Verb is a list of kubernetes resource API verbs, like: get, list, watch, create, update, delete, proxy.  \"*\" means all.",
+	"apiGroups":     "APIGroups is the name of the APIGroup that contains the resources.  If multiple API groups are specified, any action requested against one of the enumerated resources in any API group will be allowed.  \"*\" means all.",
+	"resources":     "Resources is a list of resources this rule applies to.  \"*\" means all in the specified apiGroups.\n \"*/foo\" represents the subresource 'foo' for all resources in the specified apiGroups.",
+	"resourceNames": "ResourceNames is an optional white list of names that the rule applies to.  An empty set means that everything is allowed.  \"*\" means all.",
+}
+
+func (ResourceRule) SwaggerDoc() map[string]string {
+	return map_ResourceRule
+}
+
+var map_SelfSubjectAccessReview = map[string]string{
+	"":       "SelfSubjectAccessReview checks whether or the current user can perform an action.  Not filling in a spec.namespace means \"in all namespaces\".  Self is a special case, because users should always be able to check whether they can perform an action",
+	"spec":   "Spec holds information about the request being evaluated.  user and groups must be empty",
+	"status": "Status is filled in by the server and indicates whether the request is allowed or not",
+}
+
+func (SelfSubjectAccessReview) SwaggerDoc() map[string]string {
+	return map_SelfSubjectAccessReview
+}
+
+var map_SelfSubjectAccessReviewSpec = map[string]string{
+	"":                      "SelfSubjectAccessReviewSpec is a description of the access request.  Exactly one of ResourceAuthorizationAttributes and NonResourceAuthorizationAttributes must be set",
+	"resourceAttributes":    "ResourceAuthorizationAttributes describes information for a resource access request",
+	"nonResourceAttributes": "NonResourceAttributes describes information for a non-resource access request",
+}
+
+func (SelfSubjectAccessReviewSpec) SwaggerDoc() map[string]string {
+	return map_SelfSubjectAccessReviewSpec
+}
+
+var map_SelfSubjectRulesReview = map[string]string{
+	"":       "SelfSubjectRulesReview enumerates the set of actions the current user can perform within a namespace. The returned list of actions may be incomplete depending on the server's authorization mode, and any errors experienced during the evaluation. SelfSubjectRulesReview should be used by UIs to show/hide actions, or to quickly let an end user reason about their permissions. It should NOT Be used by external systems to drive authorization decisions as this raises confused deputy, cache lifetime/revocation, and correctness concerns. SubjectAccessReview, and LocalAccessReview are the correct way to defer authorization decisions to the API server.",
+	"spec":   "Spec holds information about the request being evaluated.",
+	"status": "Status is filled in by the server and indicates the set of actions a user can perform.",
+}
+
+func (SelfSubjectRulesReview) SwaggerDoc() map[string]string {
+	return map_SelfSubjectRulesReview
+}
+
+var map_SelfSubjectRulesReviewSpec = map[string]string{
+	"namespace": "Namespace to evaluate rules for. Required.",
+}
+
+func (SelfSubjectRulesReviewSpec) SwaggerDoc() map[string]string {
+	return map_SelfSubjectRulesReviewSpec
+}
+
+var map_SubjectAccessReview = map[string]string{
+	"":       "SubjectAccessReview checks whether or not a user or group can perform an action.",
+	"spec":   "Spec holds information about the request being evaluated",
+	"status": "Status is filled in by the server and indicates whether the request is allowed or not",
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (SubjectAccessReview) SwaggerDoc() map[string]string {

@@ -17,6 +17,7 @@ limitations under the License.
 package net
 
 import (
+<<<<<<< HEAD
 	"errors"
 	"net"
 	"reflect"
@@ -51,6 +52,60 @@ func IsConnectionRefused(err error) bool {
 	var errno syscall.Errno
 	if errors.As(err, &errno) {
 		return errno == syscall.ECONNREFUSED
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"net"
+	"net/url"
+	"os"
+	"reflect"
+	"syscall"
+)
+
+// IPNetEqual checks if the two input IPNets are representing the same subnet.
+// For example,
+//	10.0.0.1/24 and 10.0.0.0/24 are the same subnet.
+//	10.0.0.1/24 and 10.0.0.0/25 are not the same subnet.
+func IPNetEqual(ipnet1, ipnet2 *net.IPNet) bool {
+	if ipnet1 == nil || ipnet2 == nil {
+		return false
+	}
+	if reflect.DeepEqual(ipnet1.Mask, ipnet2.Mask) && ipnet1.Contains(ipnet2.IP) && ipnet2.Contains(ipnet1.IP) {
+		return true
+	}
+	return false
+}
+
+// Returns if the given err is "connection reset by peer" error.
+func IsConnectionReset(err error) bool {
+	if urlErr, ok := err.(*url.Error); ok {
+		err = urlErr.Err
+	}
+	if opErr, ok := err.(*net.OpError); ok {
+		err = opErr.Err
+	}
+	if osErr, ok := err.(*os.SyscallError); ok {
+		err = osErr.Err
+	}
+	if errno, ok := err.(syscall.Errno); ok && errno == syscall.ECONNRESET {
+		return true
+	}
+	return false
+}
+
+// Returns if the given err is "connection refused" error
+func IsConnectionRefused(err error) bool {
+	if urlErr, ok := err.(*url.Error); ok {
+		err = urlErr.Err
+	}
+	if opErr, ok := err.(*net.OpError); ok {
+		err = opErr.Err
+	}
+	if osErr, ok := err.(*os.SyscallError); ok {
+		err = osErr.Err
+	}
+	if errno, ok := err.(syscall.Errno); ok && errno == syscall.ECONNREFUSED {
+		return true
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 	return false
 }

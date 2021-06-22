@@ -74,7 +74,12 @@ func parseBuddyInfo(r io.Reader) ([]BuddyInfo, error) {
 		for i := 0; i < arraySize; i++ {
 			sizes[i], err = strconv.ParseFloat(parts[i+4], 64)
 			if err != nil {
+<<<<<<< HEAD
 				return nil, fmt.Errorf("invalid value in buddyinfo: %w", err)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+				return nil, fmt.Errorf("invalid value in buddyinfo: %s", err)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			}
 		}
 

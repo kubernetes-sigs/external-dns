@@ -450,8 +450,12 @@ func BuildHeaders(opts interface{}) (map[string]string, error) {
 						optsMap[tags[0]] = v.String()
 					case reflect.Int:
 						optsMap[tags[0]] = strconv.FormatInt(v.Int(), 10)
+<<<<<<< HEAD
 					case reflect.Int64:
 						optsMap[tags[0]] = strconv.FormatInt(v.Int(), 10)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 					case reflect.Bool:
 						optsMap[tags[0]] = strconv.FormatBool(v.Bool())
 					}

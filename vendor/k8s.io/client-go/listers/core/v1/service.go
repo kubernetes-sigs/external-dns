@@ -26,6 +26,7 @@ import (
 )
 
 // ServiceLister helps list Services.
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type ServiceLister interface {
 	// List lists all Services in the indexer.
@@ -67,6 +68,45 @@ type ServiceNamespaceLister interface {
 	List(selector labels.Selector) (ret []*v1.Service, err error)
 	// Get retrieves the Service from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type ServiceLister interface {
+	// List lists all Services in the indexer.
+	List(selector labels.Selector) (ret []*v1.Service, err error)
+	// Services returns an object that can list and get Services.
+	Services(namespace string) ServiceNamespaceLister
+	ServiceListerExpansion
+}
+
+// serviceLister implements the ServiceLister interface.
+type serviceLister struct {
+	indexer cache.Indexer
+}
+
+// NewServiceLister returns a new ServiceLister.
+func NewServiceLister(indexer cache.Indexer) ServiceLister {
+	return &serviceLister{indexer: indexer}
+}
+
+// List lists all Services in the indexer.
+func (s *serviceLister) List(selector labels.Selector) (ret []*v1.Service, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1.Service))
+	})
+	return ret, err
+}
+
+// Services returns an object that can list and get Services.
+func (s *serviceLister) Services(namespace string) ServiceNamespaceLister {
+	return serviceNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// ServiceNamespaceLister helps list and get Services.
+type ServiceNamespaceLister interface {
+	// List lists all Services in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1.Service, err error)
+	// Get retrieves the Service from the indexer for a given namespace and name.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.Service, error)
 	ServiceNamespaceListerExpansion
 }

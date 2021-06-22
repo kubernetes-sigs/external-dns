@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 1.8.1
 Code quality:
   * move magefile in its own subdir/submodule to remove magefile dependency on logrus consumer
@@ -34,6 +35,9 @@ Features:
   * a new buffer pool management API has been added
   * a set of `<LogLevel>Fn()` functions have been added
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 # 1.6.0
 Fixes:
   * end of line cleanup

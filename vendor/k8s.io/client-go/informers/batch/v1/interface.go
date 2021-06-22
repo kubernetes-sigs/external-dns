@@ -24,6 +24,7 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+<<<<<<< HEAD
 	// CronJobs returns a CronJobInformer.
 	CronJobs() CronJobInformer
 	// Jobs returns a JobInformer.
@@ -44,6 +45,22 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // CronJobs returns a CronJobInformer.
 func (v *version) CronJobs() CronJobInformer {
 	return &cronJobInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// Jobs returns a JobInformer.
+	Jobs() JobInformer
+}
+
+type version struct {
+	factory          internalinterfaces.SharedInformerFactory
+	namespace        string
+	tweakListOptions internalinterfaces.TweakListOptionsFunc
+}
+
+// New returns a new Interface.
+func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // Jobs returns a JobInformer.

@@ -12,6 +12,7 @@ import (
 
 	"github.com/maxatome/go-testdeep/internal/ctxerr"
 	"github.com/maxatome/go-testdeep/internal/dark"
+<<<<<<< HEAD
 	"github.com/maxatome/go-testdeep/internal/types"
 )
 
@@ -24,6 +25,20 @@ func getTime(ctx ctxerr.Context, got reflect.Value, mustConvert bool) (time.Time
 	)
 	if mustConvert {
 		gotIf, ok = dark.GetInterface(got.Convert(types.Time), true)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+)
+
+// getTime returns the time.Time that is inside got or that can be
+// converted from got contents.
+func getTime(ctx ctxerr.Context, got reflect.Value, mustConvert bool) (time.Time, *ctxerr.Error) {
+	var (
+		gotIf interface{}
+		ok    bool
+	)
+	if mustConvert {
+		gotIf, ok = dark.GetInterface(got.Convert(timeType), true)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	} else {
 		gotIf, ok = dark.GetInterface(got, true)
 	}

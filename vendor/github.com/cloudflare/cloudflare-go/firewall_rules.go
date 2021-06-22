@@ -19,7 +19,11 @@ type FirewallRule struct {
 	Action      string      `json:"action"`
 	Priority    interface{} `json:"priority"`
 	Filter      Filter      `json:"filter"`
+<<<<<<< HEAD
 	Products    []string    `json:"products,omitempty"`
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	CreatedOn   time.Time   `json:"created_on,omitempty"`
 	ModifiedOn  time.Time   `json:"modified_on,omitempty"`
 }

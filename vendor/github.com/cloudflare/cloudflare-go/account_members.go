@@ -25,7 +25,12 @@ type AccountMemberUserDetails struct {
 	FirstName                      string `json:"first_name"`
 	LastName                       string `json:"last_name"`
 	Email                          string `json:"email"`
+<<<<<<< HEAD
 	TwoFactorAuthenticationEnabled bool   `json:"two_factor_authentication_enabled"`
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	TwoFactorAuthenticationEnabled bool
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // AccountMembersListResponse represents the response from the list

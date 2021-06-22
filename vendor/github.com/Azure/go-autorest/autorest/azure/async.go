@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/Azure/go-autorest/autorest"
+<<<<<<< HEAD
 	"github.com/Azure/go-autorest/logger"
 	"github.com/Azure/go-autorest/tracing"
 )
@@ -522,6 +523,450 @@ func (pt *pollingTrackerBase) updateErrorFromResponse() {
 		// put the body back so it's available to other callers
 		pt.resp.Body = ioutil.NopCloser(bytes.NewReader(b))
 		if len(b) == 0 {
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"github.com/Azure/go-autorest/tracing"
+)
+
+const (
+	headerAsyncOperation = "Azure-AsyncOperation"
+)
+
+const (
+	operationInProgress string = "InProgress"
+	operationCanceled   string = "Canceled"
+	operationFailed     string = "Failed"
+	operationSucceeded  string = "Succeeded"
+)
+
+var pollingCodes = [...]int{http.StatusNoContent, http.StatusAccepted, http.StatusCreated, http.StatusOK}
+
+// Future provides a mechanism to access the status and results of an asynchronous request.
+// Since futures are stateful they should be passed by value to avoid race conditions.
+type Future struct {
+	pt pollingTracker
+}
+
+// NewFutureFromResponse returns a new Future object initialized
+// with the initial response from an asynchronous operation.
+func NewFutureFromResponse(resp *http.Response) (Future, error) {
+	pt, err := createPollingTracker(resp)
+	return Future{pt: pt}, err
+}
+
+// Response returns the last HTTP response.
+func (f Future) Response() *http.Response {
+	if f.pt == nil {
+		return nil
+	}
+	return f.pt.latestResponse()
+}
+
+// Status returns the last status message of the operation.
+func (f Future) Status() string {
+	if f.pt == nil {
+		return ""
+	}
+	return f.pt.pollingStatus()
+}
+
+// PollingMethod returns the method used to monitor the status of the asynchronous operation.
+func (f Future) PollingMethod() PollingMethodType {
+	if f.pt == nil {
+		return PollingUnknown
+	}
+	return f.pt.pollingMethod()
+}
+
+// DoneWithContext queries the service to see if the operation has completed.
+func (f *Future) DoneWithContext(ctx context.Context, sender autorest.Sender) (done bool, err error) {
+	ctx = tracing.StartSpan(ctx, "github.com/Azure/go-autorest/autorest/azure/async.DoneWithContext")
+	defer func() {
+		sc := -1
+		resp := f.Response()
+		if resp != nil {
+			sc = resp.StatusCode
+		}
+		tracing.EndSpan(ctx, sc, err)
+	}()
+
+	if f.pt == nil {
+		return false, autorest.NewError("Future", "Done", "future is not initialized")
+	}
+	if f.pt.hasTerminated() {
+		return true, f.pt.pollingError()
+	}
+	if err := f.pt.pollForStatus(ctx, sender); err != nil {
+		return false, err
+	}
+	if err := f.pt.checkForErrors(); err != nil {
+		return f.pt.hasTerminated(), err
+	}
+	if err := f.pt.updatePollingState(f.pt.provisioningStateApplicable()); err != nil {
+		return false, err
+	}
+	if err := f.pt.initPollingMethod(); err != nil {
+		return false, err
+	}
+	if err := f.pt.updatePollingMethod(); err != nil {
+		return false, err
+	}
+	return f.pt.hasTerminated(), f.pt.pollingError()
+}
+
+// GetPollingDelay returns a duration the application should wait before checking
+// the status of the asynchronous request and true; this value is returned from
+// the service via the Retry-After response header.  If the header wasn't returned
+// then the function returns the zero-value time.Duration and false.
+func (f Future) GetPollingDelay() (time.Duration, bool) {
+	if f.pt == nil {
+		return 0, false
+	}
+	resp := f.pt.latestResponse()
+	if resp == nil {
+		return 0, false
+	}
+
+	retry := resp.Header.Get(autorest.HeaderRetryAfter)
+	if retry == "" {
+		return 0, false
+	}
+
+	d, err := time.ParseDuration(retry + "s")
+	if err != nil {
+		panic(err)
+	}
+
+	return d, true
+}
+
+// WaitForCompletionRef will return when one of the following conditions is met: the long
+// running operation has completed, the provided context is cancelled, or the client's
+// polling duration has been exceeded.  It will retry failed polling attempts based on
+// the retry value defined in the client up to the maximum retry attempts.
+// If no deadline is specified in the context then the client.PollingDuration will be
+// used to determine if a default deadline should be used.
+// If PollingDuration is greater than zero the value will be used as the context's timeout.
+// If PollingDuration is zero then no default deadline will be used.
+func (f *Future) WaitForCompletionRef(ctx context.Context, client autorest.Client) (err error) {
+	ctx = tracing.StartSpan(ctx, "github.com/Azure/go-autorest/autorest/azure/async.WaitForCompletionRef")
+	defer func() {
+		sc := -1
+		resp := f.Response()
+		if resp != nil {
+			sc = resp.StatusCode
+		}
+		tracing.EndSpan(ctx, sc, err)
+	}()
+	cancelCtx := ctx
+	// if the provided context already has a deadline don't override it
+	_, hasDeadline := ctx.Deadline()
+	if d := client.PollingDuration; !hasDeadline && d != 0 {
+		var cancel context.CancelFunc
+		cancelCtx, cancel = context.WithTimeout(ctx, d)
+		defer cancel()
+	}
+	// if the initial response has a Retry-After, sleep for the specified amount of time before starting to poll
+	if delay, ok := f.GetPollingDelay(); ok {
+		if delayElapsed := autorest.DelayForBackoff(delay, 0, cancelCtx.Done()); !delayElapsed {
+			err = cancelCtx.Err()
+			return
+		}
+	}
+	done, err := f.DoneWithContext(ctx, client)
+	for attempts := 0; !done; done, err = f.DoneWithContext(ctx, client) {
+		if attempts >= client.RetryAttempts {
+			return autorest.NewErrorWithError(err, "Future", "WaitForCompletion", f.pt.latestResponse(), "the number of retries has been exceeded")
+		}
+		// we want delayAttempt to be zero in the non-error case so
+		// that DelayForBackoff doesn't perform exponential back-off
+		var delayAttempt int
+		var delay time.Duration
+		if err == nil {
+			// check for Retry-After delay, if not present use the client's polling delay
+			var ok bool
+			delay, ok = f.GetPollingDelay()
+			if !ok {
+				delay = client.PollingDelay
+			}
+		} else {
+			// there was an error polling for status so perform exponential
+			// back-off based on the number of attempts using the client's retry
+			// duration.  update attempts after delayAttempt to avoid off-by-one.
+			delayAttempt = attempts
+			delay = client.RetryDuration
+			attempts++
+		}
+		// wait until the delay elapses or the context is cancelled
+		delayElapsed := autorest.DelayForBackoff(delay, delayAttempt, cancelCtx.Done())
+		if !delayElapsed {
+			return autorest.NewErrorWithError(cancelCtx.Err(), "Future", "WaitForCompletion", f.pt.latestResponse(), "context has been cancelled")
+		}
+	}
+	return
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (f Future) MarshalJSON() ([]byte, error) {
+	return json.Marshal(f.pt)
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (f *Future) UnmarshalJSON(data []byte) error {
+	// unmarshal into JSON object to determine the tracker type
+	obj := map[string]interface{}{}
+	err := json.Unmarshal(data, &obj)
+	if err != nil {
+		return err
+	}
+	if obj["method"] == nil {
+		return autorest.NewError("Future", "UnmarshalJSON", "missing 'method' property")
+	}
+	method := obj["method"].(string)
+	switch strings.ToUpper(method) {
+	case http.MethodDelete:
+		f.pt = &pollingTrackerDelete{}
+	case http.MethodPatch:
+		f.pt = &pollingTrackerPatch{}
+	case http.MethodPost:
+		f.pt = &pollingTrackerPost{}
+	case http.MethodPut:
+		f.pt = &pollingTrackerPut{}
+	default:
+		return autorest.NewError("Future", "UnmarshalJSON", "unsupoorted method '%s'", method)
+	}
+	// now unmarshal into the tracker
+	return json.Unmarshal(data, &f.pt)
+}
+
+// PollingURL returns the URL used for retrieving the status of the long-running operation.
+func (f Future) PollingURL() string {
+	if f.pt == nil {
+		return ""
+	}
+	return f.pt.pollingURL()
+}
+
+// GetResult should be called once polling has completed successfully.
+// It makes the final GET call to retrieve the resultant payload.
+func (f Future) GetResult(sender autorest.Sender) (*http.Response, error) {
+	if f.pt.finalGetURL() == "" {
+		// we can end up in this situation if the async operation returns a 200
+		// with no polling URLs.  in that case return the response which should
+		// contain the JSON payload (only do this for successful terminal cases).
+		if lr := f.pt.latestResponse(); lr != nil && f.pt.hasSucceeded() {
+			return lr, nil
+		}
+		return nil, autorest.NewError("Future", "GetResult", "missing URL for retrieving result")
+	}
+	req, err := http.NewRequest(http.MethodGet, f.pt.finalGetURL(), nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := sender.Do(req)
+	if err == nil && resp.Body != nil {
+		// copy the body and close it so callers don't have to
+		defer resp.Body.Close()
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return resp, err
+		}
+		resp.Body = ioutil.NopCloser(bytes.NewReader(b))
+	}
+	return resp, err
+}
+
+type pollingTracker interface {
+	// these methods can differ per tracker
+
+	// checks the response headers and status code to determine the polling mechanism
+	updatePollingMethod() error
+
+	// checks the response for tracker-specific error conditions
+	checkForErrors() error
+
+	// returns true if provisioning state should be checked
+	provisioningStateApplicable() bool
+
+	// methods common to all trackers
+
+	// initializes a tracker's polling URL and method, called for each iteration.
+	// these values can be overridden by each polling tracker as required.
+	initPollingMethod() error
+
+	// initializes the tracker's internal state, call this when the tracker is created
+	initializeState() error
+
+	// makes an HTTP request to check the status of the LRO
+	pollForStatus(ctx context.Context, sender autorest.Sender) error
+
+	// updates internal tracker state, call this after each call to pollForStatus
+	updatePollingState(provStateApl bool) error
+
+	// returns the error response from the service, can be nil
+	pollingError() error
+
+	// returns the polling method being used
+	pollingMethod() PollingMethodType
+
+	// returns the state of the LRO as returned from the service
+	pollingStatus() string
+
+	// returns the URL used for polling status
+	pollingURL() string
+
+	// returns the URL used for the final GET to retrieve the resource
+	finalGetURL() string
+
+	// returns true if the LRO is in a terminal state
+	hasTerminated() bool
+
+	// returns true if the LRO is in a failed terminal state
+	hasFailed() bool
+
+	// returns true if the LRO is in a successful terminal state
+	hasSucceeded() bool
+
+	// returns the cached HTTP response after a call to pollForStatus(), can be nil
+	latestResponse() *http.Response
+}
+
+type pollingTrackerBase struct {
+	// resp is the last response, either from the submission of the LRO or from polling
+	resp *http.Response
+
+	// method is the HTTP verb, this is needed for deserialization
+	Method string `json:"method"`
+
+	// rawBody is the raw JSON response body
+	rawBody map[string]interface{}
+
+	// denotes if polling is using async-operation or location header
+	Pm PollingMethodType `json:"pollingMethod"`
+
+	// the URL to poll for status
+	URI string `json:"pollingURI"`
+
+	// the state of the LRO as returned from the service
+	State string `json:"lroState"`
+
+	// the URL to GET for the final result
+	FinalGetURI string `json:"resultURI"`
+
+	// used to hold an error object returned from the service
+	Err *ServiceError `json:"error,omitempty"`
+}
+
+func (pt *pollingTrackerBase) initializeState() error {
+	// determine the initial polling state based on response body and/or HTTP status
+	// code.  this is applicable to the initial LRO response, not polling responses!
+	pt.Method = pt.resp.Request.Method
+	if err := pt.updateRawBody(); err != nil {
+		return err
+	}
+	switch pt.resp.StatusCode {
+	case http.StatusOK:
+		if ps := pt.getProvisioningState(); ps != nil {
+			pt.State = *ps
+			if pt.hasFailed() {
+				pt.updateErrorFromResponse()
+				return pt.pollingError()
+			}
+		} else {
+			pt.State = operationSucceeded
+		}
+	case http.StatusCreated:
+		if ps := pt.getProvisioningState(); ps != nil {
+			pt.State = *ps
+		} else {
+			pt.State = operationInProgress
+		}
+	case http.StatusAccepted:
+		pt.State = operationInProgress
+	case http.StatusNoContent:
+		pt.State = operationSucceeded
+	default:
+		pt.State = operationFailed
+		pt.updateErrorFromResponse()
+		return pt.pollingError()
+	}
+	return pt.initPollingMethod()
+}
+
+func (pt pollingTrackerBase) getProvisioningState() *string {
+	if pt.rawBody != nil && pt.rawBody["properties"] != nil {
+		p := pt.rawBody["properties"].(map[string]interface{})
+		if ps := p["provisioningState"]; ps != nil {
+			s := ps.(string)
+			return &s
+		}
+	}
+	return nil
+}
+
+func (pt *pollingTrackerBase) updateRawBody() error {
+	pt.rawBody = map[string]interface{}{}
+	if pt.resp.ContentLength != 0 {
+		defer pt.resp.Body.Close()
+		b, err := ioutil.ReadAll(pt.resp.Body)
+		if err != nil {
+			return autorest.NewErrorWithError(err, "pollingTrackerBase", "updateRawBody", nil, "failed to read response body")
+		}
+		// observed in 204 responses over HTTP/2.0; the content length is -1 but body is empty
+		if len(b) == 0 {
+			return nil
+		}
+		// put the body back so it's available to other callers
+		pt.resp.Body = ioutil.NopCloser(bytes.NewReader(b))
+		if err = json.Unmarshal(b, &pt.rawBody); err != nil {
+			return autorest.NewErrorWithError(err, "pollingTrackerBase", "updateRawBody", nil, "failed to unmarshal response body")
+		}
+	}
+	return nil
+}
+
+func (pt *pollingTrackerBase) pollForStatus(ctx context.Context, sender autorest.Sender) error {
+	req, err := http.NewRequest(http.MethodGet, pt.URI, nil)
+	if err != nil {
+		return autorest.NewErrorWithError(err, "pollingTrackerBase", "pollForStatus", nil, "failed to create HTTP request")
+	}
+
+	req = req.WithContext(ctx)
+	preparer := autorest.CreatePreparer(autorest.GetPrepareDecorators(ctx)...)
+	req, err = preparer.Prepare(req)
+	if err != nil {
+		return autorest.NewErrorWithError(err, "pollingTrackerBase", "pollForStatus", nil, "failed preparing HTTP request")
+	}
+	pt.resp, err = sender.Do(req)
+	if err != nil {
+		return autorest.NewErrorWithError(err, "pollingTrackerBase", "pollForStatus", nil, "failed to send HTTP request")
+	}
+	if autorest.ResponseHasStatusCode(pt.resp, pollingCodes[:]...) {
+		// reset the service error on success case
+		pt.Err = nil
+		err = pt.updateRawBody()
+	} else {
+		// check response body for error content
+		pt.updateErrorFromResponse()
+		err = pt.pollingError()
+	}
+	return err
+}
+
+// attempts to unmarshal a ServiceError type from the response body.
+// if that fails then make a best attempt at creating something meaningful.
+// NOTE: this assumes that the async operation has failed.
+func (pt *pollingTrackerBase) updateErrorFromResponse() {
+	var err error
+	if pt.resp.ContentLength != 0 {
+		type respErr struct {
+			ServiceError *ServiceError `json:"error"`
+		}
+		re := respErr{}
+		defer pt.resp.Body.Close()
+		var b []byte
+		if b, err = ioutil.ReadAll(pt.resp.Body); err != nil || len(b) == 0 {
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			goto Default
 		}
 		if err = json.Unmarshal(b, &re); err != nil {

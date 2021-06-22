@@ -205,7 +205,12 @@ func (a *Authenticator) getNonce() (string, error) {
 
 // getAuthRequest returns a rest.Request filled with a new AuthRequest
 func (a *Authenticator) getAuthRequest() (rest.Request, error) {
+<<<<<<< HEAD
 	labelPostFix := time.Now().UnixNano()
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	labelPostFix := time.Now().Unix()
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 	nonce, err := a.getNonce()
 	if err != nil {

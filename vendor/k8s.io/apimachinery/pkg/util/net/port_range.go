@@ -130,7 +130,12 @@ func (*PortRange) Type() string {
 }
 
 // ParsePortRange parses a string of the form "min-max", inclusive at both
+<<<<<<< HEAD
 // ends, and initializes a new PortRange from it.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// ends, and initializs a new PortRange from it.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func ParsePortRange(value string) (*PortRange, error) {
 	pr := &PortRange{}
 	err := pr.Set(value)

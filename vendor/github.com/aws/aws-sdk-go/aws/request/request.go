@@ -129,6 +129,7 @@ func New(cfg aws.Config, clientInfo metadata.ClientInfo, handlers Handlers,
 	httpReq, _ := http.NewRequest(method, "", nil)
 
 	var err error
+<<<<<<< HEAD
 	httpReq.URL, err = url.Parse(clientInfo.Endpoint)
 	if err != nil {
 		httpReq.URL = &url.URL{}
@@ -148,6 +149,13 @@ func New(cfg aws.Config, clientInfo metadata.ClientInfo, handlers Handlers,
 		}
 		httpReq.URL.Path += opHTTPPath
 		httpReq.URL.RawQuery = opQueryString
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	httpReq.URL, err = url.Parse(clientInfo.Endpoint + operation.HTTPPath)
+	if err != nil {
+		httpReq.URL = &url.URL{}
+		err = awserr.New("InvalidEndpointURL", "invalid endpoint uri", err)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 
 	r := &Request{

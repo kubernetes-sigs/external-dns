@@ -18,6 +18,10 @@ limitations under the License.
 
 package v1alpha1
 
+<<<<<<< HEAD
 type CSIStorageCapacityExpansion interface{}
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type VolumeAttachmentExpansion interface{}

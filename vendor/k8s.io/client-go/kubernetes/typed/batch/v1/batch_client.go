@@ -26,6 +26,7 @@ import (
 
 type BatchV1Interface interface {
 	RESTClient() rest.Interface
+<<<<<<< HEAD
 	CronJobsGetter
 	JobsGetter
 }
@@ -37,6 +38,15 @@ type BatchV1Client struct {
 
 func (c *BatchV1Client) CronJobs(namespace string) CronJobInterface {
 	return newCronJobs(c, namespace)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	JobsGetter
+}
+
+// BatchV1Client is used to interact with features provided by the batch group.
+type BatchV1Client struct {
+	restClient rest.Interface
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (c *BatchV1Client) Jobs(namespace string) JobInterface {

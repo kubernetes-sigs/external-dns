@@ -32,6 +32,7 @@ var _ TestDeep = &tdAll{}
 //     td.HasSuffix("ar"),
 //   )) // succeeds
 //
+<<<<<<< HEAD
 // Note Flatten function can be used to group or reuse some values or
 // operators and so avoid boring and inefficient copies:
 //
@@ -92,4 +93,46 @@ func (a *tdAll) Match(ctx ctxerr.Context, got reflect.Value) (err *ctxerr.Error)
 
 func (a *tdAll) TypeBehind() reflect.Type {
 	return uniqTypeBehindSlice(a.items)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// TypeBehind method can return a non-nil reflect.Type if all items
+// known non-interface types are equal, or if only interface types
+// are found (mostly issued from Isa()) and they are equal.
+func All(expectedValues ...interface{}) TestDeep {
+	return &tdAll{
+		tdList: newList(expectedValues...),
+	}
+}
+
+func (a *tdAll) Match(ctx ctxerr.Context, got reflect.Value) (err *ctxerr.Error) {
+	var origErr *ctxerr.Error
+	for idx, item := range a.items {
+		// Use deepValueEqualFinal here instead of deepValueEqual as we
+		// want to know whether an error occurred or not, we do not want
+		// to accumulate it silently
+		origErr = deepValueEqualFinal(
+			ctx.ResetErrors().
+				AddCustomLevel(fmt.Sprintf("<All#%d/%d>", idx+1, len(a.items))),
+			got, item)
+		if origErr != nil {
+			if ctx.BooleanError {
+				return ctxerr.BooleanError
+			}
+			err := &ctxerr.Error{
+				Message:  fmt.Sprintf("compared (part %d of %d)", idx+1, len(a.items)),
+				Got:      got,
+				Expected: item,
+			}
+			if item.IsValid() && item.Type().Implements(testDeeper) {
+				err.Origin = origErr
+			}
+			return ctx.CollectError(err)
+		}
+	}
+	return nil
+}
+
+func (a *tdAll) TypeBehind() reflect.Type {
+	return a.uniqTypeBehind()
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

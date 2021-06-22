@@ -16,6 +16,7 @@ import (
 )
 
 const (
+<<<<<<< HEAD
 	version     = "2.9.0"
 	defaultBase = "https://api.vultr.com"
 	userAgent   = "govultr/" + version
@@ -108,6 +109,99 @@ func NewClient(httpClient *http.Client) *Client {
 	client.Instance = &InstanceServiceHandler{client}
 	client.ISO = &ISOServiceHandler{client}
 	client.Kubernetes = &KubernetesHandler{client}
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	version     = "2.5.1"
+	defaultBase = "https://api.vultr.com"
+	userAgent   = "govultr/" + version
+	rateLimit   = 500 * time.Millisecond
+	retryLimit  = 3
+)
+
+// APIKey contains a users API Key for interacting with the API
+type APIKey struct {
+	// API Key
+	key string
+}
+
+// RequestBody is used to create JSON bodies for one off calls
+type RequestBody map[string]interface{}
+
+// Client manages interaction with the Vultr V1 API
+type Client struct {
+	// Http Client used to interact with the Vultr V1 API
+	client *retryablehttp.Client
+
+	// BASE URL for APIs
+	BaseURL *url.URL
+
+	// User Agent for the client
+	UserAgent string
+
+	// Services used to interact with the API
+	Account         AccountService
+	Application     ApplicationService
+	Backup          BackupService
+	BareMetalServer BareMetalServerService
+	BlockStorage    BlockStorageService
+	Domain          DomainService
+	DomainRecord    DomainRecordService
+	FirewallGroup   FirewallGroupService
+	FirewallRule    FireWallRuleService
+	Instance        InstanceService
+	ISO             ISOService
+	LoadBalancer    LoadBalancerService
+	Network         NetworkService
+	ObjectStorage   ObjectStorageService
+	OS              OSService
+	Plan            PlanService
+	Region          RegionService
+	ReservedIP      ReservedIPService
+	Snapshot        SnapshotService
+	SSHKey          SSHKeyService
+	StartupScript   StartupScriptService
+	User            UserService
+
+	// Optional function called after every successful request made to the Vultr API
+	onRequestCompleted RequestCompletionCallback
+}
+
+// RequestCompletionCallback defines the type of the request callback function
+type RequestCompletionCallback func(*http.Request, *http.Response)
+
+// NewClient returns a Vultr API Client
+func NewClient(httpClient *http.Client) *Client {
+
+	if httpClient == nil {
+		httpClient = http.DefaultClient
+	}
+
+	baseURL, _ := url.Parse(defaultBase)
+
+	client := &Client{
+		client:    retryablehttp.NewClient(),
+		BaseURL:   baseURL,
+		UserAgent: userAgent,
+	}
+
+	client.client.HTTPClient = httpClient
+	client.client.Logger = nil
+	client.client.ErrorHandler = client.vultrErrorHandler
+	client.SetRetryLimit(retryLimit)
+	client.SetRateLimit(rateLimit)
+
+	client.Account = &AccountServiceHandler{client}
+	client.Application = &ApplicationServiceHandler{client}
+	client.Backup = &BackupServiceHandler{client}
+	client.BareMetalServer = &BareMetalServerServiceHandler{client}
+	client.BlockStorage = &BlockStorageServiceHandler{client}
+	client.Domain = &DomainServiceHandler{client}
+	client.DomainRecord = &DomainRecordsServiceHandler{client}
+	client.FirewallGroup = &FireWallGroupServiceHandler{client}
+	client.FirewallRule = &FireWallRuleServiceHandler{client}
+	client.Instance = &InstanceServiceHandler{client}
+	client.ISO = &ISOServiceHandler{client}
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	client.LoadBalancer = &LoadBalancerHandler{client}
 	client.Network = &NetworkServiceHandler{client}
 	client.ObjectStorage = &ObjectStorageServiceHandler{client}

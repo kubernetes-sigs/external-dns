@@ -8,7 +8,12 @@ for more information.
 
 Example to List Tenants
 
+<<<<<<< HEAD
 	listOpts := &tenants.ListOpts{
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	listOpts := tenants.ListOpts{
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		Limit: 2,
 	}
 

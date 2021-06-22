@@ -299,6 +299,7 @@ func (p *TextParser) startLabelName() stateFn {
 		p.parseError(fmt.Sprintf("expected '=' after label name, found %q", p.currentByte))
 		return nil
 	}
+<<<<<<< HEAD
 	// Check for duplicate label names.
 	labels := make(map[string]struct{})
 	for _, l := range p.currentMetric.Label {
@@ -310,6 +311,9 @@ func (p *TextParser) startLabelName() stateFn {
 			return nil
 		}
 	}
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return p.startLabelValue
 }
 

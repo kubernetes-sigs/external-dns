@@ -10,7 +10,12 @@ const snapshotBasePath = "v2/snapshots"
 
 // SnapshotsService is an interface for interfacing with the snapshots
 // endpoints of the DigitalOcean API
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Snapshots
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// See: https://developers.digitalocean.com/documentation/v2#snapshots
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type SnapshotsService interface {
 	List(context.Context, *ListOptions) ([]Snapshot, *Response, error)
 	ListVolume(context.Context, *ListOptions) ([]Snapshot, *Response, error)

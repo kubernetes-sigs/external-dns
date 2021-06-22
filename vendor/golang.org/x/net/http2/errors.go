@@ -53,6 +53,7 @@ func (e ErrCode) String() string {
 	return fmt.Sprintf("unknown error code 0x%x", uint32(e))
 }
 
+<<<<<<< HEAD
 func (e ErrCode) stringToken() string {
 	if s, ok := errCodeName[e]; ok {
 		return s
@@ -78,6 +79,22 @@ type StreamError struct {
 // indicate that the StreamError was sent from the peer over the wire
 // and wasn't locally generated in the Transport.
 var errFromPeer = errors.New("received from peer")
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// ConnectionError is an error that results in the termination of the
+// entire connection.
+type ConnectionError ErrCode
+
+func (e ConnectionError) Error() string { return fmt.Sprintf("connection error: %s", ErrCode(e)) }
+
+// StreamError is an error that only affects one stream within an
+// HTTP/2 connection.
+type StreamError struct {
+	StreamID uint32
+	Code     ErrCode
+	Cause    error // optional additional detail
+}
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 func streamError(id uint32, code ErrCode) StreamError {
 	return StreamError{StreamID: id, Code: code}

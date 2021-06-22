@@ -77,9 +77,16 @@ func (mi *MessageInfo) mergePointer(dst, src pointer, opts mergeOptions) {
 		}
 	}
 	if mi.unknownOffset.IsValid() {
+<<<<<<< HEAD
 		su := mi.getUnknownBytes(src)
 		if su != nil && len(*su) > 0 {
 			du := mi.mutableUnknownBytes(dst)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		du := dst.Apply(mi.unknownOffset).Bytes()
+		su := src.Apply(mi.unknownOffset).Bytes()
+		if len(*su) > 0 {
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			*du = append(*du, *su...)
 		}
 	}

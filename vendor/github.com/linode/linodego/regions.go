@@ -35,6 +35,11 @@ func (resp *RegionsPagedResponse) appendData(r *RegionsPagedResponse) {
 func (c *Client) ListRegions(ctx context.Context, opts *ListOptions) ([]Region, error) {
 	response := RegionsPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
+<<<<<<< HEAD
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

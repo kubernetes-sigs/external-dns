@@ -22,8 +22,12 @@ type CSIDriverExpansion interface{}
 
 type CSINodeExpansion interface{}
 
+<<<<<<< HEAD
 type CSIStorageCapacityExpansion interface{}
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type StorageClassExpansion interface{}
 
 type VolumeAttachmentExpansion interface{}

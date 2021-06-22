@@ -65,7 +65,12 @@ func (iter *Iterator) ReadVal(obj interface{}) {
 	decoder := iter.cfg.getDecoderFromCache(cacheKey)
 	if decoder == nil {
 		typ := reflect2.TypeOf(obj)
+<<<<<<< HEAD
 		if typ == nil || typ.Kind() != reflect.Ptr {
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		if typ.Kind() != reflect.Ptr {
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			iter.ReportError("ReadVal", "can only unmarshal into pointer")
 			return
 		}

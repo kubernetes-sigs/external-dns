@@ -216,6 +216,7 @@ func RegisterChannel(c Channel, pid int64, ref string) int64 {
 // by pid). It returns the unique channelz tracking id assigned to this subchannel.
 func RegisterSubChannel(c Channel, pid int64, ref string) int64 {
 	if pid == 0 {
+<<<<<<< HEAD
 		logger.Error("a SubChannel's parent id cannot be 0")
 		return 0
 	}
@@ -305,6 +306,88 @@ func AddTraceEvent(l grpclog.DepthLoggerV2, id int64, depth int, desc *TraceEven
 			l.ErrorDepth(depth+1, d.Desc)
 		}
 	}
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		grpclog.Error("a SubChannel's parent id cannot be 0")
+		return 0
+	}
+	id := idGen.genID()
+	sc := &subChannel{
+		refName: ref,
+		c:       c,
+		sockets: make(map[int64]string),
+		id:      id,
+		pid:     pid,
+		trace:   &channelTrace{createdTime: time.Now(), events: make([]*TraceEvent, 0, getMaxTraceEntry())},
+	}
+	db.get().addSubChannel(id, sc, pid, ref)
+	return id
+}
+
+// RegisterServer registers the given server s in channelz database. It returns
+// the unique channelz tracking id assigned to this server.
+func RegisterServer(s Server, ref string) int64 {
+	id := idGen.genID()
+	svr := &server{
+		refName:       ref,
+		s:             s,
+		sockets:       make(map[int64]string),
+		listenSockets: make(map[int64]string),
+		id:            id,
+	}
+	db.get().addServer(id, svr)
+	return id
+}
+
+// RegisterListenSocket registers the given listen socket s in channelz database
+// with ref as its reference name, and add it to the child list of its parent
+// (identified by pid). It returns the unique channelz tracking id assigned to
+// this listen socket.
+func RegisterListenSocket(s Socket, pid int64, ref string) int64 {
+	if pid == 0 {
+		grpclog.Error("a ListenSocket's parent id cannot be 0")
+		return 0
+	}
+	id := idGen.genID()
+	ls := &listenSocket{refName: ref, s: s, id: id, pid: pid}
+	db.get().addListenSocket(id, ls, pid, ref)
+	return id
+}
+
+// RegisterNormalSocket registers the given normal socket s in channelz database
+// with ref as its reference name, and add it to the child list of its parent
+// (identified by pid). It returns the unique channelz tracking id assigned to
+// this normal socket.
+func RegisterNormalSocket(s Socket, pid int64, ref string) int64 {
+	if pid == 0 {
+		grpclog.Error("a NormalSocket's parent id cannot be 0")
+		return 0
+	}
+	id := idGen.genID()
+	ns := &normalSocket{refName: ref, s: s, id: id, pid: pid}
+	db.get().addNormalSocket(id, ns, pid, ref)
+	return id
+}
+
+// RemoveEntry removes an entry with unique channelz trakcing id to be id from
+// channelz database.
+func RemoveEntry(id int64) {
+	db.get().removeEntry(id)
+}
+
+// TraceEventDesc is what the caller of AddTraceEvent should provide to describe the event to be added
+// to the channel trace.
+// The Parent field is optional. It is used for event that will be recorded in the entity's parent
+// trace also.
+type TraceEventDesc struct {
+	Desc     string
+	Severity Severity
+	Parent   *TraceEventDesc
+}
+
+// AddTraceEvent adds trace related to the entity with specified id, using the provided TraceEventDesc.
+func AddTraceEvent(id int64, desc *TraceEventDesc) {
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if getMaxTraceEntry() == 0 {
 		return
 	}

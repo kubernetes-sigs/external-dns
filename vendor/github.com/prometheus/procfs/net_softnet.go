@@ -51,7 +51,12 @@ func (fs FS) NetSoftnetStat() ([]SoftnetStat, error) {
 
 	entries, err := parseSoftnet(bytes.NewReader(b))
 	if err != nil {
+<<<<<<< HEAD
 		return nil, fmt.Errorf("failed to parse /proc/net/softnet_stat: %w", err)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		return nil, fmt.Errorf("failed to parse /proc/net/softnet_stat: %v", err)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 
 	return entries, nil

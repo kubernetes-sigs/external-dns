@@ -11,6 +11,7 @@ const (
 	// ErrCodeCustomHealthNotFound for service response error code
 	// "CustomHealthNotFound".
 	//
+<<<<<<< HEAD
 	// The health check for the instance that's specified by ServiceId and InstanceId
 	// isn't a custom health check.
 	ErrCodeCustomHealthNotFound = "CustomHealthNotFound"
@@ -119,4 +120,90 @@ var exceptionFromCode = map[string]func(protocol.ResponseMetadata) error{
 	"ServiceAlreadyExists":      newErrorServiceAlreadyExists,
 	"ServiceNotFound":           newErrorServiceNotFound,
 	"TooManyTagsException":      newErrorTooManyTagsException,
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// The health check for the instance that is specified by ServiceId and InstanceId
+	// is not a custom health check.
+	ErrCodeCustomHealthNotFound = "CustomHealthNotFound"
+
+	// ErrCodeDuplicateRequest for service response error code
+	// "DuplicateRequest".
+	//
+	// The operation is already in progress.
+	ErrCodeDuplicateRequest = "DuplicateRequest"
+
+	// ErrCodeInstanceNotFound for service response error code
+	// "InstanceNotFound".
+	//
+	// No instance exists with the specified ID, or the instance was recently registered,
+	// and information about the instance hasn't propagated yet.
+	ErrCodeInstanceNotFound = "InstanceNotFound"
+
+	// ErrCodeInvalidInput for service response error code
+	// "InvalidInput".
+	//
+	// One or more specified values aren't valid. For example, a required value
+	// might be missing, a numeric value might be outside the allowed range, or
+	// a string value might exceed length constraints.
+	ErrCodeInvalidInput = "InvalidInput"
+
+	// ErrCodeNamespaceAlreadyExists for service response error code
+	// "NamespaceAlreadyExists".
+	//
+	// The namespace that you're trying to create already exists.
+	ErrCodeNamespaceAlreadyExists = "NamespaceAlreadyExists"
+
+	// ErrCodeNamespaceNotFound for service response error code
+	// "NamespaceNotFound".
+	//
+	// No namespace exists with the specified ID.
+	ErrCodeNamespaceNotFound = "NamespaceNotFound"
+
+	// ErrCodeOperationNotFound for service response error code
+	// "OperationNotFound".
+	//
+	// No operation exists with the specified ID.
+	ErrCodeOperationNotFound = "OperationNotFound"
+
+	// ErrCodeResourceInUse for service response error code
+	// "ResourceInUse".
+	//
+	// The specified resource can't be deleted because it contains other resources.
+	// For example, you can't delete a service that contains any instances.
+	ErrCodeResourceInUse = "ResourceInUse"
+
+	// ErrCodeResourceLimitExceeded for service response error code
+	// "ResourceLimitExceeded".
+	//
+	// The resource can't be created because you've reached the limit on the number
+	// of resources.
+	ErrCodeResourceLimitExceeded = "ResourceLimitExceeded"
+
+	// ErrCodeServiceAlreadyExists for service response error code
+	// "ServiceAlreadyExists".
+	//
+	// The service can't be created because a service with the same name already
+	// exists.
+	ErrCodeServiceAlreadyExists = "ServiceAlreadyExists"
+
+	// ErrCodeServiceNotFound for service response error code
+	// "ServiceNotFound".
+	//
+	// No service exists with the specified ID.
+	ErrCodeServiceNotFound = "ServiceNotFound"
+)
+
+var exceptionFromCode = map[string]func(protocol.ResponseMetadata) error{
+	"CustomHealthNotFound":   newErrorCustomHealthNotFound,
+	"DuplicateRequest":       newErrorDuplicateRequest,
+	"InstanceNotFound":       newErrorInstanceNotFound,
+	"InvalidInput":           newErrorInvalidInput,
+	"NamespaceAlreadyExists": newErrorNamespaceAlreadyExists,
+	"NamespaceNotFound":      newErrorNamespaceNotFound,
+	"OperationNotFound":      newErrorOperationNotFound,
+	"ResourceInUse":          newErrorResourceInUse,
+	"ResourceLimitExceeded":  newErrorResourceLimitExceeded,
+	"ServiceAlreadyExists":   newErrorServiceAlreadyExists,
+	"ServiceNotFound":        newErrorServiceNotFound,
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

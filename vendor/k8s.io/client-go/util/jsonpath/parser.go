@@ -214,11 +214,17 @@ func (p *Parser) parseIdentifier(cur *ListNode) error {
 	return p.parseInsideAction(cur)
 }
 
+<<<<<<< HEAD
 // parseRecursive scans the recursive descent operator ..
 func (p *Parser) parseRecursive(cur *ListNode) error {
 	if lastIndex := len(cur.Nodes) - 1; lastIndex >= 0 && cur.Nodes[lastIndex].Type() == NodeRecursive {
 		return fmt.Errorf("invalid multiple recursive descent")
 	}
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// parseRecursive scans the recursive desent operator ..
+func (p *Parser) parseRecursive(cur *ListNode) error {
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	p.pos += len("..")
 	p.consumeText()
 	cur.append(newRecursive())

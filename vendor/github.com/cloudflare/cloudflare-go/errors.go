@@ -2,6 +2,7 @@ package cloudflare
 
 // Error messages
 const (
+<<<<<<< HEAD
 	errEmptyCredentials          = "invalid credentials: key & email must not be empty"
 	errEmptyAPIToken             = "invalid credentials: API Token must not be empty"
 	errMakeRequestError          = "error from makeRequest"
@@ -10,6 +11,15 @@ const (
 	errMissingAccountID          = "account ID is empty and must be provided"
 	errOperationStillRunning     = "bulk operation did not finish before timeout"
 	errOperationUnexpectedStatus = "bulk operation returned an unexpected status"
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	errEmptyCredentials     = "invalid credentials: key & email must not be empty"
+	errEmptyAPIToken        = "invalid credentials: API Token must not be empty"
+	errMakeRequestError     = "error from makeRequest"
+	errUnmarshalError       = "error unmarshalling the JSON response"
+	errRequestNotSuccessful = "error reported by API"
+	errMissingAccountID     = "account ID is empty and must be provided"
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )
 
 var _ Error = &UserError{}

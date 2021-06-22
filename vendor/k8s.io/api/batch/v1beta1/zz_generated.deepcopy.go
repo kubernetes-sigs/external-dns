@@ -135,10 +135,14 @@ func (in *CronJobStatus) DeepCopyInto(out *CronJobStatus) {
 		in, out := &in.LastScheduleTime, &out.LastScheduleTime
 		*out = (*in).DeepCopy()
 	}
+<<<<<<< HEAD
 	if in.LastSuccessfulTime != nil {
 		in, out := &in.LastSuccessfulTime, &out.LastSuccessfulTime
 		*out = (*in).DeepCopy()
 	}
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

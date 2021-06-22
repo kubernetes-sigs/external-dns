@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"sort"
 
+<<<<<<< HEAD
 	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
 	"github.com/golang/protobuf/proto"
 
@@ -35,6 +36,25 @@ import (
 // Collectors. It should not be used to add fixed labels to all metrics
 // exposed. See also
 // https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels-not-static-scraped-labels
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
+	"github.com/golang/protobuf/proto"
+
+	dto "github.com/prometheus/client_model/go"
+)
+
+// WrapRegistererWith returns a Registerer wrapping the provided
+// Registerer. Collectors registered with the returned Registerer will be
+// registered with the wrapped Registerer in a modified way. The modified
+// Collector adds the provided Labels to all Metrics it collects (as
+// ConstLabels). The Metrics collected by the unmodified Collector must not
+// duplicate any of those labels. Wrapping a nil value is valid, resulting
+// in a no-op Registerer.
+//
+// WrapRegistererWith provides a way to add fixed labels to a subset of
+// Collectors. It should not be used to add fixed labels to all metrics exposed.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 //
 // Conflicts between Collectors registered through the original Registerer with
 // Collectors registered through the wrapping Registerer will still be

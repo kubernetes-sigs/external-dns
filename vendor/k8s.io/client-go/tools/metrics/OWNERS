@@ -2,5 +2,10 @@
 
 reviewers:
 - wojtek-t
+<<<<<<< HEAD
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+- eparis
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 - krousey
 - jayunit100

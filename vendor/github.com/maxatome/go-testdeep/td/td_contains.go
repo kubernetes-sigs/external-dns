@@ -139,6 +139,7 @@ func (c *tdContains) doesNotContainErr(ctx ctxerr.Context, got interface{}) *ctx
 // getExpectedValue returns the expected value handling the
 // Contains(nil) case: in this case it returns a typed nil (same type
 // as the items of got).
+<<<<<<< HEAD
 // got is an array, a slice or a map (it's the caller responsibility to check).
 func (c *tdContains) getExpectedValue(got reflect.Value) reflect.Value {
 	// If the expectValue is non-typed nil
@@ -283,6 +284,152 @@ func (c *tdContains) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error 
 	case reflect.Slice:
 		// Only []byte
 		if c.expectedValue.Type().Elem() == types.Uint8 {
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// got is an array, a slice or a map (it's the caller responsibility to check)
+func (c *tdContains) getExpectedValue(got reflect.Value) reflect.Value {
+	// If the expectValue is non-typed nil
+	if !c.expectedValue.IsValid() {
+		// AND the kind of items in got is...
+		switch got.Type().Elem().Kind() {
+		case reflect.Chan, reflect.Func, reflect.Interface,
+			reflect.Map, reflect.Ptr, reflect.Slice:
+			// returns a typed nil
+			return reflect.Zero(got.Type().Elem())
+		}
+	}
+	return c.expectedValue
+}
+
+func (c *tdContains) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	switch got.Kind() {
+	case reflect.Slice:
+		if !c.isTestDeeper && c.expectedValue.IsValid() {
+			// Special case for []byte & expected []byte or string
+			if got.Type().Elem() == uint8Type {
+				switch c.expectedValue.Kind() {
+				case reflect.String:
+					if bytes.Contains(got.Bytes(), []byte(c.expectedValue.String())) {
+						return nil
+					}
+					return c.doesNotContainErr(ctx, got)
+
+				case reflect.Slice:
+					if c.expectedValue.Type().Elem() == uint8Type {
+						if bytes.Contains(got.Bytes(), c.expectedValue.Bytes()) {
+							return nil
+						}
+						return c.doesNotContainErr(ctx, got)
+					}
+
+				case reflect.Int32: // rune
+					if bytes.ContainsRune(got.Bytes(), rune(c.expectedValue.Int())) {
+						return nil
+					}
+					return c.doesNotContainErr(ctx, got)
+
+				case reflect.Uint8: // byte
+					if bytes.ContainsRune(got.Bytes(), rune(c.expectedValue.Uint())) {
+						return nil
+					}
+					return c.doesNotContainErr(ctx, got)
+				}
+
+				// fall back on string conversion
+				break
+			}
+
+			// Search slice in slice
+			if got.Type() == c.expectedValue.Type() {
+				gotLen, expectedLen := got.Len(), c.expectedValue.Len()
+				if expectedLen == 0 {
+					return nil
+				}
+				if expectedLen > gotLen {
+					return c.doesNotContainErr(ctx, got)
+				}
+				if expectedLen == gotLen {
+					if deepValueEqualOK(got, c.expectedValue) {
+						return nil
+					}
+					return c.doesNotContainErr(ctx, got)
+				}
+
+				for i := 0; i < gotLen-expectedLen; i++ {
+					if deepValueEqualOK(got.Slice(i, i+expectedLen), c.expectedValue) {
+						return nil
+					}
+				}
+			}
+		}
+		fallthrough
+
+	case reflect.Array:
+		expectedValue := c.getExpectedValue(got)
+		for index := got.Len() - 1; index >= 0; index-- {
+			if deepValueEqualOK(got.Index(index), expectedValue) {
+				return nil
+			}
+		}
+		return c.doesNotContainErr(ctx, got)
+
+	case reflect.Map:
+		expectedValue := c.getExpectedValue(got)
+		if !tdutil.MapEachValue(got, func(v reflect.Value) bool {
+			return !deepValueEqualOK(v, expectedValue)
+		}) {
+			return nil
+		}
+		return c.doesNotContainErr(ctx, got)
+	}
+
+	str, err := getString(ctx, got)
+	if err != nil {
+		return err
+	}
+
+	// If a TestDeep operator is expected, applies this operator on
+	// each character of the string
+	if c.isTestDeeper {
+		// If the type behind the operator is known *and* is not rune,
+		// then no need to go further, but return an explicit error to
+		// help our user to fix his probably bogus code
+		if typeBehind := c.expectedValue.Interface().(TestDeep).TypeBehind(); typeBehind != nil && typeBehind != runeType {
+			if ctx.BooleanError {
+				return ctxerr.BooleanError
+			}
+			return ctx.CollectError(&ctxerr.Error{
+				Message:  "TestDeep operator can only match rune in string",
+				Got:      types.RawString(typeBehind.String()),
+				Expected: types.RawString("rune"),
+			})
+		}
+
+		for _, chr := range str {
+			if deepValueEqualOK(reflect.ValueOf(chr), c.expectedValue) {
+				return nil
+			}
+		}
+		return c.doesNotContainErr(ctx, got)
+	}
+
+	// If expectedValue is a []byte, a string, a rune or a byte, we
+	// check whether it is contained in the string or not
+	var contains bool
+	switch expectedKind := c.expectedValue.Kind(); expectedKind {
+	case reflect.String:
+		contains = strings.Contains(str, c.expectedValue.String())
+
+	case reflect.Int32: // rune
+		contains = strings.ContainsRune(str, rune(c.expectedValue.Int()))
+
+	case reflect.Uint8: // byte
+		contains = strings.ContainsRune(str, rune(c.expectedValue.Uint()))
+
+	case reflect.Slice:
+		// Only []byte
+		if c.expectedValue.Type().Elem() == uint8Type {
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			contains = strings.Contains(str, string(c.expectedValue.Bytes()))
 			break
 		}

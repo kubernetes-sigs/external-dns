@@ -25,10 +25,15 @@ import (
 
 // PreparedMsg is responsible for creating a Marshalled and Compressed object.
 //
+<<<<<<< HEAD
 // Experimental
 //
 // Notice: This type is EXPERIMENTAL and may be changed or removed in a
 // later release.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// This API is EXPERIMENTAL.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type PreparedMsg struct {
 	// Struct for preparing msg before sending them
 	encodedData []byte

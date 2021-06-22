@@ -2,6 +2,7 @@ package gophercloud
 
 import (
 	"fmt"
+<<<<<<< HEAD
 	"net/http"
 	"strings"
 )
@@ -109,6 +110,97 @@ func (e ErrUnexpectedResponseCode) GetStatusCode() int {
 type StatusCodeError interface {
 	Error() string
 	GetStatusCode() int
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"strings"
+)
+
+// BaseError is an error type that all other error types embed.
+type BaseError struct {
+	DefaultErrString string
+	Info             string
+}
+
+func (e BaseError) Error() string {
+	e.DefaultErrString = "An error occurred while executing a Gophercloud request."
+	return e.choseErrString()
+}
+
+func (e BaseError) choseErrString() string {
+	if e.Info != "" {
+		return e.Info
+	}
+	return e.DefaultErrString
+}
+
+// ErrMissingInput is the error when input is required in a particular
+// situation but not provided by the user
+type ErrMissingInput struct {
+	BaseError
+	Argument string
+}
+
+func (e ErrMissingInput) Error() string {
+	e.DefaultErrString = fmt.Sprintf("Missing input for argument [%s]", e.Argument)
+	return e.choseErrString()
+}
+
+// ErrInvalidInput is an error type used for most non-HTTP Gophercloud errors.
+type ErrInvalidInput struct {
+	ErrMissingInput
+	Value interface{}
+}
+
+func (e ErrInvalidInput) Error() string {
+	e.DefaultErrString = fmt.Sprintf("Invalid input provided for argument [%s]: [%+v]", e.Argument, e.Value)
+	return e.choseErrString()
+}
+
+// ErrMissingEnvironmentVariable is the error when environment variable is required
+// in a particular situation but not provided by the user
+type ErrMissingEnvironmentVariable struct {
+	BaseError
+	EnvironmentVariable string
+}
+
+func (e ErrMissingEnvironmentVariable) Error() string {
+	e.DefaultErrString = fmt.Sprintf("Missing environment variable [%s]", e.EnvironmentVariable)
+	return e.choseErrString()
+}
+
+// ErrMissingAnyoneOfEnvironmentVariables is the error when anyone of the environment variables
+// is required in a particular situation but not provided by the user
+type ErrMissingAnyoneOfEnvironmentVariables struct {
+	BaseError
+	EnvironmentVariables []string
+}
+
+func (e ErrMissingAnyoneOfEnvironmentVariables) Error() string {
+	e.DefaultErrString = fmt.Sprintf(
+		"Missing one of the following environment variables [%s]",
+		strings.Join(e.EnvironmentVariables, ", "),
+	)
+	return e.choseErrString()
+}
+
+// ErrUnexpectedResponseCode is returned by the Request method when a response code other than
+// those listed in OkCodes is encountered.
+type ErrUnexpectedResponseCode struct {
+	BaseError
+	URL      string
+	Method   string
+	Expected []int
+	Actual   int
+	Body     []byte
+}
+
+func (e ErrUnexpectedResponseCode) Error() string {
+	e.DefaultErrString = fmt.Sprintf(
+		"Expected HTTP response code %v when accessing [%s %s], but got %d instead\n%s",
+		e.Expected, e.Method, e.URL, e.Actual, e.Body,
+	)
+	return e.choseErrString()
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // ErrDefault400 is the default error type returned on a 400 HTTP response code.

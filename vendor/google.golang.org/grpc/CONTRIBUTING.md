@@ -57,5 +57,10 @@ How to get your contributions merged smoothly and quickly.
   - `make vet` to catch vet errors
   - `make test` to run the tests
   - `make testrace` to run tests in race mode
+<<<<<<< HEAD
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+  - optional `make testappengine` to run tests with appengine
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 - Exceptions to the rules can be made if there's a compelling reason for doing so.

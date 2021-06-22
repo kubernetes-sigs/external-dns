@@ -83,6 +83,7 @@ type readerFromDelegator struct{ *responseWriterDelegator }
 type pusherDelegator struct{ *responseWriterDelegator }
 
 func (d closeNotifierDelegator) CloseNotify() <-chan bool {
+<<<<<<< HEAD
 	//nolint:staticcheck // Ignore SA1019. http.CloseNotifier is deprecated but we keep it here to not break existing users.
 	return d.ResponseWriter.(http.CloseNotifier).CloseNotify()
 }
@@ -348,6 +349,276 @@ func newDelegator(w http.ResponseWriter, observeWriteHeaderFunc func(int)) deleg
 
 	id := 0
 	//nolint:staticcheck // Ignore SA1019. http.CloseNotifier is deprecated but we keep it here to not break existing users.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	//lint:ignore SA1019 http.CloseNotifier is deprecated but we don't want to
+	//remove support from client_golang yet.
+	return d.ResponseWriter.(http.CloseNotifier).CloseNotify()
+}
+func (d flusherDelegator) Flush() {
+	// If applicable, call WriteHeader here so that observeWriteHeader is
+	// handled appropriately.
+	if !d.wroteHeader {
+		d.WriteHeader(http.StatusOK)
+	}
+	d.ResponseWriter.(http.Flusher).Flush()
+}
+func (d hijackerDelegator) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return d.ResponseWriter.(http.Hijacker).Hijack()
+}
+func (d readerFromDelegator) ReadFrom(re io.Reader) (int64, error) {
+	// If applicable, call WriteHeader here so that observeWriteHeader is
+	// handled appropriately.
+	if !d.wroteHeader {
+		d.WriteHeader(http.StatusOK)
+	}
+	n, err := d.ResponseWriter.(io.ReaderFrom).ReadFrom(re)
+	d.written += n
+	return n, err
+}
+func (d pusherDelegator) Push(target string, opts *http.PushOptions) error {
+	return d.ResponseWriter.(http.Pusher).Push(target, opts)
+}
+
+var pickDelegator = make([]func(*responseWriterDelegator) delegator, 32)
+
+func init() {
+	// TODO(beorn7): Code generation would help here.
+	pickDelegator[0] = func(d *responseWriterDelegator) delegator { // 0
+		return d
+	}
+	pickDelegator[closeNotifier] = func(d *responseWriterDelegator) delegator { // 1
+		return closeNotifierDelegator{d}
+	}
+	pickDelegator[flusher] = func(d *responseWriterDelegator) delegator { // 2
+		return flusherDelegator{d}
+	}
+	pickDelegator[flusher+closeNotifier] = func(d *responseWriterDelegator) delegator { // 3
+		return struct {
+			*responseWriterDelegator
+			http.Flusher
+			http.CloseNotifier
+		}{d, flusherDelegator{d}, closeNotifierDelegator{d}}
+	}
+	pickDelegator[hijacker] = func(d *responseWriterDelegator) delegator { // 4
+		return hijackerDelegator{d}
+	}
+	pickDelegator[hijacker+closeNotifier] = func(d *responseWriterDelegator) delegator { // 5
+		return struct {
+			*responseWriterDelegator
+			http.Hijacker
+			http.CloseNotifier
+		}{d, hijackerDelegator{d}, closeNotifierDelegator{d}}
+	}
+	pickDelegator[hijacker+flusher] = func(d *responseWriterDelegator) delegator { // 6
+		return struct {
+			*responseWriterDelegator
+			http.Hijacker
+			http.Flusher
+		}{d, hijackerDelegator{d}, flusherDelegator{d}}
+	}
+	pickDelegator[hijacker+flusher+closeNotifier] = func(d *responseWriterDelegator) delegator { // 7
+		return struct {
+			*responseWriterDelegator
+			http.Hijacker
+			http.Flusher
+			http.CloseNotifier
+		}{d, hijackerDelegator{d}, flusherDelegator{d}, closeNotifierDelegator{d}}
+	}
+	pickDelegator[readerFrom] = func(d *responseWriterDelegator) delegator { // 8
+		return readerFromDelegator{d}
+	}
+	pickDelegator[readerFrom+closeNotifier] = func(d *responseWriterDelegator) delegator { // 9
+		return struct {
+			*responseWriterDelegator
+			io.ReaderFrom
+			http.CloseNotifier
+		}{d, readerFromDelegator{d}, closeNotifierDelegator{d}}
+	}
+	pickDelegator[readerFrom+flusher] = func(d *responseWriterDelegator) delegator { // 10
+		return struct {
+			*responseWriterDelegator
+			io.ReaderFrom
+			http.Flusher
+		}{d, readerFromDelegator{d}, flusherDelegator{d}}
+	}
+	pickDelegator[readerFrom+flusher+closeNotifier] = func(d *responseWriterDelegator) delegator { // 11
+		return struct {
+			*responseWriterDelegator
+			io.ReaderFrom
+			http.Flusher
+			http.CloseNotifier
+		}{d, readerFromDelegator{d}, flusherDelegator{d}, closeNotifierDelegator{d}}
+	}
+	pickDelegator[readerFrom+hijacker] = func(d *responseWriterDelegator) delegator { // 12
+		return struct {
+			*responseWriterDelegator
+			io.ReaderFrom
+			http.Hijacker
+		}{d, readerFromDelegator{d}, hijackerDelegator{d}}
+	}
+	pickDelegator[readerFrom+hijacker+closeNotifier] = func(d *responseWriterDelegator) delegator { // 13
+		return struct {
+			*responseWriterDelegator
+			io.ReaderFrom
+			http.Hijacker
+			http.CloseNotifier
+		}{d, readerFromDelegator{d}, hijackerDelegator{d}, closeNotifierDelegator{d}}
+	}
+	pickDelegator[readerFrom+hijacker+flusher] = func(d *responseWriterDelegator) delegator { // 14
+		return struct {
+			*responseWriterDelegator
+			io.ReaderFrom
+			http.Hijacker
+			http.Flusher
+		}{d, readerFromDelegator{d}, hijackerDelegator{d}, flusherDelegator{d}}
+	}
+	pickDelegator[readerFrom+hijacker+flusher+closeNotifier] = func(d *responseWriterDelegator) delegator { // 15
+		return struct {
+			*responseWriterDelegator
+			io.ReaderFrom
+			http.Hijacker
+			http.Flusher
+			http.CloseNotifier
+		}{d, readerFromDelegator{d}, hijackerDelegator{d}, flusherDelegator{d}, closeNotifierDelegator{d}}
+	}
+	pickDelegator[pusher] = func(d *responseWriterDelegator) delegator { // 16
+		return pusherDelegator{d}
+	}
+	pickDelegator[pusher+closeNotifier] = func(d *responseWriterDelegator) delegator { // 17
+		return struct {
+			*responseWriterDelegator
+			http.Pusher
+			http.CloseNotifier
+		}{d, pusherDelegator{d}, closeNotifierDelegator{d}}
+	}
+	pickDelegator[pusher+flusher] = func(d *responseWriterDelegator) delegator { // 18
+		return struct {
+			*responseWriterDelegator
+			http.Pusher
+			http.Flusher
+		}{d, pusherDelegator{d}, flusherDelegator{d}}
+	}
+	pickDelegator[pusher+flusher+closeNotifier] = func(d *responseWriterDelegator) delegator { // 19
+		return struct {
+			*responseWriterDelegator
+			http.Pusher
+			http.Flusher
+			http.CloseNotifier
+		}{d, pusherDelegator{d}, flusherDelegator{d}, closeNotifierDelegator{d}}
+	}
+	pickDelegator[pusher+hijacker] = func(d *responseWriterDelegator) delegator { // 20
+		return struct {
+			*responseWriterDelegator
+			http.Pusher
+			http.Hijacker
+		}{d, pusherDelegator{d}, hijackerDelegator{d}}
+	}
+	pickDelegator[pusher+hijacker+closeNotifier] = func(d *responseWriterDelegator) delegator { // 21
+		return struct {
+			*responseWriterDelegator
+			http.Pusher
+			http.Hijacker
+			http.CloseNotifier
+		}{d, pusherDelegator{d}, hijackerDelegator{d}, closeNotifierDelegator{d}}
+	}
+	pickDelegator[pusher+hijacker+flusher] = func(d *responseWriterDelegator) delegator { // 22
+		return struct {
+			*responseWriterDelegator
+			http.Pusher
+			http.Hijacker
+			http.Flusher
+		}{d, pusherDelegator{d}, hijackerDelegator{d}, flusherDelegator{d}}
+	}
+	pickDelegator[pusher+hijacker+flusher+closeNotifier] = func(d *responseWriterDelegator) delegator { //23
+		return struct {
+			*responseWriterDelegator
+			http.Pusher
+			http.Hijacker
+			http.Flusher
+			http.CloseNotifier
+		}{d, pusherDelegator{d}, hijackerDelegator{d}, flusherDelegator{d}, closeNotifierDelegator{d}}
+	}
+	pickDelegator[pusher+readerFrom] = func(d *responseWriterDelegator) delegator { // 24
+		return struct {
+			*responseWriterDelegator
+			http.Pusher
+			io.ReaderFrom
+		}{d, pusherDelegator{d}, readerFromDelegator{d}}
+	}
+	pickDelegator[pusher+readerFrom+closeNotifier] = func(d *responseWriterDelegator) delegator { // 25
+		return struct {
+			*responseWriterDelegator
+			http.Pusher
+			io.ReaderFrom
+			http.CloseNotifier
+		}{d, pusherDelegator{d}, readerFromDelegator{d}, closeNotifierDelegator{d}}
+	}
+	pickDelegator[pusher+readerFrom+flusher] = func(d *responseWriterDelegator) delegator { // 26
+		return struct {
+			*responseWriterDelegator
+			http.Pusher
+			io.ReaderFrom
+			http.Flusher
+		}{d, pusherDelegator{d}, readerFromDelegator{d}, flusherDelegator{d}}
+	}
+	pickDelegator[pusher+readerFrom+flusher+closeNotifier] = func(d *responseWriterDelegator) delegator { // 27
+		return struct {
+			*responseWriterDelegator
+			http.Pusher
+			io.ReaderFrom
+			http.Flusher
+			http.CloseNotifier
+		}{d, pusherDelegator{d}, readerFromDelegator{d}, flusherDelegator{d}, closeNotifierDelegator{d}}
+	}
+	pickDelegator[pusher+readerFrom+hijacker] = func(d *responseWriterDelegator) delegator { // 28
+		return struct {
+			*responseWriterDelegator
+			http.Pusher
+			io.ReaderFrom
+			http.Hijacker
+		}{d, pusherDelegator{d}, readerFromDelegator{d}, hijackerDelegator{d}}
+	}
+	pickDelegator[pusher+readerFrom+hijacker+closeNotifier] = func(d *responseWriterDelegator) delegator { // 29
+		return struct {
+			*responseWriterDelegator
+			http.Pusher
+			io.ReaderFrom
+			http.Hijacker
+			http.CloseNotifier
+		}{d, pusherDelegator{d}, readerFromDelegator{d}, hijackerDelegator{d}, closeNotifierDelegator{d}}
+	}
+	pickDelegator[pusher+readerFrom+hijacker+flusher] = func(d *responseWriterDelegator) delegator { // 30
+		return struct {
+			*responseWriterDelegator
+			http.Pusher
+			io.ReaderFrom
+			http.Hijacker
+			http.Flusher
+		}{d, pusherDelegator{d}, readerFromDelegator{d}, hijackerDelegator{d}, flusherDelegator{d}}
+	}
+	pickDelegator[pusher+readerFrom+hijacker+flusher+closeNotifier] = func(d *responseWriterDelegator) delegator { // 31
+		return struct {
+			*responseWriterDelegator
+			http.Pusher
+			io.ReaderFrom
+			http.Hijacker
+			http.Flusher
+			http.CloseNotifier
+		}{d, pusherDelegator{d}, readerFromDelegator{d}, hijackerDelegator{d}, flusherDelegator{d}, closeNotifierDelegator{d}}
+	}
+}
+
+func newDelegator(w http.ResponseWriter, observeWriteHeaderFunc func(int)) delegator {
+	d := &responseWriterDelegator{
+		ResponseWriter:     w,
+		observeWriteHeader: observeWriteHeaderFunc,
+	}
+
+	id := 0
+	//lint:ignore SA1019 http.CloseNotifier is deprecated but we don't want to
+	//remove support from client_golang yet.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if _, ok := w.(http.CloseNotifier); ok {
 		id += closeNotifier
 	}

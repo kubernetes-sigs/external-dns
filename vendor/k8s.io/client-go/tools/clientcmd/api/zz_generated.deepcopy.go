@@ -267,9 +267,13 @@ func (in *ExecConfig) DeepCopyInto(out *ExecConfig) {
 		*out = make([]ExecEnvVar, len(*in))
 		copy(*out, *in)
 	}
+<<<<<<< HEAD
 	if in.Config != nil {
 		out.Config = in.Config.DeepCopyObject()
 	}
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

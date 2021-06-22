@@ -445,6 +445,7 @@ func ParseRData(rtype string, rdata []string) map[string]interface{} {
 			break
 		}
 
+<<<<<<< HEAD
 	case "SVCB":
 		for _, rcontent := range rdata {
 			parts := strings.SplitN(rcontent, " ", 3)
@@ -475,6 +476,9 @@ func ParseRData(rtype string, rdata []string) map[string]interface{} {
 			break
 		}
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	default:
 		for _, rcontent := range rdata {
 			newrdata = append(newrdata, rcontent)

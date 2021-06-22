@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+<<<<<<< HEAD
 //go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || zos
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris zos
 
@@ -18,4 +19,19 @@ const (
 
 	sizeofSockaddrInet4 = unix.SizeofSockaddrInet4
 	sizeofSockaddrInet6 = unix.SizeofSockaddrInet6
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// +build aix darwin dragonfly freebsd linux netbsd openbsd solaris
+
+package socket
+
+import "golang.org/x/sys/unix"
+
+const (
+	sysAF_UNSPEC = unix.AF_UNSPEC
+	sysAF_INET   = unix.AF_INET
+	sysAF_INET6  = unix.AF_INET6
+
+	sysSOCK_RAW = unix.SOCK_RAW
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )

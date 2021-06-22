@@ -85,11 +85,15 @@ func (k KeyError) Error() string {
 	return fmt.Sprintf("couldn't create key for object %+v: %v", k.Obj, k.Err)
 }
 
+<<<<<<< HEAD
 // Unwrap implements errors.Unwrap
 func (k KeyError) Unwrap() error {
 	return k.Err
 }
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // ExplicitKey can be passed to MetaNamespaceKeyFunc if you have the key for
 // the object but not the object itself.
 type ExplicitKey string

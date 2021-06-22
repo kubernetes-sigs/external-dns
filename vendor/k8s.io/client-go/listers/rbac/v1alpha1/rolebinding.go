@@ -26,6 +26,7 @@ import (
 )
 
 // RoleBindingLister helps list RoleBindings.
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type RoleBindingLister interface {
 	// List lists all RoleBindings in the indexer.
@@ -67,6 +68,45 @@ type RoleBindingNamespaceLister interface {
 	List(selector labels.Selector) (ret []*v1alpha1.RoleBinding, err error)
 	// Get retrieves the RoleBinding from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type RoleBindingLister interface {
+	// List lists all RoleBindings in the indexer.
+	List(selector labels.Selector) (ret []*v1alpha1.RoleBinding, err error)
+	// RoleBindings returns an object that can list and get RoleBindings.
+	RoleBindings(namespace string) RoleBindingNamespaceLister
+	RoleBindingListerExpansion
+}
+
+// roleBindingLister implements the RoleBindingLister interface.
+type roleBindingLister struct {
+	indexer cache.Indexer
+}
+
+// NewRoleBindingLister returns a new RoleBindingLister.
+func NewRoleBindingLister(indexer cache.Indexer) RoleBindingLister {
+	return &roleBindingLister{indexer: indexer}
+}
+
+// List lists all RoleBindings in the indexer.
+func (s *roleBindingLister) List(selector labels.Selector) (ret []*v1alpha1.RoleBinding, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1alpha1.RoleBinding))
+	})
+	return ret, err
+}
+
+// RoleBindings returns an object that can list and get RoleBindings.
+func (s *roleBindingLister) RoleBindings(namespace string) RoleBindingNamespaceLister {
+	return roleBindingNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// RoleBindingNamespaceLister helps list and get RoleBindings.
+type RoleBindingNamespaceLister interface {
+	// List lists all RoleBindings in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1alpha1.RoleBinding, err error)
+	// Get retrieves the RoleBinding from the indexer for a given namespace and name.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1alpha1.RoleBinding, error)
 	RoleBindingNamespaceListerExpansion
 }

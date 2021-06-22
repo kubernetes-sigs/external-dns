@@ -1,10 +1,21 @@
 language: go
 
 go:
+<<<<<<< HEAD
   - 1.11.x
   - 1.12.x
   - 1.13.x
   - master
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+  - 1.4
+  - 1.3
+  - 1.2
+  - tip
+
+install:
+  - if ! go get code.google.com/p/go.tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 script:
   - go test -cover

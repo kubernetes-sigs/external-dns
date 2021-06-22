@@ -787,8 +787,12 @@ type yaml_emitter_t struct {
 	foot_comment []byte
 	tail_comment []byte
 
+<<<<<<< HEAD
 	key_line_comment []byte
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	// Dumper stuff
 
 	opened bool // If the stream was already opened?

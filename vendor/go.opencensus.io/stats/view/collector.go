@@ -35,7 +35,12 @@ type collector struct {
 func (c *collector) addSample(s string, v float64, attachments map[string]interface{}, t time.Time) {
 	aggregator, ok := c.signatures[s]
 	if !ok {
+<<<<<<< HEAD
 		aggregator = c.a.newData(t)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		aggregator = c.a.newData()
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		c.signatures[s] = aggregator
 	}
 	aggregator.addSample(v, attachments, t)

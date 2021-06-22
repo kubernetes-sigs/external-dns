@@ -92,6 +92,7 @@ func Pipe2(p []int, flags int) error {
 	return err
 }
 
+<<<<<<< HEAD
 //sys	Getdents(fd int, buf []byte) (n int, err error)
 func Getdirentries(fd int, buf []byte, basep *uintptr) (n int, err error) {
 	n, err = Getdents(fd, buf)
@@ -155,6 +156,72 @@ func setattrlistTimes(path string, times []Timespec, flags int) error {
 //sys	ioctl(fd int, req uint, arg uintptr) (err error)
 
 //sys	sysctl(mib []_C_int, old *byte, oldlen *uintptr, new *byte, newlen uintptr) (err error) = SYS___SYSCTL
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//sys Getdents(fd int, buf []byte) (n int, err error)
+func Getdirentries(fd int, buf []byte, basep *uintptr) (n int, err error) {
+	n, err = Getdents(fd, buf)
+	if err != nil || basep == nil {
+		return
+	}
+
+	var off int64
+	off, err = Seek(fd, 0, 1 /* SEEK_CUR */)
+	if err != nil {
+		*basep = ^uintptr(0)
+		return
+	}
+	*basep = uintptr(off)
+	if unsafe.Sizeof(*basep) == 8 {
+		return
+	}
+	if off>>32 != 0 {
+		// We can't stuff the offset back into a uintptr, so any
+		// future calls would be suspect. Generate an error.
+		// EIO was allowed by getdirentries.
+		err = EIO
+	}
+	return
+}
+
+//sys	Getcwd(buf []byte) (n int, err error) = SYS___GETCWD
+
+func Sendfile(outfd int, infd int, offset *int64, count int) (written int, err error) {
+	if raceenabled {
+		raceReleaseMerge(unsafe.Pointer(&ioSync))
+	}
+	return sendfile(outfd, infd, offset, count)
+}
+
+// TODO
+func sendfile(outfd int, infd int, offset *int64, count int) (written int, err error) {
+	return -1, ENOSYS
+}
+
+func Getfsstat(buf []Statfs_t, flags int) (n int, err error) {
+	var _p0 unsafe.Pointer
+	var bufsize uintptr
+	if len(buf) > 0 {
+		_p0 = unsafe.Pointer(&buf[0])
+		bufsize = unsafe.Sizeof(Statfs_t{}) * uintptr(len(buf))
+	}
+	r0, _, e1 := Syscall(SYS_GETFSSTAT, uintptr(_p0), bufsize, uintptr(flags))
+	n = int(r0)
+	if e1 != 0 {
+		err = e1
+	}
+	return
+}
+
+func setattrlistTimes(path string, times []Timespec, flags int) error {
+	// used on Darwin for UtimesNano
+	return ENOSYS
+}
+
+//sys	ioctl(fd int, req uint, arg uintptr) (err error)
+
+//sys   sysctl(mib []_C_int, old *byte, oldlen *uintptr, new *byte, newlen uintptr) (err error) = SYS___SYSCTL
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 //sys	ppoll(fds *PollFd, nfds int, timeout *Timespec, sigmask *Sigset_t) (n int, err error)
 

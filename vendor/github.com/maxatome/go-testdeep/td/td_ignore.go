@@ -24,7 +24,12 @@ type tdIgnore struct {
 // for example. Or comparing a struct with SStruct and wanting to
 // ignore some fields:
 //
+<<<<<<< HEAD
 //   td.Cmp(t, got, td.SStruct(
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//   td.Cmp(t, td.SStruct(
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 //     Person{
 //       Name: "John Doe",
 //     },

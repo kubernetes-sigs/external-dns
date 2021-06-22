@@ -28,10 +28,17 @@ package v1beta1
 
 // AUTO-GENERATED FUNCTIONS START HERE. DO NOT EDIT.
 var map_TokenReview = map[string]string{
+<<<<<<< HEAD
 	"":         "TokenReview attempts to authenticate a token to a known user. Note: TokenReview requests may be cached by the webhook token authenticator plugin in the kube-apiserver.",
 	"metadata": "Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata",
 	"spec":     "Spec holds information about the request being evaluated",
 	"status":   "Status is filled in by the server and indicates whether the token can be authenticated.",
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"":       "TokenReview attempts to authenticate a token to a known user. Note: TokenReview requests may be cached by the webhook token authenticator plugin in the kube-apiserver.",
+	"spec":   "Spec holds information about the request being evaluated",
+	"status": "Status is filled in by the server and indicates whether the request can be authenticated.",
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (TokenReview) SwaggerDoc() map[string]string {

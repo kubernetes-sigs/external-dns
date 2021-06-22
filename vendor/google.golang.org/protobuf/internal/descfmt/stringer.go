@@ -42,8 +42,12 @@ func formatListOpt(vs list, isRoot, allowMulti bool) string {
 			name = "FileImports"
 		case pref.Descriptor:
 			name = reflect.ValueOf(vs).MethodByName("Get").Type().Out(0).Name() + "s"
+<<<<<<< HEAD
 		default:
 			name = reflect.ValueOf(vs).Elem().Type().Name()
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		}
 		start, end = name+"{", "}"
 	}

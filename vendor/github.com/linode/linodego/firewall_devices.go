@@ -69,6 +69,7 @@ type FirewallDevicesPagedResponse struct {
 
 // endpointWithID gets the endpoint URL for FirewallDevices of a given Firewall
 func (FirewallDevicesPagedResponse) endpointWithID(c *Client, id int) string {
+<<<<<<< HEAD
 	endpoint, err := c.FirewallDevices.endpointWithParams(id)
 	if err != nil {
 		panic(err)
@@ -130,6 +131,71 @@ func (c *Client) CreateFirewallDevice(ctx context.Context, firewallID int, creat
 // DeleteFirewallDevice disassociates a Device with a given Firewall
 func (c *Client) DeleteFirewallDevice(ctx context.Context, firewallID, deviceID int) error {
 	e, err := c.FirewallDevices.endpointWithParams(firewallID)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	endpoint, err := c.FirewallDevices.endpointWithID(id)
+	if err != nil {
+		panic(err)
+	}
+	return endpoint
+}
+
+func (resp *FirewallDevicesPagedResponse) appendData(r *FirewallDevicesPagedResponse) {
+	resp.Data = append(resp.Data, r.Data...)
+}
+
+// ListFirewallDevices get devices associated with a given Firewall
+func (c *Client) ListFirewallDevices(ctx context.Context, firewallID int, opts *ListOptions) ([]FirewallDevice, error) {
+	response := FirewallDevicesPagedResponse{}
+	err := c.listHelperWithID(ctx, &response, firewallID, opts)
+
+	if err != nil {
+		return nil, err
+	}
+	return response.Data, nil
+}
+
+// GetFirewallDevice gets a FirewallDevice given an ID
+func (c *Client) GetFirewallDevice(ctx context.Context, firewallID, deviceID int) (*FirewallDevice, error) {
+	e, err := c.FirewallDevices.endpointWithID(firewallID)
+	if err != nil {
+		return nil, err
+	}
+
+	e = fmt.Sprintf("%s/%d", e, deviceID)
+	r, err := coupleAPIErrors(c.R(ctx).SetResult(&FirewallDevice{}).Get(e))
+	if err != nil {
+		return nil, err
+	}
+	return r.Result().(*FirewallDevice), nil
+}
+
+// AddFirewallDevice associates a Device with a given Firewall
+func (c *Client) CreateFirewallDevice(ctx context.Context, firewallID int, createOpts FirewallDeviceCreateOptions) (*FirewallDevice, error) {
+	var body string
+	e, err := c.FirewallDevices.endpointWithID(firewallID)
+	if err != nil {
+		return nil, err
+	}
+
+	req := c.R(ctx).SetResult(&FirewallDevice{})
+	if bodyData, err := json.Marshal(createOpts); err == nil {
+		body = string(bodyData)
+	} else {
+		return nil, NewError(err)
+	}
+
+	r, err := coupleAPIErrors(req.SetBody(body).Post(e))
+	if err != nil {
+		return nil, err
+	}
+	return r.Result().(*FirewallDevice), nil
+}
+
+// DeleteFirewallDevice disassociates a Device with a given Firewall
+func (c *Client) DeleteFirewallDevice(ctx context.Context, firewallID, deviceID int) error {
+	e, err := c.FirewallDevices.endpointWithID(firewallID)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return err
 	}

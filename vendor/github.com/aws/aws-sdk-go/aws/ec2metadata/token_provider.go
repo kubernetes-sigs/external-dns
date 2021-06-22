@@ -87,7 +87,11 @@ func (t *tokenProvider) enableTokenProviderHandler(r *request.Request) {
 	// If the error code status is 401, we enable the token provider
 	if e, ok := r.Error.(awserr.RequestFailure); ok && e != nil &&
 		e.StatusCode() == http.StatusUnauthorized {
+<<<<<<< HEAD
 		t.token.Store(ec2Token{})
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		atomic.StoreUint32(&t.disabled, 0)
 	}
 }

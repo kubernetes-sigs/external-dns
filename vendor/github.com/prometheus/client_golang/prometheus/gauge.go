@@ -132,6 +132,7 @@ func (g *gauge) Write(out *dto.Metric) error {
 // (e.g. number of operations queued, partitioned by user and operation
 // type). Create instances with NewGaugeVec.
 type GaugeVec struct {
+<<<<<<< HEAD
 	*MetricVec
 }
 
@@ -245,6 +246,122 @@ func (v *GaugeVec) With(labels Labels) Gauge {
 // method deletes all metrics, even if called on a curried vector.
 func (v *GaugeVec) CurryWith(labels Labels) (*GaugeVec, error) {
 	vec, err := v.MetricVec.CurryWith(labels)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	*metricVec
+}
+
+// NewGaugeVec creates a new GaugeVec based on the provided GaugeOpts and
+// partitioned by the given label names.
+func NewGaugeVec(opts GaugeOpts, labelNames []string) *GaugeVec {
+	desc := NewDesc(
+		BuildFQName(opts.Namespace, opts.Subsystem, opts.Name),
+		opts.Help,
+		labelNames,
+		opts.ConstLabels,
+	)
+	return &GaugeVec{
+		metricVec: newMetricVec(desc, func(lvs ...string) Metric {
+			if len(lvs) != len(desc.variableLabels) {
+				panic(makeInconsistentCardinalityError(desc.fqName, desc.variableLabels, lvs))
+			}
+			result := &gauge{desc: desc, labelPairs: makeLabelPairs(desc, lvs)}
+			result.init(result) // Init self-collection.
+			return result
+		}),
+	}
+}
+
+// GetMetricWithLabelValues returns the Gauge for the given slice of label
+// values (same order as the VariableLabels in Desc). If that combination of
+// label values is accessed for the first time, a new Gauge is created.
+//
+// It is possible to call this method without using the returned Gauge to only
+// create the new Gauge but leave it at its starting value 0. See also the
+// SummaryVec example.
+//
+// Keeping the Gauge for later use is possible (and should be considered if
+// performance is critical), but keep in mind that Reset, DeleteLabelValues and
+// Delete can be used to delete the Gauge from the GaugeVec. In that case, the
+// Gauge will still exist, but it will not be exported anymore, even if a
+// Gauge with the same label values is created later. See also the CounterVec
+// example.
+//
+// An error is returned if the number of label values is not the same as the
+// number of VariableLabels in Desc (minus any curried labels).
+//
+// Note that for more than one label value, this method is prone to mistakes
+// caused by an incorrect order of arguments. Consider GetMetricWith(Labels) as
+// an alternative to avoid that type of mistake. For higher label numbers, the
+// latter has a much more readable (albeit more verbose) syntax, but it comes
+// with a performance overhead (for creating and processing the Labels map).
+func (v *GaugeVec) GetMetricWithLabelValues(lvs ...string) (Gauge, error) {
+	metric, err := v.metricVec.getMetricWithLabelValues(lvs...)
+	if metric != nil {
+		return metric.(Gauge), err
+	}
+	return nil, err
+}
+
+// GetMetricWith returns the Gauge for the given Labels map (the label names
+// must match those of the VariableLabels in Desc). If that label map is
+// accessed for the first time, a new Gauge is created. Implications of
+// creating a Gauge without using it and keeping the Gauge for later use are
+// the same as for GetMetricWithLabelValues.
+//
+// An error is returned if the number and names of the Labels are inconsistent
+// with those of the VariableLabels in Desc (minus any curried labels).
+//
+// This method is used for the same purpose as
+// GetMetricWithLabelValues(...string). See there for pros and cons of the two
+// methods.
+func (v *GaugeVec) GetMetricWith(labels Labels) (Gauge, error) {
+	metric, err := v.metricVec.getMetricWith(labels)
+	if metric != nil {
+		return metric.(Gauge), err
+	}
+	return nil, err
+}
+
+// WithLabelValues works as GetMetricWithLabelValues, but panics where
+// GetMetricWithLabelValues would have returned an error. Not returning an
+// error allows shortcuts like
+//     myVec.WithLabelValues("404", "GET").Add(42)
+func (v *GaugeVec) WithLabelValues(lvs ...string) Gauge {
+	g, err := v.GetMetricWithLabelValues(lvs...)
+	if err != nil {
+		panic(err)
+	}
+	return g
+}
+
+// With works as GetMetricWith, but panics where GetMetricWithLabels would have
+// returned an error. Not returning an error allows shortcuts like
+//     myVec.With(prometheus.Labels{"code": "404", "method": "GET"}).Add(42)
+func (v *GaugeVec) With(labels Labels) Gauge {
+	g, err := v.GetMetricWith(labels)
+	if err != nil {
+		panic(err)
+	}
+	return g
+}
+
+// CurryWith returns a vector curried with the provided labels, i.e. the
+// returned vector has those labels pre-set for all labeled operations performed
+// on it. The cardinality of the curried vector is reduced accordingly. The
+// order of the remaining labels stays the same (just with the curried labels
+// taken out of the sequence – which is relevant for the
+// (GetMetric)WithLabelValues methods). It is possible to curry a curried
+// vector, but only with labels not yet used for currying before.
+//
+// The metrics contained in the GaugeVec are shared between the curried and
+// uncurried vectors. They are just accessed differently. Curried and uncurried
+// vectors behave identically in terms of collection. Only one must be
+// registered with a given registry (usually the uncurried version). The Reset
+// method deletes all metrics, even if called on a curried vector.
+func (v *GaugeVec) CurryWith(labels Labels) (*GaugeVec, error) {
+	vec, err := v.curryWith(labels)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if vec != nil {
 		return &GaugeVec{vec}, err
 	}

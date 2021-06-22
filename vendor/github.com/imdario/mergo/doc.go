@@ -4,6 +4,7 @@
 // license that can be found in the LICENSE file.
 
 /*
+<<<<<<< HEAD
 A helper to merge structs and maps in Golang. Useful for configuration default values, avoiding messy if-statements.
 
 Mergo merges same-type structs and maps by setting default values in zero-value fields. Mergo won't merge unexported (private) fields. It will do recursively any exported one. It also won't merge structs inside maps (because they are not addressable using Go reflection).
@@ -138,6 +139,44 @@ Written by Dario Castañé: https://da.rio.hn
 License
 
 BSD 3-Clause license, as Go language.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+Package mergo merges same-type structs and maps by setting default values in zero-value fields.
+
+Mergo won't merge unexported (private) fields but will do recursively any exported one. It also won't merge structs inside maps (because they are not addressable using Go reflection).
+
+Usage
+
+From my own work-in-progress project:
+
+	type networkConfig struct {
+		Protocol string
+		Address string
+		ServerType string `json: "server_type"`
+		Port uint16
+	}
+
+	type FssnConfig struct {
+		Network networkConfig
+	}
+
+	var fssnDefault = FssnConfig {
+		networkConfig {
+			"tcp",
+			"127.0.0.1",
+			"http",
+			31560,
+		},
+	}
+
+	// Inside a function [...]
+
+	if err := mergo.Merge(&config, fssnDefault); err != nil {
+		log.Fatal(err)
+	}
+
+	// More code [...]
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 */
 package mergo

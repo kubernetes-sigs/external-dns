@@ -85,6 +85,11 @@ func (resp *NotificationsPagedResponse) appendData(r *NotificationsPagedResponse
 func (c *Client) ListNotifications(ctx context.Context, opts *ListOptions) ([]Notification, error) {
 	response := NotificationsPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
+<<<<<<< HEAD
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

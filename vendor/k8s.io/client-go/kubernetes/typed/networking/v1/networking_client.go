@@ -26,6 +26,7 @@ import (
 
 type NetworkingV1Interface interface {
 	RESTClient() rest.Interface
+<<<<<<< HEAD
 	IngressesGetter
 	IngressClassesGetter
 	NetworkPoliciesGetter
@@ -42,6 +43,15 @@ func (c *NetworkingV1Client) Ingresses(namespace string) IngressInterface {
 
 func (c *NetworkingV1Client) IngressClasses() IngressClassInterface {
 	return newIngressClasses(c)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	NetworkPoliciesGetter
+}
+
+// NetworkingV1Client is used to interact with features provided by the networking.k8s.io group.
+type NetworkingV1Client struct {
+	restClient rest.Interface
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (c *NetworkingV1Client) NetworkPolicies(namespace string) NetworkPolicyInterface {

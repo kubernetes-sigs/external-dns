@@ -52,8 +52,14 @@ import (
 //	10. Send out the CL for review and submit it.
 const (
 	Major      = 1
+<<<<<<< HEAD
 	Minor      = 27
 	Patch      = 1
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	Minor      = 23
+	Patch      = 0
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	PreRelease = ""
 )
 

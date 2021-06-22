@@ -131,6 +131,7 @@ func (r Result) extractIntoPtr(to interface{}, label string) error {
 				// fields of the struct or composed extension struct
 				// at the end of this method.
 				toValue.Set(newSlice)
+<<<<<<< HEAD
 
 				// jtopjian: This was put into place to resolve the issue
 				// described at
@@ -143,6 +144,9 @@ func (r Result) extractIntoPtr(to interface{}, label string) error {
 				// For future readers, this entire case statement could
 				// use a review.
 				return nil
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			}
 		}
 	case reflect.Struct:

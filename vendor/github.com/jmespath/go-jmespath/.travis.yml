@@ -12,6 +12,7 @@ go:
   - 1.11.x
   - 1.12.x
   - 1.13.x
+<<<<<<< HEAD
   - 1.14.x
   - 1.15.x
   - tip
@@ -26,3 +27,9 @@ matrix:
     - language: go
       go: 1.15.x
       script: make test
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+install: go get -v -t ./...
+script: make test
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

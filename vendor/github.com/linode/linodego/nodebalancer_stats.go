@@ -24,7 +24,12 @@ type StatsTraffic struct {
 
 // GetNodeBalancerStats gets the template with the provided ID
 func (c *Client) GetNodeBalancerStats(ctx context.Context, linodeID int) (*NodeBalancerStats, error) {
+<<<<<<< HEAD
 	e, err := c.NodeBalancerStats.endpointWithParams(linodeID)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	e, err := c.NodeBalancerStats.endpointWithID(linodeID)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

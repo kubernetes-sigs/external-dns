@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 run:
   timeout: 10m
 
@@ -21,6 +22,31 @@ linters:
     - megacheck
     - nakedret
     - revive
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+linters-settings:
+  golint:
+    min-confidence: 0.3
+  gocyclo:
+    min-complexity: 28
+  goimports:
+    local-prefixes: github.com
+
+linters:
+  enable:
+    - deadcode
+    - dupl
+    - errcheck
+    - gocyclo
+    - goimports
+    - golint
+    - gosimple
+    - govet
+    - ineffassign
+    - megacheck
+    - nakedret
+    - scopelint
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
     - staticcheck
     - structcheck
     - unused

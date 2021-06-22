@@ -423,6 +423,7 @@ func (c *messageConverter) PBValueOf(v reflect.Value) pref.Value {
 	if v.Type() != c.goType {
 		panic(fmt.Sprintf("invalid type: got %v, want %v", v.Type(), c.goType))
 	}
+<<<<<<< HEAD
 	if c.isNonPointer() {
 		if v.CanAddr() {
 			v = v.Addr() // T => *T
@@ -493,4 +494,48 @@ func (c *messageConverter) Zero() pref.Value {
 // This never occurs for generated message types.
 func (c *messageConverter) isNonPointer() bool {
 	return c.goType.Kind() != reflect.Ptr
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if m, ok := v.Interface().(pref.ProtoMessage); ok {
+		return pref.ValueOfMessage(m.ProtoReflect())
+	}
+	return pref.ValueOfMessage(legacyWrapMessage(v))
+}
+
+func (c *messageConverter) GoValueOf(v pref.Value) reflect.Value {
+	m := v.Message()
+	var rv reflect.Value
+	if u, ok := m.(unwrapper); ok {
+		rv = reflect.ValueOf(u.protoUnwrap())
+	} else {
+		rv = reflect.ValueOf(m.Interface())
+	}
+	if rv.Type() != c.goType {
+		panic(fmt.Sprintf("invalid type: got %v, want %v", rv.Type(), c.goType))
+	}
+	return rv
+}
+
+func (c *messageConverter) IsValidPB(v pref.Value) bool {
+	m := v.Message()
+	var rv reflect.Value
+	if u, ok := m.(unwrapper); ok {
+		rv = reflect.ValueOf(u.protoUnwrap())
+	} else {
+		rv = reflect.ValueOf(m.Interface())
+	}
+	return rv.Type() == c.goType
+}
+
+func (c *messageConverter) IsValidGo(v reflect.Value) bool {
+	return v.IsValid() && v.Type() == c.goType
+}
+
+func (c *messageConverter) New() pref.Value {
+	return c.PBValueOf(reflect.New(c.goType.Elem()))
+}
+
+func (c *messageConverter) Zero() pref.Value {
+	return c.PBValueOf(reflect.Zero(c.goType))
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

@@ -8,8 +8,12 @@ import (
 )
 
 // StringValue returns the string representation of a value.
+<<<<<<< HEAD
 //
 // Deprecated: Use Prettify instead.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func StringValue(i interface{}) string {
 	var buf bytes.Buffer
 	stringValue(reflect.ValueOf(i), 0, &buf)

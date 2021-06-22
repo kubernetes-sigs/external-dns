@@ -544,11 +544,15 @@ func (in *RollingUpdateDaemonSet) DeepCopyInto(out *RollingUpdateDaemonSet) {
 		*out = new(intstr.IntOrString)
 		**out = **in
 	}
+<<<<<<< HEAD
 	if in.MaxSurge != nil {
 		in, out := &in.MaxSurge, &out.MaxSurge
 		*out = new(intstr.IntOrString)
 		**out = **in
 	}
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

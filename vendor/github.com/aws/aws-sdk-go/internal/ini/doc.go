@@ -13,6 +13,7 @@
 //	}
 //
 // Below is the BNF that describes this parser
+<<<<<<< HEAD
 //  Grammar:
 //  stmt -> section | stmt'
 //  stmt' -> epsilon | expr
@@ -39,4 +40,20 @@
 //
 //  comment -> # comment' | ; comment'
 //  comment' -> epsilon | value
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//	Grammar:
+//	stmt -> value stmt'
+//	stmt' -> epsilon | op stmt
+//	value -> number | string | boolean | quoted_string
+//
+//	section -> [ section'
+//	section' -> value section_close
+//	section_close -> ]
+//
+//	SkipState will skip (NL WS)+
+//
+//	comment -> # comment' | ; comment'
+//	comment' -> epsilon | value
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 package ini

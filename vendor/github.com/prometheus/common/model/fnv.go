@@ -20,7 +20,12 @@ const (
 	prime64  = 1099511628211
 )
 
+<<<<<<< HEAD
 // hashNew initializes a new fnv64a hash value.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// hashNew initializies a new fnv64a hash value.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func hashNew() uint64 {
 	return offset64
 }

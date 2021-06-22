@@ -50,7 +50,12 @@ type ListISOs struct {
 	Page        int           `json:"page,omitempty"`
 	PageSize    int           `json:"pagesize,omitempty"`
 	ShowRemoved *bool         `json:"showremoved,omitempty" doc:"Show removed ISOs as well"`
+<<<<<<< HEAD
 	Tags        []ResourceTag `json:"tags,omitempty" doc:"List resources by tags (key/value pairs). Note: multiple tags are OR'ed, not AND'ed."`
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	Tags        []ResourceTag `json:"tags,omitempty" doc:"List resources by tags (key/value pairs)"`
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	ZoneID      *UUID         `json:"zoneid,omitempty" doc:"The ID of the zone"`
 }
 

@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 //go:build go1.5
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // +build go1.5
 
 package v4

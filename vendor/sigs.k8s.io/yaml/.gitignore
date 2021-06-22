@@ -6,10 +6,14 @@
 .project
 .settings/**
 
+<<<<<<< HEAD
 # Idea files
 .idea/**
 .idea/
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 # Emacs save files
 *~
 

@@ -26,6 +26,7 @@ import (
 )
 
 // NodeLister helps list Nodes.
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type NodeLister interface {
 	// List lists all Nodes in the indexer.
@@ -33,6 +34,13 @@ type NodeLister interface {
 	List(selector labels.Selector) (ret []*v1.Node, err error)
 	// Get retrieves the Node from the index for a given name.
 	// Objects returned here must be treated as read-only.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type NodeLister interface {
+	// List lists all Nodes in the indexer.
+	List(selector labels.Selector) (ret []*v1.Node, err error)
+	// Get retrieves the Node from the index for a given name.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.Node, error)
 	NodeListerExpansion
 }

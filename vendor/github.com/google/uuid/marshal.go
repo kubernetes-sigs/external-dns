@@ -16,11 +16,19 @@ func (uuid UUID) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (uuid *UUID) UnmarshalText(data []byte) error {
 	id, err := ParseBytes(data)
+<<<<<<< HEAD
 	if err != nil {
 		return err
 	}
 	*uuid = id
 	return nil
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if err == nil {
+		*uuid = id
+	}
+	return err
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // MarshalBinary implements encoding.BinaryMarshaler.

@@ -36,4 +36,9 @@
 package gax
 
 // Version specifies the gax-go version being used.
+<<<<<<< HEAD
 const Version = "2.1.1"
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+const Version = "2.0.4"
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

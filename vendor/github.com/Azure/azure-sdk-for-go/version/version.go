@@ -18,4 +18,9 @@ package version
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 
 // Number contains the semantic version of this SDK.
+<<<<<<< HEAD
 const Number = "v46.4.0"
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+const Number = "v45.1.0"
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

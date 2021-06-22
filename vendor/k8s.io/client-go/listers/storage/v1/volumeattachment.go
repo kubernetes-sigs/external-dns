@@ -26,6 +26,7 @@ import (
 )
 
 // VolumeAttachmentLister helps list VolumeAttachments.
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type VolumeAttachmentLister interface {
 	// List lists all VolumeAttachments in the indexer.
@@ -33,6 +34,13 @@ type VolumeAttachmentLister interface {
 	List(selector labels.Selector) (ret []*v1.VolumeAttachment, err error)
 	// Get retrieves the VolumeAttachment from the index for a given name.
 	// Objects returned here must be treated as read-only.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type VolumeAttachmentLister interface {
+	// List lists all VolumeAttachments in the indexer.
+	List(selector labels.Selector) (ret []*v1.VolumeAttachment, err error)
+	// Get retrieves the VolumeAttachment from the index for a given name.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.VolumeAttachment, error)
 	VolumeAttachmentListerExpansion
 }

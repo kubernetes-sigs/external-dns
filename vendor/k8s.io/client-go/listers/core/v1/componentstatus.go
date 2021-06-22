@@ -26,6 +26,7 @@ import (
 )
 
 // ComponentStatusLister helps list ComponentStatuses.
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type ComponentStatusLister interface {
 	// List lists all ComponentStatuses in the indexer.
@@ -33,6 +34,13 @@ type ComponentStatusLister interface {
 	List(selector labels.Selector) (ret []*v1.ComponentStatus, err error)
 	// Get retrieves the ComponentStatus from the index for a given name.
 	// Objects returned here must be treated as read-only.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type ComponentStatusLister interface {
+	// List lists all ComponentStatuses in the indexer.
+	List(selector labels.Selector) (ret []*v1.ComponentStatus, err error)
+	// Get retrieves the ComponentStatus from the index for a given name.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.ComponentStatus, error)
 	ComponentStatusListerExpansion
 }

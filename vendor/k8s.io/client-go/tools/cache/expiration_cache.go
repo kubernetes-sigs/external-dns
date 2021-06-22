@@ -21,7 +21,12 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/clock"
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"k8s.io/klog"
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )
 
 // ExpirationCache implements the store interface

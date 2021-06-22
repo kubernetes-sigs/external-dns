@@ -26,6 +26,7 @@ import (
 
 type StorageV1alpha1Interface interface {
 	RESTClient() rest.Interface
+<<<<<<< HEAD
 	CSIStorageCapacitiesGetter
 	VolumeAttachmentsGetter
 }
@@ -37,6 +38,15 @@ type StorageV1alpha1Client struct {
 
 func (c *StorageV1alpha1Client) CSIStorageCapacities(namespace string) CSIStorageCapacityInterface {
 	return newCSIStorageCapacities(c, namespace)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	VolumeAttachmentsGetter
+}
+
+// StorageV1alpha1Client is used to interact with features provided by the storage.k8s.io group.
+type StorageV1alpha1Client struct {
+	restClient rest.Interface
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (c *StorageV1alpha1Client) VolumeAttachments() VolumeAttachmentInterface {

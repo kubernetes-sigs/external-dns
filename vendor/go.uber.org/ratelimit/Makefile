@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Directory to put `go install`ed binaries in.
 export GOBIN ?= $(shell pwd)/bin
 
@@ -44,3 +45,11 @@ staticcheck: bin/staticcheck
 .PHONY: test
 test:
 	go test -race ./...
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+test:
+	go test .
+cover:
+	go test . -coverprofile=cover.out
+	go tool cover -html=cover.out
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

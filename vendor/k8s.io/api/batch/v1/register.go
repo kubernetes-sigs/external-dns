@@ -46,8 +46,12 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&Job{},
 		&JobList{},
+<<<<<<< HEAD
 		&CronJob{},
 		&CronJobList{},
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

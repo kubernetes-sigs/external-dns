@@ -5,7 +5,11 @@
 // In Go 1.13, the ed25519 package was promoted to the standard library as
 // crypto/ed25519, and this package became a wrapper for the standard library one.
 //
+<<<<<<< HEAD
 //go:build !go1.13
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // +build !go1.13
 
 // Package ed25519 implements the Ed25519 signature algorithm. See

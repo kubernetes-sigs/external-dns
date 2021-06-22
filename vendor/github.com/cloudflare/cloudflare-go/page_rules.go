@@ -32,6 +32,7 @@ Valid IDs are:
   cache_by_device_type
   cache_deception_armor
   cache_level
+<<<<<<< HEAD
   cache_key_fields
   cache_on_cookie
   disable_apps
@@ -112,6 +113,87 @@ type PageRule struct {
 	Actions    []PageRuleAction `json:"actions"`
 	Priority   int              `json:"priority"`
 	Status     string           `json:"status"`
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+  cache_on_cookie
+  disable_apps
+  disable_performance
+  disable_railgun
+  disable_security
+  edge_cache_ttl
+  email_obfuscation
+  explicit_cache_control
+  forwarding_url
+  host_header_override
+  ip_geolocation
+  minify
+  mirage
+  opportunistic_encryption
+  origin_error_page_pass_thru
+  polish
+  resolve_override
+  respect_strong_etag
+  response_buffering
+  rocket_loader
+  security_level
+  server_side_exclude
+  sort_query_string_for_cache
+  ssl
+  true_client_ip_header
+  waf
+*/
+type PageRuleAction struct {
+	ID    string      `json:"id"`
+	Value interface{} `json:"value"`
+}
+
+// PageRuleActions maps API action IDs to human-readable strings.
+var PageRuleActions = map[string]string{
+	"always_online":               "Always Online",               // Value of type string
+	"always_use_https":            "Always Use HTTPS",            // Value of type interface{}
+	"automatic_https_rewrites":    "Automatic HTTPS Rewrites",    // Value of type string
+	"browser_cache_ttl":           "Browser Cache TTL",           // Value of type int
+	"browser_check":               "Browser Integrity Check",     // Value of type string
+	"bypass_cache_on_cookie":      "Bypass Cache on Cookie",      // Value of type string
+	"cache_by_device_type":        "Cache By Device Type",        // Value of type string
+	"cache_deception_armor":       "Cache Deception Armor",       // Value of type string
+	"cache_level":                 "Cache Level",                 // Value of type string
+	"cache_on_cookie":             "Cache On Cookie",             // Value of type string
+	"disable_apps":                "Disable Apps",                // Value of type interface{}
+	"disable_performance":         "Disable Performance",         // Value of type interface{}
+	"disable_railgun":             "Disable Railgun",             // Value of type string
+	"disable_security":            "Disable Security",            // Value of type interface{}
+	"edge_cache_ttl":              "Edge Cache TTL",              // Value of type int
+	"email_obfuscation":           "Email Obfuscation",           // Value of type string
+	"explicit_cache_control":      "Origin Cache Control",        // Value of type string
+	"forwarding_url":              "Forwarding URL",              // Value of type map[string]interface
+	"host_header_override":        "Host Header Override",        // Value of type string
+	"ip_geolocation":              "IP Geolocation Header",       // Value of type string
+	"minify":                      "Minify",                      // Value of type map[string]interface
+	"mirage":                      "Mirage",                      // Value of type string
+	"opportunistic_encryption":    "Opportunistic Encryption",    // Value of type string
+	"origin_error_page_pass_thru": "Origin Error Page Pass-thru", // Value of type string
+	"polish":                      "Polish",                      // Value of type string
+	"resolve_override":            "Resolve Override",            // Value of type string
+	"respect_strong_etag":         "Respect Strong ETags",        // Value of type string
+	"response_buffering":          "Response Buffering",          // Value of type string
+	"rocket_loader":               "Rocker Loader",               // Value of type string
+	"security_level":              "Security Level",              // Value of type string
+	"server_side_exclude":         "Server Side Excludes",        // Value of type string
+	"sort_query_string_for_cache": "Query String Sort",           // Value of type string
+	"ssl":                         "SSL",                         // Value of type string
+	"true_client_ip_header":       "True Client IP Header",       // Value of type string
+	"waf":                         "Web Application Firewall",    // Value of type string
+}
+
+// PageRule describes a Page Rule.
+type PageRule struct {
+	ID         string           `json:"id,omitempty"`
+	Targets    []PageRuleTarget `json:"targets"`
+	Actions    []PageRuleAction `json:"actions"`
+	Priority   int              `json:"priority"`
+	Status     string           `json:"status"` // can be: active, paused
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	ModifiedOn time.Time        `json:"modified_on,omitempty"`
 	CreatedOn  time.Time        `json:"created_on,omitempty"`
 }

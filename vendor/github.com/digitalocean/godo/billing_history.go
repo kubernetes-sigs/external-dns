@@ -10,7 +10,12 @@ const billingHistoryBasePath = "v2/customers/my/billing_history"
 
 // BillingHistoryService is an interface for interfacing with the BillingHistory
 // endpoints of the DigitalOcean API
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#operation/list_billing_history
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// See: https://developers.digitalocean.com/documentation/v2/#billing_history
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type BillingHistoryService interface {
 	List(context.Context, *ListOptions) (*BillingHistory, *Response, error)
 }

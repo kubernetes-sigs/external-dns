@@ -341,12 +341,17 @@ func encodeHeaders(enc *hpack.Encoder, h http.Header, keys []string) {
 	}
 	for _, k := range keys {
 		vv := h[k]
+<<<<<<< HEAD
 		k, ascii := lowerHeader(k)
 		if !ascii {
 			// Skip writing invalid headers. Per RFC 7540, Section 8.1.2, header
 			// field names have to be ASCII characters (just as in HTTP/1.x).
 			continue
 		}
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		k = lowerHeader(k)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		if !validWireHeaderFieldName(k) {
 			// Skip it as backup paranoia. Per
 			// golang.org/issue/14048, these should

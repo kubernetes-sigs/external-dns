@@ -25,4 +25,13 @@ type cmsghdr struct {
 	Type  int32
 }
 
+<<<<<<< HEAD
 const sizeofCmsghdr = 12
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+const (
+	sizeofCmsghdr       = 12
+	sizeofSockaddrInet  = 16
+	sizeofSockaddrInet6 = 28
+)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

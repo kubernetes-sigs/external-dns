@@ -21,6 +21,7 @@ import (
 	"crypto/tls"
 	"net"
 	"net/http"
+<<<<<<< HEAD
 	"net/url"
 )
 
@@ -109,6 +110,89 @@ func (c *Config) HasCertAuth() bool {
 }
 
 // HasCertCallback returns whether the configuration has certificate callback or not.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+)
+
+// Config holds various options for establishing a transport.
+type Config struct {
+	// UserAgent is an optional field that specifies the caller of this
+	// request.
+	UserAgent string
+
+	// The base TLS configuration for this transport.
+	TLS TLSConfig
+
+	// Username and password for basic authentication
+	Username string
+	Password string
+
+	// Bearer token for authentication
+	BearerToken string
+
+	// Path to a file containing a BearerToken.
+	// If set, the contents are periodically read.
+	// The last successfully read value takes precedence over BearerToken.
+	BearerTokenFile string
+
+	// Impersonate is the config that this Config will impersonate using
+	Impersonate ImpersonationConfig
+
+	// DisableCompression bypasses automatic GZip compression requests to the
+	// server.
+	DisableCompression bool
+
+	// Transport may be used for custom HTTP behavior. This attribute may
+	// not be specified with the TLS client certificate options. Use
+	// WrapTransport for most client level operations.
+	Transport http.RoundTripper
+
+	// WrapTransport will be invoked for custom HTTP behavior after the
+	// underlying transport is initialized (either the transport created
+	// from TLSClientConfig, Transport, or http.DefaultTransport). The
+	// config may layer other RoundTrippers on top of the returned
+	// RoundTripper.
+	//
+	// A future release will change this field to an array. Use config.Wrap()
+	// instead of setting this value directly.
+	WrapTransport WrapperFunc
+
+	// Dial specifies the dial function for creating unencrypted TCP connections.
+	Dial func(ctx context.Context, network, address string) (net.Conn, error)
+}
+
+// ImpersonationConfig has all the available impersonation options
+type ImpersonationConfig struct {
+	// UserName matches user.Info.GetName()
+	UserName string
+	// Groups matches user.Info.GetGroups()
+	Groups []string
+	// Extra matches user.Info.GetExtra()
+	Extra map[string][]string
+}
+
+// HasCA returns whether the configuration has a certificate authority or not.
+func (c *Config) HasCA() bool {
+	return len(c.TLS.CAData) > 0 || len(c.TLS.CAFile) > 0
+}
+
+// HasBasicAuth returns whether the configuration has basic authentication or not.
+func (c *Config) HasBasicAuth() bool {
+	return len(c.Username) != 0
+}
+
+// HasTokenAuth returns whether the configuration has token authentication or not.
+func (c *Config) HasTokenAuth() bool {
+	return len(c.BearerToken) != 0 || len(c.BearerTokenFile) != 0
+}
+
+// HasCertAuth returns whether the configuration has certificate authentication or not.
+func (c *Config) HasCertAuth() bool {
+	return (len(c.TLS.CertData) != 0 || len(c.TLS.CertFile) != 0) && (len(c.TLS.KeyData) != 0 || len(c.TLS.KeyFile) != 0)
+}
+
+// HasCertCallbacks returns whether the configuration has certificate callback or not.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func (c *Config) HasCertCallback() bool {
 	return c.TLS.GetCert != nil
 }

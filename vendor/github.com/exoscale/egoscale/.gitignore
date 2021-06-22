@@ -1,4 +1,13 @@
+<<<<<<< HEAD
 dist/
 test/
 listApis.json
 public-api.json
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+.token
+dist
+ops.asc
+vendor
+listApis.json
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

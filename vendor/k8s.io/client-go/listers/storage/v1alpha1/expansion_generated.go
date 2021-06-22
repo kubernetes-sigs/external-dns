@@ -18,6 +18,7 @@ limitations under the License.
 
 package v1alpha1
 
+<<<<<<< HEAD
 // CSIStorageCapacityListerExpansion allows custom methods to be added to
 // CSIStorageCapacityLister.
 type CSIStorageCapacityListerExpansion interface{}
@@ -26,6 +27,9 @@ type CSIStorageCapacityListerExpansion interface{}
 // CSIStorageCapacityNamespaceLister.
 type CSIStorageCapacityNamespaceListerExpansion interface{}
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // VolumeAttachmentListerExpansion allows custom methods to be added to
 // VolumeAttachmentLister.
 type VolumeAttachmentListerExpansion interface{}

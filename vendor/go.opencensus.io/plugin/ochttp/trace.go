@@ -204,10 +204,15 @@ func TraceStatus(httpStatusCode int, statusLine string) trace.Status {
 		code = trace.StatusCodeUnavailable
 	case http.StatusOK:
 		code = trace.StatusCodeOK
+<<<<<<< HEAD
 	case http.StatusConflict:
 		code = trace.StatusCodeAlreadyExists
 	}
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	}
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return trace.Status{Code: code, Message: codeToStr[code]}
 }
 

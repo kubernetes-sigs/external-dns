@@ -14,6 +14,7 @@ const (
 )
 
 func MakeUnitMap(suffix, shortSuffix string, scale int64) map[string]float64 {
+<<<<<<< HEAD
 	res := map[string]float64{
 		shortSuffix: 1,
 		// see below for "k" / "K"
@@ -47,4 +48,16 @@ func MakeUnitMap(suffix, shortSuffix string, scale int64) map[string]float64 {
 		res["K"+suffix] = float64(scale)
 	}
 	return res
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	return map[string]float64{
+		shortSuffix:  1,
+		"K" + suffix: float64(scale),
+		"M" + suffix: float64(scale * scale),
+		"G" + suffix: float64(scale * scale * scale),
+		"T" + suffix: float64(scale * scale * scale * scale),
+		"P" + suffix: float64(scale * scale * scale * scale * scale),
+		"E" + suffix: float64(scale * scale * scale * scale * scale * scale),
+	}
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

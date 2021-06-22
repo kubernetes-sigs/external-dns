@@ -28,6 +28,7 @@ type FakeNetworkingV1 struct {
 	*testing.Fake
 }
 
+<<<<<<< HEAD
 func (c *FakeNetworkingV1) Ingresses(namespace string) v1.IngressInterface {
 	return &FakeIngresses{c, namespace}
 }
@@ -36,6 +37,9 @@ func (c *FakeNetworkingV1) IngressClasses() v1.IngressClassInterface {
 	return &FakeIngressClasses{c}
 }
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func (c *FakeNetworkingV1) NetworkPolicies(namespace string) v1.NetworkPolicyInterface {
 	return &FakeNetworkPolicies{c, namespace}
 }

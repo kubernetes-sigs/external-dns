@@ -93,6 +93,7 @@ func parseCPUStat(line string) (CPUStat, int64, error) {
 		&cpuStat.Guest, &cpuStat.GuestNice)
 
 	if err != nil && err != io.EOF {
+<<<<<<< HEAD
 		return CPUStat{}, -1, fmt.Errorf("couldn't parse %q (cpu): %w", line, err)
 	}
 	if count == 0 {
@@ -238,6 +239,154 @@ func (fs FS) Stat() (Stat, error) {
 
 	if err := scanner.Err(); err != nil {
 		return Stat{}, fmt.Errorf("couldn't parse %q: %w", fileName, err)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		return CPUStat{}, -1, fmt.Errorf("couldn't parse %s (cpu): %s", line, err)
+	}
+	if count == 0 {
+		return CPUStat{}, -1, fmt.Errorf("couldn't parse %s (cpu): 0 elements parsed", line)
+	}
+
+	cpuStat.User /= userHZ
+	cpuStat.Nice /= userHZ
+	cpuStat.System /= userHZ
+	cpuStat.Idle /= userHZ
+	cpuStat.Iowait /= userHZ
+	cpuStat.IRQ /= userHZ
+	cpuStat.SoftIRQ /= userHZ
+	cpuStat.Steal /= userHZ
+	cpuStat.Guest /= userHZ
+	cpuStat.GuestNice /= userHZ
+
+	if cpu == "cpu" {
+		return cpuStat, -1, nil
+	}
+
+	cpuID, err := strconv.ParseInt(cpu[3:], 10, 64)
+	if err != nil {
+		return CPUStat{}, -1, fmt.Errorf("couldn't parse %s (cpu/cpuid): %s", line, err)
+	}
+
+	return cpuStat, cpuID, nil
+}
+
+// Parse a softirq line.
+func parseSoftIRQStat(line string) (SoftIRQStat, uint64, error) {
+	softIRQStat := SoftIRQStat{}
+	var total uint64
+	var prefix string
+
+	_, err := fmt.Sscanf(line, "%s %d %d %d %d %d %d %d %d %d %d %d",
+		&prefix, &total,
+		&softIRQStat.Hi, &softIRQStat.Timer, &softIRQStat.NetTx, &softIRQStat.NetRx,
+		&softIRQStat.Block, &softIRQStat.BlockIoPoll,
+		&softIRQStat.Tasklet, &softIRQStat.Sched,
+		&softIRQStat.Hrtimer, &softIRQStat.Rcu)
+
+	if err != nil {
+		return SoftIRQStat{}, 0, fmt.Errorf("couldn't parse %s (softirq): %s", line, err)
+	}
+
+	return softIRQStat, total, nil
+}
+
+// NewStat returns information about current cpu/process statistics.
+// See https://www.kernel.org/doc/Documentation/filesystems/proc.txt
+//
+// Deprecated: use fs.Stat() instead
+func NewStat() (Stat, error) {
+	fs, err := NewFS(fs.DefaultProcMountPoint)
+	if err != nil {
+		return Stat{}, err
+	}
+	return fs.Stat()
+}
+
+// NewStat returns information about current cpu/process statistics.
+// See https://www.kernel.org/doc/Documentation/filesystems/proc.txt
+//
+// Deprecated: use fs.Stat() instead
+func (fs FS) NewStat() (Stat, error) {
+	return fs.Stat()
+}
+
+// Stat returns information about current cpu/process statistics.
+// See https://www.kernel.org/doc/Documentation/filesystems/proc.txt
+func (fs FS) Stat() (Stat, error) {
+	fileName := fs.proc.Path("stat")
+	data, err := util.ReadFileNoStat(fileName)
+	if err != nil {
+		return Stat{}, err
+	}
+
+	stat := Stat{}
+
+	scanner := bufio.NewScanner(bytes.NewReader(data))
+	for scanner.Scan() {
+		line := scanner.Text()
+		parts := strings.Fields(scanner.Text())
+		// require at least <key> <value>
+		if len(parts) < 2 {
+			continue
+		}
+		switch {
+		case parts[0] == "btime":
+			if stat.BootTime, err = strconv.ParseUint(parts[1], 10, 64); err != nil {
+				return Stat{}, fmt.Errorf("couldn't parse %s (btime): %s", parts[1], err)
+			}
+		case parts[0] == "intr":
+			if stat.IRQTotal, err = strconv.ParseUint(parts[1], 10, 64); err != nil {
+				return Stat{}, fmt.Errorf("couldn't parse %s (intr): %s", parts[1], err)
+			}
+			numberedIRQs := parts[2:]
+			stat.IRQ = make([]uint64, len(numberedIRQs))
+			for i, count := range numberedIRQs {
+				if stat.IRQ[i], err = strconv.ParseUint(count, 10, 64); err != nil {
+					return Stat{}, fmt.Errorf("couldn't parse %s (intr%d): %s", count, i, err)
+				}
+			}
+		case parts[0] == "ctxt":
+			if stat.ContextSwitches, err = strconv.ParseUint(parts[1], 10, 64); err != nil {
+				return Stat{}, fmt.Errorf("couldn't parse %s (ctxt): %s", parts[1], err)
+			}
+		case parts[0] == "processes":
+			if stat.ProcessCreated, err = strconv.ParseUint(parts[1], 10, 64); err != nil {
+				return Stat{}, fmt.Errorf("couldn't parse %s (processes): %s", parts[1], err)
+			}
+		case parts[0] == "procs_running":
+			if stat.ProcessesRunning, err = strconv.ParseUint(parts[1], 10, 64); err != nil {
+				return Stat{}, fmt.Errorf("couldn't parse %s (procs_running): %s", parts[1], err)
+			}
+		case parts[0] == "procs_blocked":
+			if stat.ProcessesBlocked, err = strconv.ParseUint(parts[1], 10, 64); err != nil {
+				return Stat{}, fmt.Errorf("couldn't parse %s (procs_blocked): %s", parts[1], err)
+			}
+		case parts[0] == "softirq":
+			softIRQStats, total, err := parseSoftIRQStat(line)
+			if err != nil {
+				return Stat{}, err
+			}
+			stat.SoftIRQTotal = total
+			stat.SoftIRQ = softIRQStats
+		case strings.HasPrefix(parts[0], "cpu"):
+			cpuStat, cpuID, err := parseCPUStat(line)
+			if err != nil {
+				return Stat{}, err
+			}
+			if cpuID == -1 {
+				stat.CPUTotal = cpuStat
+			} else {
+				for int64(len(stat.CPU)) <= cpuID {
+					stat.CPU = append(stat.CPU, CPUStat{})
+				}
+				stat.CPU[cpuID] = cpuStat
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return Stat{}, fmt.Errorf("couldn't parse %s: %s", fileName, err)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 
 	return stat, nil

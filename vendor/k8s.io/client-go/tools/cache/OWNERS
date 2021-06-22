@@ -20,6 +20,7 @@ reviewers:
 - caesarxuchao
 - mikedanese
 - liggitt
+<<<<<<< HEAD
 - davidopp
 - pmorie
 - janetkuo
@@ -34,5 +35,29 @@ reviewers:
 - resouer
 - jessfraz
 - mfojtik
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+- nikhiljindal
+- erictune
+- davidopp
+- pmorie
+- janetkuo
+- justinsb
+- eparis
+- soltysh
+- jsafrane
+- dims
+- madhusudancs
+- hongchaodeng
+- krousey
+- xiang90
+- mml
+- ingvagabund
+- resouer
+- jessfraz
+- david-mcmahon
+- mfojtik
+- mqliang
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 - sdminonne
 - ncdc

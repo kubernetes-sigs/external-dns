@@ -26,6 +26,7 @@ type CSIDriverListerExpansion interface{}
 // CSINodeLister.
 type CSINodeListerExpansion interface{}
 
+<<<<<<< HEAD
 // CSIStorageCapacityListerExpansion allows custom methods to be added to
 // CSIStorageCapacityLister.
 type CSIStorageCapacityListerExpansion interface{}
@@ -34,6 +35,9 @@ type CSIStorageCapacityListerExpansion interface{}
 // CSIStorageCapacityNamespaceLister.
 type CSIStorageCapacityNamespaceListerExpansion interface{}
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // StorageClassListerExpansion allows custom methods to be added to
 // StorageClassLister.
 type StorageClassListerExpansion interface{}

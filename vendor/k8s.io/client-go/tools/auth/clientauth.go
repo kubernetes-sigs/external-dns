@@ -75,11 +75,20 @@ import (
 // to be read/written from a file as a JSON object.
 type Info struct {
 	User        string
+<<<<<<< HEAD
 	Password    string `datapolicy:"password"`
 	CAFile      string
 	CertFile    string
 	KeyFile     string
 	BearerToken string `datapolicy:"token"`
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	Password    string
+	CAFile      string
+	CertFile    string
+	KeyFile     string
+	BearerToken string
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Insecure    *bool
 }
 

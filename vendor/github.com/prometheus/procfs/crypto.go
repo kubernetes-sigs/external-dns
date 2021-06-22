@@ -55,12 +55,22 @@ func (fs FS) Crypto() ([]Crypto, error) {
 	path := fs.proc.Path("crypto")
 	b, err := util.ReadFileNoStat(path)
 	if err != nil {
+<<<<<<< HEAD
 		return nil, fmt.Errorf("error reading crypto %q: %w", path, err)
 	}
 
 	crypto, err := parseCrypto(bytes.NewReader(b))
 	if err != nil {
 		return nil, fmt.Errorf("error parsing crypto %q: %w", path, err)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		return nil, fmt.Errorf("error reading crypto %s: %s", path, err)
+	}
+
+	crypto, err := parseCrypto(bytes.NewReader(b))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing crypto %s: %s", path, err)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 
 	return crypto, nil

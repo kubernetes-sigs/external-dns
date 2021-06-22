@@ -19,10 +19,15 @@
 // Package serviceconfig defines types and methods for operating on gRPC
 // service configs.
 //
+<<<<<<< HEAD
 // Experimental
 //
 // Notice: This package is EXPERIMENTAL and may be changed or removed in a
 // later release.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// This package is EXPERIMENTAL.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 package serviceconfig
 
 // Config represents an opaque data structure holding a service config.

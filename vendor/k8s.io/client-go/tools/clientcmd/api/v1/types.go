@@ -75,6 +75,7 @@ type Cluster struct {
 	// CertificateAuthorityData contains PEM-encoded certificate authority certificates. Overrides CertificateAuthority
 	// +optional
 	CertificateAuthorityData []byte `json:"certificate-authority-data,omitempty"`
+<<<<<<< HEAD
 	// ProxyURL is the URL to the proxy to be used for all requests made by this
 	// client. URLs with "http", "https", and "socks5" schemes are supported.  If
 	// this configuration is not provided or the empty string, the client
@@ -261,3 +262,137 @@ const (
 	// and an error will be returned by the exec plugin runner.
 	AlwaysExecInteractiveMode ExecInteractiveMode = "Always"
 )
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// Extensions holds additional information. This is useful for extenders so that reads and writes don't clobber unknown fields
+	// +optional
+	Extensions []NamedExtension `json:"extensions,omitempty"`
+}
+
+// AuthInfo contains information that describes identity information.  This is use to tell the kubernetes cluster who you are.
+type AuthInfo struct {
+	// ClientCertificate is the path to a client cert file for TLS.
+	// +optional
+	ClientCertificate string `json:"client-certificate,omitempty"`
+	// ClientCertificateData contains PEM-encoded data from a client cert file for TLS. Overrides ClientCertificate
+	// +optional
+	ClientCertificateData []byte `json:"client-certificate-data,omitempty"`
+	// ClientKey is the path to a client key file for TLS.
+	// +optional
+	ClientKey string `json:"client-key,omitempty"`
+	// ClientKeyData contains PEM-encoded data from a client key file for TLS. Overrides ClientKey
+	// +optional
+	ClientKeyData []byte `json:"client-key-data,omitempty"`
+	// Token is the bearer token for authentication to the kubernetes cluster.
+	// +optional
+	Token string `json:"token,omitempty"`
+	// TokenFile is a pointer to a file that contains a bearer token (as described above).  If both Token and TokenFile are present, Token takes precedence.
+	// +optional
+	TokenFile string `json:"tokenFile,omitempty"`
+	// Impersonate is the username to imperonate.  The name matches the flag.
+	// +optional
+	Impersonate string `json:"as,omitempty"`
+	// ImpersonateGroups is the groups to imperonate.
+	// +optional
+	ImpersonateGroups []string `json:"as-groups,omitempty"`
+	// ImpersonateUserExtra contains additional information for impersonated user.
+	// +optional
+	ImpersonateUserExtra map[string][]string `json:"as-user-extra,omitempty"`
+	// Username is the username for basic authentication to the kubernetes cluster.
+	// +optional
+	Username string `json:"username,omitempty"`
+	// Password is the password for basic authentication to the kubernetes cluster.
+	// +optional
+	Password string `json:"password,omitempty"`
+	// AuthProvider specifies a custom authentication plugin for the kubernetes cluster.
+	// +optional
+	AuthProvider *AuthProviderConfig `json:"auth-provider,omitempty"`
+	// Exec specifies a custom exec-based authentication plugin for the kubernetes cluster.
+	// +optional
+	Exec *ExecConfig `json:"exec,omitempty"`
+	// Extensions holds additional information. This is useful for extenders so that reads and writes don't clobber unknown fields
+	// +optional
+	Extensions []NamedExtension `json:"extensions,omitempty"`
+}
+
+// Context is a tuple of references to a cluster (how do I communicate with a kubernetes cluster), a user (how do I identify myself), and a namespace (what subset of resources do I want to work with)
+type Context struct {
+	// Cluster is the name of the cluster for this context
+	Cluster string `json:"cluster"`
+	// AuthInfo is the name of the authInfo for this context
+	AuthInfo string `json:"user"`
+	// Namespace is the default namespace to use on unspecified requests
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+	// Extensions holds additional information. This is useful for extenders so that reads and writes don't clobber unknown fields
+	// +optional
+	Extensions []NamedExtension `json:"extensions,omitempty"`
+}
+
+// NamedCluster relates nicknames to cluster information
+type NamedCluster struct {
+	// Name is the nickname for this Cluster
+	Name string `json:"name"`
+	// Cluster holds the cluster information
+	Cluster Cluster `json:"cluster"`
+}
+
+// NamedContext relates nicknames to context information
+type NamedContext struct {
+	// Name is the nickname for this Context
+	Name string `json:"name"`
+	// Context holds the context information
+	Context Context `json:"context"`
+}
+
+// NamedAuthInfo relates nicknames to auth information
+type NamedAuthInfo struct {
+	// Name is the nickname for this AuthInfo
+	Name string `json:"name"`
+	// AuthInfo holds the auth information
+	AuthInfo AuthInfo `json:"user"`
+}
+
+// NamedExtension relates nicknames to extension information
+type NamedExtension struct {
+	// Name is the nickname for this Extension
+	Name string `json:"name"`
+	// Extension holds the extension information
+	Extension runtime.RawExtension `json:"extension"`
+}
+
+// AuthProviderConfig holds the configuration for a specified auth provider.
+type AuthProviderConfig struct {
+	Name   string            `json:"name"`
+	Config map[string]string `json:"config"`
+}
+
+// ExecConfig specifies a command to provide client credentials. The command is exec'd
+// and outputs structured stdout holding credentials.
+//
+// See the client.authentiction.k8s.io API group for specifications of the exact input
+// and output format
+type ExecConfig struct {
+	// Command to execute.
+	Command string `json:"command"`
+	// Arguments to pass to the command when executing it.
+	// +optional
+	Args []string `json:"args"`
+	// Env defines additional environment variables to expose to the process. These
+	// are unioned with the host's environment, as well as variables client-go uses
+	// to pass argument to the plugin.
+	// +optional
+	Env []ExecEnvVar `json:"env"`
+
+	// Preferred input version of the ExecInfo. The returned ExecCredentials MUST use
+	// the same encoding version as the input.
+	APIVersion string `json:"apiVersion,omitempty"`
+}
+
+// ExecEnvVar is used for setting environment variables when executing an exec-based
+// credential plugin.
+type ExecEnvVar struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

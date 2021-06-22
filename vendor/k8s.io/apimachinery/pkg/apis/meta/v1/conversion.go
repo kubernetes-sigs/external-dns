@@ -345,6 +345,7 @@ func Convert_url_Values_To_v1_DeleteOptions(in *url.Values, out *DeleteOptions, 
 	}
 	return nil
 }
+<<<<<<< HEAD
 
 // Convert_Slice_string_To_v1_ResourceVersionMatch allows converting a URL query parameter to ResourceVersionMatch
 func Convert_Slice_string_To_v1_ResourceVersionMatch(in *[]string, out *ResourceVersionMatch, s conversion.Scope) error {
@@ -353,3 +354,6 @@ func Convert_Slice_string_To_v1_ResourceVersionMatch(in *[]string, out *Resource
 	}
 	return nil
 }
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

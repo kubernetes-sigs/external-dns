@@ -1,5 +1,6 @@
 module github.com/googleapis/gax-go/v2
 
+<<<<<<< HEAD
 go 1.11
 
 require (
@@ -10,3 +11,7 @@ require (
 	google.golang.org/protobuf v1.27.1
 
 )
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+require google.golang.org/grpc v1.19.0
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

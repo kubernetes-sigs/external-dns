@@ -1,6 +1,11 @@
 module github.com/digitalocean/godo
 
+<<<<<<< HEAD
 go 1.16
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+go 1.14
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 require (
 	github.com/golang/protobuf v1.3.5 // indirect

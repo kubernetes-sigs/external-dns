@@ -44,6 +44,7 @@ linters:
     - wsl
     - interfacer
     - gomnd
+<<<<<<< HEAD
     - nlreturn
     - wrapcheck
     - wastedassign
@@ -53,4 +54,7 @@ linters:
     - errorlint
     - cyclop
     - godot
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
   fast: false

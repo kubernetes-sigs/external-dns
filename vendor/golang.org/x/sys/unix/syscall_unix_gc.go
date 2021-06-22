@@ -2,11 +2,17 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+<<<<<<< HEAD
 //go:build (darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris) && gc && !ppc64le && !ppc64
 // +build darwin dragonfly freebsd linux netbsd openbsd solaris
 // +build gc
 // +build !ppc64le
 // +build !ppc64
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// +build darwin dragonfly freebsd linux netbsd openbsd solaris
+// +build gc,!ppc64le,!ppc64
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 package unix
 

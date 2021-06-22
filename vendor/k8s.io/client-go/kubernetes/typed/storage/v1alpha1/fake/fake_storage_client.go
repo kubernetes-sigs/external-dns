@@ -28,10 +28,14 @@ type FakeStorageV1alpha1 struct {
 	*testing.Fake
 }
 
+<<<<<<< HEAD
 func (c *FakeStorageV1alpha1) CSIStorageCapacities(namespace string) v1alpha1.CSIStorageCapacityInterface {
 	return &FakeCSIStorageCapacities{c, namespace}
 }
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func (c *FakeStorageV1alpha1) VolumeAttachments() v1alpha1.VolumeAttachmentInterface {
 	return &FakeVolumeAttachments{c}
 }

@@ -1,6 +1,7 @@
 Releases
 ========
 
+<<<<<<< HEAD
 v1.6.0 (2020-09-14)
 ===================
 
@@ -20,6 +21,9 @@ v1.4.0 (2019-11-04)
     loop.
 
 
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 v1.3.0 (2019-10-29)
 ===================
 

@@ -26,6 +26,7 @@ import (
 )
 
 // CSIDriverLister helps list CSIDrivers.
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type CSIDriverLister interface {
 	// List lists all CSIDrivers in the indexer.
@@ -33,6 +34,13 @@ type CSIDriverLister interface {
 	List(selector labels.Selector) (ret []*v1beta1.CSIDriver, err error)
 	// Get retrieves the CSIDriver from the index for a given name.
 	// Objects returned here must be treated as read-only.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type CSIDriverLister interface {
+	// List lists all CSIDrivers in the indexer.
+	List(selector labels.Selector) (ret []*v1beta1.CSIDriver, err error)
+	// Get retrieves the CSIDriver from the index for a given name.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1beta1.CSIDriver, error)
 	CSIDriverListerExpansion
 }

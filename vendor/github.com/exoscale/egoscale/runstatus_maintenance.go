@@ -3,6 +3,7 @@ package egoscale
 import (
 	"context"
 	"encoding/json"
+<<<<<<< HEAD
 	"errors"
 	"fmt"
 	"log"
@@ -99,6 +100,104 @@ func (client *Client) GetRunstatusMaintenance(ctx context.Context, maintenance R
 	}
 
 	return nil, errors.New("maintenance not found")
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"fmt"
+	"log"
+	"net/url"
+	"path"
+	"strconv"
+	"time"
+)
+
+// RunstatusMaintenance is a runstatus maintenance
+type RunstatusMaintenance struct {
+	Created     *time.Time       `json:"created,omitempty"`
+	Description string           `json:"description,omitempty"`
+	EndDate     *time.Time       `json:"end_date"`
+	Events      []RunstatusEvent `json:"events,omitempty"`
+	EventsURL   string           `json:"events_url,omitempty"`
+	ID          int              `json:"id,omitempty"`       // missing field
+	PageURL     string           `json:"page_url,omitempty"` // fake field
+	RealTime    bool             `json:"real_time,omitempty"`
+	Services    []string         `json:"services"`
+	StartDate   *time.Time       `json:"start_date"`
+	Status      string           `json:"status"`
+	Title       string           `json:"title"`
+	URL         string           `json:"url,omitempty"`
+}
+
+// Match returns true if the other maintenance has got similarities with itself
+func (maintenance RunstatusMaintenance) Match(other RunstatusMaintenance) bool {
+	if other.Title != "" && maintenance.Title == other.Title {
+		return true
+	}
+
+	if other.ID > 0 && maintenance.ID == other.ID {
+		return true
+	}
+
+	return false
+}
+
+// FakeID fills up the ID field as it's currently missing
+func (maintenance *RunstatusMaintenance) FakeID() error {
+	if maintenance.ID > 0 {
+		return nil
+	}
+
+	if maintenance.URL == "" {
+		return fmt.Errorf("empty URL for %#v", maintenance)
+	}
+
+	u, err := url.Parse(maintenance.URL)
+	if err != nil {
+		return err
+	}
+
+	s := path.Base(u.Path)
+	id, err := strconv.Atoi(s)
+	if err != nil {
+		return err
+	}
+	maintenance.ID = id
+	return nil
+}
+
+// RunstatusMaintenanceList is a list of incident
+type RunstatusMaintenanceList struct {
+	Next         string                 `json:"next"`
+	Previous     string                 `json:"previous"`
+	Maintenances []RunstatusMaintenance `json:"results"`
+}
+
+// GetRunstatusMaintenance retrieves the details of a specific maintenance.
+func (client *Client) GetRunstatusMaintenance(ctx context.Context, maintenance RunstatusMaintenance) (*RunstatusMaintenance, error) {
+	if maintenance.URL != "" {
+		return client.getRunstatusMaintenance(ctx, maintenance.URL)
+	}
+
+	if maintenance.PageURL == "" {
+		return nil, fmt.Errorf("empty Page URL for %#v", maintenance)
+	}
+
+	page, err := client.getRunstatusPage(ctx, maintenance.PageURL)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range page.Maintenances {
+		m := &page.Maintenances[i]
+		if m.Match(maintenance) {
+			if err := m.FakeID(); err != nil {
+				log.Printf("bad fake ID for %#v, %s", m, err)
+			}
+			return m, nil
+		}
+	}
+
+	return nil, fmt.Errorf("%#v not found", maintenance)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (client *Client) getRunstatusMaintenance(ctx context.Context, maintenanceURL string) (*RunstatusMaintenance, error) {

@@ -26,6 +26,7 @@ import (
 )
 
 // EventLister helps list Events.
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type EventLister interface {
 	// List lists all Events in the indexer.
@@ -67,6 +68,45 @@ type EventNamespaceLister interface {
 	List(selector labels.Selector) (ret []*v1.Event, err error)
 	// Get retrieves the Event from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type EventLister interface {
+	// List lists all Events in the indexer.
+	List(selector labels.Selector) (ret []*v1.Event, err error)
+	// Events returns an object that can list and get Events.
+	Events(namespace string) EventNamespaceLister
+	EventListerExpansion
+}
+
+// eventLister implements the EventLister interface.
+type eventLister struct {
+	indexer cache.Indexer
+}
+
+// NewEventLister returns a new EventLister.
+func NewEventLister(indexer cache.Indexer) EventLister {
+	return &eventLister{indexer: indexer}
+}
+
+// List lists all Events in the indexer.
+func (s *eventLister) List(selector labels.Selector) (ret []*v1.Event, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1.Event))
+	})
+	return ret, err
+}
+
+// Events returns an object that can list and get Events.
+func (s *eventLister) Events(namespace string) EventNamespaceLister {
+	return eventNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// EventNamespaceLister helps list and get Events.
+type EventNamespaceLister interface {
+	// List lists all Events in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1.Event, err error)
+	// Get retrieves the Event from the indexer for a given namespace and name.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.Event, error)
 	EventNamespaceListerExpansion
 }

@@ -26,6 +26,7 @@ import (
 )
 
 // PersistentVolumeClaimLister helps list PersistentVolumeClaims.
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type PersistentVolumeClaimLister interface {
 	// List lists all PersistentVolumeClaims in the indexer.
@@ -67,6 +68,45 @@ type PersistentVolumeClaimNamespaceLister interface {
 	List(selector labels.Selector) (ret []*v1.PersistentVolumeClaim, err error)
 	// Get retrieves the PersistentVolumeClaim from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type PersistentVolumeClaimLister interface {
+	// List lists all PersistentVolumeClaims in the indexer.
+	List(selector labels.Selector) (ret []*v1.PersistentVolumeClaim, err error)
+	// PersistentVolumeClaims returns an object that can list and get PersistentVolumeClaims.
+	PersistentVolumeClaims(namespace string) PersistentVolumeClaimNamespaceLister
+	PersistentVolumeClaimListerExpansion
+}
+
+// persistentVolumeClaimLister implements the PersistentVolumeClaimLister interface.
+type persistentVolumeClaimLister struct {
+	indexer cache.Indexer
+}
+
+// NewPersistentVolumeClaimLister returns a new PersistentVolumeClaimLister.
+func NewPersistentVolumeClaimLister(indexer cache.Indexer) PersistentVolumeClaimLister {
+	return &persistentVolumeClaimLister{indexer: indexer}
+}
+
+// List lists all PersistentVolumeClaims in the indexer.
+func (s *persistentVolumeClaimLister) List(selector labels.Selector) (ret []*v1.PersistentVolumeClaim, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1.PersistentVolumeClaim))
+	})
+	return ret, err
+}
+
+// PersistentVolumeClaims returns an object that can list and get PersistentVolumeClaims.
+func (s *persistentVolumeClaimLister) PersistentVolumeClaims(namespace string) PersistentVolumeClaimNamespaceLister {
+	return persistentVolumeClaimNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// PersistentVolumeClaimNamespaceLister helps list and get PersistentVolumeClaims.
+type PersistentVolumeClaimNamespaceLister interface {
+	// List lists all PersistentVolumeClaims in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1.PersistentVolumeClaim, err error)
+	// Get retrieves the PersistentVolumeClaim from the indexer for a given namespace and name.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.PersistentVolumeClaim, error)
 	PersistentVolumeClaimNamespaceListerExpansion
 }

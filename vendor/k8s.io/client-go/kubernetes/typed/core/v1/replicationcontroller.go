@@ -20,6 +20,7 @@ package v1
 
 import (
 	"context"
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 	"time"
@@ -253,6 +254,181 @@ func (c *replicationControllers) ApplyStatus(ctx context.Context, replicationCon
 		Name(*name).
 		SubResource("status").
 		VersionedParams(&patchOpts, scheme.ParameterCodec).
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"time"
+
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	types "k8s.io/apimachinery/pkg/types"
+	watch "k8s.io/apimachinery/pkg/watch"
+	scheme "k8s.io/client-go/kubernetes/scheme"
+	rest "k8s.io/client-go/rest"
+)
+
+// ReplicationControllersGetter has a method to return a ReplicationControllerInterface.
+// A group's client should implement this interface.
+type ReplicationControllersGetter interface {
+	ReplicationControllers(namespace string) ReplicationControllerInterface
+}
+
+// ReplicationControllerInterface has methods to work with ReplicationController resources.
+type ReplicationControllerInterface interface {
+	Create(ctx context.Context, replicationController *v1.ReplicationController, opts metav1.CreateOptions) (*v1.ReplicationController, error)
+	Update(ctx context.Context, replicationController *v1.ReplicationController, opts metav1.UpdateOptions) (*v1.ReplicationController, error)
+	UpdateStatus(ctx context.Context, replicationController *v1.ReplicationController, opts metav1.UpdateOptions) (*v1.ReplicationController, error)
+	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
+	Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.ReplicationController, error)
+	List(ctx context.Context, opts metav1.ListOptions) (*v1.ReplicationControllerList, error)
+	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.ReplicationController, err error)
+	GetScale(ctx context.Context, replicationControllerName string, options metav1.GetOptions) (*autoscalingv1.Scale, error)
+	UpdateScale(ctx context.Context, replicationControllerName string, scale *autoscalingv1.Scale, opts metav1.UpdateOptions) (*autoscalingv1.Scale, error)
+
+	ReplicationControllerExpansion
+}
+
+// replicationControllers implements ReplicationControllerInterface
+type replicationControllers struct {
+	client rest.Interface
+	ns     string
+}
+
+// newReplicationControllers returns a ReplicationControllers
+func newReplicationControllers(c *CoreV1Client, namespace string) *replicationControllers {
+	return &replicationControllers{
+		client: c.RESTClient(),
+		ns:     namespace,
+	}
+}
+
+// Get takes name of the replicationController, and returns the corresponding replicationController object, and an error if there is any.
+func (c *replicationControllers) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.ReplicationController, err error) {
+	result = &v1.ReplicationController{}
+	err = c.client.Get().
+		Namespace(c.ns).
+		Resource("replicationcontrollers").
+		Name(name).
+		VersionedParams(&options, scheme.ParameterCodec).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// List takes label and field selectors, and returns the list of ReplicationControllers that match those selectors.
+func (c *replicationControllers) List(ctx context.Context, opts metav1.ListOptions) (result *v1.ReplicationControllerList, err error) {
+	var timeout time.Duration
+	if opts.TimeoutSeconds != nil {
+		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
+	}
+	result = &v1.ReplicationControllerList{}
+	err = c.client.Get().
+		Namespace(c.ns).
+		Resource("replicationcontrollers").
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Timeout(timeout).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Watch returns a watch.Interface that watches the requested replicationControllers.
+func (c *replicationControllers) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+	var timeout time.Duration
+	if opts.TimeoutSeconds != nil {
+		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
+	}
+	opts.Watch = true
+	return c.client.Get().
+		Namespace(c.ns).
+		Resource("replicationcontrollers").
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Timeout(timeout).
+		Watch(ctx)
+}
+
+// Create takes the representation of a replicationController and creates it.  Returns the server's representation of the replicationController, and an error, if there is any.
+func (c *replicationControllers) Create(ctx context.Context, replicationController *v1.ReplicationController, opts metav1.CreateOptions) (result *v1.ReplicationController, err error) {
+	result = &v1.ReplicationController{}
+	err = c.client.Post().
+		Namespace(c.ns).
+		Resource("replicationcontrollers").
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(replicationController).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Update takes the representation of a replicationController and updates it. Returns the server's representation of the replicationController, and an error, if there is any.
+func (c *replicationControllers) Update(ctx context.Context, replicationController *v1.ReplicationController, opts metav1.UpdateOptions) (result *v1.ReplicationController, err error) {
+	result = &v1.ReplicationController{}
+	err = c.client.Put().
+		Namespace(c.ns).
+		Resource("replicationcontrollers").
+		Name(replicationController.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(replicationController).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *replicationControllers) UpdateStatus(ctx context.Context, replicationController *v1.ReplicationController, opts metav1.UpdateOptions) (result *v1.ReplicationController, err error) {
+	result = &v1.ReplicationController{}
+	err = c.client.Put().
+		Namespace(c.ns).
+		Resource("replicationcontrollers").
+		Name(replicationController.Name).
+		SubResource("status").
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(replicationController).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Delete takes name of the replicationController and deletes it. Returns an error if one occurs.
+func (c *replicationControllers) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
+	return c.client.Delete().
+		Namespace(c.ns).
+		Resource("replicationcontrollers").
+		Name(name).
+		Body(&opts).
+		Do(ctx).
+		Error()
+}
+
+// DeleteCollection deletes a collection of objects.
+func (c *replicationControllers) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
+	var timeout time.Duration
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
+	}
+	return c.client.Delete().
+		Namespace(c.ns).
+		Resource("replicationcontrollers").
+		VersionedParams(&listOpts, scheme.ParameterCodec).
+		Timeout(timeout).
+		Body(&opts).
+		Do(ctx).
+		Error()
+}
+
+// Patch applies the patch and returns the patched replicationController.
+func (c *replicationControllers) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.ReplicationController, err error) {
+	result = &v1.ReplicationController{}
+	err = c.client.Patch(pt).
+		Namespace(c.ns).
+		Resource("replicationcontrollers").
+		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		Body(data).
 		Do(ctx).
 		Into(result)

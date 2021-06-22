@@ -391,6 +391,11 @@ func loadLibraryEx(name string, system bool) (*DLL, error) {
 	var flags uintptr
 	if system {
 		if canDoSearchSystem32() {
+<<<<<<< HEAD
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+			const LOAD_LIBRARY_SEARCH_SYSTEM32 = 0x00000800
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			flags = LOAD_LIBRARY_SEARCH_SYSTEM32
 		} else if isBaseName(name) {
 			// WindowsXP or unpatched Windows machine

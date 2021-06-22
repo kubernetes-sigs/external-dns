@@ -19,6 +19,7 @@ type OriginCACertificate struct {
 	ExpiresOn       time.Time `json:"expires_on"`
 	RequestType     string    `json:"request_type"`
 	RequestValidity int       `json:"requested_validity"`
+<<<<<<< HEAD
 	RevokedAt       time.Time `json:"revoked_at,omitempty"`
 	CSR             string    `json:"csr"`
 }
@@ -53,6 +54,10 @@ func (c *OriginCACertificate) UnmarshalJSON(data []byte) error {
 	}
 
 	return nil
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	CSR             string    `json:"csr"`
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // OriginCACertificateListOptions represents the parameters used to list Cloudflare-issued certificates.

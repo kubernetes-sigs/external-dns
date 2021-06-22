@@ -402,7 +402,12 @@ func (f *MyJSONFormatter) Format(entry *Entry) ([]byte, error) {
   // source of the official loggers.
   serialized, err := json.Marshal(entry.Data)
     if err != nil {
+<<<<<<< HEAD
       return nil, fmt.Errorf("Failed to marshal fields to JSON, %w", err)
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+      return nil, fmt.Errorf("Failed to marshal fields to JSON, %v", err)
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
     }
   return append(serialized, '\n'), nil
 }

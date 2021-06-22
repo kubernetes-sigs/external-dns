@@ -17,9 +17,13 @@ func (h *msghdr) pack(vs []iovec, bs [][]byte, oob []byte, sa []byte) {
 	if sa != nil {
 		h.Name = (*byte)(unsafe.Pointer(&sa[0]))
 		h.Namelen = uint32(len(sa))
+<<<<<<< HEAD
 	} else {
 		h.Name = nil
 		h.Namelen = 0
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 }
 

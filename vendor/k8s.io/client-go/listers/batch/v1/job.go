@@ -26,6 +26,7 @@ import (
 )
 
 // JobLister helps list Jobs.
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type JobLister interface {
 	// List lists all Jobs in the indexer.
@@ -67,6 +68,45 @@ type JobNamespaceLister interface {
 	List(selector labels.Selector) (ret []*v1.Job, err error)
 	// Get retrieves the Job from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type JobLister interface {
+	// List lists all Jobs in the indexer.
+	List(selector labels.Selector) (ret []*v1.Job, err error)
+	// Jobs returns an object that can list and get Jobs.
+	Jobs(namespace string) JobNamespaceLister
+	JobListerExpansion
+}
+
+// jobLister implements the JobLister interface.
+type jobLister struct {
+	indexer cache.Indexer
+}
+
+// NewJobLister returns a new JobLister.
+func NewJobLister(indexer cache.Indexer) JobLister {
+	return &jobLister{indexer: indexer}
+}
+
+// List lists all Jobs in the indexer.
+func (s *jobLister) List(selector labels.Selector) (ret []*v1.Job, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1.Job))
+	})
+	return ret, err
+}
+
+// Jobs returns an object that can list and get Jobs.
+func (s *jobLister) Jobs(namespace string) JobNamespaceLister {
+	return jobNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// JobNamespaceLister helps list and get Jobs.
+type JobNamespaceLister interface {
+	// List lists all Jobs in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1.Job, err error)
+	// Get retrieves the Job from the indexer for a given namespace and name.
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.Job, error)
 	JobNamespaceListerExpansion
 }

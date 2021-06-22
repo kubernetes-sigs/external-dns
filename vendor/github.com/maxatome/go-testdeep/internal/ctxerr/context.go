@@ -8,6 +8,7 @@ package ctxerr
 
 import (
 	"github.com/maxatome/go-testdeep/internal/anchors"
+<<<<<<< HEAD
 	"github.com/maxatome/go-testdeep/internal/hooks"
 	"github.com/maxatome/go-testdeep/internal/location"
 	"github.com/maxatome/go-testdeep/internal/visited"
@@ -41,6 +42,38 @@ type Context struct {
 	BeLax bool
 	// See ContextConfig.IgnoreUnexported for details.
 	IgnoreUnexported bool
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"github.com/maxatome/go-testdeep/internal/location"
+	"github.com/maxatome/go-testdeep/internal/visited"
+)
+
+// Context is used internally to keep track of the CmpDeeply in-Depth
+// traversal.
+type Context struct {
+	Path        Path
+	Visited     visited.Visited
+	CurOperator location.GetLocationer
+	Depth       int
+	// 0 ≤ MaxErrors ≤ 1 stops when first error encoutered (without the
+	// "Too many errors" error);
+	// MaxErrors > 1 stops when MaxErrors'th error encoutered (with a
+	// last "Too many errors" error);
+	// < 0 do not stop until comparison ends.
+	MaxErrors int
+	Errors    *[]*Error
+	Anchors   *anchors.Info
+	// If true, the contents of the returned *Error will not be
+	// checked. Can be used to avoid filling Error{} with expensive
+	// computations.
+	BooleanError bool
+	// See ContextConfig.FailureIsFatal for details.
+	FailureIsFatal bool
+	// See ContextConfig.UseEqual for details.
+	UseEqual bool
+	// See ContextConfig.BeLax for details.
+	BeLax bool
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // InitErrors initializes Context *Errors slice, if MaxErrors < 0 or

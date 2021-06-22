@@ -17,7 +17,11 @@ limitations under the License.
 // +k8s:deepcopy-gen=package
 // +k8s:protobuf-gen=package
 // +k8s:openapi-gen=true
+<<<<<<< HEAD
 // +k8s:prerelease-lifecycle-gen=true
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // +groupName=networking.k8s.io
 
 package v1beta1 // import "k8s.io/api/networking/v1beta1"

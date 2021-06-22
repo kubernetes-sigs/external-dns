@@ -111,6 +111,7 @@ func equalList(fd pref.FieldDescriptor, x, y pref.List) bool {
 
 // equalValue compares two singular values.
 func equalValue(fd pref.FieldDescriptor, x, y pref.Value) bool {
+<<<<<<< HEAD
 	switch fd.Kind() {
 	case pref.BoolKind:
 		return x.Bool() == y.Bool()
@@ -136,6 +137,21 @@ func equalValue(fd pref.FieldDescriptor, x, y pref.Value) bool {
 		return bytes.Equal(x.Bytes(), y.Bytes())
 	case pref.MessageKind, pref.GroupKind:
 		return equalMessage(x.Message(), y.Message())
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	switch {
+	case fd.Message() != nil:
+		return equalMessage(x.Message(), y.Message())
+	case fd.Kind() == pref.BytesKind:
+		return bytes.Equal(x.Bytes(), y.Bytes())
+	case fd.Kind() == pref.FloatKind, fd.Kind() == pref.DoubleKind:
+		fx := x.Float()
+		fy := y.Float()
+		if math.IsNaN(fx) || math.IsNaN(fy) {
+			return math.IsNaN(fx) && math.IsNaN(fy)
+		}
+		return fx == fy
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	default:
 		return x.Interface() == y.Interface()
 	}

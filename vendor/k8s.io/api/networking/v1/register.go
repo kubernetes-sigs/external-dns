@@ -44,10 +44,14 @@ var (
 // Adds the list of known types to the given scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
+<<<<<<< HEAD
 		&Ingress{},
 		&IngressList{},
 		&IngressClass{},
 		&IngressClassList{},
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		&NetworkPolicy{},
 		&NetworkPolicyList{},
 	)

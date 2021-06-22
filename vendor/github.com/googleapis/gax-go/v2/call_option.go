@@ -47,6 +47,7 @@ type CallOption interface {
 
 // Retryer is used by Invoke to determine retry behavior.
 type Retryer interface {
+<<<<<<< HEAD
 	// Retry reports whether a request should be retried and how long to pause before retrying
 	// if the previous attempt returned with err. Invoke never calls Retry with nil error.
 	Retry(err error) (pause time.Duration, shouldRetry bool)
@@ -138,6 +139,72 @@ type Backoff struct {
 	Multiplier float64
 
 	// cur is the current retry period.
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// Retry reports whether a request should be retriedand how long to pause before retrying
+	// if the previous attempt returned with err. Invoke never calls Retry with nil error.
+	Retry(err error) (pause time.Duration, shouldRetry bool)
+}
+
+type retryerOption func() Retryer
+
+func (o retryerOption) Resolve(s *CallSettings) {
+	s.Retry = o
+}
+
+// WithRetry sets CallSettings.Retry to fn.
+func WithRetry(fn func() Retryer) CallOption {
+	return retryerOption(fn)
+}
+
+// OnCodes returns a Retryer that retries if and only if
+// the previous attempt returns a GRPC error whose error code is stored in cc.
+// Pause times between retries are specified by bo.
+//
+// bo is only used for its parameters; each Retryer has its own copy.
+func OnCodes(cc []codes.Code, bo Backoff) Retryer {
+	return &boRetryer{
+		backoff: bo,
+		codes:   append([]codes.Code(nil), cc...),
+	}
+}
+
+type boRetryer struct {
+	backoff Backoff
+	codes   []codes.Code
+}
+
+func (r *boRetryer) Retry(err error) (time.Duration, bool) {
+	st, ok := status.FromError(err)
+	if !ok {
+		return 0, false
+	}
+	c := st.Code()
+	for _, rc := range r.codes {
+		if c == rc {
+			return r.backoff.Pause(), true
+		}
+	}
+	return 0, false
+}
+
+// Backoff implements exponential backoff.
+// The wait time between retries is a random value between 0 and the "retry envelope".
+// The envelope starts at Initial and increases by the factor of Multiplier every retry,
+// but is capped at Max.
+type Backoff struct {
+	// Initial is the initial value of the retry envelope, defaults to 1 second.
+	Initial time.Duration
+
+	// Max is the maximum value of the retry envelope, defaults to 30 seconds.
+	Max time.Duration
+
+	// Multiplier is the factor by which the retry envelope increases.
+	// It should be greater than 1 and defaults to 2.
+	Multiplier float64
+
+	// cur is the current retry envelope
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	cur time.Duration
 }
 

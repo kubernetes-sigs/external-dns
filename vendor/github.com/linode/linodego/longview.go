@@ -36,6 +36,11 @@ func (resp *LongviewClientsPagedResponse) appendData(r *LongviewClientsPagedResp
 func (c *Client) ListLongviewClients(ctx context.Context, opts *ListOptions) ([]LongviewClient, error) {
 	response := LongviewClientsPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
+<<<<<<< HEAD
+||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+>>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}
