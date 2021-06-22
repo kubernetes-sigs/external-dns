@@ -14,6 +14,7 @@ type InstanceVolumesPagedResponse struct {
 func (InstanceVolumesPagedResponse) endpointWithID(c *Client, id int) string {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	endpoint, err := c.InstanceVolumes.endpointWithParams(id)
 	if err != nil {
 		panic(err)
@@ -60,6 +61,26 @@ func (c *Client) ListInstanceVolumes(ctx context.Context, linodeID int, opts *Li
 
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	endpoint, err := c.InstanceVolumes.endpointWithID(id)
+	if err != nil {
+		panic(err)
+	}
+	return endpoint
+}
+
+// appendData appends InstanceVolumes when processing paginated InstanceVolume responses
+func (resp *InstanceVolumesPagedResponse) appendData(r *InstanceVolumesPagedResponse) {
+	resp.Data = append(resp.Data, r.Data...)
+}
+
+// ListInstanceVolumes lists InstanceVolumes
+func (c *Client) ListInstanceVolumes(ctx context.Context, linodeID int, opts *ListOptions) ([]Volume, error) {
+	response := InstanceVolumesPagedResponse{}
+	err := c.listHelperWithID(ctx, &response, linodeID, opts)
+
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

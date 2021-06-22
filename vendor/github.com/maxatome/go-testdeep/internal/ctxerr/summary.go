@@ -12,6 +12,7 @@ import (
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"github.com/maxatome/go-testdeep/internal/color"
 	"github.com/maxatome/go-testdeep/internal/util"
 )
@@ -212,6 +213,94 @@ func (s errorSummaryString) AppendSummary(buf *bytes.Buffer, prefix string) {
 	util.IndentStringIn(buf, string(s), prefix, color.BadOn, color.BadOff)
 	buf.WriteString(color.BadOff)
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"github.com/maxatome/go-testdeep/internal/util"
+)
+
+// ErrorSummary is the interface used to render error summaries. See
+// Error.Summary.
+type ErrorSummary interface {
+	AppendSummary(buf *bytes.Buffer, prefix string)
+}
+
+// ErrorSummaryItem implements the ErrorSummary interface and allows
+// to render a labeled value.
+//
+// With explanation set:
+//
+//   Label: value
+//   Explanation
+//
+// With an empty explantion:
+//
+//   Label: value
+type ErrorSummaryItem struct {
+	Label       string
+	Value       string
+	Explanation string
+}
+
+var _ ErrorSummary = ErrorSummaryItem{}
+
+// AppendSummary implements the ErrorSummary interface.
+func (s ErrorSummaryItem) AppendSummary(buf *bytes.Buffer, prefix string) {
+	buf.WriteString(prefix)
+	buf.WriteString(colorBadOnBold)
+	buf.WriteString(s.Label)
+	buf.WriteString(": ")
+
+	buf.WriteString(colorBadOn)
+	util.IndentStringIn(buf, s.Value, prefix+strings.Repeat(" ", len(s.Label)+2))
+
+	if s.Explanation != "" {
+		buf.WriteByte('\n')
+		buf.WriteString(prefix)
+		util.IndentStringIn(buf, s.Explanation, prefix)
+	}
+
+	buf.WriteString(colorBadOff)
+}
+
+// ErrorSummaryItems implements the ErrorSummary interface and allows
+// to render summaries with several labeled values. For example:
+//
+//   Missing 6 items: the 6 items...
+//     Extra 2 items: the 2 items...
+type ErrorSummaryItems []ErrorSummaryItem
+
+var _ ErrorSummary = (ErrorSummaryItems)(nil)
+
+// AppendSummary implements ErrorSummary interface.
+func (s ErrorSummaryItems) AppendSummary(buf *bytes.Buffer, prefix string) {
+	maxLen := 0
+	for _, item := range s {
+		if len(item.Label) > maxLen {
+			maxLen = len(item.Label)
+		}
+	}
+
+	for idx, item := range s {
+		if idx > 0 {
+			buf.WriteByte('\n')
+		}
+		if len(item.Label) < maxLen {
+			item.Label = strings.Repeat(" ", maxLen-len(item.Label)) + item.Label
+		}
+		item.AppendSummary(buf, prefix)
+	}
+}
+
+type errorSummaryString string
+
+var _ ErrorSummary = errorSummaryString("")
+
+func (s errorSummaryString) AppendSummary(buf *bytes.Buffer, prefix string) {
+	buf.WriteString(prefix)
+	buf.WriteString(colorBadOn)
+	util.IndentStringIn(buf, string(s), prefix)
+	buf.WriteString(colorBadOff)
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // NewSummary returns an ErrorSummary composed by the simple string s.

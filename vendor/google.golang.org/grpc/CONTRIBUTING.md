@@ -59,6 +59,7 @@ How to get your contributions merged smoothly and quickly.
   - `make testrace` to run tests in race mode
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
   - optional `make testappengine` to run tests with appengine
@@ -67,5 +68,9 @@ How to get your contributions merged smoothly and quickly.
   - optional `make testappengine` to run tests with appengine
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+  - optional `make testappengine` to run tests with appengine
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 - Exceptions to the rules can be made if there's a compelling reason for doing so.

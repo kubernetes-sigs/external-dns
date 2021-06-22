@@ -17,6 +17,7 @@ const (
 // endpoints of the Digital Ocean API.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Block-Storage
 type StorageService interface {
 	ListVolumes(context.Context, *ListVolumeParams) ([]Volume, *Response, error)
@@ -121,6 +122,54 @@ func (f Volume) String() string {
 =======
 // URN returns the volume ID as a valid DO API URN
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// See: https://developers.digitalocean.com/documentation/v2/#block-storage
+type StorageService interface {
+	ListVolumes(context.Context, *ListVolumeParams) ([]Volume, *Response, error)
+	GetVolume(context.Context, string) (*Volume, *Response, error)
+	CreateVolume(context.Context, *VolumeCreateRequest) (*Volume, *Response, error)
+	DeleteVolume(context.Context, string) (*Response, error)
+	ListSnapshots(ctx context.Context, volumeID string, opts *ListOptions) ([]Snapshot, *Response, error)
+	GetSnapshot(context.Context, string) (*Snapshot, *Response, error)
+	CreateSnapshot(context.Context, *SnapshotCreateRequest) (*Snapshot, *Response, error)
+	DeleteSnapshot(context.Context, string) (*Response, error)
+}
+
+// StorageServiceOp handles communication with the storage volumes related methods of the
+// DigitalOcean API.
+type StorageServiceOp struct {
+	client *Client
+}
+
+// ListVolumeParams stores the options you can set for a ListVolumeCall
+type ListVolumeParams struct {
+	Region      string       `json:"region"`
+	Name        string       `json:"name"`
+	ListOptions *ListOptions `json:"list_options,omitempty"`
+}
+
+var _ StorageService = &StorageServiceOp{}
+
+// Volume represents a Digital Ocean block store volume.
+type Volume struct {
+	ID              string    `json:"id"`
+	Region          *Region   `json:"region"`
+	Name            string    `json:"name"`
+	SizeGigaBytes   int64     `json:"size_gigabytes"`
+	Description     string    `json:"description"`
+	DropletIDs      []int     `json:"droplet_ids"`
+	CreatedAt       time.Time `json:"created_at"`
+	FilesystemType  string    `json:"filesystem_type"`
+	FilesystemLabel string    `json:"filesystem_label"`
+	Tags            []string  `json:"tags"`
+}
+
+func (f Volume) String() string {
+	return Stringify(f)
+}
+
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func (f Volume) URN() string {
 	return ToURN("Volume", f.ID)
 }

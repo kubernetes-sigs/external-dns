@@ -5,6 +5,7 @@ TMP=$(mktemp -d /tmp/sdk.XXX) \
 && unzip -q $TMP.zip -d $TMP \
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 && export PATH="$PATH:$TMP/go_appengine"
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -15,3 +16,7 @@ TMP=$(mktemp -d /tmp/sdk.XXX) \
 =======
 && export PATH="$PATH:$TMP/go_appengine"
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+&& export PATH="$PATH:$TMP/go_appengine"
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

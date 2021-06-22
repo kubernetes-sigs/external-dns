@@ -183,6 +183,7 @@ func NotSupported(field *Path, value interface{}, validValues []string) *Error {
 	detail := ""
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if len(validValues) > 0 {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -193,6 +194,10 @@ func NotSupported(field *Path, value interface{}, validValues []string) *Error {
 =======
 	if len(validValues) > 0 {
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if validValues != nil && len(validValues) > 0 {
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		quotedValues := make([]string, len(validValues))
 		for i, v := range validValues {
 			quotedValues[i] = strconv.Quote(v)

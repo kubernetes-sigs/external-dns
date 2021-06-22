@@ -45,6 +45,7 @@ func (u URLParams) Encode() string {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // SetOptions sets the URL params and any additional `CallOption` or
 // `MultiCallOption` passed in.
 func SetOptions(u URLParams, opts ...googleapi.CallOption) {
@@ -75,6 +76,12 @@ func SetOptions(u URLParams, opts ...googleapi.CallOption) {
 			continue
 		}
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// SetOptions sets the URL params and any additional call options.
+func SetOptions(u URLParams, opts ...googleapi.CallOption) {
+	for _, o := range opts {
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		u.Set(o.Get())
 	}
 }

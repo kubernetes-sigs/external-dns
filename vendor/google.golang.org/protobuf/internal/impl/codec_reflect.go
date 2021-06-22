@@ -32,6 +32,7 @@ func consumeEnum(b []byte, p pointer, wtyp protowire.Type, f *coderFieldInfo, _ 
 	if n < 0 {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return out, errDecode
 	}
 	p.v.Elem().SetInt(int64(v))
@@ -288,6 +289,130 @@ func consumeEnumSlice(b []byte, p pointer, wtyp protowire.Type, f *coderFieldInf
 =======
 		return out, errDecode
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		return out, protowire.ParseError(n)
+	}
+	p.v.Elem().SetInt(int64(v))
+	out.n = n
+	return out, nil
+}
+
+func mergeEnum(dst, src pointer, _ *coderFieldInfo, _ mergeOptions) {
+	dst.v.Elem().Set(src.v.Elem())
+}
+
+var coderEnum = pointerCoderFuncs{
+	size:      sizeEnum,
+	marshal:   appendEnum,
+	unmarshal: consumeEnum,
+	merge:     mergeEnum,
+}
+
+func sizeEnumNoZero(p pointer, f *coderFieldInfo, opts marshalOptions) (size int) {
+	if p.v.Elem().Int() == 0 {
+		return 0
+	}
+	return sizeEnum(p, f, opts)
+}
+
+func appendEnumNoZero(b []byte, p pointer, f *coderFieldInfo, opts marshalOptions) ([]byte, error) {
+	if p.v.Elem().Int() == 0 {
+		return b, nil
+	}
+	return appendEnum(b, p, f, opts)
+}
+
+func mergeEnumNoZero(dst, src pointer, _ *coderFieldInfo, _ mergeOptions) {
+	if src.v.Elem().Int() != 0 {
+		dst.v.Elem().Set(src.v.Elem())
+	}
+}
+
+var coderEnumNoZero = pointerCoderFuncs{
+	size:      sizeEnumNoZero,
+	marshal:   appendEnumNoZero,
+	unmarshal: consumeEnum,
+	merge:     mergeEnumNoZero,
+}
+
+func sizeEnumPtr(p pointer, f *coderFieldInfo, opts marshalOptions) (size int) {
+	return sizeEnum(pointer{p.v.Elem()}, f, opts)
+}
+
+func appendEnumPtr(b []byte, p pointer, f *coderFieldInfo, opts marshalOptions) ([]byte, error) {
+	return appendEnum(b, pointer{p.v.Elem()}, f, opts)
+}
+
+func consumeEnumPtr(b []byte, p pointer, wtyp protowire.Type, f *coderFieldInfo, opts unmarshalOptions) (out unmarshalOutput, err error) {
+	if wtyp != protowire.VarintType {
+		return out, errUnknown
+	}
+	if p.v.Elem().IsNil() {
+		p.v.Elem().Set(reflect.New(p.v.Elem().Type().Elem()))
+	}
+	return consumeEnum(b, pointer{p.v.Elem()}, wtyp, f, opts)
+}
+
+func mergeEnumPtr(dst, src pointer, _ *coderFieldInfo, _ mergeOptions) {
+	if !src.v.Elem().IsNil() {
+		v := reflect.New(dst.v.Type().Elem().Elem())
+		v.Elem().Set(src.v.Elem().Elem())
+		dst.v.Elem().Set(v)
+	}
+}
+
+var coderEnumPtr = pointerCoderFuncs{
+	size:      sizeEnumPtr,
+	marshal:   appendEnumPtr,
+	unmarshal: consumeEnumPtr,
+	merge:     mergeEnumPtr,
+}
+
+func sizeEnumSlice(p pointer, f *coderFieldInfo, opts marshalOptions) (size int) {
+	s := p.v.Elem()
+	for i, llen := 0, s.Len(); i < llen; i++ {
+		size += protowire.SizeVarint(uint64(s.Index(i).Int())) + f.tagsize
+	}
+	return size
+}
+
+func appendEnumSlice(b []byte, p pointer, f *coderFieldInfo, opts marshalOptions) ([]byte, error) {
+	s := p.v.Elem()
+	for i, llen := 0, s.Len(); i < llen; i++ {
+		b = protowire.AppendVarint(b, f.wiretag)
+		b = protowire.AppendVarint(b, uint64(s.Index(i).Int()))
+	}
+	return b, nil
+}
+
+func consumeEnumSlice(b []byte, p pointer, wtyp protowire.Type, f *coderFieldInfo, opts unmarshalOptions) (out unmarshalOutput, err error) {
+	s := p.v.Elem()
+	if wtyp == protowire.BytesType {
+		b, n := protowire.ConsumeBytes(b)
+		if n < 0 {
+			return out, protowire.ParseError(n)
+		}
+		for len(b) > 0 {
+			v, n := protowire.ConsumeVarint(b)
+			if n < 0 {
+				return out, protowire.ParseError(n)
+			}
+			rv := reflect.New(s.Type().Elem()).Elem()
+			rv.SetInt(int64(v))
+			s.Set(reflect.Append(s, rv))
+			b = b[n:]
+		}
+		out.n = n
+		return out, nil
+	}
+	if wtyp != protowire.VarintType {
+		return out, errUnknown
+	}
+	v, n := protowire.ConsumeVarint(b)
+	if n < 0 {
+		return out, protowire.ParseError(n)
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 	rv := reflect.New(s.Type().Elem()).Elem()
 	rv.SetInt(int64(v))

@@ -19,6 +19,7 @@ limitations under the License.
 // +k8s:openapi-gen=true
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // +k8s:prerelease-lifecycle-gen=true
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -27,6 +28,9 @@ limitations under the License.
 =======
 // +k8s:prerelease-lifecycle-gen=true
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // +groupName=discovery.k8s.io
 
 package v1beta1 // import "k8s.io/api/discovery/v1beta1"

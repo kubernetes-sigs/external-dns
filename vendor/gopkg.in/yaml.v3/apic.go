@@ -110,6 +110,7 @@ func yaml_emitter_initialize(emitter *yaml_emitter_t) {
 		events:     make([]yaml_event_t, 0, initial_queue_size),
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		best_width: -1,
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -118,6 +119,9 @@ func yaml_emitter_initialize(emitter *yaml_emitter_t) {
 =======
 		best_width: -1,
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 }
 

@@ -393,6 +393,7 @@ func loadLibraryEx(name string, system bool) (*DLL, error) {
 		if canDoSearchSystem32() {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 			const LOAD_LIBRARY_SEARCH_SYSTEM32 = 0x00000800
@@ -401,6 +402,10 @@ func loadLibraryEx(name string, system bool) (*DLL, error) {
 			const LOAD_LIBRARY_SEARCH_SYSTEM32 = 0x00000800
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+			const LOAD_LIBRARY_SEARCH_SYSTEM32 = 0x00000800
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			flags = LOAD_LIBRARY_SEARCH_SYSTEM32
 		} else if isBaseName(name) {
 			// WindowsXP or unpatched Windows machine

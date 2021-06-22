@@ -30,6 +30,7 @@ import (
 	"net"
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"path/filepath"
 	"strings"
 	"time"
@@ -188,6 +189,79 @@ func GenerateSelfSignedCertKeyWithFixtures(host string, alternateIPs []net.IP, a
 	certFixturePath := filepath.Join(fixtureDirectory, baseName+".crt")
 	keyFixturePath := filepath.Join(fixtureDirectory, baseName+".key")
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"path"
+	"strings"
+	"time"
+
+	"k8s.io/client-go/util/keyutil"
+)
+
+const duration365d = time.Hour * 24 * 365
+
+// Config contains the basic fields required for creating a certificate
+type Config struct {
+	CommonName   string
+	Organization []string
+	AltNames     AltNames
+	Usages       []x509.ExtKeyUsage
+}
+
+// AltNames contains the domain names and IP addresses that will be added
+// to the API Server's x509 certificate SubAltNames field. The values will
+// be passed directly to the x509.Certificate object.
+type AltNames struct {
+	DNSNames []string
+	IPs      []net.IP
+}
+
+// NewSelfSignedCACert creates a CA certificate
+func NewSelfSignedCACert(cfg Config, key crypto.Signer) (*x509.Certificate, error) {
+	now := time.Now()
+	tmpl := x509.Certificate{
+		SerialNumber: new(big.Int).SetInt64(0),
+		Subject: pkix.Name{
+			CommonName:   cfg.CommonName,
+			Organization: cfg.Organization,
+		},
+		NotBefore:             now.UTC(),
+		NotAfter:              now.Add(duration365d * 10).UTC(),
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+	}
+
+	certDERBytes, err := x509.CreateCertificate(cryptorand.Reader, &tmpl, &tmpl, key.Public(), key)
+	if err != nil {
+		return nil, err
+	}
+	return x509.ParseCertificate(certDERBytes)
+}
+
+// GenerateSelfSignedCertKey creates a self-signed certificate and key for the given host.
+// Host may be an IP or a DNS name
+// You may also specify additional subject alt names (either ip or dns names) for the certificate.
+func GenerateSelfSignedCertKey(host string, alternateIPs []net.IP, alternateDNS []string) ([]byte, []byte, error) {
+	return GenerateSelfSignedCertKeyWithFixtures(host, alternateIPs, alternateDNS, "")
+}
+
+// GenerateSelfSignedCertKeyWithFixtures creates a self-signed certificate and key for the given host.
+// Host may be an IP or a DNS name. You may also specify additional subject alt names (either ip or dns names)
+// for the certificate.
+//
+// If fixtureDirectory is non-empty, it is a directory path which can contain pre-generated certs. The format is:
+// <host>_<ip>-<ip>_<alternateDNS>-<alternateDNS>.crt
+// <host>_<ip>-<ip>_<alternateDNS>-<alternateDNS>.key
+// Certs/keys not existing in that directory are created.
+func GenerateSelfSignedCertKeyWithFixtures(host string, alternateIPs []net.IP, alternateDNS []string, fixtureDirectory string) ([]byte, []byte, error) {
+	validFrom := time.Now().Add(-time.Hour) // valid an hour earlier to avoid flakes due to clock skew
+	maxAge := time.Hour * 24 * 365          // one year self-signed certs
+
+	baseName := fmt.Sprintf("%s_%s_%s", host, strings.Join(ipsToStrings(alternateIPs), "-"), strings.Join(alternateDNS, "-"))
+	certFixturePath := path.Join(fixtureDirectory, baseName+".crt")
+	keyFixturePath := path.Join(fixtureDirectory, baseName+".key")
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if len(fixtureDirectory) > 0 {
 		cert, err := ioutil.ReadFile(certFixturePath)
 		if err == nil {

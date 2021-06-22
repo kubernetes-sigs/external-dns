@@ -263,6 +263,7 @@ func (in *PodDisruptionBudgetStatus) DeepCopyInto(out *PodDisruptionBudgetStatus
 	}
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
 		*out = make([]v1.Condition, len(*in))
@@ -283,6 +284,9 @@ func (in *PodDisruptionBudgetStatus) DeepCopyInto(out *PodDisruptionBudgetStatus
 		}
 	}
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

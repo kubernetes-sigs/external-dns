@@ -28,6 +28,7 @@ import (
 // SecretLister helps list Secrets.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type SecretLister interface {
 	// List lists all Secrets in the indexer.
@@ -120,6 +121,45 @@ type SecretNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type SecretLister interface {
+	// List lists all Secrets in the indexer.
+	List(selector labels.Selector) (ret []*v1.Secret, err error)
+	// Secrets returns an object that can list and get Secrets.
+	Secrets(namespace string) SecretNamespaceLister
+	SecretListerExpansion
+}
+
+// secretLister implements the SecretLister interface.
+type secretLister struct {
+	indexer cache.Indexer
+}
+
+// NewSecretLister returns a new SecretLister.
+func NewSecretLister(indexer cache.Indexer) SecretLister {
+	return &secretLister{indexer: indexer}
+}
+
+// List lists all Secrets in the indexer.
+func (s *secretLister) List(selector labels.Selector) (ret []*v1.Secret, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1.Secret))
+	})
+	return ret, err
+}
+
+// Secrets returns an object that can list and get Secrets.
+func (s *secretLister) Secrets(namespace string) SecretNamespaceLister {
+	return secretNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// SecretNamespaceLister helps list and get Secrets.
+type SecretNamespaceLister interface {
+	// List lists all Secrets in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1.Secret, err error)
+	// Get retrieves the Secret from the indexer for a given namespace and name.
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.Secret, error)
 	SecretNamespaceListerExpansion
 }

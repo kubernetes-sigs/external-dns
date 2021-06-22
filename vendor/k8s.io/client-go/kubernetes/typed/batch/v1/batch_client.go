@@ -28,6 +28,7 @@ type BatchV1Interface interface {
 	RESTClient() rest.Interface
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
@@ -55,6 +56,15 @@ type BatchV1Client struct {
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	JobsGetter
+}
+
+// BatchV1Client is used to interact with features provided by the batch group.
+type BatchV1Client struct {
+	restClient rest.Interface
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (c *BatchV1Client) Jobs(namespace string) JobInterface {

@@ -11,6 +11,7 @@ reviewers:
 - janetkuo
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 - xiang90
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -31,3 +32,11 @@ reviewers:
 - david-mcmahon
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+- tallclair
+- eparis
+- xiang90
+- mbohlool
+- david-mcmahon
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

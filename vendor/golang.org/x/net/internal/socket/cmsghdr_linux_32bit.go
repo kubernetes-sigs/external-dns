@@ -4,6 +4,7 @@
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build (arm || mips || mipsle || 386 || ppc) && linux
 // +build arm mips mipsle 386 ppc
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -16,6 +17,10 @@
 //go:build (arm || mips || mipsle || 386 || ppc) && linux
 // +build arm mips mipsle 386 ppc
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// +build arm mips mipsle 386
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // +build linux
 
 package socket

@@ -28,6 +28,7 @@ import (
 // ReplicationControllerLister helps list ReplicationControllers.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type ReplicationControllerLister interface {
 	// List lists all ReplicationControllers in the indexer.
@@ -120,6 +121,45 @@ type ReplicationControllerNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type ReplicationControllerLister interface {
+	// List lists all ReplicationControllers in the indexer.
+	List(selector labels.Selector) (ret []*v1.ReplicationController, err error)
+	// ReplicationControllers returns an object that can list and get ReplicationControllers.
+	ReplicationControllers(namespace string) ReplicationControllerNamespaceLister
+	ReplicationControllerListerExpansion
+}
+
+// replicationControllerLister implements the ReplicationControllerLister interface.
+type replicationControllerLister struct {
+	indexer cache.Indexer
+}
+
+// NewReplicationControllerLister returns a new ReplicationControllerLister.
+func NewReplicationControllerLister(indexer cache.Indexer) ReplicationControllerLister {
+	return &replicationControllerLister{indexer: indexer}
+}
+
+// List lists all ReplicationControllers in the indexer.
+func (s *replicationControllerLister) List(selector labels.Selector) (ret []*v1.ReplicationController, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1.ReplicationController))
+	})
+	return ret, err
+}
+
+// ReplicationControllers returns an object that can list and get ReplicationControllers.
+func (s *replicationControllerLister) ReplicationControllers(namespace string) ReplicationControllerNamespaceLister {
+	return replicationControllerNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// ReplicationControllerNamespaceLister helps list and get ReplicationControllers.
+type ReplicationControllerNamespaceLister interface {
+	// List lists all ReplicationControllers in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1.ReplicationController, err error)
+	// Get retrieves the ReplicationController from the indexer for a given namespace and name.
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.ReplicationController, error)
 	ReplicationControllerNamespaceListerExpansion
 }

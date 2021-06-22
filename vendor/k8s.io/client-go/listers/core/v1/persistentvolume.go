@@ -28,6 +28,7 @@ import (
 // PersistentVolumeLister helps list PersistentVolumes.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type PersistentVolumeLister interface {
 	// List lists all PersistentVolumes in the indexer.
@@ -52,6 +53,13 @@ type PersistentVolumeLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type PersistentVolumeLister interface {
+	// List lists all PersistentVolumes in the indexer.
+	List(selector labels.Selector) (ret []*v1.PersistentVolume, err error)
+	// Get retrieves the PersistentVolume from the index for a given name.
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.PersistentVolume, error)
 	PersistentVolumeListerExpansion
 }

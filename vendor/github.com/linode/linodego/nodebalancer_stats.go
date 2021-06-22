@@ -26,6 +26,7 @@ type StatsTraffic struct {
 func (c *Client) GetNodeBalancerStats(ctx context.Context, linodeID int) (*NodeBalancerStats, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	e, err := c.NodeBalancerStats.endpointWithParams(linodeID)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -36,6 +37,10 @@ func (c *Client) GetNodeBalancerStats(ctx context.Context, linodeID int) (*NodeB
 =======
 	e, err := c.NodeBalancerStats.endpointWithParams(linodeID)
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	e, err := c.NodeBalancerStats.endpointWithID(linodeID)
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

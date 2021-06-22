@@ -84,6 +84,7 @@ func Shallow(expectedPtr interface{}) TestDeep {
 		shallow.expectedPointer = vptr.Pointer()
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 	case reflect.String:
 		shallow.expectedStr = vptr.String()
@@ -210,5 +211,55 @@ func (s *tdShallow) String() string {
 	}
 
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		return &shallow
+
+	case reflect.String:
+		shallow.expectedStr = vptr.String()
+		shallow.expectedPointer = stringPointer(shallow.expectedStr)
+		return &shallow
+
+	default:
+		panic("usage: Shallow(CHANNEL|FUNC|MAP|PTR|SLICE|UNSAFE_PTR|STRING)")
+	}
+}
+
+func (s *tdShallow) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if got.Kind() != s.expectedKind {
+		if ctx.BooleanError {
+			return ctxerr.BooleanError
+		}
+		return ctx.CollectError(&ctxerr.Error{
+			Message:  "bad kind",
+			Got:      types.RawString(got.Kind().String()),
+			Expected: types.RawString(s.expectedKind.String()),
+		})
+	}
+
+	var ptr uintptr
+
+	// Special case for strings
+	if s.expectedKind == reflect.String {
+		ptr = stringPointer(got.String())
+	} else {
+		ptr = got.Pointer()
+	}
+
+	if ptr != s.expectedPointer {
+		if ctx.BooleanError {
+			return ctxerr.BooleanError
+		}
+		return ctx.CollectError(&ctxerr.Error{
+			Message:  fmt.Sprintf("%s pointer mismatch", s.expectedKind),
+			Got:      types.RawString(fmt.Sprintf("0x%x", ptr)),
+			Expected: types.RawString(fmt.Sprintf("0x%x", s.expectedPointer)),
+		})
+	}
+	return nil
+}
+
+func (s *tdShallow) String() string {
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return fmt.Sprintf("(%s) 0x%x", s.expectedKind, s.expectedPointer)
 }

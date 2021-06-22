@@ -30,6 +30,7 @@ type StorageV1beta1Interface interface {
 	CSINodesGetter
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
@@ -75,6 +76,24 @@ func (c *StorageV1beta1Client) CSINodes() CSINodeInterface {
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	StorageClassesGetter
+	VolumeAttachmentsGetter
+}
+
+// StorageV1beta1Client is used to interact with features provided by the storage.k8s.io group.
+type StorageV1beta1Client struct {
+	restClient rest.Interface
+}
+
+func (c *StorageV1beta1Client) CSIDrivers() CSIDriverInterface {
+	return newCSIDrivers(c)
+}
+
+func (c *StorageV1beta1Client) CSINodes() CSINodeInterface {
+	return newCSINodes(c)
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (c *StorageV1beta1Client) StorageClasses() StorageClassInterface {

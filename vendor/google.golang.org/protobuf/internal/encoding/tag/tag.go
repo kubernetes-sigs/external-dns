@@ -106,6 +106,7 @@ func Unmarshal(tag string, goType reflect.Type, evs pref.EnumValueDescriptors) p
 			if jsonName != strs.JSONCamelCase(string(f.L0.FullName.Name())) {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 				f.L1.StringName.InitJSON(jsonName)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -116,6 +117,10 @@ func Unmarshal(tag string, goType reflect.Type, evs pref.EnumValueDescriptors) p
 =======
 				f.L1.StringName.InitJSON(jsonName)
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+				f.L1.JSONName.Init(jsonName)
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			}
 		case s == "packed":
 			f.L1.HasPacked = true

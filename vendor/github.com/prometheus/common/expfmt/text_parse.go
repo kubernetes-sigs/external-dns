@@ -301,6 +301,7 @@ func (p *TextParser) startLabelName() stateFn {
 	}
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// Check for duplicate label names.
 	labels := make(map[string]struct{})
 	for _, l := range p.currentMetric.Label {
@@ -329,6 +330,9 @@ func (p *TextParser) startLabelName() stateFn {
 		}
 	}
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return p.startLabelValue
 }
 

@@ -156,6 +156,7 @@ func (x placeholderExtension) Kind() pref.Kind                            { retu
 func (x placeholderExtension) HasJSONName() bool                          { return false }
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (x placeholderExtension) JSONName() string                           { return "[" + string(x.name) + "]" }
 func (x placeholderExtension) TextName() string                           { return "[" + string(x.name) + "]" }
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -168,6 +169,10 @@ func (x placeholderExtension) JSONName() string                           { retu
 func (x placeholderExtension) JSONName() string                           { return "[" + string(x.name) + "]" }
 func (x placeholderExtension) TextName() string                           { return "[" + string(x.name) + "]" }
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func (x placeholderExtension) JSONName() string                           { return "" }
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func (x placeholderExtension) HasPresence() bool                          { return false }
 func (x placeholderExtension) HasOptionalKeyword() bool                   { return false }
 func (x placeholderExtension) IsExtension() bool                          { return true }

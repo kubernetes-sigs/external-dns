@@ -30,6 +30,7 @@ package v1beta1
 var map_Event = map[string]string{
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"":                         "Event is a report of an event somewhere in the cluster. It generally denotes some state change in the system. Events have a limited retention time and triggers and messages may evolve with time.  Event consumers should not rely on the timing of an event with a given Reason reflecting a consistent underlying trigger, or the continued existence of events with that Reason.  Events should be treated as informative, best-effort, supplemental data.",
 	"metadata":                 "Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata",
 	"eventTime":                "eventTime is the time when this Event was first observed. It is required.",
@@ -148,6 +149,45 @@ var map_EventSeries = map[string]string{
 	"count":            "count is the number of occurrences in this series up to the last heartbeat time.",
 	"lastObservedTime": "lastObservedTime is the time when last Event from the series was seen before last heartbeat.",
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"":                         "Event is a report of an event somewhere in the cluster. It generally denotes some state change in the system.",
+	"eventTime":                "Required. Time when this Event was first observed.",
+	"series":                   "Data about the Event series this event represents or nil if it's a singleton Event.",
+	"reportingController":      "Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.",
+	"reportingInstance":        "ID of the controller instance, e.g. `kubelet-xyzf`.",
+	"action":                   "What action was taken/failed regarding to the regarding object.",
+	"reason":                   "Why the action was taken.",
+	"regarding":                "The object this Event is about. In most cases it's an Object reporting controller implements. E.g. ReplicaSetController implements ReplicaSets and this event is emitted because it acts on some changes in a ReplicaSet object.",
+	"related":                  "Optional secondary object for more complex actions. E.g. when regarding object triggers a creation or deletion of related object.",
+	"note":                     "Optional. A human-readable description of the status of this operation. Maximal length of the note is 1kB, but libraries should be prepared to handle values up to 64kB.",
+	"type":                     "Type of this event (Normal, Warning), new types could be added in the future.",
+	"deprecatedSource":         "Deprecated field assuring backward compatibility with core.v1 Event type",
+	"deprecatedFirstTimestamp": "Deprecated field assuring backward compatibility with core.v1 Event type",
+	"deprecatedLastTimestamp":  "Deprecated field assuring backward compatibility with core.v1 Event type",
+	"deprecatedCount":          "Deprecated field assuring backward compatibility with core.v1 Event type",
+}
+
+func (Event) SwaggerDoc() map[string]string {
+	return map_Event
+}
+
+var map_EventList = map[string]string{
+	"":         "EventList is a list of Event objects.",
+	"metadata": "Standard list metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata",
+	"items":    "Items is a list of schema objects.",
+}
+
+func (EventList) SwaggerDoc() map[string]string {
+	return map_EventList
+}
+
+var map_EventSeries = map[string]string{
+	"":                 "EventSeries contain information on series of events, i.e. thing that was/is happening continuously for some time.",
+	"count":            "Number of occurrences in this series up to the last heartbeat time",
+	"lastObservedTime": "Time when last Event from the series was seen before last heartbeat.",
+	"state":            "Information whether this series is ongoing or finished. Deprecated. Planned removal for 1.18",
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (EventSeries) SwaggerDoc() map[string]string {

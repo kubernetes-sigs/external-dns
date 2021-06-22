@@ -27,6 +27,7 @@ type SnapshotServiceHandler struct {
 type Snapshot struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	ID             string `json:"id"`
 	DateCreated    string `json:"date_created"`
 	Description    string `json:"description"`
@@ -63,6 +64,16 @@ type Snapshot struct {
 	OsID           int    `json:"os_id"`
 	AppID          int    `json:"app_id"`
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	ID          string `json:"id"`
+	DateCreated string `json:"date_created"`
+	Description string `json:"description"`
+	Size        int    `json:"size"`
+	Status      string `json:"status"`
+	OsID        int    `json:"os_id"`
+	AppID       int    `json:"app_id"`
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // SnapshotReq struct is used to create snapshots.

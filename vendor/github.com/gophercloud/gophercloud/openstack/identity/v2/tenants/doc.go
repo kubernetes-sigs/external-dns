@@ -10,6 +10,7 @@ Example to List Tenants
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	listOpts := &tenants.ListOpts{
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -20,6 +21,10 @@ Example to List Tenants
 =======
 	listOpts := &tenants.ListOpts{
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	listOpts := tenants.ListOpts{
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		Limit: 2,
 	}
 

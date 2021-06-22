@@ -40,6 +40,7 @@ RUN make install
 WORKDIR /root
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 RUN wget https://curl.se/download/curl-7.45.0.tar.gz
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -50,6 +51,10 @@ RUN wget http://curl.haxx.se/download/curl-7.45.0.tar.gz
 =======
 RUN wget https://curl.se/download/curl-7.45.0.tar.gz
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+RUN wget http://curl.haxx.se/download/curl-7.45.0.tar.gz
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 RUN tar -zxvf curl-7.45.0.tar.gz
 WORKDIR /root/curl-7.45.0
 RUN ./configure --with-ssl --with-nghttp2=/usr/local

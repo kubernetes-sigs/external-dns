@@ -6,6 +6,7 @@ env:
   - GO111MODULE=on
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 go: 1.15.x
 os: linux
 install:
@@ -50,3 +51,17 @@ script:
   - go run mage.go -v -w ../ lint
   - go run mage.go -v -w ../ test
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+go: [1.13.x, 1.14.x]
+os: [linux, osx]
+install:
+  - ./travis/install.sh
+script:
+  - ./travis/cross_build.sh
+  - ./travis/lint.sh
+  - export GOMAXPROCS=4
+  - export GORACE=halt_on_error=1
+  - go test -race -v ./...
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then go test -race -v -tags appengine ./... ; fi
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

@@ -25,6 +25,7 @@ type ObjectKind interface {
 	SetGroupVersionKind(kind GroupVersionKind)
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// GroupVersionKind returns the stored group, version, and kind of an object, or an empty struct
 	// if the object does not expose or provide these fields.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -39,6 +40,11 @@ type ObjectKind interface {
 	// GroupVersionKind returns the stored group, version, and kind of an object, or an empty struct
 	// if the object does not expose or provide these fields.
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// GroupVersionKind returns the stored group, version, and kind of an object, or nil if the object does
+	// not expose or provide these fields.
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	GroupVersionKind() GroupVersionKind
 }
 

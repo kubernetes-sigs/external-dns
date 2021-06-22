@@ -34,6 +34,7 @@ import (
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 var logger = grpclog.Component("core")
 
 // GetCPUTime returns the how much CPU time has passed since the start of this process.
@@ -110,6 +111,38 @@ func CPUTimeDiff(first *Rusage, latest *Rusage) (float64, float64) {
 		stimeDiffs  = latest.Stime.Sec - first.Stime.Sec
 		stimeDiffus = latest.Stime.Usec - first.Stime.Usec
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// GetCPUTime returns the how much CPU time has passed since the start of this process.
+func GetCPUTime() int64 {
+	var ts unix.Timespec
+	if err := unix.ClockGettime(unix.CLOCK_PROCESS_CPUTIME_ID, &ts); err != nil {
+		grpclog.Fatal(err)
+	}
+	return ts.Nano()
+}
+
+// Rusage is an alias for syscall.Rusage under linux non-appengine environment.
+type Rusage syscall.Rusage
+
+// GetRusage returns the resource usage of current process.
+func GetRusage() (rusage *Rusage) {
+	rusage = new(Rusage)
+	syscall.Getrusage(syscall.RUSAGE_SELF, (*syscall.Rusage)(rusage))
+	return
+}
+
+// CPUTimeDiff returns the differences of user CPU time and system CPU time used
+// between two Rusage structs.
+func CPUTimeDiff(first *Rusage, latest *Rusage) (float64, float64) {
+	f := (*syscall.Rusage)(first)
+	l := (*syscall.Rusage)(latest)
+	var (
+		utimeDiffs  = l.Utime.Sec - f.Utime.Sec
+		utimeDiffus = l.Utime.Usec - f.Utime.Usec
+		stimeDiffs  = l.Stime.Sec - f.Stime.Sec
+		stimeDiffus = l.Stime.Usec - f.Stime.Usec
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	)
 
 	uTimeElapsed := float64(utimeDiffs) + float64(utimeDiffus)*1.0e-6

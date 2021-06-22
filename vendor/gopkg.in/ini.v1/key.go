@@ -688,6 +688,7 @@ func (k *Key) parseBools(strs []string, addInvalid, returnOnInvalid bool) ([]boo
 	vals := make([]bool, 0, len(strs))
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	parser := func(str string) (interface{}, error) {
 		val, err := parseBool(str)
 		return val, err
@@ -942,6 +943,102 @@ func (k *Key) doParse(strs []string, addInvalid, returnOnInvalid bool, parser Pa
 	for _, str := range strs {
 		val, err := parser(str)
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	for _, str := range strs {
+		val, err := parseBool(str)
+		if err != nil && returnOnInvalid {
+			return nil, err
+		}
+		if err == nil || addInvalid {
+			vals = append(vals, val)
+		}
+	}
+	return vals, nil
+}
+
+// parseFloat64s transforms strings to float64s.
+func (k *Key) parseFloat64s(strs []string, addInvalid, returnOnInvalid bool) ([]float64, error) {
+	vals := make([]float64, 0, len(strs))
+	for _, str := range strs {
+		val, err := strconv.ParseFloat(str, 64)
+		if err != nil && returnOnInvalid {
+			return nil, err
+		}
+		if err == nil || addInvalid {
+			vals = append(vals, val)
+		}
+	}
+	return vals, nil
+}
+
+// parseInts transforms strings to ints.
+func (k *Key) parseInts(strs []string, addInvalid, returnOnInvalid bool) ([]int, error) {
+	vals := make([]int, 0, len(strs))
+	for _, str := range strs {
+		valInt64, err := strconv.ParseInt(str, 0, 64)
+		val := int(valInt64)
+		if err != nil && returnOnInvalid {
+			return nil, err
+		}
+		if err == nil || addInvalid {
+			vals = append(vals, val)
+		}
+	}
+	return vals, nil
+}
+
+// parseInt64s transforms strings to int64s.
+func (k *Key) parseInt64s(strs []string, addInvalid, returnOnInvalid bool) ([]int64, error) {
+	vals := make([]int64, 0, len(strs))
+	for _, str := range strs {
+		val, err := strconv.ParseInt(str, 0, 64)
+		if err != nil && returnOnInvalid {
+			return nil, err
+		}
+		if err == nil || addInvalid {
+			vals = append(vals, val)
+		}
+	}
+	return vals, nil
+}
+
+// parseUints transforms strings to uints.
+func (k *Key) parseUints(strs []string, addInvalid, returnOnInvalid bool) ([]uint, error) {
+	vals := make([]uint, 0, len(strs))
+	for _, str := range strs {
+		val, err := strconv.ParseUint(str, 0, 0)
+		if err != nil && returnOnInvalid {
+			return nil, err
+		}
+		if err == nil || addInvalid {
+			vals = append(vals, uint(val))
+		}
+	}
+	return vals, nil
+}
+
+// parseUint64s transforms strings to uint64s.
+func (k *Key) parseUint64s(strs []string, addInvalid, returnOnInvalid bool) ([]uint64, error) {
+	vals := make([]uint64, 0, len(strs))
+	for _, str := range strs {
+		val, err := strconv.ParseUint(str, 0, 64)
+		if err != nil && returnOnInvalid {
+			return nil, err
+		}
+		if err == nil || addInvalid {
+			vals = append(vals, val)
+		}
+	}
+	return vals, nil
+}
+
+// parseTimesFormat transforms strings to times in given format.
+func (k *Key) parseTimesFormat(format string, strs []string, addInvalid, returnOnInvalid bool) ([]time.Time, error) {
+	vals := make([]time.Time, 0, len(strs))
+	for _, str := range strs {
+		val, err := time.Parse(format, str)
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		if err != nil && returnOnInvalid {
 			return nil, err
 		}

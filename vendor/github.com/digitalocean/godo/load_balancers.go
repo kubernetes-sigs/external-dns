@@ -14,6 +14,7 @@ const dropletsPath = "droplets"
 // LoadBalancersService is an interface for managing load balancers with the DigitalOcean API.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Load-Balancers
 type LoadBalancersService interface {
 	Get(context.Context, string) (*LoadBalancer, *Response, error)
@@ -352,6 +353,141 @@ type LoadBalancerRequest struct {
 	VPCUUID                      string           `json:"vpc_uuid,omitempty"`
 	DisableLetsEncryptDNSRecords *bool            `json:"disable_lets_encrypt_dns_records,omitempty"`
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// See: https://developers.digitalocean.com/documentation/v2#load-balancers
+type LoadBalancersService interface {
+	Get(context.Context, string) (*LoadBalancer, *Response, error)
+	List(context.Context, *ListOptions) ([]LoadBalancer, *Response, error)
+	Create(context.Context, *LoadBalancerRequest) (*LoadBalancer, *Response, error)
+	Update(ctx context.Context, lbID string, lbr *LoadBalancerRequest) (*LoadBalancer, *Response, error)
+	Delete(ctx context.Context, lbID string) (*Response, error)
+	AddDroplets(ctx context.Context, lbID string, dropletIDs ...int) (*Response, error)
+	RemoveDroplets(ctx context.Context, lbID string, dropletIDs ...int) (*Response, error)
+	AddForwardingRules(ctx context.Context, lbID string, rules ...ForwardingRule) (*Response, error)
+	RemoveForwardingRules(ctx context.Context, lbID string, rules ...ForwardingRule) (*Response, error)
+}
+
+// LoadBalancer represents a DigitalOcean load balancer configuration.
+// Tags can only be provided upon the creation of a Load Balancer.
+type LoadBalancer struct {
+	ID                     string           `json:"id,omitempty"`
+	Name                   string           `json:"name,omitempty"`
+	IP                     string           `json:"ip,omitempty"`
+	Algorithm              string           `json:"algorithm,omitempty"`
+	Status                 string           `json:"status,omitempty"`
+	Created                string           `json:"created_at,omitempty"`
+	ForwardingRules        []ForwardingRule `json:"forwarding_rules,omitempty"`
+	HealthCheck            *HealthCheck     `json:"health_check,omitempty"`
+	StickySessions         *StickySessions  `json:"sticky_sessions,omitempty"`
+	Region                 *Region          `json:"region,omitempty"`
+	DropletIDs             []int            `json:"droplet_ids,omitempty"`
+	Tag                    string           `json:"tag,omitempty"`
+	Tags                   []string         `json:"tags,omitempty"`
+	RedirectHttpToHttps    bool             `json:"redirect_http_to_https,omitempty"`
+	EnableProxyProtocol    bool             `json:"enable_proxy_protocol,omitempty"`
+	EnableBackendKeepalive bool             `json:"enable_backend_keepalive,omitempty"`
+	VPCUUID                string           `json:"vpc_uuid,omitempty"`
+}
+
+// String creates a human-readable description of a LoadBalancer.
+func (l LoadBalancer) String() string {
+	return Stringify(l)
+}
+
+func (l LoadBalancer) URN() string {
+	return ToURN("LoadBalancer", l.ID)
+}
+
+// AsRequest creates a LoadBalancerRequest that can be submitted to Update with the current values of the LoadBalancer.
+// Modifying the returned LoadBalancerRequest will not modify the original LoadBalancer.
+func (l LoadBalancer) AsRequest() *LoadBalancerRequest {
+	r := LoadBalancerRequest{
+		Name:                   l.Name,
+		Algorithm:              l.Algorithm,
+		ForwardingRules:        append([]ForwardingRule(nil), l.ForwardingRules...),
+		DropletIDs:             append([]int(nil), l.DropletIDs...),
+		Tag:                    l.Tag,
+		RedirectHttpToHttps:    l.RedirectHttpToHttps,
+		EnableProxyProtocol:    l.EnableProxyProtocol,
+		EnableBackendKeepalive: l.EnableBackendKeepalive,
+		HealthCheck:            l.HealthCheck,
+		VPCUUID:                l.VPCUUID,
+	}
+
+	if l.HealthCheck != nil {
+		r.HealthCheck = &HealthCheck{}
+		*r.HealthCheck = *l.HealthCheck
+	}
+	if l.StickySessions != nil {
+		r.StickySessions = &StickySessions{}
+		*r.StickySessions = *l.StickySessions
+	}
+	if l.Region != nil {
+		r.Region = l.Region.Slug
+	}
+	return &r
+}
+
+// ForwardingRule represents load balancer forwarding rules.
+type ForwardingRule struct {
+	EntryProtocol  string `json:"entry_protocol,omitempty"`
+	EntryPort      int    `json:"entry_port,omitempty"`
+	TargetProtocol string `json:"target_protocol,omitempty"`
+	TargetPort     int    `json:"target_port,omitempty"`
+	CertificateID  string `json:"certificate_id,omitempty"`
+	TlsPassthrough bool   `json:"tls_passthrough,omitempty"`
+}
+
+// String creates a human-readable description of a ForwardingRule.
+func (f ForwardingRule) String() string {
+	return Stringify(f)
+}
+
+// HealthCheck represents optional load balancer health check rules.
+type HealthCheck struct {
+	Protocol               string `json:"protocol,omitempty"`
+	Port                   int    `json:"port,omitempty"`
+	Path                   string `json:"path,omitempty"`
+	CheckIntervalSeconds   int    `json:"check_interval_seconds,omitempty"`
+	ResponseTimeoutSeconds int    `json:"response_timeout_seconds,omitempty"`
+	HealthyThreshold       int    `json:"healthy_threshold,omitempty"`
+	UnhealthyThreshold     int    `json:"unhealthy_threshold,omitempty"`
+}
+
+// String creates a human-readable description of a HealthCheck.
+func (h HealthCheck) String() string {
+	return Stringify(h)
+}
+
+// StickySessions represents optional load balancer session affinity rules.
+type StickySessions struct {
+	Type             string `json:"type,omitempty"`
+	CookieName       string `json:"cookie_name,omitempty"`
+	CookieTtlSeconds int    `json:"cookie_ttl_seconds,omitempty"`
+}
+
+// String creates a human-readable description of a StickySessions instance.
+func (s StickySessions) String() string {
+	return Stringify(s)
+}
+
+// LoadBalancerRequest represents the configuration to be applied to an existing or a new load balancer.
+type LoadBalancerRequest struct {
+	Name                   string           `json:"name,omitempty"`
+	Algorithm              string           `json:"algorithm,omitempty"`
+	Region                 string           `json:"region,omitempty"`
+	ForwardingRules        []ForwardingRule `json:"forwarding_rules,omitempty"`
+	HealthCheck            *HealthCheck     `json:"health_check,omitempty"`
+	StickySessions         *StickySessions  `json:"sticky_sessions,omitempty"`
+	DropletIDs             []int            `json:"droplet_ids,omitempty"`
+	Tag                    string           `json:"tag,omitempty"`
+	Tags                   []string         `json:"tags,omitempty"`
+	RedirectHttpToHttps    bool             `json:"redirect_http_to_https,omitempty"`
+	EnableProxyProtocol    bool             `json:"enable_proxy_protocol,omitempty"`
+	EnableBackendKeepalive bool             `json:"enable_backend_keepalive,omitempty"`
+	VPCUUID                string           `json:"vpc_uuid,omitempty"`
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // String creates a human-readable description of a LoadBalancerRequest.

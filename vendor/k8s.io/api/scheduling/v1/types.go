@@ -56,6 +56,7 @@ type PriorityClass struct {
 	// Defaults to PreemptLowerPriority if unset.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// This field is beta-level, gated by the NonPreemptingPriority feature-gate.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -66,6 +67,10 @@ type PriorityClass struct {
 =======
 	// This field is beta-level, gated by the NonPreemptingPriority feature-gate.
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// This field is alpha-level and is only honored by servers that enable the NonPreemptingPriority feature.
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	// +optional
 	PreemptionPolicy *apiv1.PreemptionPolicy `json:"preemptionPolicy,omitempty" protobuf:"bytes,5,opt,name=preemptionPolicy"`
 }

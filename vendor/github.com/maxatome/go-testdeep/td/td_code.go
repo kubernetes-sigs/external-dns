@@ -79,6 +79,7 @@ func Code(fn interface{}) TestDeep {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	c := tdCode{
 		base:     newBase(3),
 		function: vfn,
@@ -323,5 +324,101 @@ func (c *tdCode) TypeBehind() reflect.Type {
 		return nil
 	}
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if vfn.Kind() != reflect.Func {
+		panic("usage: Code(FUNC)")
+	}
+
+	fnType := vfn.Type()
+	if fnType.IsVariadic() || fnType.NumIn() != 1 {
+		panic("Code(FUNC): FUNC must take only one argument")
+	}
+
+	switch fnType.NumOut() {
+	case 2:
+		if fnType.Out(1).Kind() != reflect.String {
+			break
+		}
+		fallthrough
+
+	case 1:
+		// (*bool*) or (*bool*, string)
+		if fnType.Out(0).Kind() == reflect.Bool ||
+			// (*error*)
+			(fnType.NumOut() == 1 && fnType.Out(0) == errorInterface) {
+			return &tdCode{
+				base:     newBase(3),
+				function: vfn,
+				argType:  fnType.In(0),
+			}
+		}
+	}
+
+	panic("Code(FUNC): FUNC must return bool or (bool, string) or error")
+}
+
+func (c *tdCode) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if !got.Type().AssignableTo(c.argType) {
+		if ctx.BooleanError {
+			return ctxerr.BooleanError
+		}
+		return ctx.CollectError(&ctxerr.Error{
+			Message:  "incompatible parameter type",
+			Got:      types.RawString(got.Type().String()),
+			Expected: types.RawString(c.argType.String()),
+		})
+	}
+
+	// Refuse to override unexported fields access in this case. It is a
+	// choice, as we think it is better to use Code() on surrounding
+	// struct instead.
+	if !got.CanInterface() {
+		if ctx.BooleanError {
+			return ctxerr.BooleanError
+		}
+		return ctx.CollectError(&ctxerr.Error{
+			Message: "cannot compare unexported field",
+			Summary: ctxerr.NewSummary("use Code() on surrounding struct instead"),
+		})
+	}
+
+	ret := c.function.Call([]reflect.Value{got})
+	if ret[0].Kind() == reflect.Bool {
+		if ret[0].Bool() {
+			return nil
+		}
+	} else if ret[0].IsNil() { // reflect.Interface
+		return nil
+	}
+
+	if ctx.BooleanError {
+		return ctxerr.BooleanError
+	}
+
+	var reason string
+	if len(ret) > 1 { // (bool, string)
+		reason = ret[1].String()
+	} else if ret[0].Kind() == reflect.Interface { // (error)
+		// For internal use only
+		if cErr, ok := ret[0].Interface().(*ctxerr.Error); ok {
+			return ctx.CollectError(cErr)
+		}
+		reason = ret[0].Interface().(error).Error()
+	}
+	// else (bool) so no reason to report
+
+	return ctx.CollectError(&ctxerr.Error{
+		Message: "ran code with %% as argument",
+		Summary: ctxerr.NewSummaryReason(got, reason),
+	})
+}
+
+func (c *tdCode) String() string {
+	return "Code(" + c.function.Type().String() + ")"
+}
+
+func (c *tdCode) TypeBehind() reflect.Type {
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return c.argType
 }

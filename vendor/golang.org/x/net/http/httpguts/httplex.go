@@ -139,6 +139,7 @@ func trimOWS(x string) string {
 func headerValueContainsToken(v string, token string) bool {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	for comma := strings.IndexByte(v, ','); comma != -1; comma = strings.IndexByte(v, ',') {
 		if tokenEqual(trimOWS(v[:comma]), token) {
 			return true
@@ -171,6 +172,14 @@ func headerValueContainsToken(v string, token string) bool {
 =======
 	return tokenEqual(trimOWS(v), token)
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	v = trimOWS(v)
+	if comma := strings.IndexByte(v, ','); comma != -1 {
+		return tokenEqual(trimOWS(v[:comma]), token) || headerValueContainsToken(v[comma+1:], token)
+	}
+	return tokenEqual(v, token)
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // lowerASCII returns the ASCII lowercase version of b.

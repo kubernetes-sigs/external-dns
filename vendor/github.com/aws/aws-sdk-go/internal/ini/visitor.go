@@ -52,6 +52,7 @@ func (v *DefaultVisitor) VisitExpr(expr AST) error {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 			// The right-hand value side the equality expression is allowed to contain '[', ']', ':', '=' in the values.
 			// If the token is not either a literal or one of the token types that identifies those four additional
 			// tokens then error.
@@ -68,6 +69,10 @@ func (v *DefaultVisitor) VisitExpr(expr AST) error {
 			// tokens then error.
 			if !(rhs.Root.Type() == TokenLit || rhs.Root.Type() == TokenOp || rhs.Root.Type() == TokenSep) {
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+			if rhs.Root.Type() != TokenLit {
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 				return NewParseError("unexpected token type")
 			}
 

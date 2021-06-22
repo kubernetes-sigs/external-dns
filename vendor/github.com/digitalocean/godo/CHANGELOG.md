@@ -2,6 +2,7 @@
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ## [v1.69.1] - 2021-10-06
 
 - #484 - @sunny-b - k8s/godo: remove ha field from update request
@@ -390,6 +391,9 @@
 - #335 Add 1-click service and request. @scottcrawford03
 
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 ## [v1.36.0] - 2020-05-12
 
 - #331 Expose expiry_seconds for Registry.DockerCredentials. @andrewsomething

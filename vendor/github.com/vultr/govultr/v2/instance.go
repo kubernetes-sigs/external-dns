@@ -95,6 +95,7 @@ type Instance struct {
 	AppID            int      `json:"app_id"`
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	ImageID          string   `json:"image_id"`
 	FirewallGroupID  string   `json:"firewall_group_id"`
 	Features         []string `json:"features"`
@@ -399,6 +400,153 @@ type InstanceUpdateReq struct {
 =======
 	ImageID              string   `json:"image_id,omitempty"`
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	FirewallGroupID  string   `json:"firewall_group_id"`
+	Features         []string `json:"features"`
+}
+
+type instanceBase struct {
+	Instance *Instance `json:"instance"`
+}
+
+type ipv4Base struct {
+	IPv4 *IPv4 `json:"ipv4"`
+}
+
+type instancesBase struct {
+	Instances []Instance `json:"instances"`
+	Meta      *Meta      `json:"meta"`
+}
+
+// Neighbors that might exist on the same host.
+type Neighbors struct {
+	Neighbors []string `json:"neighbors"`
+}
+
+// Bandwidth used on a given instance.
+type Bandwidth struct {
+	Bandwidth map[string]struct {
+		IncomingBytes int `json:"incoming_bytes"`
+		OutgoingBytes int `json:"outgoing_bytes"`
+	} `json:"bandwidth"`
+}
+
+type privateNetworksBase struct {
+	PrivateNetworks []PrivateNetwork `json:"private_networks"`
+	Meta            *Meta            `json:"meta"`
+}
+
+// PrivateNetwork information for a given instance.
+type PrivateNetwork struct {
+	NetworkID  string `json:"network_id"`
+	MacAddress string `json:"mac_address"`
+	IPAddress  string `json:"ip_address"`
+}
+
+type isoStatusBase struct {
+	IsoStatus *Iso `json:"iso_status"`
+}
+
+// Iso information for a given instance.
+type Iso struct {
+	State string `json:"state"`
+	IsoID string `json:"iso_id"`
+}
+
+type backupScheduleBase struct {
+	BackupSchedule *BackupSchedule `json:"backup_schedule"`
+}
+
+// BackupSchedule information for a given instance.
+type BackupSchedule struct {
+	Enabled             *bool  `json:"enabled,omitempty"`
+	Type                string `json:"type,omitempty"`
+	NextScheduleTimeUTC string `json:"next_scheduled_time_utc,omitempty"`
+	Hour                int    `json:"hour,omitempty"`
+	Dow                 int    `json:"dow,omitempty"`
+	Dom                 int    `json:"dom,omitempty"`
+}
+
+// BackupScheduleReq struct used to create a backup schedule for an instance.
+type BackupScheduleReq struct {
+	Type string `json:"type"`
+	Hour *int   `json:"hour,omitempty"`
+	Dow  *int   `json:"dow,omitempty"`
+	Dom  int    `json:"dom,omitempty"`
+}
+
+// RestoreReq struct used to supply whether a restore should be from a backup or snapshot.
+type RestoreReq struct {
+	BackupID   string `json:"backup_id,omitempty"`
+	SnapshotID string `json:"snapshot_id,omitempty"`
+}
+
+// todo can we remove this list and return this data back in the list?
+type reverseIPv6sBase struct {
+	ReverseIPv6s []ReverseIP `json:"reverse_ipv6s"`
+	// no meta?
+}
+
+// ReverseIP information for a given instance.
+type ReverseIP struct {
+	IP      string `json:"ip"`
+	Reverse string `json:"reverse"`
+}
+
+type userDataBase struct {
+	UserData *UserData `json:"user_data"`
+}
+
+// UserData information for a given struct.
+type UserData struct {
+	Data string `json:"data"`
+}
+
+type upgradeBase struct {
+	Upgrades *Upgrades `json:"upgrades"`
+}
+
+// Upgrades that are available for a given Instance.
+type Upgrades struct {
+	Applications []Application `json:"applications,omitempty"`
+	OS           []OS          `json:"os,omitempty"`
+	Plans        []string      `json:"plans,omitempty"`
+}
+
+// InstanceCreateReq struct used to create an instance.
+type InstanceCreateReq struct {
+	Region               string   `json:"region,omitempty"`
+	Plan                 string   `json:"plan,omitempty"`
+	Label                string   `json:"label,omitempty"`
+	Tag                  string   `json:"tag,omitempty"`
+	OsID                 int      `json:"os_id,omitempty"`
+	ISOID                string   `json:"iso_id,omitempty"`
+	AppID                int      `json:"app_id,omitempty"`
+	FirewallGroupID      string   `json:"firewall_group_id,omitempty"`
+	Hostname             string   `json:"hostname,omitempty"`
+	IPXEChainURL         string   `json:"ipxe_chain_url,omitempty"`
+	ScriptID             string   `json:"script_id,omitempty"`
+	SnapshotID           string   `json:"snapshot_id,omitempty"`
+	EnableIPv6           *bool    `json:"enable_ipv6,omitempty"`
+	EnablePrivateNetwork *bool    `json:"enable_private_network,omitempty"`
+	AttachPrivateNetwork []string `json:"attach_private_network,omitempty"`
+	SSHKeys              []string `json:"sshkey_id,omitempty"`
+	Backups              string   `json:"backups,omitempty"`
+	DDOSProtection       *bool    `json:"ddos_protection,omitempty"`
+	UserData             string   `json:"user_data,omitempty"`
+	ReservedIPv4         string   `json:"reserved_ipv4,omitempty"`
+	ActivationEmail      *bool    `json:"activation_email,omitempty"`
+}
+
+// InstanceUpdateReq struct used to update an instance.
+type InstanceUpdateReq struct {
+	Plan                 string   `json:"plan,omitempty"`
+	Label                string   `json:"label,omitempty"`
+	Tag                  string   `json:"tag,omitempty"`
+	OsID                 int      `json:"os_id,omitempty"`
+	AppID                int      `json:"app_id,omitempty"`
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	EnableIPv6           *bool    `json:"enable_ipv6,omitempty"`
 	EnablePrivateNetwork *bool    `json:"enable_private_network,omitempty"`
 	AttachPrivateNetwork []string `json:"attach_private_network,omitempty"`

@@ -29,6 +29,7 @@ var _ TestDeep = &tdNone{}
 //   td.Cmp(t, 12, td.None(8, 10, 12, 14)) // fails
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //
 // Note Flatten function can be used to group or reuse some values or
 // operators and so avoid boring and inefficient copies:
@@ -109,6 +110,36 @@ func (n *tdNone) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 =======
 		if deepValueEqualFinalOK(ctx, got, item) {
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func None(notExpectedValues ...interface{}) TestDeep {
+	return &tdNone{
+		tdList: newList(notExpectedValues...),
+	}
+}
+
+// summary(Not): value must not match
+// input(Not): all
+
+// Not operator compares data against the not expected value. During a
+// match, it must not match to succeed.
+//
+// Not is the same operator as None() with only one argument. It is
+// provided as a more readable function when only one argument is
+// needed.
+//
+//   td.Cmp(t, 12, td.Not(10)) // succeeds
+//   td.Cmp(t, 12, td.Not(12)) // fails
+func Not(notExpected interface{}) TestDeep {
+	return &tdNone{
+		tdList: newList(notExpected),
+	}
+}
+
+func (n *tdNone) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	for idx, item := range n.items {
+		if deepValueEqualOK(got, item) {
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			if ctx.BooleanError {
 				return ctxerr.BooleanError
 			}

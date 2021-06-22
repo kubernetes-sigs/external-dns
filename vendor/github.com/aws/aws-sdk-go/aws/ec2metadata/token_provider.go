@@ -89,6 +89,7 @@ func (t *tokenProvider) enableTokenProviderHandler(r *request.Request) {
 		e.StatusCode() == http.StatusUnauthorized {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		t.token.Store(ec2Token{})
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -97,6 +98,9 @@ func (t *tokenProvider) enableTokenProviderHandler(r *request.Request) {
 =======
 		t.token.Store(ec2Token{})
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		atomic.StoreUint32(&t.disabled, 0)
 	}
 }

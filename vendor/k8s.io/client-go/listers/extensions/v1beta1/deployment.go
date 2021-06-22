@@ -28,6 +28,7 @@ import (
 // DeploymentLister helps list Deployments.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type DeploymentLister interface {
 	// List lists all Deployments in the indexer.
@@ -120,6 +121,45 @@ type DeploymentNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type DeploymentLister interface {
+	// List lists all Deployments in the indexer.
+	List(selector labels.Selector) (ret []*v1beta1.Deployment, err error)
+	// Deployments returns an object that can list and get Deployments.
+	Deployments(namespace string) DeploymentNamespaceLister
+	DeploymentListerExpansion
+}
+
+// deploymentLister implements the DeploymentLister interface.
+type deploymentLister struct {
+	indexer cache.Indexer
+}
+
+// NewDeploymentLister returns a new DeploymentLister.
+func NewDeploymentLister(indexer cache.Indexer) DeploymentLister {
+	return &deploymentLister{indexer: indexer}
+}
+
+// List lists all Deployments in the indexer.
+func (s *deploymentLister) List(selector labels.Selector) (ret []*v1beta1.Deployment, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1beta1.Deployment))
+	})
+	return ret, err
+}
+
+// Deployments returns an object that can list and get Deployments.
+func (s *deploymentLister) Deployments(namespace string) DeploymentNamespaceLister {
+	return deploymentNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// DeploymentNamespaceLister helps list and get Deployments.
+type DeploymentNamespaceLister interface {
+	// List lists all Deployments in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1beta1.Deployment, err error)
+	// Get retrieves the Deployment from the indexer for a given namespace and name.
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1beta1.Deployment, error)
 	DeploymentNamespaceListerExpansion
 }

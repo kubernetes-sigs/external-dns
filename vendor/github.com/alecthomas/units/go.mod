@@ -1,6 +1,7 @@
 module github.com/alecthomas/units
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 require github.com/stretchr/testify v1.4.0
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -11,3 +12,6 @@ require github.com/stretchr/testify v1.4.0
 
 require github.com/stretchr/testify v1.4.0
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

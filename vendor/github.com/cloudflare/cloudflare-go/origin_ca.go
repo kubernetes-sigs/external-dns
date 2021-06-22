@@ -21,6 +21,7 @@ type OriginCACertificate struct {
 	RequestValidity int       `json:"requested_validity"`
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
@@ -66,6 +67,10 @@ func (c *OriginCACertificate) UnmarshalJSON(data []byte) error {
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	CSR             string    `json:"csr"`
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // OriginCACertificateListOptions represents the parameters used to list Cloudflare-issued certificates.

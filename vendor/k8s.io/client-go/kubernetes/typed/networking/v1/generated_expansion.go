@@ -20,6 +20,7 @@ package v1
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 type IngressExpansion interface{}
 
 type IngressClassExpansion interface{}
@@ -34,4 +35,7 @@ type IngressExpansion interface{}
 type IngressClassExpansion interface{}
 
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type NetworkPolicyExpansion interface{}

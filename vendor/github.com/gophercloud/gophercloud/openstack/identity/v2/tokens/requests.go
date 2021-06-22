@@ -89,6 +89,7 @@ func Create(client *gophercloud.ServiceClient, auth AuthOptionsBuilder) (r Creat
 	}
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	resp, err := client.Post(CreateURL(client), b, &r.Body, &gophercloud.RequestOpts{
 		OkCodes:     []int{200, 203},
 		MoreHeaders: map[string]string{"X-Auth-Token": ""},
@@ -129,5 +130,20 @@ func Get(client *gophercloud.ServiceClient, token string) (r GetResult) {
 =======
 	_, r.Header, r.Err = gophercloud.ParseResponse(resp, err)
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	_, r.Err = client.Post(CreateURL(client), b, &r.Body, &gophercloud.RequestOpts{
+		OkCodes:     []int{200, 203},
+		MoreHeaders: map[string]string{"X-Auth-Token": ""},
+	})
+	return
+}
+
+// Get validates and retrieves information for user's token.
+func Get(client *gophercloud.ServiceClient, token string) (r GetResult) {
+	_, r.Err = client.Get(GetURL(client, token), &r.Body, &gophercloud.RequestOpts{
+		OkCodes: []int{200, 203},
+	})
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }

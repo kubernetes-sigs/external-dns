@@ -54,6 +54,7 @@ const (
 	Major      = 1
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Minor      = 27
 	Patch      = 1
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -68,6 +69,11 @@ const (
 	Minor      = 27
 	Patch      = 1
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	Minor      = 23
+	Patch      = 0
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	PreRelease = ""
 )
 

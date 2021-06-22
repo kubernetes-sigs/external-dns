@@ -33,6 +33,7 @@ type xopPlaceholder struct {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // NewBinary allocate a new Binary backed by the given byte slice, an auto-generated packageID and no MTOM-usage
 func NewBinary(v []byte) *Binary {
 	return &Binary{&v, "application/octet-stream", "", false}
@@ -125,6 +126,34 @@ func (b *Binary) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
 			b.packageID = fmt.Sprintf("%d", rand.Int())
 		}
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// NewBinary allocate a new Binary backed by the given byte slice
+func NewBinary(v []byte) *Binary {
+	return &Binary{&v, "application/octet-stream", "", false}
+}
+
+// Bytes returns a slice backed by the content of the field
+func (b *Binary) Bytes() []byte {
+	return *b.content
+}
+
+// SetContentType sets the content type the content will be transmitted as multipart
+func (b *Binary) SetContentType(contentType string) *Binary {
+	b.contentType = contentType
+	return b
+}
+
+// ContentType returns the content type
+func (b *Binary) ContentType() string {
+	return b.contentType
+}
+
+// MarshalXML implements the xml.Marshaler interface to encode a Binary to XML
+func (b *Binary) MarshalXML(enc *xml.Encoder, start xml.StartElement) error {
+	if b.useMTOM {
+		b.packageID = fmt.Sprintf("%d", rand.Int())
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		return enc.EncodeElement(struct {
 			Include *xopPlaceholder `xml:"http://www.w3.org/2004/08/xop/include Include"`
 		}{

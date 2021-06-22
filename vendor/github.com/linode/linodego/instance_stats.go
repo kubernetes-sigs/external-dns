@@ -37,6 +37,7 @@ type InstanceStats struct {
 func endpointWithIDAndDate(c *Client, id int, year int, month int) string {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	endpoint, err := c.InstanceStats.endpointWithParams(id)
 	if err != nil {
 		panic(err)
@@ -75,6 +76,21 @@ func (c *Client) GetInstanceStats(ctx context.Context, linodeID int) (*InstanceS
 =======
 	e, err := c.InstanceStats.endpointWithParams(linodeID)
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	endpoint, err := c.InstanceStats.endpointWithID(id)
+	if err != nil {
+		panic(err)
+	}
+
+	endpoint = fmt.Sprintf("%s/%d/%d", endpoint, year, month)
+	return endpoint
+}
+
+// GetInstanceStats gets the template with the provided ID
+func (c *Client) GetInstanceStats(ctx context.Context, linodeID int) (*InstanceStats, error) {
+	e, err := c.InstanceStats.endpointWithID(linodeID)
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

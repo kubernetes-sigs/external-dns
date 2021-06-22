@@ -125,6 +125,7 @@ pinned in the [benchmarks/go.mod][] file. [↩](#anchor-versions)
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 [doc-img]: https://pkg.go.dev/badge/go.uber.org/zap
 [doc]: https://pkg.go.dev/go.uber.org/zap
 [ci-img]: https://github.com/uber-go/zap/actions/workflows/go.yml/badge.svg
@@ -147,6 +148,13 @@ pinned in the [benchmarks/go.mod][] file. [↩](#anchor-versions)
 [ci-img]: https://github.com/uber-go/zap/actions/workflows/go.yml/badge.svg
 [ci]: https://github.com/uber-go/zap/actions/workflows/go.yml
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+[doc-img]: https://godoc.org/go.uber.org/zap?status.svg
+[doc]: https://godoc.org/go.uber.org/zap
+[ci-img]: https://travis-ci.com/uber-go/zap.svg?branch=master
+[ci]: https://travis-ci.com/uber-go/zap
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 [cov-img]: https://codecov.io/gh/uber-go/zap/branch/master/graph/badge.svg
 [cov]: https://codecov.io/gh/uber-go/zap
 [benchmarking suite]: https://github.com/uber-go/zap/tree/master/benchmarks

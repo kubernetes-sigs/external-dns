@@ -15,6 +15,7 @@
 // Below is the BNF that describes this parser
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //  Grammar:
 //  stmt -> section | stmt'
 //  stmt' -> epsilon | expr
@@ -89,4 +90,20 @@
 //  comment -> # comment' | ; comment'
 //  comment' -> epsilon | value
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//	Grammar:
+//	stmt -> value stmt'
+//	stmt' -> epsilon | op stmt
+//	value -> number | string | boolean | quoted_string
+//
+//	section -> [ section'
+//	section' -> value section_close
+//	section_close -> ]
+//
+//	SkipState will skip (NL WS)+
+//
+//	comment -> # comment' | ; comment'
+//	comment' -> epsilon | value
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 package ini

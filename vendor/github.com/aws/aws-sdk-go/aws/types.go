@@ -241,6 +241,7 @@ func (es errors) Error() string {
 }
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 // CopySeekableBody copies the seekable body to an io.Writer
 func CopySeekableBody(dst io.Writer, src io.ReadSeeker) (int64, error) {
@@ -293,3 +294,6 @@ func CopySeekableBody(dst io.Writer, src io.ReadSeeker) (int64, error) {
 	return n, nil
 }
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

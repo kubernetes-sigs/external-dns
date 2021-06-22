@@ -83,6 +83,7 @@ func (c *Client) ListPayments(ctx context.Context, opts *ListOptions) ([]Payment
 	err := c.listHelper(ctx, &response, opts)
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil {
 		return nil, err
 	}
@@ -183,6 +184,56 @@ func (c *Client) CreatePayment(ctx context.Context, createOpts PaymentCreateOpti
 
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+	if err != nil {
+		return nil, err
+	}
+
+	return response.Data, nil
+}
+
+// GetPayment gets the payment with the provided ID
+func (c *Client) GetPayment(ctx context.Context, id int) (*Payment, error) {
+	e, err := c.Payments.Endpoint()
+	if err != nil {
+		return nil, err
+	}
+
+	e = fmt.Sprintf("%s/%d", e, id)
+	r, err := coupleAPIErrors(c.R(ctx).SetResult(&Payment{}).Get(e))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return r.Result().(*Payment), nil
+}
+
+// CreatePayment creates a Payment
+func (c *Client) CreatePayment(ctx context.Context, createOpts PaymentCreateOptions) (*Payment, error) {
+	var body string
+
+	e, err := c.Payments.Endpoint()
+
+	if err != nil {
+		return nil, err
+	}
+
+	req := c.R(ctx).SetResult(&Payment{})
+
+	if bodyData, err := json.Marshal(createOpts); err == nil {
+		body = string(bodyData)
+	} else {
+		return nil, NewError(err)
+	}
+
+	r, err := coupleAPIErrors(req.
+		SetBody(body).
+		Post(e))
+
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

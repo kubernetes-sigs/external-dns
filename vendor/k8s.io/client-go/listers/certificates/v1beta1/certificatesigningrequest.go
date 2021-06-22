@@ -28,6 +28,7 @@ import (
 // CertificateSigningRequestLister helps list CertificateSigningRequests.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type CertificateSigningRequestLister interface {
 	// List lists all CertificateSigningRequests in the indexer.
@@ -52,6 +53,13 @@ type CertificateSigningRequestLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type CertificateSigningRequestLister interface {
+	// List lists all CertificateSigningRequests in the indexer.
+	List(selector labels.Selector) (ret []*v1beta1.CertificateSigningRequest, err error)
+	// Get retrieves the CertificateSigningRequest from the index for a given name.
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1beta1.CertificateSigningRequest, error)
 	CertificateSigningRequestListerExpansion
 }

@@ -10,6 +10,7 @@ import (
 // floating IPs actions endpoints of the Digital Ocean API.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Floating-IP-Actions
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -20,6 +21,10 @@ import (
 =======
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Floating-IP-Actions
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// See: https://developers.digitalocean.com/documentation/v2#floating-ips-action
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type FloatingIPActionsService interface {
 	Assign(ctx context.Context, ip string, dropletID int) (*Action, *Response, error)
 	Unassign(ctx context.Context, ip string) (*Action, *Response, error)

@@ -57,6 +57,7 @@ func (cs *contentSniffer) Read(p []byte) (n int, err error) {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // ContentType returns the sniffed content type, and whether the content type was successfully sniffed.
 func (cs *contentSniffer) ContentType() (string, bool) {
 	if cs.sniffed {
@@ -139,6 +140,43 @@ func DetermineContentType(media io.Reader, ctype string) (io.Reader, string) {
 =======
 	// For backwards compatibility, allow clients to set content
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// ContentType returns the sniffed content type, and whether the content type was succesfully sniffed.
+func (cs *contentSniffer) ContentType() (string, bool) {
+	if cs.sniffed {
+		return cs.ctype, cs.ctype != ""
+	}
+	cs.sniffed = true
+	// If ReadAll hits EOF, it returns err==nil.
+	cs.start, cs.err = ioutil.ReadAll(io.LimitReader(cs.r, sniffBuffSize))
+
+	// Don't try to detect the content type based on possibly incomplete data.
+	if cs.err != nil {
+		return "", false
+	}
+
+	cs.ctype = http.DetectContentType(cs.start)
+	return cs.ctype, true
+}
+
+// DetermineContentType determines the content type of the supplied reader.
+// If the content type is already known, it can be specified via ctype.
+// Otherwise, the content of media will be sniffed to determine the content type.
+// If media implements googleapi.ContentTyper (deprecated), this will be used
+// instead of sniffing the content.
+// After calling DetectContentType the caller must not perform further reads on
+// media, but rather read from the Reader that is returned.
+func DetermineContentType(media io.Reader, ctype string) (io.Reader, string) {
+	// Note: callers could avoid calling DetectContentType if ctype != "",
+	// but doing the check inside this function reduces the amount of
+	// generated code.
+	if ctype != "" {
+		return media, ctype
+	}
+
+	// For backwards compatability, allow clients to set content
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	// type by providing a ContentTyper for media.
 	if typer, ok := media.(googleapi.ContentTyper); ok {
 		return media, typer.ContentType()

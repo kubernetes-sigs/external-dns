@@ -209,6 +209,7 @@ type RailgunDiagnosis struct {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // railgunDiagnosisResponse represents the response from the Test Railgun Connection endpoint.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -219,6 +220,10 @@ type RailgunDiagnosis struct {
 =======
 // railgunDiagnosisResponse represents the response from the Test Railgun Connection endpoint.
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// railgunDiagnosisResponse represents the response from the Test Railgun Connection enpoint.
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type railgunDiagnosisResponse struct {
 	Response
 	Result RailgunDiagnosis `json:"result"`

@@ -70,6 +70,7 @@ See more examples in ```example_test.go```.
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 You can use this library for easier [go-fuzz](https://github.com/dvyukov/go-fuzz)ing.
 go-fuzz provides the user a byte-slice, which should be converted to different inputs
 for the tested function. This library can help convert the byte slice. Consider for
@@ -112,4 +113,7 @@ func Fuzz(data []byte) int {
 ```
 
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 Happy testing!

@@ -107,6 +107,7 @@ func (fs FS) AllProcs() (Procs, error) {
 	if err != nil {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return Procs{}, fmt.Errorf("could not read %q: %w", d.Name(), err)
 	}
 
@@ -469,6 +470,183 @@ func (p Proc) fileDescriptors() ([]string, error) {
 =======
 		return nil, fmt.Errorf("could not read %q: %w", d.Name(), err)
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		return Procs{}, fmt.Errorf("could not read %s: %s", d.Name(), err)
+	}
+
+	p := Procs{}
+	for _, n := range names {
+		pid, err := strconv.ParseInt(n, 10, 64)
+		if err != nil {
+			continue
+		}
+		p = append(p, Proc{PID: int(pid), fs: fs.proc})
+	}
+
+	return p, nil
+}
+
+// CmdLine returns the command line of a process.
+func (p Proc) CmdLine() ([]string, error) {
+	data, err := util.ReadFileNoStat(p.path("cmdline"))
+	if err != nil {
+		return nil, err
+	}
+
+	if len(data) < 1 {
+		return []string{}, nil
+	}
+
+	return strings.Split(string(bytes.TrimRight(data, string("\x00"))), string(byte(0))), nil
+}
+
+// Wchan returns the wchan (wait channel) of a process.
+func (p Proc) Wchan() (string, error) {
+	f, err := os.Open(p.path("wchan"))
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		return "", err
+	}
+
+	wchan := string(data)
+	if wchan == "" || wchan == "0" {
+		return "", nil
+	}
+
+	return wchan, nil
+}
+
+// Comm returns the command name of a process.
+func (p Proc) Comm() (string, error) {
+	data, err := util.ReadFileNoStat(p.path("comm"))
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(string(data)), nil
+}
+
+// Executable returns the absolute path of the executable command of a process.
+func (p Proc) Executable() (string, error) {
+	exe, err := os.Readlink(p.path("exe"))
+	if os.IsNotExist(err) {
+		return "", nil
+	}
+
+	return exe, err
+}
+
+// Cwd returns the absolute path to the current working directory of the process.
+func (p Proc) Cwd() (string, error) {
+	wd, err := os.Readlink(p.path("cwd"))
+	if os.IsNotExist(err) {
+		return "", nil
+	}
+
+	return wd, err
+}
+
+// RootDir returns the absolute path to the process's root directory (as set by chroot)
+func (p Proc) RootDir() (string, error) {
+	rdir, err := os.Readlink(p.path("root"))
+	if os.IsNotExist(err) {
+		return "", nil
+	}
+
+	return rdir, err
+}
+
+// FileDescriptors returns the currently open file descriptors of a process.
+func (p Proc) FileDescriptors() ([]uintptr, error) {
+	names, err := p.fileDescriptors()
+	if err != nil {
+		return nil, err
+	}
+
+	fds := make([]uintptr, len(names))
+	for i, n := range names {
+		fd, err := strconv.ParseInt(n, 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("could not parse fd %s: %s", n, err)
+		}
+		fds[i] = uintptr(fd)
+	}
+
+	return fds, nil
+}
+
+// FileDescriptorTargets returns the targets of all file descriptors of a process.
+// If a file descriptor is not a symlink to a file (like a socket), that value will be the empty string.
+func (p Proc) FileDescriptorTargets() ([]string, error) {
+	names, err := p.fileDescriptors()
+	if err != nil {
+		return nil, err
+	}
+
+	targets := make([]string, len(names))
+
+	for i, name := range names {
+		target, err := os.Readlink(p.path("fd", name))
+		if err == nil {
+			targets[i] = target
+		}
+	}
+
+	return targets, nil
+}
+
+// FileDescriptorsLen returns the number of currently open file descriptors of
+// a process.
+func (p Proc) FileDescriptorsLen() (int, error) {
+	fds, err := p.fileDescriptors()
+	if err != nil {
+		return 0, err
+	}
+
+	return len(fds), nil
+}
+
+// MountStats retrieves statistics and configuration for mount points in a
+// process's namespace.
+func (p Proc) MountStats() ([]*Mount, error) {
+	f, err := os.Open(p.path("mountstats"))
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	return parseMountStats(f)
+}
+
+// MountInfo retrieves mount information for mount points in a
+// process's namespace.
+// It supplies information missing in `/proc/self/mounts` and
+// fixes various other problems with that file too.
+func (p Proc) MountInfo() ([]*MountInfo, error) {
+	data, err := util.ReadFileNoStat(p.path("mountinfo"))
+	if err != nil {
+		return nil, err
+	}
+	return parseMountInfo(data)
+}
+
+func (p Proc) fileDescriptors() ([]string, error) {
+	d, err := os.Open(p.path("fd"))
+	if err != nil {
+		return nil, err
+	}
+	defer d.Close()
+
+	names, err := d.Readdirnames(-1)
+	if err != nil {
+		return nil, fmt.Errorf("could not read %s: %s", d.Name(), err)
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 
 	return names, nil

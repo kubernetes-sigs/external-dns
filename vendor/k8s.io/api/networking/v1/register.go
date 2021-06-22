@@ -46,6 +46,7 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		&Ingress{},
 		&IngressList{},
 		&IngressClass{},
@@ -60,6 +61,9 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&IngressClass{},
 		&IngressClassList{},
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		&NetworkPolicy{},
 		&NetworkPolicyList{},
 	)

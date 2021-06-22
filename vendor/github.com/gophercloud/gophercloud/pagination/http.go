@@ -56,6 +56,7 @@ func Request(client *gophercloud.ServiceClient, headers map[string]string, url s
 	return client.Get(url, nil, &gophercloud.RequestOpts{
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		MoreHeaders:      headers,
 		OkCodes:          []int{200, 204, 300},
 		KeepResponseBody: true,
@@ -72,5 +73,10 @@ func Request(client *gophercloud.ServiceClient, headers map[string]string, url s
 		OkCodes:          []int{200, 204, 300},
 		KeepResponseBody: true,
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		MoreHeaders: headers,
+		OkCodes:     []int{200, 204, 300},
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	})
 }

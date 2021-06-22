@@ -133,6 +133,7 @@ func (r Result) extractIntoPtr(to interface{}, label string) error {
 				toValue.Set(newSlice)
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 				// jtopjian: This was put into place to resolve the issue
 				// described at
@@ -163,6 +164,9 @@ func (r Result) extractIntoPtr(to interface{}, label string) error {
 				// use a review.
 				return nil
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			}
 		}
 	case reflect.Struct:

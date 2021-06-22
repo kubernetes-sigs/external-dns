@@ -19,6 +19,7 @@ func (h *msghdr) pack(vs []iovec, bs [][]byte, oob []byte, sa []byte) {
 		h.Namelen = uint32(len(sa))
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	} else {
 		h.Name = nil
 		h.Namelen = 0
@@ -31,6 +32,9 @@ func (h *msghdr) pack(vs []iovec, bs [][]byte, oob []byte, sa []byte) {
 		h.Name = nil
 		h.Namelen = 0
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 }
 

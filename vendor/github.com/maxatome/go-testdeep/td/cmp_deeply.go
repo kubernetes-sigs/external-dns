@@ -10,6 +10,7 @@ import (
 	"bytes"
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"fmt"
 	"reflect"
 	"strings"
@@ -304,6 +305,32 @@ func formatError(t TestingT, isFatal bool, err *ctxerr.Error, args ...interface{
 			nl = "\n"
 		}
 	}
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"reflect"
+
+	"github.com/maxatome/go-testdeep/helpers/tdutil"
+	"github.com/maxatome/go-testdeep/internal/ctxerr"
+)
+
+func formatError(t TestingT, isFatal bool, err *ctxerr.Error, args ...interface{}) {
+	t.Helper()
+
+	const failedTest = "Failed test"
+
+	var buf bytes.Buffer
+	ctxerr.ColorizeTestNameOn(&buf)
+	if len(args) == 0 {
+		buf.WriteString(failedTest + "\n")
+	} else {
+		buf.WriteString(failedTest + " '")
+		tdutil.FbuildTestName(&buf, args...)
+		buf.WriteString("'\n")
+	}
+	ctxerr.ColorizeTestNameOff(&buf)
+
+	err.Append(&buf, "")
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 	if isFatal {
 		t.Fatal(buf.String())

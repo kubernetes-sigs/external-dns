@@ -101,6 +101,7 @@ func deepMap(dst, src reflect.Value, visited map[uintptr]*visit, depth int, conf
 			if srcKind == dstKind {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 				if err = deepMerge(dstElement, srcElement, visited, depth+1, config); err != nil {
 					return
 				}
@@ -241,6 +242,69 @@ func _map(dst, src interface{}, opts ...func(*Config)) error {
 =======
 		return deepMerge(vDst, vSrc, make(map[uintptr]*visit), 0, config)
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+				if _, err = deepMerge(dstElement, srcElement, visited, depth+1, config); err != nil {
+					return
+				}
+			} else if dstKind == reflect.Interface && dstElement.Kind() == reflect.Interface {
+				if _, err = deepMerge(dstElement, srcElement, visited, depth+1, config); err != nil {
+					return
+				}
+			} else if srcKind == reflect.Map {
+				if err = deepMap(dstElement, srcElement, visited, depth+1, config); err != nil {
+					return
+				}
+			} else {
+				return fmt.Errorf("type mismatch on %s field: found %v, expected %v", fieldName, srcKind, dstKind)
+			}
+		}
+	}
+	return
+}
+
+// Map sets fields' values in dst from src.
+// src can be a map with string keys or a struct. dst must be the opposite:
+// if src is a map, dst must be a valid pointer to struct. If src is a struct,
+// dst must be map[string]interface{}.
+// It won't merge unexported (private) fields and will do recursively
+// any exported field.
+// If dst is a map, keys will be src fields' names in lower camel case.
+// Missing key in src that doesn't match a field in dst will be skipped. This
+// doesn't apply if dst is a map.
+// This is separated method from Merge because it is cleaner and it keeps sane
+// semantics: merging equal types, mapping different (restricted) types.
+func Map(dst, src interface{}, opts ...func(*Config)) error {
+	return _map(dst, src, opts...)
+}
+
+// MapWithOverwrite will do the same as Map except that non-empty dst attributes will be overridden by
+// non-empty src attribute values.
+// Deprecated: Use Map(…) with WithOverride
+func MapWithOverwrite(dst, src interface{}, opts ...func(*Config)) error {
+	return _map(dst, src, append(opts, WithOverride)...)
+}
+
+func _map(dst, src interface{}, opts ...func(*Config)) error {
+	var (
+		vDst, vSrc reflect.Value
+		err        error
+	)
+	config := &Config{}
+
+	for _, opt := range opts {
+		opt(config)
+	}
+
+	if vDst, vSrc, err = resolveValues(dst, src); err != nil {
+		return err
+	}
+	// To be friction-less, we redirect equal-type arguments
+	// to deepMerge. Only because arguments can be anything.
+	if vSrc.Kind() == vDst.Kind() {
+		_, err := deepMerge(vDst, vSrc, make(map[uintptr]*visit), 0, config)
+		return err
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 	switch vSrc.Kind() {
 	case reflect.Struct:

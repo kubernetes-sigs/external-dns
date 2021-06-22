@@ -14,6 +14,7 @@ type KeylessSSL struct {
 	CreatedOn   time.Time `json:"created_on"`
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	ModifiedOn  time.Time `json:"modified_on"`
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -24,6 +25,10 @@ type KeylessSSL struct {
 =======
 	ModifiedOn  time.Time `json:"modified_on"`
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	ModifiedOn  time.Time `json:"modifed_on"`
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // KeylessSSLResponse represents the response from the Keyless SSL endpoint.

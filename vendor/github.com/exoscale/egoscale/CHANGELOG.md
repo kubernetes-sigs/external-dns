@@ -3,6 +3,7 @@ Changelog
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 0.73.2
 ------
 
@@ -1009,6 +1010,9 @@ Changelog
 - change: add Json tag `omitempty` on field  `TemplateFilter` in type `ListTemplates` (#412)
 
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 0.18.1
 ------
 

@@ -347,6 +347,7 @@ func (client *Client) request(ctx context.Context, command Command) (json.RawMes
 	request = request.WithContext(ctx)
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	request.Header.Add("User-Agent", UserAgent)
@@ -355,6 +356,10 @@ func (client *Client) request(ctx context.Context, command Command) (json.RawMes
 	request.Header.Add("User-Agent", UserAgent)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	request.Header.Add("User-Agent", UserAgent)
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 	if method == "POST" {
 		request.Header.Add("Content-Type", "application/x-www-form-urlencoded")

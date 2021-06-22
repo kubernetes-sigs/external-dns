@@ -57,6 +57,7 @@ var (
 	// directory.  See also https://git-scm.com/docs/gitattributes
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	gitVersion   string = "v0.0.0-master+$Format:%H$"
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -67,6 +68,10 @@ var (
 =======
 	gitVersion   string = "v0.0.0-master+$Format:%H$"
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	gitVersion   string = "v0.0.0-master+$Format:%h$"
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	gitCommit    string = "$Format:%H$" // sha1 from git, output of $(git rev-parse HEAD)
 	gitTreeState string = ""            // state of git tree, either "clean" or "dirty"
 

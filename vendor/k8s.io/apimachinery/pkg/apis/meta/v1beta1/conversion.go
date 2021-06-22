@@ -18,6 +18,7 @@ package v1beta1
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import (
 	"unsafe"
 
@@ -78,5 +79,15 @@ func Convert_v1beta1_PartialObjectMetadataList_To_v1_PartialObjectMetadataList(i
 func Convert_v1_PartialObjectMetadataList_To_v1beta1_PartialObjectMetadataList(in *v1.PartialObjectMetadataList, out *PartialObjectMetadataList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
 	out.Items = *(*[]v1.PartialObjectMetadata)(unsafe.Pointer(&in.Items))
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+import "k8s.io/apimachinery/pkg/conversion"
+
+// Convert_Slice_string_To_v1beta1_IncludeObjectPolicy allows converting a URL query parameter value
+func Convert_Slice_string_To_v1beta1_IncludeObjectPolicy(input *[]string, out *IncludeObjectPolicy, s conversion.Scope) error {
+	if len(*input) > 0 {
+		*out = IncludeObjectPolicy((*input)[0])
+	}
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return nil
 }

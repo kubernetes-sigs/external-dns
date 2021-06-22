@@ -112,6 +112,7 @@ func direntNamlen(buf []byte) (uint64, bool) {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //sysnb	pipe() (fd1 int, fd2 int, err error)
 
 func Pipe(p []int) (err error) {
@@ -256,6 +257,59 @@ func setattrlistTimes(path string, times []Timespec, flags int) error {
 =======
 //sys	sysctl(mib []_C_int, old *byte, oldlen *uintptr, new *byte, newlen uintptr) (err error) = SYS___SYSCTL
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//sysnb pipe() (fd1 int, fd2 int, err error)
+func Pipe(p []int) (err error) {
+	if len(p) != 2 {
+		return EINVAL
+	}
+	p[0], p[1], err = pipe()
+	return
+}
+
+//sys Getdents(fd int, buf []byte) (n int, err error)
+func Getdirentries(fd int, buf []byte, basep *uintptr) (n int, err error) {
+	n, err = Getdents(fd, buf)
+	if err != nil || basep == nil {
+		return
+	}
+
+	var off int64
+	off, err = Seek(fd, 0, 1 /* SEEK_CUR */)
+	if err != nil {
+		*basep = ^uintptr(0)
+		return
+	}
+	*basep = uintptr(off)
+	if unsafe.Sizeof(*basep) == 8 {
+		return
+	}
+	if off>>32 != 0 {
+		// We can't stuff the offset back into a uintptr, so any
+		// future calls would be suspect. Generate an error.
+		// EIO is allowed by getdirentries.
+		err = EIO
+	}
+	return
+}
+
+//sys	Getcwd(buf []byte) (n int, err error) = SYS___GETCWD
+
+// TODO
+func sendfile(outfd int, infd int, offset *int64, count int) (written int, err error) {
+	return -1, ENOSYS
+}
+
+func setattrlistTimes(path string, times []Timespec, flags int) error {
+	// used on Darwin for UtimesNano
+	return ENOSYS
+}
+
+//sys	ioctl(fd int, req uint, arg uintptr) (err error)
+
+//sys   sysctl(mib []_C_int, old *byte, oldlen *uintptr, new *byte, newlen uintptr) (err error) = SYS___SYSCTL
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 func IoctlGetPtmget(fd int, req uint) (*Ptmget, error) {
 	var value Ptmget

@@ -52,6 +52,7 @@ var _ TestDeep = &tdTruncTime{}
 func TruncTime(expectedTime interface{}, trunc ...time.Duration) TestDeep {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	const usage = "(time.Time[, time.Duration])"
 
 	t := tdTruncTime{
@@ -244,6 +245,77 @@ func (t *tdTruncTime) String() string {
 
 	if t.expectedType.Implements(types.FmtStringer) {
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if len(trunc) <= 1 {
+		t := tdTruncTime{
+			tdExpectedType: tdExpectedType{
+				base: newBase(3),
+			},
+		}
+
+		if len(trunc) == 1 {
+			t.trunc = trunc[0]
+		}
+
+		vval := reflect.ValueOf(expectedTime)
+
+		t.expectedType = vval.Type()
+		if t.expectedType == timeType {
+			t.expectedTime = expectedTime.(time.Time).Truncate(t.trunc)
+			return &t
+		}
+		if t.expectedType.ConvertibleTo(timeType) {
+			t.expectedTime = vval.Convert(timeType).
+				Interface().(time.Time).Truncate(t.trunc)
+			return &t
+		}
+	}
+	panic("usage: TruncTime(time.Time[, time.Duration])")
+}
+
+func (t *tdTruncTime) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	err := t.checkType(ctx, got)
+	if err != nil {
+		return ctx.CollectError(err)
+	}
+
+	gotTime, err := getTime(ctx, got, got.Type() != timeType)
+	if err != nil {
+		return ctx.CollectError(err)
+	}
+	gotTimeTrunc := gotTime.Truncate(t.trunc)
+
+	if gotTimeTrunc.Equal(t.expectedTime) {
+		return nil
+	}
+
+	// Fail
+	if ctx.BooleanError {
+		return ctxerr.BooleanError
+	}
+
+	var gotRawStr, gotTruncStr string
+	if t.expectedType != timeType &&
+		t.expectedType.Implements(stringerInterface) {
+		gotRawStr = got.Interface().(fmt.Stringer).String()
+		gotTruncStr = reflect.ValueOf(gotTimeTrunc).Convert(t.expectedType).
+			Interface().(fmt.Stringer).String()
+	} else {
+		gotRawStr = gotTime.String()
+		gotTruncStr = gotTimeTrunc.String()
+	}
+
+	return ctx.CollectError(&ctxerr.Error{
+		Message:  "values differ",
+		Got:      types.RawString(gotRawStr + "\ntruncated to:\n" + gotTruncStr),
+		Expected: t,
+	})
+}
+
+func (t *tdTruncTime) String() string {
+	if t.expectedType.Implements(stringerInterface) {
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		return reflect.ValueOf(t.expectedTime).Convert(t.expectedType).
 			Interface().(fmt.Stringer).String()
 	}

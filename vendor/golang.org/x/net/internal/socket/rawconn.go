@@ -19,6 +19,7 @@ type Conn struct {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // tcpConn is an interface implemented by net.TCPConn.
 // It can be used for interface assertions to check if a net.Conn is a TCP connection.
 type tcpConn interface {
@@ -109,6 +110,21 @@ func NewConn(c net.Conn) (*Conn, error) {
 =======
 	case ipConn:
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// NewConn returns a new raw connection.
+func NewConn(c net.Conn) (*Conn, error) {
+	var err error
+	var cc Conn
+	switch c := c.(type) {
+	case *net.TCPConn:
+		cc.network = "tcp"
+		cc.c, err = c.SyscallConn()
+	case *net.UDPConn:
+		cc.network = "udp"
+		cc.c, err = c.SyscallConn()
+	case *net.IPConn:
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		cc.network = "ip"
 		cc.c, err = c.SyscallConn()
 	default:

@@ -46,6 +46,7 @@ func parseLoad(loadavgBytes []byte) (*LoadAvg, error) {
 	if len(parts) < 3 {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return nil, fmt.Errorf("malformed loadavg line: too few fields in loadavg string: %q", string(loadavgBytes))
 	}
 
@@ -76,6 +77,17 @@ func parseLoad(loadavgBytes []byte) (*LoadAvg, error) {
 =======
 			return nil, fmt.Errorf("could not parse load %q: %w", load, err)
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		return nil, fmt.Errorf("malformed loadavg line: too few fields in loadavg string: %s", string(loadavgBytes))
+	}
+
+	var err error
+	for i, load := range parts[0:3] {
+		loads[i], err = strconv.ParseFloat(load, 64)
+		if err != nil {
+			return nil, fmt.Errorf("could not parse load '%s': %s", load, err)
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		}
 	}
 	return &LoadAvg{

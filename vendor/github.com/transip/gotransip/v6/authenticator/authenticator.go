@@ -207,6 +207,7 @@ func (a *Authenticator) getNonce() (string, error) {
 func (a *Authenticator) getAuthRequest() (rest.Request, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	labelPostFix := time.Now().UnixNano()
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -217,6 +218,10 @@ func (a *Authenticator) getAuthRequest() (rest.Request, error) {
 =======
 	labelPostFix := time.Now().UnixNano()
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	labelPostFix := time.Now().Unix()
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 	nonce, err := a.getNonce()
 	if err != nil {

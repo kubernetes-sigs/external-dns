@@ -90,6 +90,7 @@ func (c *Client) NewRequest(operation *request.Operation, params interface{}, da
 func (c *Client) AddDebugHandlers() {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	if !c.Config.LogLevel.AtLeast(aws.LogDebug) {
@@ -104,6 +105,13 @@ func (c *Client) AddDebugHandlers() {
 
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if !c.Config.LogLevel.AtLeast(aws.LogDebug) {
+		return
+	}
+
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	c.Handlers.Send.PushFrontNamed(LogHTTPRequestHandler)
 	c.Handlers.Send.PushBackNamed(LogHTTPResponseHandler)
 }

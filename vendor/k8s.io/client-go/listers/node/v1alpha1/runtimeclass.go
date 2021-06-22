@@ -28,6 +28,7 @@ import (
 // RuntimeClassLister helps list RuntimeClasses.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type RuntimeClassLister interface {
 	// List lists all RuntimeClasses in the indexer.
@@ -52,6 +53,13 @@ type RuntimeClassLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type RuntimeClassLister interface {
+	// List lists all RuntimeClasses in the indexer.
+	List(selector labels.Selector) (ret []*v1alpha1.RuntimeClass, err error)
+	// Get retrieves the RuntimeClass from the index for a given name.
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1alpha1.RuntimeClass, error)
 	RuntimeClassListerExpansion
 }

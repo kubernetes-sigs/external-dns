@@ -21,6 +21,7 @@ type FirewallRule struct {
 	Filter      Filter      `json:"filter"`
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Products    []string    `json:"products,omitempty"`
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -29,6 +30,9 @@ type FirewallRule struct {
 =======
 	Products    []string    `json:"products,omitempty"`
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	CreatedOn   time.Time   `json:"created_on,omitempty"`
 	ModifiedOn  time.Time   `json:"modified_on,omitempty"`
 }

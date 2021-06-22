@@ -13,6 +13,7 @@ go:
     - "1.13.x"
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     - "1.14.x"
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -21,6 +22,9 @@ go:
 =======
     - "1.14.x"
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
     - "tip"
 
 go_import_path: gopkg.in/yaml.v2

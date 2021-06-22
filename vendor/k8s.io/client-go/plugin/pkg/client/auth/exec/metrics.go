@@ -19,6 +19,7 @@ package exec
 import (
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"errors"
 	"io/fs"
 	"os/exec"
@@ -205,5 +206,47 @@ func incrementCallsMetric(err error) {
 	default: // We don't know about this error type.
 		klog.V(2).InfoS("unexpected exec plugin return error type", "type", reflect.TypeOf(err).String(), "err", err)
 		metrics.ExecPluginCalls.Increment(failureExitCode, clientInternalError)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"sync"
+	"time"
+
+	"k8s.io/client-go/tools/metrics"
+)
+
+type certificateExpirationTracker struct {
+	mu        sync.RWMutex
+	m         map[*Authenticator]time.Time
+	metricSet func(*time.Time)
+}
+
+var expirationMetrics = &certificateExpirationTracker{
+	m: map[*Authenticator]time.Time{},
+	metricSet: func(e *time.Time) {
+		metrics.ClientCertExpiry.Set(e)
+	},
+}
+
+// set stores the given expiration time and updates the updates the certificate
+// expiry metric to the earliest expiration time.
+func (c *certificateExpirationTracker) set(a *Authenticator, t time.Time) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.m[a] = t
+
+	earliest := time.Time{}
+	for _, t := range c.m {
+		if t.IsZero() {
+			continue
+		}
+		if earliest.IsZero() || earliest.After(t) {
+			earliest = t
+		}
+	}
+	if earliest.IsZero() {
+		c.metricSet(nil)
+	} else {
+		c.metricSet(&earliest)
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 }

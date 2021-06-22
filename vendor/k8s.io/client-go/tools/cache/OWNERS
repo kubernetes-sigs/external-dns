@@ -22,6 +22,7 @@ reviewers:
 - liggitt
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 - davidopp
 - pmorie
 - janetkuo
@@ -66,5 +67,29 @@ reviewers:
 - mqliang
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+- nikhiljindal
+- erictune
+- davidopp
+- pmorie
+- janetkuo
+- justinsb
+- eparis
+- soltysh
+- jsafrane
+- dims
+- madhusudancs
+- hongchaodeng
+- krousey
+- xiang90
+- mml
+- ingvagabund
+- resouer
+- jessfraz
+- david-mcmahon
+- mfojtik
+- mqliang
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 - sdminonne
 - ncdc

@@ -5,6 +5,7 @@ import (
 	"fmt"
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net"
 	"strconv"
 	"strings"
@@ -519,6 +520,55 @@ func (c SpectrumApplicationConnectivity) Dynamic() bool {
 // Static checks if address family is specified as static config
 func (c SpectrumApplicationConnectivity) Static() bool {
 	return c == SpectrumConnectivityStatic
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"time"
+
+	"github.com/pkg/errors"
+)
+
+// SpectrumApplication defines a single Spectrum Application.
+type SpectrumApplication struct {
+	ID            string                        `json:"id,omitempty"`
+	Protocol      string                        `json:"protocol,omitempty"`
+	IPv4          bool                          `json:"ipv4,omitempty"`
+	DNS           SpectrumApplicationDNS        `json:"dns,omitempty"`
+	OriginDirect  []string                      `json:"origin_direct,omitempty"`
+	OriginPort    int                           `json:"origin_port,omitempty"`
+	OriginDNS     *SpectrumApplicationOriginDNS `json:"origin_dns,omitempty"`
+	IPFirewall    bool                          `json:"ip_firewall,omitempty"`
+	ProxyProtocol bool                          `json:"proxy_protocol,omitempty"`
+	TLS           string                        `json:"tls,omitempty"`
+	CreatedOn     *time.Time                    `json:"created_on,omitempty"`
+	ModifiedOn    *time.Time                    `json:"modified_on,omitempty"`
+}
+
+// SpectrumApplicationDNS holds the external DNS configuration for a Spectrum
+// Application.
+type SpectrumApplicationDNS struct {
+	Type string `json:"type"`
+	Name string `json:"name"`
+}
+
+// SpectrumApplicationOriginDNS holds the origin DNS configuration for a Spectrum
+// Application.
+type SpectrumApplicationOriginDNS struct {
+	Name string `json:"name"`
+}
+
+// SpectrumApplicationDetailResponse is the structure of the detailed response
+// from the API.
+type SpectrumApplicationDetailResponse struct {
+	Response
+	Result SpectrumApplication `json:"result"`
+}
+
+// SpectrumApplicationsDetailResponse is the structure of the detailed response
+// from the API.
+type SpectrumApplicationsDetailResponse struct {
+	Response
+	Result []SpectrumApplication `json:"result"`
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // SpectrumApplications fetches all of the Spectrum applications for a zone.

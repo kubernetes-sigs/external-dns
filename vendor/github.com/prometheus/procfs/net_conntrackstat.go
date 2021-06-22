@@ -57,6 +57,7 @@ func readConntrackStat(path string) ([]ConntrackStatEntry, error) {
 	if err != nil {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return nil, fmt.Errorf("failed to read conntrack stats from %q: %w", path, err)
 	}
 
@@ -257,6 +258,102 @@ func parseConntrackStatField(field string) (uint64, error) {
 =======
 		return 0, fmt.Errorf("couldn't parse %q field: %w", field, err)
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		return nil, fmt.Errorf("failed to read conntrack stats from %q: %v", path, err)
+	}
+
+	return stat, nil
+}
+
+// Reads the contents of a conntrack statistics file and parses a slice of ConntrackStatEntries
+func parseConntrackStat(r io.Reader) ([]ConntrackStatEntry, error) {
+	var entries []ConntrackStatEntry
+
+	scanner := bufio.NewScanner(r)
+	scanner.Scan()
+	for scanner.Scan() {
+		fields := strings.Fields(scanner.Text())
+		conntrackEntry, err := parseConntrackStatEntry(fields)
+		if err != nil {
+			return nil, err
+		}
+		entries = append(entries, *conntrackEntry)
+	}
+
+	return entries, nil
+}
+
+// Parses a ConntrackStatEntry from given array of fields
+func parseConntrackStatEntry(fields []string) (*ConntrackStatEntry, error) {
+	if len(fields) != 17 {
+		return nil, fmt.Errorf("invalid conntrackstat entry, missing fields")
+	}
+	entry := &ConntrackStatEntry{}
+
+	entries, err := parseConntrackStatField(fields[0])
+	if err != nil {
+		return nil, err
+	}
+	entry.Entries = entries
+
+	found, err := parseConntrackStatField(fields[2])
+	if err != nil {
+		return nil, err
+	}
+	entry.Found = found
+
+	invalid, err := parseConntrackStatField(fields[4])
+	if err != nil {
+		return nil, err
+	}
+	entry.Invalid = invalid
+
+	ignore, err := parseConntrackStatField(fields[5])
+	if err != nil {
+		return nil, err
+	}
+	entry.Ignore = ignore
+
+	insert, err := parseConntrackStatField(fields[8])
+	if err != nil {
+		return nil, err
+	}
+	entry.Insert = insert
+
+	insertFailed, err := parseConntrackStatField(fields[9])
+	if err != nil {
+		return nil, err
+	}
+	entry.InsertFailed = insertFailed
+
+	drop, err := parseConntrackStatField(fields[10])
+	if err != nil {
+		return nil, err
+	}
+	entry.Drop = drop
+
+	earlyDrop, err := parseConntrackStatField(fields[11])
+	if err != nil {
+		return nil, err
+	}
+	entry.EarlyDrop = earlyDrop
+
+	searchRestart, err := parseConntrackStatField(fields[16])
+	if err != nil {
+		return nil, err
+	}
+	entry.SearchRestart = searchRestart
+
+	return entry, nil
+}
+
+// Parses a uint64 from given hex in string
+func parseConntrackStatField(field string) (uint64, error) {
+	val, err := strconv.ParseUint(field, 16, 64)
+	if err != nil {
+		return 0, fmt.Errorf("couldn't parse \"%s\" field: %s", field, err)
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 	return val, err
 }

@@ -20,6 +20,7 @@ package grpclog
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import "google.golang.org/grpc/internal/grpclog"
 
 // Logger mimics golang's standard Logger as an interface.
@@ -72,6 +73,27 @@ func SetLogger(l Logger) {
 =======
 	grpclog.Logger = &loggerWrapper{Logger: l}
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// Logger mimics golang's standard Logger as an interface.
+//
+// Deprecated: use LoggerV2.
+type Logger interface {
+	Fatal(args ...interface{})
+	Fatalf(format string, args ...interface{})
+	Fatalln(args ...interface{})
+	Print(args ...interface{})
+	Printf(format string, args ...interface{})
+	Println(args ...interface{})
+}
+
+// SetLogger sets the logger that is used in grpc. Call only from
+// init() functions.
+//
+// Deprecated: use SetLoggerV2.
+func SetLogger(l Logger) {
+	logger = &loggerWrapper{Logger: l}
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // loggerWrapper wraps Logger into a LoggerV2.

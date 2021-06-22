@@ -44,6 +44,7 @@ func FbuildTestName(w io.Writer, args ...interface{}) {
 		// formatting directive" errors
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		fmt.Fprint(w, args[:]...) // nolint: errcheck,gocritic
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -54,5 +55,9 @@ func FbuildTestName(w io.Writer, args ...interface{}) {
 =======
 		fmt.Fprint(w, args[:]...) // nolint: errcheck,gocritic
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		fmt.Fprint(w, args[:]...) // nolint: errcheck
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 }

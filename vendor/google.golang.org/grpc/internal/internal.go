@@ -27,6 +27,7 @@ import (
 	"google.golang.org/grpc/connectivity"
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"google.golang.org/grpc/serviceconfig"
 )
 
@@ -115,6 +116,34 @@ var (
 	// listener moves to "not-serving" mode.
 	DrainServerTransports interface{} // func(*grpc.Server, string)
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+)
+
+var (
+	// WithResolverBuilder is set by dialoptions.go
+	WithResolverBuilder interface{} // func (resolver.Builder) grpc.DialOption
+	// WithHealthCheckFunc is set by dialoptions.go
+	WithHealthCheckFunc interface{} // func (HealthChecker) DialOption
+	// HealthCheckFunc is used to provide client-side LB channel health checking
+	HealthCheckFunc HealthChecker
+	// BalancerUnregister is exported by package balancer to unregister a balancer.
+	BalancerUnregister func(name string)
+	// KeepaliveMinPingTime is the minimum ping interval.  This must be 10s by
+	// default, but tests may wish to set it lower for convenience.
+	KeepaliveMinPingTime = 10 * time.Second
+	// StatusRawProto is exported by status/status.go. This func returns a
+	// pointer to the wrapped Status proto for a given status.Status without a
+	// call to proto.Clone(). The returned Status proto should not be mutated by
+	// the caller.
+	StatusRawProto interface{} // func (*status.Status) *spb.Status
+	// NewRequestInfoContext creates a new context based on the argument context attaching
+	// the passed in RequestInfo to the new context.
+	NewRequestInfoContext interface{} // func(context.Context, credentials.RequestInfo) context.Context
+	// ParseServiceConfigForTesting is for creating a fake
+	// ClientConn for resolver testing only
+	ParseServiceConfigForTesting interface{} // func(string) *serviceconfig.ParseResult
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )
 
 // HealthChecker defines the signature of the client-side LB channel health checking function.

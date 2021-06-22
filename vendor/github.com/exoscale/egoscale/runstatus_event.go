@@ -8,6 +8,7 @@ import (
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // RunstatusEvent is a runstatus event
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -18,6 +19,10 @@ import (
 =======
 // RunstatusEvent is a runstatus event
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//RunstatusEvent is a runstatus event
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type RunstatusEvent struct {
 	Created *time.Time `json:"created,omitempty"`
 	State   string     `json:"state,omitempty"`

@@ -10,6 +10,7 @@ $ go get -u go.uber.org/atomic@v1
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ### Legacy Import Path
 
 As of v1.5.0, the import path `go.uber.org/atomic` is the only supported way
@@ -68,6 +69,16 @@ $ go mod edit -replace github.com/uber-go/atomic=go.uber.org/atomic@v1
 =======
 $ go mod edit -replace github.com/uber-go/atomic=github.com/uber-go/atomic@v1.4.0
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+Note: If you are using Go modules, this package will fail to compile with the
+import path `github.com/uber-go/atomic`. To continue using that import path,
+you will have to add a `replace` directive to your `go.mod`, replacing
+`github.com/uber-go/atomic` with `go.uber.org/atomic`.
+
+```shell
+$ go mod edit -replace github.com/uber-go/atomic=go.uber.org/atomic@v1
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 ```
 
 ## Usage

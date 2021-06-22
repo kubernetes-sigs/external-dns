@@ -63,6 +63,7 @@ var (
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 var defaultClient = &Client{hc: &http.Client{
 	Transport: &http.Transport{
 		Dial: (&net.Dialer{
@@ -643,6 +644,261 @@ func (c *Client) getETag(suffix string) (value, etag string, err error) {
 	if reqErr != nil {
 		return "", "", nil
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+var (
+	defaultClient = &Client{hc: &http.Client{
+		Transport: &http.Transport{
+			Dial: (&net.Dialer{
+				Timeout:   2 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).Dial,
+			ResponseHeaderTimeout: 2 * time.Second,
+		},
+	}}
+	subscribeClient = &Client{hc: &http.Client{
+		Transport: &http.Transport{
+			Dial: (&net.Dialer{
+				Timeout:   2 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).Dial,
+		},
+	}}
+)
+
+// NotDefinedError is returned when requested metadata is not defined.
+//
+// The underlying string is the suffix after "/computeMetadata/v1/".
+//
+// This error is not returned if the value is defined to be the empty
+// string.
+type NotDefinedError string
+
+func (suffix NotDefinedError) Error() string {
+	return fmt.Sprintf("metadata: GCE metadata %q not defined", string(suffix))
+}
+
+func (c *cachedValue) get(cl *Client) (v string, err error) {
+	defer c.mu.Unlock()
+	c.mu.Lock()
+	if c.v != "" {
+		return c.v, nil
+	}
+	if c.trim {
+		v, err = cl.getTrimmed(c.k)
+	} else {
+		v, err = cl.Get(c.k)
+	}
+	if err == nil {
+		c.v = v
+	}
+	return
+}
+
+var (
+	onGCEOnce sync.Once
+	onGCE     bool
+)
+
+// OnGCE reports whether this process is running on Google Compute Engine.
+func OnGCE() bool {
+	onGCEOnce.Do(initOnGCE)
+	return onGCE
+}
+
+func initOnGCE() {
+	onGCE = testOnGCE()
+}
+
+func testOnGCE() bool {
+	// The user explicitly said they're on GCE, so trust them.
+	if os.Getenv(metadataHostEnv) != "" {
+		return true
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	resc := make(chan bool, 2)
+
+	// Try two strategies in parallel.
+	// See https://github.com/googleapis/google-cloud-go/issues/194
+	go func() {
+		req, _ := http.NewRequest("GET", "http://"+metadataIP, nil)
+		req.Header.Set("User-Agent", userAgent)
+		res, err := defaultClient.hc.Do(req.WithContext(ctx))
+		if err != nil {
+			resc <- false
+			return
+		}
+		defer res.Body.Close()
+		resc <- res.Header.Get("Metadata-Flavor") == "Google"
+	}()
+
+	go func() {
+		addrs, err := net.LookupHost("metadata.google.internal")
+		if err != nil || len(addrs) == 0 {
+			resc <- false
+			return
+		}
+		resc <- strsContains(addrs, metadataIP)
+	}()
+
+	tryHarder := systemInfoSuggestsGCE()
+	if tryHarder {
+		res := <-resc
+		if res {
+			// The first strategy succeeded, so let's use it.
+			return true
+		}
+		// Wait for either the DNS or metadata server probe to
+		// contradict the other one and say we are running on
+		// GCE. Give it a lot of time to do so, since the system
+		// info already suggests we're running on a GCE BIOS.
+		timer := time.NewTimer(5 * time.Second)
+		defer timer.Stop()
+		select {
+		case res = <-resc:
+			return res
+		case <-timer.C:
+			// Too slow. Who knows what this system is.
+			return false
+		}
+	}
+
+	// There's no hint from the system info that we're running on
+	// GCE, so use the first probe's result as truth, whether it's
+	// true or false. The goal here is to optimize for speed for
+	// users who are NOT running on GCE. We can't assume that
+	// either a DNS lookup or an HTTP request to a blackholed IP
+	// address is fast. Worst case this should return when the
+	// metaClient's Transport.ResponseHeaderTimeout or
+	// Transport.Dial.Timeout fires (in two seconds).
+	return <-resc
+}
+
+// systemInfoSuggestsGCE reports whether the local system (without
+// doing network requests) suggests that we're running on GCE. If this
+// returns true, testOnGCE tries a bit harder to reach its metadata
+// server.
+func systemInfoSuggestsGCE() bool {
+	if runtime.GOOS != "linux" {
+		// We don't have any non-Linux clues available, at least yet.
+		return false
+	}
+	slurp, _ := ioutil.ReadFile("/sys/class/dmi/id/product_name")
+	name := strings.TrimSpace(string(slurp))
+	return name == "Google" || name == "Google Compute Engine"
+}
+
+// Subscribe calls Client.Subscribe on a client designed for subscribing (one with no
+// ResponseHeaderTimeout).
+func Subscribe(suffix string, fn func(v string, ok bool) error) error {
+	return subscribeClient.Subscribe(suffix, fn)
+}
+
+// Get calls Client.Get on the default client.
+func Get(suffix string) (string, error) { return defaultClient.Get(suffix) }
+
+// ProjectID returns the current instance's project ID string.
+func ProjectID() (string, error) { return defaultClient.ProjectID() }
+
+// NumericProjectID returns the current instance's numeric project ID.
+func NumericProjectID() (string, error) { return defaultClient.NumericProjectID() }
+
+// InternalIP returns the instance's primary internal IP address.
+func InternalIP() (string, error) { return defaultClient.InternalIP() }
+
+// ExternalIP returns the instance's primary external (public) IP address.
+func ExternalIP() (string, error) { return defaultClient.ExternalIP() }
+
+// Email calls Client.Email on the default client.
+func Email(serviceAccount string) (string, error) { return defaultClient.Email(serviceAccount) }
+
+// Hostname returns the instance's hostname. This will be of the form
+// "<instanceID>.c.<projID>.internal".
+func Hostname() (string, error) { return defaultClient.Hostname() }
+
+// InstanceTags returns the list of user-defined instance tags,
+// assigned when initially creating a GCE instance.
+func InstanceTags() ([]string, error) { return defaultClient.InstanceTags() }
+
+// InstanceID returns the current VM's numeric instance ID.
+func InstanceID() (string, error) { return defaultClient.InstanceID() }
+
+// InstanceName returns the current VM's instance ID string.
+func InstanceName() (string, error) { return defaultClient.InstanceName() }
+
+// Zone returns the current VM's zone, such as "us-central1-b".
+func Zone() (string, error) { return defaultClient.Zone() }
+
+// InstanceAttributes calls Client.InstanceAttributes on the default client.
+func InstanceAttributes() ([]string, error) { return defaultClient.InstanceAttributes() }
+
+// ProjectAttributes calls Client.ProjectAttributes on the default client.
+func ProjectAttributes() ([]string, error) { return defaultClient.ProjectAttributes() }
+
+// InstanceAttributeValue calls Client.InstanceAttributeValue on the default client.
+func InstanceAttributeValue(attr string) (string, error) {
+	return defaultClient.InstanceAttributeValue(attr)
+}
+
+// ProjectAttributeValue calls Client.ProjectAttributeValue on the default client.
+func ProjectAttributeValue(attr string) (string, error) {
+	return defaultClient.ProjectAttributeValue(attr)
+}
+
+// Scopes calls Client.Scopes on the default client.
+func Scopes(serviceAccount string) ([]string, error) { return defaultClient.Scopes(serviceAccount) }
+
+func strsContains(ss []string, s string) bool {
+	for _, v := range ss {
+		if v == s {
+			return true
+		}
+	}
+	return false
+}
+
+// A Client provides metadata.
+type Client struct {
+	hc *http.Client
+}
+
+// NewClient returns a Client that can be used to fetch metadata. All HTTP requests
+// will use the given http.Client instead of the default client.
+func NewClient(c *http.Client) *Client {
+	return &Client{hc: c}
+}
+
+// getETag returns a value from the metadata service as well as the associated ETag.
+// This func is otherwise equivalent to Get.
+func (c *Client) getETag(suffix string) (value, etag string, err error) {
+	// Using a fixed IP makes it very difficult to spoof the metadata service in
+	// a container, which is an important use-case for local testing of cloud
+	// deployments. To enable spoofing of the metadata service, the environment
+	// variable GCE_METADATA_HOST is first inspected to decide where metadata
+	// requests shall go.
+	host := os.Getenv(metadataHostEnv)
+	if host == "" {
+		// Using 169.254.169.254 instead of "metadata" here because Go
+		// binaries built with the "netgo" tag and without cgo won't
+		// know the search suffix for "metadata" is
+		// ".google.internal", and this IP address is documented as
+		// being stable anyway.
+		host = metadataIP
+	}
+	u := "http://" + host + "/computeMetadata/v1/" + suffix
+	req, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		return "", "", err
+	}
+	req.Header.Set("Metadata-Flavor", "Google")
+	req.Header.Set("User-Agent", userAgent)
+	res, err := c.hc.Do(req)
+	if err != nil {
+		return "", "", err
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 	defer res.Body.Close()
 	if res.StatusCode == http.StatusNotFound {

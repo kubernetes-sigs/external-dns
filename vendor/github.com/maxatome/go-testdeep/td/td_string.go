@@ -36,6 +36,7 @@ func getString(ctx ctxerr.Context, got reflect.Value) (string, *ctxerr.Error) {
 	case reflect.Slice:
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		if got.Type().Elem() == types.Uint8 {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -46,6 +47,10 @@ func getString(ctx ctxerr.Context, got reflect.Value) (string, *ctxerr.Error) {
 =======
 		if got.Type().Elem() == types.Uint8 {
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		if got.Type().Elem() == uint8Type {
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			return string(got.Bytes()), nil
 		}
 		fallthrough

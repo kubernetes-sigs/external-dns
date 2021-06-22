@@ -28,6 +28,7 @@ import (
 // ResourceQuotaLister helps list ResourceQuotas.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type ResourceQuotaLister interface {
 	// List lists all ResourceQuotas in the indexer.
@@ -120,6 +121,45 @@ type ResourceQuotaNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type ResourceQuotaLister interface {
+	// List lists all ResourceQuotas in the indexer.
+	List(selector labels.Selector) (ret []*v1.ResourceQuota, err error)
+	// ResourceQuotas returns an object that can list and get ResourceQuotas.
+	ResourceQuotas(namespace string) ResourceQuotaNamespaceLister
+	ResourceQuotaListerExpansion
+}
+
+// resourceQuotaLister implements the ResourceQuotaLister interface.
+type resourceQuotaLister struct {
+	indexer cache.Indexer
+}
+
+// NewResourceQuotaLister returns a new ResourceQuotaLister.
+func NewResourceQuotaLister(indexer cache.Indexer) ResourceQuotaLister {
+	return &resourceQuotaLister{indexer: indexer}
+}
+
+// List lists all ResourceQuotas in the indexer.
+func (s *resourceQuotaLister) List(selector labels.Selector) (ret []*v1.ResourceQuota, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1.ResourceQuota))
+	})
+	return ret, err
+}
+
+// ResourceQuotas returns an object that can list and get ResourceQuotas.
+func (s *resourceQuotaLister) ResourceQuotas(namespace string) ResourceQuotaNamespaceLister {
+	return resourceQuotaNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// ResourceQuotaNamespaceLister helps list and get ResourceQuotas.
+type ResourceQuotaNamespaceLister interface {
+	// List lists all ResourceQuotas in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1.ResourceQuota, err error)
+	// Get retrieves the ResourceQuota from the indexer for a given namespace and name.
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.ResourceQuota, error)
 	ResourceQuotaNamespaceListerExpansion
 }

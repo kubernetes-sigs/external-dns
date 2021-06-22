@@ -79,6 +79,7 @@ type Schema interface {
 	GetDescription() string
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// Default for that schema.
 	GetDefault() interface{}
 	// Returns type extensions.
@@ -223,6 +224,71 @@ func (b *BaseSchema) GetExtensions() map[string]interface{} {
 
 func (b *BaseSchema) GetDefault() interface{} {
 	return b.Default
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// Returns type extensions.
+	GetExtensions() map[string]interface{}
+}
+
+// Path helps us keep track of type paths
+type Path struct {
+	parent *Path
+	key    string
+}
+
+func NewPath(key string) Path {
+	return Path{key: key}
+}
+
+func (p *Path) Get() []string {
+	if p == nil {
+		return []string{}
+	}
+	if p.key == "" {
+		return p.parent.Get()
+	}
+	return append(p.parent.Get(), p.key)
+}
+
+func (p *Path) Len() int {
+	return len(p.Get())
+}
+
+func (p *Path) String() string {
+	return strings.Join(p.Get(), "")
+}
+
+// ArrayPath appends an array index and creates a new path
+func (p *Path) ArrayPath(i int) Path {
+	return Path{
+		parent: p,
+		key:    fmt.Sprintf("[%d]", i),
+	}
+}
+
+// FieldPath appends a field name and creates a new path
+func (p *Path) FieldPath(field string) Path {
+	return Path{
+		parent: p,
+		key:    fmt.Sprintf(".%s", field),
+	}
+}
+
+// BaseSchema holds data used by each types of schema.
+type BaseSchema struct {
+	Description string
+	Extensions  map[string]interface{}
+
+	Path Path
+}
+
+func (b *BaseSchema) GetDescription() string {
+	return b.Description
+}
+
+func (b *BaseSchema) GetExtensions() map[string]interface{} {
+	return b.Extensions
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (b *BaseSchema) GetPath() *Path {

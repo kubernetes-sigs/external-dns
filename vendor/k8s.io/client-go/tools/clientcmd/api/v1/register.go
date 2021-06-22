@@ -39,6 +39,7 @@ func init() {
 	// makes the code compile even when the generated files are missing.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	localSchemeBuilder.Register(addKnownTypes, addDefaultingFuncs)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -49,6 +50,10 @@ func init() {
 =======
 	localSchemeBuilder.Register(addKnownTypes, addDefaultingFuncs)
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	localSchemeBuilder.Register(addKnownTypes)
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func addKnownTypes(scheme *runtime.Scheme) error {

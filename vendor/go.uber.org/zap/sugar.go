@@ -224,6 +224,7 @@ func (s *SugaredLogger) log(lvl zapcore.Level, template string, fmtArgs []interf
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	msg := getMessage(template, fmtArgs)
 	if ce := s.base.Check(lvl, msg); ce != nil {
 		ce.Write(s.sweetenFields(context)...)
@@ -290,6 +291,20 @@ func getMessage(template string, fmtArgs []interface{}) string {
 		}
 	}
 	return fmt.Sprint(fmtArgs...)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// Format with Sprint, Sprintf, or neither.
+	msg := template
+	if msg == "" && len(fmtArgs) > 0 {
+		msg = fmt.Sprint(fmtArgs...)
+	} else if msg != "" && len(fmtArgs) > 0 {
+		msg = fmt.Sprintf(template, fmtArgs...)
+	}
+
+	if ce := s.base.Check(lvl, msg); ce != nil {
+		ce.Write(s.sweetenFields(context)...)
+	}
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (s *SugaredLogger) sweetenFields(args []interface{}) []Field {

@@ -1,5 +1,6 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ## unreleased
 
 * Fix regression where `*time.Time` value would be set to empty and not be sent 
@@ -110,6 +111,9 @@
 * Improved package documentation for godoc
 
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 ## 1.1.2
 
 * Fix error when decode hook decodes interface implementation into interface

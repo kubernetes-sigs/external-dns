@@ -67,6 +67,7 @@ type DefaultRESTMapper struct {
 func (m *DefaultRESTMapper) String() string {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if m == nil {
 		return "<nil>"
 	}
@@ -79,6 +80,9 @@ func (m *DefaultRESTMapper) String() string {
 		return "<nil>"
 	}
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return fmt.Sprintf("DefaultRESTMapper{kindToPluralResource=%v}", m.kindToPluralResource)
 }
 

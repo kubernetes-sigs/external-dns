@@ -35,6 +35,7 @@ import (
 	"k8s.io/client-go/util/jsonpath"
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 )
 
@@ -545,6 +546,247 @@ type commandTokenSource struct {
 	tokenKey  string `datapolicy:"token"`
 	expiryKey string `datapolicy:"secret-key"`
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"k8s.io/klog"
+)
+
+func init() {
+	if err := restclient.RegisterAuthProviderPlugin("gcp", newGCPAuthProvider); err != nil {
+		klog.Fatalf("Failed to register gcp auth plugin: %v", err)
+	}
+}
+
+var (
+	// Stubbable for testing
+	execCommand = exec.Command
+
+	// defaultScopes:
+	// - cloud-platform is the base scope to authenticate to GCP.
+	// - userinfo.email is used to authenticate to GKE APIs with gserviceaccount
+	//   email instead of numeric uniqueID.
+	defaultScopes = []string{
+		"https://www.googleapis.com/auth/cloud-platform",
+		"https://www.googleapis.com/auth/userinfo.email"}
+)
+
+// gcpAuthProvider is an auth provider plugin that uses GCP credentials to provide
+// tokens for kubectl to authenticate itself to the apiserver. A sample json config
+// is provided below with all recognized options described.
+//
+// {
+//   'auth-provider': {
+//     # Required
+//     "name": "gcp",
+//
+//     'config': {
+//       # Authentication options
+//       # These options are used while getting a token.
+//
+//       # comma-separated list of GCP API scopes. default value of this field
+//       # is "https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/userinfo.email".
+// 		 # to override the API scopes, specify this field explicitly.
+//       "scopes": "https://www.googleapis.com/auth/cloud-platform"
+//
+//       # Caching options
+//
+//       # Raw string data representing cached access token.
+//       "access-token": "ya29.CjWdA4GiBPTt",
+//       # RFC3339Nano expiration timestamp for cached access token.
+//       "expiry": "2016-10-31 22:31:9.123",
+//
+//       # Command execution options
+//       # These options direct the plugin to execute a specified command and parse
+//       # token and expiry time from the output of the command.
+//
+//       # Command to execute for access token. Command output will be parsed as JSON.
+//       # If "cmd-args" is not present, this value will be split on whitespace, with
+//       # the first element interpreted as the command, remaining elements as args.
+//       "cmd-path": "/usr/bin/gcloud",
+//
+//       # Arguments to pass to command to execute for access token.
+//       "cmd-args": "config config-helper --output=json"
+//
+//       # JSONPath to the string field that represents the access token in
+//       # command output. If omitted, defaults to "{.access_token}".
+//       "token-key": "{.credential.access_token}",
+//
+//       # JSONPath to the string field that represents expiration timestamp
+//       # of the access token in the command output. If omitted, defaults to
+//       # "{.token_expiry}"
+//       "expiry-key": ""{.credential.token_expiry}",
+//
+//       # golang reference time in the format that the expiration timestamp uses.
+//       # If omitted, defaults to time.RFC3339Nano
+//       "time-fmt": "2006-01-02 15:04:05.999999999"
+//     }
+//   }
+// }
+//
+type gcpAuthProvider struct {
+	tokenSource oauth2.TokenSource
+	persister   restclient.AuthProviderConfigPersister
+}
+
+func newGCPAuthProvider(_ string, gcpConfig map[string]string, persister restclient.AuthProviderConfigPersister) (restclient.AuthProvider, error) {
+	ts, err := tokenSource(isCmdTokenSource(gcpConfig), gcpConfig)
+	if err != nil {
+		return nil, err
+	}
+	cts, err := newCachedTokenSource(gcpConfig["access-token"], gcpConfig["expiry"], persister, ts, gcpConfig)
+	if err != nil {
+		return nil, err
+	}
+	return &gcpAuthProvider{cts, persister}, nil
+}
+
+func isCmdTokenSource(gcpConfig map[string]string) bool {
+	_, ok := gcpConfig["cmd-path"]
+	return ok
+}
+
+func tokenSource(isCmd bool, gcpConfig map[string]string) (oauth2.TokenSource, error) {
+	// Command-based token source
+	if isCmd {
+		cmd := gcpConfig["cmd-path"]
+		if len(cmd) == 0 {
+			return nil, fmt.Errorf("missing access token cmd")
+		}
+		if gcpConfig["scopes"] != "" {
+			return nil, fmt.Errorf("scopes can only be used when kubectl is using a gcp service account key")
+		}
+		var args []string
+		if cmdArgs, ok := gcpConfig["cmd-args"]; ok {
+			args = strings.Fields(cmdArgs)
+		} else {
+			fields := strings.Fields(cmd)
+			cmd = fields[0]
+			args = fields[1:]
+		}
+		return newCmdTokenSource(cmd, args, gcpConfig["token-key"], gcpConfig["expiry-key"], gcpConfig["time-fmt"]), nil
+	}
+
+	// Google Application Credentials-based token source
+	scopes := parseScopes(gcpConfig)
+	ts, err := google.DefaultTokenSource(context.Background(), scopes...)
+	if err != nil {
+		return nil, fmt.Errorf("cannot construct google default token source: %v", err)
+	}
+	return ts, nil
+}
+
+// parseScopes constructs a list of scopes that should be included in token source
+// from the config map.
+func parseScopes(gcpConfig map[string]string) []string {
+	scopes, ok := gcpConfig["scopes"]
+	if !ok {
+		return defaultScopes
+	}
+	if scopes == "" {
+		return []string{}
+	}
+	return strings.Split(gcpConfig["scopes"], ",")
+}
+
+func (g *gcpAuthProvider) WrapTransport(rt http.RoundTripper) http.RoundTripper {
+	var resetCache map[string]string
+	if cts, ok := g.tokenSource.(*cachedTokenSource); ok {
+		resetCache = cts.baseCache()
+	} else {
+		resetCache = make(map[string]string)
+	}
+	return &conditionalTransport{&oauth2.Transport{Source: g.tokenSource, Base: rt}, g.persister, resetCache}
+}
+
+func (g *gcpAuthProvider) Login() error { return nil }
+
+type cachedTokenSource struct {
+	lk          sync.Mutex
+	source      oauth2.TokenSource
+	accessToken string
+	expiry      time.Time
+	persister   restclient.AuthProviderConfigPersister
+	cache       map[string]string
+}
+
+func newCachedTokenSource(accessToken, expiry string, persister restclient.AuthProviderConfigPersister, ts oauth2.TokenSource, cache map[string]string) (*cachedTokenSource, error) {
+	var expiryTime time.Time
+	if parsedTime, err := time.Parse(time.RFC3339Nano, expiry); err == nil {
+		expiryTime = parsedTime
+	}
+	if cache == nil {
+		cache = make(map[string]string)
+	}
+	return &cachedTokenSource{
+		source:      ts,
+		accessToken: accessToken,
+		expiry:      expiryTime,
+		persister:   persister,
+		cache:       cache,
+	}, nil
+}
+
+func (t *cachedTokenSource) Token() (*oauth2.Token, error) {
+	tok := t.cachedToken()
+	if tok.Valid() && !tok.Expiry.IsZero() {
+		return tok, nil
+	}
+	tok, err := t.source.Token()
+	if err != nil {
+		return nil, err
+	}
+	cache := t.update(tok)
+	if t.persister != nil {
+		if err := t.persister.Persist(cache); err != nil {
+			klog.V(4).Infof("Failed to persist token: %v", err)
+		}
+	}
+	return tok, nil
+}
+
+func (t *cachedTokenSource) cachedToken() *oauth2.Token {
+	t.lk.Lock()
+	defer t.lk.Unlock()
+	return &oauth2.Token{
+		AccessToken: t.accessToken,
+		TokenType:   "Bearer",
+		Expiry:      t.expiry,
+	}
+}
+
+func (t *cachedTokenSource) update(tok *oauth2.Token) map[string]string {
+	t.lk.Lock()
+	defer t.lk.Unlock()
+	t.accessToken = tok.AccessToken
+	t.expiry = tok.Expiry
+	ret := map[string]string{}
+	for k, v := range t.cache {
+		ret[k] = v
+	}
+	ret["access-token"] = t.accessToken
+	ret["expiry"] = t.expiry.Format(time.RFC3339Nano)
+	return ret
+}
+
+// baseCache is the base configuration value for this TokenSource, without any cached ephemeral tokens.
+func (t *cachedTokenSource) baseCache() map[string]string {
+	t.lk.Lock()
+	defer t.lk.Unlock()
+	ret := map[string]string{}
+	for k, v := range t.cache {
+		ret[k] = v
+	}
+	delete(ret, "access-token")
+	delete(ret, "expiry")
+	return ret
+}
+
+type commandTokenSource struct {
+	cmd       string
+	args      []string
+	tokenKey  string
+	expiryKey string
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	timeFmt   string
 }
 

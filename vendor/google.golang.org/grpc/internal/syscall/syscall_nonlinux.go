@@ -20,6 +20,7 @@
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Package syscall provides functionalities that grpc uses to get low-level
 // operating system stats/info.
 package syscall
@@ -98,6 +99,39 @@ func GetRusage() (rusage *Rusage) {
 =======
 func GetRusage() *Rusage {
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+package syscall
+
+import (
+	"net"
+	"sync"
+	"time"
+
+	"google.golang.org/grpc/grpclog"
+)
+
+var once sync.Once
+
+func log() {
+	once.Do(func() {
+		grpclog.Info("CPU time info is unavailable on non-linux or appengine environment.")
+	})
+}
+
+// GetCPUTime returns the how much CPU time has passed since the start of this process.
+// It always returns 0 under non-linux or appengine environment.
+func GetCPUTime() int64 {
+	log()
+	return 0
+}
+
+// Rusage is an empty struct under non-linux or appengine environment.
+type Rusage struct{}
+
+// GetRusage is a no-op function under non-linux or appengine environment.
+func GetRusage() (rusage *Rusage) {
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	log()
 	return nil
 }

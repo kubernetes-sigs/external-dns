@@ -31,6 +31,7 @@ func sizeMessageSet(mi *MessageInfo, p pointer, opts marshalOptions) (size int) 
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if u := mi.getUnknownBytes(p); u != nil {
 		size += messageset.SizeUnknown(*u)
 	}
@@ -211,6 +212,87 @@ func unmarshalMessageSet(mi *MessageInfo, b []byte, p pointer, opts unmarshalOpt
 			*u = protowire.AppendTag(*u, num, protowire.BytesType)
 			*u = append(*u, v...)
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	unknown := *p.Apply(mi.unknownOffset).Bytes()
+	size += messageset.SizeUnknown(unknown)
+
+	return size
+}
+
+func marshalMessageSet(mi *MessageInfo, b []byte, p pointer, opts marshalOptions) ([]byte, error) {
+	if !flags.ProtoLegacy {
+		return b, errors.New("no support for message_set_wire_format")
+	}
+
+	ext := *p.Apply(mi.extensionOffset).Extensions()
+	switch len(ext) {
+	case 0:
+	case 1:
+		// Fast-path for one extension: Don't bother sorting the keys.
+		for _, x := range ext {
+			var err error
+			b, err = marshalMessageSetField(mi, b, x, opts)
+			if err != nil {
+				return b, err
+			}
+		}
+	default:
+		// Sort the keys to provide a deterministic encoding.
+		// Not sure this is required, but the old code does it.
+		keys := make([]int, 0, len(ext))
+		for k := range ext {
+			keys = append(keys, int(k))
+		}
+		sort.Ints(keys)
+		for _, k := range keys {
+			var err error
+			b, err = marshalMessageSetField(mi, b, ext[int32(k)], opts)
+			if err != nil {
+				return b, err
+			}
+		}
+	}
+
+	unknown := *p.Apply(mi.unknownOffset).Bytes()
+	b, err := messageset.AppendUnknown(b, unknown)
+	if err != nil {
+		return b, err
+	}
+
+	return b, nil
+}
+
+func marshalMessageSetField(mi *MessageInfo, b []byte, x ExtensionField, opts marshalOptions) ([]byte, error) {
+	xi := getExtensionFieldInfo(x.Type())
+	num, _ := protowire.DecodeTag(xi.wiretag)
+	b = messageset.AppendFieldStart(b, num)
+	b, err := xi.funcs.marshal(b, x.Value(), protowire.EncodeTag(messageset.FieldMessage, protowire.BytesType), opts)
+	if err != nil {
+		return b, err
+	}
+	b = messageset.AppendFieldEnd(b)
+	return b, nil
+}
+
+func unmarshalMessageSet(mi *MessageInfo, b []byte, p pointer, opts unmarshalOptions) (out unmarshalOutput, err error) {
+	if !flags.ProtoLegacy {
+		return out, errors.New("no support for message_set_wire_format")
+	}
+
+	ep := p.Apply(mi.extensionOffset).Extensions()
+	if *ep == nil {
+		*ep = make(map[int32]ExtensionField)
+	}
+	ext := *ep
+	unknown := p.Apply(mi.unknownOffset).Bytes()
+	initialized := true
+	err = messageset.Unmarshal(b, true, func(num protowire.Number, v []byte) error {
+		o, err := mi.unmarshalExtension(v, num, protowire.BytesType, ext, opts)
+		if err == errUnknown {
+			*unknown = protowire.AppendTag(*unknown, num, protowire.BytesType)
+			*unknown = append(*unknown, v...)
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			return nil
 		}
 		if !o.initialized {

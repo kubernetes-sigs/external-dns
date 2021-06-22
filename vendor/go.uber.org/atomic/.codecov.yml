@@ -15,6 +15,7 @@ coverage:
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Also update COVER_IGNORE_PKGS in the Makefile.
 ignore:
   - /internal/gen-atomicint/
@@ -29,3 +30,6 @@ ignore:
   - /internal/gen-atomicint/
   - /internal/gen-valuewrapper/
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

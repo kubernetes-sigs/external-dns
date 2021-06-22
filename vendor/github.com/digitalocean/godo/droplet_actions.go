@@ -14,6 +14,7 @@ type ActionRequest map[string]interface{}
 // endpoints of the DigitalOcean API
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Droplet-Actions
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -24,6 +25,10 @@ type ActionRequest map[string]interface{}
 =======
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Droplet-Actions
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// See: https://developers.digitalocean.com/documentation/v2#droplet-actions
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type DropletActionsService interface {
 	Shutdown(context.Context, int) (*Action, *Response, error)
 	ShutdownByTag(context.Context, string) ([]Action, *Response, error)

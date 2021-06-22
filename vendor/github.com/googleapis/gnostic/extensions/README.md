@@ -2,6 +2,7 @@
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 **Extension Support is experimental.**
 
 This directory contains support code for building Gnostic extensio handlers and
@@ -38,3 +39,9 @@ Like plugins, extension handlers are built as separate executables. Extension
 bodies are written to extension handlers as serialized
 ExtensionHandlerRequests.
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+This directory contains support code for building Gnostic extensions and associated examples.
+
+Extensions are used to compile vendor or specification extensions into protocol buffer structures.
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

@@ -207,6 +207,7 @@ type ConditionFunc func() (done bool, err error)
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // ConditionWithContextFunc returns true if the condition is satisfied, or an error
 // if the loop should be aborted.
 //
@@ -1301,4 +1302,405 @@ func ExponentialBackoffWithContext(ctx context.Context, backoff Backoff, conditi
 	}
 
 	return ErrWaitTimeout
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// runConditionWithCrashProtection runs a ConditionFunc with crash protection
+func runConditionWithCrashProtection(condition ConditionFunc) (bool, error) {
+	defer runtime.HandleCrash()
+	return condition()
+}
+
+// Backoff holds parameters applied to a Backoff function.
+type Backoff struct {
+	// The initial duration.
+	Duration time.Duration
+	// Duration is multiplied by factor each iteration, if factor is not zero
+	// and the limits imposed by Steps and Cap have not been reached.
+	// Should not be negative.
+	// The jitter does not contribute to the updates to the duration parameter.
+	Factor float64
+	// The sleep at each iteration is the duration plus an additional
+	// amount chosen uniformly at random from the interval between
+	// zero and `jitter*duration`.
+	Jitter float64
+	// The remaining number of iterations in which the duration
+	// parameter may change (but progress can be stopped earlier by
+	// hitting the cap). If not positive, the duration is not
+	// changed. Used for exponential backoff in combination with
+	// Factor and Cap.
+	Steps int
+	// A limit on revised values of the duration parameter. If a
+	// multiplication by the factor parameter would make the duration
+	// exceed the cap then the duration is set to the cap and the
+	// steps parameter is set to zero.
+	Cap time.Duration
+}
+
+// Step (1) returns an amount of time to sleep determined by the
+// original Duration and Jitter and (2) mutates the provided Backoff
+// to update its Steps and Duration.
+func (b *Backoff) Step() time.Duration {
+	if b.Steps < 1 {
+		if b.Jitter > 0 {
+			return Jitter(b.Duration, b.Jitter)
+		}
+		return b.Duration
+	}
+	b.Steps--
+
+	duration := b.Duration
+
+	// calculate the next step
+	if b.Factor != 0 {
+		b.Duration = time.Duration(float64(b.Duration) * b.Factor)
+		if b.Cap > 0 && b.Duration > b.Cap {
+			b.Duration = b.Cap
+			b.Steps = 0
+		}
+	}
+
+	if b.Jitter > 0 {
+		duration = Jitter(duration, b.Jitter)
+	}
+	return duration
+}
+
+// contextForChannel derives a child context from a parent channel.
+//
+// The derived context's Done channel is closed when the returned cancel function
+// is called or when the parent channel is closed, whichever happens first.
+//
+// Note the caller must *always* call the CancelFunc, otherwise resources may be leaked.
+func contextForChannel(parentCh <-chan struct{}) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		select {
+		case <-parentCh:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+	return ctx, cancel
+}
+
+// BackoffManager manages backoff with a particular scheme based on its underlying implementation. It provides
+// an interface to return a timer for backoff, and caller shall backoff until Timer.C() drains. If the second Backoff()
+// is called before the timer from the first Backoff() call finishes, the first timer will NOT be drained and result in
+// undetermined behavior.
+// The BackoffManager is supposed to be called in a single-threaded environment.
+type BackoffManager interface {
+	Backoff() clock.Timer
+}
+
+type exponentialBackoffManagerImpl struct {
+	backoff              *Backoff
+	backoffTimer         clock.Timer
+	lastBackoffStart     time.Time
+	initialBackoff       time.Duration
+	backoffResetDuration time.Duration
+	clock                clock.Clock
+}
+
+// NewExponentialBackoffManager returns a manager for managing exponential backoff. Each backoff is jittered and
+// backoff will not exceed the given max. If the backoff is not called within resetDuration, the backoff is reset.
+// This backoff manager is used to reduce load during upstream unhealthiness.
+func NewExponentialBackoffManager(initBackoff, maxBackoff, resetDuration time.Duration, backoffFactor, jitter float64, c clock.Clock) BackoffManager {
+	return &exponentialBackoffManagerImpl{
+		backoff: &Backoff{
+			Duration: initBackoff,
+			Factor:   backoffFactor,
+			Jitter:   jitter,
+
+			// the current impl of wait.Backoff returns Backoff.Duration once steps are used up, which is not
+			// what we ideally need here, we set it to max int and assume we will never use up the steps
+			Steps: math.MaxInt32,
+			Cap:   maxBackoff,
+		},
+		backoffTimer:         nil,
+		initialBackoff:       initBackoff,
+		lastBackoffStart:     c.Now(),
+		backoffResetDuration: resetDuration,
+		clock:                c,
+	}
+}
+
+func (b *exponentialBackoffManagerImpl) getNextBackoff() time.Duration {
+	if b.clock.Now().Sub(b.lastBackoffStart) > b.backoffResetDuration {
+		b.backoff.Steps = math.MaxInt32
+		b.backoff.Duration = b.initialBackoff
+	}
+	b.lastBackoffStart = b.clock.Now()
+	return b.backoff.Step()
+}
+
+// Backoff implements BackoffManager.Backoff, it returns a timer so caller can block on the timer for exponential backoff.
+// The returned timer must be drained before calling Backoff() the second time
+func (b *exponentialBackoffManagerImpl) Backoff() clock.Timer {
+	if b.backoffTimer == nil {
+		b.backoffTimer = b.clock.NewTimer(b.getNextBackoff())
+	} else {
+		b.backoffTimer.Reset(b.getNextBackoff())
+	}
+	return b.backoffTimer
+}
+
+type jitteredBackoffManagerImpl struct {
+	clock        clock.Clock
+	duration     time.Duration
+	jitter       float64
+	backoffTimer clock.Timer
+}
+
+// NewJitteredBackoffManager returns a BackoffManager that backoffs with given duration plus given jitter. If the jitter
+// is negative, backoff will not be jittered.
+func NewJitteredBackoffManager(duration time.Duration, jitter float64, c clock.Clock) BackoffManager {
+	return &jitteredBackoffManagerImpl{
+		clock:        c,
+		duration:     duration,
+		jitter:       jitter,
+		backoffTimer: nil,
+	}
+}
+
+func (j *jitteredBackoffManagerImpl) getNextBackoff() time.Duration {
+	jitteredPeriod := j.duration
+	if j.jitter > 0.0 {
+		jitteredPeriod = Jitter(j.duration, j.jitter)
+	}
+	return jitteredPeriod
+}
+
+// Backoff implements BackoffManager.Backoff, it returns a timer so caller can block on the timer for jittered backoff.
+// The returned timer must be drained before calling Backoff() the second time
+func (j *jitteredBackoffManagerImpl) Backoff() clock.Timer {
+	backoff := j.getNextBackoff()
+	if j.backoffTimer == nil {
+		j.backoffTimer = j.clock.NewTimer(backoff)
+	} else {
+		j.backoffTimer.Reset(backoff)
+	}
+	return j.backoffTimer
+}
+
+// ExponentialBackoff repeats a condition check with exponential backoff.
+//
+// It repeatedly checks the condition and then sleeps, using `backoff.Step()`
+// to determine the length of the sleep and adjust Duration and Steps.
+// Stops and returns as soon as:
+// 1. the condition check returns true or an error,
+// 2. `backoff.Steps` checks of the condition have been done, or
+// 3. a sleep truncated by the cap on duration has been completed.
+// In case (1) the returned error is what the condition function returned.
+// In all other cases, ErrWaitTimeout is returned.
+func ExponentialBackoff(backoff Backoff, condition ConditionFunc) error {
+	for backoff.Steps > 0 {
+		if ok, err := runConditionWithCrashProtection(condition); err != nil || ok {
+			return err
+		}
+		if backoff.Steps == 1 {
+			break
+		}
+		time.Sleep(backoff.Step())
+	}
+	return ErrWaitTimeout
+}
+
+// Poll tries a condition func until it returns true, an error, or the timeout
+// is reached.
+//
+// Poll always waits the interval before the run of 'condition'.
+// 'condition' will always be invoked at least once.
+//
+// Some intervals may be missed if the condition takes too long or the time
+// window is too short.
+//
+// If you want to Poll something forever, see PollInfinite.
+func Poll(interval, timeout time.Duration, condition ConditionFunc) error {
+	return pollInternal(poller(interval, timeout), condition)
+}
+
+func pollInternal(wait WaitFunc, condition ConditionFunc) error {
+	done := make(chan struct{})
+	defer close(done)
+	return WaitFor(wait, condition, done)
+}
+
+// PollImmediate tries a condition func until it returns true, an error, or the timeout
+// is reached.
+//
+// PollImmediate always checks 'condition' before waiting for the interval. 'condition'
+// will always be invoked at least once.
+//
+// Some intervals may be missed if the condition takes too long or the time
+// window is too short.
+//
+// If you want to immediately Poll something forever, see PollImmediateInfinite.
+func PollImmediate(interval, timeout time.Duration, condition ConditionFunc) error {
+	return pollImmediateInternal(poller(interval, timeout), condition)
+}
+
+func pollImmediateInternal(wait WaitFunc, condition ConditionFunc) error {
+	done, err := runConditionWithCrashProtection(condition)
+	if err != nil {
+		return err
+	}
+	if done {
+		return nil
+	}
+	return pollInternal(wait, condition)
+}
+
+// PollInfinite tries a condition func until it returns true or an error
+//
+// PollInfinite always waits the interval before the run of 'condition'.
+//
+// Some intervals may be missed if the condition takes too long or the time
+// window is too short.
+func PollInfinite(interval time.Duration, condition ConditionFunc) error {
+	done := make(chan struct{})
+	defer close(done)
+	return PollUntil(interval, condition, done)
+}
+
+// PollImmediateInfinite tries a condition func until it returns true or an error
+//
+// PollImmediateInfinite runs the 'condition' before waiting for the interval.
+//
+// Some intervals may be missed if the condition takes too long or the time
+// window is too short.
+func PollImmediateInfinite(interval time.Duration, condition ConditionFunc) error {
+	done, err := runConditionWithCrashProtection(condition)
+	if err != nil {
+		return err
+	}
+	if done {
+		return nil
+	}
+	return PollInfinite(interval, condition)
+}
+
+// PollUntil tries a condition func until it returns true, an error or stopCh is
+// closed.
+//
+// PollUntil always waits interval before the first run of 'condition'.
+// 'condition' will always be invoked at least once.
+func PollUntil(interval time.Duration, condition ConditionFunc, stopCh <-chan struct{}) error {
+	ctx, cancel := contextForChannel(stopCh)
+	defer cancel()
+	return WaitFor(poller(interval, 0), condition, ctx.Done())
+}
+
+// PollImmediateUntil tries a condition func until it returns true, an error or stopCh is closed.
+//
+// PollImmediateUntil runs the 'condition' before waiting for the interval.
+// 'condition' will always be invoked at least once.
+func PollImmediateUntil(interval time.Duration, condition ConditionFunc, stopCh <-chan struct{}) error {
+	done, err := condition()
+	if err != nil {
+		return err
+	}
+	if done {
+		return nil
+	}
+	select {
+	case <-stopCh:
+		return ErrWaitTimeout
+	default:
+		return PollUntil(interval, condition, stopCh)
+	}
+}
+
+// WaitFunc creates a channel that receives an item every time a test
+// should be executed and is closed when the last test should be invoked.
+type WaitFunc func(done <-chan struct{}) <-chan struct{}
+
+// WaitFor continually checks 'fn' as driven by 'wait'.
+//
+// WaitFor gets a channel from 'wait()'', and then invokes 'fn' once for every value
+// placed on the channel and once more when the channel is closed. If the channel is closed
+// and 'fn' returns false without error, WaitFor returns ErrWaitTimeout.
+//
+// If 'fn' returns an error the loop ends and that error is returned. If
+// 'fn' returns true the loop ends and nil is returned.
+//
+// ErrWaitTimeout will be returned if the 'done' channel is closed without fn ever
+// returning true.
+//
+// When the done channel is closed, because the golang `select` statement is
+// "uniform pseudo-random", the `fn` might still run one or multiple time,
+// though eventually `WaitFor` will return.
+func WaitFor(wait WaitFunc, fn ConditionFunc, done <-chan struct{}) error {
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+	c := wait(stopCh)
+	for {
+		select {
+		case _, open := <-c:
+			ok, err := runConditionWithCrashProtection(fn)
+			if err != nil {
+				return err
+			}
+			if ok {
+				return nil
+			}
+			if !open {
+				return ErrWaitTimeout
+			}
+		case <-done:
+			return ErrWaitTimeout
+		}
+	}
+}
+
+// poller returns a WaitFunc that will send to the channel every interval until
+// timeout has elapsed and then closes the channel.
+//
+// Over very short intervals you may receive no ticks before the channel is
+// closed. A timeout of 0 is interpreted as an infinity, and in such a case
+// it would be the caller's responsibility to close the done channel.
+// Failure to do so would result in a leaked goroutine.
+//
+// Output ticks are not buffered. If the channel is not ready to receive an
+// item, the tick is skipped.
+func poller(interval, timeout time.Duration) WaitFunc {
+	return WaitFunc(func(done <-chan struct{}) <-chan struct{} {
+		ch := make(chan struct{})
+
+		go func() {
+			defer close(ch)
+
+			tick := time.NewTicker(interval)
+			defer tick.Stop()
+
+			var after <-chan time.Time
+			if timeout != 0 {
+				// time.After is more convenient, but it
+				// potentially leaves timers around much longer
+				// than necessary if we exit early.
+				timer := time.NewTimer(timeout)
+				after = timer.C
+				defer timer.Stop()
+			}
+
+			for {
+				select {
+				case <-tick.C:
+					// If the consumer isn't ready for this signal drop it and
+					// check the other channels.
+					select {
+					case ch <- struct{}{}:
+					default:
+					}
+				case <-after:
+					return
+				case <-done:
+					return
+				}
+			}
+		}()
+
+		return ch
+	})
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

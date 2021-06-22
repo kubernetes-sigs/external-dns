@@ -9,6 +9,7 @@ package types
 import (
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
@@ -118,4 +119,39 @@ func (i RawInt) String() string {
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"strconv"
+)
+
+// TestDeepStringer is a TestDeep specific interface for objects which
+// know how to stringify themselves.
+type TestDeepStringer interface {
+	_TestDeep()
+	String() string
+}
+
+// TestDeepStamp is a useful type providing the _TestDeep() method
+// needed to implement TestDeepStringer interface.
+type TestDeepStamp struct{}
+
+func (t TestDeepStamp) _TestDeep() {}
+
+// RawString implements TestDeepStringer interface.
+type RawString string
+
+func (s RawString) _TestDeep() {}
+
+func (s RawString) String() string {
+	return string(s)
+}
+
+// RawInt implements TestDeepStringer interface.
+type RawInt int
+
+func (i RawInt) _TestDeep() {}
+
+func (i RawInt) String() string {
+	return strconv.Itoa(int(i))
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

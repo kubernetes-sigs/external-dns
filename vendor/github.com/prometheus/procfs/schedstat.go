@@ -97,6 +97,7 @@ func (fs FS) Schedstat() (*Schedstat, error) {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func parseProcSchedstat(contents string) (ProcSchedstat, error) {
 	var (
 		stats ProcSchedstat
@@ -159,4 +160,27 @@ func parseProcSchedstat(contents string) (ProcSchedstat, error) {
 =======
 	return stats, errors.New("could not parse schedstat")
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func parseProcSchedstat(contents string) (stats ProcSchedstat, err error) {
+	match := procLineRE.FindStringSubmatch(contents)
+
+	if match != nil {
+		stats.RunningNanoseconds, err = strconv.ParseUint(match[1], 10, 64)
+		if err != nil {
+			return
+		}
+
+		stats.WaitingNanoseconds, err = strconv.ParseUint(match[2], 10, 64)
+		if err != nil {
+			return
+		}
+
+		stats.RunTimeslices, err = strconv.ParseUint(match[3], 10, 64)
+		return
+	}
+
+	err = errors.New("could not parse schedstat")
+	return
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

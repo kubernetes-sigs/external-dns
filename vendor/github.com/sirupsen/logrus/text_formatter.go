@@ -55,6 +55,7 @@ type TextFormatter struct {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// TimestampFormat to use for display when a full timestamp is printed.
 	// The format to use is the same than for time.Format or time.Parse from the standard
 	// library.
@@ -441,6 +442,191 @@ func (f *TextFormatter) printColored(b *bytes.Buffer, entry *Entry, keys []strin
 	case InfoLevel:
 		levelColor = blue
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// TimestampFormat to use for display when a full timestamp is printed
+	TimestampFormat string
+
+	// The fields are sorted by default for a consistent output. For applications
+	// that log extremely frequently and don't use the JSON formatter this may not
+	// be desired.
+	DisableSorting bool
+
+	// The keys sorting function, when uninitialized it uses sort.Strings.
+	SortingFunc func([]string)
+
+	// Disables the truncation of the level text to 4 characters.
+	DisableLevelTruncation bool
+
+	// PadLevelText Adds padding the level text so that all the levels output at the same length
+	// PadLevelText is a superset of the DisableLevelTruncation option
+	PadLevelText bool
+
+	// QuoteEmptyFields will wrap empty fields in quotes if true
+	QuoteEmptyFields bool
+
+	// Whether the logger's out is to a terminal
+	isTerminal bool
+
+	// FieldMap allows users to customize the names of keys for default fields.
+	// As an example:
+	// formatter := &TextFormatter{
+	//     FieldMap: FieldMap{
+	//         FieldKeyTime:  "@timestamp",
+	//         FieldKeyLevel: "@level",
+	//         FieldKeyMsg:   "@message"}}
+	FieldMap FieldMap
+
+	// CallerPrettyfier can be set by the user to modify the content
+	// of the function and file keys in the data when ReportCaller is
+	// activated. If any of the returned value is the empty string the
+	// corresponding key will be removed from fields.
+	CallerPrettyfier func(*runtime.Frame) (function string, file string)
+
+	terminalInitOnce sync.Once
+
+	// The max length of the level text, generated dynamically on init
+	levelTextMaxLength int
+}
+
+func (f *TextFormatter) init(entry *Entry) {
+	if entry.Logger != nil {
+		f.isTerminal = checkIfTerminal(entry.Logger.Out)
+	}
+	// Get the max length of the level text
+	for _, level := range AllLevels {
+		levelTextLength := utf8.RuneCount([]byte(level.String()))
+		if levelTextLength > f.levelTextMaxLength {
+			f.levelTextMaxLength = levelTextLength
+		}
+	}
+}
+
+func (f *TextFormatter) isColored() bool {
+	isColored := f.ForceColors || (f.isTerminal && (runtime.GOOS != "windows"))
+
+	if f.EnvironmentOverrideColors {
+		switch force, ok := os.LookupEnv("CLICOLOR_FORCE"); {
+		case ok && force != "0":
+			isColored = true
+		case ok && force == "0", os.Getenv("CLICOLOR") == "0":
+			isColored = false
+		}
+	}
+
+	return isColored && !f.DisableColors
+}
+
+// Format renders a single log entry
+func (f *TextFormatter) Format(entry *Entry) ([]byte, error) {
+	data := make(Fields)
+	for k, v := range entry.Data {
+		data[k] = v
+	}
+	prefixFieldClashes(data, f.FieldMap, entry.HasCaller())
+	keys := make([]string, 0, len(data))
+	for k := range data {
+		keys = append(keys, k)
+	}
+
+	var funcVal, fileVal string
+
+	fixedKeys := make([]string, 0, 4+len(data))
+	if !f.DisableTimestamp {
+		fixedKeys = append(fixedKeys, f.FieldMap.resolve(FieldKeyTime))
+	}
+	fixedKeys = append(fixedKeys, f.FieldMap.resolve(FieldKeyLevel))
+	if entry.Message != "" {
+		fixedKeys = append(fixedKeys, f.FieldMap.resolve(FieldKeyMsg))
+	}
+	if entry.err != "" {
+		fixedKeys = append(fixedKeys, f.FieldMap.resolve(FieldKeyLogrusError))
+	}
+	if entry.HasCaller() {
+		if f.CallerPrettyfier != nil {
+			funcVal, fileVal = f.CallerPrettyfier(entry.Caller)
+		} else {
+			funcVal = entry.Caller.Function
+			fileVal = fmt.Sprintf("%s:%d", entry.Caller.File, entry.Caller.Line)
+		}
+
+		if funcVal != "" {
+			fixedKeys = append(fixedKeys, f.FieldMap.resolve(FieldKeyFunc))
+		}
+		if fileVal != "" {
+			fixedKeys = append(fixedKeys, f.FieldMap.resolve(FieldKeyFile))
+		}
+	}
+
+	if !f.DisableSorting {
+		if f.SortingFunc == nil {
+			sort.Strings(keys)
+			fixedKeys = append(fixedKeys, keys...)
+		} else {
+			if !f.isColored() {
+				fixedKeys = append(fixedKeys, keys...)
+				f.SortingFunc(fixedKeys)
+			} else {
+				f.SortingFunc(keys)
+			}
+		}
+	} else {
+		fixedKeys = append(fixedKeys, keys...)
+	}
+
+	var b *bytes.Buffer
+	if entry.Buffer != nil {
+		b = entry.Buffer
+	} else {
+		b = &bytes.Buffer{}
+	}
+
+	f.terminalInitOnce.Do(func() { f.init(entry) })
+
+	timestampFormat := f.TimestampFormat
+	if timestampFormat == "" {
+		timestampFormat = defaultTimestampFormat
+	}
+	if f.isColored() {
+		f.printColored(b, entry, keys, data, timestampFormat)
+	} else {
+
+		for _, key := range fixedKeys {
+			var value interface{}
+			switch {
+			case key == f.FieldMap.resolve(FieldKeyTime):
+				value = entry.Time.Format(timestampFormat)
+			case key == f.FieldMap.resolve(FieldKeyLevel):
+				value = entry.Level.String()
+			case key == f.FieldMap.resolve(FieldKeyMsg):
+				value = entry.Message
+			case key == f.FieldMap.resolve(FieldKeyLogrusError):
+				value = entry.err
+			case key == f.FieldMap.resolve(FieldKeyFunc) && entry.HasCaller():
+				value = funcVal
+			case key == f.FieldMap.resolve(FieldKeyFile) && entry.HasCaller():
+				value = fileVal
+			default:
+				value = data[key]
+			}
+			f.appendKeyValue(b, key, value)
+		}
+	}
+
+	b.WriteByte('\n')
+	return b.Bytes(), nil
+}
+
+func (f *TextFormatter) printColored(b *bytes.Buffer, entry *Entry, keys []string, data Fields, timestampFormat string) {
+	var levelColor int
+	switch entry.Level {
+	case DebugLevel, TraceLevel:
+		levelColor = gray
+	case WarnLevel:
+		levelColor = yellow
+	case ErrorLevel, FatalLevel, PanicLevel:
+		levelColor = red
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	default:
 		levelColor = blue
 	}

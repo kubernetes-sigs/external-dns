@@ -21,6 +21,7 @@ func typedslicecopy(elemType unsafe.Pointer, dst, src sliceHeader) int
 //go:noescape
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func mapassign(rtype unsafe.Pointer, m unsafe.Pointer, key unsafe.Pointer, val unsafe.Pointer)
 
 //go:linkname mapaccess reflect.mapaccess
@@ -103,6 +104,35 @@ type hiter struct {
 	bucket      uintptr
 	checkBucket uintptr
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func mapassign(rtype unsafe.Pointer, m unsafe.Pointer, key, val unsafe.Pointer)
+
+//go:linkname mapaccess reflect.mapaccess
+//go:noescape
+func mapaccess(rtype unsafe.Pointer, m unsafe.Pointer, key unsafe.Pointer) (val unsafe.Pointer)
+
+// m escapes into the return value, but the caller of mapiterinit
+// doesn't let the return value escape.
+//go:noescape
+//go:linkname mapiterinit reflect.mapiterinit
+func mapiterinit(rtype unsafe.Pointer, m unsafe.Pointer) *hiter
+
+//go:noescape
+//go:linkname mapiternext reflect.mapiternext
+func mapiternext(it *hiter)
+
+//go:linkname ifaceE2I reflect.ifaceE2I
+func ifaceE2I(rtype unsafe.Pointer, src interface{}, dst unsafe.Pointer)
+
+// A hash iteration structure.
+// If you modify hiter, also change cmd/internal/gc/reflect.go to indicate
+// the layout of this structure.
+type hiter struct {
+	key   unsafe.Pointer // Must be in first position.  Write nil to indicate iteration end (see cmd/internal/gc/range.go).
+	value unsafe.Pointer // Must be in second position (see cmd/internal/gc/range.go).
+	// rest fields are ignored
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // add returns p+x.

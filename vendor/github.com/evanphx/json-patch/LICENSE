@@ -8,6 +8,7 @@ modification, are permitted provided that the following conditions are met:
   list of conditions and the following disclaimer.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 * Redistributions in binary form must reproduce the above copyright notice,
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -18,6 +19,10 @@ modification, are permitted provided that the following conditions are met:
 =======
 * Redistributions in binary form must reproduce the above copyright notice,
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+* Redistributions in binary form must reproduce the above copyright notice
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
   this list of conditions and the following disclaimer in the documentation
   and/or other materials provided with the distribution.
 * Neither the name of the Evan Phoenix nor the names of its contributors 

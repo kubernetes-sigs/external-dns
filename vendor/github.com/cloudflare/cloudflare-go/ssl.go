@@ -47,6 +47,7 @@ type zoneCustomSSLsResponse struct {
 type ZoneCustomSSLOptions struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Certificate     string                        `json:"certificate"`
 	PrivateKey      string                        `json:"private_key"`
 	BundleMethod    string                        `json:"bundle_method,omitempty"`
@@ -73,6 +74,14 @@ type ZoneCustomSSLOptions struct {
 	GeoRestrictions *ZoneCustomSSLGeoRestrictions `json:"geo_restrictions,omitempty"`
 	Type            string                        `json:"type,omitempty"`
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	Certificate     string                       `json:"certificate"`
+	PrivateKey      string                       `json:"private_key"`
+	BundleMethod    string                       `json:"bundle_method,omitempty"`
+	GeoRestrictions ZoneCustomSSLGeoRestrictions `json:"geo_restrictions,omitempty"`
+	Type            string                       `json:"type,omitempty"`
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // ZoneCustomSSLPriority represents a certificate's ID and priority. It is a

@@ -6,6 +6,7 @@ import "strconv"
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
@@ -104,6 +105,28 @@ func (i ErrorCode) String() string {
 		i -= 404
 		return _ErrorCode_name_1[_ErrorCode_index_1[i]:_ErrorCode_index_1[i+1]]
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+const (
+	_ErrorCode_name_0 = "Unauthorized"
+	_ErrorCode_name_1 = "MethodNotAllowed"
+	_ErrorCode_name_2 = "UnsupportedActionError"
+	_ErrorCode_name_3 = "APILimitExceededMalformedParameterErrorParamError"
+	_ErrorCode_name_4 = "InternalErrorAccountErrorAccountResourceLimitErrorInsufficientCapacityErrorResourceUnavailableErrorResourceAllocationErrorResourceInUseErrorNetworkRuleConflictError"
+)
+
+var (
+	_ErrorCode_index_3 = [...]uint8{0, 16, 39, 49}
+	_ErrorCode_index_4 = [...]uint8{0, 13, 25, 50, 75, 99, 122, 140, 164}
+)
+
+func (i ErrorCode) String() string {
+	switch {
+	case i == 401:
+		return _ErrorCode_name_0
+	case i == 405:
+		return _ErrorCode_name_1
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	case i == 422:
 		return _ErrorCode_name_2
 	case 429 <= i && i <= 431:

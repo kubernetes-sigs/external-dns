@@ -147,6 +147,7 @@ func (c *Expiring) gc(now time.Time) {
 		// heap[0] is a peek at the next element in the heap, which is not obvious
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		// from looking at the (*expiringHeap).Pop() implementation below.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -157,6 +158,10 @@ func (c *Expiring) gc(now time.Time) {
 =======
 		// from looking at the (*expiringHeap).Pop() implementation below.
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		// from looking at the (*expiringHeap).Pop() implmentation below.
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		// heap.Pop() swaps the first entry with the last entry of the heap, then
 		// calls (*expiringHeap).Pop() which returns the last element.
 		if len(c.heap) == 0 || now.Before(c.heap[0].expiry) {

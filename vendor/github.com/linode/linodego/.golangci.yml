@@ -46,6 +46,7 @@ linters:
     - gomnd
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     - nlreturn
     - wrapcheck
     - wastedassign
@@ -70,4 +71,7 @@ linters:
     - cyclop
     - godot
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
   fast: false

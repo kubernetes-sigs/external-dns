@@ -76,6 +76,7 @@ type IngressRule struct {
 	EndPort           uint16 `json:"endport,omitempty" doc:"the ending port of the security group rule "`
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	IcmpCode          int    `json:"icmpcode,omitempty" doc:"the code for the ICMP message response"`
 	IcmpType          int    `json:"icmptype,omitempty" doc:"the type of the ICMP message response"`
 	Protocol          string `json:"protocol,omitempty" doc:"the protocol of the security group rule"`
@@ -198,6 +199,61 @@ type AuthorizeSecurityGroupIngress struct {
 	IcmpCode              int                 `json:"icmpcode,omitempty" doc:"error code for this icmp message"`
 	IcmpType              int                 `json:"icmptype,omitempty" doc:"type of the icmp message being sent"`
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	IcmpCode          uint8  `json:"icmpcode,omitempty" doc:"the code for the ICMP message response"`
+	IcmpType          uint8  `json:"icmptype,omitempty" doc:"the type of the ICMP message response"`
+	Protocol          string `json:"protocol,omitempty" doc:"the protocol of the security group rule"`
+	RuleID            *UUID  `json:"ruleid" doc:"the id of the security group rule"`
+	SecurityGroupName string `json:"securitygroupname,omitempty" doc:"security group name"`
+	StartPort         uint16 `json:"startport,omitempty" doc:"the starting port of the security group rule"`
+}
+
+// EgressRule represents the ingress rule
+type EgressRule IngressRule
+
+// UserSecurityGroup represents the traffic of another security group
+type UserSecurityGroup struct {
+	Group string `json:"group,omitempty"`
+}
+
+// String gives the UserSecurityGroup name
+func (usg UserSecurityGroup) String() string {
+	return usg.Group
+}
+
+// CreateSecurityGroup represents a security group creation
+type CreateSecurityGroup struct {
+	Name        string `json:"name" doc:"name of the security group"`
+	Description string `json:"description,omitempty" doc:"the description of the security group"`
+	_           bool   `name:"createSecurityGroup" description:"Creates a security group"`
+}
+
+// Response returns the struct to unmarshal
+func (CreateSecurityGroup) Response() interface{} {
+	return new(SecurityGroup)
+}
+
+// DeleteSecurityGroup represents a security group deletion
+type DeleteSecurityGroup struct {
+	ID   *UUID  `json:"id,omitempty" doc:"The ID of the security group. Mutually exclusive with name parameter"`
+	Name string `json:"name,omitempty" doc:"The ID of the security group. Mutually exclusive with id parameter"`
+	_    bool   `name:"deleteSecurityGroup" description:"Deletes security group"`
+}
+
+// Response returns the struct to unmarshal
+func (DeleteSecurityGroup) Response() interface{} {
+	return new(BooleanResponse)
+}
+
+// AuthorizeSecurityGroupIngress (Async) represents the ingress rule creation
+type AuthorizeSecurityGroupIngress struct {
+	CIDRList              []CIDR              `json:"cidrlist,omitempty" doc:"the cidr list associated"`
+	Description           string              `json:"description,omitempty" doc:"the description of the ingress/egress rule"`
+	EndPort               uint16              `json:"endport,omitempty" doc:"end port for this ingress/egress rule"`
+	IcmpCode              uint8               `json:"icmpcode,omitempty" doc:"error code for this icmp message"`
+	IcmpType              uint8               `json:"icmptype,omitempty" doc:"type of the icmp message being sent"`
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Protocol              string              `json:"protocol,omitempty" doc:"TCP is default. UDP, ICMP, ICMPv6, AH, ESP, GRE, IPIP are the other supported protocols"`
 	SecurityGroupID       *UUID               `json:"securitygroupid,omitempty" doc:"The ID of the security group. Mutually exclusive with securitygroupname parameter"`
 	SecurityGroupName     string              `json:"securitygroupname,omitempty" doc:"The name of the security group. Mutually exclusive with securitygroupid parameter"`

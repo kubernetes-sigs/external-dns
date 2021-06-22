@@ -6,6 +6,7 @@ import "strconv"
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
@@ -84,6 +85,9 @@ func _() {
 }
 
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 const _CSErrorCode_name = "CloudRuntimeExceptionExecutionExceptionHypervisorVersionChangedExceptionCloudExceptionAccountLimitExceptionAgentUnavailableExceptionCloudAuthenticationExceptionConcurrentOperationExceptionConflictingNetworkSettingsExceptionDiscoveredWithErrorExceptionHAStateExceptionInsufficientAddressCapacityExceptionInsufficientCapacityExceptionInsufficientNetworkCapacityExceptionInsufficientServerCapacityExceptionInsufficientStorageCapacityExceptionInternalErrorExceptionInvalidParameterValueExceptionManagementServerExceptionNetworkRuleConflictExceptionPermissionDeniedExceptionResourceAllocationExceptionResourceInUseExceptionResourceUnavailableExceptionStorageUnavailableExceptionUnsupportedServiceExceptionVirtualMachineMigrationExceptionAsyncCommandQueuedRequestLimitExceptionServerAPIException"
 
 var _CSErrorCode_map = map[CSErrorCode]string{

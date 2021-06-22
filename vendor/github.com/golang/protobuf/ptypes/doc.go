@@ -5,6 +5,7 @@
 // Package ptypes provides functionality for interacting with well-known types.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //
 // Deprecated: Well-known types have specialized functionality directly
 // injected into the generated packages for each message type.
@@ -19,4 +20,7 @@
 // injected into the generated packages for each message type.
 // See the deprecation notice for each function for the suggested alternative.
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 package ptypes

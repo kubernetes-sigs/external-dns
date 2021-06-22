@@ -28,6 +28,7 @@ import (
 // ReplicaSetLister helps list ReplicaSets.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type ReplicaSetLister interface {
 	// List lists all ReplicaSets in the indexer.
@@ -120,6 +121,45 @@ type ReplicaSetNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type ReplicaSetLister interface {
+	// List lists all ReplicaSets in the indexer.
+	List(selector labels.Selector) (ret []*v1beta2.ReplicaSet, err error)
+	// ReplicaSets returns an object that can list and get ReplicaSets.
+	ReplicaSets(namespace string) ReplicaSetNamespaceLister
+	ReplicaSetListerExpansion
+}
+
+// replicaSetLister implements the ReplicaSetLister interface.
+type replicaSetLister struct {
+	indexer cache.Indexer
+}
+
+// NewReplicaSetLister returns a new ReplicaSetLister.
+func NewReplicaSetLister(indexer cache.Indexer) ReplicaSetLister {
+	return &replicaSetLister{indexer: indexer}
+}
+
+// List lists all ReplicaSets in the indexer.
+func (s *replicaSetLister) List(selector labels.Selector) (ret []*v1beta2.ReplicaSet, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1beta2.ReplicaSet))
+	})
+	return ret, err
+}
+
+// ReplicaSets returns an object that can list and get ReplicaSets.
+func (s *replicaSetLister) ReplicaSets(namespace string) ReplicaSetNamespaceLister {
+	return replicaSetNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// ReplicaSetNamespaceLister helps list and get ReplicaSets.
+type ReplicaSetNamespaceLister interface {
+	// List lists all ReplicaSets in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1beta2.ReplicaSet, err error)
+	// Get retrieves the ReplicaSet from the indexer for a given namespace and name.
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1beta2.ReplicaSet, error)
 	ReplicaSetNamespaceListerExpansion
 }

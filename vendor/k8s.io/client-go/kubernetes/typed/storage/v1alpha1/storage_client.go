@@ -28,6 +28,7 @@ type StorageV1alpha1Interface interface {
 	RESTClient() rest.Interface
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
@@ -55,6 +56,15 @@ type StorageV1alpha1Client struct {
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	VolumeAttachmentsGetter
+}
+
+// StorageV1alpha1Client is used to interact with features provided by the storage.k8s.io group.
+type StorageV1alpha1Client struct {
+	restClient rest.Interface
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (c *StorageV1alpha1Client) VolumeAttachments() VolumeAttachmentInterface {

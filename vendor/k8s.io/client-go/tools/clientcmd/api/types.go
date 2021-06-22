@@ -84,6 +84,7 @@ type Cluster struct {
 	CertificateAuthorityData []byte `json:"certificate-authority-data,omitempty"`
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// ProxyURL is the URL to the proxy to be used for all requests made by this
 	// client. URLs with "http", "https", and "socks5" schemes are supported.  If
 	// this configuration is not provided or the empty string, the client
@@ -580,6 +581,157 @@ const (
 	// and an error will be returned by the exec plugin runner.
 	AlwaysExecInteractiveMode ExecInteractiveMode = "Always"
 )
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// Extensions holds additional information. This is useful for extenders so that reads and writes don't clobber unknown fields
+	// +optional
+	Extensions map[string]runtime.Object `json:"extensions,omitempty"`
+}
+
+// AuthInfo contains information that describes identity information.  This is use to tell the kubernetes cluster who you are.
+type AuthInfo struct {
+	// LocationOfOrigin indicates where this object came from.  It is used for round tripping config post-merge, but never serialized.
+	// +k8s:conversion-gen=false
+	LocationOfOrigin string
+	// ClientCertificate is the path to a client cert file for TLS.
+	// +optional
+	ClientCertificate string `json:"client-certificate,omitempty"`
+	// ClientCertificateData contains PEM-encoded data from a client cert file for TLS. Overrides ClientCertificate
+	// +optional
+	ClientCertificateData []byte `json:"client-certificate-data,omitempty"`
+	// ClientKey is the path to a client key file for TLS.
+	// +optional
+	ClientKey string `json:"client-key,omitempty"`
+	// ClientKeyData contains PEM-encoded data from a client key file for TLS. Overrides ClientKey
+	// +optional
+	ClientKeyData []byte `json:"client-key-data,omitempty"`
+	// Token is the bearer token for authentication to the kubernetes cluster.
+	// +optional
+	Token string `json:"token,omitempty"`
+	// TokenFile is a pointer to a file that contains a bearer token (as described above).  If both Token and TokenFile are present, Token takes precedence.
+	// +optional
+	TokenFile string `json:"tokenFile,omitempty"`
+	// Impersonate is the username to act-as.
+	// +optional
+	Impersonate string `json:"act-as,omitempty"`
+	// ImpersonateGroups is the groups to imperonate.
+	// +optional
+	ImpersonateGroups []string `json:"act-as-groups,omitempty"`
+	// ImpersonateUserExtra contains additional information for impersonated user.
+	// +optional
+	ImpersonateUserExtra map[string][]string `json:"act-as-user-extra,omitempty"`
+	// Username is the username for basic authentication to the kubernetes cluster.
+	// +optional
+	Username string `json:"username,omitempty"`
+	// Password is the password for basic authentication to the kubernetes cluster.
+	// +optional
+	Password string `json:"password,omitempty"`
+	// AuthProvider specifies a custom authentication plugin for the kubernetes cluster.
+	// +optional
+	AuthProvider *AuthProviderConfig `json:"auth-provider,omitempty"`
+	// Exec specifies a custom exec-based authentication plugin for the kubernetes cluster.
+	// +optional
+	Exec *ExecConfig `json:"exec,omitempty"`
+	// Extensions holds additional information. This is useful for extenders so that reads and writes don't clobber unknown fields
+	// +optional
+	Extensions map[string]runtime.Object `json:"extensions,omitempty"`
+}
+
+// Context is a tuple of references to a cluster (how do I communicate with a kubernetes cluster), a user (how do I identify myself), and a namespace (what subset of resources do I want to work with)
+type Context struct {
+	// LocationOfOrigin indicates where this object came from.  It is used for round tripping config post-merge, but never serialized.
+	// +k8s:conversion-gen=false
+	LocationOfOrigin string
+	// Cluster is the name of the cluster for this context
+	Cluster string `json:"cluster"`
+	// AuthInfo is the name of the authInfo for this context
+	AuthInfo string `json:"user"`
+	// Namespace is the default namespace to use on unspecified requests
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+	// Extensions holds additional information. This is useful for extenders so that reads and writes don't clobber unknown fields
+	// +optional
+	Extensions map[string]runtime.Object `json:"extensions,omitempty"`
+}
+
+// AuthProviderConfig holds the configuration for a specified auth provider.
+type AuthProviderConfig struct {
+	Name string `json:"name"`
+	// +optional
+	Config map[string]string `json:"config,omitempty"`
+}
+
+var _ fmt.Stringer = new(AuthProviderConfig)
+var _ fmt.GoStringer = new(AuthProviderConfig)
+
+// GoString implements fmt.GoStringer and sanitizes sensitive fields of
+// AuthProviderConfig to prevent accidental leaking via logs.
+func (c AuthProviderConfig) GoString() string {
+	return c.String()
+}
+
+// String implements fmt.Stringer and sanitizes sensitive fields of
+// AuthProviderConfig to prevent accidental leaking via logs.
+func (c AuthProviderConfig) String() string {
+	cfg := "<nil>"
+	if c.Config != nil {
+		cfg = "--- REDACTED ---"
+	}
+	return fmt.Sprintf("api.AuthProviderConfig{Name: %q, Config: map[string]string{%s}}", c.Name, cfg)
+}
+
+// ExecConfig specifies a command to provide client credentials. The command is exec'd
+// and outputs structured stdout holding credentials.
+//
+// See the client.authentiction.k8s.io API group for specifications of the exact input
+// and output format
+type ExecConfig struct {
+	// Command to execute.
+	Command string `json:"command"`
+	// Arguments to pass to the command when executing it.
+	// +optional
+	Args []string `json:"args"`
+	// Env defines additional environment variables to expose to the process. These
+	// are unioned with the host's environment, as well as variables client-go uses
+	// to pass argument to the plugin.
+	// +optional
+	Env []ExecEnvVar `json:"env"`
+
+	// Preferred input version of the ExecInfo. The returned ExecCredentials MUST use
+	// the same encoding version as the input.
+	APIVersion string `json:"apiVersion,omitempty"`
+}
+
+var _ fmt.Stringer = new(ExecConfig)
+var _ fmt.GoStringer = new(ExecConfig)
+
+// GoString implements fmt.GoStringer and sanitizes sensitive fields of
+// ExecConfig to prevent accidental leaking via logs.
+func (c ExecConfig) GoString() string {
+	return c.String()
+}
+
+// String implements fmt.Stringer and sanitizes sensitive fields of ExecConfig
+// to prevent accidental leaking via logs.
+func (c ExecConfig) String() string {
+	var args []string
+	if len(c.Args) > 0 {
+		args = []string{"--- REDACTED ---"}
+	}
+	env := "[]ExecEnvVar(nil)"
+	if len(c.Env) > 0 {
+		env = "[]ExecEnvVar{--- REDACTED ---}"
+	}
+	return fmt.Sprintf("api.AuthProviderConfig{Command: %q, Args: %#v, Env: %s, APIVersion: %q}", c.Command, args, env, c.APIVersion)
+}
+
+// ExecEnvVar is used for setting environment variables when executing an exec-based
+// credential plugin.
+type ExecEnvVar struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 // NewConfig is a convenience function that returns a new Config object with non-nil maps
 func NewConfig() *Config {

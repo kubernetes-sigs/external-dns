@@ -28,6 +28,7 @@ import (
 // PodDisruptionBudgetLister helps list PodDisruptionBudgets.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type PodDisruptionBudgetLister interface {
 	// List lists all PodDisruptionBudgets in the indexer.
@@ -120,6 +121,45 @@ type PodDisruptionBudgetNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type PodDisruptionBudgetLister interface {
+	// List lists all PodDisruptionBudgets in the indexer.
+	List(selector labels.Selector) (ret []*v1beta1.PodDisruptionBudget, err error)
+	// PodDisruptionBudgets returns an object that can list and get PodDisruptionBudgets.
+	PodDisruptionBudgets(namespace string) PodDisruptionBudgetNamespaceLister
+	PodDisruptionBudgetListerExpansion
+}
+
+// podDisruptionBudgetLister implements the PodDisruptionBudgetLister interface.
+type podDisruptionBudgetLister struct {
+	indexer cache.Indexer
+}
+
+// NewPodDisruptionBudgetLister returns a new PodDisruptionBudgetLister.
+func NewPodDisruptionBudgetLister(indexer cache.Indexer) PodDisruptionBudgetLister {
+	return &podDisruptionBudgetLister{indexer: indexer}
+}
+
+// List lists all PodDisruptionBudgets in the indexer.
+func (s *podDisruptionBudgetLister) List(selector labels.Selector) (ret []*v1beta1.PodDisruptionBudget, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1beta1.PodDisruptionBudget))
+	})
+	return ret, err
+}
+
+// PodDisruptionBudgets returns an object that can list and get PodDisruptionBudgets.
+func (s *podDisruptionBudgetLister) PodDisruptionBudgets(namespace string) PodDisruptionBudgetNamespaceLister {
+	return podDisruptionBudgetNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// PodDisruptionBudgetNamespaceLister helps list and get PodDisruptionBudgets.
+type PodDisruptionBudgetNamespaceLister interface {
+	// List lists all PodDisruptionBudgets in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1beta1.PodDisruptionBudget, err error)
+	// Get retrieves the PodDisruptionBudget from the indexer for a given namespace and name.
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1beta1.PodDisruptionBudget, error)
 	PodDisruptionBudgetNamespaceListerExpansion
 }

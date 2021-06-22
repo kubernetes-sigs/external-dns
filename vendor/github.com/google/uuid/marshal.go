@@ -18,6 +18,7 @@ func (uuid *UUID) UnmarshalText(data []byte) error {
 	id, err := ParseBytes(data)
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil {
 		return err
 	}
@@ -44,6 +45,13 @@ func (uuid *UUID) UnmarshalText(data []byte) error {
 	*uuid = id
 	return nil
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if err == nil {
+		*uuid = id
+	}
+	return err
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // MarshalBinary implements encoding.BinaryMarshaler.

@@ -37,6 +37,7 @@ func (c *collector) addSample(s string, v float64, attachments map[string]interf
 	if !ok {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		aggregator = c.a.newData(t)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -47,6 +48,10 @@ func (c *collector) addSample(s string, v float64, attachments map[string]interf
 =======
 		aggregator = c.a.newData(t)
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		aggregator = c.a.newData()
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		c.signatures[s] = aggregator
 	}
 	aggregator.addSample(v, attachments, t)

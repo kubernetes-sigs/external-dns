@@ -57,6 +57,7 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&CSINodeList{},
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 		&CSIStorageCapacity{},
 		&CSIStorageCapacityList{},
@@ -69,6 +70,9 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&CSIStorageCapacity{},
 		&CSIStorageCapacityList{},
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	)
 
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)

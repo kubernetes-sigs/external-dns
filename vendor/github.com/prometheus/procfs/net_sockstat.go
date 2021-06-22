@@ -72,6 +72,7 @@ func readSockstat(name string) (*NetSockstat, error) {
 	if err != nil {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return nil, fmt.Errorf("failed to read sockstats from %q: %w", name, err)
 	}
 
@@ -128,6 +129,30 @@ func parseSockstat(r io.Reader) (*NetSockstat, error) {
 =======
 			return nil, fmt.Errorf("error parsing sockstat key/value pairs from %q: %w", s.Text(), err)
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		return nil, fmt.Errorf("failed to read sockstats from %q: %v", name, err)
+	}
+
+	return stat, nil
+}
+
+// parseSockstat reads the contents of a sockstat file and parses a NetSockstat.
+func parseSockstat(r io.Reader) (*NetSockstat, error) {
+	var stat NetSockstat
+	s := bufio.NewScanner(r)
+	for s.Scan() {
+		// Expect a minimum of a protocol and one key/value pair.
+		fields := strings.Split(s.Text(), " ")
+		if len(fields) < 3 {
+			return nil, fmt.Errorf("malformed sockstat line: %q", s.Text())
+		}
+
+		// The remaining fields are key/value pairs.
+		kvs, err := parseSockstatKVs(fields[1:])
+		if err != nil {
+			return nil, fmt.Errorf("error parsing sockstat key/value pairs from %q: %v", s.Text(), err)
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		}
 
 		// The first field is the protocol. We must trim its colon suffix.

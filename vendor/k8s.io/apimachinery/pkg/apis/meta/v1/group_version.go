@@ -36,6 +36,7 @@ type GroupResource struct {
 func (gr *GroupResource) String() string {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if gr == nil {
 		return "<nil>"
 	}
@@ -124,6 +125,39 @@ func (gk *GroupKind) String() string {
 		return "<nil>"
 	}
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if len(gr.Group) == 0 {
+		return gr.Resource
+	}
+	return gr.Resource + "." + gr.Group
+}
+
+// GroupVersionResource unambiguously identifies a resource.  It doesn't anonymously include GroupVersion
+// to avoid automatic coersion.  It doesn't use a GroupVersion to avoid custom marshalling
+//
+// +protobuf.options.(gogoproto.goproto_stringer)=false
+type GroupVersionResource struct {
+	Group    string `json:"group" protobuf:"bytes,1,opt,name=group"`
+	Version  string `json:"version" protobuf:"bytes,2,opt,name=version"`
+	Resource string `json:"resource" protobuf:"bytes,3,opt,name=resource"`
+}
+
+func (gvr *GroupVersionResource) String() string {
+	return strings.Join([]string{gvr.Group, "/", gvr.Version, ", Resource=", gvr.Resource}, "")
+}
+
+// GroupKind specifies a Group and a Kind, but does not force a version.  This is useful for identifying
+// concepts during lookup stages without having partially valid types
+//
+// +protobuf.options.(gogoproto.goproto_stringer)=false
+type GroupKind struct {
+	Group string `json:"group" protobuf:"bytes,1,opt,name=group"`
+	Kind  string `json:"kind" protobuf:"bytes,2,opt,name=kind"`
+}
+
+func (gk *GroupKind) String() string {
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if len(gk.Group) == 0 {
 		return gk.Kind
 	}

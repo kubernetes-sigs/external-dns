@@ -28,6 +28,7 @@ type NetworkingV1Interface interface {
 	RESTClient() rest.Interface
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
@@ -60,6 +61,15 @@ type NetworkingV1Client struct {
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	NetworkPoliciesGetter
+}
+
+// NetworkingV1Client is used to interact with features provided by the networking.k8s.io group.
+type NetworkingV1Client struct {
+	restClient rest.Interface
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (c *NetworkingV1Client) NetworkPolicies(namespace string) NetworkPolicyInterface {

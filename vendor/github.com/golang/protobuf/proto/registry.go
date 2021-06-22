@@ -15,6 +15,7 @@ import (
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
@@ -143,6 +144,66 @@ func FileDescriptor(s filePath) fileDescGZIP {
 =======
 		b, _ = Marshal(protodesc.ToFileDescriptorProto(fd))
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/runtime/protoimpl"
+)
+
+// filePath is the path to the proto source file.
+type filePath = string // e.g., "google/protobuf/descriptor.proto"
+
+// fileDescGZIP is the compressed contents of the encoded FileDescriptorProto.
+type fileDescGZIP = []byte
+
+var fileCache sync.Map // map[filePath]fileDescGZIP
+
+// RegisterFile is called from generated code to register the compressed
+// FileDescriptorProto with the file path for a proto source file.
+//
+// Deprecated: Use protoregistry.GlobalFiles.RegisterFile instead.
+func RegisterFile(s filePath, d fileDescGZIP) {
+	// Decompress the descriptor.
+	zr, err := gzip.NewReader(bytes.NewReader(d))
+	if err != nil {
+		panic(fmt.Sprintf("proto: invalid compressed file descriptor: %v", err))
+	}
+	b, err := ioutil.ReadAll(zr)
+	if err != nil {
+		panic(fmt.Sprintf("proto: invalid compressed file descriptor: %v", err))
+	}
+
+	// Construct a protoreflect.FileDescriptor from the raw descriptor.
+	// Note that DescBuilder.Build automatically registers the constructed
+	// file descriptor with the v2 registry.
+	protoimpl.DescBuilder{RawDescriptor: b}.Build()
+
+	// Locally cache the raw descriptor form for the file.
+	fileCache.Store(s, d)
+}
+
+// FileDescriptor returns the compressed FileDescriptorProto given the file path
+// for a proto source file. It returns nil if not found.
+//
+// Deprecated: Use protoregistry.GlobalFiles.FindFileByPath instead.
+func FileDescriptor(s filePath) fileDescGZIP {
+	if v, ok := fileCache.Load(s); ok {
+		return v.(fileDescGZIP)
+	}
+
+	// Find the descriptor in the v2 registry.
+	var b []byte
+	if fd, _ := protoregistry.GlobalFiles.FindFileByPath(s); fd != nil {
+		if fd, ok := fd.(interface{ ProtoLegacyRawDesc() []byte }); ok {
+			b = fd.ProtoLegacyRawDesc()
+		} else {
+			// TODO: Use protodesc.ToFileDescriptorProto to construct
+			// a descriptorpb.FileDescriptorProto and marshal it.
+			// However, doing so causes the proto package to have a dependency
+			// on descriptorpb, leading to cyclic dependency issues.
+		}
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 
 	// Locally cache the raw descriptor form for the file.

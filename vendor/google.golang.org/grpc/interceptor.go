@@ -27,6 +27,7 @@ type UnaryInvoker func(ctx context.Context, method string, req, reply interface{
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // UnaryClientInterceptor intercepts the execution of a unary RPC on the client.
 // Unary interceptors can be specified as a DialOption, using
 // WithUnaryInterceptor() or WithChainUnaryInterceptor(), when creating a
@@ -119,6 +120,20 @@ type Streamer func(ctx context.Context, desc *StreamDesc, cc *ClientConn, method
 // StreamClientInterceptor may return a custom ClientStream to intercept all I/O
 // operations. The returned error must be compatible with the status package.
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// UnaryClientInterceptor intercepts the execution of a unary RPC on the client. invoker is the handler to complete the RPC
+// and it is the responsibility of the interceptor to call it.
+// This is an EXPERIMENTAL API.
+type UnaryClientInterceptor func(ctx context.Context, method string, req, reply interface{}, cc *ClientConn, invoker UnaryInvoker, opts ...CallOption) error
+
+// Streamer is called by StreamClientInterceptor to create a ClientStream.
+type Streamer func(ctx context.Context, desc *StreamDesc, cc *ClientConn, method string, opts ...CallOption) (ClientStream, error)
+
+// StreamClientInterceptor intercepts the creation of ClientStream. It may return a custom ClientStream to intercept all I/O
+// operations. streamer is the handler to create a ClientStream and it is the responsibility of the interceptor to call it.
+// This is an EXPERIMENTAL API.
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type StreamClientInterceptor func(ctx context.Context, desc *StreamDesc, cc *ClientConn, method string, streamer Streamer, opts ...CallOption) (ClientStream, error)
 
 // UnaryServerInfo consists of various information about a unary RPC on

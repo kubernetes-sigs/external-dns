@@ -55,6 +55,7 @@ func (e ErrCode) String() string {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
@@ -103,6 +104,22 @@ type StreamError struct {
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// ConnectionError is an error that results in the termination of the
+// entire connection.
+type ConnectionError ErrCode
+
+func (e ConnectionError) Error() string { return fmt.Sprintf("connection error: %s", ErrCode(e)) }
+
+// StreamError is an error that only affects one stream within an
+// HTTP/2 connection.
+type StreamError struct {
+	StreamID uint32
+	Code     ErrCode
+	Cause    error // optional additional detail
+}
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 func streamError(id uint32, code ErrCode) StreamError {
 	return StreamError{StreamID: id, Code: code}

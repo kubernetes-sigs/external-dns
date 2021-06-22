@@ -7,6 +7,7 @@ package impl
 import (
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"reflect"
 	"sort"
 
@@ -453,6 +454,225 @@ func consumeMapOfMessage(b []byte, mapv reflect.Value, wtyp protowire.Type, mapi
 =======
 				return out, errDecode
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"errors"
+	"reflect"
+	"sort"
+
+	"google.golang.org/protobuf/encoding/protowire"
+	pref "google.golang.org/protobuf/reflect/protoreflect"
+)
+
+type mapInfo struct {
+	goType     reflect.Type
+	keyWiretag uint64
+	valWiretag uint64
+	keyFuncs   valueCoderFuncs
+	valFuncs   valueCoderFuncs
+	keyZero    pref.Value
+	keyKind    pref.Kind
+	conv       *mapConverter
+}
+
+func encoderFuncsForMap(fd pref.FieldDescriptor, ft reflect.Type) (valueMessage *MessageInfo, funcs pointerCoderFuncs) {
+	// TODO: Consider generating specialized map coders.
+	keyField := fd.MapKey()
+	valField := fd.MapValue()
+	keyWiretag := protowire.EncodeTag(1, wireTypes[keyField.Kind()])
+	valWiretag := protowire.EncodeTag(2, wireTypes[valField.Kind()])
+	keyFuncs := encoderFuncsForValue(keyField)
+	valFuncs := encoderFuncsForValue(valField)
+	conv := newMapConverter(ft, fd)
+
+	mapi := &mapInfo{
+		goType:     ft,
+		keyWiretag: keyWiretag,
+		valWiretag: valWiretag,
+		keyFuncs:   keyFuncs,
+		valFuncs:   valFuncs,
+		keyZero:    keyField.Default(),
+		keyKind:    keyField.Kind(),
+		conv:       conv,
+	}
+	if valField.Kind() == pref.MessageKind {
+		valueMessage = getMessageInfo(ft.Elem())
+	}
+
+	funcs = pointerCoderFuncs{
+		size: func(p pointer, f *coderFieldInfo, opts marshalOptions) int {
+			return sizeMap(p.AsValueOf(ft).Elem(), mapi, f, opts)
+		},
+		marshal: func(b []byte, p pointer, f *coderFieldInfo, opts marshalOptions) ([]byte, error) {
+			return appendMap(b, p.AsValueOf(ft).Elem(), mapi, f, opts)
+		},
+		unmarshal: func(b []byte, p pointer, wtyp protowire.Type, f *coderFieldInfo, opts unmarshalOptions) (unmarshalOutput, error) {
+			mp := p.AsValueOf(ft)
+			if mp.Elem().IsNil() {
+				mp.Elem().Set(reflect.MakeMap(mapi.goType))
+			}
+			if f.mi == nil {
+				return consumeMap(b, mp.Elem(), wtyp, mapi, f, opts)
+			} else {
+				return consumeMapOfMessage(b, mp.Elem(), wtyp, mapi, f, opts)
+			}
+		},
+	}
+	switch valField.Kind() {
+	case pref.MessageKind:
+		funcs.merge = mergeMapOfMessage
+	case pref.BytesKind:
+		funcs.merge = mergeMapOfBytes
+	default:
+		funcs.merge = mergeMap
+	}
+	if valFuncs.isInit != nil {
+		funcs.isInit = func(p pointer, f *coderFieldInfo) error {
+			return isInitMap(p.AsValueOf(ft).Elem(), mapi, f)
+		}
+	}
+	return valueMessage, funcs
+}
+
+const (
+	mapKeyTagSize = 1 // field 1, tag size 1.
+	mapValTagSize = 1 // field 2, tag size 2.
+)
+
+func sizeMap(mapv reflect.Value, mapi *mapInfo, f *coderFieldInfo, opts marshalOptions) int {
+	if mapv.Len() == 0 {
+		return 0
+	}
+	n := 0
+	iter := mapRange(mapv)
+	for iter.Next() {
+		key := mapi.conv.keyConv.PBValueOf(iter.Key()).MapKey()
+		keySize := mapi.keyFuncs.size(key.Value(), mapKeyTagSize, opts)
+		var valSize int
+		value := mapi.conv.valConv.PBValueOf(iter.Value())
+		if f.mi == nil {
+			valSize = mapi.valFuncs.size(value, mapValTagSize, opts)
+		} else {
+			p := pointerOfValue(iter.Value())
+			valSize += mapValTagSize
+			valSize += protowire.SizeBytes(f.mi.sizePointer(p, opts))
+		}
+		n += f.tagsize + protowire.SizeBytes(keySize+valSize)
+	}
+	return n
+}
+
+func consumeMap(b []byte, mapv reflect.Value, wtyp protowire.Type, mapi *mapInfo, f *coderFieldInfo, opts unmarshalOptions) (out unmarshalOutput, err error) {
+	if wtyp != protowire.BytesType {
+		return out, errUnknown
+	}
+	b, n := protowire.ConsumeBytes(b)
+	if n < 0 {
+		return out, protowire.ParseError(n)
+	}
+	var (
+		key = mapi.keyZero
+		val = mapi.conv.valConv.New()
+	)
+	for len(b) > 0 {
+		num, wtyp, n := protowire.ConsumeTag(b)
+		if n < 0 {
+			return out, protowire.ParseError(n)
+		}
+		if num > protowire.MaxValidNumber {
+			return out, errors.New("invalid field number")
+		}
+		b = b[n:]
+		err := errUnknown
+		switch num {
+		case 1:
+			var v pref.Value
+			var o unmarshalOutput
+			v, o, err = mapi.keyFuncs.unmarshal(b, key, num, wtyp, opts)
+			if err != nil {
+				break
+			}
+			key = v
+			n = o.n
+		case 2:
+			var v pref.Value
+			var o unmarshalOutput
+			v, o, err = mapi.valFuncs.unmarshal(b, val, num, wtyp, opts)
+			if err != nil {
+				break
+			}
+			val = v
+			n = o.n
+		}
+		if err == errUnknown {
+			n = protowire.ConsumeFieldValue(num, wtyp, b)
+			if n < 0 {
+				return out, protowire.ParseError(n)
+			}
+		} else if err != nil {
+			return out, err
+		}
+		b = b[n:]
+	}
+	mapv.SetMapIndex(mapi.conv.keyConv.GoValueOf(key), mapi.conv.valConv.GoValueOf(val))
+	out.n = n
+	return out, nil
+}
+
+func consumeMapOfMessage(b []byte, mapv reflect.Value, wtyp protowire.Type, mapi *mapInfo, f *coderFieldInfo, opts unmarshalOptions) (out unmarshalOutput, err error) {
+	if wtyp != protowire.BytesType {
+		return out, errUnknown
+	}
+	b, n := protowire.ConsumeBytes(b)
+	if n < 0 {
+		return out, protowire.ParseError(n)
+	}
+	var (
+		key = mapi.keyZero
+		val = reflect.New(f.mi.GoReflectType.Elem())
+	)
+	for len(b) > 0 {
+		num, wtyp, n := protowire.ConsumeTag(b)
+		if n < 0 {
+			return out, protowire.ParseError(n)
+		}
+		if num > protowire.MaxValidNumber {
+			return out, errors.New("invalid field number")
+		}
+		b = b[n:]
+		err := errUnknown
+		switch num {
+		case 1:
+			var v pref.Value
+			var o unmarshalOutput
+			v, o, err = mapi.keyFuncs.unmarshal(b, key, num, wtyp, opts)
+			if err != nil {
+				break
+			}
+			key = v
+			n = o.n
+		case 2:
+			if wtyp != protowire.BytesType {
+				break
+			}
+			var v []byte
+			v, n = protowire.ConsumeBytes(b)
+			if n < 0 {
+				return out, protowire.ParseError(n)
+			}
+			var o unmarshalOutput
+			o, err = f.mi.unmarshalPointer(v, pointerOfValue(val), 0, opts)
+			if o.initialized {
+				// Consider this map item initialized so long as we see
+				// an initialized value.
+				out.initialized = true
+			}
+		}
+		if err == errUnknown {
+			n = protowire.ConsumeFieldValue(num, wtyp, b)
+			if n < 0 {
+				return out, protowire.ParseError(n)
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			}
 		} else if err != nil {
 			return out, err

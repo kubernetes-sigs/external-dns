@@ -110,6 +110,7 @@ func parseNetUNIX(r io.Reader) (*NetUNIX, error) {
 		if err != nil {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %w", line, err)
 		}
 
@@ -226,6 +227,60 @@ func (u *NetUNIX) parseLine(line string, hasInode bool, min int) (*NetUNIXLine, 
 =======
 			return nil, fmt.Errorf("failed to parse inode %q: %w", fields[6], err)
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %v", line, err)
+		}
+
+		nu.Rows = append(nu.Rows, item)
+	}
+
+	if err := s.Err(); err != nil {
+		return nil, fmt.Errorf("failed to scan /proc/net/unix data: %v", err)
+	}
+
+	return &nu, nil
+}
+
+func (u *NetUNIX) parseLine(line string, hasInode bool, min int) (*NetUNIXLine, error) {
+	fields := strings.Fields(line)
+
+	l := len(fields)
+	if l < min {
+		return nil, fmt.Errorf("expected at least %d fields but got %d", min, l)
+	}
+
+	// Field offsets are as follows:
+	// Num       RefCount Protocol Flags    Type St Inode Path
+
+	kernelPtr := strings.TrimSuffix(fields[0], ":")
+
+	users, err := u.parseUsers(fields[1])
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse ref count(%s): %v", fields[1], err)
+	}
+
+	flags, err := u.parseFlags(fields[3])
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse flags(%s): %v", fields[3], err)
+	}
+
+	typ, err := u.parseType(fields[4])
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse type(%s): %v", fields[4], err)
+	}
+
+	state, err := u.parseState(fields[5])
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse state(%s): %v", fields[5], err)
+	}
+
+	var inode uint64
+	if hasInode {
+		inode, err = u.parseInode(fields[6])
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse inode(%s): %v", fields[6], err)
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		}
 	}
 

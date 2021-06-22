@@ -57,6 +57,7 @@ func (fs FS) Crypto() ([]Crypto, error) {
 	if err != nil {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return nil, fmt.Errorf("error reading crypto %q: %w", path, err)
 	}
 
@@ -83,6 +84,15 @@ func (fs FS) Crypto() ([]Crypto, error) {
 =======
 		return nil, fmt.Errorf("error parsing crypto %q: %w", path, err)
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		return nil, fmt.Errorf("error reading crypto %s: %s", path, err)
+	}
+
+	crypto, err := parseCrypto(bytes.NewReader(b))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing crypto %s: %s", path, err)
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 
 	return crypto, nil

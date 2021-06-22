@@ -35,6 +35,7 @@ const (
 // undefined.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //
 // Deprecated: Call the ts.AsTime and ts.CheckValid methods instead.
 func Timestamp(ts *timestamppb.Timestamp) (time.Time, error) {
@@ -135,6 +136,45 @@ func TimestampProto(t time.Time) (*timestamppb.Timestamp, error) {
 // Deprecated: Call the ts.AsTime method instead,
 // followed by a call to the Format method on the time.Time value.
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func Timestamp(ts *timestamppb.Timestamp) (time.Time, error) {
+	// Don't return the zero value on error, because corresponds to a valid
+	// timestamp. Instead return whatever time.Unix gives us.
+	var t time.Time
+	if ts == nil {
+		t = time.Unix(0, 0).UTC() // treat nil like the empty Timestamp
+	} else {
+		t = time.Unix(ts.Seconds, int64(ts.Nanos)).UTC()
+	}
+	return t, validateTimestamp(ts)
+}
+
+// TimestampNow returns a google.protobuf.Timestamp for the current time.
+func TimestampNow() *timestamppb.Timestamp {
+	ts, err := TimestampProto(time.Now())
+	if err != nil {
+		panic("ptypes: time.Now() out of Timestamp range")
+	}
+	return ts
+}
+
+// TimestampProto converts the time.Time to a google.protobuf.Timestamp proto.
+// It returns an error if the resulting Timestamp is invalid.
+func TimestampProto(t time.Time) (*timestamppb.Timestamp, error) {
+	ts := &timestamppb.Timestamp{
+		Seconds: t.Unix(),
+		Nanos:   int32(t.Nanosecond()),
+	}
+	if err := validateTimestamp(ts); err != nil {
+		return nil, err
+	}
+	return ts, nil
+}
+
+// TimestampString returns the RFC 3339 string for valid Timestamps.
+// For invalid Timestamps, it returns an error message in parentheses.
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func TimestampString(ts *timestamppb.Timestamp) string {
 	t, err := Timestamp(ts)
 	if err != nil {

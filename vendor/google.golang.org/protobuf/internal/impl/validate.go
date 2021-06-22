@@ -16,6 +16,7 @@ import (
 	"google.golang.org/protobuf/internal/flags"
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"google.golang.org/protobuf/internal/genid"
 	"google.golang.org/protobuf/internal/strs"
 	pref "google.golang.org/protobuf/reflect/protoreflect"
@@ -572,6 +573,280 @@ State:
 =======
 				case genid.MapEntry_Value_field_number:
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"google.golang.org/protobuf/internal/strs"
+	pref "google.golang.org/protobuf/reflect/protoreflect"
+	preg "google.golang.org/protobuf/reflect/protoregistry"
+	piface "google.golang.org/protobuf/runtime/protoiface"
+)
+
+// ValidationStatus is the result of validating the wire-format encoding of a message.
+type ValidationStatus int
+
+const (
+	// ValidationUnknown indicates that unmarshaling the message might succeed or fail.
+	// The validator was unable to render a judgement.
+	//
+	// The only causes of this status are an aberrant message type appearing somewhere
+	// in the message or a failure in the extension resolver.
+	ValidationUnknown ValidationStatus = iota + 1
+
+	// ValidationInvalid indicates that unmarshaling the message will fail.
+	ValidationInvalid
+
+	// ValidationValid indicates that unmarshaling the message will succeed.
+	ValidationValid
+)
+
+func (v ValidationStatus) String() string {
+	switch v {
+	case ValidationUnknown:
+		return "ValidationUnknown"
+	case ValidationInvalid:
+		return "ValidationInvalid"
+	case ValidationValid:
+		return "ValidationValid"
+	default:
+		return fmt.Sprintf("ValidationStatus(%d)", int(v))
+	}
+}
+
+// Validate determines whether the contents of the buffer are a valid wire encoding
+// of the message type.
+//
+// This function is exposed for testing.
+func Validate(mt pref.MessageType, in piface.UnmarshalInput) (out piface.UnmarshalOutput, _ ValidationStatus) {
+	mi, ok := mt.(*MessageInfo)
+	if !ok {
+		return out, ValidationUnknown
+	}
+	if in.Resolver == nil {
+		in.Resolver = preg.GlobalTypes
+	}
+	o, st := mi.validate(in.Buf, 0, unmarshalOptions{
+		flags:    in.Flags,
+		resolver: in.Resolver,
+	})
+	if o.initialized {
+		out.Flags |= piface.UnmarshalInitialized
+	}
+	return out, st
+}
+
+type validationInfo struct {
+	mi               *MessageInfo
+	typ              validationType
+	keyType, valType validationType
+
+	// For non-required fields, requiredBit is 0.
+	//
+	// For required fields, requiredBit's nth bit is set, where n is a
+	// unique index in the range [0, MessageInfo.numRequiredFields).
+	//
+	// If there are more than 64 required fields, requiredBit is 0.
+	requiredBit uint64
+}
+
+type validationType uint8
+
+const (
+	validationTypeOther validationType = iota
+	validationTypeMessage
+	validationTypeGroup
+	validationTypeMap
+	validationTypeRepeatedVarint
+	validationTypeRepeatedFixed32
+	validationTypeRepeatedFixed64
+	validationTypeVarint
+	validationTypeFixed32
+	validationTypeFixed64
+	validationTypeBytes
+	validationTypeUTF8String
+	validationTypeMessageSetItem
+)
+
+func newFieldValidationInfo(mi *MessageInfo, si structInfo, fd pref.FieldDescriptor, ft reflect.Type) validationInfo {
+	var vi validationInfo
+	switch {
+	case fd.ContainingOneof() != nil && !fd.ContainingOneof().IsSynthetic():
+		switch fd.Kind() {
+		case pref.MessageKind:
+			vi.typ = validationTypeMessage
+			if ot, ok := si.oneofWrappersByNumber[fd.Number()]; ok {
+				vi.mi = getMessageInfo(ot.Field(0).Type)
+			}
+		case pref.GroupKind:
+			vi.typ = validationTypeGroup
+			if ot, ok := si.oneofWrappersByNumber[fd.Number()]; ok {
+				vi.mi = getMessageInfo(ot.Field(0).Type)
+			}
+		case pref.StringKind:
+			if strs.EnforceUTF8(fd) {
+				vi.typ = validationTypeUTF8String
+			}
+		}
+	default:
+		vi = newValidationInfo(fd, ft)
+	}
+	if fd.Cardinality() == pref.Required {
+		// Avoid overflow. The required field check is done with a 64-bit mask, with
+		// any message containing more than 64 required fields always reported as
+		// potentially uninitialized, so it is not important to get a precise count
+		// of the required fields past 64.
+		if mi.numRequiredFields < math.MaxUint8 {
+			mi.numRequiredFields++
+			vi.requiredBit = 1 << (mi.numRequiredFields - 1)
+		}
+	}
+	return vi
+}
+
+func newValidationInfo(fd pref.FieldDescriptor, ft reflect.Type) validationInfo {
+	var vi validationInfo
+	switch {
+	case fd.IsList():
+		switch fd.Kind() {
+		case pref.MessageKind:
+			vi.typ = validationTypeMessage
+			if ft.Kind() == reflect.Slice {
+				vi.mi = getMessageInfo(ft.Elem())
+			}
+		case pref.GroupKind:
+			vi.typ = validationTypeGroup
+			if ft.Kind() == reflect.Slice {
+				vi.mi = getMessageInfo(ft.Elem())
+			}
+		case pref.StringKind:
+			vi.typ = validationTypeBytes
+			if strs.EnforceUTF8(fd) {
+				vi.typ = validationTypeUTF8String
+			}
+		default:
+			switch wireTypes[fd.Kind()] {
+			case protowire.VarintType:
+				vi.typ = validationTypeRepeatedVarint
+			case protowire.Fixed32Type:
+				vi.typ = validationTypeRepeatedFixed32
+			case protowire.Fixed64Type:
+				vi.typ = validationTypeRepeatedFixed64
+			}
+		}
+	case fd.IsMap():
+		vi.typ = validationTypeMap
+		switch fd.MapKey().Kind() {
+		case pref.StringKind:
+			if strs.EnforceUTF8(fd) {
+				vi.keyType = validationTypeUTF8String
+			}
+		}
+		switch fd.MapValue().Kind() {
+		case pref.MessageKind:
+			vi.valType = validationTypeMessage
+			if ft.Kind() == reflect.Map {
+				vi.mi = getMessageInfo(ft.Elem())
+			}
+		case pref.StringKind:
+			if strs.EnforceUTF8(fd) {
+				vi.valType = validationTypeUTF8String
+			}
+		}
+	default:
+		switch fd.Kind() {
+		case pref.MessageKind:
+			vi.typ = validationTypeMessage
+			if !fd.IsWeak() {
+				vi.mi = getMessageInfo(ft)
+			}
+		case pref.GroupKind:
+			vi.typ = validationTypeGroup
+			vi.mi = getMessageInfo(ft)
+		case pref.StringKind:
+			vi.typ = validationTypeBytes
+			if strs.EnforceUTF8(fd) {
+				vi.typ = validationTypeUTF8String
+			}
+		default:
+			switch wireTypes[fd.Kind()] {
+			case protowire.VarintType:
+				vi.typ = validationTypeVarint
+			case protowire.Fixed32Type:
+				vi.typ = validationTypeFixed32
+			case protowire.Fixed64Type:
+				vi.typ = validationTypeFixed64
+			case protowire.BytesType:
+				vi.typ = validationTypeBytes
+			}
+		}
+	}
+	return vi
+}
+
+func (mi *MessageInfo) validate(b []byte, groupTag protowire.Number, opts unmarshalOptions) (out unmarshalOutput, result ValidationStatus) {
+	mi.init()
+	type validationState struct {
+		typ              validationType
+		keyType, valType validationType
+		endGroup         protowire.Number
+		mi               *MessageInfo
+		tail             []byte
+		requiredMask     uint64
+	}
+
+	// Pre-allocate some slots to avoid repeated slice reallocation.
+	states := make([]validationState, 0, 16)
+	states = append(states, validationState{
+		typ: validationTypeMessage,
+		mi:  mi,
+	})
+	if groupTag > 0 {
+		states[0].typ = validationTypeGroup
+		states[0].endGroup = groupTag
+	}
+	initialized := true
+	start := len(b)
+State:
+	for len(states) > 0 {
+		st := &states[len(states)-1]
+		for len(b) > 0 {
+			// Parse the tag (field number and wire type).
+			var tag uint64
+			if b[0] < 0x80 {
+				tag = uint64(b[0])
+				b = b[1:]
+			} else if len(b) >= 2 && b[1] < 128 {
+				tag = uint64(b[0]&0x7f) + uint64(b[1])<<7
+				b = b[2:]
+			} else {
+				var n int
+				tag, n = protowire.ConsumeVarint(b)
+				if n < 0 {
+					return out, ValidationInvalid
+				}
+				b = b[n:]
+			}
+			var num protowire.Number
+			if n := tag >> 3; n < uint64(protowire.MinValidNumber) || n > uint64(protowire.MaxValidNumber) {
+				return out, ValidationInvalid
+			} else {
+				num = protowire.Number(n)
+			}
+			wtyp := protowire.Type(tag & 7)
+
+			if wtyp == protowire.EndGroupType {
+				if st.endGroup == num {
+					goto PopState
+				}
+				return out, ValidationInvalid
+			}
+			var vi validationInfo
+			switch {
+			case st.typ == validationTypeMap:
+				switch num {
+				case 1:
+					vi.typ = st.keyType
+				case 2:
+>>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 					vi.typ = st.valType
 					vi.mi = st.mi
 					vi.requiredBit = 1
